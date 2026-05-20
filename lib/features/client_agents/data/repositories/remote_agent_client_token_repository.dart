@@ -26,6 +26,7 @@ class RemoteAgentClientTokenRepository implements AgentClientTokenRepository {
        _localStore = localStore;
 
   static const int _readManyHydrationConcurrency = 6;
+  static const Duration _readManyFreshCacheTtl = Duration(minutes: 1);
 
   final ClientAgentsRemoteDataSource _remoteDataSource;
   final LocalAgentClientTokenStore _localStore;
@@ -278,34 +279,55 @@ class RemoteAgentClientTokenRepository implements AgentClientTokenRepository {
       return <String, String>{};
     }
 
-    final localTokens = await _localStore.readMany(
+    final localRecords = await _localStore.readManyRecords(
       userId: userId,
       agentIds: normalizedAgentIds,
     );
-    final missingIds = normalizedAgentIds
-        .where((agentId) => !localTokens.containsKey(agentId))
+    final now = DateTime.now().toUtc();
+    final freshTokens = <String, String>{};
+    final staleTokens = <String, String>{};
+    for (final entry in localRecords.entries) {
+      if (entry.value.isFresh(maxAge: _readManyFreshCacheTtl, now: now)) {
+        freshTokens[entry.key] = entry.value.token;
+      } else {
+        staleTokens[entry.key] = entry.value.token;
+      }
+    }
+    final idsToHydrate = normalizedAgentIds
+        .where((agentId) => !freshTokens.containsKey(agentId))
         .toList(growable: false);
-    if (missingIds.isEmpty) {
-      return localTokens;
+    if (idsToHydrate.isEmpty) {
+      return freshTokens;
     }
 
-    final merged = <String, String>{...localTokens};
-    for (var i = 0; i < missingIds.length; i += _readManyHydrationConcurrency) {
-      final end = i + _readManyHydrationConcurrency > missingIds.length
-          ? missingIds.length
+    final merged = <String, String>{...freshTokens};
+    for (
+      var i = 0;
+      i < idsToHydrate.length;
+      i += _readManyHydrationConcurrency
+    ) {
+      final end = i + _readManyHydrationConcurrency > idsToHydrate.length
+          ? idsToHydrate.length
           : i + _readManyHydrationConcurrency;
-      final chunk = missingIds.sublist(i, end);
+      final chunk = idsToHydrate.sublist(i, end);
       final hydratedEntries = await Future.wait(
         chunk.map(
           (agentId) => _fetchTokenForReadManyHydration(
             userId: userId,
             agentId: agentId,
+            staleToken: staleTokens[agentId],
           ),
         ),
       );
       for (final entry in hydratedEntries) {
-        if (entry != null) {
-          merged[entry.key] = entry.value;
+        switch (entry.kind) {
+          case _ReadManyHydrationKind.token:
+          case _ReadManyHydrationKind.preserveStale:
+            if (entry.token != null) {
+              merged[entry.agentId] = entry.token!;
+            }
+          case _ReadManyHydrationKind.missing:
+            merged.remove(entry.agentId);
         }
       }
     }
@@ -313,9 +335,10 @@ class RemoteAgentClientTokenRepository implements AgentClientTokenRepository {
     return merged;
   }
 
-  Future<MapEntry<String, String>?> _fetchTokenForReadManyHydration({
+  Future<_ReadManyHydrationResult> _fetchTokenForReadManyHydration({
     required String userId,
     required String agentId,
+    required String? staleToken,
   }) async {
     try {
       final response = await _remoteDataSource.fetchClientAgentToken(
@@ -341,34 +364,45 @@ class RemoteAgentClientTokenRepository implements AgentClientTokenRepository {
         );
       }
       if (normalized == null) {
-        return null;
+        return _ReadManyHydrationResult.missing(agentId);
       }
-      return MapEntry<String, String>(agentId, normalized);
+      return _ReadManyHydrationResult.token(agentId, normalized);
     } on DioException catch (error, stackTrace) {
-      final level = isDioUnauthorizedOrForbidden(error) ? 'debug' : 'warning';
-      final message = isDioUnauthorizedOrForbidden(error)
-          ? 'Client token readMany hydration skipped (auth denied)'
-          : 'Client token readMany hydration failed';
-      final context = <String, Object?>{
-        'operation': 'readManyClientAgentTokens',
-        'userId': userId,
-        'agentId': agentId,
-        'level': level,
-      };
-      if (isDioUnauthorizedOrForbidden(error)) {
-        AppLogger.debug(
-          message,
-          context: context,
-        );
-      } else {
-        AppLogger.warning(
-          message,
-          context: context,
-          error: error,
-          stackTrace: stackTrace,
-        );
+      if (_isAuthoritativeMissingOnReadMany(error)) {
+        try {
+          await _syncLocalCache(
+            userId: userId,
+            agentId: agentId,
+            token: null,
+          );
+        } on Object catch (cacheError, cacheStackTrace) {
+          AppLogger.warning(
+            'Client token readMany authoritative-miss cache clear failed',
+            context: <String, Object?>{
+              'operation': 'readManyClientAgentTokens',
+              'userId': userId,
+              'agentId': agentId,
+            },
+            error: cacheError,
+            stackTrace: cacheStackTrace,
+          );
+        }
+        return _ReadManyHydrationResult.missing(agentId);
       }
-      return null;
+      AppLogger.warning(
+        'Client token readMany hydration failed',
+        context: <String, Object?>{
+          'operation': 'readManyClientAgentTokens',
+          'userId': userId,
+          'agentId': agentId,
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
+      if (staleToken != null) {
+        return _ReadManyHydrationResult.preserveStale(agentId, staleToken);
+      }
+      return _ReadManyHydrationResult.missing(agentId);
     } on Object catch (error, stackTrace) {
       AppLogger.warning(
         'Client token readMany hydration failed',
@@ -380,8 +414,16 @@ class RemoteAgentClientTokenRepository implements AgentClientTokenRepository {
         error: error,
         stackTrace: stackTrace,
       );
-      return null;
+      if (staleToken != null) {
+        return _ReadManyHydrationResult.preserveStale(agentId, staleToken);
+      }
+      return _ReadManyHydrationResult.missing(agentId);
     }
+  }
+
+  bool _isAuthoritativeMissingOnReadMany(DioException error) {
+    final statusCode = error.response?.statusCode;
+    return statusCode == 403 || statusCode == 404;
   }
 
   Future<String?> _readLocal({
@@ -414,4 +456,39 @@ class RemoteAgentClientTokenRepository implements AgentClientTokenRepository {
     final trimmed = raw.trim();
     return trimmed.isEmpty ? null : trimmed;
   }
+}
+
+enum _ReadManyHydrationKind { token, missing, preserveStale }
+
+class _ReadManyHydrationResult {
+  const _ReadManyHydrationResult._({
+    required this.agentId,
+    required this.kind,
+    required this.token,
+  });
+
+  const _ReadManyHydrationResult.token(String agentId, String token)
+    : this._(
+        agentId: agentId,
+        kind: _ReadManyHydrationKind.token,
+        token: token,
+      );
+
+  const _ReadManyHydrationResult.missing(String agentId)
+    : this._(
+        agentId: agentId,
+        kind: _ReadManyHydrationKind.missing,
+        token: null,
+      );
+
+  const _ReadManyHydrationResult.preserveStale(String agentId, String token)
+    : this._(
+        agentId: agentId,
+        kind: _ReadManyHydrationKind.preserveStale,
+        token: token,
+      );
+
+  final String agentId;
+  final _ReadManyHydrationKind kind;
+  final String? token;
 }

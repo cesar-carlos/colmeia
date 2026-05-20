@@ -8,12 +8,14 @@ import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_r
 import 'package:colmeia/features/agent_meta/application/usecases/discover_agent_rpc_methods_use_case.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/load_client_token_policy_use_case.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/refresh_agent_profile_use_case.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_resolution_invalidator.dart';
 import 'package:colmeia/features/agent_meta/domain/entities/agent_profile_snapshot.dart';
 import 'package:colmeia/features/agent_meta/domain/entities/agent_rpc_descriptor.dart';
 import 'package:colmeia/features/agent_meta/domain/entities/client_token_policy.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/application/usecases/get_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_agent_detail_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/persist_client_agent_profile_snapshot_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/remove_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/save_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/update_client_agent_profile_use_case.dart';
@@ -52,10 +54,13 @@ class ClientAgentDetailController extends ChangeNotifier {
     required GetClientAgentTokenUseCase getClientAgentTokenUseCase,
     required SaveClientAgentTokenUseCase saveClientAgentTokenUseCase,
     required RemoveClientAgentTokenUseCase removeClientAgentTokenUseCase,
+    required PersistClientAgentProfileSnapshotUseCase
+    persistClientAgentProfileSnapshotUseCase,
     required RefreshAgentProfileUseCase refreshAgentProfileUseCase,
     required LoadClientTokenPolicyUseCase loadClientTokenPolicyUseCase,
     required DiscoverAgentRpcMethodsUseCase discoverAgentRpcMethodsUseCase,
     AgentRpcCapabilitiesRegistry? agentRpcCapabilitiesRegistry,
+    AgentQueryTargetResolutionInvalidator? targetResolutionInvalidator,
     String Function()? idempotencyKeyGenerator,
     RetryAfterGate? retryAfterGate,
   }) : _authController = authController,
@@ -64,10 +69,13 @@ class ClientAgentDetailController extends ChangeNotifier {
        _getClientAgentTokenUseCase = getClientAgentTokenUseCase,
        _saveClientAgentTokenUseCase = saveClientAgentTokenUseCase,
        _removeClientAgentTokenUseCase = removeClientAgentTokenUseCase,
+       _persistClientAgentProfileSnapshotUseCase =
+           persistClientAgentProfileSnapshotUseCase,
        _refreshAgentProfileUseCase = refreshAgentProfileUseCase,
        _loadClientTokenPolicyUseCase = loadClientTokenPolicyUseCase,
        _discoverAgentRpcMethodsUseCase = discoverAgentRpcMethodsUseCase,
        _agentRpcCapabilitiesRegistry = agentRpcCapabilitiesRegistry,
+       _targetResolutionInvalidator = targetResolutionInvalidator,
        _idempotencyKeyGenerator =
            idempotencyKeyGenerator ?? _defaultIdempotencyKeyGenerator,
        _retryAfterGate = retryAfterGate ?? RetryAfterGate() {
@@ -83,9 +91,12 @@ class ClientAgentDetailController extends ChangeNotifier {
   final GetClientAgentTokenUseCase _getClientAgentTokenUseCase;
   final SaveClientAgentTokenUseCase _saveClientAgentTokenUseCase;
   final RemoveClientAgentTokenUseCase _removeClientAgentTokenUseCase;
+  final PersistClientAgentProfileSnapshotUseCase
+  _persistClientAgentProfileSnapshotUseCase;
   final RefreshAgentProfileUseCase _refreshAgentProfileUseCase;
   final LoadClientTokenPolicyUseCase _loadClientTokenPolicyUseCase;
   final DiscoverAgentRpcMethodsUseCase _discoverAgentRpcMethodsUseCase;
+  final AgentQueryTargetResolutionInvalidator? _targetResolutionInvalidator;
 
   /// Optional shared cache of `rpc.discover` results. When supplied we
   /// hydrate from it synchronously on [load] to avoid an extra round
@@ -421,6 +432,7 @@ class ClientAgentDetailController extends ChangeNotifier {
             ? ClientAgentsPresentationMessage.clientAgentDetailServerTokenSaved()
             : ClientAgentsPresentationMessage.clientAgentDetailServerTokenRemoved();
         _refreshLoadedAgentTokenFlag(hasToken: snapshot.hasToken);
+        _invalidateTargetResolution(userId: userId);
       } else {
         final failure = result.exceptionOrNull()!;
         _clientTokenError = _consumeFailure(failure);
@@ -468,6 +480,7 @@ class ClientAgentDetailController extends ChangeNotifier {
         _clientTokenFeedback =
             ClientAgentsPresentationMessage.clientAgentDetailServerTokenRemoved();
         _refreshLoadedAgentTokenFlag(hasToken: false);
+        _invalidateTargetResolution(userId: userId);
       } else {
         final failure = result.exceptionOrNull()!;
         _clientTokenError = _consumeFailure(failure);
@@ -707,6 +720,26 @@ class ClientAgentDetailController extends ChangeNotifier {
       final snapshot = result.getOrNull();
       if (snapshot != null) {
         _applyAgentProfileSnapshot(snapshot);
+        final persistResult = await _persistClientAgentProfileSnapshotUseCase(
+          userId: userId,
+          agentId: agentId,
+          snapshot: snapshot,
+        );
+        if (persistResult.isError()) {
+          final failure = persistResult.exceptionOrNull()!;
+          _refreshFromAgentError = _consumeFailure(failure);
+          AppLogger.warning(
+            'Persisting refreshed agent snapshot locally failed',
+            context: <String, Object?>{
+              'operation': 'persistRefreshAgentProfileSnapshotLocally',
+              'agentId': agentId,
+              'technicalMessage': failure.message,
+            },
+            error: failure.cause ?? failure,
+            stackTrace: failure.stackTrace,
+          );
+          return;
+        }
         _refreshFromAgentFeedback =
             ClientAgentsPresentationMessage.clientAgentDetailRefreshFromAgentSuccess();
       } else {
@@ -738,17 +771,17 @@ class ClientAgentDetailController extends ChangeNotifier {
     final updated = ClientAgent(
       agentId: current.agentId,
       name: snapshot.name,
-      tradeName: snapshot.tradeName,
-      document: normalizedDocument,
-      cnpjCpf: normalizedDocument,
-      registrationDocument: normalizedDocument,
-      documentType: snapshot.documentType,
-      phone: snapshot.phone,
-      mobile: snapshot.mobile,
-      email: snapshot.email,
+      tradeName: snapshot.tradeName ?? current.tradeName,
+      document: normalizedDocument ?? current.document,
+      cnpjCpf: normalizedDocument ?? current.cnpjCpf,
+      registrationDocument: normalizedDocument ?? current.registrationDocument,
+      documentType: snapshot.documentType ?? current.documentType,
+      phone: snapshot.phone ?? current.phone,
+      mobile: snapshot.mobile ?? current.mobile,
+      email: snapshot.email ?? current.email,
       address: current.address,
-      notes: snapshot.notes,
-      observation: snapshot.observation,
+      notes: snapshot.notes ?? current.notes,
+      observation: snapshot.observation ?? current.observation,
       profileUpdatedAt: snapshot.profileUpdatedAt ?? current.profileUpdatedAt,
       profileVersion: snapshot.profileVersion ?? current.profileVersion,
       catalogStatus: current.catalogStatus,
@@ -758,6 +791,10 @@ class ClientAgentDetailController extends ChangeNotifier {
       hasServerClientToken: current.hasServerClientToken,
     );
     _agent = updated;
+  }
+
+  void _invalidateTargetResolution({required String userId}) {
+    _targetResolutionInvalidator?.invalidate(userId: userId);
   }
 
   /// Asks the connected agent for the policy resolved for the currently

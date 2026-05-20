@@ -1,6 +1,7 @@
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/features/agent_meta/domain/entities/agent_profile_snapshot.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_catalog_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_profile_update_request.dart';
@@ -52,6 +53,15 @@ final class E2eStubClientAgentsRepository implements ClientAgentsRepository {
     required AgentProfileUpdateRequest request,
   }) async {
     _notUsed('updateCatalogAgentProfile');
+  }
+
+  @override
+  Future<AppResult<Unit>> applyApprovedAgentProfileSnapshotLocally({
+    required String userId,
+    required String agentId,
+    required AgentProfileSnapshot snapshot,
+  }) async {
+    _notUsed('applyApprovedAgentProfileSnapshotLocally');
   }
 
   @override

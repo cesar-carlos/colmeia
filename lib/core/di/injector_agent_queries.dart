@@ -65,6 +65,7 @@ import 'package:colmeia/features/agent_queries/data/datasources/routing_relay_ag
 import 'package:colmeia/features/agent_queries/data/datasources/socket_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/socket_with_rest_fallback_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_resolution_invalidator.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_repository_chain_factory.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/cadastro_filial_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/cadastro_filial_repository_impl.dart';
@@ -608,6 +609,9 @@ void _registerAcrossAgentQueryRepositories(GetIt getIt) {
         clientTokenReader: getIt<AgentClientTokenReader>(),
         policy: getIt<AgentSqlExecutionEligibilityPolicy>(),
       ),
+    )
+    ..registerLazySingleton<AgentQueryTargetResolutionInvalidator>(
+      () => getIt<AgentQueryTargetResolver>(),
     )
     ..registerLazySingleton<AgentQueryPlanBuilder>(
       () => AgentQueryPlanBuilder(

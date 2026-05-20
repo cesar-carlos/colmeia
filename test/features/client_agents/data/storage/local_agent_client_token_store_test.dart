@@ -28,14 +28,18 @@ void main() {
       clientToken: '  abc  ',
     );
 
-    verify(
-      () => secure.write(
-        key:
-            'colmeia.agent_client_token.v1|user-1|'
-            '11111111-1111-1111-8111-111111111111',
-        value: 'abc',
-      ),
-    ).called(1);
+    final captured =
+        verify(
+              () => secure.write(
+                key:
+                    'colmeia.agent_client_token.v1|user-1|'
+                    '11111111-1111-1111-8111-111111111111',
+                value: captureAny(named: 'value'),
+              ),
+            ).captured.single
+            as String;
+    expect(captured, contains('"token":"abc"'));
+    expect(captured, contains('"savedAt":"'));
   });
 
   test('write with blank token deletes storage entry', () async {
@@ -113,10 +117,32 @@ void main() {
     expect(v, isNull);
   });
 
+  test(
+    'readRecord keeps legacy raw-string tokens readable as stale cache',
+    () async {
+      when(
+        () => secure.read(
+          key:
+              'colmeia.agent_client_token.v1|u|'
+              '11111111-1111-1111-8111-111111111111',
+        ),
+      ).thenAnswer((_) async => 'legacy-token');
+
+      final record = await store.readRecord(
+        userId: 'u',
+        agentId: '11111111-1111-1111-8111-111111111111',
+      );
+
+      expect(record, isNotNull);
+      expect(record!.token, 'legacy-token');
+      expect(record.savedAt, isNull);
+    },
+  );
+
   test('readMany deduplicates ids and reads in parallel', () async {
     const id = '11111111-1111-1111-8111-111111111111';
     when(() => secure.read(key: any(named: 'key'))).thenAnswer(
-      (_) async => 'tok',
+      (_) async => '{"token":"tok","savedAt":"2026-05-20T12:00:00.000Z"}',
     );
 
     final map = await store.readMany(

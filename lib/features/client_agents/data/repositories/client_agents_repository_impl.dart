@@ -3,10 +3,13 @@ import 'dart:math' show min;
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/agent_meta/domain/entities/agent_profile_snapshot.dart';
 import 'package:colmeia/features/client_agents/data/datasources/client_agents_local_datasource.dart';
 import 'package:colmeia/features/client_agents/data/datasources/client_agents_remote_datasource.dart';
 import 'package:colmeia/features/client_agents/data/models/client_access_requests_response_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/client_accessible_agent_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_agent_profile_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/client_approved_agent_detail_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_approved_agents_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/online_agent_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/online_agents_response_dto.dart';
@@ -342,6 +345,89 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
             'operation': 'updateCatalogAgentProfile',
             'userId': userId,
             'agentId': trimmed,
+          },
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<AppResult<Unit>> applyApprovedAgentProfileSnapshotLocally({
+    required String userId,
+    required String agentId,
+    required AgentProfileSnapshot snapshot,
+  }) async {
+    final trimmedAgentId = agentId.trim();
+    if (trimmedAgentId.isEmpty) {
+      return const Failure<Unit, AppFailure>(
+        ValidationFailure(
+          message: 'Agent id is empty',
+          userMessage: 'Invalid agent identifier.',
+        ),
+      );
+    }
+    try {
+      final cachedDetail = await _localDataSource.readApprovedAgentDetail(
+        userId: userId,
+        agentId: trimmedAgentId,
+      );
+      if (cachedDetail != null) {
+        await _localDataSource.saveApprovedAgentDetail(
+          userId: userId,
+          agentId: trimmedAgentId,
+          payload: ClientApprovedAgentDetailResponseDto(
+            agent: _applySnapshotToAccessibleAgent(
+              cachedDetail.agent,
+              snapshot,
+            ),
+          ),
+        );
+      }
+
+      final approvedSnapshot = await _localDataSource.readApprovedAgents(
+        userId: userId,
+        query: _defaultRefreshQuery,
+      );
+      if (approvedSnapshot != null) {
+        var changed = false;
+        final updatedAgents = approvedSnapshot.agents
+            .map((agent) {
+              if (agent.agentId != trimmedAgentId) {
+                return agent;
+              }
+              changed = true;
+              return _applySnapshotToAccessibleAgent(agent, snapshot);
+            })
+            .toList(growable: false);
+        if (changed) {
+          await _localDataSource.saveApprovedAgents(
+            userId: userId,
+            query: _defaultRefreshQuery,
+            payload: ClientApprovedAgentsResponseDto(
+              agents: updatedAgents,
+              agentIds: approvedSnapshot.agentIds,
+              count: approvedSnapshot.count,
+              total: approvedSnapshot.total,
+              page: approvedSnapshot.page,
+              pageSize: approvedSnapshot.pageSize,
+            ),
+          );
+        }
+      }
+
+      return const Success<Unit, AppFailure>(unit);
+    } on Object catch (error, stackTrace) {
+      return Failure<Unit, AppFailure>(
+        mapToAppFailure(
+          error,
+          stackTrace: stackTrace,
+          fallbackMessage: 'Unable to persist approved agent snapshot locally',
+          fallbackUserMessage:
+              'Could not keep the refreshed agent profile locally.',
+          context: <String, Object?>{
+            'operation': 'applyApprovedAgentProfileSnapshotLocally',
+            'userId': userId,
+            'agentId': trimmedAgentId,
           },
         ),
       );
@@ -1915,6 +2001,34 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
       return null;
     }
     return cached.agents.map((item) => item.agentId).toSet();
+  }
+
+  ClientAccessibleAgentDto _applySnapshotToAccessibleAgent(
+    ClientAccessibleAgentDto base,
+    AgentProfileSnapshot snapshot,
+  ) {
+    final normalizedDocument = snapshot.document?.trim();
+    return ClientAccessibleAgentDto(
+      agentId: base.agentId,
+      name: snapshot.name,
+      status: base.status,
+      createdAt: base.createdAt,
+      updatedAt: base.updatedAt,
+      tradeName: snapshot.tradeName ?? base.tradeName,
+      document: normalizedDocument ?? base.document,
+      cnpjCpf: normalizedDocument ?? base.cnpjCpf,
+      documentType: snapshot.documentType ?? base.documentType,
+      phone: snapshot.phone ?? base.phone,
+      mobile: snapshot.mobile ?? base.mobile,
+      email: snapshot.email ?? base.email,
+      address: base.address,
+      notes: snapshot.notes ?? base.notes,
+      observation: snapshot.observation ?? base.observation,
+      profileUpdatedAt: snapshot.profileUpdatedAt ?? base.profileUpdatedAt,
+      profileVersion: snapshot.profileVersion ?? base.profileVersion,
+      isHubConnected: base.isHubConnected,
+      hasClientToken: base.hasClientToken,
+    );
   }
 
   List<PendingAgentAction> _enqueueActions({

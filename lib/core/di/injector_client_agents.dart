@@ -22,6 +22,7 @@ import 'package:colmeia/features/client_agents/application/usecases/queue_client
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/read_pending_client_agent_actions_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/reject_owner_access_request_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/persist_client_agent_profile_snapshot_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/remove_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/retry_client_access_request_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/revoke_owner_client_access_use_case.dart';
@@ -106,6 +107,11 @@ void registerInjectorClientAgents(GetIt getIt) {
     )
     ..registerLazySingleton<UpdateClientAgentProfileUseCase>(
       () => UpdateClientAgentProfileUseCase(getIt<ClientAgentsRepository>()),
+    )
+    ..registerLazySingleton<PersistClientAgentProfileSnapshotUseCase>(
+      () => PersistClientAgentProfileSnapshotUseCase(
+        getIt<ClientAgentsRepository>(),
+      ),
     )
     ..registerLazySingleton<GetClientAgentTokenUseCase>(
       () => GetClientAgentTokenUseCase(getIt<AgentClientTokenRepository>()),

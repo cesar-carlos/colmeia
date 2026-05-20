@@ -7,6 +7,7 @@ import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_resolution_invalidator.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/application/client_agent_token_draft_store.dart';
 import 'package:colmeia/features/client_agents/application/services/agent_presence_poller.dart';
@@ -62,6 +63,7 @@ class ClientAgentsController extends ChangeNotifier {
     ObserveAgentPresenceUseCase? observeAgentPresenceUseCase,
     AgentPresencePoller? agentPresencePoller,
     ConsumerSocketConnection? consumerSocketConnection,
+    AgentQueryTargetResolutionInvalidator? targetResolutionInvalidator,
     Duration hintConfirmDelay = const Duration(seconds: 5),
     RetryAfterGate? syncRetryAfterGate,
     RetryAfterGate? requestAccessRetryAfterGate,
@@ -84,6 +86,7 @@ class ClientAgentsController extends ChangeNotifier {
        _observeAgentPresenceUseCase = observeAgentPresenceUseCase,
        _agentPresencePoller = agentPresencePoller,
        _consumerSocketConnection = consumerSocketConnection,
+       _targetResolutionInvalidator = targetResolutionInvalidator,
        _hintConfirmDelay = hintConfirmDelay,
        _syncRetryAfterGate = syncRetryAfterGate ?? RetryAfterGate(),
        _requestAccessRetryAfterGate =
@@ -118,6 +121,7 @@ class ClientAgentsController extends ChangeNotifier {
   final GetClientAgentTokenUseCase _getClientAgentTokenUseCase;
   final SaveClientAgentTokenUseCase _saveClientAgentTokenUseCase;
   final RetryClientAccessRequestUseCase _retryClientAccessRequestUseCase;
+  final AgentQueryTargetResolutionInvalidator? _targetResolutionInvalidator;
 
   /// PR-M part 2: optional dependency. When the build does not enable
   /// `SOCKET_PRESENCE_LISTENER_ENABLED`, the use case is `null` and the
@@ -787,6 +791,7 @@ class ClientAgentsController extends ChangeNotifier {
           userId: userId,
           fallbackAgents: relinkedAgents,
         );
+        _invalidateTargetResolution(userId: userId);
         _scheduleLocalTokenServerFlushForApprovedAgents(
           userId: userId,
           preferredAgentIds: relinkedById.keys,
@@ -1220,6 +1225,7 @@ class ClientAgentsController extends ChangeNotifier {
           userId: userId,
           agentIds: requestAccessAlreadyApprovedOnSync,
         );
+        _invalidateTargetResolution(userId: userId);
       }
       if (_actionError == null) {
         final outcome = syncResult.fold((v) => v, (_) => null);
@@ -1236,6 +1242,9 @@ class ClientAgentsController extends ChangeNotifier {
             ),
             kind: ClientAgentsActionFeedbackKind.success,
           );
+          if (outcome.successfulRemoveAccessAgentIds.isNotEmpty) {
+            _invalidateTargetResolution(userId: userId);
+          }
         }
         // Sync may have discovered that some queued ids were already
         // approved server-side. Flush any local token we stashed for those
@@ -1494,6 +1503,7 @@ class ClientAgentsController extends ChangeNotifier {
     if (approvedNow.isNotEmpty) {
       await _refreshApprovedAgentsSnapshot(userId: userId);
       _upsertApprovedAgentsInMemory(approvedNow.values.toList(growable: false));
+      _invalidateTargetResolution(userId: userId);
       // Now that the server reports these agents as linked, flush any local
       // token the user typed during the request-access flow up to the server
       // so the SQL bridge sees it on the next call (and the detail page
@@ -1855,6 +1865,10 @@ class ClientAgentsController extends ChangeNotifier {
           classification.notApproved.length +
           classification.localPending.length,
     );
+  }
+
+  void _invalidateTargetResolution({required String userId}) {
+    _targetResolutionInvalidator?.invalidate(userId: userId);
   }
 
   void _notifyListenersIfAlive() {

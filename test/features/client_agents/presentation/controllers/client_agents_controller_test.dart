@@ -5,6 +5,7 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_resolution_invalidator.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/domain/entities/client_account_status.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
@@ -90,6 +91,9 @@ class _MockSaveClientAgentTokenUseCase extends Mock
 class _MockRetryClientAccessRequestUseCase extends Mock
     implements RetryClientAccessRequestUseCase {}
 
+class _MockAgentQueryTargetResolutionInvalidator extends Mock
+    implements AgentQueryTargetResolutionInvalidator {}
+
 String? _localizedMessage(
   ClientAgentsPresentationMessage? message, {
   AppLocalizations? l10n,
@@ -141,6 +145,7 @@ void main() {
   late _MockGetClientAgentTokenUseCase getClientAgentTokenUseCase;
   late _MockSaveClientAgentTokenUseCase saveClientAgentTokenUseCase;
   late _MockRetryClientAccessRequestUseCase retryClientAccessRequestUseCase;
+  late _MockAgentQueryTargetResolutionInvalidator targetResolutionInvalidator;
   late ClientAgentsController controller;
 
   final approvedAgentsResult = PaginatedResult<ClientAgent>(
@@ -365,6 +370,7 @@ void main() {
     ).thenAnswer((_) async => <String, String>{});
     getClientAgentTokenUseCase = _MockGetClientAgentTokenUseCase();
     retryClientAccessRequestUseCase = _MockRetryClientAccessRequestUseCase();
+    targetResolutionInvalidator = _MockAgentQueryTargetResolutionInvalidator();
     when(
       () => getClientAgentTokenUseCase(
         userId: any(named: 'userId'),
@@ -410,6 +416,7 @@ void main() {
       getClientAgentTokenUseCase: getClientAgentTokenUseCase,
       saveClientAgentTokenUseCase: saveClientAgentTokenUseCase,
       retryClientAccessRequestUseCase: retryClientAccessRequestUseCase,
+      targetResolutionInvalidator: targetResolutionInvalidator,
     );
   });
 
@@ -923,6 +930,9 @@ void main() {
           agentIds: const <String>{freshId},
         ),
       ).called(1);
+      verify(
+        () => targetResolutionInvalidator.invalidate(userId: session.userId),
+      ).called(1);
       check(controller.actionNotice).isNotNull();
       expect(
         _actionFeedbackText(controller),
@@ -1063,6 +1073,54 @@ void main() {
         _actionFeedbackText(controller),
         contains('already available under "My agents"'),
       );
+      verify(
+        () => targetResolutionInvalidator.invalidate(userId: session.userId),
+      ).called(1);
+    },
+  );
+
+  test(
+    'syncPending invalidates target resolution after successful remove access',
+    () async {
+      final removePending = <PendingAgentAction>[
+        PendingAgentAction(
+          id: 'removeAccess_33333333-3333-3333-8333-333333333333',
+          agentId: '33333333-3333-3333-8333-333333333333',
+          type: PendingAgentActionType.removeAccess,
+          state: PendingAgentActionState.queued,
+          createdAt: DateTime(2026, 4, 4),
+          attemptCount: 0,
+        ),
+      ];
+      var readCount = 0;
+      when(
+        () => readPendingActionsUseCase(userId: any(named: 'userId')),
+      ).thenAnswer((_) async {
+        readCount++;
+        return Success<List<PendingAgentAction>, AppFailure>(
+          readCount == 1 ? removePending : emptyPendingActions,
+        );
+      });
+      when(
+        () => syncPendingActionsUseCase(userId: any(named: 'userId')),
+      ).thenAnswer(
+        (_) async => const Success<SyncPendingAgentActionsResult, AppFailure>(
+          SyncPendingAgentActionsResult(
+            successfulRemoveAccessAgentIds: <String>{
+              '33333333-3333-3333-8333-333333333333',
+            },
+          ),
+        ),
+      );
+
+      await controller.initialize();
+      clearInteractions(targetResolutionInvalidator);
+
+      await controller.syncPending();
+
+      verify(
+        () => targetResolutionInvalidator.invalidate(userId: session.userId),
+      ).called(1);
     },
   );
 

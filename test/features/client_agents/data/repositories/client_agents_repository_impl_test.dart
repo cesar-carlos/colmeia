@@ -1,5 +1,6 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/features/agent_meta/domain/entities/agent_profile_snapshot.dart';
 import 'package:colmeia/features/client_agents/data/datasources/client_agents_local_datasource.dart';
 import 'package:colmeia/features/client_agents/data/datasources/client_agents_remote_datasource.dart';
 import 'package:colmeia/features/client_agents/data/models/agent_catalog_record_dto.dart';
@@ -125,30 +126,33 @@ void main() {
     ).called(1);
   });
 
-  test('should enqueue remove access even when the approved snapshot is missing locally', () async {
-    when(
-      () => local.readPendingActions(userId: any(named: 'userId')),
-    ).thenAnswer((_) async => const <PendingAgentAction>[]);
-    when(
-      () => local.savePendingActions(
-        userId: any(named: 'userId'),
-        actions: any(named: 'actions'),
-      ),
-    ).thenAnswer((_) async {});
+  test(
+    'should enqueue remove access even when the approved snapshot is missing locally',
+    () async {
+      when(
+        () => local.readPendingActions(userId: any(named: 'userId')),
+      ).thenAnswer((_) async => const <PendingAgentAction>[]);
+      when(
+        () => local.savePendingActions(
+          userId: any(named: 'userId'),
+          actions: any(named: 'actions'),
+        ),
+      ).thenAnswer((_) async {});
 
-    final result = await repository.queueRemoveAccess(
-      userId: 'user-1',
-      agentIds: const <String>{'agent-2'},
-    );
-
-    check(result.isSuccess()).isTrue();
-    verify(
-      () => local.savePendingActions(
+      final result = await repository.queueRemoveAccess(
         userId: 'user-1',
-        actions: any(named: 'actions'),
-      ),
-    ).called(1);
-  });
+        agentIds: const <String>{'agent-2'},
+      );
+
+      check(result.isSuccess()).isTrue();
+      verify(
+        () => local.savePendingActions(
+          userId: 'user-1',
+          actions: any(named: 'actions'),
+        ),
+      ).called(1);
+    },
+  );
 
   test('should keep only failed pending action after granular sync', () async {
     var storedActions = <PendingAgentAction>[
@@ -274,98 +278,103 @@ void main() {
     );
   });
 
-  test('successful remove sync clears the cached approved-agent detail', () async {
-    var storedActions = <PendingAgentAction>[
-      PendingAgentAction(
-        id: 'removeAccess_agent-9',
-        agentId: 'agent-9',
-        type: PendingAgentActionType.removeAccess,
-        state: PendingAgentActionState.queued,
-        createdAt: now,
-        attemptCount: 0,
-      ),
-    ];
+  test(
+    'successful remove sync clears the cached approved-agent detail',
+    () async {
+      var storedActions = <PendingAgentAction>[
+        PendingAgentAction(
+          id: 'removeAccess_agent-9',
+          agentId: 'agent-9',
+          type: PendingAgentActionType.removeAccess,
+          state: PendingAgentActionState.queued,
+          createdAt: now,
+          attemptCount: 0,
+        ),
+      ];
 
-    when(
-      () => local.readPendingActions(userId: any(named: 'userId')),
-    ).thenAnswer((_) async => storedActions);
-    when(
-      () => local.savePendingActions(
-        userId: any(named: 'userId'),
-        actions: any(named: 'actions'),
-      ),
-    ).thenAnswer((invocation) async {
-      storedActions = List<PendingAgentAction>.from(
-        invocation.namedArguments[#actions]! as List<PendingAgentAction>,
+      when(
+        () => local.readPendingActions(userId: any(named: 'userId')),
+      ).thenAnswer((_) async => storedActions);
+      when(
+        () => local.savePendingActions(
+          userId: any(named: 'userId'),
+          actions: any(named: 'actions'),
+        ),
+      ).thenAnswer((invocation) async {
+        storedActions = List<PendingAgentAction>.from(
+          invocation.namedArguments[#actions]! as List<PendingAgentAction>,
+        );
+      });
+      when(
+        () => remote.removeApprovedAgentById('agent-9'),
+      ).thenAnswer((_) async {});
+      when(
+        () => local.clearApprovedAgentDetail(
+          userId: 'user-1',
+          agentId: 'agent-9',
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => remote.fetchApprovedAgents(
+          query: any(named: 'query'),
+          search: any(named: 'search'),
+          status: any(named: 'status'),
+          refresh: any(named: 'refresh'),
+        ),
+      ).thenAnswer(
+        (_) async => const ClientApprovedAgentsResponseDto(
+          agents: [],
+          agentIds: <String>{},
+          count: 0,
+          total: 0,
+          page: 1,
+          pageSize: 50,
+        ),
       );
-    });
-    when(() => remote.removeApprovedAgentById('agent-9')).thenAnswer((_) async {});
-    when(
-      () => local.clearApprovedAgentDetail(
-        userId: 'user-1',
-        agentId: 'agent-9',
-      ),
-    ).thenAnswer((_) async {});
-    when(
-      () => remote.fetchApprovedAgents(
-        query: any(named: 'query'),
-        search: any(named: 'search'),
-        status: any(named: 'status'),
-        refresh: any(named: 'refresh'),
-      ),
-    ).thenAnswer(
-      (_) async => const ClientApprovedAgentsResponseDto(
-        agents: [],
-        agentIds: <String>{},
-        count: 0,
-        total: 0,
-        page: 1,
-        pageSize: 50,
-      ),
-    );
-    when(
-      () => local.saveApprovedAgents(
-        userId: any(named: 'userId'),
-        query: any(named: 'query'),
-        payload: any(named: 'payload'),
-      ),
-    ).thenAnswer((_) async {});
-    when(
-      () => remote.fetchAccessRequests(query: any(named: 'query')),
-    ).thenAnswer(
-      (_) async => const ClientAccessRequestsResponseDto(
-        requests: [],
-        count: 0,
-        total: 0,
-        page: 1,
-        pageSize: 50,
-      ),
-    );
-    when(
-      () => local.saveAccessRequests(
-        userId: any(named: 'userId'),
-        query: any(named: 'query'),
-        payload: any(named: 'payload'),
-      ),
-    ).thenAnswer((_) async {});
-    when(
-      () => local.readOnlineAgents(
-        userId: any(named: 'userId'),
-        maxAge: any(named: 'maxAge'),
-      ),
-    ).thenAnswer((_) async => null);
+      when(
+        () => local.saveApprovedAgents(
+          userId: any(named: 'userId'),
+          query: any(named: 'query'),
+          payload: any(named: 'payload'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => remote.fetchAccessRequests(query: any(named: 'query')),
+      ).thenAnswer(
+        (_) async => const ClientAccessRequestsResponseDto(
+          requests: [],
+          count: 0,
+          total: 0,
+          page: 1,
+          pageSize: 50,
+        ),
+      );
+      when(
+        () => local.saveAccessRequests(
+          userId: any(named: 'userId'),
+          query: any(named: 'query'),
+          payload: any(named: 'payload'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => local.readOnlineAgents(
+          userId: any(named: 'userId'),
+          maxAge: any(named: 'maxAge'),
+        ),
+      ).thenAnswer((_) async => null);
 
-    final result = await repository.syncPendingActions(userId: 'user-1');
+      final result = await repository.syncPendingActions(userId: 'user-1');
 
-    check(result.isSuccess()).isTrue();
-    check(storedActions).isEmpty();
-    verify(
-      () => local.clearApprovedAgentDetail(
-        userId: 'user-1',
-        agentId: 'agent-9',
-      ),
-    ).called(1);
-  });
+      check(result.isSuccess()).isTrue();
+      check(storedActions).isEmpty();
+      verify(
+        () => local.clearApprovedAgentDetail(
+          userId: 'user-1',
+          agentId: 'agent-9',
+        ),
+      ).called(1);
+    },
+  );
 
   test('recovers orphaned syncing pending actions before syncing', () async {
     var storedActions = <PendingAgentAction>[
@@ -972,6 +981,115 @@ void main() {
       verifyNever(
         () => remote.fetchOnlineAgents(logUserId: any(named: 'logUserId')),
       );
+    },
+  );
+
+  test(
+    'applyApprovedAgentProfileSnapshotLocally updates cached detail/list '
+    'while preserving omitted fields',
+    () async {
+      const agentId = 'agent-local-1';
+      final cachedDetail = ClientApprovedAgentDetailResponseDto(
+        agent: ClientAccessibleAgentDto.fromJson(<String, dynamic>{
+          'agentId': agentId,
+          'name': 'Old Name',
+          'tradeName': 'Old Trade',
+          'document': '12345678901',
+          'email': 'old@example.com',
+          'notes': 'Old notes',
+          'status': 'active',
+          'address': <String, dynamic>{'city': 'Cuiaba', 'state': 'MT'},
+          'createdAt': '2020-01-01T00:00:00.000Z',
+          'updatedAt': '2020-01-02T00:00:00.000Z',
+          'profileVersion': 3,
+          'hasClientToken': true,
+        }),
+      );
+      final cachedApproved = ClientApprovedAgentsResponseDto(
+        agents: <ClientAccessibleAgentDto>[
+          ClientAccessibleAgentDto.fromJson(<String, dynamic>{
+            'agentId': agentId,
+            'name': 'Old Name',
+            'tradeName': 'Old Trade',
+            'document': '12345678901',
+            'email': 'old@example.com',
+            'notes': 'Old notes',
+            'status': 'active',
+            'address': <String, dynamic>{'city': 'Cuiaba', 'state': 'MT'},
+            'createdAt': '2020-01-01T00:00:00.000Z',
+            'updatedAt': '2020-01-02T00:00:00.000Z',
+            'profileVersion': 3,
+            'hasClientToken': true,
+          }),
+        ],
+        agentIds: const <String>{agentId},
+        count: 1,
+        total: 1,
+        page: 1,
+        pageSize: 50,
+      );
+      ClientApprovedAgentDetailResponseDto? savedDetail;
+      ClientApprovedAgentsResponseDto? savedApproved;
+
+      when(
+        () => local.readApprovedAgentDetail(
+          userId: 'user-1',
+          agentId: agentId,
+        ),
+      ).thenAnswer((_) async => cachedDetail);
+      when(
+        () => local.saveApprovedAgentDetail(
+          userId: 'user-1',
+          agentId: agentId,
+          payload: any(named: 'payload'),
+        ),
+      ).thenAnswer((invocation) async {
+        savedDetail =
+            invocation.namedArguments[#payload]
+                as ClientApprovedAgentDetailResponseDto;
+      });
+      when(
+        () => local.readApprovedAgents(
+          userId: 'user-1',
+          query: any(named: 'query'),
+        ),
+      ).thenAnswer((_) async => cachedApproved);
+      when(
+        () => local.saveApprovedAgents(
+          userId: 'user-1',
+          query: any(named: 'query'),
+          payload: any(named: 'payload'),
+        ),
+      ).thenAnswer((invocation) async {
+        savedApproved =
+            invocation.namedArguments[#payload]
+                as ClientApprovedAgentsResponseDto;
+      });
+
+      final result = await repository.applyApprovedAgentProfileSnapshotLocally(
+        userId: 'user-1',
+        agentId: agentId,
+        snapshot: AgentProfileSnapshot(
+          agentId: agentId,
+          name: 'Fresh Name',
+          phone: '65 1111-1111',
+          profileVersion: 7,
+          profileUpdatedAt: DateTime.utc(2026, 5, 20, 12),
+        ),
+      );
+
+      check(result.isSuccess()).isTrue();
+      check(savedDetail).isNotNull();
+      check(savedApproved).isNotNull();
+      check(savedDetail!.agent.name).equals('Fresh Name');
+      check(savedDetail!.agent.tradeName).equals('Old Trade');
+      check(savedDetail!.agent.email).equals('old@example.com');
+      check(savedDetail!.agent.notes).equals('Old notes');
+      check(savedDetail!.agent.address?.city).equals('Cuiaba');
+      check(savedDetail!.agent.profileVersion).equals(7);
+      check(savedApproved!.agents.single.name).equals('Fresh Name');
+      check(savedApproved!.agents.single.tradeName).equals('Old Trade');
+      check(savedApproved!.agents.single.address?.state).equals('MT');
     },
   );
 

@@ -111,6 +111,46 @@ class _MockLoadOwnerApprovedClientsUseCase extends Mock
 class _MockRevokeOwnerClientAccessUseCase extends Mock
     implements RevokeOwnerClientAccessUseCase {}
 
+CurrentUserScope _buildUserScope({
+  required String name,
+  required Set<UserPermission> permissions,
+}) {
+  return CurrentUserScope(
+    profile: UserProfile(id: 'u1', name: name, roleLabel: name),
+    access: UserAccessScope(
+      allowedStores: <StoreScope>[const StoreScope(id: '1', name: 'Store')],
+      permissions: permissions,
+    ),
+  );
+}
+
+class _MutableCurrentUserContextController
+    extends CurrentUserContextController {
+  _MutableCurrentUserContextController({
+    required String name,
+    required Set<UserPermission> permissions,
+  }) : _permissions = permissions,
+       super.testing(
+         userScope: _buildUserScope(name: name, permissions: permissions),
+         activeStoreId: '1',
+       );
+
+  Set<UserPermission> _permissions;
+
+  @override
+  Set<UserPermission> get permissions => _permissions;
+
+  @override
+  bool hasPermission(UserPermission permission) {
+    return _permissions.contains(permission);
+  }
+
+  void setPermissions(Set<UserPermission> permissions) {
+    _permissions = permissions;
+    notifyListeners();
+  }
+}
+
 AuthSession _buildSession() {
   return AuthSession(
     userId: 'u1',
@@ -177,12 +217,9 @@ void main() {
     );
 
     final currentUserContextController = CurrentUserContextController.testing(
-      userScope: const CurrentUserScope(
-        profile: UserProfile(id: 'u1', name: 'Client', roleLabel: 'Client'),
-        access: UserAccessScope(
-          allowedStores: <StoreScope>[StoreScope(id: '1', name: 'Store')],
-          permissions: <UserPermission>{},
-        ),
+      userScope: _buildUserScope(
+        name: 'Client',
+        permissions: const <UserPermission>{},
       ),
       activeStoreId: '1',
     );
@@ -306,12 +343,9 @@ void main() {
     );
 
     final currentUserContextController = CurrentUserContextController.testing(
-      userScope: const CurrentUserScope(
-        profile: UserProfile(id: 'u1', name: 'Owner', roleLabel: 'Owner'),
-        access: UserAccessScope(
-          allowedStores: <StoreScope>[StoreScope(id: '1', name: 'Store')],
-          permissions: <UserPermission>{UserPermission.manageAgents},
-        ),
+      userScope: _buildUserScope(
+        name: 'Owner',
+        permissions: const <UserPermission>{UserPermission.manageAgents},
       ),
       activeStoreId: '1',
     );
@@ -336,4 +370,259 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+    'loads owner data when manageAgents permission appears after mount',
+    (tester) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final prefs = await SharedPreferences.getInstance();
+      final authController = _MockAuthController();
+      when(() => authController.session).thenReturn(_buildSession());
+
+      final loadApprovedAgents = _MockLoadClientApprovedAgentsUseCase();
+      when(
+        () => loadApprovedAgents(
+          userId: any(named: 'userId'),
+          query: any(named: 'query'),
+          refresh: any(named: 'refresh'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            Success<PaginatedResult<ClientAgent>, AppFailure>(_emptyPage()),
+      );
+
+      final loadAccessRequests = _MockLoadClientAccessRequestsUseCase();
+      when(
+        () => loadAccessRequests(
+          userId: any(named: 'userId'),
+          query: any(named: 'query'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            Success<PaginatedResult<ClientAgentAccessRequest>, AppFailure>(
+              _emptyPage(),
+            ),
+      );
+
+      final readPendingActions = _MockReadPendingClientAgentActionsUseCase();
+      when(
+        () => readPendingActions(userId: any(named: 'userId')),
+      ).thenAnswer(
+        (_) async => const Success<List<PendingAgentAction>, AppFailure>(
+          <PendingAgentAction>[],
+        ),
+      );
+
+      final loadManagedAgents = _MockLoadManagedAgentsUseCase();
+      when(
+        () => loadManagedAgents(userId: any(named: 'userId')),
+      ).thenAnswer(
+        (_) async =>
+            const Success<List<ClientAgent>, AppFailure>(<ClientAgent>[]),
+      );
+
+      final loadOwnerAccessRequests = _MockLoadOwnerAccessRequestsUseCase();
+      when(
+        () => loadOwnerAccessRequests(userId: any(named: 'userId')),
+      ).thenAnswer(
+        (_) async => const Success<List<OwnerClientAccessRequest>, AppFailure>(
+          <OwnerClientAccessRequest>[],
+        ),
+      );
+
+      final controller = ClientAgentsController(
+        authController: authController,
+        clientTokenDraftStore: ClientAgentTokenDraftStore(
+          _MockLocalAgentClientTokenStore(),
+        ),
+        loadApprovedAgentsUseCase: loadApprovedAgents,
+        loadAccessRequestsUseCase: loadAccessRequests,
+        loadClientAccessStatusUseCase: _MockLoadClientAccessStatusUseCase(),
+        loadClientAgentDetailUseCase: _MockLoadClientAgentDetailUseCase(),
+        queueRequestAccessUseCase: _MockQueueClientAgentRequestAccessUseCase(),
+        queueRemoveAccessUseCase: _MockQueueClientAgentRemoveAccessUseCase(),
+        probeClientApprovedAgentUseCase: _MockProbeClientApprovedAgentUseCase(),
+        discardQueuedClientAgentRequestAccessUseCase:
+            _MockDiscardQueuedClientAgentRequestAccessUseCase(),
+        readPendingActionsUseCase: readPendingActions,
+        syncPendingActionsUseCase: _MockSyncPendingClientAgentActionsUseCase(),
+        getClientAgentTokenUseCase: _MockGetClientAgentTokenUseCase(),
+        saveClientAgentTokenUseCase: _MockSaveClientAgentTokenUseCase(),
+        retryClientAccessRequestUseCase: _MockRetryClientAccessRequestUseCase(),
+      );
+
+      final ownerController = ClientAgentsOwnerController(
+        authController: authController,
+        loadManagedAgentsUseCase: loadManagedAgents,
+        loadOwnerAccessRequestsUseCase: loadOwnerAccessRequests,
+        approveOwnerAccessRequestUseCase:
+            _MockApproveOwnerAccessRequestUseCase(),
+        rejectOwnerAccessRequestUseCase: _MockRejectOwnerAccessRequestUseCase(),
+        loadOwnerApprovedClientsUseCase: _MockLoadOwnerApprovedClientsUseCase(),
+        revokeOwnerClientAccessUseCase: _MockRevokeOwnerClientAccessUseCase(),
+      );
+
+      final currentUserContextController = _MutableCurrentUserContextController(
+        name: 'Client',
+        permissions: const <UserPermission>{},
+      );
+      addTearDown(currentUserContextController.dispose);
+
+      await tester.pumpWidget(
+        LocalizedTestApp(
+          child: ChangeNotifierProvider<CurrentUserContextController>.value(
+            value: currentUserContextController,
+            child: ClientAgentsPage(
+              controller: controller,
+              ownerController: ownerController,
+              pageSessionService: ClientAgentsPageSessionService(prefs),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      verifyNever(() => loadManagedAgents(userId: any(named: 'userId')));
+
+      currentUserContextController.setPermissions(
+        const <UserPermission>{UserPermission.manageAgents},
+      );
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      verify(() => loadManagedAgents(userId: 'u1')).called(1);
+    },
+  );
+
+  testWidgets(
+    'shows managed agents error instead of the false empty owner state',
+    (tester) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final prefs = await SharedPreferences.getInstance();
+      final pageSessionService = ClientAgentsPageSessionService(prefs);
+      await pageSessionService.persistSelectedTabIndex(4);
+
+      final authController = _MockAuthController();
+      when(() => authController.session).thenReturn(_buildSession());
+
+      final loadApprovedAgents = _MockLoadClientApprovedAgentsUseCase();
+      when(
+        () => loadApprovedAgents(
+          userId: any(named: 'userId'),
+          query: any(named: 'query'),
+          refresh: any(named: 'refresh'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            Success<PaginatedResult<ClientAgent>, AppFailure>(_emptyPage()),
+      );
+
+      final loadAccessRequests = _MockLoadClientAccessRequestsUseCase();
+      when(
+        () => loadAccessRequests(
+          userId: any(named: 'userId'),
+          query: any(named: 'query'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            Success<PaginatedResult<ClientAgentAccessRequest>, AppFailure>(
+              _emptyPage(),
+            ),
+      );
+
+      final readPendingActions = _MockReadPendingClientAgentActionsUseCase();
+      when(
+        () => readPendingActions(userId: any(named: 'userId')),
+      ).thenAnswer(
+        (_) async => const Success<List<PendingAgentAction>, AppFailure>(
+          <PendingAgentAction>[],
+        ),
+      );
+
+      final loadManagedAgents = _MockLoadManagedAgentsUseCase();
+      when(
+        () => loadManagedAgents(userId: any(named: 'userId')),
+      ).thenAnswer(
+        (_) async => const Failure<List<ClientAgent>, AppFailure>(
+          ValidationFailure(
+            message: 'managed_agents_failed',
+            userMessage: 'Falha ao carregar agentes administrados.',
+          ),
+        ),
+      );
+
+      final loadOwnerAccessRequests = _MockLoadOwnerAccessRequestsUseCase();
+      when(
+        () => loadOwnerAccessRequests(userId: any(named: 'userId')),
+      ).thenAnswer(
+        (_) async => const Success<List<OwnerClientAccessRequest>, AppFailure>(
+          <OwnerClientAccessRequest>[],
+        ),
+      );
+
+      final controller = ClientAgentsController(
+        authController: authController,
+        clientTokenDraftStore: ClientAgentTokenDraftStore(
+          _MockLocalAgentClientTokenStore(),
+        ),
+        loadApprovedAgentsUseCase: loadApprovedAgents,
+        loadAccessRequestsUseCase: loadAccessRequests,
+        loadClientAccessStatusUseCase: _MockLoadClientAccessStatusUseCase(),
+        loadClientAgentDetailUseCase: _MockLoadClientAgentDetailUseCase(),
+        queueRequestAccessUseCase: _MockQueueClientAgentRequestAccessUseCase(),
+        queueRemoveAccessUseCase: _MockQueueClientAgentRemoveAccessUseCase(),
+        probeClientApprovedAgentUseCase: _MockProbeClientApprovedAgentUseCase(),
+        discardQueuedClientAgentRequestAccessUseCase:
+            _MockDiscardQueuedClientAgentRequestAccessUseCase(),
+        readPendingActionsUseCase: readPendingActions,
+        syncPendingActionsUseCase: _MockSyncPendingClientAgentActionsUseCase(),
+        getClientAgentTokenUseCase: _MockGetClientAgentTokenUseCase(),
+        saveClientAgentTokenUseCase: _MockSaveClientAgentTokenUseCase(),
+        retryClientAccessRequestUseCase: _MockRetryClientAccessRequestUseCase(),
+      );
+
+      final ownerController = ClientAgentsOwnerController(
+        authController: authController,
+        loadManagedAgentsUseCase: loadManagedAgents,
+        loadOwnerAccessRequestsUseCase: loadOwnerAccessRequests,
+        approveOwnerAccessRequestUseCase:
+            _MockApproveOwnerAccessRequestUseCase(),
+        rejectOwnerAccessRequestUseCase: _MockRejectOwnerAccessRequestUseCase(),
+        loadOwnerApprovedClientsUseCase: _MockLoadOwnerApprovedClientsUseCase(),
+        revokeOwnerClientAccessUseCase: _MockRevokeOwnerClientAccessUseCase(),
+      );
+
+      final currentUserContextController = CurrentUserContextController.testing(
+        userScope: _buildUserScope(
+          name: 'Owner',
+          permissions: const <UserPermission>{UserPermission.manageAgents},
+        ),
+        activeStoreId: '1',
+      );
+      addTearDown(currentUserContextController.dispose);
+
+      await tester.pumpWidget(
+        LocalizedTestApp(
+          child: ChangeNotifierProvider<CurrentUserContextController>.value(
+            value: currentUserContextController,
+            child: ClientAgentsPage(
+              controller: controller,
+              ownerController: ownerController,
+              pageSessionService: pageSessionService,
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Falha ao carregar agentes administrados.'),
+        findsOneWidget,
+      );
+      expect(
+        find.text(AppLocalizationsPt().clientAgentsOwnerClientsEmptyAgents),
+        findsNothing,
+      );
+    },
+  );
 }

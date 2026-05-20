@@ -156,6 +156,15 @@ class _ClientAgentsPageState extends State<ClientAgentsPage> with RouteAware {
         .select<CurrentUserContextController, bool>(
           (controller) => controller.hasPermission(UserPermission.manageAgents),
         );
+    if (canManageOwnerAccess && !_ownerInitialLoadScheduled) {
+      _ownerInitialLoadScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        unawaited(_ownerController.initialize());
+      });
+    }
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<ClientAgentsController>.value(
@@ -343,6 +352,10 @@ class _ClientAgentsPageState extends State<ClientAgentsPage> with RouteAware {
                 label: l10n.clientAgentsTabOwnerClients,
                 child: ClientAgentsOwnerClientsTab(
                   managedAgents: ownerController.managedAgents,
+                  managedAgentsErrorMessage: _localizeMessage(
+                    ownerController.managedAgentsError,
+                    l10n,
+                  ),
                   selectedAgentId: ownerController.selectedManagedAgentId,
                   approvedClients: ownerController.approvedClients,
                   errorMessage: _localizeMessage(

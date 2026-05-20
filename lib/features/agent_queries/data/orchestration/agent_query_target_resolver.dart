@@ -1,6 +1,7 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_resolution_invalidator.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_eligibility_policy.dart';
@@ -14,7 +15,8 @@ import 'package:colmeia/features/client_agents/domain/repositories/client_agents
 import 'package:colmeia/features/client_agents/domain/services/agent_connection_status_resolver.dart';
 import 'package:result_dart/result_dart.dart';
 
-class AgentQueryTargetResolver {
+class AgentQueryTargetResolver
+    implements AgentQueryTargetResolutionInvalidator {
   AgentQueryTargetResolver({
     required ClientAgentsRepository clientAgentsRepository,
     required AgentClientTokenReader clientTokenReader,
@@ -374,6 +376,15 @@ class AgentQueryTargetResolver {
   }
 
   DateTime _resolveNow() => (_now ?? DateTime.now)();
+
+  @override
+  void invalidate({required String userId}) {
+    final cached = _cacheEntry;
+    if (cached == null || cached.userId != userId) {
+      return;
+    }
+    _cacheEntry = null;
+  }
 }
 
 class _AgentQueryTargetResolutionCacheEntry {

@@ -267,6 +267,59 @@ void main() {
     },
   );
 
+  test('invalidate clears cached resolution for the user', () async {
+    var current = DateTime.utc(2026, 5, 14, 10);
+    resolver = AgentQueryTargetResolver(
+      clientAgentsRepository: agentsRepository,
+      clientTokenReader: tokenStore,
+      now: () => current,
+    );
+    when(
+      () => agentsRepository.loadApprovedAgents(
+        userId: any(named: 'userId'),
+        query: any(named: 'query'),
+        search: any(named: 'search'),
+        status: any(named: 'status'),
+        includeOnlineStatus: any(named: 'includeOnlineStatus'),
+        refresh: any(named: 'refresh'),
+      ),
+    ).thenAnswer(
+      (_) async => Success<PaginatedResult<ClientAgent>, AppFailure>(
+        PaginatedResult<ClientAgent>(
+          items: <ClientAgent>[_agent('agent-a')],
+          count: 1,
+          total: 1,
+          page: 1,
+          pageSize: 50,
+        ),
+      ),
+    );
+    when(
+      () => tokenStore.readMany(
+        userId: any(named: 'userId'),
+        agentIds: any(named: 'agentIds'),
+      ),
+    ).thenAnswer((_) async => <String, String>{'agent-a': 'token-a'});
+
+    final first = await resolver.resolve(userId: 'user-1');
+    resolver.invalidate(userId: 'user-1');
+    current = current.add(const Duration(seconds: 2));
+    final second = await resolver.resolve(userId: 'user-1');
+
+    check(first.isSuccess()).isTrue();
+    check(second.isSuccess()).isTrue();
+    verify(
+      () => agentsRepository.loadApprovedAgents(
+        userId: 'user-1',
+        query: any(named: 'query'),
+        search: any(named: 'search'),
+        status: any(named: 'status'),
+        includeOnlineStatus: false,
+        refresh: any(named: 'refresh'),
+      ),
+    ).called(2);
+  });
+
   test('should load approved agents with online status disabled', () async {
     when(
       () => agentsRepository.loadApprovedAgents(

@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 class ClientAgentsOwnerClientsTab extends StatelessWidget {
   const ClientAgentsOwnerClientsTab({
     required this.managedAgents,
+    required this.managedAgentsErrorMessage,
     required this.selectedAgentId,
     required this.approvedClients,
     required this.errorMessage,
@@ -24,6 +25,7 @@ class ClientAgentsOwnerClientsTab extends StatelessWidget {
   });
 
   final List<ClientAgent> managedAgents;
+  final String? managedAgentsErrorMessage;
   final String? selectedAgentId;
   final List<OwnerApprovedClient> approvedClients;
   final String? errorMessage;
@@ -36,6 +38,14 @@ class ClientAgentsOwnerClientsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    if (managedAgentsErrorMessage case final String message) {
+      return AppInlineErrorPanel(
+        title: l10n.clientAgentsOwnerClientsLoadErrorTitle,
+        message: message,
+        onRetry: onRetry,
+        retryLabel: l10n.appInlineErrorRetry,
+      );
+    }
     if (managedAgents.isEmpty) {
       return Text(l10n.clientAgentsOwnerClientsEmptyAgents);
     }

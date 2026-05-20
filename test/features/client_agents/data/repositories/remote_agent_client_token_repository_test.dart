@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/client_agents/data/datasources/client_agents_remote_datasource.dart';
@@ -14,6 +16,16 @@ class _MockClientAgentsRemoteDataSource extends Mock
     implements ClientAgentsRemoteDataSource {}
 
 class _MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
+
+String _storedTokenEnvelope(
+  String token, {
+  required DateTime savedAt,
+}) {
+  return jsonEncode(<String, Object?>{
+    'token': token,
+    'savedAt': savedAt.toUtc().toIso8601String(),
+  });
+}
 
 void main() {
   late _MockClientAgentsRemoteDataSource remote;
@@ -69,12 +81,16 @@ void main() {
 
       check(result.isSuccess()).isTrue();
       check(result.getOrNull()?.token).equals('tok');
-      verify(
-        () => secure.write(
-          key: any(named: 'key', that: contains(agentId)),
-          value: 'tok',
-        ),
-      ).called(1);
+      final captured =
+          verify(
+                () => secure.write(
+                  key: any(named: 'key', that: contains(agentId)),
+                  value: captureAny(named: 'value'),
+                ),
+              ).captured.single
+              as String;
+      check(captured.contains('"token":"tok"')).isTrue();
+      check(captured.contains('"savedAt":"')).isTrue();
     });
 
     test('clears local cache when server returns null token', () async {
@@ -202,12 +218,15 @@ void main() {
       );
 
       check(result.getOrNull()?.token).equals('tok');
-      verify(
-        () => secure.write(
-          key: any(named: 'key', that: contains(agentId)),
-          value: 'tok',
-        ),
-      ).called(1);
+      final captured =
+          verify(
+                () => secure.write(
+                  key: any(named: 'key', that: contains(agentId)),
+                  value: captureAny(named: 'value'),
+                ),
+              ).captured.single
+              as String;
+      check(captured.contains('"token":"tok"')).isTrue();
     });
 
     test('rejects token over the server cap before any HTTP call', () async {
@@ -322,7 +341,12 @@ void main() {
       () async {
         when(
           () => secure.read(key: any(named: 'key')),
-        ).thenAnswer((_) async => 'tok');
+        ).thenAnswer(
+          (_) async => _storedTokenEnvelope(
+            'tok',
+            savedAt: DateTime.now().toUtc(),
+          ),
+        );
 
         final map = await repository.readMany(
           userId: userId,
@@ -371,15 +395,118 @@ void main() {
         verify(
           () => secure.write(
             key: any(named: 'key', that: contains(agentId)),
-            value: 'tok-$agentId',
+            value: any(named: 'value'),
           ),
         ).called(1);
         verify(
           () => secure.write(
             key: any(named: 'key', that: contains(secondAgentId)),
-            value: 'tok-$secondAgentId',
+            value: any(named: 'value'),
           ),
         ).called(1);
+      },
+    );
+
+    test('revalidates stale local token and updates the cache', () async {
+      when(
+        () => secure.read(key: any(named: 'key')),
+      ).thenAnswer(
+        (_) async => _storedTokenEnvelope(
+          'stale-token',
+          savedAt: DateTime.now().toUtc().subtract(const Duration(minutes: 2)),
+        ),
+      );
+      when(
+        () => remote.fetchClientAgentToken(agentId: agentId),
+      ).thenAnswer(
+        (_) async => const ClientAgentTokenResponseDto(
+          agentId: agentId,
+          clientToken: 'fresh-token',
+        ),
+      );
+
+      final map = await repository.readMany(
+        userId: userId,
+        agentIds: const <String>[agentId],
+      );
+
+      check(map[agentId]).equals('fresh-token');
+      verify(() => remote.fetchClientAgentToken(agentId: agentId)).called(1);
+    });
+
+    test(
+      'authoritative 403 hydration clears local token and excludes it',
+      () async {
+        when(
+          () => secure.read(key: any(named: 'key')),
+        ).thenAnswer(
+          (_) async => _storedTokenEnvelope(
+            'stale-token',
+            savedAt: DateTime.now().toUtc().subtract(
+              const Duration(minutes: 2),
+            ),
+          ),
+        );
+        when(
+          () => remote.fetchClientAgentToken(agentId: agentId),
+        ).thenThrow(
+          DioException(
+            requestOptions: RequestOptions(path: '/x'),
+            response: Response<dynamic>(
+              requestOptions: RequestOptions(path: '/x'),
+              statusCode: 403,
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        );
+
+        final map = await repository.readMany(
+          userId: userId,
+          agentIds: const <String>[agentId],
+        );
+
+        check(map.containsKey(agentId)).isFalse();
+        verify(
+          () => secure.delete(
+            key: any(named: 'key', that: contains(agentId)),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'keeps a stale local token when revalidation fails transiently',
+      () async {
+        when(
+          () => secure.read(key: any(named: 'key')),
+        ).thenAnswer(
+          (_) async => _storedTokenEnvelope(
+            'stale-token',
+            savedAt: DateTime.now().toUtc().subtract(
+              const Duration(minutes: 2),
+            ),
+          ),
+        );
+        when(
+          () => remote.fetchClientAgentToken(agentId: agentId),
+        ).thenThrow(
+          DioException(
+            requestOptions: RequestOptions(path: '/x'),
+            type: DioExceptionType.connectionError,
+          ),
+        );
+
+        final map = await repository.readMany(
+          userId: userId,
+          agentIds: const <String>[agentId],
+        );
+
+        check(map[agentId]).equals('stale-token');
+        verifyNever(
+          () => secure.delete(
+            key: any(named: 'key', that: contains(agentId)),
+          ),
+        );
       },
     );
 

@@ -3,6 +3,7 @@ import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_r
 import 'package:colmeia/features/agent_meta/application/usecases/discover_agent_rpc_methods_use_case.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/load_client_token_policy_use_case.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/refresh_agent_profile_use_case.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_resolution_invalidator.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/application/client_agent_token_draft_store.dart';
 import 'package:colmeia/features/client_agents/application/services/agent_presence_poller.dart';
@@ -17,6 +18,7 @@ import 'package:colmeia/features/client_agents/application/usecases/load_managed
 import 'package:colmeia/features/client_agents/application/usecases/load_owner_access_requests_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_owner_approved_clients_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/observe_agent_presence_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/persist_client_agent_profile_snapshot_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/probe_client_approved_agent_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_remove_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_request_access_use_case.dart';
@@ -96,6 +98,10 @@ void registerInjectorPresentation(GetIt getIt) {
         consumerSocketConnection: getIt.isRegistered<ConsumerSocketConnection>()
             ? getIt<ConsumerSocketConnection>()
             : null,
+        targetResolutionInvalidator:
+            getIt.isRegistered<AgentQueryTargetResolutionInvalidator>()
+            ? getIt<AgentQueryTargetResolutionInvalidator>()
+            : null,
       ),
     )
     ..registerFactory<ClientAgentsOwnerController>(
@@ -121,10 +127,16 @@ void registerInjectorPresentation(GetIt getIt) {
         getClientAgentTokenUseCase: getIt<GetClientAgentTokenUseCase>(),
         saveClientAgentTokenUseCase: getIt<SaveClientAgentTokenUseCase>(),
         removeClientAgentTokenUseCase: getIt<RemoveClientAgentTokenUseCase>(),
+        persistClientAgentProfileSnapshotUseCase:
+            getIt<PersistClientAgentProfileSnapshotUseCase>(),
         refreshAgentProfileUseCase: getIt<RefreshAgentProfileUseCase>(),
         loadClientTokenPolicyUseCase: getIt<LoadClientTokenPolicyUseCase>(),
         discoverAgentRpcMethodsUseCase: getIt<DiscoverAgentRpcMethodsUseCase>(),
         agentRpcCapabilitiesRegistry: getIt<AgentRpcCapabilitiesRegistry>(),
+        targetResolutionInvalidator:
+            getIt.isRegistered<AgentQueryTargetResolutionInvalidator>()
+            ? getIt<AgentQueryTargetResolutionInvalidator>()
+            : null,
       ),
     );
 }

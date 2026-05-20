@@ -1,4 +1,5 @@
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/features/agent_meta/domain/entities/agent_profile_snapshot.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_profile_update_request.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_access_status_snapshot.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
@@ -29,6 +30,12 @@ abstract interface class ClientAgentsRepository {
     required String userId,
     required String agentId,
     required AgentProfileUpdateRequest request,
+  });
+
+  Future<AppResult<Unit>> applyApprovedAgentProfileSnapshotLocally({
+    required String userId,
+    required String agentId,
+    required AgentProfileSnapshot snapshot,
   });
 
   Future<AppResult<PaginatedResult<ClientAgent>>> loadApprovedAgents({
