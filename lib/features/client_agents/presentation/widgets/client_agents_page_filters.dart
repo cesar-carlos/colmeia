@@ -6,7 +6,6 @@ import 'package:colmeia/features/client_agents/domain/entities/client_agent_acce
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
-import 'package:flutter/material.dart';
 
 int clientAgentsApprovedActiveFilterCount(
   AppLocalizations l10n,
@@ -260,90 +259,66 @@ List<PendingAgentAction> filterClientAgentsPendingActionsList(
   return filtered;
 }
 
-List<Widget> buildClientAgentsApprovedFilterSummaryChips({
+List<String> buildClientAgentsApprovedFilterSummaryLabels({
   required AppLocalizations l10n,
   required Map<String, Object?> approvedAgentFilters,
 }) {
-  final chips = <Widget>[];
+  final labels = <String>[];
   final search = approvedAgentFilters['search'] as String?;
   if (search != null && search.trim().isNotEmpty) {
-    chips.add(
-      Chip(
-        label: Text(l10n.clientAgentsFilterSummarySearch(search.trim())),
-      ),
-    );
+    labels.add(l10n.clientAgentsFilterSummarySearch(search.trim()));
   }
 
   final connectionStatus = approvedAgentFilters['connectionStatus'] as String?;
   if (connectionStatus != null && connectionStatus.isNotEmpty) {
-    chips.add(
-      Chip(
-        label: Text(
-          l10n.clientAgentsFilterSummaryConnection(
-            clientAgentsConnectionFilterLabel(connectionStatus, l10n),
-          ),
-        ),
+    labels.add(
+      l10n.clientAgentsFilterSummaryConnection(
+        clientAgentsConnectionFilterLabel(connectionStatus, l10n),
       ),
     );
   }
 
   final catalogStatus = approvedAgentFilters['catalogStatus'] as String?;
   if (catalogStatus != null && catalogStatus.isNotEmpty) {
-    chips.add(
-      Chip(
-        label: Text(
-          l10n.clientAgentsFilterSummaryCatalog(
-            clientAgentsCatalogChipLabel(catalogStatus, l10n),
-          ),
-        ),
+    labels.add(
+      l10n.clientAgentsFilterSummaryCatalog(
+        clientAgentsCatalogChipLabel(catalogStatus, l10n),
       ),
     );
   }
 
-  return chips;
+  return labels;
 }
 
-List<Widget> buildClientAgentsRequestsFilterSummaryChips({
+List<String> buildClientAgentsRequestsFilterSummaryLabels({
   required AppLocalizations l10n,
   required Map<String, Object?> requestsFilters,
 }) {
-  final chips = <Widget>[];
+  final labels = <String>[];
   final search = requestsFilters['search'] as String?;
   if (search != null && search.trim().isNotEmpty) {
-    chips.add(
-      Chip(
-        label: Text(l10n.clientAgentsFilterSummarySearch(search.trim())),
-      ),
-    );
+    labels.add(l10n.clientAgentsFilterSummarySearch(search.trim()));
   }
 
   final requestStatus = requestsFilters['requestStatus'] as String?;
   if (requestStatus != null && requestStatus.isNotEmpty) {
-    chips.add(
-      Chip(
-        label: Text(
-          l10n.clientAgentsRequestsFilterSummaryRequest(
-            clientAgentsRequestStatusChipLabel(requestStatus, l10n),
-          ),
-        ),
+    labels.add(
+      l10n.clientAgentsRequestsFilterSummaryRequest(
+        clientAgentsRequestStatusChipLabel(requestStatus, l10n),
       ),
     );
   }
 
   final pendingState = requestsFilters['pendingState'] as String?;
   if (pendingState != null && pendingState.isNotEmpty) {
-    chips.add(
-      Chip(
-        label: Text(
-          l10n.clientAgentsRequestsFilterSummaryPending(
-            clientAgentsPendingStateChipLabel(pendingState, l10n),
-          ),
-        ),
+    labels.add(
+      l10n.clientAgentsRequestsFilterSummaryPending(
+        clientAgentsPendingStateChipLabel(pendingState, l10n),
       ),
     );
   }
 
-  return chips;
+  return labels;
 }
 
 String clientAgentsConnectionFilterLabel(

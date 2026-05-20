@@ -15,6 +15,8 @@ import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
@@ -489,7 +491,7 @@ void main() {
 
       controller.add(
         SalesLiveMapLoadResult(
-          points: <AppBrazilStoreSalesPoint>[],
+          points: <SalesLiveMapPoint>[],
           branchOptions: <SalesLiveMapBranchOption>[],
           totalRevenue: 0,
           totalSalesCount: 0,
@@ -605,8 +607,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final fullscreenChart = tester.widget<AppBrazilStoreSalesMapChart>(
-        find.byType(AppBrazilStoreSalesMapChart).last,
+        find.byType(AppBrazilStoreSalesMapChart),
       );
+      expect(find.byType(AppBrazilStoreSalesMapChart), findsOneWidget);
       expect(fullscreenChart.showDesktopBranchSidebar, isTrue);
       expect(
         fullscreenChart.presentationMode,
@@ -669,8 +672,9 @@ void main() {
       await tester.pumpAndSettle();
 
       var fullscreenChart = tester.widget<AppBrazilStoreSalesMapChart>(
-        find.byType(AppBrazilStoreSalesMapChart).last,
+        find.byType(AppBrazilStoreSalesMapChart),
       );
+      expect(find.byType(AppBrazilStoreSalesMapChart), findsOneWidget);
       expect(fullscreenChart.points, hasLength(1));
       expect(
         find.textContaining('data loaded when you opened fullscreen'),
@@ -681,11 +685,76 @@ void main() {
       await tester.pumpAndSettle();
 
       fullscreenChart = tester.widget<AppBrazilStoreSalesMapChart>(
-        find.byType(AppBrazilStoreSalesMapChart).last,
+        find.byType(AppBrazilStoreSalesMapChart),
       );
+      expect(find.byType(AppBrazilStoreSalesMapChart), findsOneWidget);
       expect(fullscreenChart.points, hasLength(2));
       expect(router.canPop(), isTrue);
       expect(router.state.matchedLocation, AppRoute.chartFullscreen.path);
+    },
+  );
+
+  testWidgets(
+    'rebuilds the inline chart from controller state after closing fullscreen without reloading',
+    (tester) async {
+      await _setDesktopSurface(tester);
+      var callCount = 0;
+      when(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      ).thenAnswer((_) {
+        callCount += 1;
+        return _streamResult(
+          callCount == 1 ? _loadedResult() : _twoBranchLoadedResult(),
+        );
+      });
+
+      final router = await _pumpPageWithRouter(
+        tester,
+        authController: authController,
+      );
+      await _pumpInitialLoad(tester);
+
+      final controller = tester
+          .element(find.byType(SalesLiveMapPage).first)
+          .read<SalesLiveMapController>();
+      final fullscreenFinder = find.byIcon(Icons.open_in_full);
+      await tester.ensureVisible(fullscreenFinder);
+      await tester.pump();
+      await tester.tap(fullscreenFinder);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppBrazilStoreSalesMapChart), findsOneWidget);
+
+      await controller.reload();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppBrazilStoreSalesMapChart), findsOneWidget);
+      clearInteractions(loadLiveMap);
+
+      router.pop();
+      await tester.pumpAndSettle();
+
+      final inlineChart = tester.widget<AppBrazilStoreSalesMapChart>(
+        find.byType(AppBrazilStoreSalesMapChart),
+      );
+      expect(inlineChart.points, hasLength(2));
+      expect(
+        inlineChart.presentationMode,
+        AppBrazilStoreSalesMapPresentationMode.inlineOperational,
+      );
+      verifyNever(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      );
     },
   );
 
@@ -1038,7 +1107,7 @@ void main() {
           periodMode: SalesLiveMapPeriodMode.lastSevenDays,
           detailLevel: SalesLiveMapMapDetail.municipalities,
           markerVisual: SalesLiveMapMarkerVisual.bubble,
-          metric: AppBrazilStoreSalesMapMetric.salesCount,
+          metric: SalesLiveMapMetric.salesCount,
         ),
       );
 
@@ -1073,7 +1142,7 @@ void main() {
       );
       expect(
         persistedFilters.last.metric,
-        AppBrazilStoreSalesMapMetric.revenue,
+        SalesLiveMapMetric.revenue,
       );
 
       final capturedFilters = verify(
@@ -1290,8 +1359,8 @@ Stream<SalesLiveMapLoadResult> _streamFromFuture(
 
 SalesLiveMapLoadResult _twoBranchLoadedResult() {
   return SalesLiveMapLoadResult(
-    points: const <AppBrazilStoreSalesPoint>[
-      AppBrazilStoreSalesPoint(
+    points: const <SalesLiveMapPoint>[
+      SalesLiveMapPoint(
         id: 'agent-1-1-1',
         name: 'Branch One',
         uf: 'MT',
@@ -1301,7 +1370,7 @@ SalesLiveMapLoadResult _twoBranchLoadedResult() {
         salesCount: 12,
         city: 'Cuiaba',
       ),
-      AppBrazilStoreSalesPoint(
+      SalesLiveMapPoint(
         id: 'agent-1-1-2',
         name: 'Branch Two',
         uf: 'MT',
@@ -1352,8 +1421,8 @@ SalesLiveMapLoadResult _twoBranchLoadedResult() {
 
 SalesLiveMapLoadResult _loadedResult() {
   return SalesLiveMapLoadResult(
-    points: const <AppBrazilStoreSalesPoint>[
-      AppBrazilStoreSalesPoint(
+    points: const <SalesLiveMapPoint>[
+      SalesLiveMapPoint(
         id: 'agent-1-1-1',
         name: 'Branch One',
         uf: 'MT',
@@ -1394,8 +1463,8 @@ SalesLiveMapLoadResult _loadedResult() {
 
 SalesLiveMapLoadResult _pendingMapResult() {
   return SalesLiveMapLoadResult(
-    points: const <AppBrazilStoreSalesPoint>[
-      AppBrazilStoreSalesPoint(
+    points: const <SalesLiveMapPoint>[
+      SalesLiveMapPoint(
         id: 'agent-1-1-1',
         name: 'Branch One',
         uf: 'MT',
@@ -1438,8 +1507,8 @@ SalesLiveMapLoadResult _pendingMapResult() {
 
 SalesLiveMapLoadResult _partialUnmappedResult() {
   return SalesLiveMapLoadResult(
-    points: const <AppBrazilStoreSalesPoint>[
-      AppBrazilStoreSalesPoint(
+    points: const <SalesLiveMapPoint>[
+      SalesLiveMapPoint(
         id: 'agent-1-1-1',
         name: 'Branch One',
         uf: 'MT',
@@ -1502,8 +1571,8 @@ SalesLiveMapLoadResult _partialUnmappedResult() {
 
 SalesLiveMapLoadResult _partialNoSalesResult() {
   return SalesLiveMapLoadResult(
-    points: const <AppBrazilStoreSalesPoint>[
-      AppBrazilStoreSalesPoint(
+    points: const <SalesLiveMapPoint>[
+      SalesLiveMapPoint(
         id: 'agent-1-1-1',
         name: 'Branch One',
         uf: 'MT',
@@ -1548,8 +1617,8 @@ SalesLiveMapLoadResult _partialNoSalesResult() {
 
 SalesLiveMapLoadResult _partialUnavailableSalesResult() {
   return SalesLiveMapLoadResult(
-    points: const <AppBrazilStoreSalesPoint>[
-      AppBrazilStoreSalesPoint(
+    points: const <SalesLiveMapPoint>[
+      SalesLiveMapPoint(
         id: 'agent-1-1-1',
         name: 'Branch One',
         uf: 'MT',
@@ -1594,7 +1663,7 @@ SalesLiveMapLoadResult _partialUnavailableSalesResult() {
 
 SalesLiveMapLoadResult _emptyResult() {
   return SalesLiveMapLoadResult(
-    points: const <AppBrazilStoreSalesPoint>[],
+    points: const <SalesLiveMapPoint>[],
     branchOptions: const <SalesLiveMapBranchOption>[],
     totalRevenue: 0,
     totalSalesCount: 0,
@@ -1613,7 +1682,7 @@ SalesLiveMapLoadResult _emptyResult() {
 
 SalesLiveMapLoadResult _failedResult() {
   return SalesLiveMapLoadResult(
-    points: const <AppBrazilStoreSalesPoint>[],
+    points: const <SalesLiveMapPoint>[],
     branchOptions: const <SalesLiveMapBranchOption>[],
     totalRevenue: 0,
     totalSalesCount: 0,

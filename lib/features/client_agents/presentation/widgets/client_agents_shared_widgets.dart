@@ -1,4 +1,4 @@
-import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_controller.dart';
+import 'package:colmeia/features/client_agents/presentation/models/client_agents_presentation_message.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/feedback/inline_alert_banner.dart';

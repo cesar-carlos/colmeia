@@ -32,7 +32,6 @@ import 'package:colmeia/features/client_agents/domain/entities/pending_agent_act
 import 'package:colmeia/features/client_agents/domain/entities/sync_pending_agent_actions_result.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_controller.dart';
 import 'package:colmeia/features/client_agents/presentation/models/client_agent_access_request_row_input.dart';
-import 'package:colmeia/l10n/app_localizations_en.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:result_dart/result_dart.dart';
@@ -262,7 +261,7 @@ void main() {
       getClientAgentTokenUseCase: getTokenUseCase,
       saveClientAgentTokenUseCase: saveTokenUseCase,
       retryClientAccessRequestUseCase: retryClientAccessRequestUseCase,
-    )..activeLocalizations = AppLocalizationsEn();
+    );
   });
 
   tearDown(() => controller.dispose());
@@ -282,7 +281,7 @@ void main() {
         );
 
         check(accepted).isFalse();
-        check(controller.actionErrorMessage).isNotNull();
+        check(controller.actionError).isNotNull();
         verifyNever(
           () => tokenStore.write(
             userId: any(named: 'userId'),

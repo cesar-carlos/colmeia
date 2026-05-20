@@ -20,9 +20,7 @@ import 'package:colmeia/features/client_agents/application/usecases/update_clien
 import 'package:colmeia/features/client_agents/domain/entities/agent_profile_address.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_profile_update_request.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
-import 'package:colmeia/features/client_agents/presentation/localization/client_agents_failure_l10n.dart';
-import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:colmeia/l10n/app_localizations_en.dart';
+import 'package:colmeia/features/client_agents/presentation/models/client_agents_presentation_message.dart';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
@@ -108,16 +106,8 @@ class ClientAgentDetailController extends ChangeNotifier {
   /// rate-limit on save token throttles refresh-from-agent too.
   final RetryAfterGate _retryAfterGate;
 
-  AppLocalizations? _l10n;
-
-  AppLocalizations? get activeLocalizations => _l10n;
-
-  set activeLocalizations(AppLocalizations value) => _l10n = value;
-
-  AppLocalizations get _s => _l10n ?? AppLocalizationsEn();
-
   ClientAgent? _agent;
-  String? _errorMessage;
+  ClientAgentsPresentationMessage? _errorMessage;
   bool _isLoading = false;
   bool _isRefreshing = false;
   bool _disposed = false;
@@ -129,11 +119,11 @@ class ClientAgentDetailController extends ChangeNotifier {
   ClientAgentTokenStatus _clientTokenStatus = ClientAgentTokenStatus.unknown;
   bool _isLoadingClientToken = false;
   bool _isSavingClientToken = false;
-  String? _clientTokenFeedback;
-  String? _clientTokenError;
+  ClientAgentsPresentationMessage? _clientTokenFeedback;
+  ClientAgentsPresentationMessage? _clientTokenError;
   bool _isSavingProfile = false;
-  String? _profileSaveError;
-  String? _profileSaveSuccess;
+  ClientAgentsPresentationMessage? _profileSaveError;
+  ClientAgentsPresentationMessage? _profileSaveSuccess;
 
   // -- agent_meta state --
 
@@ -154,15 +144,15 @@ class ClientAgentDetailController extends ChangeNotifier {
   /// this flag to `true`).
   bool _clientTokenPolicyUnsupported = false;
   bool _isLoadingClientTokenPolicy = false;
-  String? _clientTokenPolicyError;
+  ClientAgentsPresentationMessage? _clientTokenPolicyError;
   int _clientTokenPolicyGeneration = 0;
 
   bool _isRefreshingFromAgent = false;
-  String? _refreshFromAgentFeedback;
-  String? _refreshFromAgentError;
+  ClientAgentsPresentationMessage? _refreshFromAgentFeedback;
+  ClientAgentsPresentationMessage? _refreshFromAgentError;
 
   ClientAgent? get agent => _agent;
-  String? get errorMessage => _errorMessage;
+  ClientAgentsPresentationMessage? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
   bool get isRefreshing => _isRefreshing;
 
@@ -181,11 +171,12 @@ class ClientAgentDetailController extends ChangeNotifier {
 
   /// One-shot success message after a save/remove operation. The page should
   /// clear it once shown via [clearClientTokenFeedback].
-  String? get clientTokenFeedback => _clientTokenFeedback;
+  ClientAgentsPresentationMessage? get clientTokenFeedback =>
+      _clientTokenFeedback;
 
   /// One-shot error message after a save/remove operation. Cleared the same
   /// way as [clientTokenFeedback].
-  String? get clientTokenError => _clientTokenError;
+  ClientAgentsPresentationMessage? get clientTokenError => _clientTokenError;
 
   /// Server-confirmed token presence for the loaded agent. Defaults to
   /// [ClientAgentTokenStatus.unknown] until the GET endpoint succeeds.
@@ -193,9 +184,10 @@ class ClientAgentDetailController extends ChangeNotifier {
 
   bool get isSavingProfile => _isSavingProfile;
 
-  String? get profileSaveError => _profileSaveError;
+  ClientAgentsPresentationMessage? get profileSaveError => _profileSaveError;
 
-  String? get profileSaveSuccess => _profileSaveSuccess;
+  ClientAgentsPresentationMessage? get profileSaveSuccess =>
+      _profileSaveSuccess;
 
   // -- agent_meta getters --
 
@@ -212,11 +204,14 @@ class ClientAgentDetailController extends ChangeNotifier {
 
   bool get clientTokenPolicyUnsupported => _clientTokenPolicyUnsupported;
   bool get isLoadingClientTokenPolicy => _isLoadingClientTokenPolicy;
-  String? get clientTokenPolicyError => _clientTokenPolicyError;
+  ClientAgentsPresentationMessage? get clientTokenPolicyError =>
+      _clientTokenPolicyError;
 
   bool get isRefreshingFromAgent => _isRefreshingFromAgent;
-  String? get refreshFromAgentFeedback => _refreshFromAgentFeedback;
-  String? get refreshFromAgentError => _refreshFromAgentError;
+  ClientAgentsPresentationMessage? get refreshFromAgentFeedback =>
+      _refreshFromAgentFeedback;
+  ClientAgentsPresentationMessage? get refreshFromAgentError =>
+      _refreshFromAgentError;
 
   /// `true` when the connected agent advertised [method] in its
   /// `rpc.discover` catalogue. Returns `true` when the catalogue is
@@ -248,7 +243,8 @@ class ClientAgentDetailController extends ChangeNotifier {
 
     final userId = _authController.session?.userId;
     if (userId == null || userId.isEmpty) {
-      _errorMessage = _s.clientAgentDetailSessionUnavailable;
+      _errorMessage =
+          ClientAgentsPresentationMessage.clientAgentDetailSessionUnavailable();
       _notifyListenersIfAlive();
       return;
     }
@@ -396,7 +392,8 @@ class ClientAgentDetailController extends ChangeNotifier {
   }) async {
     final userId = _authController.session?.userId;
     if (userId == null || userId.isEmpty) {
-      _clientTokenError = _s.clientAgentDetailSessionUnavailable;
+      _clientTokenError =
+          ClientAgentsPresentationMessage.clientAgentDetailSessionUnavailable();
       _notifyListenersIfAlive();
       return;
     }
@@ -420,8 +417,8 @@ class ClientAgentDetailController extends ChangeNotifier {
             : ClientAgentTokenStatus.missing;
         _clientTokenRevision++;
         _clientTokenFeedback = snapshot.hasToken
-            ? _s.clientAgentDetailServerTokenSaved
-            : _s.clientAgentDetailServerTokenRemoved;
+            ? ClientAgentsPresentationMessage.clientAgentDetailServerTokenSaved()
+            : ClientAgentsPresentationMessage.clientAgentDetailServerTokenRemoved();
         _refreshLoadedAgentTokenFlag(hasToken: snapshot.hasToken);
       } else {
         final failure = result.exceptionOrNull()!;
@@ -446,7 +443,8 @@ class ClientAgentDetailController extends ChangeNotifier {
   Future<void> removeClientAgentToken({required String agentId}) async {
     final userId = _authController.session?.userId;
     if (userId == null || userId.isEmpty) {
-      _clientTokenError = _s.clientAgentDetailSessionUnavailable;
+      _clientTokenError =
+          ClientAgentsPresentationMessage.clientAgentDetailSessionUnavailable();
       _notifyListenersIfAlive();
       return;
     }
@@ -465,7 +463,8 @@ class ClientAgentDetailController extends ChangeNotifier {
         _persistedClientToken = '';
         _clientTokenStatus = ClientAgentTokenStatus.missing;
         _clientTokenRevision++;
-        _clientTokenFeedback = _s.clientAgentDetailServerTokenRemoved;
+        _clientTokenFeedback =
+            ClientAgentsPresentationMessage.clientAgentDetailServerTokenRemoved();
         _refreshLoadedAgentTokenFlag(hasToken: false);
       } else {
         final failure = result.exceptionOrNull()!;
@@ -534,7 +533,8 @@ class ClientAgentDetailController extends ChangeNotifier {
     final userId = _authController.session?.userId;
     if (userId == null || userId.isEmpty) {
       _profileSaveSuccess = null;
-      _profileSaveError = _s.clientAgentDetailSessionUnavailable;
+      _profileSaveError =
+          ClientAgentsPresentationMessage.clientAgentDetailSessionUnavailable();
       _notifyListenersIfAlive();
       return;
     }
@@ -546,7 +546,8 @@ class ClientAgentDetailController extends ChangeNotifier {
 
     final trimmedName = name.trim();
     if (trimmedName.isEmpty) {
-      _profileSaveError = _s.clientAgentDetailProfileNameRequired;
+      _profileSaveError =
+          ClientAgentsPresentationMessage.clientAgentDetailProfileNameRequired();
       _isSavingProfile = false;
       _notifyListenersIfAlive();
       return;
@@ -594,7 +595,8 @@ class ClientAgentDetailController extends ChangeNotifier {
       final updated = result.getOrNull();
       if (updated != null) {
         await load(agentId, forceRefresh: true);
-        _profileSaveSuccess = _s.clientAgentDetailProfileSaved;
+        _profileSaveSuccess =
+            ClientAgentsPresentationMessage.clientAgentDetailProfileSaved();
       } else {
         final failure = result.exceptionOrNull()!;
         _profileSaveError = _consumeFailure(failure);
@@ -676,13 +678,15 @@ class ClientAgentDetailController extends ChangeNotifier {
   /// `agent.getProfile` — UI should hide the action in that case.
   Future<void> refreshFromAgent({required String agentId}) async {
     if (!agentSupportsRpcMethod('agent.getProfile')) {
-      _refreshFromAgentError = _s.clientAgentDetailRefreshFromAgentUnsupported;
+      _refreshFromAgentError =
+          ClientAgentsPresentationMessage.clientAgentDetailRefreshFromAgentUnsupported();
       _notifyListenersIfAlive();
       return;
     }
     final userId = _authController.session?.userId;
     if (userId == null || userId.isEmpty) {
-      _refreshFromAgentError = _s.clientAgentDetailSessionUnavailable;
+      _refreshFromAgentError =
+          ClientAgentsPresentationMessage.clientAgentDetailSessionUnavailable();
       _notifyListenersIfAlive();
       return;
     }
@@ -701,7 +705,8 @@ class ClientAgentDetailController extends ChangeNotifier {
       final snapshot = result.getOrNull();
       if (snapshot != null) {
         _applyAgentProfileSnapshot(snapshot);
-        _refreshFromAgentFeedback = _s.clientAgentDetailRefreshFromAgentSuccess;
+        _refreshFromAgentFeedback =
+            ClientAgentsPresentationMessage.clientAgentDetailRefreshFromAgentSuccess();
       } else {
         final failure = result.exceptionOrNull()!;
         _refreshFromAgentError = _consumeFailure(failure);
@@ -820,12 +825,12 @@ class ClientAgentDetailController extends ChangeNotifier {
   /// 2. Arms the retry-after gate when the failure carries a
   ///    `Retry-After` hint, so subsequent button taps are throttled
   ///    automatically without each call site repeating the wiring.
-  String _consumeFailure(AppFailure failure) {
+  ClientAgentsPresentationMessage _consumeFailure(AppFailure failure) {
     final retryAfter = appFailureRetryAfter(failure);
     if (retryAfter != null) {
       _retryAfterGate.arm(retryAfter);
     }
-    return clientAgentsFailureUserMessage(failure, _s);
+    return ClientAgentsPresentationMessage.failure(failure);
   }
 
   void _notifyListenersIfAlive() {

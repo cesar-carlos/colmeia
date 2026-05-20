@@ -20,11 +20,13 @@ class ClientAgentsRequestAccessTab extends StatefulWidget {
     required this.loadClientToken,
     required this.persistClientTokenDraftLine,
     super.key,
-    this.initialAgentIdSlots = const <String>[''],
+    this.draftSeedAgentIdSlots = const <String>[''],
+    this.draftResetRevision = 0,
     this.retryAfterSeconds,
   });
 
-  final List<String> initialAgentIdSlots;
+  final List<String> draftSeedAgentIdSlots;
+  final int draftResetRevision;
 
   final Future<bool> Function(List<ClientAgentAccessRequestRowInput> rows)
   onSubmitRows;
@@ -107,21 +109,20 @@ class _ClientAgentsRequestAccessTabState
   @override
   void initState() {
     super.initState();
-    _rows = _createRowsFromSlots(widget.initialAgentIdSlots);
+    _rows = _createRowsFromSlots(widget.draftSeedAgentIdSlots);
     unawaited(_hydrateAllRowsThatHaveAValidId());
   }
 
   @override
   void didUpdateWidget(covariant ClientAgentsRequestAccessTab oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!_listEquals(
-      oldWidget.initialAgentIdSlots,
-      widget.initialAgentIdSlots,
-    )) {
+    if (oldWidget.draftResetRevision != widget.draftResetRevision) {
       _cancelAllPersistTimers();
       _disposeRowControllers();
-      _rows = _createRowsFromSlots(widget.initialAgentIdSlots);
+      _rows = _createRowsFromSlots(widget.draftSeedAgentIdSlots);
       _hydratedTokenByAgentId.clear();
+      _validationMessage = null;
+      _inputNoteMessage = null;
       unawaited(_hydrateAllRowsThatHaveAValidId());
     }
   }
@@ -166,18 +167,6 @@ class _ClientAgentsRequestAccessTabState
       row.agentId.dispose();
       row.clientToken.dispose();
     }
-  }
-
-  bool _listEquals(List<String> a, List<String> b) {
-    if (a.length != b.length) {
-      return false;
-    }
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) {
-        return false;
-      }
-    }
-    return true;
   }
 
   void _notifyDraftSlotsChanged() {
@@ -496,19 +485,9 @@ class _ClientAgentsRequestAccessTabState
       return;
     }
 
-    if (accepted) {
-      _cancelAllPersistTimers();
-      setState(() {
-        _disposeRowControllers();
-        _rows = _createRowsFromSlots(const <String>['']);
-        _hydratedTokenByAgentId.clear();
-      });
-      widget.onDraftSlotsChanged(const <String>['']);
-    }
-
     setState(() {
       _validationMessage = null;
-      _inputNoteMessage = parsed.duplicatedAgentIds.isEmpty
+      _inputNoteMessage = !accepted || parsed.duplicatedAgentIds.isEmpty
           ? null
           : l10n.clientAgentsDuplicatedIdsNote(
               parsed.duplicatedAgentIds.join(', '),

@@ -1,7 +1,7 @@
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
-import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dart';
 import 'package:flutter/foundation.dart';
 
 const int kSalesLiveMapMaxCustomRangeInclusiveDays = 31;
@@ -45,7 +45,7 @@ class SalesLiveMapFilter {
     this.customDateRange,
     this.detailLevel = SalesLiveMapMapDetail.branches,
     this.markerVisual = SalesLiveMapMarkerVisual.dot,
-    this.metric = AppBrazilStoreSalesMapMetric.revenue,
+    this.metric = SalesLiveMapMetric.revenue,
   });
 
   final Set<String>? selectedAgentIds;
@@ -54,7 +54,7 @@ class SalesLiveMapFilter {
   final OverviewDateRange? customDateRange;
   final SalesLiveMapMapDetail detailLevel;
   final SalesLiveMapMarkerVisual markerVisual;
-  final AppBrazilStoreSalesMapMetric metric;
+  final SalesLiveMapMetric metric;
 
   SalesLiveMapFilter copyWith({
     Object? selectedAgentIds = _sentinel,
@@ -63,7 +63,7 @@ class SalesLiveMapFilter {
     Object? customDateRange = _sentinel,
     SalesLiveMapMapDetail? detailLevel,
     SalesLiveMapMarkerVisual? markerVisual,
-    AppBrazilStoreSalesMapMetric? metric,
+    SalesLiveMapMetric? metric,
   }) {
     final nextSelectedAgentIds = selectedAgentIds == _sentinel
         ? this.selectedAgentIds

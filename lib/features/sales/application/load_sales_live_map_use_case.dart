@@ -16,14 +16,15 @@ import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_f
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
+import 'package:colmeia/features/sales/application/sales_live_map_point_factory.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_refresh_metrics.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
 import 'package:colmeia/features/sales/data/sales_live_map_catalog_disk_cache.dart';
 import 'package:colmeia/features/sales/data/sales_live_map_catalog_scope.dart';
+import 'package:colmeia/features/sales/domain/contracts/sales_live_map_point_resolver.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
-import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
-import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_point_resolver.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart';
 import 'package:flutter/foundation.dart';
 import 'package:result_dart/result_dart.dart';
 
@@ -63,7 +64,7 @@ class SalesLiveMapLoadResult {
     this.partialGeoReuseCount = 0,
   });
 
-  final List<AppBrazilStoreSalesPoint> points;
+  final List<SalesLiveMapPoint> points;
   final List<SalesLiveMapBranchOption> branchOptions;
   final List<SalesLiveMapBranchOption> unmappedBranchOptions;
   final double totalRevenue;
@@ -133,7 +134,7 @@ class SalesLiveMapLocationDiagnostics {
   });
 
   factory SalesLiveMapLocationDiagnostics.fromPoints({
-    required Iterable<AppBrazilStoreSalesPoint> points,
+    required Iterable<SalesLiveMapPoint> points,
     required int totalBranchCount,
   }) {
     var resolvedByProvidedGeoPointCount = 0;
@@ -148,17 +149,17 @@ class SalesLiveMapLocationDiagnostics {
     for (final point in points) {
       resolvedPointCount += 1;
       switch (point.locationResolution) {
-        case AppBrazilStoreSalesLocationResolution.providedGeoPoint:
+        case SalesLiveMapLocationResolution.providedGeoPoint:
           resolvedByProvidedGeoPointCount += 1;
-        case AppBrazilStoreSalesLocationResolution.ibgeMunicipalityCode:
+        case SalesLiveMapLocationResolution.ibgeMunicipalityCode:
           resolvedByIbgeMunicipalityCodeCount += 1;
-        case AppBrazilStoreSalesLocationResolution.cep:
+        case SalesLiveMapLocationResolution.cep:
           resolvedByCepCount += 1;
-        case AppBrazilStoreSalesLocationResolution.cityUf:
+        case SalesLiveMapLocationResolution.cityUf:
           resolvedByCityUfCount += 1;
-        case AppBrazilStoreSalesLocationResolution.capitalUf:
+        case SalesLiveMapLocationResolution.capitalUf:
           resolvedByCapitalUfCount += 1;
-        case AppBrazilStoreSalesLocationResolution.stateUf:
+        case SalesLiveMapLocationResolution.stateUf:
           resolvedByStateUfCount += 1;
         case null:
           unknownResolutionCount += 1;
@@ -204,9 +205,11 @@ class LoadSalesLiveMapUseCase {
     this._loadResumoTotalVendasMunicipioFilialPeriodoAcrossAgents,
     this._loadCadastroFilialAcrossAgents,
     this._pointResolver, {
+    SalesLiveMapPointFactory? pointFactory,
     SalesLiveMapRefreshMetrics? refreshMetrics,
     DateTime Function()? now,
   }) : _refreshMetrics = refreshMetrics ?? SalesLiveMapRefreshMetrics(),
+       _pointFactory = pointFactory ?? const SalesLiveMapPointFactory(),
        _now = now;
 
   static const int bridgeTimeoutMs = 120000;
@@ -224,7 +227,8 @@ class LoadSalesLiveMapUseCase {
   final LoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase
   _loadResumoTotalVendasMunicipioFilialPeriodoAcrossAgents;
   final LoadCadastroFilialAcrossAgentsUseCase _loadCadastroFilialAcrossAgents;
-  final AppBrazilStoreSalesPointResolver _pointResolver;
+  final SalesLiveMapPointResolver _pointResolver;
+  final SalesLiveMapPointFactory _pointFactory;
   final SalesLiveMapRefreshMetrics _refreshMetrics;
   final DateTime Function()? _now;
   final Map<String, _SalesLiveMapCachedBranchLocation> _branchLocationCache =
@@ -233,8 +237,8 @@ class LoadSalesLiveMapUseCase {
       <String, _SalesLiveMapCachedCatalogResult>{};
   final Map<String, String> _partialLocationSignatureByBranchId =
       <String, String>{};
-  final Map<String, AppBrazilStoreSalesPoint> _partialGeoPointsByBranchId =
-      <String, AppBrazilStoreSalesPoint>{};
+  final Map<String, SalesLiveMapPoint> _partialGeoPointsByBranchId =
+      <String, SalesLiveMapPoint>{};
 
   Future<SalesLiveMapLoadResult> call({
     required String userId,
@@ -831,7 +835,7 @@ class LoadSalesLiveMapUseCase {
     if (baseReport == null) {
       return _SalesLiveMapMappedResult(
         result: SalesLiveMapLoadResult(
-          points: const <AppBrazilStoreSalesPoint>[],
+          points: const <SalesLiveMapPoint>[],
           branchOptions: const <SalesLiveMapBranchOption>[],
           totalRevenue: 0,
           totalSalesCount: 0,
@@ -1090,7 +1094,7 @@ class LoadSalesLiveMapUseCase {
       return const _SalesLiveMapGeolocationResult();
     }
 
-    final pointsByIndex = List<AppBrazilStoreSalesPoint?>.filled(
+    final pointsByIndex = List<SalesLiveMapPoint?>.filled(
       aggregates.length,
       null,
     );
@@ -1128,7 +1132,10 @@ class LoadSalesLiveMapUseCase {
 
       if (cached.resolved) {
         cacheHitCount += 1;
-        pointsByIndex[i] = cached.toPoint(aggregate);
+        pointsByIndex[i] = cached.toPoint(
+          aggregate,
+          pointFactory: _pointFactory,
+        );
       } else {
         cacheUnresolvedHitCount += 1;
       }
@@ -1138,14 +1145,14 @@ class LoadSalesLiveMapUseCase {
     var unresolvedAndCachedCount = 0;
     if (pending.isNotEmpty) {
       final resolved = await _pointResolver.resolveAllWithDetails(
-        pending.map((item) => item.aggregate.toPointSource()),
+        pending.map((item) => item.aggregate.toPointSource(_pointFactory)),
         maxConcurrent: _geolocationConcurrencyFor(pending.length),
       );
       if (cancelToken?.isCancelled ?? false) {
         return const _SalesLiveMapGeolocationResult(cancelled: true);
       }
 
-      final resolvedById = <String, AppBrazilStoreSalesResolvedPoint>{
+      final resolvedById = <String, SalesLiveMapResolvedPoint>{
         for (final item in resolved) item.point.id: item,
       };
       for (final item in pending) {
@@ -1170,12 +1177,15 @@ class LoadSalesLiveMapUseCase {
           resolved: resolvedPoint,
         );
         _writeCachedBranchLocation(item.aggregate, cachedLocation);
-        pointsByIndex[item.index] = cachedLocation.toPoint(item.aggregate);
+        pointsByIndex[item.index] = cachedLocation.toPoint(
+          item.aggregate,
+          pointFactory: _pointFactory,
+        );
       }
     }
 
     return _SalesLiveMapGeolocationResult(
-      points: pointsByIndex.whereType<AppBrazilStoreSalesPoint>().toList(
+      points: pointsByIndex.whereType<SalesLiveMapPoint>().toList(
         growable: false,
       ),
       cacheHitCount: cacheHitCount,
@@ -1250,7 +1260,7 @@ class LoadSalesLiveMapUseCase {
 
   void _logBranchGeolocation(
     _SalesLiveMapBranchAggregate aggregate,
-    AppBrazilStoreSalesResolvedPoint? resolved,
+    SalesLiveMapResolvedPoint? resolved,
   ) {
     final point = resolved?.point;
     AppLogger.debug(
@@ -1339,7 +1349,7 @@ class LoadSalesLiveMapUseCase {
     required DateTime refreshedAt,
   }) {
     return SalesLiveMapLoadResult(
-      points: const <AppBrazilStoreSalesPoint>[],
+      points: const <SalesLiveMapPoint>[],
       branchOptions: const <SalesLiveMapBranchOption>[],
       totalRevenue: 0,
       totalSalesCount: 0,
@@ -1362,7 +1372,7 @@ class LoadSalesLiveMapUseCase {
     required DateTime refreshedAt,
   }) {
     return SalesLiveMapLoadResult(
-      points: const <AppBrazilStoreSalesPoint>[],
+      points: const <SalesLiveMapPoint>[],
       branchOptions: const <SalesLiveMapBranchOption>[],
       totalRevenue: 0,
       totalSalesCount: 0,
@@ -1388,7 +1398,7 @@ class LoadSalesLiveMapUseCase {
       <String, Object?>{'refreshedAt': refreshedAt.toIso8601String()},
     );
     return SalesLiveMapLoadResult(
-      points: const <AppBrazilStoreSalesPoint>[],
+      points: const <SalesLiveMapPoint>[],
       branchOptions: const <SalesLiveMapBranchOption>[],
       totalRevenue: 0,
       totalSalesCount: 0,
@@ -1682,13 +1692,13 @@ class LoadSalesLiveMapUseCase {
         : geolocationMaxConcurrency;
   }
 
-  int _mappedMunicipalityCount(Iterable<AppBrazilStoreSalesPoint> points) {
+  int _mappedMunicipalityCount(Iterable<SalesLiveMapPoint> points) {
     return points.map(_municipalityKeyFor).toSet().length;
   }
 
   List<SalesLiveMapBranchOption> _unmappedBranchOptions({
     required List<_SalesLiveMapBranchAggregate> visibleAggregates,
-    required List<AppBrazilStoreSalesPoint> points,
+    required List<SalesLiveMapPoint> points,
   }) {
     final mappedBranchIds = points.map((point) => point.id).toSet();
 
@@ -1698,7 +1708,7 @@ class LoadSalesLiveMapUseCase {
         .toList(growable: false);
   }
 
-  String _municipalityKeyFor(AppBrazilStoreSalesPoint point) {
+  String _municipalityKeyFor(SalesLiveMapPoint point) {
     final municipalityCode = point.municipalityCode?.trim();
     if (municipalityCode != null && municipalityCode.isNotEmpty) {
       return 'ibge:${municipalityCode.toUpperCase()}';
@@ -1713,30 +1723,33 @@ class LoadSalesLiveMapUseCase {
   }
 }
 
-AppBrazilStoreSalesPoint _mergePartialGeoIntoAggregate(
-  AppBrazilStoreSalesPoint base,
+SalesLiveMapPoint _mergePartialGeoIntoAggregate(
+  SalesLiveMapPoint base,
   _SalesLiveMapBranchAggregate aggregate,
 ) {
-  return AppBrazilStoreSalesPoint(
-    id: base.id,
-    name: base.name,
-    uf: base.uf,
-    latitude: base.latitude,
-    longitude: base.longitude,
+  return const SalesLiveMapPointFactory().mergeAggregateOntoResolvedBase(
+    base: base,
+    name: aggregate.name,
     salesAmount: aggregate.totalVenda,
     salesCount: aggregate.qtdVendas,
-    municipalityCode: base.municipalityCode,
-    city: base.city,
-    fantasyName: base.fantasyName,
-    branchName: base.branchName,
-    companyCode: base.companyCode,
-    branchCode: base.branchCode,
-    agentName: base.agentName,
+    fantasyName: _SalesLiveMapBranchAggregate._trimmedOrNull(
+      aggregate.nomeFantasiaFilial,
+    ),
+    branchName: _SalesLiveMapBranchAggregate._trimmedOrNull(
+      aggregate.nomeFilial,
+    ),
+    companyCode: aggregate.codEmpresa,
+    branchCode: aggregate.codFilial,
+    agentName: _SalesLiveMapBranchAggregate._trimmedOrNull(
+      aggregate.agentName,
+    ),
     salesDataLoading: aggregate.salesDataLoading,
     salesDataUnavailable: aggregate.salesDataUnavailable,
-    salesDataStatusLabel: aggregate.salesDataStatusLabel,
-    locationResolution: base.locationResolution,
-    subtitle: base.subtitle,
+    salesDataStatusLabel: _SalesLiveMapBranchAggregate._trimmedOrNull(
+      aggregate.salesDataStatusLabel,
+    ),
+    subtitle:
+        'Agente ${aggregate.agentName} - Empresa ${aggregate.codEmpresa} - Filial ${aggregate.codFilial}',
     payload: aggregate,
   );
 }
@@ -1860,14 +1873,18 @@ class _SalesLiveMapBranchAggregate {
     salesDataStatusLabel = statusLabel;
   }
 
-  AppBrazilStoreSalesPointSource toPointSource() {
-    return AppBrazilStoreSalesPointSource(
+  SalesLiveMapPointSource toPointSource(
+    SalesLiveMapPointFactory pointFactory,
+  ) {
+    return pointFactory.createSource(
       id: id,
       name: name,
       salesAmount: totalVenda,
       salesCount: qtdVendas,
       uf: ufMunicipioFilial,
       city: nomeMunicipioFilial,
+      latitude: null,
+      longitude: null,
       cep: cepFilial,
       ibgeMunicipalityCode: codigoIbgeMunicipioFilial,
       allowUfFallback: false,
@@ -1935,7 +1952,7 @@ class _SalesLiveMapBranchAggregate {
 
 class _SalesLiveMapGeolocationResult {
   const _SalesLiveMapGeolocationResult({
-    this.points = const <AppBrazilStoreSalesPoint>[],
+    this.points = const <SalesLiveMapPoint>[],
     this.cacheHitCount = 0,
     this.cacheMissCount = 0,
     this.cacheUnresolvedHitCount = 0,
@@ -1945,7 +1962,7 @@ class _SalesLiveMapGeolocationResult {
     this.cancelled = false,
   });
 
-  final List<AppBrazilStoreSalesPoint> points;
+  final List<SalesLiveMapPoint> points;
   final int cacheHitCount;
   final int cacheMissCount;
   final int cacheUnresolvedHitCount;
@@ -2007,7 +2024,7 @@ class _SalesLiveMapCachedBranchLocation {
   factory _SalesLiveMapCachedBranchLocation.fromResolved({
     required String sourceSignature,
     required DateTime cachedAt,
-    required AppBrazilStoreSalesResolvedPoint resolved,
+    required SalesLiveMapResolvedPoint resolved,
   }) {
     final point = resolved.point;
     return _SalesLiveMapCachedBranchLocation(
@@ -2042,13 +2059,16 @@ class _SalesLiveMapCachedBranchLocation {
   final double? longitude;
   final String? municipalityCode;
   final String? city;
-  final AppBrazilStoreSalesLocationResolution? locationResolution;
+  final SalesLiveMapLocationResolution? locationResolution;
 
   bool isExpired(DateTime now, {required Duration ttl}) {
     return now.difference(cachedAt) > ttl;
   }
 
-  AppBrazilStoreSalesPoint? toPoint(_SalesLiveMapBranchAggregate aggregate) {
+  SalesLiveMapPoint? toPoint(
+    _SalesLiveMapBranchAggregate aggregate, {
+    required SalesLiveMapPointFactory pointFactory,
+  }) {
     final resolvedUf = uf;
     final resolvedLatitude = latitude;
     final resolvedLongitude = longitude;
@@ -2059,7 +2079,7 @@ class _SalesLiveMapCachedBranchLocation {
       return null;
     }
 
-    return AppBrazilStoreSalesPoint(
+    return pointFactory.createPoint(
       id: aggregate.id,
       name: aggregate.name,
       uf: resolvedUf,

@@ -1,0 +1,4 @@
+enum SalesLiveMapMetric {
+  revenue,
+  salesCount,
+}

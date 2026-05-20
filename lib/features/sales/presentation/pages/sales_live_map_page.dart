@@ -13,12 +13,16 @@ import 'package:colmeia/features/auth/presentation/controllers/auth_controller.d
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
+import 'package:colmeia/features/sales/presentation/models/sales_live_map_visual_spec.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
 import 'package:colmeia/features/sales/presentation/view_models/sales_live_map_view_model.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_chart_panel.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_filters_sheet.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_kpi_grid.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -26,10 +30,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/utils/app_branch_display_model.dart';
 import 'package:colmeia/shared/utils/app_branch_display_name.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
-import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
-import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart.dart';
-import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_scaffold.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/foundation.dart';
@@ -401,6 +402,7 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
           _SalesLiveMapBodySection(
             onRetryReload: () => unawaited(_reload()),
             onOpenFullscreen: _openLiveMapFullscreen,
+            showInlineChart: !_liveMapFullscreenOpen,
           ),
         ],
       ),
@@ -571,10 +573,12 @@ class _SalesLiveMapBodySection extends StatelessWidget {
   const _SalesLiveMapBodySection({
     required this.onRetryReload,
     required this.onOpenFullscreen,
+    required this.showInlineChart,
   });
 
   final VoidCallback onRetryReload;
   final VoidCallback onOpenFullscreen;
+  final bool showInlineChart;
 
   @override
   Widget build(BuildContext context) {
@@ -595,10 +599,12 @@ class _SalesLiveMapBodySection extends StatelessWidget {
               slice: slice,
               onRetryReload: onRetryReload,
             ),
-            SizedBox(height: tokens.sectionSpacing),
-            _SalesLiveMapInlineChartSection(
-              onOpenFullscreen: onOpenFullscreen,
-            ),
+            if (showInlineChart) ...<Widget>[
+              SizedBox(height: tokens.sectionSpacing),
+              _SalesLiveMapInlineChartSection(
+                onOpenFullscreen: onOpenFullscreen,
+              ),
+            ],
           ],
         );
       },
@@ -649,39 +655,16 @@ class _SalesLiveMapFullscreenChart extends StatelessWidget {
         selector: (_, controller) =>
             _SalesLiveMapMapSlice.fromState(controller.state),
         builder: (context, slice, _) {
-          return LayoutBuilder(
-            builder: (context, _) {
-              final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-              return AppSectionCard(
-                padding: EdgeInsets.fromLTRB(
-                  tokens.contentSpacing,
-                  tokens.contentSpacing,
-                  tokens.contentSpacing,
-                  0,
-                ),
-                child: LayoutBuilder(
-                  builder: (context, cardConstraints) {
-                    Widget chart = AppBrazilStoreSalesMapChart(
-                      points: slice.points,
-                      initialMetric: slice.metric,
-                      filterBranchIds: slice.filterBranchIds,
-                      fixedBranchIds: slice.filterBranchIds,
-                      style: slice.mapStyle,
-                      isRefreshing: slice.isRefreshing,
-                      onMetricChanged: controller.updateMetric,
-                      showDesktopBranchSidebar: true,
-                      presentationMode: AppBrazilStoreSalesMapPresentationMode
-                          .cleanFullscreen,
-                    );
-                    final maxH = cardConstraints.maxHeight;
-                    if (maxH.isFinite && maxH < double.infinity) {
-                      chart = SizedBox(height: maxH, child: chart);
-                    }
-                    return chart;
-                  },
-                ),
-              );
-            },
+          return SalesLiveMapChartPanel(
+            mode: SalesLiveMapChartPanelMode.fullscreen,
+            points: slice.points,
+            metric: slice.metric,
+            filterBranchIds: slice.filterBranchIds,
+            visualSpec: slice.visualSpec,
+            isRefreshing: slice.isRefreshing,
+            onMetricChanged: controller.updateMetric,
+            showSidebar: true,
+            showHeader: false,
           );
         },
       ),
@@ -762,17 +745,15 @@ class _SalesLiveMapInlineChartSection extends StatelessWidget {
         final l10n = AppLocalizations.of(context);
         final controller = context.read<SalesLiveMapController>();
         final viewModel = SalesLiveMapViewModel.fromState(slice.state, l10n);
-        return AppBrazilStoreSalesMapChart(
+        return SalesLiveMapChartPanel(
+          mode: SalesLiveMapChartPanelMode.inline,
           title: l10n.salesLiveMapChartTitle,
           subtitle: viewModel.mapSubtitle,
           points: slice.points,
-          initialMetric: slice.metric,
+          metric: slice.metric,
           filterBranchIds: slice.filterBranchIds,
-          fixedBranchIds: slice.filterBranchIds,
-          style: slice.mapStyle,
+          visualSpec: slice.visualSpec,
           isRefreshing: slice.isRefreshing,
-          presentationMode:
-              AppBrazilStoreSalesMapPresentationMode.inlineOperational,
           onMetricChanged: controller.updateMetric,
           onOpenFullscreen: onOpenFullscreen,
         );
@@ -926,7 +907,7 @@ class _SalesLiveMapMapSlice {
     required this.mapPayloadDigest,
     required this.metric,
     required this.filterBranchIds,
-    required this.mapStyle,
+    required this.visualSpec,
     required this.isRefreshing,
   });
 
@@ -936,21 +917,21 @@ class _SalesLiveMapMapSlice {
     );
     return _SalesLiveMapMapSlice(
       state: state,
-      points: state.visualResult?.points ?? const <AppBrazilStoreSalesPoint>[],
+      points: state.visualResult?.points ?? const <SalesLiveMapPoint>[],
       mapPayloadDigest: state.mapPayloadDigest,
       metric: state.filter.metric,
       filterBranchIds: filterBranchIds,
-      mapStyle: state.mapStyle,
+      visualSpec: state.visualSpec,
       isRefreshing: state.isMapRefreshing,
     );
   }
 
   final SalesLiveMapPresentationState state;
-  final List<AppBrazilStoreSalesPoint> points;
+  final List<SalesLiveMapPoint> points;
   final int mapPayloadDigest;
-  final AppBrazilStoreSalesMapMetric metric;
+  final SalesLiveMapMetric metric;
   final Set<String> filterBranchIds;
-  final AppBrazilStoreSalesMapStyle mapStyle;
+  final SalesLiveMapVisualSpec visualSpec;
   final bool isRefreshing;
 
   @override
@@ -959,7 +940,7 @@ class _SalesLiveMapMapSlice {
         other.mapPayloadDigest == mapPayloadDigest &&
         other.metric == metric &&
         setEquals(other.filterBranchIds, filterBranchIds) &&
-        other.mapStyle == mapStyle &&
+        other.visualSpec == visualSpec &&
         other.isRefreshing == isRefreshing;
   }
 
@@ -968,7 +949,7 @@ class _SalesLiveMapMapSlice {
     mapPayloadDigest,
     metric,
     Object.hashAll(filterBranchIds.toList(growable: false)..sort()),
-    mapStyle,
+    visualSpec,
     isRefreshing,
   );
 }
@@ -984,7 +965,7 @@ class _SalesLiveMapInitialSkeleton extends StatelessWidget {
         children: <Widget>[
           const SalesLiveMapKpiGrid(
             result: SalesLiveMapLoadResult(
-              points: <AppBrazilStoreSalesPoint>[],
+              points: <SalesLiveMapPoint>[],
               branchOptions: <SalesLiveMapBranchOption>[],
               totalRevenue: 128000,
               totalSalesCount: 420,
@@ -1001,21 +982,23 @@ class _SalesLiveMapInitialSkeleton extends StatelessWidget {
             ),
           ),
           SizedBox(height: tokens.sectionSpacing),
-          AppBrazilStoreSalesMapChart(
+          SalesLiveMapChartPanel(
+            mode: SalesLiveMapChartPanelMode.inline,
             title: AppLocalizations.of(context).salesLiveMapChartTitle,
-            points: const <AppBrazilStoreSalesPoint>[],
-            style: const AppBrazilStoreSalesMapStyle(
-              showStoreDetail: false,
-              showRegionFilter: false,
-            ),
-            presentationMode:
-                AppBrazilStoreSalesMapPresentationMode.inlineOperational,
+            points: const <SalesLiveMapPoint>[],
+            metric: SalesLiveMapMetric.revenue,
+            filterBranchIds: const <String>{},
+            visualSpec: const SalesLiveMapVisualSpec.operational(),
+            isRefreshing: false,
+            onMetricChanged: _ignoreMetricChanged,
           ),
         ],
       ),
     );
   }
 }
+
+void _ignoreMetricChanged(SalesLiveMapMetric _) {}
 
 class _SalesLiveMapAttentionPanel extends StatelessWidget {
   const _SalesLiveMapAttentionPanel({required this.result});

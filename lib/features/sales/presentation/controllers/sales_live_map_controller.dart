@@ -9,10 +9,11 @@ import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_data_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
+import 'package:colmeia/features/sales/presentation/mappers/sales_live_map_chart_mapper.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
-import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.dart';
-import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:flutter/foundation.dart';
 
 enum SalesLiveMapReloadOutcomeKind { completed, cancelled, superseded }
@@ -159,7 +160,7 @@ class SalesLiveMapController extends ChangeNotifier {
     await reload(force: true, reason: SalesLiveMapReloadReason.filterChange);
   }
 
-  void updateMetric(AppBrazilStoreSalesMapMetric metric) {
+  void updateMetric(SalesLiveMapMetric metric) {
     if (_state.filter.metric == metric) {
       return;
     }
@@ -375,7 +376,7 @@ class SalesLiveMapController extends ChangeNotifier {
 
   SalesLiveMapLoadResult _sessionExpiredResult() {
     return SalesLiveMapLoadResult(
-      points: const <AppBrazilStoreSalesPoint>[],
+      points: const <SalesLiveMapPoint>[],
       branchOptions: const <SalesLiveMapBranchOption>[],
       totalRevenue: 0,
       totalSalesCount: 0,
@@ -459,6 +460,6 @@ class SalesLiveMapController extends ChangeNotifier {
     if (visualResult == null) {
       return 0;
     }
-    return AppBrazilStoreSalesMapData.pointsContentDigest(visualResult.points);
+    return SalesLiveMapChartMapper.pointsContentDigest(visualResult.points);
   }
 }

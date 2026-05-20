@@ -12,7 +12,9 @@ import 'package:colmeia/features/sales/application/resolve_sales_agent_client_to
 import 'package:colmeia/features/sales/application/sales_live_map_refresh_metrics.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/data/sales_live_map_catalog_disk_cache.dart';
+import 'package:colmeia/features/sales/data/sales_live_map_point_resolver_adapter.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
+import 'package:colmeia/features/sales/domain/contracts/sales_live_map_point_resolver.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/shared/maps/app_location_resolver.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_point_resolver.dart';
@@ -56,15 +58,20 @@ void registerInjectorSales(GetIt getIt) {
     ..registerLazySingleton<SalesLiveMapRefreshMetrics>(
       SalesLiveMapRefreshMetrics.new,
     )
+    ..registerLazySingleton<SalesLiveMapPointResolver>(
+      () => SalesLiveMapPointResolverAdapter(
+        delegate: AppBrazilStoreSalesPointResolver(
+          locationResolver: getIt<AppLocationResolver>(),
+        ),
+      ),
+    )
     ..registerFactory<LoadSalesLiveMapUseCase>(
       () => LoadSalesLiveMapUseCase(
         getIt<AgentQueryTargetResolver>(),
         getIt<SalesLiveMapCatalogDiskCache>(),
         getIt<LoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase>(),
         getIt<LoadCadastroFilialAcrossAgentsUseCase>(),
-        AppBrazilStoreSalesPointResolver(
-          locationResolver: getIt<AppLocationResolver>(),
-        ),
+        getIt<SalesLiveMapPointResolver>(),
         refreshMetrics: getIt<SalesLiveMapRefreshMetrics>(),
       ),
     );

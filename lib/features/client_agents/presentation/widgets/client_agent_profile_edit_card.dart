@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agent_detail_controller.dart';
+import 'package:colmeia/features/client_agents/presentation/localization/client_agents_presentation_message_l10n.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
@@ -121,6 +122,12 @@ class _ClientAgentProfileEditCardState
     final tokens = widget.tokens;
     final c = widget.controller;
     final theme = Theme.of(context);
+    final profileSaveError = c.profileSaveError == null
+        ? null
+        : localizeClientAgentsPresentationMessage(c.profileSaveError!, l10n);
+    final profileSaveSuccess = c.profileSaveSuccess == null
+        ? null
+        : localizeClientAgentsPresentationMessage(c.profileSaveSuccess!, l10n);
 
     return AppSectionCardWithHeading(
       title: l10n.clientAgentDetailSectionEditProfile,
@@ -270,19 +277,19 @@ class _ClientAgentProfileEditCardState
                     );
                   },
           ),
-          if (c.profileSaveError != null) ...<Widget>[
+          if (profileSaveError != null) ...<Widget>[
             SizedBox(height: tokens.gapSm),
             Text(
-              c.profileSaveError!,
+              profileSaveError,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.error,
               ),
             ),
           ],
-          if (c.profileSaveSuccess != null) ...<Widget>[
+          if (profileSaveSuccess != null) ...<Widget>[
             SizedBox(height: tokens.gapSm),
             Text(
-              c.profileSaveSuccess!,
+              profileSaveSuccess,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.primary,
               ),

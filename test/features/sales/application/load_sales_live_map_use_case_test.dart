@@ -26,12 +26,13 @@ import 'package:colmeia/features/sales/application/sales_live_map_refresh_metric
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
 import 'package:colmeia/features/sales/data/sales_live_map_catalog_disk_cache.dart';
 import 'package:colmeia/features/sales/data/sales_live_map_catalog_scope.dart';
+import 'package:colmeia/features/sales/data/sales_live_map_point_resolver_adapter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart';
 import 'package:colmeia/shared/maps/app_location_geocode_cache.dart';
 import 'package:colmeia/shared/maps/app_location_models.dart';
 import 'package:colmeia/shared/maps/app_location_resolver.dart';
-import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_point_resolver.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -151,7 +152,11 @@ void main() {
       catalogDiskCache,
       loadAcrossAgents,
       loadCadastroAcrossAgents,
-      AppBrazilStoreSalesPointResolver(locationResolver: locationResolver),
+      SalesLiveMapPointResolverAdapter(
+        delegate: AppBrazilStoreSalesPointResolver(
+          locationResolver: locationResolver,
+        ),
+      ),
       refreshMetrics: refreshMetrics,
       now: () => now,
     );
@@ -171,7 +176,11 @@ void main() {
       diskCache,
       loadAcrossAgents,
       loadCadastroAcrossAgents,
-      AppBrazilStoreSalesPointResolver(locationResolver: locationResolver),
+      SalesLiveMapPointResolverAdapter(
+        delegate: AppBrazilStoreSalesPointResolver(
+          locationResolver: locationResolver,
+        ),
+      ),
       refreshMetrics: metrics,
       now: () => now,
     );
@@ -1092,7 +1101,7 @@ void main() {
     check(point.longitude).equals(-61.9998238962936);
     check(point.municipalityCode).equals('1100015');
     check(point.locationResolution).equals(
-      AppBrazilStoreSalesLocationResolution.ibgeMunicipalityCode,
+      SalesLiveMapLocationResolution.ibgeMunicipalityCode,
     );
     check(result.mappedMunicipalityCount).equals(1);
     check(

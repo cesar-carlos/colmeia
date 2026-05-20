@@ -5,8 +5,8 @@ import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
-import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -32,7 +32,7 @@ void main() {
       expect(filter.selectedBranchIds, isNull);
       expect(filter.detailLevel, SalesLiveMapMapDetail.branches);
       expect(filter.markerVisual, SalesLiveMapMarkerVisual.dot);
-      expect(filter.metric, AppBrazilStoreSalesMapMetric.revenue);
+      expect(filter.metric, SalesLiveMapMetric.revenue);
       expect(range.startInclusive, DateTime(2026, 5, 9));
       expect(range.endInclusive, DateTime(2026, 5, 9));
 
@@ -71,7 +71,7 @@ void main() {
             customDateRange: customRange,
             detailLevel: SalesLiveMapMapDetail.municipalities,
             markerVisual: SalesLiveMapMarkerVisual.bubble,
-            metric: AppBrazilStoreSalesMapMetric.salesCount,
+            metric: SalesLiveMapMetric.salesCount,
           ),
         );
 
@@ -97,7 +97,7 @@ void main() {
         expect(restored.periodMode, SalesLiveMapPeriodMode.customRange);
         expect(restored.detailLevel, SalesLiveMapMapDetail.municipalities);
         expect(restored.markerVisual, SalesLiveMapMarkerVisual.bubble);
-        expect(restored.metric, AppBrazilStoreSalesMapMetric.salesCount);
+        expect(restored.metric, SalesLiveMapMetric.salesCount);
         expect(restoredRange.inclusiveCalendarDayCount, 31);
         expect(restoredRange.startInclusive, DateTime(2026, 3, 16));
         expect(restoredRange.endInclusive, DateTime(2026, 4, 15));
@@ -116,6 +116,19 @@ void main() {
 
       expect(restored.detailLevel, SalesLiveMapMapDetail.states);
       expect(restored.markerVisual, SalesLiveMapMarkerVisual.bubble);
+    });
+
+    test('restores persisted metric payloads compatibly', () async {
+      await prefs.setString(
+        'colmeia_sales_card.${SalesPreferences.salesLiveMapCardId}.filters',
+        jsonEncode(<String, Object?>{
+          'metric': 'salesCount',
+        }),
+      );
+
+      final restored = salesPrefs.restoreSalesLiveMapFilter();
+
+      expect(restored.metric, SalesLiveMapMetric.salesCount);
     });
 
     test('persists and restores live map auto refresh preference', () async {

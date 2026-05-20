@@ -35,15 +35,11 @@ import 'package:colmeia/features/client_agents/domain/entities/paginated_result.
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
 import 'package:colmeia/features/client_agents/domain/entities/sync_pending_agent_actions_result.dart';
 import 'package:colmeia/features/client_agents/domain/events/agent_presence_event.dart';
-import 'package:colmeia/features/client_agents/presentation/localization/client_agents_failure_l10n.dart';
 import 'package:colmeia/features/client_agents/presentation/models/client_agent_access_request_row_input.dart';
+import 'package:colmeia/features/client_agents/presentation/models/client_agents_presentation_message.dart';
 import 'package:colmeia/features/client_agents/presentation/utils/client_agent_id_format.dart';
-import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:colmeia/l10n/app_localizations_en.dart';
 import 'package:flutter/foundation.dart';
 import 'package:result_dart/result_dart.dart' show Unit;
-
-enum ClientAgentsActionFeedbackKind { info, success }
 
 class ClientAgentsController extends ChangeNotifier {
   ClientAgentsController({
@@ -95,7 +91,7 @@ class ClientAgentsController extends ChangeNotifier {
     // Re-broadcast gate ticks so consumer widgets that already listen to
     // the controller refresh the countdown label without subscribing to
     // each gate individually.
-    _syncRetryAfterGate.addListener(_notifyListenersIfAlive);
+    _syncRetryAfterGate.addListener(_handleSyncRetryAfterGateChanged);
     _requestAccessRetryAfterGate.addListener(_notifyListenersIfAlive);
   }
 
@@ -155,27 +151,17 @@ class ClientAgentsController extends ChangeNotifier {
   /// quota, so a flurry of submissions does not bypass the throttle.
   final RetryAfterGate _requestAccessRetryAfterGate;
 
-  AppLocalizations? _l10n;
-
-  AppLocalizations? get activeLocalizations => _l10n;
-
-  set activeLocalizations(AppLocalizations value) => _l10n = value;
-
-  AppLocalizations get _s => _l10n ?? AppLocalizationsEn();
-
   bool _isDisposed = false;
   bool _isLoadingInitial = false;
   bool _isRefreshing = false;
   bool _isSyncing = false;
   bool _hasLoadedInitialData = false;
-  bool _hasAttemptedAutoSync = false;
   bool _isPollingApprovals = false;
-  String? _actionErrorMessage;
-  String? _actionFeedbackMessage;
-  ClientAgentsActionFeedbackKind? _actionFeedbackKind;
-  String? _approvedAgentsErrorMessage;
-  String? _accessRequestsErrorMessage;
-  String? _pendingActionsErrorMessage;
+  ClientAgentsPresentationMessage? _actionError;
+  ClientAgentsPresentationNotice? _actionNotice;
+  ClientAgentsPresentationMessage? _approvedAgentsError;
+  ClientAgentsPresentationMessage? _accessRequestsError;
+  ClientAgentsPresentationMessage? _pendingActionsError;
 
   PaginatedResult<ClientAgent>? _approvedAgents;
   PaginatedResult<ClientAgentAccessRequest>? _accessRequests;
@@ -226,12 +212,14 @@ class ClientAgentsController extends ChangeNotifier {
   bool get isLoadingInitial => _isLoadingInitial;
   bool get isRefreshing => _isRefreshing;
   bool get isSyncing => _isSyncing;
-  String? get actionErrorMessage => _actionErrorMessage;
-  String? get actionFeedbackMessage => _actionFeedbackMessage;
-  ClientAgentsActionFeedbackKind? get actionFeedbackKind => _actionFeedbackKind;
-  String? get approvedAgentsErrorMessage => _approvedAgentsErrorMessage;
-  String? get accessRequestsErrorMessage => _accessRequestsErrorMessage;
-  String? get pendingActionsErrorMessage => _pendingActionsErrorMessage;
+  ClientAgentsPresentationMessage? get actionError => _actionError;
+  ClientAgentsPresentationNotice? get actionNotice => _actionNotice;
+  ClientAgentsPresentationMessage? get approvedAgentsError =>
+      _approvedAgentsError;
+  ClientAgentsPresentationMessage? get accessRequestsError =>
+      _accessRequestsError;
+  ClientAgentsPresentationMessage? get pendingActionsError =>
+      _pendingActionsError;
   PaginatedResult<ClientAgent>? get approvedAgents => _approvedAgents;
   PaginatedResult<ClientAgentAccessRequest>? get accessRequests =>
       _accessRequests;
@@ -276,7 +264,8 @@ class ClientAgentsController extends ChangeNotifier {
   }) async {
     final userId = _authController.session?.userId;
     if (userId == null || userId.isEmpty) {
-      _actionErrorMessage = _s.clientAgentsSessionUnavailableLoad;
+      _actionError =
+          ClientAgentsPresentationMessage.clientAgentsSessionUnavailableLoad();
       _notifyListenersIfAlive();
       return;
     }
@@ -316,17 +305,17 @@ class ClientAgentsController extends ChangeNotifier {
         return;
       }
 
-      _approvedAgentsErrorMessage = _consumeResult(
+      _approvedAgentsError = _consumeResult(
         result: approvedResult,
         onSuccess: (value) => _approvedAgents = value,
         operation: 'loadApprovedClientAgents',
       );
-      _accessRequestsErrorMessage = _consumeResult(
+      _accessRequestsError = _consumeResult(
         result: requestsResult,
         onSuccess: (value) => _accessRequests = value,
         operation: 'loadClientAgentAccessRequests',
       );
-      _pendingActionsErrorMessage = _consumeResult(
+      _pendingActionsError = _consumeResult(
         result: pendingResult,
         onSuccess: (value) => _pendingActions = value,
         operation: 'readPendingClientAgentActions',
@@ -446,7 +435,8 @@ class ClientAgentsController extends ChangeNotifier {
   ) async {
     final userId = _authController.session?.userId;
     if (userId == null || userId.isEmpty) {
-      _actionErrorMessage = _s.clientAgentsSessionUnavailableRequest;
+      _actionError =
+          ClientAgentsPresentationMessage.clientAgentsSessionUnavailableRequest();
       _notifyListenersIfAlive();
       return false;
     }
@@ -467,10 +457,11 @@ class ClientAgentsController extends ChangeNotifier {
     }
 
     if (tokensTooLongIds.isNotEmpty) {
-      _actionErrorMessage = _s.clientAgentsValidationTokenTooLong(
-        ClientAgentTokenConstraints.maxLength,
-        tokensTooLongIds.join(', '),
-      );
+      _actionError =
+          ClientAgentsPresentationMessage.clientAgentsValidationTokenTooLong(
+            maxLength: ClientAgentTokenConstraints.maxLength,
+            agentIds: tokensTooLongIds,
+          );
       _notifyListenersIfAlive();
       return false;
     }
@@ -673,7 +664,8 @@ class ClientAgentsController extends ChangeNotifier {
     }
     final userId = _authController.session?.userId;
     if (userId == null || userId.isEmpty) {
-      _actionErrorMessage = _s.clientAgentsSessionUnavailableRequest;
+      _actionError =
+          ClientAgentsPresentationMessage.clientAgentsSessionUnavailableRequest();
       _notifyListenersIfAlive();
       return false;
     }
@@ -686,7 +678,7 @@ class ClientAgentsController extends ChangeNotifier {
       // errors fall back to the normal queue path; 401/403 abort with an auth
       // message instead of enqueueing blindly.
       _isSyncing = true;
-      _actionErrorMessage = null;
+      _actionError = null;
       _clearActionFeedback();
       _notifyListenersIfAlive();
 
@@ -722,7 +714,7 @@ class ClientAgentsController extends ChangeNotifier {
             (failure) {
               final authMessage = _probeAuthBlockingUserMessage(failure);
               if (authMessage != null) {
-                _actionErrorMessage = authMessage;
+                _actionError = authMessage;
                 authAborted = true;
                 return;
               }
@@ -739,7 +731,7 @@ class ClientAgentsController extends ChangeNotifier {
         }
       }
 
-      if (_actionErrorMessage != null) {
+      if (_actionError != null) {
         _isSyncing = false;
         _notifyListenersIfAlive();
         await _reloadPendingAfterEnqueue(userId: userId);
@@ -773,13 +765,14 @@ class ClientAgentsController extends ChangeNotifier {
       if (classification.allowed.isEmpty) {
         _isSyncing = false;
         if (relinkedAgents.isEmpty) {
-          _actionErrorMessage = _buildBlockedRequestMessage(classification);
+          _actionError = _buildBlockedRequestMessage(classification);
         } else {
           _setActionFeedback(
-            message: _withRelinkPendingCleanupNote(
-              _relinkFeedbackMessage(relinkedAgents.length),
-              pendingCleanupOk: pendingCleanupOk,
-            ),
+            message:
+                ClientAgentsPresentationMessage.clientAgentsRequestRelinkOnly(
+                  relinkedCount: relinkedAgents.length,
+                  pendingCleanupOk: pendingCleanupOk,
+                ),
             kind: ClientAgentsActionFeedbackKind.success,
           );
           if (onResolved != null) {
@@ -793,34 +786,36 @@ class ClientAgentsController extends ChangeNotifier {
         }
         _notifyListenersIfAlive();
         await _reloadPendingAfterEnqueue(userId: userId);
-        return _actionErrorMessage == null;
+        return _actionError == null;
       }
 
       final queueResult = await _queueRequestAccessUseCase(
         userId: userId,
         agentIds: classification.allowed,
       );
-      _actionErrorMessage = _consumeResult(
+      _actionError = _consumeResult(
         result: queueResult,
         operation: 'queueClientAgentRequestAccess',
       );
       _maybeArmRequestAccessRetryGateFromResult(queueResult);
-      if (_actionErrorMessage == null) {
-        final queueMessage = _buildQueuedRequestMessage(classification);
+      if (_actionError == null) {
         if (relinkedAgents.isEmpty) {
           _setActionFeedback(
-            message: queueMessage,
+            message: _buildQueuedRequestMessage(classification),
             kind: ClientAgentsActionFeedbackKind.info,
           );
         } else {
           _setActionFeedback(
-            message: _withRelinkPendingCleanupNote(
-              _s.clientAgentsRequestRelinkAndQueued(
-                _relinkFeedbackMessage(relinkedAgents.length),
-                queueMessage,
-              ),
-              pendingCleanupOk: pendingCleanupOk,
-            ),
+            message:
+                ClientAgentsPresentationMessage.clientAgentsRequestRelinkAndQueued(
+                  relinkedCount: relinkedAgents.length,
+                  queuedCount: classification.allowed.length,
+                  ignoredCount:
+                      classification.approved.length +
+                      classification.remotePending.length +
+                      classification.localPending.length,
+                  pendingCleanupOk: pendingCleanupOk,
+                ),
             kind: ClientAgentsActionFeedbackKind.info,
           );
         }
@@ -834,19 +829,21 @@ class ClientAgentsController extends ChangeNotifier {
         }
       }
       await _reloadPendingAfterEnqueue(userId: userId);
-      return _actionErrorMessage == null;
+      return _actionError == null;
     });
   }
 
-  String? _probeAuthBlockingUserMessage(AppFailure failure) {
+  ClientAgentsPresentationMessage? _probeAuthBlockingUserMessage(
+    AppFailure failure,
+  ) {
     if (failure is SessionFailure) {
-      return _s.clientAgentsSessionUnavailableRequest;
+      return ClientAgentsPresentationMessage.clientAgentsSessionUnavailableRequest();
     }
     if (failure is AuthorizationFailure) {
       if (isBlockedAccountFailure(failure)) {
-        return clientAgentsFailureUserMessage(failure, _s);
+        return ClientAgentsPresentationMessage.failure(failure);
       }
-      return _s.clientAgentsSessionUnavailableRequest;
+      return ClientAgentsPresentationMessage.clientAgentsSessionUnavailableRequest();
     }
     return null;
   }
@@ -908,22 +905,6 @@ class ClientAgentsController extends ChangeNotifier {
     );
   }
 
-  String _withRelinkPendingCleanupNote(
-    String message, {
-    required bool pendingCleanupOk,
-  }) {
-    if (pendingCleanupOk) {
-      return message;
-    }
-    return '$message ${_s.clientAgentsRelinkPendingNotCleared}';
-  }
-
-  String _relinkFeedbackMessage(int relinkedCount) {
-    return relinkedCount == 1
-        ? _s.clientAgentsRequestRelinkUpdatedSingle
-        : _s.clientAgentsRequestRelinkUpdatedPlural(relinkedCount);
-  }
-
   Future<void> removeAccess({
     required Set<String> agentIds,
   }) async {
@@ -932,7 +913,8 @@ class ClientAgentsController extends ChangeNotifier {
     }
     final userId = _authController.session?.userId;
     if (userId == null || userId.isEmpty) {
-      _actionErrorMessage = _s.clientAgentsSessionUnavailableRemove;
+      _actionError =
+          ClientAgentsPresentationMessage.clientAgentsSessionUnavailableRemove();
       _notifyListenersIfAlive();
       return;
     }
@@ -942,14 +924,14 @@ class ClientAgentsController extends ChangeNotifier {
         return;
       }
       _isSyncing = true;
-      _actionErrorMessage = null;
+      _actionError = null;
       _clearActionFeedback();
       _notifyListenersIfAlive();
 
       final classification = _classifyRemoveAgentIds(agentIds);
       if (classification.allowed.isEmpty) {
         _isSyncing = false;
-        _actionErrorMessage = _buildBlockedRemoveMessage(classification);
+        _actionError = _buildBlockedRemoveMessage(classification);
         _notifyListenersIfAlive();
         return;
       }
@@ -958,11 +940,11 @@ class ClientAgentsController extends ChangeNotifier {
         userId: userId,
         agentIds: classification.allowed,
       );
-      _actionErrorMessage = _consumeResult(
+      _actionError = _consumeResult(
         result: queueResult,
         operation: 'queueClientAgentRemoveAccess',
       );
-      if (_actionErrorMessage == null) {
+      if (_actionError == null) {
         _setActionFeedback(
           message: _buildQueuedRemoveMessage(classification),
           kind: ClientAgentsActionFeedbackKind.info,
@@ -977,13 +959,15 @@ class ClientAgentsController extends ChangeNotifier {
   }) async {
     final requestId = request.requestId?.trim();
     if (requestId == null || requestId.isEmpty) {
-      _actionErrorMessage = _s.clientAgentsRetryMissingRequestId;
+      _actionError =
+          ClientAgentsPresentationMessage.clientAgentsRetryMissingRequestId();
       _notifyListenersIfAlive();
       return;
     }
     final userId = _authController.session?.userId;
     if (userId == null || userId.isEmpty) {
-      _actionErrorMessage = _s.clientAgentsSessionUnavailableRequest;
+      _actionError =
+          ClientAgentsPresentationMessage.clientAgentsSessionUnavailableRequest();
       _notifyListenersIfAlive();
       return;
     }
@@ -993,21 +977,21 @@ class ClientAgentsController extends ChangeNotifier {
         return;
       }
       _isSyncing = true;
-      _actionErrorMessage = null;
+      _actionError = null;
       _clearActionFeedback();
       _notifyListenersIfAlive();
       final retryResult = await _retryClientAccessRequestUseCase(
         userId: userId,
         requestId: requestId,
       );
-      _actionErrorMessage = _consumeResult(
+      _actionError = _consumeResult(
         result: retryResult,
         operation: 'retryClientAccessRequest',
       );
       await _refreshAfterMutation(userId: userId);
-      if (_actionErrorMessage == null) {
+      if (_actionError == null) {
         _setActionFeedback(
-          message: _s.clientAgentsRetrySuccess,
+          message: ClientAgentsPresentationMessage.clientAgentsRetrySuccess(),
           kind: ClientAgentsActionFeedbackKind.info,
         );
         _startApprovalPolling(
@@ -1032,13 +1016,15 @@ class ClientAgentsController extends ChangeNotifier {
       }
       final userId = _authController.session?.userId;
       if (userId == null || userId.isEmpty) {
-        _actionErrorMessage = _s.clientAgentsSessionUnavailableRequest;
+        _actionError =
+            ClientAgentsPresentationMessage.clientAgentsSessionUnavailableRequest();
         _notifyListenersIfAlive();
         return;
       }
       final agentId = action.agentId.trim();
       if (!_matchesDiscardableLocalRequestAccess(action, agentId)) {
-        _actionErrorMessage = _s.clientAgentsDiscardQueuedRequestInvalidState;
+        _actionError =
+            ClientAgentsPresentationMessage.clientAgentsDiscardQueuedRequestInvalidState();
         _notifyListenersIfAlive();
         return;
       }
@@ -1046,13 +1032,14 @@ class ClientAgentsController extends ChangeNotifier {
           .where((a) => _matchesDiscardableLocalRequestAccess(a, agentId))
           .length;
       if (beforeCount == 0) {
-        _actionErrorMessage = _s.clientAgentsDiscardQueuedRequestInvalidState;
+        _actionError =
+            ClientAgentsPresentationMessage.clientAgentsDiscardQueuedRequestInvalidState();
         _notifyListenersIfAlive();
         return;
       }
 
       _isSyncing = true;
-      _actionErrorMessage = null;
+      _actionError = null;
       _clearActionFeedback();
       _notifyListenersIfAlive();
 
@@ -1060,12 +1047,12 @@ class ClientAgentsController extends ChangeNotifier {
         userId: userId,
         agentIds: <String>{agentId},
       );
-      _actionErrorMessage = _consumeResult(
+      _actionError = _consumeResult(
         result: discardResult,
         operation: 'discardQueuedClientAgentRequestAccess',
       );
       await _refreshAfterMutation(userId: userId);
-      if (_actionErrorMessage == null) {
+      if (_actionError == null) {
         final afterCount = _pendingActions
             .where((a) => _matchesDiscardableLocalRequestAccess(a, agentId))
             .length;
@@ -1075,7 +1062,8 @@ class ClientAgentsController extends ChangeNotifier {
             clientTokenRaw: '',
           );
           _setActionFeedback(
-            message: _s.clientAgentsDiscardQueuedRequestSuccess,
+            message:
+                ClientAgentsPresentationMessage.clientAgentsDiscardQueuedRequestSuccess(),
             kind: ClientAgentsActionFeedbackKind.info,
           );
         }
@@ -1099,7 +1087,8 @@ class ClientAgentsController extends ChangeNotifier {
   }) async {
     final userId = _authController.session?.userId;
     if (userId == null || userId.isEmpty) {
-      _actionErrorMessage = _s.clientAgentsSessionUnavailableSync;
+      _actionError =
+          ClientAgentsPresentationMessage.clientAgentsSessionUnavailableSync();
       _notifyListenersIfAlive();
       return;
     }
@@ -1110,8 +1099,8 @@ class ClientAgentsController extends ChangeNotifier {
       // schedule) are silent so we do not spam the user with the same
       // banner across ticks; manual taps surface the wait window.
       if (!autoTriggered) {
-        _actionErrorMessage = _buildSyncCooldownMessage(
-          _syncRetryAfterGate.remaining,
+        _actionError = ClientAgentsPresentationMessage.clientAgentsSyncCooldown(
+          seconds: _remainingRetryAfterSeconds(_syncRetryAfterGate.remaining),
         );
         _notifyListenersIfAlive();
       }
@@ -1133,7 +1122,8 @@ class ClientAgentsController extends ChangeNotifier {
       if (pendingCount == 0) {
         if (!autoTriggered) {
           _setActionFeedback(
-            message: _s.clientAgentsNoLocalPendingToSync,
+            message:
+                ClientAgentsPresentationMessage.clientAgentsNoLocalPendingToSync(),
             kind: ClientAgentsActionFeedbackKind.info,
           );
           _notifyListenersIfAlive();
@@ -1142,7 +1132,7 @@ class ClientAgentsController extends ChangeNotifier {
       }
 
       _isSyncing = true;
-      _actionErrorMessage = null;
+      _actionError = null;
       if (!autoTriggered) {
         _clearActionFeedback();
       }
@@ -1176,23 +1166,24 @@ class ClientAgentsController extends ChangeNotifier {
         (value) => value.requestAccessDebouncedAgentIds,
         (_) => const <String>{},
       );
-      _actionErrorMessage = _consumeResult(
+      _actionError = _consumeResult(
         result: syncResult,
         operation: 'syncPendingClientAgentActions',
       );
       _maybeArmSyncRetryGateFromResult(syncResult);
       await _refreshAfterMutation(userId: userId);
-      if (_actionErrorMessage == null) {
+      if (_actionError == null) {
         final outcome = syncResult.fold((v) => v, (_) => null);
         if (outcome != null) {
           _setActionFeedback(
-            message: _buildSyncSuccessMessage(
-              result: outcome,
-              autoTriggered: autoTriggered,
+            message: ClientAgentsPresentationMessage.clientAgentsSyncSuccess(
+              syncedCount: outcome.successfulActionCount,
+              failedCount: outcome.failedActionCount,
               attemptedPendingCount: pendingCount,
+              autoTriggered: autoTriggered,
               watchingApproval: requestAccessPollAgentIds.isNotEmpty,
-              alreadyApprovedIds: requestAccessAlreadyApprovedOnSync,
-              debouncedIds: requestAccessDebouncedOnSync,
+              alreadyApprovedCount: requestAccessAlreadyApprovedOnSync.length,
+              debouncedCount: requestAccessDebouncedOnSync.length,
             ),
             kind: ClientAgentsActionFeedbackKind.success,
           );
@@ -1222,14 +1213,14 @@ class ClientAgentsController extends ChangeNotifier {
     required String userId,
   }) async {
     final pendingResult = await _readPendingActionsUseCase(userId: userId);
-    _pendingActionsErrorMessage = _consumeResult(
+    _pendingActionsError = _consumeResult(
       result: pendingResult,
       onSuccess: (value) => _pendingActions = value,
       operation: 'readPendingClientAgentActions',
     );
     _isSyncing = false;
     _notifyListenersIfAlive();
-    _scheduleAutoSyncIfNeeded(force: true);
+    _scheduleAutoSyncIfNeeded();
   }
 
   Future<void> _refreshAfterMutation({
@@ -1258,17 +1249,17 @@ class ClientAgentsController extends ChangeNotifier {
       return;
     }
 
-    _approvedAgentsErrorMessage = _consumeResult(
+    _approvedAgentsError = _consumeResult(
       result: approvedResult,
       onSuccess: (value) => _approvedAgents = value,
       operation: 'loadApprovedClientAgents',
     );
-    _accessRequestsErrorMessage = _consumeResult(
+    _accessRequestsError = _consumeResult(
       result: requestsResult,
       onSuccess: (value) => _accessRequests = value,
       operation: 'loadClientAgentAccessRequests',
     );
-    _pendingActionsErrorMessage = _consumeResult(
+    _pendingActionsError = _consumeResult(
       result: pendingResult,
       onSuccess: (value) => _pendingActions = value,
       operation: 'readPendingClientAgentActions',
@@ -1278,7 +1269,7 @@ class ClientAgentsController extends ChangeNotifier {
     _notifyListenersIfAlive();
   }
 
-  String? _consumeResult<T extends Object>({
+  ClientAgentsPresentationMessage? _consumeResult<T extends Object>({
     required AppResult<T> result,
     required String operation,
     ValueChanged<T>? onSuccess,
@@ -1298,21 +1289,21 @@ class ClientAgentsController extends ChangeNotifier {
           error: failure.cause ?? failure,
           stackTrace: failure.stackTrace,
         );
-        return clientAgentsFailureUserMessage(failure, _s);
+        return ClientAgentsPresentationMessage.failure(failure);
       },
     );
   }
 
   void clearActionError() {
-    if (_actionErrorMessage == null) {
+    if (_actionError == null) {
       return;
     }
-    _actionErrorMessage = null;
+    _actionError = null;
     _notifyListenersIfAlive();
   }
 
   void clearActionFeedback() {
-    if (_actionFeedbackMessage == null) {
+    if (_actionNotice == null) {
       return;
     }
     _clearActionFeedback();
@@ -1320,32 +1311,28 @@ class ClientAgentsController extends ChangeNotifier {
   }
 
   void _clearSectionErrors() {
-    _actionErrorMessage = null;
-    _approvedAgentsErrorMessage = null;
-    _accessRequestsErrorMessage = null;
-    _pendingActionsErrorMessage = null;
+    _actionError = null;
+    _approvedAgentsError = null;
+    _accessRequestsError = null;
+    _pendingActionsError = null;
   }
 
   void _clearActionFeedback() {
-    _actionFeedbackMessage = null;
-    _actionFeedbackKind = null;
+    _actionNotice = null;
   }
 
   void _setActionFeedback({
-    required String message,
+    required ClientAgentsPresentationMessage message,
     required ClientAgentsActionFeedbackKind kind,
   }) {
-    _actionFeedbackMessage = message;
-    _actionFeedbackKind = kind;
+    _actionNotice = ClientAgentsPresentationNotice(
+      message: message,
+      kind: kind,
+    );
   }
 
-  void _scheduleAutoSyncIfNeeded({
-    bool force = false,
-  }) {
-    if (_isSyncing) {
-      return;
-    }
-    if (!force && _hasAttemptedAutoSync) {
+  void _scheduleAutoSyncIfNeeded() {
+    if (_isSyncing || !_syncRetryAfterGate.isOpen) {
       return;
     }
     final hasPendingSync = _pendingActions.any(
@@ -1356,7 +1343,6 @@ class ClientAgentsController extends ChangeNotifier {
     if (!hasPendingSync) {
       return;
     }
-    _hasAttemptedAutoSync = true;
     unawaited(syncPending(autoTriggered: true));
   }
 
@@ -1408,7 +1394,7 @@ class ClientAgentsController extends ChangeNotifier {
       userId: userId,
       query: _approvalPollingQuery,
     );
-    _accessRequestsErrorMessage = _consumeResult(
+    _accessRequestsError = _consumeResult(
       result: requestsRefreshResult,
       onSuccess: (value) => _accessRequests = value,
       operation: 'pollRefreshClientAgentAccessRequests',
@@ -1474,12 +1460,13 @@ class ClientAgentsController extends ChangeNotifier {
         deniedNow.isNotEmpty ||
         timedOutNow.isNotEmpty) {
       _setActionFeedback(
-        message: _buildApprovalPollingProgressMessage(
-          approvedNow: approvedNow.keys.toSet(),
-          deniedNow: deniedNow,
-          timedOutNow: timedOutNow,
-          remaining: _trackedApprovalAgentIds.length,
-        ),
+        message:
+            ClientAgentsPresentationMessage.clientAgentsApprovalPollingProgress(
+              approvedCount: approvedNow.length,
+              deniedCount: deniedNow.length,
+              timedOutCount: timedOutNow.length,
+              remainingCount: _trackedApprovalAgentIds.length,
+            ),
         kind: approvedNow.isNotEmpty && deniedNow.isEmpty && timedOutNow.isEmpty
             ? ClientAgentsActionFeedbackKind.success
             : ClientAgentsActionFeedbackKind.info,
@@ -1491,6 +1478,20 @@ class ClientAgentsController extends ChangeNotifier {
     }
     _isPollingApprovals = false;
     _notifyListenersIfAlive();
+  }
+
+  void _handleSyncRetryAfterGateChanged() {
+    if (_isDisposed) {
+      return;
+    }
+    _notifyListenersIfAlive();
+    if (_syncRetryAfterGate.isOpen) {
+      _scheduleAutoSyncIfNeeded();
+    }
+  }
+
+  int _remainingRetryAfterSeconds(Duration? remaining) {
+    return (remaining?.inSeconds ?? 0).clamp(1, 86400);
   }
 
   Future<
@@ -1602,7 +1603,7 @@ class ClientAgentsController extends ChangeNotifier {
       userId: userId,
       query: _approvalPollingQuery,
     );
-    _approvedAgentsErrorMessage = _consumeResult(
+    _approvedAgentsError = _consumeResult(
       result: approvedResult,
       onSuccess: (value) => _approvedAgents = value,
       operation: 'pollApprovedClientAgents',
@@ -1717,7 +1718,7 @@ class ClientAgentsController extends ChangeNotifier {
         .toSet();
   }
 
-  String _buildBlockedRequestMessage(
+  ClientAgentsPresentationMessage _buildBlockedRequestMessage(
     ({
       Set<String> allowed,
       Set<String> approved,
@@ -1726,24 +1727,14 @@ class ClientAgentsController extends ChangeNotifier {
     })
     classification,
   ) {
-    final remotePendingMessage = classification.remotePending.join(', ');
-    final localPendingMessage = classification.localPending.join(', ');
-    final parts = <String>[
-      if (classification.approved.isNotEmpty)
-        _s.clientAgentsRequestBlockedAlreadyApproved(
-          classification.approved.join(', '),
-        ),
-      if (classification.remotePending.isNotEmpty)
-        _s.clientAgentsRequestBlockedAlreadyReview(remotePendingMessage),
-      if (classification.localPending.isNotEmpty)
-        _s.clientAgentsRequestBlockedAlreadyQueued(localPendingMessage),
-    ];
-    return parts.isEmpty
-        ? _s.clientAgentsRequestBlockedFallback
-        : _s.clientAgentsRequestBlockedIntro(parts.join(' '));
+    return ClientAgentsPresentationMessage.clientAgentsRequestBlocked(
+      approved: classification.approved,
+      remotePending: classification.remotePending,
+      localPending: classification.localPending,
+    );
   }
 
-  String _buildQueuedRequestMessage(
+  ClientAgentsPresentationMessage _buildQueuedRequestMessage(
     ({
       Set<String> allowed,
       Set<String> approved,
@@ -1752,128 +1743,35 @@ class ClientAgentsController extends ChangeNotifier {
     })
     classification,
   ) {
-    final queuedCount = classification.allowed.length;
-    final ignoredCount =
-        classification.approved.length +
-        classification.remotePending.length +
-        classification.localPending.length;
-    final baseMessage = queuedCount == 1
-        ? _s.clientAgentsRequestQueuedWatchingSingle
-        : _s.clientAgentsRequestQueuedWatchingPlural(queuedCount);
-    if (ignoredCount == 0) {
-      return baseMessage;
-    }
-    return '$baseMessage '
-        '${_s.clientAgentsRequestQueuedIgnoredSuffix(ignoredCount)}';
+    return ClientAgentsPresentationMessage.clientAgentsRequestQueued(
+      queuedCount: classification.allowed.length,
+      ignoredCount:
+          classification.approved.length +
+          classification.remotePending.length +
+          classification.localPending.length,
+    );
   }
 
-  String _buildBlockedRemoveMessage(
+  ClientAgentsPresentationMessage _buildBlockedRemoveMessage(
     ({Set<String> allowed, Set<String> notApproved, Set<String> localPending})
     classification,
   ) {
-    final localPendingMessage = classification.localPending.join(', ');
-    final parts = <String>[
-      if (classification.notApproved.isNotEmpty)
-        _s.clientAgentsRemoveBlockedNotApproved(
-          classification.notApproved.join(', '),
-        ),
-      if (classification.localPending.isNotEmpty)
-        _s.clientAgentsRemoveBlockedAlreadyQueued(localPendingMessage),
-    ];
-    return parts.isEmpty
-        ? _s.clientAgentsRemoveBlockedFallback
-        : _s.clientAgentsRemoveBlockedIntro(parts.join(' '));
+    return ClientAgentsPresentationMessage.clientAgentsRemoveBlocked(
+      notApproved: classification.notApproved,
+      localPending: classification.localPending,
+    );
   }
 
-  String _buildQueuedRemoveMessage(
+  ClientAgentsPresentationMessage _buildQueuedRemoveMessage(
     ({Set<String> allowed, Set<String> notApproved, Set<String> localPending})
     classification,
   ) {
-    final queuedCount = classification.allowed.length;
-    final ignoredCount =
-        classification.notApproved.length + classification.localPending.length;
-    final baseMessage = queuedCount == 1
-        ? _s.clientAgentsRemoveQueuedSingle
-        : _s.clientAgentsRemoveQueuedPlural(queuedCount);
-    if (ignoredCount == 0) {
-      return baseMessage;
-    }
-    return '$baseMessage '
-        '${_s.clientAgentsRemoveQueuedIgnoredSuffix(ignoredCount)}';
-  }
-
-  String _buildSyncSuccessMessage({
-    required SyncPendingAgentActionsResult result,
-    required bool autoTriggered,
-    required int attemptedPendingCount,
-    required bool watchingApproval,
-    Set<String> alreadyApprovedIds = const <String>{},
-    Set<String> debouncedIds = const <String>{},
-  }) {
-    final synced = result.successfulActionCount;
-    final failed = result.failedActionCount;
-    final String prefix;
-    if (synced == 0 && attemptedPendingCount > 0) {
-      prefix = _s.clientAgentsSyncSuccessNoneCompleted;
-    } else if (synced == 1) {
-      prefix = _s.clientAgentsSyncSuccessSingle;
-    } else {
-      prefix = _s.clientAgentsSyncSuccessPlural(synced);
-    }
-    final suffix = autoTriggered
-        ? _s.clientAgentsSyncSuccessAutoSuffix
-        : _s.clientAgentsSyncSuccessManualSuffix;
-    final polling = watchingApproval
-        ? _s.clientAgentsSyncSuccessPollingSuffix
-        : '';
-    var message = '$prefix$suffix$polling';
-    if (alreadyApprovedIds.isNotEmpty) {
-      message += alreadyApprovedIds.length == 1
-          ? _s.clientAgentsSyncSuccessAlreadyApprovedSingle
-          : _s.clientAgentsSyncSuccessAlreadyApprovedPlural(
-              alreadyApprovedIds.length,
-            );
-    }
-    if (debouncedIds.isNotEmpty) {
-      message += debouncedIds.length == 1
-          ? _s.clientAgentsSyncSuccessDebouncedSingle
-          : _s.clientAgentsSyncSuccessDebouncedPlural(debouncedIds.length);
-    }
-    if (failed > 0) {
-      message += _s.clientAgentsSyncSuccessSomeFailedSuffix(failed);
-    }
-    return message;
-  }
-
-  String _buildApprovalPollingProgressMessage({
-    required Set<String> approvedNow,
-    required Set<String> deniedNow,
-    required Set<String> timedOutNow,
-    required int remaining,
-  }) {
-    final myAgentsTab = _s.clientAgentsTabMyAgents;
-    final parts = <String>[
-      if (approvedNow.isNotEmpty)
-        approvedNow.length == 1
-            ? _s.clientAgentsPollApprovedSingle(myAgentsTab)
-            : _s.clientAgentsPollApprovedPlural(
-                approvedNow.length,
-                myAgentsTab,
-              ),
-      if (deniedNow.isNotEmpty)
-        deniedNow.length == 1
-            ? _s.clientAgentsPollDeniedSingle
-            : _s.clientAgentsPollDeniedPlural(deniedNow.length),
-      if (timedOutNow.isNotEmpty)
-        timedOutNow.length == 1
-            ? _s.clientAgentsPollTimeoutSingle
-            : _s.clientAgentsPollTimeoutPlural(timedOutNow.length),
-      if (remaining > 0)
-        remaining == 1
-            ? _s.clientAgentsPollRemainingSingle
-            : _s.clientAgentsPollRemainingPlural(remaining),
-    ];
-    return parts.join(' ');
+    return ClientAgentsPresentationMessage.clientAgentsRemoveQueued(
+      queuedCount: classification.allowed.length,
+      ignoredCount:
+          classification.notApproved.length +
+          classification.localPending.length,
+    );
   }
 
   void _notifyListenersIfAlive() {
@@ -1957,17 +1855,17 @@ class ClientAgentsController extends ChangeNotifier {
   /// the visible route. Only effective when PR-M part 3 dependencies
   /// (`AgentPresencePoller` + `ConsumerSocketConnection`) were wired —
   /// no-op otherwise so the legacy build behaves identically.
-  void onScreenVisible() {
-    _isScreenVisible = true;
+  void setScreenVisible({required bool isVisible}) {
+    _isScreenVisible = isVisible;
     _reconcilePollerGate();
   }
 
-  /// Page-level hook (RouteAware): the `client_agents` screen left the
-  /// foreground (push to detail, tab switch, deep route). Stops the
-  /// REST polling so we do not waste battery on hidden views.
+  void onScreenVisible() {
+    setScreenVisible(isVisible: true);
+  }
+
   void onScreenHidden() {
-    _isScreenVisible = false;
-    _reconcilePollerGate();
+    setScreenVisible(isVisible: false);
   }
 
   void _onPresence(AgentPresenceEvent event) {
@@ -2127,7 +2025,7 @@ class ClientAgentsController extends ChangeNotifier {
     _agentPresencePoller?.stop();
     _lastPresenceObservedByAgentId.clear();
     _syncRetryAfterGate
-      ..removeListener(_notifyListenersIfAlive)
+      ..removeListener(_handleSyncRetryAfterGateChanged)
       ..dispose();
     _requestAccessRetryAfterGate
       ..removeListener(_notifyListenersIfAlive)
@@ -2160,11 +2058,6 @@ class ClientAgentsController extends ChangeNotifier {
       return failure.retryAfter;
     }
     return null;
-  }
-
-  String _buildSyncCooldownMessage(Duration? remaining) {
-    final seconds = (remaining?.inSeconds ?? 0).clamp(1, 86400);
-    return _s.clientAgentsSyncRetryAfterCountdown(seconds);
   }
 }
 

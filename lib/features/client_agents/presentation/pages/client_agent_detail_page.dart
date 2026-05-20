@@ -10,12 +10,13 @@ import 'package:colmeia/features/client_agents/domain/entities/agent_connection_
 import 'package:colmeia/features/client_agents/domain/entities/agent_profile_address.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agent_detail_controller.dart';
+import 'package:colmeia/features/client_agents/presentation/localization/client_agents_presentation_message_l10n.dart';
+import 'package:colmeia/features/client_agents/presentation/models/client_agents_presentation_message.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agent_profile_edit_card.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
-import 'package:colmeia/shared/presentation/localization/sync_app_localizations_mixin.dart';
 import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
@@ -41,8 +42,7 @@ class ClientAgentDetailPage extends StatefulWidget {
   State<ClientAgentDetailPage> createState() => _ClientAgentDetailPageState();
 }
 
-class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
-    with SyncAppLocalizationsMixin<ClientAgentDetailPage> {
+class _ClientAgentDetailPageState extends State<ClientAgentDetailPage> {
   late final ClientAgentDetailController _controller;
   bool _initialLoadScheduled = false;
 
@@ -59,11 +59,6 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
   void initState() {
     super.initState();
     _controller = widget.controller;
-  }
-
-  @override
-  void bindAppLocalizations(AppLocalizations l10n) {
-    _controller.activeLocalizations = l10n;
   }
 
   @override
@@ -111,10 +106,13 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
       child: Consumer<ClientAgentDetailController>(
         builder: (context, controller, _) {
           final agent = controller.agent;
+          final loadErrorMessage = _localizeMessage(
+            controller.errorMessage,
+            l10n,
+          );
           final initialLoading =
               controller.isLoading && agent == null && !controller.isRefreshing;
-          final blockingError =
-              controller.errorMessage != null && agent == null;
+          final blockingError = loadErrorMessage != null && agent == null;
           final showRefreshFooter = !initialLoading;
 
           return RefreshIndicator(
@@ -194,16 +192,15 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
                 else if (blockingError)
                   AppInlineErrorPanel(
                     title: l10n.clientAgentDetailLoadErrorTitle,
-                    message: controller.errorMessage!,
+                    message: loadErrorMessage,
                     onRetry: controller.reload,
                     retryLabel: l10n.appInlineErrorRetry,
                   )
                 else ...<Widget>[
-                  if (agent != null &&
-                      controller.errorMessage != null) ...<Widget>[
+                  if (agent != null && loadErrorMessage != null) ...<Widget>[
                     AppInlineErrorPanel(
                       title: l10n.clientAgentDetailLoadErrorTitle,
-                      message: controller.errorMessage!,
+                      message: loadErrorMessage,
                       onRetry: () => unawaited(
                         _controller.refresh(widget.agentId),
                       ),
@@ -274,6 +271,16 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage>
         (a.city?.isNotEmpty ?? false) ||
         (a.state?.isNotEmpty ?? false);
   }
+
+  String? _localizeMessage(
+    ClientAgentsPresentationMessage? message,
+    AppLocalizations l10n,
+  ) {
+    if (message == null) {
+      return null;
+    }
+    return localizeClientAgentsPresentationMessage(message, l10n);
+  }
 }
 
 class _AgentClientTokenCard extends StatefulWidget {
@@ -334,8 +341,14 @@ class _AgentClientTokenCardState extends State<_AgentClientTokenCard> {
   Widget build(BuildContext context) {
     final c = widget.controller;
     final theme = Theme.of(context);
-    final feedback = c.clientTokenFeedback;
-    final feedbackError = c.clientTokenError;
+    final feedback = _localizeClientAgentsMessage(
+      c.clientTokenFeedback,
+      widget.l10n,
+    );
+    final feedbackError = _localizeClientAgentsMessage(
+      c.clientTokenError,
+      widget.l10n,
+    );
     final isMutating = c.isSavingClientToken;
 
     return AppSectionCardWithHeading(
@@ -579,7 +592,8 @@ class _ClientTokenPolicyCardState extends State<_ClientTokenPolicyCard> {
       );
     } else if (c.clientTokenPolicyError != null) {
       body = Text(
-        c.clientTokenPolicyError!,
+        _localizeClientAgentsMessage(c.clientTokenPolicyError, widget.l10n) ??
+            '',
         style: theme.textTheme.bodySmall?.copyWith(color: colors.error),
       );
     } else if (c.clientTokenPolicyUnsupported) {
@@ -1302,4 +1316,14 @@ class _AgentDetailRow extends StatelessWidget {
       ),
     );
   }
+}
+
+String? _localizeClientAgentsMessage(
+  ClientAgentsPresentationMessage? message,
+  AppLocalizations l10n,
+) {
+  if (message == null) {
+    return null;
+  }
+  return localizeClientAgentsPresentationMessage(message, l10n);
 }

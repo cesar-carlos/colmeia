@@ -689,6 +689,48 @@ void main() {
     );
 
     test(
+      'snapshot builder can skip visible branch list items for inline mode',
+      () {
+        final snapshot = AppBrazilStoreSalesMapSnapshotBuilder.build(
+          const AppBrazilStoreSalesMapSnapshotInput(
+            points: <AppBrazilStoreSalesPoint>[
+              AppBrazilStoreSalesPoint(
+                id: 'sinop',
+                name: 'Loja Sinop',
+                uf: 'MT',
+                city: 'Sinop',
+                latitude: -11.8604,
+                longitude: -55.5091,
+                salesAmount: 100,
+                salesCount: 2,
+              ),
+              AppBrazilStoreSalesPoint(
+                id: 'paulista',
+                name: 'Loja Paulista',
+                uf: 'SP',
+                city: 'Sao Paulo',
+                latitude: -23.5505,
+                longitude: -46.6333,
+                salesAmount: 300,
+                salesCount: 5,
+              ),
+            ],
+            metric: AppBrazilStoreSalesMapMetric.revenue,
+            zoomLevel: 2,
+            style: AppBrazilStoreSalesMapStyle.standard(),
+            includeVisibleBranchListItems: false,
+          ),
+          cachedReuseKey: 'inline-no-sidebar',
+          defaultBranchName: 'Filial sem nome',
+        );
+
+        expect(snapshot.visibleBranchListItems, isEmpty);
+        expect(snapshot.markerGroups, isNotEmpty);
+        expect(snapshot.buckets, isNotEmpty);
+      },
+    );
+
+    test(
       'snapshot reuse key is stable for equivalent point content and ignores visual selection state',
       () {
       const pointsA = <AppBrazilStoreSalesPoint>[

@@ -695,6 +695,8 @@ class _AppBrazilStoreSalesMapChartState
   bool get _usesFloatingMapControls =>
       _usesInlineOperationalChrome || _usesCleanFullscreenChrome;
 
+  bool get _includeVisibleBranchListItems => widget.showDesktopBranchSidebar;
+
   bool get _showsFloatingMetricSelector =>
       _usesFloatingMapControls &&
       widget.style.showMetricSelector &&
@@ -948,6 +950,7 @@ class _AppBrazilStoreSalesMapChartState
       metric: _selectedMetric,
       activeRegionKey: _activeRegionKey,
       zoomLevel: _currentZoomLevel,
+      includeVisibleBranchListItems: _includeVisibleBranchListItems,
       pointsDigest: pointsDigest,
     );
   }
@@ -973,6 +976,9 @@ class _AppBrazilStoreSalesMapChartState
       return snapshotData;
     }
 
+    final stopwatch = kDebugMode || kProfileMode
+        ? (Stopwatch()..start())
+        : null;
     final nextSnapshotData = AppBrazilStoreSalesMapSnapshotBuilder.buildData(
       AppBrazilStoreSalesMapSnapshotInput(
         points: widget.points,
@@ -980,12 +986,31 @@ class _AppBrazilStoreSalesMapChartState
         activeRegionKey: _activeRegionKey,
         zoomLevel: _currentZoomLevel,
         style: widget.style,
+        includeVisibleBranchListItems: _includeVisibleBranchListItems,
       ),
       cachedReuseKey: reuseKey,
       defaultBranchName: AppLocalizations.of(
         context,
       ).brazilStoreSalesMapDefaultBranchName,
     );
+    if (stopwatch != null) {
+      AppLogger.debug(
+        'Brazil store sales map snapshot data built',
+        context: <String, Object?>{
+          'operation': 'AppBrazilStoreSalesMapChart',
+          'elapsedMs': stopwatch.elapsedMilliseconds,
+          'inputPointCount': widget.points.length,
+          'validPointCount': nextSnapshotData.validPointCount,
+          'bucketCount': nextSnapshotData.buckets.length,
+          'markerGroupCount': nextSnapshotData.markerGroups.length,
+          'visibleBranchListItemCount':
+              nextSnapshotData.visibleBranchListItems.length,
+          'includeVisibleBranchListItems': _includeVisibleBranchListItems,
+          'aggregation': widget.style.markerAggregation.name,
+          'activeRegionKey': _activeRegionKey,
+        },
+      );
+    }
     _snapshotData = nextSnapshotData;
     return nextSnapshotData;
   }

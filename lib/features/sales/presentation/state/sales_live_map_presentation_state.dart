@@ -2,7 +2,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref_codec.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
-import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
+import 'package:colmeia/features/sales/presentation/models/sales_live_map_visual_spec.dart';
 import 'package:flutter/foundation.dart';
 
 const int kSalesLiveMapAutoMunicipalityDetailPointThreshold = 200;
@@ -92,45 +92,10 @@ class SalesLiveMapPresentationState {
     return filter.detailLevel;
   }
 
-  AppBrazilStoreSalesMapStyle get mapStyle {
-    final detailLevel = effectiveDetailLevel;
-    final resolvedVisual = detailLevel == SalesLiveMapMapDetail.states
-        ? SalesLiveMapMarkerVisual.bubble
-        : filter.markerVisual;
-    final appMarkerVisual = switch (resolvedVisual) {
-      SalesLiveMapMarkerVisual.dot => AppBrazilStoreSalesMarkerVisual.dot,
-      SalesLiveMapMarkerVisual.bubble => AppBrazilStoreSalesMarkerVisual.bubble,
-      SalesLiveMapMarkerVisual.storeIcon =>
-        AppBrazilStoreSalesMarkerVisual.storeIcon,
-    };
-    final aggregation = switch (detailLevel) {
-      SalesLiveMapMapDetail.branches =>
-        AppBrazilStoreSalesMarkerAggregation.stores,
-      SalesLiveMapMapDetail.municipalities =>
-        AppBrazilStoreSalesMarkerAggregation.municipalities,
-      SalesLiveMapMapDetail.states =>
-        AppBrazilStoreSalesMarkerAggregation.states,
-    };
-    final (minSize, maxSize) = switch (resolvedVisual) {
-      SalesLiveMapMarkerVisual.dot => (10.0, 24.0),
-      SalesLiveMapMarkerVisual.bubble =>
-        detailLevel == SalesLiveMapMapDetail.states
-            ? (30.0, 76.0)
-            : (34.0, 82.0),
-      SalesLiveMapMarkerVisual.storeIcon => (24.0, 34.0),
-    };
-
-    return AppBrazilStoreSalesMapStyle(
-      height: 560,
-      markerVisual: appMarkerVisual,
-      markerAggregation: aggregation,
-      markerMinSize: minSize,
-      markerMaxSize: maxSize,
-      maxClusterTooltipStores:
-          detailLevel == SalesLiveMapMapDetail.municipalities ? 8 : 5,
-      showStoreDetail: detailLevel != SalesLiveMapMapDetail.states,
-      showRegionFilter: false,
-      enableProximityCluster: detailLevel == SalesLiveMapMapDetail.branches,
+  SalesLiveMapVisualSpec get visualSpec {
+    return SalesLiveMapVisualSpec.operational(
+      detailLevel: effectiveDetailLevel,
+      markerVisual: filter.markerVisual,
     );
   }
 

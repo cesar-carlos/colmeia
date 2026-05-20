@@ -7,6 +7,9 @@ import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_controller.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_owner_controller.dart';
+import 'package:colmeia/features/client_agents/presentation/localization/client_agents_presentation_message_l10n.dart';
+import 'package:colmeia/features/client_agents/presentation/models/client_agents_presentation_message.dart';
+import 'package:colmeia/features/client_agents/presentation/utils/client_agents_page_route_lifecycle_bridge.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_approved_agents_tab.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_owner_clients_tab.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_owner_requests_tab.dart';
@@ -18,7 +21,6 @@ import 'package:colmeia/features/user_context/domain/entities/user_permission.da
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:colmeia/shared/presentation/localization/sync_app_localizations_mixin.dart';
 import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
@@ -46,8 +48,7 @@ class ClientAgentsPage extends StatefulWidget {
   State<ClientAgentsPage> createState() => _ClientAgentsPageState();
 }
 
-class _ClientAgentsPageState extends State<ClientAgentsPage>
-    with SyncAppLocalizationsMixin<ClientAgentsPage>, RouteAware {
+class _ClientAgentsPageState extends State<ClientAgentsPage> with RouteAware {
   static const int _approvedAgentsTabIndex = 0;
   static const int _requestsTabIndex = 2;
   static const int _ownerClientsTabIndex = 4;
@@ -56,10 +57,12 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
   late final ClientAgentsController _controller;
   late final ClientAgentsOwnerController _ownerController;
   late final ClientAgentsPageSessionService _pageSessionService;
+  late final ClientAgentsPageRouteLifecycleBridge _routeLifecycleBridge;
   late ClientAgentsPageSessionState _pageSession;
   Timer? _draftPersistenceTimer;
   bool _shellRouteObserverSubscribed = false;
   bool _ownerInitialLoadScheduled = false;
+  int _requestAccessDraftResetRevision = 0;
 
   @override
   void initState() {
@@ -67,6 +70,11 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
     _controller = widget.controller;
     _ownerController = widget.ownerController;
     _pageSessionService = widget.pageSessionService;
+    _routeLifecycleBridge = ClientAgentsPageRouteLifecycleBridge(
+      setScreenVisible: ({required isVisible}) {
+        _controller.setScreenVisible(isVisible: isVisible);
+      },
+    );
     _pageSession = _pageSessionService.restore(
       fallbackTabIndex: _approvedAgentsTabIndex,
       maxTabIndex: _maxTabIndex,
@@ -74,12 +82,6 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
   }
 
   bool _initialLoadScheduled = false;
-
-  @override
-  void bindAppLocalizations(AppLocalizations l10n) {
-    _controller.activeLocalizations = l10n;
-    _ownerController.activeLocalizations = l10n;
-  }
 
   @override
   void didChangeDependencies() {
@@ -109,12 +111,12 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
     // PR-M part 3: visibility on first push so the REST poller (when
     // wired) can decide if it should start polling on a degraded
     // socket.
-    _controller.onScreenVisible();
+    _routeLifecycleBridge.didPush();
   }
 
   @override
   void didPopNext() {
-    _controller.onScreenVisible();
+    _routeLifecycleBridge.didPopNext();
     unawaited(_controller.refreshAll());
   }
 
@@ -123,12 +125,12 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
     // PR-M part 3: pushed onto a child route (e.g. agent detail).
     // Stop the REST poller — the badge stays in the in-memory
     // snapshot and is reconciled when we come back via didPopNext.
-    _controller.onScreenHidden();
+    _routeLifecycleBridge.didPushNext();
   }
 
   @override
   void didPop() {
-    _controller.onScreenHidden();
+    _routeLifecycleBridge.didPop();
   }
 
   @override
@@ -166,6 +168,22 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
       child: Consumer2<ClientAgentsController, ClientAgentsOwnerController>(
         builder: (context, controller, ownerController, _) {
           final l10n = AppLocalizations.of(context);
+          final actionErrorMessage = _localizeMessage(
+            controller.actionError,
+            l10n,
+          );
+          final ownerActionErrorMessage = _localizeMessage(
+            ownerController.actionError,
+            l10n,
+          );
+          final actionNoticeMessage = _localizeNoticeMessage(
+            controller.actionNotice,
+            l10n,
+          );
+          final ownerActionNoticeMessage = _localizeNoticeMessage(
+            ownerController.actionNotice,
+            l10n,
+          );
           final pendingCount = controller.pendingActions.length;
           final rawRequests =
               controller.accessRequests?.items ??
@@ -201,7 +219,10 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
               label: l10n.clientAgentsTabMyAgents,
               child: ClientAgentsApprovedAgentsTab(
                 agents: filteredApprovedAgents,
-                errorMessage: controller.approvedAgentsErrorMessage,
+                errorMessage: _localizeMessage(
+                  controller.approvedAgentsError,
+                  l10n,
+                ),
                 onQueueRemoveAccess: (agentIds) async {
                   await controller.removeAccess(agentIds: agentIds);
                 },
@@ -219,8 +240,9 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
             AppTabViewItem(
               label: l10n.clientAgentsTabRequestAccess,
               child: ClientAgentsRequestAccessTab(
-                initialAgentIdSlots:
+                draftSeedAgentIdSlots:
                     _pageSession.requestAccessDraftAgentIdSlots,
+                draftResetRevision: _requestAccessDraftResetRevision,
                 onDraftSlotsChanged: (slots) {
                   if (!mounted) {
                     return;
@@ -242,9 +264,12 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                     return accepted;
                   }
                   if (accepted) {
-                    _pageSession = _pageSession.copyWith(
-                      requestAccessDraftAgentIdSlots: const <String>[''],
-                    );
+                    setState(() {
+                      _pageSession = _pageSession.copyWith(
+                        requestAccessDraftAgentIdSlots: const <String>[''],
+                      );
+                      _requestAccessDraftResetRevision++;
+                    });
                     _draftPersistenceTimer?.cancel();
                     await _persistRequestAccessDraftSlots(const <String>['']);
                   }
@@ -268,8 +293,14 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
               child: ClientAgentsRequestsTab(
                 requests: filteredRequests,
                 pendingActions: filteredPendingActions,
-                errorMessage: controller.accessRequestsErrorMessage,
-                pendingErrorMessage: controller.pendingActionsErrorMessage,
+                errorMessage: _localizeMessage(
+                  controller.accessRequestsError,
+                  l10n,
+                ),
+                pendingErrorMessage: _localizeMessage(
+                  controller.pendingActionsError,
+                  l10n,
+                ),
                 onRetry: () => unawaited(controller.refreshAll()),
                 isMutating: controller.isSyncing,
                 onRetryAccessRequest: (request) =>
@@ -291,7 +322,10 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                 label: l10n.clientAgentsTabOwnerRequests,
                 child: ClientAgentsOwnerRequestsTab(
                   requests: ownerController.ownerRequests,
-                  errorMessage: ownerController.ownerRequestsErrorMessage,
+                  errorMessage: _localizeMessage(
+                    ownerController.ownerRequestsError,
+                    l10n,
+                  ),
                   onRetry: () => unawaited(ownerController.refreshAll()),
                   onApprove: (request) => ownerController.approveRequest(
                     requestId: request.requestId,
@@ -311,7 +345,10 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                   managedAgents: ownerController.managedAgents,
                   selectedAgentId: ownerController.selectedManagedAgentId,
                   approvedClients: ownerController.approvedClients,
-                  errorMessage: ownerController.approvedClientsErrorMessage,
+                  errorMessage: _localizeMessage(
+                    ownerController.approvedClientsError,
+                    l10n,
+                  ),
                   isMutating: ownerController.isMutating,
                   onRetry: () => unawaited(ownerController.refreshAll()),
                   onSelectAgent: (agentId) =>
@@ -384,15 +421,14 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                     ],
                   ),
                 ),
-                if (controller.actionErrorMessage
-                    case final String message) ...<Widget>[
+                if (actionErrorMessage case final String message) ...<Widget>[
                   SizedBox(height: tokens.sectionSpacing),
                   AppInlineErrorPanel(
                     title: l10n.clientAgentsActionFailedTitle,
                     message: message,
                   ),
                 ],
-                if (ownerController.actionErrorMessage
+                if (ownerActionErrorMessage
                     case final String message) ...<Widget>[
                   SizedBox(height: tokens.gapMd),
                   AppInlineErrorPanel(
@@ -400,20 +436,19 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
                     message: message,
                   ),
                 ],
-                if (controller.actionFeedbackMessage
-                    case final String message) ...<Widget>[
+                if (actionNoticeMessage case final String message) ...<Widget>[
                   SizedBox(height: tokens.gapMd),
                   ClientAgentsActionFeedbackBanner(
                     message: message,
-                    kind: controller.actionFeedbackKind,
+                    kind: controller.actionNotice?.kind,
                   ),
                 ],
-                if (ownerController.actionFeedbackMessage
+                if (ownerActionNoticeMessage
                     case final String message) ...<Widget>[
                   SizedBox(height: tokens.gapMd),
                   ClientAgentsActionFeedbackBanner(
                     message: message,
-                    kind: ClientAgentsActionFeedbackKind.success,
+                    kind: ownerController.actionNotice?.kind,
                   ),
                 ],
                 SizedBox(height: tokens.sectionSpacing),
@@ -510,9 +545,11 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
       return Wrap(
         spacing: tokens.gapSm,
         runSpacing: tokens.gapSm,
-        children: buildClientAgentsApprovedFilterSummaryChips(
-          l10n: l10n,
-          approvedAgentFilters: _pageSession.approvedAgentFilters,
+        children: _buildSummaryChips(
+          buildClientAgentsApprovedFilterSummaryLabels(
+            l10n: l10n,
+            approvedAgentFilters: _pageSession.approvedAgentFilters,
+          ),
         ),
       );
     }
@@ -525,13 +562,21 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
       return Wrap(
         spacing: tokens.gapSm,
         runSpacing: tokens.gapSm,
-        children: buildClientAgentsRequestsFilterSummaryChips(
-          l10n: l10n,
-          requestsFilters: _pageSession.requestsFilters,
+        children: _buildSummaryChips(
+          buildClientAgentsRequestsFilterSummaryLabels(
+            l10n: l10n,
+            requestsFilters: _pageSession.requestsFilters,
+          ),
         ),
       );
     }
     return null;
+  }
+
+  List<Widget> _buildSummaryChips(List<String> labels) {
+    return labels
+        .map((label) => Chip(label: Text(label)))
+        .toList(growable: false);
   }
 
   Future<void> _showApprovedAgentFilters() async {
@@ -655,5 +700,26 @@ class _ClientAgentsPageState extends State<ClientAgentsPage>
         ),
       );
     });
+  }
+
+  String? _localizeMessage(
+    ClientAgentsPresentationMessage? message,
+    AppLocalizations l10n,
+  ) {
+    if (message == null) {
+      return null;
+    }
+    return localizeClientAgentsPresentationMessage(message, l10n);
+  }
+
+  String? _localizeNoticeMessage(
+    ClientAgentsPresentationNotice? notice,
+    AppLocalizations l10n,
+  ) {
+    final message = notice?.message;
+    if (message == null) {
+      return null;
+    }
+    return localizeClientAgentsPresentationMessage(message, l10n);
   }
 }

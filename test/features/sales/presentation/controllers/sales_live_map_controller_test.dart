@@ -8,9 +8,10 @@ import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
-import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -142,11 +143,11 @@ void main() {
       await controller.bindUser('user-1');
       clearInteractions(loadLiveMap);
 
-      controller.updateMetric(AppBrazilStoreSalesMapMetric.salesCount);
+      controller.updateMetric(SalesLiveMapMetric.salesCount);
 
       expect(
         controller.state.filter.metric,
-        AppBrazilStoreSalesMapMetric.salesCount,
+        SalesLiveMapMetric.salesCount,
       );
       verifyNever(
         () => loadLiveMap.loadProgressive(
@@ -161,7 +162,7 @@ void main() {
       ).captured.cast<SalesLiveMapFilter>();
       expect(
         persistedFilters.last.metric,
-        AppBrazilStoreSalesMapMetric.salesCount,
+        SalesLiveMapMetric.salesCount,
       );
     },
   );
@@ -282,7 +283,7 @@ void main() {
         periodMode: SalesLiveMapPeriodMode.lastSevenDays,
         detailLevel: SalesLiveMapMapDetail.municipalities,
         markerVisual: SalesLiveMapMarkerVisual.bubble,
-        metric: AppBrazilStoreSalesMapMetric.salesCount,
+        metric: SalesLiveMapMetric.salesCount,
       ),
     );
     clearInteractions(loadLiveMap);
@@ -296,7 +297,7 @@ void main() {
     expect(controller.state.filter.markerVisual, SalesLiveMapMarkerVisual.dot);
     expect(
       controller.state.filter.metric,
-      AppBrazilStoreSalesMapMetric.revenue,
+      SalesLiveMapMetric.revenue,
     );
 
     final capturedFilters = verify(
@@ -413,7 +414,7 @@ void main() {
 
       stream.add(
         SalesLiveMapLoadResult(
-          points: <AppBrazilStoreSalesPoint>[],
+          points: <SalesLiveMapPoint>[],
           branchOptions: <SalesLiveMapBranchOption>[],
           totalRevenue: 0,
           totalSalesCount: 0,
@@ -465,7 +466,7 @@ void main() {
 
       stream.add(
         SalesLiveMapLoadResult(
-          points: <AppBrazilStoreSalesPoint>[],
+          points: <SalesLiveMapPoint>[],
           branchOptions: <SalesLiveMapBranchOption>[],
           totalRevenue: 0,
           totalSalesCount: 0,
@@ -497,43 +498,46 @@ void main() {
     },
   );
 
-  test('clears the visual snapshot while a data filter change reloads', () async {
-    await controller.bindUser('user-1');
+  test(
+    'clears the visual snapshot while a data filter change reloads',
+    () async {
+      await controller.bindUser('user-1');
 
-    final stream = StreamController<SalesLiveMapLoadResult>();
-    addTearDown(stream.close);
-    when(
-      () => loadLiveMap.loadProgressive(
-        userId: any(named: 'userId'),
-        filter: any(named: 'filter'),
-        reason: any(named: 'reason'),
-        cancelToken: any(named: 'cancelToken'),
-      ),
-    ).thenAnswer((_) => stream.stream);
+      final stream = StreamController<SalesLiveMapLoadResult>();
+      addTearDown(stream.close);
+      when(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      ).thenAnswer((_) => stream.stream);
 
-    final reloadFuture = controller.applyFilter(
-      SalesLiveMapFilter(
-        selectedBranchIds: <SalesLiveMapBranchRef>{
-          const SalesLiveMapBranchRef(
-            agentId: 'agent-1',
-            codEmpresa: 1,
-            codFilial: 1,
-          ),
-        },
-      ),
-    );
-    await Future<void>.delayed(Duration.zero);
+      final reloadFuture = controller.applyFilter(
+        SalesLiveMapFilter(
+          selectedBranchIds: <SalesLiveMapBranchRef>{
+            const SalesLiveMapBranchRef(
+              agentId: 'agent-1',
+              codEmpresa: 1,
+              codFilial: 1,
+            ),
+          },
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
 
-    expect(controller.state.isLoading, isTrue);
-    expect(controller.state.visualResult, isNull);
-    expect(controller.state.hasVisualResult, isFalse);
+      expect(controller.state.isLoading, isTrue);
+      expect(controller.state.visualResult, isNull);
+      expect(controller.state.hasVisualResult, isFalse);
 
-    stream.add(_loadedResult());
-    await stream.close();
-    await reloadFuture;
+      stream.add(_loadedResult());
+      await stream.close();
+      await reloadFuture;
 
-    expect(controller.state.visualResult, isNotNull);
-  });
+      expect(controller.state.visualResult, isNotNull);
+    },
+  );
 
   test('reload defaults to manual reason', () async {
     await controller.bindUser('user-1');
@@ -562,8 +566,8 @@ SalesLiveMapLoadResult _loadedResult() {
 
 SalesLiveMapLoadResult _resultForRevenue(double revenue) {
   return SalesLiveMapLoadResult(
-    points: <AppBrazilStoreSalesPoint>[
-      AppBrazilStoreSalesPoint(
+    points: <SalesLiveMapPoint>[
+      SalesLiveMapPoint(
         id: 'agent-1-1-1',
         name: 'Branch One',
         uf: 'MT',

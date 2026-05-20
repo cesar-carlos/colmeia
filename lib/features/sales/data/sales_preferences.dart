@@ -8,9 +8,9 @@ import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref_codec.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dart';
 import 'package:colmeia/features/sales/domain/sales_daily_totals_range_policy.dart';
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_bar_chart_preferences.dart';
-import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SalesPreferences {
@@ -454,15 +454,15 @@ class SalesPreferences {
     return SalesLiveMapMapPreset.standard;
   }
 
-  static AppBrazilStoreSalesMapMetric _salesLiveMapMetricFromRaw(Object? raw) {
+  static SalesLiveMapMetric _salesLiveMapMetricFromRaw(Object? raw) {
     if (raw is String) {
-      for (final metric in AppBrazilStoreSalesMapMetric.values) {
+      for (final metric in SalesLiveMapMetric.values) {
         if (metric.name == raw) {
           return metric;
         }
       }
     }
-    return AppBrazilStoreSalesMapMetric.revenue;
+    return SalesLiveMapMetric.revenue;
   }
 
   static Set<String>? _salesLiveMapSelectedAgentIdsFromRaw(Object? raw) {

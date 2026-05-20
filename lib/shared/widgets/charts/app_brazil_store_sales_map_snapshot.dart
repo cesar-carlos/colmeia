@@ -40,6 +40,7 @@ class AppBrazilStoreSalesMapSnapshotInput {
     required this.metric,
     required this.zoomLevel,
     required this.style,
+    this.includeVisibleBranchListItems = true,
     this.selectedStoreId,
     this.requestedStateKey,
     this.activeRegionKey,
@@ -52,6 +53,7 @@ class AppBrazilStoreSalesMapSnapshotInput {
   final String? activeRegionKey;
   final double zoomLevel;
   final AppBrazilStoreSalesMapStyle style;
+  final bool includeVisibleBranchListItems;
 }
 
 class AppBrazilStoreSalesMapSnapshotData {
@@ -208,11 +210,13 @@ abstract final class AppBrazilStoreSalesMapSnapshotBuilder {
       }
     }
 
-    final visibleBranchListItems = _buildVisibleBranchListItems(
-      points: preparedData.validPoints,
-      selectedStoreId: input.selectedStoreId,
-      defaultBranchName: defaultBranchName,
-    );
+    final visibleBranchListItems = input.includeVisibleBranchListItems
+        ? _buildVisibleBranchListItems(
+            points: preparedData.validPoints,
+            selectedStoreId: input.selectedStoreId,
+            defaultBranchName: defaultBranchName,
+          )
+        : const <AppBrazilStoreSalesVisibleBranchListItem>[];
 
     return AppBrazilStoreSalesMapSnapshotData(
       metric: input.metric,
@@ -245,6 +249,7 @@ abstract final class AppBrazilStoreSalesMapSnapshotBuilder {
     required AppBrazilStoreSalesMapMetric metric,
     required String? activeRegionKey,
     required double zoomLevel,
+    bool includeVisibleBranchListItems = true,
     int? pointsDigest,
     String? selectedStoreId,
     String? requestedStateKey,
@@ -252,6 +257,7 @@ abstract final class AppBrazilStoreSalesMapSnapshotBuilder {
     final parts = <String>[
       'fx=${_sortedSetJoin(fixedBranchIds)}',
       'fl=${_sortedSetJoin(filterBranchIds)}',
+      'sb=$includeVisibleBranchListItems',
       style.markerAggregation.name,
       style.markerVisual.name,
       style.enableProximityCluster.toString(),

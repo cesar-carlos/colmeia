@@ -21,6 +21,9 @@ class AppBrazilStoreSalesMapChartDemoPage extends StatefulWidget {
 class _AppBrazilStoreSalesMapChartDemoPageState
     extends State<AppBrazilStoreSalesMapChartDemoPage> {
   AppBrazilStoreSalesMapPreset _selectedMapPreset = _lastSelectedMapPreset;
+  _BrazilStoreSalesDemoVolumePreset _selectedVolumePreset =
+      _BrazilStoreSalesDemoVolumePreset.p50;
+  bool _showOperationalSidebar = true;
   String? _eventSummary;
 
   @override
@@ -143,6 +146,80 @@ class _AppBrazilStoreSalesMapChartDemoPageState
           child: const SizedBox.shrink(),
         ),
         SizedBox(height: tokens.sectionSpacing),
+        AppSectionCardWithHeading(
+          title: 'Cenario operacional para profiling',
+          subtitle:
+              'Replica o caminho mais custoso da tela operacional com cluster, '
+              'troca de metrica e sidebar desktop opcional.',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final compact = constraints.maxWidth < 520;
+                  return AppSegmentedControl<_BrazilStoreSalesDemoVolumePreset>(
+                    expandToFill: !compact,
+                    options: _BrazilStoreSalesDemoVolumePreset.values
+                        .map(
+                          (preset) =>
+                              AppSegmentedControlOption<
+                                _BrazilStoreSalesDemoVolumePreset
+                              >(
+                                value: preset,
+                                label: preset.label,
+                                tooltip:
+                                    '${preset.pointCount} pontos deterministas',
+                              ),
+                        )
+                        .toList(growable: false),
+                    value: _selectedVolumePreset,
+                    onChanged: (preset) {
+                      if (preset == _selectedVolumePreset) {
+                        return;
+                      }
+                      setState(() {
+                        _selectedVolumePreset = preset;
+                      });
+                    },
+                  );
+                },
+              ),
+              SizedBox(height: tokens.gapSm),
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Exibir sidebar desktop'),
+                subtitle: const Text(
+                  'Ative para medir busca local, hover e selecao lateral.',
+                ),
+                value: _showOperationalSidebar,
+                onChanged: (value) {
+                  setState(() {
+                    _showOperationalSidebar = value;
+                  });
+                },
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: tokens.sectionSpacing),
+        AppBrazilStoreSalesMapChart(
+          key: ValueKey<String>(
+            'operational-${_selectedVolumePreset.name}-${_showOperationalSidebar ? 'sidebar' : 'no-sidebar'}',
+          ),
+          title: 'Cenario operacional deterministico',
+          subtitle:
+              '${_selectedVolumePreset.pointCount} pontos com cluster por proximidade e metric selector ativo.',
+          points: _selectedVolumePreset.buildOperationalPoints(),
+          showDesktopBranchSidebar: _showOperationalSidebar,
+          presentationMode:
+              AppBrazilStoreSalesMapPresentationMode.inlineOperational,
+          style: const AppBrazilStoreSalesMapStyle(
+            height: 560,
+            showRegionFilter: false,
+            enableProximityCluster: true,
+          ),
+        ),
+        SizedBox(height: tokens.sectionSpacing),
         const AppBrazilStoreSalesMapChart(
           title: 'Cenario com valores iguais',
           subtitle:
@@ -173,6 +250,64 @@ class _AppBrazilStoreSalesMapChartDemoPageState
 
 AppBrazilStoreSalesMapPreset _lastSelectedMapPreset =
     AppBrazilStoreSalesMapPreset.standard;
+
+enum _BrazilStoreSalesDemoVolumePreset {
+  p50(50, '50'),
+  p200(200, '200'),
+  p500(500, '500')
+  ;
+
+  const _BrazilStoreSalesDemoVolumePreset(this.pointCount, this.label);
+
+  final int pointCount;
+  final String label;
+
+  List<AppBrazilStoreSalesPoint> buildOperationalPoints() {
+    return List<AppBrazilStoreSalesPoint>.generate(pointCount, (index) {
+      final seed =
+          _operationalSeedPoints[index % _operationalSeedPoints.length];
+      final wave = index ~/ _operationalSeedPoints.length;
+      final sameCoordinate = wave % 9 == 0;
+      final latitudeOffset =
+          (((wave % 5) - 2) * 0.0042) + ((index % 3) * 0.0007);
+      final longitudeOffset =
+          ((((wave ~/ 5) % 5) - 2) * 0.0048) + ((index % 4) * 0.0006);
+      final salesUnavailable = index % 37 == 0;
+      final salesLoading = !salesUnavailable && index % 41 == 0;
+      final amount = salesUnavailable || salesLoading
+          ? 0.0
+          : seed.salesAmount + (wave * 1450) + ((index % 11) * 210);
+      final count = salesUnavailable || salesLoading
+          ? 0
+          : seed.salesCount + (wave % 17) + (index % 6);
+
+      return AppBrazilStoreSalesPoint(
+        id: '${seed.id}-$index',
+        name: '${seed.name} ${index + 1}',
+        uf: seed.uf,
+        city: seed.city,
+        latitude: sameCoordinate
+            ? seed.latitude
+            : seed.latitude + latitudeOffset,
+        longitude: sameCoordinate
+            ? seed.longitude
+            : seed.longitude + longitudeOffset,
+        salesAmount: amount,
+        salesCount: count,
+        fantasyName: 'Operacional ${seed.city} ${wave + 1}',
+        branchName: 'Filial ${seed.city} ${index + 1}',
+        subtitle: salesUnavailable
+            ? 'Vendas indisponiveis'
+            : salesLoading
+            ? 'Carregando vendas'
+            : 'Cenario operacional deterministico',
+        salesDataUnavailable: salesUnavailable,
+        salesDataLoading: salesLoading,
+        salesDataStatusLabel: salesUnavailable ? 'Vendas indisponiveis' : null,
+      );
+    }, growable: false);
+  }
+}
 
 extension _BrazilStoreSalesDemoMapPresetX on AppBrazilStoreSalesMapPreset {
   String demoLabel(AppLocalizations l10n, {required bool compact}) =>
@@ -254,6 +389,109 @@ extension _BrazilStoreSalesDemoMapPresetX on AppBrazilStoreSalesMapPreset {
       ),
   };
 }
+
+const List<AppBrazilStoreSalesPoint> _operationalSeedPoints = [
+  AppBrazilStoreSalesPoint(
+    id: 'op-cuiaba',
+    name: 'Operacional Cuiaba',
+    uf: 'MT',
+    city: 'Cuiaba',
+    latitude: -15.6014,
+    longitude: -56.0979,
+    salesAmount: 315000,
+    salesCount: 440,
+  ),
+  AppBrazilStoreSalesPoint(
+    id: 'op-sinop',
+    name: 'Operacional Sinop',
+    uf: 'MT',
+    city: 'Sinop',
+    latitude: -11.8604,
+    longitude: -55.5091,
+    salesAmount: 282000,
+    salesCount: 392,
+  ),
+  AppBrazilStoreSalesPoint(
+    id: 'op-goiania',
+    name: 'Operacional Goiania',
+    uf: 'GO',
+    city: 'Goiania',
+    latitude: -16.6869,
+    longitude: -49.2648,
+    salesAmount: 335000,
+    salesCount: 468,
+  ),
+  AppBrazilStoreSalesPoint(
+    id: 'op-brasilia',
+    name: 'Operacional Brasilia',
+    uf: 'DF',
+    city: 'Brasilia',
+    latitude: -15.7939,
+    longitude: -47.8828,
+    salesAmount: 351000,
+    salesCount: 488,
+  ),
+  AppBrazilStoreSalesPoint(
+    id: 'op-campo-grande',
+    name: 'Operacional Campo Grande',
+    uf: 'MS',
+    city: 'Campo Grande',
+    latitude: -20.4697,
+    longitude: -54.6201,
+    salesAmount: 241000,
+    salesCount: 332,
+  ),
+  AppBrazilStoreSalesPoint(
+    id: 'op-sao-paulo',
+    name: 'Operacional Sao Paulo',
+    uf: 'SP',
+    city: 'Sao Paulo',
+    latitude: -23.5505,
+    longitude: -46.6333,
+    salesAmount: 512000,
+    salesCount: 702,
+  ),
+  AppBrazilStoreSalesPoint(
+    id: 'op-ribeirao',
+    name: 'Operacional Ribeirao Preto',
+    uf: 'SP',
+    city: 'Ribeirao Preto',
+    latitude: -21.1699,
+    longitude: -47.8099,
+    salesAmount: 276000,
+    salesCount: 368,
+  ),
+  AppBrazilStoreSalesPoint(
+    id: 'op-curitiba',
+    name: 'Operacional Curitiba',
+    uf: 'PR',
+    city: 'Curitiba',
+    latitude: -25.4284,
+    longitude: -49.2733,
+    salesAmount: 298000,
+    salesCount: 401,
+  ),
+  AppBrazilStoreSalesPoint(
+    id: 'op-porto-alegre',
+    name: 'Operacional Porto Alegre',
+    uf: 'RS',
+    city: 'Porto Alegre',
+    latitude: -30.0346,
+    longitude: -51.2177,
+    salesAmount: 287000,
+    salesCount: 385,
+  ),
+  AppBrazilStoreSalesPoint(
+    id: 'op-salvador',
+    name: 'Operacional Salvador',
+    uf: 'BA',
+    city: 'Salvador',
+    latitude: -12.9777,
+    longitude: -38.5016,
+    salesAmount: 324000,
+    salesCount: 452,
+  ),
+];
 
 const List<AppBrazilStoreSalesPoint> _demoStorePoints = [
   AppBrazilStoreSalesPoint(

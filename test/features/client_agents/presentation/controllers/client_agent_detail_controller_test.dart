@@ -18,7 +18,6 @@ import 'package:colmeia/features/client_agents/domain/entities/agent_connection_
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_token_snapshot.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agent_detail_controller.dart';
-import 'package:colmeia/l10n/app_localizations_en.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:result_dart/result_dart.dart';
@@ -106,7 +105,7 @@ void main() {
       refreshAgentProfileUseCase: refreshFromAgent,
       loadClientTokenPolicyUseCase: loadPolicy,
       discoverAgentRpcMethodsUseCase: discoverRpc,
-    )..activeLocalizations = AppLocalizationsEn();
+    );
     when(() => auth.session).thenReturn(session);
 
     // Default token GET returns "no token configured" so save/remove tests

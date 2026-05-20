@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/domain/entities/client_account_status.dart';
@@ -36,6 +37,9 @@ import 'package:colmeia/features/client_agents/domain/entities/paginated_result.
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
 import 'package:colmeia/features/client_agents/domain/entities/sync_pending_agent_actions_result.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_controller.dart';
+import 'package:colmeia/features/client_agents/presentation/localization/client_agents_presentation_message_l10n.dart';
+import 'package:colmeia/features/client_agents/presentation/models/client_agents_presentation_message.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/l10n/app_localizations_en.dart';
 import 'package:colmeia/l10n/app_localizations_pt.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -85,6 +89,40 @@ class _MockSaveClientAgentTokenUseCase extends Mock
 
 class _MockRetryClientAccessRequestUseCase extends Mock
     implements RetryClientAccessRequestUseCase {}
+
+String? _localizedMessage(
+  ClientAgentsPresentationMessage? message, {
+  AppLocalizations? l10n,
+}) {
+  if (message == null) {
+    return null;
+  }
+  return localizeClientAgentsPresentationMessage(
+    message,
+    l10n ?? AppLocalizationsEn(),
+  );
+}
+
+String? _actionErrorText(
+  ClientAgentsController controller, {
+  AppLocalizations? l10n,
+}) {
+  return _localizedMessage(controller.actionError, l10n: l10n);
+}
+
+String? _actionFeedbackText(
+  ClientAgentsController controller, {
+  AppLocalizations? l10n,
+}) {
+  return _localizedMessage(controller.actionNotice?.message, l10n: l10n);
+}
+
+String? _approvedAgentsErrorText(
+  ClientAgentsController controller, {
+  AppLocalizations? l10n,
+}) {
+  return _localizedMessage(controller.approvedAgentsError, l10n: l10n);
+}
 
 void main() {
   late _MockAuthController authController;
@@ -372,7 +410,7 @@ void main() {
       getClientAgentTokenUseCase: getClientAgentTokenUseCase,
       saveClientAgentTokenUseCase: saveClientAgentTokenUseCase,
       retryClientAccessRequestUseCase: retryClientAccessRequestUseCase,
-    )..activeLocalizations = AppLocalizationsEn();
+    );
   });
 
   tearDown(() {
@@ -406,16 +444,77 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     verify(() => syncPendingActionsUseCase(userId: session.userId)).called(1);
-    check(controller.actionFeedbackMessage).isNotNull();
+    check(controller.actionNotice).isNotNull();
     expect(
-      controller.actionFeedbackMessage,
+      _actionFeedbackText(controller),
       contains('pending action finished syncing'),
     );
     expect(
-      controller.actionFeedbackMessage,
+      _actionFeedbackText(controller),
       contains('track approval'),
     );
   });
+
+  test(
+    'should retry automatic sync after the cooldown gate reopens while pending remains',
+    () async {
+      final retryGate = RetryAfterGate(
+        tickInterval: const Duration(milliseconds: 20),
+      );
+      var syncCallCount = 0;
+
+      when(
+        () => readPendingActionsUseCase(userId: any(named: 'userId')),
+      ).thenAnswer(
+        (_) async => Success<List<PendingAgentAction>, AppFailure>(
+          queuedPendingActions,
+        ),
+      );
+      when(
+        () => syncPendingActionsUseCase(userId: any(named: 'userId')),
+      ).thenAnswer((_) async {
+        syncCallCount++;
+        if (syncCallCount == 1) {
+          return const Failure<SyncPendingAgentActionsResult, AppFailure>(
+            NetworkFailure(
+              message: 'rate limited',
+              userMessage: 'rate limited',
+              retryAfter: Duration(milliseconds: 80),
+            ),
+          );
+        }
+        return const Success<SyncPendingAgentActionsResult, AppFailure>(
+          SyncPendingAgentActionsResult(),
+        );
+      });
+
+      final dedicatedController = ClientAgentsController(
+        authController: authController,
+        clientTokenDraftStore: ClientAgentTokenDraftStore(clientTokenStore),
+        loadApprovedAgentsUseCase: loadApprovedAgentsUseCase,
+        loadAccessRequestsUseCase: loadAccessRequestsUseCase,
+        loadClientAccessStatusUseCase: loadClientAccessStatusUseCase,
+        loadClientAgentDetailUseCase: loadClientAgentDetailUseCase,
+        queueRequestAccessUseCase: queueRequestAccessUseCase,
+        queueRemoveAccessUseCase: queueRemoveAccessUseCase,
+        probeClientApprovedAgentUseCase: probeClientApprovedAgentUseCase,
+        discardQueuedClientAgentRequestAccessUseCase:
+            discardQueuedClientAgentRequestAccessUseCase,
+        readPendingActionsUseCase: readPendingActionsUseCase,
+        syncPendingActionsUseCase: syncPendingActionsUseCase,
+        getClientAgentTokenUseCase: getClientAgentTokenUseCase,
+        saveClientAgentTokenUseCase: saveClientAgentTokenUseCase,
+        retryClientAccessRequestUseCase: retryClientAccessRequestUseCase,
+        syncRetryAfterGate: retryGate,
+      );
+      addTearDown(dedicatedController.dispose);
+
+      await dedicatedController.initialize();
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+
+      expect(syncCallCount, greaterThanOrEqualTo(2));
+    },
+  );
 
   test(
     'should preserve loaded content while refreshing all sections',
@@ -540,10 +639,11 @@ void main() {
         ),
       );
 
-      controller.activeLocalizations = AppLocalizationsPt();
       await controller.refreshAll();
 
-      check(controller.approvedAgentsErrorMessage).equals(
+      check(
+        _approvedAgentsErrorText(controller, l10n: AppLocalizationsPt()),
+      ).equals(
         AppLocalizationsPt().clientAgentsErrorLoadApproved,
       );
     },
@@ -588,9 +688,9 @@ void main() {
           agentIds: any(named: 'agentIds'),
         ),
       );
-      check(controller.actionErrorMessage).isNotNull();
+      check(controller.actionError).isNotNull();
       expect(
-        controller.actionErrorMessage,
+        _actionErrorText(controller),
         contains('No new agents can be requested'),
       );
     },
@@ -631,9 +731,9 @@ void main() {
         agentIds: const <String>{'44444444-4444-4444-8444-444444444444'},
       ),
     ).called(1);
-    check(controller.actionFeedbackMessage).isNotNull();
-    expect(controller.actionFeedbackMessage, contains('Request submitted'));
-    expect(controller.actionFeedbackMessage, contains('IDs were ignored'));
+    check(controller.actionNotice).isNotNull();
+    expect(_actionFeedbackText(controller), contains('Request submitted'));
+    expect(_actionFeedbackText(controller), contains('IDs were ignored'));
   });
 
   test(
@@ -686,9 +786,9 @@ void main() {
           refresh: true,
         ),
       ).called(1);
-      check(controller.actionFeedbackMessage).isNotNull();
+      check(controller.actionNotice).isNotNull();
       expect(
-        controller.actionFeedbackMessage,
+        _actionFeedbackText(controller),
         contains('already approved on the server'),
       );
       check(
@@ -725,9 +825,9 @@ void main() {
           agentIds: any(named: 'agentIds'),
         ),
       );
-      check(controller.actionErrorMessage).isNotNull();
+      check(controller.actionError).isNotNull();
       expect(
-        controller.actionErrorMessage,
+        _actionErrorText(controller),
         contains('Session unavailable'),
       );
     },
@@ -823,13 +923,13 @@ void main() {
           agentIds: const <String>{freshId},
         ),
       ).called(1);
-      check(controller.actionFeedbackMessage).isNotNull();
+      check(controller.actionNotice).isNotNull();
       expect(
-        controller.actionFeedbackMessage,
+        _actionFeedbackText(controller),
         contains('already approved on the server'),
       );
-      expect(controller.actionFeedbackMessage, contains('Request submitted'));
-      expect(controller.actionFeedbackMessage, contains('. Request'));
+      expect(_actionFeedbackText(controller), contains('Request submitted'));
+      expect(_actionFeedbackText(controller), contains('. Request'));
     },
   );
 
@@ -875,10 +975,10 @@ void main() {
       );
 
       check(accepted).isTrue();
-      check(controller.actionErrorMessage).isNull();
-      check(controller.actionFeedbackMessage).isNotNull();
+      check(controller.actionError).isNull();
+      check(controller.actionNotice).isNotNull();
       expect(
-        controller.actionFeedbackMessage,
+        _actionFeedbackText(controller),
         contains('Could not clear local pending'),
       );
       check(
@@ -960,7 +1060,7 @@ void main() {
         isTrue,
       );
       expect(
-        controller.actionFeedbackMessage,
+        _actionFeedbackText(controller),
         contains('already available under "My agents"'),
       );
     },
@@ -1029,7 +1129,7 @@ void main() {
         verifyNever(
           () => syncPendingActionsUseCase(userId: any(named: 'userId')),
         );
-        expect(controller.actionErrorMessage, isNotNull);
+        expect(controller.actionError, isNotNull);
       },
     );
   });
@@ -1075,8 +1175,8 @@ void main() {
           requestId: 'rq-1001',
         ),
       ).called(1);
-      expect(controller.actionErrorMessage, isNull);
-      expect(controller.actionFeedbackMessage, contains('approval'));
+      expect(controller.actionError, isNull);
+      expect(_actionFeedbackText(controller), contains('approval'));
     },
   );
 
@@ -1108,7 +1208,7 @@ void main() {
           agentIds: any(named: 'agentIds'),
         ),
       );
-      expect(controller.actionErrorMessage, isNotNull);
+      expect(controller.actionError, isNotNull);
     },
   );
 
@@ -1159,8 +1259,8 @@ void main() {
           agentId: '33333333-3333-3333-8333-333333333333',
         ),
       ).called(1);
-      expect(controller.actionErrorMessage, isNull);
-      expect(controller.actionFeedbackMessage, contains('removed'));
+      expect(controller.actionError, isNull);
+      expect(_actionFeedbackText(controller), contains('removed'));
     },
   );
 }
