@@ -4,7 +4,9 @@ import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/discover_agent_rpc_methods_use_case.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/load_client_token_policy_use_case.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/refresh_agent_profile_use_case.dart';
+import 'package:colmeia/features/agent_meta/domain/entities/agent_profile_snapshot.dart';
 import 'package:colmeia/features/agent_meta/domain/entities/agent_rpc_descriptor.dart';
+import 'package:colmeia/features/agent_meta/domain/entities/client_token_policy.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/domain/entities/client_account_status.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
@@ -382,6 +384,135 @@ void main() {
         );
       },
     );
+
+    test('refreshFromAgent updates the visible profile fields from snapshot', () async {
+      when(() => discoverRpc(agentId: any(named: 'agentId'))).thenAnswer(
+        (_) async => const Success<AgentRpcDescriptor, AppFailure>(
+          AgentRpcDescriptor(methods: <String>{'agent.getProfile'}),
+        ),
+      );
+      when(
+        () => loadDetail(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+        ),
+      ).thenAnswer((_) async => Success<ClientAgent, AppFailure>(agent));
+      when(
+        () => refreshFromAgent(
+          agentId: any(named: 'agentId'),
+          clientToken: any(named: 'clientToken'),
+        ),
+      ).thenAnswer(
+        (_) async => const Success<AgentProfileSnapshot, AppFailure>(
+          AgentProfileSnapshot(
+            agentId: agentId,
+            name: 'Agent refreshed',
+            tradeName: 'Trade refreshed',
+            document: '12345678901',
+            phone: '65 1111-1111',
+            mobile: '65 99999-9999',
+            email: 'new@example.com',
+            notes: 'Fresh notes',
+            observation: 'Fresh observation',
+            profileVersion: 7,
+          ),
+        ),
+      );
+
+      await controller.load(agentId);
+      await Future<void>.delayed(Duration.zero);
+      await controller.refreshFromAgent(agentId: agentId);
+
+      expect(controller.agent?.name, 'Agent refreshed');
+      expect(controller.agent?.tradeName, 'Trade refreshed');
+      expect(controller.agent?.cnpjCpf, '12345678901');
+      expect(controller.agent?.phone, '65 1111-1111');
+      expect(controller.agent?.mobile, '65 99999-9999');
+      expect(controller.agent?.email, 'new@example.com');
+      expect(controller.agent?.notes, 'Fresh notes');
+      expect(controller.agent?.observation, 'Fresh observation');
+      expect(controller.agent?.profileVersion, 7);
+      expect(controller.refreshFromAgentFeedback, isNotNull);
+    });
+
+    test('save/remove token invalidates the previously loaded policy snapshot', () async {
+      when(
+        () => loadDetail(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+        ),
+      ).thenAnswer((_) async => Success<ClientAgent, AppFailure>(agent));
+      when(
+        () => getToken(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+        ),
+      ).thenAnswer(
+        (_) async => const Success<ClientAgentTokenSnapshot, AppFailure>(
+          ClientAgentTokenSnapshot(token: 'stored-token'),
+        ),
+      );
+      when(() => discoverRpc(agentId: any(named: 'agentId'))).thenAnswer(
+        (_) async => const Success<AgentRpcDescriptor, AppFailure>(
+          AgentRpcDescriptor(methods: <String>{'client_token.getPolicy'}),
+        ),
+      );
+      when(
+        () => loadPolicy(
+          agentId: any(named: 'agentId'),
+          clientToken: any(named: 'clientToken'),
+        ),
+      ).thenAnswer(
+        (_) async => const Success<ClientTokenPolicySnapshot, AppFailure>(
+          ClientTokenPolicySnapshot(
+            supported: true,
+            policy: ClientTokenPolicy(
+              tokenIdentifier: 'tok',
+              allTables: true,
+              allViews: true,
+              allPermissions: true,
+              tableRules: <String>[],
+              viewRules: <String>[],
+              permissionRules: <String>[],
+            ),
+          ),
+        ),
+      );
+      when(
+        () => saveToken(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+          clientToken: any(named: 'clientToken'),
+        ),
+      ).thenAnswer(
+        (_) async => const Success<ClientAgentTokenSnapshot, AppFailure>(
+          ClientAgentTokenSnapshot(token: 'next-token'),
+        ),
+      );
+      when(
+        () => removeToken(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+        ),
+      ).thenAnswer((_) async => const Success<Unit, AppFailure>(unit));
+
+      await controller.load(agentId);
+      await Future<void>.delayed(Duration.zero);
+      await controller.loadClientTokenPolicy(agentId: agentId);
+      expect(controller.clientTokenPolicy, isNotNull);
+
+      await controller.saveClientAgentToken(agentId: agentId, rawToken: 'next-token');
+      expect(controller.clientTokenPolicy, isNull);
+      expect(controller.clientTokenPolicyError, isNull);
+      expect(controller.clientTokenPolicyUnsupported, isFalse);
+
+      await controller.loadClientTokenPolicy(agentId: agentId);
+      expect(controller.clientTokenPolicy, isNotNull);
+
+      await controller.removeClientAgentToken(agentId: agentId);
+      expect(controller.clientTokenPolicy, isNull);
+      expect(controller.clientTokenPolicyUnsupported, isFalse);
+    });
   });
 
   group('Retry-After integration', () {

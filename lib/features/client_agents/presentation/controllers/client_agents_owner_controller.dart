@@ -56,6 +56,7 @@ class ClientAgentsOwnerController extends ChangeNotifier {
       const <OwnerClientAccessRequest>[];
   List<OwnerApprovedClient> _approvedClients = const <OwnerApprovedClient>[];
   String? _selectedManagedAgentId;
+  int _approvedClientsLoadGeneration = 0;
 
   bool get isLoading => _isLoadingInitial || _isRefreshing;
   bool get isLoadingInitial => _isLoadingInitial;
@@ -216,6 +217,7 @@ class ClientAgentsOwnerController extends ChangeNotifier {
   }
 
   Future<void> _loadApprovedClients({String? userId}) async {
+    final generation = ++_approvedClientsLoadGeneration;
     final resolvedUserId = userId ?? _authController.session?.userId;
     final agentId = _selectedManagedAgentId;
     if (resolvedUserId == null || resolvedUserId.isEmpty || agentId == null) {
@@ -228,6 +230,11 @@ class ClientAgentsOwnerController extends ChangeNotifier {
       userId: resolvedUserId,
       agentId: agentId,
     );
+    if (_isDisposed ||
+        generation != _approvedClientsLoadGeneration ||
+        agentId != _selectedManagedAgentId) {
+      return;
+    }
     _approvedClientsError = _consumeResult(
       result: result,
       operation: 'loadOwnerApprovedClients',

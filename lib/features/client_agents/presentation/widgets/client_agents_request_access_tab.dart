@@ -82,6 +82,12 @@ class _RowControllers {
   /// controller carries during hydration.
   bool isHydratingToken = false;
 
+  /// When the user changes the UUID while a hydration is already in flight,
+  /// we stash the last requested valid id here so the row re-runs hydration
+  /// as soon as the current read completes instead of silently dropping the
+  /// new request.
+  String? pendingHydrationAgentId;
+
   bool obscureToken = true;
 }
 
@@ -237,9 +243,12 @@ class _ClientAgentsRequestAccessTabState
   ///   user input).
   Future<void> _hydrateTokenForRow(_RowControllers row, String validId) async {
     if (row.isHydratingToken) {
+      row.pendingHydrationAgentId = validId;
       return;
     }
-    row.isHydratingToken = true;
+    row
+      ..isHydratingToken = true
+      ..pendingHydrationAgentId = null;
     // Cancel any debounced persist that would race with the read below.
     _cancelPersistTimerForRow(row);
 
@@ -259,6 +268,7 @@ class _ClientAgentsRequestAccessTabState
 
     if (!mounted) {
       row.isHydratingToken = false;
+      _scheduleFollowUpHydrationIfNeeded(row, currentHydratedId: validId);
       return;
     }
     if (!_rows.contains(row)) {
@@ -267,6 +277,7 @@ class _ClientAgentsRequestAccessTabState
     }
     if (row.agentId.text.trim() != validId) {
       row.isHydratingToken = false;
+      _scheduleFollowUpHydrationIfNeeded(row, currentHydratedId: validId);
       return;
     }
 
@@ -280,6 +291,25 @@ class _ClientAgentsRequestAccessTabState
       }
     }
     row.isHydratingToken = false;
+    _scheduleFollowUpHydrationIfNeeded(row, currentHydratedId: validId);
+  }
+
+  void _scheduleFollowUpHydrationIfNeeded(
+    _RowControllers row, {
+    required String currentHydratedId,
+  }) {
+    if (!mounted || !_rows.contains(row)) {
+      return;
+    }
+    final followUpId = row.pendingHydrationAgentId;
+    row.pendingHydrationAgentId = null;
+    if (followUpId == null || followUpId == currentHydratedId) {
+      return;
+    }
+    if (row.agentId.text.trim() != followUpId) {
+      return;
+    }
+    unawaited(_hydrateTokenForRow(row, followUpId));
   }
 
   // ---------------------------------------------------------------------------

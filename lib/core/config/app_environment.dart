@@ -173,6 +173,19 @@ abstract final class AppEnvironment {
         defaultAgentSqlRelayStreamingMaxConcurrentPerAgent,
       );
 
+  /// `0` disables REST per-agent in-flight limiting. Otherwise caps concurrent
+  /// `executeSql` / `executeSqlBatch` per agent id before `POST .../commands`.
+  static const int defaultAgentSqlRestMaxInflightPerAgent = 8;
+
+  static int get agentSqlRestMaxInflightPerAgent =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.agentSqlRestMaxInflightPerAgent,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.agentSqlRestMaxInflightPerAgent),
+        fallback: defaultAgentSqlRestMaxInflightPerAgent,
+      ).clamp(0, 64);
+
   /// Agent bridge + client-auth data for a full stack e2e run.
   static bool get hasE2eAgentBridgeCredentials =>
       hasE2eAgentQueryCredentials && hasE2eClientLoginCredentials;

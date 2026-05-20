@@ -45,6 +45,8 @@ class ClientAgentDetailPage extends StatefulWidget {
 class _ClientAgentDetailPageState extends State<ClientAgentDetailPage> {
   late final ClientAgentDetailController _controller;
   bool _initialLoadScheduled = false;
+  ClientAgentsPresentationMessage? _refreshFromAgentNotice;
+  ClientAgentsPresentationMessage? _refreshFromAgentError;
 
   /// Anchor used by the policy card when the user taps "Save new token"
   /// after the server reports the current token as revoked. We scroll
@@ -59,6 +61,7 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage> {
   void initState() {
     super.initState();
     _controller = widget.controller;
+    _controller.addListener(_consumeControllerNotices);
   }
 
   @override
@@ -72,9 +75,30 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage> {
 
   @override
   void dispose() {
+    _controller.removeListener(_consumeControllerNotices);
     _tokenInputFocusNode.dispose();
     _controller.dispose();
     super.dispose();
+  }
+
+  void _consumeControllerNotices() {
+    var shouldRebuild = false;
+    if (_controller.isRefreshingFromAgent &&
+        (_refreshFromAgentNotice != null || _refreshFromAgentError != null)) {
+      _refreshFromAgentNotice = null;
+      _refreshFromAgentError = null;
+      shouldRebuild = true;
+    }
+    if (_controller.refreshFromAgentFeedback != null ||
+        _controller.refreshFromAgentError != null) {
+      _refreshFromAgentNotice = _controller.refreshFromAgentFeedback;
+      _refreshFromAgentError = _controller.refreshFromAgentError;
+      _controller.clearRefreshFromAgentFeedback();
+      shouldRebuild = true;
+    }
+    if (shouldRebuild && mounted) {
+      setState(() {});
+    }
   }
 
   /// Scrolls the token card back into view and focuses its input.
@@ -108,6 +132,14 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage> {
           final agent = controller.agent;
           final loadErrorMessage = _localizeMessage(
             controller.errorMessage,
+            l10n,
+          );
+          final refreshFromAgentNotice = _localizeMessage(
+            _refreshFromAgentNotice,
+            l10n,
+          );
+          final refreshFromAgentError = _localizeMessage(
+            _refreshFromAgentError,
             l10n,
           );
           final initialLoading =
@@ -182,6 +214,34 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage> {
                                   ),
                               ],
                             ),
+                            if (refreshFromAgentNotice != null) ...<Widget>[
+                              SizedBox(height: tokens.gapSm),
+                              Text(
+                                refreshFromAgentNotice,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary,
+                                    ),
+                              ),
+                            ],
+                            if (refreshFromAgentError != null) ...<Widget>[
+                              SizedBox(height: tokens.gapSm),
+                              Text(
+                                refreshFromAgentError,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .error,
+                                    ),
+                              ),
+                            ],
                           ],
                         )
                       : null,
@@ -309,6 +369,10 @@ class _AgentClientTokenCardState extends State<_AgentClientTokenCard> {
   late final TextEditingController _tokenController;
   int _lastSyncedRevision = -1;
   bool _obscureToken = true;
+  String _lastAppliedTokenText = '';
+  bool _forceApplyNextRevision = false;
+  ClientAgentsPresentationMessage? _ephemeralFeedback;
+  ClientAgentsPresentationMessage? _ephemeralError;
 
   @override
   void initState() {
@@ -327,14 +391,42 @@ class _AgentClientTokenCardState extends State<_AgentClientTokenCard> {
 
   void _syncTokenFieldFromController() {
     final c = widget.controller;
+    if (c.isSavingClientToken &&
+        (_ephemeralFeedback != null || _ephemeralError != null)) {
+      setState(() {
+        _ephemeralFeedback = null;
+        _ephemeralError = null;
+      });
+    }
+    if (c.clientTokenFeedback != null || c.clientTokenError != null) {
+      setState(() {
+        _ephemeralFeedback = c.clientTokenFeedback;
+        _ephemeralError = c.clientTokenError;
+      });
+      if (c.clientTokenRevision == _lastSyncedRevision) {
+        _forceApplyNextRevision = false;
+      }
+      c.clearClientTokenFeedback();
+    }
     if (_lastSyncedRevision == c.clientTokenRevision) {
       return;
     }
-    _lastSyncedRevision = c.clientTokenRevision;
     final text = c.persistedClientTokenForField;
-    if (_tokenController.text != text) {
-      _tokenController.text = text;
+    final hasUnsavedLocalEdits = _tokenController.text != _lastAppliedTokenText;
+    if (!_forceApplyNextRevision &&
+        hasUnsavedLocalEdits &&
+        _tokenController.text != text) {
+      return;
     }
+    _lastSyncedRevision = c.clientTokenRevision;
+    if (_tokenController.text != text) {
+      _tokenController.value = TextEditingValue(
+        text: text,
+        selection: TextSelection.collapsed(offset: text.length),
+      );
+    }
+    _lastAppliedTokenText = text;
+    _forceApplyNextRevision = false;
   }
 
   @override
@@ -342,11 +434,11 @@ class _AgentClientTokenCardState extends State<_AgentClientTokenCard> {
     final c = widget.controller;
     final theme = Theme.of(context);
     final feedback = _localizeClientAgentsMessage(
-      c.clientTokenFeedback,
+      _ephemeralFeedback,
       widget.l10n,
     );
     final feedbackError = _localizeClientAgentsMessage(
-      c.clientTokenError,
+      _ephemeralError,
       widget.l10n,
     );
     final isMutating = c.isSavingClientToken;
@@ -402,21 +494,27 @@ class _AgentClientTokenCardState extends State<_AgentClientTokenCard> {
                 isLoading: isMutating,
                 onPressed: isMutating || c.isOnRetryCooldown
                     ? null
-                    : () => unawaited(
-                        c.saveClientAgentToken(
-                          agentId: widget.agentId,
-                          rawToken: _tokenController.text,
-                        ),
-                      ),
+                    : () {
+                        _forceApplyNextRevision = true;
+                        unawaited(
+                          c.saveClientAgentToken(
+                            agentId: widget.agentId,
+                            rawToken: _tokenController.text,
+                          ),
+                        );
+                      },
               ),
               AppSecondaryButton(
                 label: widget.l10n.clientAgentDetailServerTokenRemove,
                 icon: const Icon(Icons.delete_outline_rounded),
                 onPressed: isMutating || c.isOnRetryCooldown
                     ? null
-                    : () => unawaited(
-                        c.removeClientAgentToken(agentId: widget.agentId),
-                      ),
+                    : () {
+                        _forceApplyNextRevision = true;
+                        unawaited(
+                          c.removeClientAgentToken(agentId: widget.agentId),
+                        );
+                      },
               ),
             ],
           ),
@@ -533,6 +631,7 @@ class _ClientTokenPolicyCard extends StatefulWidget {
 
 class _ClientTokenPolicyCardState extends State<_ClientTokenPolicyCard> {
   bool _hasRequested = false;
+  int _lastSeenTokenRevision = -1;
 
   @override
   void initState() {
@@ -553,10 +652,17 @@ class _ClientTokenPolicyCardState extends State<_ClientTokenPolicyCard> {
   /// token snapshot has resolved to "configured" and the controller is
   /// not already busy with another policy call.
   void _maybeKickoff() {
-    if (!mounted || _hasRequested) {
+    if (!mounted) {
       return;
     }
     final c = widget.controller;
+    if (_lastSeenTokenRevision != c.clientTokenRevision) {
+      _lastSeenTokenRevision = c.clientTokenRevision;
+      _hasRequested = false;
+    }
+    if (_hasRequested) {
+      return;
+    }
     if (c.clientTokenStatus != ClientAgentTokenStatus.configured) {
       return;
     }

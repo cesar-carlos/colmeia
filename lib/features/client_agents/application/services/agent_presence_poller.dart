@@ -48,6 +48,7 @@ class AgentPresencePoller {
   String? _activeUserId;
   bool _tickInFlight = false;
   bool _isDisposed = false;
+  int _epoch = 0;
 
   bool get isRunning => _timer != null;
 
@@ -65,6 +66,7 @@ class AgentPresencePoller {
       return;
     }
     _timer?.cancel();
+    _epoch++;
     _activeUserId = userId;
     _timer = Timer.periodic(_interval, (_) => unawaited(_tick()));
     unawaited(_tick());
@@ -74,6 +76,7 @@ class AgentPresencePoller {
   void stop() {
     _timer?.cancel();
     _timer = null;
+    _epoch++;
     _activeUserId = null;
   }
 
@@ -97,14 +100,15 @@ class AgentPresencePoller {
       // different userIds back-to-back.
       while (!_isDisposed) {
         final userId = _activeUserId;
+        final epoch = _epoch;
         if (userId == null) {
           return;
         }
-        await _runOneTick(userId);
+        await _runOneTick(userId, epoch: epoch);
         if (_isDisposed) {
           return;
         }
-        if (_activeUserId == userId) {
+        if (_activeUserId == userId && _epoch == epoch) {
           return;
         }
         // User changed during the await: continue and tick again.
@@ -114,12 +118,12 @@ class AgentPresencePoller {
     }
   }
 
-  Future<void> _runOneTick(String userId) async {
+  Future<void> _runOneTick(String userId, {required int epoch}) async {
     try {
       final ids = await _clientAgentsRepository.loadOnlineAgentIds(
         userId: userId,
       );
-      if (_isDisposed) {
+      if (_isDisposed || _activeUserId != userId || _epoch != epoch) {
         return;
       }
       if (ids == null) {

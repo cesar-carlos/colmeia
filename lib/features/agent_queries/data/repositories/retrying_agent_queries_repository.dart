@@ -138,8 +138,52 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
     );
   }
 
-  bool _shouldRetry(AppFailure failure) =>
-      failure.isTransient && _retryAfterOf(failure) == null;
+  bool _shouldRetry(AppFailure failure) {
+    if (_retryAfterOf(failure) != null) {
+      return false;
+    }
+    if (failure.isTransient) {
+      return true;
+    }
+    return _isCooperativeHubWarmupFailure(failure);
+  }
+
+  /// Hub sometimes returns `SERVICE_UNAVAILABLE` / "protocol negotiation is
+  /// not ready" while the agent link warms up. Those payloads may omit
+  /// `retryable: true`; still treat as a short-lived bridge condition.
+  bool _isCooperativeHubWarmupFailure(AppFailure failure) {
+    if (failure is RpcFailure) {
+      final msg = failure.message.toLowerCase();
+      final tech = (failure.technicalMessage ?? '').toLowerCase();
+      if (msg.contains('protocol negotiation') ||
+          tech.contains('protocol negotiation')) {
+        return true;
+      }
+      if (msg.contains('negotiation is not ready') ||
+          tech.contains('negotiation is not ready')) {
+        return true;
+      }
+      final code = failure.context['code']?.toString().toUpperCase();
+      if (code == 'SERVICE_UNAVAILABLE') {
+        return true;
+      }
+    }
+    if (failure is NetworkFailure) {
+      final http = failure.context['httpStatusCode'];
+      if (http == 503) {
+        final body =
+            failure.context[DioHttpFailureContext.responseBodyField]
+                ?.toString() ??
+            '';
+        final lower = body.toLowerCase();
+        if (lower.contains('protocol negotiation') ||
+            lower.contains('service_unavailable')) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 
   Duration? _retryAfterOf(AppFailure failure) => switch (failure) {
     final NetworkFailure f => f.retryAfter,

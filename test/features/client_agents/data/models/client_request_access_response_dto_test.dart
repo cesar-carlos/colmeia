@@ -17,11 +17,11 @@ void main() {
     },
   );
 
-  test('parse maps empty semantic body to requested fallback', () {
+  test('parse keeps empty semantic body unacknowledged', () {
     final dto = ClientRequestAccessResponseDto.parse(
       const <String, dynamic>{},
-      const <String>{'x', 'y'},
     );
-    check(dto.requested).deepEquals(<String>['x', 'y']);
+    check(dto.requested).isEmpty();
+    check(dto.acknowledgesAgent('x')).isFalse();
   });
 }

@@ -11,6 +11,10 @@
 # Optional: `E2E_LOG_TRANSIENT=1` in process env logs mapped hub 503/timeout
 # lines from runE2eAppResult (see e2e_dependency_bootstrap.dart).
 #
+# Baseline (post Fase 0, REST, --concurrency=1): 68 tests, wall-clock ~68–71 s
+# on a typical dev machine against the bundled API (hub-dependent). Command:
+#   flutter test test/integration/e2e/ --concurrency=1
+#
 # Socket + relay hits the real hub with longer tail latency than REST-only;
 # the default 30s test timeout caused false failures (tearDown disposed relay
 # while work was still in flight). Tag timeout keeps VM E2E stable.

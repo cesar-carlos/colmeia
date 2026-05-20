@@ -38,23 +38,52 @@ final class _AllowingEligibility implements AgentSqlExecutionEligibilityPort {
 }
 
 void main() {
-  test('builds AgentQueriesRepository decorator chain in expected order', () {
-    final chain = AgentQueriesRepositoryChainFactory.build(
-      remoteDataSource: _FakeAgentQueriesRemoteDataSource(),
-      eligibility: _AllowingEligibility(),
-      maxCacheSize: 50,
-    );
+  test(
+    'builds AgentQueriesRepository decorator chain without REST inflight when disabled',
+    () {
+      final chain = AgentQueriesRepositoryChainFactory.build(
+        remoteDataSource: _FakeAgentQueriesRemoteDataSource(),
+        eligibility: _AllowingEligibility(),
+        maxCacheSize: 50,
+        agentSqlRestMaxInflightPerAgent: 0,
+      );
 
-    check(chain.repository).isA<GatedAgentQueriesRepository>();
-    check(chain.decorators).deepEquals(<String>[
-      'GatedAgentQueriesRepository',
-      'CircuitBreakerAgentQueriesRepository',
-      'CachingAgentQueriesRepository',
-      'CoalescingAgentQueriesRepository',
-      'MetricsAgentQueriesRepository',
-      'AdaptiveTimeoutAgentQueriesRepository',
-      'RetryingAgentQueriesRepository',
-      'AgentQueriesRepositoryImpl',
-    ]);
-  });
+      check(chain.repository).isA<GatedAgentQueriesRepository>();
+      check(chain.decorators).deepEquals(<String>[
+        'GatedAgentQueriesRepository',
+        'CircuitBreakerAgentQueriesRepository',
+        'CachingAgentQueriesRepository',
+        'CoalescingAgentQueriesRepository',
+        'MetricsAgentQueriesRepository',
+        'AdaptiveTimeoutAgentQueriesRepository',
+        'RetryingAgentQueriesRepository',
+        'AgentQueriesRepositoryImpl',
+      ]);
+    },
+  );
+
+  test(
+    'inserts RestInflightAgentQueriesRepository when REST inflight is enabled',
+    () {
+      final chain = AgentQueriesRepositoryChainFactory.build(
+        remoteDataSource: _FakeAgentQueriesRemoteDataSource(),
+        eligibility: _AllowingEligibility(),
+        maxCacheSize: 50,
+        agentSqlRestMaxInflightPerAgent: 8,
+      );
+
+      check(chain.repository).isA<GatedAgentQueriesRepository>();
+      check(chain.decorators).deepEquals(<String>[
+        'GatedAgentQueriesRepository',
+        'CircuitBreakerAgentQueriesRepository',
+        'CachingAgentQueriesRepository',
+        'CoalescingAgentQueriesRepository',
+        'MetricsAgentQueriesRepository',
+        'AdaptiveTimeoutAgentQueriesRepository',
+        'RetryingAgentQueriesRepository',
+        'RestInflightAgentQueriesRepository',
+        'AgentQueriesRepositoryImpl',
+      ]);
+    },
+  );
 }

@@ -47,6 +47,9 @@ constants.
 - Collected relay streaming allows up to 4 concurrent `sql.execute` streams per
   agent by default. Tune with `AGENT_SQL_RELAY_STREAMING_MAX_CONCURRENT_PER_AGENT`;
   set `1` to recover the previous serial behavior.
+- REST-only: Colmeia caps concurrent `POST /api/v1/agents/commands` per agent id
+  at 8 by default (`AGENT_SQL_REST_MAX_INFLIGHT_PER_AGENT`); set `0` to disable
+  client-side limiting.
 - `SOCKET_WARM_UP_AFTER_LOGIN=true` preconnects `/consumers` after login so the
   first socket SQL call does not pay the handshake cost.
 - Relay accepts one correlatable JSON-RPC request per `relay:rpc.request`; do
@@ -87,3 +90,6 @@ When plug_server changes socket or bridge behavior:
 2. Check shared constants in `src/shared/constants/agent_transport_contract.ts`.
 3. Update Colmeia code, tests, and this summary together.
 4. Keep `docs/bridge_agent_sql_api_options.md` aligned for SQL-specific fields.
+5. For REST-only fleets, validate `AGENT_SQL_REST_MAX_INFLIGHT_PER_AGENT`
+   against hub rate limits and `503` / negotiation warm-up behavior (see
+   `RetryingAgentQueriesRepository` cooperative retries).

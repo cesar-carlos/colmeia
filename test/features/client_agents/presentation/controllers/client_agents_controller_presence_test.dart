@@ -197,6 +197,12 @@ void main() {
     saveClientAgentTokenUseCase = _MockSaveClientAgentTokenUseCase();
     retryClientAccessRequestUseCase = _MockRetryClientAccessRequestUseCase();
     when(
+      () => clientTokenStore.read(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+      ),
+    ).thenAnswer((_) async => null);
+    when(
       () => getClientAgentTokenUseCase(
         userId: any(named: 'userId'),
         agentId: any(named: 'agentId'),
@@ -459,6 +465,61 @@ void main() {
       );
       check(updated.connectionStatus).equals(AgentConnectionStatus.online);
     });
+
+    test(
+      'catalog event with same observedAt but higher profileVersion is accepted',
+      () async {
+        when(
+          () => loadClientAgentDetailUseCase(
+            userId: any(named: 'userId'),
+            agentId: 'a1',
+          ),
+        ).thenAnswer(
+          (_) async => Success<ClientAgent, AppFailure>(
+            ClientAgent(
+              agentId: 'a1',
+              name: 'Agent a1 refreshed v2',
+              catalogStatus: AgentCatalogStatus.active,
+              connectionStatus: AgentConnectionStatus.online,
+              createdAt: DateTime.utc(2026),
+              updatedAt: DateTime.utc(2026, 4, 17, 13),
+              profileVersion: 2,
+            ),
+          ),
+        );
+
+        await controller.initialize();
+        presenceStream.emit(
+          AgentPresenceCatalogUpdated(
+            agentId: 'a1',
+            observedAt: DateTime.utc(2026, 4, 17, 12),
+            profileVersion: 1,
+          ),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        presenceStream.emit(
+          AgentPresenceCatalogUpdated(
+            agentId: 'a1',
+            observedAt: DateTime.utc(2026, 4, 17, 12),
+            profileVersion: 2,
+          ),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        verify(
+          () => loadClientAgentDetailUseCase(
+            userId: 'client-1',
+            agentId: 'a1',
+          ),
+        ).called(2);
+        final updated = controller.approvedAgents!.items.firstWhere(
+          (a) => a.agentId == 'a1',
+        );
+        check(updated.name).equals('Agent a1 refreshed v2');
+        check(updated.profileVersion).equals(2);
+      },
+    );
 
     test('hint for an unknown agentId is a silent no-op', () async {
       await controller.initialize();

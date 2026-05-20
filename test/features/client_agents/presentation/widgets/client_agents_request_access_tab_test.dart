@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:checks/checks.dart';
 import 'package:colmeia/features/client_agents/presentation/models/client_agent_access_request_row_input.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_request_access_tab.dart';
@@ -21,11 +23,13 @@ class _RequestAccessHarness extends StatefulWidget {
     required this.persistCalls,
     required this.submitRows,
     this.submitAccepted = false,
+    this.loadClientToken,
   });
 
   final List<_PersistCall> persistCalls;
   final List<List<ClientAgentAccessRequestRowInput>> submitRows;
   final bool submitAccepted;
+  final Future<String?> Function(String agentId)? loadClientToken;
 
   @override
   State<_RequestAccessHarness> createState() => _RequestAccessHarnessState();
@@ -49,7 +53,7 @@ class _RequestAccessHarnessState extends State<_RequestAccessHarness> {
             });
           },
           onClearMessages: () {},
-          loadClientToken: (_) async => null,
+          loadClientToken: widget.loadClientToken ?? ((_) async => null),
           persistClientTokenDraftLine:
               ({
                 required agentIdRaw,
@@ -142,6 +146,44 @@ void main() {
 
       expect(find.text(validAgentId), findsNothing);
       check(submitRows.single.single.agentIdRaw).equals(validAgentId);
+    },
+  );
+
+  testWidgets(
+    'rehydrates the latest valid UUID when the id changes mid-flight',
+    (tester) async {
+      const firstId = '22222222-2222-2222-8222-222222222222';
+      const secondId = '33333333-3333-3333-8333-333333333333';
+      final persistCalls = <_PersistCall>[];
+      final submitRows = <List<ClientAgentAccessRequestRowInput>>[];
+      final completers = <String, Completer<String?>>{
+        firstId: Completer<String?>(),
+        secondId: Completer<String?>(),
+      };
+
+      await tester.pumpWidget(
+        _RequestAccessHarness(
+          persistCalls: persistCalls,
+          submitRows: submitRows,
+          loadClientToken: (agentId) => completers[agentId]!.future,
+        ),
+      );
+
+      final fields = find.byType(TextFormField);
+      await tester.enterText(fields.at(0), firstId);
+      await tester.pump();
+      await tester.enterText(fields.at(0), secondId);
+      await tester.pump();
+
+      completers[firstId]!.complete('tok-old');
+      completers[secondId]!.complete('tok-new');
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('tok-new'), findsOneWidget);
+      expect(find.text('tok-old'), findsNothing);
+      check(persistCalls).isEmpty();
+      check(submitRows).isEmpty();
     },
   );
 }

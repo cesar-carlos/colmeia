@@ -401,6 +401,7 @@ class ClientAgentDetailController extends ChangeNotifier {
     _isSavingClientToken = true;
     _clientTokenFeedback = null;
     _clientTokenError = null;
+    _resetClientTokenPolicyState();
     _notifyListenersIfAlive();
 
     try {
@@ -452,6 +453,7 @@ class ClientAgentDetailController extends ChangeNotifier {
     _isSavingClientToken = true;
     _clientTokenFeedback = null;
     _clientTokenError = null;
+    _resetClientTokenPolicyState();
     _notifyListenersIfAlive();
 
     try {
@@ -732,15 +734,30 @@ class ClientAgentDetailController extends ChangeNotifier {
     if (current == null) {
       return;
     }
-    final newVersion = snapshot.profileVersion;
-    final updated = current.copyWith(
-      profileVersion: newVersion,
+    final normalizedDocument = snapshot.document?.trim();
+    final updated = ClientAgent(
+      agentId: current.agentId,
+      name: snapshot.name,
+      tradeName: snapshot.tradeName,
+      document: normalizedDocument,
+      cnpjCpf: normalizedDocument,
+      registrationDocument: normalizedDocument,
+      documentType: snapshot.documentType,
+      phone: snapshot.phone,
+      mobile: snapshot.mobile,
+      email: snapshot.email,
+      address: current.address,
+      notes: snapshot.notes,
+      observation: snapshot.observation,
+      profileUpdatedAt: snapshot.profileUpdatedAt ?? current.profileUpdatedAt,
+      profileVersion: snapshot.profileVersion ?? current.profileVersion,
+      catalogStatus: current.catalogStatus,
+      connectionStatus: current.connectionStatus,
+      createdAt: current.createdAt,
+      updatedAt: current.updatedAt,
+      hasServerClientToken: current.hasServerClientToken,
     );
-    if (newVersion != null) {
-      _agent = updated;
-    } else {
-      _agent = updated;
-    }
+    _agent = updated;
   }
 
   /// Asks the connected agent for the policy resolved for the currently
@@ -818,6 +835,12 @@ class ClientAgentDetailController extends ChangeNotifier {
   /// cool-down?". Pages typically combine this with operation-specific
   /// flags (e.g. `isSavingClientToken`).
   bool get isOnRetryCooldown => !_retryAfterGate.isOpen;
+
+  void _resetClientTokenPolicyState() {
+    _clientTokenPolicy = null;
+    _clientTokenPolicyUnsupported = false;
+    _clientTokenPolicyError = null;
+  }
 
   /// Centralised failure handler for this controller.
   ///

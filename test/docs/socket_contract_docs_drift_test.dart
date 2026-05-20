@@ -40,6 +40,7 @@ void main() {
       check(rootSummary).contains(
         'AGENT_SQL_RELAY_STREAMING_MAX_CONCURRENT_PER_AGENT',
       );
+      check(rootSummary).contains('AGENT_SQL_REST_MAX_INFLIGHT_PER_AGENT');
       check(rootSummary).contains(
         'SOCKET_PROFILE_UPDATED_LEGACY_RAW_JSON_ENABLED',
       );

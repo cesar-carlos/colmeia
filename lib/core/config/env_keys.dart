@@ -42,6 +42,11 @@ abstract final class EnvKeys {
   static const String agentSqlRelayStreamingMaxConcurrentPerAgent =
       'AGENT_SQL_RELAY_STREAMING_MAX_CONCURRENT_PER_AGENT';
 
+  /// Max concurrent `POST /agents/commands` calls per agentId on the REST
+  /// path. `0` disables client-side limiting. Default 8 (conservative vs hub).
+  static const String agentSqlRestMaxInflightPerAgent =
+      'AGENT_SQL_REST_MAX_INFLIGHT_PER_AGENT';
+
   // ----- Socket channel (PR-A: infraestrutura de conexão) -----
 
   /// `rest` (default) | `socket`. Selects the agent commands transport.

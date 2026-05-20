@@ -309,7 +309,6 @@ class ApiClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
     );
     return ClientRequestAccessResponseDto.parse(
       response.data ?? const <String, dynamic>{},
-      agentIds,
     );
   }
 

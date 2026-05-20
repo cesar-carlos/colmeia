@@ -275,6 +275,8 @@ void _registerAgentQueriesRepositoryChain(GetIt getIt) {
         eligibility: getIt<AgentSqlExecutionEligibilityPort>(),
         maxCacheSize: AppEnvironment.agentSqlCacheMaxSize,
         cacheTtl: Duration(milliseconds: AppEnvironment.agentSqlCacheTtlMs),
+        agentSqlRestMaxInflightPerAgent:
+            AppEnvironment.agentSqlRestMaxInflightPerAgent,
       );
 
       AppLogger.info(
@@ -282,6 +284,8 @@ void _registerAgentQueriesRepositoryChain(GetIt getIt) {
         context: <String, Object?>{
           'decorators': chain.decorators,
           'agentSqlCacheMaxSize': AppEnvironment.agentSqlCacheMaxSize,
+          'agentSqlRestMaxInflightPerAgent':
+              AppEnvironment.agentSqlRestMaxInflightPerAgent,
         },
       );
 
@@ -580,6 +584,9 @@ void _registerSingleAgentQueryRepositories(GetIt getIt) {
 }
 
 void _registerAcrossAgentQueryRepositories(GetIt getIt) {
+  // mergeAllConcurrency caps parallel bridge calls per wave; 8 aligns with
+  // AGENT_SQL_REST_MAX_INFLIGHT_PER_AGENT and reduces hub rate-limit bursts.
+  const mergeAllConcurrency = 8;
   getIt
     ..registerLazySingleton<AgentQueryTargetResolver>(
       () => AgentQueryTargetResolver(
@@ -594,56 +601,78 @@ void _registerAcrossAgentQueryRepositories(GetIt getIt) {
       ),
     )
     ..registerLazySingleton<AgentQueryExecutor<ResumoParcelaFormaPagamentoRow>>(
-      AgentQueryExecutor<ResumoParcelaFormaPagamentoRow>.new,
+      () => AgentQueryExecutor<ResumoParcelaFormaPagamentoRow>(
+        mergeAllConcurrency: mergeAllConcurrency,
+      ),
     )
     ..registerLazySingleton<AgentQueryExecutor<ResumoParcelaPorUsuarioRow>>(
-      AgentQueryExecutor<ResumoParcelaPorUsuarioRow>.new,
+      () => AgentQueryExecutor<ResumoParcelaPorUsuarioRow>(
+        mergeAllConcurrency: mergeAllConcurrency,
+      ),
     )
     ..registerLazySingleton<AgentQueryExecutor<ResumoVendaProdutoDiarioRow>>(
-      AgentQueryExecutor<ResumoVendaProdutoDiarioRow>.new,
+      () => AgentQueryExecutor<ResumoVendaProdutoDiarioRow>(
+        mergeAllConcurrency: mergeAllConcurrency,
+      ),
     )
     ..registerLazySingleton<AgentQueryExecutor<ResumoParcelasDiaSemanaRow>>(
-      AgentQueryExecutor<ResumoParcelasDiaSemanaRow>.new,
+      () => AgentQueryExecutor<ResumoParcelasDiaSemanaRow>(
+        mergeAllConcurrency: mergeAllConcurrency,
+      ),
     )
     ..registerLazySingleton<
       AgentQueryExecutor<ResumoParcelasDiaSemanaUsuarioRow>
     >(
-      AgentQueryExecutor<ResumoParcelasDiaSemanaUsuarioRow>.new,
+      () => AgentQueryExecutor<ResumoParcelasDiaSemanaUsuarioRow>(
+        mergeAllConcurrency: mergeAllConcurrency,
+      ),
     )
     ..registerLazySingleton<AgentQueryExecutor<ResumoParcelasAnualRow>>(
-      AgentQueryExecutor<ResumoParcelasAnualRow>.new,
+      () => AgentQueryExecutor<ResumoParcelasAnualRow>(
+        mergeAllConcurrency: mergeAllConcurrency,
+      ),
     )
     ..registerLazySingleton<
       AgentQueryExecutor<ResumoParcelasFormaPagamentoPorMesRow>
     >(
-      AgentQueryExecutor<ResumoParcelasFormaPagamentoPorMesRow>.new,
+      () => AgentQueryExecutor<ResumoParcelasFormaPagamentoPorMesRow>(
+        mergeAllConcurrency: mergeAllConcurrency,
+      ),
     )
     ..registerLazySingleton<AgentQueryExecutor<ResumoParcelasMensalRow>>(
-      AgentQueryExecutor<ResumoParcelasMensalRow>.new,
+      () => AgentQueryExecutor<ResumoParcelasMensalRow>(
+        mergeAllConcurrency: mergeAllConcurrency,
+      ),
     )
     ..registerLazySingleton<
       AgentQueryExecutor<ResumoVendasDiariasPorVendedorRow>
     >(
-      AgentQueryExecutor<ResumoVendasDiariasPorVendedorRow>.new,
+      () => AgentQueryExecutor<ResumoVendasDiariasPorVendedorRow>(
+        mergeAllConcurrency: mergeAllConcurrency,
+      ),
     )
     ..registerLazySingleton<AgentQueryExecutor<ResumoTotalDiarioVendasRow>>(
-      AgentQueryExecutor<ResumoTotalDiarioVendasRow>.new,
+      () => AgentQueryExecutor<ResumoTotalDiarioVendasRow>(
+        mergeAllConcurrency: mergeAllConcurrency,
+      ),
     )
     ..registerLazySingleton<AgentQueryExecutor<CadastroFilialRow>>(
-      AgentQueryExecutor<CadastroFilialRow>.new,
+      () => AgentQueryExecutor<CadastroFilialRow>(
+        mergeAllConcurrency: mergeAllConcurrency,
+      ),
     )
     ..registerLazySingleton<
       AgentQueryExecutor<ResumoTotalVendasMunicipioFilialDiarioRow>
     >(
       () => AgentQueryExecutor<ResumoTotalVendasMunicipioFilialDiarioRow>(
-        mergeAllConcurrency: 8,
+        mergeAllConcurrency: mergeAllConcurrency,
       ),
     )
     ..registerLazySingleton<
       AgentQueryExecutor<ResumoTotalVendasMunicipioFilialPeriodoRow>
     >(
       () => AgentQueryExecutor<ResumoTotalVendasMunicipioFilialPeriodoRow>(
-        mergeAllConcurrency: 8,
+        mergeAllConcurrency: mergeAllConcurrency,
       ),
     )
     ..registerLazySingleton<ResumoParcelaFormaPagamentoAcrossAgentsRepository>(
@@ -851,6 +880,7 @@ void _registerAcrossAgentQueryRepositories(GetIt getIt) {
 }
 
 void _registerFilterOptionsRepositories(GetIt getIt) {
+  const mergeAllConcurrency = 8;
   getIt
     ..registerLazySingleton<
       ResumoVendasDiariasPorVendedorFilterOptionsRepository
@@ -883,18 +913,24 @@ void _registerFilterOptionsRepositories(GetIt getIt) {
     ..registerLazySingleton<
       AgentQueryExecutor<ResumoVendasDiariasPorVendedorVendedorOption>
     >(
-      AgentQueryExecutor<ResumoVendasDiariasPorVendedorVendedorOption>.new,
+      () => AgentQueryExecutor<ResumoVendasDiariasPorVendedorVendedorOption>(
+        mergeAllConcurrency: mergeAllConcurrency,
+      ),
     )
     ..registerLazySingleton<
       AgentQueryExecutor<ResumoVendasDiariasPorVendedorTextOption>
     >(
-      AgentQueryExecutor<ResumoVendasDiariasPorVendedorTextOption>.new,
+      () => AgentQueryExecutor<ResumoVendasDiariasPorVendedorTextOption>(
+        mergeAllConcurrency: mergeAllConcurrency,
+      ),
     )
     ..registerLazySingleton<
       AgentQueryExecutor<ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch>
     >(
-      AgentQueryExecutor<ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch>
-          .new,
+      () =>
+          AgentQueryExecutor<ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch>(
+            mergeAllConcurrency: mergeAllConcurrency,
+          ),
     )
     ..registerLazySingleton<
       ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepository

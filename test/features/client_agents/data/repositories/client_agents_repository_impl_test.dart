@@ -104,12 +104,6 @@ void main() {
       () => local.readPendingActions(userId: any(named: 'userId')),
     ).thenAnswer((_) async => const <PendingAgentAction>[]);
     when(
-      () => local.readApprovedAgents(
-        userId: any(named: 'userId'),
-        query: any(named: 'query'),
-      ),
-    ).thenAnswer((_) async => null);
-    when(
       () => local.savePendingActions(
         userId: any(named: 'userId'),
         actions: any(named: 'actions'),
@@ -123,6 +117,31 @@ void main() {
 
     check(result.isSuccess()).isTrue();
     verifyNever(() => remote.requestAccess(agentIds: any(named: 'agentIds')));
+    verify(
+      () => local.savePendingActions(
+        userId: 'user-1',
+        actions: any(named: 'actions'),
+      ),
+    ).called(1);
+  });
+
+  test('should enqueue remove access even when the approved snapshot is missing locally', () async {
+    when(
+      () => local.readPendingActions(userId: any(named: 'userId')),
+    ).thenAnswer((_) async => const <PendingAgentAction>[]);
+    when(
+      () => local.savePendingActions(
+        userId: any(named: 'userId'),
+        actions: any(named: 'actions'),
+      ),
+    ).thenAnswer((_) async {});
+
+    final result = await repository.queueRemoveAccess(
+      userId: 'user-1',
+      agentIds: const <String>{'agent-2'},
+    );
+
+    check(result.isSuccess()).isTrue();
     verify(
       () => local.savePendingActions(
         userId: 'user-1',
@@ -253,6 +272,99 @@ void main() {
     verifyNever(
       () => remote.fetchOnlineAgents(logUserId: any(named: 'logUserId')),
     );
+  });
+
+  test('successful remove sync clears the cached approved-agent detail', () async {
+    var storedActions = <PendingAgentAction>[
+      PendingAgentAction(
+        id: 'removeAccess_agent-9',
+        agentId: 'agent-9',
+        type: PendingAgentActionType.removeAccess,
+        state: PendingAgentActionState.queued,
+        createdAt: now,
+        attemptCount: 0,
+      ),
+    ];
+
+    when(
+      () => local.readPendingActions(userId: any(named: 'userId')),
+    ).thenAnswer((_) async => storedActions);
+    when(
+      () => local.savePendingActions(
+        userId: any(named: 'userId'),
+        actions: any(named: 'actions'),
+      ),
+    ).thenAnswer((invocation) async {
+      storedActions = List<PendingAgentAction>.from(
+        invocation.namedArguments[#actions]! as List<PendingAgentAction>,
+      );
+    });
+    when(() => remote.removeApprovedAgentById('agent-9')).thenAnswer((_) async {});
+    when(
+      () => local.clearApprovedAgentDetail(
+        userId: 'user-1',
+        agentId: 'agent-9',
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => remote.fetchApprovedAgents(
+        query: any(named: 'query'),
+        search: any(named: 'search'),
+        status: any(named: 'status'),
+        refresh: any(named: 'refresh'),
+      ),
+    ).thenAnswer(
+      (_) async => const ClientApprovedAgentsResponseDto(
+        agents: [],
+        agentIds: <String>{},
+        count: 0,
+        total: 0,
+        page: 1,
+        pageSize: 50,
+      ),
+    );
+    when(
+      () => local.saveApprovedAgents(
+        userId: any(named: 'userId'),
+        query: any(named: 'query'),
+        payload: any(named: 'payload'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => remote.fetchAccessRequests(query: any(named: 'query')),
+    ).thenAnswer(
+      (_) async => const ClientAccessRequestsResponseDto(
+        requests: [],
+        count: 0,
+        total: 0,
+        page: 1,
+        pageSize: 50,
+      ),
+    );
+    when(
+      () => local.saveAccessRequests(
+        userId: any(named: 'userId'),
+        query: any(named: 'query'),
+        payload: any(named: 'payload'),
+      ),
+    ).thenAnswer((_) async {});
+    when(
+      () => local.readOnlineAgents(
+        userId: any(named: 'userId'),
+        maxAge: any(named: 'maxAge'),
+      ),
+    ).thenAnswer((_) async => null);
+
+    final result = await repository.syncPendingActions(userId: 'user-1');
+
+    check(result.isSuccess()).isTrue();
+    check(storedActions).isEmpty();
+    verify(
+      () => local.clearApprovedAgentDetail(
+        userId: 'user-1',
+        agentId: 'agent-9',
+      ),
+    ).called(1);
   });
 
   test('recovers orphaned syncing pending actions before syncing', () async {

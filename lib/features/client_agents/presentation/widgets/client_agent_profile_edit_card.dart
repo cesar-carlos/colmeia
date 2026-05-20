@@ -71,7 +71,14 @@ class _ClientAgentProfileEditCardState
     super.didUpdateWidget(oldWidget);
     final newAt = widget.agent.profileUpdatedAt;
     final oldAt = oldWidget.agent.profileUpdatedAt;
-    if (widget.agent.agentId != oldWidget.agent.agentId || newAt != oldAt) {
+    final profileVersionChanged =
+        widget.agent.profileVersion != oldWidget.agent.profileVersion;
+    if (widget.agent.agentId != oldWidget.agent.agentId) {
+      _hydrateFromAgent(widget.agent);
+      return;
+    }
+    if ((newAt != oldAt || profileVersionChanged) &&
+        !_hasUnsavedChangesComparedTo(widget.agent)) {
       _hydrateFromAgent(widget.agent);
     }
   }
@@ -95,6 +102,27 @@ class _ClientAgentProfileEditCardState
     _state.text = a?.state ?? '';
     _notes.text = agent.notes ?? '';
     _observation.text = agent.observation ?? '';
+  }
+
+  bool _hasUnsavedChangesComparedTo(ClientAgent agent) {
+    final doc = agent.cnpjCpf?.trim().isNotEmpty ?? false
+        ? agent.cnpjCpf
+        : agent.document;
+    final address = agent.address;
+    return _name.text != agent.name ||
+        _tradeName.text != (agent.tradeName ?? '') ||
+        _cnpjCpf.text != (doc ?? '') ||
+        _phone.text != (agent.phone ?? '') ||
+        _mobile.text != (agent.mobile ?? '') ||
+        _email.text != (agent.email ?? '') ||
+        _street.text != (address?.street ?? '') ||
+        _number.text != (address?.number ?? '') ||
+        _district.text != (address?.district ?? '') ||
+        _postalCode.text != (address?.postalCode ?? '') ||
+        _city.text != (address?.city ?? '') ||
+        _state.text != (address?.state ?? '') ||
+        _notes.text != (agent.notes ?? '') ||
+        _observation.text != (agent.observation ?? '');
   }
 
   @override

@@ -163,5 +163,55 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 30));
       check(poller.isRunning).isFalse();
     });
+
+    test('does not emit hints after stop while a tick is still in flight', () async {
+      final completer = Completer<Set<String>?>();
+      when(
+        () => repository.loadOnlineAgentIds(userId: any(named: 'userId')),
+      ).thenAnswer((_) => completer.future);
+
+      final poller = buildPoller();
+      addTearDown(poller.dispose);
+      final events = <AgentPresenceEvent>[];
+      final sub = sink.stream.listen(events.add);
+      addTearDown(sub.cancel);
+
+      poller.start(userId: 'client-1');
+      await Future<void>.delayed(Duration.zero);
+      poller.stop();
+      completer.complete(<String>{'a1'});
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      check(events).isEmpty();
+    });
+
+    test('drops stale hints from the previous user after a mid-flight switch', () async {
+      final firstUser = Completer<Set<String>?>();
+      final secondUser = Completer<Set<String>?>();
+      when(
+        () => repository.loadOnlineAgentIds(userId: 'client-1'),
+      ).thenAnswer((_) => firstUser.future);
+      when(
+        () => repository.loadOnlineAgentIds(userId: 'client-2'),
+      ).thenAnswer((_) => secondUser.future);
+
+      final poller = buildPoller(interval: const Duration(milliseconds: 500));
+      addTearDown(poller.dispose);
+      final events = <AgentPresenceEvent>[];
+      final sub = sink.stream.listen(events.add);
+      addTearDown(sub.cancel);
+
+      poller.start(userId: 'client-1');
+      await Future<void>.delayed(Duration.zero);
+      poller.start(userId: 'client-2');
+      firstUser.complete(<String>{'stale-a1'});
+      secondUser.complete(<String>{'fresh-a2'});
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+
+      check(events.length).equals(1);
+      final hint = events.single as AgentPresenceHint;
+      check(hint.agentId).equals('fresh-a2');
+    });
   });
 }

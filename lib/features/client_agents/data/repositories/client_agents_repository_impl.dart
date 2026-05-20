@@ -1315,12 +1315,10 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
   }) async {
     try {
       final actions = await _localDataSource.readPendingActions(userId: userId);
-      final approvedIds = await _readApprovedIds(userId: userId);
       final updated = _enqueueActions(
         currentActions: actions,
         agentIds: agentIds,
         type: PendingAgentActionType.requestAccess,
-        approvedAgentIds: approvedIds,
       );
       await _localDataSource.savePendingActions(
         userId: userId,
@@ -1352,12 +1350,10 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
   }) async {
     try {
       final actions = await _localDataSource.readPendingActions(userId: userId);
-      final approvedIds = await _readApprovedIds(userId: userId);
       final updated = _enqueueActions(
         currentActions: actions,
         agentIds: agentIds,
         type: PendingAgentActionType.removeAccess,
-        approvedAgentIds: approvedIds,
       );
       await _localDataSource.savePendingActions(
         userId: userId,
@@ -1689,6 +1685,16 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         userId: userId,
         actions: working,
       );
+      if (successfulRemoveAccessAgentIds.isNotEmpty) {
+        await Future.wait(
+          successfulRemoveAccessAgentIds.map(
+            (agentId) => _localDataSource.clearApprovedAgentDetail(
+              userId: userId,
+              agentId: agentId,
+            ),
+          ),
+        );
+      }
 
       await _refreshSnapshotsAfterSync(userId: userId);
       return Success<SyncPendingAgentActionsResult, AppFailure>(
@@ -1905,44 +1911,23 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
       userId: userId,
       maxAge: _onlineStatusOfflineFallbackMaxAge,
     );
-    final resolved =
-        cached ??
-        await _localDataSource.readOnlineAgents(
-          userId: userId,
-        );
-    if (resolved == null) {
+    if (cached == null) {
       return null;
     }
-    return resolved.agents.map((item) => item.agentId).toSet();
-  }
-
-  Future<Set<String>> _readApprovedIds({
-    required String userId,
-  }) async {
-    final approved = await _localDataSource.readApprovedAgents(
-      userId: userId,
-      query: _defaultRefreshQuery,
-    );
-    return approved?.agentIds ?? const <String>{};
+    return cached.agents.map((item) => item.agentId).toSet();
   }
 
   List<PendingAgentAction> _enqueueActions({
     required List<PendingAgentAction> currentActions,
     required Set<String> agentIds,
     required PendingAgentActionType type,
-    required Set<String> approvedAgentIds,
   }) {
     final updated = List<PendingAgentAction>.from(currentActions);
-    for (final agentId in agentIds) {
-      if (type == PendingAgentActionType.requestAccess &&
-          approvedAgentIds.contains(agentId)) {
+    for (final rawAgentId in agentIds) {
+      final agentId = rawAgentId.trim();
+      if (agentId.isEmpty) {
         continue;
       }
-      if (type == PendingAgentActionType.removeAccess &&
-          !approvedAgentIds.contains(agentId)) {
-        continue;
-      }
-
       final sameIndex = updated.indexWhere((action) {
         return action.agentId == agentId && action.type == type;
       });

@@ -87,11 +87,17 @@ Common batch `options`:
 Batch item failures are domain results. Bridge/RPC failures still map to
 transport or repository failures.
 
+Repository audit (REST): overview and filter-options paths already use
+`sql.executeBatch` where independent read-only statements share one round-trip.
+Remaining `AgentSqlRepositoryExecution.execute` call sites are single-query
+loads or relay streaming screens where batching does not apply without a
+product change.
+
 ## Choosing batch vs `multi_result` vs JSON-RPC batch
 
 | Mechanism | What it does | Colmeia overview |
 |-----------|--------------|------------------|
-| `sql.executeBatch` | Multiple `commands[]`, each with its own `params`; optional `max_parallel_read_only_batch_items` for read-only parallelism (see `plug_server/docs/snippets/agent_command_performance_options.ts`). | Main batch runs **forma pagamento** + **per-user** resumo (`OverviewBatchLoader`); section batch runs monthly/weekday/daily/etc. |
+| `sql.executeBatch` | Multiple `commands[]`, each with its own `params`; optional `max_parallel_read_only_batch_items` for read-only parallelism (see `plug_server/docs/snippets/agent_command_performance_options.ts`). | Main batch runs **forma pagamento** + **per-user** resumo (`OverviewBatchLoader`); section batch runs monthly/weekday/daily/etc. Filter-options and moving-average screens batch independent `sql.execute` calls where the hub allows read-only batching. |
 | `multi_result` | Single `sql.execute`, one SQL string with multiple statements; **cannot** be combined with named `params` or pagination (`plug_server/docs/api_rest_bridge.md`). | **Not used** for overview (all resumo queries use `:named` binds). |
 | JSON-RPC `command: []` | Up to 32 independent RPC objects in one REST body. | Not used for overview batch; relay intentionally accepts a single correlatable RPC per frame. |
 
@@ -129,6 +135,13 @@ Allowed values:
   - `AGENT_SQL_RELAY_STREAMING_MAX_CONCURRENT_PER_AGENT` defaults to `4`;
     reduce to `1` for fragile hubs/DBs, and validate changes with the E2E
     comparator before increasing further.
+  - `AGENT_SQL_REST_MAX_INFLIGHT_PER_AGENT` defaults to `8` on REST (per-agent
+    cap on concurrent `POST .../agents/commands`); set `0` to disable.
+- **SQL cache counters (diagnostics):** `CachingAgentQueriesRepository` exposes
+  `cacheHits`, `cacheMisses`, `batchCacheHits`, `batchCacheMisses`, and
+  `cacheSize` for tests and ad-hoc inspection. Production observability should
+  pair those with `MetricsAgentQueriesRepository` timings and hub-side rate
+  limits rather than expecting a separate in-app export job.
 - `meta.outbound_compression` is not the primary tuning knob today; the
   current server runtime documents it as a no-op for response compression.
 - Colmeia treats `stream_id` from legacy `agents:command_response` as

@@ -97,6 +97,37 @@ void main() {
     },
   );
 
+  test(
+    'RpcFailure protocol negotiation not ready (retryable false): retries',
+    () async {
+      var callCount = 0;
+      when(() => delegate.executeSql(any())).thenAnswer((_) async {
+        callCount++;
+        if (callCount == 1) {
+          return Failure<AgentSqlExecutionResult, AppFailure>(
+            RpcFailure(
+              message: 'Agent protocol negotiation is not ready',
+              userMessage: 'Busy',
+              rpcCode: null,
+              retryable: false,
+              context: const <String, Object?>{
+                'code': 'SERVICE_UNAVAILABLE',
+              },
+            ),
+          );
+        }
+        return const Success<AgentSqlExecutionResult, AppFailure>(
+          successResult,
+        );
+      });
+
+      final result = await retrying.executeSql(request);
+
+      check(result.isSuccess()).isTrue();
+      verify(() => delegate.executeSql(request)).called(2);
+    },
+  );
+
   test('non-transient failure: delegate called once, no retry', () async {
     const failure = ValidationFailure(
       message: 'invalid SQL',

@@ -20,6 +20,11 @@ import 'package:flutter/scheduler.dart';
 
 typedef OverviewFailureMessageBuilder = String Function(AppFailure failure);
 
+/// Drives overview loading for the home dashboard.
+///
+/// Progressive loads ([OverviewLoadingMode.progressive]) emit partial
+/// [Overview] snapshots; UI can render KPIs from [overview] while sections
+/// are still loading ([completedOverviewSections]).
 class OverviewController extends ChangeNotifier {
   OverviewController(
     this._loadOverviewUseCase,
@@ -142,6 +147,9 @@ class OverviewController extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  bool _isOverviewLoadStale(int generation) =>
+      _disposed || generation != _loadGeneration;
 
   Overview? get overview => _overview;
   bool get isLoading => _isLoadingInitial || _isRefreshing;
@@ -343,7 +351,7 @@ class OverviewController extends ChangeNotifier {
       filter: _activeFilter,
       rowLabels: rowLabels,
     );
-    if (_disposed || generation != _loadGeneration) {
+    if (_isOverviewLoadStale(generation)) {
       return;
     }
 
@@ -430,7 +438,7 @@ class OverviewController extends ChangeNotifier {
       filter: _activeFilter,
       rowLabels: rowLabels,
     )) {
-      if (_disposed || generation != _loadGeneration) {
+      if (_isOverviewLoadStale(generation)) {
         return;
       }
 
@@ -554,7 +562,7 @@ class OverviewController extends ChangeNotifier {
         overview.hubPresenceOnlineAgentIdsSnapshot ??
         await _loadOverviewOnlineAgentIdsUseCase(userId: userId);
 
-    if (_disposed || generation != _loadGeneration) {
+    if (_isOverviewLoadStale(generation)) {
       return false;
     }
 

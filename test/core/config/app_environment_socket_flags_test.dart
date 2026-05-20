@@ -140,6 +140,7 @@ SOCKET_RELAY_STREAM_REFILL_THRESHOLD=99
 AGENT_SQL_CACHE_TTL_MS=-1
 AGENT_SQL_OVERVIEW_BATCH_MAX_PARALLEL_READ_ONLY_ITEMS=0
 AGENT_SQL_RELAY_STREAMING_MAX_CONCURRENT_PER_AGENT=0
+AGENT_SQL_REST_MAX_INFLIGHT_PER_AGENT=99
 ''',
       );
 
@@ -191,6 +192,19 @@ AGENT_SQL_RELAY_STREAMING_MAX_CONCURRENT_PER_AGENT=0
       ).equals(
         AppEnvironment.defaultAgentSqlRelayStreamingMaxConcurrentPerAgent,
       );
+      check(AppEnvironment.agentSqlRestMaxInflightPerAgent).equals(64);
+    });
+
+    test('AGENT_SQL_REST_MAX_INFLIGHT_PER_AGENT defaults when omitted', () {
+      dotenv.loadFromString(
+        envString: '''
+AGENT_BRIDGE_TRANSPORT=rest
+SOCKET_RELAY_ENABLED=false
+SOCKET_PRESENCE_LISTENER_ENABLED=false
+''',
+      );
+
+      check(AppEnvironment.agentSqlRestMaxInflightPerAgent).equals(8);
     });
 
     test('agent SQL performance knobs can be overridden explicitly', () {
@@ -200,6 +214,7 @@ AGENT_BRIDGE_TRANSPORT=rest
 AGENT_SQL_CACHE_TTL_MS=1200
 AGENT_SQL_OVERVIEW_BATCH_MAX_PARALLEL_READ_ONLY_ITEMS=6
 AGENT_SQL_RELAY_STREAMING_MAX_CONCURRENT_PER_AGENT=3
+AGENT_SQL_REST_MAX_INFLIGHT_PER_AGENT=0
 ''',
       );
 
@@ -212,6 +227,7 @@ AGENT_SQL_RELAY_STREAMING_MAX_CONCURRENT_PER_AGENT=3
       check(AppEnvironment.agentSqlRelayStreamingMaxConcurrentPerAgent).equals(
         3,
       );
+      check(AppEnvironment.agentSqlRestMaxInflightPerAgent).equals(0);
     });
   });
 }

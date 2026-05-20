@@ -8,10 +8,7 @@ final class ClientRequestAccessResponseDto {
     this.debounced = const <String>[],
   });
 
-  factory ClientRequestAccessResponseDto.parse(
-    Map<String, dynamic> json,
-    Set<String> sentAgentIds,
-  ) {
+  factory ClientRequestAccessResponseDto.parse(Map<String, dynamic> json) {
     final requested = _stringIdList(json['requested']);
     final alreadyApproved = _stringIdList(json['alreadyApproved']);
     final newRequests = _stringIdList(json['newRequests']);
@@ -23,10 +20,8 @@ final class ClientRequestAccessResponseDto {
         newRequests.isNotEmpty ||
         reopened.isNotEmpty ||
         debounced.isNotEmpty;
-    if (!hasSemantic && sentAgentIds.isNotEmpty) {
-      return ClientRequestAccessResponseDto(
-        requested: sentAgentIds.toList(growable: false),
-      );
+    if (!hasSemantic) {
+      return const ClientRequestAccessResponseDto();
     }
     return ClientRequestAccessResponseDto(
       requested: requested,

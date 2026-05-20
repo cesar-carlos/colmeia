@@ -167,6 +167,7 @@ class ClientAgentsController extends ChangeNotifier {
   PaginatedResult<ClientAgentAccessRequest>? _accessRequests;
   List<PendingAgentAction> _pendingActions = const <PendingAgentAction>[];
   final Set<String> _trackedApprovalAgentIds = <String>{};
+  final Set<String> _pendingLocalTokenServerFlushAgentIds = <String>{};
   final Map<String, DateTime> _approvalPollingStartedAtByAgentId =
       <String, DateTime>{};
   Timer? _approvalPollingTimer;
@@ -179,8 +180,8 @@ class ClientAgentsController extends ChangeNotifier {
 
   /// Tracks the most recent `observedAt` per agent so out-of-order events
   /// (catalog → hint → catalog with stale clock) do not flap the badge.
-  final Map<String, DateTime> _lastPresenceObservedByAgentId =
-      <String, DateTime>{};
+  final Map<String, _PresenceObservation> _lastPresenceObservedByAgentId =
+      <String, _PresenceObservation>{};
 
   /// Per-agent debounce for confirming a hint via REST. Cancelled on
   /// subsequent hints for the same agent and on `dispose()`.
@@ -320,6 +321,7 @@ class ClientAgentsController extends ChangeNotifier {
         onSuccess: (value) => _pendingActions = value,
         operation: 'readPendingClientAgentActions',
       );
+      _scheduleLocalTokenServerFlushForApprovedAgents(userId: userId);
     } finally {
       if (!_isDisposed && refreshToken == _refreshAllToken) {
         if (keepContentVisible) {
@@ -546,6 +548,7 @@ class ClientAgentsController extends ChangeNotifier {
         clientToken: token,
       );
       if (result.isError()) {
+        _pendingLocalTokenServerFlushAgentIds.add(agentId);
         final failure = result.exceptionOrNull()!;
         AppLogger.warning(
           'Server PUT of client-agent token after relink failed; falling '
@@ -564,6 +567,8 @@ class ClientAgentsController extends ChangeNotifier {
           agentId: agentId,
           token: token,
         );
+      } else {
+        _pendingLocalTokenServerFlushAgentIds.remove(agentId);
       }
     }
 
@@ -583,6 +588,7 @@ class ClientAgentsController extends ChangeNotifier {
     required String token,
   }) async {
     if (token.isEmpty) {
+      _pendingLocalTokenServerFlushAgentIds.remove(agentId);
       await _clientTokenDraftStore.delete(userId: userId, agentId: agentId);
       return;
     }
@@ -634,6 +640,7 @@ class ClientAgentsController extends ChangeNotifier {
         clientToken: localToken,
       );
       if (result.isError()) {
+        _pendingLocalTokenServerFlushAgentIds.add(agentId);
         final failure = result.exceptionOrNull()!;
         AppLogger.warning(
           'Server PUT of client-agent token after approval failed; local '
@@ -646,8 +653,39 @@ class ClientAgentsController extends ChangeNotifier {
           error: failure.cause ?? failure,
           stackTrace: failure.stackTrace,
         );
+      } else {
+        _pendingLocalTokenServerFlushAgentIds.remove(agentId);
       }
     }
+  }
+
+  void _scheduleLocalTokenServerFlushForApprovedAgents({
+    required String userId,
+    Iterable<String> preferredAgentIds = const <String>[],
+  }) {
+    if (_isDisposed) {
+      return;
+    }
+    final approvedItems = _approvedAgents?.items;
+    if (approvedItems == null || approvedItems.isEmpty) {
+      return;
+    }
+    final approvedIds = approvedItems.map((agent) => agent.agentId).toSet();
+    final candidates = <String>{
+      ..._pendingLocalTokenServerFlushAgentIds,
+      ...preferredAgentIds,
+      for (final agent in approvedItems)
+        if (agent.hasServerClientToken != true) agent.agentId,
+    }.intersection(approvedIds);
+    if (candidates.isEmpty) {
+      return;
+    }
+    unawaited(
+      _pushLocalTokenToServerAfterApproval(
+        userId: userId,
+        agentIds: candidates,
+      ),
+    );
   }
 
   /// Optional callback fired by [requestAccess] right after the controller
@@ -748,6 +786,10 @@ class ClientAgentsController extends ChangeNotifier {
         await _reloadApprovedAgentsCacheAfterRelink(
           userId: userId,
           fallbackAgents: relinkedAgents,
+        );
+        _scheduleLocalTokenServerFlushForApprovedAgents(
+          userId: userId,
+          preferredAgentIds: relinkedById.keys,
         );
       }
 
@@ -1172,6 +1214,13 @@ class ClientAgentsController extends ChangeNotifier {
       );
       _maybeArmSyncRetryGateFromResult(syncResult);
       await _refreshAfterMutation(userId: userId);
+      if (_actionError == null &&
+          requestAccessAlreadyApprovedOnSync.isNotEmpty) {
+        await _hydrateApprovedAgentsInMemory(
+          userId: userId,
+          agentIds: requestAccessAlreadyApprovedOnSync,
+        );
+      }
       if (_actionError == null) {
         final outcome = syncResult.fold((v) => v, (_) => null);
         if (outcome != null) {
@@ -1266,6 +1315,7 @@ class ClientAgentsController extends ChangeNotifier {
     );
 
     _isSyncing = false;
+    _scheduleLocalTokenServerFlushForApprovedAgents(userId: userId);
     _notifyListenersIfAlive();
   }
 
@@ -1610,6 +1660,39 @@ class ClientAgentsController extends ChangeNotifier {
     );
   }
 
+  Future<void> _hydrateApprovedAgentsInMemory({
+    required String userId,
+    required Iterable<String> agentIds,
+  }) async {
+    final ids = agentIds.toSet();
+    if (ids.isEmpty) {
+      return;
+    }
+    final results = await Future.wait(
+      ids.map(
+        (agentId) => _loadClientAgentDetailUseCase(
+          userId: userId,
+          agentId: agentId,
+        ),
+      ),
+    );
+    if (_isDisposed) {
+      return;
+    }
+    final approved = <ClientAgent>[];
+    for (final result in results) {
+      final agent = result.getOrNull();
+      if (agent != null) {
+        approved.add(agent);
+      }
+    }
+    if (approved.isEmpty) {
+      return;
+    }
+    _upsertApprovedAgentsInMemory(approved);
+    _notifyListenersIfAlive();
+  }
+
   void _upsertApprovedAgentsInMemory(List<ClientAgent> approvedAgents) {
     final current = _approvedAgents;
     if (current == null) {
@@ -1872,11 +1955,8 @@ class ClientAgentsController extends ChangeNotifier {
     if (_isDisposed) {
       return;
     }
-    // Drop events older than the latest observation we already applied
-    // for the same agent. Both sources (catalog push + command hints)
-    // can race, so anchoring on `observedAt` keeps the badge stable.
     final last = _lastPresenceObservedByAgentId[event.agentId];
-    if (last != null && !event.observedAt.isAfter(last)) {
+    if (!_shouldAcceptPresenceEvent(event: event, last: last)) {
       AppLogger.debug(
         'Discarded stale presence event',
         context: <String, Object?>{
@@ -1887,7 +1967,13 @@ class ClientAgentsController extends ChangeNotifier {
       );
       return;
     }
-    _lastPresenceObservedByAgentId[event.agentId] = event.observedAt;
+    _lastPresenceObservedByAgentId[event.agentId] = _PresenceObservation(
+      observedAt: event.observedAt,
+      profileVersion: switch (event) {
+        AgentPresenceCatalogUpdated(:final profileVersion) => profileVersion,
+        AgentPresenceHint() => last?.profileVersion,
+      },
+    );
 
     final userId = _authController.session?.userId;
     if (userId == null || userId.isEmpty) {
@@ -1909,6 +1995,27 @@ class ClientAgentsController extends ChangeNotifier {
         );
         _scheduleHintConfirm(userId: userId, agentId: event.agentId);
     }
+  }
+
+  bool _shouldAcceptPresenceEvent({
+    required AgentPresenceEvent event,
+    required _PresenceObservation? last,
+  }) {
+    if (last == null) {
+      return true;
+    }
+    if (event case AgentPresenceCatalogUpdated(:final profileVersion?)) {
+      final lastVersion = last.profileVersion;
+      if (lastVersion != null) {
+        if (profileVersion > lastVersion) {
+          return true;
+        }
+        if (profileVersion < lastVersion) {
+          return false;
+        }
+      }
+    }
+    return event.observedAt.isAfter(last.observedAt);
   }
 
   Future<void> _refreshAgentDetailFromPresence({
@@ -2059,6 +2166,16 @@ class ClientAgentsController extends ChangeNotifier {
     }
     return null;
   }
+}
+
+class _PresenceObservation {
+  const _PresenceObservation({
+    required this.observedAt,
+    required this.profileVersion,
+  });
+
+  final DateTime observedAt;
+  final int? profileVersion;
 }
 
 /// Snapshot passed from [ClientAgentsController.requestAccess] to its
