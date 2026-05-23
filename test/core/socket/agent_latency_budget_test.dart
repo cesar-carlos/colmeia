@@ -10,7 +10,6 @@ void main() {
         sampleCount: 2,
         warmUpSampleCount: 5,
         safetyFactor: 2,
-        fallback: const Duration(seconds: 15),
       );
 
       expect(duration, const Duration(seconds: 15));
@@ -23,8 +22,6 @@ void main() {
         sampleCount: 10,
         warmUpSampleCount: 5,
         safetyFactor: 2,
-        floor: const Duration(seconds: 3),
-        ceiling: const Duration(seconds: 60),
       );
 
       expect(duration, const Duration(seconds: 60));

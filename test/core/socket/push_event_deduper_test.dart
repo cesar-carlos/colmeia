@@ -16,7 +16,7 @@ void main() {
     });
 
     test('isObservationAfter compares UTC timestamps', () {
-      final earlier = DateTime.utc(2026, 5, 1);
+      final earlier = DateTime.utc(2026, 5);
       final later = DateTime.utc(2026, 5, 2);
 
       check(

@@ -66,7 +66,7 @@ void main() {
       );
       const batch = AgentSqlExecuteBatchRequest(
         agentId: agentId,
-        commands: const <AgentSqlExecuteBatchCommand>[
+        commands: <AgentSqlExecuteBatchCommand>[
           AgentSqlExecuteBatchCommand(sql: sql),
         ],
       );

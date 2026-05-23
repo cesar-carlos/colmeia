@@ -1,6 +1,7 @@
 import 'package:colmeia/features/agent_queries/data/models/agent_sql_bridge_response.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
+import 'package:flutter/foundation.dart';
 
 /// Top-level entry for [compute] — unary bridge success parse.
 AgentSqlExecutionResult agentSqlBridgeResponseParseSuccessIsolate(

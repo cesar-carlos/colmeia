@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'package:colmeia/core/socket/agent_latency_oracle.dart';
+
 /// Shared clamping for latency-derived timeout budgets.
 ///
 /// Keeps [AgentLatencyOracle] (transport EWMA) and repository decorators

@@ -1,3 +1,5 @@
+import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
+import 'package:colmeia/core/socket/socket_command_dispatcher.dart';
 import 'package:uuid/uuid.dart';
 
 /// Target for hub-side `sql.cancel` when a streaming SQL load is abandoned.

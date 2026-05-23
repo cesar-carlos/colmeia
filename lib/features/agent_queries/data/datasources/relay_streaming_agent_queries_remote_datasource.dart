@@ -68,8 +68,8 @@ class RelayStreamingAgentQueriesRemoteDataSource
 
   Stream<Map<String, dynamic>> _trackStreamingIds({
     required Stream<Map<String, dynamic>> stream,
-    AgentQueriesCancelScope? cancelScope,
     required String agentId,
+    AgentQueriesCancelScope? cancelScope,
     String? clientToken,
   }) {
     return stream.map((chunk) {

@@ -1,3 +1,5 @@
+import 'package:colmeia/core/config/agent_query_transport_policy_mode.dart';
+
 /// Compile-time (`--dart-define`) and dotenv key names used by
 /// `AppEnvironment`.
 abstract final class EnvKeys {

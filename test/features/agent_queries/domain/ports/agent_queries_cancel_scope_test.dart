@@ -8,20 +8,19 @@ void main() {
     final socketIds = <String>[];
     final streams = <AgentStreamingSqlCancelTarget>[];
 
-    scope.relayCancelHandler = relayIds.addAll;
-    scope.socketRpcCancelHandler = socketIds.addAll;
-    scope.streamingSqlCancelHandler = streams.addAll;
-
-    scope.trackRelayPending('relay-req-1');
-    scope.trackSocketPending('socket-rpc-1');
-    scope.trackStreamingSql(
-      const AgentStreamingSqlCancelTarget(
-        agentId: 'a1',
-        streamId: 's1',
-      ),
-    );
-
-    scope.cancelAll();
+    scope
+      ..relayCancelHandler = relayIds.addAll
+      ..socketRpcCancelHandler = socketIds.addAll
+      ..streamingSqlCancelHandler = streams.addAll
+      ..trackRelayPending('relay-req-1')
+      ..trackSocketPending('socket-rpc-1')
+      ..trackStreamingSql(
+        const AgentStreamingSqlCancelTarget(
+          agentId: 'a1',
+          streamId: 's1',
+        ),
+      )
+      ..cancelAll();
 
     expect(scope.isCancelled, isTrue);
     expect(relayIds, ['relay-req-1']);
@@ -35,12 +34,12 @@ void main() {
     final relayIds = <String>[];
     final socketIds = <String>[];
 
-    scope.relayCancelHandler = relayIds.addAll;
-    scope.socketRpcCancelHandler = socketIds.addAll;
-
-    scope.trackRelayPending('relay-only');
-    scope.trackSocketPending('socket-only');
-    scope.cancelAll();
+    scope
+      ..relayCancelHandler = relayIds.addAll
+      ..socketRpcCancelHandler = socketIds.addAll
+      ..trackRelayPending('relay-only')
+      ..trackSocketPending('socket-only')
+      ..cancelAll();
 
     expect(relayIds, ['relay-only']);
     expect(socketIds, ['socket-only']);
@@ -49,16 +48,17 @@ void main() {
   test('trackStreamingSql deduplicates by agent and stream', () {
     final scope = AgentQueriesCancelScope();
     final streams = <AgentStreamingSqlCancelTarget>[];
-    scope.streamingSqlCancelHandler = streams.addAll;
 
-    scope.trackStreamingSql(
-      const AgentStreamingSqlCancelTarget(agentId: 'a', streamId: 's'),
-    );
-    scope.trackStreamingSql(
-      const AgentStreamingSqlCancelTarget(agentId: 'a', streamId: 's'),
-    );
+    scope
+      ..streamingSqlCancelHandler = streams.addAll
+      ..trackStreamingSql(
+        const AgentStreamingSqlCancelTarget(agentId: 'a', streamId: 's'),
+      )
+      ..trackStreamingSql(
+        const AgentStreamingSqlCancelTarget(agentId: 'a', streamId: 's'),
+      )
+      ..cancelAll();
 
-    scope.cancelAll();
     expect(streams, hasLength(1));
   });
 }
