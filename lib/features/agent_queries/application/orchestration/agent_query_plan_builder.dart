@@ -1,5 +1,6 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_target_ordering.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_plan.dart';
@@ -24,6 +25,8 @@ class AgentQueryPlanBuilder {
     required AgentQueryTargetResolution resolution,
     int? bridgeTimeoutMs,
     int? raceMaxSources,
+    bool orderPlannedTargetsOnlineFirst = false,
+    bool dedupePlannedTargetsByAgentId = false,
   }) {
     final resolvedTimeoutMs = bridgeTimeoutMs ?? defaultBridgeTimeoutMs;
     if (resolvedTimeoutMs < 1) {
@@ -53,6 +56,14 @@ class AgentQueryPlanBuilder {
               )
               .toList(growable: false);
 
+    var orderedTargets = plannedTargets;
+    if (dedupePlannedTargetsByAgentId) {
+      orderedTargets = AgentQueryTargetOrdering.dedupeByAgentId(orderedTargets);
+    }
+    if (orderPlannedTargetsOnlineFirst) {
+      orderedTargets = AgentQueryTargetOrdering.onlineFirst(orderedTargets);
+    }
+
     switch (strategy) {
       case AgentQueryExecutionStrategy.singleSource:
         if (consideredTargets.length != 1) {
@@ -73,7 +84,7 @@ class AgentQueryPlanBuilder {
             strategy: strategy,
             consideredApprovedAgentCount:
                 resolution.consideredApprovedAgentCount,
-            plannedTargets: plannedTargets,
+            plannedTargets: orderedTargets,
             missingClientTokenTargets: resolution.missingClientTokenTargets,
             skippedDueToHubPresenceTargets:
                 resolution.skippedDueToHubPresenceTargets,
@@ -87,7 +98,7 @@ class AgentQueryPlanBuilder {
             strategy: strategy,
             consideredApprovedAgentCount:
                 resolution.consideredApprovedAgentCount,
-            plannedTargets: plannedTargets,
+            plannedTargets: orderedTargets,
             missingClientTokenTargets: resolution.missingClientTokenTargets,
             skippedDueToHubPresenceTargets:
                 resolution.skippedDueToHubPresenceTargets,
@@ -113,7 +124,7 @@ class AgentQueryPlanBuilder {
             strategy: strategy,
             consideredApprovedAgentCount:
                 resolution.consideredApprovedAgentCount,
-            plannedTargets: plannedTargets
+            plannedTargets: orderedTargets
                 .take(resolvedRaceMaxSources)
                 .toList(growable: false),
             missingClientTokenTargets: resolution.missingClientTokenTargets,

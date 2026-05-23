@@ -567,6 +567,24 @@ Audit against PR2 baseline and roadmap phases. **Do not duplicate policy from
 socket connection factory when `SOCKET_CONNECTION_POOL_SIZE > 1`; unary
 `sql.cancel` semantics on the agent.
 
+### Performance follow-up (Colmeia-only plan)
+
+| PR | Item | Status | Location |
+| --- | --- | --- | --- |
+| PR1 | SQL cache/coalesce in socket session export | Done | `wireAgentQueriesSocketMetricsExport`, `MetricsAgentQueriesRepository.repositoryLayerAppendix` |
+| PR2 | Coalescing with `cancelScope` + split pending ids | Done | `CoalescingAgentQueriesRepository`, `AgentQueriesCancelScope` |
+| PR3 | Transport policy effective on overview | Done | `OverviewBatchLoader`, `AgentQueryTransportPolicy` |
+| PR4 | Parse rows off main thread | Done | `AgentSqlBridgeResponse`, `agent_sql_bridge_response_isolate.dart` |
+| PR5 | Sales map batch + wave limit | Done | `LoadSalesLiveMapUseCase`, `AgentQueryTargetOrdering` |
+| PR6 | Push dedup §5.10 | Done | `PushEventDeduper`, profile listener, `ClientAgentsController` |
+| PR7 | mergeAll default, catalog cache TTL, same-agent grouping | Done | `AgentQueryExecutor`, `CachingAgentQueriesRepository`, coordinator |
+
+**Baseline before transport rollout (§7):** capture `SocketMetricsListener` log
+`Socket session metrics export` after a 15–30 min session; compare
+`coalescedTotal`, `sqlCacheHits`, `sqlCacheHitRate`,
+`coalescingRepositoryCoalescedTotal`, `p95(dispatch_ms)` and
+`relayAcceptToFirstChunkMs` before changing `AGENT_QUERY_TRANSPORT_POLICY`.
+
 ---
 
 ## 13. Referências cruzadas

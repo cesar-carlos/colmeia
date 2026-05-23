@@ -1,6 +1,8 @@
+import 'package:colmeia/features/agent_queries/data/models/agent_sql_bridge_response_isolate.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_pagination_result.dart';
+import 'package:flutter/foundation.dart';
 
 /// Matches `agentSqlErrorGeneric` in `lib/l10n/app_en.arb` (keep in sync).
 const String _kAgentSqlRpcGenericUserMessageEn =
@@ -47,6 +49,34 @@ final class AgentSqlRpcException implements Exception {
 
 /// Parses the JSON body of `POST /agents/commands` for a single `sql.execute`.
 abstract final class AgentSqlBridgeResponse {
+  static Future<AgentSqlExecutionResult> parseSuccessMaybeAsync(
+    Map<String, dynamic> json, {
+    required int isolateRowThreshold,
+  }) async {
+    if (isolateRowThreshold <= 0 ||
+        agentSqlBridgeResponseEstimateRowCount(json) < isolateRowThreshold) {
+      return parseSuccess(json);
+    }
+    return compute(
+      agentSqlBridgeResponseParseSuccessIsolate,
+      Map<String, dynamic>.from(json),
+    );
+  }
+
+  static Future<AgentSqlBatchExecutionResult> parseBatchSuccessMaybeAsync(
+    Map<String, dynamic> json, {
+    required int isolateRowThreshold,
+  }) async {
+    if (isolateRowThreshold <= 0 ||
+        agentSqlBridgeResponseEstimateRowCount(json) < isolateRowThreshold) {
+      return parseBatchSuccess(json);
+    }
+    return compute(
+      agentSqlBridgeResponseParseBatchSuccessIsolate,
+      Map<String, dynamic>.from(json),
+    );
+  }
+
   static AgentSqlExecutionResult parseSuccess(Map<String, dynamic> json) {
     final response = json['response'];
     if (response is! Map<String, dynamic>) {

@@ -64,7 +64,10 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
           OperationCancelledFailure(),
         );
       }
-      final result = AgentSqlBridgeResponse.parseSuccess(payload);
+      final result = await AgentSqlBridgeResponse.parseSuccessMaybeAsync(
+        payload,
+        isolateRowThreshold: AppEnvironment.agentSqlParseIsolateRowThreshold,
+      );
       AppLogger.info(
         'Agent SQL execute completed',
         context: <String, Object?>{
@@ -259,7 +262,10 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
           OperationCancelledFailure(),
         );
       }
-      final result = AgentSqlBridgeResponse.parseBatchSuccess(payload);
+      final result = await AgentSqlBridgeResponse.parseBatchSuccessMaybeAsync(
+        payload,
+        isolateRowThreshold: AppEnvironment.agentSqlParseIsolateRowThreshold,
+      );
       AppLogger.info(
         'Agent SQL batch execute completed',
         context: <String, Object?>{

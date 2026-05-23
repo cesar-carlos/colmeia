@@ -30,15 +30,18 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
   CachingAgentQueriesRepository({
     required AgentQueriesRepository delegate,
     Duration cacheTtl = defaultCacheTtl,
+    Duration? catalogCacheTtl,
     int maxCacheSize = 500,
   }) : _delegate = delegate,
        _cacheTtl = cacheTtl,
+       _catalogCacheTtl = catalogCacheTtl,
        _maxCacheSize = maxCacheSize;
 
   static const Duration defaultCacheTtl = Duration(seconds: 3);
 
   final AgentQueriesRepository _delegate;
   final Duration _cacheTtl;
+  final Duration? _catalogCacheTtl;
   final int _maxCacheSize;
 
   final Map<String, _SqlCacheEntry> _sqlCache = <String, _SqlCacheEntry>{};
@@ -72,9 +75,10 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
   }) async {
     final key = AgentQueriesRequestKey.build(request);
     final now = DateTime.now();
+    final ttl = _effectiveTtlForSql(request.trimmedSql);
 
     final entry = _sqlCache[key];
-    if (entry != null && now.difference(entry.cachedAt) <= _cacheTtl) {
+    if (entry != null && now.difference(entry.cachedAt) <= ttl) {
       _cacheHits++;
       AppLogger.debug(
         'Cache hit for SQL query',
@@ -192,6 +196,20 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
         },
       );
     }
+  }
+
+  Duration _effectiveTtlForSql(String sql) {
+    final catalogTtl = _catalogCacheTtl;
+    if (catalogTtl != null && _isCatalogReadOnlySql(sql)) {
+      return catalogTtl;
+    }
+    return _cacheTtl;
+  }
+
+  static bool _isCatalogReadOnlySql(String sql) {
+    final normalized = sql.toLowerCase();
+    return normalized.contains(' from filial') ||
+        normalized.contains('\nfrom filial');
   }
 
   /// Clears all cached entries. Useful for testing or explicit cache busting.

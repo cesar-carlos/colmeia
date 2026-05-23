@@ -22,5 +22,8 @@ abstract interface class ResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsRepo
     int? raceMaxSources,
     AgentQueryTargetResolution? preResolvedResolution,
     AgentQueriesCancelScope? cancelScope,
+    bool orderTargetsOnlineFirst = false,
+    bool dedupeTargetsByAgentId = false,
+    int? mergeAllConcurrencyOverride,
   });
 }

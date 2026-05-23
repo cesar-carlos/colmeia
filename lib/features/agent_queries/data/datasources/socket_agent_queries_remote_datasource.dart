@@ -49,7 +49,7 @@ class SocketAgentQueriesRemoteDataSource
       );
     }
     final rpcId = _uuid.v4();
-    cancelScope?.trackPending(rpcId);
+    cancelScope?.trackSocketPending(rpcId);
     final body = _bodyMapper.build(request: request, rpcId: rpcId);
     return _sender
         .send(
@@ -64,7 +64,7 @@ class SocketAgentQueriesRemoteDataSource
             responseType: 'single',
           ),
         )
-        .whenComplete(() => cancelScope?.untrackPending(rpcId));
+        .whenComplete(() => cancelScope?.untrackSocketPending(rpcId));
   }
 
   @override
@@ -81,7 +81,7 @@ class SocketAgentQueriesRemoteDataSource
       );
     }
     final rpcId = _uuid.v4();
-    cancelScope?.trackPending(rpcId);
+    cancelScope?.trackSocketPending(rpcId);
     final body = _batchBodyMapper.build(request: request, rpcId: rpcId);
     return _sender
         .send(
@@ -96,7 +96,7 @@ class SocketAgentQueriesRemoteDataSource
             responseType: 'batch',
           ),
         )
-        .whenComplete(() => cancelScope?.untrackPending(rpcId));
+        .whenComplete(() => cancelScope?.untrackSocketPending(rpcId));
   }
 
   /// Same +5s buffer the REST path applies to keep the client wait window

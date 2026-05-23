@@ -57,6 +57,9 @@ class CadastroFilialAcrossAgentsRepositoryImpl
     int? raceMaxSources,
     AgentQueryTargetResolution? preResolvedResolution,
     AgentQueriesCancelScope? cancelScope,
+    bool orderTargetsOnlineFirst = false,
+    bool dedupeTargetsByAgentId = false,
+    int? mergeAllConcurrencyOverride,
   }) {
     return AgentQueryListReportAcrossAgentsCoordinator.executeLoadedMapped<
       CadastroFilialAcrossAgentsPageResult,
@@ -73,6 +76,9 @@ class CadastroFilialAcrossAgentsRepositoryImpl
       bridgeTimeoutMs: bridgeTimeoutMs,
       raceMaxSources: raceMaxSources,
       preResolvedResolution: preResolvedResolution,
+      orderPlannedTargetsOnlineFirst: orderTargetsOnlineFirst,
+      dedupePlannedTargetsByAgentId: dedupeTargetsByAgentId,
+      mergeAllConcurrencyOverride: mergeAllConcurrencyOverride,
       loadRowsForTarget:
           ({
             required target,
@@ -116,6 +122,9 @@ class CadastroFilialAcrossAgentsRepositoryImpl
     int? raceMaxSources,
     AgentQueryTargetResolution? preResolvedResolution,
     AgentQueriesCancelScope? cancelScope,
+    bool orderTargetsOnlineFirst = false,
+    bool dedupeTargetsByAgentId = false,
+    int? mergeAllConcurrencyOverride,
   }) {
     final paginationStalledAgentIds = <String>{};
     return AgentQueryListReportAcrossAgentsCoordinator.executeLoadedMapped<
@@ -133,6 +142,9 @@ class CadastroFilialAcrossAgentsRepositoryImpl
       bridgeTimeoutMs: bridgeTimeoutMs,
       raceMaxSources: raceMaxSources,
       preResolvedResolution: preResolvedResolution,
+      orderPlannedTargetsOnlineFirst: orderTargetsOnlineFirst,
+      dedupePlannedTargetsByAgentId: dedupeTargetsByAgentId,
+      mergeAllConcurrencyOverride: mergeAllConcurrencyOverride,
       loadRowsForTarget:
           ({
             required target,

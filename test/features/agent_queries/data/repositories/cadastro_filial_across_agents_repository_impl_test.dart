@@ -96,6 +96,12 @@ void main() {
           resolution: any(named: 'resolution'),
           bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
           raceMaxSources: any(named: 'raceMaxSources'),
+          orderPlannedTargetsOnlineFirst: any(
+            named: 'orderPlannedTargetsOnlineFirst',
+          ),
+          dedupePlannedTargetsByAgentId: any(
+            named: 'dedupePlannedTargetsByAgentId',
+          ),
         ),
       ).thenReturn(Success<AgentQueryPlan, AppFailure>(plan));
       when(
@@ -194,6 +200,12 @@ void main() {
           resolution: any(named: 'resolution'),
           bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
           raceMaxSources: any(named: 'raceMaxSources'),
+          orderPlannedTargetsOnlineFirst: any(
+            named: 'orderPlannedTargetsOnlineFirst',
+          ),
+          dedupePlannedTargetsByAgentId: any(
+            named: 'dedupePlannedTargetsByAgentId',
+          ),
         ),
       ).thenReturn(Success<AgentQueryPlan, AppFailure>(plan));
       when(
@@ -303,6 +315,12 @@ void main() {
           resolution: any(named: 'resolution'),
           bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
           raceMaxSources: any(named: 'raceMaxSources'),
+          orderPlannedTargetsOnlineFirst: any(
+            named: 'orderPlannedTargetsOnlineFirst',
+          ),
+          dedupePlannedTargetsByAgentId: any(
+            named: 'dedupePlannedTargetsByAgentId',
+          ),
         ),
       ).thenReturn(Success<AgentQueryPlan, AppFailure>(plan));
       when(
@@ -414,6 +432,12 @@ void main() {
           resolution: any(named: 'resolution'),
           bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
           raceMaxSources: any(named: 'raceMaxSources'),
+          orderPlannedTargetsOnlineFirst: any(
+            named: 'orderPlannedTargetsOnlineFirst',
+          ),
+          dedupePlannedTargetsByAgentId: any(
+            named: 'dedupePlannedTargetsByAgentId',
+          ),
         ),
       ).thenReturn(Success<AgentQueryPlan, AppFailure>(plan));
       when(
@@ -556,6 +580,12 @@ void main() {
           resolution: any(named: 'resolution'),
           bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
           raceMaxSources: any(named: 'raceMaxSources'),
+          orderPlannedTargetsOnlineFirst: any(
+            named: 'orderPlannedTargetsOnlineFirst',
+          ),
+          dedupePlannedTargetsByAgentId: any(
+            named: 'dedupePlannedTargetsByAgentId',
+          ),
         ),
       ).thenReturn(Success<AgentQueryPlan, AppFailure>(plan));
       when(

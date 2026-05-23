@@ -42,6 +42,24 @@ void main() {
       expect(policy.apply(streaming).useRelay, isTrue);
     });
 
+    test('applyBatch legacy leaves non-dashboard batch on base transport', () {
+      const policy = AgentQueryTransportPolicy(
+        mode: AgentQueryTransportPolicyMode.legacy,
+      );
+      const batch = AgentSqlExecuteBatchRequest(
+        agentId: agentId,
+        commands: <AgentSqlExecuteBatchCommand>[
+          AgentSqlExecuteBatchCommand(sql: sql),
+        ],
+      );
+
+      expect(policy.applyBatch(batch).useRelay, isFalse);
+      expect(
+        policy.applyBatch(batch, dashboardBatch: true).useRelay,
+        isTrue,
+      );
+    });
+
     test('applyBatch preferRelay sets useRelay on batch', () {
       const policy = AgentQueryTransportPolicy(
         mode: AgentQueryTransportPolicyMode.preferRelay,

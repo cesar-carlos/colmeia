@@ -100,6 +100,9 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
     int? bridgeTimeoutMs,
     int? raceMaxSources,
     AgentQueryTargetResolution? preResolvedResolution,
+    bool orderPlannedTargetsOnlineFirst = false,
+    bool dedupePlannedTargetsByAgentId = false,
+    int? mergeAllConcurrencyOverride,
   }) async {
     return executeLoadedMapped<AgentQueryExecutionReport<Row>, Row>(
       operation: operation,
@@ -113,6 +116,9 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
       bridgeTimeoutMs: bridgeTimeoutMs,
       raceMaxSources: raceMaxSources,
       preResolvedResolution: preResolvedResolution,
+      orderPlannedTargetsOnlineFirst: orderPlannedTargetsOnlineFirst,
+      dedupePlannedTargetsByAgentId: dedupePlannedTargetsByAgentId,
+      mergeAllConcurrencyOverride: mergeAllConcurrencyOverride,
       loadRowsForTarget:
           ({
             required target,
@@ -223,6 +229,9 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
     )?
     successContext,
     AgentQueryTargetResolution? preResolvedResolution,
+    bool orderPlannedTargetsOnlineFirst = false,
+    bool dedupePlannedTargetsByAgentId = false,
+    int? mergeAllConcurrencyOverride,
   }) async {
     late final AgentQueryTargetResolution resolution;
     if (preResolvedResolution != null) {
@@ -262,6 +271,8 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
       resolution: resolution,
       bridgeTimeoutMs: bridgeTimeoutMs,
       raceMaxSources: raceMaxSources,
+      orderPlannedTargetsOnlineFirst: orderPlannedTargetsOnlineFirst,
+      dedupePlannedTargetsByAgentId: dedupePlannedTargetsByAgentId,
     );
     final plan = planResult.getOrNull();
     if (plan == null) {
@@ -299,6 +310,7 @@ abstract final class AgentQueryListReportAcrossAgentsCoordinator {
         plan: plan,
         resolution: resolution,
       ),
+      mergeAllConcurrencyOverride: mergeAllConcurrencyOverride,
     );
     final report = executionResult.getOrNull();
     if (report != null) {

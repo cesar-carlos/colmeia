@@ -36,7 +36,7 @@ class AgentQueryExecutor<Row> {
   /// production this guard should never fire — it exists exclusively to
   /// keep the executor from trusting upstream timeouts blindly.
   AgentQueryExecutor({
-    this.mergeAllConcurrency = 16,
+    this.mergeAllConcurrency = 8,
     this.raceTotalTimeout = const Duration(minutes: 2),
   }) : assert(
          mergeAllConcurrency > 0,
@@ -72,6 +72,7 @@ class AgentQueryExecutor<Row> {
   Future<AppResult<AgentQueryExecutionReport<Row>>> executeLoadedRows({
     required AgentQueryPlan plan,
     required AgentQueryLoadedRowsTargetLoader<Row> loadTarget,
+    int? mergeAllConcurrencyOverride,
   }) {
     return switch (plan.strategy) {
       AgentQueryExecutionStrategy.singleSource => _executeSingleSource(
@@ -81,6 +82,7 @@ class AgentQueryExecutor<Row> {
       AgentQueryExecutionStrategy.mergeAll => _executeMergeAll(
         plan: plan,
         loadTarget: loadTarget,
+        mergeAllConcurrencyOverride: mergeAllConcurrencyOverride,
       ),
       AgentQueryExecutionStrategy.race => _executeRace(
         plan: plan,
@@ -128,6 +130,7 @@ class AgentQueryExecutor<Row> {
   Future<AppResult<AgentQueryExecutionReport<Row>>> _executeMergeAll({
     required AgentQueryPlan plan,
     required AgentQueryLoadedRowsTargetLoader<Row> loadTarget,
+    int? mergeAllConcurrencyOverride,
   }) async {
     if (plan.plannedTargets.isEmpty) {
       return Success<AgentQueryExecutionReport<Row>, AppFailure>(
@@ -135,6 +138,7 @@ class AgentQueryExecutor<Row> {
       );
     }
 
+    final waveSize = mergeAllConcurrencyOverride ?? mergeAllConcurrency;
     final totalStopwatch = Stopwatch()..start();
     final participants = List<AgentQueryExecutionParticipant<Row>?>.filled(
       plan.plannedTargets.length,
@@ -144,11 +148,11 @@ class AgentQueryExecutor<Row> {
     for (
       var start = 0;
       start < plan.plannedTargets.length;
-      start += mergeAllConcurrency
+      start += waveSize
     ) {
-      final end = start + mergeAllConcurrency > plan.plannedTargets.length
+      final end = start + waveSize > plan.plannedTargets.length
           ? plan.plannedTargets.length
-          : start + mergeAllConcurrency;
+          : start + waveSize;
       final indices = List<int>.generate(end - start, (index) => start + index);
       final chunk = await Future.wait(
         indices.map((index) async {

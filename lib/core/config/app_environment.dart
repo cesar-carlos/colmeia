@@ -131,6 +131,9 @@ abstract final class AppEnvironment {
 
   static const int defaultAgentSqlCacheMaxSize = 500;
   static const int defaultAgentSqlCacheTtlMs = 3000;
+  static const int defaultAgentSqlParseIsolateRowThreshold = 2000;
+  static const int defaultAgentSqlCatalogCacheTtlMs = 30000;
+  static const int defaultAgentQueryMergeAllConcurrency = 8;
   static const int defaultAgentSqlOverviewBatchMaxParallelReadOnlyItems = 4;
   static const int defaultAgentSqlRelayStreamingMaxConcurrentPerAgent = 4;
 
@@ -145,6 +148,49 @@ abstract final class AppEnvironment {
     fromDotenv: _dotenvMaybe(EnvKeys.agentSqlCacheTtlMs),
     fallback: defaultAgentSqlCacheTtlMs,
   )._atLeastOrFallback(0, defaultAgentSqlCacheTtlMs);
+
+  static int get agentSqlParseIsolateRowThreshold =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.agentSqlParseIsolateRowThreshold,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.agentSqlParseIsolateRowThreshold),
+        fallback: defaultAgentSqlParseIsolateRowThreshold,
+      ).clamp(0, 100000);
+
+  static int get agentSqlCatalogCacheTtlMs =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.agentSqlCatalogCacheTtlMs,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.agentSqlCatalogCacheTtlMs),
+        fallback: defaultAgentSqlCatalogCacheTtlMs,
+      )._atLeastOrFallback(0, defaultAgentSqlCatalogCacheTtlMs);
+
+  static int get agentQueryMergeAllConcurrency =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.agentQueryMergeAllConcurrency,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.agentQueryMergeAllConcurrency),
+        fallback: defaultAgentQueryMergeAllConcurrency,
+      ).clamp(1, 64);
+
+  /// Wave size for sales live map mergeAll; falls back to per-agent inflight cap.
+  static int get salesLiveMapMergeWaveSize {
+    final configured = AppEnvironmentResolution.resolveInt(
+      fromDefine: const String.fromEnvironment(
+        EnvKeys.salesLiveMapMergeWaveSize,
+      ),
+      fromDotenv: _dotenvMaybe(EnvKeys.salesLiveMapMergeWaveSize),
+      fallback: 0,
+    );
+    if (configured > 0) {
+      return configured.clamp(1, 64);
+    }
+    final inflight = socketMaxInflightPerAgent;
+    return inflight > 0 ? inflight : defaultAgentQueryMergeAllConcurrency;
+  }
 
   static int get agentSqlOverviewBatchMaxParallelReadOnlyItems =>
       AppEnvironmentResolution.resolveInt(

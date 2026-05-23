@@ -15,6 +15,9 @@ abstract interface class CadastroFilialAcrossAgentsRepository {
     int? raceMaxSources,
     AgentQueryTargetResolution? preResolvedResolution,
     AgentQueriesCancelScope? cancelScope,
+    bool orderTargetsOnlineFirst = false,
+    bool dedupeTargetsByAgentId = false,
+    int? mergeAllConcurrencyOverride,
   });
 
   Future<AppResult<CadastroFilialAcrossAgentsPageResult>> loadAll({
@@ -26,5 +29,8 @@ abstract interface class CadastroFilialAcrossAgentsRepository {
     int? raceMaxSources,
     AgentQueryTargetResolution? preResolvedResolution,
     AgentQueriesCancelScope? cancelScope,
+    bool orderTargetsOnlineFirst = false,
+    bool dedupeTargetsByAgentId = false,
+    int? mergeAllConcurrencyOverride,
   });
 }

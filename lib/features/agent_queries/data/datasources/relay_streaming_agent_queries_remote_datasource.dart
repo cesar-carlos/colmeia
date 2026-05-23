@@ -42,7 +42,7 @@ class RelayStreamingAgentQueriesRemoteDataSource
       );
     }
     final clientRequestId = _uuid.v4();
-    cancelScope?.trackPending(clientRequestId);
+    cancelScope?.trackRelayPending(clientRequestId);
     try {
       final body = _bodyMapper.buildRelayCommand(
         request: request,
@@ -62,7 +62,7 @@ class RelayStreamingAgentQueriesRemoteDataSource
         ),
       );
     } finally {
-      cancelScope?.untrackPending(clientRequestId);
+      cancelScope?.untrackRelayPending(clientRequestId);
     }
   }
 

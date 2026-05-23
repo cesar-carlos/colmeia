@@ -50,6 +50,9 @@ class ResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsRepositoryImpl
     int? raceMaxSources,
     AgentQueryTargetResolution? preResolvedResolution,
     AgentQueriesCancelScope? cancelScope,
+    bool orderTargetsOnlineFirst = false,
+    bool dedupeTargetsByAgentId = false,
+    int? mergeAllConcurrencyOverride,
   }) {
     return AgentQueryListReportAcrossAgentsCoordinator.executeLoadedRows<
       ResumoTotalVendasMunicipioFilialPeriodoFilter,
@@ -89,6 +92,9 @@ class ResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsRepositoryImpl
       bridgeTimeoutMs: bridgeTimeoutMs,
       raceMaxSources: raceMaxSources,
       preResolvedResolution: preResolvedResolution,
+      orderPlannedTargetsOnlineFirst: orderTargetsOnlineFirst,
+      dedupePlannedTargetsByAgentId: dedupeTargetsByAgentId,
+      mergeAllConcurrencyOverride: mergeAllConcurrencyOverride,
     );
   }
 }

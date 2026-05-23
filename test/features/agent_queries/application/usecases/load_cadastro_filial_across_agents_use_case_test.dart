@@ -36,6 +36,11 @@ void main() {
         strategy: strategy,
         bridgeTimeoutMs: 5000,
         raceMaxSources: 2,
+        preResolvedResolution: any(named: 'preResolvedResolution'),
+        cancelScope: any(named: 'cancelScope'),
+        orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
+        dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
+        mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
       ),
     ).thenAnswer(
       (_) async =>
@@ -73,6 +78,11 @@ void main() {
         strategy: strategy,
         bridgeTimeoutMs: 5000,
         raceMaxSources: 2,
+        preResolvedResolution: any(named: 'preResolvedResolution'),
+        cancelScope: any(named: 'cancelScope'),
+        orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
+        dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
+        mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
       ),
     ).called(1);
   });

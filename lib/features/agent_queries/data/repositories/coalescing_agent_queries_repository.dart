@@ -16,14 +16,8 @@ import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries
 /// options) at nearly the same time, this decorator ensures only ONE request
 /// is sent to the hub, and all callers share the same Future result.
 ///
-/// Benefits:
-/// - Reduces hub load during parallel widget builds or refresh storms
-/// - Improves perceived latency (second caller gets cached Future instantly)
-/// - Prevents race conditions where the same data is fetched multiple times
-///
-/// The deduplication key includes clientToken to prevent cross-user leakage
-/// in shared contexts (though in practice each user session has its own
-/// repository instance via DI scoping).
+/// When [AgentQueriesCancelScope] is provided, coalescing is scoped to the
+/// same [AgentQueriesCancelScope.traceId] so distinct UI loads never share work.
 class CoalescingAgentQueriesRepository implements AgentQueriesRepository {
   CoalescingAgentQueriesRepository({
     required AgentQueriesRepository delegate,
@@ -39,7 +33,6 @@ class CoalescingAgentQueriesRepository implements AgentQueriesRepository {
   int _coalescedCount = 0;
 
   /// Visible for testing and observability.
-  /// Returns the number of requests that were coalesced (deduplicated).
   int get coalescedCount => _coalescedCount;
 
   @override
@@ -47,10 +40,7 @@ class CoalescingAgentQueriesRepository implements AgentQueriesRepository {
     AgentSqlExecuteRequest request, {
     AgentQueriesCancelScope? cancelScope,
   }) async {
-    if (cancelScope != null) {
-      return _delegate.executeSql(request, cancelScope: cancelScope);
-    }
-    final key = _buildKey(request);
+    final key = _buildSqlKey(request, cancelScope);
 
     final existing = _inflight[key];
     if (existing != null) {
@@ -61,12 +51,13 @@ class CoalescingAgentQueriesRepository implements AgentQueriesRepository {
           'operation': 'executeAgentSql',
           'agentId': request.trimmedAgentId,
           'coalescedCount': _coalescedCount,
+          if (cancelScope != null) 'traceId': cancelScope.traceId,
         },
       );
       return existing;
     }
 
-    final future = _delegate.executeSql(request);
+    final future = _delegate.executeSql(request, cancelScope: cancelScope);
     _inflight[key] = future;
     unawaited(_removeInflightWhenComplete(key, future));
 
@@ -78,10 +69,7 @@ class CoalescingAgentQueriesRepository implements AgentQueriesRepository {
     AgentSqlExecuteBatchRequest request, {
     AgentQueriesCancelScope? cancelScope,
   }) async {
-    if (cancelScope != null) {
-      return _delegate.executeSqlBatch(request, cancelScope: cancelScope);
-    }
-    final key = AgentQueriesRequestKey.buildBatch(request);
+    final key = _buildBatchKey(request, cancelScope);
 
     final existing = _batchInflight[key];
     if (existing != null) {
@@ -92,20 +80,41 @@ class CoalescingAgentQueriesRepository implements AgentQueriesRepository {
           'operation': 'executeAgentSqlBatch',
           'agentId': request.trimmedAgentId,
           'coalescedCount': _coalescedCount,
+          if (cancelScope != null) 'traceId': cancelScope.traceId,
         },
       );
       return existing;
     }
 
-    final future = _delegate.executeSqlBatch(request);
+    final future = _delegate.executeSqlBatch(request, cancelScope: cancelScope);
     _batchInflight[key] = future;
     unawaited(_removeBatchInflightWhenComplete(key, future));
 
     return future;
   }
 
-  String _buildKey(AgentSqlExecuteRequest request) {
-    return AgentQueriesRequestKey.build(request);
+  static String _buildSqlKey(
+    AgentSqlExecuteRequest request,
+    AgentQueriesCancelScope? cancelScope,
+  ) {
+    final base = AgentQueriesRequestKey.build(request);
+    final traceId = cancelScope?.traceId;
+    if (traceId == null) {
+      return base;
+    }
+    return '$traceId|$base';
+  }
+
+  static String _buildBatchKey(
+    AgentSqlExecuteBatchRequest request,
+    AgentQueriesCancelScope? cancelScope,
+  ) {
+    final base = AgentQueriesRequestKey.buildBatch(request);
+    final traceId = cancelScope?.traceId;
+    if (traceId == null) {
+      return base;
+    }
+    return '$traceId|$base';
   }
 
   Future<void> _removeInflightWhenComplete(

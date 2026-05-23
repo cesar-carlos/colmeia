@@ -1,3 +1,4 @@
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
@@ -13,6 +14,7 @@ import 'package:colmeia/features/agent_queries/data/models/resumo_produto_venda_
 import 'package:colmeia/features/agent_queries/data/models/resumo_produto_venda_lucratividade_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/models/resumo_total_diario_vendas_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
+import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_transport_policy.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcela_forma_pagamento_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcela_por_usuario_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_dia_semana_sql.dart';
@@ -232,20 +234,26 @@ final class _OverviewSectionBatchCommands {
 }
 
 class OverviewBatchLoader {
-  const OverviewBatchLoader({
+  OverviewBatchLoader({
     required AgentQueryTargetResolver targetResolver,
     required AgentQueryPlanBuilder planBuilder,
     required AgentQueriesRepository agentQueriesRepository,
     int maxParallelReadOnlyBatchItems = 4,
+    AgentQueryTransportPolicy? transportPolicy,
   }) : _targetResolver = targetResolver,
        _planBuilder = planBuilder,
        _agentQueriesRepository = agentQueriesRepository,
-       _maxParallelReadOnlyBatchItems = maxParallelReadOnlyBatchItems;
+       _maxParallelReadOnlyBatchItems = maxParallelReadOnlyBatchItems,
+       _transportPolicy = transportPolicy ??
+           AgentQueryTransportPolicy(
+             mode: AppEnvironment.agentQueryTransportPolicyMode,
+           );
 
   final AgentQueryTargetResolver _targetResolver;
   final AgentQueryPlanBuilder _planBuilder;
   final AgentQueriesRepository _agentQueriesRepository;
   final int _maxParallelReadOnlyBatchItems;
+  final AgentQueryTransportPolicy _transportPolicy;
 
   /// Hub validates `sql.executeBatch` `options.timeout_ms` at <= 300_000.
   static const int overviewBatchBridgeTimeoutMs = 300000;
@@ -452,9 +460,7 @@ class OverviewBatchLoader {
     AgentQueriesCancelScope? cancelScope,
   }) async {
     final started = DateTime.now();
-    // Keep dashboard batches on relay when the socket path is enabled so
-    // unary and batch SQL share the same transient/permanent failure contract.
-    final result = await _agentQueriesRepository.executeSqlBatch(
+    final batchRequest = _transportPolicy.applyBatch(
       AgentSqlExecuteBatchRequest(
         agentId: target.agentId,
         requestingUserId: userId,
@@ -463,7 +469,6 @@ class OverviewBatchLoader {
             target.hubConnectedFromApprovedCatalogRow,
         commands: batch.commands,
         clientToken: target.clientToken,
-        useRelay: true,
         bridgeTimeoutMs: planBridgeTimeoutMs,
         options: AgentSqlReadOnlyBatchOptions.dashboard(
           sqlTimeoutMs: overviewBatchSqlTimeoutMs,
@@ -471,6 +476,10 @@ class OverviewBatchLoader {
           maxParallelReadOnlyBatchItems: _maxParallelReadOnlyBatchItems,
         ),
       ),
+      dashboardBatch: true,
+    );
+    final result = await _agentQueriesRepository.executeSqlBatch(
+      batchRequest,
       cancelScope: cancelScope,
     );
     final elapsedMs = DateTime.now().difference(started).inMilliseconds;
@@ -502,7 +511,7 @@ class OverviewBatchLoader {
     AgentQueriesCancelScope? cancelScope,
   }) async {
     final started = DateTime.now();
-    final result = await _agentQueriesRepository.executeSqlBatch(
+    final batchRequest = _transportPolicy.applyBatch(
       AgentSqlExecuteBatchRequest(
         agentId: target.agentId,
         requestingUserId: userId,
@@ -511,7 +520,6 @@ class OverviewBatchLoader {
             target.hubConnectedFromApprovedCatalogRow,
         commands: batch.commands,
         clientToken: target.clientToken,
-        useRelay: true,
         bridgeTimeoutMs: planBridgeTimeoutMs,
         options: AgentSqlReadOnlyBatchOptions.dashboard(
           sqlTimeoutMs: overviewBatchSqlTimeoutMs,
@@ -519,6 +527,10 @@ class OverviewBatchLoader {
           maxParallelReadOnlyBatchItems: _maxParallelReadOnlyBatchItems,
         ),
       ),
+      dashboardBatch: true,
+    );
+    final result = await _agentQueriesRepository.executeSqlBatch(
+      batchRequest,
       cancelScope: cancelScope,
     );
     final elapsedMs = DateTime.now().difference(started).inMilliseconds;

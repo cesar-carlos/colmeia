@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
@@ -288,6 +289,7 @@ class LoadSalesLiveMapUseCase {
   }) async* {
     final totalStopwatch = _startTraceStopwatch();
     final now = _resolveNow();
+    final mergeWaveSize = AppEnvironment.salesLiveMapMergeWaveSize;
     if (cancelToken?.isCancelled ?? false) {
       yield _cancelledResult(refreshedAt: now);
       return;
@@ -380,6 +382,7 @@ class LoadSalesLiveMapUseCase {
           paginationStalledAgentIds: const <String>{},
           partialFailure: false,
           loadFailed: true,
+          mergeWaveSize: mergeWaveSize,
         ),
       );
       yield _failedResult(
@@ -402,6 +405,9 @@ class LoadSalesLiveMapUseCase {
         bridgeTimeoutMs: bridgeTimeoutMs,
         preResolvedResolution: resolution,
         cancelScope: cancelToken?.sqlCancelScope,
+        orderTargetsOnlineFirst: true,
+        dedupeTargetsByAgentId: true,
+        mergeAllConcurrencyOverride: mergeWaveSize,
       ),
       salesStopwatch,
     );
@@ -517,6 +523,7 @@ class LoadSalesLiveMapUseCase {
               catalogPage?.paginationStalledAgentIds ?? const <String>{},
           partialFailure: false,
           loadFailed: true,
+          mergeWaveSize: mergeWaveSize,
         ),
       );
       yield _failedResult(failure, refreshedAt: now);
@@ -556,6 +563,7 @@ class LoadSalesLiveMapUseCase {
           catalogPage?.paginationStalledAgentIds ?? const <String>{},
       partialFailure: mapped.result.hasPartialIssue,
       loadFailed: mapped.result.loadFailed,
+      mergeWaveSize: mergeWaveSize,
       partialIssueBreakdown: mapped.result.hasPartialIssue
           ? mapped.result.partialIssueActiveKeys
           : null,
@@ -590,6 +598,9 @@ class LoadSalesLiveMapUseCase {
       bridgeTimeoutMs: bridgeTimeoutMs,
       preResolvedResolution: preResolvedResolution,
       cancelScope: cancelToken?.sqlCancelScope,
+      orderTargetsOnlineFirst: true,
+      dedupeTargetsByAgentId: true,
+      mergeAllConcurrencyOverride: AppEnvironment.salesLiveMapMergeWaveSize,
     );
     final page = result.getOrNull();
     if (page != null) {

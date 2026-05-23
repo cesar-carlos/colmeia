@@ -20,6 +20,9 @@ class LoadCadastroFilialAcrossAgentsUseCase {
     int? raceMaxSources,
     AgentQueryTargetResolution? preResolvedResolution,
     AgentQueriesCancelScope? cancelScope,
+    bool orderTargetsOnlineFirst = false,
+    bool dedupeTargetsByAgentId = false,
+    int? mergeAllConcurrencyOverride,
   }) {
     return _repository.loadPage(
       userId: userId,
@@ -30,6 +33,9 @@ class LoadCadastroFilialAcrossAgentsUseCase {
       raceMaxSources: raceMaxSources,
       preResolvedResolution: preResolvedResolution,
       cancelScope: cancelScope,
+      orderTargetsOnlineFirst: orderTargetsOnlineFirst,
+      dedupeTargetsByAgentId: dedupeTargetsByAgentId,
+      mergeAllConcurrencyOverride: mergeAllConcurrencyOverride,
     );
   }
 
@@ -42,6 +48,9 @@ class LoadCadastroFilialAcrossAgentsUseCase {
     int? raceMaxSources,
     AgentQueryTargetResolution? preResolvedResolution,
     AgentQueriesCancelScope? cancelScope,
+    bool orderTargetsOnlineFirst = false,
+    bool dedupeTargetsByAgentId = false,
+    int? mergeAllConcurrencyOverride,
   }) {
     return _repository.loadAll(
       userId: userId,
@@ -52,6 +61,9 @@ class LoadCadastroFilialAcrossAgentsUseCase {
       raceMaxSources: raceMaxSources,
       preResolvedResolution: preResolvedResolution,
       cancelScope: cancelScope,
+      orderTargetsOnlineFirst: orderTargetsOnlineFirst,
+      dedupeTargetsByAgentId: dedupeTargetsByAgentId,
+      mergeAllConcurrencyOverride: mergeAllConcurrencyOverride,
     );
   }
 }

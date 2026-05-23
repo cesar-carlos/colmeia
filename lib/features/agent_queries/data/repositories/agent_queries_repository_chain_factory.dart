@@ -18,6 +18,7 @@ class AgentQueriesRepositoryChain {
     required this.decorators,
     required this.metricsRepository,
     required this.cachingRepository,
+    required this.coalescingRepository,
   });
 
   final AgentQueriesRepository repository;
@@ -31,6 +32,9 @@ class AgentQueriesRepositoryChain {
 
   /// In-memory SQL result cache wired outside [MetricsAgentQueriesRepository].
   final CachingAgentQueriesRepository cachingRepository;
+
+  /// In-flight dedupe decorator between cache and metrics.
+  final CoalescingAgentQueriesRepository coalescingRepository;
 }
 
 abstract final class AgentQueriesRepositoryChainFactory {
@@ -39,6 +43,7 @@ abstract final class AgentQueriesRepositoryChainFactory {
     required AgentSqlExecutionEligibilityPort eligibility,
     required int maxCacheSize,
     Duration cacheTtl = CachingAgentQueriesRepository.defaultCacheTtl,
+    Duration? catalogCacheTtl,
     int agentSqlRestMaxInflightPerAgent = 0,
   }) {
     final base = AgentQueriesRepositoryImpl(remoteDataSource);
@@ -71,6 +76,7 @@ abstract final class AgentQueriesRepositoryChainFactory {
     final caching = CachingAgentQueriesRepository(
       delegate: coalescing,
       cacheTtl: cacheTtl,
+      catalogCacheTtl: catalogCacheTtl,
       maxCacheSize: maxCacheSize,
     );
     metrics.sqlCache = caching;
@@ -102,6 +108,7 @@ abstract final class AgentQueriesRepositoryChainFactory {
       decorators: decorators,
       metricsRepository: metrics,
       cachingRepository: caching,
+      coalescingRepository: coalescing,
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/observability/socket/socket_sql_metrics_appendix_port.dart' show SocketSqlMetricsAppendixProvider;
 import 'package:colmeia/features/agent_queries/data/repositories/caching_agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/coalescing_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
@@ -325,15 +326,38 @@ class MetricsAgentQueriesRepository implements AgentQueriesRepository {
   /// Compact counters for socket disconnect export (paired with
   /// [SocketSqlMetricsAppendixProvider]).
   Map<String, Object?> appendixForSocketExport() {
-    if (_successCount + _failureCount == 0) {
-      return const <String, Object?>{};
-    }
     return <String, Object?>{
-      'successCount': _successCount,
-      'failureCount': _failureCount,
-      'successRate': _successCount / (_successCount + _failureCount),
-      'avgSuccessDurationMs': averageSuccessDuration.inMilliseconds,
-      'avgFailureDurationMs': averageFailureDuration.inMilliseconds,
+      if (_successCount + _failureCount > 0) ...<String, Object?>{
+        'successCount': _successCount,
+        'failureCount': _failureCount,
+        'successRate': _successCount / (_successCount + _failureCount),
+        'avgSuccessDurationMs': averageSuccessDuration.inMilliseconds,
+        'avgFailureDurationMs': averageFailureDuration.inMilliseconds,
+      },
+    };
+  }
+
+  /// Repository-layer cache + coalescing counters for session export.
+  static Map<String, Object?> repositoryLayerAppendix({
+    required CachingAgentQueriesRepository cache,
+    required CoalescingAgentQueriesRepository coalescing,
+  }) {
+    final hits = cache.cacheHits;
+    final misses = cache.cacheMisses;
+    final batchHits = cache.batchCacheHits;
+    final batchMisses = cache.batchCacheMisses;
+    final denom = hits + misses;
+    final batchDenom = batchHits + batchMisses;
+    return <String, Object?>{
+      'sqlCacheHits': hits,
+      'sqlCacheMisses': misses,
+      'sqlCacheHitRate': denom == 0 ? null : hits / denom,
+      'sqlBatchCacheHits': batchHits,
+      'sqlBatchCacheMisses': batchMisses,
+      'sqlBatchCacheHitRate':
+          batchDenom == 0 ? null : batchHits / batchDenom,
+      'sqlCacheSize': cache.cacheSize,
+      'coalescingRepositoryCoalescedTotal': coalescing.coalescedCount,
     };
   }
 

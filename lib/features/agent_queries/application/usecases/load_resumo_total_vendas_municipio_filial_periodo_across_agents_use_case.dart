@@ -29,6 +29,9 @@ class LoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase {
     int? raceMaxSources,
     AgentQueryTargetResolution? preResolvedResolution,
     AgentQueriesCancelScope? cancelScope,
+    bool orderTargetsOnlineFirst = false,
+    bool dedupeTargetsByAgentId = false,
+    int? mergeAllConcurrencyOverride,
   }) {
     return _repository.load(
       userId: userId,
@@ -39,6 +42,9 @@ class LoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase {
       raceMaxSources: raceMaxSources,
       preResolvedResolution: preResolvedResolution,
       cancelScope: cancelScope,
+      orderTargetsOnlineFirst: orderTargetsOnlineFirst,
+      dedupeTargetsByAgentId: dedupeTargetsByAgentId,
+      mergeAllConcurrencyOverride: mergeAllConcurrencyOverride,
     );
   }
 }

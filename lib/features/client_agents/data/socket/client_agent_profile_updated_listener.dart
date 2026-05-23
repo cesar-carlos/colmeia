@@ -2,6 +2,7 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/payload_frame.dart';
 import 'package:colmeia/core/socket/payload_frame_codec.dart';
+import 'package:colmeia/core/socket/push_event_deduper.dart';
 import 'package:colmeia/features/client_agents/domain/events/agent_presence_event.dart';
 
 /// Edge adapter: subscribes the raw socket to `client:agent.profile.updated`
@@ -40,6 +41,7 @@ class ClientAgentProfileUpdatedListener {
   final Sink<AgentPresenceEvent> _sink;
   final bool _acceptLegacyRawJson;
   final PayloadFrameCodec _codec;
+  final PushEventDeduper _observedAtDeduper = PushEventDeduper();
   late final void Function(Object?) _eventHandler;
 
   bool _attached = false;
@@ -105,10 +107,24 @@ class ClientAgentProfileUpdatedListener {
         );
         return;
       }
+      final observedAt = _parseObservedAt(logical);
+      if (!_observedAtDeduper.shouldAccept(
+        key: agentId,
+        observedAt: observedAt,
+      )) {
+        AppLogger.debug(
+          '$eventName ignored: stale observedAt after reconnect',
+          context: <String, Object?>{
+            'component': 'ClientAgentProfileUpdatedListener',
+            'agentId': agentId,
+          },
+        );
+        return;
+      }
       _sink.add(
         AgentPresenceCatalogUpdated(
           agentId: agentId,
-          observedAt: _parseObservedAt(logical),
+          observedAt: observedAt,
           changedFields: _parseChangedFields(logical),
           profileVersion: _asInt(logical['profile_version']),
           source: logical['source']?.toString(),

@@ -7,6 +7,7 @@ import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
+import 'package:colmeia/core/socket/push_event_deduper.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_resolution_invalidator.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/application/client_agent_token_draft_store.dart';
@@ -2029,7 +2030,10 @@ class ClientAgentsController extends ChangeNotifier {
         }
       }
     }
-    return event.observedAt.isAfter(last.observedAt);
+    return PushEventDeduper.isObservationAfter(
+      candidate: event.observedAt,
+      lastObservedAt: last.observedAt,
+    );
   }
 
   Future<void> _refreshAgentDetailFromPresence({

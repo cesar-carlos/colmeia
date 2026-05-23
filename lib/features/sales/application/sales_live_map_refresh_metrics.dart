@@ -29,6 +29,8 @@ class SalesLiveMapRefreshMetricEvent {
     required this.paginationStalledAgentIds,
     required this.partialFailure,
     required this.loadFailed,
+    this.catalogSalesBatchMerged = false,
+    this.mergeWaveSize = 0,
     this.partialIssueBreakdown,
   });
 
@@ -49,6 +51,8 @@ class SalesLiveMapRefreshMetricEvent {
   final Set<String> paginationStalledAgentIds;
   final bool partialFailure;
   final bool loadFailed;
+  final bool catalogSalesBatchMerged;
+  final int mergeWaveSize;
 
   /// When [partialFailure] is true, lists which load-result flags contributed
   /// (same keys as `partialIssueFlagBreakdown` on the live-map load result).
@@ -74,6 +78,8 @@ class SalesLiveMapRefreshMetricEvent {
       ),
       'partialFailure': partialFailure,
       'loadFailed': loadFailed,
+      'catalogSalesBatchMerged': catalogSalesBatchMerged,
+      'mergeWaveSize': mergeWaveSize,
       if (partialIssueBreakdown != null && partialIssueBreakdown!.isNotEmpty)
         'partialIssueBreakdown': partialIssueBreakdown,
     };

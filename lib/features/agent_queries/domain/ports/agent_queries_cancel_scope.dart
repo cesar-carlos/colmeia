@@ -26,7 +26,8 @@ class AgentQueriesCancelScope {
   final String traceId;
 
   bool _cancelled = false;
-  final Set<String> _pendingClientRequestIds = <String>{};
+  final Set<String> _pendingRelayClientRequestIds = <String>{};
+  final Set<String> _pendingSocketRpcIds = <String>{};
   final Set<String> _pendingStreamingKeys = <String>{};
   final List<AgentStreamingSqlCancelTarget> _streamingCancelTargets =
       <AgentStreamingSqlCancelTarget>[];
@@ -41,15 +42,26 @@ class AgentQueriesCancelScope {
   void Function(Iterable<AgentStreamingSqlCancelTarget> targets)?
   streamingSqlCancelHandler;
 
-  void trackPending(String clientRequestId) {
+  void trackRelayPending(String clientRequestId) {
     if (_cancelled) {
       return;
     }
-    _pendingClientRequestIds.add(clientRequestId);
+    _pendingRelayClientRequestIds.add(clientRequestId);
   }
 
-  void untrackPending(String clientRequestId) {
-    _pendingClientRequestIds.remove(clientRequestId);
+  void untrackRelayPending(String clientRequestId) {
+    _pendingRelayClientRequestIds.remove(clientRequestId);
+  }
+
+  void trackSocketPending(String rpcId) {
+    if (_cancelled) {
+      return;
+    }
+    _pendingSocketRpcIds.add(rpcId);
+  }
+
+  void untrackSocketPending(String rpcId) {
+    _pendingSocketRpcIds.remove(rpcId);
   }
 
   /// Registers a hub stream id once known (first relay chunk).
@@ -68,16 +80,21 @@ class AgentQueriesCancelScope {
       return;
     }
     _cancelled = true;
-    final ids = List<String>.of(_pendingClientRequestIds, growable: false);
-    _pendingClientRequestIds.clear();
+    final relayIds = List<String>.of(
+      _pendingRelayClientRequestIds,
+      growable: false,
+    );
+    final socketIds = List<String>.of(_pendingSocketRpcIds, growable: false);
+    _pendingRelayClientRequestIds.clear();
+    _pendingSocketRpcIds.clear();
     final streams = List<AgentStreamingSqlCancelTarget>.of(
       _streamingCancelTargets,
       growable: false,
     );
     _streamingCancelTargets.clear();
     _pendingStreamingKeys.clear();
-    relayCancelHandler?.call(ids);
-    socketRpcCancelHandler?.call(ids);
+    relayCancelHandler?.call(relayIds);
+    socketRpcCancelHandler?.call(socketIds);
     streamingSqlCancelHandler?.call(streams);
   }
 

@@ -722,6 +722,10 @@ void main() {
         bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
         raceMaxSources: any(named: 'raceMaxSources'),
         preResolvedResolution: any(named: 'preResolvedResolution'),
+        cancelScope: any(named: 'cancelScope'),
+        orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
+        dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
+        mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
       ),
     ).captured;
     final catalogFilter = captured[0] as CadastroFilialFilter;
@@ -798,6 +802,10 @@ void main() {
           bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
           raceMaxSources: any(named: 'raceMaxSources'),
           preResolvedResolution: any(named: 'preResolvedResolution'),
+          cancelScope: any(named: 'cancelScope'),
+          orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
+          dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
+          mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
         ),
       )..called(1);
       final captured = verification.captured;
@@ -900,6 +908,10 @@ void main() {
           bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
           raceMaxSources: any(named: 'raceMaxSources'),
           preResolvedResolution: any(named: 'preResolvedResolution'),
+          cancelScope: any(named: 'cancelScope'),
+          orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
+          dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
+          mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
         ),
       )..called(1);
       final selectedAgentIds = verification.captured.single as Set<String>;
@@ -944,6 +956,10 @@ void main() {
         bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
         raceMaxSources: any(named: 'raceMaxSources'),
         preResolvedResolution: any(named: 'preResolvedResolution'),
+        cancelScope: any(named: 'cancelScope'),
+        orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
+        dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
+        mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
       ),
     ).captured.single;
     check(captured as Set<String>).deepEquals(<String>{'agent-a'});
@@ -986,6 +1002,10 @@ void main() {
           bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
           raceMaxSources: any(named: 'raceMaxSources'),
           preResolvedResolution: any(named: 'preResolvedResolution'),
+          cancelScope: any(named: 'cancelScope'),
+          orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
+          dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
+          mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
         ),
       ).captured;
       final queryFilter =
@@ -1044,6 +1064,10 @@ void main() {
           bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
           raceMaxSources: any(named: 'raceMaxSources'),
           preResolvedResolution: any(named: 'preResolvedResolution'),
+          cancelScope: any(named: 'cancelScope'),
+          orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
+          dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
+          mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
         ),
       ).captured;
       final queryFilter =
@@ -1650,6 +1674,10 @@ void main() {
           bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
           raceMaxSources: any(named: 'raceMaxSources'),
           preResolvedResolution: any(named: 'preResolvedResolution'),
+          cancelScope: any(named: 'cancelScope'),
+          orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
+          dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
+          mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
         ),
       );
       verify(
@@ -1661,6 +1689,10 @@ void main() {
           bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
           raceMaxSources: any(named: 'raceMaxSources'),
           preResolvedResolution: any(named: 'preResolvedResolution'),
+          cancelScope: any(named: 'cancelScope'),
+          orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
+          dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
+          mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
         ),
       ).called(2);
       check(refreshMetrics.latest).isNotNull();
@@ -1754,6 +1786,10 @@ void main() {
           bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
           raceMaxSources: any(named: 'raceMaxSources'),
           preResolvedResolution: any(named: 'preResolvedResolution'),
+          cancelScope: any(named: 'cancelScope'),
+          orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
+          dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
+          mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
         ),
       );
       check(localMetrics.latest).isNotNull();
@@ -1845,6 +1881,10 @@ void main() {
         bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
         raceMaxSources: any(named: 'raceMaxSources'),
         preResolvedResolution: any(named: 'preResolvedResolution'),
+        cancelScope: any(named: 'cancelScope'),
+        orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
+        dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
+        mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
       ),
     );
     check(localMetrics.latest).isNotNull();
@@ -1932,6 +1972,10 @@ void main() {
         bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
         raceMaxSources: any(named: 'raceMaxSources'),
         preResolvedResolution: any(named: 'preResolvedResolution'),
+        cancelScope: any(named: 'cancelScope'),
+        orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
+        dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
+        mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
       ),
     );
     check(localMetrics.latest).isNotNull();
@@ -2099,6 +2143,10 @@ void main() {
           bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
           raceMaxSources: any(named: 'raceMaxSources'),
           preResolvedResolution: any(named: 'preResolvedResolution'),
+          cancelScope: any(named: 'cancelScope'),
+          orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
+          dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
+          mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
         ),
       ).called(2);
     },
@@ -2157,6 +2205,10 @@ void main() {
           bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
           raceMaxSources: any(named: 'raceMaxSources'),
           preResolvedResolution: any(named: 'preResolvedResolution'),
+          cancelScope: any(named: 'cancelScope'),
+          orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
+          dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
+          mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
         ),
       ).called(1);
       verify(
@@ -2168,6 +2220,10 @@ void main() {
           bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
           raceMaxSources: any(named: 'raceMaxSources'),
           preResolvedResolution: any(named: 'preResolvedResolution'),
+          cancelScope: any(named: 'cancelScope'),
+          orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
+          dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
+          mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
         ),
       ).called(2);
     },
@@ -2191,6 +2247,10 @@ void main() {
         bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
         raceMaxSources: any(named: 'raceMaxSources'),
         preResolvedResolution: any(named: 'preResolvedResolution'),
+        cancelScope: any(named: 'cancelScope'),
+        orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
+        dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
+        mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
       ),
     ).thenAnswer((_) => reportCompleter.future);
     final cancelToken = SalesLiveMapLoadCancelToken();
@@ -2270,6 +2330,10 @@ void _stubReportFuture(
       bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
       raceMaxSources: any(named: 'raceMaxSources'),
       preResolvedResolution: any(named: 'preResolvedResolution'),
+      cancelScope: any(named: 'cancelScope'),
+      orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
+      dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
+      mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
     ),
   ).thenAnswer((_) => result);
 }
@@ -2286,6 +2350,10 @@ void _stubSalesFailure(
       bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
       raceMaxSources: any(named: 'raceMaxSources'),
       preResolvedResolution: any(named: 'preResolvedResolution'),
+      cancelScope: any(named: 'cancelScope'),
+      orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
+      dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
+      mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
     ),
   ).thenAnswer(
     (_) async =>
@@ -2328,6 +2396,10 @@ void _stubCatalogFuture(
       bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
       raceMaxSources: any(named: 'raceMaxSources'),
       preResolvedResolution: any(named: 'preResolvedResolution'),
+      cancelScope: any(named: 'cancelScope'),
+      orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
+      dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
+      mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
     ),
   ).thenAnswer((_) => result);
 }
@@ -2344,6 +2416,10 @@ void _stubCatalogFailure(
       bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
       raceMaxSources: any(named: 'raceMaxSources'),
       preResolvedResolution: any(named: 'preResolvedResolution'),
+      cancelScope: any(named: 'cancelScope'),
+      orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
+      dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
+      mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
     ),
   ).thenAnswer(
     (_) async =>

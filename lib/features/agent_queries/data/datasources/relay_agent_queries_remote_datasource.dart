@@ -53,7 +53,7 @@ class RelayAgentQueriesRemoteDataSource
       );
     }
     final clientRequestId = _uuid.v4();
-    cancelScope?.trackPending(clientRequestId);
+    cancelScope?.trackRelayPending(clientRequestId);
     final body = _bodyMapper.buildRelayCommand(
       request: request,
       rpcId: clientRequestId,
@@ -73,7 +73,7 @@ class RelayAgentQueriesRemoteDataSource
             responseType: 'single',
           ),
         )
-        .whenComplete(() => cancelScope?.untrackPending(clientRequestId));
+        .whenComplete(() => cancelScope?.untrackRelayPending(clientRequestId));
   }
 
   @override
@@ -90,7 +90,7 @@ class RelayAgentQueriesRemoteDataSource
       );
     }
     final clientRequestId = _uuid.v4();
-    cancelScope?.trackPending(clientRequestId);
+    cancelScope?.trackRelayPending(clientRequestId);
     final body = _batchBodyMapper.buildRelayCommand(
       request: request,
       rpcId: clientRequestId,
@@ -110,7 +110,7 @@ class RelayAgentQueriesRemoteDataSource
             responseType: 'batch',
           ),
         )
-        .whenComplete(() => cancelScope?.untrackPending(clientRequestId));
+        .whenComplete(() => cancelScope?.untrackRelayPending(clientRequestId));
   }
 
   /// Same +5s buffer the REST and unitary socket paths apply, so the relay

@@ -201,8 +201,17 @@ void wireAgentQueriesSocketMetricsExport(GetIt getIt) {
   if (!getIt.isRegistered<MetricsAgentQueriesRepository>()) {
     return;
   }
-  getIt<SocketMetricsListener>().sqlAppendix =
-      () => getIt<MetricsAgentQueriesRepository>().appendixForSocketExport();
+  getIt<SocketMetricsListener>().sqlAppendix = () {
+    final chain = getIt<AgentQueriesRepositoryChain>();
+    final metrics = getIt<MetricsAgentQueriesRepository>();
+    return <String, Object?>{
+      ...metrics.appendixForSocketExport(),
+      ...MetricsAgentQueriesRepository.repositoryLayerAppendix(
+        cache: chain.cachingRepository,
+        coalescing: chain.coalescingRepository,
+      ),
+    };
+  };
 }
 
 /// Wires transport cancel handlers for [AgentQueriesCancelScope].
@@ -388,6 +397,9 @@ void _registerAgentQueriesRepositoryChain(GetIt getIt) {
       eligibility: getIt<AgentSqlExecutionEligibilityPort>(),
       maxCacheSize: AppEnvironment.agentSqlCacheMaxSize,
       cacheTtl: Duration(milliseconds: AppEnvironment.agentSqlCacheTtlMs),
+      catalogCacheTtl: AppEnvironment.agentSqlCatalogCacheTtlMs > 0
+          ? Duration(milliseconds: AppEnvironment.agentSqlCatalogCacheTtlMs)
+          : null,
       agentSqlRestMaxInflightPerAgent:
           AppEnvironment.agentSqlRestMaxInflightPerAgent,
     );
@@ -715,9 +727,9 @@ void _registerSingleAgentQueryRepositories(GetIt getIt) {
 }
 
 void _registerAcrossAgentQueryRepositories(GetIt getIt) {
-  // mergeAllConcurrency caps parallel bridge calls per wave; 8 aligns with
-  // AGENT_SQL_REST_MAX_INFLIGHT_PER_AGENT and reduces hub rate-limit bursts.
-  const mergeAllConcurrency = 8;
+  // mergeAllConcurrency caps parallel bridge calls per wave; aligns with
+  // AGENT_QUERY_MERGE_ALL_CONCURRENCY and per-agent inflight limits.
+  final mergeAllConcurrency = AppEnvironment.agentQueryMergeAllConcurrency;
   getIt
     ..registerLazySingleton<AgentQueryTargetResolver>(
       () => AgentQueryTargetResolver(
@@ -1014,7 +1026,7 @@ void _registerAcrossAgentQueryRepositories(GetIt getIt) {
 }
 
 void _registerFilterOptionsRepositories(GetIt getIt) {
-  const mergeAllConcurrency = 8;
+  final mergeAllConcurrency = AppEnvironment.agentQueryMergeAllConcurrency;
   getIt
     ..registerLazySingleton<
       ResumoVendasDiariasPorVendedorFilterOptionsRepository

@@ -68,27 +68,35 @@ class AgentQueryTransportPolicy {
     }
   }
 
-  AgentSqlExecuteBatchRequest applyBatch(AgentSqlExecuteBatchRequest request) {
-    if (request.useRelay || mode == AgentQueryTransportPolicyMode.legacy) {
+  AgentSqlExecuteBatchRequest applyBatch(
+    AgentSqlExecuteBatchRequest request, {
+    bool dashboardBatch = false,
+  }) {
+    if (request.useRelay) {
       return request;
     }
-    if (mode == AgentQueryTransportPolicyMode.preferRelay) {
-      return AgentSqlExecuteBatchRequest(
-        agentId: request.agentId,
-        commands: request.commands,
-        clientToken: request.clientToken,
-        requestingUserId: request.requestingUserId,
-        hubPresenceOnlineAgentIdsSnapshot:
-            request.hubPresenceOnlineAgentIdsSnapshot,
-        hubConnectedFromApprovedCatalogRow:
-            request.hubConnectedFromApprovedCatalogRow,
-        bridgeTimeoutMs: request.bridgeTimeoutMs,
-        options: request.options,
-        useRelay: true,
-        apiVersion: request.apiVersion,
-        payloadFrameCompression: request.payloadFrameCompression,
-      );
+    final shouldUseRelay = switch (mode) {
+      AgentQueryTransportPolicyMode.legacy => dashboardBatch,
+      AgentQueryTransportPolicyMode.preferRelay => true,
+      AgentQueryTransportPolicyMode.autoByShape => dashboardBatch,
+    };
+    if (!shouldUseRelay) {
+      return request;
     }
-    return request;
+    return AgentSqlExecuteBatchRequest(
+      agentId: request.agentId,
+      commands: request.commands,
+      clientToken: request.clientToken,
+      requestingUserId: request.requestingUserId,
+      hubPresenceOnlineAgentIdsSnapshot:
+          request.hubPresenceOnlineAgentIdsSnapshot,
+      hubConnectedFromApprovedCatalogRow:
+          request.hubConnectedFromApprovedCatalogRow,
+      bridgeTimeoutMs: request.bridgeTimeoutMs,
+      options: request.options,
+      useRelay: true,
+      apiVersion: request.apiVersion,
+      payloadFrameCompression: request.payloadFrameCompression,
+    );
   }
 }

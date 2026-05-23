@@ -32,6 +32,25 @@ abstract final class EnvKeys {
   /// TTL in milliseconds for the short in-memory SQL result cache.
   static const String agentSqlCacheTtlMs = 'AGENT_SQL_CACHE_TTL_MS';
 
+  /// Row-count threshold for offloading bridge response parsing to a worker
+  /// isolate. `0` disables isolate parsing.
+  static const String agentSqlParseIsolateRowThreshold =
+      'AGENT_SQL_PARSE_ISOLATE_ROW_THRESHOLD';
+
+  /// Longer TTL (ms) for read-only catalog SQL (e.g. cadastro filial).
+  /// `0` uses the standard [agentSqlCacheTtlMs].
+  static const String agentSqlCatalogCacheTtlMs =
+      'AGENT_SQL_CATALOG_CACHE_TTL_MS';
+
+  /// Parallel mergeAll wave size for across-agent orchestration. Default 8.
+  static const String agentQueryMergeAllConcurrency =
+      'AGENT_QUERY_MERGE_ALL_CONCURRENCY';
+
+  /// mergeAll wave cap for sales live map loads. `0` (default) mirrors
+  /// [socketMaxInflightPerAgent] or 8 when the gate is disabled.
+  static const String salesLiveMapMergeWaveSize =
+      'SALES_LIVE_MAP_MERGE_WAVE_SIZE';
+
   /// Optional bridge hint for overview read-only `sql.executeBatch`
   /// parallelism. Positive integer; the agent keeps the final safety cap.
   static const String agentSqlOverviewBatchMaxParallelReadOnlyItems =

@@ -140,6 +140,56 @@ void main() {
       check(thirdResult.getOrNull()?.totalCommands).equals(3);
     },
   );
+
+  test(
+    'coalesces identical requests under the same cancelScope traceId',
+    () async {
+      final delegate = _QueueAgentQueriesRepository();
+      final coalescing = CoalescingAgentQueriesRepository(delegate: delegate);
+      final scope = AgentQueriesCancelScope(traceId: 'load-1');
+      final completer = Completer<AppResult<AgentSqlExecutionResult>>();
+      delegate.enqueue((_) => completer.future);
+
+      final firstFuture = coalescing.executeSql(
+        baseRequest,
+        cancelScope: scope,
+      );
+      final secondFuture = coalescing.executeSql(
+        baseRequest,
+        cancelScope: scope,
+      );
+
+      check(delegate.callCount).equals(1);
+      check(coalescing.coalescedCount).equals(1);
+
+      completer.complete(_successResult(rowCount: 1));
+      await firstFuture;
+      await secondFuture;
+    },
+  );
+
+  test(
+    'does not coalesce identical requests with different cancelScope traceIds',
+    () async {
+      final delegate = _QueueAgentQueriesRepository();
+      final coalescing = CoalescingAgentQueriesRepository(delegate: delegate);
+      delegate
+        ..enqueue((_) async => _successResult(rowCount: 1))
+        ..enqueue((_) async => _successResult(rowCount: 2));
+
+      await coalescing.executeSql(
+        baseRequest,
+        cancelScope: AgentQueriesCancelScope(traceId: 'a'),
+      );
+      await coalescing.executeSql(
+        baseRequest,
+        cancelScope: AgentQueriesCancelScope(traceId: 'b'),
+      );
+
+      check(delegate.callCount).equals(2);
+      check(coalescing.coalescedCount).equals(0);
+    },
+  );
 }
 
 AppResult<AgentSqlExecutionResult> _successResult({required int rowCount}) {
