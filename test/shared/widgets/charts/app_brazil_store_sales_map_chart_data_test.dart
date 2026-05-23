@@ -733,52 +733,53 @@ void main() {
     test(
       'snapshot reuse key is stable for equivalent point content and ignores visual selection state',
       () {
-      const pointsA = <AppBrazilStoreSalesPoint>[
-        AppBrazilStoreSalesPoint(
-          id: 'sinop',
-          name: 'Loja Sinop',
-          uf: 'MT',
-          latitude: -11.8604,
-          longitude: -55.5091,
-          salesAmount: 100,
-          salesCount: 2,
-        ),
-      ];
-      const pointsB = <AppBrazilStoreSalesPoint>[
-        AppBrazilStoreSalesPoint(
-          id: 'sinop',
-          name: 'Loja Sinop',
-          uf: 'MT',
-          latitude: -11.8604,
-          longitude: -55.5091,
-          salesAmount: 100,
-          salesCount: 2,
-        ),
-      ];
+        const pointsA = <AppBrazilStoreSalesPoint>[
+          AppBrazilStoreSalesPoint(
+            id: 'sinop',
+            name: 'Loja Sinop',
+            uf: 'MT',
+            latitude: -11.8604,
+            longitude: -55.5091,
+            salesAmount: 100,
+            salesCount: 2,
+          ),
+        ];
+        const pointsB = <AppBrazilStoreSalesPoint>[
+          AppBrazilStoreSalesPoint(
+            id: 'sinop',
+            name: 'Loja Sinop',
+            uf: 'MT',
+            latitude: -11.8604,
+            longitude: -55.5091,
+            salesAmount: 100,
+            salesCount: 2,
+          ),
+        ];
 
-      final reuseKeyA = AppBrazilStoreSalesMapSnapshotBuilder.buildReuseKey(
-        points: pointsA,
-        fixedBranchIds: const <String>{'a'},
-        filterBranchIds: const <String>{'b'},
-        style: const AppBrazilStoreSalesMapStyle.standard(),
-        metric: AppBrazilStoreSalesMapMetric.revenue,
-        activeRegionKey: null,
-        zoomLevel: 2,
-      );
-      final reuseKeyB = AppBrazilStoreSalesMapSnapshotBuilder.buildReuseKey(
-        points: pointsB,
-        fixedBranchIds: const <String>{'a'},
-        filterBranchIds: const <String>{'b'},
-        style: const AppBrazilStoreSalesMapStyle.standard(),
-        metric: AppBrazilStoreSalesMapMetric.revenue,
-        selectedStoreId: 'other-store',
-        requestedStateKey: 'SP',
-        activeRegionKey: null,
-        zoomLevel: 2,
-      );
+        final reuseKeyA = AppBrazilStoreSalesMapSnapshotBuilder.buildReuseKey(
+          points: pointsA,
+          fixedBranchIds: const <String>{'a'},
+          filterBranchIds: const <String>{'b'},
+          style: const AppBrazilStoreSalesMapStyle.standard(),
+          metric: AppBrazilStoreSalesMapMetric.revenue,
+          activeRegionKey: null,
+          zoomLevel: 2,
+        );
+        final reuseKeyB = AppBrazilStoreSalesMapSnapshotBuilder.buildReuseKey(
+          points: pointsB,
+          fixedBranchIds: const <String>{'a'},
+          filterBranchIds: const <String>{'b'},
+          style: const AppBrazilStoreSalesMapStyle.standard(),
+          metric: AppBrazilStoreSalesMapMetric.revenue,
+          selectedStoreId: 'other-store',
+          requestedStateKey: 'SP',
+          activeRegionKey: null,
+          zoomLevel: 2,
+        );
 
-      expect(reuseKeyA, reuseKeyB);
-    });
+        expect(reuseKeyA, reuseKeyB);
+      },
+    );
 
     test(
       'snapshot builder keeps requested state when selected store is missing',

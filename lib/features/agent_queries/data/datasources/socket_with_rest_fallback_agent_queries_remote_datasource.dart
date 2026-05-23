@@ -3,6 +3,7 @@ import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 
 /// Wraps a primary (socket) datasource with a permanent REST
 /// fallback for the rare classes of failures that no amount of
@@ -64,19 +65,23 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
 
   @override
   Future<Map<String, dynamic>> postSqlExecute(
-    AgentSqlExecuteRequest request,
-  ) async {
+    AgentSqlExecuteRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
     if (_latched) {
-      return _restDelegate.postSqlExecute(request);
+      return _restDelegate.postSqlExecute(request, cancelScope: cancelScope);
     }
     try {
-      return await _socketDelegate.postSqlExecute(request);
+      return await _socketDelegate.postSqlExecute(
+        request,
+        cancelScope: cancelScope,
+      );
     } on SocketDispatchNamespaceForbidden catch (trigger) {
       _latch(trigger, reason: 'namespace_forbidden');
-      return _restDelegate.postSqlExecute(request);
+      return _restDelegate.postSqlExecute(request, cancelScope: cancelScope);
     } on SocketDispatchUnauthorized catch (trigger) {
       _latch(trigger, reason: 'unauthorized_exhausted');
-      return _restDelegate.postSqlExecute(request);
+      return _restDelegate.postSqlExecute(request, cancelScope: cancelScope);
     }
     // All other SocketDispatchException variants (timeout,
     // disconnected, app_error, decode_failed, cancelled) propagate
@@ -87,19 +92,32 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
 
   @override
   Future<Map<String, dynamic>> postSqlExecuteBatch(
-    AgentSqlExecuteBatchRequest request,
-  ) async {
+    AgentSqlExecuteBatchRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
     if (_latched) {
-      return _restDelegate.postSqlExecuteBatch(request);
+      return _restDelegate.postSqlExecuteBatch(
+        request,
+        cancelScope: cancelScope,
+      );
     }
     try {
-      return await _socketDelegate.postSqlExecuteBatch(request);
+      return await _socketDelegate.postSqlExecuteBatch(
+        request,
+        cancelScope: cancelScope,
+      );
     } on SocketDispatchNamespaceForbidden catch (trigger) {
       _latch(trigger, reason: 'namespace_forbidden');
-      return _restDelegate.postSqlExecuteBatch(request);
+      return _restDelegate.postSqlExecuteBatch(
+        request,
+        cancelScope: cancelScope,
+      );
     } on SocketDispatchUnauthorized catch (trigger) {
       _latch(trigger, reason: 'unauthorized_exhausted');
-      return _restDelegate.postSqlExecuteBatch(request);
+      return _restDelegate.postSqlExecuteBatch(
+        request,
+        cancelScope: cancelScope,
+      );
     }
   }
 

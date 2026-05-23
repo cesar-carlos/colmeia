@@ -2,6 +2,7 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_produto_venda_lucratividade_mensal_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/overview/domain/overview_last_twelve_months_venda_range.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.dart';
@@ -26,6 +27,7 @@ class LoadSalesMonthlyPnlLinesUseCase {
     required String agentId,
     required OverviewYearMonth anchor,
     String? clientToken,
+    AgentQueriesCancelScope? cancelScope,
   }) async {
     final trimmedAgentId = agentId.trim();
     final last12 = OverviewLast12MonthsVendaRange.fromPeriodEnd(anchor.end);
@@ -40,6 +42,7 @@ class LoadSalesMonthlyPnlLinesUseCase {
       filter: filter,
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs,
+      cancelScope: cancelScope,
     );
 
     return result.fold(

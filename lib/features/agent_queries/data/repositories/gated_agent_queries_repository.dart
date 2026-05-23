@@ -5,6 +5,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_e
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_sql_execution_eligibility_port.dart';
 import 'package:result_dart/result_dart.dart';
@@ -24,8 +25,9 @@ class GatedAgentQueriesRepository implements AgentQueriesRepository {
 
   @override
   Future<AppResult<AgentSqlExecutionResult>> executeSql(
-    AgentSqlExecuteRequest request,
-  ) async {
+    AgentSqlExecuteRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
     final userId = request.trimmedRequestingUserId;
     if (userId == null || userId.isEmpty) {
       if (!_loggedMissingRequestingUserId) {
@@ -39,7 +41,7 @@ class GatedAgentQueriesRepository implements AgentQueriesRepository {
           },
         );
       }
-      return _delegate.executeSql(request);
+      return _delegate.executeSql(request, cancelScope: cancelScope);
     }
 
     final decision = await _eligibility.evaluate(
@@ -64,16 +66,17 @@ class GatedAgentQueriesRepository implements AgentQueriesRepository {
         ),
       );
     }
-    return _delegate.executeSql(request);
+    return _delegate.executeSql(request, cancelScope: cancelScope);
   }
 
   @override
   Future<AppResult<AgentSqlBatchExecutionResult>> executeSqlBatch(
-    AgentSqlExecuteBatchRequest request,
-  ) async {
+    AgentSqlExecuteBatchRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
     final userId = request.trimmedRequestingUserId;
     if (userId == null || userId.isEmpty) {
-      return _delegate.executeSqlBatch(request);
+      return _delegate.executeSqlBatch(request, cancelScope: cancelScope);
     }
 
     final decision = await _eligibility.evaluate(
@@ -98,6 +101,6 @@ class GatedAgentQueriesRepository implements AgentQueriesRepository {
         ),
       );
     }
-    return _delegate.executeSqlBatch(request);
+    return _delegate.executeSqlBatch(request, cancelScope: cancelScope);
   }
 }

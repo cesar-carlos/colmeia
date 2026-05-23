@@ -8,6 +8,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:result_dart/result_dart.dart';
@@ -181,38 +182,41 @@ void main() {
     check(caching.batchCacheHits).equals(0);
   });
 
-  test('evicts oldest across sql and batch when combined size exceeds max', () async {
-    final delegate = _SequenceAgentQueriesRepository();
-    final caching = CachingAgentQueriesRepository(
-      delegate: delegate,
-      maxCacheSize: 2,
-    );
-    delegate
-      ..enqueue(_successResult(rowCount: 1))
-      ..enqueueBatch(_successBatchResult())
-      ..enqueue(_successResult(rowCount: 2))
-      ..enqueue(_successResult(rowCount: 3));
+  test(
+    'evicts oldest across sql and batch when combined size exceeds max',
+    () async {
+      final delegate = _SequenceAgentQueriesRepository();
+      final caching = CachingAgentQueriesRepository(
+        delegate: delegate,
+        maxCacheSize: 2,
+      );
+      delegate
+        ..enqueue(_successResult(rowCount: 1))
+        ..enqueueBatch(_successBatchResult())
+        ..enqueue(_successResult(rowCount: 2))
+        ..enqueue(_successResult(rowCount: 3));
 
-    await caching.executeSql(_request('SELECT a'));
-    await caching.executeSqlBatch(
-      const AgentSqlExecuteBatchRequest(
-        agentId: 'agent-1',
-        commands: <AgentSqlExecuteBatchCommand>[
-          AgentSqlExecuteBatchCommand(sql: 'BATCH', executionOrder: 0),
-        ],
-      ),
-    );
-    check(caching.cacheSize).equals(2);
+      await caching.executeSql(_request('SELECT a'));
+      await caching.executeSqlBatch(
+        const AgentSqlExecuteBatchRequest(
+          agentId: 'agent-1',
+          commands: <AgentSqlExecuteBatchCommand>[
+            AgentSqlExecuteBatchCommand(sql: 'BATCH', executionOrder: 0),
+          ],
+        ),
+      );
+      check(caching.cacheSize).equals(2);
 
-    await caching.executeSql(_request('SELECT b'));
-    check(caching.cacheSize).equals(2);
-    check(delegate.callCount).equals(2);
-    check(delegate.batchCallCount).equals(1);
+      await caching.executeSql(_request('SELECT b'));
+      check(caching.cacheSize).equals(2);
+      check(delegate.callCount).equals(2);
+      check(delegate.batchCallCount).equals(1);
 
-    final reloadedA = await caching.executeSql(_request('SELECT a'));
-    check(reloadedA.getOrNull()?.rowCount).equals(3);
-    check(delegate.callCount).equals(3);
-  });
+      final reloadedA = await caching.executeSql(_request('SELECT a'));
+      check(reloadedA.getOrNull()?.rowCount).equals(3);
+      check(delegate.callCount).equals(3);
+    },
+  );
 }
 
 AgentSqlExecuteRequest _request(String sql) {
@@ -256,8 +260,9 @@ final class _SequenceAgentQueriesRepository implements AgentQueriesRepository {
 
   @override
   Future<AppResult<AgentSqlExecutionResult>> executeSql(
-    AgentSqlExecuteRequest request,
-  ) async {
+    AgentSqlExecuteRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
     callCount++;
     if (delay > Duration.zero) {
       await Future<void>.delayed(delay);
@@ -267,8 +272,9 @@ final class _SequenceAgentQueriesRepository implements AgentQueriesRepository {
 
   @override
   Future<AppResult<AgentSqlBatchExecutionResult>> executeSqlBatch(
-    AgentSqlExecuteBatchRequest request,
-  ) async {
+    AgentSqlExecuteBatchRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
     batchCallCount++;
     if (delay > Duration.zero) {
       await Future<void>.delayed(delay);

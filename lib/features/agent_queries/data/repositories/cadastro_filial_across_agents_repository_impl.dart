@@ -13,6 +13,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_query_targe
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_across_agents_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/cadastro_filial_across_agents_repository.dart';
 import 'package:result_dart/result_dart.dart';
 
@@ -55,6 +56,7 @@ class CadastroFilialAcrossAgentsRepositoryImpl
     int? bridgeTimeoutMs,
     int? raceMaxSources,
     AgentQueryTargetResolution? preResolvedResolution,
+    AgentQueriesCancelScope? cancelScope,
   }) {
     return AgentQueryListReportAcrossAgentsCoordinator.executeLoadedMapped<
       CadastroFilialAcrossAgentsPageResult,
@@ -87,6 +89,7 @@ class CadastroFilialAcrossAgentsRepositoryImpl
                   resolution.hubPresenceOnlineAgentIdsSnapshot,
               hubConnectedFromApprovedCatalogRow:
                   target.hubConnectedFromApprovedCatalogRow,
+              cancelScope: cancelScope,
             );
             return result.fold(
               (page) =>
@@ -112,6 +115,7 @@ class CadastroFilialAcrossAgentsRepositoryImpl
     int? bridgeTimeoutMs,
     int? raceMaxSources,
     AgentQueryTargetResolution? preResolvedResolution,
+    AgentQueriesCancelScope? cancelScope,
   }) {
     final paginationStalledAgentIds = <String>{};
     return AgentQueryListReportAcrossAgentsCoordinator.executeLoadedMapped<
@@ -148,6 +152,7 @@ class CadastroFilialAcrossAgentsRepositoryImpl
                   resolution.hubPresenceOnlineAgentIdsSnapshot,
               hubConnectedFromApprovedCatalogRow:
                   target.hubConnectedFromApprovedCatalogRow,
+              cancelScope: cancelScope,
             );
           },
       mapReport: (report) => CadastroFilialAcrossAgentsPageResult.fromReport(
@@ -167,6 +172,7 @@ class CadastroFilialAcrossAgentsRepositoryImpl
     int? bridgeTimeoutMs,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
   }) async {
     // Catalog spike (PR4): Option A (single unbounded SQL) is not used here
     // because the hub still enforces `max_rows`. Option C (parallel pages)
@@ -192,6 +198,7 @@ class CadastroFilialAcrossAgentsRepositoryImpl
         bridgeTimeoutMs: bridgeTimeoutMs,
         hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
         hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
+        cancelScope: cancelScope,
       );
       final loaded = result.getOrNull();
       if (loaded == null) {

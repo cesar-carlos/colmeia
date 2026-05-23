@@ -513,7 +513,12 @@ abstract final class AppReportExportHandler {
           .join(',');
       buffer.writeln(line);
     }
-    final bytes = Uint8List.fromList(utf8.encode(buffer.toString()));
+    final bytes = Uint8List.fromList(<int>[
+      0xEF,
+      0xBB,
+      0xBF,
+      ...utf8.encode(buffer.toString()),
+    ]);
     await _shareExportBytes(
       format: AppReportExportFormat.csv,
       bytes: bytes,

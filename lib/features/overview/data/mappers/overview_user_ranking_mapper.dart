@@ -33,10 +33,12 @@ List<OverviewUserRanking> overviewUserRankingsFromResumoParcelaPorUsuarioRows(
       rowLabels,
     );
     final key = overviewUserRankingNormalizeKey(row.nomeUsuario, rowLabels);
-    buckets.putIfAbsent(key, () => _UserTotals(userName: displayName)).add(
-      row.qtdVendas,
-      row.valorParcela,
-    );
+    buckets
+        .putIfAbsent(key, () => _UserTotals(userName: displayName))
+        .add(
+          row.qtdVendas,
+          row.valorParcela,
+        );
   }
   final rankings =
       buckets.values

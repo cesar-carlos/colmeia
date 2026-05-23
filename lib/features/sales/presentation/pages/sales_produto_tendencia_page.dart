@@ -16,6 +16,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/marca_produto_opt
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
@@ -208,6 +209,7 @@ class SalesProdutoTendenciaPage extends StatefulWidget {
     required this.loadTrendScreenUseCase,
     required this.loadGrupoProdutoOptionsUseCase,
     required this.loadMarcaProdutoOptionsUseCase,
+    this.relayCancelScopeBinder,
     super.key,
   });
 
@@ -217,6 +219,7 @@ class SalesProdutoTendenciaPage extends StatefulWidget {
   final LoadProdutoVendidoTendenciaDeVendaScreenUseCase loadTrendScreenUseCase;
   final LoadGrupoProdutoOptionsUseCase loadGrupoProdutoOptionsUseCase;
   final LoadMarcaProdutoOptionsUseCase loadMarcaProdutoOptionsUseCase;
+  final AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder;
 
   @override
   State<SalesProdutoTendenciaPage> createState() =>
@@ -259,6 +262,8 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
 
   bool _loading = false;
   String? _error;
+  int _sqlLoadGeneration = 0;
+  AgentQueriesCancelScope? _sqlCancelScope;
   List<ProdutoVendidoTendenciaDeVendaRow> _rows =
       const <ProdutoVendidoTendenciaDeVendaRow>[];
   List<ProdutoVendidoTendenciaDeVendaSummaryRow> _summaryRows =
@@ -321,6 +326,12 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     });
   }
 
+  @override
+  void dispose() {
+    _sqlCancelScope?.cancelAll();
+    super.dispose();
+  }
+
   Future<void> _loadAgents() async {
     final auth = context.read<AuthController>();
     final userId = auth.session?.userId;
@@ -376,6 +387,12 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     final agentId = _selectedAgentId;
     markAutoRefreshCancelled();
 
+    final generation = ++_sqlLoadGeneration;
+    _sqlCancelScope?.cancelAll();
+    final sqlScope = AgentQueriesCancelScope();
+    _sqlCancelScope = sqlScope;
+    widget.relayCancelScopeBinder?.call(sqlScope);
+
     setState(() {
       _loading = true;
       _error = null;
@@ -399,7 +416,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
       userId: userId,
       agentId: trimmedAgentId,
     );
-    if (!mounted) {
+    if (!mounted || generation != _sqlLoadGeneration) {
       return;
     }
     if (clientToken == null) {
@@ -419,7 +436,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
         agentId: trimmedAgentId,
         clientToken: clientToken,
       );
-      if (!mounted) {
+      if (!mounted || generation != _sqlLoadGeneration) {
         return;
       }
     }
@@ -449,9 +466,10 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
       pageFilter: detailFilter,
       summaryFilter: summaryFilter,
       clientToken: clientToken,
+      cancelScope: sqlScope,
     );
 
-    if (!mounted) {
+    if (!mounted || generation != _sqlLoadGeneration) {
       return;
     }
 

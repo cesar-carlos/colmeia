@@ -57,55 +57,56 @@ void main() {
   testWidgets(
     'applies municipality detail and marker visual from the current selection',
     (tester) async {
-    SalesLiveMapFilter? appliedFilter;
+      SalesLiveMapFilter? appliedFilter;
 
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.light(),
-        locale: const Locale('en'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Builder(
-          builder: (context) {
-            return Scaffold(
-              body: SalesLiveMapFiltersSheet(
-                l10n: AppLocalizations.of(context),
-                availableAgents: const <OverviewAgentOption>[
-                  OverviewAgentOption(
-                    agentId: 'agent-1',
-                    name: 'Branch with token',
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              return Scaffold(
+                body: SalesLiveMapFiltersSheet(
+                  l10n: AppLocalizations.of(context),
+                  availableAgents: const <OverviewAgentOption>[
+                    OverviewAgentOption(
+                      agentId: 'agent-1',
+                      name: 'Branch with token',
+                    ),
+                  ],
+                  availableBranches: const <SalesLiveMapBranchOption>[
+                    SalesLiveMapBranchOption(
+                      id: 'agent-1-1-1',
+                      agentId: 'agent-1',
+                      agentName: 'Branch with token',
+                      codEmpresa: 1,
+                      codFilial: 1,
+                      registrationName: 'Branch with token',
+                      city: 'Sinop',
+                      uf: 'MT',
+                    ),
+                  ],
+                  initialFilter: const SalesLiveMapFilter(
+                    detailLevel: SalesLiveMapMapDetail.municipalities,
+                    markerVisual: SalesLiveMapMarkerVisual.bubble,
                   ),
-                ],
-                availableBranches: const <SalesLiveMapBranchOption>[
-                  SalesLiveMapBranchOption(
-                    id: 'agent-1-1-1',
-                    agentId: 'agent-1',
-                    agentName: 'Branch with token',
-                    codEmpresa: 1,
-                    codFilial: 1,
-                    registrationName: 'Branch with token',
-                    city: 'Sinop',
-                    uf: 'MT',
-                  ),
-                ],
-                initialFilter: const SalesLiveMapFilter(
-                  detailLevel: SalesLiveMapMapDetail.municipalities,
-                  markerVisual: SalesLiveMapMarkerVisual.bubble,
+                  onApply: (filter) => appliedFilter = filter,
                 ),
-                onApply: (filter) => appliedFilter = filter,
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
-      ),
-    );
+      );
 
-    await tester.tap(find.text('Apply filters'));
-    await tester.pump();
+      await tester.tap(find.text('Apply filters'));
+      await tester.pump();
 
-    expect(appliedFilter?.detailLevel, SalesLiveMapMapDetail.municipalities);
-    expect(appliedFilter?.markerVisual, SalesLiveMapMarkerVisual.bubble);
-  });
+      expect(appliedFilter?.detailLevel, SalesLiveMapMapDetail.municipalities);
+      expect(appliedFilter?.markerVisual, SalesLiveMapMarkerVisual.bubble);
+    },
+  );
 
   testWidgets(
     'shows fantasy as secondary info and finds branches by fantasy search',

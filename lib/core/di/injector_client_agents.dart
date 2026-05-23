@@ -17,12 +17,12 @@ import 'package:colmeia/features/client_agents/application/usecases/load_managed
 import 'package:colmeia/features/client_agents/application/usecases/load_owner_access_requests_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_owner_approved_clients_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/observe_agent_presence_use_case.dart';
+import 'package:colmeia/features/client_agents/application/usecases/persist_client_agent_profile_snapshot_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/probe_client_approved_agent_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_remove_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/queue_client_agent_request_access_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/read_pending_client_agent_actions_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/reject_owner_access_request_use_case.dart';
-import 'package:colmeia/features/client_agents/application/usecases/persist_client_agent_profile_snapshot_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/remove_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/retry_client_access_request_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/revoke_owner_client_access_use_case.dart';

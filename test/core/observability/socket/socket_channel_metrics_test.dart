@@ -27,6 +27,8 @@ void main() {
       check(snap.relayGzipDecodeIsolateTotal).equals(0);
       check(snap.relayJsonDecodeIsolateTotal).equals(0);
       check(snap.relayDecodeFailureTotalByCode).isEmpty();
+      check(snap.restFallbackLatchTotal).equals(0);
+      check(snap.lastGateSessionPeakSample).equals(0);
     });
 
     test('handshake histogram aggregates count, mean and percentiles', () {
@@ -159,6 +161,19 @@ void main() {
       ).equals(2);
     });
 
+    test('REST fallback latch and gate session peak sample export', () {
+      metrics
+        ..recordRestFallbackLatch()
+        ..recordRestFallbackLatch()
+        ..lastGateSessionPeakSample = 7;
+      final snap = metrics.snapshot();
+      check(snap.restFallbackLatchTotal).equals(2);
+      check(snap.lastGateSessionPeakSample).equals(7);
+      final compact = snap.toCompactSessionExport();
+      check(compact['restFallbackLatchTotal']).equals(2);
+      check(compact['lastGateSessionPeakSample']).equals(7);
+    });
+
     test('relay payload decode metrics record and reset', () {
       metrics
         ..recordRelayPayloadDecodeWallClock(
@@ -208,6 +223,8 @@ void main() {
         )
         ..recordRelayPayloadGzipDecodeIsolate()
         ..recordRelayDecodeFailure(code: 'malformed_frame')
+        ..recordRestFallbackLatch()
+        ..lastGateSessionPeakSample = 9
         ..reset();
 
       final snap = metrics.snapshot();
@@ -220,6 +237,8 @@ void main() {
       check(snap.relayPayloadDecodeWallClockMs.count).equals(0);
       check(snap.relayGzipDecodeIsolateTotal).equals(0);
       check(snap.relayDecodeFailureTotalByCode).isEmpty();
+      check(snap.restFallbackLatchTotal).equals(0);
+      check(snap.lastGateSessionPeakSample).equals(0);
     });
   });
 }

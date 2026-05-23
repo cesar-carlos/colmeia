@@ -1,6 +1,7 @@
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_page_result.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/cadastro_filial_repository.dart';
 
 class LoadCadastroFilialPageUseCase {
@@ -16,6 +17,7 @@ class LoadCadastroFilialPageUseCase {
     int? bridgeTimeoutMs,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
   }) {
     return _repository.loadPage(
       userId: userId,
@@ -25,6 +27,7 @@ class LoadCadastroFilialPageUseCase {
       bridgeTimeoutMs: bridgeTimeoutMs,
       hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
       hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
+      cancelScope: cancelScope,
     );
   }
 }

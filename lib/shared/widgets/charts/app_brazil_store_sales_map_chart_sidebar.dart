@@ -380,8 +380,8 @@ class _DesktopBranchSidebarState extends State<_DesktopBranchSidebar> {
                         message: l10n.brazilStoreSalesMapSidebarCollapseTooltip,
                         child: InkWell(
                           key: const ValueKey<String>(
-                          'brazil-store-sales-map-sidebar-collapse',
-                        ),
+                            'brazil-store-sales-map-sidebar-collapse',
+                          ),
                           borderRadius: BorderRadius.circular(12),
                           onTap: widget.onToggleCollapsed,
                           child: Padding(

@@ -10,6 +10,7 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_produto
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_produto_rank_lucro_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_produto_rank_lucro_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_produto_rank_lucro_sort_by.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
@@ -43,6 +44,7 @@ class SalesProdutoRankLucroPage extends StatefulWidget {
     required this.loadSalesAvailableAgentsUseCase,
     required this.resolveSalesAgentClientTokenUseCase,
     required this.loadProdutoVendidoProdutoRankLucroUseCase,
+    this.relayCancelScopeBinder,
     super.key,
   });
 
@@ -51,6 +53,7 @@ class SalesProdutoRankLucroPage extends StatefulWidget {
   final ResolveSalesAgentClientTokenUseCase resolveSalesAgentClientTokenUseCase;
   final LoadProdutoVendidoProdutoRankLucroUseCase
   loadProdutoVendidoProdutoRankLucroUseCase;
+  final AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder;
 
   @override
   State<SalesProdutoRankLucroPage> createState() =>
@@ -79,6 +82,9 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
 
   bool _loading = false;
   String? _error;
+
+  int _sqlLoadGeneration = 0;
+  AgentQueriesCancelScope? _sqlCancelScope;
 
   DateTimeRange _fullMonthInclusiveRange(DateTime anchor) => DateTimeRange(
     start: DateTime(anchor.year, anchor.month),
@@ -132,6 +138,12 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_loadAgents());
     });
+  }
+
+  @override
+  void dispose() {
+    _sqlCancelScope?.cancelAll();
+    super.dispose();
   }
 
   Future<void> _loadAgents() async {
@@ -189,6 +201,12 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
     final agentId = _selectedAgentId;
     markAutoRefreshCancelled();
 
+    final generation = ++_sqlLoadGeneration;
+    _sqlCancelScope?.cancelAll();
+    final sqlScope = AgentQueriesCancelScope();
+    _sqlCancelScope = sqlScope;
+    widget.relayCancelScopeBinder?.call(sqlScope);
+
     setState(() {
       _loading = true;
       _error = null;
@@ -211,7 +229,7 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
       userId: userId,
       agentId: trimmedAgentId,
     );
-    if (!mounted) {
+    if (!mounted || generation != _sqlLoadGeneration) {
       return;
     }
     if (clientToken == null) {
@@ -242,9 +260,10 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
         sortBy: sortBy,
       ),
       clientToken: clientToken,
+      cancelScope: sqlScope,
     );
 
-    if (!mounted) {
+    if (!mounted || generation != _sqlLoadGeneration) {
       return;
     }
 

@@ -1,3 +1,4 @@
+import 'package:colmeia/core/di/injector_agent_queries.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_registry.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/discover_agent_rpc_methods_use_case.dart';
@@ -57,6 +58,8 @@ void registerInjectorPresentation(GetIt getIt) {
         getIt<LoadOverviewUseCase>(),
         getIt<LoadOverviewOnlineAgentIdsUseCase>(),
         agentRpcCapabilitiesRegistry: getIt<AgentRpcCapabilitiesRegistry>(),
+        relayCancelScopeBinder: (scope) =>
+            wireAgentQueriesCancelScopeHandlers(getIt, scope),
       ),
     )
     ..registerFactory<ClientAgentsController>(

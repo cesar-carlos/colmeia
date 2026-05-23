@@ -1,6 +1,12 @@
 import 'dart:async';
 import 'dart:collection';
 
+/// Thrown when a queued [PerAgentConcurrencyGate.acquire] wait is cancelled
+/// (e.g. `RelayCommandDispatcher.cancel`) before a slot is granted.
+final class GateQueueWaitCancelled implements Exception {
+  const GateQueueWaitCancelled();
+}
+
 /// Bounds the number of in-flight `agents:command` dispatches per agent.
 ///
 /// Mirror of the hub's `SOCKET_REST_AGENT_MAX_INFLIGHT` (default 32) but
@@ -62,6 +68,10 @@ class PerAgentConcurrencyGate {
   final Map<String, Queue<_QueuedWaiter>> _waiters =
       <String, Queue<_QueuedWaiter>>{};
 
+  /// Max value of [peakInflight] observed since process start (or last
+  /// [resetSessionConcurrencyPeak]). Used for client-side session gauges.
+  int _sessionPeakMaxAgentInflight = 0;
+
   /// Currently consumed slots for [agentId]. Useful for metrics.
   int inflightFor(String agentId) => _inflight[agentId] ?? 0;
 
@@ -77,13 +87,43 @@ class PerAgentConcurrencyGate {
     return peak;
   }
 
+  /// Session maximum of [peakInflight] (max concurrent slots for any single
+  /// agent at a point in time). Resets when [resetSessionConcurrencyPeak]
+  /// is called (typically after exporting metrics on disconnect).
+  int get sessionPeakMaxAgentInflight => _sessionPeakMaxAgentInflight;
+
+  void _observeConcurrencyPeak() {
+    final peak = peakInflight;
+    if (peak > _sessionPeakMaxAgentInflight) {
+      _sessionPeakMaxAgentInflight = peak;
+    }
+  }
+
+  /// Clears the session peak gauge after it has been sampled for export.
+  void resetSessionConcurrencyPeak() {
+    _sessionPeakMaxAgentInflight = 0;
+  }
+
   /// Number of waiters currently blocked on [agentId].
   int waitingFor(String agentId) => _waiters[agentId]?.length ?? 0;
 
-  Future<void> acquire(String agentId) async {
+  /// Removes a queued [acquire] waiter without granting a slot. Used when
+  /// the owning request is cancelled before [acquire] completes.
+  void cancelQueuedWaiter(String agentId, Completer<void> waiter) {
+    _removeQueuedWaiter(agentId, waiter);
+    if (!waiter.isCompleted) {
+      waiter.completeError(const GateQueueWaitCancelled());
+    }
+  }
+
+  Future<void> acquire(
+    String agentId, {
+    void Function(Completer<void> queuedWaitCompleter)? onQueuedWaiter,
+  }) async {
     final current = _inflight[agentId] ?? 0;
     if (current < maxInflightPerAgent) {
       _inflight[agentId] = current + 1;
+      _observeConcurrencyPeak();
       return;
     }
     final queue = _waiters.putIfAbsent(agentId, Queue<_QueuedWaiter>.new);
@@ -114,11 +154,13 @@ class PerAgentConcurrencyGate {
       });
     }
     queue.add(_QueuedWaiter(completer: completer, timeoutTimer: timer));
+    onQueuedWaiter?.call(completer);
     try {
       await completer.future;
     } finally {
       timer?.cancel();
     }
+    _observeConcurrencyPeak();
   }
 
   void release(String agentId) {
@@ -145,6 +187,7 @@ class PerAgentConcurrencyGate {
     } else {
       _inflight[agentId] = current - 1;
     }
+    _observeConcurrencyPeak();
   }
 
   void _removeQueuedWaiter(String agentId, Completer<void> target) {

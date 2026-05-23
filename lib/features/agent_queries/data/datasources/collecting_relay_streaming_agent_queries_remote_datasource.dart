@@ -6,6 +6,7 @@ import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_st
 import 'package:colmeia/features/agent_queries/data/streaming_sql_execute_collector.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 
 /// Adapter that lets a repository **already wired to the unary
 /// `AgentQueriesRemoteDataSource` port** benefit from the relay
@@ -55,8 +56,9 @@ class CollectingRelayStreamingAgentQueriesRemoteDataSource
 
   @override
   Future<Map<String, dynamic>> postSqlExecute(
-    AgentSqlExecuteRequest request,
-  ) {
+    AgentSqlExecuteRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) {
     final agentId = request.trimmedAgentId;
     late final _PerAgentStreamingQueue queue;
     queue = _queuesByAgentId.putIfAbsent(
@@ -72,15 +74,20 @@ class CollectingRelayStreamingAgentQueriesRemoteDataSource
     );
     return queue.run(
       () => _collector.collect(
-        _streamingDelegate.streamSqlExecute(request),
+        _streamingDelegate.streamSqlExecute(
+          request,
+          cancelScope: cancelScope,
+        ),
+        cancelScope: cancelScope,
       ),
     );
   }
 
   @override
   Future<Map<String, dynamic>> postSqlExecuteBatch(
-    AgentSqlExecuteBatchRequest request,
-  ) {
+    AgentSqlExecuteBatchRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) {
     final batchDelegate = _batchDelegate;
     if (batchDelegate == null) {
       throw UnsupportedError(
@@ -88,7 +95,10 @@ class CollectingRelayStreamingAgentQueriesRemoteDataSource
         'without a batch delegate',
       );
     }
-    return batchDelegate.postSqlExecuteBatch(request);
+    return batchDelegate.postSqlExecuteBatch(
+      request,
+      cancelScope: cancelScope,
+    );
   }
 }
 

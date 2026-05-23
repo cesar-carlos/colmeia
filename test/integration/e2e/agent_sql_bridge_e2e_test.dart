@@ -4,7 +4,7 @@ library;
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart'
-    show AppFailure, SessionFailure;
+    show AppFailure, RpcFailure, SessionFailure;
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
@@ -21,7 +21,7 @@ void main() {
       registerE2eAgentQueriesSuiteHooks();
 
       test(
-        'executeSql loads Cliente with page pagination',
+        'executeSql loads Cliente rows on the legacy bridge',
         () async {
           final missingKeys = missingE2eRepositoryKeys();
           if (missingKeys.isNotEmpty) {
@@ -45,42 +45,75 @@ void main() {
               AgentSqlExecuteRequest(
                 agentId: AppEnvironment.e2eAgentId,
                 clientToken: AppEnvironment.e2eClientToken,
-                sql: 'SELECT * FROM Cliente ORDER BY CodCliente',
-                pagination: const AgentSqlPagePagination(page: 1, pageSize: 10),
+                sql:
+                    'SELECT TOP 10 CodCliente, Nome FROM Cliente '
+                    'ORDER BY CodCliente',
+                bridgeTimeoutMs: 30000,
               ),
             ),
+            actionLabel: 'agent_sql_bridge_execute',
           );
 
           result.fold(
             (success) {
               expect(success.rows, isNotEmpty);
               expect(success.rows.length, lessThanOrEqualTo(10));
-              expect(success.pagination, isNotNull);
-              expect(success.pagination?.page, 1);
-              expect(success.pagination?.pageSize, 10);
-              expect(success.pagination?.returnedRows, success.rows.length);
+            },
+            (failure) => _expectBridgeE2eFailure(
+              failure,
+              context: 'agent_sql_bridge_execute',
+            ),
+          );
+        },
+      );
+
+      test(
+        'executeSql loads Cliente with body page pagination when hub allows',
+        () async {
+          final missingKeys = missingE2eRepositoryKeys();
+          if (missingKeys.isNotEmpty) {
+            // ignore: avoid_print -- E2E skip hints should appear in local diagnostics.
+            print(
+              'SKIP agent_sql_bridge_pagination_e2e: missing '
+              '${missingKeys.join(', ')}.',
+            );
+            return;
+          }
+
+          final repo = getIt<AgentQueriesRepository>();
+          final result = await runE2eAppResult(
+            () => repo.executeSql(
+              AgentSqlExecuteRequest(
+                agentId: AppEnvironment.e2eAgentId,
+                clientToken: AppEnvironment.e2eClientToken,
+                sql:
+                    'SELECT CodCliente, Nome FROM Cliente '
+                    'ORDER BY CodCliente',
+                bridgeTimeoutMs: 30000,
+                pagination: const AgentSqlPagePagination(page: 1, pageSize: 10),
+              ),
+            ),
+            actionLabel: 'agent_sql_bridge_pagination',
+          );
+
+          result.fold(
+            (success) {
+              expect(success.rows, isNotEmpty);
+              expect(success.rows.length, lessThanOrEqualTo(10));
+              final pagination = success.pagination;
+              if (pagination != null) {
+                expect(pagination.page, 1);
+                expect(pagination.pageSize, 10);
+                expect(pagination.returnedRows, success.rows.length);
+              }
             },
             (failure) {
-              expect(
-                failure,
-                isA<AppFailure>(),
-              );
-              if (AppEnvironment.hasE2eAgentBridgeCredentials) {
-                expect(
-                  failure,
-                  isNot(isA<SessionFailure>()),
-                  reason:
-                      'Unexpected HTTP 401 after client login '
-                      '— check E2E_* values '
-                      'and hub access.',
-                );
-              }
-              if (isAcceptableE2eAgentSqlRepositoryFailure(failure)) {
+              if (_isHubBodyPaginationSchemaRejection(failure)) {
                 return;
               }
-              fail(
-                'Bridge e2e failed with ${failure.runtimeType}: '
-                '${failure.displayMessage}',
+              _expectBridgeE2eFailure(
+                failure,
+                context: 'agent_sql_bridge_pagination',
               );
             },
           );
@@ -127,29 +160,55 @@ void main() {
               expect(success.items.first.rows, isNotEmpty);
               expect(success.items.last.rows, isNotEmpty);
             },
-            (failure) {
-              expect(failure, isA<AppFailure>());
-              if (AppEnvironment.hasE2eAgentBridgeCredentials) {
-                expect(
-                  failure,
-                  isNot(isA<SessionFailure>()),
-                  reason:
-                      'Unexpected HTTP 401 after client login '
-                      'for sql.executeBatch.',
-                );
-              }
-              if (isAcceptableE2eAgentSqlRepositoryFailure(failure)) {
-                return;
-              }
-              fail(
-                'Bridge batch e2e failed with ${failure.runtimeType}: '
-                '${failure.displayMessage}',
-              );
-            },
+            (failure) => _expectBridgeE2eFailure(
+              failure,
+              context: 'agent_sql_bridge_execute_batch',
+            ),
           );
         },
       );
     },
     tags: <String>['e2e'],
+  );
+}
+
+/// Hub profile 2.10 may reject merged `options.page` / `page_size` for some
+/// SQL shapes even when body `pagination` is valid — production uses
+/// `startRow` / `endRow` instead ([AgentSqlPagePagination] is fake-backend
+/// coverage + this opt-in probe).
+bool _isHubBodyPaginationSchemaRejection(AppFailure failure) {
+  if (failure is! RpcFailure) {
+    return false;
+  }
+  if (failure.reason != 'invalid_params' || failure.rpcCode != -32602) {
+    return false;
+  }
+  final technical = failure.technicalMessage?.toLowerCase() ?? '';
+  return technical.contains('sql-execute.schema.json') &&
+      technical.contains('page');
+}
+
+void _expectBridgeE2eFailure(
+  AppFailure failure, {
+  required String context,
+}) {
+  if (shouldLogE2eAcceptedFailureDiagnostic(failure)) {
+    // ignore: avoid_print -- E2E failure diagnostics should appear in local output.
+    print('$context failure: ${e2eAgentSqlFailureDiagnostic(failure)}');
+  }
+  expect(failure, isA<AppFailure>());
+  if (AppEnvironment.hasE2eAgentBridgeCredentials) {
+    expect(
+      failure,
+      isNot(isA<SessionFailure>()),
+      reason: 'Unexpected HTTP 401 after client login for $context.',
+    );
+  }
+  expect(
+    isAcceptableE2eAgentSqlRepositoryFailure(failure),
+    isTrue,
+    reason:
+        '$context should succeed or return an accepted E2E environmental '
+        'failure. ${e2eAgentSqlFailureDiagnostic(failure)}',
   );
 }

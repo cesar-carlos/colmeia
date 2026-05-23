@@ -2,6 +2,7 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_diario_vendas_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_complete_period.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_daily_sales_trend_mapper.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
@@ -25,6 +26,7 @@ class LoadSalesDailyTotalsUseCase {
     required OverviewYearMonth anchor,
     OverviewDateRange? dailySaleDateRange,
     String? clientToken,
+    AgentQueriesCancelScope? cancelScope,
   }) async {
     final trimmedAgentId = agentId.trim();
     final DateTime start;
@@ -56,6 +58,7 @@ class LoadSalesDailyTotalsUseCase {
       filter: filter,
       clientToken: clientToken,
       bridgeTimeoutMs: bridgeTimeoutMs,
+      cancelScope: cancelScope,
     );
 
     return result.fold(

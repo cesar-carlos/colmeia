@@ -6,16 +6,21 @@ import 'package:colmeia/features/agent_queries/domain/agent_sql_http_receive_tim
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:dio/dio.dart';
 import 'package:uuid/uuid.dart';
 
 // Split into API vs fake implementations for DI; more methods may follow.
 abstract interface class AgentQueriesRemoteDataSource {
-  Future<Map<String, dynamic>> postSqlExecute(AgentSqlExecuteRequest request);
+  Future<Map<String, dynamic>> postSqlExecute(
+    AgentSqlExecuteRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  });
 
   Future<Map<String, dynamic>> postSqlExecuteBatch(
-    AgentSqlExecuteBatchRequest request,
-  );
+    AgentSqlExecuteBatchRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  });
 }
 
 class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
@@ -36,8 +41,9 @@ class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
 
   @override
   Future<Map<String, dynamic>> postSqlExecute(
-    AgentSqlExecuteRequest request,
-  ) async {
+    AgentSqlExecuteRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
     final rpcId = _uuid.v4();
     final body = _bodyMapper.build(request: request, rpcId: rpcId);
 
@@ -79,8 +85,9 @@ class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
 
   @override
   Future<Map<String, dynamic>> postSqlExecuteBatch(
-    AgentSqlExecuteBatchRequest request,
-  ) async {
+    AgentSqlExecuteBatchRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
     final rpcId = _uuid.v4();
     final body = _batchBodyMapper.build(request: request, rpcId: rpcId);
 
@@ -118,8 +125,9 @@ class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
 class FakeAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
   @override
   Future<Map<String, dynamic>> postSqlExecute(
-    AgentSqlExecuteRequest request,
-  ) async {
+    AgentSqlExecuteRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
     Map<String, dynamic>? paginationResult;
     final pagination = request.pagination;
     if (pagination is AgentSqlPagePagination) {
@@ -172,8 +180,9 @@ class FakeAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
 
   @override
   Future<Map<String, dynamic>> postSqlExecuteBatch(
-    AgentSqlExecuteBatchRequest request,
-  ) async {
+    AgentSqlExecuteBatchRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
     return <String, dynamic>{
       'mode': 'bridge',
       'agentId': request.trimmedAgentId,

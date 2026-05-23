@@ -11,6 +11,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_e
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logger/logger.dart';
 
@@ -33,14 +34,18 @@ class _ThrowingDataSource implements AgentQueriesRemoteDataSource {
   final Exception error;
 
   @override
-  Future<Map<String, dynamic>> postSqlExecute(AgentSqlExecuteRequest request) {
+  Future<Map<String, dynamic>> postSqlExecute(
+    AgentSqlExecuteRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) {
     throw error;
   }
 
   @override
   Future<Map<String, dynamic>> postSqlExecuteBatch(
-    AgentSqlExecuteBatchRequest request,
-  ) {
+    AgentSqlExecuteBatchRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) {
     throw error;
   }
 }

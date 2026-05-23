@@ -39,8 +39,9 @@ void main() {
     expect(sales.titleForMetric(isSalesCount: false), 'Daily revenue');
   });
 
-  testWidgets('DailySalesTrendChartLabels resolveEmptyMessage uses overrides',
-      (tester) async {
+  testWidgets('DailySalesTrendChartLabels resolveEmptyMessage uses overrides', (
+    tester,
+  ) async {
     late AppLocalizations l10n;
     await tester.pumpWidget(
       MaterialApp(

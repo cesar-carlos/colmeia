@@ -946,12 +946,12 @@ class _SyncfusionRegionMapChartState<T>
     if (values.isEmpty || index < 0 || index >= values.length) {
       return _liveShapeLowColor;
     }
-    final normalized = ((values[index] - _liveShapeMetricMinValue) /
-            _liveShapeMetricRange)
-        .clamp(
-      0.0,
-      1.0,
-    );
+    final normalized =
+        ((values[index] - _liveShapeMetricMinValue) / _liveShapeMetricRange)
+            .clamp(
+              0.0,
+              1.0,
+            );
     return Color.lerp(_liveShapeLowColor, _liveShapeHighColor, normalized)!;
   }
 

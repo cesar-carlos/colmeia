@@ -1,4 +1,5 @@
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 
 /// Companion port to `AgentQueriesRemoteDataSource` exposing the
 /// **streaming** path for `sql.execute` calls that produce a large
@@ -31,6 +32,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute
 // ignore: one_member_abstracts
 abstract interface class AgentQueriesStreamingRemoteDataSource {
   Stream<Map<String, dynamic>> streamSqlExecute(
-    AgentSqlExecuteRequest request,
-  );
+    AgentSqlExecuteRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  });
 }

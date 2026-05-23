@@ -5,6 +5,7 @@ import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
@@ -35,6 +36,7 @@ class SalesDailyTotalsPage extends StatefulWidget {
     required this.loadSalesAvailableAgentsUseCase,
     required this.loadSalesDailyTotalsUseCase,
     required this.resolveSalesAgentClientTokenUseCase,
+    this.relayCancelScopeBinder,
     super.key,
   });
 
@@ -42,6 +44,7 @@ class SalesDailyTotalsPage extends StatefulWidget {
   final LoadSalesAvailableAgentsUseCase loadSalesAvailableAgentsUseCase;
   final LoadSalesDailyTotalsUseCase loadSalesDailyTotalsUseCase;
   final ResolveSalesAgentClientTokenUseCase resolveSalesAgentClientTokenUseCase;
+  final AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder;
 
   @override
   State<SalesDailyTotalsPage> createState() => _SalesDailyTotalsPageState();
@@ -71,6 +74,13 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
   bool _loadFailed = false;
   String? _loadFailureMessage;
   int _loadGeneration = 0;
+  AgentQueriesCancelScope? _sqlCancelScope;
+
+  @override
+  void dispose() {
+    _sqlCancelScope?.cancelAll();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -165,6 +175,10 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
     final agentId = _selectedAgentId;
     final anchor = _anchorYearMonth;
     final generation = ++_loadGeneration;
+    _sqlCancelScope?.cancelAll();
+    final sqlScope = AgentQueriesCancelScope();
+    _sqlCancelScope = sqlScope;
+    widget.relayCancelScopeBinder?.call(sqlScope);
     markAutoRefreshCancelled();
 
     setState(() {
@@ -214,6 +228,7 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
       anchor: anchor,
       dailySaleDateRange: _dailyTotalsDateRange,
       clientToken: clientToken,
+      cancelScope: sqlScope,
     );
 
     if (!mounted || generation != _loadGeneration) {

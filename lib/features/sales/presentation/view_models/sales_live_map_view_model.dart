@@ -3,8 +3,7 @@ import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-
-final String _fullscreenSummarySeparator = ' ${String.fromCharCode(0x00B7)} ';
+import 'package:colmeia/shared/widgets/charts/app_chart_filter_summary.dart';
 
 class SalesLiveMapViewModel {
   SalesLiveMapViewModel._({
@@ -48,7 +47,9 @@ class SalesLiveMapViewModel {
       usesMapLabel: usesMapLabel,
       mapSubtitle: mapSubtitle,
       loadErrorMessage: loadErrorMessage,
-      fullscreenFilterSummary: filterParts.join(_fullscreenSummarySeparator),
+      fullscreenFilterSummary: filterParts.join(
+        AppChartFilterSummary.spacedMiddleDotSeparator,
+      ),
     );
   }
 

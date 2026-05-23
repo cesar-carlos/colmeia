@@ -16,6 +16,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_f
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_point_factory.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_refresh_metrics.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
@@ -132,10 +133,13 @@ enum SalesLiveMapLoadFailureReason { missingClientTokenSetup }
 class SalesLiveMapLoadCancelToken {
   bool _isCancelled = false;
 
+  final AgentQueriesCancelScope sqlCancelScope = AgentQueriesCancelScope();
+
   bool get isCancelled => _isCancelled;
 
   void cancel() {
     _isCancelled = true;
+    sqlCancelScope.cancelAll();
   }
 }
 
@@ -397,6 +401,7 @@ class LoadSalesLiveMapUseCase {
         selectedAgentIds: selectedAgentIds,
         bridgeTimeoutMs: bridgeTimeoutMs,
         preResolvedResolution: resolution,
+        cancelScope: cancelToken?.sqlCancelScope,
       ),
       salesStopwatch,
     );
@@ -415,6 +420,7 @@ class LoadSalesLiveMapUseCase {
               scope: catalogScope,
               now: now,
               preResolvedResolution: resolution,
+              cancelToken: cancelToken,
             ),
             catalogStopwatch,
           );
@@ -575,6 +581,7 @@ class LoadSalesLiveMapUseCase {
     required SalesLiveMapCatalogScope scope,
     required DateTime now,
     required AgentQueryTargetResolution preResolvedResolution,
+    SalesLiveMapLoadCancelToken? cancelToken,
   }) async {
     final result = await _loadCadastroFilialAcrossAgents.loadAll(
       userId: userId,
@@ -582,6 +589,7 @@ class LoadSalesLiveMapUseCase {
       selectedAgentIds: scope.selectedAgentIds,
       bridgeTimeoutMs: bridgeTimeoutMs,
       preResolvedResolution: preResolvedResolution,
+      cancelScope: cancelToken?.sqlCancelScope,
     );
     final page = result.getOrNull();
     if (page != null) {

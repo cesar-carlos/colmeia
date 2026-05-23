@@ -160,7 +160,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dashboardAffectedAgentsSheetTitlePartialFailure =>
-      'Filiais que nao retornaram dados';
+      'Filiais que não retornaram dados';
 
   @override
   String get dashboardAffectedAgentsSheetTitleMissingToken =>
@@ -186,7 +186,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dashboardMultiAgentAggregationMessage =>
-      'Este resumo agrega dados de varias filiais aprovadas. Se houver sobreposicao entre bases, os totais podem ficar acima de uma unica fonte.';
+      'Este resumo agrega dados de varias filiais aprovadas. Se houver sobreposição entre bases, os totais podem ficar acima de uma unica fonte.';
 
   @override
   String get overviewHomeAlertErrorDetailsButton => 'Detalhes do erro';
@@ -240,28 +240,28 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dashboardPaymentSummarySubtitle =>
-      'Detalhamento de vendas, ticket medio e participacao.';
+      'Detalhamento de vendas, ticket médio e participação.';
 
   @override
   String get dashboardPaymentSummaryEmptyTitle => 'Sem formas de pagamento';
 
   @override
   String get dashboardPaymentSummaryEmptyMessage =>
-      'Nao ha linhas de forma de pagamento para este periodo.';
+      'Não há linhas de forma de pagamento para este período.';
 
   @override
   String get dashboardPaymentSummaryHeaderRevenueAbbr => 'FATURAM.';
 
   @override
   String get dashboardPaymentSummaryTooltipRevenueAbbr =>
-      'Faturamento no periodo selecionado';
+      'Faturamento no período selecionado';
 
   @override
   String get dashboardPaymentSummaryHeaderParticipationAbbr => 'PARTIC.';
 
   @override
   String get dashboardPaymentSummaryTooltipParticipationAbbr =>
-      'Participacao percentual no faturamento total';
+      'Participação percentual no faturamento total';
 
   @override
   String get dashboardPaymentSummaryHeaderSales => 'VENDAS';
@@ -274,14 +274,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dashboardHomeFiltersAgentsEmptyHint =>
-      'Carregue a visao geral para listar as filiais.';
+      'Carregue a visão geral para listar as filiais.';
 
   @override
   String get dashboardHomeFiltersBranchesLabel => 'FILIAIS';
 
   @override
   String get dashboardHomeFiltersBranchesEmptyHint =>
-      'Carregue a visao geral para listar as filiais.';
+      'Carregue a visão geral para listar as filiais.';
 
   @override
   String get dashboardHomeFiltersYearMonthLabel => 'ANO / MÊS';
@@ -439,14 +439,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dashboardAgentRankingSubtitle =>
-      'Faturamento total por filial no periodo.';
+      'Faturamento total por filial no período.';
 
   @override
   String get dashboardUserRankingTitle => 'Ranking por operador';
 
   @override
   String get dashboardUserRankingSubtitle =>
-      'Faturamento por operador no periodo.';
+      'Faturamento por operador no período.';
 
   @override
   String get overviewAgentRankingEmpty =>
@@ -515,14 +515,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewLoadErrorTitle =>
-      'Nao foi possivel carregar a visao geral';
+      'Não foi possível carregar a visão geral';
 
   @override
   String get overviewStaleCacheTitle => 'Dados salvos neste aparelho';
 
   @override
   String get overviewStaleCacheMessage =>
-      'Nao foi possivel atualizar agora. Os numeros abaixo refletem o ultimo resumo obtido com sucesso.';
+      'Não foi possível atualizar agora. Os números abaixo refletem o último resumo obtido com sucesso.';
 
   @override
   String get overviewLoadingPaymentKpisSemantics =>
@@ -541,18 +541,18 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewLoadingMonthlyParcelsSemantics =>
-      'Carregando grafico dos ultimos 12 meses…';
+      'Carregando gráfico dos últimos 12 meses…';
 
   @override
   String get overviewLoadingWeekdaySalesSemantics =>
       'Carregando gráfico de vendas por dia da semana…';
 
   @override
-  String get overviewMonthlyParcelsTitle => 'Ultimos 12 meses';
+  String get overviewMonthlyParcelsTitle => 'Últimos 12 meses';
 
   @override
   String get overviewMonthlyParcelsSubtitle =>
-      'Quantidade de vendas e total em parcelas por mes (todas as filiais no escopo).';
+      'Quantidade de vendas e total em parcelas por mês (todas as filiais no escopo).';
 
   @override
   String get overviewMonthlyParcelsSalesSeriesLabel => 'Vendas';
@@ -562,19 +562,19 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewMonthlyParcelsEmpty =>
-      'Sem dados mensais para este periodo.';
+      'Sem dados mensais para este período.';
 
   @override
   String get overviewMonthlyParcelsLoadFailed =>
-      'Nao foi possivel carregar o grafico mensal. Tente novamente mais tarde.';
+      'Não foi possível carregar o gráfico mensal. Tente novamente mais tarde.';
 
   @override
   String get overviewMonthlyParcelsChartSemantics =>
-      'Grafico dos ultimos doze meses de vendas e valor em parcelas';
+      'Gráfico dos últimos doze meses de vendas e valor em parcelas';
 
   @override
   String get overviewMonthlyParcelsSubtitleValueView =>
-      'Total em parcelas e quantidade de vendas por mes (todas as filiais no escopo).';
+      'Total em parcelas e quantidade de vendas por mês (todas as filiais no escopo).';
 
   @override
   String get overviewMonthlyParcelsSwitchSalesLabel => 'Vendas';
@@ -584,7 +584,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewMonthlyParcelsChartSemanticsValueView =>
-      'Grafico dos ultimos doze meses de valor em parcelas e vendas';
+      'Gráfico dos últimos doze meses de valor em parcelas e vendas';
 
   @override
   String get overviewDailySalesTitle => 'Vendas por dia';
@@ -794,11 +794,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get overviewKpiSales => 'Vendas';
 
   @override
-  String get overviewKpiAvgTicket => 'Ticket medio';
+  String get overviewKpiAvgTicket => 'Ticket médio';
 
   @override
   String get overviewUserRankingChartSemanticsExtra =>
-      'Cada barra mostra o faturamento total e o ticket medio daquele operador.';
+      'Cada barra mostra o faturamento total e o ticket médio daquele operador.';
 
   @override
   String get overviewKpiPaymentMethodCount => 'Formas de pagamento';
@@ -808,7 +808,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewPaymentMixSubtitle =>
-      'Participacao percentual no faturamento do periodo.';
+      'Participação percentual no faturamento do período.';
 
   @override
   String get overviewPaymentMixDonutTotalLabel => 'TOTAL';
@@ -827,7 +827,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get appCategoryDonutCardLoadingSemantics =>
-      'Carregando grafico de categorias…';
+      'Carregando gráfico de categorias…';
 
   @override
   String appCategoryDonutCardEmptySemantics(String title) {
@@ -841,18 +841,18 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String appCategoryDonutChartSemantics(String summary) {
-    return 'Grafico de rosca. $summary';
+    return 'Gráfico de rosca. $summary';
   }
 
   @override
   String get overviewPaymentBarTitle => 'Faturamento por forma de pagamento';
 
   @override
-  String get overviewPaymentBarSubtitle => 'Valor total acumulado no periodo.';
+  String get overviewPaymentBarSubtitle => 'Valor total acumulado no período.';
 
   @override
   String get overviewPaymentBarEmpty =>
-      'Sem faturamento por forma de pagamento neste periodo.';
+      'Sem faturamento por forma de pagamento neste período.';
 
   @override
   String overviewPaymentBarTooltip(String label, String amount) {
@@ -1031,7 +1031,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get brazilStoreSalesMapSemanticsSalesUnavailableSuffix =>
-      ', vendas indisponiveis';
+      ', vendas indisponíveis';
 
   @override
   String brazilStoreSalesMapSemanticsClusterStores(
@@ -1094,12 +1094,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String brazilStoreSalesMapDataQualityLead(String count) {
-    return '$count lojas nao exibidas';
+    return '$count lojas não exibidas';
   }
 
   @override
   String brazilStoreSalesMapDataQualityInvalidCoords(String count) {
-    return '$count com coordenada invalida';
+    return '$count com coordenada inválida';
   }
 
   @override
@@ -1137,7 +1137,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get brazilStoreSalesMapSalesUnavailableFallback =>
-      'Vendas indisponiveis';
+      'Vendas indisponíveis';
 
   @override
   String get brazilStoreSalesMapSelectBranchButton => 'Selecionar filial';
@@ -1150,7 +1150,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Filial anterior';
 
   @override
-  String get brazilStoreSalesMapBranchNavigationNextTooltip => 'Proxima filial';
+  String get brazilStoreSalesMapBranchNavigationNextTooltip => 'Próxima filial';
 
   @override
   String get brazilStoreSalesMapMarkerGroupTotalTitle => 'Total do ponto';
@@ -1159,15 +1159,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String get brazilStoreSalesMapDefaultBranchName => 'Filial sem nome';
 
   @override
-  String get brazilStoreSalesMapSidebarTitle => 'Filiais visiveis';
+  String get brazilStoreSalesMapSidebarTitle => 'Filiais visíveis';
 
   @override
   String brazilStoreSalesMapSidebarSummary(int count, String revenue) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count filiais visiveis',
-      one: '1 filial visivel',
+      other: '$count filiais visíveis',
+      one: '1 filial visível',
     );
     return '$_temp0 · $revenue';
   }
@@ -1177,8 +1177,8 @@ class AppLocalizationsPt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count filiais visiveis',
-      one: '1 filial visivel',
+      other: '$count filiais visíveis',
+      one: '1 filial visível',
     );
     return '$_temp0';
   }
@@ -1198,7 +1198,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get brazilStoreSalesMapSidebarEmptyStateTitle =>
-      'Nenhuma filial visivel';
+      'Nenhuma filial visível';
 
   @override
   String get brazilStoreSalesMapSidebarEmptyStateMessage =>
@@ -1214,7 +1214,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get brazilStoreSalesMapSidebarZeroSalesLabel =>
-      'Sem vendas no periodo';
+      'Sem vendas no período';
 
   @override
   String get brazilStoreSalesMapSidebarCollapseTooltip =>
@@ -1239,13 +1239,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'Coordenada da filial';
 
   @override
-  String get brazilStoreSalesMapLocationIbge => 'Geolocalizacao IBGE';
+  String get brazilStoreSalesMapLocationIbge => 'Geolocalização IBGE';
 
   @override
-  String get brazilStoreSalesMapLocationCep => 'Geolocalizacao CEP';
+  String get brazilStoreSalesMapLocationCep => 'Geolocalização CEP';
 
   @override
-  String get brazilStoreSalesMapLocationCityUf => 'Geolocalizacao cidade/UF';
+  String get brazilStoreSalesMapLocationCityUf => 'Geolocalização cidade/UF';
 
   @override
   String get brazilStoreSalesMapLocationCapitalUf => 'Capital da UF';
@@ -1255,7 +1255,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get brazilStoreSalesMapLocationUnknown =>
-      'Origem da coordenada nao informada';
+      'Origem da coordenada não informada';
 
   @override
   String overviewSemanticsPaymentMethodRow(String label) {
@@ -1274,7 +1274,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String overviewSemanticsAvgTicket(String amount) {
-    return 'Ticket medio $amount';
+    return 'Ticket médio $amount';
   }
 
   @override
@@ -1284,29 +1284,29 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewNoApprovedAgentsUserMessage =>
-      'Nenhuma filial aprovada esta disponivel para carregar a visao geral.';
+      'Nenhuma filial aprovada está disponível para carregar a visão geral.';
 
   @override
   String get overviewLoadFailedUserMessage =>
-      'Nao foi possivel carregar a visao geral.';
+      'Não foi possível carregar a visão geral.';
 
   @override
   String get clientAgentsDataSourcesEyebrow => 'Fontes de dados';
 
   @override
-  String get clientAgentsPageTitle => 'Gestao de agentes';
+  String get clientAgentsPageTitle => 'Gestão de agentes';
 
   @override
   String get clientAgentsPageSubtitle =>
-      'Acompanhe seus agentes aprovados, solicite novos acessos e consulte o andamento das solicitacoes.';
+      'Acompanhe seus agentes aprovados, solicite novos acessos e consulte o andamento das solicitações.';
 
   @override
   String clientAgentsPendingActionsCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count acoes para enviar',
-      one: '1 acao para enviar',
+      other: '$count ações para enviar',
+      one: '1 ação para enviar',
     );
     return '$_temp0';
   }
@@ -1315,22 +1315,22 @@ class AppLocalizationsPt extends AppLocalizations {
   String get clientAgentsRefresh => 'Atualizar';
 
   @override
-  String get clientAgentsSubmitRequests => 'Enviar solicitacoes';
+  String get clientAgentsSubmitRequests => 'Enviar solicitações';
 
   @override
   String get clientAgentsActionFailedTitle =>
-      'Nao foi possivel concluir a acao';
+      'Não foi possível concluir a ação';
 
   @override
-  String get clientAgentsMaintenanceTitle => 'Manutencao de agentes';
+  String get clientAgentsMaintenanceTitle => 'Manutenção de agentes';
 
   @override
   String get clientAgentsMaintenanceSubtitle =>
-      'Use as abas para ver agentes aprovados, pedir novos acessos e acompanhar o historico das solicitacoes.';
+      'Use as abas para ver agentes aprovados, pedir novos acessos e acompanhar o histórico das solicitações.';
 
   @override
   String get clientAgentsMaintenanceSubtitleOwner =>
-      'Use as abas para gerir agentes aprovados, reenviar solicitacoes de clientes e revisar acessos dos agentes que voce administra.';
+      'Use as abas para gerir agentes aprovados, reenviar solicitações de clientes e revisar acessos dos agentes que você administra.';
 
   @override
   String get clientAgentsTabMyAgents => 'Meus agentes';
@@ -1339,17 +1339,17 @@ class AppLocalizationsPt extends AppLocalizations {
   String get clientAgentsTabRequestAccess => 'Solicitar acesso';
 
   @override
-  String get clientAgentsTabRequests => 'Solicitacoes';
+  String get clientAgentsTabRequests => 'Solicitações';
 
   @override
-  String get clientAgentsTabOwnerRequests => 'Revisar solicitacoes';
+  String get clientAgentsTabOwnerRequests => 'Revisar solicitações';
 
   @override
   String get clientAgentsTabOwnerClients => 'Clientes aprovados';
 
   @override
   String get clientAgentsLoadApprovedErrorTitle =>
-      'Nao foi possivel carregar seus agentes';
+      'Não foi possível carregar seus agentes';
 
   @override
   String clientAgentsEmptyApproved(String tabLabel) {
@@ -1379,10 +1379,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentsApprovedBulkSelect =>
-      'Selecionar para remocao em lote';
+      'Selecionar para remoção em lote';
 
   @override
-  String get clientAgentsApprovedBulkCancel => 'Cancelar selecao';
+  String get clientAgentsApprovedBulkCancel => 'Cancelar seleção';
 
   @override
   String clientAgentsApprovedBulkRemove(int count) {
@@ -1391,36 +1391,36 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentsBulkRemoveConfirmTitle =>
-      'Enfileirar remocao para varios agentes?';
+      'Enfileirar remoção para varios agentes?';
 
   @override
   String clientAgentsBulkRemoveConfirmMessage(int count) {
-    return 'A remocao de acesso para $count agentes sera preparada e enviada no proximo sync.';
+    return 'A remoção de acesso para $count agentes será preparada e enviada no próximo sync.';
   }
 
   @override
   String get clientAgentsBulkRemoveConfirmBack => 'Voltar';
 
   @override
-  String get clientAgentsBulkRemoveConfirmAction => 'Enfileirar remocao';
+  String get clientAgentsBulkRemoveConfirmAction => 'Enfileirar remoção';
 
   @override
   String get clientAgentsApprovedBulkSelectAll => 'Selecionar todos';
 
   @override
-  String get clientAgentsApprovedBulkClearSelection => 'Limpar selecao';
+  String get clientAgentsApprovedBulkClearSelection => 'Limpar seleção';
 
   @override
   String get clientAgentsRequestAccessIntro1 =>
-      'Use uma ou mais linhas para solicitar acesso. Cada linha precisa de um UUID de agente; informe o client token quando o agente exigir para execucao SQL.';
+      'Use uma ou mais linhas para solicitar acesso. Cada linha precisa de um UUID de agente; informe o client token quando o agente exigir para execução SQL.';
 
   @override
   String get clientAgentsRequestAccessIntro2 =>
-      'O agentId deve ser informado pelo responsavel do agente ou por um fluxo externo. Quando a solicitacao for aprovada, o agente sera liberado automaticamente para esta conta.';
+      'O agentId deve ser informado pelo responsável do agente ou por um fluxo externo. Quando a solicitação for aprovada, o agente será liberado automáticamente para esta conta.';
 
   @override
   String get clientAgentsRequestAccessIntroToken =>
-      'O client token fica em cache neste dispositivo enquanto a aprovacao esta pendente e e enviado ao servidor Colmeia assim que o agente for vinculado.';
+      'O client token fica em cache neste dispositivo enquanto a aprovação está pendente e é enviado ao servidor Colmeia assim que o agente for vinculado.';
 
   @override
   String get clientAgentsRequestAccessAddRow => 'Adicionar linha de agente';
@@ -1438,7 +1438,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentsClientTokenHint =>
-      'Opcional — cache local, enviado ao servidor apos aprovacao';
+      'Opcional — cache local, enviado ao servidor após aprovação';
 
   @override
   String get clientAgentsClientTokenShow => 'Mostrar token';
@@ -1454,33 +1454,33 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentsValidationNeedOneValidId =>
-      'Informe pelo menos um agentId valido para continuar.';
+      'Enter at least one valid agent ID to continue.';
 
   @override
   String clientAgentsValidationInvalidIds(String ids) {
-    return 'Os seguintes agentIds sao invalidos: $ids.';
+    return 'The following agent IDs are invalid: $ids.';
   }
 
   @override
   String clientAgentsValidationTokenTooLong(int limit, String ids) {
-    return 'O client token deve ter no maximo $limit caracteres. Reduza para: $ids.';
+    return 'The client token must be $limit characters or fewer. Shorten it for: $ids.';
   }
 
   @override
   String clientAgentsDuplicatedIdsNote(String ids) {
-    return 'IDs duplicados foram ignorados automaticamente: $ids.';
+    return 'IDs duplicados foram ignorados automáticamente: $ids.';
   }
 
   @override
   String get clientAgentsLoadRequestsErrorTitle =>
-      'Nao foi possivel carregar as solicitacoes';
+      'Não foi possível carregar as solicitações';
 
   @override
   String get clientAgentsLoadPendingErrorTitle =>
-      'Nao foi possivel carregar os envios pendentes';
+      'Não foi possível carregar os envios pendentes';
 
   @override
-  String get clientAgentsNoRequestsYet => 'Sem solicitacoes no momento.';
+  String get clientAgentsNoRequestsYet => 'Sem solicitações no momento.';
 
   @override
   String get clientAgentsRequestStatusPending => 'Pendente';
@@ -1499,23 +1499,23 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentsRequestDescPending =>
-      'Em analise pelo responsavel do agente.';
+      'Em análise pelo responsável do agente.';
 
   @override
   String get clientAgentsRequestDescApproved =>
-      'Aprovado e disponivel para esta conta.';
+      'Aprovado e disponível para esta conta.';
 
   @override
   String get clientAgentsRequestDescRejected =>
-      'Nao foi aprovado pelo responsavel do agente.';
+      'Não foi aprovado pelo responsável do agente.';
 
   @override
   String get clientAgentsRequestDescExpired =>
-      'A solicitacao expirou. Envie novamente se necessario.';
+      'A solicitação expirou. Envie novamente se necessário.';
 
   @override
   String get clientAgentsRequestDescUnknown =>
-      'O status dessa solicitacao ainda nao esta disponivel.';
+      'O status dessa solicitação ainda não está disponível.';
 
   @override
   String get clientAgentsRetryRequestAction => 'Tentar novamente';
@@ -1528,7 +1528,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentsPendingDescFailed =>
-      'Nao foi possivel enviar. Tente novamente.';
+      'Não foi possível enviar. Tente novamente.';
 
   @override
   String get clientAgentsPendingDescSynced => 'Enviado.';
@@ -1558,50 +1558,50 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentsSessionUnavailableLoad =>
-      'Sessao indisponivel para carregar agentes.';
+      'Sessao indisponível para carregar agentes.';
 
   @override
   String get clientAgentsSessionUnavailableRequest =>
-      'Sessao indisponivel para solicitar acesso.';
+      'Sessao indisponível para solicitar acesso.';
 
   @override
   String get clientAgentsSessionUnavailableRemove =>
-      'Sessao indisponivel para remover acesso.';
+      'Sessao indisponível para remover acesso.';
 
   @override
   String get clientAgentsSessionUnavailableSync =>
-      'Sessao indisponivel para sincronizar pendencias.';
+      'Sessao indisponível para sincronizar pendências.';
 
   @override
   String get clientAgentsRetryMissingRequestId =>
-      'Esta solicitacao nao pode ser reenviada porque o identificador nao esta disponivel.';
+      'Esta solicitação não pode ser reenviada porque o identificador não está disponível.';
 
   @override
   String get clientAgentsRetrySuccess =>
-      'A solicitacao foi reenviada. Vamos continuar acompanhando a aprovacao.';
+      'A solicitação foi reenviada. Vamos continuar acompanhando a aprovação.';
 
   @override
   String get clientAgentsDiscardQueuedRequestAction => 'Remover da fila';
 
   @override
   String get clientAgentsDiscardQueuedRequestSuccess =>
-      'O envio pendente foi removido. Voce pode solicitar acesso de novo quando quiser.';
+      'O envio pendente foi removido. Você pode solicitar acesso de novo quando quiser.';
 
   @override
   String get clientAgentsDiscardQueuedRequestInvalidState =>
-      'Este envio nao pode ser removido da fila no estado atual.';
+      'Este envio não pode ser removido da fila no estado atual.';
 
   @override
   String get clientAgentsOwnerActionFailedTitle =>
-      'Nao foi possivel concluir a acao do responsavel';
+      'Não foi possível concluir a ação do responsável';
 
   @override
   String get clientAgentsOwnerRequestsLoadErrorTitle =>
-      'Nao foi possivel carregar as solicitacoes para revisao';
+      'Não foi possível carregar as solicitações para revisão';
 
   @override
   String get clientAgentsOwnerRequestsEmpty =>
-      'Nenhuma solicitacao de cliente precisa da sua revisao agora.';
+      'Nenhuma solicitação de cliente precisa da sua revisão agora.';
 
   @override
   String get clientAgentsOwnerApproveAction => 'Aprovar';
@@ -1615,31 +1615,31 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentsOwnerRequestsStatusApproved =>
-      'Aprovada e ja disponivel para o cliente.';
+      'Aprovada e já disponível para o cliente.';
 
   @override
   String get clientAgentsOwnerRequestsStatusRejected =>
-      'Rejeitada durante a revisao do responsavel.';
+      'Rejeitada durante a revisão do responsável.';
 
   @override
   String get clientAgentsOwnerRequestsStatusExpired =>
-      'Expirou antes da revisao final.';
+      'Expirou antes da revisão final.';
 
   @override
   String get clientAgentsOwnerRequestsStatusUnknown =>
-      'O status mais recente da revisao nao esta disponivel.';
+      'O status mais recente da revisão não está disponível.';
 
   @override
   String get clientAgentsOwnerApproveSuccess =>
-      'A solicitacao de acesso foi aprovada.';
+      'A solicitação de acesso foi aprovada.';
 
   @override
   String get clientAgentsOwnerRejectSuccess =>
-      'A solicitacao de acesso foi rejeitada.';
+      'A solicitação de acesso foi rejeitada.';
 
   @override
   String get clientAgentsOwnerClientsEmptyAgents =>
-      'Nenhum agente administrado esta disponivel para esta conta ainda.';
+      'Nenhum agente administrado está disponível para esta conta ainda.';
 
   @override
   String get clientAgentsOwnerClientsAgentSelectorLabel => 'Agente';
@@ -1650,11 +1650,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentsOwnerClientsLoadErrorTitle =>
-      'Nao foi possivel carregar os clientes aprovados';
+      'Não foi possível carregar os clientes aprovados';
 
   @override
   String get clientAgentsOwnerClientsEmpty =>
-      'Nenhum cliente aprovado esta vinculado a este agente ainda.';
+      'Nenhum cliente aprovado está vinculado a este agente ainda.';
 
   @override
   String get clientAgentsOwnerClientsApprovedSubtitle =>
@@ -1669,7 +1669,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentDetailSessionUnavailable =>
-      'Sessao indisponivel para carregar o agente.';
+      'Sessao indisponível para carregar o agente.';
 
   @override
   String get appInlineErrorRetry => 'Tentar novamente';
@@ -1681,11 +1681,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentsNoLocalPendingToSync =>
-      'Nao ha pendencias locais para sincronizar.';
+      'Não há pendências locais para sincronizar.';
 
   @override
   String get clientAgentsRequestBlockedFallback =>
-      'Nao foi possivel registrar a solicitacao informada.';
+      'Não foi possível registrar a solicitação informada.';
 
   @override
   String clientAgentsRequestBlockedIntro(String details) {
@@ -1699,7 +1699,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String clientAgentsRequestBlockedAlreadyReview(String ids) {
-    return 'Ja em analise: $ids.';
+    return 'Já em análise: $ids.';
   }
 
   @override
@@ -1709,25 +1709,25 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentsRequestQueuedWatchingSingle =>
-      'Solicitacao enviada. Vamos acompanhar a aprovacao automaticamente.';
+      'Solicitação enviada. Vamos acompanhar a aprovação automáticamente.';
 
   @override
   String clientAgentsRequestQueuedWatchingPlural(int count) {
-    return '$count solicitacoes enviadas. Vamos acompanhar as aprovacoes automaticamente.';
+    return '$count solicitações enviadas. Vamos acompanhar as aprovações automáticamente.';
   }
 
   @override
   String clientAgentsRequestQueuedIgnoredSuffix(int count) {
-    return '$count IDs foram ignorados porque ja estavam aprovados ou em analise.';
+    return '$count IDs foram ignorados porque já estavam aprovados ou em análise.';
   }
 
   @override
   String get clientAgentsRequestRelinkUpdatedSingle =>
-      'Esse agente ja esta aprovado no servidor. A lista de agentes foi atualizada.';
+      'Esse agente já está aprovado no servidor. A lista de agentes foi atualizada.';
 
   @override
   String clientAgentsRequestRelinkUpdatedPlural(int count) {
-    return '$count agentes ja estavam aprovados no servidor. A lista de agentes foi atualizada.';
+    return '$count agentes já estavam aprovados no servidor. A lista de agentes foi atualizada.';
   }
 
   @override
@@ -1740,11 +1740,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentsRelinkPendingNotCleared =>
-      'Nao foi possivel limpar solicitacoes pendentes locais; elas podem ser reenviadas na proxima sincronizacao.';
+      'Não foi possível limpar solicitações pendentes locais; elas podem ser reenviadas na próxima sincronização.';
 
   @override
   String get clientAgentsRemoveBlockedFallback =>
-      'Nao foi possivel registrar a remocao informada.';
+      'Não foi possível registrar a remoção informada.';
 
   @override
   String clientAgentsRemoveBlockedIntro(String details) {
@@ -1758,16 +1758,16 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String clientAgentsRemoveBlockedAlreadyQueued(String ids) {
-    return 'Remocao ja preparada para envio: $ids.';
+    return 'Remoção ja preparada para envio: $ids.';
   }
 
   @override
   String get clientAgentsRemoveQueuedSingle =>
-      'Remocao de acesso preparada e enviada para sincronizacao.';
+      'Remoção de acesso preparada e enviada para sincronização.';
 
   @override
   String clientAgentsRemoveQueuedPlural(int count) {
-    return '$count remocoes de acesso preparadas e enviadas para sincronizacao.';
+    return '$count remoções de acesso preparadas e enviadas para sincronização.';
   }
 
   @override
@@ -1776,16 +1776,16 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get clientAgentsSyncSuccessSingle => '1 pendencia foi sincronizada.';
+  String get clientAgentsSyncSuccessSingle => '1 pendência foi sincronizada.';
 
   @override
   String clientAgentsSyncSuccessPlural(int count) {
-    return '$count pendencias foram sincronizadas.';
+    return '$count pendências foram sincronizadas.';
   }
 
   @override
   String get clientAgentsSyncSuccessNoneCompleted =>
-      'A sincronizacao terminou, mas nenhuma pendencia foi aplicada.';
+      'A sincronização terminou, mas nenhuma pendência foi aplicada.';
 
   @override
   String clientAgentsSyncRetryAfterCountdown(int seconds) {
@@ -1794,17 +1794,17 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String clientAgentsRequestAccessRetryAfterCountdown(int seconds) {
-    return 'Muitas solicitacoes de acesso. Tente de novo em ${seconds}s.';
+    return 'Muitas solicitações de acesso. Tente de novo em ${seconds}s.';
   }
 
   @override
   String clientAgentsSyncSuccessSomeFailedSuffix(int count) {
-    return ' $count acao(oes) falhou e permanece na fila para nova tentativa.';
+    return ' $count ação(oes) falhou e permanece na fila para nova tentativa.';
   }
 
   @override
   String get clientAgentsSyncSuccessAutoSuffix =>
-      ' O envio aconteceu automaticamente.';
+      ' O envio aconteceu automáticamente.';
 
   @override
   String get clientAgentsSyncSuccessManualSuffix =>
@@ -1812,61 +1812,61 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentsSyncSuccessPollingSuffix =>
-      ' Vamos acompanhar a aprovacao automaticamente.';
+      ' Vamos acompanhar a aprovação automáticamente.';
 
   @override
   String get clientAgentsSyncSuccessAlreadyApprovedSingle =>
-      ' Um agente ja estava aprovado no servidor.';
+      ' Um agente já estava aprovado no servidor.';
 
   @override
   String clientAgentsSyncSuccessAlreadyApprovedPlural(int count) {
-    return ' $count agentes ja estavam aprovados no servidor.';
+    return ' $count agentes já estavam aprovados no servidor.';
   }
 
   @override
   String get clientAgentsSyncSuccessDebouncedSingle =>
-      ' Uma solicitacao foi atualizada recentemente (sem novo email).';
+      ' Uma solicitação foi atualizada recentemente (sem novo email).';
 
   @override
   String clientAgentsSyncSuccessDebouncedPlural(int count) {
-    return ' $count solicitacoes foram atualizadas recentemente (sem novo email).';
+    return ' $count solicitações foram atualizadas recentemente (sem novo email).';
   }
 
   @override
   String clientAgentsPollApprovedSingle(String tabLabel) {
-    return 'Acesso aprovado. O agente ja esta disponivel em \"$tabLabel\".';
+    return 'Acesso aprovado. O agente ja está disponível em \"$tabLabel\".';
   }
 
   @override
   String clientAgentsPollApprovedPlural(int count, String tabLabel) {
-    return '$count acessos foram aprovados. Os agentes ja estao disponiveis em \"$tabLabel\".';
+    return '$count acessos foram aprovados. Os agentes ja estão disponíveis em \"$tabLabel\".';
   }
 
   @override
   String get clientAgentsPollDeniedSingle =>
-      '1 solicitacao foi encerrada sem aprovacao.';
+      '1 solicitação foi encerrada sem aprovação.';
 
   @override
   String clientAgentsPollDeniedPlural(int count) {
-    return '$count solicitacoes foram encerradas sem aprovacao.';
+    return '$count solicitações foram encerradas sem aprovação.';
   }
 
   @override
   String get clientAgentsPollTimeoutSingle =>
-      '1 solicitacao ainda esta em analise. Atualize esta tela mais tarde para verificar o resultado.';
+      '1 solicitação ainda está em análise. Atualize esta tela mais tarde para verificar o resultado.';
 
   @override
   String clientAgentsPollTimeoutPlural(int count) {
-    return '$count solicitacoes seguem em analise e voce pode atualizar esta tela mais tarde para verificar o resultado.';
+    return '$count solicitações seguem em análise e você pode atualizar esta tela mais tarde para verificar o resultado.';
   }
 
   @override
   String get clientAgentsPollRemainingSingle =>
-      'Ainda ha 1 solicitacao em analise.';
+      'Ainda há 1 solicitação em análise.';
 
   @override
   String clientAgentsPollRemainingPlural(int count) {
-    return 'Ainda ha $count solicitacoes em analise.';
+    return 'Ainda há $count solicitações em análise.';
   }
 
   @override
@@ -1877,11 +1877,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentDetailSubtitle =>
-      'Informacoes detalhadas do agente aprovado para esta conta.';
+      'Informações detalhadas do agente aprovado para esta conta.';
 
   @override
   String get clientAgentDetailLoadErrorTitle =>
-      'Nao foi possivel carregar o agente';
+      'Não foi possível carregar o agente';
 
   @override
   String get clientAgentFieldTradeName => 'Nome fantasia';
@@ -1911,7 +1911,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get clientAgentDetailSectionAddress => 'Endereco';
 
   @override
-  String get clientAgentDetailSectionNotes => 'Anotacoes';
+  String get clientAgentDetailSectionNotes => 'Anotações';
 
   @override
   String get clientAgentDetailSectionRecord => 'Registro';
@@ -1921,7 +1921,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentDetailSectionServerTokenSubtitle =>
-      'Salvo no servidor Colmeia e encaminhado ao agente como `params.client_token` quando este cliente executa SQL via bridge. O token tambem fica em cache neste dispositivo para dashboards seguirem funcionando brevemente sem conexao.';
+      'Salvo no servidor Colmeia e encaminhado ao agente como `params.client_token` quando este cliente executa SQL via bridge. O token também fica em cache neste dispositivo para dashboards seguirem funcionando brevemente sem conexão.';
 
   @override
   String get clientAgentDetailServerTokenSave => 'Salvar token';
@@ -1946,7 +1946,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentDetailServerTokenStatusUnknown =>
-      'Status do token nao carregado — atualize a tela com acesso a internet para confirmar.';
+      'Status do token não carregado — atualize a tela com acesso a internet para confirmar.';
 
   @override
   String get clientAgentDetailRefreshFromAgent => 'Recarregar do agente';
@@ -1957,7 +1957,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentDetailRefreshFromAgentUnsupported =>
-      'Este agente nao implementa agent.getProfile via RPC.';
+      'Este agente não implementa agent.getProfile via RPC.';
 
   @override
   String clientAgentDetailRetryAfterCountdown(int seconds) {
@@ -1969,7 +1969,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentDetailSectionPolicySubtitle =>
-      'Resolvidas pelo agente para o token atualmente salvo no servidor. Se a politica mudar apos revogacao ou alteracao de escopo, recarregue a tela.';
+      'Resolvidas pelo agente para o token atualmente salvo no servidor. Se a política mudar após revogação ou alteração de escopo, recarregue a tela.';
 
   @override
   String get clientAgentDetailPolicyFullAccess =>
@@ -1997,18 +1997,18 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentDetailPolicyRevoked =>
-      'Este token esta marcado como revogado pelo agente.';
+      'Este token está marcado como revogado pelo agente.';
 
   @override
   String get clientAgentDetailPolicyRevokedSaveNewToken => 'Salvar novo token';
 
   @override
   String get clientAgentDetailPolicyUnsupported =>
-      'Este agente nao expoe introspecao da politica do token.';
+      'Este agente não expõe introspecção da política do token.';
 
   @override
   String get clientAgentDetailPolicyEmpty =>
-      'O agente nao retornou nenhuma regra para este token.';
+      'O agente não retornou nenhuma regra para este token.';
 
   @override
   String get clientAgentDetailSectionEditProfile => 'Perfil no catálogo';
@@ -2051,13 +2051,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get clientAgentFieldStatus => 'Status';
 
   @override
-  String get clientAgentFieldConnection => 'Conexao';
+  String get clientAgentFieldConnection => 'Conexão';
 
   @override
   String get clientAgentFieldNotes => 'Notas';
 
   @override
-  String get clientAgentFieldObservation => 'Observacao';
+  String get clientAgentFieldObservation => 'Observação';
 
   @override
   String get clientAgentFieldStreet => 'Rua';
@@ -2090,7 +2090,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get clientAgentsFilterSearchHint => 'Nome, agentId ou nome fantasia';
 
   @override
-  String get clientAgentsFilterConnectionLabel => 'Conexao';
+  String get clientAgentsFilterConnectionLabel => 'Conexão';
 
   @override
   String get clientAgentsFilterConnectionOnline => 'Online';
@@ -2117,7 +2117,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String clientAgentsFilterSummaryConnection(String label) {
-    return 'Conexao: $label';
+    return 'Conexão: $label';
   }
 
   @override
@@ -2130,7 +2130,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Nenhum agente corresponde aos filtros selecionados.';
 
   @override
-  String get clientAgentsRequestsFilterSheetTitle => 'Filtros de solicitacoes';
+  String get clientAgentsRequestsFilterSheetTitle => 'Filtros de solicitações';
 
   @override
   String get clientAgentsRequestsFilterSearchLabel => 'Buscar';
@@ -2140,14 +2140,14 @@ class AppLocalizationsPt extends AppLocalizations {
       'Nome do agente ou agent ID';
 
   @override
-  String get clientAgentsRequestsFilterStatusLabel => 'Status da solicitacao';
+  String get clientAgentsRequestsFilterStatusLabel => 'Status da solicitação';
 
   @override
   String get clientAgentsRequestsFilterPendingLabel => 'Envio pendente';
 
   @override
   String clientAgentsRequestsFilterSummaryRequest(String label) {
-    return 'Solicitacao: $label';
+    return 'Solicitação: $label';
   }
 
   @override
@@ -2165,7 +2165,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentsEmptyFilteredRequests =>
-      'Nenhuma solicitacao corresponde aos filtros selecionados.';
+      'Nenhuma solicitação corresponde aos filtros selecionados.';
 
   @override
   String get clientAgentsPendingFilterQueued => 'Pronto para enviar';
@@ -2189,7 +2189,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get reportFiltersDescription =>
-      'Ajuste a consulta e aplique somente os recortes que fazem sentido para esta analise.';
+      'Ajuste a consulta e aplique somente os recortes que fazem sentido para esta análise.';
 
   @override
   String reportFiltersFieldCount(int count) {
@@ -2254,7 +2254,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get reportInlineFiltersAllOption => 'Todos';
 
   @override
-  String get reportInlineFiltersSelectPeriod => 'Selecionar periodo';
+  String get reportInlineFiltersSelectPeriod => 'Selecionar período';
 
   @override
   String get reportInlineFiltersSelectDate => 'Selecionar data';
@@ -2264,107 +2264,107 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentsErrorLoadCatalog =>
-      'Nao foi possivel carregar o catalogo de agentes.';
+      'Não foi possível carregar o catalogo de agentes.';
 
   @override
   String get clientAgentsErrorLoadCatalogAgent =>
-      'Nao foi possivel carregar este agente do catalogo.';
+      'Não foi possível carregar este agente do catalogo.';
 
   @override
   String get clientAgentsErrorLoadClientAccessStatus =>
-      'Nao foi possivel ler o status da solicitacao de acesso.';
+      'Não foi possível ler o status da solicitação de acesso.';
 
   @override
   String get clientAgentsErrorLoadApproved =>
-      'Nao foi possivel carregar os agentes aprovados para esta conta.';
+      'Não foi possível carregar os agentes aprovados para esta conta.';
 
   @override
   String get clientAgentsErrorLoadAgentDetail =>
-      'Nao foi possivel carregar os dados do agente.';
+      'Não foi possível carregar os dados do agente.';
 
   @override
   String get clientAgentsErrorProbeApproved =>
-      'Nao foi possivel verificar se o agente ja esta ligado a esta conta.';
+      'Não foi possível verificar se o agente já está ligado a esta conta.';
 
   @override
   String get clientAgentsErrorLoadAccessRequests =>
-      'Nao foi possivel carregar o historico de solicitacoes.';
+      'Não foi possível carregar o histórico de solicitações.';
 
   @override
   String get clientAgentsErrorRetryClientAccessRequest =>
-      'Nao foi possivel reenviar esta solicitacao de acesso.';
+      'Não foi possível reenviar esta solicitação de acesso.';
 
   @override
   String get clientAgentsErrorReadPending =>
-      'Nao foi possivel carregar as acoes pendentes de sincronizacao.';
+      'Não foi possível carregar as ações pendentes de sincronização.';
 
   @override
   String get clientAgentsErrorQueueRequest =>
-      'Nao foi possivel registrar a solicitacao para sincronizacao.';
+      'Não foi possível registrar a solicitação para sincronização.';
 
   @override
   String get clientAgentsErrorQueueRemove =>
-      'Nao foi possivel registrar a remocao para sincronizacao.';
+      'Não foi possível registrar a remoção para sincronização.';
 
   @override
   String get clientAgentsErrorSyncAction =>
-      'Nao foi possivel sincronizar a alteracao do agente.';
+      'Não foi possível sincronizar a alteração do agente.';
 
   @override
   String get clientAgentsErrorSyncPending =>
-      'Nao foi possivel sincronizar as acoes pendentes de agentes.';
+      'Não foi possível sincronizar as ações pendentes de agentes.';
 
   @override
   String get clientAgentsErrorLoadManagedAgents =>
-      'Nao foi possivel carregar os agentes administrados.';
+      'Não foi possível carregar os agentes administrados.';
 
   @override
   String get clientAgentsErrorLoadOwnerAccessRequests =>
-      'Nao foi possivel carregar as solicitacoes de acesso para revisao.';
+      'Não foi possível carregar as solicitações de acesso para revisão.';
 
   @override
   String get clientAgentsErrorApproveOwnerAccessRequest =>
-      'Nao foi possivel aprovar esta solicitacao de acesso.';
+      'Não foi possível aprovar esta solicitação de acesso.';
 
   @override
   String get clientAgentsErrorRejectOwnerAccessRequest =>
-      'Nao foi possivel rejeitar esta solicitacao de acesso.';
+      'Não foi possível rejeitar esta solicitação de acesso.';
 
   @override
   String get clientAgentsErrorLoadOwnerApprovedClients =>
-      'Nao foi possivel carregar os clientes aprovados deste agente.';
+      'Não foi possível carregar os clientes aprovados deste agente.';
 
   @override
   String get clientAgentsErrorRevokeOwnerClientAccess =>
-      'Nao foi possivel revogar este acesso de cliente.';
+      'Não foi possível revogar este acesso de cliente.';
 
   @override
   String get clientAgentsErrorGetClientAgentToken =>
-      'Nao foi possivel ler o token do agente no servidor.';
+      'Não foi possível ler o token do agente no servidor.';
 
   @override
   String get clientAgentsErrorSaveClientAgentToken =>
-      'Nao foi possivel salvar o token do agente no servidor.';
+      'Não foi possível salvar o token do agente no servidor.';
 
   @override
   String get clientAgentsErrorRemoveClientAgentToken =>
-      'Nao foi possivel remover o token do agente no servidor.';
+      'Não foi possível remover o token do agente no servidor.';
 
   @override
   String get clientAgentsErrorAgentDocumentConflict =>
-      'Este CPF/CNPJ ja esta vinculado a outro agente no catalogo. Para alterar o vinculo, entre em contato com o suporte.';
+      'Este CPF/CNPJ ja está vinculado a outro agente no catalogo. Para alterar o vinculo, entre em contato com o suporte.';
 
   @override
   String get clientAgentsErrorAgentProfileCasMismatch =>
-      'Outro dispositivo atualizou este agente. Recarregue a tela e reaplique suas alteracoes.';
+      'Outro dispositivo atualizou este agente. Recarregue a tela e reaplique suas alterações.';
 
   @override
   String get agentSqlErrorAuthenticationFailed =>
-      'A autenticacao para consultar este agente e invalida ou expirou.';
+      'A autenticação para consultar este agente e inválida ou expirou.';
 
   @override
   String get agentSqlErrorPermissionDenied =>
-      'Voce nao tem permissao para consultar estes dados neste agente.';
+      'Você não tem permissão para consultar estes dados neste agente.';
 
   @override
   String get agentSqlErrorTransportTimeout =>
@@ -2372,23 +2372,22 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get agentSqlErrorNetworkError =>
-      'Nao foi possivel alcancar o agente agora. Tente novamente.';
+      'Não foi possível alcancar o agente agora. Tente novamente.';
 
   @override
   String get agentSqlErrorRateLimited =>
       'Muitas tentativas de consulta foram feitas. Aguarde um instante e tente novamente.';
 
   @override
-  String get agentSqlErrorValidationFailed =>
-      'A consulta informada e invalida.';
+  String get agentSqlErrorValidationFailed => 'The query is invalid.';
 
   @override
   String get agentSqlErrorExecutionFailed =>
-      'Nao foi possivel executar a consulta.';
+      'Não foi possível executar a consulta.';
 
   @override
   String get agentSqlErrorTransactionFailed =>
-      'Nao foi possivel concluir a transacao da consulta.';
+      'Não foi possível concluir a transação da consulta.';
 
   @override
   String get agentSqlErrorConnectionPoolExhausted =>
@@ -2400,7 +2399,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get agentSqlErrorDatabaseConnectionFailed =>
-      'Nao foi possivel conectar ao banco para executar a consulta.';
+      'Não foi possível conectar ao banco para executar a consulta.';
 
   @override
   String get agentSqlErrorQueryTimeout =>
@@ -2408,18 +2407,18 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get agentSqlErrorInvalidDatabaseConfig =>
-      'A configuracao de acesso ao banco deste agente esta invalida.';
+      'A configuração de acesso ao banco deste agente esta inválida.';
 
   @override
   String get agentSqlErrorExecutionNotFound =>
-      'A execucao solicitada nao foi encontrada.';
+      'A execução solicitada não foi encontrada.';
 
   @override
   String get agentSqlErrorExecutionCancelled => 'A consulta foi cancelada.';
 
   @override
   String get agentSqlErrorGeneric =>
-      'Nao foi possivel concluir a consulta no agente.';
+      'Não foi possível concluir a consulta no agente.';
 
   @override
   String get formsDemoDatePickersFormTitle => 'Date pickers no Form';
@@ -2434,17 +2433,17 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get formsDemoFormBuilderSectionSubtitle =>
-      'Mesmos wrappers dos relatorios: dropdown, multi-select e os mesmos date pickers da secao Form acima (FormBuilderField + AppFormBuilderDate*).';
+      'Mesmos wrappers dos relatorios: dropdown, multi-select e os mesmos date pickers da seção Form acima (FormBuilderField + AppFormBuilderDate*).';
 
   @override
-  String get formsDemoValidateFormBuilderButton => 'Validar FormBuilder';
+  String get formsDemoValidateFormBuilderButton => 'Validate FormBuilder';
 
   @override
-  String get formsDemoValidateFormSubmitButton => 'Validar envio (Form)';
+  String get formsDemoValidateFormSubmitButton => 'Validate submit (Form)';
 
   @override
   String formsDemoFormValidSnackbar(String refLabel, String rangeLabel) {
-    return 'Formulario valido (demo fake). Ref: $refLabel. Periodo: $rangeLabel.';
+    return 'Formulário válido (demo fake). Ref: $refLabel. Período: $rangeLabel.';
   }
 
   @override
@@ -2452,29 +2451,29 @@ class AppLocalizationsPt extends AppLocalizations {
     String dateLabel,
     String rangeLabel,
   ) {
-    return 'FormBuilder valido (demo fake). Data: $dateLabel. Periodo: $rangeLabel.';
+    return 'FormBuilder válido (demo fake). Data: $dateLabel. Período: $rangeLabel.';
   }
 
   @override
   String get datePickerPlaceholderSelectDate => 'Selecione uma data';
 
   @override
-  String get dateRangePickerPlaceholderSelectPeriod => 'Selecione o periodo';
+  String get dateRangePickerPlaceholderSelectPeriod => 'Selecione o período';
 
   @override
   String get datePickerSheetDefaultTitle => 'Selecionar data';
 
   @override
-  String get dateRangePickerSheetDefaultTitle => 'Selecionar periodo';
+  String get dateRangePickerSheetDefaultTitle => 'Selecionar período';
 
   @override
-  String get datePickerClearSelectionTooltip => 'Limpar selecao';
+  String get datePickerClearSelectionTooltip => 'Limpar seleção';
 
   @override
   String get datePickerSheetRemoveDate => 'Remover data';
 
   @override
-  String get dateRangePickerSheetRemovePeriod => 'Remover periodo';
+  String get dateRangePickerSheetRemovePeriod => 'Remover período';
 
   @override
   String get datePickerSheetCloseTooltip => 'Fechar';
@@ -2486,14 +2485,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get datePickerSemanticsFallbackLabel => 'Data';
 
   @override
-  String get dateRangePickerSemanticsFallbackLabel => 'Periodo';
+  String get dateRangePickerSemanticsFallbackLabel => 'Período';
 
   @override
   String get overviewLucratividadeTitle => 'Lucratividade por filial';
 
   @override
   String get overviewLucratividadeSubtitle =>
-      'Receita, custo e margem no periodo selecionado (todas as filiais no escopo somadas).';
+      'Receita, custo e margem no período selecionado (todas as filiais no escopo somadas).';
 
   @override
   String get overviewLucratividadeSwitchProfit => 'Lucro';
@@ -2530,7 +2529,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewLucratividadePercentHelpCostBody =>
-      'Custo / Venda × 100. Mostra qual parcela da receita corresponde ao custo de reposicao.';
+      'Custo / Venda × 100. Mostra qual parcela da receita corresponde ao custo de reposição.';
 
   @override
   String get overviewLucratividadePercentHelpGrossBody =>
@@ -2538,7 +2537,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewLucratividadePercentHelpMarkupBody =>
-      'Lucro / Custo × 100. Mostra quanto o lucro representa em relacao ao custo de reposicao.';
+      'Lucro / Custo × 100. Mostra quanto o lucro representa em relação ao custo de reposição.';
 
   @override
   String get overviewLucratividadeMarkupNotApplicable => '—';
@@ -2553,7 +2552,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewLucratividadePercentSemanticsMarkup =>
-      'Markup sobre o custo de reposicao.';
+      'Markup sobre o custo de reposição.';
 
   @override
   String get overviewLucratividadePercentIndicatorHeading =>
@@ -2568,11 +2567,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewLucratividadeMarkupUndefinedTooltip =>
-      'Markup nao definido quando o custo de reposicao e zero ou ausente.';
+      'Markup não definido quando o custo de reposição é zero ou ausente.';
 
   @override
   String get overviewLucratividadePercentMetricCostTooltip =>
-      'Parcela da receita correspondente ao custo de reposicao (custo dividido pela venda).';
+      'Parcela da receita correspondente ao custo de reposição (custo dividido pela venda).';
 
   @override
   String get overviewLucratividadePercentMetricGrossTooltip =>
@@ -2580,7 +2579,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewLucratividadePercentMetricMarkupTooltip =>
-      'Markup sobre o custo de reposicao (lucro dividido pelo custo).';
+      'Markup sobre o custo de reposição (lucro dividido pelo custo).';
 
   @override
   String get overviewLucratividadeMensalPercentChronologicalHint =>
@@ -2593,22 +2592,22 @@ class AppLocalizationsPt extends AppLocalizations {
   String get overviewLucratividadeRevenueSeriesLabel => 'Receita';
 
   @override
-  String get overviewLucratividadeCostSeriesLabel => 'Custo reposicao';
+  String get overviewLucratividadeCostSeriesLabel => 'Custo reposição';
 
   @override
   String get overviewLucratividadeMarginSeriesLabel => 'Margem %';
 
   @override
   String get overviewLucratividadeEmpty =>
-      'Sem dados de lucratividade para este periodo.';
+      'Sem dados de lucratividade para este período.';
 
   @override
   String get overviewLucratividadeMultiAgentHint =>
-      'Nenhuma filial aprovada esta disponivel para carregar a lucratividade. Adicione ou conecte uma filial primeiro.';
+      'Nenhuma filial aprovada está disponível para carregar a lucratividade. Adicione ou conecte uma filial primeiro.';
 
   @override
   String get overviewLoadingLucratividadeSemantics =>
-      'Carregando grafico de lucratividade por filial…';
+      'Carregando gráfico de lucratividade por filial…';
 
   @override
   String get overviewLucratividadeMensalTitle =>
@@ -2616,11 +2615,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewLucratividadeMensalSubtitle =>
-      'Receita, custo de reposicao e margem por mes (filial selecionada).';
+      'Receita, custo de reposição e margem por mês (filial selecionada).';
 
   @override
   String get overviewLucratividadeMensalEmpty =>
-      'Sem dados de lucratividade para este periodo.';
+      'Sem dados de lucratividade para este período.';
 
   @override
   String get overviewLucratividadeMensalMultiAgentHint =>
@@ -2645,14 +2644,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get overviewLucratividadeMensalRevenueSeriesLabel => 'Receita';
 
   @override
-  String get overviewLucratividadeMensalCostSeriesLabel => 'Custo reposicao';
+  String get overviewLucratividadeMensalCostSeriesLabel => 'Custo reposição';
 
   @override
   String get overviewLucratividadeMensalMarginSeriesLabel => 'Margem %';
 
   @override
   String get overviewLoadingLucratividadeMensalSemantics =>
-      'Carregando grafico de lucratividade mensal do produto…';
+      'Carregando gráfico de lucratividade mensal do produto…';
 
   @override
   String get salesHubTitle => 'Vendas';
@@ -2666,14 +2665,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get shellNavSalesMonitoringSubtitle =>
-      'Mapa e atualizacao por filtros';
+      'Mapa e atualização por filtros';
 
   @override
   String get salesLiveMapTitle => 'Acompanhar vendas';
 
   @override
   String get salesLiveMapSubtitle =>
-      'Mapa do Brasil com vendas por filial e atualizacao por filtros.';
+      'Mapa do Brasil com vendas por filial e atualização por filtros.';
 
   @override
   String get salesLiveMapSessionExpiredMessage =>
@@ -2683,7 +2682,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesLiveMapAgentsLabel => 'Filiais';
 
   @override
-  String get salesLiveMapPeriodLabel => 'Periodo';
+  String get salesLiveMapPeriodLabel => 'Período';
 
   @override
   String get salesLiveMapMapLabel => 'Mapa';
@@ -2720,7 +2719,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesLiveMapPeriodToday => 'Hoje';
 
   @override
-  String get salesLiveMapPeriodLastSevenDays => 'Ultimos 7 dias';
+  String get salesLiveMapPeriodLastSevenDays => 'Últimos 7 dias';
 
   @override
   String get salesLiveMapPeriodLastSevenDaysShort => '7 dias';
@@ -2741,10 +2740,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesLiveMapMapPresetBubbles => 'Bolhas';
 
   @override
-  String get salesLiveMapMapPresetMunicipalities => 'Municipios';
+  String get salesLiveMapMapPresetMunicipalities => 'Municípios';
 
   @override
-  String get salesLiveMapMapPresetMunicipalitiesShort => 'Municipios';
+  String get salesLiveMapMapPresetMunicipalitiesShort => 'Municípios';
 
   @override
   String get salesLiveMapMapPresetStateBubbles => 'Bolhas por UF';
@@ -2760,7 +2759,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesLiveMapLoadErrorTitle =>
-      'Nao foi possivel carregar o acompanhamento';
+      'Não foi possível carregar o acompanhamento';
 
   @override
   String get salesLiveMapLoadErrorRetryMessage =>
@@ -2771,25 +2770,25 @@ class AppLocalizationsPt extends AppLocalizations {
       'Nenhum agente selecionado possui token local para executar a consulta.';
 
   @override
-  String get salesLiveMapEmptyNoSalesTitle => 'Sem vendas no periodo';
+  String get salesLiveMapEmptyNoSalesTitle => 'Sem vendas no período';
 
   @override
   String get salesLiveMapEmptyNoSalesMessage =>
-      'A consulta foi executada, mas nao encontrou vendas para os filtros atuais.';
+      'A consulta foi executada, mas não encontrou vendas para os filtros atuais.';
 
   @override
-  String get salesLiveMapEmptySelectionTitle => 'Selecao sem resultado';
+  String get salesLiveMapEmptySelectionTitle => 'Seleção sem resultado';
 
   @override
   String get salesLiveMapEmptySelectionMessage =>
-      'As filiais selecionadas nao retornaram vendas neste periodo. Limpe a selecao para recarregar todas as filiais disponiveis.';
+      'As filiais selecionadas não retornaram vendas neste período. Limpe a seleção para recarregar todas as filiais disponíveis.';
 
   @override
   String get salesLiveMapChartTitle => 'Vendas por filial no Brasil';
 
   @override
   String salesLiveMapChartSubtitlePending(String period) {
-    return 'Periodo $period.';
+    return 'Período $period.';
   }
 
   @override
@@ -2798,7 +2797,7 @@ class AppLocalizationsPt extends AppLocalizations {
     int mappedCount,
     int totalCount,
   ) {
-    return 'Periodo $period. $mappedCount de $totalCount filiais posicionadas.';
+    return 'Período $period. $mappedCount de $totalCount filiais posicionadas.';
   }
 
   @override
@@ -2841,7 +2840,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String salesLiveMapPartialNoSalesAgents(int count) {
-    return '$count filial(is) sem vendas no periodo.';
+    return '$count filial(is) sem vendas no período.';
   }
 
   @override
@@ -2851,7 +2850,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String salesLiveMapPartialUnavailableSalesBranches(int count) {
-    return '$count filial(is) exibidas com venda indisponivel por falha na consulta.';
+    return '$count filial(is) exibidas com venda indisponível por falha na consulta.';
   }
 
   @override
@@ -2871,14 +2870,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesLiveMapFiltersDescription =>
-      'Escolha filiais, periodo e tipo visual do mapa.';
+      'Escolha filiais, período e tipo visual do mapa.';
 
   @override
   String get salesLiveMapBranchesSectionTitle => 'Filiais';
 
   @override
   String get salesLiveMapBranchesSectionSubtitle =>
-      'A lista aparece depois da primeira atualizacao do mapa.';
+      'A lista aparece depois da primeira atualização do mapa.';
 
   @override
   String get salesLiveMapSelectAtLeastOneTokenBranch =>
@@ -2886,11 +2885,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesLiveMapNoApprovedAgents =>
-      'Nenhuma filial aprovada disponivel para consulta.';
+      'Nenhuma filial aprovada disponível para consulta.';
 
   @override
   String get salesLiveMapBranchesLoadBeforeSelection =>
-      'Atualize o mapa uma vez para listar as filiais disponiveis.';
+      'Atualize o mapa uma vez para listar as filiais disponíveis.';
 
   @override
   String get salesLiveMapSelectAllTokenBacked => 'Selecionar todas';
@@ -2900,7 +2899,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesLiveMapClearBranchSelectionAction =>
-      'Limpar selecao de filiais';
+      'Limpar seleção de filiais';
 
   @override
   String get salesLiveMapClearSavedFiltersAction => 'Limpar filtros salvos';
@@ -2909,15 +2908,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesLiveMapMissingLocalToken => 'Sem token local';
 
   @override
-  String get salesLiveMapCustomPeriodLabel => 'Periodo personalizado';
+  String get salesLiveMapCustomPeriodLabel => 'Período personalizado';
 
   @override
   String salesLiveMapCustomPeriodHelper(int maxDays) {
-    return 'Limite de $maxDays dias por atualizacao.';
+    return 'Limite de $maxDays dias por atualização.';
   }
 
   @override
-  String get salesLiveMapCustomPeriodPickerTitle => 'Selecionar periodo';
+  String get salesLiveMapCustomPeriodPickerTitle => 'Selecionar período';
 
   @override
   String get salesLiveMapMapTypeTitle => 'Tipo de mapa';
@@ -2931,13 +2930,13 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesLiveMapDetailSubtitle =>
-      'Escolha o nivel de agregacao mostrado no mapa.';
+      'Escolha o nivel de agregação mostrado no mapa.';
 
   @override
   String get salesLiveMapDetailBranches => 'Filiais';
 
   @override
-  String get salesLiveMapDetailMunicipalities => 'Municipios';
+  String get salesLiveMapDetailMunicipalities => 'Municípios';
 
   @override
   String get salesLiveMapDetailStates => 'UFs';
@@ -2947,7 +2946,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesLiveMapVisualSubtitle =>
-      'Escolha o estilo dos marcadores para filiais e municipios.';
+      'Escolha o estilo dos marcadores para filiais e municípios.';
 
   @override
   String get salesLiveMapVisualDot => 'Pontos';
@@ -2960,7 +2959,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String salesLiveMapDetailAutoMunicipalities(int threshold) {
-    return 'Acima de $threshold filiais, municipios sao exibidos automaticamente para melhorar a leitura.';
+    return 'Acima de $threshold filiais, municípios sao exibidos automáticamente para melhorar a leitura.';
   }
 
   @override
@@ -2986,7 +2985,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get salesLiveMapKpiMunicipalitiesOnMap => 'Municipios no mapa';
+  String get salesLiveMapKpiMunicipalitiesOnMap => 'Municípios no mapa';
 
   @override
   String get salesLiveMapKpiQueriedAgents => 'Filiais consultadas';
@@ -3010,17 +3009,17 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesBranchFilterMissingClientTokenBanner =>
-      'Filiais sem token de cliente neste dispositivo nao executam consultas SQL. “Online” indica apenas ligacao ao hub.';
+      'Filiais sem token de cliente neste dispositivo não executam consultas SQL. “Online” indica apenas ligação ao hub.';
 
   @override
   String get salesBranchPickerEmpty => 'Selecione uma filial';
 
   @override
-  String get salesBranchRequiredTitle => 'Selecao de filial obrigatoria';
+  String get salesBranchRequiredTitle => 'Seleção de filial obrigatoria';
 
   @override
   String get salesBranchRequiredMessage =>
-      'Selecione uma filial para visualizar essas informacoes.';
+      'Selecione uma filial para visualizar essas informações.';
 
   @override
   String get salesAgentPickerLabel => 'Filial';
@@ -3032,11 +3031,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesAgentPickerSheetTitle => 'Selecione uma filial';
 
   @override
-  String get salesAgentRequiredTitle => 'Selecao de filial obrigatoria';
+  String get salesAgentRequiredTitle => 'Seleção de filial obrigatoria';
 
   @override
   String get salesAgentRequiredMessage =>
-      'Selecione uma filial para visualizar essas informacoes.';
+      'Selecione uma filial para visualizar essas informações.';
 
   @override
   String get salesCardOpenAccountsTitle => 'Contas em Aberto';
@@ -3045,7 +3044,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesCardPaidAccountsTitle => 'Contas Pagas';
 
   @override
-  String get salesCardPaymentHistoryTitle => 'Historico de Pagamentos';
+  String get salesCardPaymentHistoryTitle => 'Histórico de Pagamentos';
 
   @override
   String get salesCardNewPaymentTitle => 'Novo Pagamento';
@@ -3063,7 +3062,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesAutoRefreshOff => 'Desligado';
 
   @override
-  String get salesAutoRefreshTooltip => 'Atualizacao automatica';
+  String get salesAutoRefreshTooltip => 'Atualização automática';
 
   @override
   String get salesAutoRefreshNow => 'Atualizar agora';
@@ -3075,7 +3074,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String salesAutoRefreshNextIn(String time) {
-    return 'Proximo em $time';
+    return 'Próximo em $time';
   }
 
   @override
@@ -3084,27 +3083,27 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get salesAutoRefreshPaused => 'Atualizacao automatica pausada';
+  String get salesAutoRefreshPaused => 'Atualização automática pausada';
 
   @override
   String get salesAutoRefreshPausedLoading =>
-      'Atualizacao automatica pausada durante a carga';
+      'Atualização automática pausada durante a carga';
 
   @override
   String get salesAutoRefreshPausedMissingLocalToken =>
-      'Atualizacao automatica pausada: token local necessario';
+      'Atualização automática pausada: token local necessário';
 
   @override
   String get salesAutoRefreshPausedNoEligibleSelection =>
-      'Atualizacao automatica pausada: selecione uma filial valida';
+      'Atualização automática pausada: selecione uma filial válida';
 
   @override
   String get salesAutoRefreshPausedUnsupportedViewport =>
-      'Atualizacao automatica disponivel no desktop';
+      'Atualização automática disponível no desktop';
 
   @override
   String get salesAutoRefreshPausedHidden =>
-      'Atualizacao automatica pausada enquanto a tela estiver oculta';
+      'Atualização automática pausada enquanto a tela estiver oculta';
 
   @override
   String get salesDailyTotalsChartTitle => 'Vendas por dia';
@@ -3221,25 +3220,25 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get salesCardProdutoTendenciaTitle => 'Tendência de vendas';
+  String get salesCardProdutoTendenciaTitle => 'Sales trend';
 
   @override
   String get salesCardProdutoTendenciaMediaMovelTitle =>
-      'Tendência de vendas (média móvel)';
+      'Sales trend (moving average)';
 
   @override
   String get salesMonthlyPnlPageSubtitle =>
-      'Venda, lucro e custo da mercadoria por mes na filial selecionada. A janela termina no mes de referencia.';
+      'Venda, lucro e custo da mercadoria por mês na filial selecionada. A janela termina no mes de referência.';
 
   @override
-  String get salesMonthlyPnlFilterAnchorMonth => 'Mes de referencia';
+  String get salesMonthlyPnlFilterAnchorMonth => 'Mes de referência';
 
   @override
   String get salesMonthlyPnlChartTitle => 'Resultado mensal';
 
   @override
   String get salesMonthlyPnlChartSubtitle =>
-      'Venda, lucro e custo da mercadoria por mes (filial selecionada).';
+      'Venda, lucro e custo da mercadoria por mês (filial selecionada).';
 
   @override
   String get salesMonthlyPnlSeriesSalesLabel => 'Vendas';
@@ -3251,22 +3250,22 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesMonthlyPnlSeriesCostLabel => 'Custo da mercadoria';
 
   @override
-  String get salesMonthlyPnlEmpty => 'Sem dados mensais para este periodo.';
+  String get salesMonthlyPnlEmpty => 'Sem dados mensais para este período.';
 
   @override
   String get salesMonthlyPnlLoadFailed =>
-      'Nao foi possivel carregar o grafico mensal. Tente novamente mais tarde.';
+      'Não foi possível carregar o gráfico mensal. Tente novamente mais tarde.';
 
   @override
   String get salesMonthlyPnlChartSemantics =>
-      'Grafico do resultado mensal com venda, lucro e custo da mercadoria na filial selecionada';
+      'Gráfico do resultado mensal com venda, lucro e custo da mercadoria na filial selecionada';
 
   @override
   String get salesMonthlyPnlBarChartTitle => 'Comparativo mensal (barras)';
 
   @override
   String get salesMonthlyPnlBarChartSubtitle =>
-      'As barras usam os mesmos totais mensais que o grafico de linhas acima (venda, lucro e custo da mercadoria agregados — nao medias por item). Os percentuais sao calculados a partir desses totais mensais.';
+      'As barras usam os mesmos totais mensais que o gráfico de linhas acima (venda, lucro e custo da mercadoria agregados — não médias por item). Os percentuais sao calculados a partir desses totais mensais.';
 
   @override
   String get salesMonthlyPnlBarDisplayValuesLabel => 'Valores';
@@ -3296,7 +3295,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesMonthlyPnlBarChartSemantics =>
-      'Grafico de barras agrupadas mensais de venda, lucro e custo da mercadoria';
+      'Gráfico de barras agrupadas mensais de venda, lucro e custo da mercadoria';
 
   @override
   String salesMonthlyPnlBarSummarySemantics(
@@ -3306,14 +3305,14 @@ class AppLocalizationsPt extends AppLocalizations {
     String topMonth,
     String topSales,
   ) {
-    return 'Totais do periodo: $totalSales em vendas, $totalProfit de lucro, $totalCost de custo da mercadoria. Mes com maior venda: $topMonth ($topSales).';
+    return 'Totais do período: $totalSales em vendas, $totalProfit de lucro, $totalCost de custo da mercadoria. Mes com maior venda: $topMonth ($topSales).';
   }
 
   @override
   String get salesProdutoRankLucroChartTitle => 'Top produtos';
 
   @override
-  String get salesProdutoRankLucroFilterPeriod => 'Periodo';
+  String get salesProdutoRankLucroFilterPeriod => 'Período';
 
   @override
   String get salesProdutoRankLucroFilterSortBy => 'Metrica';
@@ -3326,252 +3325,251 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesProdutoTendenciaPageSubtitle =>
-      'Visao executiva da tendencia de venda por produto com resumo, destaques e detalhe paginado.';
+      'Executive snapshot of product sales trend with summary, movers, and paged details.';
 
   @override
-  String get salesProdutoTendenciaFilterCurrentPeriod => 'Periodo atual';
+  String get salesProdutoTendenciaFilterCurrentPeriod => 'Current period';
 
   @override
-  String get salesProdutoTendenciaFilterPreviousPeriod => 'Periodo anterior';
+  String get salesProdutoTendenciaFilterPreviousPeriod => 'Previous period';
 
   @override
-  String get salesProdutoTendenciaComparisonCurrentChip => 'Atual';
+  String get salesProdutoTendenciaComparisonCurrentChip => 'Current';
 
   @override
-  String get salesProdutoTendenciaComparisonPreviousChip => 'Anterior';
+  String get salesProdutoTendenciaComparisonPreviousChip => 'Previous';
 
   @override
-  String get salesProdutoTendenciaFilterSearch => 'Busca';
+  String get salesProdutoTendenciaFilterSearch => 'Search term';
 
   @override
-  String get salesProdutoTendenciaFilterSearchHint => 'Produto, grupo ou marca';
+  String get salesProdutoTendenciaFilterSearchHint =>
+      'Product, group, or brand';
 
   @override
-  String get salesProdutoTendenciaFilterClassification => 'Classificacao';
+  String get salesProdutoTendenciaFilterClassification => 'Classification';
 
   @override
-  String get salesProdutoTendenciaFilterGroup => 'Grupo';
+  String get salesProdutoTendenciaFilterGroup => 'Group';
 
   @override
-  String get salesProdutoTendenciaFilterBrand => 'Marca';
+  String get salesProdutoTendenciaFilterBrand => 'Brand';
 
   @override
-  String get salesProdutoTendenciaFilterPageSize => 'Linhas por pagina';
+  String get salesProdutoTendenciaFilterPageSize => 'Rows per page';
 
   @override
-  String get salesProdutoTendenciaFilterAllOption => 'Todos';
+  String get salesProdutoTendenciaFilterAllOption => 'All';
 
   @override
   String get salesProdutoTendenciaFilterQuickPeriodsTitle =>
-      'Periodos sugeridos';
+      'Suggested periods';
 
   @override
   String get salesProdutoTendenciaFilterQuickPeriodsSubtitle =>
-      'Escolha uma janela base e o relatorio alinha a comparacao automaticamente.';
+      'Pick a base window and the report will align the comparison for you.';
 
   @override
-  String get salesProdutoTendenciaFilterPresetCurrentMonth => 'Mes atual';
+  String get salesProdutoTendenciaFilterPresetCurrentMonth => 'Current month';
 
   @override
-  String get salesProdutoTendenciaFilterPresetPreviousMonth => 'Mes anterior';
+  String get salesProdutoTendenciaFilterPresetPreviousMonth => 'Previous month';
 
   @override
-  String get salesProdutoTendenciaFilterPresetLast7Days => 'Ultimos 7 dias';
+  String get salesProdutoTendenciaFilterPresetLast7Days => 'Last 7 days';
 
   @override
-  String get salesProdutoTendenciaFilterPresetLast30Days => 'Ultimos 30 dias';
+  String get salesProdutoTendenciaFilterPresetLast30Days => 'Last 30 days';
 
   @override
   String get salesProdutoTendenciaFilterAutoAdjustPreviousAction =>
-      'Ajustar periodo anterior';
+      'Adjust previous period';
 
   @override
-  String get salesProdutoTendenciaFilterRuleHelperTitle =>
-      'Regra da comparacao';
+  String get salesProdutoTendenciaFilterRuleHelperTitle => 'Comparison rule';
 
   @override
   String get salesProdutoTendenciaFilterRuleHelper =>
-      'Compare mes completo com mes completo, ou periodos personalizados com a mesma quantidade de dias.';
+      'Compare full months with full months, or custom periods with the same number of days.';
 
   @override
   String get salesProdutoTendenciaFilterApplyDisabledTitle =>
-      'A comparacao precisa de ajuste';
+      'Comparison needs adjustment';
 
   @override
   String get salesProdutoTendenciaFilterApplyDisabledHint =>
-      'Atualize os periodos acima para habilitar a aplicacao dos filtros.';
+      'Update the periods above to enable the apply action.';
 
   @override
   String salesProdutoTendenciaFilterDurationDays(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count dias',
-      one: '1 dia',
+      other: '$count days',
+      one: '1 day',
     );
     return '$_temp0';
   }
 
   @override
-  String get salesProdutoTendenciaFilterRangeKindFullMonth => 'Mes completo';
+  String get salesProdutoTendenciaFilterRangeKindFullMonth => 'Full month';
 
   @override
-  String get salesProdutoTendenciaFilterRangeKindCustom =>
-      'Periodo personalizado';
+  String get salesProdutoTendenciaFilterRangeKindCustom => 'Custom period';
 
   @override
   String get salesProdutoTendenciaFilterPeriodsOrderError =>
-      'O periodo anterior precisa terminar antes do inicio do periodo atual.';
+      'The previous period must end before the current period starts.';
 
   @override
   String get salesProdutoTendenciaFilterPeriodsEquivalentWindowError =>
-      'Use janelas equivalentes na comparacao: mes completo contra mes completo, ou periodo personalizado contra periodo personalizado com a mesma quantidade de dias.';
+      'Use equivalent comparison windows: full month versus full month, or custom period versus custom period with the same number of days.';
 
   @override
-  String get salesProdutoTendenciaSummaryTitle => 'Resumo executivo';
+  String get salesProdutoTendenciaSummaryTitle => 'Executive summary';
 
   @override
   String get salesProdutoTendenciaSummarySubtitle =>
-      'Visao geral da movimentacao por classificacao de tendencia.';
+      'Overview of product movement by trend classification.';
 
   @override
   String get salesProdutoTendenciaSummaryByClassificacaoTitle =>
-      'Produtos por classificacao';
+      'Products by classification';
 
   @override
   String get salesProdutoTendenciaSummaryByClassificacaoSubtitle =>
-      'Distribuicao e impacto dentro da pagina carregada.';
+      'Distribution and impact in the loaded page.';
 
   @override
-  String get salesProdutoTendenciaTopMoversTitle => 'Principais movimentacoes';
+  String get salesProdutoTendenciaTopMoversTitle => 'Top movers';
 
   @override
   String get salesProdutoTendenciaTopMoversSubtitle =>
-      'Maiores altas e quedas no periodo selecionado.';
+      'Highest growth and decline in the selected period.';
 
   @override
-  String get salesProdutoTendenciaTopGainersTitle => 'Top 5 altas';
+  String get salesProdutoTendenciaTopGainersTitle => 'Top 5 gainers';
 
   @override
-  String get salesProdutoTendenciaTopLosersTitle => 'Top 5 quedas';
+  String get salesProdutoTendenciaTopLosersTitle => 'Top 5 losers';
 
   @override
-  String get salesProdutoTendenciaDetailsTitle => 'Detalhes';
+  String get salesProdutoTendenciaDetailsTitle => 'Detailed rows';
 
   @override
   String get salesProdutoTendenciaDetailsSubtitle =>
-      'Lista paginada com produto, classificacao e grupo.';
+      'Paginated detail with product, classification, and group.';
 
   @override
   String get salesProdutoTendenciaDetailsHorizontalScrollCaption =>
-      'Deslize para o lado para ver todas as colunas.';
+      'Swipe sideways to see all columns.';
 
   @override
   String get salesProdutoTendenciaFiltersAppliedSnackbar =>
-      'Filtros aplicados. Atualizando dados.';
+      'Filters applied. Refreshing data.';
 
   @override
   String get salesProdutoTendenciaLoadingTrendSemantics =>
-      'Carregando tendencia de vendas…';
+      'Loading sales trend…';
 
   @override
-  String get salesProdutoTendenciaDetailsEntityLabel => 'linhas';
+  String get salesProdutoTendenciaDetailsEntityLabel => 'rows';
 
   @override
   String get salesProdutoTendenciaNoData =>
-      'Sem dados de tendencia para os filtros selecionados.';
+      'No trend data for the selected filters.';
 
   @override
-  String get salesProdutoTendenciaKpiGrowing => 'Produtos crescendo';
+  String get salesProdutoTendenciaKpiGrowing => 'Growing products';
 
   @override
-  String get salesProdutoTendenciaKpiFalling => 'Produtos caindo';
+  String get salesProdutoTendenciaKpiFalling => 'Falling products';
 
   @override
-  String get salesProdutoTendenciaKpiNewProducts => 'Produtos novos';
+  String get salesProdutoTendenciaKpiNewProducts => 'New products';
 
   @override
-  String get salesProdutoTendenciaKpiStopped => 'Parou de vender';
+  String get salesProdutoTendenciaKpiStopped => 'Stopped selling';
 
   @override
-  String get salesProdutoTendenciaKpiNetImpact => 'Impacto liquido (qtd)';
+  String get salesProdutoTendenciaKpiNetImpact => 'Net impact (qty)';
 
   @override
-  String get salesProdutoTendenciaColProduct => 'Produto';
+  String get salesProdutoTendenciaColProduct => 'Product';
 
   @override
-  String get salesProdutoTendenciaColClassificacao => 'Classificacao';
+  String get salesProdutoTendenciaColClassificacao => 'Classification';
 
   @override
-  String get salesProdutoTendenciaColGrupo => 'Grupo';
+  String get salesProdutoTendenciaColGrupo => 'Group';
 
   @override
-  String get salesProdutoTendenciaColDiferenca => 'Diferenca';
+  String get salesProdutoTendenciaColDiferenca => 'Delta';
 
   @override
-  String get salesProdutoTendenciaColPercentual => 'Tendencia %';
+  String get salesProdutoTendenciaColPercentual => 'Trend %';
 
   @override
-  String get salesProdutoTendenciaClassificacaoStopped => 'Parou de vender';
+  String get salesProdutoTendenciaClassificacaoStopped => 'Stopped selling';
 
   @override
-  String get salesProdutoTendenciaClassificacaoNew => 'Novo produto';
+  String get salesProdutoTendenciaClassificacaoNew => 'New product';
 
   @override
-  String get salesProdutoTendenciaClassificacaoGrowing => 'Crescendo';
+  String get salesProdutoTendenciaClassificacaoGrowing => 'Growing';
 
   @override
-  String get salesProdutoTendenciaClassificacaoFalling => 'Caindo';
+  String get salesProdutoTendenciaClassificacaoFalling => 'Falling';
 
   @override
-  String get salesProdutoTendenciaClassificacaoStable => 'Estavel';
+  String get salesProdutoTendenciaClassificacaoStable => 'Stable';
 
   @override
   String salesProdutoTendenciaActiveFiltersSummary(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count filtros adicionais',
-      one: '1 filtro adicional',
-      zero: 'Sem filtros adicionais',
+      other: '$count additional filters',
+      one: '1 additional filter',
+      zero: 'No additional filters',
     );
     return '$_temp0';
   }
 
   @override
   String salesProdutoTendenciaDetailsNotice(String pageSize) {
-    return 'Pode haver mais linhas no resultado. Use a paginacao para carregar as proximas paginas (tamanho atual: $pageSize).';
+    return 'Results may contain more rows. Use pagination to load next pages (current size: $pageSize).';
   }
 
   @override
   String get salesProdutoTendenciaMediaMovelPageSubtitle =>
-      'Painel de media movel com resumo por classificacao e detalhe paginado por produto.';
+      'Moving-average dashboard with classification summary and paged product detail.';
 
   @override
   String get salesProdutoTendenciaMediaMovelFilterQuantidadeDias =>
-      'Janela de dias';
+      'Window size';
 
   @override
   String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHint =>
-      'Quantidade de dias usada em cada media movel';
+      'Number of days used in each moving average';
 
   @override
   String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHelper =>
-      'Use a mesma janela para comparar a media atual com a anterior.';
+      'Use the same window size for the current and previous averages.';
 
   @override
   String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasInvalid =>
-      'Informe uma quantidade de dias valida e maior que zero.';
+      'Enter a valid number of days greater than zero.';
 
   @override
   String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasPresetsTitle =>
-      'Janelas rapidas';
+      'Quick windows';
 
   @override
   String salesProdutoTendenciaMediaMovelFilterQuantidadeDiasTooLarge(
     int maxDays,
   ) {
-    return 'Use no maximo $maxDays dias.';
+    return 'Use at most $maxDays days.';
   }
 
   @override
@@ -3579,8 +3577,8 @@ class AppLocalizationsPt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count dias',
-      one: '1 dia',
+      other: '$count days',
+      one: '1 day',
     );
     return '$_temp0';
   }
@@ -3590,152 +3588,149 @@ class AppLocalizationsPt extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count filtros adicionais',
-      one: '1 filtro adicional',
-      zero: 'Sem filtros adicionais',
+      other: '$count additional filters',
+      one: '1 additional filter',
+      zero: 'No additional filters',
     );
     return '$_temp0';
   }
 
   @override
   String get salesProdutoTendenciaMediaMovelFilterSearchHint =>
-      'Produto ou grupo';
+      'Product or group';
 
   @override
   String get salesProdutoTendenciaMediaMovelFiltersAppliedSnackbar =>
-      'Filtros aplicados. Atualizando a tendencia por media movel.';
+      'Filters applied. Refreshing moving-average trend.';
 
   @override
   String get salesProdutoTendenciaMediaMovelSelectAgentHint =>
-      'Escolha um agente de vendas para carregar a tendencia de vendas por media movel.';
+      'Choose one sales agent to load the moving-average sales trend.';
 
   @override
-  String get salesProdutoTendenciaMediaMovelSummaryTitle => 'Resumo executivo';
+  String get salesProdutoTendenciaMediaMovelSummaryTitle => 'Executive summary';
 
   @override
   String get salesProdutoTendenciaMediaMovelSummarySubtitle =>
-      'Totais por classificacao em todo o resultado filtrado.';
+      'Classification totals across the full filtered result.';
 
   @override
   String get salesProdutoTendenciaMediaMovelSummaryUnavailableTitle =>
-      'Resumo indisponivel';
+      'Summary unavailable';
 
   @override
   String get salesProdutoTendenciaMediaMovelSummaryUnavailableMessage =>
-      'Nao foi possivel carregar o resumo, entao a pagina esta mostrando uma estimativa baseada nas linhas atuais.';
+      'The summary could not be loaded, so the page is showing an estimate based on the current rows.';
 
   @override
   String get salesProdutoTendenciaMediaMovelSummaryByClassificacaoTitle =>
-      'Produtos por classificacao';
+      'Products by classification';
 
   @override
   String get salesProdutoTendenciaMediaMovelSummaryByClassificacaoSubtitle =>
-      'Distribuicao dos produtos em todo o resultado filtrado.';
+      'Distribution of products across the full filtered result.';
 
   @override
   String get salesProdutoTendenciaMediaMovelSummaryByImpactTitle =>
-      'Impacto por classificacao';
+      'Impact by classification';
 
   @override
   String get salesProdutoTendenciaMediaMovelSummaryByImpactSubtitle =>
-      'Impacto liquido em quantidade de cada classificacao em todo o resultado filtrado.';
+      'Net quantity impact of each classification across the full filtered result.';
 
   @override
-  String get salesProdutoTendenciaMediaMovelDetailsTitle => 'Detalhes';
+  String get salesProdutoTendenciaMediaMovelDetailsTitle => 'Detailed rows';
 
   @override
   String get salesProdutoTendenciaMediaMovelDetailsSubtitle =>
-      'Lista paginada com produto, medias, grupo e classificacao de tendencia.';
+      'Paginated detail with product, averages, group, and trend classification.';
 
   @override
   String get salesProdutoTendenciaMediaMovelDetailsHorizontalScrollCaption =>
-      'Deslize para o lado para ver todas as colunas.';
+      'Swipe sideways to see all columns.';
 
   @override
-  String get salesProdutoTendenciaMediaMovelDetailsEntityLabel => 'linhas';
+  String get salesProdutoTendenciaMediaMovelDetailsEntityLabel => 'rows';
 
   @override
   String salesProdutoTendenciaMediaMovelDetailsSortedBy(String sortLabel) {
-    return 'Ordenado por: $sortLabel';
+    return 'Sorted by: $sortLabel';
   }
 
   @override
   String salesProdutoTendenciaMediaMovelDetailsNotice(String pageSize) {
-    return 'Pode haver mais linhas no resultado. Use a paginacao para carregar as proximas paginas (tamanho atual: $pageSize).';
+    return 'Results may contain more rows. Use pagination to load next pages (current size: $pageSize).';
   }
 
   @override
   String get salesProdutoTendenciaMediaMovelNoData =>
-      'Sem dados de tendencia por media movel para os filtros selecionados.';
+      'No moving-average trend data for the selected filters.';
 
   @override
-  String get salesProdutoTendenciaMediaMovelKpiGrowing => 'Produtos crescendo';
+  String get salesProdutoTendenciaMediaMovelKpiGrowing => 'Growing products';
 
   @override
-  String get salesProdutoTendenciaMediaMovelKpiFalling => 'Produtos caindo';
+  String get salesProdutoTendenciaMediaMovelKpiFalling => 'Falling products';
 
   @override
-  String get salesProdutoTendenciaMediaMovelKpiNewProducts => 'Produtos novos';
+  String get salesProdutoTendenciaMediaMovelKpiNewProducts => 'New products';
 
   @override
-  String get salesProdutoTendenciaMediaMovelKpiStopped => 'Parou de vender';
+  String get salesProdutoTendenciaMediaMovelKpiStopped => 'Stopped selling';
 
   @override
-  String get salesProdutoTendenciaMediaMovelKpiNetImpact =>
-      'Impacto liquido (qtd)';
+  String get salesProdutoTendenciaMediaMovelKpiNetImpact => 'Net impact (qty)';
 
   @override
-  String get salesProdutoTendenciaMediaMovelColProduct => 'Produto';
+  String get salesProdutoTendenciaMediaMovelColProduct => 'Product';
 
   @override
-  String get salesProdutoTendenciaMediaMovelColClassificacao => 'Classificacao';
+  String get salesProdutoTendenciaMediaMovelColClassificacao =>
+      'Classification';
 
   @override
-  String get salesProdutoTendenciaMediaMovelColGrupo => 'Grupo';
+  String get salesProdutoTendenciaMediaMovelColGrupo => 'Group';
 
   @override
-  String get salesProdutoTendenciaMediaMovelColMediaAtual => 'Media atual';
+  String get salesProdutoTendenciaMediaMovelColMediaAtual => 'Current avg.';
 
   @override
-  String get salesProdutoTendenciaMediaMovelColMediaAnterior =>
-      'Media anterior';
+  String get salesProdutoTendenciaMediaMovelColMediaAnterior => 'Previous avg.';
 
   @override
-  String get salesProdutoTendenciaMediaMovelColDiferenca => 'Diferenca';
+  String get salesProdutoTendenciaMediaMovelColDiferenca => 'Delta';
 
   @override
-  String get salesProdutoTendenciaMediaMovelColPercentual => 'Tendencia %';
+  String get salesProdutoTendenciaMediaMovelColPercentual => 'Trend %';
 
   @override
-  String get salesProdutoTendenciaMediaMovelFilterSortBy =>
-      'Ordenar linhas por';
+  String get salesProdutoTendenciaMediaMovelFilterSortBy => 'Sort rows by';
 
   @override
   String get salesProdutoTendenciaMediaMovelSortTrendPercent =>
-      'Percentual de tendencia';
+      'Trend percentage';
 
   @override
-  String get salesProdutoTendenciaMediaMovelSortDifference => 'Diferenca';
+  String get salesProdutoTendenciaMediaMovelSortDifference => 'Delta';
 
   @override
-  String get salesProdutoTendenciaMediaMovelSortProductName =>
-      'Nome do produto';
+  String get salesProdutoTendenciaMediaMovelSortProductName => 'Product name';
 
   @override
   String get salesProdutoTendenciaMediaMovelClassificacaoStopped =>
-      'Parou de vender';
+      'Stopped selling';
 
   @override
-  String get salesProdutoTendenciaMediaMovelClassificacaoNew => 'Novo produto';
+  String get salesProdutoTendenciaMediaMovelClassificacaoNew => 'New product';
 
   @override
-  String get salesProdutoTendenciaMediaMovelClassificacaoGrowing => 'Crescendo';
+  String get salesProdutoTendenciaMediaMovelClassificacaoGrowing => 'Growing';
 
   @override
-  String get salesProdutoTendenciaMediaMovelClassificacaoFalling => 'Caindo';
+  String get salesProdutoTendenciaMediaMovelClassificacaoFalling => 'Falling';
 
   @override
-  String get salesProdutoTendenciaMediaMovelClassificacaoStable => 'Estavel';
+  String get salesProdutoTendenciaMediaMovelClassificacaoStable => 'Stable';
 
   @override
   String get agentStatusPending => 'Pendente';
@@ -3777,13 +3772,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get brazilStoreSalesMapPresetBubbleLabel => 'Bolhas';
 
   @override
-  String get brazilStoreSalesMapPresetMunicipalityBubblesLabel => 'Municipios';
+  String get brazilStoreSalesMapPresetMunicipalityBubblesLabel => 'Municípios';
 
   @override
   String get brazilStoreSalesMapPresetStateBubblesLabel => 'Bolhas por UF';
 
   @override
-  String get brazilStoreSalesMapPresetStoreIconLabel => 'Icone loja';
+  String get brazilStoreSalesMapPresetStoreIconLabel => 'Ícone loja';
 
   @override
   String get brazilStoreSalesMapPresetStandardTooltip =>
@@ -3791,11 +3786,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get brazilStoreSalesMapPresetBubbleTooltip =>
-      'Exibe lojas como bolhas proporcionais a metrica ativa.';
+      'Exibe lojas como bolhas proporcionais à métrica ativa.';
 
   @override
   String get brazilStoreSalesMapPresetMunicipalityBubblesTooltip =>
-      'Agrupa lojas por municipio e exibe bolhas proporcionais a metrica ativa.';
+      'Agrupa lojas por município e exibe bolhas proporcionais à métrica ativa.';
 
   @override
   String get brazilStoreSalesMapPresetStateBubblesTooltip =>
@@ -3803,7 +3798,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get brazilStoreSalesMapPresetStoreIconTooltip =>
-      'Exibe cada loja com icone operacional de unidade.';
+      'Exibe cada loja com ícone operacional de unidade.';
 }
 
 /// The translations for Portuguese, as used in Brazil (`pt_BR`).
@@ -3962,7 +3957,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get dashboardAffectedAgentsSheetTitlePartialFailure =>
-      'Filiais que nao retornaram dados';
+      'Filiais que não retornaram dados';
 
   @override
   String get dashboardAffectedAgentsSheetTitleMissingToken =>
@@ -3988,7 +3983,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get dashboardMultiAgentAggregationMessage =>
-      'Este resumo agrega dados de varias filiais aprovadas. Se houver sobreposicao entre bases, os totais podem ficar acima de uma unica fonte.';
+      'Este resumo agrega dados de varias filiais aprovadas. Se houver sobreposição entre bases, os totais podem ficar acima de uma unica fonte.';
 
   @override
   String get overviewHomeAlertErrorDetailsButton => 'Detalhes do erro';
@@ -4042,28 +4037,28 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get dashboardPaymentSummarySubtitle =>
-      'Detalhamento de vendas, ticket medio e participacao.';
+      'Detalhamento de vendas, ticket médio e participação.';
 
   @override
   String get dashboardPaymentSummaryEmptyTitle => 'Sem formas de pagamento';
 
   @override
   String get dashboardPaymentSummaryEmptyMessage =>
-      'Nao ha linhas de forma de pagamento para este periodo.';
+      'Não há linhas de forma de pagamento para este período.';
 
   @override
   String get dashboardPaymentSummaryHeaderRevenueAbbr => 'FATURAM.';
 
   @override
   String get dashboardPaymentSummaryTooltipRevenueAbbr =>
-      'Faturamento no periodo selecionado';
+      'Faturamento no período selecionado';
 
   @override
   String get dashboardPaymentSummaryHeaderParticipationAbbr => 'PARTIC.';
 
   @override
   String get dashboardPaymentSummaryTooltipParticipationAbbr =>
-      'Participacao percentual no faturamento total';
+      'Participação percentual no faturamento total';
 
   @override
   String get dashboardPaymentSummaryHeaderSales => 'VENDAS';
@@ -4076,14 +4071,14 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get dashboardHomeFiltersAgentsEmptyHint =>
-      'Carregue a visao geral para listar as filiais.';
+      'Carregue a visão geral para listar as filiais.';
 
   @override
   String get dashboardHomeFiltersBranchesLabel => 'FILIAIS';
 
   @override
   String get dashboardHomeFiltersBranchesEmptyHint =>
-      'Carregue a visao geral para listar as filiais.';
+      'Carregue a visão geral para listar as filiais.';
 
   @override
   String get dashboardHomeFiltersYearMonthLabel => 'ANO / MÊS';
@@ -4241,14 +4236,14 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get dashboardAgentRankingSubtitle =>
-      'Faturamento total por filial no periodo.';
+      'Faturamento total por filial no período.';
 
   @override
   String get dashboardUserRankingTitle => 'Ranking por operador';
 
   @override
   String get dashboardUserRankingSubtitle =>
-      'Faturamento por operador no periodo.';
+      'Faturamento por operador no período.';
 
   @override
   String get overviewAgentRankingEmpty =>
@@ -4317,14 +4312,14 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewLoadErrorTitle =>
-      'Nao foi possivel carregar a visao geral';
+      'Não foi possível carregar a visão geral';
 
   @override
   String get overviewStaleCacheTitle => 'Dados salvos neste aparelho';
 
   @override
   String get overviewStaleCacheMessage =>
-      'Nao foi possivel atualizar agora. Os numeros abaixo refletem o ultimo resumo obtido com sucesso.';
+      'Não foi possível atualizar agora. Os números abaixo refletem o último resumo obtido com sucesso.';
 
   @override
   String get overviewLoadingPaymentKpisSemantics =>
@@ -4343,18 +4338,18 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewLoadingMonthlyParcelsSemantics =>
-      'Carregando grafico dos ultimos 12 meses…';
+      'Carregando gráfico dos últimos 12 meses…';
 
   @override
   String get overviewLoadingWeekdaySalesSemantics =>
       'Carregando gráfico de vendas por dia da semana…';
 
   @override
-  String get overviewMonthlyParcelsTitle => 'Ultimos 12 meses';
+  String get overviewMonthlyParcelsTitle => 'Últimos 12 meses';
 
   @override
   String get overviewMonthlyParcelsSubtitle =>
-      'Quantidade de vendas e total em parcelas por mes (todas as filiais no escopo).';
+      'Quantidade de vendas e total em parcelas por mês (todas as filiais no escopo).';
 
   @override
   String get overviewMonthlyParcelsSalesSeriesLabel => 'Vendas';
@@ -4364,19 +4359,19 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewMonthlyParcelsEmpty =>
-      'Sem dados mensais para este periodo.';
+      'Sem dados mensais para este período.';
 
   @override
   String get overviewMonthlyParcelsLoadFailed =>
-      'Nao foi possivel carregar o grafico mensal. Tente novamente mais tarde.';
+      'Não foi possível carregar o gráfico mensal. Tente novamente mais tarde.';
 
   @override
   String get overviewMonthlyParcelsChartSemantics =>
-      'Grafico dos ultimos doze meses de vendas e valor em parcelas';
+      'Gráfico dos últimos doze meses de vendas e valor em parcelas';
 
   @override
   String get overviewMonthlyParcelsSubtitleValueView =>
-      'Total em parcelas e quantidade de vendas por mes (todas as filiais no escopo).';
+      'Total em parcelas e quantidade de vendas por mês (todas as filiais no escopo).';
 
   @override
   String get overviewMonthlyParcelsSwitchSalesLabel => 'Vendas';
@@ -4386,7 +4381,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewMonthlyParcelsChartSemanticsValueView =>
-      'Grafico dos ultimos doze meses de valor em parcelas e vendas';
+      'Gráfico dos últimos doze meses de valor em parcelas e vendas';
 
   @override
   String get overviewDailySalesTitle => 'Vendas por dia';
@@ -4596,11 +4591,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get overviewKpiSales => 'Vendas';
 
   @override
-  String get overviewKpiAvgTicket => 'Ticket medio';
+  String get overviewKpiAvgTicket => 'Ticket médio';
 
   @override
   String get overviewUserRankingChartSemanticsExtra =>
-      'Cada barra mostra o faturamento total e o ticket medio daquele operador.';
+      'Cada barra mostra o faturamento total e o ticket médio daquele operador.';
 
   @override
   String get overviewKpiPaymentMethodCount => 'Formas de pagamento';
@@ -4610,7 +4605,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewPaymentMixSubtitle =>
-      'Participacao percentual no faturamento do periodo.';
+      'Participação percentual no faturamento do período.';
 
   @override
   String get overviewPaymentMixDonutTotalLabel => 'TOTAL';
@@ -4629,7 +4624,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get appCategoryDonutCardLoadingSemantics =>
-      'Carregando grafico de categorias…';
+      'Carregando gráfico de categorias…';
 
   @override
   String appCategoryDonutCardEmptySemantics(String title) {
@@ -4643,18 +4638,18 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String appCategoryDonutChartSemantics(String summary) {
-    return 'Grafico de rosca. $summary';
+    return 'Gráfico de rosca. $summary';
   }
 
   @override
   String get overviewPaymentBarTitle => 'Faturamento por forma de pagamento';
 
   @override
-  String get overviewPaymentBarSubtitle => 'Valor total acumulado no periodo.';
+  String get overviewPaymentBarSubtitle => 'Valor total acumulado no período.';
 
   @override
   String get overviewPaymentBarEmpty =>
-      'Sem faturamento por forma de pagamento neste periodo.';
+      'Sem faturamento por forma de pagamento neste período.';
 
   @override
   String overviewPaymentBarTooltip(String label, String amount) {
@@ -4833,7 +4828,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get brazilStoreSalesMapSemanticsSalesUnavailableSuffix =>
-      ', vendas indisponiveis';
+      ', vendas indisponíveis';
 
   @override
   String brazilStoreSalesMapSemanticsClusterStores(
@@ -4896,12 +4891,12 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String brazilStoreSalesMapDataQualityLead(String count) {
-    return '$count lojas nao exibidas';
+    return '$count lojas não exibidas';
   }
 
   @override
   String brazilStoreSalesMapDataQualityInvalidCoords(String count) {
-    return '$count com coordenada invalida';
+    return '$count com coordenada inválida';
   }
 
   @override
@@ -4939,7 +4934,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get brazilStoreSalesMapSalesUnavailableFallback =>
-      'Vendas indisponiveis';
+      'Vendas indisponíveis';
 
   @override
   String get brazilStoreSalesMapSelectBranchButton => 'Selecionar filial';
@@ -4952,7 +4947,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Filial anterior';
 
   @override
-  String get brazilStoreSalesMapBranchNavigationNextTooltip => 'Proxima filial';
+  String get brazilStoreSalesMapBranchNavigationNextTooltip => 'Próxima filial';
 
   @override
   String get brazilStoreSalesMapMarkerGroupTotalTitle => 'Total do ponto';
@@ -4961,15 +4956,15 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get brazilStoreSalesMapDefaultBranchName => 'Filial sem nome';
 
   @override
-  String get brazilStoreSalesMapSidebarTitle => 'Filiais visiveis';
+  String get brazilStoreSalesMapSidebarTitle => 'Filiais visíveis';
 
   @override
   String brazilStoreSalesMapSidebarSummary(int count, String revenue) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count filiais visiveis',
-      one: '1 filial visivel',
+      other: '$count filiais visíveis',
+      one: '1 filial visível',
     );
     return '$_temp0 · $revenue';
   }
@@ -4979,8 +4974,8 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count filiais visiveis',
-      one: '1 filial visivel',
+      other: '$count filiais visíveis',
+      one: '1 filial visível',
     );
     return '$_temp0';
   }
@@ -5000,7 +4995,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get brazilStoreSalesMapSidebarEmptyStateTitle =>
-      'Nenhuma filial visivel';
+      'Nenhuma filial visível';
 
   @override
   String get brazilStoreSalesMapSidebarEmptyStateMessage =>
@@ -5016,7 +5011,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get brazilStoreSalesMapSidebarZeroSalesLabel =>
-      'Sem vendas no periodo';
+      'Sem vendas no período';
 
   @override
   String get brazilStoreSalesMapSidebarCollapseTooltip =>
@@ -5041,13 +5036,13 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Coordenada da filial';
 
   @override
-  String get brazilStoreSalesMapLocationIbge => 'Geolocalizacao IBGE';
+  String get brazilStoreSalesMapLocationIbge => 'Geolocalização IBGE';
 
   @override
-  String get brazilStoreSalesMapLocationCep => 'Geolocalizacao CEP';
+  String get brazilStoreSalesMapLocationCep => 'Geolocalização CEP';
 
   @override
-  String get brazilStoreSalesMapLocationCityUf => 'Geolocalizacao cidade/UF';
+  String get brazilStoreSalesMapLocationCityUf => 'Geolocalização cidade/UF';
 
   @override
   String get brazilStoreSalesMapLocationCapitalUf => 'Capital da UF';
@@ -5057,7 +5052,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get brazilStoreSalesMapLocationUnknown =>
-      'Origem da coordenada nao informada';
+      'Origem da coordenada não informada';
 
   @override
   String overviewSemanticsPaymentMethodRow(String label) {
@@ -5076,7 +5071,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String overviewSemanticsAvgTicket(String amount) {
-    return 'Ticket medio $amount';
+    return 'Ticket médio $amount';
   }
 
   @override
@@ -5086,29 +5081,29 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewNoApprovedAgentsUserMessage =>
-      'Nenhuma filial aprovada esta disponivel para carregar a visao geral.';
+      'Nenhuma filial aprovada está disponível para carregar a visão geral.';
 
   @override
   String get overviewLoadFailedUserMessage =>
-      'Nao foi possivel carregar a visao geral.';
+      'Não foi possível carregar a visão geral.';
 
   @override
   String get clientAgentsDataSourcesEyebrow => 'Fontes de dados';
 
   @override
-  String get clientAgentsPageTitle => 'Gestao de agentes';
+  String get clientAgentsPageTitle => 'Gestão de agentes';
 
   @override
   String get clientAgentsPageSubtitle =>
-      'Acompanhe seus agentes aprovados, solicite novos acessos e consulte o andamento das solicitacoes.';
+      'Acompanhe seus agentes aprovados, solicite novos acessos e consulte o andamento das solicitações.';
 
   @override
   String clientAgentsPendingActionsCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count acoes para enviar',
-      one: '1 acao para enviar',
+      other: '$count ações para enviar',
+      one: '1 ação para enviar',
     );
     return '$_temp0';
   }
@@ -5117,22 +5112,22 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get clientAgentsRefresh => 'Atualizar';
 
   @override
-  String get clientAgentsSubmitRequests => 'Enviar solicitacoes';
+  String get clientAgentsSubmitRequests => 'Enviar solicitações';
 
   @override
   String get clientAgentsActionFailedTitle =>
-      'Nao foi possivel concluir a acao';
+      'Não foi possível concluir a ação';
 
   @override
-  String get clientAgentsMaintenanceTitle => 'Manutencao de agentes';
+  String get clientAgentsMaintenanceTitle => 'Manutenção de agentes';
 
   @override
   String get clientAgentsMaintenanceSubtitle =>
-      'Use as abas para ver agentes aprovados, pedir novos acessos e acompanhar o historico das solicitacoes.';
+      'Use as abas para ver agentes aprovados, pedir novos acessos e acompanhar o histórico das solicitações.';
 
   @override
   String get clientAgentsMaintenanceSubtitleOwner =>
-      'Use as abas para gerir agentes aprovados, reenviar solicitacoes de clientes e revisar acessos dos agentes que voce administra.';
+      'Use as abas para gerir agentes aprovados, reenviar solicitações de clientes e revisar acessos dos agentes que você administra.';
 
   @override
   String get clientAgentsTabMyAgents => 'Meus agentes';
@@ -5141,17 +5136,17 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get clientAgentsTabRequestAccess => 'Solicitar acesso';
 
   @override
-  String get clientAgentsTabRequests => 'Solicitacoes';
+  String get clientAgentsTabRequests => 'Solicitações';
 
   @override
-  String get clientAgentsTabOwnerRequests => 'Revisar solicitacoes';
+  String get clientAgentsTabOwnerRequests => 'Revisar solicitações';
 
   @override
   String get clientAgentsTabOwnerClients => 'Clientes aprovados';
 
   @override
   String get clientAgentsLoadApprovedErrorTitle =>
-      'Nao foi possivel carregar seus agentes';
+      'Não foi possível carregar seus agentes';
 
   @override
   String clientAgentsEmptyApproved(String tabLabel) {
@@ -5181,10 +5176,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentsApprovedBulkSelect =>
-      'Selecionar para remocao em lote';
+      'Selecionar para remoção em lote';
 
   @override
-  String get clientAgentsApprovedBulkCancel => 'Cancelar selecao';
+  String get clientAgentsApprovedBulkCancel => 'Cancelar seleção';
 
   @override
   String clientAgentsApprovedBulkRemove(int count) {
@@ -5193,36 +5188,36 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentsBulkRemoveConfirmTitle =>
-      'Enfileirar remocao para varios agentes?';
+      'Enfileirar remoção para varios agentes?';
 
   @override
   String clientAgentsBulkRemoveConfirmMessage(int count) {
-    return 'A remocao de acesso para $count agentes sera preparada e enviada no proximo sync.';
+    return 'A remoção de acesso para $count agentes será preparada e enviada no próximo sync.';
   }
 
   @override
   String get clientAgentsBulkRemoveConfirmBack => 'Voltar';
 
   @override
-  String get clientAgentsBulkRemoveConfirmAction => 'Enfileirar remocao';
+  String get clientAgentsBulkRemoveConfirmAction => 'Enfileirar remoção';
 
   @override
   String get clientAgentsApprovedBulkSelectAll => 'Selecionar todos';
 
   @override
-  String get clientAgentsApprovedBulkClearSelection => 'Limpar selecao';
+  String get clientAgentsApprovedBulkClearSelection => 'Limpar seleção';
 
   @override
   String get clientAgentsRequestAccessIntro1 =>
-      'Use uma ou mais linhas para solicitar acesso. Cada linha precisa de um UUID de agente; informe o client token quando o agente exigir para execucao SQL.';
+      'Use uma ou mais linhas para solicitar acesso. Cada linha precisa de um UUID de agente; informe o client token quando o agente exigir para execução SQL.';
 
   @override
   String get clientAgentsRequestAccessIntro2 =>
-      'O agentId deve ser informado pelo responsavel do agente ou por um fluxo externo. Quando a solicitacao for aprovada, o agente sera liberado automaticamente para esta conta.';
+      'O agentId deve ser informado pelo responsável do agente ou por um fluxo externo. Quando a solicitação for aprovada, o agente será liberado automáticamente para esta conta.';
 
   @override
   String get clientAgentsRequestAccessIntroToken =>
-      'O client token fica em cache neste dispositivo enquanto a aprovacao esta pendente e e enviado ao servidor Colmeia assim que o agente for vinculado.';
+      'O client token fica em cache neste dispositivo enquanto a aprovação está pendente e é enviado ao servidor Colmeia assim que o agente for vinculado.';
 
   @override
   String get clientAgentsRequestAccessAddRow => 'Adicionar linha de agente';
@@ -5240,7 +5235,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentsClientTokenHint =>
-      'Opcional — cache local, enviado ao servidor apos aprovacao';
+      'Opcional — cache local, enviado ao servidor após aprovação';
 
   @override
   String get clientAgentsClientTokenShow => 'Mostrar token';
@@ -5255,34 +5250,20 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get clientAgentsRequestAccessCta => 'Solicitar acesso';
 
   @override
-  String get clientAgentsValidationNeedOneValidId =>
-      'Informe pelo menos um agentId valido para continuar.';
-
-  @override
-  String clientAgentsValidationInvalidIds(String ids) {
-    return 'Os seguintes agentIds sao invalidos: $ids.';
-  }
-
-  @override
-  String clientAgentsValidationTokenTooLong(int limit, String ids) {
-    return 'O client token deve ter no maximo $limit caracteres. Reduza para: $ids.';
-  }
-
-  @override
   String clientAgentsDuplicatedIdsNote(String ids) {
-    return 'IDs duplicados foram ignorados automaticamente: $ids.';
+    return 'IDs duplicados foram ignorados automáticamente: $ids.';
   }
 
   @override
   String get clientAgentsLoadRequestsErrorTitle =>
-      'Nao foi possivel carregar as solicitacoes';
+      'Não foi possível carregar as solicitações';
 
   @override
   String get clientAgentsLoadPendingErrorTitle =>
-      'Nao foi possivel carregar os envios pendentes';
+      'Não foi possível carregar os envios pendentes';
 
   @override
-  String get clientAgentsNoRequestsYet => 'Sem solicitacoes no momento.';
+  String get clientAgentsNoRequestsYet => 'Sem solicitações no momento.';
 
   @override
   String get clientAgentsRequestStatusPending => 'Pendente';
@@ -5301,23 +5282,23 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentsRequestDescPending =>
-      'Em analise pelo responsavel do agente.';
+      'Em análise pelo responsável do agente.';
 
   @override
   String get clientAgentsRequestDescApproved =>
-      'Aprovado e disponivel para esta conta.';
+      'Aprovado e disponível para esta conta.';
 
   @override
   String get clientAgentsRequestDescRejected =>
-      'Nao foi aprovado pelo responsavel do agente.';
+      'Não foi aprovado pelo responsável do agente.';
 
   @override
   String get clientAgentsRequestDescExpired =>
-      'A solicitacao expirou. Envie novamente se necessario.';
+      'A solicitação expirou. Envie novamente se necessário.';
 
   @override
   String get clientAgentsRequestDescUnknown =>
-      'O status dessa solicitacao ainda nao esta disponivel.';
+      'O status dessa solicitação ainda não está disponível.';
 
   @override
   String get clientAgentsRetryRequestAction => 'Tentar novamente';
@@ -5330,7 +5311,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentsPendingDescFailed =>
-      'Nao foi possivel enviar. Tente novamente.';
+      'Não foi possível enviar. Tente novamente.';
 
   @override
   String get clientAgentsPendingDescSynced => 'Enviado.';
@@ -5360,50 +5341,50 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentsSessionUnavailableLoad =>
-      'Sessao indisponivel para carregar agentes.';
+      'Sessao indisponível para carregar agentes.';
 
   @override
   String get clientAgentsSessionUnavailableRequest =>
-      'Sessao indisponivel para solicitar acesso.';
+      'Sessao indisponível para solicitar acesso.';
 
   @override
   String get clientAgentsSessionUnavailableRemove =>
-      'Sessao indisponivel para remover acesso.';
+      'Sessao indisponível para remover acesso.';
 
   @override
   String get clientAgentsSessionUnavailableSync =>
-      'Sessao indisponivel para sincronizar pendencias.';
+      'Sessao indisponível para sincronizar pendências.';
 
   @override
   String get clientAgentsRetryMissingRequestId =>
-      'Esta solicitacao nao pode ser reenviada porque o identificador nao esta disponivel.';
+      'Esta solicitação não pode ser reenviada porque o identificador não está disponível.';
 
   @override
   String get clientAgentsRetrySuccess =>
-      'A solicitacao foi reenviada. Vamos continuar acompanhando a aprovacao.';
+      'A solicitação foi reenviada. Vamos continuar acompanhando a aprovação.';
 
   @override
   String get clientAgentsDiscardQueuedRequestAction => 'Remover da fila';
 
   @override
   String get clientAgentsDiscardQueuedRequestSuccess =>
-      'O envio pendente foi removido. Voce pode solicitar acesso de novo quando quiser.';
+      'O envio pendente foi removido. Você pode solicitar acesso de novo quando quiser.';
 
   @override
   String get clientAgentsDiscardQueuedRequestInvalidState =>
-      'Este envio nao pode ser removido da fila no estado atual.';
+      'Este envio não pode ser removido da fila no estado atual.';
 
   @override
   String get clientAgentsOwnerActionFailedTitle =>
-      'Nao foi possivel concluir a acao do responsavel';
+      'Não foi possível concluir a ação do responsável';
 
   @override
   String get clientAgentsOwnerRequestsLoadErrorTitle =>
-      'Nao foi possivel carregar as solicitacoes para revisao';
+      'Não foi possível carregar as solicitações para revisão';
 
   @override
   String get clientAgentsOwnerRequestsEmpty =>
-      'Nenhuma solicitacao de cliente precisa da sua revisao agora.';
+      'Nenhuma solicitação de cliente precisa da sua revisão agora.';
 
   @override
   String get clientAgentsOwnerApproveAction => 'Aprovar';
@@ -5417,31 +5398,31 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentsOwnerRequestsStatusApproved =>
-      'Aprovada e ja disponivel para o cliente.';
+      'Aprovada e já disponível para o cliente.';
 
   @override
   String get clientAgentsOwnerRequestsStatusRejected =>
-      'Rejeitada durante a revisao do responsavel.';
+      'Rejeitada durante a revisão do responsável.';
 
   @override
   String get clientAgentsOwnerRequestsStatusExpired =>
-      'Expirou antes da revisao final.';
+      'Expirou antes da revisão final.';
 
   @override
   String get clientAgentsOwnerRequestsStatusUnknown =>
-      'O status mais recente da revisao nao esta disponivel.';
+      'O status mais recente da revisão não está disponível.';
 
   @override
   String get clientAgentsOwnerApproveSuccess =>
-      'A solicitacao de acesso foi aprovada.';
+      'A solicitação de acesso foi aprovada.';
 
   @override
   String get clientAgentsOwnerRejectSuccess =>
-      'A solicitacao de acesso foi rejeitada.';
+      'A solicitação de acesso foi rejeitada.';
 
   @override
   String get clientAgentsOwnerClientsEmptyAgents =>
-      'Nenhum agente administrado esta disponivel para esta conta ainda.';
+      'Nenhum agente administrado está disponível para esta conta ainda.';
 
   @override
   String get clientAgentsOwnerClientsAgentSelectorLabel => 'Agente';
@@ -5452,11 +5433,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentsOwnerClientsLoadErrorTitle =>
-      'Nao foi possivel carregar os clientes aprovados';
+      'Não foi possível carregar os clientes aprovados';
 
   @override
   String get clientAgentsOwnerClientsEmpty =>
-      'Nenhum cliente aprovado esta vinculado a este agente ainda.';
+      'Nenhum cliente aprovado está vinculado a este agente ainda.';
 
   @override
   String get clientAgentsOwnerClientsApprovedSubtitle =>
@@ -5471,7 +5452,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentDetailSessionUnavailable =>
-      'Sessao indisponivel para carregar o agente.';
+      'Sessao indisponível para carregar o agente.';
 
   @override
   String get appInlineErrorRetry => 'Tentar novamente';
@@ -5483,11 +5464,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentsNoLocalPendingToSync =>
-      'Nao ha pendencias locais para sincronizar.';
+      'Não há pendências locais para sincronizar.';
 
   @override
   String get clientAgentsRequestBlockedFallback =>
-      'Nao foi possivel registrar a solicitacao informada.';
+      'Não foi possível registrar a solicitação informada.';
 
   @override
   String clientAgentsRequestBlockedIntro(String details) {
@@ -5501,7 +5482,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String clientAgentsRequestBlockedAlreadyReview(String ids) {
-    return 'Ja em analise: $ids.';
+    return 'Já em análise: $ids.';
   }
 
   @override
@@ -5511,25 +5492,25 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentsRequestQueuedWatchingSingle =>
-      'Solicitacao enviada. Vamos acompanhar a aprovacao automaticamente.';
+      'Solicitação enviada. Vamos acompanhar a aprovação automáticamente.';
 
   @override
   String clientAgentsRequestQueuedWatchingPlural(int count) {
-    return '$count solicitacoes enviadas. Vamos acompanhar as aprovacoes automaticamente.';
+    return '$count solicitações enviadas. Vamos acompanhar as aprovações automáticamente.';
   }
 
   @override
   String clientAgentsRequestQueuedIgnoredSuffix(int count) {
-    return '$count IDs foram ignorados porque ja estavam aprovados ou em analise.';
+    return '$count IDs foram ignorados porque já estavam aprovados ou em análise.';
   }
 
   @override
   String get clientAgentsRequestRelinkUpdatedSingle =>
-      'Esse agente ja esta aprovado no servidor. A lista de agentes foi atualizada.';
+      'Esse agente já está aprovado no servidor. A lista de agentes foi atualizada.';
 
   @override
   String clientAgentsRequestRelinkUpdatedPlural(int count) {
-    return '$count agentes ja estavam aprovados no servidor. A lista de agentes foi atualizada.';
+    return '$count agentes já estavam aprovados no servidor. A lista de agentes foi atualizada.';
   }
 
   @override
@@ -5542,11 +5523,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentsRelinkPendingNotCleared =>
-      'Nao foi possivel limpar solicitacoes pendentes locais; elas podem ser reenviadas na proxima sincronizacao.';
+      'Não foi possível limpar solicitações pendentes locais; elas podem ser reenviadas na próxima sincronização.';
 
   @override
   String get clientAgentsRemoveBlockedFallback =>
-      'Nao foi possivel registrar a remocao informada.';
+      'Não foi possível registrar a remoção informada.';
 
   @override
   String clientAgentsRemoveBlockedIntro(String details) {
@@ -5560,16 +5541,16 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String clientAgentsRemoveBlockedAlreadyQueued(String ids) {
-    return 'Remocao ja preparada para envio: $ids.';
+    return 'Remoção ja preparada para envio: $ids.';
   }
 
   @override
   String get clientAgentsRemoveQueuedSingle =>
-      'Remocao de acesso preparada e enviada para sincronizacao.';
+      'Remoção de acesso preparada e enviada para sincronização.';
 
   @override
   String clientAgentsRemoveQueuedPlural(int count) {
-    return '$count remocoes de acesso preparadas e enviadas para sincronizacao.';
+    return '$count remoções de acesso preparadas e enviadas para sincronização.';
   }
 
   @override
@@ -5578,16 +5559,16 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   }
 
   @override
-  String get clientAgentsSyncSuccessSingle => '1 pendencia foi sincronizada.';
+  String get clientAgentsSyncSuccessSingle => '1 pendência foi sincronizada.';
 
   @override
   String clientAgentsSyncSuccessPlural(int count) {
-    return '$count pendencias foram sincronizadas.';
+    return '$count pendências foram sincronizadas.';
   }
 
   @override
   String get clientAgentsSyncSuccessNoneCompleted =>
-      'A sincronizacao terminou, mas nenhuma pendencia foi aplicada.';
+      'A sincronização terminou, mas nenhuma pendência foi aplicada.';
 
   @override
   String clientAgentsSyncRetryAfterCountdown(int seconds) {
@@ -5596,17 +5577,17 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String clientAgentsRequestAccessRetryAfterCountdown(int seconds) {
-    return 'Muitas solicitacoes de acesso. Tente de novo em ${seconds}s.';
+    return 'Muitas solicitações de acesso. Tente de novo em ${seconds}s.';
   }
 
   @override
   String clientAgentsSyncSuccessSomeFailedSuffix(int count) {
-    return ' $count acao(oes) falhou e permanece na fila para nova tentativa.';
+    return ' $count ação(oes) falhou e permanece na fila para nova tentativa.';
   }
 
   @override
   String get clientAgentsSyncSuccessAutoSuffix =>
-      ' O envio aconteceu automaticamente.';
+      ' O envio aconteceu automáticamente.';
 
   @override
   String get clientAgentsSyncSuccessManualSuffix =>
@@ -5614,61 +5595,61 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentsSyncSuccessPollingSuffix =>
-      ' Vamos acompanhar a aprovacao automaticamente.';
+      ' Vamos acompanhar a aprovação automáticamente.';
 
   @override
   String get clientAgentsSyncSuccessAlreadyApprovedSingle =>
-      ' Um agente ja estava aprovado no servidor.';
+      ' Um agente já estava aprovado no servidor.';
 
   @override
   String clientAgentsSyncSuccessAlreadyApprovedPlural(int count) {
-    return ' $count agentes ja estavam aprovados no servidor.';
+    return ' $count agentes já estavam aprovados no servidor.';
   }
 
   @override
   String get clientAgentsSyncSuccessDebouncedSingle =>
-      ' Uma solicitacao foi atualizada recentemente (sem novo email).';
+      ' Uma solicitação foi atualizada recentemente (sem novo email).';
 
   @override
   String clientAgentsSyncSuccessDebouncedPlural(int count) {
-    return ' $count solicitacoes foram atualizadas recentemente (sem novo email).';
+    return ' $count solicitações foram atualizadas recentemente (sem novo email).';
   }
 
   @override
   String clientAgentsPollApprovedSingle(String tabLabel) {
-    return 'Acesso aprovado. O agente ja esta disponivel em \"$tabLabel\".';
+    return 'Acesso aprovado. O agente ja está disponível em \"$tabLabel\".';
   }
 
   @override
   String clientAgentsPollApprovedPlural(int count, String tabLabel) {
-    return '$count acessos foram aprovados. Os agentes ja estao disponiveis em \"$tabLabel\".';
+    return '$count acessos foram aprovados. Os agentes ja estão disponíveis em \"$tabLabel\".';
   }
 
   @override
   String get clientAgentsPollDeniedSingle =>
-      '1 solicitacao foi encerrada sem aprovacao.';
+      '1 solicitação foi encerrada sem aprovação.';
 
   @override
   String clientAgentsPollDeniedPlural(int count) {
-    return '$count solicitacoes foram encerradas sem aprovacao.';
+    return '$count solicitações foram encerradas sem aprovação.';
   }
 
   @override
   String get clientAgentsPollTimeoutSingle =>
-      '1 solicitacao ainda esta em analise. Atualize esta tela mais tarde para verificar o resultado.';
+      '1 solicitação ainda está em análise. Atualize esta tela mais tarde para verificar o resultado.';
 
   @override
   String clientAgentsPollTimeoutPlural(int count) {
-    return '$count solicitacoes seguem em analise e voce pode atualizar esta tela mais tarde para verificar o resultado.';
+    return '$count solicitações seguem em análise e você pode atualizar esta tela mais tarde para verificar o resultado.';
   }
 
   @override
   String get clientAgentsPollRemainingSingle =>
-      'Ainda ha 1 solicitacao em analise.';
+      'Ainda há 1 solicitação em análise.';
 
   @override
   String clientAgentsPollRemainingPlural(int count) {
-    return 'Ainda ha $count solicitacoes em analise.';
+    return 'Ainda há $count solicitações em análise.';
   }
 
   @override
@@ -5679,11 +5660,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentDetailSubtitle =>
-      'Informacoes detalhadas do agente aprovado para esta conta.';
+      'Informações detalhadas do agente aprovado para esta conta.';
 
   @override
   String get clientAgentDetailLoadErrorTitle =>
-      'Nao foi possivel carregar o agente';
+      'Não foi possível carregar o agente';
 
   @override
   String get clientAgentFieldTradeName => 'Nome fantasia';
@@ -5713,7 +5694,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get clientAgentDetailSectionAddress => 'Endereco';
 
   @override
-  String get clientAgentDetailSectionNotes => 'Anotacoes';
+  String get clientAgentDetailSectionNotes => 'Anotações';
 
   @override
   String get clientAgentDetailSectionRecord => 'Registro';
@@ -5723,7 +5704,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentDetailSectionServerTokenSubtitle =>
-      'Salvo no servidor Colmeia e encaminhado ao agente como `params.client_token` quando este cliente executa SQL via bridge. O token tambem fica em cache neste dispositivo para dashboards seguirem funcionando brevemente sem conexao.';
+      'Salvo no servidor Colmeia e encaminhado ao agente como `params.client_token` quando este cliente executa SQL via bridge. O token também fica em cache neste dispositivo para dashboards seguirem funcionando brevemente sem conexão.';
 
   @override
   String get clientAgentDetailServerTokenSave => 'Salvar token';
@@ -5748,7 +5729,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentDetailServerTokenStatusUnknown =>
-      'Status do token nao carregado — atualize a tela com acesso a internet para confirmar.';
+      'Status do token não carregado — atualize a tela com acesso a internet para confirmar.';
 
   @override
   String get clientAgentDetailRefreshFromAgent => 'Recarregar do agente';
@@ -5759,7 +5740,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentDetailRefreshFromAgentUnsupported =>
-      'Este agente nao implementa agent.getProfile via RPC.';
+      'Este agente não implementa agent.getProfile via RPC.';
 
   @override
   String clientAgentDetailRetryAfterCountdown(int seconds) {
@@ -5771,7 +5752,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentDetailSectionPolicySubtitle =>
-      'Resolvidas pelo agente para o token atualmente salvo no servidor. Se a politica mudar apos revogacao ou alteracao de escopo, recarregue a tela.';
+      'Resolvidas pelo agente para o token atualmente salvo no servidor. Se a política mudar após revogação ou alteração de escopo, recarregue a tela.';
 
   @override
   String get clientAgentDetailPolicyFullAccess =>
@@ -5799,18 +5780,18 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentDetailPolicyRevoked =>
-      'Este token esta marcado como revogado pelo agente.';
+      'Este token está marcado como revogado pelo agente.';
 
   @override
   String get clientAgentDetailPolicyRevokedSaveNewToken => 'Salvar novo token';
 
   @override
   String get clientAgentDetailPolicyUnsupported =>
-      'Este agente nao expoe introspecao da politica do token.';
+      'Este agente não expõe introspecção da política do token.';
 
   @override
   String get clientAgentDetailPolicyEmpty =>
-      'O agente nao retornou nenhuma regra para este token.';
+      'O agente não retornou nenhuma regra para este token.';
 
   @override
   String get clientAgentDetailSectionEditProfile => 'Perfil no catálogo';
@@ -5853,13 +5834,13 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get clientAgentFieldStatus => 'Status';
 
   @override
-  String get clientAgentFieldConnection => 'Conexao';
+  String get clientAgentFieldConnection => 'Conexão';
 
   @override
   String get clientAgentFieldNotes => 'Notas';
 
   @override
-  String get clientAgentFieldObservation => 'Observacao';
+  String get clientAgentFieldObservation => 'Observação';
 
   @override
   String get clientAgentFieldStreet => 'Rua';
@@ -5892,7 +5873,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get clientAgentsFilterSearchHint => 'Nome, agentId ou nome fantasia';
 
   @override
-  String get clientAgentsFilterConnectionLabel => 'Conexao';
+  String get clientAgentsFilterConnectionLabel => 'Conexão';
 
   @override
   String get clientAgentsFilterConnectionOnline => 'Online';
@@ -5919,7 +5900,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String clientAgentsFilterSummaryConnection(String label) {
-    return 'Conexao: $label';
+    return 'Conexão: $label';
   }
 
   @override
@@ -5932,7 +5913,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Nenhum agente corresponde aos filtros selecionados.';
 
   @override
-  String get clientAgentsRequestsFilterSheetTitle => 'Filtros de solicitacoes';
+  String get clientAgentsRequestsFilterSheetTitle => 'Filtros de solicitações';
 
   @override
   String get clientAgentsRequestsFilterSearchLabel => 'Buscar';
@@ -5942,14 +5923,14 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Nome do agente ou agent ID';
 
   @override
-  String get clientAgentsRequestsFilterStatusLabel => 'Status da solicitacao';
+  String get clientAgentsRequestsFilterStatusLabel => 'Status da solicitação';
 
   @override
   String get clientAgentsRequestsFilterPendingLabel => 'Envio pendente';
 
   @override
   String clientAgentsRequestsFilterSummaryRequest(String label) {
-    return 'Solicitacao: $label';
+    return 'Solicitação: $label';
   }
 
   @override
@@ -5967,7 +5948,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentsEmptyFilteredRequests =>
-      'Nenhuma solicitacao corresponde aos filtros selecionados.';
+      'Nenhuma solicitação corresponde aos filtros selecionados.';
 
   @override
   String get clientAgentsPendingFilterQueued => 'Pronto para enviar';
@@ -5991,7 +5972,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get reportFiltersDescription =>
-      'Ajuste a consulta e aplique somente os recortes que fazem sentido para esta analise.';
+      'Ajuste a consulta e aplique somente os recortes que fazem sentido para esta análise.';
 
   @override
   String reportFiltersFieldCount(int count) {
@@ -6056,7 +6037,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get reportInlineFiltersAllOption => 'Todos';
 
   @override
-  String get reportInlineFiltersSelectPeriod => 'Selecionar periodo';
+  String get reportInlineFiltersSelectPeriod => 'Selecionar período';
 
   @override
   String get reportInlineFiltersSelectDate => 'Selecionar data';
@@ -6066,107 +6047,107 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentsErrorLoadCatalog =>
-      'Nao foi possivel carregar o catalogo de agentes.';
+      'Não foi possível carregar o catalogo de agentes.';
 
   @override
   String get clientAgentsErrorLoadCatalogAgent =>
-      'Nao foi possivel carregar este agente do catalogo.';
+      'Não foi possível carregar este agente do catalogo.';
 
   @override
   String get clientAgentsErrorLoadClientAccessStatus =>
-      'Nao foi possivel ler o status da solicitacao de acesso.';
+      'Não foi possível ler o status da solicitação de acesso.';
 
   @override
   String get clientAgentsErrorLoadApproved =>
-      'Nao foi possivel carregar os agentes aprovados para esta conta.';
+      'Não foi possível carregar os agentes aprovados para esta conta.';
 
   @override
   String get clientAgentsErrorLoadAgentDetail =>
-      'Nao foi possivel carregar os dados do agente.';
+      'Não foi possível carregar os dados do agente.';
 
   @override
   String get clientAgentsErrorProbeApproved =>
-      'Nao foi possivel verificar se o agente ja esta ligado a esta conta.';
+      'Não foi possível verificar se o agente já está ligado a esta conta.';
 
   @override
   String get clientAgentsErrorLoadAccessRequests =>
-      'Nao foi possivel carregar o historico de solicitacoes.';
+      'Não foi possível carregar o histórico de solicitações.';
 
   @override
   String get clientAgentsErrorRetryClientAccessRequest =>
-      'Nao foi possivel reenviar esta solicitacao de acesso.';
+      'Não foi possível reenviar esta solicitação de acesso.';
 
   @override
   String get clientAgentsErrorReadPending =>
-      'Nao foi possivel carregar as acoes pendentes de sincronizacao.';
+      'Não foi possível carregar as ações pendentes de sincronização.';
 
   @override
   String get clientAgentsErrorQueueRequest =>
-      'Nao foi possivel registrar a solicitacao para sincronizacao.';
+      'Não foi possível registrar a solicitação para sincronização.';
 
   @override
   String get clientAgentsErrorQueueRemove =>
-      'Nao foi possivel registrar a remocao para sincronizacao.';
+      'Não foi possível registrar a remoção para sincronização.';
 
   @override
   String get clientAgentsErrorSyncAction =>
-      'Nao foi possivel sincronizar a alteracao do agente.';
+      'Não foi possível sincronizar a alteração do agente.';
 
   @override
   String get clientAgentsErrorSyncPending =>
-      'Nao foi possivel sincronizar as acoes pendentes de agentes.';
+      'Não foi possível sincronizar as ações pendentes de agentes.';
 
   @override
   String get clientAgentsErrorLoadManagedAgents =>
-      'Nao foi possivel carregar os agentes administrados.';
+      'Não foi possível carregar os agentes administrados.';
 
   @override
   String get clientAgentsErrorLoadOwnerAccessRequests =>
-      'Nao foi possivel carregar as solicitacoes de acesso para revisao.';
+      'Não foi possível carregar as solicitações de acesso para revisão.';
 
   @override
   String get clientAgentsErrorApproveOwnerAccessRequest =>
-      'Nao foi possivel aprovar esta solicitacao de acesso.';
+      'Não foi possível aprovar esta solicitação de acesso.';
 
   @override
   String get clientAgentsErrorRejectOwnerAccessRequest =>
-      'Nao foi possivel rejeitar esta solicitacao de acesso.';
+      'Não foi possível rejeitar esta solicitação de acesso.';
 
   @override
   String get clientAgentsErrorLoadOwnerApprovedClients =>
-      'Nao foi possivel carregar os clientes aprovados deste agente.';
+      'Não foi possível carregar os clientes aprovados deste agente.';
 
   @override
   String get clientAgentsErrorRevokeOwnerClientAccess =>
-      'Nao foi possivel revogar este acesso de cliente.';
+      'Não foi possível revogar este acesso de cliente.';
 
   @override
   String get clientAgentsErrorGetClientAgentToken =>
-      'Nao foi possivel ler o token do agente no servidor.';
+      'Não foi possível ler o token do agente no servidor.';
 
   @override
   String get clientAgentsErrorSaveClientAgentToken =>
-      'Nao foi possivel salvar o token do agente no servidor.';
+      'Não foi possível salvar o token do agente no servidor.';
 
   @override
   String get clientAgentsErrorRemoveClientAgentToken =>
-      'Nao foi possivel remover o token do agente no servidor.';
+      'Não foi possível remover o token do agente no servidor.';
 
   @override
   String get clientAgentsErrorAgentDocumentConflict =>
-      'Este CPF/CNPJ ja esta vinculado a outro agente no catalogo. Para alterar o vinculo, entre em contato com o suporte.';
+      'Este CPF/CNPJ ja está vinculado a outro agente no catalogo. Para alterar o vinculo, entre em contato com o suporte.';
 
   @override
   String get clientAgentsErrorAgentProfileCasMismatch =>
-      'Outro dispositivo atualizou este agente. Recarregue a tela e reaplique suas alteracoes.';
+      'Outro dispositivo atualizou este agente. Recarregue a tela e reaplique suas alterações.';
 
   @override
   String get agentSqlErrorAuthenticationFailed =>
-      'A autenticacao para consultar este agente e invalida ou expirou.';
+      'A autenticação para consultar este agente e inválida ou expirou.';
 
   @override
   String get agentSqlErrorPermissionDenied =>
-      'Voce nao tem permissao para consultar estes dados neste agente.';
+      'Você não tem permissão para consultar estes dados neste agente.';
 
   @override
   String get agentSqlErrorTransportTimeout =>
@@ -6174,23 +6155,19 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get agentSqlErrorNetworkError =>
-      'Nao foi possivel alcancar o agente agora. Tente novamente.';
+      'Não foi possível alcancar o agente agora. Tente novamente.';
 
   @override
   String get agentSqlErrorRateLimited =>
       'Muitas tentativas de consulta foram feitas. Aguarde um instante e tente novamente.';
 
   @override
-  String get agentSqlErrorValidationFailed =>
-      'A consulta informada e invalida.';
-
-  @override
   String get agentSqlErrorExecutionFailed =>
-      'Nao foi possivel executar a consulta.';
+      'Não foi possível executar a consulta.';
 
   @override
   String get agentSqlErrorTransactionFailed =>
-      'Nao foi possivel concluir a transacao da consulta.';
+      'Não foi possível concluir a transação da consulta.';
 
   @override
   String get agentSqlErrorConnectionPoolExhausted =>
@@ -6202,7 +6179,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get agentSqlErrorDatabaseConnectionFailed =>
-      'Nao foi possivel conectar ao banco para executar a consulta.';
+      'Não foi possível conectar ao banco para executar a consulta.';
 
   @override
   String get agentSqlErrorQueryTimeout =>
@@ -6210,18 +6187,18 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get agentSqlErrorInvalidDatabaseConfig =>
-      'A configuracao de acesso ao banco deste agente esta invalida.';
+      'A configuração de acesso ao banco deste agente esta inválida.';
 
   @override
   String get agentSqlErrorExecutionNotFound =>
-      'A execucao solicitada nao foi encontrada.';
+      'A execução solicitada não foi encontrada.';
 
   @override
   String get agentSqlErrorExecutionCancelled => 'A consulta foi cancelada.';
 
   @override
   String get agentSqlErrorGeneric =>
-      'Nao foi possivel concluir a consulta no agente.';
+      'Não foi possível concluir a consulta no agente.';
 
   @override
   String get formsDemoDatePickersFormTitle => 'Date pickers no Form';
@@ -6236,17 +6213,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get formsDemoFormBuilderSectionSubtitle =>
-      'Mesmos wrappers dos relatorios: dropdown, multi-select e os mesmos date pickers da secao Form acima (FormBuilderField + AppFormBuilderDate*).';
-
-  @override
-  String get formsDemoValidateFormBuilderButton => 'Validar FormBuilder';
-
-  @override
-  String get formsDemoValidateFormSubmitButton => 'Validar envio (Form)';
+      'Mesmos wrappers dos relatorios: dropdown, multi-select e os mesmos date pickers da seção Form acima (FormBuilderField + AppFormBuilderDate*).';
 
   @override
   String formsDemoFormValidSnackbar(String refLabel, String rangeLabel) {
-    return 'Formulario valido (demo fake). Ref: $refLabel. Periodo: $rangeLabel.';
+    return 'Formulário válido (demo fake). Ref: $refLabel. Período: $rangeLabel.';
   }
 
   @override
@@ -6254,29 +6225,29 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
     String dateLabel,
     String rangeLabel,
   ) {
-    return 'FormBuilder valido (demo fake). Data: $dateLabel. Periodo: $rangeLabel.';
+    return 'FormBuilder válido (demo fake). Data: $dateLabel. Período: $rangeLabel.';
   }
 
   @override
   String get datePickerPlaceholderSelectDate => 'Selecione uma data';
 
   @override
-  String get dateRangePickerPlaceholderSelectPeriod => 'Selecione o periodo';
+  String get dateRangePickerPlaceholderSelectPeriod => 'Selecione o período';
 
   @override
   String get datePickerSheetDefaultTitle => 'Selecionar data';
 
   @override
-  String get dateRangePickerSheetDefaultTitle => 'Selecionar periodo';
+  String get dateRangePickerSheetDefaultTitle => 'Selecionar período';
 
   @override
-  String get datePickerClearSelectionTooltip => 'Limpar selecao';
+  String get datePickerClearSelectionTooltip => 'Limpar seleção';
 
   @override
   String get datePickerSheetRemoveDate => 'Remover data';
 
   @override
-  String get dateRangePickerSheetRemovePeriod => 'Remover periodo';
+  String get dateRangePickerSheetRemovePeriod => 'Remover período';
 
   @override
   String get datePickerSheetCloseTooltip => 'Fechar';
@@ -6288,14 +6259,14 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get datePickerSemanticsFallbackLabel => 'Data';
 
   @override
-  String get dateRangePickerSemanticsFallbackLabel => 'Periodo';
+  String get dateRangePickerSemanticsFallbackLabel => 'Período';
 
   @override
   String get overviewLucratividadeTitle => 'Lucratividade por filial';
 
   @override
   String get overviewLucratividadeSubtitle =>
-      'Receita, custo e margem no periodo selecionado (todas as filiais no escopo somadas).';
+      'Receita, custo e margem no período selecionado (todas as filiais no escopo somadas).';
 
   @override
   String get overviewLucratividadeSwitchProfit => 'Lucro';
@@ -6332,7 +6303,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewLucratividadePercentHelpCostBody =>
-      'Custo / Venda × 100. Mostra qual parcela da receita corresponde ao custo de reposicao.';
+      'Custo / Venda × 100. Mostra qual parcela da receita corresponde ao custo de reposição.';
 
   @override
   String get overviewLucratividadePercentHelpGrossBody =>
@@ -6340,7 +6311,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewLucratividadePercentHelpMarkupBody =>
-      'Lucro / Custo × 100. Mostra quanto o lucro representa em relacao ao custo de reposicao.';
+      'Lucro / Custo × 100. Mostra quanto o lucro representa em relação ao custo de reposição.';
 
   @override
   String get overviewLucratividadeMarkupNotApplicable => '—';
@@ -6355,7 +6326,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewLucratividadePercentSemanticsMarkup =>
-      'Markup sobre o custo de reposicao.';
+      'Markup sobre o custo de reposição.';
 
   @override
   String get overviewLucratividadePercentIndicatorHeading =>
@@ -6370,11 +6341,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewLucratividadeMarkupUndefinedTooltip =>
-      'Markup nao definido quando o custo de reposicao e zero ou ausente.';
+      'Markup não definido quando o custo de reposição é zero ou ausente.';
 
   @override
   String get overviewLucratividadePercentMetricCostTooltip =>
-      'Parcela da receita correspondente ao custo de reposicao (custo dividido pela venda).';
+      'Parcela da receita correspondente ao custo de reposição (custo dividido pela venda).';
 
   @override
   String get overviewLucratividadePercentMetricGrossTooltip =>
@@ -6382,7 +6353,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewLucratividadePercentMetricMarkupTooltip =>
-      'Markup sobre o custo de reposicao (lucro dividido pelo custo).';
+      'Markup sobre o custo de reposição (lucro dividido pelo custo).';
 
   @override
   String get overviewLucratividadeMensalPercentChronologicalHint =>
@@ -6395,22 +6366,22 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get overviewLucratividadeRevenueSeriesLabel => 'Receita';
 
   @override
-  String get overviewLucratividadeCostSeriesLabel => 'Custo reposicao';
+  String get overviewLucratividadeCostSeriesLabel => 'Custo reposição';
 
   @override
   String get overviewLucratividadeMarginSeriesLabel => 'Margem %';
 
   @override
   String get overviewLucratividadeEmpty =>
-      'Sem dados de lucratividade para este periodo.';
+      'Sem dados de lucratividade para este período.';
 
   @override
   String get overviewLucratividadeMultiAgentHint =>
-      'Nenhuma filial aprovada esta disponivel para carregar a lucratividade. Adicione ou conecte uma filial primeiro.';
+      'Nenhuma filial aprovada está disponível para carregar a lucratividade. Adicione ou conecte uma filial primeiro.';
 
   @override
   String get overviewLoadingLucratividadeSemantics =>
-      'Carregando grafico de lucratividade por filial…';
+      'Carregando gráfico de lucratividade por filial…';
 
   @override
   String get overviewLucratividadeMensalTitle =>
@@ -6418,11 +6389,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewLucratividadeMensalSubtitle =>
-      'Receita, custo de reposicao e margem por mes (filial selecionada).';
+      'Receita, custo de reposição e margem por mês (filial selecionada).';
 
   @override
   String get overviewLucratividadeMensalEmpty =>
-      'Sem dados de lucratividade para este periodo.';
+      'Sem dados de lucratividade para este período.';
 
   @override
   String get overviewLucratividadeMensalMultiAgentHint =>
@@ -6447,14 +6418,14 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get overviewLucratividadeMensalRevenueSeriesLabel => 'Receita';
 
   @override
-  String get overviewLucratividadeMensalCostSeriesLabel => 'Custo reposicao';
+  String get overviewLucratividadeMensalCostSeriesLabel => 'Custo reposição';
 
   @override
   String get overviewLucratividadeMensalMarginSeriesLabel => 'Margem %';
 
   @override
   String get overviewLoadingLucratividadeMensalSemantics =>
-      'Carregando grafico de lucratividade mensal do produto…';
+      'Carregando gráfico de lucratividade mensal do produto…';
 
   @override
   String get salesHubTitle => 'Vendas';
@@ -6468,14 +6439,14 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get shellNavSalesMonitoringSubtitle =>
-      'Mapa e atualizacao por filtros';
+      'Mapa e atualização por filtros';
 
   @override
   String get salesLiveMapTitle => 'Acompanhar vendas';
 
   @override
   String get salesLiveMapSubtitle =>
-      'Mapa do Brasil com vendas por filial e atualizacao por filtros.';
+      'Mapa do Brasil com vendas por filial e atualização por filtros.';
 
   @override
   String get salesLiveMapSessionExpiredMessage =>
@@ -6485,7 +6456,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesLiveMapAgentsLabel => 'Filiais';
 
   @override
-  String get salesLiveMapPeriodLabel => 'Periodo';
+  String get salesLiveMapPeriodLabel => 'Período';
 
   @override
   String get salesLiveMapMapLabel => 'Mapa';
@@ -6522,7 +6493,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesLiveMapPeriodToday => 'Hoje';
 
   @override
-  String get salesLiveMapPeriodLastSevenDays => 'Ultimos 7 dias';
+  String get salesLiveMapPeriodLastSevenDays => 'Últimos 7 dias';
 
   @override
   String get salesLiveMapPeriodLastSevenDaysShort => '7 dias';
@@ -6543,10 +6514,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesLiveMapMapPresetBubbles => 'Bolhas';
 
   @override
-  String get salesLiveMapMapPresetMunicipalities => 'Municipios';
+  String get salesLiveMapMapPresetMunicipalities => 'Municípios';
 
   @override
-  String get salesLiveMapMapPresetMunicipalitiesShort => 'Municipios';
+  String get salesLiveMapMapPresetMunicipalitiesShort => 'Municípios';
 
   @override
   String get salesLiveMapMapPresetStateBubbles => 'Bolhas por UF';
@@ -6562,7 +6533,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesLiveMapLoadErrorTitle =>
-      'Nao foi possivel carregar o acompanhamento';
+      'Não foi possível carregar o acompanhamento';
 
   @override
   String get salesLiveMapLoadErrorRetryMessage =>
@@ -6573,25 +6544,25 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Nenhum agente selecionado possui token local para executar a consulta.';
 
   @override
-  String get salesLiveMapEmptyNoSalesTitle => 'Sem vendas no periodo';
+  String get salesLiveMapEmptyNoSalesTitle => 'Sem vendas no período';
 
   @override
   String get salesLiveMapEmptyNoSalesMessage =>
-      'A consulta foi executada, mas nao encontrou vendas para os filtros atuais.';
+      'A consulta foi executada, mas não encontrou vendas para os filtros atuais.';
 
   @override
-  String get salesLiveMapEmptySelectionTitle => 'Selecao sem resultado';
+  String get salesLiveMapEmptySelectionTitle => 'Seleção sem resultado';
 
   @override
   String get salesLiveMapEmptySelectionMessage =>
-      'As filiais selecionadas nao retornaram vendas neste periodo. Limpe a selecao para recarregar todas as filiais disponiveis.';
+      'As filiais selecionadas não retornaram vendas neste período. Limpe a seleção para recarregar todas as filiais disponíveis.';
 
   @override
   String get salesLiveMapChartTitle => 'Vendas por filial no Brasil';
 
   @override
   String salesLiveMapChartSubtitlePending(String period) {
-    return 'Periodo $period.';
+    return 'Período $period.';
   }
 
   @override
@@ -6600,7 +6571,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
     int mappedCount,
     int totalCount,
   ) {
-    return 'Periodo $period. $mappedCount de $totalCount filiais posicionadas.';
+    return 'Período $period. $mappedCount de $totalCount filiais posicionadas.';
   }
 
   @override
@@ -6643,7 +6614,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String salesLiveMapPartialNoSalesAgents(int count) {
-    return '$count filial(is) sem vendas no periodo.';
+    return '$count filial(is) sem vendas no período.';
   }
 
   @override
@@ -6653,7 +6624,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String salesLiveMapPartialUnavailableSalesBranches(int count) {
-    return '$count filial(is) exibidas com venda indisponivel por falha na consulta.';
+    return '$count filial(is) exibidas com venda indisponível por falha na consulta.';
   }
 
   @override
@@ -6673,14 +6644,14 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesLiveMapFiltersDescription =>
-      'Escolha filiais, periodo e tipo visual do mapa.';
+      'Escolha filiais, período e tipo visual do mapa.';
 
   @override
   String get salesLiveMapBranchesSectionTitle => 'Filiais';
 
   @override
   String get salesLiveMapBranchesSectionSubtitle =>
-      'A lista aparece depois da primeira atualizacao do mapa.';
+      'A lista aparece depois da primeira atualização do mapa.';
 
   @override
   String get salesLiveMapSelectAtLeastOneTokenBranch =>
@@ -6688,11 +6659,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesLiveMapNoApprovedAgents =>
-      'Nenhuma filial aprovada disponivel para consulta.';
+      'Nenhuma filial aprovada disponível para consulta.';
 
   @override
   String get salesLiveMapBranchesLoadBeforeSelection =>
-      'Atualize o mapa uma vez para listar as filiais disponiveis.';
+      'Atualize o mapa uma vez para listar as filiais disponíveis.';
 
   @override
   String get salesLiveMapSelectAllTokenBacked => 'Selecionar todas';
@@ -6702,7 +6673,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesLiveMapClearBranchSelectionAction =>
-      'Limpar selecao de filiais';
+      'Limpar seleção de filiais';
 
   @override
   String get salesLiveMapClearSavedFiltersAction => 'Limpar filtros salvos';
@@ -6711,15 +6682,15 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesLiveMapMissingLocalToken => 'Sem token local';
 
   @override
-  String get salesLiveMapCustomPeriodLabel => 'Periodo personalizado';
+  String get salesLiveMapCustomPeriodLabel => 'Período personalizado';
 
   @override
   String salesLiveMapCustomPeriodHelper(int maxDays) {
-    return 'Limite de $maxDays dias por atualizacao.';
+    return 'Limite de $maxDays dias por atualização.';
   }
 
   @override
-  String get salesLiveMapCustomPeriodPickerTitle => 'Selecionar periodo';
+  String get salesLiveMapCustomPeriodPickerTitle => 'Selecionar período';
 
   @override
   String get salesLiveMapMapTypeTitle => 'Tipo de mapa';
@@ -6733,13 +6704,13 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesLiveMapDetailSubtitle =>
-      'Escolha o nivel de agregacao mostrado no mapa.';
+      'Escolha o nivel de agregação mostrado no mapa.';
 
   @override
   String get salesLiveMapDetailBranches => 'Filiais';
 
   @override
-  String get salesLiveMapDetailMunicipalities => 'Municipios';
+  String get salesLiveMapDetailMunicipalities => 'Municípios';
 
   @override
   String get salesLiveMapDetailStates => 'UFs';
@@ -6749,7 +6720,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesLiveMapVisualSubtitle =>
-      'Escolha o estilo dos marcadores para filiais e municipios.';
+      'Escolha o estilo dos marcadores para filiais e municípios.';
 
   @override
   String get salesLiveMapVisualDot => 'Pontos';
@@ -6762,7 +6733,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String salesLiveMapDetailAutoMunicipalities(int threshold) {
-    return 'Acima de $threshold filiais, municipios sao exibidos automaticamente para melhorar a leitura.';
+    return 'Acima de $threshold filiais, municípios sao exibidos automáticamente para melhorar a leitura.';
   }
 
   @override
@@ -6788,7 +6759,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   }
 
   @override
-  String get salesLiveMapKpiMunicipalitiesOnMap => 'Municipios no mapa';
+  String get salesLiveMapKpiMunicipalitiesOnMap => 'Municípios no mapa';
 
   @override
   String get salesLiveMapKpiQueriedAgents => 'Filiais consultadas';
@@ -6812,17 +6783,17 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesBranchFilterMissingClientTokenBanner =>
-      'Filiais sem token de cliente neste dispositivo nao executam consultas SQL. “Online” indica apenas ligacao ao hub.';
+      'Filiais sem token de cliente neste dispositivo não executam consultas SQL. “Online” indica apenas ligação ao hub.';
 
   @override
   String get salesBranchPickerEmpty => 'Selecione uma filial';
 
   @override
-  String get salesBranchRequiredTitle => 'Selecao de filial obrigatoria';
+  String get salesBranchRequiredTitle => 'Seleção de filial obrigatoria';
 
   @override
   String get salesBranchRequiredMessage =>
-      'Selecione uma filial para visualizar essas informacoes.';
+      'Selecione uma filial para visualizar essas informações.';
 
   @override
   String get salesAgentPickerLabel => 'Filial';
@@ -6834,11 +6805,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesAgentPickerSheetTitle => 'Selecione uma filial';
 
   @override
-  String get salesAgentRequiredTitle => 'Selecao de filial obrigatoria';
+  String get salesAgentRequiredTitle => 'Seleção de filial obrigatoria';
 
   @override
   String get salesAgentRequiredMessage =>
-      'Selecione uma filial para visualizar essas informacoes.';
+      'Selecione uma filial para visualizar essas informações.';
 
   @override
   String get salesCardOpenAccountsTitle => 'Contas em Aberto';
@@ -6847,7 +6818,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesCardPaidAccountsTitle => 'Contas Pagas';
 
   @override
-  String get salesCardPaymentHistoryTitle => 'Historico de Pagamentos';
+  String get salesCardPaymentHistoryTitle => 'Histórico de Pagamentos';
 
   @override
   String get salesCardNewPaymentTitle => 'Novo Pagamento';
@@ -6865,7 +6836,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesAutoRefreshOff => 'Desligado';
 
   @override
-  String get salesAutoRefreshTooltip => 'Atualizacao automatica';
+  String get salesAutoRefreshTooltip => 'Atualização automática';
 
   @override
   String get salesAutoRefreshNow => 'Atualizar agora';
@@ -6877,7 +6848,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String salesAutoRefreshNextIn(String time) {
-    return 'Proximo em $time';
+    return 'Próximo em $time';
   }
 
   @override
@@ -6886,27 +6857,27 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   }
 
   @override
-  String get salesAutoRefreshPaused => 'Atualizacao automatica pausada';
+  String get salesAutoRefreshPaused => 'Atualização automática pausada';
 
   @override
   String get salesAutoRefreshPausedLoading =>
-      'Atualizacao automatica pausada durante a carga';
+      'Atualização automática pausada durante a carga';
 
   @override
   String get salesAutoRefreshPausedMissingLocalToken =>
-      'Atualizacao automatica pausada: token local necessario';
+      'Atualização automática pausada: token local necessário';
 
   @override
   String get salesAutoRefreshPausedNoEligibleSelection =>
-      'Atualizacao automatica pausada: selecione uma filial valida';
+      'Atualização automática pausada: selecione uma filial válida';
 
   @override
   String get salesAutoRefreshPausedUnsupportedViewport =>
-      'Atualizacao automatica disponivel no desktop';
+      'Atualização automática disponível no desktop';
 
   @override
   String get salesAutoRefreshPausedHidden =>
-      'Atualizacao automatica pausada enquanto a tela estiver oculta';
+      'Atualização automática pausada enquanto a tela estiver oculta';
 
   @override
   String get salesDailyTotalsChartTitle => 'Vendas por dia';
@@ -7023,25 +6994,18 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   }
 
   @override
-  String get salesCardProdutoTendenciaTitle => 'Tendência de vendas';
-
-  @override
-  String get salesCardProdutoTendenciaMediaMovelTitle =>
-      'Tendência de vendas (média móvel)';
-
-  @override
   String get salesMonthlyPnlPageSubtitle =>
-      'Venda, lucro e custo da mercadoria por mes na filial selecionada. A janela termina no mes de referencia.';
+      'Venda, lucro e custo da mercadoria por mês na filial selecionada. A janela termina no mes de referência.';
 
   @override
-  String get salesMonthlyPnlFilterAnchorMonth => 'Mes de referencia';
+  String get salesMonthlyPnlFilterAnchorMonth => 'Mes de referência';
 
   @override
   String get salesMonthlyPnlChartTitle => 'Resultado mensal';
 
   @override
   String get salesMonthlyPnlChartSubtitle =>
-      'Venda, lucro e custo da mercadoria por mes (filial selecionada).';
+      'Venda, lucro e custo da mercadoria por mês (filial selecionada).';
 
   @override
   String get salesMonthlyPnlSeriesSalesLabel => 'Vendas';
@@ -7053,22 +7017,22 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesMonthlyPnlSeriesCostLabel => 'Custo da mercadoria';
 
   @override
-  String get salesMonthlyPnlEmpty => 'Sem dados mensais para este periodo.';
+  String get salesMonthlyPnlEmpty => 'Sem dados mensais para este período.';
 
   @override
   String get salesMonthlyPnlLoadFailed =>
-      'Nao foi possivel carregar o grafico mensal. Tente novamente mais tarde.';
+      'Não foi possível carregar o gráfico mensal. Tente novamente mais tarde.';
 
   @override
   String get salesMonthlyPnlChartSemantics =>
-      'Grafico do resultado mensal com venda, lucro e custo da mercadoria na filial selecionada';
+      'Gráfico do resultado mensal com venda, lucro e custo da mercadoria na filial selecionada';
 
   @override
   String get salesMonthlyPnlBarChartTitle => 'Comparativo mensal (barras)';
 
   @override
   String get salesMonthlyPnlBarChartSubtitle =>
-      'As barras usam os mesmos totais mensais que o grafico de linhas acima (venda, lucro e custo da mercadoria agregados — nao medias por item). Os percentuais sao calculados a partir desses totais mensais.';
+      'As barras usam os mesmos totais mensais que o gráfico de linhas acima (venda, lucro e custo da mercadoria agregados — não médias por item). Os percentuais sao calculados a partir desses totais mensais.';
 
   @override
   String get salesMonthlyPnlBarDisplayValuesLabel => 'Valores';
@@ -7098,7 +7062,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesMonthlyPnlBarChartSemantics =>
-      'Grafico de barras agrupadas mensais de venda, lucro e custo da mercadoria';
+      'Gráfico de barras agrupadas mensais de venda, lucro e custo da mercadoria';
 
   @override
   String salesMonthlyPnlBarSummarySemantics(
@@ -7108,14 +7072,14 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
     String topMonth,
     String topSales,
   ) {
-    return 'Totais do periodo: $totalSales em vendas, $totalProfit de lucro, $totalCost de custo da mercadoria. Mes com maior venda: $topMonth ($topSales).';
+    return 'Totais do período: $totalSales em vendas, $totalProfit de lucro, $totalCost de custo da mercadoria. Mes com maior venda: $topMonth ($topSales).';
   }
 
   @override
   String get salesProdutoRankLucroChartTitle => 'Top produtos';
 
   @override
-  String get salesProdutoRankLucroFilterPeriod => 'Periodo';
+  String get salesProdutoRankLucroFilterPeriod => 'Período';
 
   @override
   String get salesProdutoRankLucroFilterSortBy => 'Metrica';
@@ -7125,419 +7089,6 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesProdutoRankLucroSortProfit => 'Lucro total';
-
-  @override
-  String get salesProdutoTendenciaPageSubtitle =>
-      'Visao executiva da tendencia de venda por produto com resumo, destaques e detalhe paginado.';
-
-  @override
-  String get salesProdutoTendenciaFilterCurrentPeriod => 'Periodo atual';
-
-  @override
-  String get salesProdutoTendenciaFilterPreviousPeriod => 'Periodo anterior';
-
-  @override
-  String get salesProdutoTendenciaComparisonCurrentChip => 'Atual';
-
-  @override
-  String get salesProdutoTendenciaComparisonPreviousChip => 'Anterior';
-
-  @override
-  String get salesProdutoTendenciaFilterSearch => 'Busca';
-
-  @override
-  String get salesProdutoTendenciaFilterSearchHint => 'Produto, grupo ou marca';
-
-  @override
-  String get salesProdutoTendenciaFilterClassification => 'Classificacao';
-
-  @override
-  String get salesProdutoTendenciaFilterGroup => 'Grupo';
-
-  @override
-  String get salesProdutoTendenciaFilterBrand => 'Marca';
-
-  @override
-  String get salesProdutoTendenciaFilterPageSize => 'Linhas por pagina';
-
-  @override
-  String get salesProdutoTendenciaFilterAllOption => 'Todos';
-
-  @override
-  String get salesProdutoTendenciaFilterQuickPeriodsTitle =>
-      'Periodos sugeridos';
-
-  @override
-  String get salesProdutoTendenciaFilterQuickPeriodsSubtitle =>
-      'Escolha uma janela base e o relatorio alinha a comparacao automaticamente.';
-
-  @override
-  String get salesProdutoTendenciaFilterPresetCurrentMonth => 'Mes atual';
-
-  @override
-  String get salesProdutoTendenciaFilterPresetPreviousMonth => 'Mes anterior';
-
-  @override
-  String get salesProdutoTendenciaFilterPresetLast7Days => 'Ultimos 7 dias';
-
-  @override
-  String get salesProdutoTendenciaFilterPresetLast30Days => 'Ultimos 30 dias';
-
-  @override
-  String get salesProdutoTendenciaFilterAutoAdjustPreviousAction =>
-      'Ajustar periodo anterior';
-
-  @override
-  String get salesProdutoTendenciaFilterRuleHelperTitle =>
-      'Regra da comparacao';
-
-  @override
-  String get salesProdutoTendenciaFilterRuleHelper =>
-      'Compare mes completo com mes completo, ou periodos personalizados com a mesma quantidade de dias.';
-
-  @override
-  String get salesProdutoTendenciaFilterApplyDisabledTitle =>
-      'A comparacao precisa de ajuste';
-
-  @override
-  String get salesProdutoTendenciaFilterApplyDisabledHint =>
-      'Atualize os periodos acima para habilitar a aplicacao dos filtros.';
-
-  @override
-  String salesProdutoTendenciaFilterDurationDays(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count dias',
-      one: '1 dia',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get salesProdutoTendenciaFilterRangeKindFullMonth => 'Mes completo';
-
-  @override
-  String get salesProdutoTendenciaFilterRangeKindCustom =>
-      'Periodo personalizado';
-
-  @override
-  String get salesProdutoTendenciaFilterPeriodsOrderError =>
-      'O periodo anterior precisa terminar antes do inicio do periodo atual.';
-
-  @override
-  String get salesProdutoTendenciaFilterPeriodsEquivalentWindowError =>
-      'Use janelas equivalentes na comparacao: mes completo contra mes completo, ou periodo personalizado contra periodo personalizado com a mesma quantidade de dias.';
-
-  @override
-  String get salesProdutoTendenciaSummaryTitle => 'Resumo executivo';
-
-  @override
-  String get salesProdutoTendenciaSummarySubtitle =>
-      'Visao geral da movimentacao por classificacao de tendencia.';
-
-  @override
-  String get salesProdutoTendenciaSummaryByClassificacaoTitle =>
-      'Produtos por classificacao';
-
-  @override
-  String get salesProdutoTendenciaSummaryByClassificacaoSubtitle =>
-      'Distribuicao e impacto dentro da pagina carregada.';
-
-  @override
-  String get salesProdutoTendenciaTopMoversTitle => 'Principais movimentacoes';
-
-  @override
-  String get salesProdutoTendenciaTopMoversSubtitle =>
-      'Maiores altas e quedas no periodo selecionado.';
-
-  @override
-  String get salesProdutoTendenciaTopGainersTitle => 'Top 5 altas';
-
-  @override
-  String get salesProdutoTendenciaTopLosersTitle => 'Top 5 quedas';
-
-  @override
-  String get salesProdutoTendenciaDetailsTitle => 'Detalhes';
-
-  @override
-  String get salesProdutoTendenciaDetailsSubtitle =>
-      'Lista paginada com produto, classificacao e grupo.';
-
-  @override
-  String get salesProdutoTendenciaDetailsHorizontalScrollCaption =>
-      'Deslize para o lado para ver todas as colunas.';
-
-  @override
-  String get salesProdutoTendenciaFiltersAppliedSnackbar =>
-      'Filtros aplicados. Atualizando dados.';
-
-  @override
-  String get salesProdutoTendenciaLoadingTrendSemantics =>
-      'Carregando tendencia de vendas…';
-
-  @override
-  String get salesProdutoTendenciaDetailsEntityLabel => 'linhas';
-
-  @override
-  String get salesProdutoTendenciaNoData =>
-      'Sem dados de tendencia para os filtros selecionados.';
-
-  @override
-  String get salesProdutoTendenciaKpiGrowing => 'Produtos crescendo';
-
-  @override
-  String get salesProdutoTendenciaKpiFalling => 'Produtos caindo';
-
-  @override
-  String get salesProdutoTendenciaKpiNewProducts => 'Produtos novos';
-
-  @override
-  String get salesProdutoTendenciaKpiStopped => 'Parou de vender';
-
-  @override
-  String get salesProdutoTendenciaKpiNetImpact => 'Impacto liquido (qtd)';
-
-  @override
-  String get salesProdutoTendenciaColProduct => 'Produto';
-
-  @override
-  String get salesProdutoTendenciaColClassificacao => 'Classificacao';
-
-  @override
-  String get salesProdutoTendenciaColGrupo => 'Grupo';
-
-  @override
-  String get salesProdutoTendenciaColDiferenca => 'Diferenca';
-
-  @override
-  String get salesProdutoTendenciaColPercentual => 'Tendencia %';
-
-  @override
-  String get salesProdutoTendenciaClassificacaoStopped => 'Parou de vender';
-
-  @override
-  String get salesProdutoTendenciaClassificacaoNew => 'Novo produto';
-
-  @override
-  String get salesProdutoTendenciaClassificacaoGrowing => 'Crescendo';
-
-  @override
-  String get salesProdutoTendenciaClassificacaoFalling => 'Caindo';
-
-  @override
-  String get salesProdutoTendenciaClassificacaoStable => 'Estavel';
-
-  @override
-  String salesProdutoTendenciaActiveFiltersSummary(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count filtros adicionais',
-      one: '1 filtro adicional',
-      zero: 'Sem filtros adicionais',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String salesProdutoTendenciaDetailsNotice(String pageSize) {
-    return 'Pode haver mais linhas no resultado. Use a paginacao para carregar as proximas paginas (tamanho atual: $pageSize).';
-  }
-
-  @override
-  String get salesProdutoTendenciaMediaMovelPageSubtitle =>
-      'Painel de media movel com resumo por classificacao e detalhe paginado por produto.';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelFilterQuantidadeDias =>
-      'Janela de dias';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHint =>
-      'Quantidade de dias usada em cada media movel';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHelper =>
-      'Use a mesma janela para comparar a media atual com a anterior.';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasInvalid =>
-      'Informe uma quantidade de dias valida e maior que zero.';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasPresetsTitle =>
-      'Janelas rapidas';
-
-  @override
-  String salesProdutoTendenciaMediaMovelFilterQuantidadeDiasTooLarge(
-    int maxDays,
-  ) {
-    return 'Use no maximo $maxDays dias.';
-  }
-
-  @override
-  String salesProdutoTendenciaMediaMovelFilterQuantidadeDiasValue(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count dias',
-      one: '1 dia',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String salesProdutoTendenciaMediaMovelActiveFiltersSummary(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count filtros adicionais',
-      one: '1 filtro adicional',
-      zero: 'Sem filtros adicionais',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get salesProdutoTendenciaMediaMovelFilterSearchHint =>
-      'Produto ou grupo';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelFiltersAppliedSnackbar =>
-      'Filtros aplicados. Atualizando a tendencia por media movel.';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelSelectAgentHint =>
-      'Escolha um agente de vendas para carregar a tendencia de vendas por media movel.';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelSummaryTitle => 'Resumo executivo';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelSummarySubtitle =>
-      'Totais por classificacao em todo o resultado filtrado.';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelSummaryUnavailableTitle =>
-      'Resumo indisponivel';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelSummaryUnavailableMessage =>
-      'Nao foi possivel carregar o resumo, entao a pagina esta mostrando uma estimativa baseada nas linhas atuais.';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelSummaryByClassificacaoTitle =>
-      'Produtos por classificacao';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelSummaryByClassificacaoSubtitle =>
-      'Distribuicao dos produtos em todo o resultado filtrado.';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelSummaryByImpactTitle =>
-      'Impacto por classificacao';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelSummaryByImpactSubtitle =>
-      'Impacto liquido em quantidade de cada classificacao em todo o resultado filtrado.';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelDetailsTitle => 'Detalhes';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelDetailsSubtitle =>
-      'Lista paginada com produto, medias, grupo e classificacao de tendencia.';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelDetailsHorizontalScrollCaption =>
-      'Deslize para o lado para ver todas as colunas.';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelDetailsEntityLabel => 'linhas';
-
-  @override
-  String salesProdutoTendenciaMediaMovelDetailsSortedBy(String sortLabel) {
-    return 'Ordenado por: $sortLabel';
-  }
-
-  @override
-  String salesProdutoTendenciaMediaMovelDetailsNotice(String pageSize) {
-    return 'Pode haver mais linhas no resultado. Use a paginacao para carregar as proximas paginas (tamanho atual: $pageSize).';
-  }
-
-  @override
-  String get salesProdutoTendenciaMediaMovelNoData =>
-      'Sem dados de tendencia por media movel para os filtros selecionados.';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelKpiGrowing => 'Produtos crescendo';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelKpiFalling => 'Produtos caindo';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelKpiNewProducts => 'Produtos novos';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelKpiStopped => 'Parou de vender';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelKpiNetImpact =>
-      'Impacto liquido (qtd)';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelColProduct => 'Produto';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelColClassificacao => 'Classificacao';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelColGrupo => 'Grupo';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelColMediaAtual => 'Media atual';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelColMediaAnterior =>
-      'Media anterior';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelColDiferenca => 'Diferenca';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelColPercentual => 'Tendencia %';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelFilterSortBy =>
-      'Ordenar linhas por';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelSortTrendPercent =>
-      'Percentual de tendencia';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelSortDifference => 'Diferenca';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelSortProductName =>
-      'Nome do produto';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelClassificacaoStopped =>
-      'Parou de vender';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelClassificacaoNew => 'Novo produto';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelClassificacaoGrowing => 'Crescendo';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelClassificacaoFalling => 'Caindo';
-
-  @override
-  String get salesProdutoTendenciaMediaMovelClassificacaoStable => 'Estavel';
 
   @override
   String get agentStatusPending => 'Pendente';

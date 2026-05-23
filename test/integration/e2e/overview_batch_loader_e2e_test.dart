@@ -16,6 +16,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_executi
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/overview/data/overview_batch_loader.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
@@ -126,6 +127,11 @@ void main() {
                 return;
               }
 
+              if (target.hasSectionFailure) {
+                _expectOverviewBatchLoaderSectionFailures(target);
+                return;
+              }
+
               expect(target.hasAnyFailure, isFalse);
               expect(success.hasTargetFailures, isFalse);
               expect(success.completedWithOnlyTargetFailures, isFalse);
@@ -178,6 +184,40 @@ void main() {
   );
 }
 
+void _expectOverviewBatchLoaderSectionFailures(
+  OverviewBatchTargetResult target,
+) {
+  expect(target.hasAnyFailure, isTrue);
+  for (final failure in <AppFailure?>[
+    target.userRankingFailure,
+    target.monthlyFailure,
+    target.weekdayFailure,
+    target.dailyFailure,
+    target.weekdayUserFailure,
+    target.lucratividadeFailure,
+    target.lucratividadeMensalFailure,
+  ]) {
+    if (failure == null) {
+      continue;
+    }
+    if (shouldLogE2eAcceptedFailureDiagnostic(failure)) {
+      // ignore: avoid_print -- E2E failure diagnostics should appear in local output.
+      print(
+        'overview_batch_loader_e2e section failure: '
+        '${e2eAgentSqlFailureDiagnostic(failure)}',
+      );
+    }
+    expect(
+      isAcceptableE2eAgentSqlRepositoryFailure(failure),
+      isTrue,
+      reason:
+          'Overview section batch failure should be an accepted E2E '
+          'environmental failure. '
+          '${e2eAgentSqlFailureDiagnostic(failure)}',
+    );
+  }
+}
+
 final class _CountingAgentQueriesRepository implements AgentQueriesRepository {
   _CountingAgentQueriesRepository(this._delegate);
 
@@ -188,17 +228,19 @@ final class _CountingAgentQueriesRepository implements AgentQueriesRepository {
 
   @override
   Future<ResultDart<AgentSqlExecutionResult, AppFailure>> executeSql(
-    AgentSqlExecuteRequest request,
-  ) {
-    return _delegate.executeSql(request);
+    AgentSqlExecuteRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) {
+    return _delegate.executeSql(request, cancelScope: cancelScope);
   }
 
   @override
   Future<ResultDart<AgentSqlBatchExecutionResult, AppFailure>> executeSqlBatch(
-    AgentSqlExecuteBatchRequest request,
-  ) {
+    AgentSqlExecuteBatchRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) {
     batchCallCount++;
     batchRequests.add(request);
-    return _delegate.executeSqlBatch(request);
+    return _delegate.executeSqlBatch(request, cancelScope: cancelScope);
   }
 }

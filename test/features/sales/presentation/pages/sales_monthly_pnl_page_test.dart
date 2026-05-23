@@ -151,6 +151,7 @@ void main() {
         anchor: any(named: 'anchor'),
         dailySaleDateRange: any(named: 'dailySaleDateRange'),
         clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer(
       (_) async => (
@@ -171,6 +172,7 @@ void main() {
         agentId: any(named: 'agentId'),
         anchor: any(named: 'anchor'),
         clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer((_) => completer.future);
 
@@ -204,6 +206,7 @@ void main() {
         agentId: any(named: 'agentId'),
         anchor: any(named: 'anchor'),
         clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer((_) async => _bundleWithBaseValue(120));
 
@@ -242,6 +245,7 @@ void main() {
         agentId: any(named: 'agentId'),
         anchor: any(named: 'anchor'),
         clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer((invocation) {
       final anchor = invocation.namedArguments[#anchor] as OverviewYearMonth;
@@ -307,6 +311,7 @@ void main() {
         agentId: any(named: 'agentId'),
         anchor: secondAnchor,
         clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
       ),
     ).called(1);
     verify(
@@ -315,6 +320,7 @@ void main() {
         agentId: any(named: 'agentId'),
         anchor: thirdAnchor,
         clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
       ),
     ).called(1);
 

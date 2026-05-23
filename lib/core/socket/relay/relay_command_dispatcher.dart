@@ -1,3 +1,4 @@
+import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart' show RelayRequestCancelled;
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
 import 'package:colmeia/core/socket/relay/relay_rpc_outcome.dart';
 
@@ -77,6 +78,15 @@ abstract interface class RelayCommandDispatcher {
     RelayPayloadFrameCompression compression =
         RelayPayloadFrameCompression.auto,
   });
+
+  /// Fails the pending unary future or streaming controller for
+  /// [clientRequestId] with [RelayRequestCancelled], if still registered.
+  ///
+  /// Idempotent: unknown or already-settled ids are ignored.
+  ///
+  /// Does **not** notify the hub (same limitation as cancelling a
+  /// [sendStreaming] subscription).
+  void cancel(String clientRequestId, {String reason = 'caller_cancelled'});
 
   /// Broadcast stream of outcomes (success or failure). Subscribers from
   /// the presence layer / metrics see exactly one event per `sendUnary`

@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_filter_summary.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -199,7 +200,7 @@ class _AppChartFullscreenFilterChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final parts = _splitSummary(summary);
+    final parts = AppChartFilterSummary.splitOnMiddleDot(summary);
     if (parts.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -222,19 +223,6 @@ class _AppChartFullscreenFilterChips extends StatelessWidget {
     );
   }
 
-  List<String> _splitSummary(String value) {
-    const separator = 0x00B7;
-    final mojibakeSeparator = String.fromCharCodes(<int>[0x00C2, separator]);
-    final normalized = value.replaceAll(
-      mojibakeSeparator,
-      String.fromCharCode(separator),
-    );
-    return normalized
-        .split(String.fromCharCode(separator))
-        .map((part) => part.trim())
-        .where((part) => part.isNotEmpty)
-        .toList(growable: false);
-  }
 }
 
 class _AppChartFullscreenFilterChip extends StatelessWidget {

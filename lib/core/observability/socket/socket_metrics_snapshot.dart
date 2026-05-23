@@ -1,3 +1,5 @@
+import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart' show PerAgentConcurrencyGate;
+
 /// Read-only snapshot of `SocketChannelMetrics`. Useful for diagnostics,
 /// snapshot tests, manual inspection in debug builds, and compact relay
 /// slices via [relayDebugLogFields].
@@ -22,6 +24,10 @@ class SocketMetricsSnapshot {
     this.relayGzipDecodeIsolateTotal = 0,
     this.relayJsonDecodeIsolateTotal = 0,
     this.relayDecodeFailureTotalByCode = const <String, int>{},
+    this.relayDispatchMsByKey = const <String, HistogramSnapshot>{},
+    this.relayOutcomesTotal = const <String, int>{},
+    this.restFallbackLatchTotal = 0,
+    this.lastGateSessionPeakSample = 0,
   });
 
   /// Histogram across **all** completed handshakes since process start
@@ -92,6 +98,20 @@ class SocketMetricsSnapshot {
   /// Counts of decode failures by stable `code` (e.g. `gzip_decode_failed`).
   final Map<String, int> relayDecodeFailureTotalByCode;
 
+  /// Relay unary/streaming dispatch latency by `"<agentId>|<method>"`.
+  final Map<String, HistogramSnapshot> relayDispatchMsByKey;
+
+  /// Relay outcome counts keyed like legacy outcomes
+  /// (`RelayRpcSuccess|-`, `RelayRpcFailure|<code>`).
+  final Map<String, int> relayOutcomesTotal;
+
+  /// Times the SQL datasource latched to REST for auth/namespace failures.
+  final int restFallbackLatchTotal;
+
+  /// Last sampled [PerAgentConcurrencyGate.sessionPeakMaxAgentInflight] at
+  /// socket disconnect export (0 if never sampled).
+  final int lastGateSessionPeakSample;
+
   Map<String, Object?> toJson() {
     return <String, Object?>{
       'handshakeMs': handshakeMs.toJson(),
@@ -116,6 +136,13 @@ class SocketMetricsSnapshot {
       'relayGzipDecodeIsolateTotal': relayGzipDecodeIsolateTotal,
       'relayJsonDecodeIsolateTotal': relayJsonDecodeIsolateTotal,
       'relayDecodeFailureTotalByCode': relayDecodeFailureTotalByCode,
+      'relayDispatchMsByKey': <String, Object?>{
+        for (final entry in relayDispatchMsByKey.entries)
+          entry.key: entry.value.toJson(),
+      },
+      'relayOutcomesTotal': relayOutcomesTotal,
+      'restFallbackLatchTotal': restFallbackLatchTotal,
+      'lastGateSessionPeakSample': lastGateSessionPeakSample,
     };
   }
 
@@ -147,6 +174,27 @@ class SocketMetricsSnapshot {
       out['relayAcceptToFirstChunkMs'] = _histogramDebugMap(firstChunk);
     }
     return out;
+  }
+
+  /// Compact payload for `AppLogger.info` on socket disconnect (release).
+  Map<String, Object?> toCompactSessionExport() {
+    return <String, Object?>{
+      'handshakeP95Ms': handshakeMs.count > 0 ? handshakeMs.p95 : null,
+      'handshakeCount': handshakeMs.count,
+      'dispatchKeyCount': dispatchMsByKey.length,
+      'relayDispatchKeyCount': relayDispatchMsByKey.length,
+      'coalescedTotal': coalescedTotal,
+      'batchEmissionsTotal': batchEmissionsTotal,
+      'batchPartialFailureTotal': batchPartialFailureTotal,
+      'gateWaiterQueueRejectedTotal': gateWaiterQueueRejectedTotal,
+      'gateAcquireWaitTimeoutTotal': gateAcquireWaitTimeoutTotal,
+      'lastGateSessionPeakSample': lastGateSessionPeakSample,
+      'restFallbackLatchTotal': restFallbackLatchTotal,
+      'outcomesTotal': outcomesTotal,
+      'relayOutcomesTotal': relayOutcomesTotal,
+      'reconnectsTotalByReason': reconnectsTotalByReason,
+      ...relayDebugLogFields(),
+    };
   }
 }
 

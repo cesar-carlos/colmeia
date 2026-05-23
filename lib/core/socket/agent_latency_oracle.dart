@@ -1,5 +1,7 @@
 import 'dart:math' as math;
 
+import 'package:colmeia/core/socket/agent_latency_budget.dart';
+
 /// Estimates a per `(agentId, method)` recommended timeout from observed
 /// dispatch latencies, so the dispatcher can pick a tighter SLA when an
 /// agent is consistently fast and a looser SLA when it is consistently
@@ -13,6 +15,15 @@ import 'dart:math' as math;
 /// `[floor, ceiling]`. When fewer than `warmUpSampleCount` samples are
 /// available the oracle returns the caller-provided `fallback` so cold
 /// starts do not produce pathological estimates.
+///
+/// **Boundary vs repository decorators:** this oracle feeds **transport**
+/// pending timers (relay / socket dispatchers) when the outbound RPC does
+/// not carry an explicit `Duration` timeout. The adaptive-timeout repository
+/// decorator applies only to Agent SQL requests that already set
+/// `AgentSqlExecuteRequest.bridgeTimeoutMs` — it does not replace hub-side SQL
+/// execution limits. Prefer oracle-backed transport defaults for relay-heavy
+/// workloads; keep explicit `bridgeTimeoutMs` for long-running batches
+/// (overview) where the decorator may still refine the declared ceiling.
 class AgentLatencyOracle {
   AgentLatencyOracle({
     this.alpha = 0.2,
@@ -72,12 +83,23 @@ class AgentLatencyOracle {
     assert(floor <= ceiling, 'floor must be <= ceiling');
     final key = _key(agentId: agentId, method: method);
     final stats = _stats[key];
-    if (stats == null || stats.count < warmUpSampleCount) {
-      return _clamp(fallback, floor: floor, ceiling: ceiling);
+    if (stats == null) {
+      return AgentLatencyBudget.clampDuration(
+        fallback,
+        floor,
+        ceiling,
+      );
     }
-    final estimateMs = stats.mean + safetyFactor * stats.stddev;
-    final estimate = Duration(microseconds: (estimateMs * 1000).round());
-    return _clamp(estimate, floor: floor, ceiling: ceiling);
+    return AgentLatencyBudget.suggest(
+      meanMs: stats.mean,
+      stdDevMs: AgentLatencyBudget.stdDevFromEwmaVariance(stats.variance),
+      sampleCount: stats.count,
+      warmUpSampleCount: warmUpSampleCount,
+      safetyFactor: safetyFactor,
+      fallback: fallback,
+      floor: floor,
+      ceiling: ceiling,
+    );
   }
 
   /// Number of samples recorded for the given pivot. Mostly useful for
@@ -94,16 +116,6 @@ class AgentLatencyOracle {
 
   String _key({required String agentId, required String method}) {
     return '$agentId|$method';
-  }
-
-  Duration _clamp(
-    Duration value, {
-    required Duration floor,
-    required Duration ceiling,
-  }) {
-    if (value < floor) return floor;
-    if (value > ceiling) return ceiling;
-    return value;
   }
 }
 

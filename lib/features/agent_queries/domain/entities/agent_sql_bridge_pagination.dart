@@ -7,6 +7,10 @@ sealed class AgentSqlBridgePagination {
 
   /// JSON fragment under the HTTP `pagination` key.
   Map<String, Object?> toHttpBody();
+
+  /// Pagination fields merged into `params.options` on relay (no REST body
+  /// envelope).
+  Map<String, Object?> toRpcOptions();
 }
 
 /// Offset pagination (`page` + `pageSize`, 1-based page).
@@ -27,6 +31,13 @@ final class AgentSqlPagePagination extends AgentSqlBridgePagination {
   Map<String, Object?> toHttpBody() => <String, Object?>{
     'page': page,
     'pageSize': pageSize,
+    'page_size': pageSize,
+  };
+
+  @override
+  Map<String, Object?> toRpcOptions() => <String, Object?>{
+    'page': page,
+    'page_size': pageSize,
   };
 }
 
@@ -40,6 +51,11 @@ final class AgentSqlCursorPagination extends AgentSqlBridgePagination {
 
   @override
   Map<String, Object?> toHttpBody() => <String, Object?>{
+    'cursor': cursor,
+  };
+
+  @override
+  Map<String, Object?> toRpcOptions() => <String, Object?>{
     'cursor': cursor,
   };
 }

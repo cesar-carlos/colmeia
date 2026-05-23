@@ -1,10 +1,12 @@
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/di/injector.dart';
+import 'package:colmeia/core/di/injector_agent_queries.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_produto_rank_lucro_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_screen_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_screen_use_case.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
@@ -23,6 +25,10 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_under_construction_page.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+
+void _wireSalesAgentSqlRelayCancel(AgentQueriesCancelScope scope) {
+  wireAgentQueriesCancelScopeHandlers(getIt, scope);
+}
 
 List<RouteBase> buildSalesRoutes() {
   final sessionService = getIt<SalesSessionService>();
@@ -46,6 +52,7 @@ List<RouteBase> buildSalesRoutes() {
               sessionService: sessionService,
               loadSalesAvailableAgentsUseCase: loadSalesAvailableAgentsUseCase,
               loadSalesLiveMapUseCase: getIt<LoadSalesLiveMapUseCase>(),
+              relayCancelScopeBinder: _wireSalesAgentSqlRelayCancel,
             ),
             child: const SalesLiveMapPage(),
           ),
@@ -70,6 +77,7 @@ List<RouteBase> buildSalesRoutes() {
                 resolveSalesAgentClientTokenUseCase,
             loadProdutoVendidoProdutoRankLucroUseCase:
                 getIt<LoadProdutoVendidoProdutoRankLucroUseCase>(),
+            relayCancelScopeBinder: _wireSalesAgentSqlRelayCancel,
           );
         }
 
@@ -82,6 +90,7 @@ List<RouteBase> buildSalesRoutes() {
             loadSalesDailyTotalsUseCase: getIt<LoadSalesDailyTotalsUseCase>(),
             resolveSalesAgentClientTokenUseCase:
                 resolveSalesAgentClientTokenUseCase,
+            relayCancelScopeBinder: _wireSalesAgentSqlRelayCancel,
           );
         }
 
@@ -92,6 +101,7 @@ List<RouteBase> buildSalesRoutes() {
             loadSalesDailyTotalsUseCase: getIt<LoadSalesDailyTotalsUseCase>(),
             resolveSalesAgentClientTokenUseCase:
                 resolveSalesAgentClientTokenUseCase,
+            relayCancelScopeBinder: _wireSalesAgentSqlRelayCancel,
           );
         }
 
@@ -107,6 +117,7 @@ List<RouteBase> buildSalesRoutes() {
                 getIt<LoadGrupoProdutoOptionsUseCase>(),
             loadMarcaProdutoOptionsUseCase:
                 getIt<LoadMarcaProdutoOptionsUseCase>(),
+            relayCancelScopeBinder: _wireSalesAgentSqlRelayCancel,
           );
         }
 
@@ -122,6 +133,7 @@ List<RouteBase> buildSalesRoutes() {
                 >(),
             loadGrupoProdutoOptionsUseCase:
                 getIt<LoadGrupoProdutoOptionsUseCase>(),
+            relayCancelScopeBinder: _wireSalesAgentSqlRelayCancel,
           );
         }
 

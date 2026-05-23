@@ -4,6 +4,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execu
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 
 // ignore: one_member_abstracts -- single entry point matches other across-agents repositories.
 abstract interface class ResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsRepository {
@@ -20,5 +21,6 @@ abstract interface class ResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsRepo
     int? bridgeTimeoutMs,
     int? raceMaxSources,
     AgentQueryTargetResolution? preResolvedResolution,
+    AgentQueriesCancelScope? cancelScope,
   });
 }

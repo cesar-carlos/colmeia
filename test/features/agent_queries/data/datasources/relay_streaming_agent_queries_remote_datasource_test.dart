@@ -11,6 +11,7 @@ import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/relay_streaming_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -62,6 +63,51 @@ void main() {
       check(received.length).equals(3);
       check(received[0]['row']).equals(0);
       check(received[2]['value']).equals('c');
+    });
+
+    test('registers stream_id on cancel scope from first chunk', () async {
+      final dispatcher = _MockRelayDispatcher();
+      final controller = StreamController<Map<String, dynamic>>();
+      addTearDown(controller.close);
+
+      when(
+        () => dispatcher.sendStreaming(
+          agentId: any(named: 'agentId'),
+          body: any(named: 'body'),
+          clientRequestId: any(named: 'clientRequestId'),
+          timeout: any(named: 'timeout'),
+          compression: any(named: 'compression'),
+        ),
+      ).thenAnswer((_) => controller.stream);
+
+      final cancelScope = AgentQueriesCancelScope();
+      final streams = <AgentStreamingSqlCancelTarget>[];
+      cancelScope.streamingSqlCancelHandler = streams.addAll;
+
+      final datasource = RelayStreamingAgentQueriesRemoteDataSource(
+        dispatcher: dispatcher,
+      );
+
+      final sub = datasource
+          .streamSqlExecute(
+            const AgentSqlExecuteRequest(
+              agentId: 'agent-1',
+              sql: 'SELECT 1',
+              clientToken: 'tok',
+            ),
+            cancelScope: cancelScope,
+          )
+          .listen((_) {});
+
+      controller.add(<String, dynamic>{'stream_id': 'stream-42', 'row': 0});
+      await Future<void>.delayed(Duration.zero);
+
+      cancelScope.cancelAll();
+      await sub.cancel();
+
+      check(streams.length).equals(1);
+      check(streams.single.streamId).equals('stream-42');
+      check(streams.single.agentId).equals('agent-1');
     });
 
     test('forwards bridgeTimeoutMs + 5s as the relay timeout', () async {

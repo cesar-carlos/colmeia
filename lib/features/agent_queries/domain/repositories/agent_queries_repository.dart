@@ -3,6 +3,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_e
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 
 abstract interface class AgentQueriesRepository {
   /// Runs a single JSON-RPC `sql.execute` through the configured bridge
@@ -12,11 +13,13 @@ abstract interface class AgentQueriesRepository {
   /// streaming-heavy queries when using socket transport — the unary legacy
   /// socket path does not pull `agents:command_stream_*`.
   Future<AppResult<AgentSqlExecutionResult>> executeSql(
-    AgentSqlExecuteRequest request,
-  );
+    AgentSqlExecuteRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  });
 
   /// Runs a single JSON-RPC `sql.executeBatch` through the configured bridge.
   Future<AppResult<AgentSqlBatchExecutionResult>> executeSqlBatch(
-    AgentSqlExecuteBatchRequest request,
-  );
+    AgentSqlExecuteBatchRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  });
 }

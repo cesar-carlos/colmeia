@@ -10,6 +10,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:result_dart/result_dart.dart';
@@ -201,16 +202,18 @@ final class _QueueAgentQueriesRepository implements AgentQueriesRepository {
 
   @override
   Future<AppResult<AgentSqlExecutionResult>> executeSql(
-    AgentSqlExecuteRequest request,
-  ) {
+    AgentSqlExecuteRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) {
     callCount++;
     return _handlers.removeAt(0)(request);
   }
 
   @override
   Future<AppResult<AgentSqlBatchExecutionResult>> executeSqlBatch(
-    AgentSqlExecuteBatchRequest request,
-  ) async {
+    AgentSqlExecuteBatchRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
     batchCallCount++;
     return _batchHandlers.removeAt(0)(request);
   }

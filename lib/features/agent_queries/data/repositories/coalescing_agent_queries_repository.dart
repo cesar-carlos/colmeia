@@ -7,6 +7,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_e
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 
 /// Deduplicates identical requests that are in-flight simultaneously.
@@ -43,8 +44,12 @@ class CoalescingAgentQueriesRepository implements AgentQueriesRepository {
 
   @override
   Future<AppResult<AgentSqlExecutionResult>> executeSql(
-    AgentSqlExecuteRequest request,
-  ) async {
+    AgentSqlExecuteRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
+    if (cancelScope != null) {
+      return _delegate.executeSql(request, cancelScope: cancelScope);
+    }
     final key = _buildKey(request);
 
     final existing = _inflight[key];
@@ -70,8 +75,12 @@ class CoalescingAgentQueriesRepository implements AgentQueriesRepository {
 
   @override
   Future<AppResult<AgentSqlBatchExecutionResult>> executeSqlBatch(
-    AgentSqlExecuteBatchRequest request,
-  ) async {
+    AgentSqlExecuteBatchRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
+    if (cancelScope != null) {
+      return _delegate.executeSqlBatch(request, cancelScope: cancelScope);
+    }
     final key = AgentQueriesRequestKey.buildBatch(request);
 
     final existing = _batchInflight[key];

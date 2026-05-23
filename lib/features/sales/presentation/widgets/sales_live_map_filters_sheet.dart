@@ -453,22 +453,25 @@ class _BranchSelectionPanelState extends State<_BranchSelectionPanel> {
     if (normalizedQuery == null || normalizedQuery.isEmpty) {
       return branches;
     }
-    return branches.where((branch) {
-      final searchTokens = resolveAppBranchDisplayModel(
-        registrationName: branch.registrationName,
-        fantasyName: branch.fantasyName,
-        fallbackName: branch.registrationName,
-        extraSearchTerms: <String>[
-          branch.city,
-          branch.uf,
-          branch.agentName,
-        ],
-      ).searchTokens;
-      final normalizedTokens = AppLocationLookupNormalizer.normalizeAddressLine(
-        searchTokens,
-      );
-      return normalizedTokens?.contains(normalizedQuery) ?? false;
-    }).toList(growable: false);
+    return branches
+        .where((branch) {
+          final searchTokens = resolveAppBranchDisplayModel(
+            registrationName: branch.registrationName,
+            fantasyName: branch.fantasyName,
+            fallbackName: branch.registrationName,
+            extraSearchTerms: <String>[
+              branch.city,
+              branch.uf,
+              branch.agentName,
+            ],
+          ).searchTokens;
+          final normalizedTokens =
+              AppLocationLookupNormalizer.normalizeAddressLine(
+                searchTokens,
+              );
+          return normalizedTokens?.contains(normalizedQuery) ?? false;
+        })
+        .toList(growable: false);
   }
 
   @override
@@ -522,7 +525,8 @@ class _BranchSelectionPanelState extends State<_BranchSelectionPanel> {
           if (filteredBranches.isEmpty)
             AppInlineErrorPanel(
               tone: AppInlinePanelTone.informational,
-              message: widget.l10n.brazilStoreSalesMapSidebarSearchEmptyStateMessage,
+              message:
+                  widget.l10n.brazilStoreSalesMapSidebarSearchEmptyStateMessage,
             )
           else
             for (final branch in filteredBranches)

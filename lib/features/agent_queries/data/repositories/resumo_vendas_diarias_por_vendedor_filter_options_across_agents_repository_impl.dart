@@ -30,7 +30,9 @@ class ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepositoryImpl
     vendedorExecutor,
     required AgentQueryExecutor<ResumoVendasDiariasPorVendedorTextOption>
     textExecutor,
-    required AgentQueryExecutor<ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch>
+    required AgentQueryExecutor<
+      ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch
+    >
     allOptionsBatchExecutor,
     required ResumoVendasDiariasPorVendedorFilterOptionsRepository
     filterOptionsRepository,
@@ -56,7 +58,9 @@ class ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepositoryImpl
   _vendedorExecutor;
   final AgentQueryExecutor<ResumoVendasDiariasPorVendedorTextOption>
   _textExecutor;
-  final AgentQueryExecutor<ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch>
+  final AgentQueryExecutor<
+    ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch
+  >
   _allOptionsBatchExecutor;
   final ResumoVendasDiariasPorVendedorFilterOptionsRepository
   _filterOptionsRepository;
@@ -233,8 +237,10 @@ class ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepositoryImpl
       dataVendaFim: dataVendaFim,
     );
     if (rangeError != null) {
-      return Failure<ResumoVendasDiariasPorVendedorAllFilterOptionsAcrossAgents,
-          AppFailure>(
+      return Failure<
+        ResumoVendasDiariasPorVendedorAllFilterOptionsAcrossAgents,
+        AppFailure
+      >(
         ValidationFailure(
           message: rangeError,
           userMessage: 'Os filtros da consulta sao invalidos.',
@@ -251,7 +257,8 @@ class ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepositoryImpl
       ResumoVendasDiariasPorVendedorAllFilterOptionsAcrossAgents,
       ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch
     >(
-      operation: 'loadResumoVendasDiariasPorVendedorAllFilterOptionsAcrossAgents',
+      operation:
+          'loadResumoVendasDiariasPorVendedorAllFilterOptionsAcrossAgents',
       queryKey: AgentQueryKey.resumoVendasDiariasOptsBatch,
       userId: userId,
       targetResolver: _targetResolver,
@@ -268,25 +275,25 @@ class ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepositoryImpl
             required resolution,
           }) async {
             final perAgentFetchLimit =
-                ResumoVendasDiariasSuggestionSqlParams
-                    .perAgentSuggestionFetchLimit(
-                      mergeResultLimit: effectiveLimit,
-                      plannedTargetCount: plan.plannedTargets.length,
-                    );
-            final batchResult = await _filterOptionsRepository.loadAllFilterOptions(
-              userId: userId,
-              agentId: target.agentId,
-              dataVendaInicio: dataVendaInicio,
-              dataVendaFim: dataVendaFim,
-              searchTerm: searchTerm,
-              limit: perAgentFetchLimit,
-              clientToken: target.clientToken,
-              bridgeTimeoutMs: plan.bridgeTimeoutMs,
-              hubPresenceOnlineAgentIdsSnapshot:
-                  resolution.hubPresenceOnlineAgentIdsSnapshot,
-              hubConnectedFromApprovedCatalogRow:
-                  target.hubConnectedFromApprovedCatalogRow,
-            );
+                ResumoVendasDiariasSuggestionSqlParams.perAgentSuggestionFetchLimit(
+                  mergeResultLimit: effectiveLimit,
+                  plannedTargetCount: plan.plannedTargets.length,
+                );
+            final batchResult = await _filterOptionsRepository
+                .loadAllFilterOptions(
+                  userId: userId,
+                  agentId: target.agentId,
+                  dataVendaInicio: dataVendaInicio,
+                  dataVendaFim: dataVendaFim,
+                  searchTerm: searchTerm,
+                  limit: perAgentFetchLimit,
+                  clientToken: target.clientToken,
+                  bridgeTimeoutMs: plan.bridgeTimeoutMs,
+                  hubPresenceOnlineAgentIdsSnapshot:
+                      resolution.hubPresenceOnlineAgentIdsSnapshot,
+                  hubConnectedFromApprovedCatalogRow:
+                      target.hubConnectedFromApprovedCatalogRow,
+                );
             return batchResult.map(
               (bundle) =>
                   <ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch>[
@@ -311,18 +318,20 @@ class ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepositoryImpl
             effectiveLimit,
           ),
           bairroOptions: _postDedupeTextOptions(allBairro, effectiveLimit),
-          municipioOptions: _postDedupeTextOptions(allMunicipio, effectiveLimit),
+          municipioOptions: _postDedupeTextOptions(
+            allMunicipio,
+            effectiveLimit,
+          ),
         );
       },
       successLogMessage:
           'Agent query filter options batch executed across agents',
-      successContext:
-          (report, mapped) => <String, Object?>{
-            'mergedVendedorOptionCount': mapped.vendedorOptions.length,
-            'mergedBairroOptionCount': mapped.bairroOptions.length,
-            'mergedMunicipioOptionCount': mapped.municipioOptions.length,
-            'failedAgentCount': report.failedAgentIds.length,
-          },
+      successContext: (report, mapped) => <String, Object?>{
+        'mergedVendedorOptionCount': mapped.vendedorOptions.length,
+        'mergedBairroOptionCount': mapped.bairroOptions.length,
+        'mergedMunicipioOptionCount': mapped.municipioOptions.length,
+        'failedAgentCount': report.failedAgentIds.length,
+      },
     );
   }
 

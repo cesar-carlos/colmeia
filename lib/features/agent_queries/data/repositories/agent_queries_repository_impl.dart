@@ -1,8 +1,10 @@
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
+import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_transport_policy.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_rpc_user_message_resolver.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/models/agent_sql_bridge_response.dart';
@@ -12,6 +14,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_e
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:dio/dio.dart';
 import 'package:result_dart/result_dart.dart';
@@ -21,11 +24,15 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
 
   final AgentQueriesRemoteDataSource _remoteDataSource;
   static const _transportFailureMapper = AgentQueriesTransportFailureMapper();
+  static final _transportPolicy = AgentQueryTransportPolicy(
+    mode: AppEnvironment.agentQueryTransportPolicyMode,
+  );
 
   @override
   Future<AppResult<AgentSqlExecutionResult>> executeSql(
-    AgentSqlExecuteRequest request,
-  ) async {
+    AgentSqlExecuteRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
     final validationError = request.validationError();
     if (validationError != null) {
       return Failure<AgentSqlExecutionResult, AppFailure>(
@@ -40,8 +47,23 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
       );
     }
 
+    if (cancelScope?.isCancelled ?? false) {
+      return const Failure<AgentSqlExecutionResult, AppFailure>(
+        OperationCancelledFailure(),
+      );
+    }
+
     try {
-      final payload = await _remoteDataSource.postSqlExecute(request);
+      final routedRequest = _transportPolicy.apply(request);
+      final payload = await _remoteDataSource.postSqlExecute(
+        routedRequest,
+        cancelScope: cancelScope,
+      );
+      if (cancelScope?.isCancelled ?? false) {
+        return const Failure<AgentSqlExecutionResult, AppFailure>(
+          OperationCancelledFailure(),
+        );
+      }
       final result = AgentSqlBridgeResponse.parseSuccess(payload);
       AppLogger.info(
         'Agent SQL execute completed',
@@ -203,8 +225,9 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
 
   @override
   Future<AppResult<AgentSqlBatchExecutionResult>> executeSqlBatch(
-    AgentSqlExecuteBatchRequest request,
-  ) async {
+    AgentSqlExecuteBatchRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
     final validationError = request.validationError();
     if (validationError != null) {
       return Failure<AgentSqlBatchExecutionResult, AppFailure>(
@@ -219,8 +242,23 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
       );
     }
 
+    if (cancelScope?.isCancelled ?? false) {
+      return const Failure<AgentSqlBatchExecutionResult, AppFailure>(
+        OperationCancelledFailure(),
+      );
+    }
+
     try {
-      final payload = await _remoteDataSource.postSqlExecuteBatch(request);
+      final routedRequest = _transportPolicy.applyBatch(request);
+      final payload = await _remoteDataSource.postSqlExecuteBatch(
+        routedRequest,
+        cancelScope: cancelScope,
+      );
+      if (cancelScope?.isCancelled ?? false) {
+        return const Failure<AgentSqlBatchExecutionResult, AppFailure>(
+          OperationCancelledFailure(),
+        );
+      }
       final result = AgentSqlBridgeResponse.parseBatchSuccess(payload);
       AppLogger.info(
         'Agent SQL batch execute completed',

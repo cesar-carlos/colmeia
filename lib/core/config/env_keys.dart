@@ -188,6 +188,16 @@ abstract final class EnvKeys {
   static const String socketRelayStreamRefillThreshold =
       'SOCKET_RELAY_STREAM_REFILL_THRESHOLD';
 
+  /// Future hub feature: JSON-RPC batch arrays on relay. Default `false`.
+  static const String socketRelayBatchEnabled = 'SOCKET_RELAY_BATCH_ENABLED';
+
+  /// Experimental multi-socket spike (`1` = single connection, default).
+  static const String socketConnectionPoolSize = 'SOCKET_CONNECTION_POOL_SIZE';
+
+  /// `legacy` | `auto` | `prefer_relay` — see [AgentQueryTransportPolicyMode].
+  static const String agentQueryTransportPolicy =
+      'AGENT_QUERY_TRANSPORT_POLICY';
+
   // ----- Socket presence (PR-M: client:agent.profile.updated) -----
 
   /// Optional realtime presence switch. Socket bridge transport also enables

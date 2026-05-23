@@ -42,6 +42,9 @@ void main() {
       check(command['jsonrpc']).equals('2.0');
       check(command['method']).equals('sql.executeBatch');
       check(command['id']).equals('rpc-batch-1');
+      final meta = command['meta']! as Map<String, Object?>;
+      check(meta.containsKey('trace_id')).isTrue();
+      check((meta['trace_id']! as String).length).equals(36);
       check(kColmeiaAgentBatchApiVersion).equals('2.10');
       check(command['api_version']).equals(kColmeiaAgentBatchApiVersion);
 
@@ -129,6 +132,9 @@ void main() {
       check(command['jsonrpc']).equals('2.0');
       check(command['method']).equals('sql.executeBatch');
       check(command['id']).equals('rpc-relay-batch-1');
+      final meta = command['meta']! as Map<String, Object?>;
+      check(meta.containsKey('trace_id')).isTrue();
+      check((meta['trace_id']! as String).length).equals(36);
       final params = command['params']! as Map<String, Object?>;
       check(params['client_token']).equals('token-1');
       final commands = params['commands']! as List<Object?>;
@@ -136,6 +142,24 @@ void main() {
       check(first['sql']).equals('SELECT * FROM Cliente');
       final namedParams = first['params']! as Map<String, Object?>;
       check(namedParams['ativo']).equals(true);
+    });
+
+    test('buildRelayCommand uses explicit trace_id when provided', () {
+      const request = AgentSqlExecuteBatchRequest(
+        agentId: 'agent-1',
+        clientToken: 't',
+        commands: <AgentSqlExecuteBatchCommand>[
+          AgentSqlExecuteBatchCommand(sql: 'SELECT 1'),
+        ],
+      );
+      const tid = '22222222-2222-2222-2222-222222222222';
+      final command = builder.buildRelayCommand(
+        request: request,
+        rpcId: 'rpc-batch-trace',
+        traceId: tid,
+      );
+      final meta = command['meta']! as Map<String, Object?>;
+      check(meta['trace_id']).equals(tid);
     });
   });
 }

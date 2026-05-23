@@ -1,8 +1,10 @@
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
+import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_execute_request_to_bridge_body.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_streaming_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:uuid/uuid.dart';
 
 /// Streams `sql.execute` over relay using the JSON-RPC command as the
@@ -30,20 +32,68 @@ class RelayStreamingAgentQueriesRemoteDataSource
 
   @override
   Stream<Map<String, dynamic>> streamSqlExecute(
-    AgentSqlExecuteRequest request,
-  ) {
+    AgentSqlExecuteRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async* {
+    if (cancelScope?.isCancelled ?? false) {
+      throw const RelayRequestCancelled(
+        message:
+            'streamSqlExecute skipped: AgentQueriesCancelScope already cancelled',
+      );
+    }
     final clientRequestId = _uuid.v4();
-    final body = _bodyMapper.buildRelayCommand(
-      request: request,
-      rpcId: clientRequestId,
-    );
-    return _dispatcher.sendStreaming(
-      agentId: request.trimmedAgentId,
-      body: body,
-      clientRequestId: clientRequestId,
-      timeout: _resolveTimeout(request),
-      compression: _resolveCompression(request.payloadFrameCompression),
-    );
+    cancelScope?.trackPending(clientRequestId);
+    try {
+      final body = _bodyMapper.buildRelayCommand(
+        request: request,
+        rpcId: clientRequestId,
+        traceId: cancelScope?.traceId,
+      );
+      yield* _trackStreamingIds(
+        cancelScope: cancelScope,
+        agentId: request.trimmedAgentId,
+        clientToken: request.trimmedClientToken,
+        stream: _dispatcher.sendStreaming(
+          agentId: request.trimmedAgentId,
+          body: body,
+          clientRequestId: clientRequestId,
+          timeout: _resolveTimeout(request),
+          compression: _resolveCompression(request.payloadFrameCompression),
+        ),
+      );
+    } finally {
+      cancelScope?.untrackPending(clientRequestId);
+    }
+  }
+
+  Stream<Map<String, dynamic>> _trackStreamingIds({
+    required Stream<Map<String, dynamic>> stream,
+    AgentQueriesCancelScope? cancelScope,
+    required String agentId,
+    String? clientToken,
+  }) {
+    return stream.map((chunk) {
+      final streamId = _readStreamId(chunk);
+      if (streamId != null) {
+        cancelScope?.trackStreamingSql(
+          AgentStreamingSqlCancelTarget(
+            agentId: agentId,
+            streamId: streamId,
+            clientToken: clientToken,
+          ),
+        );
+      }
+      return chunk;
+    });
+  }
+
+  String? _readStreamId(Map<String, dynamic> chunk) {
+    final raw = chunk['stream_id'] ?? chunk['streamId'];
+    if (raw is! String) {
+      return null;
+    }
+    final trimmed = raw.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 
   /// Same +5s buffer the unary paths apply: keeps the relay timeout

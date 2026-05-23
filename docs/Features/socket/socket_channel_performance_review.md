@@ -33,6 +33,14 @@
 
 ---
 
+## Fronteiras de timeout (transporte vs repositório)
+
+- **`AgentLatencyOracle`** (`lib/core/socket/agent_latency_oracle.dart`): alimenta timers de pendência **no transporte** (ex.: `RelayCommandDispatcherImpl`) quando o RPC **não** traz `Duration` explícita — EWMA por `(agentId, método)`.
+- **`AdaptiveTimeoutAgentQueriesRepository`**: atua **só** em chamadas Agent SQL que já declaram `bridgeTimeoutMs`, ajustando esse teto com base em histórico de latência no decorator da cadeia do repositório.
+- **Convivência:** overview batch com `bridgeTimeoutMs` longo (300s) continua passando pelo decorator quando habilitado; o oracle cobre o caminho relay default sem timeout por request. Não misturar as duas camadas na mesma responsabilidade.
+
+---
+
 ## 1. Matriz de responsabilidades (quem controla o quê)
 
 | Camada                | Cliente (Colmeia)                                    | Hub (`plug_server`)                                                                                      | Agente (`plug_agente`)                           |
@@ -534,7 +542,34 @@ compressão.
 
 ---
 
-## 12. Referências cruzadas
+## 12. Colmeia implementation status (roadmap 2026-05)
+
+Audit against PR2 baseline and roadmap phases. **Do not duplicate policy from
+`.cursor/rules`** — this section is a checklist only.
+
+| Review § | Item | Status | Colmeia location |
+| --- | --- | --- | --- |
+| 5.1 | Request coalescing | Done | `SocketCommandDispatcher` + `CoalescingAgentQueriesRepository` |
+| 5.2 | Batch `agents:command` | Done | `AgentCommandBatchCoordinator` (`SOCKET_BATCH_ENABLED`) |
+| 5.4 | Reconnect jitter | Done | `SocketReconnectBackoff`, `consumer_socket_connection.dart` |
+| 5.5 | Per-agent concurrency gate | Done | `PerAgentConcurrencyGate` |
+| 5.6 | Cancel / `sql.cancel` | Done (client) | `AgentQueriesCancelScope`, `wireAgentQueriesCancelScopeHandlers`, `AgentSqlCancelEmitter`; map: `sql_cancel_contract_colmeia_map.md` |
+| 5.7 | Socket warm-up after login | Done | `SOCKET_WARM_UP_AFTER_LOGIN`, `bootstrap.dart` |
+| 5.8 | Client metrics | Done | `SocketChannelMetrics`, `SocketMetricsListener` |
+| 5.9 | Async gzip encode/decode | Done | `PayloadFrameCodec` isolate thresholds |
+| PR2 | Relay cancel fail-fast | Done | `RelayCommandDispatcher.cancel` |
+| Phase 3 | Shared latency budget | Done | `AgentLatencyBudget` → oracle + adaptive timeout repo |
+| Phase 4 | Relay batch | Guard only | `RelayBatchProtocolGuard`, `relay_batch_future_spec.md`; hub TBD |
+| Phase 5 | Socket pool spike | Done (minimal) | `ConsumerSocketConnectionPool`, `SOCKET_CONNECTION_POOL_SIZE` |
+| Phase 6 | Transport policy matrix | Done (env) | `AgentQueryTransportPolicy`, `AGENT_QUERY_TRANSPORT_POLICY` |
+
+**Gaps / hub-dependent**: relay JSON-RPC batch on plug_server; optional second
+socket connection factory when `SOCKET_CONNECTION_POOL_SIZE > 1`; unary
+`sql.cancel` semantics on the agent.
+
+---
+
+## 13. Referências cruzadas
 
 - Plano executivo: `docs/Features/socket_consumer_channel_plan.md`
 - Conexão: `docs/Features/consumer_socket_connection_design.md`

@@ -286,10 +286,8 @@ class OverviewUserRankingCard extends StatelessWidget {
           l10n.chartComparisonExtremeValueSpreadNotice,
       labelBuilder: (u) => u.userName,
       valueBuilder: (u) => u.totalAmount,
-      tooltipLabelBuilder: (u, v) =>
-          _overviewUserRankingTooltip(l10n, u, v),
-      dataLabelBuilder: (u, v) =>
-          _overviewUserRankingDataLabel(l10n, u, v),
+      tooltipLabelBuilder: (u, v) => _overviewUserRankingTooltip(l10n, u, v),
+      dataLabelBuilder: (u, v) => _overviewUserRankingDataLabel(l10n, u, v),
       style: overviewHomeComparisonBarChartStyle(
         tokens: tokens,
         kind: OverviewHomeBarChartKind.ranking,

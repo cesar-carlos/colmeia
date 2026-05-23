@@ -67,14 +67,15 @@ void main() {
           ),
         ],
         missingClientTokenTargets: <AgentQueryTarget>[],
-        participants: <AgentQueryExecutionParticipant<ResumoParcelaPorUsuarioRow>>[
-          AgentQueryExecutionParticipant<ResumoParcelaPorUsuarioRow>(
-            agentId: 'agent-a',
-            displayName: 'Agent A',
-            rows: <ResumoParcelaPorUsuarioRow>[],
-            elapsedMs: 1,
-          ),
-        ],
+        participants:
+            <AgentQueryExecutionParticipant<ResumoParcelaPorUsuarioRow>>[
+              AgentQueryExecutionParticipant<ResumoParcelaPorUsuarioRow>(
+                agentId: 'agent-a',
+                displayName: 'Agent A',
+                rows: <ResumoParcelaPorUsuarioRow>[],
+                elapsedMs: 1,
+              ),
+            ],
         totalElapsedMs: 1,
       );
       final override = overviewUserRankingsOverrideFromAcrossAgentsResult(
@@ -107,22 +108,23 @@ void main() {
         ),
       ],
       missingClientTokenTargets: <AgentQueryTarget>[],
-      participants: <AgentQueryExecutionParticipant<ResumoParcelaPorUsuarioRow>>[
-          AgentQueryExecutionParticipant<ResumoParcelaPorUsuarioRow>(
-            agentId: 'agent-a',
-            displayName: 'Agent A',
-            rows: <ResumoParcelaPorUsuarioRow>[
-              ResumoParcelaPorUsuarioRow(
-                codEmpresa: 1,
-                codFilial: 1,
-                nomeUsuario: 'Caixa',
-                qtdVendas: 2,
-              valorParcela: 100,
+      participants:
+          <AgentQueryExecutionParticipant<ResumoParcelaPorUsuarioRow>>[
+            AgentQueryExecutionParticipant<ResumoParcelaPorUsuarioRow>(
+              agentId: 'agent-a',
+              displayName: 'Agent A',
+              rows: <ResumoParcelaPorUsuarioRow>[
+                ResumoParcelaPorUsuarioRow(
+                  codEmpresa: 1,
+                  codFilial: 1,
+                  nomeUsuario: 'Caixa',
+                  qtdVendas: 2,
+                  valorParcela: 100,
+                ),
+              ],
+              elapsedMs: 1,
             ),
           ],
-          elapsedMs: 1,
-        ),
-      ],
       totalElapsedMs: 1,
     );
     final override = overviewUserRankingsOverrideFromAcrossAgentsResult(
@@ -223,9 +225,13 @@ void main() {
 
   test('across-agents override is null when per-user resumo call fails', () {
     final override = overviewUserRankingsOverrideFromAcrossAgentsResult(
-      userPorResult: const Failure<AgentQueryExecutionReport<ResumoParcelaPorUsuarioRow>, AppFailure>(
-        ValidationFailure(message: 'bridge failed'),
-      ),
+      userPorResult:
+          const Failure<
+            AgentQueryExecutionReport<ResumoParcelaPorUsuarioRow>,
+            AppFailure
+          >(
+            ValidationFailure(message: 'bridge failed'),
+          ),
       paymentMergedRows: const <ResumoParcelaFormaPagamentoRow>[],
       userId: 'user-1',
       rowLabels: labels,

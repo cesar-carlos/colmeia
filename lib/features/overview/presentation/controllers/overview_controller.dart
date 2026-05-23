@@ -5,6 +5,7 @@ import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
 import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_registry.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_online_agent_ids_use_case.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
@@ -31,8 +32,10 @@ class OverviewController extends ChangeNotifier {
     this._loadOverviewOnlineAgentIdsUseCase, {
     RetryAfterGate? retryAfterGate,
     AgentRpcCapabilitiesRegistry? agentRpcCapabilitiesRegistry,
+    AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder,
   }) : _retryAfterGate = retryAfterGate ?? RetryAfterGate(),
-       _agentRpcCapabilitiesRegistry = agentRpcCapabilitiesRegistry {
+       _agentRpcCapabilitiesRegistry = agentRpcCapabilitiesRegistry,
+       _relayCancelScopeBinder = relayCancelScopeBinder {
     // Re-publish gate ticks (countdown updates + window expired) through
     // the controller so the home page's retry button reacts without
     // subscribing to the gate directly.
@@ -57,6 +60,8 @@ class OverviewController extends ChangeNotifier {
   /// is best-effort.
   final AgentRpcCapabilitiesRegistry? _agentRpcCapabilitiesRegistry;
 
+  final AgentQueriesRelayCancelScopeBinder? _relayCancelScopeBinder;
+
   Overview? _overview;
   bool _isLoadingInitial = false;
   bool _isRefreshing = false;
@@ -65,6 +70,7 @@ class OverviewController extends ChangeNotifier {
   String? _requestedOverviewSignature;
   String? _loadedOverviewSignature;
   int _loadGeneration = 0;
+  AgentQueriesCancelScope? _overviewSqlCancelScope;
   bool _disposed = false;
   Set<OverviewProgressiveSection> _completedOverviewSections =
       const <OverviewProgressiveSection>{};
@@ -135,6 +141,8 @@ class OverviewController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _overviewSqlCancelScope?.cancelAll();
+    _overviewSqlCancelScope = null;
     _retryAfterGate
       ..removeListener(_notifyListenersIfAlive)
       ..dispose();
@@ -306,6 +314,10 @@ class OverviewController extends ChangeNotifier {
     final signature = _signatureFor(userId: userId);
     _requestedOverviewSignature = signature;
     final generation = ++_loadGeneration;
+    _overviewSqlCancelScope?.cancelAll();
+    _overviewSqlCancelScope = AgentQueriesCancelScope();
+    _relayCancelScopeBinder?.call(_overviewSqlCancelScope!);
+    final sqlCancelScope = _overviewSqlCancelScope!;
 
     AppLogger.debug(
       'Starting overview load in controller',
@@ -341,6 +353,7 @@ class OverviewController extends ChangeNotifier {
         failureMessageBuilder: failureMessageBuilder,
         signature: signature,
         generation: generation,
+        sqlCancelScope: sqlCancelScope,
       );
       return;
     }
@@ -350,6 +363,7 @@ class OverviewController extends ChangeNotifier {
       policy: policy,
       filter: _activeFilter,
       rowLabels: rowLabels,
+      cancelScope: sqlCancelScope,
     );
     if (_isOverviewLoadStale(generation)) {
       return;
@@ -431,12 +445,14 @@ class OverviewController extends ChangeNotifier {
     required OverviewFailureMessageBuilder failureMessageBuilder,
     required String signature,
     required int generation,
+    required AgentQueriesCancelScope sqlCancelScope,
   }) async {
     await for (final result in _loadOverviewUseCase.progressively(
       userId: userId,
       policy: policy,
       filter: _activeFilter,
       rowLabels: rowLabels,
+      cancelScope: sqlCancelScope,
     )) {
       if (_isOverviewLoadStale(generation)) {
         return;

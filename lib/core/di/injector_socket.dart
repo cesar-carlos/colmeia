@@ -11,7 +11,9 @@ import 'package:colmeia/core/socket/agent_command_sender.dart';
 import 'package:colmeia/core/socket/agent_latency_oracle.dart';
 import 'package:colmeia/core/socket/app_socket_url_resolver.dart';
 import 'package:colmeia/core/socket/connection_ready_payload.dart';
+import 'package:colmeia/core/socket/agent_sql_cancel_emitter.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
+import 'package:colmeia/core/socket/consumer_socket_connection_pool.dart';
 import 'package:colmeia/core/socket/direct_agent_command_sender.dart';
 import 'package:colmeia/core/socket/payload_frame.dart';
 import 'package:colmeia/core/socket/payload_frame_codec.dart';
@@ -106,15 +108,6 @@ void registerInjectorSocket(GetIt getIt) {
       ),
       dispose: (dispatcher) => dispatcher.dispose(),
     )
-    ..registerLazySingleton<SocketMetricsListener>(
-      () => SocketMetricsListener(
-        connection: getIt<ConsumerSocketConnection>(),
-        dispatcher: getIt<SocketCommandDispatcher>(),
-        metrics: getIt<SocketChannelMetrics>(),
-        latencyOracle: _resolveLatencyOracle(getIt),
-      ),
-      dispose: (listener) => listener.dispose(),
-    )
     // Direct sender always exists: it is the fallback used either as the
     // bypass target of the batch coordinator or as the standalone sender
     // when batching is disabled.
@@ -191,10 +184,25 @@ void registerInjectorSocket(GetIt getIt) {
               AppEnvironment.socketRelayStreamRefillThreshold,
           concurrencyGate: _resolveConcurrencyGate(getIt),
           channelMetrics: getIt<SocketChannelMetrics>(),
+          latencyOracle: _resolveLatencyOracle(getIt),
         ),
         dispose: (dispatcher) => dispatcher.dispose(),
       );
   }
+
+  getIt.registerLazySingleton<SocketMetricsListener>(
+    () => SocketMetricsListener(
+      connection: getIt<ConsumerSocketConnection>(),
+      dispatcher: getIt<SocketCommandDispatcher>(),
+      metrics: getIt<SocketChannelMetrics>(),
+      latencyOracle: _resolveLatencyOracle(getIt),
+      relayDispatcher: getIt.isRegistered<RelayCommandDispatcher>()
+          ? getIt<RelayCommandDispatcher>()
+          : null,
+      concurrencyGate: _resolveConcurrencyGate(getIt),
+    ),
+    dispose: (listener) => listener.dispose(),
+  );
 
   // Pick the active AgentCommandSender. When SOCKET_BATCH_ENABLED=true,
   // the coordinator wraps the direct sender; otherwise the direct sender
@@ -232,6 +240,17 @@ void registerInjectorSocket(GetIt getIt) {
       () => getIt<DirectAgentCommandSender>(),
     );
   }
+
+  getIt
+    ..registerLazySingleton<ConsumerSocketConnectionPool>(
+      () => ConsumerSocketConnectionPool(
+        primary: getIt<ConsumerSocketConnection>(),
+        poolSize: AppEnvironment.socketConnectionPoolSize,
+      ),
+    )
+    ..registerLazySingleton<AgentSqlCancelEmitter>(
+      () => AgentSqlCancelEmitter(sender: getIt<AgentCommandSender>()),
+    );
 }
 
 PerAgentConcurrencyGate? _resolveConcurrencyGate(GetIt getIt) {

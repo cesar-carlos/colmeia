@@ -10,6 +10,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.d
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_total_vendas_municipio_filial_periodo_across_agents_repository.dart';
 
 class ResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsRepositoryImpl
@@ -48,6 +49,7 @@ class ResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsRepositoryImpl
     int? bridgeTimeoutMs,
     int? raceMaxSources,
     AgentQueryTargetResolution? preResolvedResolution,
+    AgentQueriesCancelScope? cancelScope,
   }) {
     return AgentQueryListReportAcrossAgentsCoordinator.executeLoadedRows<
       ResumoTotalVendasMunicipioFilialPeriodoFilter,
@@ -60,7 +62,28 @@ class ResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsRepositoryImpl
       targetResolver: _targetResolver,
       planBuilder: _planBuilder,
       executor: _executor,
-      loadRowsForTarget: _loadResumo.call,
+      loadRowsForTarget:
+          ({
+            required userId,
+            required agentId,
+            required filter,
+            clientToken,
+            bridgeTimeoutMs,
+            hubPresenceOnlineAgentIdsSnapshot,
+            hubConnectedFromApprovedCatalogRow,
+          }) =>
+              _loadResumo(
+                userId: userId,
+                agentId: agentId,
+                filter: filter,
+                clientToken: clientToken,
+                bridgeTimeoutMs: bridgeTimeoutMs,
+                hubPresenceOnlineAgentIdsSnapshot:
+                    hubPresenceOnlineAgentIdsSnapshot,
+                hubConnectedFromApprovedCatalogRow:
+                    hubConnectedFromApprovedCatalogRow,
+                cancelScope: cancelScope,
+              ),
       selectedAgentIds: selectedAgentIds,
       strategy: strategy,
       bridgeTimeoutMs: bridgeTimeoutMs,

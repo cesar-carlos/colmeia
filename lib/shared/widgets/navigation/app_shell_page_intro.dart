@@ -119,8 +119,9 @@ class _IntroTitles extends StatelessWidget {
           if (onSectionLabelTap != null)
             Semantics(
               button: true,
-              label: AppLocalizations.of(context)
-                  .shellSectionBreadcrumbSemantics(sectionLabel!),
+              label: AppLocalizations.of(
+                context,
+              ).shellSectionBreadcrumbSemantics(sectionLabel!),
               child: Material(
                 type: MaterialType.transparency,
                 child: InkWell(
@@ -130,8 +131,9 @@ class _IntroTitles extends StatelessWidget {
                       sectionLabel!,
                       style: sectionStyle.copyWith(
                         decoration: TextDecoration.underline,
-                        decorationColor:
-                            colorScheme.primary.withValues(alpha: 0.5),
+                        decorationColor: colorScheme.primary.withValues(
+                          alpha: 0.5,
+                        ),
                       ),
                     ),
                   ),

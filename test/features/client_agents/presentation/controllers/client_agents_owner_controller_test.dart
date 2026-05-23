@@ -101,66 +101,70 @@ void main() {
     controller.dispose();
   });
 
-  test('ignores stale approved-clients response after switching selection again', () async {
-    when(() => loadManagedAgents(userId: any(named: 'userId'))).thenAnswer(
-      (_) async => Success<List<ClientAgent>, AppFailure>(
-        <ClientAgent>[_managedAgent('agent-a'), _managedAgent('agent-b')],
-      ),
-    );
-    when(
-      () => loadOwnerAccessRequests(userId: any(named: 'userId')),
-    ).thenAnswer(
-      (_) async =>
-          const Success<List<OwnerClientAccessRequest>, AppFailure>(<OwnerClientAccessRequest>[]),
-    );
-    when(
-      () => loadApprovedClients(
-        userId: any(named: 'userId'),
-        agentId: 'agent-a',
-      ),
-    ).thenAnswer(
-      (_) async => Success<List<OwnerApprovedClient>, AppFailure>(
-        <OwnerApprovedClient>[_approvedClient('initial-a')],
-      ),
-    );
+  test(
+    'ignores stale approved-clients response after switching selection again',
+    () async {
+      when(() => loadManagedAgents(userId: any(named: 'userId'))).thenAnswer(
+        (_) async => Success<List<ClientAgent>, AppFailure>(
+          <ClientAgent>[_managedAgent('agent-a'), _managedAgent('agent-b')],
+        ),
+      );
+      when(
+        () => loadOwnerAccessRequests(userId: any(named: 'userId')),
+      ).thenAnswer(
+        (_) async => const Success<List<OwnerClientAccessRequest>, AppFailure>(
+          <OwnerClientAccessRequest>[],
+        ),
+      );
+      when(
+        () => loadApprovedClients(
+          userId: any(named: 'userId'),
+          agentId: 'agent-a',
+        ),
+      ).thenAnswer(
+        (_) async => Success<List<OwnerApprovedClient>, AppFailure>(
+          <OwnerApprovedClient>[_approvedClient('initial-a')],
+        ),
+      );
 
-    await controller.initialize();
+      await controller.initialize();
 
-    final staleB = Completer<AppResult<List<OwnerApprovedClient>>>();
-    final freshA = Completer<AppResult<List<OwnerApprovedClient>>>();
-    when(
-      () => loadApprovedClients(
-        userId: any(named: 'userId'),
-        agentId: 'agent-b',
-      ),
-    ).thenAnswer((_) => staleB.future);
-    when(
-      () => loadApprovedClients(
-        userId: any(named: 'userId'),
-        agentId: 'agent-a',
-      ),
-    ).thenAnswer((_) => freshA.future);
+      final staleB = Completer<AppResult<List<OwnerApprovedClient>>>();
+      final freshA = Completer<AppResult<List<OwnerApprovedClient>>>();
+      when(
+        () => loadApprovedClients(
+          userId: any(named: 'userId'),
+          agentId: 'agent-b',
+        ),
+      ).thenAnswer((_) => staleB.future);
+      when(
+        () => loadApprovedClients(
+          userId: any(named: 'userId'),
+          agentId: 'agent-a',
+        ),
+      ).thenAnswer((_) => freshA.future);
 
-    unawaited(controller.selectManagedAgent('agent-b'));
-    await Future<void>.delayed(Duration.zero);
-    unawaited(controller.selectManagedAgent('agent-a'));
-    await Future<void>.delayed(Duration.zero);
+      unawaited(controller.selectManagedAgent('agent-b'));
+      await Future<void>.delayed(Duration.zero);
+      unawaited(controller.selectManagedAgent('agent-a'));
+      await Future<void>.delayed(Duration.zero);
 
-    staleB.complete(
-      Success<List<OwnerApprovedClient>, AppFailure>(
-        <OwnerApprovedClient>[_approvedClient('stale-b')],
-      ),
-    );
-    await Future<void>.delayed(Duration.zero);
+      staleB.complete(
+        Success<List<OwnerApprovedClient>, AppFailure>(
+          <OwnerApprovedClient>[_approvedClient('stale-b')],
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
 
-    freshA.complete(
-      Success<List<OwnerApprovedClient>, AppFailure>(
-        <OwnerApprovedClient>[_approvedClient('fresh-a')],
-      ),
-    );
-    await Future<void>.delayed(Duration.zero);
+      freshA.complete(
+        Success<List<OwnerApprovedClient>, AppFailure>(
+          <OwnerApprovedClient>[_approvedClient('fresh-a')],
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
 
-    expect(controller.selectedManagedAgentId, 'agent-a');
-    expect(controller.approvedClients.single.clientId, 'fresh-a');
-  });
+      expect(controller.selectedManagedAgentId, 'agent-a');
+      expect(controller.approvedClients.single.clientId, 'fresh-a');
+    },
+  );
 }

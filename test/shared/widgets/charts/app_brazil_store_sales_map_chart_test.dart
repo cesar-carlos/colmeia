@@ -285,7 +285,8 @@ void main() {
         width: 1400,
         height: 780,
         showDesktopBranchSidebar: true,
-        presentationMode: AppBrazilStoreSalesMapPresentationMode.cleanFullscreen,
+        presentationMode:
+            AppBrazilStoreSalesMapPresentationMode.cleanFullscreen,
         style: _baseStyle.copyWith(
           showLegend: true,
           showMarkerScaleLegend: true,
@@ -587,7 +588,10 @@ void main() {
             payload.points.any((groupPoint) => groupPoint.id == 'store-2');
       });
       expect(storeTwoPointAfter.style?.size, greaterThan(storeTwoSizeBefore!));
-      expect(previewHandle.snapshotDataIdentityForTesting, same(snapshotDataBefore));
+      expect(
+        previewHandle.snapshotDataIdentityForTesting,
+        same(snapshotDataBefore),
+      );
       expect(
         find.byKey(
           const ValueKey<String>('brazil-store-sales-map-store-detail'),
@@ -614,7 +618,10 @@ void main() {
             payload.points.any((groupPoint) => groupPoint.id == 'store-2');
       });
       expect(storeTwoPointReset.style?.size, storeTwoSizeBefore);
-      expect(previewHandle.snapshotDataIdentityForTesting, same(snapshotDataBefore));
+      expect(
+        previewHandle.snapshotDataIdentityForTesting,
+        same(snapshotDataBefore),
+      );
 
       await tester.enterText(
         find.byKey(

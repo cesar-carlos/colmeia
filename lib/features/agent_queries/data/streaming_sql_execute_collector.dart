@@ -1,4 +1,6 @@
+import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_relay_response_adapter.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 
 /// Aggregates the chunked output of
 /// `AgentQueriesStreamingRemoteDataSource.streamSqlExecute(...)` into a
@@ -47,7 +49,10 @@ import 'package:colmeia/features/agent_queries/data/agent_sql_relay_response_ada
 // this ignore goes.
 // ignore: one_member_abstracts
 abstract interface class StreamingSqlExecuteCollector {
-  Future<Map<String, dynamic>> collect(Stream<Map<String, dynamic>> chunks);
+  Future<Map<String, dynamic>> collect(
+    Stream<Map<String, dynamic>> chunks, {
+    AgentQueriesCancelScope? cancelScope,
+  });
 }
 
 /// Default collector that materialises the canonical bridge envelope
@@ -69,8 +74,9 @@ class BridgeShapedSqlExecuteCollector implements StreamingSqlExecuteCollector {
 
   @override
   Future<Map<String, dynamic>> collect(
-    Stream<Map<String, dynamic>> chunks,
-  ) async {
+    Stream<Map<String, dynamic>> chunks, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
     final rows = <Object?>[];
     String? executionId;
     String? startedAt;
@@ -84,6 +90,12 @@ class BridgeShapedSqlExecuteCollector implements StreamingSqlExecuteCollector {
     var sawComplete = false;
 
     await for (final chunk in chunks) {
+      if (cancelScope?.isCancelled ?? false) {
+        throw const RelayRequestCancelled(
+          message:
+              'Relay streaming collect aborted by AgentQueriesCancelScope',
+        );
+      }
       sawItem = true;
       if (isRelayJsonRpcResponse(chunk)) {
         return relayJsonRpcToBridgeEnvelope(chunk, responseType: 'single');

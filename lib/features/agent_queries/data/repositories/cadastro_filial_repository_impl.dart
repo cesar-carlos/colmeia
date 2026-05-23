@@ -10,6 +10,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_executi
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/cadastro_filial_repository.dart';
 
@@ -30,6 +31,7 @@ class CadastroFilialRepositoryImpl implements CadastroFilialRepository {
     int? bridgeTimeoutMs,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
   }) async {
     final trimmedAgentId = agentId.trim();
     final validationError = filter.validationError();
@@ -76,6 +78,7 @@ class CadastroFilialRepositoryImpl implements CadastroFilialRepository {
       agentId: trimmedAgentId,
       unexpectedRowsLogMessage: 'Unexpected row shape for $_operation',
       mapExecution: _mapPagedExecution,
+      cancelScope: cancelScope,
     );
   }
 

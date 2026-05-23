@@ -27,10 +27,16 @@ void main() {
     gate = PerAgentConcurrencyGate(maxInflightPerAgent: 1);
   });
 
-  const ok = AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0);
+  const ok = AgentSqlExecutionResult(
+    rows: <Map<String, dynamic>>[],
+    rowCount: 0,
+  );
 
   test('serializes concurrent executeSql for the same agent', () async {
-    final repo = RestInflightAgentQueriesRepository(delegate: delegate, gate: gate);
+    final repo = RestInflightAgentQueriesRepository(
+      delegate: delegate,
+      gate: gate,
+    );
     const req = AgentSqlExecuteRequest(agentId: 'a1', sql: 'SELECT 1');
     var callCount = 0;
     when(() => delegate.executeSql(req)).thenAnswer((_) async {
@@ -49,7 +55,10 @@ void main() {
   });
 
   test('empty agentId bypasses gate', () async {
-    final repo = RestInflightAgentQueriesRepository(delegate: delegate, gate: gate);
+    final repo = RestInflightAgentQueriesRepository(
+      delegate: delegate,
+      gate: gate,
+    );
     const req = AgentSqlExecuteRequest(agentId: '   ', sql: 'SELECT 1');
     when(() => delegate.executeSql(req)).thenAnswer(
       (_) async => const Success<AgentSqlExecutionResult, AppFailure>(ok),

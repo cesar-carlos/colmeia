@@ -38,10 +38,13 @@ void main() {
       expect(sql, isNot(contains('AND 1 = 0')));
     });
 
-    test('query short-circuits to no rows when selected branches miss agent', () {
-      final sql = CadastroFilialSql.query(hasSelectedBranches: true);
+    test(
+      'query short-circuits to no rows when selected branches miss agent',
+      () {
+        final sql = CadastroFilialSql.query(hasSelectedBranches: true);
 
-      expect(sql, contains('AND 1 = 0'));
-    });
+        expect(sql, contains('AND 1 = 0'));
+      },
+    );
   });
 }

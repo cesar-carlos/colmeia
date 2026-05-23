@@ -260,7 +260,9 @@ void main() {
           ),
         ),
       ).captured.cast<CadastroFilialFilter>();
-      check(captured.map((filter) => filter.page).toList()).deepEquals(<int>[1]);
+      check(
+        captured.map((filter) => filter.page).toList(),
+      ).deepEquals(<int>[1]);
       check(captured.map((filter) => filter.pageSize).toSet()).deepEquals(
         <int>{CadastroFilialFilter.maxPageSize},
       );

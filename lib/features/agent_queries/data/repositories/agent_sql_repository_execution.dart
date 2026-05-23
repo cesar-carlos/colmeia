@@ -3,6 +3,7 @@ import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:result_dart/result_dart.dart';
 
@@ -43,8 +44,12 @@ abstract final class AgentSqlRepositoryExecution {
     required T Function(AgentSqlExecutionResult executionResult) mapExecution,
     String? unexpectedRowsLogMessage,
     String unexpectedRowsUserMessage = defaultUnexpectedRowsUserMessage,
+    AgentQueriesCancelScope? cancelScope,
   }) async {
-    final result = await agentQueriesRepository.executeSql(request);
+    final result = await agentQueriesRepository.executeSql(
+      request,
+      cancelScope: cancelScope,
+    );
     return result.fold(
       (executionResult) => mapExecutionResult(
         executionResult,

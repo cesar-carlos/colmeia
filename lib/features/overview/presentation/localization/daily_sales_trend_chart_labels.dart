@@ -33,7 +33,8 @@ sealed class DailySalesTrendChartLabels {
   String get metricAmountLabel;
 }
 
-final class OverviewDailySalesTrendChartLabels extends DailySalesTrendChartLabels {
+final class OverviewDailySalesTrendChartLabels
+    extends DailySalesTrendChartLabels {
   OverviewDailySalesTrendChartLabels(this._l10n);
 
   final AppLocalizations _l10n;
@@ -76,7 +77,8 @@ final class OverviewDailySalesTrendChartLabels extends DailySalesTrendChartLabel
   String get metricAmountLabel => _l10n.overviewWeekdayMetricSalesAmountLabel;
 }
 
-final class SalesDailyTotalsTrendChartLabels extends DailySalesTrendChartLabels {
+final class SalesDailyTotalsTrendChartLabels
+    extends DailySalesTrendChartLabels {
   SalesDailyTotalsTrendChartLabels(this._l10n);
 
   final AppLocalizations _l10n;

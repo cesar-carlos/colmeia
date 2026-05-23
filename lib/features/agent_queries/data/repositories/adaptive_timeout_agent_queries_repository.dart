@@ -1,9 +1,11 @@
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/socket/agent_latency_budget.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 
 /// Applies adaptive timeouts based on historical query latency patterns.
@@ -22,6 +24,14 @@ import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries
 /// Only queries that already specify a bridgeTimeoutMs are eligible for
 /// adaptive adjustment. Queries without explicit timeout pass through
 /// unchanged and rely on the datasource/hub defaults.
+///
+/// **Boundary vs `AgentLatencyOracle`:** this decorator adjusts declared
+/// `AgentSqlExecuteRequest.bridgeTimeoutMs` / batch SQL timeouts on the
+/// repository chain only. Transport-level pending timers for relay/socket use
+/// `AgentLatencyOracle` when the caller omits a per-RPC timeout — the two
+/// layers are orthogonal and can both apply when a request carries an explicit
+/// bridge timeout while the relay stack still uses oracle-backed dispatch
+/// defaults for null RPC timeouts.
 class AdaptiveTimeoutAgentQueriesRepository implements AgentQueriesRepository {
   AdaptiveTimeoutAgentQueriesRepository({
     required AgentQueriesRepository delegate,
@@ -43,8 +53,9 @@ class AdaptiveTimeoutAgentQueriesRepository implements AgentQueriesRepository {
 
   @override
   Future<AppResult<AgentSqlExecutionResult>> executeSql(
-    AgentSqlExecuteRequest request,
-  ) async {
+    AgentSqlExecuteRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
     final adaptiveTimeout = _calculateAdaptiveTimeout(request);
 
     final adjustedRequest = adaptiveTimeout != null
@@ -82,7 +93,10 @@ class AdaptiveTimeoutAgentQueriesRepository implements AgentQueriesRepository {
     }
 
     final stopwatch = Stopwatch()..start();
-    final result = await _delegate.executeSql(adjustedRequest);
+    final result = await _delegate.executeSql(
+      adjustedRequest,
+      cancelScope: cancelScope,
+    );
     stopwatch.stop();
 
     if (result.isSuccess()) {
@@ -94,8 +108,9 @@ class AdaptiveTimeoutAgentQueriesRepository implements AgentQueriesRepository {
 
   @override
   Future<AppResult<AgentSqlBatchExecutionResult>> executeSqlBatch(
-    AgentSqlExecuteBatchRequest request,
-  ) async {
+    AgentSqlExecuteBatchRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
     final adaptiveTimeout = _calculateBatchAdaptiveTimeout(request);
     final adjustedRequest = adaptiveTimeout == null
         ? request
@@ -116,7 +131,10 @@ class AdaptiveTimeoutAgentQueriesRepository implements AgentQueriesRepository {
           );
 
     final stopwatch = Stopwatch()..start();
-    final result = await _delegate.executeSqlBatch(adjustedRequest);
+    final result = await _delegate.executeSqlBatch(
+      adjustedRequest,
+      cancelScope: cancelScope,
+    );
     stopwatch.stop();
 
     if (result.isSuccess()) {
@@ -133,23 +151,12 @@ class AdaptiveTimeoutAgentQueriesRepository implements AgentQueriesRepository {
     final agentId = request.trimmedAgentId;
     final history = _latencies[agentId];
 
-    if (history == null || history.isEmpty) {
-      return null;
-    }
-
-    final sum = history.fold<int>(
-      0,
-      (sum, duration) => sum + duration.inMilliseconds,
+    return AgentLatencyBudget.suggestFromAverage(
+      history: history ?? const <Duration>[],
+      safetyMultiplier: _safetyMultiplier,
+      minTimeout: _minTimeout,
+      maxTimeout: _maxTimeout,
     );
-    final avgMs = sum / history.length;
-    final adaptiveMs = (avgMs * _safetyMultiplier).toInt();
-
-    final bounded = Duration(milliseconds: adaptiveMs).clamp(
-      _minTimeout,
-      _maxTimeout,
-    );
-
-    return bounded;
   }
 
   Duration? _calculateBatchAdaptiveTimeout(
@@ -159,17 +166,11 @@ class AdaptiveTimeoutAgentQueriesRepository implements AgentQueriesRepository {
       return null;
     }
     final history = _latencies[request.trimmedAgentId];
-    if (history == null || history.isEmpty) {
-      return null;
-    }
-    final sum = history.fold<int>(
-      0,
-      (sum, duration) => sum + duration.inMilliseconds,
-    );
-    final avgMs = sum / history.length;
-    return Duration(milliseconds: (avgMs * _safetyMultiplier).toInt()).clamp(
-      _minTimeout,
-      _maxTimeout,
+    return AgentLatencyBudget.suggestFromAverage(
+      history: history ?? const <Duration>[],
+      safetyMultiplier: _safetyMultiplier,
+      minTimeout: _minTimeout,
+      maxTimeout: _maxTimeout,
     );
   }
 
@@ -199,17 +200,5 @@ class AdaptiveTimeoutAgentQueriesRepository implements AgentQueriesRepository {
   /// Clears all latency history. Useful for testing.
   void clear() {
     _latencies.clear();
-  }
-}
-
-extension on Duration {
-  Duration clamp(Duration min, Duration max) {
-    if (this < min) {
-      return min;
-    }
-    if (this > max) {
-      return max;
-    }
-    return this;
   }
 }

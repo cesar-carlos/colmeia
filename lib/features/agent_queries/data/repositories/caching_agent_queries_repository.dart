@@ -5,6 +5,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_e
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 
 /// Short-term cache for idempotent SQL queries to reduce redundant hub calls.
@@ -41,7 +42,8 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
   final int _maxCacheSize;
 
   final Map<String, _SqlCacheEntry> _sqlCache = <String, _SqlCacheEntry>{};
-  final Map<String, _BatchCacheEntry> _batchCache = <String, _BatchCacheEntry>{};
+  final Map<String, _BatchCacheEntry> _batchCache =
+      <String, _BatchCacheEntry>{};
 
   int _cacheHits = 0;
   int _cacheMisses = 0;
@@ -65,8 +67,9 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
 
   @override
   Future<AppResult<AgentSqlExecutionResult>> executeSql(
-    AgentSqlExecuteRequest request,
-  ) async {
+    AgentSqlExecuteRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
     final key = AgentQueriesRequestKey.build(request);
     final now = DateTime.now();
 
@@ -87,7 +90,10 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
     }
 
     _cacheMisses++;
-    final result = await _delegate.executeSql(request);
+    final result = await _delegate.executeSql(
+      request,
+      cancelScope: cancelScope,
+    );
 
     if (result.isSuccess()) {
       _sqlCache[key] = _SqlCacheEntry(
@@ -103,8 +109,9 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
 
   @override
   Future<AppResult<AgentSqlBatchExecutionResult>> executeSqlBatch(
-    AgentSqlExecuteBatchRequest request,
-  ) async {
+    AgentSqlExecuteBatchRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
     final key = AgentQueriesRequestKey.buildBatch(request);
     final now = DateTime.now();
 
@@ -125,7 +132,10 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
     }
 
     _batchCacheMisses++;
-    final result = await _delegate.executeSqlBatch(request);
+    final result = await _delegate.executeSqlBatch(
+      request,
+      cancelScope: cancelScope,
+    );
 
     if (result.isSuccess()) {
       _batchCache[key] = _BatchCacheEntry(

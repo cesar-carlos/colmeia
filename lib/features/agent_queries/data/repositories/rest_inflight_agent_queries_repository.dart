@@ -4,6 +4,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_e
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 
 /// Limits concurrent REST bridge calls per `agentId` before they reach
@@ -24,15 +25,16 @@ class RestInflightAgentQueriesRepository implements AgentQueriesRepository {
 
   @override
   Future<AppResult<AgentSqlExecutionResult>> executeSql(
-    AgentSqlExecuteRequest request,
-  ) async {
+    AgentSqlExecuteRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
     final id = request.trimmedAgentId;
     if (id.isEmpty) {
-      return _delegate.executeSql(request);
+      return _delegate.executeSql(request, cancelScope: cancelScope);
     }
     await _gate.acquire(id);
     try {
-      return await _delegate.executeSql(request);
+      return await _delegate.executeSql(request, cancelScope: cancelScope);
     } finally {
       _gate.release(id);
     }
@@ -40,15 +42,16 @@ class RestInflightAgentQueriesRepository implements AgentQueriesRepository {
 
   @override
   Future<AppResult<AgentSqlBatchExecutionResult>> executeSqlBatch(
-    AgentSqlExecuteBatchRequest request,
-  ) async {
+    AgentSqlExecuteBatchRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
     final id = request.trimmedAgentId;
     if (id.isEmpty) {
-      return _delegate.executeSqlBatch(request);
+      return _delegate.executeSqlBatch(request, cancelScope: cancelScope);
     }
     await _gate.acquire(id);
     try {
-      return await _delegate.executeSqlBatch(request);
+      return await _delegate.executeSqlBatch(request, cancelScope: cancelScope);
     } finally {
       _gate.release(id);
     }

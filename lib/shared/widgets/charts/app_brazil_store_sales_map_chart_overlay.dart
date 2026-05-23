@@ -86,10 +86,9 @@ class _FloatingMapControlsOverlay extends StatelessWidget {
                         tooltip: l10n.regionMapViewFullScopeTooltip(
                           scopeRootLabel,
                         ),
-                        semanticLabel: l10n
-                            .regionMapViewFullScopeSemanticLabel(
-                              scopeRootLabel,
-                            ),
+                        semanticLabel: l10n.regionMapViewFullScopeSemanticLabel(
+                          scopeRootLabel,
+                        ),
                         onSelected: () {
                           if (activeScopeKey == null) {
                             return;

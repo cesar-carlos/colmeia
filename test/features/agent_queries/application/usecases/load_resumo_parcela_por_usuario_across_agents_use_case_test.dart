@@ -34,15 +34,16 @@ void main() {
   });
 
   test('should forward arguments to the repository', () async {
-    const expectedReport = AgentQueryExecutionReport<ResumoParcelaPorUsuarioRow>(
-      queryKey: AgentQueryKey.resumoParcelaPorUsuario,
-      strategy: AgentQueryExecutionStrategy.mergeAll,
-      consideredApprovedAgentCount: 1,
-      plannedTargets: [],
-      missingClientTokenTargets: [],
-      participants: [],
-      totalElapsedMs: 10,
-    );
+    const expectedReport =
+        AgentQueryExecutionReport<ResumoParcelaPorUsuarioRow>(
+          queryKey: AgentQueryKey.resumoParcelaPorUsuario,
+          strategy: AgentQueryExecutionStrategy.mergeAll,
+          consideredApprovedAgentCount: 1,
+          plannedTargets: [],
+          missingClientTokenTargets: [],
+          participants: [],
+          totalElapsedMs: 10,
+        );
     when(
       () => repository.load(
         userId: any(named: 'userId'),

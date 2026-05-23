@@ -7,6 +7,7 @@ import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
@@ -106,6 +107,7 @@ class SalesMonthlyPnlPage extends StatefulWidget {
     required this.loadSalesMonthlyPnlLinesUseCase,
     required this.loadSalesDailyTotalsUseCase,
     required this.resolveSalesAgentClientTokenUseCase,
+    this.relayCancelScopeBinder,
     super.key,
   });
 
@@ -114,6 +116,7 @@ class SalesMonthlyPnlPage extends StatefulWidget {
   final LoadSalesMonthlyPnlLinesUseCase loadSalesMonthlyPnlLinesUseCase;
   final LoadSalesDailyTotalsUseCase loadSalesDailyTotalsUseCase;
   final ResolveSalesAgentClientTokenUseCase resolveSalesAgentClientTokenUseCase;
+  final AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder;
 
   @override
   State<SalesMonthlyPnlPage> createState() => _SalesMonthlyPnlPageState();
@@ -147,6 +150,13 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
   bool _dailyChartLoadFailed = false;
   String? _dailyChartLoadFailureMessage;
   int _chartLoadGeneration = 0;
+  AgentQueriesCancelScope? _sqlCancelScope;
+
+  @override
+  void dispose() {
+    _sqlCancelScope?.cancelAll();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -243,6 +253,10 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
     final agentId = _selectedAgentId;
     final anchor = _anchorYearMonth;
     final generation = ++_chartLoadGeneration;
+    _sqlCancelScope?.cancelAll();
+    final sqlScope = AgentQueriesCancelScope();
+    _sqlCancelScope = sqlScope;
+    widget.relayCancelScopeBinder?.call(sqlScope);
     markAutoRefreshCancelled();
 
     setState(() {
@@ -300,6 +314,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
         agentId: trimmed,
         anchor: anchor,
         clientToken: clientToken,
+        cancelScope: sqlScope,
       ),
       _loadDailyTotals(
         userId: userId,
@@ -307,6 +322,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
         anchor: anchor,
         dailySaleDateRange: _dailyTotalsDateRange,
         clientToken: clientToken,
+        cancelScope: sqlScope,
       ),
     ]);
 

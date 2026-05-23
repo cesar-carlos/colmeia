@@ -45,6 +45,9 @@ class _FakeRelayCommandDispatcher implements RelayCommandDispatcher {
   Future<void> dispose() async {}
 
   @override
+  void cancel(String clientRequestId, {String reason = 'caller_cancelled'}) {}
+
+  @override
   Future<Map<String, dynamic>> sendUnary({
     required String agentId,
     required Map<String, Object?> body,
@@ -144,6 +147,36 @@ AGENT_BRIDGE_TRANSPORT=rest
 ''',
     );
   });
+
+  test(
+    'socket transport routes useRelay=false through relay unary when relay '
+    'is registered',
+    () async {
+      final getIt = GetIt.asNewInstance();
+      final sender = _ThrowingAgentCommandSender();
+      final relay = _FakeRelayCommandDispatcher();
+      getIt
+        ..registerLazySingleton<Dio>(Dio.new)
+        ..registerLazySingleton<AgentCommandSender>(() => sender)
+        ..registerLazySingleton<RelayCommandDispatcher>(() => relay);
+
+      registerInjectorAgentQueries(getIt);
+
+      final datasource = getIt<AgentQueriesRemoteDataSource>();
+      await datasource.postSqlExecute(
+        const AgentSqlExecuteRequest(
+          agentId: 'agent-1',
+          sql: 'SELECT 1',
+        ),
+      );
+
+      check(relay.unaryCalls).equals(1);
+      check(relay.streamingCalls).equals(0);
+      check(sender.calls).equals(0);
+
+      await getIt.reset();
+    },
+  );
 
   test(
     'registers useRelay requests through the unary relay path by default',

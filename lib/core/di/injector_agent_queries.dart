@@ -1,8 +1,15 @@
+import 'dart:async';
+
 import 'package:colmeia/core/config/agent_bridge_transport.dart';
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/observability/socket/socket_channel_metrics.dart';
+import 'package:colmeia/core/observability/socket/socket_metrics_listener.dart';
 import 'package:colmeia/core/socket/agent_command_sender.dart';
+import 'package:colmeia/core/socket/agent_sql_cancel_emitter.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
+import 'package:colmeia/core/socket/socket_command_dispatcher.dart';
+import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_executor.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_across_agents_use_case.dart';
@@ -65,12 +72,12 @@ import 'package:colmeia/features/agent_queries/data/datasources/routing_relay_ag
 import 'package:colmeia/features/agent_queries/data/datasources/socket_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/socket_with_rest_fallback_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
-import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_resolution_invalidator.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_repository_chain_factory.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/cadastro_filial_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/cadastro_filial_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/grupo_produto_options_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/marca_produto_options_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/metrics_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/municipio_list_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/produto_vendido_produto_rank_lucro_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/produto_vendido_tendencia_de_venda_media_movel_repository_impl.dart';
@@ -122,6 +129,8 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_dia
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_text_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_vendedor_option.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_resolution_invalidator.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_sql_execution_eligibility_port.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/cadastro_filial_across_agents_repository.dart';
@@ -166,6 +175,7 @@ import 'package:colmeia/features/client_agents/domain/repositories/client_agents
 import 'package:colmeia/shared/maps/resolve_postal_address_location_use_case.dart';
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 void registerInjectorAgentQueries(GetIt getIt) {
   getIt.registerLazySingleton<ResolveCadastroFilialLocationUseCase>(
@@ -179,6 +189,102 @@ void registerInjectorAgentQueries(GetIt getIt) {
   _registerAcrossAgentQueryRepositories(getIt);
   _registerFilterOptionsRepositories(getIt);
   _registerStreamingRelay(getIt);
+  wireAgentQueriesSocketMetricsExport(getIt);
+}
+
+/// Attaches SQL metrics export to [SocketMetricsListener] after both stacks
+/// are registered.
+void wireAgentQueriesSocketMetricsExport(GetIt getIt) {
+  if (!getIt.isRegistered<SocketMetricsListener>()) {
+    return;
+  }
+  if (!getIt.isRegistered<MetricsAgentQueriesRepository>()) {
+    return;
+  }
+  getIt<SocketMetricsListener>().sqlAppendix =
+      () => getIt<MetricsAgentQueriesRepository>().appendixForSocketExport();
+}
+
+/// Wires transport cancel handlers for [AgentQueriesCancelScope].
+void wireAgentQueriesCancelScopeHandlers(
+  GetIt getIt,
+  AgentQueriesCancelScope scope,
+) {
+  if (getIt.isRegistered<RelayCommandDispatcher>()) {
+    final dispatcher = getIt<RelayCommandDispatcher>();
+    scope.relayCancelHandler = (clientRequestIds) {
+      clientRequestIds.forEach(dispatcher.cancel);
+    };
+  } else {
+    scope.relayCancelHandler = null;
+  }
+
+  if (getIt.isRegistered<SocketCommandDispatcher>()) {
+    final socket = getIt<SocketCommandDispatcher>();
+    scope.socketRpcCancelHandler = (rpcIds) {
+      rpcIds.forEach(socket.cancel);
+    };
+  } else {
+    scope.socketRpcCancelHandler = null;
+  }
+
+  if (getIt.isRegistered<AgentSqlCancelEmitter>()) {
+    final emitter = getIt<AgentSqlCancelEmitter>();
+    scope.streamingSqlCancelHandler = (targets) {
+      for (final target in targets) {
+        unawaited(
+          emitter.cancelStream(
+            agentId: target.agentId,
+            streamId: target.streamId,
+            clientToken: target.clientToken,
+          ),
+        );
+      }
+    };
+  } else {
+    scope.streamingSqlCancelHandler = null;
+  }
+}
+
+/// Wires [AgentQueriesCancelScope.relayCancelHandler] to fail-fast pending
+/// relay unary/streaming RPCs when the scope is abandoned.
+void wireAgentQueriesRelayCancelHandler(
+  GetIt getIt,
+  AgentQueriesCancelScope scope,
+) {
+  wireAgentQueriesCancelScopeHandlers(getIt, scope);
+}
+
+void _onAgentQueriesRestFallbackLatched(
+  GetIt getIt,
+  SocketDispatchException trigger,
+  String latchLabel,
+) {
+  if (getIt.isRegistered<SocketChannelMetrics>()) {
+    getIt<SocketChannelMetrics>().recordRestFallbackLatch();
+  }
+  AppLogger.warning(
+    '$latchLabel latched to REST fallback',
+    context: <String, Object?>{
+      'triggerCode': trigger.code,
+      'triggerMessage': trigger.message,
+      'transport': AppEnvironment.agentBridgeTransport.wireValue,
+    },
+  );
+  unawaited(
+    Sentry.addBreadcrumb(
+      Breadcrumb(
+        category: 'agent_queries.transport',
+        message: 'REST fallback latched ($latchLabel)',
+        data: <String, String>{
+          'triggerCode': trigger.code,
+          'triggerMessage': trigger.message,
+          'latchLabel': latchLabel,
+        },
+        level: SentryLevel.warning,
+      ),
+    ),
+  );
 }
 
 void _registerAgentQueryTransport(GetIt getIt) {
@@ -201,46 +307,46 @@ void _registerAgentQueryTransport(GetIt getIt) {
           dio: getIt<Dio>(),
           bodyMapper: getIt<AgentSqlExecuteRequestToBridgeBody>(),
         );
+        final relay = _resolveRelayDatasource(getIt);
+        AgentQueriesRemoteDataSource wrapWithRestFallback({
+          required AgentQueriesRemoteDataSource socketDelegate,
+          required String latchLabel,
+        }) {
+          return SocketWithRestFallbackAgentQueriesRemoteDataSource(
+            socketDelegate: socketDelegate,
+            restDelegate: rest,
+            onFallback: (trigger) =>
+                _onAgentQueriesRestFallbackLatched(getIt, trigger, latchLabel),
+          );
+        }
+
+        final relayFallback = relay == null
+            ? null
+            : wrapWithRestFallback(
+                socketDelegate: relay,
+                latchLabel: 'Relay AgentQueriesRemoteDataSource',
+              );
+        AgentQueriesRemoteDataSource legacySocketBase() {
+          return wrapWithRestFallback(
+            socketDelegate: SocketAgentQueriesRemoteDataSource(
+              sender: getIt<AgentCommandSender>(),
+              bodyMapper: getIt<AgentSqlExecuteRequestToBridgeBody>(),
+            ),
+            latchLabel: 'AgentQueriesRemoteDataSource',
+          );
+        }
+
+        // When relay is available on socket transport, route all SQL
+        // (including `useRelay: false`) through relay unary instead of
+        // `agents:command`, which hangs when the hub does not respond.
         final base = switch (AppEnvironment.agentBridgeTransport) {
-          AgentBridgeTransport.socket => () {
-            return SocketWithRestFallbackAgentQueriesRemoteDataSource(
-              socketDelegate: SocketAgentQueriesRemoteDataSource(
-                sender: getIt<AgentCommandSender>(),
-                bodyMapper: getIt<AgentSqlExecuteRequestToBridgeBody>(),
-              ),
-              restDelegate: rest,
-              onFallback: (trigger) => AppLogger.warning(
-                'AgentQueriesRemoteDataSource latched to REST fallback',
-                context: <String, Object?>{
-                  'triggerCode': trigger.code,
-                  'triggerMessage': trigger.message,
-                  'agentBridgeTransport':
-                      AppEnvironment.agentBridgeTransport.wireValue,
-                },
-              ),
-            );
-          }(),
+          AgentBridgeTransport.socket => relayFallback ?? legacySocketBase(),
           AgentBridgeTransport.rest => rest,
         };
         // PR-L+ part 1: wrap with the per-call selector when the relay
         // datasource is available (SOCKET_RELAY_ENABLED=true). Requests
-        // with `useRelay: true` flow through the relay channel; everything
-        // else stays on the legacy channel byte-for-byte identical.
-        final relay = _resolveRelayDatasource(getIt);
-        final relayFallback = relay == null
-            ? null
-            : SocketWithRestFallbackAgentQueriesRemoteDataSource(
-                socketDelegate: relay,
-                restDelegate: rest,
-                onFallback: (trigger) => AppLogger.warning(
-                  'Relay AgentQueriesRemoteDataSource latched to REST fallback',
-                  context: <String, Object?>{
-                    'triggerCode': trigger.code,
-                    'triggerMessage': trigger.message,
-                    'transport': AppEnvironment.agentBridgeTransport.wireValue,
-                  },
-                ),
-              );
+        // with `useRelay: true` flow through the relay channel; on REST
+        // transport everything else stays on REST.
         final relayWrapped = relay == null
             ? base
             : HybridAgentQueriesRemoteDataSource(
@@ -252,9 +358,14 @@ void _registerAgentQueryTransport(GetIt getIt) {
           context: <String, Object?>{
             'transport': AppEnvironment.agentBridgeTransport.wireValue,
             'relayEnabled': relay != null,
+            'baseUsesRelayOnSocket':
+                AppEnvironment.agentBridgeTransport ==
+                    AgentBridgeTransport.socket &&
+                relay != null,
             'baseUsesSocketRestFallback':
                 AppEnvironment.agentBridgeTransport ==
-                AgentBridgeTransport.socket,
+                    AgentBridgeTransport.socket &&
+                relay == null,
             'relayUsesSocketRestFallback': relay != null,
           },
         );
@@ -270,37 +381,42 @@ void _registerAgentQueryTransport(GetIt getIt) {
 }
 
 void _registerAgentQueriesRepositoryChain(GetIt getIt) {
-  getIt.registerLazySingleton<AgentQueriesRepository>(
-    () {
-      final chain = AgentQueriesRepositoryChainFactory.build(
-        remoteDataSource: getIt<AgentQueriesRemoteDataSource>(),
-        eligibility: getIt<AgentSqlExecutionEligibilityPort>(),
-        maxCacheSize: AppEnvironment.agentSqlCacheMaxSize,
-        cacheTtl: Duration(milliseconds: AppEnvironment.agentSqlCacheTtlMs),
-        agentSqlRestMaxInflightPerAgent:
+  getIt
+    ..registerLazySingleton<AgentQueriesRepositoryChain>(() {
+    final chain = AgentQueriesRepositoryChainFactory.build(
+      remoteDataSource: getIt<AgentQueriesRemoteDataSource>(),
+      eligibility: getIt<AgentSqlExecutionEligibilityPort>(),
+      maxCacheSize: AppEnvironment.agentSqlCacheMaxSize,
+      cacheTtl: Duration(milliseconds: AppEnvironment.agentSqlCacheTtlMs),
+      agentSqlRestMaxInflightPerAgent:
+          AppEnvironment.agentSqlRestMaxInflightPerAgent,
+    );
+
+    final cache = chain.cachingRepository;
+    AppLogger.info(
+      'AgentQueriesRepository decorator chain initialized',
+      context: <String, Object?>{
+        'decorators': chain.decorators,
+        'agentSqlCacheMaxSize': AppEnvironment.agentSqlCacheMaxSize,
+        'agentSqlCacheTtlMs': AppEnvironment.agentSqlCacheTtlMs,
+        'agentSqlRestMaxInflightPerAgent':
             AppEnvironment.agentSqlRestMaxInflightPerAgent,
-      );
+        'sqlCacheHits': cache.cacheHits,
+        'sqlCacheMisses': cache.cacheMisses,
+        'sqlBatchCacheHits': cache.batchCacheHits,
+        'sqlBatchCacheMisses': cache.batchCacheMisses,
+        'sqlCacheSize': cache.cacheSize,
+      },
+    );
 
-      final cache = chain.cachingRepository;
-      AppLogger.info(
-        'AgentQueriesRepository decorator chain initialized',
-        context: <String, Object?>{
-          'decorators': chain.decorators,
-          'agentSqlCacheMaxSize': AppEnvironment.agentSqlCacheMaxSize,
-          'agentSqlCacheTtlMs': AppEnvironment.agentSqlCacheTtlMs,
-          'agentSqlRestMaxInflightPerAgent':
-              AppEnvironment.agentSqlRestMaxInflightPerAgent,
-          'sqlCacheHits': cache.cacheHits,
-          'sqlCacheMisses': cache.cacheMisses,
-          'sqlBatchCacheHits': cache.batchCacheHits,
-          'sqlBatchCacheMisses': cache.batchCacheMisses,
-          'sqlCacheSize': cache.cacheSize,
-        },
-      );
-
-      return chain.repository;
-    },
-  );
+    return chain;
+  })
+    ..registerLazySingleton<MetricsAgentQueriesRepository>(
+      () => getIt<AgentQueriesRepositoryChain>().metricsRepository,
+    )
+    ..registerLazySingleton<AgentQueriesRepository>(
+      () => getIt<AgentQueriesRepositoryChain>().repository,
+    );
 }
 
 void _registerSingleAgentQueryRepositories(GetIt getIt) {

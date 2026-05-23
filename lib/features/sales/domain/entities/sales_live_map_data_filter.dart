@@ -81,10 +81,9 @@ class SalesLiveMapDataFilter {
     if (value == null) {
       return null;
     }
-    final sorted = value
-        .map(SalesLiveMapBranchRefCodec.encode)
-        .toList(growable: false)
-      ..sort();
+    final sorted =
+        value.map(SalesLiveMapBranchRefCodec.encode).toList(growable: false)
+          ..sort();
     return Object.hashAll(sorted);
   }
 }

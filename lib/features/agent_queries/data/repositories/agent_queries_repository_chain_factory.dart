@@ -43,8 +43,7 @@ abstract final class AgentQueriesRepositoryChainFactory {
   }) {
     final base = AgentQueriesRepositoryImpl(remoteDataSource);
 
-    final retryingDelegate =
-        agentSqlRestMaxInflightPerAgent > 0
+    final retryingDelegate = agentSqlRestMaxInflightPerAgent > 0
         ? RestInflightAgentQueriesRepository(
             delegate: base,
             gate: PerAgentConcurrencyGate(

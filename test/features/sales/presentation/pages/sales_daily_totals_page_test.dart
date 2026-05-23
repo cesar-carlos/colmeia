@@ -129,6 +129,7 @@ void main() {
         anchor: any(named: 'anchor'),
         dailySaleDateRange: any(named: 'dailySaleDateRange'),
         clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer(
       (_) async => (
@@ -148,6 +149,7 @@ void main() {
         anchor: any(named: 'anchor'),
         dailySaleDateRange: any(named: 'dailySaleDateRange'),
         clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer((_) => completer.future);
 
@@ -194,6 +196,7 @@ void main() {
         anchor: any(named: 'anchor'),
         dailySaleDateRange: any(named: 'dailySaleDateRange'),
         clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
       ),
     ).called(1);
 
@@ -213,6 +216,7 @@ void main() {
         anchor: any(named: 'anchor'),
         dailySaleDateRange: any(named: 'dailySaleDateRange'),
         clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
       ),
     ).called(1);
   });
@@ -275,6 +279,7 @@ void main() {
           anchor: any(named: 'anchor'),
           dailySaleDateRange: any(named: 'dailySaleDateRange'),
           clientToken: any(named: 'clientToken'),
+          cancelScope: any(named: 'cancelScope'),
         ),
       );
     },

@@ -459,8 +459,7 @@ class _OverviewAgentSelectionSheetState
   }
 
   void _popWithAllBranches() {
-    final allIds =
-        widget.availableAgents.map((e) => e.agentId).toSet();
+    final allIds = widget.availableAgents.map((e) => e.agentId).toSet();
     Navigator.of(context).pop(allIds);
   }
 
@@ -480,8 +479,9 @@ class _OverviewAgentSelectionSheetState
     final allFilteredSelected =
         filtered.isNotEmpty &&
         filtered.every((a) => _selected.contains(a.agentId));
-    final anyFilteredSelected =
-        filtered.any((a) => _selected.contains(a.agentId));
+    final anyFilteredSelected = filtered.any(
+      (a) => _selected.contains(a.agentId),
+    );
     final byIdForBanner = <String, OverviewAgentOption>{
       for (final a in widget.availableAgents) a.agentId: a,
     };
@@ -497,7 +497,8 @@ class _OverviewAgentSelectionSheetState
       ),
     );
 
-    final minChromePx = 236.0 +
+    final minChromePx =
+        236.0 +
         44.0 +
         (showCounter ? 28.0 : 0.0) +
         (widget.availableAgents.isNotEmpty ? 44.0 : 0.0) +
@@ -568,7 +569,9 @@ class _OverviewAgentSelectionSheetState
                           style: bulkActionStyle,
                           onPressed: _popWithAllBranches,
                           child: Text(
-                            widget.l10n.overviewHomeBranchFilterSheetUseAllBranches,
+                            widget
+                                .l10n
+                                .overviewHomeBranchFilterSheetUseAllBranches,
                           ),
                         ),
                       ),
@@ -640,8 +643,9 @@ class _OverviewAgentSelectionSheetState
                         ),
                         TextButton(
                           style: bulkActionStyle,
-                          onPressed:
-                              _selected.isEmpty ? null : _deselectAllAgents,
+                          onPressed: _selected.isEmpty
+                              ? null
+                              : _deselectAllAgents,
                           child: Text(
                             widget.l10n.overviewHomeBranchFilterDeselectAll,
                           ),
@@ -667,7 +671,9 @@ class _OverviewAgentSelectionSheetState
                                 ? null
                                 : _selectAllMatching,
                             child: Text(
-                              widget.l10n.overviewHomeBranchFilterSelectMatching,
+                              widget
+                                  .l10n
+                                  .overviewHomeBranchFilterSelectMatching,
                             ),
                           ),
                           TextButton(
@@ -676,7 +682,9 @@ class _OverviewAgentSelectionSheetState
                                 ? null
                                 : _deselectAllMatching,
                             child: Text(
-                              widget.l10n.overviewHomeBranchFilterDeselectMatching,
+                              widget
+                                  .l10n
+                                  .overviewHomeBranchFilterDeselectMatching,
                             ),
                           ),
                         ],
@@ -839,7 +847,8 @@ class _OverviewAgentSelectionSheetState
                             Padding(
                               padding: EdgeInsets.only(bottom: tokens.gapSm),
                               child: Text(
-                                widget.l10n
+                                widget
+                                    .l10n
                                     .overviewHomeBranchFilterApplyRequiresSelectionHint,
                                 style: theme.appTypography.caption.copyWith(
                                   color: scheme.onSurfaceVariant,
@@ -850,8 +859,7 @@ class _OverviewAgentSelectionSheetState
                             children: <Widget>[
                               Expanded(
                                 child: OutlinedButton(
-                                  onPressed: () =>
-                                      Navigator.of(context).pop(),
+                                  onPressed: () => Navigator.of(context).pop(),
                                   child: Text(
                                     widget.l10n.overviewHomeBranchFilterCancel,
                                   ),
@@ -863,17 +871,22 @@ class _OverviewAgentSelectionSheetState
                                   button: true,
                                   enabled: _selected.isNotEmpty,
                                   label: _selected.isEmpty
-                                      ? widget.l10n
-                                          .overviewHomeBranchFilterApplyDisabledSemantics
-                                      : widget.l10n.overviewHomeBranchFilterApply,
+                                      ? widget
+                                            .l10n
+                                            .overviewHomeBranchFilterApplyDisabledSemantics
+                                      : widget
+                                            .l10n
+                                            .overviewHomeBranchFilterApply,
                                   child: _selected.isEmpty
                                       ? Tooltip(
-                                          message: widget.l10n
+                                          message: widget
+                                              .l10n
                                               .overviewHomeBranchFilterApplyRequiresSelectionHint,
                                           child: FilledButton(
                                             onPressed: null,
                                             child: Text(
-                                              widget.l10n
+                                              widget
+                                                  .l10n
                                                   .overviewHomeBranchFilterApply,
                                             ),
                                           ),
@@ -881,7 +894,9 @@ class _OverviewAgentSelectionSheetState
                                       : FilledButton(
                                           onPressed: _apply,
                                           child: Text(
-                                            widget.l10n.overviewHomeBranchFilterApply,
+                                            widget
+                                                .l10n
+                                                .overviewHomeBranchFilterApply,
                                           ),
                                         ),
                                 ),

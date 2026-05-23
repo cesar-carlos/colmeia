@@ -5,22 +5,25 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('overviewAgentQueryFailureTechnicalSummary', () {
-    test('truncates very long RpcFailure reason and correlationId segments', () {
-      final longReason = 'x' * 600;
-      final longCorr = 'c' * 600;
-      final failure = RpcFailure(
-        message: 'm',
-        userMessage: 'u',
-        rpcCode: 1,
-        retryable: false,
-        reason: longReason,
-        correlationId: longCorr,
-      );
-      final summary = overviewAgentQueryFailureTechnicalSummary(failure);
-      expect(summary.length, lessThanOrEqualTo(4096 + 32));
-      expect(summary, contains('(600 chars)'));
-      expect(summary, isNot(contains(longReason)));
-    });
+    test(
+      'truncates very long RpcFailure reason and correlationId segments',
+      () {
+        final longReason = 'x' * 600;
+        final longCorr = 'c' * 600;
+        final failure = RpcFailure(
+          message: 'm',
+          userMessage: 'u',
+          rpcCode: 1,
+          retryable: false,
+          reason: longReason,
+          correlationId: longCorr,
+        );
+        final summary = overviewAgentQueryFailureTechnicalSummary(failure);
+        expect(summary.length, lessThanOrEqualTo(4096 + 32));
+        expect(summary, contains('(600 chars)'));
+        expect(summary, isNot(contains(longReason)));
+      },
+    );
 
     test('caps entire technical summary length', () {
       final hugeMessage = 'z' * 5000;

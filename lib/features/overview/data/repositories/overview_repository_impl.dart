@@ -17,6 +17,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_ve
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/overview/data/datasources/overview_local_datasource.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_agent_resumo_mapper.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_daily_sales_trend_mapper.dart';
@@ -125,6 +126,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     OverviewLoadPolicy policy = OverviewLoadPolicy.defaultLoad,
     OverviewFilter filter = const OverviewFilter(),
     OverviewLoadLabels? rowLabels,
+    AgentQueriesCancelScope? cancelScope,
   }) async {
     AppResult<Overview>? lastResult;
     await for (final result in loadOverviewProgressively(
@@ -132,6 +134,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
       policy: policy,
       filter: filter,
       rowLabels: rowLabels,
+      cancelScope: cancelScope,
     )) {
       final snapshot = result.getOrNull();
       if (snapshot != null) {
@@ -155,12 +158,14 @@ class OverviewRepositoryImpl implements OverviewRepository {
     OverviewLoadPolicy policy = OverviewLoadPolicy.defaultLoad,
     OverviewFilter filter = const OverviewFilter(),
     OverviewLoadLabels? rowLabels,
+    AgentQueriesCancelScope? cancelScope,
   }) async* {
     yield* _loadOverviewProgressivelyBatch(
       userId: userId,
       policy: policy,
       filter: filter,
       rowLabels: rowLabels,
+      cancelScope: cancelScope,
     );
   }
 
@@ -170,6 +175,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     required OverviewLoadPolicy policy,
     required OverviewFilter filter,
     OverviewLoadLabels? rowLabels,
+    AgentQueriesCancelScope? cancelScope,
   }) async* {
     final resolvedRowLabels = rowLabels ?? OverviewLoadLabels.englishFallback;
     final period = _buildPeriod(filter);
@@ -202,6 +208,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
         weekdayFilter: weekdayFilter,
         dailyTotalFilter: dailyTotalFilter,
         executionStrategy: executionStrategy,
+        cancelScope: cancelScope,
       )) {
         final loaded = loadResult.getOrNull();
         if (loaded == null) {
@@ -1210,16 +1217,16 @@ class OverviewRepositoryImpl implements OverviewRepository {
 
     final userRankings =
         userRankingsOverride ??
-        userBuckets.values
-            .map(
-              (item) => OverviewUserRanking(
-                userName: item.userName,
-                totalSalesCount: item.totalSalesCount,
-                totalAmount: item.totalAmount,
-                averageTicket: item.averageTicket,
-              ),
-            )
-            .toList(growable: false)
+              userBuckets.values
+                  .map(
+                    (item) => OverviewUserRanking(
+                      userName: item.userName,
+                      totalSalesCount: item.totalSalesCount,
+                      totalAmount: item.totalAmount,
+                      averageTicket: item.averageTicket,
+                    ),
+                  )
+                  .toList(growable: false)
           ..sort(_compareUsers);
 
     return Overview(

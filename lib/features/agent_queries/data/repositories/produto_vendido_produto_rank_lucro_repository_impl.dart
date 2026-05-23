@@ -10,6 +10,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_produto_rank_lucro_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_produto_rank_lucro_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_produto_rank_lucro_repository.dart';
 
@@ -36,6 +37,7 @@ class ProdutoVendidoProdutoRankLucroRepositoryImpl
     int? bridgeTimeoutMs,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {
@@ -93,6 +95,7 @@ class ProdutoVendidoProdutoRankLucroRepositoryImpl
       unexpectedRowsLogMessage: 'Unexpected row shape for $_operation',
       mapExecution: (executionResult) =>
           _mapExecution(executionResult, agentId: agentId.trim()),
+      cancelScope: cancelScope,
     );
   }
 

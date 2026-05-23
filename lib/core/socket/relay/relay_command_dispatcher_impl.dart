@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/observability/socket/socket_channel_metrics.dart';
+import 'package:colmeia/core/socket/agent_latency_oracle.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/core/socket/payload_frame.dart';
@@ -41,6 +42,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     PayloadFrameCodec? codec,
     PerAgentConcurrencyGate? concurrencyGate,
     SocketChannelMetrics? channelMetrics,
+    AgentLatencyOracle? latencyOracle,
     Duration defaultTimeout = const Duration(seconds: 30),
     RelayPayloadFrameCompression defaultCompression =
         RelayPayloadFrameCompression.auto,
@@ -51,6 +53,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
        _codec = codec ?? const PayloadFrameCodec(),
        _concurrencyGate = concurrencyGate,
        _channelMetrics = channelMetrics,
+       _latencyOracle = latencyOracle,
        _defaultTimeout = defaultTimeout,
        _defaultCompression = defaultCompression,
        _defaultStreamInitialWindow = defaultStreamInitialWindow,
@@ -64,6 +67,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
   final PayloadFrameCodec _codec;
   final PerAgentConcurrencyGate? _concurrencyGate;
   final SocketChannelMetrics? _channelMetrics;
+  final AgentLatencyOracle? _latencyOracle;
   final Duration _defaultTimeout;
   final RelayPayloadFrameCompression _defaultCompression;
   final int _defaultStreamInitialWindow;
@@ -148,7 +152,12 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     final gate = _concurrencyGate;
     if (gate != null) {
       try {
-        await gate.acquire(pending.agentId);
+        await gate.acquire(
+          pending.agentId,
+          onQueuedWaiter: (c) => pending.gateQueueWaitCompleter = c,
+        );
+      } on GateQueueWaitCancelled {
+        return pending.completer.future;
       } on Object catch (e, s) {
         _failPending(
           clientRequestId,
@@ -168,7 +177,8 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       }
       pending.relayPerAgentSlotRelease = () => gate.release(pending.agentId);
     }
-    _armPendingTimeout(pending, timeout);
+    pending.gateQueueWaitCompleter = null;
+    _armPendingTimeout(pending, timeout, rpcMethodHint: _extractMethod(body));
     await _emitRpcRequestAsync(
       conversationId: pending.conversationId,
       clientRequestId: clientRequestId,
@@ -265,7 +275,12 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
         final gate = _concurrencyGate;
         if (gate != null) {
           try {
-            await gate.acquire(pending.agentId);
+            await gate.acquire(
+              pending.agentId,
+              onQueuedWaiter: (c) => pending.gateQueueWaitCompleter = c,
+            );
+          } on GateQueueWaitCancelled {
+            return;
           } on Object catch (e, s) {
             _failPending(
               clientRequestId,
@@ -286,7 +301,12 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
           pending.relayPerAgentSlotRelease = () =>
               gate.release(pending.agentId);
         }
-        _armPendingTimeout(pending, timeout);
+        pending.gateQueueWaitCompleter = null;
+        _armPendingTimeout(
+          pending,
+          timeout,
+          rpcMethodHint: _extractMethod(body),
+        );
         await _emitRpcRequestAsync(
           conversationId: pending.conversationId,
           clientRequestId: clientRequestId,
@@ -300,6 +320,20 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     );
 
     return controller.stream;
+  }
+
+  @override
+  void cancel(String clientRequestId, {String reason = 'caller_cancelled'}) {
+    if (_isDisposed) {
+      return;
+    }
+    _failPending(
+      clientRequestId,
+      RelayRequestCancelled(
+        message: 'Relay request cancelled by caller (reason=$reason)',
+        clientRequestId: clientRequestId,
+      ),
+    );
   }
 
   @override
@@ -429,11 +463,25 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     return pending;
   }
 
-  void _armPendingTimeout(_PendingRelay pending, Duration? timeout) {
+  void _armPendingTimeout(
+    _PendingRelay pending,
+    Duration? timeout, {
+    String? rpcMethodHint,
+  }) {
     if (!_pendingByClientId.containsKey(pending.clientRequestId)) {
       return;
     }
-    final effectiveTimeout = timeout ?? _defaultTimeout;
+    final method = pending.method ?? rpcMethodHint;
+    var effectiveTimeout = timeout ?? _defaultTimeout;
+    final oracle = _latencyOracle;
+    if (timeout == null && oracle != null && method != null) {
+      effectiveTimeout = oracle.suggestTimeout(
+        agentId: pending.agentId,
+        method: method,
+        fallback: _defaultTimeout,
+        ceiling: _defaultTimeout,
+      );
+    }
     pending.timeoutTimer = Timer(effectiveTimeout, () {
       _failPending(
         pending.clientRequestId,
@@ -1325,6 +1373,12 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     if (entry == null) {
       return;
     }
+    final gate = _concurrencyGate;
+    final qw = entry.gateQueueWaitCompleter;
+    if (gate != null && qw != null) {
+      gate.cancelQueuedWaiter(entry.agentId, qw);
+      entry.gateQueueWaitCompleter = null;
+    }
     _unregisterPendingConversation(entry.conversationId, clientRequestId);
     _releaseRelayGateSlot(entry);
     final requestId = entry.requestId;
@@ -1441,6 +1495,9 @@ sealed class _PendingRelay {
 
   /// Invoked once when the per-agent relay slot is finished.
   void Function()? relayPerAgentSlotRelease;
+
+  /// Populated while [PerAgentConcurrencyGate.acquire] is awaiting a slot.
+  Completer<void>? gateQueueWaitCompleter;
 
   /// Reports an external failure to the consumer (Future or Stream).
   /// Returns `true` when the failure was actually delivered (i.e. the

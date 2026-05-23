@@ -251,8 +251,11 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
         execution,
         agentId: agentId.trim(),
       ),
-      Failure<ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch,
-          AppFailure>.new,
+      Failure<
+            ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch,
+            AppFailure
+          >
+          .new,
     );
   }
 
@@ -265,50 +268,65 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
       for (final item in execution.items) item.index: item,
     };
 
-    final vendedorMapped = AgentSqlBatchItemRowsMapper.mapRowsForIndex<
-      ResumoVendasDiariasPorVendedorVendedorOption
-    >(
-      byIndex,
-      _batchIndexVendedor,
-      (row) =>
-          ResumoVendasDiariasPorVendedorVendedorOptionModel.fromMap(row).toEntity(),
-      operation: _batchOperation,
-    );
+    final vendedorMapped =
+        AgentSqlBatchItemRowsMapper.mapRowsForIndex<
+          ResumoVendasDiariasPorVendedorVendedorOption
+        >(
+          byIndex,
+          _batchIndexVendedor,
+          (row) => ResumoVendasDiariasPorVendedorVendedorOptionModel.fromMap(
+            row,
+          ).toEntity(),
+          operation: _batchOperation,
+        );
     if (vendedorMapped.failure != null) {
-      return Failure<ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch,
-          AppFailure>(vendedorMapped.failure!);
+      return Failure<
+        ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch,
+        AppFailure
+      >(vendedorMapped.failure!);
     }
 
-    final bairroMapped = AgentSqlBatchItemRowsMapper.mapRowsForIndex<
-      ResumoVendasDiariasPorVendedorTextOption
-    >(
-      byIndex,
-      _batchIndexBairro,
-      (row) =>
-          ResumoVendasDiariasPorVendedorTextOptionModel.fromBairroMap(row).toEntity(),
-      operation: _batchOperation,
-    );
+    final bairroMapped =
+        AgentSqlBatchItemRowsMapper.mapRowsForIndex<
+          ResumoVendasDiariasPorVendedorTextOption
+        >(
+          byIndex,
+          _batchIndexBairro,
+          (row) => ResumoVendasDiariasPorVendedorTextOptionModel.fromBairroMap(
+            row,
+          ).toEntity(),
+          operation: _batchOperation,
+        );
     if (bairroMapped.failure != null) {
-      return Failure<ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch,
-          AppFailure>(bairroMapped.failure!);
+      return Failure<
+        ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch,
+        AppFailure
+      >(bairroMapped.failure!);
     }
 
-    final municipioMapped = AgentSqlBatchItemRowsMapper.mapRowsForIndex<
-      ResumoVendasDiariasPorVendedorTextOption
-    >(
-      byIndex,
-      _batchIndexMunicipio,
-      (row) =>
-          ResumoVendasDiariasPorVendedorTextOptionModel.fromMunicipioMap(row).toEntity(),
-      operation: _batchOperation,
-    );
+    final municipioMapped =
+        AgentSqlBatchItemRowsMapper.mapRowsForIndex<
+          ResumoVendasDiariasPorVendedorTextOption
+        >(
+          byIndex,
+          _batchIndexMunicipio,
+          (row) =>
+              ResumoVendasDiariasPorVendedorTextOptionModel.fromMunicipioMap(
+                row,
+              ).toEntity(),
+          operation: _batchOperation,
+        );
     if (municipioMapped.failure != null) {
-      return Failure<ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch,
-          AppFailure>(municipioMapped.failure!);
+      return Failure<
+        ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch,
+        AppFailure
+      >(municipioMapped.failure!);
     }
 
-    return Success<ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch,
-        AppFailure>(
+    return Success<
+      ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch,
+      AppFailure
+    >(
       ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch(
         vendedorOptions: vendedorMapped.rows,
         bairroOptions: bairroMapped.rows,

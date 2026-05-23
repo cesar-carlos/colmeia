@@ -19,6 +19,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_screen_data.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_summary_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_tendencia_de_venda_media_movel_repository.dart';
 import 'package:result_dart/result_dart.dart';
@@ -58,6 +59,7 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
     int? bridgeTimeoutMs,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {
@@ -122,6 +124,7 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
         agentId: agentId.trim(),
         sqlMaxRowsCap: sqlMaxRowsCap,
       ),
+      cancelScope: cancelScope,
     );
   }
 
@@ -135,6 +138,7 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
     int? bridgeTimeoutMs,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {
@@ -189,6 +193,7 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
       unexpectedRowsUserMessage:
           'Resumo da media movel veio em formato inesperado. Tente novamente.',
       mapExecution: _mapSummaryExecution,
+      cancelScope: cancelScope,
     );
   }
 
@@ -202,6 +207,7 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
     int? bridgeTimeoutMs,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {
@@ -224,9 +230,11 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
       _maxRowsPageBuffer + 1,
       AgentQueriesBoundedResultMaxRows.produtoVendidoTendenciaDeVendaMediaMovel,
     );
-    const summaryMaxRows =
-        AgentQueriesBoundedResultMaxRows.produtoVendidoTendenciaDeVendaMediaMovelSummary;
-    final batchMaxRows = sqlMaxRowsCap > summaryMaxRows ? sqlMaxRowsCap : summaryMaxRows;
+    const summaryMaxRows = AgentQueriesBoundedResultMaxRows
+        .produtoVendidoTendenciaDeVendaMediaMovelSummary;
+    final batchMaxRows = sqlMaxRowsCap > summaryMaxRows
+        ? sqlMaxRowsCap
+        : summaryMaxRows;
 
     final request = AgentSqlExecuteBatchRequest(
       agentId: agentId,
@@ -269,14 +277,18 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
       ],
     );
 
-    final batchResult = await _agentQueriesRepository.executeSqlBatch(request);
+    final batchResult = await _agentQueriesRepository.executeSqlBatch(
+      request,
+      cancelScope: cancelScope,
+    );
     return batchResult.fold(
       (execution) => _mapPageAndSummaryBatch(
         execution,
         agentId: trimmedAgentId,
         sqlMaxRowsCap: sqlMaxRowsCap,
       ),
-      Failure<ProdutoVendidoTendenciaDeVendaMediaMovelScreenData, AppFailure>.new,
+      Failure<ProdutoVendidoTendenciaDeVendaMediaMovelScreenData, AppFailure>
+          .new,
     );
   }
 
@@ -291,8 +303,10 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
     };
     final pageItem = byIndex[_batchIndexPage];
     if (pageItem == null) {
-      return const Failure<ProdutoVendidoTendenciaDeVendaMediaMovelScreenData,
-          AppFailure>(
+      return const Failure<
+        ProdutoVendidoTendenciaDeVendaMediaMovelScreenData,
+        AppFailure
+      >(
         RpcFailure(
           message: 'sql.executeBatch page item is missing',
           userMessage: 'Nao foi possivel carregar esta consulta.',
@@ -307,8 +321,10 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
       );
     }
     if (!pageItem.ok) {
-      return Failure<ProdutoVendidoTendenciaDeVendaMediaMovelScreenData,
-          AppFailure>(
+      return Failure<
+        ProdutoVendidoTendenciaDeVendaMediaMovelScreenData,
+        AppFailure
+      >(
         RpcFailure(
           message: pageItem.error ?? 'sql.executeBatch page item failed',
           userMessage:
@@ -326,8 +342,10 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
 
     final summaryItem = byIndex[_batchIndexSummary];
     if (summaryItem == null) {
-      return const Failure<ProdutoVendidoTendenciaDeVendaMediaMovelScreenData,
-          AppFailure>(
+      return const Failure<
+        ProdutoVendidoTendenciaDeVendaMediaMovelScreenData,
+        AppFailure
+      >(
         RpcFailure(
           message: 'sql.executeBatch summary item is missing',
           userMessage: 'Nao foi possivel carregar esta consulta.',
@@ -342,8 +360,10 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
       );
     }
     if (!summaryItem.ok) {
-      return Failure<ProdutoVendidoTendenciaDeVendaMediaMovelScreenData,
-          AppFailure>(
+      return Failure<
+        ProdutoVendidoTendenciaDeVendaMediaMovelScreenData,
+        AppFailure
+      >(
         RpcFailure(
           message: summaryItem.error ?? 'sql.executeBatch summary item failed',
           userMessage:
@@ -361,7 +381,10 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
 
     try {
       final pageResult = _mapPagedExecution(
-        AgentSqlExecutionResult(rows: pageItem.rows, rowCount: pageItem.rowCount),
+        AgentSqlExecutionResult(
+          rows: pageItem.rows,
+          rowCount: pageItem.rowCount,
+        ),
         agentId: agentId,
         sqlMaxRowsCap: sqlMaxRowsCap,
       );
@@ -371,8 +394,10 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
           rowCount: summaryItem.rowCount,
         ),
       );
-      return Success<ProdutoVendidoTendenciaDeVendaMediaMovelScreenData,
-          AppFailure>(
+      return Success<
+        ProdutoVendidoTendenciaDeVendaMediaMovelScreenData,
+        AppFailure
+      >(
         ProdutoVendidoTendenciaDeVendaMediaMovelScreenData(
           page: pageResult,
           summaryRows: summaryRows,
@@ -394,8 +419,10 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
       final message = error is FormatException
           ? error.message
           : error.toString();
-      return Failure<ProdutoVendidoTendenciaDeVendaMediaMovelScreenData,
-          AppFailure>(
+      return Failure<
+        ProdutoVendidoTendenciaDeVendaMediaMovelScreenData,
+        AppFailure
+      >(
         UnknownFailure(
           message: message,
           userMessage:

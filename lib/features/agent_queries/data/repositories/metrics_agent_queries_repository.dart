@@ -1,12 +1,15 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/observability/socket/socket_sql_metrics_appendix_port.dart' show SocketSqlMetricsAppendixProvider;
 import 'package:colmeia/features/agent_queries/data/repositories/caching_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
+import 'package:result_dart/result_dart.dart';
 
 /// Records latency and success/failure metrics for SQL query execution.
 ///
@@ -75,10 +78,19 @@ class MetricsAgentQueriesRepository implements AgentQueriesRepository {
 
   @override
   Future<AppResult<AgentSqlExecutionResult>> executeSql(
-    AgentSqlExecuteRequest request,
-  ) async {
+    AgentSqlExecuteRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
+    if (cancelScope?.isCancelled ?? false) {
+      return const Failure<AgentSqlExecutionResult, AppFailure>(
+        OperationCancelledFailure(),
+      );
+    }
     final stopwatch = Stopwatch()..start();
-    final result = await _delegate.executeSql(request);
+    final result = await _delegate.executeSql(
+      request,
+      cancelScope: cancelScope,
+    );
     stopwatch.stop();
 
     _recordMetric(
@@ -101,10 +113,19 @@ class MetricsAgentQueriesRepository implements AgentQueriesRepository {
 
   @override
   Future<AppResult<AgentSqlBatchExecutionResult>> executeSqlBatch(
-    AgentSqlExecuteBatchRequest request,
-  ) async {
+    AgentSqlExecuteBatchRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
+    if (cancelScope?.isCancelled ?? false) {
+      return const Failure<AgentSqlBatchExecutionResult, AppFailure>(
+        OperationCancelledFailure(),
+      );
+    }
     final stopwatch = Stopwatch()..start();
-    final result = await _delegate.executeSqlBatch(request);
+    final result = await _delegate.executeSqlBatch(
+      request,
+      cancelScope: cancelScope,
+    );
     stopwatch.stop();
 
     _recordMetric(
@@ -301,6 +322,21 @@ class MetricsAgentQueriesRepository implements AgentQueriesRepository {
     }).toList();
   }
 
+  /// Compact counters for socket disconnect export (paired with
+  /// [SocketSqlMetricsAppendixProvider]).
+  Map<String, Object?> appendixForSocketExport() {
+    if (_successCount + _failureCount == 0) {
+      return const <String, Object?>{};
+    }
+    return <String, Object?>{
+      'successCount': _successCount,
+      'failureCount': _failureCount,
+      'successRate': _successCount / (_successCount + _failureCount),
+      'avgSuccessDurationMs': averageSuccessDuration.inMilliseconds,
+      'avgFailureDurationMs': averageFailureDuration.inMilliseconds,
+    };
+  }
+
   /// Clears all metrics. Useful for testing.
   void clear() {
     _metrics.clear();
@@ -331,7 +367,9 @@ class MetricsAgentQueriesRepository implements AgentQueriesRepository {
     };
   }
 
-  static Map<String, int> _p95DurationMsByOperation(List<_MetricEntry> entries) {
+  static Map<String, int> _p95DurationMsByOperation(
+    List<_MetricEntry> entries,
+  ) {
     final byOp = <String, List<int>>{};
     for (final entry in entries) {
       (byOp[entry.operation] ??= <int>[]).add(entry.duration.inMilliseconds);

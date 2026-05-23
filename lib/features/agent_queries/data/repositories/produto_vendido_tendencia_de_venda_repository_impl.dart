@@ -18,6 +18,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_screen_data.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_tendencia_de_venda_repository.dart';
 import 'package:result_dart/result_dart.dart';
@@ -53,6 +54,7 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
     int? bridgeTimeoutMs,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {
@@ -114,6 +116,7 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
         agentId: agentId.trim(),
         sqlMaxRowsCap: sqlMaxRowsCap,
       ),
+      cancelScope: cancelScope,
     );
   }
 
@@ -127,6 +130,7 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
     int? bridgeTimeoutMs,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {
@@ -176,6 +180,7 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
       unexpectedRowsUserMessage:
           'Resumo de tendencia veio em formato inesperado. Tente novamente.',
       mapExecution: _mapSummaryExecution,
+      cancelScope: cancelScope,
     );
   }
 
@@ -190,6 +195,7 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
     int? bridgeTimeoutMs,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
   }) async {
     final pageErr = pageFilter.validationError();
     if (pageErr != null) {
@@ -224,7 +230,9 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
     );
     const summaryMaxRows =
         AgentQueriesBoundedResultMaxRows.produtoVendidoTendenciaDeVendaSummary;
-    final batchMaxRows = sqlMaxRowsCap > summaryMaxRows ? sqlMaxRowsCap : summaryMaxRows;
+    final batchMaxRows = sqlMaxRowsCap > summaryMaxRows
+        ? sqlMaxRowsCap
+        : summaryMaxRows;
 
     final request = AgentSqlExecuteBatchRequest(
       agentId: agentId,
@@ -259,7 +267,10 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
       ],
     );
 
-    final batchResult = await _agentQueriesRepository.executeSqlBatch(request);
+    final batchResult = await _agentQueriesRepository.executeSqlBatch(
+      request,
+      cancelScope: cancelScope,
+    );
     return batchResult.fold(
       (execution) => _mapPageAndSummaryBatch(
         execution,
@@ -280,7 +291,10 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
     };
     final pageItem = byIndex[_batchIndexPage];
     if (pageItem == null) {
-      return const Failure<ProdutoVendidoTendenciaDeVendaScreenData, AppFailure>(
+      return const Failure<
+        ProdutoVendidoTendenciaDeVendaScreenData,
+        AppFailure
+      >(
         RpcFailure(
           message: 'sql.executeBatch page item is missing',
           userMessage: 'Nao foi possivel carregar esta consulta.',
@@ -313,7 +327,10 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
 
     final summaryItem = byIndex[_batchIndexSummary];
     if (summaryItem == null) {
-      return const Failure<ProdutoVendidoTendenciaDeVendaScreenData, AppFailure>(
+      return const Failure<
+        ProdutoVendidoTendenciaDeVendaScreenData,
+        AppFailure
+      >(
         RpcFailure(
           message: 'sql.executeBatch summary item is missing',
           userMessage: 'Nao foi possivel carregar esta consulta.',
@@ -346,7 +363,10 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
 
     try {
       final rows = _mapExecution(
-        AgentSqlExecutionResult(rows: pageItem.rows, rowCount: pageItem.rowCount),
+        AgentSqlExecutionResult(
+          rows: pageItem.rows,
+          rowCount: pageItem.rowCount,
+        ),
         agentId: agentId,
         sqlMaxRowsCap: sqlMaxRowsCap,
       );

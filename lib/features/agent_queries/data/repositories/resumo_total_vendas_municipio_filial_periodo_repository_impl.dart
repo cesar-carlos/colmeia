@@ -12,6 +12,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_total_vendas_municipio_filial_periodo_repository.dart';
 import 'package:flutter/foundation.dart';
@@ -40,6 +41,7 @@ class ResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl
     int? bridgeTimeoutMs,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {
@@ -99,6 +101,7 @@ class ResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl
         agentId: trimmedAgentId,
         filter: filter,
       ),
+      cancelScope: cancelScope,
     );
   }
 

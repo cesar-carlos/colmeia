@@ -1,10 +1,12 @@
 import 'package:checks/checks.dart';
+import 'package:colmeia/core/observability/socket/socket_channel_metrics.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/socket_with_rest_fallback_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_outbound_compression.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -123,6 +125,31 @@ void main() {
       },
     );
 
+    test(
+      'onFallback wired like DI can bump SocketChannelMetrics latch counter',
+      () async {
+        final socket = _RecordingDataSource(
+          throwOn: const SocketDispatchNamespaceForbidden(
+            message: 'Role "client" not allowed',
+            role: 'client',
+            namespace: '/consumers',
+          ),
+        );
+        final rest = _RecordingDataSource(
+          response: <String, dynamic>{'response': 'ok-from-rest'},
+        );
+        final metrics = SocketChannelMetrics(reservoirSize: 8);
+        final fallback = SocketWithRestFallbackAgentQueriesRemoteDataSource(
+          socketDelegate: socket,
+          restDelegate: rest,
+          onFallback: (_) => metrics.recordRestFallbackLatch(),
+        );
+
+        await fallback.postSqlExecute(request);
+        check(metrics.snapshot().restFallbackLatchTotal).equals(1);
+      },
+    );
+
     test('real unauthorized failure latches to REST too', () async {
       final socket = _RecordingDataSource(
         throwOn: const SocketDispatchUnauthorized(
@@ -238,8 +265,9 @@ class _RecordingDataSource implements AgentQueriesRemoteDataSource {
 
   @override
   Future<Map<String, dynamic>> postSqlExecute(
-    AgentSqlExecuteRequest request,
-  ) {
+    AgentSqlExecuteRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) {
     callCount += 1;
     final toThrow = throwOn;
     if (toThrow != null) {
@@ -252,8 +280,9 @@ class _RecordingDataSource implements AgentQueriesRemoteDataSource {
 
   @override
   Future<Map<String, dynamic>> postSqlExecuteBatch(
-    AgentSqlExecuteBatchRequest request,
-  ) {
+    AgentSqlExecuteBatchRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) {
     callCount += 1;
     final toThrow = throwOn;
     if (toThrow != null) {

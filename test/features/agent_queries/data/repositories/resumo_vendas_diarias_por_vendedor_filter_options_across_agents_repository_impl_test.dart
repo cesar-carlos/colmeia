@@ -45,7 +45,9 @@ void main() {
   vendedorExecutor;
   late AgentQueryExecutor<ResumoVendasDiariasPorVendedorTextOption>
   textExecutor;
-  late AgentQueryExecutor<ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch>
+  late AgentQueryExecutor<
+    ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch
+  >
   allOptionsBatchExecutor;
   late _MockFilterOptionsRepository filterOptionsRepository;
   late _MockLoadVendedorOptions loadVendedorOptions;
@@ -78,7 +80,9 @@ void main() {
     textExecutor =
         AgentQueryExecutor<ResumoVendasDiariasPorVendedorTextOption>();
     allOptionsBatchExecutor =
-        AgentQueryExecutor<ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch>();
+        AgentQueryExecutor<
+          ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch
+        >();
     filterOptionsRepository = _MockFilterOptionsRepository();
     loadVendedorOptions = _MockLoadVendedorOptions();
     loadBairroOptions = _MockLoadBairroOptions();
@@ -825,8 +829,10 @@ void main() {
           ),
         ).thenAnswer((invocation) async {
           final agentId = invocation.namedArguments[#agentId] as String;
-          return Success<ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch,
-              AppFailure>(
+          return Success<
+            ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch,
+            AppFailure
+          >(
             ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch(
               vendedorOptions: <ResumoVendasDiariasPorVendedorVendedorOption>[
                 ResumoVendasDiariasPorVendedorVendedorOption(
@@ -835,7 +841,8 @@ void main() {
                 ),
               ],
               bairroOptions: const <ResumoVendasDiariasPorVendedorTextOption>[],
-              municipioOptions: const <ResumoVendasDiariasPorVendedorTextOption>[],
+              municipioOptions:
+                  const <ResumoVendasDiariasPorVendedorTextOption>[],
             ),
           );
         });

@@ -154,7 +154,8 @@ class _OverviewAlertDetailSheetScaffold extends StatelessWidget {
                           ),
                         ),
                         IconButton(
-                          tooltip: l10n.overviewHomeAlertDetailsCopySemanticsLabel,
+                          tooltip:
+                              l10n.overviewHomeAlertDetailsCopySemanticsLabel,
                           onPressed: () async {
                             await Clipboard.setData(
                               ClipboardData(text: bodyText),
@@ -205,12 +206,13 @@ class _OverviewAlertDetailSheetScaffold extends StatelessWidget {
                               final tech = d.technicalSummary?.trim();
                               return Semantics(
                                 container: true,
-                                label: l10n.overviewHomeAlertDetailsAgentSemanticSummary(
-                                  d.displayName,
-                                  d.agentId,
-                                  _sourceLabel(l10n, d.source),
-                                  d.userMessage,
-                                ),
+                                label: l10n
+                                    .overviewHomeAlertDetailsAgentSemanticSummary(
+                                      d.displayName,
+                                      d.agentId,
+                                      _sourceLabel(l10n, d.source),
+                                      d.userMessage,
+                                    ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: <Widget>[
@@ -225,7 +227,8 @@ class _OverviewAlertDetailSheetScaffold extends StatelessWidget {
                                     Text(
                                       _sourceLabel(l10n, d.source),
                                       style: typography.caption.copyWith(
-                                        color: theme.colorScheme.onSurfaceVariant,
+                                        color:
+                                            theme.colorScheme.onSurfaceVariant,
                                       ),
                                     ),
                                     SizedBox(height: tokens.gapSm),

@@ -7,6 +7,7 @@ import 'package:colmeia/features/agent_queries/data/repositories/metrics_agent_q
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_eligibility_evaluation.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_sql_execution_eligibility_port.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -14,15 +15,17 @@ final class _FakeAgentQueriesRemoteDataSource
     implements AgentQueriesRemoteDataSource {
   @override
   Future<Map<String, dynamic>> postSqlExecute(
-    AgentSqlExecuteRequest request,
-  ) async {
+    AgentSqlExecuteRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
     return const <String, dynamic>{};
   }
 
   @override
   Future<Map<String, dynamic>> postSqlExecuteBatch(
-    AgentSqlExecuteBatchRequest request,
-  ) async {
+    AgentSqlExecuteBatchRequest request, {
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
     return const <String, dynamic>{};
   }
 }

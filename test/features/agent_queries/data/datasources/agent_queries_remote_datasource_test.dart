@@ -70,6 +70,7 @@ void main() {
       check(body['timeoutMs']).equals(45000);
       check(pagination['page']).equals(2);
       check(pagination['pageSize']).equals(50);
+      check(pagination['page_size']).equals(50);
       check(command['jsonrpc']).equals('2.0');
       check(command['method']).equals('sql.execute');
       check(command['id']).isA<String>();

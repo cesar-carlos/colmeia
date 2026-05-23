@@ -1,5 +1,7 @@
 import 'package:colmeia/core/observability/socket/socket_metrics_snapshot.dart';
 import 'package:colmeia/core/socket/agent_command_outcome.dart';
+import 'package:colmeia/core/socket/relay/relay_rpc_outcome.dart';
+import 'package:colmeia/features/agent_queries/data/datasources/socket_with_rest_fallback_agent_queries_remote_datasource.dart' show SocketWithRestFallbackAgentQueriesRemoteDataSource;
 import 'package:flutter/foundation.dart';
 
 /// In-memory metrics service for the consumer Socket channel. Designed to
@@ -23,7 +25,9 @@ class SocketChannelMetrics {
       _batchSizeDistribution = _ReservoirHistogram(reservoirSize),
       _batchBypassByReason = <String, int>{},
       _relayPayloadDecodeWallClockMs = _ReservoirHistogram(reservoirSize),
-      _relayAcceptToFirstChunkMs = _ReservoirHistogram(reservoirSize);
+      _relayAcceptToFirstChunkMs = _ReservoirHistogram(reservoirSize),
+      _relayDispatchMsByKey = <String, _ReservoirHistogram>{},
+      _relayOutcomesTotal = <String, int>{};
 
   /// Maximum number of samples kept per histogram. 1024 is the sweet spot
   /// for memory vs accuracy in client-side aggregation.
@@ -48,6 +52,10 @@ class SocketChannelMetrics {
   final Map<String, int> _relayDecodeFailureByCode = <String, int>{};
   final _ReservoirHistogram _batchSizeDistribution;
   final Map<String, int> _batchBypassByReason;
+  final Map<String, _ReservoirHistogram> _relayDispatchMsByKey;
+  final Map<String, int> _relayOutcomesTotal;
+  int _restFallbackLatchTotal = 0;
+  int lastGateSessionPeakSample = 0;
 
   // ----- Recording API -----
 
@@ -159,6 +167,28 @@ class SocketChannelMetrics {
     _relayAcceptToFirstChunkMs.add(elapsed.inMicroseconds / 1000.0);
   }
 
+  /// One increment when [SocketWithRestFallbackAgentQueriesRemoteDataSource]
+  /// latches to REST for the remainder of the process.
+  void recordRestFallbackLatch() {
+    _restFallbackLatchTotal += 1;
+  }
+
+  void recordRelayDispatch({
+    required String agentId,
+    required String? method,
+    required Duration elapsed,
+  }) {
+    final key = _dispatchKey(agentId: agentId, method: method);
+    _relayDispatchMsByKey
+        .putIfAbsent(key, () => _ReservoirHistogram(reservoirSize))
+        .add(elapsed.inMicroseconds / 1000.0);
+  }
+
+  void recordRelayOutcome({required RelayRpcOutcome outcome}) {
+    final key = _relayOutcomeKey(outcome);
+    _relayOutcomesTotal[key] = (_relayOutcomesTotal[key] ?? 0) + 1;
+  }
+
   // ----- Inspection API -----
 
   /// Snapshot of all the current values. Cheap to compute; safe for the
@@ -193,6 +223,13 @@ class SocketChannelMetrics {
       relayDecodeFailureTotalByCode: Map<String, int>.unmodifiable(
         _relayDecodeFailureByCode,
       ),
+      relayDispatchMsByKey: <String, HistogramSnapshot>{
+        for (final entry in _relayDispatchMsByKey.entries)
+          entry.key: entry.value.snapshot(),
+      },
+      relayOutcomesTotal: Map<String, int>.unmodifiable(_relayOutcomesTotal),
+      restFallbackLatchTotal: _restFallbackLatchTotal,
+      lastGateSessionPeakSample: lastGateSessionPeakSample,
     );
   }
 
@@ -219,9 +256,20 @@ class SocketChannelMetrics {
     _relayAcceptToFirstChunkMs.clear();
     _batchSizeDistribution.clear();
     _batchBypassByReason.clear();
+    _relayDispatchMsByKey.clear();
+    _relayOutcomesTotal.clear();
+    _restFallbackLatchTotal = 0;
+    lastGateSessionPeakSample = 0;
   }
 
   // ----- Helpers -----
+
+  String _relayOutcomeKey(RelayRpcOutcome outcome) {
+    return switch (outcome) {
+      RelayRpcSuccess() => 'RelayRpcSuccess|-',
+      RelayRpcFailure(:final exception) => 'RelayRpcFailure|${exception.code}',
+    };
+  }
 
   String _dispatchKey({required String agentId, required String? method}) {
     return '$agentId|${method ?? '<unknown>'}';

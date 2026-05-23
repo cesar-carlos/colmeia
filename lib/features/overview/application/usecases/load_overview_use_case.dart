@@ -1,4 +1,5 @@
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
@@ -14,12 +15,14 @@ class LoadOverviewUseCase {
     OverviewLoadPolicy policy = OverviewLoadPolicy.defaultLoad,
     OverviewFilter filter = const OverviewFilter(),
     OverviewLoadLabels? rowLabels,
+    AgentQueriesCancelScope? cancelScope,
   }) {
     return _overviewRepository.loadOverview(
       userId: userId,
       policy: policy,
       filter: filter,
       rowLabels: rowLabels,
+      cancelScope: cancelScope,
     );
   }
 
@@ -28,12 +31,14 @@ class LoadOverviewUseCase {
     OverviewLoadPolicy policy = OverviewLoadPolicy.defaultLoad,
     OverviewFilter filter = const OverviewFilter(),
     OverviewLoadLabels? rowLabels,
+    AgentQueriesCancelScope? cancelScope,
   }) {
     return _overviewRepository.loadOverviewProgressively(
       userId: userId,
       policy: policy,
       filter: filter,
       rowLabels: rowLabels,
+      cancelScope: cancelScope,
     );
   }
 }

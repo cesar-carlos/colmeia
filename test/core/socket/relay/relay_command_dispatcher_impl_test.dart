@@ -11,6 +11,7 @@ import 'dart:typed_data';
 
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/observability/socket/socket_channel_metrics.dart';
+import 'package:colmeia/core/socket/agent_latency_oracle.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/core/socket/payload_frame.dart';
@@ -157,6 +158,7 @@ void main() {
     Duration defaultTimeout = const Duration(milliseconds: 500),
     PerAgentConcurrencyGate? concurrencyGate,
     SocketChannelMetrics? channelMetrics,
+    AgentLatencyOracle? latencyOracle,
   }) async {
     final dispatcher = RelayCommandDispatcherImpl(
       connection: connection,
@@ -164,6 +166,7 @@ void main() {
       defaultTimeout: defaultTimeout,
       concurrencyGate: concurrencyGate,
       channelMetrics: channelMetrics,
+      latencyOracle: latencyOracle,
     );
     return dispatcher;
   }
@@ -292,6 +295,76 @@ void main() {
         );
 
         await f2;
+      },
+    );
+
+    test(
+      'cancel while queued for gate slot completes with RelayRequestCancelled '
+      'and clears waiter',
+      () async {
+        final gate = PerAgentConcurrencyGate(maxInflightPerAgent: 1);
+        final dispatcher = await dispatcherFor(concurrencyGate: gate);
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final f1 = dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-cancel-a',
+            },
+          },
+          clientRequestId: 'rpc-cancel-a',
+        );
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        final f2 = dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-cancel-b',
+            },
+          },
+          clientRequestId: 'rpc-cancel-b',
+        );
+        await Future<void>.delayed(Duration.zero);
+        check(gate.waitingFor('agent-1')).equals(1);
+
+        dispatcher.cancel('rpc-cancel-b');
+
+        await check(f2).throws<RelayRequestCancelled>();
+        check(gate.waitingFor('agent-1')).equals(0);
+
+        wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': 'rpc-cancel-a',
+          'requestId': 'srv-cancel-a',
+          'success': true,
+        });
+        wiring.fire(
+          RelayEventNames.rpcResponse,
+          _buildResponseFrame(
+            <String, Object?>{
+              'response': <String, Object?>{
+                'type': 'single',
+                'item': <String, Object?>{
+                  'id': 'rpc-cancel-a',
+                  'success': true,
+                  'result': <String, Object?>{'rows': <Object?>[]},
+                },
+              },
+            },
+            requestId: 'srv-cancel-a',
+          ),
+        );
+
+        await f1;
       },
     );
 
@@ -1287,6 +1360,41 @@ void main() {
 
       await check(future).throws<RelayRequestTimeout>();
     });
+
+    test(
+      'uses AgentLatencyOracle when caller timeout is null (warm oracle)',
+      () async {
+        final oracle = AgentLatencyOracle(warmUpSampleCount: 3);
+        for (var i = 0; i < 5; i++) {
+          oracle.record(
+            agentId: 'agent-1',
+            method: 'sql.execute',
+            elapsed: const Duration(milliseconds: 20),
+          );
+        }
+        final dispatcher = await dispatcherFor(
+          latencyOracle: oracle,
+          defaultTimeout: const Duration(seconds: 60),
+        );
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final future = dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-oracle-timeout',
+            },
+          },
+          clientRequestId: 'rpc-oracle-timeout',
+        );
+
+        await expectLater(future, throwsA(isA<RelayRequestTimeout>()));
+      },
+    );
 
     test(
       'dispose fails pending requests with RelayDispatcherDisposed',

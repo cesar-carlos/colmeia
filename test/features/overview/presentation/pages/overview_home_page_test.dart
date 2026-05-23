@@ -94,6 +94,7 @@ void main() {
         policy: any(named: 'policy'),
         filter: any(named: 'filter'),
         rowLabels: any(named: 'rowLabels'),
+        cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer((_) async => Success<Overview, AppFailure>(_overview()));
     when(
@@ -102,6 +103,7 @@ void main() {
         policy: any(named: 'policy'),
         filter: any(named: 'filter'),
         rowLabels: any(named: 'rowLabels'),
+        cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer(
       (_) => Stream<AppResult<OverviewProgressiveSnapshot>>.value(
@@ -206,6 +208,7 @@ void main() {
         policy: any(named: 'policy'),
         filter: any(named: 'filter'),
         rowLabels: any(named: 'rowLabels'),
+        cancelScope: any(named: 'cancelScope'),
       ),
     );
   });
@@ -220,6 +223,7 @@ void main() {
         policy: any(named: 'policy'),
         filter: any(named: 'filter'),
         rowLabels: any(named: 'rowLabels'),
+        cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer((_) async* {
       yield Success<OverviewProgressiveSnapshot, AppFailure>(

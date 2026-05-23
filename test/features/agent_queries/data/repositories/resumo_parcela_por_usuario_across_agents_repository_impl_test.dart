@@ -21,7 +21,8 @@ class _MockTargetResolver extends Mock implements AgentQueryTargetResolver {}
 
 class _MockPlanBuilder extends Mock implements AgentQueryPlanBuilder {}
 
-class _MockLoadResumo extends Mock implements LoadResumoParcelaPorUsuarioUseCase {}
+class _MockLoadResumo extends Mock
+    implements LoadResumoParcelaPorUsuarioUseCase {}
 
 void main() {
   late _MockTargetResolver targetResolver;

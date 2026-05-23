@@ -1,13 +1,20 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/observability/socket/socket_channel_metrics.dart';
+import 'package:colmeia/core/observability/socket/socket_sql_metrics_appendix_port.dart';
 import 'package:colmeia/core/socket/agent_command_outcome.dart';
 import 'package:colmeia/core/socket/agent_latency_oracle.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
+import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
+import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
+import 'package:colmeia/core/socket/relay/relay_rpc_outcome.dart';
 import 'package:colmeia/core/socket/socket_command_dispatcher.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/metrics_agent_queries_repository.dart' show MetricsAgentQueriesRepository;
 import 'package:flutter/foundation.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 /// Glue that subscribes to [ConsumerSocketConnection] state transitions
 /// and [SocketCommandDispatcher] outcomes and feeds them into a
@@ -25,18 +32,35 @@ class SocketMetricsListener {
     required SocketCommandDispatcher dispatcher,
     required SocketChannelMetrics metrics,
     AgentLatencyOracle? latencyOracle,
+    RelayCommandDispatcher? relayDispatcher,
+    PerAgentConcurrencyGate? concurrencyGate,
   }) : _connection = connection,
        _dispatcher = dispatcher,
        _metrics = metrics,
-       _latencyOracle = latencyOracle;
+       _latencyOracle = latencyOracle,
+       _relayDispatcher = relayDispatcher,
+       _concurrencyGate = concurrencyGate;
 
   final ConsumerSocketConnection _connection;
   final SocketCommandDispatcher _dispatcher;
   final SocketChannelMetrics _metrics;
   final AgentLatencyOracle? _latencyOracle;
+  final RelayCommandDispatcher? _relayDispatcher;
+  final PerAgentConcurrencyGate? _concurrencyGate;
 
   StreamSubscription<ConsumerSocketConnectionState>? _statesSub;
   StreamSubscription<AgentCommandOutcome>? _outcomesSub;
+  StreamSubscription<RelayRpcOutcome>? _relayOutcomesSub;
+
+  SocketSqlMetricsAppendixProvider? _sqlAppendix;
+
+  SocketSqlMetricsAppendixProvider? get sqlAppendix => _sqlAppendix;
+
+  /// Wired after [MetricsAgentQueriesRepository] is registered so the
+  /// listener stays free of feature imports.
+  set sqlAppendix(SocketSqlMetricsAppendixProvider provider) {
+    _sqlAppendix = provider;
+  }
 
   DateTime? _connectingStartedAt;
   bool _isStarted = false;
@@ -51,6 +75,10 @@ class SocketMetricsListener {
     _isStarted = true;
     _statesSub = _connection.states().listen(_onState);
     _outcomesSub = _dispatcher.outcomes().listen(_onOutcome);
+    final relay = _relayDispatcher;
+    if (relay != null) {
+      _relayOutcomesSub = relay.outcomes().listen(_onRelayOutcome);
+    }
     AppLogger.debug(
       'SocketMetricsListener attached',
       context: const <String, Object?>{
@@ -66,8 +94,10 @@ class SocketMetricsListener {
     _isDisposed = true;
     await _statesSub?.cancel();
     await _outcomesSub?.cancel();
+    await _relayOutcomesSub?.cancel();
     _statesSub = null;
     _outcomesSub = null;
+    _relayOutcomesSub = null;
   }
 
   // ----- Internals -----
@@ -85,8 +115,8 @@ class SocketMetricsListener {
       case ConsumerSocketDisconnected(:final reason):
         _connectingStartedAt = null;
         _metrics.recordReconnect(reason: reason ?? 'disconnected');
-        _debugLogRelaySliceIfNonEmpty(
-          'disconnected',
+        _exportSessionSocketMetrics(
+          socketEvent: 'disconnected',
           extra: <String, Object?>{
             'disconnectReason': reason ?? 'disconnected',
           },
@@ -96,11 +126,10 @@ class SocketMetricsListener {
         _metrics.recordReconnect(
           reason: transient ? 'transient_error' : 'fatal_error',
         );
-        _debugLogRelaySliceIfNonEmpty(
-          'error',
+        _exportSessionSocketMetrics(
+          socketEvent: 'error',
           extra: <String, Object?>{'transient': transient},
         );
-        // One breadcrumb is more useful than a histogram entry alone.
         AppLogger.warning(
           'Consumer socket transitioned to error state',
           context: <String, Object?>{
@@ -112,30 +141,88 @@ class SocketMetricsListener {
       case ConsumerSocketUnauthorized():
         _connectingStartedAt = null;
         _metrics.recordReconnect(reason: 'unauthorized');
-        _debugLogRelaySliceIfNonEmpty('unauthorized');
+        _exportSessionSocketMetrics(socketEvent: 'unauthorized');
     }
   }
 
-  void _debugLogRelaySliceIfNonEmpty(
-    String socketEvent, {
+  void _exportSessionSocketMetrics({
+    required String socketEvent,
     Map<String, Object?> extra = const <String, Object?>{},
   }) {
-    if (!kDebugMode) {
-      return;
+    final gate = _concurrencyGate;
+    if (gate != null) {
+      _metrics.lastGateSessionPeakSample =
+          gate.sessionPeakMaxAgentInflight;
+      gate.resetSessionConcurrencyPeak();
     }
-    final fields = _metrics.snapshot().relayDebugLogFields();
-    if (fields.isEmpty) {
-      return;
+    final snapshot = _metrics.snapshot();
+    final compact = snapshot.toCompactSessionExport();
+    final sqlAppendix = _sqlAppendix?.call();
+    final context = <String, Object?>{
+      'component': 'SocketMetricsListener',
+      'socketEvent': socketEvent,
+      ...extra,
+      'socketSession': compact,
+      if (sqlAppendix != null && sqlAppendix.isNotEmpty)
+        'sqlSessionAppendix': sqlAppendix,
+    };
+    AppLogger.info(
+      'Socket session metrics export',
+      context: context,
+    );
+    _addSentryBreadcrumb(
+      socketEvent: socketEvent,
+      compact: compact,
+      sqlAppendix: sqlAppendix,
+      extra: extra,
+    );
+    if (kDebugMode) {
+      final fields = snapshot.relayDebugLogFields();
+      if (fields.isNotEmpty) {
+        AppLogger.debug(
+          'Socket metrics: relay diagnostics at $socketEvent',
+          context: <String, Object?>{
+            'component': 'SocketMetricsListener',
+            'socketEvent': socketEvent,
+            ...extra,
+            ...fields,
+          },
+        );
+      }
     }
-    AppLogger.debug(
-      'Socket metrics: relay diagnostics at $socketEvent',
-      context: <String, Object?>{
-        'component': 'SocketMetricsListener',
+  }
+
+  void _addSentryBreadcrumb({
+    required String socketEvent,
+    required Map<String, Object?> compact,
+    Map<String, Object?>? sqlAppendix,
+    Map<String, Object?> extra = const {},
+  }) {
+    try {
+      final encodable = <String, Object?>{
         'socketEvent': socketEvent,
         ...extra,
-        ...fields,
-      },
-    );
+        'socketSession': compact,
+        if (sqlAppendix != null && sqlAppendix.isNotEmpty)
+          'sqlSessionAppendix': sqlAppendix,
+      };
+      var encoded = jsonEncode(encodable);
+      if (encoded.length > 8000) {
+        encoded = encoded.substring(0, 8000);
+      }
+      unawaited(
+        Sentry.addBreadcrumb(
+          Breadcrumb(
+            category: 'socket.session_metrics',
+            message: socketEvent,
+            data: <String, dynamic>{'payload': encoded},
+            level: SentryLevel.info,
+          ),
+        ),
+      );
+    } on Object catch (_) {
+      // Sentry may be uninitialized in some tests / early boot paths.
+    }
   }
 
   void _onOutcome(AgentCommandOutcome outcome) {
@@ -149,9 +236,25 @@ class SocketMetricsListener {
     final method = outcome.method;
     final oracle = _latencyOracle;
     if (oracle != null && method != null && outcome is AgentCommandSuccess) {
-      // Only successful round-trips contribute to the latency oracle —
-      // failures (timeouts, disconnects) would skew the EWMA upwards and
-      // would cause the dispatcher to suggest ever-growing timeouts.
+      oracle.record(
+        agentId: outcome.agentId,
+        method: method,
+        elapsed: outcome.elapsed,
+      );
+    }
+  }
+
+  void _onRelayOutcome(RelayRpcOutcome outcome) {
+    _metrics
+      ..recordRelayOutcome(outcome: outcome)
+      ..recordRelayDispatch(
+        agentId: outcome.agentId,
+        method: outcome.method,
+        elapsed: outcome.elapsed,
+      );
+    final method = outcome.method;
+    final oracle = _latencyOracle;
+    if (oracle != null && method != null && outcome is RelayRpcSuccess) {
       oracle.record(
         agentId: outcome.agentId,
         method: method,

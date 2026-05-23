@@ -134,6 +134,16 @@ final class AgentQueriesTransportFailureMapper {
       );
     }
 
+    if (error is RelayRequestCancelled) {
+      return OperationCancelledFailure(
+        message: error.message,
+        context: <String, Object?>{
+          ...context,
+          AgentQueriesFailureContext.cancelledField: true,
+        },
+      );
+    }
+
     if (error is RelayConversationLost) {
       return NetworkFailure(
         message: error.message,

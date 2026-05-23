@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_persistence.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
@@ -46,13 +47,16 @@ class SalesLiveMapController extends ChangeNotifier {
     required SalesSessionService sessionService,
     required LoadSalesAvailableAgentsUseCase loadSalesAvailableAgentsUseCase,
     required LoadSalesLiveMapUseCase loadSalesLiveMapUseCase,
+    AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder,
   }) : _sessionService = sessionService,
        _loadAgentsUseCase = loadSalesAvailableAgentsUseCase,
-       _loadLiveMap = loadSalesLiveMapUseCase;
+       _loadLiveMap = loadSalesLiveMapUseCase,
+       _relayCancelScopeBinder = relayCancelScopeBinder;
 
   final SalesSessionService _sessionService;
   final LoadSalesAvailableAgentsUseCase _loadAgentsUseCase;
   final LoadSalesLiveMapUseCase _loadLiveMap;
+  final AgentQueriesRelayCancelScopeBinder? _relayCancelScopeBinder;
 
   SalesLiveMapPresentationState _state = const SalesLiveMapPresentationState();
   String? _boundUserId;
@@ -247,6 +251,7 @@ class SalesLiveMapController extends ChangeNotifier {
     final userId = _boundUserId;
     final generation = ++_loadGeneration;
     final cancelToken = SalesLiveMapLoadCancelToken();
+    _relayCancelScopeBinder?.call(cancelToken.sqlCancelScope);
     final preserveVisualSnapshot =
         reason != SalesLiveMapReloadReason.filterChange;
     final preservedVisualResult = preserveVisualSnapshot

@@ -1,3 +1,5 @@
+import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart' show RelayCommandDispatcher;
+
 /// Failures raised by the relay dispatcher. Kept separate from
 /// `SocketDispatchException` because the relay layer carries extra context
 /// (`conversationId`, `clientRequestId`) and a richer set of terminal codes
@@ -100,6 +102,17 @@ final class RelayRequestTimeout extends RelayDispatchException {
     super.conversationId,
     super.clientRequestId,
   }) : super(code: 'timeout');
+}
+
+/// Local cancel via [RelayCommandDispatcher.cancel] before the hub
+/// completes the request. Same transport limitation as cancelling a
+/// `sendStreaming` subscription: the hub is **not** notified.
+final class RelayRequestCancelled extends RelayDispatchException {
+  const RelayRequestCancelled({
+    required super.message,
+    super.conversationId,
+    super.clientRequestId,
+  }) : super(code: 'caller_cancelled');
 }
 
 /// The PayloadFrame returned by the hub failed structural validation

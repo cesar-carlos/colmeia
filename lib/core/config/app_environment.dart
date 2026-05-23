@@ -1,4 +1,5 @@
 import 'package:colmeia/core/config/agent_bridge_transport.dart';
+import 'package:colmeia/core/config/agent_query_transport_policy_mode.dart';
 import 'package:colmeia/core/config/app_environment_resolution.dart';
 import 'package:colmeia/core/config/connection_ready_compat_mode.dart';
 import 'package:colmeia/core/config/env_keys.dart';
@@ -344,23 +345,23 @@ abstract final class AppEnvironment {
 
   /// Activates `AgentLatencyOracle` and routes its timeout suggestions
   /// into the dispatcher when callers do not pass `timeout`. Default
-  /// `false` (opt-in); review §5.3 (P2).
+  /// `true`; set `false` to use fixed bridge timeouts (review §5.3).
   static bool get socketTimeoutAdaptiveEnabled =>
       AppEnvironmentResolution.resolveBool(
         fromDefine: const String.fromEnvironment(
           EnvKeys.socketTimeoutAdaptiveEnabled,
         ),
         fromDotenv: _dotenvMaybe(EnvKeys.socketTimeoutAdaptiveEnabled),
-        fallback: false,
+        fallback: true,
       );
 
   /// Whether to wire the agent-queries datasource through
-  /// `AgentCommandBatchCoordinator` (PR-I, review §5.2). Default `false`
-  /// (opt-in until baseline metrics validate the savings).
+  /// `AgentCommandBatchCoordinator` (PR-I, review §5.2). Default `true`;
+  /// set `false` to disable JSON-RPC batch coalescing on the socket path.
   static bool get socketBatchEnabled => AppEnvironmentResolution.resolveBool(
     fromDefine: const String.fromEnvironment(EnvKeys.socketBatchEnabled),
     fromDotenv: _dotenvMaybe(EnvKeys.socketBatchEnabled),
-    fallback: false,
+    fallback: true,
   );
 
   static const int defaultSocketBatchWindowMs = 8;
@@ -479,6 +480,38 @@ abstract final class AppEnvironment {
       fallback: defaultSocketRelayStreamRefillThreshold.clamp(0, initialWindow),
     );
   }
+
+  /// Relay JSON-RPC batch arrays (hub protocol not available yet). Default false.
+  static bool get socketRelayBatchEnabled =>
+      AppEnvironmentResolution.resolveBool(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.socketRelayBatchEnabled,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.socketRelayBatchEnabled),
+        fallback: false,
+      );
+
+  /// Experimental socket pool size (1 = single connection). Default 1.
+  static int get socketConnectionPoolSize =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.socketConnectionPoolSize,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.socketConnectionPoolSize),
+        fallback: 1,
+      ).clamp(1, 4);
+
+  /// Agent SQL transport routing policy env value.
+  static AgentQueryTransportPolicyMode get agentQueryTransportPolicyMode =>
+      parseAgentQueryTransportPolicyMode(
+        AppEnvironmentResolution.resolveString(
+          fromDefine: const String.fromEnvironment(
+            EnvKeys.agentQueryTransportPolicy,
+          ),
+          fromDotenv: _dotenvMaybe(EnvKeys.agentQueryTransportPolicy),
+          fallback: 'legacy',
+        ),
+      );
 
   // ----- Socket presence (PR-M) -----
 

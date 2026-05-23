@@ -43,7 +43,8 @@ void main() {
             dataVendaFim: periodEnd,
           );
 
-          final useCase = getIt<LoadResumoParcelaPorUsuarioAcrossAgentsUseCase>();
+          final useCase =
+              getIt<LoadResumoParcelaPorUsuarioAcrossAgentsUseCase>();
           final result = await runE2eAppResult(
             () => useCase(
               userId: 'user-1',

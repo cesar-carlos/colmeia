@@ -13,6 +13,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_summary_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
@@ -39,6 +40,7 @@ class SalesProdutoTendenciaMediaMovelPage extends StatefulWidget {
     required this.resolveSalesAgentClientTokenUseCase,
     required this.loadTrendScreenUseCase,
     required this.loadGrupoProdutoOptionsUseCase,
+    this.relayCancelScopeBinder,
     super.key,
   });
 
@@ -48,6 +50,7 @@ class SalesProdutoTendenciaMediaMovelPage extends StatefulWidget {
   final LoadProdutoVendidoTendenciaDeVendaMediaMovelScreenUseCase
   loadTrendScreenUseCase;
   final LoadGrupoProdutoOptionsUseCase loadGrupoProdutoOptionsUseCase;
+  final AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder;
 
   @override
   State<SalesProdutoTendenciaMediaMovelPage> createState() =>
@@ -91,6 +94,8 @@ class _SalesProdutoTendenciaMediaMovelPageState
 
   bool _loading = false;
   String? _error;
+  int _sqlLoadGeneration = 0;
+  AgentQueriesCancelScope? _sqlCancelScope;
   String? _summaryError;
   ProdutoVendidoTendenciaDeVendaMediaMovelPageResult _pageResult =
       const ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
@@ -144,6 +149,12 @@ class _SalesProdutoTendenciaMediaMovelPageState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_loadAgents());
     });
+  }
+
+  @override
+  void dispose() {
+    _sqlCancelScope?.cancelAll();
+    super.dispose();
   }
 
   Future<void> _loadAgents() async {
@@ -202,6 +213,12 @@ class _SalesProdutoTendenciaMediaMovelPageState
     final agentId = _selectedAgentId;
     markAutoRefreshCancelled();
 
+    final generation = ++_sqlLoadGeneration;
+    _sqlCancelScope?.cancelAll();
+    final sqlScope = AgentQueriesCancelScope();
+    _sqlCancelScope = sqlScope;
+    widget.relayCancelScopeBinder?.call(sqlScope);
+
     setState(() {
       _loading = true;
       _error = null;
@@ -229,7 +246,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
       userId: userId,
       agentId: trimmedAgentId,
     );
-    if (!mounted) {
+    if (!mounted || generation != _sqlLoadGeneration) {
       return;
     }
     if (clientToken == null) {
@@ -253,7 +270,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
         agentId: trimmedAgentId,
         clientToken: clientToken,
       );
-      if (!mounted) {
+      if (!mounted || generation != _sqlLoadGeneration) {
         return;
       }
     }
@@ -273,9 +290,10 @@ class _SalesProdutoTendenciaMediaMovelPageState
       agentId: trimmedAgentId,
       filter: filter,
       clientToken: clientToken,
+      cancelScope: sqlScope,
     );
 
-    if (!mounted) {
+    if (!mounted || generation != _sqlLoadGeneration) {
       return;
     }
 

@@ -1,4 +1,7 @@
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
+import 'package:uuid/uuid.dart';
 
 /// Maps an [AgentSqlExecuteRequest] into the bridge body shared by REST and
 /// the legacy socket command path:
@@ -32,7 +35,11 @@ class AgentSqlExecuteRequestToBridgeBody {
       'timeoutMs': ?request.bridgeTimeoutMs,
       'pagination': ?request.pagination?.toHttpBody(),
       'payloadFrameCompression': ?payloadFrameCompression,
-      'command': buildRelayCommand(request: request, rpcId: rpcId),
+      'command': _buildJsonRpcCommand(
+        request: request,
+        rpcId: rpcId,
+        includePaginationInOptions: false,
+      ),
     };
   }
 
@@ -41,9 +48,29 @@ class AgentSqlExecuteRequestToBridgeBody {
   Map<String, Object?> buildRelayCommand({
     required AgentSqlExecuteRequest request,
     required String rpcId,
+    String? traceId,
+  }) {
+    return _buildJsonRpcCommand(
+      request: request,
+      rpcId: rpcId,
+      includePaginationInOptions: true,
+      traceId: traceId,
+    );
+  }
+
+  Map<String, Object?> _buildJsonRpcCommand({
+    required AgentSqlExecuteRequest request,
+    required String rpcId,
+    required bool includePaginationInOptions,
+    String? traceId,
   }) {
     final trimmedToken = request.trimmedClientToken;
-    final rpcOptions = request.executeOptions?.toRpcOptions();
+    final rpcOptions = includePaginationInOptions
+        ? _buildRelayRpcOptions(
+            executeOptions: request.executeOptions,
+            pagination: request.pagination,
+          )
+        : request.executeOptions?.toRpcOptions();
     final namedParams = request.namedParams.isEmpty
         ? null
         : request.namedParams;
@@ -59,9 +86,10 @@ class AgentSqlExecuteRequestToBridgeBody {
     };
 
     final outboundCompression = request.outboundCompression?.wireValue;
-    final meta = outboundCompression == null
-        ? null
-        : <String, Object?>{'outbound_compression': outboundCompression};
+    final meta = <String, Object?>{
+      'trace_id': traceId ?? const Uuid().v4(),
+      'outbound_compression': ?outboundCompression,
+    };
 
     final apiVersion = request.apiVersion.trim();
 
@@ -70,7 +98,7 @@ class AgentSqlExecuteRequestToBridgeBody {
       'method': 'sql.execute',
       'id': rpcId,
       if (apiVersion.isNotEmpty) 'api_version': apiVersion,
-      'meta': ?meta,
+      'meta': meta,
       'params': params,
     };
   }
@@ -78,3 +106,19 @@ class AgentSqlExecuteRequestToBridgeBody {
 
 String _normalizeSqlForRpc(String sql) =>
     sql.replaceAll(RegExp(r'\s*\r?\n\s*'), ' ').trim();
+
+Map<String, Object?>? _buildRelayRpcOptions({
+  AgentSqlExecuteOptions? executeOptions,
+  AgentSqlBridgePagination? pagination,
+}) {
+  final map = <String, Object?>{};
+  final execOpts = executeOptions?.toRpcOptions();
+  if (execOpts != null) {
+    map.addAll(execOpts);
+  }
+  final paginationOpts = pagination?.toRpcOptions();
+  if (paginationOpts != null) {
+    map.addAll(paginationOpts);
+  }
+  return map.isEmpty ? null : map;
+}

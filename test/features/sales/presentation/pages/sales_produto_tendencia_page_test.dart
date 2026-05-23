@@ -166,6 +166,7 @@ void main() {
         pageFilter: any(named: 'pageFilter'),
         summaryFilter: any(named: 'summaryFilter'),
         clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer(
       (_) async =>
@@ -264,6 +265,7 @@ void main() {
         pageFilter: any(named: 'pageFilter'),
         summaryFilter: any(named: 'summaryFilter'),
         clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer((_) => screenCompleter.future);
 
@@ -294,6 +296,7 @@ void main() {
         pageFilter: any(named: 'pageFilter'),
         summaryFilter: any(named: 'summaryFilter'),
         clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer(
       (_) async =>
@@ -421,6 +424,7 @@ void main() {
           pageFilter: any(named: 'pageFilter'),
           summaryFilter: any(named: 'summaryFilter'),
           clientToken: any(named: 'clientToken'),
+          cancelScope: any(named: 'cancelScope'),
         ),
       ).thenAnswer(
         (_) async =>

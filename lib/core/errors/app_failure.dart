@@ -36,6 +36,15 @@ final class ValidationFailure extends AppFailure {
   });
 }
 
+/// Cooperative cancellation (caller abandoned the operation).
+final class OperationCancelledFailure extends AppFailure {
+  const OperationCancelledFailure({
+    super.message = 'operation_cancelled',
+    super.userMessage = 'Operacao cancelada.',
+    super.context = const {},
+  }) : super(isTransient: true);
+}
+
 final class SessionFailure extends AppFailure {
   const SessionFailure({
     required super.message,
@@ -195,6 +204,11 @@ AppFailure appFailureWithMergedContext(
       userMessage: failure.userMessage,
       cause: failure.cause,
       stackTrace: failure.stackTrace,
+      context: mergedContext,
+    ),
+    OperationCancelledFailure() => OperationCancelledFailure(
+      message: failure.message,
+      userMessage: failure.userMessage,
       context: mergedContext,
     ),
     SessionFailure() => SessionFailure(

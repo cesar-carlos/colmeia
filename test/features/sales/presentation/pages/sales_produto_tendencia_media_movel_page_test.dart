@@ -62,7 +62,7 @@ late SalesPreferences _pumpSalesPreferences;
 late LoadAvailableAgentsForSales _pumpLoadAvailableAgentsForSales;
 late AgentClientTokenReader _pumpTokenReader;
 late LoadProdutoVendidoTendenciaDeVendaMediaMovelScreenUseCase
-    _pumpLoadTrendScreenUseCase;
+_pumpLoadTrendScreenUseCase;
 late LoadGrupoProdutoOptionsUseCase _pumpLoadGrupoOptionsUseCase;
 
 void main() {
@@ -164,6 +164,7 @@ void main() {
         hubConnectedFromApprovedCatalogRow: any(
           named: 'hubConnectedFromApprovedCatalogRow',
         ),
+        cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer(
       (_) async =>
@@ -176,7 +177,8 @@ void main() {
                 items: <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[],
                 totalCount: 0,
               ),
-              summaryRows: <ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>[],
+              summaryRows:
+                  <ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>[],
             ),
           ),
     );
@@ -226,7 +228,9 @@ void main() {
       ..registerSingleton<ResolveSalesAgentClientTokenUseCase>(
         ResolveSalesAgentClientTokenUseCase(tokenReader),
       )
-      ..registerSingleton<LoadProdutoVendidoTendenciaDeVendaMediaMovelScreenUseCase>(
+      ..registerSingleton<
+        LoadProdutoVendidoTendenciaDeVendaMediaMovelScreenUseCase
+      >(
         loadTrendScreenUseCase,
       )
       ..registerSingleton<LoadGrupoProdutoOptionsUseCase>(
@@ -279,6 +283,7 @@ void main() {
         hubConnectedFromApprovedCatalogRow: any(
           named: 'hubConnectedFromApprovedCatalogRow',
         ),
+        cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer((_) => screenCompleter.future);
 
@@ -323,6 +328,7 @@ void main() {
         hubConnectedFromApprovedCatalogRow: any(
           named: 'hubConnectedFromApprovedCatalogRow',
         ),
+        cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer(
       (_) async =>
@@ -359,6 +365,7 @@ void main() {
         hubConnectedFromApprovedCatalogRow: any(
           named: 'hubConnectedFromApprovedCatalogRow',
         ),
+        cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer(
       (_) async =>
@@ -395,6 +402,7 @@ void main() {
         hubConnectedFromApprovedCatalogRow: any(
           named: 'hubConnectedFromApprovedCatalogRow',
         ),
+        cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer(
       (_) async =>
@@ -416,18 +424,19 @@ void main() {
                 ],
                 totalCount: 2,
               ),
-              summaryRows: const <ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>[
-                ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow(
-                  classificacao: 'CRESCENDO',
-                  quantidadeProdutos: 1,
-                  impactoLiquido: 4,
-                ),
-                ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow(
-                  classificacao: 'CAINDO',
-                  quantidadeProdutos: 1,
-                  impactoLiquido: -2,
-                ),
-              ],
+              summaryRows:
+                  const <ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>[
+                    ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow(
+                      classificacao: 'CRESCENDO',
+                      quantidadeProdutos: 1,
+                      impactoLiquido: 4,
+                    ),
+                    ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow(
+                      classificacao: 'CAINDO',
+                      quantidadeProdutos: 1,
+                      impactoLiquido: -2,
+                    ),
+                  ],
             ),
           ),
     );
@@ -496,6 +505,7 @@ void main() {
         hubConnectedFromApprovedCatalogRow: any(
           named: 'hubConnectedFromApprovedCatalogRow',
         ),
+        cancelScope: any(named: 'cancelScope'),
       ),
     ).captured;
 
@@ -545,6 +555,7 @@ void main() {
         hubConnectedFromApprovedCatalogRow: any(
           named: 'hubConnectedFromApprovedCatalogRow',
         ),
+        cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer(
       (_) async =>
@@ -559,13 +570,14 @@ void main() {
                 ],
                 totalCount: 25,
               ),
-              summaryRows: const <ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>[
-                ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow(
-                  classificacao: 'CRESCENDO',
-                  quantidadeProdutos: 25,
-                  impactoLiquido: 80,
-                ),
-              ],
+              summaryRows:
+                  const <ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>[
+                    ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow(
+                      classificacao: 'CRESCENDO',
+                      quantidadeProdutos: 25,
+                      impactoLiquido: 80,
+                    ),
+                  ],
             ),
           ),
     );

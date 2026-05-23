@@ -4,6 +4,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execu
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_total_vendas_municipio_filial_periodo_across_agents_repository.dart';
 
 class LoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase {
@@ -27,6 +28,7 @@ class LoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase {
     int? bridgeTimeoutMs,
     int? raceMaxSources,
     AgentQueryTargetResolution? preResolvedResolution,
+    AgentQueriesCancelScope? cancelScope,
   }) {
     return _repository.load(
       userId: userId,
@@ -36,6 +38,7 @@ class LoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase {
       bridgeTimeoutMs: bridgeTimeoutMs,
       raceMaxSources: raceMaxSources,
       preResolvedResolution: preResolvedResolution,
+      cancelScope: cancelScope,
     );
   }
 }

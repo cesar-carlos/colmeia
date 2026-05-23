@@ -1,4 +1,5 @@
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
+import 'package:uuid/uuid.dart';
 
 class AgentSqlExecuteBatchRequestToBridgeBody {
   const AgentSqlExecuteBatchRequestToBridgeBody();
@@ -25,6 +26,7 @@ class AgentSqlExecuteBatchRequestToBridgeBody {
   Map<String, Object?> buildRelayCommand({
     required AgentSqlExecuteBatchRequest request,
     required String rpcId,
+    String? traceId,
   }) {
     final trimmedToken = request.trimmedClientToken;
     final clientToken = trimmedToken == null || trimmedToken.isEmpty
@@ -37,6 +39,9 @@ class AgentSqlExecuteBatchRequestToBridgeBody {
       'method': 'sql.executeBatch',
       'id': rpcId,
       if (apiVersion.isNotEmpty) 'api_version': apiVersion,
+      'meta': <String, Object?>{
+        'trace_id': traceId ?? const Uuid().v4(),
+      },
       'params': <String, Object?>{
         'commands': <Map<String, Object?>>[
           for (final command in request.commands)

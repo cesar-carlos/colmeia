@@ -218,13 +218,11 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage> {
                               SizedBox(height: tokens.gapSm),
                               Text(
                                 refreshFromAgentNotice,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
+                                style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
                                     ),
                               ),
                             ],
@@ -232,13 +230,11 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage> {
                               SizedBox(height: tokens.gapSm),
                               Text(
                                 refreshFromAgentError,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
+                                style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .error,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.error,
                                     ),
                               ),
                             ],

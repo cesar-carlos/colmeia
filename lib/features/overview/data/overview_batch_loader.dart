@@ -43,6 +43,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_ve
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/overview/data/overview_sql_batch_item_rows_mapper.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
@@ -262,6 +263,7 @@ class OverviewBatchLoader {
     required ResumoParcelasDiaSemanaFilter weekdayFilter,
     required ResumoTotalDiarioVendasFilter dailyTotalFilter,
     required AgentQueryExecutionStrategy executionStrategy,
+    AgentQueriesCancelScope? cancelScope,
   }) async {
     AppResult<OverviewBatchLoadResult>? finalResult;
     await for (final result in loadProgressively(
@@ -274,6 +276,7 @@ class OverviewBatchLoader {
       weekdayFilter: weekdayFilter,
       dailyTotalFilter: dailyTotalFilter,
       executionStrategy: executionStrategy,
+      cancelScope: cancelScope,
     )) {
       final loaded = result.getOrNull();
       if (loaded == null) {
@@ -300,6 +303,7 @@ class OverviewBatchLoader {
     required ResumoParcelasDiaSemanaFilter weekdayFilter,
     required ResumoTotalDiarioVendasFilter dailyTotalFilter,
     required AgentQueryExecutionStrategy executionStrategy,
+    AgentQueriesCancelScope? cancelScope,
   }) async* {
     final resolutionResult = await _targetResolver.resolve(
       userId: userId,
@@ -334,19 +338,48 @@ class OverviewBatchLoader {
       periodStart: periodStart,
       periodEnd: periodEnd,
     );
-    final started = DateTime.now();
-    final mainResults = await Future.wait(
-      plan.plannedTargets.map(
-        (target) => _loadMainForTarget(
-          userId: userId,
-          target: target,
-          planBridgeTimeoutMs: plan.bridgeTimeoutMs,
-          batch: mainBatch,
-          hubPresenceOnlineAgentIdsSnapshot:
-              resolution.hubPresenceOnlineAgentIdsSnapshot,
-        ),
-      ),
+    final sectionBatch = _buildSectionCommands(
+      last12Range: last12Range,
+      mensalFilter: mensalFilter,
+      weekdayFilter: weekdayFilter,
+      dailyTotalFilter: dailyTotalFilter,
+      includeLucratividadeMensal: includeLucratividadeMensal,
     );
+    final started = DateTime.now();
+    final targets = plan.plannedTargets.toList();
+    final pendingPairs =
+        await Future.wait<
+          (OverviewBatchTargetResult, Future<OverviewBatchTargetResult>?)
+        >(
+          targets.map((target) async {
+            final mainR = await _loadMainForTarget(
+              userId: userId,
+              target: target,
+              planBridgeTimeoutMs: plan.bridgeTimeoutMs,
+              batch: mainBatch,
+              hubPresenceOnlineAgentIdsSnapshot:
+                  resolution.hubPresenceOnlineAgentIdsSnapshot,
+              cancelScope: cancelScope,
+            );
+            final sectionFuture =
+                mainR.mainFailure == null
+                ? _loadSectionsForTarget(
+                    userId: userId,
+                    target: target,
+                    planBridgeTimeoutMs: plan.bridgeTimeoutMs,
+                    batch: sectionBatch,
+                    includeLucratividadeMensal: includeLucratividadeMensal,
+                    hubPresenceOnlineAgentIdsSnapshot:
+                        resolution.hubPresenceOnlineAgentIdsSnapshot,
+                    cancelScope: cancelScope,
+                  )
+                : null;
+            return (mainR, sectionFuture);
+          }),
+        );
+    final mainResults = pendingPairs
+        .map((pair) => pair.$1)
+        .toList(growable: false);
     final mainElapsedMs = DateTime.now().difference(started).inMilliseconds;
     final mainReport = _buildMainResumoReport(
       strategy: executionStrategy,
@@ -376,38 +409,25 @@ class OverviewBatchLoader {
       return;
     }
 
-    final sectionBatch = _buildSectionCommands(
-      last12Range: last12Range,
-      mensalFilter: mensalFilter,
-      weekdayFilter: weekdayFilter,
-      dailyTotalFilter: dailyTotalFilter,
-      includeLucratividadeMensal: includeLucratividadeMensal,
-    );
-    final sectionTargets = mainResults.where(
-      (result) => result.mainFailure == null,
-    );
-    final sectionResults = await Future.wait(
-      sectionTargets.map(
-        (mainResult) => _loadSectionsForTarget(
-          userId: userId,
-          target: mainResult.target,
-          planBridgeTimeoutMs: plan.bridgeTimeoutMs,
-          batch: sectionBatch,
-          includeLucratividadeMensal: includeLucratividadeMensal,
-          hubPresenceOnlineAgentIdsSnapshot:
-              resolution.hubPresenceOnlineAgentIdsSnapshot,
-        ),
-      ),
+    final combinedResults = await Future.wait(
+      pendingPairs.map((pair) async {
+        final mainR = pair.$1;
+        final sectionFuture = pair.$2;
+        if (sectionFuture == null) {
+          return mainR;
+        }
+        final sections = await sectionFuture;
+        return _combineMainAndSectionResults(
+          mainResults: <OverviewBatchTargetResult>[mainR],
+          sectionResults: <OverviewBatchTargetResult>[sections],
+        ).single;
+      }),
     );
     final totalElapsedMs = DateTime.now().difference(started).inMilliseconds;
-    final targetResults = _combineMainAndSectionResults(
-      mainResults: mainResults,
-      sectionResults: sectionResults,
-    );
     final report = _buildMainResumoReport(
       strategy: executionStrategy,
       plan: plan,
-      targetResults: targetResults,
+      targetResults: combinedResults,
       totalElapsedMs: totalElapsedMs,
     );
 
@@ -416,7 +436,7 @@ class OverviewBatchLoader {
         resolution: resolution,
         plan: plan,
         strategy: executionStrategy,
-        targetResults: targetResults,
+        targetResults: combinedResults,
         mainResumoReport: report,
         totalElapsedMs: totalElapsedMs,
       ),
@@ -429,6 +449,7 @@ class OverviewBatchLoader {
     required int planBridgeTimeoutMs,
     required _OverviewMainBatchCommands batch,
     required Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    AgentQueriesCancelScope? cancelScope,
   }) async {
     final started = DateTime.now();
     // Keep dashboard batches on relay when the socket path is enabled so
@@ -450,6 +471,7 @@ class OverviewBatchLoader {
           maxParallelReadOnlyBatchItems: _maxParallelReadOnlyBatchItems,
         ),
       ),
+      cancelScope: cancelScope,
     );
     final elapsedMs = DateTime.now().difference(started).inMilliseconds;
     final execution = result.getOrNull();
@@ -477,6 +499,7 @@ class OverviewBatchLoader {
     required _OverviewSectionBatchCommands batch,
     required bool includeLucratividadeMensal,
     required Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    AgentQueriesCancelScope? cancelScope,
   }) async {
     final started = DateTime.now();
     final result = await _agentQueriesRepository.executeSqlBatch(
@@ -496,6 +519,7 @@ class OverviewBatchLoader {
           maxParallelReadOnlyBatchItems: _maxParallelReadOnlyBatchItems,
         ),
       ),
+      cancelScope: cancelScope,
     );
     final elapsedMs = DateTime.now().difference(started).inMilliseconds;
     final execution = result.getOrNull();

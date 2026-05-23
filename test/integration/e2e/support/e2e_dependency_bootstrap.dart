@@ -713,6 +713,20 @@ bool isKnownE2eAgentDisconnectedAtDispatchFailure(AppFailure failure) {
   return failure.reason == 'agent_disconnected_at_dispatch';
 }
 
+/// Hub replay window rejected a duplicate JSON-RPC id (common when E2E files
+/// rerun quickly or batch waves reuse correlation ids against the same agent).
+bool isKnownE2eAgentSqlReplayDetectedFailure(AppFailure failure) {
+  if (failure is! RpcFailure) {
+    return false;
+  }
+  if (failure.reason == 'replay_detected' || failure.rpcCode == -32014) {
+    return true;
+  }
+  final message = failure.displayMessage.toLowerCase();
+  return message.contains('requisição duplicada') ||
+      message.contains('duplicate request');
+}
+
 /// Fail-fast while the agent-queries circuit breaker is open (overload
 /// protection): [NetworkFailure] without an underlying Dio cause, but still
 /// an environmental hub-overload signal for E2E smoke runs.
@@ -738,6 +752,7 @@ bool isAcceptableE2eAgentSqlRepositoryFailure(AppFailure failure) {
       isKnownE2eAgentSqlHttpForbiddenFailure(failure) ||
       isKnownE2eAgentSqlBridgeNamedParameterLimitFailure(failure) ||
       isKnownE2eAgentSqlQueueSaturationFailure(failure) ||
+      isKnownE2eAgentSqlReplayDetectedFailure(failure) ||
       isKnownE2eAgentSqlCircuitBreakerOpenFailure(failure) ||
       isKnownE2eAgentDisconnectedAtDispatchFailure(failure);
 }

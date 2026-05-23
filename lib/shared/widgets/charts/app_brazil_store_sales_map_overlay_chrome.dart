@@ -25,7 +25,8 @@ class AppBrazilStoreSalesMapOverlayTooltipScope extends StatelessWidget {
 }
 
 /// Icon control for map overlay rows: avoids [IconButton] tooltips on Windows.
-class AppBrazilStoreSalesMapWindowsSafeOverlayIconButton extends StatelessWidget {
+class AppBrazilStoreSalesMapWindowsSafeOverlayIconButton
+    extends StatelessWidget {
   const AppBrazilStoreSalesMapWindowsSafeOverlayIconButton({
     required this.icon,
     required this.onPressed,

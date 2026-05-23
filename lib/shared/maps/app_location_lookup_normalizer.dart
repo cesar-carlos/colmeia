@@ -215,17 +215,17 @@ abstract final class AppLocationLookupNormalizer {
 
   static String _stripDiacritics(String value) {
     final buffer = StringBuffer();
-    for (final codeUnit in value.codeUnits) {
+    for (final rune in value.runes) {
       buffer.write(
-        _asciiBaseLetterFor(codeUnit) ?? String.fromCharCode(codeUnit),
+        _asciiBaseLetterFor(rune) ?? String.fromCharCode(rune),
       );
     }
 
     return buffer.toString();
   }
 
-  static String? _asciiBaseLetterFor(int codeUnit) {
-    return switch (codeUnit) {
+  static String? _asciiBaseLetterFor(int rune) {
+    return switch (rune) {
       0x00C0 || 0x00C1 || 0x00C2 || 0x00C3 || 0x00C4 || 0x00C5 => 'A',
       0x00E0 || 0x00E1 || 0x00E2 || 0x00E3 || 0x00E4 || 0x00E5 => 'A',
       0x00C8 || 0x00C9 || 0x00CA || 0x00CB => 'E',

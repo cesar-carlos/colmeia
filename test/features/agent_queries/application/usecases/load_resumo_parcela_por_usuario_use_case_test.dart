@@ -8,7 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:result_dart/result_dart.dart';
 
-class _MockRepository extends Mock implements ResumoParcelaPorUsuarioRepository {}
+class _MockRepository extends Mock
+    implements ResumoParcelaPorUsuarioRepository {}
 
 void main() {
   late _MockRepository repository;
