@@ -5,6 +5,7 @@ import 'package:colmeia/core/socket/app_socket_url_resolver.dart';
 import 'package:colmeia/core/socket/connection_ready_payload.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
+import 'package:colmeia/core/socket/consumer_socket_terminal_exception.dart';
 import 'package:colmeia/core/socket/socket_auth_token_provider.dart';
 import 'package:colmeia/core/socket/socket_io_client_factory.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -162,7 +163,7 @@ void main() {
         await tokens.dispose();
       });
 
-      await check(conn.connect()).throws<StateError>();
+      await check(conn.connect()).throws<ConsumerSocketAuthFailed>();
       check(conn.state).isA<ConsumerSocketUnauthorized>();
     });
 
@@ -258,9 +259,9 @@ void main() {
         final f1 = conn.connect();
         final f2 = conn.connect();
 
-        // Both should reject with the same StateError (unauthorized).
-        await check(f1).throws<StateError>();
-        await check(f2).throws<StateError>();
+        // Both should reject with the same ConsumerSocketAuthFailed (unauthorized).
+        await check(f1).throws<ConsumerSocketAuthFailed>();
+        await check(f2).throws<ConsumerSocketAuthFailed>();
 
         check(conn.state).isA<ConsumerSocketUnauthorized>();
       },
@@ -333,7 +334,7 @@ void main() {
         final stopwatch = Stopwatch()..start();
         final connectFuture = conn.connect();
         await Future<void>.delayed(Duration.zero);
-        final expectation = check(connectFuture).throws<StateError>();
+        final expectation = check(connectFuture).throws<ConsumerSocketConnectCancelled>();
 
         await conn.pause();
         await expectation;
@@ -366,7 +367,7 @@ void main() {
         final stopwatch = Stopwatch()..start();
         final connectFuture = conn.connect();
         await Future<void>.delayed(Duration.zero);
-        final expectation = check(connectFuture).throws<StateError>();
+        final expectation = check(connectFuture).throws<ConsumerSocketReconnectExhausted>();
 
         factory.fire('disconnect', 'transport close');
         await expectation;

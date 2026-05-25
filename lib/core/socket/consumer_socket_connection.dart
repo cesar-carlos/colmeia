@@ -5,10 +5,12 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/app_socket_url_resolver.dart';
 import 'package:colmeia/core/socket/connection_ready_payload.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
+import 'package:colmeia/core/socket/consumer_socket_terminal_exception.dart';
 import 'package:colmeia/core/socket/socket_app_error_retry_after.dart';
 import 'package:colmeia/core/socket/socket_auth_token_provider.dart';
 import 'package:colmeia/core/socket/socket_io_client_factory.dart';
 import 'package:colmeia/core/socket/socket_reconnect_backoff.dart';
+import 'package:colmeia/core/socket/socket_wire_utils.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
 /// Single Socket.IO connection to the `/consumers` namespace.
@@ -181,25 +183,23 @@ class ConsumerSocketConnection {
 
         case _ConnectCancelled():
           _setState(ConsumerSocketDisconnected(reason: outcome.reason));
-          throw StateError(
-            'Consumer socket connect cancelled: ${outcome.reason}',
+          throw ConsumerSocketConnectCancelled(
+            message: 'Consumer socket connect cancelled: ${outcome.reason}',
+            reason: outcome.reason,
           );
 
         case _ConnectAuthFailure():
           _setState(const ConsumerSocketUnauthorized());
-          throw StateError(
-            'Consumer socket unauthorized: ${outcome.reason}',
+          throw ConsumerSocketAuthFailed(
+            message: 'Consumer socket unauthorized: ${outcome.reason}',
+            reason: outcome.reason,
           );
 
         case _ConnectNamespaceForbidden():
           // Permanent: the hub's `SOCKET_CONSUMER_ROLES` does not
           // include the JWT's role. Retrying / refreshing does not
           // help — the upstream `SocketWithRestFallback…DataSource`
-          // pivots to REST permanently for the rest of the
-          // session. We surface a `StateError` here (same shape as
-          // the other terminal failures) carrying the namespace +
-          // role so the dispatcher's exception mapper can build a
-          // `SocketDispatchNamespaceForbidden` with the parsed bits.
+          // pivots to REST permanently for the rest of the session.
           AppLogger.warning(
             'Consumer socket handshake rejected by hub role policy',
             context: <String, Object?>{
@@ -211,11 +211,10 @@ class ConsumerSocketConnection {
             },
           );
           _setState(const ConsumerSocketUnauthorized());
-          throw StateError(
-            'Consumer socket namespace forbidden: '
-            'role=${outcome.role ?? "<unknown>"} '
-            'namespace=${outcome.namespace ?? "<unknown>"} '
-            'message=${outcome.message}',
+          throw ConsumerSocketNamespaceForbidden(
+            message: outcome.message,
+            role: outcome.role,
+            namespace: outcome.namespace,
           );
 
         case _ConnectTransientFailure():
@@ -227,8 +226,9 @@ class ConsumerSocketConnection {
                 cause: outcome.error,
               ),
             );
-            throw StateError(
-              'Consumer socket reconnect exhausted: ${outcome.error}',
+            throw ConsumerSocketReconnectExhausted(
+              message: 'Consumer socket reconnect exhausted: ${outcome.error}',
+              cause: outcome.error,
             );
           }
           _setState(
@@ -490,17 +490,8 @@ class ConsumerSocketConnection {
     );
   }
 
-  Map<String, Object?>? _toStringKeyedMap(Object? raw) {
-    if (raw is Map<String, Object?>) {
-      return raw;
-    }
-    if (raw is Map) {
-      return raw.map(
-        (key, value) => MapEntry<String, Object?>(key.toString(), value),
-      );
-    }
-    return null;
-  }
+  Map<String, dynamic>? _toStringKeyedMap(Object? raw) =>
+      socketToStringKeyedMap(raw);
 
   Future<_ConnectOutcome> _timeoutFuture() {
     return Future<_ConnectOutcome>.delayed(
@@ -514,10 +505,14 @@ class ConsumerSocketConnection {
       return false;
     }
     final message = err.toString().toLowerCase();
+    // 'forbidden' is intentionally excluded: namespace-policy rejections
+    // ("Role 'X' is not allowed to connect to /Y") also contain that word
+    // but are handled separately by _tryParseNamespaceForbidden before this
+    // method is reached. Catching them here would trigger a token refresh
+    // that cannot fix a server-side allow-list restriction.
     return message.contains('401') ||
         message.contains('403') ||
-        message.contains('unauthorized') ||
-        message.contains('forbidden');
+        message.contains('unauthorized');
   }
 
   /// Detects the hub's namespace-policy rejection that ships in the

@@ -16,6 +16,11 @@ import 'package:colmeia/core/socket/agent_latency_budget.dart';
 /// available the oracle returns the caller-provided `fallback` so cold
 /// starts do not produce pathological estimates.
 ///
+/// [maxTrackedKeys] bounds the `_stats` map so sessions with a large number
+/// of distinct `(agentId, method)` pairs do not accumulate indefinitely.
+/// Eviction targets the entry with the fewest samples (least warmed-up),
+/// which is the least reliable and cheapest to lose.
+///
 /// **Boundary vs repository decorators:** this oracle feeds **transport**
 /// pending timers (relay / socket dispatchers) when the outbound RPC does
 /// not carry an explicit `Duration` timeout. The adaptive-timeout repository
@@ -29,6 +34,7 @@ class AgentLatencyOracle {
     this.alpha = 0.2,
     this.warmUpSampleCount = 5,
     this.safetyFactor = 3.0,
+    this.maxTrackedKeys = 256,
   }) : assert(
          alpha > 0 && alpha <= 1,
          'alpha must be in (0, 1]',
@@ -40,6 +46,10 @@ class AgentLatencyOracle {
        assert(
          safetyFactor >= 0,
          'safetyFactor must be >= 0',
+       ),
+       assert(
+         maxTrackedKeys >= 1,
+         'maxTrackedKeys must be >= 1',
        );
 
   /// Smoothing factor for both mean and variance EWMA. Higher values
@@ -55,6 +65,11 @@ class AgentLatencyOracle {
   /// distributions; we use it as a conservative envelope.
   final double safetyFactor;
 
+  /// Maximum number of `(agentId, method)` keys tracked simultaneously.
+  /// When exceeded, the entry with the fewest recorded samples is evicted
+  /// (least-warmed entries are cheapest to discard and will re-warm quickly).
+  final int maxTrackedKeys;
+
   final Map<String, _EwmaStats> _stats = <String, _EwmaStats>{};
 
   void record({
@@ -67,7 +82,34 @@ class AgentLatencyOracle {
       return;
     }
     final key = _key(agentId: agentId, method: method);
-    _stats.putIfAbsent(key, _EwmaStats.new).observe(value: ms, alpha: alpha);
+    var stats = _stats[key];
+    if (stats == null) {
+      if (_stats.length >= maxTrackedKeys) {
+        _evictLeastWarmed();
+      }
+      stats = _EwmaStats();
+      _stats[key] = stats;
+    }
+    stats.observe(value: ms, alpha: alpha);
+  }
+
+  /// Removes the entry with the fewest recorded samples. Entries with fewer
+  /// samples are less reliable and will warm up again quickly on reuse.
+  void _evictLeastWarmed() {
+    if (_stats.isEmpty) {
+      return;
+    }
+    String? victim;
+    var minCount = double.maxFinite.toInt();
+    for (final entry in _stats.entries) {
+      if (entry.value.count < minCount) {
+        minCount = entry.value.count;
+        victim = entry.key;
+      }
+    }
+    if (victim != null) {
+      _stats.remove(victim);
+    }
   }
 
   /// Returns a recommended dispatch timeout for the given pivot. Falls

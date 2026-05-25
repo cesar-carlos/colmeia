@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
+import 'package:colmeia/core/socket/consumer_socket_terminal_exception.dart';
 import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
 import 'package:colmeia/core/socket/socket_command_dispatcher_impl.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
@@ -525,7 +526,10 @@ void main() {
       'connect reconnect exhausted maps to SocketDispatchDisconnected',
       () async {
         when(connection.connect).thenThrow(
-          StateError('Consumer socket reconnect exhausted: handshake_timeout'),
+          const ConsumerSocketReconnectExhausted(
+            message: 'Consumer socket reconnect exhausted: handshake_timeout',
+            cause: 'handshake_timeout',
+          ),
         );
         dispatcher = SocketCommandDispatcherImpl(
           connection: connection,
@@ -546,7 +550,10 @@ void main() {
       'connect unauthorized still maps to SocketDispatchUnauthorized',
       () async {
         when(connection.connect).thenThrow(
-          StateError('Consumer socket unauthorized: refresh_failed'),
+          const ConsumerSocketAuthFailed(
+            message: 'Consumer socket unauthorized: refresh_failed',
+            reason: 'refresh_failed',
+          ),
         );
         dispatcher = SocketCommandDispatcherImpl(
           connection: connection,

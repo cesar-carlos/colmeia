@@ -116,8 +116,12 @@ class BridgeShapedSqlExecuteCollector implements StreamingSqlExecuteCollector {
         rows.addAll(maybeRows);
         final cap = maxBufferedRows;
         if (cap != null && rows.length > cap) {
-          throw StateError(
-            'BridgeShapedSqlExecuteCollector buffered row cap exceeded '
+          // FormatException is consistent with the other protocol failures
+          // surfaced by this collector. The repository layer should map this
+          // to a user-visible "result set too large" message rather than a
+          // generic technical error — see canvas finding T1.
+          throw FormatException(
+            'Relay streaming buffered row cap exceeded '
             '(maxBufferedRows=$cap, currentRows=${rows.length})',
           );
         }

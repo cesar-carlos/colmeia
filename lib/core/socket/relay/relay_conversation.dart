@@ -5,6 +5,7 @@ import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation_state.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
+import 'package:colmeia/core/socket/socket_wire_utils.dart';
 
 /// One conversation against one agent, isolated by `conversationId`. A
 /// conversation is the unit of correlation in the relay protocol — every
@@ -299,15 +300,6 @@ class RelayConversation {
     _state = next;
   }
 
-  static Map<String, Object?>? _toMap(Object? raw) {
-    if (raw is Map<String, Object?>) {
-      return raw;
-    }
-    if (raw is Map) {
-      return raw.map(
-        (key, value) => MapEntry<String, Object?>(key.toString(), value),
-      );
-    }
-    return null;
-  }
+  static Map<String, dynamic>? _toMap(Object? raw) =>
+      socketToStringKeyedMap(raw);
 }

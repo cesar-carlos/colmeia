@@ -5,12 +5,14 @@ import 'package:colmeia/core/socket/agent_command_outcome.dart';
 import 'package:colmeia/core/socket/agent_latency_oracle.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
+import 'package:colmeia/core/socket/consumer_socket_terminal_exception.dart';
 import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
 import 'package:colmeia/core/socket/socket_app_error_retry_after.dart';
 import 'package:colmeia/core/socket/socket_coalesce_key.dart';
 import 'package:colmeia/core/socket/socket_command_dispatcher.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/core/socket/socket_request_correlator.dart';
+import 'package:colmeia/core/socket/socket_wire_utils.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
 /// Default implementation of [SocketCommandDispatcher].
@@ -208,41 +210,31 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     try {
       await _connection.connect();
     }
-    // ConsumerSocketConnection signals unrecoverable auth/usage errors via
-    // StateError on purpose; this is the controlled exception to catch.
-    // ignore: avoid_catching_errors
-    on StateError catch (e) {
-      // Two terminal failures share `StateError` as the wire shape —
-      // disambiguate by the message marker the connection layer
-      // emits for namespace rejection. Without this distinction the
-      // upstream fallback datasource cannot tell "the JWT is bad"
-      // from "the hub policy excludes this role" and would not
-      // pivot to REST.
-      final message = e.message;
-      if (message.startsWith('Consumer socket namespace forbidden:')) {
-        throw SocketDispatchNamespaceForbidden(
-          message: message,
-          role: _extractMarker(message, 'role='),
-          namespace: _extractMarker(message, 'namespace='),
-          cause: e,
-        );
+    on ConsumerSocketTerminalException catch (e) {
+      // Typed terminal failures from the connection layer. The exhaustive
+      // switch lets the compiler verify every subtype is mapped — no more
+      // fragile message.startsWith() parsing.
+      switch (e) {
+        case ConsumerSocketNamespaceForbidden():
+          // Hub policy excludes this JWT role — REST fallback takes over.
+          throw SocketDispatchNamespaceForbidden(
+            message: e.message,
+            role: e.role,
+            namespace: e.namespace,
+            cause: e,
+          );
+        case ConsumerSocketConnectCancelled():
+        case ConsumerSocketReconnectExhausted():
+          throw SocketDispatchDisconnected(
+            message: 'Connect failed before dispatch: $e',
+            cause: e,
+          );
+        case ConsumerSocketAuthFailed():
+          throw SocketDispatchUnauthorized(
+            message: 'Cannot connect to consumer socket: $e',
+            cause: e,
+          );
       }
-      if (message.startsWith('Consumer socket connect cancelled:')) {
-        throw SocketDispatchDisconnected(
-          message: 'Connect cancelled before dispatch: $e',
-          cause: e,
-        );
-      }
-      if (message.startsWith('Consumer socket reconnect exhausted:')) {
-        throw SocketDispatchDisconnected(
-          message: 'Connect exhausted before dispatch: $e',
-          cause: e,
-        );
-      }
-      throw SocketDispatchUnauthorized(
-        message: 'Cannot connect to consumer socket: $e',
-        cause: e,
-      );
     } on Object catch (e, s) {
       _emitTransient(
         agentId: agentId,
@@ -628,17 +620,8 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     }
   }
 
-  Map<String, dynamic>? _toStringKeyedMap(Object? raw) {
-    if (raw is Map<String, dynamic>) {
-      return raw;
-    }
-    if (raw is Map) {
-      return raw.map(
-        (key, value) => MapEntry<String, dynamic>(key.toString(), value),
-      );
-    }
-    return null;
-  }
+  Map<String, dynamic>? _toStringKeyedMap(Object? raw) =>
+      socketToStringKeyedMap(raw);
 
   /// Socket.IO may deliver `agents:command_response` as a single-arg Map or
   /// as a multi-arg list (first Map wins).
@@ -1156,22 +1139,6 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     return _RpcErrorClass.transient;
   }
 
-  /// Pulls a `key=value` token out of the `StateError.message` the
-  /// connection layer emits for namespace rejection, e.g.
-  /// `... role=client namespace=/consumers ...`. Returns `null` when
-  /// the marker is absent or unquoted weirdly so the caller can fall
-  /// back to the unparsed original string.
-  String? _extractMarker(String source, String key) {
-    final start = source.indexOf(key);
-    if (start < 0) {
-      return null;
-    }
-    final valueStart = start + key.length;
-    final remainder = source.substring(valueStart);
-    final endIndex = remainder.indexOf(' ');
-    final value = endIndex < 0 ? remainder : remainder.substring(0, endIndex);
-    return value.isEmpty ? null : value;
-  }
 }
 
 class _PendingMeta {

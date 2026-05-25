@@ -68,15 +68,19 @@ class PerAgentConcurrencyGate {
   final Map<String, Queue<_QueuedWaiter>> _waiters =
       <String, Queue<_QueuedWaiter>>{};
 
-  /// Max value of [peakInflight] observed since process start (or last
-  /// [resetSessionConcurrencyPeak]). Used for client-side session gauges.
+  /// Session maximum of per-agent in-flight slots observed since process
+  /// start (or last [resetSessionConcurrencyPeak]). Updated in O(1) on
+  /// each direct acquire by comparing the new per-agent count against the
+  /// running maximum — no full scan of `_inflight.values` required.
   int _sessionPeakMaxAgentInflight = 0;
 
   /// Currently consumed slots for [agentId]. Useful for metrics.
   int inflightFor(String agentId) => _inflight[agentId] ?? 0;
 
-  /// Returns the highest [inflightFor] value across every agent (peak
-  /// concurrency observed by the gate). Useful for diagnosis.
+  /// Returns the highest [inflightFor] value across every agent at the
+  /// current instant. O(n) in the number of tracked agents; intended for
+  /// diagnostic snapshots, not for the hot-path. Prefer
+  /// [sessionPeakMaxAgentInflight] for ongoing monitoring.
   int get peakInflight {
     var peak = 0;
     for (final value in _inflight.values) {
@@ -92,10 +96,13 @@ class PerAgentConcurrencyGate {
   /// is called (typically after exporting metrics on disconnect).
   int get sessionPeakMaxAgentInflight => _sessionPeakMaxAgentInflight;
 
-  void _observeConcurrencyPeak() {
-    final peak = peakInflight;
-    if (peak > _sessionPeakMaxAgentInflight) {
-      _sessionPeakMaxAgentInflight = peak;
+  /// O(1): called only when a slot is directly granted (not when a waiter
+  /// merely inherits a released slot — the per-agent count stays the same
+  /// in that case). The session peak is monotonically non-decreasing, so
+  /// release paths never need to update it.
+  void _updateSessionPeak(int newCount) {
+    if (newCount > _sessionPeakMaxAgentInflight) {
+      _sessionPeakMaxAgentInflight = newCount;
     }
   }
 
@@ -122,8 +129,12 @@ class PerAgentConcurrencyGate {
   }) async {
     final current = _inflight[agentId] ?? 0;
     if (current < maxInflightPerAgent) {
-      _inflight[agentId] = current + 1;
-      _observeConcurrencyPeak();
+      final newCount = current + 1;
+      _inflight[agentId] = newCount;
+      // O(1): only a direct grant increases the per-agent count, so we
+      // update the session peak here and nowhere else. Release paths and
+      // waiter-inherit paths keep the count stable.
+      _updateSessionPeak(newCount);
       return;
     }
     final queue = _waiters.putIfAbsent(agentId, Queue<_QueuedWaiter>.new);
@@ -160,7 +171,8 @@ class PerAgentConcurrencyGate {
     } finally {
       timer?.cancel();
     }
-    _observeConcurrencyPeak();
+    // A waiter inheriting a released slot does not change the per-agent
+    // count (one slot freed, immediately re-granted). No peak update needed.
   }
 
   void release(String agentId) {
@@ -177,6 +189,9 @@ class PerAgentConcurrencyGate {
         if (waiters.isEmpty) {
           _waiters.remove(agentId);
         }
+        // The per-agent inflight count stays the same: one slot released,
+        // one immediately re-granted to the waiter. Session peak is
+        // unchanged — no update needed.
         return;
       }
       _waiters.remove(agentId);
@@ -187,7 +202,7 @@ class PerAgentConcurrencyGate {
     } else {
       _inflight[agentId] = current - 1;
     }
-    _observeConcurrencyPeak();
+    // Decrementing the per-agent count can never increase the session peak.
   }
 
   void _removeQueuedWaiter(String agentId, Completer<void> target) {

@@ -3,6 +3,7 @@ import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/payload_frame.dart';
 import 'package:colmeia/core/socket/payload_frame_codec.dart';
 import 'package:colmeia/core/socket/push_event_deduper.dart';
+import 'package:colmeia/core/socket/socket_wire_utils.dart';
 import 'package:colmeia/features/client_agents/domain/events/agent_presence_event.dart';
 
 /// Edge adapter: subscribes the raw socket to `client:agent.profile.updated`
@@ -156,12 +157,7 @@ class ClientAgentProfileUpdatedListener {
       case PayloadFrameParseSuccess(:final frame):
         try {
           final decoded = _codec.decodeJson(frame);
-          if (decoded is Map) {
-            return decoded.map(
-              (key, value) => MapEntry<String, Object?>(key.toString(), value),
-            );
-          }
-          return null;
+          return socketToStringKeyedMap(decoded);
         } on PayloadFrameDecodeException catch (error, stackTrace) {
           AppLogger.warning(
             '$eventName payload frame rejected by codec',
@@ -192,15 +188,7 @@ class ClientAgentProfileUpdatedListener {
     if (!_acceptLegacyRawJson) {
       return null;
     }
-    if (raw is Map<String, Object?>) {
-      return raw;
-    }
-    if (raw is Map) {
-      return raw.map(
-        (key, value) => MapEntry<String, Object?>(key.toString(), value),
-      );
-    }
-    return null;
+    return socketToStringKeyedMap(raw);
   }
 
   bool _looksLikePayloadFrame(Object? raw) {

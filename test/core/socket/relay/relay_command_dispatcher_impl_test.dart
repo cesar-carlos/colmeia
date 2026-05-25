@@ -14,6 +14,7 @@ import 'package:colmeia/core/observability/socket/socket_channel_metrics.dart';
 import 'package:colmeia/core/socket/agent_latency_oracle.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
+import 'package:colmeia/core/socket/consumer_socket_terminal_exception.dart';
 import 'package:colmeia/core/socket/payload_frame.dart';
 import 'package:colmeia/core/socket/payload_frame_codec.dart';
 import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
@@ -1063,8 +1064,9 @@ void main() {
       'connect reconnect exhausted is surfaced as transient disconnected',
       () async {
         when(connection.connect).thenThrow(
-          StateError(
-            'Consumer socket reconnect exhausted: handshake_timeout',
+          const ConsumerSocketReconnectExhausted(
+            message: 'Consumer socket reconnect exhausted: handshake_timeout',
+            cause: 'handshake_timeout',
           ),
         );
         final dispatcher = await dispatcherFor();
@@ -1583,9 +1585,11 @@ void main() {
       'sendStreaming forwards permanent socket prepare failures to the stream',
       () async {
         when(connection.connect).thenThrow(
-          StateError(
-            'Consumer socket namespace forbidden: '
-            'role=client namespace=/consumers',
+          const ConsumerSocketNamespaceForbidden(
+            message: 'Consumer socket namespace forbidden: '
+                'role=client namespace=/consumers',
+            role: 'client',
+            namespace: '/consumers',
           ),
         );
         final dispatcher = await dispatcherFor();

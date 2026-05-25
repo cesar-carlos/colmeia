@@ -4,6 +4,7 @@ import 'package:colmeia/app/authentication_gate.dart';
 import 'package:colmeia/core/config/agent_bridge_transport.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
+import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:flutter/widgets.dart';
 
 /// Observer that wires the consumer Socket connection lifecycle to:
@@ -62,12 +63,41 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
     with WidgetsBindingObserver {
   bool _wasAuthenticated = false;
 
+  /// Tracks current app lifecycle state so the connection-state listener
+  /// can guard reconnect attempts against background/detached conditions.
+  AppLifecycleState? _currentLifecycleState;
+
+  StreamSubscription<ConsumerSocketConnectionState>? _connectionStatesSub;
+
+  /// Reasons that identify an intentional disconnect initiated by the app.
+  /// Unexpected server-side disconnects will carry a Socket.IO transport
+  /// reason (e.g. "io server disconnect", "transport close") or null, and
+  /// must trigger an automatic reconnect.
+  static const _intentionalDisconnectReasons = <String>{
+    'app_paused',
+    'signed_out',
+    'session_invalidated',
+    'disposed',
+    'disconnect',
+  };
+
+  bool get _isAppInForeground {
+    final s = _currentLifecycleState;
+    // null means no lifecycle event received yet — app started in foreground.
+    return s == null || s == AppLifecycleState.resumed;
+  }
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _wasAuthenticated = widget.authGate.isAuthenticated;
     widget.authGate.addListener(_onAuthChanged);
+
+    if (_shouldManageSocket) {
+      _connectionStatesSub =
+          widget.connection!.states().listen(_onConnectionStateChanged);
+    }
 
     // Cold-start / hot-reload race fix: if the auth gate is already
     // authenticated by the time this observer mounts (the restore future
@@ -82,6 +112,8 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
 
   @override
   void dispose() {
+    unawaited(_connectionStatesSub?.cancel() ?? Future<void>.value());
+    _connectionStatesSub = null;
     widget.authGate.removeListener(_onAuthChanged);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -89,6 +121,7 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    _currentLifecycleState = state;
     if (!_shouldManageSocket) {
       return;
     }
@@ -106,6 +139,41 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
         // the socket; pause/resume cover the actionable cases.
         break;
     }
+  }
+
+  /// Reacts to unexpected server-side disconnects by triggering a reconnect.
+  ///
+  /// Only fires when:
+  /// - The disconnect reason is NOT one of the known client-initiated reasons
+  ///   (app pause, sign-out, dispose, explicit disconnect).
+  /// - The user is currently authenticated.
+  /// - The app is in foreground.
+  ///
+  /// `ConsumerSocketConnection.connect()` is single-flight and owns the
+  /// backoff/retry loop internally, so concurrent or redundant calls here
+  /// are safe.
+  void _onConnectionStateChanged(ConsumerSocketConnectionState state) {
+    if (state is! ConsumerSocketDisconnected) {
+      return;
+    }
+    if (!widget.authGate.isAuthenticated) {
+      return;
+    }
+    if (!_isAppInForeground) {
+      return;
+    }
+    final reason = state.reason;
+    if (reason != null && _intentionalDisconnectReasons.contains(reason)) {
+      return;
+    }
+    AppLogger.debug(
+      'SocketLifecycleObserver: unexpected disconnect — scheduling reconnect',
+      context: <String, Object?>{
+        'component': 'SocketLifecycleObserver',
+        'disconnectReason': reason,
+      },
+    );
+    unawaited(_safeResume(reason: 'unexpected_disconnect'));
   }
 
   void _onAuthChanged() {

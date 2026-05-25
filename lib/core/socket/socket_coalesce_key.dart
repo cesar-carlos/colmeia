@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'package:crypto/crypto.dart';
-
 /// Pure helper that produces a **stable** identifier for an
 /// `agents:command` body so identical concurrent requests can be
 /// deduplicated by the dispatcher (review §5.1, P1).
@@ -19,6 +17,13 @@ abstract final class SocketCoalesceKey {
   /// Builds the canonical key for [body]. Returns `null` when [body] does
   /// not contain a recognizable `command.method`; the dispatcher must
   /// then disable coalescing for that call.
+  ///
+  /// The key is the deterministic JSON-encoded canonical form of the
+  /// relevant fields (maps sorted by key). Using the JSON string directly
+  /// as a map key avoids the SHA-256 computation that previously ran on
+  /// every eligible request in the event loop; Dart's String hashCode is
+  /// computed once and cached, so map lookups remain O(1) regardless of
+  /// key length.
   static String? compute({
     required String agentId,
     required Map<String, Object?> body,
@@ -42,8 +47,7 @@ abstract final class SocketCoalesceKey {
       'pagination': pagination,
       'timeoutMs': timeoutMs,
     };
-    final wire = jsonEncode(_sortDeep(canonical));
-    return sha256.convert(utf8.encode(wire)).toString();
+    return jsonEncode(_sortDeep(canonical));
   }
 
   /// Recursively sorts every map by key so that the wire form is

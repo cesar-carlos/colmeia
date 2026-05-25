@@ -67,6 +67,10 @@ void main() {
           handshakeAt: DateTime.utc(2026),
         ),
       );
+      // states() is called in initState to subscribe to unexpected disconnects.
+      when(() => connection.states()).thenAnswer(
+        (_) => const Stream<ConsumerSocketConnectionState>.empty(),
+      );
       authGate = _StubAuthGate();
     });
 

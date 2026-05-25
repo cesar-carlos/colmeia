@@ -136,10 +136,18 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
   }
 
   /// Forces flush across every agent. Useful for sign-out and dispose.
+  ///
+  /// Cancels any pending flush timers before dispatching so the timer
+  /// cannot fire a redundant _flushCollector call on an already-cleared
+  /// collector (and cannot cause a double-flush race).
   Future<void> flushAll() async {
     final collectors = List<_AgentBatchCollector>.of(
       _collectorsByAgent.values,
     );
+    for (final collector in collectors) {
+      collector.flushTimer?.cancel();
+      collector.flushTimer = null;
+    }
     await Future.wait(collectors.map(_flushCollector));
   }
 
@@ -328,6 +336,7 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
     required String? commonRequestId,
   }) {
     final unmatched = Map<String, _PendingRpc>.of(byId);
+    final now = DateTime.now();
     var sawError = false;
     for (final raw in items) {
       if (raw is! Map<String, dynamic>) {
@@ -346,6 +355,31 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
             'rpcId': id,
           },
         );
+        continue;
+      }
+      // Enforce individual timeout: if the item's own deadline elapsed while
+      // waiting in the batch window, fail it instead of completing with stale
+      // data. This restores the semantics the caller configured via `timeout`.
+      final deadline = pending.enqueuedAt.add(pending.timeout);
+      if (now.isAfter(deadline)) {
+        sawError = true;
+        AppLogger.debug(
+          'Batch item individual timeout expired at distribution',
+          context: <String, Object?>{
+            'component': 'AgentCommandBatchCoordinator',
+            'rpcId': id,
+            'timeoutMs': pending.timeout.inMilliseconds,
+          },
+        );
+        if (!pending.completer.isCompleted) {
+          pending.completer.completeError(
+            SocketDispatchTimeout(
+              message:
+                  'Batch item timed out waiting for batch response '
+                  '(rpcId=$id, timeout=${pending.timeout.inSeconds}s)',
+            ),
+          );
+        }
         continue;
       }
       if (raw['error'] != null) {

@@ -5,6 +5,7 @@ import 'package:colmeia/core/observability/socket/socket_channel_metrics.dart';
 import 'package:colmeia/core/socket/agent_latency_oracle.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
+import 'package:colmeia/core/socket/consumer_socket_terminal_exception.dart';
 import 'package:colmeia/core/socket/payload_frame.dart';
 import 'package:colmeia/core/socket/payload_frame_codec.dart';
 import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
@@ -16,6 +17,7 @@ import 'package:colmeia/core/socket/relay/relay_event_names.dart';
 import 'package:colmeia/core/socket/relay/relay_rpc_outcome.dart';
 import 'package:colmeia/core/socket/socket_app_error_retry_after.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
+import 'package:colmeia/core/socket/socket_wire_utils.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
 /// Default `RelayCommandDispatcher`. Wraps a `ConsumerSocketConnection`
@@ -404,42 +406,33 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       rethrow;
     }
     // `_conversationManager.obtain` calls `_connection.connect()` which
-    // surfaces the two terminal handshake failures as `StateError`
-    // (same shape as `SocketCommandDispatcherImpl`). We MUST translate
-    // them to the shared `SocketDispatch*` exceptions BEFORE the
-    // generic Object catch below — otherwise the
-    // `SocketWithRestFallbackAgentQueriesRemoteDataSource` cannot
-    // distinguish "hub forbidden / auth dead" (latch + REST) from a
-    // transient relay start failure (no fallback, surface as-is).
-    // ignore: avoid_catching_errors
-    on StateError catch (e) {
-      final message = e.message;
-      if (message.startsWith('Consumer socket namespace forbidden:')) {
-        throw SocketDispatchNamespaceForbidden(
-          message: message,
-          role: _extractMarker(message, 'role='),
-          namespace: _extractMarker(message, 'namespace='),
-          cause: e,
-        );
+    // surfaces terminal handshake failures as typed
+    // [ConsumerSocketTerminalException]. We MUST translate them to the shared
+    // `SocketDispatch*` exceptions BEFORE the generic Object catch below so
+    // `SocketWithRestFallbackAgentQueriesRemoteDataSource` can distinguish
+    // "hub forbidden / auth dead" (latch + REST) from transient relay
+    // failures (surface as-is).
+    on ConsumerSocketTerminalException catch (e) {
+      switch (e) {
+        case ConsumerSocketNamespaceForbidden():
+          throw SocketDispatchNamespaceForbidden(
+            message: e.message,
+            role: e.role,
+            namespace: e.namespace,
+            cause: e,
+          );
+        case ConsumerSocketReconnectExhausted():
+        case ConsumerSocketConnectCancelled():
+          throw SocketDispatchDisconnected(
+            message: 'Cannot start relay conversation: $e',
+            cause: e,
+          );
+        case ConsumerSocketAuthFailed():
+          throw SocketDispatchUnauthorized(
+            message: 'Cannot start relay conversation: $e',
+            cause: e,
+          );
       }
-      if (message.startsWith('Consumer socket reconnect exhausted:')) {
-        throw SocketDispatchDisconnected(
-          message: 'Cannot start relay conversation: $e',
-          cause: e,
-        );
-      }
-      if (message.startsWith('Consumer socket unauthorized:')) {
-        throw SocketDispatchUnauthorized(
-          message: 'Cannot start relay conversation: $e',
-          cause: e,
-        );
-      }
-      // Other StateErrors (used-after-dispose, etc.) surface as
-      // start failures because they are not a hub-policy issue.
-      throw RelayConversationStartFailure(
-        message: 'failed to obtain relay conversation: $e',
-        cause: e,
-      );
     } on Object catch (e, s) {
       throw RelayConversationStartFailure(
         message: 'failed to obtain relay conversation: $e',
@@ -1428,35 +1421,9 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     return null;
   }
 
-  static Map<String, Object?>? _toMap(Object? raw) {
-    if (raw is Map<String, Object?>) {
-      return raw;
-    }
-    if (raw is Map) {
-      return raw.map(
-        (key, value) => MapEntry<String, Object?>(key.toString(), value),
-      );
-    }
-    return null;
-  }
+  static Map<String, dynamic>? _toMap(Object? raw) =>
+      socketToStringKeyedMap(raw);
 
-  /// Same parser as the legacy `SocketCommandDispatcherImpl` —
-  /// pulls a `key=value` token out of the `StateError.message` the
-  /// connection layer emits for namespace rejection. Kept private
-  /// (duplicated) instead of moved to a shared helper because the
-  /// two dispatchers will diverge over time on which markers they
-  /// care about, and the cost is one method.
-  String? _extractMarker(String source, String key) {
-    final start = source.indexOf(key);
-    if (start < 0) {
-      return null;
-    }
-    final valueStart = start + key.length;
-    final remainder = source.substring(valueStart);
-    final endIndex = remainder.indexOf(' ');
-    final value = endIndex < 0 ? remainder : remainder.substring(0, endIndex);
-    return value.isEmpty ? null : value;
-  }
 }
 
 final class _PendingRelayFrameRoute {

@@ -228,7 +228,7 @@ void main() {
       );
       await expectLater(
         () => capped.collect(stream),
-        throwsA(isA<StateError>()),
+        throwsA(isA<FormatException>()),
       );
     });
 

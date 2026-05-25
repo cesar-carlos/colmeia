@@ -68,13 +68,13 @@ class RelayConversationManager {
     await conversation.end(reason: reason);
   }
 
-  /// Closes every conversation. Used on logout, transport switch, dispose.
+  /// Closes every conversation in parallel. Used on logout, transport switch,
+  /// dispose. Parallel close avoids blocking for N × endTimeout (default 5s
+  /// each) when multiple agents have open conversations.
   Future<void> releaseAll({String? reason}) async {
     final conversations = _byAgentId.values.toList(growable: false);
     _byAgentId.clear();
-    for (final conversation in conversations) {
-      await conversation.end(reason: reason);
-    }
+    await Future.wait(conversations.map((c) => c.end(reason: reason)));
   }
 
   void _onConnectionState(ConsumerSocketConnectionState state) {
