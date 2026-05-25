@@ -219,6 +219,17 @@ AgentSqlRpcUserMessageResolution resolveAgentSqlRpcUserMessage(
     );
   }
 
+  // replay_detected (-32014): hub idempotency guard fired (typically from
+  // network-level packet duplication). RetryingAgentQueriesRepository retries
+  // with a fresh UUID automatically; this mapping only applies when all retry
+  // attempts are exhausted, in which case a generic transient message is shown.
+  if (code == -32014 || reasonLower == 'replay_detected') {
+    return const AgentSqlRpcUserMessageResolution(
+      userMessage: _En.networkError,
+      uiKey: AgentSqlRpcFailureUiKey.networkError,
+    );
+  }
+
   switch (code) {
     case -32102:
       return const AgentSqlRpcUserMessageResolution(

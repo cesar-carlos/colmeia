@@ -160,8 +160,20 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
   /// Hub sometimes returns `SERVICE_UNAVAILABLE` / "protocol negotiation is
   /// not ready" while the agent link warms up. Those payloads may omit
   /// `retryable: true`; still treat as a short-lived bridge condition.
+  ///
+  /// Also handles `replay_detected` (-32014): the hub has idempotency guards
+  /// that can fire when the same `client_request_id` arrives twice (e.g. from
+  /// network-level packet duplication or a relay conversation timing edge
+  /// case). Each call to `postSqlExecute` generates a fresh UUID, so the
+  /// retry will NOT carry the same ID and will not trigger replay detection
+  /// again. Retrying transparently spares the user the "Requisição duplicada
+  /// detectada" message for what is effectively a transient transport glitch.
   bool _isCooperativeHubWarmupFailure(AppFailure failure) {
     if (failure is RpcFailure) {
+      if (failure.rpcCode == -32014 ||
+          (failure.reason?.toLowerCase() == 'replay_detected')) {
+        return true;
+      }
       final msg = failure.message.toLowerCase();
       final tech = (failure.technicalMessage ?? '').toLowerCase();
       if (msg.contains('protocol negotiation') ||
