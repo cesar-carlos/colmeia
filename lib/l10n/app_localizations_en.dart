@@ -3753,4 +3753,112 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get brazilStoreSalesMapPresetStoreIconTooltip =>
       'Shows each store with an operational store icon.';
+
+  @override
+  String get authLoginWelcomeTitle => 'Welcome back';
+
+  @override
+  String get authLoginWelcomeSubtitle =>
+      'Enter your credentials to access Colmeia.';
+
+  @override
+  String get authLoginEmailLabel => 'User or e-mail';
+
+  @override
+  String get authLoginPasswordLabel => 'Password';
+
+  @override
+  String get authLoginPasswordRequired => 'Enter the password';
+
+  @override
+  String get authLoginForgotPasswordShort => 'Forgot?';
+
+  @override
+  String get authLoginRememberMe => 'Keep me signed in';
+
+  @override
+  String get authLoginNewHerePrefix => 'New here?  ';
+
+  @override
+  String get authLoginRequestAccessAction => 'Request access';
+
+  @override
+  String get authLoginSubmitButton => 'Sign in';
+
+  @override
+  String get authLoginRestoringSession => 'Restoring session…';
+
+  @override
+  String get authLoginCheckRegistrationStatus => 'Check registration status';
+
+  @override
+  String get authLoginForgotPasswordAction => 'I forgot my password';
+
+  @override
+  String authLoginLoadingSemantics(String label) {
+    return 'Loading: $label';
+  }
+
+  @override
+  String get authEmailFieldRequired => 'Enter the e-mail';
+
+  @override
+  String get authEmailFieldInvalid => 'Enter a valid e-mail.';
+
+  @override
+  String get authRegisterTitle => 'Create client account';
+
+  @override
+  String get authRegisterSubtitle =>
+      'Your registration will be pending approval from the designated owner. Once approved, you will be able to sign in.';
+
+  @override
+  String get authRegisterOwnerEmailLabel => 'Owner e-mail';
+
+  @override
+  String get authRegisterOwnerEmailRequired => 'Enter the owner e-mail.';
+
+  @override
+  String get authRegisterFirstNameLabel => 'First name';
+
+  @override
+  String get authRegisterFirstNameRequired => 'Enter your first name.';
+
+  @override
+  String get authRegisterLastNameLabel => 'Last name';
+
+  @override
+  String get authRegisterLastNameRequired => 'Enter your last name.';
+
+  @override
+  String get authRegisterAccountEmailLabel => 'Account e-mail';
+
+  @override
+  String get authRegisterAccountEmailRequired => 'Enter the account e-mail.';
+
+  @override
+  String get authRegisterMobileLabel => 'Mobile (optional)';
+
+  @override
+  String get authRegisterPasswordLabel => 'Password';
+
+  @override
+  String get authRegisterConfirmPasswordLabel => 'Confirm password';
+
+  @override
+  String get authRegisterSubmitButton => 'Request registration';
+
+  @override
+  String get authRegisterBackToLogin => 'Back to sign in';
+
+  @override
+  String authPasswordTooShort(int minLength) {
+    return 'Password must be at least $minLength characters.';
+  }
+
+  @override
+  String get authConfirmPasswordRequired => 'Confirm your password.';
+
+  @override
+  String get authPasswordsMismatch => 'Passwords do not match.';
 }

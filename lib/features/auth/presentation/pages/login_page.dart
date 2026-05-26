@@ -13,6 +13,7 @@ import 'package:colmeia/features/auth/presentation/widgets/login/login_primary_b
 import 'package:colmeia/features/auth/presentation/widgets/login/login_remember_me_row.dart';
 import 'package:colmeia/features/auth/presentation/widgets/login/login_request_access_row.dart';
 import 'package:colmeia/features/auth/presentation/widgets/login/login_welcome_section.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/backgrounds/app_hex_screen_body.dart';
 import 'package:colmeia/shared/widgets/feedback/inline_alert_banner.dart';
@@ -87,6 +88,7 @@ class _LoginPageBodyState extends State<_LoginPageBody> {
     final page = context.watch<LoginPageController>();
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final isBlocked = auth.isLoading || auth.isRestoringSession;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       body: AppHexScreenBody(
@@ -139,8 +141,8 @@ class _LoginPageBodyState extends State<_LoginPageBody> {
                           SizedBox(height: tokens.authLoginGapMajorSection),
                           LoginPrimaryButton(
                             label: auth.isRestoringSession
-                                ? 'Restaurando sessão...'
-                                : 'Entrar na conta',
+                                ? l10n.authLoginRestoringSession
+                                : l10n.authLoginSubmitButton,
                             isLoading: isBlocked,
                             onPressed: () => _submit(auth),
                           ),
@@ -158,7 +160,7 @@ class _LoginPageBodyState extends State<_LoginPageBody> {
                                   : () => context.goTo(
                                       AppRoute.registrationStatus,
                                     ),
-                              child: const Text('Consultar status do cadastro'),
+                              child: Text(l10n.authLoginCheckRegistrationStatus),
                             ),
                           ),
                           Center(
@@ -168,7 +170,7 @@ class _LoginPageBodyState extends State<_LoginPageBody> {
                                   : () => context.goTo(
                                       AppRoute.passwordRecovery,
                                     ),
-                              child: const Text('Esqueci minha senha'),
+                              child: Text(l10n.authLoginForgotPasswordAction),
                             ),
                           ),
                         ],

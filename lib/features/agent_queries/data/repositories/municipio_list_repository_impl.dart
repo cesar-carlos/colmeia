@@ -1,3 +1,4 @@
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_sql_row_map_reader.dart';
@@ -17,7 +18,6 @@ import 'package:colmeia/features/agent_queries/domain/repositories/municipio_lis
 class MunicipioListRepositoryImpl implements MunicipioListRepository {
   MunicipioListRepositoryImpl(this._agentQueriesRepository);
 
-  static const int _defaultBridgeTimeoutMs = 120000;
   static const String _operation = 'loadMunicipioListPage';
 
   final AgentQueriesRepository _agentQueriesRepository;
@@ -48,7 +48,8 @@ class MunicipioListRepositoryImpl implements MunicipioListRepository {
       requestingUserId: userId,
       sql: MunicipioListSql.pagedQuery,
       clientToken: clientToken,
-      bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,
+      bridgeTimeoutMs:
+          bridgeTimeoutMs ?? AppEnvironment.agentSqlBridgeTimeoutMs,
       namedParams: <String, Object?>{
         ...filterParams,
         'startRow': filter.startRow,

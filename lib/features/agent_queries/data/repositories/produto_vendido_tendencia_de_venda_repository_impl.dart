@@ -1,3 +1,4 @@
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
@@ -26,9 +27,6 @@ import 'package:result_dart/result_dart.dart';
 class ProdutoVendidoTendenciaDeVendaRepositoryImpl
     implements ProdutoVendidoTendenciaDeVendaRepository {
   ProdutoVendidoTendenciaDeVendaRepositoryImpl(this._agentQueriesRepository);
-
-  /// Product-level aggregate with two periods and metadata joins.
-  static const int _defaultBridgeTimeoutMs = 180000;
 
   /// 90 % of the active bridge timeout, clamped for very short overrides.
   static const int _defaultSqlTimeoutMs = 162000;
@@ -67,7 +65,8 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
       );
     }
 
-    final effectiveBridgeMs = bridgeTimeoutMs ?? _defaultBridgeTimeoutMs;
+    final effectiveBridgeMs =
+        bridgeTimeoutMs ?? AppEnvironment.agentSqlBridgeMediumTimeoutMs;
     final effectiveSqlMs = (effectiveBridgeMs * 0.9).round().clamp(
       _minSqlTimeoutMs,
       _defaultSqlTimeoutMs,
@@ -143,7 +142,8 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
       );
     }
 
-    final effectiveBridgeMs = bridgeTimeoutMs ?? _defaultBridgeTimeoutMs;
+    final effectiveBridgeMs =
+        bridgeTimeoutMs ?? AppEnvironment.agentSqlBridgeMediumTimeoutMs;
     final effectiveSqlMs = (effectiveBridgeMs * 0.9).round().clamp(
       _minSqlTimeoutMs,
       _defaultSqlTimeoutMs,
@@ -219,7 +219,8 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
     }
 
     final trimmedAgentId = agentId.trim();
-    final effectiveBridgeMs = bridgeTimeoutMs ?? _defaultBridgeTimeoutMs;
+    final effectiveBridgeMs =
+        bridgeTimeoutMs ?? AppEnvironment.agentSqlBridgeMediumTimeoutMs;
     final effectiveSqlMs = (effectiveBridgeMs * 0.9).round().clamp(
       _minSqlTimeoutMs,
       _defaultSqlTimeoutMs,

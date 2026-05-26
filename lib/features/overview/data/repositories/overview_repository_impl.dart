@@ -147,7 +147,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
         const Failure<Overview, AppFailure>(
           UnknownFailure(
             message: 'Overview load produced no data',
-            userMessage: 'Unable to load the overview.',
+            userMessage: 'Não foi possível carregar a visão geral.',
           ),
         );
   }
@@ -418,7 +418,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
         error,
         stackTrace: stackTrace,
         fallbackMessage: 'Unable to load overview',
-        fallbackUserMessage: 'Unable to load the overview.',
+        fallbackUserMessage: 'Não foi possível carregar a visão geral.',
         context: <String, Object?>{
           'operation': 'loadOverview',
           'userId': userId,

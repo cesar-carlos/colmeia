@@ -316,6 +316,14 @@ class AuthRepositoryImpl implements AuthRepository {
       final profile = await _remoteDataSource.readCurrentUserProfile();
       return Success<UserProfile, AppFailure>(profile);
     } on Object catch (error, stackTrace) {
+      AppLogger.error(
+        'Unexpected failure reading current user profile',
+        context: const <String, Object?>{
+          'operation': 'readCurrentUserProfile',
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
       return Failure<UserProfile, AppFailure>(
         mapToAppFailure(
           error,
@@ -360,6 +368,14 @@ class AuthRepositoryImpl implements AuthRepository {
         ),
       );
     } on Object catch (error, stackTrace) {
+      AppLogger.error(
+        'Unexpected failure updating current user profile',
+        context: const <String, Object?>{
+          'operation': 'updateCurrentUserProfile',
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
       return Failure<UserProfile, AppFailure>(
         mapToAppFailure(
           error,
@@ -401,6 +417,14 @@ class AuthRepositoryImpl implements AuthRepository {
       );
       return Failure<UserProfile, AppFailure>(failure);
     } on Object catch (error, stackTrace) {
+      AppLogger.error(
+        'Unexpected failure uploading thumbnail',
+        context: const <String, Object?>{
+          'operation': 'uploadThumbnail',
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
       return Failure<UserProfile, AppFailure>(
         mapToAppFailure(
           error,
@@ -443,6 +467,14 @@ class AuthRepositoryImpl implements AuthRepository {
       );
       return Failure<Unit, AppFailure>(failure);
     } on Object catch (error, stackTrace) {
+      AppLogger.error(
+        'Unexpected failure changing password',
+        context: const <String, Object?>{
+          'operation': 'changePassword',
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
       return Failure<Unit, AppFailure>(
         mapToAppFailure(
           error,
@@ -485,6 +517,15 @@ class AuthRepositoryImpl implements AuthRepository {
       );
       return Failure<String, AppFailure>(failure);
     } on Object catch (error, stackTrace) {
+      AppLogger.error(
+        'Unexpected failure requesting password recovery',
+        context: <String, Object?>{
+          'operation': 'requestPasswordRecovery',
+          'email': redactedEmail,
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
       return Failure<String, AppFailure>(
         mapToAppFailure(
           error,
@@ -536,6 +577,14 @@ class AuthRepositoryImpl implements AuthRepository {
         ),
       );
     } on Object catch (error, stackTrace) {
+      AppLogger.error(
+        'Unexpected failure reading password recovery status',
+        context: const <String, Object?>{
+          'operation': 'readPasswordRecoveryStatus',
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
       return Failure<ClientPasswordRecoveryStatus, AppFailure>(
         mapToAppFailure(
           error,
@@ -597,6 +646,14 @@ class AuthRepositoryImpl implements AuthRepository {
             );
       return Failure<Unit, AppFailure>(failure);
     } on Object catch (error, stackTrace) {
+      AppLogger.error(
+        'Unexpected failure resetting password',
+        context: const <String, Object?>{
+          'operation': 'resetPassword',
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
       return Failure<Unit, AppFailure>(
         mapToAppFailure(
           error,

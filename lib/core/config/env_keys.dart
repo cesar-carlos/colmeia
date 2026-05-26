@@ -72,6 +72,24 @@ abstract final class EnvKeys {
   /// offline fallback and fast home reopen. Default 30 minutes.
   static const String overviewCacheMaxAgeMs = 'OVERVIEW_CACHE_MAX_AGE_MS';
 
+  /// Default per-call bridge timeout (ms) for `agent_queries` repositories.
+  /// Used as fallback when callers do not pass `bridgeTimeoutMs`. Default
+  /// 120000 ms.
+  static const String agentSqlBridgeTimeoutMs = 'AGENT_SQL_BRIDGE_TIMEOUT_MS';
+
+  /// Medium-tier bridge timeout (ms) for `agent_queries` repositories whose
+  /// SQL runs slightly longer than the default (e.g. product ranking and
+  /// trend reports). Override via dotenv if upstream tuning changes.
+  /// Default: 180000 ms.
+  static const String agentSqlBridgeMediumTimeoutMs =
+      'AGENT_SQL_BRIDGE_MEDIUM_TIMEOUT_MS';
+
+  /// Extended bridge timeout (ms) for heavy `agent_queries` repositories
+  /// whose SQL runs longer than the standard call (e.g. monthly installment
+  /// aggregations). Default 240000 ms.
+  static const String agentSqlBridgeLongTimeoutMs =
+      'AGENT_SQL_BRIDGE_LONG_TIMEOUT_MS';
+
   // ----- Socket channel (PR-A: infraestrutura de conexão) -----
 
   /// `rest` (default) | `socket`. Selects the agent commands transport.

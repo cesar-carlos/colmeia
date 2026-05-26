@@ -136,6 +136,9 @@ abstract final class AppEnvironment {
   static const int defaultAgentQueryMergeAllConcurrency = 8;
   static const int defaultAgentSqlOverviewBatchMaxParallelReadOnlyItems = 4;
   static const int defaultAgentSqlRelayStreamingMaxConcurrentPerAgent = 4;
+  static const int defaultAgentSqlBridgeTimeoutMs = 120000;
+  static const int defaultAgentSqlBridgeMediumTimeoutMs = 180000;
+  static const int defaultAgentSqlBridgeLongTimeoutMs = 240000;
 
   static int get agentSqlCacheMaxSize => AppEnvironmentResolution.resolveInt(
     fromDefine: const String.fromEnvironment(EnvKeys.agentSqlCacheMaxSize),
@@ -219,6 +222,32 @@ abstract final class AppEnvironment {
         1,
         defaultAgentSqlRelayStreamingMaxConcurrentPerAgent,
       );
+
+  static int get agentSqlBridgeTimeoutMs => AppEnvironmentResolution.resolveInt(
+    fromDefine: const String.fromEnvironment(
+      EnvKeys.agentSqlBridgeTimeoutMs,
+    ),
+    fromDotenv: _dotenvMaybe(EnvKeys.agentSqlBridgeTimeoutMs),
+    fallback: defaultAgentSqlBridgeTimeoutMs,
+  )._atLeastOrFallback(1, defaultAgentSqlBridgeTimeoutMs);
+
+  static int get agentSqlBridgeMediumTimeoutMs =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.agentSqlBridgeMediumTimeoutMs,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.agentSqlBridgeMediumTimeoutMs),
+        fallback: defaultAgentSqlBridgeMediumTimeoutMs,
+      )._atLeastOrFallback(1, defaultAgentSqlBridgeMediumTimeoutMs);
+
+  static int get agentSqlBridgeLongTimeoutMs =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.agentSqlBridgeLongTimeoutMs,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.agentSqlBridgeLongTimeoutMs),
+        fallback: defaultAgentSqlBridgeLongTimeoutMs,
+      )._atLeastOrFallback(1, defaultAgentSqlBridgeLongTimeoutMs);
 
   /// `0` disables REST per-agent in-flight limiting. Otherwise caps concurrent
   /// `executeSql` / `executeSqlBatch` per agent id before `POST .../commands`.

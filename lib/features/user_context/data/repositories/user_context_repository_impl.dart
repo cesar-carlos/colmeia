@@ -86,14 +86,42 @@ class UserContextRepositoryImpl implements UserContextRepository {
   Future<void> persistActiveStoreId({
     required String userId,
     required String storeId,
-  }) {
-    return _localDataSource.saveActiveStoreId(userId: userId, storeId: storeId);
+  }) async {
+    try {
+      await _localDataSource.saveActiveStoreId(
+        userId: userId,
+        storeId: storeId,
+      );
+    } on Object catch (error, stackTrace) {
+      AppLogger.error(
+        'Failed to persist active store id',
+        context: <String, Object?>{
+          'operation': 'persistActiveStoreId',
+          'userId': userId,
+          'storeId': storeId,
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   @override
   Future<void> clearPersistedActiveStoreId({
     required String userId,
-  }) {
-    return _localDataSource.clearActiveStoreId(userId);
+  }) async {
+    try {
+      await _localDataSource.clearActiveStoreId(userId);
+    } on Object catch (error, stackTrace) {
+      AppLogger.error(
+        'Failed to clear persisted active store id',
+        context: <String, Object?>{
+          'operation': 'clearPersistedActiveStoreId',
+          'userId': userId,
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 }

@@ -13,7 +13,11 @@ import 'package:result_dart/result_dart.dart';
 /// Circuit breaker that prevents cascading failures when the hub is
 /// overloaded or repeatedly returning 503/timeout errors.
 ///
-/// States:
+/// State is partitioned per `agentId`: failures on one agent never trip the
+/// breaker for another. This avoids one misbehaving agent from blocking
+/// SQL traffic to the rest.
+///
+/// States (per agent):
 /// - **Closed** (normal): requests flow through to delegate
 /// - **Open** (protecting): fail-fast without calling hub
 /// - **Half-Open** (testing): allows one probe request to test recovery
@@ -40,51 +44,35 @@ class CircuitBreakerAgentQueriesRepository implements AgentQueriesRepository {
   final int _failureThreshold;
   final Duration _cooldownPeriod;
 
-  _CircuitState _state = _CircuitState.closed;
-  int _consecutiveFailures = 0;
-  DateTime? _openedAt;
+  final Map<String, _AgentCircuit> _circuits = <String, _AgentCircuit>{};
 
-  /// Visible for testing and observability.
-  String get state => _state.name;
+  _AgentCircuit _circuitFor(String agentId) {
+    return _circuits.putIfAbsent(agentId, _AgentCircuit.new);
+  }
 
-  /// Visible for testing and observability.
-  int get consecutiveFailures => _consecutiveFailures;
+  /// Visible for testing and observability — returns the breaker state name
+  /// for [agentId] (`closed`, `open`, or `halfOpen`).
+  String stateFor(String agentId) => _circuitFor(agentId).state.name;
+
+  /// Visible for testing and observability — returns the consecutive failure
+  /// count for [agentId].
+  int consecutiveFailuresFor(String agentId) =>
+      _circuitFor(agentId).consecutiveFailures;
 
   @override
   Future<AppResult<AgentSqlExecutionResult>> executeSql(
     AgentSqlExecuteRequest request, {
     AgentQueriesCancelScope? cancelScope,
   }) async {
-    if (_state == _CircuitState.open) {
-      final now = DateTime.now();
-      if (_openedAt != null && now.difference(_openedAt!) >= _cooldownPeriod) {
-        _state = _CircuitState.halfOpen;
-        AppLogger.info(
-          'Circuit breaker entering half-open state for probe',
-          context: <String, Object?>{
-            'operation': 'executeAgentSql',
-            'agentId': request.trimmedAgentId,
-            'cooldownElapsed': _cooldownPeriod.inSeconds,
-          },
-        );
-      } else {
-        return Failure<AgentSqlExecutionResult, AppFailure>(
-          NetworkFailure(
-            message: 'Circuit breaker open: hub overload protection active',
-            userMessage:
-                'O servidor esta temporariamente indisponivel. '
-                'Tente novamente em alguns instantes.',
-            context: <String, Object?>{
-              'circuitBreakerState': 'open',
-              'consecutiveFailures': _consecutiveFailures,
-              'cooldownRemainingMs': _openedAt == null
-                  ? 0
-                  : (_cooldownPeriod.inMilliseconds -
-                        now.difference(_openedAt!).inMilliseconds),
-            },
-          ),
-        );
-      }
+    final agentId = request.trimmedAgentId;
+    final circuit = _circuitFor(agentId);
+
+    final openFailure = _openCircuitFailure<AgentSqlExecutionResult>(
+      circuit: circuit,
+      agentId: agentId,
+    );
+    if (openFailure != null) {
+      return openFailure;
     }
 
     final result = await _delegate.executeSql(
@@ -93,13 +81,13 @@ class CircuitBreakerAgentQueriesRepository implements AgentQueriesRepository {
     );
 
     if (result.isSuccess()) {
-      _onSuccess();
+      _onSuccess(circuit, agentId);
       return result;
     }
 
     final failure = result.exceptionOrNull()!;
     if (_isCircuitBreakingFailure(failure)) {
-      _onFailure(failure);
+      _onFailure(circuit, agentId, failure);
     }
 
     return result;
@@ -110,7 +98,13 @@ class CircuitBreakerAgentQueriesRepository implements AgentQueriesRepository {
     AgentSqlExecuteBatchRequest request, {
     AgentQueriesCancelScope? cancelScope,
   }) async {
-    final openFailure = _openCircuitFailure<AgentSqlBatchExecutionResult>();
+    final agentId = request.trimmedAgentId;
+    final circuit = _circuitFor(agentId);
+
+    final openFailure = _openCircuitFailure<AgentSqlBatchExecutionResult>(
+      circuit: circuit,
+      agentId: agentId,
+    );
     if (openFailure != null) {
       return openFailure;
     }
@@ -120,24 +114,36 @@ class CircuitBreakerAgentQueriesRepository implements AgentQueriesRepository {
       cancelScope: cancelScope,
     );
     if (result.isSuccess()) {
-      _onSuccess();
+      _onSuccess(circuit, agentId);
       return result;
     }
 
     final failure = result.exceptionOrNull()!;
     if (_isCircuitBreakingFailure(failure)) {
-      _onFailure(failure);
+      _onFailure(circuit, agentId, failure);
     }
     return result;
   }
 
-  AppResult<T>? _openCircuitFailure<T extends Object>() {
-    if (_state != _CircuitState.open) {
+  AppResult<T>? _openCircuitFailure<T extends Object>({
+    required _AgentCircuit circuit,
+    required String agentId,
+  }) {
+    if (circuit.state != _CircuitState.open) {
       return null;
     }
     final now = DateTime.now();
-    if (_openedAt != null && now.difference(_openedAt!) >= _cooldownPeriod) {
-      _state = _CircuitState.halfOpen;
+    if (circuit.openedAt != null &&
+        now.difference(circuit.openedAt!) >= _cooldownPeriod) {
+      circuit.state = _CircuitState.halfOpen;
+      AppLogger.info(
+        'Circuit breaker entering half-open state for probe',
+        context: <String, Object?>{
+          'operation': 'executeAgentSql',
+          'agentId': agentId,
+          'cooldownElapsed': _cooldownPeriod.inSeconds,
+        },
+      );
       return null;
     }
     return Failure<T, AppFailure>(
@@ -147,12 +153,13 @@ class CircuitBreakerAgentQueriesRepository implements AgentQueriesRepository {
             'O servidor esta temporariamente indisponivel. '
             'Tente novamente em alguns instantes.',
         context: <String, Object?>{
+          'agentId': agentId,
           'circuitBreakerState': 'open',
-          'consecutiveFailures': _consecutiveFailures,
-          'cooldownRemainingMs': _openedAt == null
+          'consecutiveFailures': circuit.consecutiveFailures,
+          'cooldownRemainingMs': circuit.openedAt == null
               ? 0
               : (_cooldownPeriod.inMilliseconds -
-                    now.difference(_openedAt!).inMilliseconds),
+                    now.difference(circuit.openedAt!).inMilliseconds),
         },
       ),
     );
@@ -190,51 +197,69 @@ class CircuitBreakerAgentQueriesRepository implements AgentQueriesRepository {
         code == 'overloaded';
   }
 
-  void _onSuccess() {
-    if (_state == _CircuitState.halfOpen) {
-      _state = _CircuitState.closed;
-      _consecutiveFailures = 0;
+  void _onSuccess(_AgentCircuit circuit, String agentId) {
+    if (circuit.state == _CircuitState.halfOpen) {
+      circuit
+        ..state = _CircuitState.closed
+        ..consecutiveFailures = 0;
       AppLogger.info(
         'Circuit breaker closed: hub recovered',
-        context: <String, Object?>{'operation': 'executeAgentSql'},
+        context: <String, Object?>{
+          'operation': 'executeAgentSql',
+          'agentId': agentId,
+        },
       );
-    } else if (_consecutiveFailures > 0) {
-      _consecutiveFailures = 0;
+    } else if (circuit.consecutiveFailures > 0) {
+      circuit.consecutiveFailures = 0;
     }
   }
 
-  void _onFailure(AppFailure failure) {
-    _consecutiveFailures++;
+  void _onFailure(
+    _AgentCircuit circuit,
+    String agentId,
+    AppFailure failure,
+  ) {
+    circuit.consecutiveFailures++;
 
-    if (_state == _CircuitState.halfOpen) {
-      _state = _CircuitState.open;
-      _openedAt = DateTime.now();
+    if (circuit.state == _CircuitState.halfOpen) {
+      circuit
+        ..state = _CircuitState.open
+        ..openedAt = DateTime.now();
       AppLogger.warning(
         'Circuit breaker re-opened: probe request failed',
         context: <String, Object?>{
           'operation': 'executeAgentSql',
-          'consecutiveFailures': _consecutiveFailures,
+          'agentId': agentId,
+          'consecutiveFailures': circuit.consecutiveFailures,
           'failureType': failure.runtimeType.toString(),
         },
       );
       return;
     }
 
-    if (_state == _CircuitState.closed &&
-        _consecutiveFailures >= _failureThreshold) {
-      _state = _CircuitState.open;
-      _openedAt = DateTime.now();
+    if (circuit.state == _CircuitState.closed &&
+        circuit.consecutiveFailures >= _failureThreshold) {
+      circuit
+        ..state = _CircuitState.open
+        ..openedAt = DateTime.now();
       AppLogger.warning(
         'Circuit breaker opened: hub overload detected',
         context: <String, Object?>{
           'operation': 'executeAgentSql',
-          'consecutiveFailures': _consecutiveFailures,
+          'agentId': agentId,
+          'consecutiveFailures': circuit.consecutiveFailures,
           'failureThreshold': _failureThreshold,
           'cooldownPeriod': _cooldownPeriod.inSeconds,
         },
       );
     }
   }
+}
+
+class _AgentCircuit {
+  _CircuitState state = _CircuitState.closed;
+  int consecutiveFailures = 0;
+  DateTime? openedAt;
 }
 
 enum _CircuitState {

@@ -1,3 +1,4 @@
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/forms/app_checkbox_field.dart';
 import 'package:flutter/material.dart';
 
@@ -13,6 +14,7 @@ class LoginRememberMeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
@@ -30,8 +32,8 @@ class LoginRememberMeRow extends StatelessWidget {
       child: AppCheckboxField(
         value: value,
         onChanged: onChanged,
-        label: 'Manter conectado',
-        semanticLabel: 'Manter conectado',
+        label: l10n.authLoginRememberMe,
+        semanticLabel: l10n.authLoginRememberMe,
       ),
     );
   }

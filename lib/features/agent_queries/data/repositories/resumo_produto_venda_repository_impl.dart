@@ -1,3 +1,4 @@
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_sql_local_date.dart';
@@ -16,10 +17,6 @@ import 'package:colmeia/features/agent_queries/domain/repositories/resumo_produt
 
 class ResumoProdutoVendaRepositoryImpl implements ResumoProdutoVendaRepository {
   ResumoProdutoVendaRepositoryImpl(this._agentQueriesRepository);
-
-  /// HTTP bridge wait — resumo can be heavy (wide joins + CustoProduto +
-  /// aggregate); aligned with other multi-join agent reports.
-  static const int _defaultBridgeTimeoutMs = 180000;
 
   /// Upper bound for the agent-side SQL timeout (`options.timeout_ms`).
   /// The effective value is derived as 90 % of the active bridge timeout,
@@ -61,7 +58,8 @@ class ResumoProdutoVendaRepositoryImpl implements ResumoProdutoVendaRepository {
       );
     }
 
-    final effectiveBridgeMs = bridgeTimeoutMs ?? _defaultBridgeTimeoutMs;
+    final effectiveBridgeMs =
+        bridgeTimeoutMs ?? AppEnvironment.agentSqlBridgeMediumTimeoutMs;
     // 90 % of the bridge timeout, capped at the default SQL ceiling and floored
     // at the minimum so very short bridge timeouts don't produce near-zero SQL
     // timeouts that would fire before the query even starts.

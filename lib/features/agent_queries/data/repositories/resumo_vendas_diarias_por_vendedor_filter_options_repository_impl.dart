@@ -1,3 +1,4 @@
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
@@ -28,7 +29,6 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
     this._agentQueriesRepository,
   );
 
-  static const int _defaultBridgeTimeoutMs = 120000;
   static const int _minSqlTimeoutMs = 5000;
   static const int _defaultSqlTimeoutCapMs = 108000;
   static const String _batchOperation =
@@ -197,7 +197,8 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
     final effectiveLimit = ResumoVendasDiariasSuggestionSqlParams.clampLimit(
       limit,
     );
-    final effectiveBridgeMs = bridgeTimeoutMs ?? _defaultBridgeTimeoutMs;
+    final effectiveBridgeMs =
+        bridgeTimeoutMs ?? AppEnvironment.agentSqlBridgeTimeoutMs;
     final effectiveSqlMs = (effectiveBridgeMs * 0.9).round().clamp(
       _minSqlTimeoutMs,
       _defaultSqlTimeoutCapMs,
@@ -421,7 +422,8 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
       hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
       sql: sql,
       clientToken: clientToken,
-      bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,
+      bridgeTimeoutMs:
+          bridgeTimeoutMs ?? AppEnvironment.agentSqlBridgeTimeoutMs,
       namedParams:
           namedParamsOverride ??
           <String, Object?>{

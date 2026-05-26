@@ -14,6 +14,7 @@ import 'package:colmeia/features/auth/domain/repositories/auth_repository.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/auth/presentation/controllers/login_page_controller.dart';
 import 'package:colmeia/features/auth/presentation/pages/login_page.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/feedback/inline_alert_banner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -56,6 +57,8 @@ void main() {
       MaterialApp(
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: ChangeNotifierProvider<AuthController>.value(
           value: auth,
           child: loginPage,
@@ -64,15 +67,19 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(Scaffold)),
+    );
+
     await tester.enterText(find.byType(TextFormField).at(0), '');
     await tester.enterText(find.byType(TextFormField).at(1), 'secret');
 
-    final submitButton = find.text('Entrar na conta');
+    final submitButton = find.text(l10n.authLoginSubmitButton);
     await tester.ensureVisible(submitButton);
     await tester.tap(submitButton);
     await tester.pumpAndSettle();
 
-    expect(find.text('Informe o e-mail'), findsOneWidget);
+    expect(find.text(l10n.authEmailFieldRequired), findsOneWidget);
     auth.dispose();
   });
 
@@ -84,6 +91,8 @@ void main() {
       MaterialApp(
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: ChangeNotifierProvider<AuthController>.value(
           value: auth,
           child: loginPage,
@@ -115,6 +124,8 @@ void main() {
       MaterialApp(
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         home: ChangeNotifierProvider<AuthController>.value(
           value: auth,
           child: loginPage,
@@ -123,10 +134,14 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(Scaffold)),
+    );
+
     await tester.enterText(find.byType(TextFormField).at(0), 'user@corp.com');
     await tester.enterText(find.byType(TextFormField).at(1), 'secret');
 
-    final submitButton = find.text('Entrar na conta');
+    final submitButton = find.text(l10n.authLoginSubmitButton);
     await tester.ensureVisible(submitButton);
     await tester.tap(submitButton);
     await tester.pumpAndSettle();

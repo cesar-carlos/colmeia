@@ -11,6 +11,7 @@ import 'package:colmeia/core/config/app_dotenv_loader.dart';
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/observability/app_global_error_handlers.dart';
 import 'package:colmeia/core/observability/sentry_bootstrap.dart';
 import 'package:colmeia/core/observability/socket/socket_metrics_listener.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
@@ -61,6 +62,8 @@ Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
   configureColmeiaWebUrlStrategy();
   AppLogger.configureForRuntime();
+  installGlobalErrorHandlers();
+  installBrandedErrorWidget();
   await loadAppDotenv();
 
   // Boot-time observability: surface the resolved bridge transport
@@ -72,7 +75,20 @@ Future<void> bootstrap() async {
 
   await runAppWithOptionalSentry(() async {
     await setupDependencies();
-    await getIt<WindowsAutoUpdateController>().initialize();
+    unawaited(
+      getIt<WindowsAutoUpdateController>()
+          .initialize()
+          .catchError((Object error, StackTrace st) {
+        AppLogger.warning(
+          'Windows auto-update initialization failed',
+          context: const <String, Object?>{
+            'operation': 'WindowsAutoUpdateController.initialize',
+          },
+          error: error,
+          stackTrace: st,
+        );
+      }),
+    );
     if (AppEnvironment.consumerSocketLifecycleEnabled) {
       getIt<SocketMetricsListener>().start();
     }

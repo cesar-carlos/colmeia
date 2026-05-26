@@ -1,3 +1,4 @@
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
@@ -21,7 +22,6 @@ class ResumoTotalVendasMunicipioFilialDiarioRepositoryImpl
     this._agentQueriesRepository,
   );
 
-  static const int _defaultBridgeTimeoutMs = 120000;
   static const String _operation = 'loadResumoTotalVendasMunicipioFilialDiario';
 
   final AgentQueriesRepository _agentQueriesRepository;
@@ -54,7 +54,8 @@ class ResumoTotalVendasMunicipioFilialDiarioRepositoryImpl
       hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
       sql: ResumoTotalVendasMunicipioFilialDiarioSql.query,
       clientToken: clientToken,
-      bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,
+      bridgeTimeoutMs:
+          bridgeTimeoutMs ?? AppEnvironment.agentSqlBridgeTimeoutMs,
       namedParams: <String, Object?>{
         'dataVendaInicio': AgentQueriesSqlLocalDate.format(
           filter.dataVendaInicio,

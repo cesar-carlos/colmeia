@@ -15,7 +15,8 @@ class ColmeiaApp extends StatelessWidget {
     final themeMode = context.watch<AppThemeModeController>().themeMode;
 
     return MaterialApp.router(
-      title: 'Colmeia',
+      onGenerateTitle: (context) =>
+          AppLocalizations.of(context).shellAppBrandName,
       debugShowCheckedModeBanner: false,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,

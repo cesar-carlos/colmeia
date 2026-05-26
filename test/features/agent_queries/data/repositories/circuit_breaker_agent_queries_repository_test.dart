@@ -39,7 +39,7 @@ void main() {
       check(second.isError()).isTrue();
       check(third.isError()).isTrue();
       check(delegate.callCount).equals(2);
-      check(breaker.state).equals('open');
+      check(breaker.stateFor('agent-1')).equals('open');
       check(
         third.exceptionOrNull()?.message,
       ).isNotNull().contains('Circuit breaker open');
@@ -71,8 +71,52 @@ void main() {
 
       check(result.isError()).isTrue();
       check(delegate.callCount).equals(1);
-      check(breaker.state).equals('closed');
-      check(breaker.consecutiveFailures).equals(0);
+      check(breaker.stateFor('agent-1')).equals('closed');
+      check(breaker.consecutiveFailuresFor('agent-1')).equals(0);
+    },
+  );
+
+  test(
+    'should isolate breaker state per agentId so one agent does not block others',
+    () async {
+      final delegate = _SequenceAgentQueriesRepository();
+      final breaker = CircuitBreakerAgentQueriesRepository(
+        delegate: delegate,
+        failureThreshold: 2,
+        cooldownPeriod: const Duration(minutes: 1),
+      );
+      delegate
+        ..enqueue(_networkFailureWithTransportCode('disconnected'))
+        ..enqueue(_networkFailureWithTransportCode('disconnected'))
+        ..enqueue(
+          const Success<AgentSqlExecutionResult, AppFailure>(
+            AgentSqlExecutionResult(
+              rows: <Map<String, dynamic>>[],
+              rowCount: 0,
+            ),
+          ),
+        );
+
+      const requestA = AgentSqlExecuteRequest(
+        agentId: 'agent-A',
+        sql: 'SELECT 1',
+      );
+      const requestB = AgentSqlExecuteRequest(
+        agentId: 'agent-B',
+        sql: 'SELECT 1',
+      );
+
+      await breaker.executeSql(requestA);
+      await breaker.executeSql(requestA);
+
+      check(breaker.stateFor('agent-A')).equals('open');
+      check(breaker.stateFor('agent-B')).equals('closed');
+
+      final resultForB = await breaker.executeSql(requestB);
+
+      check(resultForB.isSuccess()).isTrue();
+      check(breaker.stateFor('agent-A')).equals('open');
+      check(breaker.stateFor('agent-B')).equals('closed');
     },
   );
 }

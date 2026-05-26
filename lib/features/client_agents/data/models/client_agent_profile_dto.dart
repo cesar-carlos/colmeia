@@ -172,6 +172,7 @@ class ClientAgentProfileDto {
 
   ClientAgent toEntity({
     AgentConnectionStatus connectionStatus = AgentConnectionStatus.unknown,
+    bool isStaleCache = false,
   }) {
     return ClientAgent(
       agentId: agentId,
@@ -194,6 +195,7 @@ class ClientAgentProfileDto {
       createdAt: createdAt,
       updatedAt: updatedAt,
       hasServerClientToken: hasClientToken,
+      isStaleCache: isStaleCache,
     );
   }
 

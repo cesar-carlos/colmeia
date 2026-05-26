@@ -1,3 +1,4 @@
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
@@ -37,9 +38,6 @@ class ResumoParcelasMensalRepositoryImpl
     this._agentQueriesRepository,
   );
 
-  /// Heavy join over 12 months; default above generic agent queries to reduce
-  /// false timeouts while still bounded by the bridge.
-  static const int _defaultBridgeTimeoutMs = 240000;
   static const String _operation = 'loadResumoParcelasMensal';
 
   final AgentQueriesRepository _agentQueriesRepository;
@@ -85,7 +83,8 @@ class ResumoParcelasMensalRepositoryImpl
         codVendedor: filter.codVendedor,
       ),
       clientToken: clientToken,
-      bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,
+      bridgeTimeoutMs:
+          bridgeTimeoutMs ?? AppEnvironment.agentSqlBridgeLongTimeoutMs,
       namedParams: periodAndFlagsParams,
       executeOptions: const AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,

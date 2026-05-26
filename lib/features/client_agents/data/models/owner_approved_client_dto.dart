@@ -57,13 +57,14 @@ class OwnerApprovedClientDto {
   final String? accountStatus;
   final DateTime? approvedAt;
 
-  OwnerApprovedClient toEntity() {
+  OwnerApprovedClient toEntity({bool isStaleCache = false}) {
     return OwnerApprovedClient(
       clientId: clientId,
       clientName: clientName,
       clientEmail: clientEmail,
       accountStatus: accountStatus,
       approvedAt: approvedAt,
+      isStaleCache: isStaleCache,
     );
   }
 

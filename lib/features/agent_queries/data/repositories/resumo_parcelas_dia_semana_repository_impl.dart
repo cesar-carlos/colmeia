@@ -1,3 +1,4 @@
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
@@ -18,7 +19,6 @@ class ResumoParcelasDiaSemanaRepositoryImpl
     implements ResumoParcelasDiaSemanaRepository {
   ResumoParcelasDiaSemanaRepositoryImpl(this._agentQueriesRepository);
 
-  static const int _defaultBridgeTimeoutMs = 120000;
   static const String _operation = 'loadResumoParcelasDiaSemana';
 
   final AgentQueriesRepository _agentQueriesRepository;
@@ -64,7 +64,8 @@ class ResumoParcelasDiaSemanaRepositoryImpl
         codVendedor: filter.codVendedor,
       ),
       clientToken: clientToken,
-      bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,
+      bridgeTimeoutMs:
+          bridgeTimeoutMs ?? AppEnvironment.agentSqlBridgeTimeoutMs,
       namedParams: periodAndFlagsParams,
       executeOptions: const AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,

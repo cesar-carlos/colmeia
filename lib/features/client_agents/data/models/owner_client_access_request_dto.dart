@@ -120,7 +120,7 @@ class OwnerClientAccessRequestDto {
   final DateTime? reviewedAt;
   final String? rejectionReason;
 
-  OwnerClientAccessRequest toEntity() {
+  OwnerClientAccessRequest toEntity({bool isStaleCache = false}) {
     return OwnerClientAccessRequest(
       requestId: requestId,
       agentId: agentId,
@@ -132,6 +132,7 @@ class OwnerClientAccessRequestDto {
       requestedAt: requestedAt,
       reviewedAt: reviewedAt,
       rejectionReason: rejectionReason,
+      isStaleCache: isStaleCache,
     );
   }
 

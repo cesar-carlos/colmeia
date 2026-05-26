@@ -166,7 +166,7 @@ void main() {
     });
 
     test(
-      'returns empty snapshot when network fails and cache is empty',
+      'returns NetworkFailure when network fails and cache is empty',
       () async {
         when(
           () => remote.fetchClientAgentToken(agentId: any(named: 'agentId')),
@@ -182,9 +182,8 @@ void main() {
           agentId: agentId,
         );
 
-        check(result.isSuccess()).isTrue();
-        check(result.getOrNull()?.token).isNull();
-        check(result.getOrNull()?.hasToken).equals(false);
+        check(result.isError()).isTrue();
+        check(result.exceptionOrNull()).isA<NetworkFailure>();
       },
     );
 

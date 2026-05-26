@@ -3799,6 +3799,115 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get brazilStoreSalesMapPresetStoreIconTooltip =>
       'Exibe cada loja com ícone operacional de unidade.';
+
+  @override
+  String get authLoginWelcomeTitle => 'Bem-vindo de volta';
+
+  @override
+  String get authLoginWelcomeSubtitle =>
+      'Informe suas credenciais para acessar a colmeia.';
+
+  @override
+  String get authLoginEmailLabel => 'Usuário ou e-mail';
+
+  @override
+  String get authLoginPasswordLabel => 'Senha';
+
+  @override
+  String get authLoginPasswordRequired => 'Informe a senha';
+
+  @override
+  String get authLoginForgotPasswordShort => 'Esqueceu?';
+
+  @override
+  String get authLoginRememberMe => 'Manter conectado';
+
+  @override
+  String get authLoginNewHerePrefix => 'Novo por aqui?  ';
+
+  @override
+  String get authLoginRequestAccessAction => 'Solicitar acesso';
+
+  @override
+  String get authLoginSubmitButton => 'Entrar na conta';
+
+  @override
+  String get authLoginRestoringSession => 'Restaurando sessão…';
+
+  @override
+  String get authLoginCheckRegistrationStatus => 'Consultar status do cadastro';
+
+  @override
+  String get authLoginForgotPasswordAction => 'Esqueci minha senha';
+
+  @override
+  String authLoginLoadingSemantics(String label) {
+    return 'Carregando: $label';
+  }
+
+  @override
+  String get authEmailFieldRequired => 'Informe o e-mail';
+
+  @override
+  String get authEmailFieldInvalid => 'Informe um e-mail válido.';
+
+  @override
+  String get authRegisterTitle => 'Criar conta de cliente';
+
+  @override
+  String get authRegisterSubtitle =>
+      'Seu cadastro ficará pendente de aprovação do responsável informado. Assim que ele aprovar, você poderá entrar na conta.';
+
+  @override
+  String get authRegisterOwnerEmailLabel => 'E-mail do responsável';
+
+  @override
+  String get authRegisterOwnerEmailRequired =>
+      'Informe o e-mail do responsável.';
+
+  @override
+  String get authRegisterFirstNameLabel => 'Nome';
+
+  @override
+  String get authRegisterFirstNameRequired => 'Informe seu nome.';
+
+  @override
+  String get authRegisterLastNameLabel => 'Sobrenome';
+
+  @override
+  String get authRegisterLastNameRequired => 'Informe seu sobrenome.';
+
+  @override
+  String get authRegisterAccountEmailLabel => 'E-mail da conta';
+
+  @override
+  String get authRegisterAccountEmailRequired => 'Informe o e-mail da conta.';
+
+  @override
+  String get authRegisterMobileLabel => 'Celular (opcional)';
+
+  @override
+  String get authRegisterPasswordLabel => 'Senha';
+
+  @override
+  String get authRegisterConfirmPasswordLabel => 'Confirmar senha';
+
+  @override
+  String get authRegisterSubmitButton => 'Solicitar cadastro';
+
+  @override
+  String get authRegisterBackToLogin => 'Voltar para o login';
+
+  @override
+  String authPasswordTooShort(int minLength) {
+    return 'A senha deve ter pelo menos $minLength caracteres.';
+  }
+
+  @override
+  String get authConfirmPasswordRequired => 'Confirme sua senha.';
+
+  @override
+  String get authPasswordsMismatch => 'As senhas não conferem.';
 }
 
 /// The translations for Portuguese, as used in Brazil (`pt_BR`).
@@ -7157,4 +7266,113 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get brazilStoreSalesMapPresetStoreIconTooltip =>
       'Exibe cada loja com ícone operacional de unidade.';
+
+  @override
+  String get authLoginWelcomeTitle => 'Bem-vindo de volta';
+
+  @override
+  String get authLoginWelcomeSubtitle =>
+      'Informe suas credenciais para acessar a colmeia.';
+
+  @override
+  String get authLoginEmailLabel => 'Usuário ou e-mail';
+
+  @override
+  String get authLoginPasswordLabel => 'Senha';
+
+  @override
+  String get authLoginPasswordRequired => 'Informe a senha';
+
+  @override
+  String get authLoginForgotPasswordShort => 'Esqueceu?';
+
+  @override
+  String get authLoginRememberMe => 'Manter conectado';
+
+  @override
+  String get authLoginNewHerePrefix => 'Novo por aqui?  ';
+
+  @override
+  String get authLoginRequestAccessAction => 'Solicitar acesso';
+
+  @override
+  String get authLoginSubmitButton => 'Entrar na conta';
+
+  @override
+  String get authLoginRestoringSession => 'Restaurando sessão…';
+
+  @override
+  String get authLoginCheckRegistrationStatus => 'Consultar status do cadastro';
+
+  @override
+  String get authLoginForgotPasswordAction => 'Esqueci minha senha';
+
+  @override
+  String authLoginLoadingSemantics(String label) {
+    return 'Carregando: $label';
+  }
+
+  @override
+  String get authEmailFieldRequired => 'Informe o e-mail';
+
+  @override
+  String get authEmailFieldInvalid => 'Informe um e-mail válido.';
+
+  @override
+  String get authRegisterTitle => 'Criar conta de cliente';
+
+  @override
+  String get authRegisterSubtitle =>
+      'Seu cadastro ficará pendente de aprovação do responsável informado. Assim que ele aprovar, você poderá entrar na conta.';
+
+  @override
+  String get authRegisterOwnerEmailLabel => 'E-mail do responsável';
+
+  @override
+  String get authRegisterOwnerEmailRequired =>
+      'Informe o e-mail do responsável.';
+
+  @override
+  String get authRegisterFirstNameLabel => 'Nome';
+
+  @override
+  String get authRegisterFirstNameRequired => 'Informe seu nome.';
+
+  @override
+  String get authRegisterLastNameLabel => 'Sobrenome';
+
+  @override
+  String get authRegisterLastNameRequired => 'Informe seu sobrenome.';
+
+  @override
+  String get authRegisterAccountEmailLabel => 'E-mail da conta';
+
+  @override
+  String get authRegisterAccountEmailRequired => 'Informe o e-mail da conta.';
+
+  @override
+  String get authRegisterMobileLabel => 'Celular (opcional)';
+
+  @override
+  String get authRegisterPasswordLabel => 'Senha';
+
+  @override
+  String get authRegisterConfirmPasswordLabel => 'Confirmar senha';
+
+  @override
+  String get authRegisterSubmitButton => 'Solicitar cadastro';
+
+  @override
+  String get authRegisterBackToLogin => 'Voltar para o login';
+
+  @override
+  String authPasswordTooShort(int minLength) {
+    return 'A senha deve ter pelo menos $minLength caracteres.';
+  }
+
+  @override
+  String get authConfirmPasswordRequired => 'Confirme sua senha.';
+
+  @override
+  String get authPasswordsMismatch => 'As senhas não conferem.';
 }

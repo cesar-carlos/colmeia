@@ -1,3 +1,4 @@
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:flutter/material.dart';
 
@@ -6,6 +7,7 @@ class LoginWelcomeSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
@@ -14,7 +16,7 @@ class LoginWelcomeSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          'Bem-vindo de volta',
+          l10n.authLoginWelcomeTitle,
           style: tt.headlineMedium?.copyWith(
             fontWeight: FontWeight.w800,
             color: cs.onSurface,
@@ -22,7 +24,7 @@ class LoginWelcomeSection extends StatelessWidget {
         ),
         SizedBox(height: tokens.gapSm),
         Text(
-          'Informe suas credenciais para acessar a colmeia.',
+          l10n.authLoginWelcomeSubtitle,
           style: tt.bodyMedium?.copyWith(
             color: cs.onSurfaceVariant,
             height: 1.5,

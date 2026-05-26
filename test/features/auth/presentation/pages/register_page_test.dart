@@ -13,6 +13,7 @@ import 'package:colmeia/features/auth/domain/entities/client_registration_submis
 import 'package:colmeia/features/auth/domain/repositories/auth_repository.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/auth/presentation/pages/register_page.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -61,10 +62,16 @@ void main() {
     await tester.pumpWidget(
       MaterialApp.router(
         theme: AppTheme.light(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         routerConfig: router,
       ),
     );
     await tester.pumpAndSettle();
+
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(Scaffold)),
+    );
 
     await tester.enterText(find.byType(TextFormField).at(0), '');
     await tester.enterText(find.byType(TextFormField).at(1), 'Maria');
@@ -83,12 +90,12 @@ void main() {
     await tester.enterText(find.byType(TextFormField).at(5), '12345678');
     await tester.enterText(find.byType(TextFormField).at(6), '12345678');
 
-    final submit = find.text('Solicitar cadastro');
+    final submit = find.text(l10n.authRegisterSubmitButton);
     await tester.ensureVisible(submit);
     await tester.tap(submit);
     await tester.pumpAndSettle();
 
-    expect(find.text('Informe o e-mail do responsavel.'), findsOneWidget);
+    expect(find.text(l10n.authRegisterOwnerEmailRequired), findsOneWidget);
     auth.dispose();
   });
 
@@ -133,10 +140,16 @@ void main() {
     await tester.pumpWidget(
       MaterialApp.router(
         theme: AppTheme.light(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
         routerConfig: router,
       ),
     );
     await tester.pumpAndSettle();
+
+    final l10n = AppLocalizations.of(
+      tester.element(find.byType(Scaffold)),
+    );
 
     await tester.enterText(
       find.byType(TextFormField).at(0),
@@ -158,7 +171,7 @@ void main() {
     await tester.enterText(find.byType(TextFormField).at(5), '12345678');
     await tester.enterText(find.byType(TextFormField).at(6), '12345678');
 
-    final submit = find.text('Solicitar cadastro');
+    final submit = find.text(l10n.authRegisterSubmitButton);
     await tester.ensureVisible(submit);
     await tester.tap(submit);
     await tester.pumpAndSettle();

@@ -49,11 +49,16 @@ void main() {
     expect(find.text('Empresa 1 - Filial 1'), findsNothing);
     expect(find.text('Filial Tangara'), findsOneWidget);
     expect(find.text(r'R$ 84.246,26'), findsOneWidget);
-    expect(find.text('1.568 vendas'), findsOneWidget);
+    final l10n = localizedFromWidget<AppBrazilStoreSalesMapChart>(tester);
+    expect(
+      find.text(l10n.brazilStoreSalesMapDetailChipSales('1.568')),
+      findsOneWidget,
+    );
     expect(find.text('Tangara da Serra / MT'), findsOneWidget);
-    expect(find.text('IBGE 5107958'), findsOneWidget);
-    final l10n =
-        localizedFromWidget<AppBrazilStoreSalesMapChart>(tester);
+    expect(
+      find.text(l10n.brazilStoreSalesMapIbgeCodeLabel('5107958')),
+      findsOneWidget,
+    );
     expect(find.text(l10n.brazilStoreSalesMapLocationIbge), findsOneWidget);
   });
 
@@ -345,15 +350,25 @@ void main() {
         find.byKey(const ValueKey<String>('app-region-map-scope-selector')),
         findsOneWidget,
       );
-      expect(find.text('MÉTRICA'), findsNothing);
-      expect(find.text('ESCOPO'), findsNothing);
+      final l10n = localizedFromWidget<AppBrazilStoreSalesMapChart>(tester);
+      expect(
+        find.text(l10n.regionMapMetricGroupLabel.toUpperCase()),
+        findsNothing,
+      );
+      expect(
+        find.text(l10n.regionMapScopeGroupLabel.toUpperCase()),
+        findsNothing,
+      );
       expect(
         find.byKey(
           const ValueKey<String>('brazil-store-sales-map-legend-button'),
         ),
         findsNothing,
       );
-      expect(find.text('Legenda'), findsNothing);
+      expect(
+        find.text(l10n.brazilStoreSalesMapLegendButton),
+        findsNothing,
+      );
 
       await tester.tap(
         find.byKey(
@@ -648,9 +663,13 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Nenhuma filial encontrada'), findsOneWidget);
+      final l10n = localizedFromWidget<AppBrazilStoreSalesMapChart>(tester);
       expect(
-        find.text('Ajuste a busca para localizar filiais neste recorte.'),
+        find.text(l10n.brazilStoreSalesMapSidebarSearchEmptyStateTitle),
+        findsOneWidget,
+      );
+      expect(
+        find.text(l10n.brazilStoreSalesMapSidebarSearchEmptyStateMessage),
         findsOneWidget,
       );
     },
@@ -707,10 +726,12 @@ void main() {
         ],
       );
 
-      expect(find.text('Carregando vendas'), findsOneWidget);
+      final l10n = localizedFromWidget<AppBrazilStoreSalesMapChart>(tester);
+      expect(
+        find.text(l10n.brazilStoreSalesMapSalesLoadingLabel),
+        findsOneWidget,
+      );
       expect(find.text('Vendas indisponiveis'), findsOneWidget);
-      final l10n =
-        localizedFromWidget<AppBrazilStoreSalesMapChart>(tester);
       expect(
         find.text(l10n.brazilStoreSalesMapSidebarZeroSalesLabel),
         findsOneWidget,
@@ -908,11 +929,24 @@ void main() {
     expect(find.text('Jardim'), findsOneWidget);
     expect(find.text('Tangara da Serra / MT'), findsOneWidget);
     expect(find.text(r'R$ 24.246,26'), findsOneWidget);
-    expect(find.text('468 vendas'), findsOneWidget);
-    expect(find.text('1 de 2'), findsWidgets);
-    expect(find.text('Total do ponto'), findsOneWidget);
+    final l10n = localizedFromWidget<AppBrazilStoreSalesMapChart>(tester);
+    expect(
+      find.text(l10n.brazilStoreSalesMapDetailChipSales('468')),
+      findsOneWidget,
+    );
+    expect(
+      find.text(l10n.brazilStoreSalesMapCarouselPosition('1', '2')),
+      findsWidgets,
+    );
+    expect(
+      find.text(l10n.brazilStoreSalesMapMarkerGroupTotalTitle),
+      findsOneWidget,
+    );
     expect(find.text(r'R$ 84.246,26'), findsOneWidget);
-    expect(find.text('1.568 vendas'), findsOneWidget);
+    expect(
+      find.text(l10n.brazilStoreSalesMapDetailChipSales('1.568')),
+      findsOneWidget,
+    );
     expect(find.text('Empresa 1 - Filial 2'), findsNothing);
   });
 
@@ -950,7 +984,11 @@ void main() {
     expect(find.text('Filial cadastro'), findsOneWidget);
     expect(find.text('Sinop / MT'), findsOneWidget);
     expect(find.text(r'R$ 3.421,77'), findsOneWidget);
-    expect(find.text('64 vendas'), findsOneWidget);
+    final l10n = localizedFromWidget<Scaffold>(tester);
+    expect(
+      find.text(l10n.brazilStoreSalesMapDetailChipSales('64')),
+      findsOneWidget,
+    );
     expect(find.text('Empresa 7 - Filial 3'), findsNothing);
     expect(find.text('Filial Norte'), findsOneWidget);
   });
@@ -982,7 +1020,11 @@ void main() {
 
     expect(find.text('Filial sem venda disponivel'), findsOneWidget);
     expect(find.text('Mel Sinop'), findsOneWidget);
-    expect(find.text('0 vendas'), findsOneWidget);
+    final l10n = localizedFromWidget<Scaffold>(tester);
+    expect(
+      find.text(l10n.brazilStoreSalesMapDetailChipSales('0')),
+      findsOneWidget,
+    );
     expect(find.text('Vendas indisponiveis'), findsOneWidget);
   });
 
@@ -1012,9 +1054,16 @@ void main() {
 
     expect(find.text('Filial carregando'), findsOneWidget);
     expect(find.text('Mel Sinop'), findsOneWidget);
-    expect(find.text('Carregando vendas'), findsOneWidget);
+    final l10n = localizedFromWidget<Scaffold>(tester);
+    expect(
+      find.text(l10n.brazilStoreSalesMapSalesLoadingLabel),
+      findsOneWidget,
+    );
     expect(find.text(r'R$ 0,00'), findsNothing);
-    expect(find.text('0 vendas'), findsNothing);
+    expect(
+      find.text(l10n.brazilStoreSalesMapDetailChipSales('0')),
+      findsNothing,
+    );
   });
 
   testWidgets('hover card navigates between stores in the same marker', (
@@ -1060,7 +1109,11 @@ void main() {
     addTearDown(gesture.removePointer);
 
     expect(find.text('Matriz'), findsOneWidget);
-    expect(find.text('1 de 2'), findsWidgets);
+    final l10n = localizedFromWidget<Scaffold>(tester);
+    expect(
+      find.text(l10n.brazilStoreSalesMapCarouselPosition('1', '2')),
+      findsWidgets,
+    );
 
     await tester.tap(
       find.byKey(const ValueKey<String>('brazil-store-sales-branch-card-next')),
@@ -1069,8 +1122,14 @@ void main() {
 
     expect(find.text('Filial 2'), findsOneWidget);
     expect(find.text(r'R$ 1.421,77'), findsOneWidget);
-    expect(find.text('44 vendas'), findsOneWidget);
-    expect(find.text('2 de 2'), findsWidgets);
+    expect(
+      find.text(l10n.brazilStoreSalesMapDetailChipSales('44')),
+      findsOneWidget,
+    );
+    expect(
+      find.text(l10n.brazilStoreSalesMapCarouselPosition('2', '2')),
+      findsWidgets,
+    );
   });
 
   testWidgets('hover card shows branch picker for many stores', (tester) async {
@@ -1270,19 +1329,26 @@ void main() {
     );
 
     expect(tester.takeException(), isNull);
-    expect(find.text('Legenda'), findsOneWidget);
+    final l10n = localizedFromWidget<AppBrazilStoreSalesMapChart>(tester);
+    expect(find.text(l10n.brazilStoreSalesMapLegendButton), findsOneWidget);
     expect(
       find.byKey(
         const ValueKey<String>('brazil-store-sales-map-legend-button'),
       ),
       findsOneWidget,
     );
-    expect(find.text('Tamanho do ponto'), findsNothing);
+    expect(
+      find.text(l10n.brazilStoreSalesMapMarkerSizeLegend),
+      findsNothing,
+    );
 
-    await tester.tap(find.text('Legenda'));
+    await tester.tap(find.text(l10n.brazilStoreSalesMapLegendButton));
     await tester.pumpAndSettle();
 
-    expect(find.text('Tamanho do ponto'), findsOneWidget);
+    expect(
+      find.text(l10n.brazilStoreSalesMapMarkerSizeLegend),
+      findsOneWidget,
+    );
   });
 
   testWidgets('exposes stable selector and diagnostics anchors', (
@@ -1378,7 +1444,8 @@ void main() {
         isNull,
         reason: 'width $width should not overflow',
       );
-      expect(find.text('Legenda'), findsOneWidget);
+      final l10n = localizedFromWidget<AppBrazilStoreSalesMapChart>(tester);
+      expect(find.text(l10n.brazilStoreSalesMapLegendButton), findsOneWidget);
     }
   });
 

@@ -6,19 +6,36 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 abstract final class AppTheme {
+  static final Map<_ThemeCacheKey, ThemeData> _cache =
+      <_ThemeCacheKey, ThemeData>{};
+
   static ThemeData light({TargetPlatform? platform}) {
-    return _buildTheme(
-      AppColors.light,
-      AppThemeTokens.light,
-      platform: platform,
+    final resolvedPlatform = platform ?? defaultTargetPlatform;
+    return _cache.putIfAbsent(
+      _ThemeCacheKey(
+        brightness: Brightness.light,
+        platform: resolvedPlatform,
+      ),
+      () => _buildTheme(
+        AppColors.light,
+        AppThemeTokens.light,
+        platform: resolvedPlatform,
+      ),
     );
   }
 
   static ThemeData dark({TargetPlatform? platform}) {
-    return _buildTheme(
-      AppColors.dark,
-      AppThemeTokens.dark,
-      platform: platform,
+    final resolvedPlatform = platform ?? defaultTargetPlatform;
+    return _cache.putIfAbsent(
+      _ThemeCacheKey(
+        brightness: Brightness.dark,
+        platform: resolvedPlatform,
+      ),
+      () => _buildTheme(
+        AppColors.dark,
+        AppThemeTokens.dark,
+        platform: resolvedPlatform,
+      ),
     );
   }
 
@@ -432,4 +449,25 @@ abstract final class AppTheme {
       ),
     );
   }
+}
+
+@immutable
+class _ThemeCacheKey {
+  const _ThemeCacheKey({
+    required this.brightness,
+    required this.platform,
+  });
+
+  final Brightness brightness;
+  final TargetPlatform platform;
+
+  @override
+  bool operator ==(Object other) {
+    return other is _ThemeCacheKey &&
+        other.brightness == brightness &&
+        other.platform == platform;
+  }
+
+  @override
+  int get hashCode => Object.hash(brightness, platform);
 }

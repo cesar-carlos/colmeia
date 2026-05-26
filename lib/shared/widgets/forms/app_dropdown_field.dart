@@ -207,10 +207,7 @@ class _AppDropdownFieldState<T> extends State<AppDropdownField<T>> {
                                     if (hasBoundedWidth)
                                       Expanded(child: label)
                                     else
-                                      Flexible(
-                                        fit: FlexFit.loose,
-                                        child: label,
-                                      ),
+                                      Flexible(child: label),
                                     SizedBox(width: tokens.gapSm),
                                     AnimatedRotation(
                                       duration: const Duration(

@@ -95,8 +95,26 @@ class RemoteAgentClientTokenRepository implements AgentClientTokenRepository {
         error: error,
         stackTrace: stackTrace,
       );
-      return Success<ClientAgentTokenSnapshot, AppFailure>(
-        ClientAgentTokenSnapshot(token: cached),
+      if (cached != null) {
+        return Success<ClientAgentTokenSnapshot, AppFailure>(
+          ClientAgentTokenSnapshot(token: cached),
+        );
+      }
+      return Failure<ClientAgentTokenSnapshot, AppFailure>(
+        NetworkFailure(
+          message: 'Client agent token GET failed with no local cache',
+          userMessage:
+              'Nao foi possivel ler o token do agente no servidor.',
+          cause: error,
+          stackTrace: stackTrace,
+          context: <String, Object?>{
+            'operation': 'getClientAgentToken',
+            'userId': userId,
+            'agentId': trimmedAgentId,
+            ClientAgentsFailureUiKey.field:
+                ClientAgentsFailureUiKey.getClientAgentToken,
+          },
+        ),
       );
     } on Object catch (error, stackTrace) {
       return Failure<ClientAgentTokenSnapshot, AppFailure>(

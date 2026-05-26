@@ -24,6 +24,7 @@ class ClientAgent {
     this.profileUpdatedAt,
     this.profileVersion,
     this.hasServerClientToken,
+    this.isStaleCache = false,
   });
 
   final String agentId;
@@ -63,12 +64,15 @@ class ClientAgent {
   /// treat `null` as "unknown" and decide between local fallback and prompt.
   final bool? hasServerClientToken;
 
+  final bool isStaleCache;
+
   ClientAgent copyWith({
     AgentConnectionStatus? connectionStatus,
     bool? hasServerClientToken,
     bool resetHasServerClientToken = false,
     int? profileVersion,
     bool resetProfileVersion = false,
+    bool? isStaleCache,
   }) {
     return ClientAgent(
       agentId: agentId,
@@ -95,6 +99,7 @@ class ClientAgent {
       hasServerClientToken: resetHasServerClientToken
           ? null
           : (hasServerClientToken ?? this.hasServerClientToken),
+      isStaleCache: isStaleCache ?? this.isStaleCache,
     );
   }
 }

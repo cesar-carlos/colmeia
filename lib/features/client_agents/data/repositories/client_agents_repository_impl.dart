@@ -106,7 +106,7 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
       if (cached != null) {
         final onlineIds = await _readCachedOnlineAgentIds(userId: userId);
         return Success<PaginatedResult<ClientAgentCatalogItem>, AppFailure>(
-          _mapCatalog(cached, onlineIds: onlineIds),
+          _mapCatalog(cached, onlineIds: onlineIds, isStaleCache: true),
         );
       }
       return Failure<PaginatedResult<ClientAgentCatalogItem>, AppFailure>(
@@ -148,7 +148,7 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
       if (cached != null) {
         final onlineIds = await _readCachedOnlineAgentIds(userId: userId);
         return Success<PaginatedResult<ClientAgentCatalogItem>, AppFailure>(
-          _mapCatalog(cached, onlineIds: onlineIds),
+          _mapCatalog(cached, onlineIds: onlineIds, isStaleCache: true),
         );
       }
       return Failure<PaginatedResult<ClientAgentCatalogItem>, AppFailure>(
@@ -222,6 +222,7 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         return Success<ClientAgentCatalogItem, AppFailure>(
           ClientAgentCatalogItem(
             agent: _mapProfile(cached, onlineIds: onlineIds),
+            isStaleCache: true,
           ),
         );
       }
@@ -267,6 +268,7 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         return Success<ClientAgentCatalogItem, AppFailure>(
           ClientAgentCatalogItem(
             agent: _mapProfile(cached, onlineIds: onlineIds),
+            isStaleCache: true,
           ),
         );
       }
@@ -551,7 +553,7 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
             ? await _readCachedOnlineAgentIds(userId: userId)
             : null;
         return Success<PaginatedResult<ClientAgent>, AppFailure>(
-          _mapApproved(cached, onlineIds: onlineIds),
+          _mapApproved(cached, onlineIds: onlineIds, isStaleCache: true),
         );
       }
       return Failure<PaginatedResult<ClientAgent>, AppFailure>(
@@ -598,7 +600,7 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
             ? await _readCachedOnlineAgentIds(userId: userId)
             : null;
         return Success<PaginatedResult<ClientAgent>, AppFailure>(
-          _mapApproved(cached, onlineIds: onlineIds),
+          _mapApproved(cached, onlineIds: onlineIds, isStaleCache: true),
         );
       }
       return Failure<PaginatedResult<ClientAgent>, AppFailure>(
@@ -660,7 +662,7 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
       if (cached != null) {
         final onlineIds = await _readCachedOnlineAgentIds(userId: userId);
         return Success<ClientAgent, AppFailure>(
-          _mapProfile(cached.agent, onlineIds: onlineIds),
+          _mapProfile(cached.agent, onlineIds: onlineIds, isStaleCache: true),
         );
       }
       return Failure<ClientAgent, AppFailure>(
@@ -703,7 +705,7 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
       if (cached != null) {
         final onlineIds = await _readCachedOnlineAgentIds(userId: userId);
         return Success<ClientAgent, AppFailure>(
-          _mapProfile(cached.agent, onlineIds: onlineIds),
+          _mapProfile(cached.agent, onlineIds: onlineIds, isStaleCache: true),
         );
       }
       return Failure<ClientAgent, AppFailure>(
@@ -896,7 +898,7 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
       );
       if (cached != null) {
         return Success<PaginatedResult<ClientAgentAccessRequest>, AppFailure>(
-          _mapAccessRequests(cached),
+          _mapAccessRequests(cached, isStaleCache: true),
         );
       }
       return Failure<PaginatedResult<ClientAgentAccessRequest>, AppFailure>(
@@ -938,7 +940,7 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
       );
       if (cached != null) {
         return Success<PaginatedResult<ClientAgentAccessRequest>, AppFailure>(
-          _mapAccessRequests(cached),
+          _mapAccessRequests(cached, isStaleCache: true),
         );
       }
       return Failure<PaginatedResult<ClientAgentAccessRequest>, AppFailure>(
@@ -1049,7 +1051,13 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         final onlineIds = await _readCachedOnlineAgentIds(userId: userId);
         return Success<List<ClientAgent>, AppFailure>(
           cached.agents
-              .map((agent) => _mapProfile(agent, onlineIds: onlineIds))
+              .map(
+                (agent) => _mapProfile(
+                  agent,
+                  onlineIds: onlineIds,
+                  isStaleCache: true,
+                ),
+              )
               .toList(growable: false),
         );
       }
@@ -1073,7 +1081,13 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         final onlineIds = await _readCachedOnlineAgentIds(userId: userId);
         return Success<List<ClientAgent>, AppFailure>(
           cached.agents
-              .map((agent) => _mapProfile(agent, onlineIds: onlineIds))
+              .map(
+                (agent) => _mapProfile(
+                  agent,
+                  onlineIds: onlineIds,
+                  isStaleCache: true,
+                ),
+              )
               .toList(growable: false),
         );
       }
@@ -1130,7 +1144,7 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
       );
       if (cached != null) {
         return Success<List<OwnerClientAccessRequest>, AppFailure>(
-          _mapOwnerAccessRequests(cached),
+          _mapOwnerAccessRequests(cached, isStaleCache: true),
         );
       }
       return Failure<List<OwnerClientAccessRequest>, AppFailure>(
@@ -1154,7 +1168,7 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
       );
       if (cached != null) {
         return Success<List<OwnerClientAccessRequest>, AppFailure>(
-          _mapOwnerAccessRequests(cached),
+          _mapOwnerAccessRequests(cached, isStaleCache: true),
         );
       }
       return Failure<List<OwnerClientAccessRequest>, AppFailure>(
@@ -1262,7 +1276,7 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
       );
       if (cached != null) {
         return Success<List<OwnerApprovedClient>, AppFailure>(
-          _mapOwnerApprovedClients(cached),
+          _mapOwnerApprovedClients(cached, isStaleCache: true),
         );
       }
       return Failure<List<OwnerApprovedClient>, AppFailure>(
@@ -1288,7 +1302,7 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
       );
       if (cached != null) {
         return Success<List<OwnerApprovedClient>, AppFailure>(
-          _mapOwnerApprovedClients(cached),
+          _mapOwnerApprovedClients(cached, isStaleCache: true),
         );
       }
       return Failure<List<OwnerApprovedClient>, AppFailure>(
@@ -1822,6 +1836,7 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
   PaginatedResult<ClientAgentCatalogItem> _mapCatalog(
     PaginatedAgentCatalogResponseDto response, {
     required Set<String>? onlineIds,
+    bool isStaleCache = false,
   }) {
     final items = response.agents
         .map((agent) {
@@ -1836,12 +1851,14 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
       total: response.total,
       page: response.page,
       pageSize: response.pageSize,
+      isStaleCache: isStaleCache,
     );
   }
 
   PaginatedResult<ClientAgent> _mapApproved(
     ClientApprovedAgentsResponseDto response, {
     required Set<String>? onlineIds,
+    bool isStaleCache = false,
   }) {
     final items = response.agents
         .map((agent) => _mapProfile(agent, onlineIds: onlineIds))
@@ -1852,12 +1869,14 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
       total: response.total,
       page: response.page,
       pageSize: response.pageSize,
+      isStaleCache: isStaleCache,
     );
   }
 
   PaginatedResult<ClientAgentAccessRequest> _mapAccessRequests(
-    ClientAccessRequestsResponseDto response,
-  ) {
+    ClientAccessRequestsResponseDto response, {
+    bool isStaleCache = false,
+  }) {
     return PaginatedResult<ClientAgentAccessRequest>(
       items: response.requests
           .map((request) => request.toEntity())
@@ -1866,35 +1885,42 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
       total: response.total,
       page: response.page,
       pageSize: response.pageSize,
+      isStaleCache: isStaleCache,
     );
   }
 
   List<OwnerClientAccessRequest> _mapOwnerAccessRequests(
-    OwnerAccessRequestsResponseDto response,
-  ) {
+    OwnerAccessRequestsResponseDto response, {
+    bool isStaleCache = false,
+  }) {
     return response.requests
-        .map((request) => request.toEntity())
+        .map((request) => request.toEntity(isStaleCache: isStaleCache))
         .toList(growable: false);
   }
 
   List<OwnerApprovedClient> _mapOwnerApprovedClients(
-    OwnerApprovedClientsResponseDto response,
-  ) {
+    OwnerApprovedClientsResponseDto response, {
+    bool isStaleCache = false,
+  }) {
     return response.clients
-        .map((client) => client.toEntity())
+        .map((client) => client.toEntity(isStaleCache: isStaleCache))
         .toList(growable: false);
   }
 
   ClientAgent _mapProfile(
     ClientAgentProfileDto profile, {
     required Set<String>? onlineIds,
+    bool isStaleCache = false,
   }) {
     final connectionStatus = resolveAgentConnectionStatus(
       agentId: profile.agentId,
       isHubConnected: profile.isHubConnected,
       onlineAgentIds: onlineIds,
     );
-    return profile.toEntity(connectionStatus: connectionStatus);
+    return profile.toEntity(
+      connectionStatus: connectionStatus,
+      isStaleCache: isStaleCache,
+    );
   }
 
   /// Writes a synthetic [OnlineAgentsResponseDto] when profile rows include

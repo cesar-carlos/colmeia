@@ -7,6 +7,8 @@ import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../support/widget_test_l10n.dart';
+
 void main() {
   testWidgets('uses localized default chrome labels in portuguese', (
     tester,
@@ -20,10 +22,17 @@ void main() {
       onDrillUpRequested: (_) {},
     );
 
-    expect(find.text('MÉTRICA'), findsOneWidget);
-    expect(find.text('ESCOPO'), findsOneWidget);
-    expect(find.text('Todas as regiões'), findsOneWidget);
-    expect(find.text('Voltar para regiões'), findsOneWidget);
+    final l10n = localizedFromWidget<Scaffold>(tester);
+    expect(
+      find.text(l10n.regionMapMetricGroupLabel.toUpperCase()),
+      findsOneWidget,
+    );
+    expect(
+      find.text(l10n.regionMapScopeGroupLabel.toUpperCase()),
+      findsOneWidget,
+    );
+    expect(find.text(l10n.regionMapRootScopeLabel), findsOneWidget);
+    expect(find.text(l10n.regionMapDrillUpToRegionsLabel), findsOneWidget);
     expect(find.bySemanticsLabel('Métrica do mapa'), findsOneWidget);
     expect(find.bySemanticsLabel('Escopo territorial'), findsOneWidget);
   });

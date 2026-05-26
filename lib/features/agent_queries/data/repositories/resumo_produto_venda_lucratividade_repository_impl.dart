@@ -1,3 +1,4 @@
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
@@ -16,10 +17,6 @@ import 'package:colmeia/features/agent_queries/domain/repositories/resumo_produt
 class ResumoProdutoVendaLucratividadeRepositoryImpl
     implements ResumoProdutoVendaLucratividadeRepository {
   ResumoProdutoVendaLucratividadeRepositoryImpl(this._agentQueriesRepository);
-
-  /// One row per branch — very small result set; lighter than the monthly
-  /// variant but covers the full period in a single aggregate.
-  static const int _defaultBridgeTimeoutMs = 120000;
 
   /// 90 % of the active bridge timeout, clamped so short timeouts stay usable.
   static const int _defaultSqlTimeoutMs = 108000;
@@ -50,7 +47,8 @@ class ResumoProdutoVendaLucratividadeRepositoryImpl
       );
     }
 
-    final effectiveBridgeMs = bridgeTimeoutMs ?? _defaultBridgeTimeoutMs;
+    final effectiveBridgeMs =
+        bridgeTimeoutMs ?? AppEnvironment.agentSqlBridgeTimeoutMs;
     final effectiveSqlMs = (effectiveBridgeMs * 0.9).round().clamp(
       _minSqlTimeoutMs,
       _defaultSqlTimeoutMs,

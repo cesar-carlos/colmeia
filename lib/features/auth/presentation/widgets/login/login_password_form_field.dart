@@ -1,5 +1,6 @@
 import 'package:colmeia/features/auth/presentation/widgets/auth_password_text_field.dart';
 import 'package:colmeia/features/auth/presentation/widgets/login/login_labeled_field.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/forms/app_form_validators.dart';
 import 'package:flutter/material.dart';
 
@@ -23,13 +24,14 @@ class LoginPasswordFormField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final forgot = onForgot;
     final trailing = forgot == null
         ? null
         : _ForgotPasswordLink(onPressed: forgot);
 
     return LoginLabeledField(
-      label: 'Senha',
+      label: l10n.authLoginPasswordLabel,
       icon: Icons.lock_outline_rounded,
       trailing: trailing,
       child: AuthPasswordTextField(
@@ -43,7 +45,7 @@ class LoginPasswordFormField extends StatelessWidget {
         ),
         validator: (value) => AppFormValidators.requiredText(
           value,
-          message: 'Informe a senha',
+          message: l10n.authLoginPasswordRequired,
         ),
       ),
     );
@@ -57,6 +59,7 @@ class _ForgotPasswordLink extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -69,7 +72,7 @@ class _ForgotPasswordLink extends StatelessWidget {
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
       child: Text(
-        'Esqueceu?',
+        l10n.authLoginForgotPasswordShort,
         style: tt.labelSmall?.copyWith(
           fontWeight: FontWeight.w600,
           color: cs.secondary,

@@ -1803,5 +1803,49 @@
   "brazilStoreSalesMapPresetBubbleTooltip": "Shows stores as bubbles proportional to the active metric.",
   "brazilStoreSalesMapPresetMunicipalityBubblesTooltip": "Groups stores by municipality and shows bubbles proportional to the active metric.",
   "brazilStoreSalesMapPresetStateBubblesTooltip": "Groups stores into bubbles positioned at each state centroid.",
-  "brazilStoreSalesMapPresetStoreIconTooltip": "Shows each store with an operational store icon."
+  "brazilStoreSalesMapPresetStoreIconTooltip": "Shows each store with an operational store icon.",
+  "authLoginWelcomeTitle": "Welcome back",
+  "authLoginWelcomeSubtitle": "Enter your credentials to access Colmeia.",
+  "authLoginEmailLabel": "User or e-mail",
+  "authLoginPasswordLabel": "Password",
+  "authLoginPasswordRequired": "Enter the password",
+  "authLoginForgotPasswordShort": "Forgot?",
+  "authLoginRememberMe": "Keep me signed in",
+  "authLoginNewHerePrefix": "New here?  ",
+  "authLoginRequestAccessAction": "Request access",
+  "authLoginSubmitButton": "Sign in",
+  "authLoginRestoringSession": "Restoring session…",
+  "authLoginCheckRegistrationStatus": "Check registration status",
+  "authLoginForgotPasswordAction": "I forgot my password",
+  "authLoginLoadingSemantics": "Loading: {label}",
+  "@authLoginLoadingSemantics": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "authEmailFieldRequired": "Enter the e-mail",
+  "authEmailFieldInvalid": "Enter a valid e-mail.",
+  "authRegisterTitle": "Create client account",
+  "authRegisterSubtitle": "Your registration will be pending approval from the designated owner. Once approved, you will be able to sign in.",
+  "authRegisterOwnerEmailLabel": "Owner e-mail",
+  "authRegisterOwnerEmailRequired": "Enter the owner e-mail.",
+  "authRegisterFirstNameLabel": "First name",
+  "authRegisterFirstNameRequired": "Enter your first name.",
+  "authRegisterLastNameLabel": "Last name",
+  "authRegisterLastNameRequired": "Enter your last name.",
+  "authRegisterAccountEmailLabel": "Account e-mail",
+  "authRegisterAccountEmailRequired": "Enter the account e-mail.",
+  "authRegisterMobileLabel": "Mobile (optional)",
+  "authRegisterPasswordLabel": "Password",
+  "authRegisterConfirmPasswordLabel": "Confirm password",
+  "authRegisterSubmitButton": "Request registration",
+  "authRegisterBackToLogin": "Back to sign in",
+  "authPasswordTooShort": "Password must be at least {minLength} characters.",
+  "@authPasswordTooShort": {
+    "placeholders": {
+      "minLength": {"type": "int"}
+    }
+  },
+  "authConfirmPasswordRequired": "Confirm your password.",
+  "authPasswordsMismatch": "Passwords do not match."
 }

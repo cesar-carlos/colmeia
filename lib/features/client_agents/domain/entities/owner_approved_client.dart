@@ -5,6 +5,7 @@ class OwnerApprovedClient {
     this.clientEmail,
     this.accountStatus,
     this.approvedAt,
+    this.isStaleCache = false,
   });
 
   final String clientId;
@@ -12,4 +13,5 @@ class OwnerApprovedClient {
   final String? clientEmail;
   final String? accountStatus;
   final DateTime? approvedAt;
+  final bool isStaleCache;
 }

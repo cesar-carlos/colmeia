@@ -1,3 +1,4 @@
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/data/models/marca_produto_option_model.dart';
@@ -13,7 +14,6 @@ class MarcaProdutoOptionsRepositoryImpl
     implements MarcaProdutoOptionsRepository {
   MarcaProdutoOptionsRepositoryImpl(this._agentQueriesRepository);
 
-  static const int _defaultBridgeTimeoutMs = 120000;
   static const int _defaultPageSize = 20;
   static const int _maxPageSize = 500;
   static const int _maxRowsPageBuffer = 25;
@@ -81,7 +81,8 @@ class MarcaProdutoOptionsRepositoryImpl
       hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
       sql: MarcaProdutoOptionsSql.pagedQuery,
       clientToken: clientToken,
-      bridgeTimeoutMs: bridgeTimeoutMs ?? _defaultBridgeTimeoutMs,
+      bridgeTimeoutMs:
+          bridgeTimeoutMs ?? AppEnvironment.agentSqlBridgeTimeoutMs,
       namedParams: <String, Object?>{
         'startRow': startRow,
         'endRow': endRow,

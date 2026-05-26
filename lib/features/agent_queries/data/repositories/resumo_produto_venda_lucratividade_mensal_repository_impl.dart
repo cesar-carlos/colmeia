@@ -1,3 +1,4 @@
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
@@ -19,10 +20,6 @@ class ResumoProdutoVendaLucratividadeMensalRepositoryImpl
   ResumoProdutoVendaLucratividadeMensalRepositoryImpl(
     this._agentQueriesRepository,
   );
-
-  /// HTTP bridge wait — monthly aggregate over a wide date range; lighter than
-  /// the paginated product summary (fewer joins, no ROW_NUMBER).
-  static const int _defaultBridgeTimeoutMs = 120000;
 
   /// Agent-side SQL timeout: 90 % of the active bridge timeout, capped here
   /// and floored at the minimum so very short bridge timeouts stay usable.
@@ -55,7 +52,8 @@ class ResumoProdutoVendaLucratividadeMensalRepositoryImpl
       );
     }
 
-    final effectiveBridgeMs = bridgeTimeoutMs ?? _defaultBridgeTimeoutMs;
+    final effectiveBridgeMs =
+        bridgeTimeoutMs ?? AppEnvironment.agentSqlBridgeTimeoutMs;
     final effectiveSqlMs = (effectiveBridgeMs * 0.9).round().clamp(
       _minSqlTimeoutMs,
       _defaultSqlTimeoutMs,

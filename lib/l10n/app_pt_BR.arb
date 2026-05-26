@@ -1577,5 +1577,49 @@
   "brazilStoreSalesMapPresetBubbleTooltip": "Exibe lojas como bolhas proporcionais à métrica ativa.",
   "brazilStoreSalesMapPresetMunicipalityBubblesTooltip": "Agrupa lojas por município e exibe bolhas proporcionais à métrica ativa.",
   "brazilStoreSalesMapPresetStateBubblesTooltip": "Agrupa as lojas em bolhas posicionadas no centroide de cada UF.",
-  "brazilStoreSalesMapPresetStoreIconTooltip": "Exibe cada loja com ícone operacional de unidade."
+  "brazilStoreSalesMapPresetStoreIconTooltip": "Exibe cada loja com ícone operacional de unidade.",
+  "authLoginWelcomeTitle": "Bem-vindo de volta",
+  "authLoginWelcomeSubtitle": "Informe suas credenciais para acessar a colmeia.",
+  "authLoginEmailLabel": "Usuário ou e-mail",
+  "authLoginPasswordLabel": "Senha",
+  "authLoginPasswordRequired": "Informe a senha",
+  "authLoginForgotPasswordShort": "Esqueceu?",
+  "authLoginRememberMe": "Manter conectado",
+  "authLoginNewHerePrefix": "Novo por aqui?  ",
+  "authLoginRequestAccessAction": "Solicitar acesso",
+  "authLoginSubmitButton": "Entrar na conta",
+  "authLoginRestoringSession": "Restaurando sessão…",
+  "authLoginCheckRegistrationStatus": "Consultar status do cadastro",
+  "authLoginForgotPasswordAction": "Esqueci minha senha",
+  "authLoginLoadingSemantics": "Carregando: {label}",
+  "@authLoginLoadingSemantics": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "authEmailFieldRequired": "Informe o e-mail",
+  "authEmailFieldInvalid": "Informe um e-mail válido.",
+  "authRegisterTitle": "Criar conta de cliente",
+  "authRegisterSubtitle": "Seu cadastro ficará pendente de aprovação do responsável informado. Assim que ele aprovar, você poderá entrar na conta.",
+  "authRegisterOwnerEmailLabel": "E-mail do responsável",
+  "authRegisterOwnerEmailRequired": "Informe o e-mail do responsável.",
+  "authRegisterFirstNameLabel": "Nome",
+  "authRegisterFirstNameRequired": "Informe seu nome.",
+  "authRegisterLastNameLabel": "Sobrenome",
+  "authRegisterLastNameRequired": "Informe seu sobrenome.",
+  "authRegisterAccountEmailLabel": "E-mail da conta",
+  "authRegisterAccountEmailRequired": "Informe o e-mail da conta.",
+  "authRegisterMobileLabel": "Celular (opcional)",
+  "authRegisterPasswordLabel": "Senha",
+  "authRegisterConfirmPasswordLabel": "Confirmar senha",
+  "authRegisterSubmitButton": "Solicitar cadastro",
+  "authRegisterBackToLogin": "Voltar para o login",
+  "authPasswordTooShort": "A senha deve ter pelo menos {minLength} caracteres.",
+  "@authPasswordTooShort": {
+    "placeholders": {
+      "minLength": {"type": "int"}
+    }
+  },
+  "authConfirmPasswordRequired": "Confirme sua senha.",
+  "authPasswordsMismatch": "As senhas não conferem."
 }

@@ -8,6 +8,7 @@ import 'package:colmeia/features/auth/presentation/widgets/auth_password_text_fi
 import 'package:colmeia/features/auth/presentation/widgets/login/login_brand_header.dart';
 import 'package:colmeia/features/auth/presentation/widgets/login/login_footer.dart';
 import 'package:colmeia/features/auth/presentation/widgets/login/login_glass_card.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/forms/app_form_validators.dart';
 import 'package:colmeia/shared/widgets/backgrounds/app_hex_screen_body.dart';
@@ -98,6 +99,7 @@ class _RegisterPageBodyState extends State<_RegisterPageBody> {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
     final blocked = auth.isLoading;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       body: AppHexScreenBody(
@@ -123,60 +125,60 @@ class _RegisterPageBodyState extends State<_RegisterPageBody> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: <Widget>[
                             Text(
-                              'Criar conta de cliente',
+                              l10n.authRegisterTitle,
                               style: theme.textTheme.headlineSmall,
                             ),
                             SizedBox(height: tokens.gapSm),
                             Text(
-                              'Seu cadastro ficara pendente de aprovacao do '
-                              'responsavel informado. Assim que ele aprovar, '
-                              'voce podera entrar na conta.',
+                              l10n.authRegisterSubtitle,
                               style: theme.textTheme.bodyMedium,
                             ),
                             SizedBox(height: tokens.authLoginGapMajorSection),
                             AuthEmailTextField(
                               controller: _ownerEmailController,
-                              label: 'E-mail do responsavel',
+                              label: l10n.authRegisterOwnerEmailLabel,
                               icon: Icons.supervisor_account_outlined,
                               enabled: !blocked,
-                              emptyMessage: 'Informe o e-mail do responsavel.',
+                              emptyMessage: l10n.authRegisterOwnerEmailRequired,
+                              invalidMessage: l10n.authEmailFieldInvalid,
                             ),
                             SizedBox(height: tokens.authLoginGapBetweenFields),
                             AuthFormTextField(
                               controller: _firstNameController,
-                              label: 'Nome',
+                              label: l10n.authRegisterFirstNameLabel,
                               icon: Icons.badge_outlined,
                               enabled: !blocked,
                               validator: (value) =>
                                   AppFormValidators.requiredText(
                                     value,
-                                    message: 'Informe seu nome.',
+                                    message: l10n.authRegisterFirstNameRequired,
                                   ),
                             ),
                             SizedBox(height: tokens.authLoginGapBetweenFields),
                             AuthFormTextField(
                               controller: _lastNameController,
-                              label: 'Sobrenome',
+                              label: l10n.authRegisterLastNameLabel,
                               icon: Icons.person_outline,
                               enabled: !blocked,
                               validator: (value) =>
                                   AppFormValidators.requiredText(
                                     value,
-                                    message: 'Informe seu sobrenome.',
+                                    message: l10n.authRegisterLastNameRequired,
                                   ),
                             ),
                             SizedBox(height: tokens.authLoginGapBetweenFields),
                             AuthEmailTextField(
                               controller: _emailController,
-                              label: 'E-mail da conta',
+                              label: l10n.authRegisterAccountEmailLabel,
                               icon: Icons.alternate_email,
                               enabled: !blocked,
-                              emptyMessage: 'Informe o e-mail da conta.',
+                              emptyMessage: l10n.authRegisterAccountEmailRequired,
+                              invalidMessage: l10n.authEmailFieldInvalid,
                             ),
                             SizedBox(height: tokens.authLoginGapBetweenFields),
                             AuthFormTextField(
                               controller: _mobileController,
-                              label: 'Celular (opcional)',
+                              label: l10n.authRegisterMobileLabel,
                               icon: Icons.phone_android_outlined,
                               enabled: !blocked,
                               keyboardType: TextInputType.phone,
@@ -184,7 +186,7 @@ class _RegisterPageBodyState extends State<_RegisterPageBody> {
                             SizedBox(height: tokens.authLoginGapBetweenFields),
                             AuthPasswordTextField(
                               controller: _passwordController,
-                              label: 'Senha',
+                              label: l10n.authRegisterPasswordLabel,
                               icon: Icons.lock_outline,
                               enabled: !blocked,
                               obscureText: page.obscurePassword,
@@ -198,7 +200,7 @@ class _RegisterPageBodyState extends State<_RegisterPageBody> {
                             SizedBox(height: tokens.authLoginGapBetweenFields),
                             AuthPasswordTextField(
                               controller: _confirmPasswordController,
-                              label: 'Confirmar senha',
+                              label: l10n.authRegisterConfirmPasswordLabel,
                               icon: Icons.lock_reset_outlined,
                               enabled: !blocked,
                               obscureText: page.obscureConfirmPassword,
@@ -231,7 +233,7 @@ class _RegisterPageBodyState extends State<_RegisterPageBody> {
                                           strokeWidth: 2,
                                         ),
                                       )
-                                    : const Text('Solicitar cadastro'),
+                                    : Text(l10n.authRegisterSubmitButton),
                               ),
                             ),
                             SizedBox(height: tokens.gapSm),
@@ -240,7 +242,7 @@ class _RegisterPageBodyState extends State<_RegisterPageBody> {
                                 onPressed: blocked
                                     ? null
                                     : () => context.goTo(AppRoute.login),
-                                child: const Text('Voltar para o login'),
+                                child: Text(l10n.authRegisterBackToLogin),
                               ),
                             ),
                           ],

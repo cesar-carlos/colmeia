@@ -1,3 +1,4 @@
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +18,7 @@ class LoginPrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final tokens = Theme.of(context).extension<AppThemeTokens>();
@@ -35,7 +37,7 @@ class LoginPrimaryButton extends StatelessWidget {
       trailing: isLoading
           ? null
           : const Icon(Icons.arrow_forward_rounded, size: 20),
-      semanticsLabel: isLoading ? 'Carregando: $label' : label,
+      semanticsLabel: isLoading ? l10n.authLoginLoadingSemantics(label) : label,
       style: FilledButton.styleFrom(
         backgroundColor: cs.primaryContainer,
         foregroundColor: cs.onPrimaryContainer,

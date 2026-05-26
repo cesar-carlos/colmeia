@@ -6125,6 +6125,210 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Shows each store with an operational store icon.'**
   String get brazilStoreSalesMapPresetStoreIconTooltip;
+
+  /// No description provided for @authLoginWelcomeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back'**
+  String get authLoginWelcomeTitle;
+
+  /// No description provided for @authLoginWelcomeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your credentials to access Colmeia.'**
+  String get authLoginWelcomeSubtitle;
+
+  /// No description provided for @authLoginEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'User or e-mail'**
+  String get authLoginEmailLabel;
+
+  /// No description provided for @authLoginPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get authLoginPasswordLabel;
+
+  /// No description provided for @authLoginPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the password'**
+  String get authLoginPasswordRequired;
+
+  /// No description provided for @authLoginForgotPasswordShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Forgot?'**
+  String get authLoginForgotPasswordShort;
+
+  /// No description provided for @authLoginRememberMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep me signed in'**
+  String get authLoginRememberMe;
+
+  /// No description provided for @authLoginNewHerePrefix.
+  ///
+  /// In en, this message translates to:
+  /// **'New here?  '**
+  String get authLoginNewHerePrefix;
+
+  /// No description provided for @authLoginRequestAccessAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Request access'**
+  String get authLoginRequestAccessAction;
+
+  /// No description provided for @authLoginSubmitButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get authLoginSubmitButton;
+
+  /// No description provided for @authLoginRestoringSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Restoring session…'**
+  String get authLoginRestoringSession;
+
+  /// No description provided for @authLoginCheckRegistrationStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Check registration status'**
+  String get authLoginCheckRegistrationStatus;
+
+  /// No description provided for @authLoginForgotPasswordAction.
+  ///
+  /// In en, this message translates to:
+  /// **'I forgot my password'**
+  String get authLoginForgotPasswordAction;
+
+  /// No description provided for @authLoginLoadingSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading: {label}'**
+  String authLoginLoadingSemantics(String label);
+
+  /// No description provided for @authEmailFieldRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the e-mail'**
+  String get authEmailFieldRequired;
+
+  /// No description provided for @authEmailFieldInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid e-mail.'**
+  String get authEmailFieldInvalid;
+
+  /// No description provided for @authRegisterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create client account'**
+  String get authRegisterTitle;
+
+  /// No description provided for @authRegisterSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your registration will be pending approval from the designated owner. Once approved, you will be able to sign in.'**
+  String get authRegisterSubtitle;
+
+  /// No description provided for @authRegisterOwnerEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner e-mail'**
+  String get authRegisterOwnerEmailLabel;
+
+  /// No description provided for @authRegisterOwnerEmailRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the owner e-mail.'**
+  String get authRegisterOwnerEmailRequired;
+
+  /// No description provided for @authRegisterFirstNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'First name'**
+  String get authRegisterFirstNameLabel;
+
+  /// No description provided for @authRegisterFirstNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your first name.'**
+  String get authRegisterFirstNameRequired;
+
+  /// No description provided for @authRegisterLastNameLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Last name'**
+  String get authRegisterLastNameLabel;
+
+  /// No description provided for @authRegisterLastNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your last name.'**
+  String get authRegisterLastNameRequired;
+
+  /// No description provided for @authRegisterAccountEmailLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Account e-mail'**
+  String get authRegisterAccountEmailLabel;
+
+  /// No description provided for @authRegisterAccountEmailRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the account e-mail.'**
+  String get authRegisterAccountEmailRequired;
+
+  /// No description provided for @authRegisterMobileLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile (optional)'**
+  String get authRegisterMobileLabel;
+
+  /// No description provided for @authRegisterPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get authRegisterPasswordLabel;
+
+  /// No description provided for @authRegisterConfirmPasswordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm password'**
+  String get authRegisterConfirmPasswordLabel;
+
+  /// No description provided for @authRegisterSubmitButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Request registration'**
+  String get authRegisterSubmitButton;
+
+  /// No description provided for @authRegisterBackToLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to sign in'**
+  String get authRegisterBackToLogin;
+
+  /// No description provided for @authPasswordTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least {minLength} characters.'**
+  String authPasswordTooShort(int minLength);
+
+  /// No description provided for @authConfirmPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm your password.'**
+  String get authConfirmPasswordRequired;
+
+  /// No description provided for @authPasswordsMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match.'**
+  String get authPasswordsMismatch;
 }
 
 class _AppLocalizationsDelegate

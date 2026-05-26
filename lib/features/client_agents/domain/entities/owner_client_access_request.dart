@@ -12,6 +12,7 @@ class OwnerClientAccessRequest {
     this.requestedAt,
     this.reviewedAt,
     this.rejectionReason,
+    this.isStaleCache = false,
   });
 
   final String requestId;
@@ -24,4 +25,5 @@ class OwnerClientAccessRequest {
   final DateTime? requestedAt;
   final DateTime? reviewedAt;
   final String? rejectionReason;
+  final bool isStaleCache;
 }

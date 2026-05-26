@@ -1,3 +1,4 @@
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 class LoginRequestAccessRow extends StatelessWidget {
@@ -7,6 +8,7 @@ class LoginRequestAccessRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -15,13 +17,13 @@ class LoginRequestAccessRow extends StatelessWidget {
         text: TextSpan(
           style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
           children: <InlineSpan>[
-            const TextSpan(text: 'Novo por aqui?  '),
+            TextSpan(text: l10n.authLoginNewHerePrefix),
             WidgetSpan(
               alignment: PlaceholderAlignment.middle,
               child: GestureDetector(
                 onTap: onTap,
                 child: Text(
-                  'Solicitar acesso',
+                  l10n.authLoginRequestAccessAction,
                   style: tt.bodySmall?.copyWith(
                     color: cs.primary,
                     fontWeight: FontWeight.w700,
