@@ -338,7 +338,12 @@ class _AppMultiSelectSearchFieldState<T>
   void didUpdateWidget(covariant AppMultiSelectSearchField<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!widget.enabled && _expanded) {
-      _expanded = false;
+      // Cannot use _setExpanded(false) here because its !widget.enabled guard
+      // would return early — the widget is already disabled at this point.
+      // Call setState + unfocus + clear directly, matching _setExpanded(false).
+      setState(() => _expanded = false);
+      _searchFocusNode.unfocus();
+      _searchController.clear();
     }
   }
 
@@ -356,6 +361,8 @@ class _AppMultiSelectSearchFieldState<T>
       _searchFocusNode.requestFocus();
     } else {
       _searchFocusNode.unfocus();
+      // Clear search so the next open shows all options, not a stale filter.
+      _searchController.clear();
     }
   }
 
@@ -817,7 +824,7 @@ class _AnimatedDropdownMenu extends StatelessWidget {
           opacity: animation,
           child: SizeTransition(
             sizeFactor: animation,
-            axisAlignment: -1,
+            alignment: Alignment.topLeft,
             child: child,
           ),
         );
