@@ -4,7 +4,6 @@ import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_r
 import 'package:colmeia/features/agent_meta/application/usecases/discover_agent_rpc_methods_use_case.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/load_client_token_policy_use_case.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/refresh_agent_profile_use_case.dart';
-import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_resolution_invalidator.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/application/client_agent_token_draft_store.dart';
 import 'package:colmeia/features/client_agents/application/services/agent_presence_poller.dart';
@@ -41,6 +40,7 @@ import 'package:colmeia/features/user_context/application/usecases/clear_active_
 import 'package:colmeia/features/user_context/application/usecases/load_current_user_context_use_case.dart';
 import 'package:colmeia/features/user_context/application/usecases/persist_active_store_use_case.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
+import 'package:colmeia/shared/ports/agent_query_target_resolution_invalidator.dart';
 import 'package:get_it/get_it.dart';
 
 void registerInjectorPresentation(GetIt getIt) {

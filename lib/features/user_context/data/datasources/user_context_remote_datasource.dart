@@ -1,14 +1,14 @@
 import 'package:colmeia/core/dev/fake_backend/fake_identity_backend_store.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/network/api_routes.dart';
-import 'package:colmeia/features/auth/data/models/client_auth_json_reader.dart';
-import 'package:colmeia/features/auth/data/models/client_me_response_dto.dart';
 import 'package:colmeia/features/user_context/data/models/client_user_context_access_payload_resolver.dart';
 import 'package:colmeia/features/user_context/data/models/current_user_context_model.dart';
 import 'package:colmeia/features/user_context/data/models/user_access_scope_model.dart';
 import 'package:colmeia/features/user_context/data/models/user_profile_model.dart';
 import 'package:colmeia/features/user_context/domain/entities/access/store_scope.dart';
 import 'package:colmeia/features/user_context/domain/entities/user_permission.dart';
+import 'package:colmeia/shared/data/identity/client_me_response_dto.dart';
+import 'package:colmeia/shared/data/json/wrapped_json_reader.dart';
 import 'package:dio/dio.dart';
 
 // ignore: one_member_abstracts — explicit remote contract for fake vs API swap.

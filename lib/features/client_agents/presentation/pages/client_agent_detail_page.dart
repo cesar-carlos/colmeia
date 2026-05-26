@@ -22,11 +22,27 @@ import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
+import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
+/// Visual constants for the agent detail page.
+///
+/// Centralized so spinner/icon sizes do not drift between the token status
+/// row, the policy loading state, the policy line glyphs and the copy
+/// affordance.
+const double _kStatusSpinnerSize = 18;
+const double _kStatusIconSize = 20;
+const double _kPolicyLoadingHeight = 64;
+const double _kPolicyLoadingSpinnerSize = 22;
+const double _kSpinnerStrokeWidth = 2;
+const double _kPolicyLineIconSize = 18;
+const double _kCopyIconSize = 20;
+const double _kCopyTouchTargetSize = 40;
+const Duration _kRefreshScrollDuration = Duration(milliseconds: 250);
 
 class ClientAgentDetailPage extends StatefulWidget {
   const ClientAgentDetailPage({
@@ -82,22 +98,29 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage> {
   }
 
   void _consumeControllerNotices() {
-    var shouldRebuild = false;
-    if (_controller.isRefreshingFromAgent &&
-        (_refreshFromAgentNotice != null || _refreshFromAgentError != null)) {
-      _refreshFromAgentNotice = null;
-      _refreshFromAgentError = null;
-      shouldRebuild = true;
+    final c = _controller;
+    var nextNotice = _refreshFromAgentNotice;
+    var nextError = _refreshFromAgentError;
+    var changed = false;
+
+    if (c.isRefreshingFromAgent &&
+        (nextNotice != null || nextError != null)) {
+      nextNotice = null;
+      nextError = null;
+      changed = true;
     }
-    if (_controller.refreshFromAgentFeedback != null ||
-        _controller.refreshFromAgentError != null) {
-      _refreshFromAgentNotice = _controller.refreshFromAgentFeedback;
-      _refreshFromAgentError = _controller.refreshFromAgentError;
-      _controller.clearRefreshFromAgentFeedback();
-      shouldRebuild = true;
+    if (c.refreshFromAgentFeedback != null ||
+        c.refreshFromAgentError != null) {
+      nextNotice = c.refreshFromAgentFeedback;
+      nextError = c.refreshFromAgentError;
+      c.clearRefreshFromAgentFeedback();
+      changed = true;
     }
-    if (shouldRebuild && mounted) {
-      setState(() {});
+    if (changed && mounted) {
+      setState(() {
+        _refreshFromAgentNotice = nextNotice;
+        _refreshFromAgentError = nextError;
+      });
     }
   }
 
@@ -111,7 +134,7 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage> {
     if (ctx != null) {
       await Scrollable.ensureVisible(
         ctx,
-        duration: const Duration(milliseconds: 250),
+        duration: _kRefreshScrollDuration,
         alignment: 0.1,
         curve: Curves.easeOutCubic,
       );
@@ -216,26 +239,16 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage> {
                             ),
                             if (refreshFromAgentNotice != null) ...<Widget>[
                               SizedBox(height: tokens.gapSm),
-                              Text(
-                                refreshFromAgentNotice,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                    ),
+                              _FeedbackInlineText(
+                                message: refreshFromAgentNotice,
+                                tone: _FeedbackTone.info,
                               ),
                             ],
                             if (refreshFromAgentError != null) ...<Widget>[
                               SizedBox(height: tokens.gapSm),
-                              Text(
-                                refreshFromAgentError,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.error,
-                                    ),
+                              _FeedbackInlineText(
+                                message: refreshFromAgentError,
+                                tone: _FeedbackTone.error,
                               ),
                             ],
                           ],
@@ -428,7 +441,6 @@ class _AgentClientTokenCardState extends State<_AgentClientTokenCard> {
   @override
   Widget build(BuildContext context) {
     final c = widget.controller;
-    final theme = Theme.of(context);
     final feedback = _localizeClientAgentsMessage(
       _ephemeralFeedback,
       widget.l10n,
@@ -516,20 +528,13 @@ class _AgentClientTokenCardState extends State<_AgentClientTokenCard> {
           ),
           if (feedback != null) ...<Widget>[
             SizedBox(height: widget.tokens.gapSm),
-            Text(
-              feedback,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.primary,
-              ),
-            ),
+            _FeedbackInlineText(message: feedback, tone: _FeedbackTone.info),
           ],
           if (feedbackError != null) ...<Widget>[
             SizedBox(height: widget.tokens.gapSm),
-            Text(
-              feedbackError,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.error,
-              ),
+            _FeedbackInlineText(
+              message: feedbackError,
+              tone: _FeedbackTone.error,
             ),
           ],
         ],
@@ -578,14 +583,14 @@ class _ClientTokenStatusRow extends StatelessWidget {
       children: <Widget>[
         if (isLoading)
           SizedBox.square(
-            dimension: 18,
+            dimension: _kStatusSpinnerSize,
             child: CircularProgressIndicator(
-              strokeWidth: 2,
+              strokeWidth: _kSpinnerStrokeWidth,
               color: color,
             ),
           )
         else
-          Icon(icon, size: 20, color: color),
+          Icon(icon, size: _kStatusIconSize, color: color),
         SizedBox(width: tokens.gapSm),
         Expanded(
           child: Text(
@@ -681,12 +686,12 @@ class _ClientTokenPolicyCardState extends State<_ClientTokenPolicyCard> {
     final Widget body;
     if (c.isLoadingClientTokenPolicy) {
       body = SizedBox(
-        height: 64,
+        height: _kPolicyLoadingHeight,
         child: Center(
           child: SizedBox.square(
-            dimension: 22,
+            dimension: _kPolicyLoadingSpinnerSize,
             child: CircularProgressIndicator(
-              strokeWidth: 2,
+              strokeWidth: _kSpinnerStrokeWidth,
               color: colors.primary,
             ),
           ),
@@ -950,7 +955,7 @@ class _ClientTokenPolicyLine extends StatelessWidget {
     final tokens = theme.extension<AppThemeTokens>()!;
     return Row(
       children: <Widget>[
-        Icon(icon, size: 18, color: color),
+        Icon(icon, size: _kPolicyLineIconSize, color: color),
         SizedBox(width: tokens.gapSm),
         Expanded(
           child: Text(
@@ -991,12 +996,7 @@ class _ClientTokenPolicyChips extends StatelessWidget {
           spacing: tokens.gapXs,
           runSpacing: tokens.gapXs,
           children: <Widget>[
-            for (final entry in entries)
-              Chip(
-                label: Text(entry),
-                visualDensity: VisualDensity.compact,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
+            for (final entry in entries) AppTagChip(label: entry),
           ],
         ),
       ],
@@ -1400,13 +1400,13 @@ class _AgentDetailRow extends StatelessWidget {
               Expanded(child: Text(value, style: typography.body)),
               if (copyPayload != null)
                 IconButton(
-                  icon: const Icon(Icons.copy_rounded, size: 20),
+                  icon: const Icon(Icons.copy_rounded, size: _kCopyIconSize),
                   tooltip: l10n.clientAgentDetailCopyFieldTooltip(label),
                   visualDensity: VisualDensity.compact,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(
-                    minWidth: 40,
-                    minHeight: 40,
+                    minWidth: _kCopyTouchTargetSize,
+                    minHeight: _kCopyTouchTargetSize,
                   ),
                   onPressed: () => unawaited(
                     _copyAgentDetailFieldValue(context, copyPayload),
@@ -1428,4 +1428,33 @@ String? _localizeClientAgentsMessage(
     return null;
   }
   return localizeClientAgentsPresentationMessage(message, l10n);
+}
+
+enum _FeedbackTone { info, error }
+
+/// Tiny inline feedback line used by the detail page wherever a localized
+/// success/error message must render below a CTA cluster without the visual
+/// weight of an [AppInlineErrorPanel] or a banner.
+///
+/// Centralizes the `bodySmall` + `primary`/`error` color combination that
+/// previously appeared inline in the header, the token card and the policy
+/// card so changes to that style happen in one place.
+class _FeedbackInlineText extends StatelessWidget {
+  const _FeedbackInlineText({required this.message, required this.tone});
+
+  final String message;
+  final _FeedbackTone tone;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = switch (tone) {
+      _FeedbackTone.info => theme.colorScheme.primary,
+      _FeedbackTone.error => theme.colorScheme.error,
+    };
+    return Text(
+      message,
+      style: theme.textTheme.bodySmall?.copyWith(color: color),
+    );
+  }
 }

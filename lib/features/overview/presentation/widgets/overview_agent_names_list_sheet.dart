@@ -4,6 +4,7 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/bottom_sheet_compact_drag_handle.dart';
+import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:flutter/material.dart';
 
 /// Returns trimmed, non-empty names, sorted case-insensitively, with
@@ -164,18 +165,11 @@ class _OverviewAgentNamesListSheetState
                       tokens.contentSpacing,
                       tokens.gapSm,
                     ),
-                    child: TextField(
+                    child: AppTextField(
                       controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: l10n.overviewAgentFilterSheetSearchHint,
-                        prefixIcon: const Icon(Icons.search_rounded),
-                        isDense: true,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(
-                            tokens.formFieldRadius,
-                          ),
-                        ),
-                      ),
+                      hintText: l10n.overviewAgentFilterSheetSearchHint,
+                      prefixIcon: Icons.search_rounded,
+                      density: AppTextFieldDensity.compact,
                       onChanged: (_) => setState(() {}),
                     ),
                   ),

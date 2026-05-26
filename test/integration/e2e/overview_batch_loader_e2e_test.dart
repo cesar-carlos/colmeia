@@ -19,7 +19,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diar
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/overview/data/overview_batch_loader.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter_test/flutter_test.dart' hide group;
 import 'package:result_dart/result_dart.dart';
 import 'package:test_api/scaffolding.dart' show group;
@@ -63,7 +63,7 @@ void main() {
           final result = await runE2eAppResultWithHubRetry(
             () => loader.load(
               userId: 'user-1',
-              filter: OverviewFilter(
+              filter: DashboardFilter(
                 selectedAgentIds: <String>{AppEnvironment.e2eAgentId},
               ),
               periodStart: periodStart,

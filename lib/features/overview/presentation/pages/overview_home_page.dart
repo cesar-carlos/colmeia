@@ -9,7 +9,6 @@ import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
@@ -25,6 +24,7 @@ import 'package:colmeia/features/overview/presentation/widgets/overview_kpi_bar.
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
@@ -452,8 +452,8 @@ class _FilterSlice {
     required this.isLoading,
   });
 
-  final OverviewFilter filter;
-  final List<OverviewAgentOption> agents;
+  final DashboardFilter filter;
+  final List<DashboardAgentOption> agents;
   final bool isLoading;
 
   @override

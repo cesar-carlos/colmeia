@@ -4,11 +4,11 @@ import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/overview_weekday_display_order.dart';
-import 'package:colmeia/features/overview/presentation/localization/overview_weekday_sales_trend_l10n.dart';
-import 'package:colmeia/features/overview/presentation/widgets/overview_bar_chart_style.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/charts/daily_sales_weekday_labels.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
+import 'package:colmeia/shared/widgets/charts/app_dashboard_comparison_bar_chart_preset.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -199,7 +199,7 @@ class _OverviewWeekdaySalesTrendChartState
                                   extremeSpreadAccessibilityNotice: l10n
                                       .chartComparisonExtremeValueSpreadNotice,
                                   labelBuilder: (point) =>
-                                      overviewWeekdaySalesLabel(
+                                      dailySalesWeekdayLabel(
                                         point.weekdayNumber,
                                         l10n,
                                       ),
@@ -209,7 +209,7 @@ class _OverviewWeekdaySalesTrendChartState
                                       : point.salesAmount,
                                   tooltipLabelBuilder: (point, value) =>
                                       l10n.overviewWeekdaySalesTooltip(
-                                        overviewWeekdaySalesLabel(
+                                        dailySalesWeekdayLabel(
                                           point.weekdayNumber,
                                           l10n,
                                         ),
@@ -224,9 +224,9 @@ class _OverviewWeekdaySalesTrendChartState
                                       fullscreenIsSalesCount
                                       ? compactSalesCountFormat.format(value)
                                       : AppBrFormatters.compactCurrency(value),
-                                  style: overviewHomeComparisonBarChartStyle(
+                                  style: appDashboardComparisonBarChartStyle(
                                     tokens: fullscreenTokens,
-                                    kind: OverviewHomeBarChartKind.weekday,
+                                    kind: AppDashboardComparisonBarChartKind.weekday,
                                     l10n: l10n,
                                     weekdayUsesCurrencyAxis:
                                         !fullscreenIsSalesCount,
@@ -292,20 +292,20 @@ class _OverviewWeekdaySalesTrendChartState
         extremeSpreadAccessibilityNotice:
             l10n.chartComparisonExtremeValueSpreadNotice,
         labelBuilder: (point) =>
-            overviewWeekdaySalesLabel(point.weekdayNumber, l10n),
+            dailySalesWeekdayLabel(point.weekdayNumber, l10n),
         valueBuilder: (point) =>
             isSalesCount ? point.salesCount : point.salesAmount,
         tooltipLabelBuilder: (point, value) => l10n.overviewWeekdaySalesTooltip(
-          overviewWeekdaySalesLabel(point.weekdayNumber, l10n),
+          dailySalesWeekdayLabel(point.weekdayNumber, l10n),
           salesCountFormat.format(point.salesCount),
           AppBrFormatters.currency(point.salesAmount),
         ),
         dataLabelBuilder: (_, value) => isSalesCount
             ? compactSalesCountFormat.format(value)
             : AppBrFormatters.compactCurrency(value),
-        style: overviewHomeComparisonBarChartStyle(
+        style: appDashboardComparisonBarChartStyle(
           tokens: tokens,
-          kind: OverviewHomeBarChartKind.weekday,
+          kind: AppDashboardComparisonBarChartKind.weekday,
           l10n: l10n,
           weekdayUsesCurrencyAxis: !isSalesCount,
           weekdayRevenueDataLabelBackground: isSalesCount
@@ -357,7 +357,7 @@ class _OverviewWeekdaySalesTrendChartState
       return rightValue > leftValue ? right : left;
     });
 
-    final topLabel = overviewWeekdaySalesLabel(topPoint.weekdayNumber, l10n);
+    final topLabel = dailySalesWeekdayLabel(topPoint.weekdayNumber, l10n);
     return _metric == _OverviewWeekdayMetric.salesCount
         ? l10n.overviewWeekdaySalesSummarySemantics(
             salesCountFormat.format(totalSalesCount),

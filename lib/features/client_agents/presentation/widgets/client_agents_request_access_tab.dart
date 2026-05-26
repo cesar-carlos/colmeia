@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:colmeia/features/client_agents/domain/entities/client_agent_token_constraints.dart';
 import 'package:colmeia/features/client_agents/presentation/models/client_agent_access_request_row_input.dart';
 import 'package:colmeia/features/client_agents/presentation/utils/client_agent_id_format.dart';
+import 'package:colmeia/features/client_agents/presentation/utils/client_agents_request_access_form_parser.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
@@ -505,113 +505,47 @@ class _ClientAgentsRequestAccessTabState
         )
         .toList(growable: false);
 
-    final parsed = _parseRows(rows, l10n);
-    if (parsed == null) {
-      return;
+    final parsed = parseClientAgentsRequestAccessForm(rows);
+    switch (parsed) {
+      case ClientAgentsRequestAccessFormParseSuccess():
+        final accepted = await widget.onSubmitRows(parsed.rows);
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _validationMessage = null;
+          _inputNoteMessage = !accepted || parsed.duplicatedAgentIds.isEmpty
+              ? null
+              : l10n.clientAgentsDuplicatedIdsNote(
+                  parsed.duplicatedAgentIds.join(', '),
+                );
+        });
+      case ClientAgentsRequestAccessFormParseFailure():
+        setState(() {
+          _validationMessage = _failureMessage(parsed, l10n);
+          _inputNoteMessage = null;
+        });
     }
-
-    final accepted = await widget.onSubmitRows(parsed.rows);
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _validationMessage = null;
-      _inputNoteMessage = !accepted || parsed.duplicatedAgentIds.isEmpty
-          ? null
-          : l10n.clientAgentsDuplicatedIdsNote(
-              parsed.duplicatedAgentIds.join(', '),
-            );
-    });
   }
 
-  _ParsedRowsResult? _parseRows(
-    List<ClientAgentAccessRequestRowInput> rows,
+  String _failureMessage(
+    ClientAgentsRequestAccessFormParseFailure failure,
     AppLocalizations l10n,
   ) {
-    final validAgentIds = <String>{};
-    final duplicatedAgentIds = <String>{};
-    final invalidAgentIds = <String>[];
-    final tokensTooLong = <String>[];
-
-    for (final row in rows) {
-      final raw = row.agentIdRaw.trim();
-      if (raw.isEmpty) {
-        continue;
-      }
-      if (!isValidClientAgentId(raw)) {
-        invalidAgentIds.add(raw);
-        continue;
-      }
-      if (!validAgentIds.add(raw)) {
-        duplicatedAgentIds.add(raw);
-      }
-      final token = row.clientTokenRaw.trim();
-      if (token.length > ClientAgentTokenConstraints.maxLength) {
-        tokensTooLong.add(raw);
-      }
-    }
-
-    if (validAgentIds.isEmpty) {
-      setState(() {
-        _validationMessage = invalidAgentIds.isEmpty
-            ? l10n.clientAgentsValidationNeedOneValidId
-            : l10n.clientAgentsValidationInvalidIds(
-                invalidAgentIds.join(', '),
-              );
-        _inputNoteMessage = null;
-      });
-      return null;
-    }
-
-    if (invalidAgentIds.isNotEmpty) {
-      setState(() {
-        _validationMessage = l10n.clientAgentsValidationInvalidIds(
-          invalidAgentIds.join(', '),
-        );
-        _inputNoteMessage = null;
-      });
-      return null;
-    }
-
-    if (tokensTooLong.isNotEmpty) {
-      setState(() {
-        _validationMessage = l10n.clientAgentsValidationTokenTooLong(
-          ClientAgentTokenConstraints.maxLength,
-          tokensTooLong.join(', '),
-        );
-        _inputNoteMessage = null;
-      });
-      return null;
-    }
-
-    final dedupedRows = <ClientAgentAccessRequestRowInput>[];
-    final seen = <String>{};
-    for (final row in rows) {
-      final id = row.agentIdRaw.trim();
-      if (!isValidClientAgentId(id)) {
-        continue;
-      }
-      if (seen.add(id)) {
-        dedupedRows.add(row);
-      }
-    }
-
-    return _ParsedRowsResult(
-      rows: dedupedRows,
-      duplicatedAgentIds: duplicatedAgentIds,
-    );
+    return switch (failure) {
+      ClientAgentsRequestAccessFormNeedsAtLeastOneId() =>
+        l10n.clientAgentsValidationNeedOneValidId,
+      ClientAgentsRequestAccessFormHasInvalidIds() =>
+        l10n.clientAgentsValidationInvalidIds(
+          failure.invalidAgentIds.join(', '),
+        ),
+      ClientAgentsRequestAccessFormHasTokensTooLong() =>
+        l10n.clientAgentsValidationTokenTooLong(
+          failure.maxLength,
+          failure.agentIds.join(', '),
+        ),
+    };
   }
-}
-
-class _ParsedRowsResult {
-  const _ParsedRowsResult({
-    required this.rows,
-    required this.duplicatedAgentIds,
-  });
-
-  final List<ClientAgentAccessRequestRowInput> rows;
-  final Set<String> duplicatedAgentIds;
 }
 
 class _RequestAccessRow extends StatelessWidget {

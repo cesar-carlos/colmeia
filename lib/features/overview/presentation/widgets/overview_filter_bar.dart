@@ -1,9 +1,9 @@
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_home_agent_filter_control.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/forms/app_date_picker_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
@@ -23,10 +23,10 @@ class OverviewFilterBar extends StatefulWidget {
   });
 
   final AppLocalizations l10n;
-  final OverviewFilter filter;
-  final List<OverviewAgentOption> availableAgents;
+  final DashboardFilter filter;
+  final List<DashboardAgentOption> availableAgents;
   final bool isLoading;
-  final ValueChanged<OverviewFilter>? onFilterChanged;
+  final ValueChanged<DashboardFilter>? onFilterChanged;
 
   @override
   State<OverviewFilterBar> createState() => _OverviewFilterBarState();
@@ -59,22 +59,22 @@ class _OverviewFilterBarState extends State<OverviewFilterBar> {
     }
   }
 
-  static List<OverviewYearMonth> _buildPastMonthOptions({
+  static List<DashboardYearMonth> _buildPastMonthOptions({
     required DateTime now,
     int monthsBack = 12,
   }) {
-    return List<OverviewYearMonth>.generate(monthsBack, (i) {
+    return List<DashboardYearMonth>.generate(monthsBack, (i) {
       var month = now.month - (i + 1);
       var year = now.year;
       while (month < 1) {
         month += 12;
         year -= 1;
       }
-      return OverviewYearMonth(year: year, month: month);
+      return DashboardYearMonth(year: year, month: month);
     });
   }
 
-  static String _monthLabel(BuildContext context, OverviewYearMonth ym) {
+  static String _monthLabel(BuildContext context, DashboardYearMonth ym) {
     final locale = Localizations.localeOf(context).toString();
     final date = DateTime(ym.year, ym.month);
     return DateFormat.yMMM(locale).format(date);
@@ -88,7 +88,7 @@ class _OverviewFilterBarState extends State<OverviewFilterBar> {
     final cs = theme.colorScheme;
     final colors = theme.appColors;
     final now = DateTime.now();
-    final currentYm = OverviewYearMonth.fromDate(now);
+    final currentYm = DashboardYearMonth.fromDate(now);
     final pastMonthOptions = _buildPastMonthOptions(now: now);
     final isDisabled = widget.onFilterChanged == null || widget.isLoading;
     final hasActiveFilter = !widget.filter.isDefault;
@@ -97,20 +97,20 @@ class _OverviewFilterBarState extends State<OverviewFilterBar> {
     final selectedYm = widget.filter.yearMonth ?? currentYm;
     final rangePickerLastDate = DateTime(now.year, now.month, now.day);
     final rangePickerFirstDate = DateTime(now.year - 10);
-    var monthDropdownOptions = <AppDropdownOption<OverviewYearMonth>>[
-      AppDropdownOption<OverviewYearMonth>(
+    var monthDropdownOptions = <AppDropdownOption<DashboardYearMonth>>[
+      AppDropdownOption<DashboardYearMonth>(
         value: currentYm,
         label: widget.l10n.dashboardHomeFiltersCurrentMonth,
       ),
       for (final ym in pastMonthOptions)
-        AppDropdownOption<OverviewYearMonth>(
+        AppDropdownOption<DashboardYearMonth>(
           value: ym,
           label: _monthLabel(context, ym),
         ),
     ];
     if (!monthDropdownOptions.any((o) => o.value == selectedYm)) {
-      monthDropdownOptions = <AppDropdownOption<OverviewYearMonth>>[
-        AppDropdownOption<OverviewYearMonth>(
+      monthDropdownOptions = <AppDropdownOption<DashboardYearMonth>>[
+        AppDropdownOption<DashboardYearMonth>(
           value: selectedYm,
           label: _monthLabel(context, selectedYm),
         ),
@@ -156,7 +156,7 @@ class _OverviewFilterBarState extends State<OverviewFilterBar> {
                         ),
                   style: TextButton.styleFrom(
                     visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    padding: EdgeInsets.symmetric(horizontal: tokens.gapSm),
                     textStyle: const TextStyle(
                       decoration: TextDecoration.underline,
                     ),
@@ -169,10 +169,10 @@ class _OverviewFilterBarState extends State<OverviewFilterBar> {
                 TextButton(
                   onPressed: isDisabled
                       ? null
-                      : () => widget.onFilterChanged!(OverviewFilter.initial()),
+                      : () => widget.onFilterChanged!(DashboardFilter.initial()),
                   style: TextButton.styleFrom(
                     visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    padding: EdgeInsets.symmetric(horizontal: tokens.gapSm),
                     textStyle: const TextStyle(
                       decoration: TextDecoration.underline,
                     ),
@@ -257,7 +257,7 @@ class _OverviewFilterBarState extends State<OverviewFilterBar> {
                   label: widget.l10n.dashboardHomeFiltersReferenceRangeLabel,
                   helperText: widget.l10n
                       .dashboardHomeFiltersReferenceRangeHelper(
-                        kOverviewCustomReferenceRangeMaxInclusiveDays,
+                        kDashboardCustomReferenceRangeMaxInclusiveDays,
                       ),
                   pickerTitle:
                       widget.l10n.dashboardHomeFiltersReferenceRangePickerTitle,
@@ -278,7 +278,7 @@ class _OverviewFilterBarState extends State<OverviewFilterBar> {
                       );
                       return;
                     }
-                    final range = OverviewDateRange.fromOrderedEndpoints(
+                    final range = DashboardDateRange.fromOrderedEndpoints(
                       picked.start,
                       picked.end,
                     );
@@ -292,7 +292,7 @@ class _OverviewFilterBarState extends State<OverviewFilterBar> {
                           content: Text(
                             widget.l10n
                                 .dashboardHomeFiltersReferenceRangeMaxDurationSnackbar(
-                                  kOverviewCustomReferenceRangeMaxInclusiveDays,
+                                  kDashboardCustomReferenceRangeMaxInclusiveDays,
                                 ),
                           ),
                         ),
@@ -302,7 +302,7 @@ class _OverviewFilterBarState extends State<OverviewFilterBar> {
                     widget.onFilterChanged!(
                       widget.filter.copyWith(
                         referenceRange: range,
-                        yearMonth: OverviewYearMonth.fromDate(
+                        yearMonth: DashboardYearMonth.fromDate(
                           range.endInclusive,
                         ),
                       ),
@@ -310,7 +310,7 @@ class _OverviewFilterBarState extends State<OverviewFilterBar> {
                   },
                 )
               else
-                AppDropdownField<OverviewYearMonth>(
+                AppDropdownField<DashboardYearMonth>(
                   label: widget.l10n.dashboardHomeFiltersYearMonthLabel,
                   value: selectedYm,
                   options: monthDropdownOptions,

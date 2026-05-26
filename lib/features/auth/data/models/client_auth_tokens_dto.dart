@@ -1,7 +1,7 @@
 import 'package:colmeia/features/auth/data/models/auth_session_model.dart';
 import 'package:colmeia/features/auth/data/models/auth_token_expiry_decoder.dart';
-import 'package:colmeia/features/auth/data/models/client_auth_json_reader.dart';
-import 'package:colmeia/features/auth/domain/entities/client_account_status.dart';
+import 'package:colmeia/shared/data/json/wrapped_json_reader.dart';
+import 'package:colmeia/shared/identity/client_account_status.dart';
 
 class ClientAuthTokensDto {
   const ClientAuthTokensDto({

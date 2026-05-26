@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
-import 'package:colmeia/features/overview/presentation/widgets/overview_bar_chart_style.dart';
-import 'package:colmeia/features/overview/presentation/widgets/overview_lucratividade_percent_metrics.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.dart';
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_bar_chart_preferences.dart';
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_point_percent_metric.dart';
@@ -15,7 +13,9 @@ import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
+import 'package:colmeia/shared/widgets/charts/app_dashboard_comparison_bar_chart_preset.dart';
 import 'package:colmeia/shared/widgets/charts/app_grouped_column_chart.dart';
+import 'package:colmeia/shared/widgets/charts/dashboard_lucratividade_percent_metrics.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
@@ -467,7 +467,7 @@ class _SalesMonthlyPnlBarChartBody extends StatelessWidget {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final narrow = constraints.maxWidth < 380;
-                return OverviewLucratividadePercentMetricSection(
+                return DashboardLucratividadePercentMetricSection(
                   l10n: l10n,
                   tokens: tokens,
                   metric: session.percentMetric,
@@ -530,9 +530,9 @@ AppComparisonBarChartStyle _comparisonStyleWithPercent({
   required double animationMs,
   required NumberFormat percentRatioFormat,
 }) {
-  final base = overviewHomeComparisonBarChartStyle(
+    final base = appDashboardComparisonBarChartStyle(
     tokens: tokens,
-    kind: OverviewHomeBarChartKind.weekday,
+      kind: AppDashboardComparisonBarChartKind.weekday,
     l10n: l10n,
     heightOverride: chartHeightOverride,
   );
@@ -681,7 +681,7 @@ Future<void> pushSalesMonthlyPnlBarChartFullscreen({
                     child: LayoutBuilder(
                       builder: (context, c2) {
                         final narrow = c2.maxWidth < 380;
-                        return OverviewLucratividadePercentMetricSection(
+                        return DashboardLucratividadePercentMetricSection(
                           l10n: l10nFs,
                           tokens: tokensFs,
                           metric: fsSession.percentMetric,

@@ -1,7 +1,6 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
-import 'package:colmeia/features/auth/domain/entities/client_account_status.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/application/client_agent_token_draft_store.dart';
 import 'package:colmeia/features/client_agents/application/client_agents_page_session_service.dart';
@@ -41,6 +40,7 @@ import 'package:colmeia/features/user_context/domain/entities/user_permission.da
 import 'package:colmeia/features/user_context/domain/entities/user_profile.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/l10n/app_localizations_pt.dart';
+import 'package:colmeia/shared/identity/client_account_status.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:provider/provider.dart';

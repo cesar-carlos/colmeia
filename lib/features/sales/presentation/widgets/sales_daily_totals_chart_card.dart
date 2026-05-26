@@ -1,8 +1,8 @@
-import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
-import 'package:colmeia/features/overview/presentation/widgets/overview_daily_sales_trend_chart.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_daily_totals_chart_copy.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
+import 'package:colmeia/shared/widgets/charts/daily_sales_trend_chart.dart';
 import 'package:flutter/material.dart';
 
 class SalesDailyTotalsChartCard extends StatelessWidget {
@@ -17,19 +17,19 @@ class SalesDailyTotalsChartCard extends StatelessWidget {
   });
 
   final AppLocalizations l10n;
-  final List<OverviewDailySalesTrendPoint> points;
+  final List<DailySalesTrendPoint> points;
   final bool loadFailed;
   final bool isLoading;
   final String? loadFailureMessage;
 
   /// When non-null, daily totals were loaded for this inclusive span instead of the anchor month.
-  final OverviewDateRange? dailySaleDateRange;
+  final DashboardDateRange? dailySaleDateRange;
 
   @override
   Widget build(BuildContext context) {
     final range = dailySaleDateRange;
     return RepaintBoundary(
-      child: OverviewDailySalesTrendChart(
+      child: DailySalesTrendChart(
         l10n: l10n,
         points: points,
         loadFailed: loadFailed,

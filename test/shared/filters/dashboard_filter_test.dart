@@ -1,11 +1,11 @@
 import 'package:checks/checks.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('OverviewDateRange clamps', () {
+  group('DashboardDateRange clamps', () {
     test('clampedToPickerCalendarBounds narrows to window', () {
-      final r = OverviewDateRange.fromOrderedEndpoints(
+      final r = DashboardDateRange.fromOrderedEndpoints(
         DateTime(1990),
         DateTime(2030, 12, 31),
       );
@@ -18,7 +18,7 @@ void main() {
     });
 
     test('clampedToMaxInclusiveCalendarDays keeps end fixed', () {
-      final r = OverviewDateRange.fromOrderedEndpoints(
+      final r = DashboardDateRange.fromOrderedEndpoints(
         DateTime(2020),
         DateTime(2020, 1, 10),
       );
@@ -29,13 +29,13 @@ void main() {
     });
   });
 
-  group('OverviewFilter', () {
+  group('DashboardFilter', () {
     test('isDefault is false when referenceRange is set', () {
-      const f = OverviewFilter(
-        yearMonth: OverviewYearMonth(year: 2020, month: 1),
+      const f = DashboardFilter(
+        yearMonth: DashboardYearMonth(year: 2020, month: 1),
       );
       final withRange = f.copyWith(
-        referenceRange: OverviewDateRange.fromOrderedEndpoints(
+        referenceRange: DashboardDateRange.fromOrderedEndpoints(
           DateTime(2020, 1, 5),
           DateTime(2020, 1, 15),
         ),
@@ -44,8 +44,8 @@ void main() {
     });
 
     test('copyWith can clear referenceRange', () {
-      final f = OverviewFilter.initial().copyWith(
-        referenceRange: OverviewDateRange.fromOrderedEndpoints(
+      final f = DashboardFilter.initial().copyWith(
+        referenceRange: DashboardDateRange.fromOrderedEndpoints(
           DateTime(2026, 1, 2),
           DateTime(2026, 1, 10),
         ),
@@ -56,9 +56,9 @@ void main() {
 
     test('normalizedForHomeDashboardReferenceRange clamps end to today', () {
       final now = DateTime(2026, 6, 15);
-      final f = OverviewFilter(
-        yearMonth: OverviewYearMonth.fromDate(now),
-        referenceRange: OverviewDateRange.fromOrderedEndpoints(
+      final f = DashboardFilter(
+        yearMonth: DashboardYearMonth.fromDate(now),
+        referenceRange: DashboardDateRange.fromOrderedEndpoints(
           DateTime(2026, 6),
           DateTime(2030),
         ),
@@ -67,7 +67,7 @@ void main() {
       final last = DateTime(now.year, now.month, now.day);
       check(n.referenceRange!.startInclusive).equals(DateTime(2026, 6));
       check(n.referenceRange!.endInclusive).equals(last);
-      check(n.yearMonth).equals(OverviewYearMonth.fromDate(last));
+      check(n.yearMonth).equals(DashboardYearMonth.fromDate(last));
     });
   });
 }

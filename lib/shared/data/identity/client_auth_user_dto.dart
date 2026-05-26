@@ -1,6 +1,6 @@
-import 'package:colmeia/features/auth/data/models/client_auth_json_reader.dart';
-import 'package:colmeia/features/auth/domain/entities/client_account_status.dart';
 import 'package:colmeia/features/user_context/domain/entities/user_profile.dart';
+import 'package:colmeia/shared/data/json/wrapped_json_reader.dart';
+import 'package:colmeia/shared/identity/client_account_status.dart';
 
 class ClientAuthUserDto {
   const ClientAuthUserDto({

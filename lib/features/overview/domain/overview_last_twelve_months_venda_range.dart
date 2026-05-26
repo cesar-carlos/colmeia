@@ -1,4 +1,4 @@
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 
 /// Calendar sale-date window for the overview monthly chart: 12 inclusive
 /// months ending in the selected filter month when set, otherwise in the
@@ -8,16 +8,16 @@ abstract final class OverviewLast12MonthsVendaRange {
   /// Sale-date bounds for the monthly resumo SQL, aligned with the filter bar
   /// month, not with the KPI rolling window when the filter month is unset.
   static ({DateTime dataVendaInicio, DateTime dataVendaFim}) fromOverviewFilter(
-    OverviewFilter filter, {
+    DashboardFilter filter, {
     required DateTime Function() clock,
   }) {
     final DateTime anchorEnd;
     final rr = filter.referenceRange;
     if (rr != null) {
-      anchorEnd = OverviewYearMonth.fromDate(rr.endInclusive).end;
+      anchorEnd = DashboardYearMonth.fromDate(rr.endInclusive).end;
     } else {
       anchorEnd =
-          filter.yearMonth?.end ?? OverviewYearMonth.fromDate(clock()).end;
+          filter.yearMonth?.end ?? DashboardYearMonth.fromDate(clock()).end;
     }
     return fromPeriodEnd(anchorEnd);
   }

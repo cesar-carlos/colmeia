@@ -277,64 +277,38 @@ class _PasswordRecoveryStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final (icon, title, message, color) = switch (status) {
+    final (kind, icon, title, message) = switch (status) {
       ClientPasswordRecoveryStatus.pending => (
+        InlineAlertBannerKind.success,
         Icons.verified_user_outlined,
         'Token valido',
         'O token esta ativo. Voce ja pode definir a nova senha.',
-        colorScheme.primary,
       ),
       ClientPasswordRecoveryStatus.expired => (
+        InlineAlertBannerKind.error,
         Icons.timer_off_outlined,
         'Token expirado',
         'Esse token expirou. Solicite uma nova recuperacao de acesso.',
-        colorScheme.error,
       ),
       ClientPasswordRecoveryStatus.invalid => (
+        InlineAlertBannerKind.error,
         Icons.help_outline_rounded,
         'Token invalido',
         'Nao encontramos um token valido com esse valor.',
-        colorScheme.error,
       ),
       ClientPasswordRecoveryStatus.unknown => (
+        InlineAlertBannerKind.neutral,
         Icons.help_outline_rounded,
         'Status desconhecido',
         'A API retornou um status que ainda nao foi classificado no app.',
-        colorScheme.secondary,
       ),
     };
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.24)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Icon(icon, color: color),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(message),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return InlineAlertBanner(
+      kind: kind,
+      icon: icon,
+      title: title,
+      message: message,
     );
   }
 }

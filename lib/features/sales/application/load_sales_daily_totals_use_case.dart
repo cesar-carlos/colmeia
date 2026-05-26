@@ -3,12 +3,12 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_complete_period.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
-import 'package:colmeia/features/overview/data/mappers/overview_daily_sales_trend_mapper.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
+import 'package:colmeia/shared/data/charts/daily_sales_trend_point_mappers.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 
 typedef SalesDailyTotalsLoadResult = ({
-  List<OverviewDailySalesTrendPoint> points,
+  List<DailySalesTrendPoint> points,
   bool loadFailed,
   String? loadFailureMessage,
 });
@@ -23,8 +23,8 @@ class LoadSalesDailyTotalsUseCase {
   Future<SalesDailyTotalsLoadResult> call({
     required String userId,
     required String agentId,
-    required OverviewYearMonth anchor,
-    OverviewDateRange? dailySaleDateRange,
+    required DashboardYearMonth anchor,
+    DashboardDateRange? dailySaleDateRange,
     String? clientToken,
     AgentQueriesCancelScope? cancelScope,
   }) async {
@@ -69,7 +69,7 @@ class LoadSalesDailyTotalsUseCase {
           rows: rows,
         );
         return (
-          points: overviewDailySalesTrendPointsFromRows(filled),
+          points: dailySalesTrendPointsFromRows(filled),
           loadFailed: false,
           loadFailureMessage: null,
         );
@@ -84,7 +84,7 @@ class LoadSalesDailyTotalsUseCase {
           error: failure,
         );
         return (
-          points: const <OverviewDailySalesTrendPoint>[],
+          points: const <DailySalesTrendPoint>[],
           loadFailed: true,
           loadFailureMessage: failure.userMessage,
         );

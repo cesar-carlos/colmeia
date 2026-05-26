@@ -1,12 +1,12 @@
 import 'dart:convert';
 
 import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -47,7 +47,7 @@ void main() {
     test(
       'persists selected branches, custom period, detail, visual and metric',
       () async {
-        final customRange = OverviewDateRange.fromOrderedEndpoints(
+        final customRange = DashboardDateRange.fromOrderedEndpoints(
           DateTime(2026, 3),
           DateTime(2026, 4, 15),
         );

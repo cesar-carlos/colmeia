@@ -1,6 +1,6 @@
-import 'package:colmeia/features/auth/data/models/client_auth_json_reader.dart';
 import 'package:colmeia/features/auth/domain/entities/client_registration_status.dart';
 import 'package:colmeia/features/auth/domain/entities/client_registration_submission.dart';
+import 'package:colmeia/shared/data/json/wrapped_json_reader.dart';
 
 class ClientRegisterResponseDto {
   const ClientRegisterResponseDto({

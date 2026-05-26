@@ -15,7 +15,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diar
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/overview/data/overview_batch_loader.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:result_dart/result_dart.dart';
@@ -312,7 +312,7 @@ void main() {
 
         final result = await loader.load(
           userId: 'user-1',
-          filter: const OverviewFilter(
+          filter: const DashboardFilter(
             selectedAgentIds: <String>{'agent-1', 'agent-2'},
           ),
           periodStart: DateTime(2026, 4),
@@ -392,7 +392,7 @@ void main() {
 
         final result = await loader.load(
           userId: 'user-1',
-          filter: const OverviewFilter(
+          filter: const DashboardFilter(
             selectedAgentIds: <String>{'agent-1', 'agent-2'},
           ),
           periodStart: DateTime(2026, 4),
@@ -468,7 +468,7 @@ void main() {
 
         await loader.load(
           userId: 'user-1',
-          filter: OverviewFilter(
+          filter: DashboardFilter(
             selectedAgentIds: <String>{
               for (var i = 0; i < 6; i++) 'agent-${i + 1}',
             },
@@ -519,7 +519,7 @@ Future<ResultDart<OverviewBatchLoadResult, AppFailure>> _loadSingleAgent(
 ) {
   return loader.load(
     userId: 'user-1',
-    filter: const OverviewFilter(selectedAgentIds: <String>{'agent-1'}),
+    filter: const DashboardFilter(selectedAgentIds: <String>{'agent-1'}),
     periodStart: DateTime(2026, 4),
     periodEnd: DateTime(2026, 4, 30),
     last12Range: (

@@ -10,7 +10,6 @@ import 'package:colmeia/features/client_agents/domain/repositories/client_agents
 import 'package:colmeia/features/overview/application/usecases/load_overview_online_agent_ids_use_case.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
@@ -21,13 +20,14 @@ import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_controller.dart';
 import 'package:colmeia/features/overview/presentation/pages/overview_home_page.dart';
-import 'package:colmeia/features/overview/presentation/widgets/overview_daily_sales_trend_chart.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_home_staged_below_kpis.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_weekday_sales_trend_chart.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
+import 'package:colmeia/shared/widgets/charts/daily_sales_trend_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -54,7 +54,7 @@ void main() {
   setUpAll(() {
     Provider.debugCheckInvalidValueType = null;
     registerFallbackValue(OverviewLoadPolicy.defaultLoad);
-    registerFallbackValue(const OverviewFilter());
+    registerFallbackValue(const DashboardFilter());
     registerFallbackValue(OverviewLoadLabels.englishFallback);
   });
 
@@ -306,7 +306,7 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(OverviewDailySalesTrendChart), findsOneWidget);
+      expect(find.byType(DailySalesTrendChart), findsOneWidget);
       expect(find.text('Daily sales'), findsOneWidget);
       expect(find.byType(OverviewWeekdaySalesTrendChart), findsNothing);
       expect(find.text('Last 12 months'), findsNothing);
@@ -356,8 +356,8 @@ Overview _overview() {
         valorParcela: 4200,
       ),
     ],
-    dailySalesTrend: <OverviewDailySalesTrendPoint>[
-      OverviewDailySalesTrendPoint(
+    dailySalesTrend: <DailySalesTrendPoint>[
+      DailySalesTrendPoint(
         saleDate: DateTime(2026, 3, 15),
         salesCount: 10,
         salesAmount: 1000,

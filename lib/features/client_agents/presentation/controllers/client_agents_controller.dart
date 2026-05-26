@@ -8,7 +8,6 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/core/socket/push_event_deduper.dart';
-import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_resolution_invalidator.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/application/client_agent_token_draft_store.dart';
 import 'package:colmeia/features/client_agents/application/services/agent_presence_poller.dart';
@@ -37,11 +36,15 @@ import 'package:colmeia/features/client_agents/domain/entities/paginated_result.
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
 import 'package:colmeia/features/client_agents/domain/entities/sync_pending_agent_actions_result.dart';
 import 'package:colmeia/features/client_agents/domain/events/agent_presence_event.dart';
+import 'package:colmeia/features/client_agents/presentation/controllers/request_access_submission_snapshot.dart';
 import 'package:colmeia/features/client_agents/presentation/models/client_agent_access_request_row_input.dart';
 import 'package:colmeia/features/client_agents/presentation/models/client_agents_presentation_message.dart';
 import 'package:colmeia/features/client_agents/presentation/utils/client_agent_id_format.dart';
+import 'package:colmeia/shared/ports/agent_query_target_resolution_invalidator.dart';
 import 'package:flutter/foundation.dart';
 import 'package:result_dart/result_dart.dart' show Unit;
+
+export 'package:colmeia/features/client_agents/presentation/controllers/request_access_submission_snapshot.dart';
 
 class ClientAgentsController extends ChangeNotifier {
   ClientAgentsController({
@@ -2194,23 +2197,4 @@ class _PresenceObservation {
 
   final DateTime observedAt;
   final int? profileVersion;
-}
-
-/// Snapshot passed from [ClientAgentsController.requestAccess] to its
-/// optional `onResolved` callback so the caller knows which ids ended up
-/// where after preflight + classification + queueing.
-class RequestAccessSubmissionSnapshot {
-  const RequestAccessSubmissionSnapshot({
-    required this.relinkedAgentIds,
-    required this.queuedAgentIds,
-  });
-
-  /// Ids the server already had linked for this client. Tokens for these
-  /// can be PUT to the server immediately.
-  final Set<String> relinkedAgentIds;
-
-  /// Ids the controller placed in the local pending queue (POST will fire
-  /// on the next sync). Tokens for these are stashed locally and PUT to the
-  /// server later, after approval polling sees the link.
-  final Set<String> queuedAgentIds;
 }

@@ -1,9 +1,9 @@
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/presentation/overview_available_agents_assembler.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Overview _minimalOverview({
@@ -79,7 +79,7 @@ void main() {
 
     test('previous names carry over when overview adds new ids', () {
       final previous = [
-        const OverviewAgentOption(agentId: 'x', name: 'Old X'),
+        const DashboardAgentOption(agentId: 'x', name: 'Old X'),
       ];
       final overview = _minimalOverview(
         rankings: const [

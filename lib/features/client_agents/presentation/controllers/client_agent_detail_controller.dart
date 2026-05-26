@@ -11,7 +11,6 @@ import 'package:colmeia/features/agent_meta/application/usecases/refresh_agent_p
 import 'package:colmeia/features/agent_meta/domain/entities/agent_profile_snapshot.dart';
 import 'package:colmeia/features/agent_meta/domain/entities/agent_rpc_descriptor.dart';
 import 'package:colmeia/features/agent_meta/domain/entities/client_token_policy.dart';
-import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_resolution_invalidator.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/application/usecases/get_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/load_client_agent_detail_use_case.dart';
@@ -23,6 +22,7 @@ import 'package:colmeia/features/client_agents/domain/entities/agent_profile_add
 import 'package:colmeia/features/client_agents/domain/entities/agent_profile_update_request.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/presentation/models/client_agents_presentation_message.dart';
+import 'package:colmeia/shared/ports/agent_query_target_resolution_invalidator.dart';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 

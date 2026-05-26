@@ -13,7 +13,7 @@ class LoadOverviewUseCase {
   Future<AppResult<Overview>> call({
     required String userId,
     OverviewLoadPolicy policy = OverviewLoadPolicy.defaultLoad,
-    OverviewFilter filter = const OverviewFilter(),
+    DashboardFilter filter = const DashboardFilter(),
     OverviewLoadLabels? rowLabels,
     AgentQueriesCancelScope? cancelScope,
   }) {
@@ -29,7 +29,7 @@ class LoadOverviewUseCase {
   Stream<AppResult<OverviewProgressiveSnapshot>> progressively({
     required String userId,
     OverviewLoadPolicy policy = OverviewLoadPolicy.defaultLoad,
-    OverviewFilter filter = const OverviewFilter(),
+    DashboardFilter filter = const DashboardFilter(),
     OverviewLoadLabels? rowLabels,
     AgentQueriesCancelScope? cancelScope,
   }) {

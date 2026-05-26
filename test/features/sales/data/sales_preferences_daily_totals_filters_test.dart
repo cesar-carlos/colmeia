@@ -1,5 +1,5 @@
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -19,7 +19,7 @@ void main() {
     test(
       'persistMonthlyPnlAnchor preserves persisted custom daily totals range',
       () async {
-        final range = OverviewDateRange.fromOrderedEndpoints(
+        final range = DashboardDateRange.fromOrderedEndpoints(
           DateTime(2026, 3, 2),
           DateTime(2026, 3, 18),
         );
@@ -28,7 +28,7 @@ void main() {
           range: range,
         );
         await salesPrefs.persistMonthlyPnlAnchor(
-          const OverviewYearMonth(year: 2026, month: 7),
+          const DashboardYearMonth(year: 2026, month: 7),
         );
 
         expect(salesPrefs.restoreSalesDailyTotalsUseCustomRange(), isTrue);
@@ -38,7 +38,7 @@ void main() {
         expect(restored.endInclusive, DateTime(2026, 3, 18));
 
         final anchor = salesPrefs.restoreMonthlyPnlAnchor();
-        expect(anchor, const OverviewYearMonth(year: 2026, month: 7));
+        expect(anchor, const DashboardYearMonth(year: 2026, month: 7));
       },
     );
 
@@ -47,7 +47,7 @@ void main() {
       () async {
         await salesPrefs.persistSalesDailyTotalsDateRange(
           useCustomRange: true,
-          range: OverviewDateRange.fromOrderedEndpoints(
+          range: DashboardDateRange.fromOrderedEndpoints(
             DateTime(2026, 1, 5),
             DateTime(2026, 1, 20),
           ),

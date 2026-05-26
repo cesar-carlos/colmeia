@@ -7,22 +7,29 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
-enum OverviewHomeBarChartKind {
+/// Identifies which dashboard bar chart preset is being requested.
+///
+/// Each kind tweaks axis formatting, header height, data-label lift,
+/// minimum plotted share and other knobs that keep dashboard charts
+/// visually consistent across overview/sales/etc. when they render the
+/// same data shape.
+enum AppDashboardComparisonBarChartKind {
   payment,
   weekday,
   daily,
   ranking,
 }
 
-/// Shared [AppComparisonBarChartStyle] for overview / home dashboard bar charts.
+/// Shared [AppComparisonBarChartStyle] preset for dashboard bar charts.
 ///
-/// All kinds use horizontal auto-scroll when categories would be narrower than
-/// the style's minimum bar slot width, plus a short bar entrance animation. Category-axis pan was
-/// dropped in favour of the same horizontal scroll pattern as other comparison
-/// charts (fade edges + localized semantics hint).
-AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
+/// All kinds use horizontal auto-scroll when categories would be narrower
+/// than the style's minimum bar slot width, plus a short bar entrance
+/// animation. Category-axis pan was dropped in favour of the same
+/// horizontal scroll pattern as other comparison charts (fade edges +
+/// localized semantics hint).
+AppComparisonBarChartStyle appDashboardComparisonBarChartStyle({
   required AppThemeTokens tokens,
-  required OverviewHomeBarChartKind kind,
+  required AppDashboardComparisonBarChartKind kind,
   required AppLocalizations l10n,
   double? heightOverride,
   bool showDataLabels = true,
@@ -30,18 +37,19 @@ AppComparisonBarChartStyle overviewHomeComparisonBarChartStyle({
   Color? weekdayRevenueDataLabelBackground,
 }) {
   final localeName = l10n.localeName;
-  final isRanking = kind == OverviewHomeBarChartKind.ranking;
-  final isWeekday = kind == OverviewHomeBarChartKind.weekday;
-  final isDaily = kind == OverviewHomeBarChartKind.daily;
-  final isPayment = kind == OverviewHomeBarChartKind.payment;
+  final isRanking = kind == AppDashboardComparisonBarChartKind.ranking;
+  final isWeekday = kind == AppDashboardComparisonBarChartKind.weekday;
+  final isDaily = kind == AppDashboardComparisonBarChartKind.daily;
+  final isPayment = kind == AppDashboardComparisonBarChartKind.payment;
   final isWeekdayOrDaily = isWeekday || isDaily;
   final metricRevenueAxis = isWeekdayOrDaily && weekdayUsesCurrencyAxis;
 
-  // Compact currency labels sit just above tall bars; horizontal grid lines at
-  // round tick values (e.g. R$ 20 mil) can visually cross the label. Keep the
-  // same modest lift used by other comparison charts; the axis range padding
-  // already creates plot headroom for labels, so adding a second large top
-  // reserve leaves an empty band above the bars.
+  // Compact currency labels sit just above tall bars; horizontal grid
+  // lines at round tick values (e.g. R$ 20 mil) can visually cross the
+  // label. Keep the same modest lift used by other comparison charts;
+  // the axis range padding already creates plot headroom for labels, so
+  // adding a second large top reserve leaves an empty band above the
+  // bars.
   final dataLabelLiftY = metricRevenueAxis
       ? tokens.gapSm
       : (isRanking || isPayment ? tokens.gapSm : tokens.gapMd);

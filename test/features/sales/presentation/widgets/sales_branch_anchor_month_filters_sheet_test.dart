@@ -1,8 +1,8 @@
 import 'package:colmeia/app/theme/app_theme.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_anchor_month_filters_context.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_branch_anchor_month_filters_sheet.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -29,17 +29,17 @@ void main() {
                 return SalesBranchAnchorMonthFiltersSheet(
                   l10n: l10n,
                   filtersContext: SalesAnchorMonthFiltersContext.monthlyPnl,
-                  availableAgents: const <OverviewAgentOption>[
-                    OverviewAgentOption(agentId: 'a', name: 'Branch A'),
+                  availableAgents: const <DashboardAgentOption>[
+                    DashboardAgentOption(agentId: 'a', name: 'Branch A'),
                   ],
                   initialSelectedAgentId: 'a',
-                  initialAnchorYearMonth: const OverviewYearMonth(
+                  initialAnchorYearMonth: const DashboardYearMonth(
                     year: 2026,
                     month: 3,
                   ),
                   initialDailyTotalsUseCustomRange: true,
                   initialDailyTotalsDateRange:
-                      OverviewDateRange.fromOrderedEndpoints(
+                      DashboardDateRange.fromOrderedEndpoints(
                         DateTime(2026, 3),
                         DateTime(2026, 3, 12),
                       ),

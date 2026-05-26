@@ -7,7 +7,7 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report_resumo_parcelas.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter_test/flutter_test.dart' hide group;
 import 'package:test_api/scaffolding.dart' show group;
 
@@ -39,8 +39,8 @@ void main() {
           }
 
           final clock = DateTime.now();
-          final overviewFilter = OverviewFilter.initial(now: clock);
-          final yearMonth = overviewFilter.yearMonth!;
+          final dashboardFilter = DashboardFilter.initial(now: clock);
+          final yearMonth = dashboardFilter.yearMonth!;
           final filter = ResumoParcelasDiaSemanaFilter(
             dataVendaInicio: yearMonth.start,
             dataVendaFim: yearMonth.end,

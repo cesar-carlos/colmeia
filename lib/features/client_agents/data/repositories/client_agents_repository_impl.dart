@@ -2,20 +2,18 @@ import 'dart:math' show min;
 
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/core/errors/repository_error_mapping.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_meta/domain/entities/agent_profile_snapshot.dart';
 import 'package:colmeia/features/client_agents/data/datasources/client_agents_local_datasource.dart';
 import 'package:colmeia/features/client_agents/data/datasources/client_agents_remote_datasource.dart';
-import 'package:colmeia/features/client_agents/data/models/client_access_requests_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_accessible_agent_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_agent_profile_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_approved_agent_detail_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_approved_agents_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/online_agent_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/online_agents_response_dto.dart';
-import 'package:colmeia/features/client_agents/data/models/owner_access_requests_response_dto.dart';
-import 'package:colmeia/features/client_agents/data/models/owner_approved_clients_response_dto.dart';
-import 'package:colmeia/features/client_agents/data/models/paginated_agent_catalog_response_dto.dart';
+import 'package:colmeia/features/client_agents/data/repositories/client_agents_response_mappers.dart';
 import 'package:colmeia/features/client_agents/domain/client_agents_failure_ui_key.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_profile_update_request.dart';
@@ -32,8 +30,6 @@ import 'package:colmeia/features/client_agents/domain/entities/paginated_result.
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
 import 'package:colmeia/features/client_agents/domain/entities/sync_pending_agent_actions_result.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
-import 'package:colmeia/features/client_agents/domain/services/agent_connection_status_resolver.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:result_dart/result_dart.dart';
 
@@ -61,233 +57,105 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
     required String userId,
     required PaginatedQuery query,
     String? search,
-  }) async {
-    try {
-      final remote = await _remoteDataSource.fetchCatalog(
-        query: query,
-        search: search,
-      );
-      await _localDataSource.saveCatalog(
-        userId: userId,
-        query: query,
-        search: search,
-        payload: remote,
-      );
-      await _persistHubPresenceCacheFromProfiles(
-        userId: userId,
-        profiles: remote.agents,
-      );
-      final onlineIds = await _loadOnlineAgentIds(userId: userId);
-      return Success<PaginatedResult<ClientAgentCatalogItem>, AppFailure>(
-        _mapCatalog(remote, onlineIds: onlineIds),
-      );
-    } on DioException catch (error, stackTrace) {
-      if (isDioUnauthorizedOrForbidden(error)) {
-        return Failure<PaginatedResult<ClientAgentCatalogItem>, AppFailure>(
-          mapToAppFailure(
-            error,
-            stackTrace: stackTrace,
-            fallbackMessage: 'Unable to load agent catalog',
-            fallbackUserMessage: 'Could not load the agent catalog.',
-            context: <String, Object?>{
-              'operation': 'loadClientAgentCatalog',
-              'userId': userId,
-              ClientAgentsFailureUiKey.field:
-                  ClientAgentsFailureUiKey.loadCatalog,
-            },
-          ),
+  }) {
+    return withRepositoryErrorMapping<PaginatedResult<ClientAgentCatalogItem>>(
+      action: () async {
+        final remote = await _remoteDataSource.fetchCatalog(
+          query: query,
+          search: search,
         );
-      }
-      final cached = await _localDataSource.readCatalog(
-        userId: userId,
-        query: query,
-        search: search,
-      );
-      if (cached != null) {
+        await _localDataSource.saveCatalog(
+          userId: userId,
+          query: query,
+          search: search,
+          payload: remote,
+        );
+        await _persistHubPresenceCacheFromProfiles(
+          userId: userId,
+          profiles: remote.agents,
+        );
+        final onlineIds = await _loadOnlineAgentIds(userId: userId);
+        return mapClientAgentCatalogResponse(remote, onlineIds: onlineIds);
+      },
+      cacheFallback: (_) async {
+        final cached = await _localDataSource.readCatalog(
+          userId: userId,
+          query: query,
+          search: search,
+        );
+        if (cached == null) {
+          return null;
+        }
         final onlineIds = await _readCachedOnlineAgentIds(userId: userId);
-        return Success<PaginatedResult<ClientAgentCatalogItem>, AppFailure>(
-          _mapCatalog(cached, onlineIds: onlineIds, isStaleCache: true),
+        return mapClientAgentCatalogResponse(
+          cached,
+          onlineIds: onlineIds,
+          isStaleCache: true,
         );
-      }
-      return Failure<PaginatedResult<ClientAgentCatalogItem>, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to load agent catalog',
-          fallbackUserMessage: 'Could not load the agent catalog.',
-          context: <String, Object?>{
-            'operation': 'loadClientAgentCatalog',
-            'userId': userId,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.loadCatalog,
-          },
-        ),
-      );
-    } on Object catch (error, stackTrace) {
-      if (error is DioException && isDioUnauthorizedOrForbidden(error)) {
-        return Failure<PaginatedResult<ClientAgentCatalogItem>, AppFailure>(
-          mapToAppFailure(
-            error,
-            stackTrace: stackTrace,
-            fallbackMessage: 'Unable to load agent catalog',
-            fallbackUserMessage: 'Could not load the agent catalog.',
-            context: <String, Object?>{
-              'operation': 'loadClientAgentCatalog',
-              'userId': userId,
-              ClientAgentsFailureUiKey.field:
-                  ClientAgentsFailureUiKey.loadCatalog,
-            },
-          ),
-        );
-      }
-      final cached = await _localDataSource.readCatalog(
-        userId: userId,
-        query: query,
-        search: search,
-      );
-      if (cached != null) {
-        final onlineIds = await _readCachedOnlineAgentIds(userId: userId);
-        return Success<PaginatedResult<ClientAgentCatalogItem>, AppFailure>(
-          _mapCatalog(cached, onlineIds: onlineIds, isStaleCache: true),
-        );
-      }
-      return Failure<PaginatedResult<ClientAgentCatalogItem>, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to load agent catalog',
-          fallbackUserMessage: 'Could not load the agent catalog.',
-          context: <String, Object?>{
-            'operation': 'loadClientAgentCatalog',
-            'userId': userId,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.loadCatalog,
-          },
-        ),
-      );
-    }
+      },
+      fallbackMessage: 'Unable to load agent catalog',
+      fallbackUserMessage: 'Could not load the agent catalog.',
+      context: <String, Object?>{
+        'operation': 'loadClientAgentCatalog',
+        'userId': userId,
+        ClientAgentsFailureUiKey.field: ClientAgentsFailureUiKey.loadCatalog,
+      },
+    );
   }
 
   @override
   Future<AppResult<ClientAgentCatalogItem>> loadCatalogAgentById({
     required String userId,
     required String agentId,
-  }) async {
+  }) {
     final trimmed = agentId.trim();
     if (trimmed.isEmpty) {
-      return const Failure<ClientAgentCatalogItem, AppFailure>(
-        ValidationFailure(
-          message: 'Agent id is empty',
-          userMessage: 'Invalid agent identifier.',
+      return Future.value(
+        const Failure<ClientAgentCatalogItem, AppFailure>(
+          ValidationFailure(
+            message: 'Agent id is empty',
+            userMessage: 'Invalid agent identifier.',
+          ),
         ),
       );
     }
-    try {
-      final remote = await _remoteDataSource.fetchCatalogAgentById(trimmed);
-      await _localDataSource.saveCatalogAgentById(
-        userId: userId,
-        agentId: trimmed,
-        payload: remote,
-      );
-      final onlineIds = await _loadOnlineAgentIds(userId: userId);
-      return Success<ClientAgentCatalogItem, AppFailure>(
-        ClientAgentCatalogItem(
-          agent: _mapProfile(remote, onlineIds: onlineIds),
-        ),
-      );
-    } on DioException catch (error, stackTrace) {
-      if (isDioUnauthorizedOrForbidden(error)) {
-        return Failure<ClientAgentCatalogItem, AppFailure>(
-          mapToAppFailure(
-            error,
-            stackTrace: stackTrace,
-            fallbackMessage: 'Unable to load catalog agent by id',
-            fallbackUserMessage: 'Could not load catalog agent details.',
-            context: <String, Object?>{
-              'operation': 'loadCatalogAgentById',
-              'userId': userId,
-              'agentId': trimmed,
-              ClientAgentsFailureUiKey.field:
-                  ClientAgentsFailureUiKey.loadCatalogAgentById,
-            },
-          ),
+    return withRepositoryErrorMapping<ClientAgentCatalogItem>(
+      action: () async {
+        final remote = await _remoteDataSource.fetchCatalogAgentById(trimmed);
+        await _localDataSource.saveCatalogAgentById(
+          userId: userId,
+          agentId: trimmed,
+          payload: remote,
         );
-      }
-      final cached = await _localDataSource.readCatalogAgentById(
-        userId: userId,
-        agentId: trimmed,
-      );
-      if (cached != null) {
+        final onlineIds = await _loadOnlineAgentIds(userId: userId);
+        return ClientAgentCatalogItem(
+          agent: mapClientAgentProfile(remote, onlineIds: onlineIds),
+        );
+      },
+      cacheFallback: (_) async {
+        final cached = await _localDataSource.readCatalogAgentById(
+          userId: userId,
+          agentId: trimmed,
+        );
+        if (cached == null) {
+          return null;
+        }
         final onlineIds = await _readCachedOnlineAgentIds(userId: userId);
-        return Success<ClientAgentCatalogItem, AppFailure>(
-          ClientAgentCatalogItem(
-            agent: _mapProfile(cached, onlineIds: onlineIds),
-            isStaleCache: true,
-          ),
+        return ClientAgentCatalogItem(
+          agent: mapClientAgentProfile(cached, onlineIds: onlineIds),
+          isStaleCache: true,
         );
-      }
-      return Failure<ClientAgentCatalogItem, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to load catalog agent by id',
-          fallbackUserMessage: 'Could not load catalog agent details.',
-          context: <String, Object?>{
-            'operation': 'loadCatalogAgentById',
-            'userId': userId,
-            'agentId': trimmed,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.loadCatalogAgentById,
-          },
-        ),
-      );
-    } on Object catch (error, stackTrace) {
-      if (error is DioException && isDioUnauthorizedOrForbidden(error)) {
-        return Failure<ClientAgentCatalogItem, AppFailure>(
-          mapToAppFailure(
-            error,
-            stackTrace: stackTrace,
-            fallbackMessage: 'Unable to load catalog agent by id',
-            fallbackUserMessage: 'Could not load catalog agent details.',
-            context: <String, Object?>{
-              'operation': 'loadCatalogAgentById',
-              'userId': userId,
-              'agentId': trimmed,
-              ClientAgentsFailureUiKey.field:
-                  ClientAgentsFailureUiKey.loadCatalogAgentById,
-            },
-          ),
-        );
-      }
-      final cached = await _localDataSource.readCatalogAgentById(
-        userId: userId,
-        agentId: trimmed,
-      );
-      if (cached != null) {
-        final onlineIds = await _readCachedOnlineAgentIds(userId: userId);
-        return Success<ClientAgentCatalogItem, AppFailure>(
-          ClientAgentCatalogItem(
-            agent: _mapProfile(cached, onlineIds: onlineIds),
-            isStaleCache: true,
-          ),
-        );
-      }
-      return Failure<ClientAgentCatalogItem, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to load catalog agent by id',
-          fallbackUserMessage: 'Could not load catalog agent details.',
-          context: <String, Object?>{
-            'operation': 'loadCatalogAgentById',
-            'userId': userId,
-            'agentId': trimmed,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.loadCatalogAgentById,
-          },
-        ),
-      );
-    }
+      },
+      fallbackMessage: 'Unable to load catalog agent by id',
+      fallbackUserMessage: 'Could not load catalog agent details.',
+      context: <String, Object?>{
+        'operation': 'loadCatalogAgentById',
+        'userId': userId,
+        'agentId': trimmed,
+        ClientAgentsFailureUiKey.field:
+            ClientAgentsFailureUiKey.loadCatalogAgentById,
+      },
+    );
   }
 
   @override
@@ -305,52 +173,30 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         ),
       );
     }
-    try {
-      final remote = await _remoteDataSource.patchAgentProfile(
-        agentId: trimmed,
-        body: request.toWireJson(),
-        idempotencyKey: request.idempotencyKey,
-      );
-      await _localDataSource.saveCatalogAgentById(
-        userId: userId,
-        agentId: trimmed,
-        payload: remote,
-      );
-      final onlineIds = await _loadOnlineAgentIds(userId: userId);
-      return Success<ClientAgent, AppFailure>(
-        _mapProfile(remote, onlineIds: onlineIds),
-      );
-    } on DioException catch (error, stackTrace) {
-      return Failure<ClientAgent, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to update catalog agent profile',
-          fallbackUserMessage:
-              'Nao foi possivel atualizar o perfil do agente no servidor.',
-          context: <String, Object?>{
-            'operation': 'updateCatalogAgentProfile',
-            'userId': userId,
-            'agentId': trimmed,
-          },
-        ),
-      );
-    } on Object catch (error, stackTrace) {
-      return Failure<ClientAgent, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to update catalog agent profile',
-          fallbackUserMessage:
-              'Nao foi possivel atualizar o perfil do agente no servidor.',
-          context: <String, Object?>{
-            'operation': 'updateCatalogAgentProfile',
-            'userId': userId,
-            'agentId': trimmed,
-          },
-        ),
-      );
-    }
+    return withRepositoryErrorMappingNoCache<ClientAgent>(
+      action: () async {
+        final remote = await _remoteDataSource.patchAgentProfile(
+          agentId: trimmed,
+          body: request.toWireJson(),
+          idempotencyKey: request.idempotencyKey,
+        );
+        await _localDataSource.saveCatalogAgentById(
+          userId: userId,
+          agentId: trimmed,
+          payload: remote,
+        );
+        final onlineIds = await _loadOnlineAgentIds(userId: userId);
+        return mapClientAgentProfile(remote, onlineIds: onlineIds);
+      },
+      fallbackMessage: 'Unable to update catalog agent profile',
+      fallbackUserMessage:
+          'Nao foi possivel atualizar o perfil do agente no servidor.',
+      context: <String, Object?>{
+        'operation': 'updateCatalogAgentProfile',
+        'userId': userId,
+        'agentId': trimmed,
+      },
+    );
   }
 
   @override
@@ -368,72 +214,67 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         ),
       );
     }
-    try {
-      final cachedDetail = await _localDataSource.readApprovedAgentDetail(
-        userId: userId,
-        agentId: trimmedAgentId,
-      );
-      if (cachedDetail != null) {
-        await _localDataSource.saveApprovedAgentDetail(
+    return withRepositoryErrorMappingNoCache<Unit>(
+      action: () async {
+        final cachedDetail = await _localDataSource.readApprovedAgentDetail(
           userId: userId,
           agentId: trimmedAgentId,
-          payload: ClientApprovedAgentDetailResponseDto(
-            agent: _applySnapshotToAccessibleAgent(
-              cachedDetail.agent,
-              snapshot,
-            ),
-          ),
         );
-      }
-
-      final approvedSnapshot = await _localDataSource.readApprovedAgents(
-        userId: userId,
-        query: _defaultRefreshQuery,
-      );
-      if (approvedSnapshot != null) {
-        var changed = false;
-        final updatedAgents = approvedSnapshot.agents
-            .map((agent) {
-              if (agent.agentId != trimmedAgentId) {
-                return agent;
-              }
-              changed = true;
-              return _applySnapshotToAccessibleAgent(agent, snapshot);
-            })
-            .toList(growable: false);
-        if (changed) {
-          await _localDataSource.saveApprovedAgents(
+        if (cachedDetail != null) {
+          await _localDataSource.saveApprovedAgentDetail(
             userId: userId,
-            query: _defaultRefreshQuery,
-            payload: ClientApprovedAgentsResponseDto(
-              agents: updatedAgents,
-              agentIds: approvedSnapshot.agentIds,
-              count: approvedSnapshot.count,
-              total: approvedSnapshot.total,
-              page: approvedSnapshot.page,
-              pageSize: approvedSnapshot.pageSize,
+            agentId: trimmedAgentId,
+            payload: ClientApprovedAgentDetailResponseDto(
+              agent: _applySnapshotToAccessibleAgent(
+                cachedDetail.agent,
+                snapshot,
+              ),
             ),
           );
         }
-      }
 
-      return const Success<Unit, AppFailure>(unit);
-    } on Object catch (error, stackTrace) {
-      return Failure<Unit, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to persist approved agent snapshot locally',
-          fallbackUserMessage:
-              'Could not keep the refreshed agent profile locally.',
-          context: <String, Object?>{
-            'operation': 'applyApprovedAgentProfileSnapshotLocally',
-            'userId': userId,
-            'agentId': trimmedAgentId,
-          },
-        ),
-      );
-    }
+        final approvedSnapshot = await _localDataSource.readApprovedAgents(
+          userId: userId,
+          query: _defaultRefreshQuery,
+        );
+        if (approvedSnapshot != null) {
+          var changed = false;
+          final updatedAgents = approvedSnapshot.agents
+              .map((agent) {
+                if (agent.agentId != trimmedAgentId) {
+                  return agent;
+                }
+                changed = true;
+                return _applySnapshotToAccessibleAgent(agent, snapshot);
+              })
+              .toList(growable: false);
+          if (changed) {
+            await _localDataSource.saveApprovedAgents(
+              userId: userId,
+              query: _defaultRefreshQuery,
+              payload: ClientApprovedAgentsResponseDto(
+                agents: updatedAgents,
+                agentIds: approvedSnapshot.agentIds,
+                count: approvedSnapshot.count,
+                total: approvedSnapshot.total,
+                page: approvedSnapshot.page,
+                pageSize: approvedSnapshot.pageSize,
+              ),
+            );
+          }
+        }
+
+        return unit;
+      },
+      fallbackMessage: 'Unable to persist approved agent snapshot locally',
+      fallbackUserMessage:
+          'Could not keep the refreshed agent profile locally.',
+      context: <String, Object?>{
+        'operation': 'applyApprovedAgentProfileSnapshotLocally',
+        'userId': userId,
+        'agentId': trimmedAgentId,
+      },
+    );
   }
 
   @override
@@ -449,42 +290,21 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         ),
       );
     }
-    try {
-      final remote = await _remoteDataSource.fetchClientAccessStatus(
-        token: trimmed,
-      );
-      return Success<ClientAccessStatusSnapshot, AppFailure>(
-        remote.toEntity(),
-      );
-    } on DioException catch (error, stackTrace) {
-      return Failure<ClientAccessStatusSnapshot, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to load client access status',
-          fallbackUserMessage: 'Could not read access request status.',
-          context: <String, Object?>{
-            'operation': 'loadClientAccessStatus',
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.loadClientAccessStatus,
-          },
-        ),
-      );
-    } on Object catch (error, stackTrace) {
-      return Failure<ClientAccessStatusSnapshot, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to load client access status',
-          fallbackUserMessage: 'Could not read access request status.',
-          context: <String, Object?>{
-            'operation': 'loadClientAccessStatus',
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.loadClientAccessStatus,
-          },
-        ),
-      );
-    }
+    return withRepositoryErrorMappingNoCache<ClientAccessStatusSnapshot>(
+      action: () async {
+        final remote = await _remoteDataSource.fetchClientAccessStatus(
+          token: trimmed,
+        );
+        return remote.toEntity();
+      },
+      fallbackMessage: 'Unable to load client access status',
+      fallbackUserMessage: 'Could not read access request status.',
+      context: <String, Object?>{
+        'operation': 'loadClientAccessStatus',
+        ClientAgentsFailureUiKey.field:
+            ClientAgentsFailureUiKey.loadClientAccessStatus,
+      },
+    );
   }
 
   /// [includeOnlineStatus] avoids online-agent enrichment when false (faster;
@@ -497,342 +317,184 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
     String? status,
     bool includeOnlineStatus = true,
     bool refresh = false,
-  }) async {
-    try {
-      final remote = await _remoteDataSource.fetchApprovedAgents(
-        query: query,
-        search: search,
-        status: status,
-        refresh: refresh,
-      );
-      await _localDataSource.saveApprovedAgents(
-        userId: userId,
-        query: query,
-        search: search,
-        status: status,
-        payload: remote,
-      );
-      if (includeOnlineStatus) {
-        await _persistHubPresenceCacheFromProfiles(
+  }) {
+    return withRepositoryErrorMapping<PaginatedResult<ClientAgent>>(
+      action: () async {
+        final remote = await _remoteDataSource.fetchApprovedAgents(
+          query: query,
+          search: search,
+          status: status,
+          refresh: refresh,
+        );
+        await _localDataSource.saveApprovedAgents(
           userId: userId,
-          profiles: remote.agents,
+          query: query,
+          search: search,
+          status: status,
+          payload: remote,
         );
-      }
-      final onlineIds = includeOnlineStatus
-          ? await _loadOnlineAgentIds(userId: userId)
-          : null;
-      return Success<PaginatedResult<ClientAgent>, AppFailure>(
-        _mapApproved(remote, onlineIds: onlineIds),
-      );
-    } on DioException catch (error, stackTrace) {
-      if (isDioUnauthorizedOrForbidden(error)) {
-        return Failure<PaginatedResult<ClientAgent>, AppFailure>(
-          mapToAppFailure(
-            error,
-            stackTrace: stackTrace,
-            fallbackMessage: 'Unable to load approved client agents',
-            fallbackUserMessage:
-                'Could not load approved agents for this account.',
-            context: <String, Object?>{
-              'operation': 'loadApprovedClientAgents',
-              'userId': userId,
-              ClientAgentsFailureUiKey.field:
-                  ClientAgentsFailureUiKey.loadApprovedAgents,
-            },
-          ),
+        if (includeOnlineStatus) {
+          await _persistHubPresenceCacheFromProfiles(
+            userId: userId,
+            profiles: remote.agents,
+          );
+        }
+        final onlineIds = includeOnlineStatus
+            ? await _loadOnlineAgentIds(userId: userId)
+            : null;
+        return mapClientApprovedAgentsResponse(remote, onlineIds: onlineIds);
+      },
+      cacheFallback: (_) async {
+        final cached = await _localDataSource.readApprovedAgents(
+          userId: userId,
+          query: query,
+          search: search,
+          status: status,
         );
-      }
-      final cached = await _localDataSource.readApprovedAgents(
-        userId: userId,
-        query: query,
-        search: search,
-        status: status,
-      );
-      if (cached != null) {
+        if (cached == null) {
+          return null;
+        }
         final onlineIds = includeOnlineStatus
             ? await _readCachedOnlineAgentIds(userId: userId)
             : null;
-        return Success<PaginatedResult<ClientAgent>, AppFailure>(
-          _mapApproved(cached, onlineIds: onlineIds, isStaleCache: true),
+        return mapClientApprovedAgentsResponse(
+          cached,
+          onlineIds: onlineIds,
+          isStaleCache: true,
         );
-      }
-      return Failure<PaginatedResult<ClientAgent>, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to load approved client agents',
-          fallbackUserMessage:
-              'Could not load approved agents for this account.',
-          context: <String, Object?>{
-            'operation': 'loadApprovedClientAgents',
-            'userId': userId,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.loadApprovedAgents,
-          },
-        ),
-      );
-    } on Object catch (error, stackTrace) {
-      if (error is DioException && isDioUnauthorizedOrForbidden(error)) {
-        return Failure<PaginatedResult<ClientAgent>, AppFailure>(
-          mapToAppFailure(
-            error,
-            stackTrace: stackTrace,
-            fallbackMessage: 'Unable to load approved client agents',
-            fallbackUserMessage:
-                'Could not load approved agents for this account.',
-            context: <String, Object?>{
-              'operation': 'loadApprovedClientAgents',
-              'userId': userId,
-              ClientAgentsFailureUiKey.field:
-                  ClientAgentsFailureUiKey.loadApprovedAgents,
-            },
-          ),
-        );
-      }
-      final cached = await _localDataSource.readApprovedAgents(
-        userId: userId,
-        query: query,
-        search: search,
-        status: status,
-      );
-      if (cached != null) {
-        final onlineIds = includeOnlineStatus
-            ? await _readCachedOnlineAgentIds(userId: userId)
-            : null;
-        return Success<PaginatedResult<ClientAgent>, AppFailure>(
-          _mapApproved(cached, onlineIds: onlineIds, isStaleCache: true),
-        );
-      }
-      return Failure<PaginatedResult<ClientAgent>, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to load approved client agents',
-          fallbackUserMessage:
-              'Could not load approved agents for this account.',
-          context: <String, Object?>{
-            'operation': 'loadApprovedClientAgents',
-            'userId': userId,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.loadApprovedAgents,
-          },
-        ),
-      );
-    }
+      },
+      fallbackMessage: 'Unable to load approved client agents',
+      fallbackUserMessage: 'Could not load approved agents for this account.',
+      context: <String, Object?>{
+        'operation': 'loadApprovedClientAgents',
+        'userId': userId,
+        ClientAgentsFailureUiKey.field:
+            ClientAgentsFailureUiKey.loadApprovedAgents,
+      },
+    );
   }
 
   @override
   Future<AppResult<ClientAgent>> loadApprovedAgentById({
     required String userId,
     required String agentId,
-  }) async {
-    try {
-      final remote = await _remoteDataSource.fetchApprovedAgentById(agentId);
-      await _localDataSource.saveApprovedAgentDetail(
-        userId: userId,
-        agentId: agentId,
-        payload: remote,
-      );
-      final onlineIds = await _loadOnlineAgentIds(userId: userId);
-      return Success<ClientAgent, AppFailure>(
-        _mapProfile(remote.agent, onlineIds: onlineIds),
-      );
-    } on DioException catch (error, stackTrace) {
-      if (isDioUnauthorizedOrForbidden(error)) {
-        return Failure<ClientAgent, AppFailure>(
-          mapToAppFailure(
-            error,
-            stackTrace: stackTrace,
-            fallbackMessage: 'Unable to load approved agent detail',
-            fallbackUserMessage: 'Could not load agent details.',
-            context: <String, Object?>{
-              'operation': 'loadApprovedAgentById',
-              'userId': userId,
-              'agentId': agentId,
-              ClientAgentsFailureUiKey.field:
-                  ClientAgentsFailureUiKey.loadAgentDetail,
-            },
-          ),
+  }) {
+    return withRepositoryErrorMapping<ClientAgent>(
+      action: () async {
+        final remote = await _remoteDataSource.fetchApprovedAgentById(agentId);
+        await _localDataSource.saveApprovedAgentDetail(
+          userId: userId,
+          agentId: agentId,
+          payload: remote,
         );
-      }
-      final cached = await _localDataSource.readApprovedAgentDetail(
-        userId: userId,
-        agentId: agentId,
-      );
-      if (cached != null) {
+        final onlineIds = await _loadOnlineAgentIds(userId: userId);
+        return mapClientAgentProfile(remote.agent, onlineIds: onlineIds);
+      },
+      cacheFallback: (_) async {
+        final cached = await _localDataSource.readApprovedAgentDetail(
+          userId: userId,
+          agentId: agentId,
+        );
+        if (cached == null) {
+          return null;
+        }
         final onlineIds = await _readCachedOnlineAgentIds(userId: userId);
-        return Success<ClientAgent, AppFailure>(
-          _mapProfile(cached.agent, onlineIds: onlineIds, isStaleCache: true),
+        return mapClientAgentProfile(
+          cached.agent,
+          onlineIds: onlineIds,
+          isStaleCache: true,
         );
-      }
-      return Failure<ClientAgent, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to load approved agent detail',
-          fallbackUserMessage: 'Could not load agent details.',
-          context: <String, Object?>{
-            'operation': 'loadApprovedAgentById',
-            'userId': userId,
-            'agentId': agentId,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.loadAgentDetail,
-          },
-        ),
-      );
-    } on Object catch (error, stackTrace) {
-      if (error is DioException && isDioUnauthorizedOrForbidden(error)) {
-        return Failure<ClientAgent, AppFailure>(
-          mapToAppFailure(
-            error,
-            stackTrace: stackTrace,
-            fallbackMessage: 'Unable to load approved agent detail',
-            fallbackUserMessage: 'Could not load agent details.',
-            context: <String, Object?>{
-              'operation': 'loadApprovedAgentById',
-              'userId': userId,
-              'agentId': agentId,
-              ClientAgentsFailureUiKey.field:
-                  ClientAgentsFailureUiKey.loadAgentDetail,
-            },
-          ),
-        );
-      }
-      final cached = await _localDataSource.readApprovedAgentDetail(
-        userId: userId,
-        agentId: agentId,
-      );
-      if (cached != null) {
-        final onlineIds = await _readCachedOnlineAgentIds(userId: userId);
-        return Success<ClientAgent, AppFailure>(
-          _mapProfile(cached.agent, onlineIds: onlineIds, isStaleCache: true),
-        );
-      }
-      return Failure<ClientAgent, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to load approved agent detail',
-          fallbackUserMessage: 'Could not load agent details.',
-          context: <String, Object?>{
-            'operation': 'loadApprovedAgentById',
-            'userId': userId,
-            'agentId': agentId,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.loadAgentDetail,
-          },
-        ),
-      );
-    }
+      },
+      fallbackMessage: 'Unable to load approved agent detail',
+      fallbackUserMessage: 'Could not load agent details.',
+      context: <String, Object?>{
+        'operation': 'loadApprovedAgentById',
+        'userId': userId,
+        'agentId': agentId,
+        ClientAgentsFailureUiKey.field:
+            ClientAgentsFailureUiKey.loadAgentDetail,
+      },
+    );
   }
 
   @override
   Future<AppResult<ClientApprovedAgentProbeOutcome>> probeApprovedAgentLink({
     required String userId,
     required String agentId,
-  }) async {
-    try {
-      final remote = await _remoteDataSource.fetchApprovedAgentDetailOrNull(
-        agentId,
-      );
-      if (remote == null) {
-        await _localDataSource.clearApprovedAgentDetail(
+  }) {
+    return withRepositoryErrorMappingNoCache<ClientApprovedAgentProbeOutcome>(
+      action: () async {
+        final remote = await _remoteDataSource.fetchApprovedAgentDetailOrNull(
+          agentId,
+        );
+        if (remote == null) {
+          await _localDataSource.clearApprovedAgentDetail(
+            userId: userId,
+            agentId: agentId,
+          );
+          return const ClientApprovedAgentProbeOutcome.notLinked();
+        }
+        await _localDataSource.saveApprovedAgentDetail(
           userId: userId,
           agentId: agentId,
+          payload: remote,
         );
-        return const Success<ClientApprovedAgentProbeOutcome, AppFailure>(
-          ClientApprovedAgentProbeOutcome.notLinked(),
+        await _persistHubPresenceCacheFromProfiles(
+          userId: userId,
+          profiles: <ClientAgentProfileDto>[remote.agent],
         );
-      }
-      await _localDataSource.saveApprovedAgentDetail(
-        userId: userId,
-        agentId: agentId,
-        payload: remote,
-      );
-      await _persistHubPresenceCacheFromProfiles(
-        userId: userId,
-        profiles: <ClientAgentProfileDto>[remote.agent],
-      );
-      final onlineIds = await _loadOnlineAgentIds(userId: userId);
-      return Success<ClientApprovedAgentProbeOutcome, AppFailure>(
-        ClientApprovedAgentProbeOutcome.linked(
-          _mapProfile(remote.agent, onlineIds: onlineIds),
-        ),
-      );
-    } on DioException catch (error, stackTrace) {
-      return Failure<ClientApprovedAgentProbeOutcome, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to probe approved agent link',
-          fallbackUserMessage: 'Could not verify agent link status.',
-          context: <String, Object?>{
-            'operation': 'probeApprovedAgentLink',
-            'userId': userId,
-            'agentId': agentId,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.probeApprovedAgentLink,
-          },
-        ),
-      );
-    } on Object catch (error, stackTrace) {
-      return Failure<ClientApprovedAgentProbeOutcome, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to probe approved agent link',
-          fallbackUserMessage: 'Could not verify agent link status.',
-          context: <String, Object?>{
-            'operation': 'probeApprovedAgentLink',
-            'userId': userId,
-            'agentId': agentId,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.probeApprovedAgentLink,
-          },
-        ),
-      );
-    }
+        final onlineIds = await _loadOnlineAgentIds(userId: userId);
+        return ClientApprovedAgentProbeOutcome.linked(
+          mapClientAgentProfile(remote.agent, onlineIds: onlineIds),
+        );
+      },
+      fallbackMessage: 'Unable to probe approved agent link',
+      fallbackUserMessage: 'Could not verify agent link status.',
+      context: <String, Object?>{
+        'operation': 'probeApprovedAgentLink',
+        'userId': userId,
+        'agentId': agentId,
+        ClientAgentsFailureUiKey.field:
+            ClientAgentsFailureUiKey.probeApprovedAgentLink,
+      },
+    );
   }
 
   @override
   Future<AppResult<Unit>> discardQueuedRequestAccessForAgents({
     required String userId,
     required Set<String> agentIds,
-  }) async {
+  }) {
     if (agentIds.isEmpty) {
-      return const Success<Unit, AppFailure>(unit);
+      return Future.value(const Success<Unit, AppFailure>(unit));
     }
-    try {
-      final actions = await _localDataSource.readPendingActions(userId: userId);
-      final updated = actions
-          .where(
-            (action) => !_shouldDiscardRequestAccessAction(action, agentIds),
-          )
-          .toList(growable: false);
-      if (updated.length == actions.length) {
-        return const Success<Unit, AppFailure>(unit);
-      }
-      await _localDataSource.savePendingActions(
-        userId: userId,
-        actions: updated,
-      );
-      return const Success<Unit, AppFailure>(unit);
-    } on Object catch (error, stackTrace) {
-      return Failure<Unit, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to discard queued request-access actions',
-          fallbackUserMessage: 'Could not update local pending actions.',
-          context: <String, Object?>{
-            'operation': 'discardQueuedRequestAccessForAgents',
-            'userId': userId,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.readPendingActions,
-          },
-        ),
-      );
-    }
+    return withRepositoryErrorMappingNoCache<Unit>(
+      action: () async {
+        final actions = await _localDataSource.readPendingActions(
+          userId: userId,
+        );
+        final updated = actions
+            .where(
+              (action) => !_shouldDiscardRequestAccessAction(action, agentIds),
+            )
+            .toList(growable: false);
+        if (updated.length != actions.length) {
+          await _localDataSource.savePendingActions(
+            userId: userId,
+            actions: updated,
+          );
+        }
+        return unit;
+      },
+      fallbackMessage: 'Unable to discard queued request-access actions',
+      fallbackUserMessage: 'Could not update local pending actions.',
+      context: <String, Object?>{
+        'operation': 'discardQueuedRequestAccessForAgents',
+        'userId': userId,
+        ClientAgentsFailureUiKey.field:
+            ClientAgentsFailureUiKey.readPendingActions,
+      },
+    );
   }
 
   bool _shouldDiscardRequestAccessAction(
@@ -856,337 +518,159 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
     required PaginatedQuery query,
     String? search,
     String? status,
-  }) async {
-    try {
-      final remote = await _remoteDataSource.fetchAccessRequests(
-        query: query,
-        search: search,
-        status: status,
-      );
-      await _localDataSource.saveAccessRequests(
-        userId: userId,
-        query: query,
-        search: search,
-        status: status,
-        payload: remote,
-      );
-      return Success<PaginatedResult<ClientAgentAccessRequest>, AppFailure>(
-        _mapAccessRequests(remote),
-      );
-    } on DioException catch (error, stackTrace) {
-      if (isDioUnauthorizedOrForbidden(error)) {
-        return Failure<PaginatedResult<ClientAgentAccessRequest>, AppFailure>(
-          mapToAppFailure(
-            error,
-            stackTrace: stackTrace,
-            fallbackMessage: 'Unable to load access requests',
-            fallbackUserMessage: 'Could not load request history.',
-            context: <String, Object?>{
-              'operation': 'loadAccessRequests',
-              'userId': userId,
-              ClientAgentsFailureUiKey.field:
-                  ClientAgentsFailureUiKey.loadAccessRequests,
-            },
-          ),
+  }) {
+    return withRepositoryErrorMapping<
+      PaginatedResult<ClientAgentAccessRequest>
+    >(
+      action: () async {
+        final remote = await _remoteDataSource.fetchAccessRequests(
+          query: query,
+          search: search,
+          status: status,
         );
-      }
-      final cached = await _localDataSource.readAccessRequests(
-        userId: userId,
-        query: query,
-        search: search,
-        status: status,
-      );
-      if (cached != null) {
-        return Success<PaginatedResult<ClientAgentAccessRequest>, AppFailure>(
-          _mapAccessRequests(cached, isStaleCache: true),
+        await _localDataSource.saveAccessRequests(
+          userId: userId,
+          query: query,
+          search: search,
+          status: status,
+          payload: remote,
         );
-      }
-      return Failure<PaginatedResult<ClientAgentAccessRequest>, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to load access requests',
-          fallbackUserMessage: 'Could not load request history.',
-          context: <String, Object?>{
-            'operation': 'loadAccessRequests',
-            'userId': userId,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.loadAccessRequests,
-          },
-        ),
-      );
-    } on Object catch (error, stackTrace) {
-      if (error is DioException && isDioUnauthorizedOrForbidden(error)) {
-        return Failure<PaginatedResult<ClientAgentAccessRequest>, AppFailure>(
-          mapToAppFailure(
-            error,
-            stackTrace: stackTrace,
-            fallbackMessage: 'Unable to load access requests',
-            fallbackUserMessage: 'Could not load request history.',
-            context: <String, Object?>{
-              'operation': 'loadAccessRequests',
-              'userId': userId,
-              ClientAgentsFailureUiKey.field:
-                  ClientAgentsFailureUiKey.loadAccessRequests,
-            },
-          ),
+        return mapClientAccessRequestsResponse(remote);
+      },
+      cacheFallback: (_) async {
+        final cached = await _localDataSource.readAccessRequests(
+          userId: userId,
+          query: query,
+          search: search,
+          status: status,
         );
-      }
-      final cached = await _localDataSource.readAccessRequests(
-        userId: userId,
-        query: query,
-        search: search,
-        status: status,
-      );
-      if (cached != null) {
-        return Success<PaginatedResult<ClientAgentAccessRequest>, AppFailure>(
-          _mapAccessRequests(cached, isStaleCache: true),
-        );
-      }
-      return Failure<PaginatedResult<ClientAgentAccessRequest>, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to load access requests',
-          fallbackUserMessage: 'Could not load request history.',
-          context: <String, Object?>{
-            'operation': 'loadAccessRequests',
-            'userId': userId,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.loadAccessRequests,
-          },
-        ),
-      );
-    }
+        if (cached == null) {
+          return null;
+        }
+        return mapClientAccessRequestsResponse(cached, isStaleCache: true);
+      },
+      fallbackMessage: 'Unable to load access requests',
+      fallbackUserMessage: 'Could not load request history.',
+      context: <String, Object?>{
+        'operation': 'loadAccessRequests',
+        'userId': userId,
+        ClientAgentsFailureUiKey.field:
+            ClientAgentsFailureUiKey.loadAccessRequests,
+      },
+    );
   }
 
   @override
   Future<AppResult<Unit>> retryClientAccessRequest({
     required String userId,
     required String requestId,
-  }) async {
+  }) {
     final trimmed = requestId.trim();
     if (trimmed.isEmpty) {
-      return const Failure<Unit, AppFailure>(
-        ValidationFailure(
-          message: 'Request id is empty',
-          userMessage: 'Identificador de solicitacao invalido.',
+      return Future.value(
+        const Failure<Unit, AppFailure>(
+          ValidationFailure(
+            message: 'Request id is empty',
+            userMessage: 'Identificador de solicitacao invalido.',
+          ),
         ),
       );
     }
-    try {
-      await _remoteDataSource.retryAccessRequest(requestId: trimmed);
-      return const Success<Unit, AppFailure>(unit);
-    } on DioException catch (error, stackTrace) {
-      return Failure<Unit, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to retry access request',
-          fallbackUserMessage: 'Could not retry this access request.',
-          context: <String, Object?>{
-            'operation': 'retryClientAccessRequest',
-            'userId': userId,
-            'requestId': trimmed,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.retryClientAccessRequest,
-          },
-        ),
-      );
-    } on Object catch (error, stackTrace) {
-      return Failure<Unit, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to retry access request',
-          fallbackUserMessage: 'Could not retry this access request.',
-          context: <String, Object?>{
-            'operation': 'retryClientAccessRequest',
-            'userId': userId,
-            'requestId': trimmed,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.retryClientAccessRequest,
-          },
-        ),
-      );
-    }
+    return withRepositoryErrorMappingNoCache<Unit>(
+      action: () async {
+        await _remoteDataSource.retryAccessRequest(requestId: trimmed);
+        return unit;
+      },
+      fallbackMessage: 'Unable to retry access request',
+      fallbackUserMessage: 'Could not retry this access request.',
+      context: <String, Object?>{
+        'operation': 'retryClientAccessRequest',
+        'userId': userId,
+        'requestId': trimmed,
+        ClientAgentsFailureUiKey.field:
+            ClientAgentsFailureUiKey.retryClientAccessRequest,
+      },
+    );
   }
 
   @override
   Future<AppResult<List<ClientAgent>>> loadManagedAgents({
     required String userId,
-  }) async {
-    try {
-      final remote = await _remoteDataSource.fetchManagedAgents();
-      await _localDataSource.saveManagedAgents(userId: userId, payload: remote);
-      await _persistHubPresenceCacheFromProfiles(
-        userId: userId,
-        profiles: remote.agents,
-      );
-      final onlineIds = await _loadOnlineAgentIds(userId: userId);
-      return Success<List<ClientAgent>, AppFailure>(
-        remote.agents
-            .map((agent) => _mapProfile(agent, onlineIds: onlineIds))
-            .toList(growable: false),
-      );
-    } on DioException catch (error, stackTrace) {
-      if (isDioUnauthorizedOrForbidden(error)) {
-        return Failure<List<ClientAgent>, AppFailure>(
-          mapToAppFailure(
-            error,
-            stackTrace: stackTrace,
-            fallbackMessage: 'Unable to load managed agents',
-            fallbackUserMessage: 'Could not load managed agents.',
-            context: <String, Object?>{
-              'operation': 'loadManagedAgents',
-              'userId': userId,
-              ClientAgentsFailureUiKey.field:
-                  ClientAgentsFailureUiKey.loadManagedAgents,
-            },
-          ),
+  }) {
+    return withRepositoryErrorMapping<List<ClientAgent>>(
+      action: () async {
+        final remote = await _remoteDataSource.fetchManagedAgents();
+        await _localDataSource.saveManagedAgents(
+          userId: userId,
+          payload: remote,
         );
-      }
-      final cached = await _localDataSource.readManagedAgents(userId: userId);
-      if (cached != null) {
+        await _persistHubPresenceCacheFromProfiles(
+          userId: userId,
+          profiles: remote.agents,
+        );
+        final onlineIds = await _loadOnlineAgentIds(userId: userId);
+        return remote.agents
+            .map((agent) => mapClientAgentProfile(agent, onlineIds: onlineIds))
+            .toList(growable: false);
+      },
+      cacheFallback: (_) async {
+        final cached = await _localDataSource.readManagedAgents(userId: userId);
+        if (cached == null) {
+          return null;
+        }
         final onlineIds = await _readCachedOnlineAgentIds(userId: userId);
-        return Success<List<ClientAgent>, AppFailure>(
-          cached.agents
-              .map(
-                (agent) => _mapProfile(
-                  agent,
-                  onlineIds: onlineIds,
-                  isStaleCache: true,
-                ),
-              )
-              .toList(growable: false),
-        );
-      }
-      return Failure<List<ClientAgent>, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to load managed agents',
-          fallbackUserMessage: 'Could not load managed agents.',
-          context: <String, Object?>{
-            'operation': 'loadManagedAgents',
-            'userId': userId,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.loadManagedAgents,
-          },
-        ),
-      );
-    } on Object catch (error, stackTrace) {
-      final cached = await _localDataSource.readManagedAgents(userId: userId);
-      if (cached != null) {
-        final onlineIds = await _readCachedOnlineAgentIds(userId: userId);
-        return Success<List<ClientAgent>, AppFailure>(
-          cached.agents
-              .map(
-                (agent) => _mapProfile(
-                  agent,
-                  onlineIds: onlineIds,
-                  isStaleCache: true,
-                ),
-              )
-              .toList(growable: false),
-        );
-      }
-      return Failure<List<ClientAgent>, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to load managed agents',
-          fallbackUserMessage: 'Could not load managed agents.',
-          context: <String, Object?>{
-            'operation': 'loadManagedAgents',
-            'userId': userId,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.loadManagedAgents,
-          },
-        ),
-      );
-    }
+        return cached.agents
+            .map(
+              (agent) => mapClientAgentProfile(
+                agent,
+                onlineIds: onlineIds,
+                isStaleCache: true,
+              ),
+            )
+            .toList(growable: false);
+      },
+      fallbackMessage: 'Unable to load managed agents',
+      fallbackUserMessage: 'Could not load managed agents.',
+      context: <String, Object?>{
+        'operation': 'loadManagedAgents',
+        'userId': userId,
+        ClientAgentsFailureUiKey.field:
+            ClientAgentsFailureUiKey.loadManagedAgents,
+      },
+    );
   }
 
   @override
   Future<AppResult<List<OwnerClientAccessRequest>>> loadOwnerAccessRequests({
     required String userId,
-  }) async {
-    try {
-      final remote = await _remoteDataSource.fetchOwnerAccessRequests();
-      await _localDataSource.saveOwnerAccessRequests(
-        userId: userId,
-        payload: remote,
-      );
-      return Success<List<OwnerClientAccessRequest>, AppFailure>(
-        _mapOwnerAccessRequests(remote),
-      );
-    } on DioException catch (error, stackTrace) {
-      if (isDioUnauthorizedOrForbidden(error)) {
-        return Failure<List<OwnerClientAccessRequest>, AppFailure>(
-          mapToAppFailure(
-            error,
-            stackTrace: stackTrace,
-            fallbackMessage: 'Unable to load owner access requests',
-            fallbackUserMessage:
-                'Could not load client access requests for review.',
-            context: <String, Object?>{
-              'operation': 'loadOwnerAccessRequests',
-              'userId': userId,
-              ClientAgentsFailureUiKey.field:
-                  ClientAgentsFailureUiKey.loadOwnerAccessRequests,
-            },
-          ),
+  }) {
+    return withRepositoryErrorMapping<List<OwnerClientAccessRequest>>(
+      action: () async {
+        final remote = await _remoteDataSource.fetchOwnerAccessRequests();
+        await _localDataSource.saveOwnerAccessRequests(
+          userId: userId,
+          payload: remote,
         );
-      }
-      final cached = await _localDataSource.readOwnerAccessRequests(
-        userId: userId,
-      );
-      if (cached != null) {
-        return Success<List<OwnerClientAccessRequest>, AppFailure>(
-          _mapOwnerAccessRequests(cached, isStaleCache: true),
+        return mapOwnerAccessRequestsResponse(remote);
+      },
+      cacheFallback: (_) async {
+        final cached = await _localDataSource.readOwnerAccessRequests(
+          userId: userId,
         );
-      }
-      return Failure<List<OwnerClientAccessRequest>, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to load owner access requests',
-          fallbackUserMessage:
-              'Could not load client access requests for review.',
-          context: <String, Object?>{
-            'operation': 'loadOwnerAccessRequests',
-            'userId': userId,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.loadOwnerAccessRequests,
-          },
-        ),
-      );
-    } on Object catch (error, stackTrace) {
-      final cached = await _localDataSource.readOwnerAccessRequests(
-        userId: userId,
-      );
-      if (cached != null) {
-        return Success<List<OwnerClientAccessRequest>, AppFailure>(
-          _mapOwnerAccessRequests(cached, isStaleCache: true),
-        );
-      }
-      return Failure<List<OwnerClientAccessRequest>, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to load owner access requests',
-          fallbackUserMessage:
-              'Could not load client access requests for review.',
-          context: <String, Object?>{
-            'operation': 'loadOwnerAccessRequests',
-            'userId': userId,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.loadOwnerAccessRequests,
-          },
-        ),
-      );
-    }
+        if (cached == null) {
+          return null;
+        }
+        return mapOwnerAccessRequestsResponse(cached, isStaleCache: true);
+      },
+      fallbackMessage: 'Unable to load owner access requests',
+      fallbackUserMessage: 'Could not load client access requests for review.',
+      context: <String, Object?>{
+        'operation': 'loadOwnerAccessRequests',
+        'userId': userId,
+        ClientAgentsFailureUiKey.field:
+            ClientAgentsFailureUiKey.loadOwnerAccessRequests,
+      },
+    );
   }
 
   @override
@@ -1227,101 +711,49 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
   Future<AppResult<List<OwnerApprovedClient>>> loadOwnerApprovedClients({
     required String userId,
     required String agentId,
-  }) async {
+  }) {
     final trimmedAgentId = agentId.trim();
     if (trimmedAgentId.isEmpty) {
-      return const Failure<List<OwnerApprovedClient>, AppFailure>(
-        ValidationFailure(
-          message: 'Agent id is empty',
-          userMessage: 'Identificador de agente invalido.',
-        ),
-      );
-    }
-    try {
-      final remote = await _remoteDataSource
-          .fetchApprovedClientsForManagedAgent(
-            agentId: trimmedAgentId,
-          );
-      await _localDataSource.saveOwnerApprovedClients(
-        userId: userId,
-        agentId: trimmedAgentId,
-        payload: remote,
-      );
-      return Success<List<OwnerApprovedClient>, AppFailure>(
-        _mapOwnerApprovedClients(remote),
-      );
-    } on DioException catch (error, stackTrace) {
-      if (isDioUnauthorizedOrForbidden(error)) {
-        return Failure<List<OwnerApprovedClient>, AppFailure>(
-          mapToAppFailure(
-            error,
-            stackTrace: stackTrace,
-            fallbackMessage:
-                'Unable to load approved clients for managed agent',
-            fallbackUserMessage:
-                'Could not load approved clients for this agent.',
-            context: <String, Object?>{
-              'operation': 'loadOwnerApprovedClients',
-              'userId': userId,
-              'agentId': trimmedAgentId,
-              ClientAgentsFailureUiKey.field:
-                  ClientAgentsFailureUiKey.loadOwnerApprovedClients,
-            },
+      return Future.value(
+        const Failure<List<OwnerApprovedClient>, AppFailure>(
+          ValidationFailure(
+            message: 'Agent id is empty',
+            userMessage: 'Identificador de agente invalido.',
           ),
-        );
-      }
-      final cached = await _localDataSource.readOwnerApprovedClients(
-        userId: userId,
-        agentId: trimmedAgentId,
-      );
-      if (cached != null) {
-        return Success<List<OwnerApprovedClient>, AppFailure>(
-          _mapOwnerApprovedClients(cached, isStaleCache: true),
-        );
-      }
-      return Failure<List<OwnerApprovedClient>, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to load approved clients for managed agent',
-          fallbackUserMessage:
-              'Could not load approved clients for this agent.',
-          context: <String, Object?>{
-            'operation': 'loadOwnerApprovedClients',
-            'userId': userId,
-            'agentId': trimmedAgentId,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.loadOwnerApprovedClients,
-          },
-        ),
-      );
-    } on Object catch (error, stackTrace) {
-      final cached = await _localDataSource.readOwnerApprovedClients(
-        userId: userId,
-        agentId: trimmedAgentId,
-      );
-      if (cached != null) {
-        return Success<List<OwnerApprovedClient>, AppFailure>(
-          _mapOwnerApprovedClients(cached, isStaleCache: true),
-        );
-      }
-      return Failure<List<OwnerApprovedClient>, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to load approved clients for managed agent',
-          fallbackUserMessage:
-              'Could not load approved clients for this agent.',
-          context: <String, Object?>{
-            'operation': 'loadOwnerApprovedClients',
-            'userId': userId,
-            'agentId': trimmedAgentId,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.loadOwnerApprovedClients,
-          },
         ),
       );
     }
+    return withRepositoryErrorMapping<List<OwnerApprovedClient>>(
+      action: () async {
+        final remote = await _remoteDataSource
+            .fetchApprovedClientsForManagedAgent(agentId: trimmedAgentId);
+        await _localDataSource.saveOwnerApprovedClients(
+          userId: userId,
+          agentId: trimmedAgentId,
+          payload: remote,
+        );
+        return mapOwnerApprovedClientsResponse(remote);
+      },
+      cacheFallback: (_) async {
+        final cached = await _localDataSource.readOwnerApprovedClients(
+          userId: userId,
+          agentId: trimmedAgentId,
+        );
+        if (cached == null) {
+          return null;
+        }
+        return mapOwnerApprovedClientsResponse(cached, isStaleCache: true);
+      },
+      fallbackMessage: 'Unable to load approved clients for managed agent',
+      fallbackUserMessage: 'Could not load approved clients for this agent.',
+      context: <String, Object?>{
+        'operation': 'loadOwnerApprovedClients',
+        'userId': userId,
+        'agentId': trimmedAgentId,
+        ClientAgentsFailureUiKey.field:
+            ClientAgentsFailureUiKey.loadOwnerApprovedClients,
+      },
+    );
   }
 
   @override
@@ -1329,153 +761,119 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
     required String userId,
     required String agentId,
     required String clientId,
-  }) async {
+  }) {
     final trimmedAgentId = agentId.trim();
     final trimmedClientId = clientId.trim();
     if (trimmedAgentId.isEmpty || trimmedClientId.isEmpty) {
-      return const Failure<Unit, AppFailure>(
-        ValidationFailure(
-          message: 'Agent or client id is empty',
-          userMessage: 'Identificador invalido para revogar o acesso.',
+      return Future.value(
+        const Failure<Unit, AppFailure>(
+          ValidationFailure(
+            message: 'Agent or client id is empty',
+            userMessage: 'Identificador invalido para revogar o acesso.',
+          ),
         ),
       );
     }
-    try {
-      await _remoteDataSource.revokeManagedAgentClientAccess(
-        agentId: trimmedAgentId,
-        clientId: trimmedClientId,
-      );
-      return const Success<Unit, AppFailure>(unit);
-    } on DioException catch (error, stackTrace) {
-      return Failure<Unit, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to revoke owner client access',
-          fallbackUserMessage: 'Could not revoke this client access.',
-          context: <String, Object?>{
-            'operation': 'revokeOwnerClientAccess',
-            'userId': userId,
-            'agentId': trimmedAgentId,
-            'clientId': trimmedClientId,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.revokeOwnerClientAccess,
-          },
-        ),
-      );
-    } on Object catch (error, stackTrace) {
-      return Failure<Unit, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to revoke owner client access',
-          fallbackUserMessage: 'Could not revoke this client access.',
-          context: <String, Object?>{
-            'operation': 'revokeOwnerClientAccess',
-            'userId': userId,
-            'agentId': trimmedAgentId,
-            'clientId': trimmedClientId,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.revokeOwnerClientAccess,
-          },
-        ),
-      );
-    }
+    return withRepositoryErrorMappingNoCache<Unit>(
+      action: () async {
+        await _remoteDataSource.revokeManagedAgentClientAccess(
+          agentId: trimmedAgentId,
+          clientId: trimmedClientId,
+        );
+        return unit;
+      },
+      fallbackMessage: 'Unable to revoke owner client access',
+      fallbackUserMessage: 'Could not revoke this client access.',
+      context: <String, Object?>{
+        'operation': 'revokeOwnerClientAccess',
+        'userId': userId,
+        'agentId': trimmedAgentId,
+        'clientId': trimmedClientId,
+        ClientAgentsFailureUiKey.field:
+            ClientAgentsFailureUiKey.revokeOwnerClientAccess,
+      },
+    );
   }
 
   @override
   Future<AppResult<List<PendingAgentAction>>> readPendingActions({
     required String userId,
-  }) async {
-    try {
-      final actions = await _localDataSource.readPendingActions(userId: userId);
-      return Success<List<PendingAgentAction>, AppFailure>(actions);
-    } on Object catch (error, stackTrace) {
-      return Failure<List<PendingAgentAction>, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to read pending actions',
-          fallbackUserMessage: 'Could not load pending submissions to sync.',
-          context: <String, Object?>{
-            'operation': 'readPendingClientAgentActions',
-            'userId': userId,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.readPendingActions,
-          },
-        ),
-      );
-    }
+  }) {
+    return withRepositoryErrorMappingNoCache<List<PendingAgentAction>>(
+      action: () => _localDataSource.readPendingActions(userId: userId),
+      fallbackMessage: 'Unable to read pending actions',
+      fallbackUserMessage: 'Could not load pending submissions to sync.',
+      context: <String, Object?>{
+        'operation': 'readPendingClientAgentActions',
+        'userId': userId,
+        ClientAgentsFailureUiKey.field:
+            ClientAgentsFailureUiKey.readPendingActions,
+      },
+    );
   }
 
   @override
   Future<AppResult<Unit>> queueRequestAccess({
     required String userId,
     required Set<String> agentIds,
-  }) async {
-    try {
-      final actions = await _localDataSource.readPendingActions(userId: userId);
-      final updated = _enqueueActions(
-        currentActions: actions,
-        agentIds: agentIds,
-        type: PendingAgentActionType.requestAccess,
-      );
-      await _localDataSource.savePendingActions(
-        userId: userId,
-        actions: updated,
-      );
-      return const Success<Unit, AppFailure>(unit);
-    } on Object catch (error, stackTrace) {
-      return Failure<Unit, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to queue request-access actions',
-          fallbackUserMessage: 'Could not queue the access request for sync.',
-          context: <String, Object?>{
-            'operation': 'queueRequestAccess',
-            'userId': userId,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.queueRequestAccess,
-          },
-        ),
-      );
-    }
+  }) {
+    return withRepositoryErrorMappingNoCache<Unit>(
+      action: () async {
+        final actions = await _localDataSource.readPendingActions(
+          userId: userId,
+        );
+        final updated = _enqueueActions(
+          currentActions: actions,
+          agentIds: agentIds,
+          type: PendingAgentActionType.requestAccess,
+        );
+        await _localDataSource.savePendingActions(
+          userId: userId,
+          actions: updated,
+        );
+        return unit;
+      },
+      fallbackMessage: 'Unable to queue request-access actions',
+      fallbackUserMessage: 'Could not queue the access request for sync.',
+      context: <String, Object?>{
+        'operation': 'queueRequestAccess',
+        'userId': userId,
+        ClientAgentsFailureUiKey.field:
+            ClientAgentsFailureUiKey.queueRequestAccess,
+      },
+    );
   }
 
   @override
   Future<AppResult<Unit>> queueRemoveAccess({
     required String userId,
     required Set<String> agentIds,
-  }) async {
-    try {
-      final actions = await _localDataSource.readPendingActions(userId: userId);
-      final updated = _enqueueActions(
-        currentActions: actions,
-        agentIds: agentIds,
-        type: PendingAgentActionType.removeAccess,
-      );
-      await _localDataSource.savePendingActions(
-        userId: userId,
-        actions: updated,
-      );
-      return const Success<Unit, AppFailure>(unit);
-    } on Object catch (error, stackTrace) {
-      return Failure<Unit, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to queue remove-access actions',
-          fallbackUserMessage: 'Could not queue the removal for sync.',
-          context: <String, Object?>{
-            'operation': 'queueRemoveAccess',
-            'userId': userId,
-            ClientAgentsFailureUiKey.field:
-                ClientAgentsFailureUiKey.queueRemoveAccess,
-          },
-        ),
-      );
-    }
+  }) {
+    return withRepositoryErrorMappingNoCache<Unit>(
+      action: () async {
+        final actions = await _localDataSource.readPendingActions(
+          userId: userId,
+        );
+        final updated = _enqueueActions(
+          currentActions: actions,
+          agentIds: agentIds,
+          type: PendingAgentActionType.removeAccess,
+        );
+        await _localDataSource.savePendingActions(
+          userId: userId,
+          actions: updated,
+        );
+        return unit;
+      },
+      fallbackMessage: 'Unable to queue remove-access actions',
+      fallbackUserMessage: 'Could not queue the removal for sync.',
+      context: <String, Object?>{
+        'operation': 'queueRemoveAccess',
+        'userId': userId,
+        ClientAgentsFailureUiKey.field:
+            ClientAgentsFailureUiKey.queueRemoveAccess,
+      },
+    );
   }
 
   Future<List<PendingAgentAction>> _recoverStaleSyncingPendingActions({
@@ -1833,96 +1231,6 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
     return _loadOnlineAgentIds(userId: userId);
   }
 
-  PaginatedResult<ClientAgentCatalogItem> _mapCatalog(
-    PaginatedAgentCatalogResponseDto response, {
-    required Set<String>? onlineIds,
-    bool isStaleCache = false,
-  }) {
-    final items = response.agents
-        .map((agent) {
-          return ClientAgentCatalogItem(
-            agent: _mapProfile(agent, onlineIds: onlineIds),
-          );
-        })
-        .toList(growable: false);
-    return PaginatedResult<ClientAgentCatalogItem>(
-      items: items,
-      count: response.count,
-      total: response.total,
-      page: response.page,
-      pageSize: response.pageSize,
-      isStaleCache: isStaleCache,
-    );
-  }
-
-  PaginatedResult<ClientAgent> _mapApproved(
-    ClientApprovedAgentsResponseDto response, {
-    required Set<String>? onlineIds,
-    bool isStaleCache = false,
-  }) {
-    final items = response.agents
-        .map((agent) => _mapProfile(agent, onlineIds: onlineIds))
-        .toList(growable: false);
-    return PaginatedResult<ClientAgent>(
-      items: items,
-      count: response.count,
-      total: response.total,
-      page: response.page,
-      pageSize: response.pageSize,
-      isStaleCache: isStaleCache,
-    );
-  }
-
-  PaginatedResult<ClientAgentAccessRequest> _mapAccessRequests(
-    ClientAccessRequestsResponseDto response, {
-    bool isStaleCache = false,
-  }) {
-    return PaginatedResult<ClientAgentAccessRequest>(
-      items: response.requests
-          .map((request) => request.toEntity())
-          .toList(growable: false),
-      count: response.count,
-      total: response.total,
-      page: response.page,
-      pageSize: response.pageSize,
-      isStaleCache: isStaleCache,
-    );
-  }
-
-  List<OwnerClientAccessRequest> _mapOwnerAccessRequests(
-    OwnerAccessRequestsResponseDto response, {
-    bool isStaleCache = false,
-  }) {
-    return response.requests
-        .map((request) => request.toEntity(isStaleCache: isStaleCache))
-        .toList(growable: false);
-  }
-
-  List<OwnerApprovedClient> _mapOwnerApprovedClients(
-    OwnerApprovedClientsResponseDto response, {
-    bool isStaleCache = false,
-  }) {
-    return response.clients
-        .map((client) => client.toEntity(isStaleCache: isStaleCache))
-        .toList(growable: false);
-  }
-
-  ClientAgent _mapProfile(
-    ClientAgentProfileDto profile, {
-    required Set<String>? onlineIds,
-    bool isStaleCache = false,
-  }) {
-    final connectionStatus = resolveAgentConnectionStatus(
-      agentId: profile.agentId,
-      isHubConnected: profile.isHubConnected,
-      onlineAgentIds: onlineIds,
-    );
-    return profile.toEntity(
-      connectionStatus: connectionStatus,
-      isStaleCache: isStaleCache,
-    );
-  }
-
   /// Writes a synthetic [OnlineAgentsResponseDto] when profile rows include
   /// [ClientAgentProfileDto.isHubConnected], so [loadOnlineAgentIds] and
   /// overview can resolve online ids without `GET /api/v1/agents` (user-only).
@@ -1956,50 +1264,32 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
     required String uiKey,
     required String fallbackUserMessage,
     required Future<void> Function(String trimmedRequestId) action,
-  }) async {
+  }) {
     final trimmed = requestId.trim();
     if (trimmed.isEmpty) {
-      return const Failure<Unit, AppFailure>(
-        ValidationFailure(
-          message: 'Request id is empty',
-          userMessage: 'Identificador de solicitacao invalido.',
+      return Future.value(
+        const Failure<Unit, AppFailure>(
+          ValidationFailure(
+            message: 'Request id is empty',
+            userMessage: 'Identificador de solicitacao invalido.',
+          ),
         ),
       );
     }
-    try {
-      await action(trimmed);
-      return const Success<Unit, AppFailure>(unit);
-    } on DioException catch (error, stackTrace) {
-      return Failure<Unit, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to mutate owner access request',
-          fallbackUserMessage: fallbackUserMessage,
-          context: <String, Object?>{
-            'operation': operation,
-            'userId': userId,
-            'requestId': trimmed,
-            ClientAgentsFailureUiKey.field: uiKey,
-          },
-        ),
-      );
-    } on Object catch (error, stackTrace) {
-      return Failure<Unit, AppFailure>(
-        mapToAppFailure(
-          error,
-          stackTrace: stackTrace,
-          fallbackMessage: 'Unable to mutate owner access request',
-          fallbackUserMessage: fallbackUserMessage,
-          context: <String, Object?>{
-            'operation': operation,
-            'userId': userId,
-            'requestId': trimmed,
-            ClientAgentsFailureUiKey.field: uiKey,
-          },
-        ),
-      );
-    }
+    return withRepositoryErrorMappingNoCache<Unit>(
+      action: () async {
+        await action(trimmed);
+        return unit;
+      },
+      fallbackMessage: 'Unable to mutate owner access request',
+      fallbackUserMessage: fallbackUserMessage,
+      context: <String, Object?>{
+        'operation': operation,
+        'userId': userId,
+        'requestId': trimmed,
+        ClientAgentsFailureUiKey.field: uiKey,
+      },
+    );
   }
 
   /// Cached hub presence only (no `GET /api/v1/agents` — client JWT is 403).

@@ -48,7 +48,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diar
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/overview/data/overview_sql_batch_item_rows_mapper.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:result_dart/result_dart.dart';
 
 /// SQL commands in the overview main batch before section-only batches.
@@ -263,7 +263,7 @@ class OverviewBatchLoader {
 
   Future<AppResult<OverviewBatchLoadResult>> load({
     required String userId,
-    required OverviewFilter filter,
+    required DashboardFilter filter,
     required DateTime periodStart,
     required DateTime periodEnd,
     required ({DateTime dataVendaInicio, DateTime dataVendaFim}) last12Range,
@@ -303,7 +303,7 @@ class OverviewBatchLoader {
 
   Stream<AppResult<OverviewBatchLoadResult>> loadProgressively({
     required String userId,
-    required OverviewFilter filter,
+    required DashboardFilter filter,
     required DateTime periodStart,
     required DateTime periodEnd,
     required ({DateTime dataVendaInicio, DateTime dataVendaFim}) last12Range,

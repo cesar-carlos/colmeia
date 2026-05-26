@@ -1,11 +1,11 @@
 import 'package:checks/checks.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('OverviewDateRangeHomePolicy', () {
+  group('DashboardDateRangeHomePolicy', () {
     test('inclusiveCalendarDayCount is one for a single day', () {
-      final r = OverviewDateRange.fromOrderedEndpoints(
+      final r = DashboardDateRange.fromOrderedEndpoints(
         DateTime(2026, 3, 15),
         DateTime(2026, 3, 15),
       );
@@ -14,7 +14,7 @@ void main() {
     });
 
     test('inclusiveCalendarDayCount spans months correctly', () {
-      final r = OverviewDateRange.fromOrderedEndpoints(
+      final r = DashboardDateRange.fromOrderedEndpoints(
         DateTime(2026, 2, 28),
         DateTime(2026, 3, 2),
       );
@@ -22,7 +22,7 @@ void main() {
     });
 
     test('full leap-year span 2024-01-01..2024-12-31 is 366 days (at cap)', () {
-      final r = OverviewDateRange.fromOrderedEndpoints(
+      final r = DashboardDateRange.fromOrderedEndpoints(
         DateTime(2024),
         DateTime(2024, 12, 31),
       );
@@ -31,7 +31,7 @@ void main() {
     });
 
     test('367 inclusive days exceeds home dashboard cap', () {
-      final r = OverviewDateRange.fromOrderedEndpoints(
+      final r = DashboardDateRange.fromOrderedEndpoints(
         DateTime(2024),
         DateTime(2025),
       );

@@ -1,4 +1,3 @@
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/domain/sales_daily_totals_range_policy.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_anchor_month_support.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_anchor_month_filters_context.dart';
@@ -6,6 +5,7 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_filters_sheet_
 import 'package:colmeia/features/sales/presentation/widgets/sales_single_agent_picker_control.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/forms/app_date_picker_field.dart';
@@ -16,7 +16,7 @@ import 'package:flutter/material.dart';
 
 /// Branch + reference month filters shared by sales charts anchored to a month.
 ///
-/// Daily totals may use [OverviewDateRange] while monthly charts keep using the
+/// Daily totals may use [DashboardDateRange] while monthly charts keep using the
 /// reference month only.
 class SalesBranchAnchorMonthFiltersSheet extends StatefulWidget {
   const SalesBranchAnchorMonthFiltersSheet({
@@ -33,16 +33,16 @@ class SalesBranchAnchorMonthFiltersSheet extends StatefulWidget {
 
   final AppLocalizations l10n;
   final SalesAnchorMonthFiltersContext filtersContext;
-  final List<OverviewAgentOption> availableAgents;
+  final List<DashboardAgentOption> availableAgents;
   final String? initialSelectedAgentId;
-  final OverviewYearMonth initialAnchorYearMonth;
+  final DashboardYearMonth initialAnchorYearMonth;
 
   /// When true, [initialDailyTotalsDateRange] defines the custom sale-date span.
   final bool initialDailyTotalsUseCustomRange;
 
   /// Restored custom range for daily totals only; ignored when
   /// [initialDailyTotalsUseCustomRange] is false.
-  final OverviewDateRange? initialDailyTotalsDateRange;
+  final DashboardDateRange? initialDailyTotalsDateRange;
 
   final ValueChanged<Map<String, Object?>> onApply;
 
@@ -59,7 +59,7 @@ enum _DailyTotalsPeriodMode {
 class _SalesBranchAnchorMonthFiltersSheetState
     extends State<SalesBranchAnchorMonthFiltersSheet> {
   String? _selectedAgentId;
-  late OverviewYearMonth _anchorYearMonth;
+  late DashboardYearMonth _anchorYearMonth;
   late _DailyTotalsPeriodMode _dailyTotalsMode;
   DateTimeRange? _customSaleDateRange;
 
@@ -90,7 +90,7 @@ class _SalesBranchAnchorMonthFiltersSheetState
     }
   }
 
-  static DateTimeRange _defaultCustomRangeForAnchor(OverviewYearMonth anchor) {
+  static DateTimeRange _defaultCustomRangeForAnchor(DashboardYearMonth anchor) {
     return DateTimeRange(
       start: anchor.start,
       end: DateTime(anchor.year, anchor.month + 1, 0),
@@ -112,13 +112,13 @@ class _SalesBranchAnchorMonthFiltersSheetState
     if (!_canApplyCustomRange) {
       return;
     }
-    OverviewDateRange? dailyTotalsDateRange;
+    DashboardDateRange? dailyTotalsDateRange;
     if (_dailyTotalsMode == _DailyTotalsPeriodMode.customRange) {
       final picked = _customSaleDateRange;
       if (picked == null) {
         return;
       }
-      var range = OverviewDateRange.fromOrderedEndpoints(
+      var range = DashboardDateRange.fromOrderedEndpoints(
         picked.start,
         picked.end,
       );
@@ -151,7 +151,7 @@ class _SalesBranchAnchorMonthFiltersSheetState
 
   void _clear() {
     setState(() {
-      _anchorYearMonth = OverviewYearMonth.fromDate(DateTime.now());
+      _anchorYearMonth = DashboardYearMonth.fromDate(DateTime.now());
       _dailyTotalsMode = _DailyTotalsPeriodMode.referenceMonth;
       _customSaleDateRange = _defaultCustomRangeForAnchor(_anchorYearMonth);
     });
@@ -237,7 +237,7 @@ class _SalesBranchAnchorMonthFiltersSheetState
             SizedBox(height: tokens.gapSm),
             AppSectionCard(
               color: theme.colorScheme.surfaceContainerLow,
-              child: AppDropdownField<OverviewYearMonth>(
+              child: AppDropdownField<DashboardYearMonth>(
                 label: l10n.salesMonthlyPnlFilterAnchorMonth,
                 value: _anchorYearMonth,
                 density: AppTextFieldDensity.compact,

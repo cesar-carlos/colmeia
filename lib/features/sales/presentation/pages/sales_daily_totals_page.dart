@@ -7,8 +7,6 @@ import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
@@ -24,7 +22,9 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_branch_anchor_
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_daily_totals_chart_card.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
@@ -61,15 +61,15 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
   late final ResolveSalesAgentClientTokenUseCase _resolveClientTokenUseCase;
 
   String? _selectedAgentId;
-  List<OverviewAgentOption> _availableAgents = const <OverviewAgentOption>[];
-  late OverviewYearMonth _anchorYearMonth;
-  OverviewDateRange? _dailyTotalsDateRange;
+  List<DashboardAgentOption> _availableAgents = const <DashboardAgentOption>[];
+  late DashboardYearMonth _anchorYearMonth;
+  DashboardDateRange? _dailyTotalsDateRange;
   String? _cachedClientTokenUserId;
   String? _cachedClientTokenAgentId;
   String? _cachedClientToken;
 
-  List<OverviewDailySalesTrendPoint> _dailyPoints =
-      const <OverviewDailySalesTrendPoint>[];
+  List<DailySalesTrendPoint> _dailyPoints =
+      const <DailySalesTrendPoint>[];
   bool _loading = false;
   bool _loadFailed = false;
   String? _loadFailureMessage;
@@ -92,7 +92,7 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
     _selectedAgentId = _sessionService.selectedAgentId;
     _anchorYearMonth =
         _sessionService.restoreSalesChartReferenceMonth() ??
-        OverviewYearMonth.fromDate(DateTime.now());
+        DashboardYearMonth.fromDate(DateTime.now());
     _dailyTotalsDateRange =
         _sessionService.restoreSalesDailyTotalsUseCustomRange()
         ? _sessionService.restoreSalesDailyTotalsDateRange()
@@ -163,7 +163,7 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
   String? get autoRefreshSelectedAgentId => _selectedAgentId;
 
   @override
-  List<OverviewAgentOption> get autoRefreshAvailableAgents => _availableAgents;
+  List<DashboardAgentOption> get autoRefreshAvailableAgents => _availableAgents;
 
   @override
   bool get autoRefreshPageLoading => _loading;
@@ -193,7 +193,7 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
       }
       setState(() {
         _loading = false;
-        _dailyPoints = const <OverviewDailySalesTrendPoint>[];
+        _dailyPoints = const <DailySalesTrendPoint>[];
         _loadFailed = false;
         _loadFailureMessage = null;
       });
@@ -214,7 +214,7 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
       ).agentSqlErrorAuthenticationFailed;
       setState(() {
         _loading = false;
-        _dailyPoints = const <OverviewDailySalesTrendPoint>[];
+        _dailyPoints = const <DailySalesTrendPoint>[];
         _loadFailed = true;
         _loadFailureMessage = authMsg;
       });
@@ -252,8 +252,8 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
     final normalizedAgentId = nextAgentId == null || nextAgentId.isEmpty
         ? null
         : nextAgentId;
-    final anchor = next['anchorYearMonth'] as OverviewYearMonth?;
-    final dailyRange = next['dailyTotalsDateRange'] as OverviewDateRange?;
+    final anchor = next['anchorYearMonth'] as DashboardYearMonth?;
+    final dailyRange = next['dailyTotalsDateRange'] as DashboardDateRange?;
 
     setState(() {
       _selectedAgentId = normalizedAgentId;
@@ -304,7 +304,7 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
     final l10n = AppLocalizations.of(context);
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final selectedBranch = _availableAgents
-        .cast<OverviewAgentOption?>()
+        .cast<DashboardAgentOption?>()
         .firstWhere(
           (agent) => agent?.agentId == _selectedAgentId,
           orElse: () => null,

@@ -4,8 +4,8 @@ import 'package:colmeia/core/refresh/auto_refresh_option.dart';
 import 'package:colmeia/core/refresh/auto_refresh_option_set.dart';
 import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_persistence.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/material.dart';
 
 abstract final class SalesAutoRefreshOptions {
@@ -63,7 +63,7 @@ bool salesAutoRefreshIsAvailableForViewport(BuildContext context) =>
 
 bool salesAutoRefreshCanScheduleSelectedAgent({
   required String? selectedAgentId,
-  required List<OverviewAgentOption> availableAgents,
+  required List<DashboardAgentOption> availableAgents,
 }) {
   final trimmedAgentId = selectedAgentId?.trim();
   if (trimmedAgentId == null || trimmedAgentId.isEmpty) {

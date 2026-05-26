@@ -2,7 +2,6 @@ import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
-import 'package:colmeia/features/overview/presentation/widgets/overview_daily_sales_trend_chart.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_lucratividade_chart.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_monthly_parcels_combo_chart.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_payment_mix_card.dart';
@@ -14,6 +13,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_fade_in.dart';
+import 'package:colmeia/shared/widgets/charts/daily_sales_trend_chart.dart';
 import 'package:flutter/material.dart';
 
 /// Stages daily sales (ResumoTotalDiarioVendas) first, then the last-12-months combo
@@ -190,7 +190,7 @@ class _OverviewHomeStagedBelowKpisState
             placeholderHeight: chartBlockHeight,
             showDelay: Duration.zero,
             loadingSemanticsLabel: l10n.overviewLoadingDailySalesSemantics,
-            builder: () => OverviewDailySalesTrendChart(
+            builder: () => DailySalesTrendChart(
               l10n: l10n,
               points: displayOverview.dailySalesTrend,
               loadFailed: displayOverview.dailySalesTrendLoadFailed,
@@ -303,7 +303,7 @@ class _OverviewHomeStagedBelowKpisState
           placeholderHeight: chartBlockHeight,
           showDelay: Duration.zero,
           loadingSemanticsLabel: l10n.overviewLoadingDailySalesSemantics,
-          builder: () => OverviewDailySalesTrendChart(
+          builder: () => DailySalesTrendChart(
             l10n: l10n,
             points: overview.dailySalesTrend,
             loadFailed: overview.dailySalesTrendLoadFailed,

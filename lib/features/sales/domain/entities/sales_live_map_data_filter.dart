@@ -1,7 +1,7 @@
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref_codec.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/foundation.dart';
 
 /// SQL-driving slice of [SalesLiveMapFilter] (agents, period, persisted branch scope).
@@ -29,7 +29,7 @@ class SalesLiveMapDataFilter {
   final Set<String>? selectedAgentIds;
   final Set<SalesLiveMapBranchRef>? selectedBranchIds;
   final SalesLiveMapPeriodMode periodMode;
-  final OverviewDateRange? customDateRange;
+  final DashboardDateRange? customDateRange;
 
   @override
   bool operator ==(Object other) {

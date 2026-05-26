@@ -1,5 +1,5 @@
 import 'package:colmeia/core/value_objects/email_address.dart';
-import 'package:colmeia/features/auth/domain/entities/client_account_status.dart';
+import 'package:colmeia/shared/identity/client_account_status.dart';
 
 class AuthSession {
   const AuthSession({

@@ -141,7 +141,7 @@ void main() {
         final snapshots = await repository
             .loadOverviewProgressively(
               userId: 'user-1',
-              filter: const OverviewFilter(
+              filter: const DashboardFilter(
                 selectedAgentIds: <String>{'agent-1'},
               ),
             )
@@ -232,7 +232,7 @@ void main() {
         final repository = makeRepository();
         final result = await repository.loadOverview(
           userId: 'user-1',
-          filter: const OverviewFilter(
+          filter: const DashboardFilter(
             selectedAgentIds: <String>{'agent-1'},
           ),
         );
@@ -284,7 +284,7 @@ void main() {
         final snapshots = await repository
             .loadOverviewProgressively(
               userId: 'user-1',
-              filter: const OverviewFilter(
+              filter: const DashboardFilter(
                 selectedAgentIds: <String>{'agent-1'},
               ),
             )
@@ -351,7 +351,7 @@ void main() {
         final repository = makeRepository();
         final result = await repository.loadOverview(
           userId: 'user-1',
-          filter: const OverviewFilter(
+          filter: const DashboardFilter(
             selectedAgentIds: <String>{'agent-1', 'agent-2'},
           ),
         );

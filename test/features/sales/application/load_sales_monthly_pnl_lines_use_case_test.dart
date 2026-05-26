@@ -3,8 +3,8 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_produto_venda_lucratividade_mensal_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:result_dart/result_dart.dart';
@@ -100,7 +100,7 @@ void main() {
       final result = await useCase(
         userId: 'user-1',
         agentId: 'agent-1',
-        anchor: const OverviewYearMonth(year: 2026, month: 3),
+        anchor: const DashboardYearMonth(year: 2026, month: 3),
         clientToken: 'token-1',
       );
 
@@ -176,7 +176,7 @@ void main() {
       final result = await useCase(
         userId: 'user-2',
         agentId: 'agent-2',
-        anchor: const OverviewYearMonth(year: 2026, month: 3),
+        anchor: const DashboardYearMonth(year: 2026, month: 3),
       );
 
       check(result.loadFailed).isTrue();

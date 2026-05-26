@@ -7,7 +7,6 @@ import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/core/value_objects/store_id.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
-import 'package:colmeia/features/auth/domain/entities/client_account_status.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/user_context/application/usecases/clear_active_store_use_case.dart';
 import 'package:colmeia/features/user_context/application/usecases/load_current_user_context_use_case.dart';
@@ -19,6 +18,7 @@ import 'package:colmeia/features/user_context/domain/entities/user_access_scope.
 import 'package:colmeia/features/user_context/domain/entities/user_permission.dart';
 import 'package:colmeia/features/user_context/domain/entities/user_profile.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
+import 'package:colmeia/shared/identity/client_account_status.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:result_dart/result_dart.dart';

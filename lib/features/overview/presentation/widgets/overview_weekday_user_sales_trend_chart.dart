@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_user_sales_trend_point.dart';
-import 'package:colmeia/features/overview/presentation/localization/overview_weekday_sales_trend_l10n.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_weekday_user_grouped_bar_chart.dart';
 import 'package:colmeia/features/overview/presentation/widgets/weekday_user_grouped_chart_data.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/charts/daily_sales_weekday_labels.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
@@ -323,7 +323,7 @@ class _OverviewWeekdayUserSalesTrendChartState
       return rightValue > leftValue ? right : left;
     });
 
-    final topWeekdayLabel = overviewWeekdaySalesLabel(
+    final topWeekdayLabel = dailySalesWeekdayLabel(
       topPoint.weekdayNumber,
       l10n,
     );

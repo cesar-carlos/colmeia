@@ -1,6 +1,6 @@
 import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
 import 'package:colmeia/core/refresh/auto_refresh_ui_state.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/material.dart';
 
 mixin SalesSingleAgentAutoRefreshMixin<T extends StatefulWidget>
@@ -12,13 +12,13 @@ mixin SalesSingleAgentAutoRefreshMixin<T extends StatefulWidget>
   String? get autoRefreshSelectedAgentId;
 
   @protected
-  List<OverviewAgentOption> get autoRefreshAvailableAgents;
+  List<DashboardAgentOption> get autoRefreshAvailableAgents;
 
   @protected
   bool get autoRefreshPageLoading;
 
   @protected
-  OverviewAgentOption? get selectedAutoRefreshAgentOption {
+  DashboardAgentOption? get selectedAutoRefreshAgentOption {
     final selectedAgentId = autoRefreshSelectedAgentId?.trim();
     if (selectedAgentId == null || selectedAgentId.isEmpty) {
       return null;

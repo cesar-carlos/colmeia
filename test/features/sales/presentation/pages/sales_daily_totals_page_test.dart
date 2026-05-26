@@ -6,8 +6,6 @@ import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
@@ -18,6 +16,8 @@ import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refr
 import 'package:colmeia/features/sales/presentation/pages/sales_daily_totals_page.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_anchor_month_support.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -43,12 +43,12 @@ void main() {
   late _MockAgentClientTokenReader tokenReader;
   late _MockLoadAvailableAgentsForSales loadAvailableAgentsForSales;
   late _MockLoadSalesDailyTotalsUseCase loadDailyTotals;
-  late OverviewYearMonth currentAnchor;
+  late DashboardYearMonth currentAnchor;
 
   setUpAll(() {
     Provider.debugCheckInvalidValueType = null;
     registerFallbackValue(
-      const OverviewYearMonth(year: 2026, month: 5),
+      const DashboardYearMonth(year: 2026, month: 5),
     );
     registerFallbackValue(<String>['agent-1']);
     registerFallbackValue(AutoRefreshSnapshot.disabled);
@@ -115,8 +115,8 @@ void main() {
     when(
       () => loadAvailableAgentsForSales.call(any()),
     ).thenAnswer(
-      (_) async => <OverviewAgentOption>[
-        const OverviewAgentOption(
+      (_) async => <DashboardAgentOption>[
+        const DashboardAgentOption(
           agentId: 'agent-1',
           name: 'Agent One',
         ),
@@ -133,7 +133,7 @@ void main() {
       ),
     ).thenAnswer(
       (_) async => (
-        points: const <OverviewDailySalesTrendPoint>[],
+        points: const <DailySalesTrendPoint>[],
         loadFailed: false,
         loadFailureMessage: null,
       ),
@@ -240,8 +240,8 @@ void main() {
       when(
         () => loadAvailableAgentsForSales.call(any()),
       ).thenAnswer(
-        (_) async => <OverviewAgentOption>[
-          const OverviewAgentOption(
+        (_) async => <DashboardAgentOption>[
+          const DashboardAgentOption(
             agentId: 'agent-1',
             name: 'Agent One',
             missingLocalClientToken: true,

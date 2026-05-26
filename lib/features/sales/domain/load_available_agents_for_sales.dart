@@ -4,7 +4,7 @@ import 'package:colmeia/features/client_agents/domain/entities/paginated_query.d
 import 'package:colmeia/features/client_agents/domain/entities/paginated_result.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 
 class LoadAvailableAgentsForSales {
   LoadAvailableAgentsForSales(
@@ -22,7 +22,7 @@ class LoadAvailableAgentsForSales {
   final AgentClientTokenReader? _clientTokenReader;
   final AgentQueryTargetResolver? _targetResolver;
 
-  Future<List<OverviewAgentOption>> call(String userId) async {
+  Future<List<DashboardAgentOption>> call(String userId) async {
     final resolver = _targetResolver;
     if (resolver != null) {
       return _loadFromTargetResolver(resolver, userId: userId);
@@ -30,7 +30,7 @@ class LoadAvailableAgentsForSales {
 
     final agents = await _loadAllApprovedAgents(userId);
     if (agents == null) {
-      return <OverviewAgentOption>[];
+      return <DashboardAgentOption>[];
     }
 
     final agentIds = agents.map((agent) => agent.agentId);
@@ -41,7 +41,7 @@ class LoadAvailableAgentsForSales {
     final tokenBackedAgentIds = tokensByAgent.keys.toSet();
     return agents
         .map(
-          (agent) => OverviewAgentOption(
+          (agent) => DashboardAgentOption(
             agentId: agent.agentId,
             name: agent.name,
             connectionStatus: agent.connectionStatus,
@@ -53,19 +53,19 @@ class LoadAvailableAgentsForSales {
         .toList();
   }
 
-  Future<List<OverviewAgentOption>> _loadFromTargetResolver(
+  Future<List<DashboardAgentOption>> _loadFromTargetResolver(
     AgentQueryTargetResolver resolver, {
     required String userId,
   }) async {
     final result = await resolver.resolve(userId: userId);
     final resolution = result.getOrNull();
     if (resolution == null) {
-      return <OverviewAgentOption>[];
+      return <DashboardAgentOption>[];
     }
 
     return resolution.consideredApprovedTargets
         .map(
-          (target) => OverviewAgentOption(
+          (target) => DashboardAgentOption(
             agentId: target.agentId,
             name: target.displayName,
             connectionStatus: target.connectionStatus,

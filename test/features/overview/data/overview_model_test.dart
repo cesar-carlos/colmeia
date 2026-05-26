@@ -4,13 +4,13 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_ve
 import 'package:colmeia/features/overview/data/models/overview_model.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_user_sales_trend_point.dart';
+import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -244,8 +244,8 @@ void main() {
             ),
           ],
           weekdaySalesTrendLoadFailed: true,
-          dailySalesTrend: <OverviewDailySalesTrendPoint>[
-            OverviewDailySalesTrendPoint(
+          dailySalesTrend: <DailySalesTrendPoint>[
+            DailySalesTrendPoint(
               saleDate: DateTime(2026, 4, 7),
               salesCount: 11,
               salesAmount: 990,
@@ -431,8 +431,8 @@ OverviewModel _fullModel() {
         salesAmount: 40,
       ),
     ],
-    dailySalesTrend: <OverviewDailySalesTrendPoint>[
-      OverviewDailySalesTrendPoint(
+    dailySalesTrend: <DailySalesTrendPoint>[
+      DailySalesTrendPoint(
         saleDate: DateTime(2026, 4, 7),
         salesCount: 8,
         salesAmount: 720,

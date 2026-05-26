@@ -2,20 +2,20 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_filter_circle_palette.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/utils/app_branch_display_model.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/bottom_sheet_compact_drag_handle.dart';
+import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:flutter/material.dart';
 
 const double _kAgentFilterCircleSize = 44;
-const Color _kAgentFilterCircleFill = Color(0xFFFFE5D9);
-const Color _kAgentFilterCircleIcon = Color(0xFF5D4037);
 
 class SalesBranchFilterCopy {
   const SalesBranchFilterCopy({
@@ -49,8 +49,8 @@ class SalesBranchFilterCopy {
   final String missingClientTokenBanner;
 }
 
-OverviewAgentOption? _salesFindBranch(
-  List<OverviewAgentOption> branches,
+DashboardAgentOption? _salesFindBranch(
+  List<DashboardAgentOption> branches,
   String? id,
 ) {
   if (id == null) {
@@ -77,7 +77,7 @@ class SalesBranchPickerControl extends StatelessWidget {
   });
 
   final AppLocalizations l10n;
-  final List<OverviewAgentOption> availableBranches;
+  final List<DashboardAgentOption> availableBranches;
   final String? selectedBranchId;
   final ValueChanged<String> onSelectionChanged;
   final bool enabled;
@@ -209,7 +209,7 @@ class SalesBranchPickerControl extends StatelessWidget {
               button: true,
               label: l10n.overviewAgentFilterEditAction,
               child: Material(
-                color: _kAgentFilterCircleFill,
+                color: SalesFilterCirclePalette.fill,
                 shape: const CircleBorder(),
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
@@ -222,7 +222,7 @@ class SalesBranchPickerControl extends StatelessWidget {
                       Icons.filter_list_rounded,
                       size: 22,
                       color: enabled
-                          ? _kAgentFilterCircleIcon
+                          ? SalesFilterCirclePalette.icon
                           : scheme.onSurfaceVariant,
                     ),
                   ),
@@ -251,7 +251,7 @@ class SalesSingleAgentPickerControl extends StatelessWidget {
   });
 
   final AppLocalizations l10n;
-  final List<OverviewAgentOption> availableAgents;
+  final List<DashboardAgentOption> availableAgents;
   final String? selectedAgentId;
   final ValueChanged<String> onSelectionChanged;
   final bool enabled;
@@ -281,7 +281,7 @@ class _SalesBranchSelectionSheet extends StatefulWidget {
   });
 
   final AppLocalizations l10n;
-  final List<OverviewAgentOption> availableBranches;
+  final List<DashboardAgentOption> availableBranches;
   final String? initialSelectedBranchId;
   final SalesBranchFilterCopy copy;
 
@@ -297,11 +297,11 @@ class _SalesBranchSelectionSheetState
   String? _selectedBranchId;
   late final TextEditingController _searchController;
   Timer? _searchDebounceTimer;
-  Map<String, OverviewAgentOption> _branchById =
-      <String, OverviewAgentOption>{};
+  Map<String, DashboardAgentOption> _branchById =
+      <String, DashboardAgentOption>{};
   late String _appliedFilterQuery;
 
-  List<OverviewAgentOption>? _memoFilteredBranches;
+  List<DashboardAgentOption>? _memoFilteredBranches;
   Object? _memoBranchesListIdentity;
   String? _memoFilterQuery;
 
@@ -345,7 +345,7 @@ class _SalesBranchSelectionSheetState
   }
 
   void _rebuildBranchByIdMap() {
-    _branchById = <String, OverviewAgentOption>{
+    _branchById = <String, DashboardAgentOption>{
       for (final branch in widget.availableBranches) branch.agentId: branch,
     };
   }
@@ -372,7 +372,7 @@ class _SalesBranchSelectionSheetState
     });
   }
 
-  List<OverviewAgentOption> _getFilteredBranches() {
+  List<DashboardAgentOption> _getFilteredBranches() {
     final branches = widget.availableBranches;
     final q = _appliedFilterQuery;
     if (identical(_memoBranchesListIdentity, branches) &&
@@ -479,19 +479,12 @@ class _SalesBranchSelectionSheetState
                       horizontal: tokens.contentSpacing,
                       vertical: tokens.gapSm,
                     ),
-                    child: TextField(
+                    child: AppTextField(
                       controller: _searchController,
                       autofocus: true,
-                      decoration: InputDecoration(
-                        hintText: widget.copy.sheetSearchHint,
-                        prefixIcon: const Icon(Icons.search_rounded),
-                        isDense: true,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(
-                            tokens.formFieldRadius,
-                          ),
-                        ),
-                      ),
+                      hintText: widget.copy.sheetSearchHint,
+                      prefixIcon: Icons.search_rounded,
+                      density: AppTextFieldDensity.compact,
                       onChanged: (_) => _scheduleSearchFilterRebuild(),
                     ),
                   ),
@@ -623,7 +616,7 @@ class _SalesBranchSheetCheckboxRow extends StatelessWidget {
   });
 
   final AppLocalizations l10n;
-  final OverviewAgentOption branch;
+  final DashboardAgentOption branch;
   final ColorScheme scheme;
   final AppThemeTokens tokens;
   final ThemeData theme;
@@ -708,10 +701,10 @@ Color _salesBranchNameColor(
   };
 }
 
-String _branchPrimaryName(OverviewAgentOption branch) {
+String _branchPrimaryName(DashboardAgentOption branch) {
   return resolveAppBranchDisplayModel(fallbackName: branch.name).primaryName;
 }
 
-String _branchSearchTokens(OverviewAgentOption branch) {
+String _branchSearchTokens(DashboardAgentOption branch) {
   return resolveAppBranchDisplayModel(fallbackName: branch.name).searchTokens;
 }

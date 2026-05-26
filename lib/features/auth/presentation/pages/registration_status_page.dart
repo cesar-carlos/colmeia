@@ -191,73 +191,45 @@ class _RegistrationStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final (icon, title, message, color) = switch (status) {
+    final (kind, icon, title, message) = switch (status) {
       ClientRegistrationStatus.pending => (
+        InlineAlertBannerKind.warning,
         Icons.hourglass_top_rounded,
         'Cadastro pendente',
         'Sua solicitacao ainda esta aguardando a aprovacao do responsavel.',
-        colorScheme.primary,
       ),
       ClientRegistrationStatus.approved => (
+        InlineAlertBannerKind.success,
         Icons.check_circle_outline_rounded,
         'Cadastro aprovado',
         'Seu cadastro ja pode acessar o login com o e-mail e senha informados.',
-        colorScheme.tertiary,
       ),
       ClientRegistrationStatus.rejected => (
+        InlineAlertBannerKind.error,
         Icons.cancel_outlined,
         'Cadastro rejeitado',
         'A solicitacao foi rejeitada. Revise os dados e envie um novo '
             'cadastro.',
-        colorScheme.error,
       ),
       ClientRegistrationStatus.expired => (
+        InlineAlertBannerKind.error,
         Icons.timer_off_outlined,
         'Cadastro expirado',
         'O token consultado expirou. Envie um novo cadastro para continuar.',
-        colorScheme.error,
       ),
       ClientRegistrationStatus.unknown => (
+        InlineAlertBannerKind.neutral,
         Icons.help_outline_rounded,
         'Status desconhecido',
         'Nao foi possivel classificar o status retornado pela API.',
-        colorScheme.secondary,
       ),
     };
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.24)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Icon(icon, color: color),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(message),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+    return InlineAlertBanner(
+      kind: kind,
+      icon: icon,
+      title: title,
+      message: message,
     );
   }
 }

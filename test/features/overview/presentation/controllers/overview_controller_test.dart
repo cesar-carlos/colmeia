@@ -491,7 +491,7 @@ class _GatedProgressiveOverviewRepository implements OverviewRepository {
   Future<AppResult<Overview>> loadOverview({
     required String userId,
     OverviewLoadPolicy policy = OverviewLoadPolicy.defaultLoad,
-    OverviewFilter filter = const OverviewFilter(),
+    DashboardFilter filter = const DashboardFilter(),
     OverviewLoadLabels? rowLabels,
     AgentQueriesCancelScope? cancelScope,
   }) {
@@ -502,7 +502,7 @@ class _GatedProgressiveOverviewRepository implements OverviewRepository {
   Stream<AppResult<OverviewProgressiveSnapshot>> loadOverviewProgressively({
     required String userId,
     OverviewLoadPolicy policy = OverviewLoadPolicy.defaultLoad,
-    OverviewFilter filter = const OverviewFilter(),
+    DashboardFilter filter = const DashboardFilter(),
     OverviewLoadLabels? rowLabels,
     AgentQueriesCancelScope? cancelScope,
   }) async* {
@@ -539,7 +539,7 @@ class _PendingOverviewRepository implements OverviewRepository {
   Future<AppResult<Overview>> loadOverview({
     required String userId,
     OverviewLoadPolicy policy = OverviewLoadPolicy.defaultLoad,
-    OverviewFilter filter = const OverviewFilter(),
+    DashboardFilter filter = const DashboardFilter(),
     OverviewLoadLabels? rowLabels,
     AgentQueriesCancelScope? cancelScope,
   }) {
@@ -550,7 +550,7 @@ class _PendingOverviewRepository implements OverviewRepository {
   Stream<AppResult<OverviewProgressiveSnapshot>> loadOverviewProgressively({
     required String userId,
     OverviewLoadPolicy policy = OverviewLoadPolicy.defaultLoad,
-    OverviewFilter filter = const OverviewFilter(),
+    DashboardFilter filter = const DashboardFilter(),
     OverviewLoadLabels? rowLabels,
     AgentQueriesCancelScope? cancelScope,
   }) async* {
@@ -577,7 +577,7 @@ class _QueuedOverviewRepository implements OverviewRepository {
   Future<AppResult<Overview>> loadOverview({
     required String userId,
     OverviewLoadPolicy policy = OverviewLoadPolicy.defaultLoad,
-    OverviewFilter filter = const OverviewFilter(),
+    DashboardFilter filter = const DashboardFilter(),
     OverviewLoadLabels? rowLabels,
     AgentQueriesCancelScope? cancelScope,
   }) {
@@ -589,7 +589,7 @@ class _QueuedOverviewRepository implements OverviewRepository {
   Stream<AppResult<OverviewProgressiveSnapshot>> loadOverviewProgressively({
     required String userId,
     OverviewLoadPolicy policy = OverviewLoadPolicy.defaultLoad,
-    OverviewFilter filter = const OverviewFilter(),
+    DashboardFilter filter = const DashboardFilter(),
     OverviewLoadLabels? rowLabels,
     AgentQueriesCancelScope? cancelScope,
   }) async* {

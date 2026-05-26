@@ -1,12 +1,12 @@
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_row.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
+import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
 
-List<OverviewDailySalesTrendPoint> overviewDailySalesTrendPointsFromRows(
+List<DailySalesTrendPoint> dailySalesTrendPointsFromRows(
   List<ResumoTotalDiarioVendasRow> rows,
 ) {
   return rows
       .map(
-        (row) => OverviewDailySalesTrendPoint(
+        (row) => DailySalesTrendPoint(
           saleDate: DateTime(
             row.dataVenda.year,
             row.dataVenda.month,

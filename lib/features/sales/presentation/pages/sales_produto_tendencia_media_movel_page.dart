@@ -15,7 +15,6 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_summary_row.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
@@ -28,6 +27,7 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_tr
 import 'package:colmeia/features/sales/presentation/widgets/sales_single_agent_picker_control.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
@@ -74,7 +74,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
   late final LoadGrupoProdutoOptionsUseCase _loadGrupoOptions;
 
   String? _selectedAgentId;
-  List<OverviewAgentOption> _availableAgents = <OverviewAgentOption>[];
+  List<DashboardAgentOption> _availableAgents = <DashboardAgentOption>[];
   List<GrupoProdutoOption> _grupoOptions = const <GrupoProdutoOption>[];
   String? _optionsLoadedForAgentId;
 
@@ -201,7 +201,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
   String? get autoRefreshSelectedAgentId => _selectedAgentId;
 
   @override
-  List<OverviewAgentOption> get autoRefreshAvailableAgents => _availableAgents;
+  List<DashboardAgentOption> get autoRefreshAvailableAgents => _availableAgents;
 
   @override
   bool get autoRefreshPageLoading => _loading;
@@ -530,7 +530,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
     final selectedBranch = _availableAgents
-        .cast<OverviewAgentOption?>()
+        .cast<DashboardAgentOption?>()
         .firstWhere(
           (agent) => agent?.agentId == _selectedAgentId,
           orElse: () => null,

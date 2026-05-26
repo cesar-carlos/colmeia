@@ -2,8 +2,8 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_diario_vendas_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_row.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:result_dart/result_dart.dart';
@@ -53,7 +53,7 @@ void main() {
       );
     });
 
-    const anchor = OverviewYearMonth(year: 2026, month: 5);
+    const anchor = DashboardYearMonth(year: 2026, month: 5);
     final result = await useCase(
       userId: 'u',
       agentId: 'a',
@@ -91,14 +91,14 @@ void main() {
       );
     });
 
-    final range = OverviewDateRange.fromOrderedEndpoints(
+    final range = DashboardDateRange.fromOrderedEndpoints(
       DateTime(2026, 5, 2),
       DateTime(2026, 5, 8),
     );
     final result = await useCase(
       userId: 'u',
       agentId: 'a',
-      anchor: const OverviewYearMonth(year: 2026, month: 1),
+      anchor: const DashboardYearMonth(year: 2026, month: 1),
       dailySaleDateRange: range,
     );
 

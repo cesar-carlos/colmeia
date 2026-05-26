@@ -1,5 +1,5 @@
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/domain/sales_daily_totals_range_policy.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -9,7 +9,7 @@ void main() {
       () {
         expect(
           kSalesDailyTotalsMaxInclusiveDays,
-          kOverviewCustomReferenceRangeMaxInclusiveDays,
+          kDashboardCustomReferenceRangeMaxInclusiveDays,
         );
       },
     );

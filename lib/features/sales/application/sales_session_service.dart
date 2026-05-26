@@ -1,9 +1,9 @@
 import 'package:colmeia/core/refresh/auto_refresh_option_set.dart';
 import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_bar_chart_preferences.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 
 class SalesSessionService {
   SalesSessionService(this._preferences);
@@ -30,11 +30,11 @@ class SalesSessionService {
     return _preferences.persistCardFilters(cardId, filters);
   }
 
-  OverviewYearMonth? restoreSalesChartReferenceMonth() {
+  DashboardYearMonth? restoreSalesChartReferenceMonth() {
     return _preferences.restoreSalesChartReferenceMonth();
   }
 
-  Future<void> persistSalesChartReferenceMonth(OverviewYearMonth anchor) {
+  Future<void> persistSalesChartReferenceMonth(DashboardYearMonth anchor) {
     return _preferences.persistSalesChartReferenceMonth(anchor);
   }
 
@@ -42,13 +42,13 @@ class SalesSessionService {
     return _preferences.restoreSalesDailyTotalsUseCustomRange();
   }
 
-  OverviewDateRange? restoreSalesDailyTotalsDateRange() {
+  DashboardDateRange? restoreSalesDailyTotalsDateRange() {
     return _preferences.restoreSalesDailyTotalsDateRange();
   }
 
   Future<void> persistSalesDailyTotalsDateRange({
     required bool useCustomRange,
-    OverviewDateRange? range,
+    DashboardDateRange? range,
   }) {
     return _preferences.persistSalesDailyTotalsDateRange(
       useCustomRange: useCustomRange,

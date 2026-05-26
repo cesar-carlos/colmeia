@@ -12,7 +12,6 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_p
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_produto_rank_lucro_sort_by.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
@@ -27,6 +26,7 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/charts/app_horizontal_progress_chart.dart';
@@ -71,7 +71,7 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
   late final LoadProdutoVendidoProdutoRankLucroUseCase _loadRanking;
 
   String? _selectedAgentId;
-  List<OverviewAgentOption> _availableAgents = <OverviewAgentOption>[];
+  List<DashboardAgentOption> _availableAgents = <DashboardAgentOption>[];
   String? _cachedClientTokenUserId;
   String? _cachedClientTokenAgentId;
   String? _cachedClientToken;
@@ -189,7 +189,7 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
   String? get autoRefreshSelectedAgentId => _selectedAgentId;
 
   @override
-  List<OverviewAgentOption> get autoRefreshAvailableAgents => _availableAgents;
+  List<DashboardAgentOption> get autoRefreshAvailableAgents => _availableAgents;
 
   @override
   bool get autoRefreshPageLoading => _loading;
@@ -368,7 +368,7 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
         : NumberFormat.decimalPattern('pt_BR');
 
     final selectedBranch = _availableAgents
-        .cast<OverviewAgentOption?>()
+        .cast<DashboardAgentOption?>()
         .firstWhere(
           (agent) => agent?.agentId == _selectedAgentId,
           orElse: () => null,
@@ -534,7 +534,7 @@ class _SalesProdutoRankLucroFiltersSheet extends StatefulWidget {
   });
 
   final AppLocalizations l10n;
-  final List<OverviewAgentOption> availableAgents;
+  final List<DashboardAgentOption> availableAgents;
   final String? initialSelectedAgentId;
   final DateTimeRange? initialPeriod;
   final String? initialSortKey;

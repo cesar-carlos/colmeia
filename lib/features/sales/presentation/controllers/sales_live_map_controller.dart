@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_persistence.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
@@ -15,6 +14,7 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/mappers/sales_live_map_chart_mapper.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/foundation.dart';
 
 enum SalesLiveMapReloadOutcomeKind { completed, cancelled, superseded }
@@ -89,7 +89,7 @@ class SalesLiveMapController extends ChangeNotifier {
     _setState(
       _state.copyWith(
         filter: restoredFilter,
-        availableAgents: const <OverviewAgentOption>[],
+        availableAgents: const <DashboardAgentOption>[],
         result: sessionExpiredResult,
         visualResult: sessionExpiredResult,
         mapPayloadDigest: _mapPayloadDigestFor(sessionExpiredResult),
@@ -219,7 +219,7 @@ class SalesLiveMapController extends ChangeNotifier {
   }
 
   Set<String>? _normalizeSelectedAgentIds({
-    required List<OverviewAgentOption> agents,
+    required List<DashboardAgentOption> agents,
     required Set<String>? selectedAgentIds,
   }) {
     final tokenBacked = agents

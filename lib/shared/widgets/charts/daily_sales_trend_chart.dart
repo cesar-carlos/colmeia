@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
-import 'package:colmeia/features/overview/presentation/localization/daily_sales_trend_chart_labels.dart';
-import 'package:colmeia/features/overview/presentation/localization/overview_weekday_sales_trend_l10n.dart';
-import 'package:colmeia/features/overview/presentation/widgets/overview_bar_chart_style.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/charts/daily_sales_trend_chart_labels.dart';
+import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
+import 'package:colmeia/shared/charts/daily_sales_weekday_labels.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
+import 'package:colmeia/shared/widgets/charts/app_dashboard_comparison_bar_chart_preset.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -19,8 +19,8 @@ enum _OverviewDailyMetric {
 }
 
 /// Daily sales totals (bar chart) for the overview period or Sales branch/month scope.
-class OverviewDailySalesTrendChart extends StatefulWidget {
-  const OverviewDailySalesTrendChart({
+class DailySalesTrendChart extends StatefulWidget {
+  const DailySalesTrendChart({
     required this.l10n,
     required this.points,
     required this.loadFailed,
@@ -33,7 +33,7 @@ class OverviewDailySalesTrendChart extends StatefulWidget {
   });
 
   final AppLocalizations l10n;
-  final List<OverviewDailySalesTrendPoint> points;
+  final List<DailySalesTrendPoint> points;
   final bool loadFailed;
   final bool isLoading;
   final String? loadFailureMessage;
@@ -49,15 +49,15 @@ class OverviewDailySalesTrendChart extends StatefulWidget {
   final String? salesScopeHintOverride;
 
   @override
-  State<OverviewDailySalesTrendChart> createState() =>
+  State<DailySalesTrendChart> createState() =>
       _OverviewDailySalesTrendChartState();
 }
 
 class _OverviewDailySalesTrendChartState
-    extends State<OverviewDailySalesTrendChart> {
+    extends State<DailySalesTrendChart> {
   _OverviewDailyMetric _metric = _OverviewDailyMetric.salesCount;
 
-  List<OverviewDailySalesTrendPoint> _chartPointsNonZero() {
+  List<DailySalesTrendPoint> _chartPointsNonZero() {
     if (_metric == _OverviewDailyMetric.salesCount) {
       return [
         for (final p in widget.points)
@@ -70,16 +70,16 @@ class _OverviewDailySalesTrendChartState
     ];
   }
 
-  String _dayAxisLabel(OverviewDailySalesTrendPoint p) {
+  String _dayAxisLabel(DailySalesTrendPoint p) {
     final l10n = widget.l10n;
     final dateLine = AppBrFormatters.shortDate(p.saleDate);
-    final dowLine = overviewShortWeekdayFromDateTime(l10n, p.saleDate);
+    final dowLine = dailySalesShortWeekdayFromDateTime(l10n, p.saleDate);
     return '$dateLine\n$dowLine';
   }
 
-  String _tooltipDateLine(OverviewDailySalesTrendPoint p) {
+  String _tooltipDateLine(DailySalesTrendPoint p) {
     final l10n = widget.l10n;
-    return '${AppBrFormatters.shortDate(p.saleDate)} · ${overviewShortWeekdayFromDateTime(l10n, p.saleDate)}';
+    return '${AppBrFormatters.shortDate(p.saleDate)} · ${dailySalesShortWeekdayFromDateTime(l10n, p.saleDate)}';
   }
 
   @override
@@ -105,7 +105,7 @@ class _OverviewDailySalesTrendChartState
     final resolvedScopeHint = widget.salesScopeHintOverride ?? labels.scopeHint;
 
     void openFullscreen() {
-      final chartPointsSnapshot = List<OverviewDailySalesTrendPoint>.of(
+      final chartPointsSnapshot = List<DailySalesTrendPoint>.of(
         chartPoints,
         growable: false,
       );
@@ -168,7 +168,7 @@ class _OverviewDailySalesTrendChartState
                             height: availableChartHeight,
                             child:
                                 AppComparisonBarChart<
-                                  OverviewDailySalesTrendPoint
+                                  DailySalesTrendPoint
                                 >(
                                   items: chartPointsSnapshot,
                                   isLoading: isLoadingSnapshot,
@@ -197,9 +197,9 @@ class _OverviewDailySalesTrendChartState
                                       fullscreenIsSalesCount
                                       ? compactSalesCountFormat.format(value)
                                       : AppBrFormatters.compactCurrency(value),
-                                  style: overviewHomeComparisonBarChartStyle(
+                                  style: appDashboardComparisonBarChartStyle(
                                     tokens: fullscreenTokens,
-                                    kind: OverviewHomeBarChartKind.daily,
+                                    kind: AppDashboardComparisonBarChartKind.daily,
                                     l10n: l10n,
                                     weekdayUsesCurrencyAxis:
                                         !fullscreenIsSalesCount,
@@ -237,7 +237,7 @@ class _OverviewDailySalesTrendChartState
     return Semantics(
       label: labels.semanticsForMetric(isSalesCount: isSalesCount),
       hint: resolvedScopeHint,
-      child: AppComparisonBarChart<OverviewDailySalesTrendPoint>(
+      child: AppComparisonBarChart<DailySalesTrendPoint>(
         title: labels.titleForMetric(isSalesCount: isSalesCount),
         subtitle: resolvedSubtitle,
         onOpenFullscreen: openFullscreen,
@@ -271,9 +271,9 @@ class _OverviewDailySalesTrendChartState
         dataLabelBuilder: (_, value) => isSalesCount
             ? compactSalesCountFormat.format(value)
             : AppBrFormatters.compactCurrency(value),
-        style: overviewHomeComparisonBarChartStyle(
+        style: appDashboardComparisonBarChartStyle(
           tokens: tokens,
-          kind: OverviewHomeBarChartKind.daily,
+          kind: AppDashboardComparisonBarChartKind.daily,
           l10n: l10n,
           weekdayUsesCurrencyAxis: !isSalesCount,
           weekdayRevenueDataLabelBackground: isSalesCount

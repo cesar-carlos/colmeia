@@ -29,6 +29,7 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/utils/app_branch_display_model.dart';
 import 'package:colmeia/shared/utils/app_branch_display_name.dart';
+import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_scaffold.dart';
@@ -1244,10 +1245,10 @@ class _SalesLiveMapEmptyNotice extends StatelessWidget {
       actions: selectedWithoutRows
           ? Align(
               alignment: Alignment.centerLeft,
-              child: FilledButton.icon(
-                onPressed: onClearSelectedBranches,
+              child: AppSecondaryButton(
+                label: l10n.salesLiveMapClearBranchSelectionAction,
                 icon: const Icon(Icons.filter_alt_off_rounded),
-                label: Text(l10n.salesLiveMapClearBranchSelectionAction),
+                onPressed: onClearSelectedBranches,
               ),
             )
           : null,

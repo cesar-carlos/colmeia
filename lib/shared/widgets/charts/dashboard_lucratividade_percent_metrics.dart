@@ -97,8 +97,8 @@ String _segmentTooltip(AppLocalizations l10n, LucratividadePercentMetric m) {
 }
 
 /// Sub-selector for [LucratividadePercentMetric] plus explanation text.
-class OverviewLucratividadePercentMetricSection extends StatelessWidget {
-  const OverviewLucratividadePercentMetricSection({
+class DashboardLucratividadePercentMetricSection extends StatelessWidget {
+  const DashboardLucratividadePercentMetricSection({
     required this.l10n,
     required this.tokens,
     required this.metric,

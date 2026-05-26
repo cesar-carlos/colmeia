@@ -1,7 +1,7 @@
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/foundation.dart';
 
 const int kSalesLiveMapMaxCustomRangeInclusiveDays = 31;
@@ -51,7 +51,7 @@ class SalesLiveMapFilter {
   final Set<String>? selectedAgentIds;
   final Set<SalesLiveMapBranchRef>? selectedBranchIds;
   final SalesLiveMapPeriodMode periodMode;
-  final OverviewDateRange? customDateRange;
+  final DashboardDateRange? customDateRange;
   final SalesLiveMapMapDetail detailLevel;
   final SalesLiveMapMarkerVisual markerVisual;
   final SalesLiveMapMetric metric;
@@ -81,31 +81,31 @@ class SalesLiveMapFilter {
       periodMode: periodMode ?? this.periodMode,
       customDateRange: customDateRange == _sentinel
           ? this.customDateRange
-          : customDateRange as OverviewDateRange?,
+          : customDateRange as DashboardDateRange?,
       detailLevel: detailLevel ?? this.detailLevel,
       markerVisual: markerVisual ?? this.markerVisual,
       metric: metric ?? this.metric,
     );
   }
 
-  OverviewDateRange resolveDateRange({DateTime? now}) {
+  DashboardDateRange resolveDateRange({DateTime? now}) {
     final current = _day(now ?? DateTime.now());
     return switch (periodMode) {
-      SalesLiveMapPeriodMode.today => OverviewDateRange(
+      SalesLiveMapPeriodMode.today => DashboardDateRange(
         startInclusive: current,
         endInclusive: current,
       ),
-      SalesLiveMapPeriodMode.lastSevenDays => OverviewDateRange(
+      SalesLiveMapPeriodMode.lastSevenDays => DashboardDateRange(
         startInclusive: current.subtract(const Duration(days: 6)),
         endInclusive: current,
       ),
-      SalesLiveMapPeriodMode.currentMonth => OverviewDateRange(
+      SalesLiveMapPeriodMode.currentMonth => DashboardDateRange(
         startInclusive: DateTime(current.year, current.month),
         endInclusive: current,
       ),
       SalesLiveMapPeriodMode.customRange =>
         (customDateRange ??
-                OverviewDateRange(
+                DashboardDateRange(
                   startInclusive: current,
                   endInclusive: current,
                 ))

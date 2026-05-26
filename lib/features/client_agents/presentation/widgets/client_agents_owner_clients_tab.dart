@@ -8,6 +8,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
 import 'package:flutter/material.dart';
 
 class ClientAgentsOwnerClientsTab extends StatelessWidget {
@@ -65,31 +66,25 @@ class ClientAgentsOwnerClientsTab extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              Text(
-                l10n.clientAgentsOwnerClientsAgentSelectorLabel,
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              SizedBox(height: tokens.gapSm),
-              DropdownButtonFormField<String>(
-                initialValue: selectedAgentId,
-                decoration: InputDecoration(
-                  border: const OutlineInputBorder(),
-                  hintText: l10n.clientAgentsOwnerClientsAgentSelectorHint,
-                ),
-                items: managedAgents
+              AppDropdownField<String>(
+                label: l10n.clientAgentsOwnerClientsAgentSelectorLabel,
+                hintText: l10n.clientAgentsOwnerClientsAgentSelectorHint,
+                value: selectedAgentId,
+                enabled: !isMutating,
+                options: managedAgents
                     .map(
-                      (agent) => DropdownMenuItem<String>(
+                      (agent) => AppDropdownOption<String>(
                         value: agent.agentId,
-                        child: Text(agent.name),
+                        label: agent.name,
                       ),
                     )
                     .toList(growable: false),
-                onChanged: isMutating ? null : onSelectAgent,
+                onChanged: onSelectAgent,
               ),
               if (selectedAgent != null) ...<Widget>[
                 SizedBox(height: tokens.gapSm),
                 Text(
-                  selectedAgent.tradeName?.trim().isNotEmpty == true
+                  selectedAgent.tradeName?.trim().isNotEmpty ?? false
                       ? selectedAgent.tradeName!
                       : l10n.clientAgentsNoTradeName,
                   style: Theme.of(context).textTheme.bodySmall,

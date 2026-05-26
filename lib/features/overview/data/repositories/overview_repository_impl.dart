@@ -20,7 +20,6 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diar
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/overview/data/datasources/overview_local_datasource.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_agent_resumo_mapper.dart';
-import 'package:colmeia/features/overview/data/mappers/overview_daily_sales_trend_mapper.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_monthly_parcel_mapper.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_user_ranking_mapper.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_weekday_sales_trend_mapper.dart';
@@ -31,7 +30,6 @@ import 'package:colmeia/features/overview/data/overview_user_rankings_override_p
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
@@ -45,6 +43,8 @@ import 'package:colmeia/features/overview/domain/overview_agent_query_failure_ma
 import 'package:colmeia/features/overview/domain/overview_failure_ui_key.dart';
 import 'package:colmeia/features/overview/domain/overview_last_twelve_months_venda_range.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
+import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
+import 'package:colmeia/shared/data/charts/daily_sales_trend_point_mappers.dart';
 import 'package:result_dart/result_dart.dart';
 
 /// When the overview falls back to cached KPIs because no agent could run the
@@ -124,7 +124,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
   Future<AppResult<Overview>> loadOverview({
     required String userId,
     OverviewLoadPolicy policy = OverviewLoadPolicy.defaultLoad,
-    OverviewFilter filter = const OverviewFilter(),
+    DashboardFilter filter = const DashboardFilter(),
     OverviewLoadLabels? rowLabels,
     AgentQueriesCancelScope? cancelScope,
   }) async {
@@ -156,7 +156,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
   Stream<AppResult<OverviewProgressiveSnapshot>> loadOverviewProgressively({
     required String userId,
     OverviewLoadPolicy policy = OverviewLoadPolicy.defaultLoad,
-    OverviewFilter filter = const OverviewFilter(),
+    DashboardFilter filter = const DashboardFilter(),
     OverviewLoadLabels? rowLabels,
     AgentQueriesCancelScope? cancelScope,
   }) async* {
@@ -173,7 +173,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
   _loadOverviewProgressivelyBatch({
     required String userId,
     required OverviewLoadPolicy policy,
-    required OverviewFilter filter,
+    required DashboardFilter filter,
     OverviewLoadLabels? rowLabels,
     AgentQueriesCancelScope? cancelScope,
   }) async* {
@@ -467,7 +467,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     return overviewWeekdaySalesTrendPointsFromRows(report.chartRowsWeek);
   }
 
-  List<OverviewDailySalesTrendPoint> _batchDailyPoints(
+  List<DailySalesTrendPoint> _batchDailyPoints(
     List<OverviewBatchTargetResult> results,
     ResumoTotalDiarioVendasFilter filter,
   ) {
@@ -476,7 +476,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
       (result) => result.dailyRows,
       (result) => result.dailyFailure,
     );
-    return overviewDailySalesTrendPointsFromRows(
+    return dailySalesTrendPointsFromRows(
       report.chartRowsFilledPeriod(filter),
     );
   }
@@ -566,7 +566,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
   ) {
     return AgentQueryExecutionReport<Row>(
       queryKey: AgentQueryKey.resumoParcelaFormaPagamento,
-      strategy: _resolveExecutionStrategy(const OverviewFilter()),
+      strategy: _resolveExecutionStrategy(const DashboardFilter()),
       consideredApprovedAgentCount: results.length,
       plannedTargets: results.map((result) => result.target).toList(),
       missingClientTokenTargets: const <AgentQueryTarget>[],
@@ -674,7 +674,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
   /// for consolidated KPIs). Race would keep only the first successful agent.
   /// Single-source when exactly one agent is selected.
   AgentQueryExecutionStrategy _resolveExecutionStrategy(
-    OverviewFilter filter,
+    DashboardFilter filter,
   ) {
     final selectedAgentIds = filter.selectedAgentIds;
     if (selectedAgentIds != null && selectedAgentIds.length == 1) {
@@ -1055,7 +1055,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
             OverviewFailureUiKey.noApprovedAgents;
   }
 
-  _OverviewPeriod _buildPeriod(OverviewFilter filter) {
+  _OverviewPeriod _buildPeriod(DashboardFilter filter) {
     final rr = filter.referenceRange;
     if (rr != null) {
       final start = DateTime(
@@ -1113,8 +1113,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
         const <OverviewWeekdaySalesTrendPoint>[],
     bool weekdaySalesTrendLoadFailed = false,
     String? weekdaySalesTrendLoadFailureMessage,
-    List<OverviewDailySalesTrendPoint> dailySalesTrend =
-        const <OverviewDailySalesTrendPoint>[],
+    List<DailySalesTrendPoint> dailySalesTrend =
+        const <DailySalesTrendPoint>[],
     bool dailySalesTrendLoadFailed = false,
     String? dailySalesTrendLoadFailureMessage,
     List<OverviewWeekdayUserSalesTrendPoint> weekdayUserSalesTrend =

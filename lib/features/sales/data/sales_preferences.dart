@@ -4,13 +4,13 @@ import 'package:colmeia/core/preferences/persisted_page_session_store.dart';
 import 'package:colmeia/core/refresh/auto_refresh_option.dart';
 import 'package:colmeia/core/refresh/auto_refresh_option_set.dart';
 import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref_codec.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dart';
 import 'package:colmeia/features/sales/domain/sales_daily_totals_range_policy.dart';
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_bar_chart_preferences.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SalesPreferences {
@@ -80,16 +80,16 @@ class SalesPreferences {
   static const int _anchorYearMax = 2100;
 
   /// Reference month shared by Sales monthly P&L and daily totals (same storage).
-  OverviewYearMonth? restoreSalesChartReferenceMonth() =>
+  DashboardYearMonth? restoreSalesChartReferenceMonth() =>
       restoreMonthlyPnlAnchor();
 
   /// Persists [anchor] for monthly P&L and daily totals charts.
-  Future<void> persistSalesChartReferenceMonth(OverviewYearMonth anchor) =>
+  Future<void> persistSalesChartReferenceMonth(DashboardYearMonth anchor) =>
       persistMonthlyPnlAnchor(anchor);
 
-  /// Restores [OverviewYearMonth] anchor for the monthly P&L chart,
+  /// Restores [DashboardYearMonth] anchor for the monthly P&L chart,
   /// or null when nothing valid is stored.
-  OverviewYearMonth? restoreMonthlyPnlAnchor() {
+  DashboardYearMonth? restoreMonthlyPnlAnchor() {
     final current = restoreCardFilters(monthlyPnlCardId);
     final raw = current.isNotEmpty
         ? current
@@ -102,7 +102,7 @@ class SalesPreferences {
     if (m < 1 || m > 12 || y < _anchorYearMin || y > _anchorYearMax) {
       return null;
     }
-    return OverviewYearMonth(year: y, month: m);
+    return DashboardYearMonth(year: y, month: m);
   }
 
   static const String _dailyTotalsUseCustomRangeKey =
@@ -111,7 +111,7 @@ class SalesPreferences {
       'daily_totals_range_start_ms';
   static const String _dailyTotalsRangeEndMsKey = 'daily_totals_range_end_ms';
 
-  Future<void> persistMonthlyPnlAnchor(OverviewYearMonth anchor) async {
+  Future<void> persistMonthlyPnlAnchor(DashboardYearMonth anchor) async {
     final merged = Map<String, Object?>.from(
       restoreCardFilters(monthlyPnlCardId),
     );
@@ -128,7 +128,7 @@ class SalesPreferences {
     return v == true;
   }
 
-  OverviewDateRange? restoreSalesDailyTotalsDateRange() {
+  DashboardDateRange? restoreSalesDailyTotalsDateRange() {
     final raw = restoreCardFilters(monthlyPnlCardId);
     if (raw[_dailyTotalsUseCustomRangeKey] != true) {
       return null;
@@ -140,7 +140,7 @@ class SalesPreferences {
     }
     final start = DateTime.fromMillisecondsSinceEpoch(startMs);
     final end = DateTime.fromMillisecondsSinceEpoch(endMs);
-    final range = OverviewDateRange.fromOrderedEndpoints(start, end);
+    final range = DashboardDateRange.fromOrderedEndpoints(start, end);
     return SalesDailyTotalsRangePolicy.normalizedForSalesDailyTotalsPicker(
       range: range,
     );
@@ -148,12 +148,12 @@ class SalesPreferences {
 
   Future<void> persistSalesDailyTotalsDateRange({
     required bool useCustomRange,
-    OverviewDateRange? range,
+    DashboardDateRange? range,
   }) async {
     final merged = Map<String, Object?>.from(
       restoreCardFilters(monthlyPnlCardId),
     );
-    OverviewDateRange? normalizedCustomForLog;
+    DashboardDateRange? normalizedCustomForLog;
     if (!useCustomRange || range == null) {
       merged
         ..remove(_dailyTotalsUseCustomRangeKey)
@@ -506,14 +506,14 @@ class SalesPreferences {
     return refs.isEmpty ? null : Set<SalesLiveMapBranchRef>.unmodifiable(refs);
   }
 
-  static OverviewDateRange? _salesLiveMapCustomRangeFromRaw({
+  static DashboardDateRange? _salesLiveMapCustomRangeFromRaw({
     required Object? startMs,
     required Object? endMs,
   }) {
     if (startMs is! int || endMs is! int) {
       return null;
     }
-    final range = OverviewDateRange.fromOrderedEndpoints(
+    final range = DashboardDateRange.fromOrderedEndpoints(
       DateTime.fromMillisecondsSinceEpoch(startMs),
       DateTime.fromMillisecondsSinceEpoch(endMs),
     );

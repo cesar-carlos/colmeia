@@ -10,12 +10,12 @@ import 'package:colmeia/features/overview/application/usecases/load_overview_onl
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_policy.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
 import 'package:colmeia/features/overview/presentation/overview_available_agents_assembler.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_agent_names_list_sheet.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 
@@ -75,17 +75,17 @@ class OverviewController extends ChangeNotifier {
   Set<OverviewProgressiveSection> _completedOverviewSections =
       const <OverviewProgressiveSection>{};
 
-  OverviewFilter _activeFilter = OverviewFilter.initial();
+  DashboardFilter _activeFilter = DashboardFilter.initial();
 
   /// The filter currently applied to the overview.
-  OverviewFilter get activeFilter => _activeFilter;
+  DashboardFilter get activeFilter => _activeFilter;
 
   /// Agent options derived from the last successful overview load.
   ///
   /// Populated after the first successful load so the filter bar can show
   /// agent names. Empty until data arrives.
-  List<OverviewAgentOption> _availableAgents = const <OverviewAgentOption>[];
-  List<OverviewAgentOption> get availableAgents => _availableAgents;
+  List<DashboardAgentOption> _availableAgents = const <DashboardAgentOption>[];
+  List<DashboardAgentOption> get availableAgents => _availableAgents;
 
   Overview? _normalizedNamesCacheRef;
   List<String> _missingTokenNamesNormalized = const <String>[];
@@ -183,7 +183,7 @@ class OverviewController extends ChangeNotifier {
   /// Applies [filter] and immediately reloads the overview.
   Future<void> applyFilter({
     required String userId,
-    required OverviewFilter filter,
+    required DashboardFilter filter,
     OverviewLoadingMode loadingMode = OverviewLoadingMode.progressive,
     OverviewLoadLabels? rowLabels,
     OverviewFailureMessageBuilder? failureMessageBuilder,

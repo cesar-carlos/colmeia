@@ -3,12 +3,12 @@ import 'dart:async';
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
-import 'package:colmeia/features/overview/presentation/widgets/overview_lucratividade_percent_metrics.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart'
     show formatComparisonBarXAxisLabelWrapped;
+import 'package:colmeia/shared/widgets/charts/dashboard_lucratividade_percent_metrics.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -354,7 +354,7 @@ class _OverviewLucratividadeChartState
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final narrow = constraints.maxWidth < 380;
-                return OverviewLucratividadePercentMetricSection(
+                return DashboardLucratividadePercentMetricSection(
                   l10n: l10n,
                   tokens: tokens,
                   metric: _percentMetric,
@@ -491,7 +491,7 @@ class _OverviewLucratividadeChartState
                           child: LayoutBuilder(
                             builder: (context, constraints) {
                               final narrow = constraints.maxWidth < 380;
-                              return OverviewLucratividadePercentMetricSection(
+                              return DashboardLucratividadePercentMetricSection(
                                 l10n: l10n,
                                 tokens: fullscreenTokens,
                                 metric: fullscreenPercentMetric,

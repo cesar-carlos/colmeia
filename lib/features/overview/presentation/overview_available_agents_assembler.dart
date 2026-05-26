@@ -1,12 +1,12 @@
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 
 /// Builds the filter dropdown options from overview rows and failure metadata.
 abstract final class OverviewAvailableAgentsAssembler {
-  static List<OverviewAgentOption> assemble({
+  static List<DashboardAgentOption> assemble({
     required Overview overview,
-    required List<OverviewAgentOption> previousOptions,
+    required List<DashboardAgentOption> previousOptions,
     required Set<String>? onlineAgentIds,
   }) {
     final seen = <String, String>{};
@@ -41,14 +41,14 @@ abstract final class OverviewAvailableAgentsAssembler {
     };
 
     if (merged.isEmpty) {
-      return const <OverviewAgentOption>[];
+      return const <DashboardAgentOption>[];
     }
 
     final missingTokenIds = overview.agentIdsMissingClientToken.toSet();
 
     return merged.entries
         .map(
-          (e) => OverviewAgentOption(
+          (e) => DashboardAgentOption(
             agentId: e.key,
             name: e.value,
             connectionStatus: _connectionStatusFor(onlineAgentIds, e.key),

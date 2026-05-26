@@ -17,7 +17,10 @@ import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_f
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
-import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
+import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_load_cancel_token.dart';
+import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_load_failure_reason.dart';
+import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_load_result.dart';
+import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_location_diagnostics.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_point_factory.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_refresh_metrics.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
@@ -30,196 +33,13 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart
 import 'package:flutter/foundation.dart';
 import 'package:result_dart/result_dart.dart';
 
-class SalesLiveMapLoadResult {
-  const SalesLiveMapLoadResult({
-    required this.points,
-    required this.branchOptions,
-    required this.totalRevenue,
-    required this.totalSalesCount,
-    required this.totalBranchCount,
-    required this.mappedBranchCount,
-    required this.mappedMunicipalityCount,
-    required this.queriedAgentCount,
-    required this.plannedAgentCount,
-    required this.failedAgentCount,
-    required this.missingClientTokenAgentCount,
-    required this.skippedOfflineAgentCount,
-    required this.rowCapReachedAgentCount,
-    required this.refreshedAt,
-    this.salesAgentCount = 0,
-    this.catalogBranchCount = 0,
-    this.salesBranchCount = 0,
-    this.zeroedBranchCount = 0,
-    this.noSalesBranchCount = 0,
-    this.salesUnavailableBranchCount = 0,
-    this.salesDataPending = false,
-    this.salesPendingBranchCount = 0,
-    this.failedCatalogAgentCount = 0,
-    this.failedSalesAgentCount = 0,
-    this.noSalesAgentOptions = const <SalesLiveMapAgentOption>[],
-    this.unmappedBranchOptions = const <SalesLiveMapBranchOption>[],
-    this.locationDiagnostics = const SalesLiveMapLocationDiagnostics(),
-    this.loadFailed = false,
-    this.loadFailureReason,
-    this.loadFailureMessage,
-    this.cancelled = false,
-    this.partialGeoReuseCount = 0,
-  });
-
-  final List<SalesLiveMapPoint> points;
-  final List<SalesLiveMapBranchOption> branchOptions;
-  final List<SalesLiveMapBranchOption> unmappedBranchOptions;
-  final double totalRevenue;
-  final int totalSalesCount;
-  final int totalBranchCount;
-  final int mappedBranchCount;
-  final int mappedMunicipalityCount;
-  final int queriedAgentCount;
-  final int plannedAgentCount;
-  final int failedAgentCount;
-  final int missingClientTokenAgentCount;
-  final int skippedOfflineAgentCount;
-  final int rowCapReachedAgentCount;
-  final int salesAgentCount;
-  final int catalogBranchCount;
-  final int salesBranchCount;
-  final int zeroedBranchCount;
-  final int noSalesBranchCount;
-  final int salesUnavailableBranchCount;
-  final bool salesDataPending;
-  final int salesPendingBranchCount;
-  final int failedCatalogAgentCount;
-  final int failedSalesAgentCount;
-  final List<SalesLiveMapAgentOption> noSalesAgentOptions;
-  final SalesLiveMapLocationDiagnostics locationDiagnostics;
-  final bool loadFailed;
-  final SalesLiveMapLoadFailureReason? loadFailureReason;
-  final String? loadFailureMessage;
-  final DateTime? refreshedAt;
-  final bool cancelled;
-  final int partialGeoReuseCount;
-
-  bool get hasPartialIssue =>
-      failedAgentCount > 0 ||
-      missingClientTokenAgentCount > 0 ||
-      skippedOfflineAgentCount > 0 ||
-      rowCapReachedAgentCount > 0 ||
-      failedCatalogAgentCount > 0 ||
-      failedSalesAgentCount > 0 ||
-      noSalesAgentOptions.isNotEmpty ||
-      unmappedBranchOptions.isNotEmpty ||
-      mappedBranchCount < totalBranchCount;
-
-  /// Which [hasPartialIssue] predicates are true (stable keys for logs / E2E).
-  Map<String, bool> get partialIssueFlagBreakdown => <String, bool>{
-    'failedAgentCount': failedAgentCount > 0,
-    'missingClientTokenAgentCount': missingClientTokenAgentCount > 0,
-    'skippedOfflineAgentCount': skippedOfflineAgentCount > 0,
-    'rowCapReachedAgentCount': rowCapReachedAgentCount > 0,
-    'failedCatalogAgentCount': failedCatalogAgentCount > 0,
-    'failedSalesAgentCount': failedSalesAgentCount > 0,
-    'noSalesAgentOptions': noSalesAgentOptions.isNotEmpty,
-    'unmappedBranchOptions': unmappedBranchOptions.isNotEmpty,
-    'mappedBranchCountBelowTotal': mappedBranchCount < totalBranchCount,
-  };
-
-  List<String> get partialIssueActiveKeys => partialIssueFlagBreakdown.entries
-      .where((e) => e.value)
-      .map((e) => e.key)
-      .toList(growable: false);
-}
-
-enum SalesLiveMapLoadFailureReason { missingClientTokenSetup }
-
-class SalesLiveMapLoadCancelToken {
-  bool _isCancelled = false;
-
-  final AgentQueriesCancelScope sqlCancelScope = AgentQueriesCancelScope();
-
-  bool get isCancelled => _isCancelled;
-
-  void cancel() {
-    _isCancelled = true;
-    sqlCancelScope.cancelAll();
-  }
-}
-
-class SalesLiveMapLocationDiagnostics {
-  const SalesLiveMapLocationDiagnostics({
-    this.resolvedByProvidedGeoPointCount = 0,
-    this.resolvedByIbgeMunicipalityCodeCount = 0,
-    this.resolvedByCepCount = 0,
-    this.resolvedByCityUfCount = 0,
-    this.resolvedByCapitalUfCount = 0,
-    this.resolvedByStateUfCount = 0,
-    this.unknownResolutionCount = 0,
-    this.unresolvedBranchCount = 0,
-  });
-
-  factory SalesLiveMapLocationDiagnostics.fromPoints({
-    required Iterable<SalesLiveMapPoint> points,
-    required int totalBranchCount,
-  }) {
-    var resolvedByProvidedGeoPointCount = 0;
-    var resolvedByIbgeMunicipalityCodeCount = 0;
-    var resolvedByCepCount = 0;
-    var resolvedByCityUfCount = 0;
-    var resolvedByCapitalUfCount = 0;
-    var resolvedByStateUfCount = 0;
-    var unknownResolutionCount = 0;
-    var resolvedPointCount = 0;
-
-    for (final point in points) {
-      resolvedPointCount += 1;
-      switch (point.locationResolution) {
-        case SalesLiveMapLocationResolution.providedGeoPoint:
-          resolvedByProvidedGeoPointCount += 1;
-        case SalesLiveMapLocationResolution.ibgeMunicipalityCode:
-          resolvedByIbgeMunicipalityCodeCount += 1;
-        case SalesLiveMapLocationResolution.cep:
-          resolvedByCepCount += 1;
-        case SalesLiveMapLocationResolution.cityUf:
-          resolvedByCityUfCount += 1;
-        case SalesLiveMapLocationResolution.capitalUf:
-          resolvedByCapitalUfCount += 1;
-        case SalesLiveMapLocationResolution.stateUf:
-          resolvedByStateUfCount += 1;
-        case null:
-          unknownResolutionCount += 1;
-      }
-    }
-
-    return SalesLiveMapLocationDiagnostics(
-      resolvedByProvidedGeoPointCount: resolvedByProvidedGeoPointCount,
-      resolvedByIbgeMunicipalityCodeCount: resolvedByIbgeMunicipalityCodeCount,
-      resolvedByCepCount: resolvedByCepCount,
-      resolvedByCityUfCount: resolvedByCityUfCount,
-      resolvedByCapitalUfCount: resolvedByCapitalUfCount,
-      resolvedByStateUfCount: resolvedByStateUfCount,
-      unknownResolutionCount: unknownResolutionCount,
-      unresolvedBranchCount: totalBranchCount - resolvedPointCount,
-    );
-  }
-
-  final int resolvedByProvidedGeoPointCount;
-  final int resolvedByIbgeMunicipalityCodeCount;
-  final int resolvedByCepCount;
-  final int resolvedByCityUfCount;
-  final int resolvedByCapitalUfCount;
-  final int resolvedByStateUfCount;
-  final int unknownResolutionCount;
-  final int unresolvedBranchCount;
-
-  bool get hasAnySignal =>
-      resolvedByProvidedGeoPointCount > 0 ||
-      resolvedByIbgeMunicipalityCodeCount > 0 ||
-      resolvedByCepCount > 0 ||
-      resolvedByCityUfCount > 0 ||
-      resolvedByCapitalUfCount > 0 ||
-      resolvedByStateUfCount > 0 ||
-      unknownResolutionCount > 0 ||
-      unresolvedBranchCount > 0;
-}
+// Re-export the public types the use case API surface depends on so legacy
+// call sites that import only this file keep compiling after the types
+// moved to dedicated files under `load_sales_live_map/`.
+export 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_load_cancel_token.dart';
+export 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_load_failure_reason.dart';
+export 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_load_result.dart';
+export 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_location_diagnostics.dart';
 
 class LoadSalesLiveMapUseCase {
   LoadSalesLiveMapUseCase(

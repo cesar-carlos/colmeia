@@ -1,5 +1,5 @@
-import 'package:colmeia/features/overview/presentation/localization/daily_sales_trend_chart_labels.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/charts/daily_sales_trend_chart_labels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

@@ -1,9 +1,9 @@
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_filters_sheet_scaffold.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/maps/app_location_lookup_normalizer.dart';
 import 'package:colmeia/shared/utils/app_branch_display_model.dart';
 import 'package:colmeia/shared/utils/app_branch_display_name.dart';
@@ -25,7 +25,7 @@ class SalesLiveMapFiltersSheet extends StatefulWidget {
   });
 
   final AppLocalizations l10n;
-  final List<OverviewAgentOption> availableAgents;
+  final List<DashboardAgentOption> availableAgents;
   final List<SalesLiveMapBranchOption> availableBranches;
   final SalesLiveMapFilter initialFilter;
   final ValueChanged<SalesLiveMapFilter> onApply;
@@ -97,7 +97,7 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
     if (range == null) {
       return false;
     }
-    final normalized = OverviewDateRange.fromOrderedEndpoints(
+    final normalized = DashboardDateRange.fromOrderedEndpoints(
       range.start,
       range.end,
     );
@@ -110,14 +110,14 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
       return;
     }
 
-    OverviewDateRange? customDateRange;
+    DashboardDateRange? customDateRange;
     if (_periodMode == SalesLiveMapPeriodMode.customRange) {
       final picked = _customRange;
       if (picked == null) {
         return;
       }
       customDateRange =
-          OverviewDateRange.fromOrderedEndpoints(
+          DashboardDateRange.fromOrderedEndpoints(
             picked.start,
             picked.end,
           ).clampedToMaxInclusiveCalendarDays(
@@ -402,7 +402,7 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
     );
   }
 
-  static DateTimeRange _dateTimeRangeFrom(OverviewDateRange range) {
+  static DateTimeRange _dateTimeRangeFrom(DashboardDateRange range) {
     return DateTimeRange(
       start: range.startInclusive,
       end: range.endInclusive,

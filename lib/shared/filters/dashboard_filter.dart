@@ -3,8 +3,8 @@ import 'package:flutter/foundation.dart';
 
 /// Represents a named agent option available for overview filtering.
 @immutable
-class OverviewAgentOption {
-  const OverviewAgentOption({
+class DashboardAgentOption {
+  const DashboardAgentOption({
     required this.agentId,
     required this.name,
     this.connectionStatus = AgentConnectionStatus.unknown,
@@ -21,7 +21,7 @@ class OverviewAgentOption {
 
   @override
   bool operator ==(Object other) =>
-      other is OverviewAgentOption &&
+      other is DashboardAgentOption &&
       other.agentId == agentId &&
       other.name == name &&
       other.connectionStatus == connectionStatus &&
@@ -36,12 +36,12 @@ class OverviewAgentOption {
 ///
 /// [month] is 1-based (January = 1, December = 12).
 @immutable
-class OverviewYearMonth {
-  const OverviewYearMonth({required this.year, required this.month})
+class DashboardYearMonth {
+  const DashboardYearMonth({required this.year, required this.month})
     : assert(month >= 1 && month <= 12, 'month must be between 1 and 12');
 
-  factory OverviewYearMonth.fromDate(DateTime date) =>
-      OverviewYearMonth(year: date.year, month: date.month);
+  factory DashboardYearMonth.fromDate(DateTime date) =>
+      DashboardYearMonth(year: date.year, month: date.month);
 
   final int year;
   final int month;
@@ -57,7 +57,7 @@ class OverviewYearMonth {
 
   @override
   bool operator ==(Object other) =>
-      other is OverviewYearMonth && other.year == year && other.month == month;
+      other is DashboardYearMonth && other.year == year && other.month == month;
 
   @override
   int get hashCode => Object.hash(year, month);
@@ -68,20 +68,20 @@ class OverviewYearMonth {
 
 /// Inclusive local calendar dates for an overview “custom period” filter.
 @immutable
-class OverviewDateRange {
-  const OverviewDateRange({
+class DashboardDateRange {
+  const DashboardDateRange({
     required this.startInclusive,
     required this.endInclusive,
   });
 
   /// Normalizes to date-only local instants and orders [a]/[b] correctly.
-  factory OverviewDateRange.fromOrderedEndpoints(DateTime a, DateTime b) {
+  factory DashboardDateRange.fromOrderedEndpoints(DateTime a, DateTime b) {
     final sa = DateTime(a.year, a.month, a.day);
     final sb = DateTime(b.year, b.month, b.day);
     if (sb.isBefore(sa)) {
-      return OverviewDateRange(startInclusive: sb, endInclusive: sa);
+      return DashboardDateRange(startInclusive: sb, endInclusive: sa);
     }
-    return OverviewDateRange(startInclusive: sa, endInclusive: sb);
+    return DashboardDateRange(startInclusive: sa, endInclusive: sb);
   }
 
   final DateTime startInclusive;
@@ -89,7 +89,7 @@ class OverviewDateRange {
 
   @override
   bool operator ==(Object other) =>
-      other is OverviewDateRange &&
+      other is DashboardDateRange &&
       _sameCalendarDay(other.startInclusive, startInclusive) &&
       _sameCalendarDay(other.endInclusive, endInclusive);
 
@@ -104,10 +104,10 @@ class OverviewDateRange {
   );
 }
 
-/// Inclusive calendar-day cap for [OverviewFilter.referenceRange] on home.
-const int kOverviewCustomReferenceRangeMaxInclusiveDays = 366;
+/// Inclusive calendar-day cap for [DashboardFilter.referenceRange] on home.
+const int kDashboardCustomReferenceRangeMaxInclusiveDays = 366;
 
-extension OverviewDateRangeHomePolicy on OverviewDateRange {
+extension DashboardDateRangeHomePolicy on DashboardDateRange {
   /// Inclusive count of local calendar days from [startInclusive] through
   /// [endInclusive].
   int get inclusiveCalendarDayCount {
@@ -126,11 +126,11 @@ extension OverviewDateRangeHomePolicy on OverviewDateRange {
 
   bool get withinHomeDashboardMaxInclusiveDays =>
       inclusiveCalendarDayCount <=
-      kOverviewCustomReferenceRangeMaxInclusiveDays;
+      kDashboardCustomReferenceRangeMaxInclusiveDays;
 
   /// Clamps both endpoints to local calendar days inside
   /// [[firstInclusive], [lastInclusive]] (inclusive).
-  OverviewDateRange clampedToPickerCalendarBounds({
+  DashboardDateRange clampedToPickerCalendarBounds({
     required DateTime firstInclusive,
     required DateTime lastInclusive,
   }) {
@@ -151,14 +151,14 @@ extension OverviewDateRangeHomePolicy on OverviewDateRange {
     if (e.isBefore(fa)) {
       e = fa;
     }
-    return OverviewDateRange.fromOrderedEndpoints(s, e);
+    return DashboardDateRange.fromOrderedEndpoints(s, e);
   }
 
   /// Shrinks [startInclusive] forward so the span has at most [maxInclusiveDays]
   /// calendar days, keeping [endInclusive] fixed.
-  OverviewDateRange clampedToMaxInclusiveCalendarDays(int maxInclusiveDays) {
+  DashboardDateRange clampedToMaxInclusiveCalendarDays(int maxInclusiveDays) {
     if (maxInclusiveDays < 1) {
-      return OverviewDateRange.fromOrderedEndpoints(
+      return DashboardDateRange.fromOrderedEndpoints(
         endInclusive,
         endInclusive,
       );
@@ -172,7 +172,7 @@ extension OverviewDateRangeHomePolicy on OverviewDateRange {
       endInclusive.day,
     );
     final newStart = e.subtract(Duration(days: maxInclusiveDays - 1));
-    return OverviewDateRange(startInclusive: newStart, endInclusive: e);
+    return DashboardDateRange(startInclusive: newStart, endInclusive: e);
   }
 }
 
@@ -181,25 +181,25 @@ extension OverviewDateRangeHomePolicy on OverviewDateRange {
 /// [selectedAgentIds] — null means "all approved agents" (implicitly selected).
 /// When non-null, only these agent ids are queried and shown.
 /// [yearMonth] — null means a rolling **last 30 days** window (see repository).
-/// The overview home uses [OverviewFilter.initial] so the default period is
+/// The overview home uses [DashboardFilter.initial] so the default period is
 /// the current calendar month instead.
 /// Custom sale-date span when non-null: KPIs, rankings, and the weekday chart
 /// use this inclusive local date range (it may span multiple calendar months).
 /// The monthly trend chart uses 12 months ending in the calendar month of the
 /// range end. When null, the whole [yearMonth] window applies.
 @immutable
-class OverviewFilter {
-  const OverviewFilter({
+class DashboardFilter {
+  const DashboardFilter({
     this.selectedAgentIds,
     this.yearMonth,
     this.referenceRange,
   });
 
   /// All agents and the current local calendar month (app open / after clear).
-  factory OverviewFilter.initial({DateTime? now}) {
+  factory DashboardFilter.initial({DateTime? now}) {
     final n = now ?? DateTime.now();
-    return OverviewFilter(
-      yearMonth: OverviewYearMonth.fromDate(n),
+    return DashboardFilter(
+      yearMonth: DashboardYearMonth.fromDate(n),
     );
   }
 
@@ -207,10 +207,10 @@ class OverviewFilter {
   final Set<String>? selectedAgentIds;
 
   /// null = rolling 30-day window; non-null = that calendar month (local).
-  final OverviewYearMonth? yearMonth;
+  final DashboardYearMonth? yearMonth;
 
   /// null = use full [yearMonth] (or rolling window when it is null).
-  final OverviewDateRange? referenceRange;
+  final DashboardDateRange? referenceRange;
 
   /// True when showing all agents and the period is the current local month.
   /// [yearMonth] null ("last 30 days") is not the default baseline.
@@ -229,27 +229,27 @@ class OverviewFilter {
     return ym.year == n.year && ym.month == n.month;
   }
 
-  OverviewFilter copyWith({
+  DashboardFilter copyWith({
     Object? selectedAgentIds = _sentinel,
     Object? yearMonth = _sentinel,
     Object? referenceRange = _sentinel,
   }) {
-    return OverviewFilter(
+    return DashboardFilter(
       selectedAgentIds: selectedAgentIds == _sentinel
           ? this.selectedAgentIds
           : selectedAgentIds as Set<String>?,
       yearMonth: yearMonth == _sentinel
           ? this.yearMonth
-          : yearMonth as OverviewYearMonth?,
+          : yearMonth as DashboardYearMonth?,
       referenceRange: referenceRange == _sentinel
           ? this.referenceRange
-          : referenceRange as OverviewDateRange?,
+          : referenceRange as DashboardDateRange?,
     );
   }
 
   @override
   bool operator ==(Object other) =>
-      other is OverviewFilter &&
+      other is DashboardFilter &&
       _setEquals(other.selectedAgentIds, selectedAgentIds) &&
       other.yearMonth == yearMonth &&
       other.referenceRange == referenceRange;
@@ -266,10 +266,10 @@ class OverviewFilter {
   }
 
   /// Ensures [referenceRange] stays within the home date-picker window (10 years
-  /// through today, local) and within [kOverviewCustomReferenceRangeMaxInclusiveDays].
+  /// through today, local) and within [kDashboardCustomReferenceRangeMaxInclusiveDays].
   ///
   /// When adjustment is needed, [yearMonth] is aligned to the clamped range end.
-  OverviewFilter normalizedForHomeDashboardReferenceRange({DateTime? now}) {
+  DashboardFilter normalizedForHomeDashboardReferenceRange({DateTime? now}) {
     final r = referenceRange;
     if (r == null) {
       return this;
@@ -282,14 +282,14 @@ class OverviewFilter {
       lastInclusive: last,
     );
     next = next.clampedToMaxInclusiveCalendarDays(
-      kOverviewCustomReferenceRangeMaxInclusiveDays,
+      kDashboardCustomReferenceRangeMaxInclusiveDays,
     );
     if (next == r) {
       return this;
     }
     return copyWith(
       referenceRange: next,
-      yearMonth: OverviewYearMonth.fromDate(next.endInclusive),
+      yearMonth: DashboardYearMonth.fromDate(next.endInclusive),
     );
   }
 }

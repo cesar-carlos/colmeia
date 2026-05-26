@@ -1,11 +1,11 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 
 /// Subtitle and semantics copy for the Sales daily totals chart.
 String salesDailyTotalsEffectiveSubtitle(
   AppLocalizations l10n, {
-  required OverviewDateRange? dailySaleDateRange,
+  required DashboardDateRange? dailySaleDateRange,
 }) {
   if (dailySaleDateRange == null) {
     return l10n.salesDailyTotalsChartSubtitle;
@@ -19,7 +19,7 @@ String salesDailyTotalsEffectiveSubtitle(
 /// Scope hint for Semantics when a custom daily range is active.
 String salesDailyTotalsEffectiveScopeHint(
   AppLocalizations l10n, {
-  required OverviewDateRange? dailySaleDateRange,
+  required DashboardDateRange? dailySaleDateRange,
 }) {
   if (dailySaleDateRange == null) {
     return l10n.salesDailyTotalsChartScopeHint;

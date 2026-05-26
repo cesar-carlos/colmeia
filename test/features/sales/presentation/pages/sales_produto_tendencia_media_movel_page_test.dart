@@ -20,7 +20,6 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
@@ -31,6 +30,7 @@ import 'package:colmeia/features/sales/presentation/pages/sales_hub_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_produto_tendencia_media_movel_page.dart';
 import 'package:colmeia/features/sales/presentation/routes/sales_routes.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -143,8 +143,8 @@ void main() {
     when(
       () => loadAvailableAgentsForSales.call(any()),
     ).thenAnswer(
-      (_) async => <OverviewAgentOption>[
-        const OverviewAgentOption(
+      (_) async => <DashboardAgentOption>[
+        const DashboardAgentOption(
           agentId: 'agent-1',
           name: 'Agent One',
         ),
@@ -251,7 +251,7 @@ void main() {
     when(() => salesPreferences.selectedAgentId).thenReturn(null);
     when(
       () => loadAvailableAgentsForSales.call(any()),
-    ).thenAnswer((_) async => const <OverviewAgentOption>[]);
+    ).thenAnswer((_) async => const <DashboardAgentOption>[]);
 
     await _pumpPage(tester, authController: authController);
     await tester.pumpAndSettle();

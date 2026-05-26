@@ -3,12 +3,12 @@ import 'package:colmeia/core/network/api_routes.dart';
 import 'package:colmeia/core/network/auth_session_accessor.dart';
 import 'package:colmeia/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:colmeia/features/auth/data/models/auth_session_model.dart';
-import 'package:colmeia/features/auth/domain/entities/client_account_status.dart';
 import 'package:colmeia/features/auth/domain/entities/client_password_recovery_status.dart';
 import 'package:colmeia/features/auth/domain/entities/client_registration_status.dart';
 import 'package:colmeia/features/auth/domain/entities/client_registration_submission.dart';
 import 'package:colmeia/features/user_context/domain/entities/access/store_scope.dart';
 import 'package:colmeia/features/user_context/domain/entities/user_profile.dart';
+import 'package:colmeia/shared/identity/client_account_status.dart';
 import 'package:dio/dio.dart';
 
 final class FakeAuthRemoteDataSource implements AuthRemoteDataSource {

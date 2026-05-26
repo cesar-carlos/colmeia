@@ -1,5 +1,5 @@
-import 'package:colmeia/features/auth/data/models/client_auth_json_reader.dart';
 import 'package:colmeia/features/auth/domain/entities/client_password_recovery_status.dart';
+import 'package:colmeia/shared/data/json/wrapped_json_reader.dart';
 
 class ClientPasswordRecoveryStatusResponseDto {
   const ClientPasswordRecoveryStatusResponseDto({

@@ -9,8 +9,6 @@ import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
@@ -29,8 +27,10 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_tr
 import 'package:colmeia/features/sales/presentation/widgets/sales_daily_totals_chart_card.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_monthly_pnl_bar_chart_card.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
@@ -134,16 +134,16 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
   late final ResolveSalesAgentClientTokenUseCase _resolveClientTokenUseCase;
 
   String? _selectedAgentId;
-  List<OverviewAgentOption> _availableAgents = <OverviewAgentOption>[];
-  late OverviewYearMonth _anchorYearMonth;
-  OverviewDateRange? _dailyTotalsDateRange;
+  List<DashboardAgentOption> _availableAgents = <DashboardAgentOption>[];
+  late DashboardYearMonth _anchorYearMonth;
+  DashboardDateRange? _dailyTotalsDateRange;
   String? _cachedClientTokenUserId;
   String? _cachedClientTokenAgentId;
   String? _cachedClientToken;
 
   List<SalesMonthlyPnlPoint> _points = const <SalesMonthlyPnlPoint>[];
-  List<OverviewDailySalesTrendPoint> _dailyPoints =
-      const <OverviewDailySalesTrendPoint>[];
+  List<DailySalesTrendPoint> _dailyPoints =
+      const <DailySalesTrendPoint>[];
   bool _loading = false;
   bool _chartLoadFailed = false;
   String? _chartLoadFailureMessage;
@@ -169,7 +169,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
     _selectedAgentId = _sessionService.selectedAgentId;
     _anchorYearMonth =
         _sessionService.restoreSalesChartReferenceMonth() ??
-        OverviewYearMonth.fromDate(DateTime.now());
+        DashboardYearMonth.fromDate(DateTime.now());
     _dailyTotalsDateRange =
         _sessionService.restoreSalesDailyTotalsUseCustomRange()
         ? _sessionService.restoreSalesDailyTotalsDateRange()
@@ -241,7 +241,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
   String? get autoRefreshSelectedAgentId => _selectedAgentId;
 
   @override
-  List<OverviewAgentOption> get autoRefreshAvailableAgents => _availableAgents;
+  List<DashboardAgentOption> get autoRefreshAvailableAgents => _availableAgents;
 
   @override
   bool get autoRefreshPageLoading => _loading;
@@ -276,7 +276,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
         _points = const <SalesMonthlyPnlPoint>[];
         _chartLoadFailed = false;
         _chartLoadFailureMessage = null;
-        _dailyPoints = const <OverviewDailySalesTrendPoint>[];
+        _dailyPoints = const <DailySalesTrendPoint>[];
         _dailyChartLoadFailed = false;
         _dailyChartLoadFailureMessage = null;
       });
@@ -300,7 +300,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
         _points = const <SalesMonthlyPnlPoint>[];
         _chartLoadFailed = true;
         _chartLoadFailureMessage = authMsg;
-        _dailyPoints = const <OverviewDailySalesTrendPoint>[];
+        _dailyPoints = const <DailySalesTrendPoint>[];
         _dailyChartLoadFailed = true;
         _dailyChartLoadFailureMessage = authMsg;
       });
@@ -352,8 +352,8 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
     final normalizedAgentId = nextAgentId == null || nextAgentId.isEmpty
         ? null
         : nextAgentId;
-    final anchor = next['anchorYearMonth'] as OverviewYearMonth?;
-    final dailyRange = next['dailyTotalsDateRange'] as OverviewDateRange?;
+    final anchor = next['anchorYearMonth'] as DashboardYearMonth?;
+    final dailyRange = next['dailyTotalsDateRange'] as DashboardDateRange?;
 
     setState(() {
       _selectedAgentId = normalizedAgentId;
@@ -388,7 +388,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
 
   String _monthlyPnlFullscreenFilterSummary(AppLocalizations l10n) {
     final selectedBranch = _availableAgents
-        .cast<OverviewAgentOption?>()
+        .cast<DashboardAgentOption?>()
         .firstWhere(
           (agent) => agent?.agentId == _selectedAgentId,
           orElse: () => null,
@@ -494,7 +494,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
     final l10n = AppLocalizations.of(context);
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final selectedBranch = _availableAgents
-        .cast<OverviewAgentOption?>()
+        .cast<DashboardAgentOption?>()
         .firstWhere(
           (agent) => agent?.agentId == _selectedAgentId,
           orElse: () => null,

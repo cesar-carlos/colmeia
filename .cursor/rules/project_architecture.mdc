@@ -56,6 +56,56 @@ lib/
 - Controllers e view models devem expor estado e intencoes da tela sem conhecer
   detalhes concretos de API, storage ou plataforma
 
+## Use Cases na Camada Application
+
+Use cases vivem em `lib/features/<feature>/application/usecases/` e expoem
+um unico ponto de entrada (`call(...)`) para uma intencao de negocio.
+
+### Quando criar use case
+
+Crie um use case quando a operacao tem **uma ou mais** destas
+caracteristicas:
+
+- **Orquestracao**: encadeia chamadas a varios repositorios ou servicos
+- **Validacao de dominio**: aplica regras antes de delegar a infra
+- **Transformacao**: converte dados entre representacoes que nao caberiam
+  no controller (ex.: agregacao, deduplicacao, ranking)
+- **Efeitos colaterais coordenados**: persistencia local apos sucesso
+  remoto, invalidacao de cache, log de auditoria
+- **Compartilhamento entre features**: a mesma intencao precisa ser
+  invocada por dois ou mais controllers/services
+
+### Quando NAO criar use case
+
+Evite o use case quando o metodo seria apenas:
+
+```dart
+class LoadXUseCase {
+ LoadXUseCase(this._repo);
+ final XRepository _repo;
+ Future<AppResult<X>> call({required String userId}) =>
+ _repo.loadX(userId: userId);
+}
+```
+
+Esse "thin wrapper" adiciona um arquivo, um mock no teste e uma indirecao
+sem trocar dados nem aplicar regra. Nesses casos:
+
+- Injete o repositorio diretamente no controller
+- Renomeie a operacao no repositorio para expressar a intencao se
+  necessario, em vez de inventar uma nova classe
+
+### Sinais de over-engineering
+
+- O use case e mais curto que ~30 linhas e nao tem `try/catch`, `if` ou
+  `await` encadeado
+- O teste do use case e identico ao teste do repositorio mockado
+- Multiplos use cases delegam ao mesmo metodo de repositorio com
+  parametros levemente diferentes (sugere que o repositorio deveria
+  expor uma operacao mais especifica)
+- O controller precisa instanciar 8+ use cases para um fluxo (sugere que
+  a interface esta granular demais)
+
 ## Injecao de Dependencia com get_it
 
 - Use `get_it` para registrar e resolver dependencias fora da camada de

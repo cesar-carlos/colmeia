@@ -5,6 +5,7 @@ import 'package:colmeia/features/client_agents/domain/entities/client_agent_acce
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_shared_widgets.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:flutter/material.dart';
@@ -38,6 +39,7 @@ class ClientAgentsRequestsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final children = <Widget>[
       if (errorMessage case final String message) ...<Widget>[
         AppInlineErrorPanel(
@@ -92,7 +94,7 @@ class ClientAgentsRequestsTab extends StatelessWidget {
                   if (_canDiscardLocalQueuedRequest(action) &&
                       onDiscardQueuedRequestAccess != null)
                     Padding(
-                      padding: const EdgeInsets.only(top: 8),
+                      padding: EdgeInsets.only(top: tokens.gapSm),
                       child: AppSecondaryButton(
                         label: l10n.clientAgentsDiscardQueuedRequestAction,
                         onPressed: isMutating
@@ -122,13 +124,13 @@ class ClientAgentsRequestsTab extends StatelessWidget {
                 ),
                 if (_canRetryRequest(request) && onRetryAccessRequest != null)
                   Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: FilledButton.tonalIcon(
+                    padding: EdgeInsets.only(top: tokens.gapSm),
+                    child: AppSecondaryButton(
+                      label: l10n.clientAgentsRetryRequestAction,
+                      icon: const Icon(Icons.refresh_rounded),
                       onPressed: isMutating
                           ? null
                           : () => unawaited(onRetryAccessRequest!(request)),
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: Text(l10n.clientAgentsRetryRequestAction),
                     ),
                   ),
               ],
@@ -223,7 +225,8 @@ class ClientAgentsRequestsTab extends StatelessWidget {
   }
 
   bool _canRetryRequest(ClientAgentAccessRequest request) {
-    return request.requestId?.trim().isNotEmpty == true &&
+    final hasRequestId = request.requestId?.trim().isNotEmpty ?? false;
+    return hasRequestId &&
         (request.status == AgentAccessRequestStatus.rejected ||
             request.status == AgentAccessRequestStatus.expired);
   }

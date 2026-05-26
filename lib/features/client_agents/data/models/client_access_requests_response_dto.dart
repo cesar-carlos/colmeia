@@ -1,6 +1,7 @@
 import 'package:colmeia/features/client_agents/data/models/client_agent_access_request_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/paginated_response_dto.dart';
 
-class ClientAccessRequestsResponseDto {
+class ClientAccessRequestsResponseDto implements PaginatedResponseDto {
   const ClientAccessRequestsResponseDto({
     required this.requests,
     required this.count,
@@ -36,9 +37,13 @@ class ClientAccessRequestsResponseDto {
   }
 
   final List<ClientAgentAccessRequestDto> requests;
+  @override
   final int count;
+  @override
   final int total;
+  @override
   final int page;
+  @override
   final int pageSize;
 
   Map<String, Object?> toJson() {

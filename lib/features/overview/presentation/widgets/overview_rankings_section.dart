@@ -4,10 +4,10 @@ import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
-import 'package:colmeia/features/overview/presentation/widgets/overview_bar_chart_style.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
+import 'package:colmeia/shared/widgets/charts/app_dashboard_comparison_bar_chart_preset.dart';
 import 'package:flutter/material.dart';
 
 String _overviewUserRankingTooltip(
@@ -151,9 +151,9 @@ class OverviewAgentRankingCard extends StatelessWidget {
                         '${a.displayName}: ${AppBrFormatters.currency(v)}',
                     dataLabelBuilder: (a, v) =>
                         AppBrFormatters.compactCurrency(v),
-                    style: overviewHomeComparisonBarChartStyle(
+                    style: appDashboardComparisonBarChartStyle(
                       tokens: fullscreenTokens,
-                      kind: OverviewHomeBarChartKind.ranking,
+                      kind: AppDashboardComparisonBarChartKind.ranking,
                       l10n: l10n,
                       heightOverride: constraints.maxHeight,
                     ),
@@ -188,9 +188,9 @@ class OverviewAgentRankingCard extends StatelessWidget {
       tooltipLabelBuilder: (a, v) =>
           '${a.displayName}: ${AppBrFormatters.currency(v)}',
       dataLabelBuilder: (a, v) => AppBrFormatters.compactCurrency(v),
-      style: overviewHomeComparisonBarChartStyle(
+      style: appDashboardComparisonBarChartStyle(
         tokens: tokens,
-        kind: OverviewHomeBarChartKind.ranking,
+        kind: AppDashboardComparisonBarChartKind.ranking,
         l10n: l10n,
       ),
       emptyPlaceholder: showEmpty
@@ -252,9 +252,9 @@ class OverviewUserRankingCard extends StatelessWidget {
                         _overviewUserRankingTooltip(l10n, u, v),
                     dataLabelBuilder: (u, v) =>
                         _overviewUserRankingDataLabel(l10n, u, v),
-                    style: overviewHomeComparisonBarChartStyle(
+                    style: appDashboardComparisonBarChartStyle(
                       tokens: fullscreenTokens,
-                      kind: OverviewHomeBarChartKind.ranking,
+                      kind: AppDashboardComparisonBarChartKind.ranking,
                       l10n: l10n,
                       heightOverride: constraints.maxHeight,
                     ),
@@ -288,9 +288,9 @@ class OverviewUserRankingCard extends StatelessWidget {
       valueBuilder: (u) => u.totalAmount,
       tooltipLabelBuilder: (u, v) => _overviewUserRankingTooltip(l10n, u, v),
       dataLabelBuilder: (u, v) => _overviewUserRankingDataLabel(l10n, u, v),
-      style: overviewHomeComparisonBarChartStyle(
+      style: appDashboardComparisonBarChartStyle(
         tokens: tokens,
-        kind: OverviewHomeBarChartKind.ranking,
+        kind: AppDashboardComparisonBarChartKind.ranking,
         l10n: l10n,
       ),
       emptyPlaceholder: showEmpty

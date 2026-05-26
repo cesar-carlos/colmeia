@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:checks/checks.dart';
 import 'package:colmeia/features/auth/data/models/client_login_response_dto.dart';
-import 'package:colmeia/features/auth/domain/entities/client_account_status.dart';
+import 'package:colmeia/shared/identity/client_account_status.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

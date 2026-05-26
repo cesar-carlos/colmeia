@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
@@ -12,6 +11,7 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dar
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -49,8 +49,8 @@ void main() {
     when(
       () => loadAvailableAgentsForSales.call('user-1'),
     ).thenAnswer(
-      (_) async => const <OverviewAgentOption>[
-        OverviewAgentOption(agentId: 'agent-1', name: 'Agent One'),
+      (_) async => const <DashboardAgentOption>[
+        DashboardAgentOption(agentId: 'agent-1', name: 'Agent One'),
       ],
     );
     when(
@@ -321,8 +321,8 @@ void main() {
       when(
         () => loadAvailableAgentsForSales.call('user-1'),
       ).thenAnswer(
-        (_) async => const <OverviewAgentOption>[
-          OverviewAgentOption(
+        (_) async => const <DashboardAgentOption>[
+          DashboardAgentOption(
             agentId: 'agent-1',
             name: 'Agent One',
             missingLocalClientToken: true,

@@ -1,8 +1,8 @@
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 
 /// Returns [previousSelectedId] if it appears in [agents]; otherwise null.
 String? reconcileSelectedSalesAgentId({
-  required List<OverviewAgentOption> agents,
+  required List<DashboardAgentOption> agents,
   required String? previousSelectedId,
 }) {
   if (previousSelectedId == null) {

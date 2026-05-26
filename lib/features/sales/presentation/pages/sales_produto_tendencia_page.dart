@@ -18,31 +18,27 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_agent_auto_refresh_mixin.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
+import 'package:colmeia/features/sales/presentation/utils/sales_trend_date_preset.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_filters_sheet_scaffold.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_single_agent_picker_control.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_filters_sheet.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_trend_comparison_bar_chart_style.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
-import 'package:colmeia/shared/widgets/forms/app_choice_chip.dart';
-import 'package:colmeia/shared/widgets/forms/app_date_picker_field.dart';
-import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
-import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:colmeia/shared/widgets/metrics/app_metric_stat_card.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:colmeia/shared/widgets/pagination/app_table_pagination_footer.dart';
@@ -82,123 +78,6 @@ List<ProdutoVendidoTendenciaDeVendaRow> _trendTopLosersRows(
           return a.diferenca.compareTo(b.diferenca);
         });
   return values.take(5).toList(growable: false);
-}
-
-enum _SalesTrendDatePreset {
-  currentMonth,
-  previousMonth,
-  last7Days,
-  last30Days,
-}
-
-DateTime _salesTrendCalendarDate(DateTime date) {
-  return DateTime(date.year, date.month, date.day);
-}
-
-DateTimeRange _salesTrendFullMonthInclusiveRange(DateTime anchor) {
-  return DateTimeRange(
-    start: DateTime(anchor.year, anchor.month),
-    end: DateTime(anchor.year, anchor.month + 1, 0),
-  );
-}
-
-DateTimeRange _salesTrendPreviousMonthInclusiveRange(DateTime anchor) {
-  final previous = DateTime(anchor.year, anchor.month - 1);
-  return DateTimeRange(
-    start: DateTime(previous.year, previous.month),
-    end: DateTime(previous.year, previous.month + 1, 0),
-  );
-}
-
-DateTimeRange _salesTrendCurrentRangeForPreset(
-  _SalesTrendDatePreset preset, {
-  DateTime? anchor,
-}) {
-  final today = _salesTrendCalendarDate(anchor ?? DateTime.now());
-  return switch (preset) {
-    _SalesTrendDatePreset.currentMonth => _salesTrendFullMonthInclusiveRange(
-      today,
-    ),
-    _SalesTrendDatePreset.previousMonth =>
-      _salesTrendPreviousMonthInclusiveRange(today),
-    _SalesTrendDatePreset.last7Days => DateTimeRange(
-      start: today.subtract(const Duration(days: 6)),
-      end: today,
-    ),
-    _SalesTrendDatePreset.last30Days => DateTimeRange(
-      start: today.subtract(const Duration(days: 29)),
-      end: today,
-    ),
-  };
-}
-
-bool _salesTrendIsWholeCalendarMonthRange(DateTimeRange range) {
-  final normalizedStart = _salesTrendCalendarDate(range.start);
-  final normalizedEnd = _salesTrendCalendarDate(range.end);
-  return normalizedStart.day == 1 &&
-      normalizedEnd.day ==
-          DateTime(
-            normalizedEnd.year,
-            normalizedEnd.month + 1,
-            0,
-          ).day;
-}
-
-int _salesTrendInclusiveDayCount(DateTimeRange range) {
-  final normalizedStart = _salesTrendCalendarDate(range.start);
-  final normalizedEnd = _salesTrendCalendarDate(range.end);
-  return normalizedEnd.difference(normalizedStart).inDays + 1;
-}
-
-int _salesTrendCalendarMonthSpan(DateTimeRange range) {
-  final normalizedStart = _salesTrendCalendarDate(range.start);
-  final normalizedEnd = _salesTrendCalendarDate(range.end);
-  return (normalizedEnd.year - normalizedStart.year) * 12 +
-      normalizedEnd.month -
-      normalizedStart.month +
-      1;
-}
-
-DateTimeRange _salesTrendAutoPreviousRange(DateTimeRange currentRange) {
-  final normalizedStart = _salesTrendCalendarDate(currentRange.start);
-  if (_salesTrendIsWholeCalendarMonthRange(currentRange)) {
-    final monthSpan = _salesTrendCalendarMonthSpan(currentRange);
-    return DateTimeRange(
-      start: DateTime(
-        normalizedStart.year,
-        normalizedStart.month - monthSpan,
-      ),
-      end: DateTime(normalizedStart.year, normalizedStart.month, 0),
-    );
-  }
-
-  final inclusiveDays = _salesTrendInclusiveDayCount(currentRange);
-  final previousEnd = normalizedStart.subtract(const Duration(days: 1));
-  final previousStart = previousEnd.subtract(
-    Duration(days: inclusiveDays - 1),
-  );
-  return DateTimeRange(start: previousStart, end: previousEnd);
-}
-
-bool _salesTrendSameRange(DateTimeRange? a, DateTimeRange? b) {
-  if (a == null || b == null) {
-    return a == b;
-  }
-  return _salesTrendCalendarDate(a.start) == _salesTrendCalendarDate(b.start) &&
-      _salesTrendCalendarDate(a.end) == _salesTrendCalendarDate(b.end);
-}
-
-String _salesTrendRangeDescriptorLabel(
-  AppLocalizations l10n,
-  DateTimeRange range,
-) {
-  final durationLabel = l10n.salesProdutoTendenciaFilterDurationDays(
-    _salesTrendInclusiveDayCount(range),
-  );
-  final rangeKind = _salesTrendIsWholeCalendarMonthRange(range)
-      ? l10n.salesProdutoTendenciaFilterRangeKindFullMonth
-      : l10n.salesProdutoTendenciaFilterRangeKindCustom;
-  return '$durationLabel • $rangeKind';
 }
 
 class SalesProdutoTendenciaPage extends StatefulWidget {
@@ -242,7 +121,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
   late final LoadMarcaProdutoOptionsUseCase _loadMarcaOptions;
 
   String? _selectedAgentId;
-  List<OverviewAgentOption> _availableAgents = <OverviewAgentOption>[];
+  List<DashboardAgentOption> _availableAgents = <DashboardAgentOption>[];
   List<GrupoProdutoOption> _grupoOptions = const <GrupoProdutoOption>[];
   List<MarcaProdutoOption> _marcaOptions = const <MarcaProdutoOption>[];
   String? _optionsLoadedForAgentId;
@@ -270,10 +149,10 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
       const <ProdutoVendidoTendenciaDeVendaSummaryRow>[];
 
   DateTimeRange _fullMonthInclusiveRange(DateTime anchor) =>
-      _salesTrendFullMonthInclusiveRange(anchor);
+      salesTrendFullMonthInclusiveRange(anchor);
 
   DateTimeRange _previousMonthInclusiveRange(DateTime anchor) =>
-      _salesTrendPreviousMonthInclusiveRange(anchor);
+      salesTrendPreviousMonthInclusiveRange(anchor);
 
   @override
   void initState() {
@@ -375,7 +254,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
   String? get autoRefreshSelectedAgentId => _selectedAgentId;
 
   @override
-  List<OverviewAgentOption> get autoRefreshAvailableAgents => _availableAgents;
+  List<DashboardAgentOption> get autoRefreshAvailableAgents => _availableAgents;
 
   @override
   bool get autoRefreshPageLoading => _loading;
@@ -810,7 +689,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
       useSafeArea: true,
       showDragHandle: false,
       builder: (context) {
-        return _SalesProdutoTendenciaFiltersSheet(
+        return SalesProdutoTendenciaFiltersSheet(
           l10n: AppLocalizations.of(context),
           availableAgents: _availableAgents,
           initialSelectedAgentId: _selectedAgentId,
@@ -871,7 +750,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
   }
 
   String _periodDescriptorLabel(AppLocalizations l10n, DateTimeRange range) {
-    return _salesTrendRangeDescriptorLabel(l10n, range);
+    return salesTrendRangeDescriptorLabel(l10n, range);
   }
 
   List<String> _activeFilterChipLabels(AppLocalizations l10n) {
@@ -918,7 +797,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     final l10n = AppLocalizations.of(context);
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final selectedBranch = _availableAgents
-        .cast<OverviewAgentOption?>()
+        .cast<DashboardAgentOption?>()
         .firstWhere(
           (agent) => agent?.agentId == _selectedAgentId,
           orElse: () => null,
@@ -1856,7 +1735,7 @@ class _TrendDetailsRow extends StatelessWidget {
             SizedBox(
               width: _TrendDetailsTableLayout._grupo(tokens),
               child: Text(
-                row.nomeGrupoProduto?.trim().isNotEmpty == true
+                (row.nomeGrupoProduto?.trim().isNotEmpty ?? false)
                     ? row.nomeGrupoProduto!
                     : l10n.salesProdutoTendenciaFilterAllOption,
                 softWrap: true,
@@ -1898,506 +1777,6 @@ class _TrendDetailsRow extends StatelessWidget {
   }
 }
 
-class _SalesProdutoTendenciaFiltersSheet extends StatefulWidget {
-  const _SalesProdutoTendenciaFiltersSheet({
-    required this.l10n,
-    required this.availableAgents,
-    required this.initialSelectedAgentId,
-    required this.initialPeriodoAtual,
-    required this.initialPeriodoAnterior,
-    required this.initialSearchTerm,
-    required this.initialClassificacao,
-    required this.initialCodGrupoProduto,
-    required this.initialCodMarca,
-    required this.initialPageSize,
-    required this.grupoOptions,
-    required this.marcaOptions,
-    required this.onApply,
-  });
-
-  final AppLocalizations l10n;
-  final List<OverviewAgentOption> availableAgents;
-  final String? initialSelectedAgentId;
-  final DateTimeRange initialPeriodoAtual;
-  final DateTimeRange initialPeriodoAnterior;
-  final String initialSearchTerm;
-  final String? initialClassificacao;
-  final int? initialCodGrupoProduto;
-  final int? initialCodMarca;
-  final int initialPageSize;
-  final List<GrupoProdutoOption> grupoOptions;
-  final List<MarcaProdutoOption> marcaOptions;
-  final ValueChanged<Map<String, Object?>> onApply;
-
-  @override
-  State<_SalesProdutoTendenciaFiltersSheet> createState() =>
-      _SalesProdutoTendenciaFiltersSheetState();
-}
-
-class _SalesProdutoTendenciaFiltersSheetState
-    extends State<_SalesProdutoTendenciaFiltersSheet> {
-  String? _selectedAgentId;
-  DateTimeRange? _periodoAtual;
-  DateTimeRange? _periodoAnterior;
-  late final TextEditingController _searchController;
-  String? _classificacao;
-  int? _codGrupoProduto;
-  int? _codMarca;
-  late int _pageSize;
-
-  _SalesTrendDatePreset? get _selectedPreset {
-    for (final preset in _SalesTrendDatePreset.values) {
-      final current = _salesTrendCurrentRangeForPreset(preset);
-      final previous = _salesTrendAutoPreviousRange(current);
-      if (_salesTrendSameRange(_periodoAtual, current) &&
-          _salesTrendSameRange(_periodoAnterior, previous)) {
-        return preset;
-      }
-    }
-    return null;
-  }
-
-  String? get _periodValidationMessage {
-    final periodoAtual = _periodoAtual;
-    final periodoAnterior = _periodoAnterior;
-    if (periodoAtual == null || periodoAnterior == null) {
-      return null;
-    }
-
-    final error = ProdutoVendidoTendenciaDeVendaFilter(
-      periodoAtualInicio: periodoAtual.start,
-      periodoAtualFim: periodoAtual.end,
-      periodoAnteriorInicio: periodoAnterior.start,
-      periodoAnteriorFim: periodoAnterior.end,
-      searchTerm: _searchController.text,
-      classificacao: _classificacao,
-      codGrupoProduto: _codGrupoProduto,
-      codMarca: _codMarca,
-      pageSize: _pageSize,
-    ).validationError();
-
-    return _localizedPeriodValidationMessage(error);
-  }
-
-  bool get _canApply {
-    final selectedAgentId = _selectedAgentId;
-    return selectedAgentId != null &&
-        selectedAgentId.trim().isNotEmpty &&
-        _periodoAtual != null &&
-        _periodoAnterior != null &&
-        _periodValidationMessage == null;
-  }
-
-  String? _rangeHelperText(DateTimeRange? range) {
-    if (range == null) {
-      return null;
-    }
-    return _salesTrendRangeDescriptorLabel(widget.l10n, range);
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedAgentId = widget.initialSelectedAgentId;
-    _periodoAtual = widget.initialPeriodoAtual;
-    _periodoAnterior = widget.initialPeriodoAnterior;
-    _searchController = TextEditingController(text: widget.initialSearchTerm);
-    _classificacao = widget.initialClassificacao;
-    _codGrupoProduto = widget.initialCodGrupoProduto;
-    _codMarca = widget.initialCodMarca;
-    _pageSize = widget.initialPageSize;
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  String? _localizedPeriodValidationMessage(String? error) {
-    if (error == null) {
-      return null;
-    }
-
-    final l10n = widget.l10n;
-    return switch (error) {
-      ProdutoVendidoTendenciaDeVendaFilter
-          .errorPeriodoAnteriorMustBeBeforeAtual =>
-        l10n.salesProdutoTendenciaFilterPeriodsOrderError,
-      ProdutoVendidoTendenciaDeVendaFilter
-          .errorPeriodsMustCoverEquivalentWindows =>
-        l10n.salesProdutoTendenciaFilterPeriodsEquivalentWindowError,
-      _ => null,
-    };
-  }
-
-  void _apply() {
-    if (!_canApply) {
-      return;
-    }
-    final selectedAgentId = _selectedAgentId!;
-    widget.onApply(<String, Object?>{
-      'agentId': selectedAgentId,
-      'periodoAtual': _periodoAtual,
-      'periodoAnterior': _periodoAnterior,
-      'searchTerm': _searchController.text,
-      'classificacao': _classificacao,
-      'codGrupoProduto': _codGrupoProduto,
-      'codMarca': _codMarca,
-      'pageSize': _pageSize,
-    });
-    Navigator.of(context).pop();
-  }
-
-  void _applyPreset(_SalesTrendDatePreset preset) {
-    final current = _salesTrendCurrentRangeForPreset(preset);
-    setState(() {
-      _periodoAtual = current;
-      _periodoAnterior = _salesTrendAutoPreviousRange(current);
-    });
-  }
-
-  void _autoAdjustPreviousPeriod() {
-    final periodoAtual = _periodoAtual;
-    if (periodoAtual == null) {
-      return;
-    }
-    setState(() {
-      _periodoAnterior = _salesTrendAutoPreviousRange(periodoAtual);
-    });
-  }
-
-  void _clear() {
-    final now = DateTime.now();
-    setState(() {
-      _periodoAtual = _salesTrendFullMonthInclusiveRange(now);
-      _periodoAnterior = _salesTrendPreviousMonthInclusiveRange(now);
-      _searchController.text = '';
-      _classificacao = null;
-      _codGrupoProduto = null;
-      _codMarca = null;
-      _pageSize = ProdutoVendidoTendenciaDeVendaFilter.defaultPageSize;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
-    final l10n = widget.l10n;
-    final periodValidationMessage = _periodValidationMessage;
-    final selectedPreset = _selectedPreset;
-    final selectedAgentMissingToken =
-        _selectedAgentId != null &&
-        widget.availableAgents.any(
-          (agent) =>
-              agent.agentId == _selectedAgentId &&
-              agent.missingLocalClientToken,
-        );
-
-    return SalesFiltersSheetScaffold(
-      title: l10n.reportFiltersTitleWithContext(
-        l10n.salesCardProdutoTendenciaTitle,
-      ),
-      description: l10n.reportFiltersDescription,
-      primaryActionLabel: l10n.reportFiltersApplyAction,
-      secondaryActionLabel: l10n.reportFiltersClearAction,
-      onPrimaryAction: _apply,
-      onSecondaryAction: _clear,
-      canPrimaryAction: _canApply,
-      bodyBuilder: (scrollController) {
-        return ListView(
-          controller: scrollController,
-          padding: EdgeInsets.fromLTRB(
-            tokens.contentSpacing,
-            0,
-            tokens.contentSpacing,
-            tokens.contentSpacing,
-          ),
-          children: <Widget>[
-            SalesFiltersSectionHeader(
-              title: l10n.salesBranchFilterLabel,
-              subtitle: l10n.salesBranchRequiredMessage,
-              requiredBadgeLabel: l10n.reportFiltersRequiredCount(1),
-            ),
-            SizedBox(height: tokens.gapSm),
-            SalesBranchPickerControl(
-              l10n: l10n,
-              availableBranches: widget.availableAgents,
-              selectedBranchId: _selectedAgentId,
-              showTrailingFilterButton: false,
-              onSelectionChanged: (agentId) {
-                setState(() => _selectedAgentId = agentId);
-              },
-            ),
-            if (selectedAgentMissingToken) ...<Widget>[
-              SizedBox(height: tokens.gapMd),
-              AppInlineErrorPanel(
-                tone: AppInlinePanelTone.informational,
-                message: l10n.salesBranchFilterMissingClientTokenBanner,
-              ),
-            ],
-            SizedBox(height: tokens.sectionSpacing),
-            SalesFiltersSectionHeader(
-              title: l10n.reportFiltersTitle,
-              subtitle: l10n.reportFiltersDescription,
-            ),
-            SizedBox(height: tokens.gapSm),
-            AppSectionCard(
-              color: theme.colorScheme.surfaceContainerLow,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Text(
-                    l10n.salesProdutoTendenciaFilterQuickPeriodsTitle,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  SizedBox(height: tokens.gapXs),
-                  Text(
-                    l10n.salesProdutoTendenciaFilterQuickPeriodsSubtitle,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  SizedBox(height: tokens.gapMd),
-                  Wrap(
-                    spacing: tokens.gapSm,
-                    runSpacing: tokens.gapSm,
-                    children: <Widget>[
-                      AppChoiceChip(
-                        label:
-                            l10n.salesProdutoTendenciaFilterPresetCurrentMonth,
-                        selected:
-                            selectedPreset ==
-                            _SalesTrendDatePreset.currentMonth,
-                        icon: Icons.calendar_view_month_rounded,
-                        onSelected: () => _applyPreset(
-                          _SalesTrendDatePreset.currentMonth,
-                        ),
-                      ),
-                      AppChoiceChip(
-                        label:
-                            l10n.salesProdutoTendenciaFilterPresetPreviousMonth,
-                        selected:
-                            selectedPreset ==
-                            _SalesTrendDatePreset.previousMonth,
-                        icon: Icons.history_rounded,
-                        onSelected: () => _applyPreset(
-                          _SalesTrendDatePreset.previousMonth,
-                        ),
-                      ),
-                      AppChoiceChip(
-                        label: l10n.salesProdutoTendenciaFilterPresetLast7Days,
-                        selected:
-                            selectedPreset == _SalesTrendDatePreset.last7Days,
-                        icon: Icons.date_range_rounded,
-                        onSelected: () =>
-                            _applyPreset(_SalesTrendDatePreset.last7Days),
-                      ),
-                      AppChoiceChip(
-                        label: l10n.salesProdutoTendenciaFilterPresetLast30Days,
-                        selected:
-                            selectedPreset == _SalesTrendDatePreset.last30Days,
-                        icon: Icons.insights_rounded,
-                        onSelected: () =>
-                            _applyPreset(_SalesTrendDatePreset.last30Days),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: tokens.gapSm),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      onPressed: _periodoAtual == null
-                          ? null
-                          : _autoAdjustPreviousPeriod,
-                      icon: const Icon(Icons.auto_fix_high_rounded, size: 18),
-                      label: Text(
-                        l10n.salesProdutoTendenciaFilterAutoAdjustPreviousAction,
-                      ),
-                    ),
-                  ),
-                  AppInlineErrorPanel(
-                    variant: AppInlineErrorPanelVariant.plain,
-                    tone: AppInlinePanelTone.informational,
-                    title: l10n.salesProdutoTendenciaFilterRuleHelperTitle,
-                    message: l10n.salesProdutoTendenciaFilterRuleHelper,
-                  ),
-                  SizedBox(height: tokens.contentSpacing),
-                  AppDateRangePickerField(
-                    label: l10n.salesProdutoTendenciaFilterCurrentPeriod,
-                    pickerTitle: l10n.salesProdutoTendenciaFilterCurrentPeriod,
-                    value: _periodoAtual,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime.now(),
-                    density: AppTextFieldDensity.compact,
-                    helperText: _rangeHelperText(_periodoAtual),
-                    errorText: periodValidationMessage,
-                    onChanged: (value) {
-                      setState(() {
-                        _periodoAtual = value;
-                        _periodoAnterior = value == null
-                            ? null
-                            : _salesTrendAutoPreviousRange(value);
-                      });
-                    },
-                  ),
-                  SizedBox(height: tokens.contentSpacing),
-                  AppDateRangePickerField(
-                    label: l10n.salesProdutoTendenciaFilterPreviousPeriod,
-                    pickerTitle: l10n.salesProdutoTendenciaFilterPreviousPeriod,
-                    value: _periodoAnterior,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime.now(),
-                    density: AppTextFieldDensity.compact,
-                    helperText: _rangeHelperText(_periodoAnterior),
-                    errorText: periodValidationMessage,
-                    onChanged: (value) {
-                      setState(() => _periodoAnterior = value);
-                    },
-                  ),
-                  SizedBox(height: tokens.contentSpacing),
-                  AppTextField(
-                    controller: _searchController,
-                    label: l10n.salesProdutoTendenciaFilterSearch,
-                    hintText: l10n.salesProdutoTendenciaFilterSearchHint,
-                    density: AppTextFieldDensity.compact,
-                  ),
-                  SizedBox(height: tokens.contentSpacing),
-                  AppDropdownField<String?>(
-                    label: l10n.salesProdutoTendenciaFilterClassification,
-                    value: _classificacao,
-                    density: AppTextFieldDensity.compact,
-                    options: <AppDropdownOption<String?>>[
-                      AppDropdownOption<String?>(
-                        value: null,
-                        label: l10n.salesProdutoTendenciaFilterAllOption,
-                      ),
-                      AppDropdownOption<String?>(
-                        value: 'CRESCENDO',
-                        label: l10n.salesProdutoTendenciaClassificacaoGrowing,
-                      ),
-                      AppDropdownOption<String?>(
-                        value: 'CAINDO',
-                        label: l10n.salesProdutoTendenciaClassificacaoFalling,
-                      ),
-                      AppDropdownOption<String?>(
-                        value: 'NOVO PRODUTO',
-                        label: l10n.salesProdutoTendenciaClassificacaoNew,
-                      ),
-                      AppDropdownOption<String?>(
-                        value: 'PAROU DE VENDER',
-                        label: l10n.salesProdutoTendenciaClassificacaoStopped,
-                      ),
-                      AppDropdownOption<String?>(
-                        value: 'ESTAVEL',
-                        label: l10n.salesProdutoTendenciaClassificacaoStable,
-                      ),
-                    ],
-                    onChanged: (value) {
-                      setState(() => _classificacao = value);
-                    },
-                  ),
-                  SizedBox(height: tokens.contentSpacing),
-                  AppDropdownField<int?>(
-                    label: l10n.salesProdutoTendenciaFilterGroup,
-                    value: _codGrupoProduto,
-                    density: AppTextFieldDensity.compact,
-                    options: <AppDropdownOption<int?>>[
-                      AppDropdownOption<int?>(
-                        value: null,
-                        label: l10n.salesProdutoTendenciaFilterAllOption,
-                      ),
-                      ...widget.grupoOptions.map(
-                        (option) => AppDropdownOption<int?>(
-                          value: option.codGrupoProduto,
-                          label: option.nomeGrupoProduto,
-                        ),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      setState(() => _codGrupoProduto = value);
-                    },
-                  ),
-                  SizedBox(height: tokens.contentSpacing),
-                  AppDropdownField<int?>(
-                    label: l10n.salesProdutoTendenciaFilterBrand,
-                    value: _codMarca,
-                    density: AppTextFieldDensity.compact,
-                    options: <AppDropdownOption<int?>>[
-                      AppDropdownOption<int?>(
-                        value: null,
-                        label: l10n.salesProdutoTendenciaFilterAllOption,
-                      ),
-                      ...widget.marcaOptions.map(
-                        (option) => AppDropdownOption<int?>(
-                          value: option.codMarca,
-                          label: option.nomeMarca,
-                        ),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      setState(() => _codMarca = value);
-                    },
-                  ),
-                  SizedBox(height: tokens.contentSpacing),
-                  AppDropdownField<int>(
-                    label: l10n.salesProdutoTendenciaFilterPageSize,
-                    value: _pageSize,
-                    density: AppTextFieldDensity.compact,
-                    options: const <AppDropdownOption<int>>[
-                      AppDropdownOption<int>(value: 10, label: '10'),
-                      AppDropdownOption<int>(value: 20, label: '20'),
-                      AppDropdownOption<int>(value: 50, label: '50'),
-                      AppDropdownOption<int>(value: 100, label: '100'),
-                    ],
-                    onChanged: (value) {
-                      if (value == null) {
-                        return;
-                      }
-                      setState(() => _pageSize = value);
-                    },
-                  ),
-                  if (periodValidationMessage != null) ...<Widget>[
-                    SizedBox(height: tokens.contentSpacing),
-                    AppInlineErrorPanel(
-                      variant: AppInlineErrorPanelVariant.plain,
-                      title: l10n.salesProdutoTendenciaFilterApplyDisabledTitle,
-                      message: periodValidationMessage,
-                      belowMessage: Text(
-                        l10n.salesProdutoTendenciaFilterApplyDisabledHint,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      actions: Align(
-                        alignment: Alignment.centerLeft,
-                        child: TextButton.icon(
-                          onPressed: _periodoAtual == null
-                              ? null
-                              : _autoAdjustPreviousPeriod,
-                          icon: const Icon(
-                            Icons.auto_fix_high_rounded,
-                            size: 18,
-                          ),
-                          label: Text(
-                            l10n.salesProdutoTendenciaFilterAutoAdjustPreviousAction,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
 
 _TrendSummary _buildSummary(
   List<ProdutoVendidoTendenciaDeVendaSummaryRow> summaryRows,

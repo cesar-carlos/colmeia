@@ -1,12 +1,13 @@
 import 'dart:math' as math;
 
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/bottom_sheet_compact_drag_handle.dart';
+import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:flutter/material.dart';
 
 const int _kMaxInlineChips = 3;
@@ -23,7 +24,7 @@ class OverviewHomeAgentFilterControl extends StatelessWidget {
   });
 
   final AppLocalizations l10n;
-  final List<OverviewAgentOption> availableAgents;
+  final List<DashboardAgentOption> availableAgents;
 
   /// Domain: `null` means all approved agents.
   final Set<String>? selectedAgentIds;
@@ -290,7 +291,7 @@ class _InlineChipsRow extends StatelessWidget {
     required this.typography,
   });
 
-  final List<OverviewAgentOption> availableAgents;
+  final List<DashboardAgentOption> availableAgents;
   final Set<String> selectedIds;
   final bool enabled;
   final ValueChanged<String> onRemove;
@@ -302,13 +303,13 @@ class _InlineChipsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final byId = <String, OverviewAgentOption>{
+    final byId = <String, DashboardAgentOption>{
       for (final a in availableAgents) a.agentId: a,
     };
     final ordered =
         selectedIds
             .map((id) => byId[id])
-            .whereType<OverviewAgentOption>()
+            .whereType<DashboardAgentOption>()
             .toList(growable: false)
           ..sort((a, b) => a.name.compareTo(b.name));
     final canRemove = selectedIds.length > 1;
@@ -386,7 +387,7 @@ class _OverviewAgentSelectionSheet extends StatefulWidget {
   });
 
   final AppLocalizations l10n;
-  final List<OverviewAgentOption> availableAgents;
+  final List<DashboardAgentOption> availableAgents;
   final Set<String> initialSelected;
 
   @override
@@ -414,7 +415,7 @@ class _OverviewAgentSelectionSheetState
 
   String get _query => _searchController.text.trim().toLowerCase();
 
-  List<OverviewAgentOption> get _filtered {
+  List<DashboardAgentOption> get _filtered {
     final q = _query;
     if (q.isEmpty) {
       return widget.availableAgents;
@@ -482,7 +483,7 @@ class _OverviewAgentSelectionSheetState
     final anyFilteredSelected = filtered.any(
       (a) => _selected.contains(a.agentId),
     );
-    final byIdForBanner = <String, OverviewAgentOption>{
+    final byIdForBanner = <String, DashboardAgentOption>{
       for (final a in widget.availableAgents) a.agentId: a,
     };
     final showMissingTokenBanner = _selected.any(
@@ -581,20 +582,13 @@ class _OverviewAgentSelectionSheetState
                       horizontal: tokens.contentSpacing,
                       vertical: tokens.gapSm,
                     ),
-                    child: TextField(
+                    child: AppTextField(
                       controller: _searchController,
                       autofocus: true,
-                      decoration: InputDecoration(
-                        hintText:
-                            widget.l10n.overviewHomeBranchFilterSheetSearchHint,
-                        prefixIcon: const Icon(Icons.search_rounded),
-                        isDense: true,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(
-                            tokens.formFieldRadius,
-                          ),
-                        ),
-                      ),
+                      hintText:
+                          widget.l10n.overviewHomeBranchFilterSheetSearchHint,
+                      prefixIcon: Icons.search_rounded,
+                      density: AppTextFieldDensity.compact,
                       onChanged: (_) => setState(() {}),
                     ),
                   ),
@@ -928,7 +922,7 @@ Color _overviewAgentNameColor(
   };
 }
 
-Widget? _agentFilterChipAvatar(OverviewAgentOption agent, ColorScheme scheme) {
+Widget? _agentFilterChipAvatar(DashboardAgentOption agent, ColorScheme scheme) {
   final offline = agent.connectionStatus == AgentConnectionStatus.offline;
   final noToken = agent.missingLocalClientToken;
   if (offline && noToken) {

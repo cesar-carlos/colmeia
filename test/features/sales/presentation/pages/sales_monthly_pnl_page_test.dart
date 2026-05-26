@@ -6,8 +6,6 @@ import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_daily_sales_trend_point.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
@@ -22,6 +20,8 @@ import 'package:colmeia/features/sales/presentation/pages/sales_monthly_pnl_page
 import 'package:colmeia/features/sales/presentation/sales_monthly_pnl_chart_keys.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_anchor_month_support.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
 import 'package:flutter/material.dart';
@@ -53,12 +53,12 @@ void main() {
   late _MockLoadAvailableAgentsForSales loadAvailableAgentsForSales;
   late _MockLoadSalesMonthlyPnlLinesUseCase loadMonthlyPnlLines;
   late _MockLoadSalesDailyTotalsUseCase loadDailyTotals;
-  late OverviewYearMonth currentAnchor;
+  late DashboardYearMonth currentAnchor;
 
   setUpAll(() {
     Provider.debugCheckInvalidValueType = null;
     registerFallbackValue(
-      const OverviewYearMonth(year: 2026, month: 5),
+      const DashboardYearMonth(year: 2026, month: 5),
     );
     registerFallbackValue(<String>['agent-1']);
     registerFallbackValue(SalesMonthlyPnlBarChartPreferences.defaults);
@@ -136,8 +136,8 @@ void main() {
     when(
       () => loadAvailableAgentsForSales.call(any()),
     ).thenAnswer(
-      (_) async => <OverviewAgentOption>[
-        const OverviewAgentOption(
+      (_) async => <DashboardAgentOption>[
+        const DashboardAgentOption(
           agentId: 'agent-1',
           name: 'Agent One',
         ),
@@ -155,7 +155,7 @@ void main() {
       ),
     ).thenAnswer(
       (_) async => (
-        points: const <OverviewDailySalesTrendPoint>[],
+        points: const <DailySalesTrendPoint>[],
         loadFailed: false,
         loadFailureMessage: null,
       ),
@@ -248,7 +248,7 @@ void main() {
         cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer((invocation) {
-      final anchor = invocation.namedArguments[#anchor] as OverviewYearMonth;
+      final anchor = invocation.namedArguments[#anchor] as DashboardYearMonth;
       if (anchor == currentAnchor) {
         return Future<SalesMonthlyPnlLinesLoadResult>.value(
           _bundleWithBaseValue(100),

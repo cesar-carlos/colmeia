@@ -1,8 +1,8 @@
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref_codec.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/presentation/models/sales_live_map_visual_spec.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/foundation.dart';
 
 const int kSalesLiveMapAutoMunicipalityDetailPointThreshold = 200;
@@ -11,7 +11,7 @@ const int kSalesLiveMapAutoMunicipalityDetailPointThreshold = 200;
 class SalesLiveMapPresentationState {
   const SalesLiveMapPresentationState({
     this.filter = const SalesLiveMapFilter(),
-    this.availableAgents = const <OverviewAgentOption>[],
+    this.availableAgents = const <DashboardAgentOption>[],
     this.result,
     this.visualResult,
     this.mapPayloadDigest = 0,
@@ -21,7 +21,7 @@ class SalesLiveMapPresentationState {
   });
 
   final SalesLiveMapFilter filter;
-  final List<OverviewAgentOption> availableAgents;
+  final List<DashboardAgentOption> availableAgents;
   final SalesLiveMapLoadResult? result;
   final SalesLiveMapLoadResult? visualResult;
   final int mapPayloadDigest;
@@ -101,7 +101,7 @@ class SalesLiveMapPresentationState {
 
   SalesLiveMapPresentationState copyWith({
     SalesLiveMapFilter? filter,
-    List<OverviewAgentOption>? availableAgents,
+    List<DashboardAgentOption>? availableAgents,
     Object? result = _sentinel,
     Object? visualResult = _sentinel,
     int? mapPayloadDigest,

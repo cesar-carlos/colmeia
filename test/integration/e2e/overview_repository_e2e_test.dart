@@ -65,7 +65,7 @@ void main() {
             () => useCase(
               userId: 'user-1',
               policy: OverviewLoadPolicy.forceRefresh,
-              filter: OverviewFilter(
+              filter: DashboardFilter(
                 selectedAgentIds: <String>{AppEnvironment.e2eAgentId},
               ),
               rowLabels: OverviewLoadLabels.englishFallback,
@@ -119,7 +119,7 @@ Future<AppResult<Overview>> _loadOverviewProgressiveEnd(
   await for (final chunk in repository.loadOverviewProgressively(
     userId: 'user-1',
     policy: OverviewLoadPolicy.forceRefresh,
-    filter: OverviewFilter(
+    filter: DashboardFilter(
       selectedAgentIds: <String>{AppEnvironment.e2eAgentId},
     ),
     rowLabels: OverviewLoadLabels.englishFallback,

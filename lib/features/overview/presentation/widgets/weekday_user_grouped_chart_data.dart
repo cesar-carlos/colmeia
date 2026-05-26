@@ -2,8 +2,8 @@ import 'dart:math' as math;
 
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_user_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/overview_weekday_display_order.dart';
-import 'package:colmeia/features/overview/presentation/localization/overview_weekday_sales_trend_l10n.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/charts/daily_sales_weekday_labels.dart';
 import 'package:colmeia/shared/widgets/charts/comparison_bar_plot_floor.dart';
 
 /// One cell in the weekday × user matrix for grouped column charts.
@@ -49,7 +49,7 @@ const String _kWeekdayUserGroupedOthersSeriesKey =
 
 List<String> overviewWeekdayCategoryLabels(AppLocalizations l10n) => <String>[
   for (final n in kOverviewApiWeekdayDisplayOrder)
-    overviewWeekdaySalesLabel(n, l10n),
+    dailySalesWeekdayLabel(n, l10n),
 ];
 
 /// Builds clustered column data: X = weekday only; one series per user.

@@ -7,7 +7,6 @@ import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
@@ -22,6 +21,7 @@ import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refr
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_live_map_page.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
@@ -99,8 +99,8 @@ void main() {
     when(
       () => loadAvailableAgentsForSales.call('user-1'),
     ).thenAnswer(
-      (_) async => const <OverviewAgentOption>[
-        OverviewAgentOption(agentId: 'agent-1', name: 'Branch One'),
+      (_) async => const <DashboardAgentOption>[
+        DashboardAgentOption(agentId: 'agent-1', name: 'Branch One'),
       ],
     );
     when(
@@ -342,8 +342,8 @@ void main() {
       when(
         () => loadAvailableAgentsForSales.call('user-1'),
       ).thenAnswer(
-        (_) async => const <OverviewAgentOption>[
-          OverviewAgentOption(
+        (_) async => const <DashboardAgentOption>[
+          DashboardAgentOption(
             agentId: 'agent-1',
             name: 'Branch One',
             missingLocalClientToken: true,
@@ -409,7 +409,7 @@ void main() {
   testWidgets('keeps initial skeleton while agents are still loading', (
     tester,
   ) async {
-    final agentsCompleter = Completer<List<OverviewAgentOption>>();
+    final agentsCompleter = Completer<List<DashboardAgentOption>>();
     when(
       () => loadAvailableAgentsForSales.call('user-1'),
     ).thenAnswer((_) => agentsCompleter.future);
@@ -427,8 +427,8 @@ void main() {
       ),
     );
 
-    agentsCompleter.complete(const <OverviewAgentOption>[
-      OverviewAgentOption(agentId: 'agent-1', name: 'Branch One'),
+    agentsCompleter.complete(const <DashboardAgentOption>[
+      DashboardAgentOption(agentId: 'agent-1', name: 'Branch One'),
     ]);
     await _pumpInitialLoad(tester);
   });

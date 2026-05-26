@@ -3,9 +3,9 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/overview/domain/overview_last_twelve_months_venda_range.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/foundation.dart';
 
 typedef SalesMonthlyPnlLinesLoadResult = ({
@@ -25,7 +25,7 @@ class LoadSalesMonthlyPnlLinesUseCase {
   Future<SalesMonthlyPnlLinesLoadResult> call({
     required String userId,
     required String agentId,
-    required OverviewYearMonth anchor,
+    required DashboardYearMonth anchor,
     String? clientToken,
     AgentQueriesCancelScope? cancelScope,
   }) async {

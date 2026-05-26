@@ -1,3 +1,4 @@
+import 'package:colmeia/features/sales/presentation/widgets/sales_filter_circle_palette.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
@@ -5,8 +6,6 @@ import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:flutter/material.dart';
 
 const double _kSalesFilterCircleSize = 44;
-const Color _kSalesFilterCircleFill = Color(0xFFFFE5D9);
-const Color _kSalesFilterCircleIcon = Color(0xFF5D4037);
 
 class SalesCardFilterSummaryItem {
   const SalesCardFilterSummaryItem({
@@ -112,7 +111,7 @@ class SalesCardFilterTrigger extends StatelessWidget {
                 button: true,
                 label: buttonSemanticsLabel,
                 child: Material(
-                  color: _kSalesFilterCircleFill,
+                  color: SalesFilterCirclePalette.fill,
                   shape: const CircleBorder(),
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
@@ -125,7 +124,7 @@ class SalesCardFilterTrigger extends StatelessWidget {
                         Icons.filter_list_rounded,
                         size: 22,
                         color: enabled
-                            ? _kSalesFilterCircleIcon
+                            ? SalesFilterCirclePalette.icon
                             : scheme.onSurfaceVariant,
                       ),
                     ),

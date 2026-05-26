@@ -1,9 +1,9 @@
 import 'package:colmeia/app/theme/app_theme.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_filters_sheet.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -22,8 +22,8 @@ void main() {
             return Scaffold(
               body: SalesLiveMapFiltersSheet(
                 l10n: AppLocalizations.of(context),
-                availableAgents: const <OverviewAgentOption>[
-                  OverviewAgentOption(agentId: 'agent-1', name: 'Agent 1'),
+                availableAgents: const <DashboardAgentOption>[
+                  DashboardAgentOption(agentId: 'agent-1', name: 'Agent 1'),
                 ],
                 availableBranches: const <SalesLiveMapBranchOption>[
                   SalesLiveMapBranchOption(
@@ -70,8 +70,8 @@ void main() {
               return Scaffold(
                 body: SalesLiveMapFiltersSheet(
                   l10n: AppLocalizations.of(context),
-                  availableAgents: const <OverviewAgentOption>[
-                    OverviewAgentOption(
+                  availableAgents: const <DashboardAgentOption>[
+                    DashboardAgentOption(
                       agentId: 'agent-1',
                       name: 'Branch with token',
                     ),
@@ -122,8 +122,8 @@ void main() {
               return Scaffold(
                 body: SalesLiveMapFiltersSheet(
                   l10n: AppLocalizations.of(context),
-                  availableAgents: const <OverviewAgentOption>[
-                    OverviewAgentOption(agentId: 'agent-1', name: 'Agent 1'),
+                  availableAgents: const <DashboardAgentOption>[
+                    DashboardAgentOption(agentId: 'agent-1', name: 'Agent 1'),
                   ],
                   availableBranches: const <SalesLiveMapBranchOption>[
                     SalesLiveMapBranchOption(
@@ -174,9 +174,9 @@ void main() {
             return Scaffold(
               body: SalesLiveMapFiltersSheet(
                 l10n: AppLocalizations.of(context),
-                availableAgents: const <OverviewAgentOption>[
-                  OverviewAgentOption(agentId: 'agent-1', name: 'Agent 1'),
-                  OverviewAgentOption(agentId: 'agent-2', name: 'Agent 2'),
+                availableAgents: const <DashboardAgentOption>[
+                  DashboardAgentOption(agentId: 'agent-1', name: 'Agent 1'),
+                  DashboardAgentOption(agentId: 'agent-2', name: 'Agent 2'),
                 ],
                 availableBranches: const <SalesLiveMapBranchOption>[
                   SalesLiveMapBranchOption(
@@ -243,8 +243,8 @@ void main() {
             return Scaffold(
               body: SalesLiveMapFiltersSheet(
                 l10n: AppLocalizations.of(context),
-                availableAgents: const <OverviewAgentOption>[
-                  OverviewAgentOption(
+                availableAgents: const <DashboardAgentOption>[
+                  DashboardAgentOption(
                     agentId: 'agent-1',
                     name: 'Branch without token',
                     missingLocalClientToken: true,

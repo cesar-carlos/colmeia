@@ -1,21 +1,21 @@
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 
 /// Maximum inclusive calendar-day span for Sales daily totals (picker + loads).
-/// Matches [kOverviewCustomReferenceRangeMaxInclusiveDays] today; kept here so
+/// Matches [kDashboardCustomReferenceRangeMaxInclusiveDays] today; kept here so
 /// Sales can diverge without editing overview modules.
 const int kSalesDailyTotalsMaxInclusiveDays =
-    kOverviewCustomReferenceRangeMaxInclusiveDays;
+    kDashboardCustomReferenceRangeMaxInclusiveDays;
 
 /// Guards date spans for daily totals sales loads and filter UI.
 abstract final class SalesDailyTotalsRangePolicy {
   /// Same maximum-length rule as the dashboard home custom reference range.
-  static bool isAllowed(OverviewDateRange range) =>
+  static bool isAllowed(DashboardDateRange range) =>
       range.inclusiveCalendarDayCount <= kSalesDailyTotalsMaxInclusiveDays;
 
   /// Normalizes UI/restored ranges to the same picker window as the dashboard
   /// home filter.
-  static OverviewDateRange normalizedForSalesDailyTotalsPicker({
-    required OverviewDateRange range,
+  static DashboardDateRange normalizedForSalesDailyTotalsPicker({
+    required DashboardDateRange range,
     DateTime? now,
   }) {
     final n = now ?? DateTime.now();

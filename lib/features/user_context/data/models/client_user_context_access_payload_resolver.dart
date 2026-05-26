@@ -1,4 +1,4 @@
-import 'package:colmeia/features/auth/data/models/client_auth_json_reader.dart';
+import 'package:colmeia/shared/data/json/wrapped_json_reader.dart';
 
 class ResolvedClientUserContextAccessPayload {
   const ResolvedClientUserContextAccessPayload({

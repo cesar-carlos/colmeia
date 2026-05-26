@@ -4,7 +4,7 @@ import 'package:colmeia/l10n/app_localizations.dart';
 ///
 /// Labels use [AppLocalizations.overviewDailySalesAxisDow*] — single source for
 /// short weekday strings across daily and weekday overview charts.
-String overviewWeekdaySalesLabel(int weekdayNumber, AppLocalizations l10n) {
+String dailySalesWeekdayLabel(int weekdayNumber, AppLocalizations l10n) {
   return switch (weekdayNumber) {
     1 => l10n.overviewDailySalesAxisDowSun,
     2 => l10n.overviewDailySalesAxisDowMon,
@@ -18,7 +18,7 @@ String overviewWeekdaySalesLabel(int weekdayNumber, AppLocalizations l10n) {
 }
 
 /// [DateTime.weekday]: Monday = 1 … Sunday = 7 (same mapping as axis strings).
-String overviewShortWeekdayFromDateTime(AppLocalizations l10n, DateTime d) {
+String dailySalesShortWeekdayFromDateTime(AppLocalizations l10n, DateTime d) {
   switch (d.weekday) {
     case DateTime.monday:
       return l10n.overviewDailySalesAxisDowMon;

@@ -1,6 +1,6 @@
 import 'package:checks/checks.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_filter.dart';
 import 'package:colmeia/features/overview/domain/overview_last_twelve_months_venda_range.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -29,8 +29,8 @@ void main() {
       'fromOverviewFilter uses yearMonth as last month of the 12-month window',
       () {
         final range = OverviewLast12MonthsVendaRange.fromOverviewFilter(
-          const OverviewFilter(
-            yearMonth: OverviewYearMonth(year: 2026, month: 3),
+          const DashboardFilter(
+            yearMonth: DashboardYearMonth(year: 2026, month: 3),
           ),
           clock: () => DateTime(2026, 4),
         );
@@ -45,8 +45,8 @@ void main() {
       'fromOverviewFilter ignores clock when yearMonth is set',
       () {
         final range = OverviewLast12MonthsVendaRange.fromOverviewFilter(
-          const OverviewFilter(
-            yearMonth: OverviewYearMonth(year: 2026, month: 3),
+          const DashboardFilter(
+            yearMonth: DashboardYearMonth(year: 2026, month: 3),
           ),
           clock: () => DateTime(2020),
         );
@@ -59,7 +59,7 @@ void main() {
       'fromOverviewFilter uses calendar month of clock when yearMonth is null',
       () {
         final range = OverviewLast12MonthsVendaRange.fromOverviewFilter(
-          const OverviewFilter(),
+          const DashboardFilter(),
           clock: () => DateTime(2026, 3, 10),
         );
         check(range.dataVendaInicio).equals(DateTime(2025, 4));
@@ -71,9 +71,9 @@ void main() {
       'fromOverviewFilter anchors last month on referenceRange end month',
       () {
         final range = OverviewLast12MonthsVendaRange.fromOverviewFilter(
-          OverviewFilter(
-            yearMonth: const OverviewYearMonth(year: 2026, month: 4),
-            referenceRange: OverviewDateRange.fromOrderedEndpoints(
+          DashboardFilter(
+            yearMonth: const DashboardYearMonth(year: 2026, month: 4),
+            referenceRange: DashboardDateRange.fromOrderedEndpoints(
               DateTime(2026, 3),
               DateTime(2026, 3, 10),
             ),
