@@ -1,6 +1,7 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
+import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'e2e_dependency_bootstrap.dart';
@@ -108,6 +109,68 @@ void main() {
         reason: 'other',
       );
       expect(isKnownE2eAgentDisconnectedAtDispatchFailure(failure), isFalse);
+    });
+  });
+
+  group('isKnownE2eAgentSqlHubConcurrencyFailure', () {
+    test('returns true for concurrent_handlers_exceeded RpcFailure', () {
+      const failure = RpcFailure(
+        message: 'Too many query attempts were made.',
+        userMessage: 'Wait and try again.',
+        rpcCode: -32013,
+        retryable: true,
+        reason: 'concurrent_handlers_exceeded',
+        category: 'transport',
+        context: <String, Object?>{
+          AgentSqlRpcFailureUiKey.field: AgentSqlRpcFailureUiKey.rateLimited,
+        },
+      );
+
+      expect(isKnownE2eAgentSqlHubConcurrencyFailure(failure), isTrue);
+      expect(isAcceptableE2eAgentSqlRepositoryFailure(failure), isTrue);
+    });
+
+    test('returns false for unrelated RpcFailure', () {
+      const failure = RpcFailure(
+        message: 'm',
+        userMessage: 'u',
+        rpcCode: -1,
+        retryable: false,
+        reason: 'sql_execution_failed',
+        category: 'sql',
+      );
+
+      expect(isKnownE2eAgentSqlHubConcurrencyFailure(failure), isFalse);
+    });
+
+    test('returns true for rate_limited RpcFailure reason', () {
+      const failure = RpcFailure(
+        message: 'Rate limit exceeded.',
+        userMessage: 'Wait and try again.',
+        rpcCode: -32013,
+        retryable: true,
+        reason: 'rate_limited',
+        category: 'transport',
+      );
+
+      expect(isKnownE2eAgentSqlHubConcurrencyFailure(failure), isTrue);
+      expect(isAcceptableE2eAgentSqlRepositoryFailure(failure), isTrue);
+    });
+
+    test('returns true when only uiKey is rateLimited', () {
+      const failure = RpcFailure(
+        message: 'Hub busy.',
+        userMessage: 'Wait and try again.',
+        rpcCode: -32013,
+        retryable: true,
+        category: 'transport',
+        context: <String, Object?>{
+          AgentSqlRpcFailureUiKey.field: AgentSqlRpcFailureUiKey.rateLimited,
+        },
+      );
+
+      expect(isKnownE2eAgentSqlHubConcurrencyFailure(failure), isTrue);
+      expect(isAcceptableE2eAgentSqlRepositoryFailure(failure), isTrue);
     });
   });
 

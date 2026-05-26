@@ -12,6 +12,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../support/widget_test_l10n.dart';
+
 void main() {
   testWidgets('renders the selected store detail card content', (
     tester,
@@ -50,7 +52,9 @@ void main() {
     expect(find.text('1.568 vendas'), findsOneWidget);
     expect(find.text('Tangara da Serra / MT'), findsOneWidget);
     expect(find.text('IBGE 5107958'), findsOneWidget);
-    expect(find.text('Geolocalizacao IBGE'), findsOneWidget);
+    final l10n =
+        localizedFromWidget<AppBrazilStoreSalesMapChart>(tester);
+    expect(find.text(l10n.brazilStoreSalesMapLocationIbge), findsOneWidget);
   });
 
   testWidgets(
@@ -101,9 +105,11 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text('Filiais visiveis'), findsOneWidget);
+      final l10n =
+        localizedFromWidget<AppBrazilStoreSalesMapChart>(tester);
+      expect(find.text(l10n.brazilStoreSalesMapSidebarTitle), findsOneWidget);
       expect(
-        find.text(r'2 filiais visiveis · R$ 14.000,00'),
+        find.text(l10n.brazilStoreSalesMapSidebarSummary(2, r'R$ 14.000,00')),
         findsOneWidget,
       );
       expect(find.text('Filial Sao Paulo'), findsOneWidget);
@@ -422,11 +428,14 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text('Nenhuma filial visivel'), findsOneWidget);
+      final l10n =
+        localizedFromWidget<AppBrazilStoreSalesMapChart>(tester);
       expect(
-        find.text(
-          'Ajuste a regiao do mapa ou limpe o escopo ativo para listar filiais neste painel.',
-        ),
+        find.text(l10n.brazilStoreSalesMapSidebarEmptyStateTitle),
+        findsOneWidget,
+      );
+      expect(
+        find.text(l10n.brazilStoreSalesMapSidebarEmptyStateMessage),
         findsOneWidget,
       );
       expect(find.text('Mel Cuiaba'), findsNothing);
@@ -497,8 +506,16 @@ void main() {
       expect(find.text('Mel Sul'), findsOneWidget);
       expect(find.text('Filial Sao Paulo'), findsNothing);
       expect(find.text('Filial Cuiaba'), findsNothing);
-      expect(find.text('1 filial visivel'), findsOneWidget);
-      expect(find.text(r'Total no recorte: R$ 7.300,00'), findsOneWidget);
+      final l10n =
+        localizedFromWidget<AppBrazilStoreSalesMapChart>(tester);
+      expect(
+        find.text(l10n.brazilStoreSalesMapSidebarCountSummary(1)),
+        findsOneWidget,
+      );
+      expect(
+        find.text(l10n.brazilStoreSalesMapSidebarRevenueSummary(r'R$ 7.300,00')),
+        findsOneWidget,
+      );
     },
   );
 
@@ -692,7 +709,12 @@ void main() {
 
       expect(find.text('Carregando vendas'), findsOneWidget);
       expect(find.text('Vendas indisponiveis'), findsOneWidget);
-      expect(find.text('Sem vendas no periodo'), findsOneWidget);
+      final l10n =
+        localizedFromWidget<AppBrazilStoreSalesMapChart>(tester);
+      expect(
+        find.text(l10n.brazilStoreSalesMapSidebarZeroSalesLabel),
+        findsOneWidget,
+      );
 
       await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
       await tester.pump();

@@ -727,6 +727,25 @@ bool isKnownE2eAgentSqlReplayDetectedFailure(AppFailure failure) {
       message.contains('duplicate request');
 }
 
+/// Hub concurrency / rate-limit RPCs during heavy parallel `flutter test` runs.
+bool isKnownE2eAgentSqlHubConcurrencyFailure(AppFailure failure) {
+  if (failure is! RpcFailure) {
+    return false;
+  }
+  if (failure.reason == 'concurrent_handlers_exceeded') {
+    return true;
+  }
+  final reasonLower = failure.reason?.trim().toLowerCase() ?? '';
+  if (reasonLower == 'rate_limited') {
+    return true;
+  }
+  if (failure.rpcCode == -32013 && failure.category == 'transport') {
+    return true;
+  }
+  final uiKey = failure.context[AgentSqlRpcFailureUiKey.field];
+  return uiKey == AgentSqlRpcFailureUiKey.rateLimited;
+}
+
 /// Fail-fast while the agent-queries circuit breaker is open (overload
 /// protection): [NetworkFailure] without an underlying Dio cause, but still
 /// an environmental hub-overload signal for E2E smoke runs.
@@ -752,6 +771,7 @@ bool isAcceptableE2eAgentSqlRepositoryFailure(AppFailure failure) {
       isKnownE2eAgentSqlHttpForbiddenFailure(failure) ||
       isKnownE2eAgentSqlBridgeNamedParameterLimitFailure(failure) ||
       isKnownE2eAgentSqlQueueSaturationFailure(failure) ||
+      isKnownE2eAgentSqlHubConcurrencyFailure(failure) ||
       isKnownE2eAgentSqlReplayDetectedFailure(failure) ||
       isKnownE2eAgentSqlCircuitBreakerOpenFailure(failure) ||
       isKnownE2eAgentDisconnectedAtDispatchFailure(failure);

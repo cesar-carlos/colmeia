@@ -182,31 +182,49 @@ class _AppDropdownFieldState<T> extends State<AppDropdownField<T>> {
                         children: <Widget>[
                           Padding(
                             padding: fieldPadding,
-                            child: Row(
-                              children: <Widget>[
-                                Expanded(
-                                  child: Text(
-                                    displayLabel,
-                                    style: typography.body.copyWith(
-                                      color: hasCollapsedSelection
-                                          ? colors.onSurface
-                                          : colors.onSurfaceVariant,
-                                      fontWeight: hasCollapsedSelection
-                                          ? FontWeight.w600
-                                          : FontWeight.w500,
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final label = Text(
+                                  displayLabel,
+                                  style: typography.body.copyWith(
+                                    color: hasCollapsedSelection
+                                        ? colors.onSurface
+                                        : colors.onSurfaceVariant,
+                                    fontWeight: hasCollapsedSelection
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                );
+                                final hasBoundedWidth =
+                                    constraints.maxWidth.isFinite &&
+                                    constraints.maxWidth > 0;
+                                return Row(
+                                  mainAxisSize: hasBoundedWidth
+                                      ? MainAxisSize.max
+                                      : MainAxisSize.min,
+                                  children: <Widget>[
+                                    if (hasBoundedWidth)
+                                      Expanded(child: label)
+                                    else
+                                      Flexible(
+                                        fit: FlexFit.loose,
+                                        child: label,
+                                      ),
+                                    SizedBox(width: tokens.gapSm),
+                                    AnimatedRotation(
+                                      duration: const Duration(
+                                        milliseconds: 140,
+                                      ),
+                                      turns: _expanded ? 0.5 : 0,
+                                      child: Icon(
+                                        Icons.expand_more_rounded,
+                                        color: colors.outline,
+                                      ),
                                     ),
-                                  ),
-                                ),
-                                SizedBox(width: tokens.gapSm),
-                                AnimatedRotation(
-                                  duration: const Duration(milliseconds: 140),
-                                  turns: _expanded ? 0.5 : 0,
-                                  child: Icon(
-                                    Icons.expand_more_rounded,
-                                    color: colors.outline,
-                                  ),
-                                ),
-                              ],
+                                  ],
+                                );
+                              },
                             ),
                           ),
                           _AnimatedDropdownMenu(

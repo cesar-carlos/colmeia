@@ -1202,7 +1202,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get brazilStoreSalesMapSidebarEmptyStateMessage =>
-      'Ajuste a regiao do mapa ou limpe o escopo ativo para listar filiais neste painel.';
+      'Ajuste a região do mapa ou limpe o escopo ativo para listar filiais neste painel.';
 
   @override
   String get brazilStoreSalesMapSidebarSearchEmptyStateTitle =>
@@ -4999,7 +4999,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get brazilStoreSalesMapSidebarEmptyStateMessage =>
-      'Ajuste a regiao do mapa ou limpe o escopo ativo para listar filiais neste painel.';
+      'Ajuste a região do mapa ou limpe o escopo ativo para listar filiais neste painel.';
 
   @override
   String get brazilStoreSalesMapSidebarSearchEmptyStateTitle =>

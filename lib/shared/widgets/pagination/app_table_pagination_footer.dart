@@ -42,6 +42,9 @@ List<int?> buildPaginationPageSlots({
   return out;
 }
 
+/// Fixed width for the page-size dropdown (compact numeric labels only).
+const double _kCompactPageSizeDropdownWidth = 88;
+
 class AppTablePaginationFooterStyle {
   const AppTablePaginationFooterStyle({
     this.iconButtonSize = 32,
@@ -122,6 +125,7 @@ class AppTablePaginationFooter extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 _SummaryRow(
+                  isMobile: true,
                   tokens: tokens,
                   scheme: scheme,
                   numberFormat: numberFormat,
@@ -156,6 +160,7 @@ class AppTablePaginationFooter extends StatelessWidget {
               children: <Widget>[
                 Expanded(
                   child: _SummaryRow(
+                    isMobile: false,
                     tokens: tokens,
                     scheme: scheme,
                     numberFormat: numberFormat,
@@ -194,6 +199,7 @@ class AppTablePaginationFooter extends StatelessWidget {
 
 class _SummaryRow extends StatelessWidget {
   const _SummaryRow({
+    required this.isMobile,
     required this.tokens,
     required this.scheme,
     required this.numberFormat,
@@ -209,6 +215,7 @@ class _SummaryRow extends StatelessWidget {
     required this.entityLabel,
   });
 
+  final bool isMobile;
   final AppThemeTokens tokens;
   final ColorScheme scheme;
   final NumberFormat numberFormat;
@@ -234,10 +241,12 @@ class _SummaryRow extends StatelessWidget {
       fontWeight: FontWeight.w700,
     );
 
-    final pageSizeWidget =
+    final hasPageSizeControl =
         pageSizeOptions != null &&
-            pageSizeOptions!.isNotEmpty &&
-            onPageSizeChanged != null
+        pageSizeOptions!.isNotEmpty &&
+        onPageSizeChanged != null;
+
+    final pageSizeBlock = hasPageSizeControl
         ? Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
@@ -248,10 +257,9 @@ class _SummaryRow extends StatelessWidget {
                 options: pageSizeOptions!,
                 onChanged: onPageSizeChanged!,
               ),
-              SizedBox(width: tokens.gapMd),
             ],
           )
-        : const SizedBox.shrink();
+        : null;
 
     final summary = Text.rich(
       TextSpan(
@@ -274,12 +282,26 @@ class _SummaryRow extends StatelessWidget {
       ),
     );
 
-    return Wrap(
-      crossAxisAlignment: WrapCrossAlignment.center,
-      runSpacing: tokens.gapSm,
+    if (isMobile) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          if (pageSizeBlock != null) ...<Widget>[
+            pageSizeBlock,
+            SizedBox(height: tokens.gapSm),
+          ],
+          summary,
+        ],
+      );
+    }
+
+    return Row(
       children: <Widget>[
-        pageSizeWidget,
-        summary,
+        if (pageSizeBlock != null) ...<Widget>[
+          pageSizeBlock,
+          SizedBox(width: tokens.gapMd),
+        ],
+        Expanded(child: summary),
       ],
     );
   }
@@ -298,17 +320,20 @@ class _PageSizeDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppDropdownField<int>(
-      value: value,
-      options: options
-          .map((n) => AppDropdownOption<int>(value: n, label: '$n'))
-          .toList(growable: false),
-      density: AppTextFieldDensity.compact,
-      onChanged: (v) {
-        if (v != null) {
-          onChanged(v);
-        }
-      },
+    return SizedBox(
+      width: _kCompactPageSizeDropdownWidth,
+      child: AppDropdownField<int>(
+        value: value,
+        options: options
+            .map((n) => AppDropdownOption<int>(value: n, label: '$n'))
+            .toList(growable: false),
+        density: AppTextFieldDensity.compact,
+        onChanged: (v) {
+          if (v != null) {
+            onChanged(v);
+          }
+        },
+      ),
     );
   }
 }

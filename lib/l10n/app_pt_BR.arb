@@ -574,7 +574,7 @@
   "brazilStoreSalesMapSidebarSearchPlaceholder": "Buscar filial ou cidade",
   "brazilStoreSalesMapSidebarSearchSemanticsLabel": "Buscar filial ou cidade na lista do mapa",
   "brazilStoreSalesMapSidebarEmptyStateTitle": "Nenhuma filial visível",
-  "brazilStoreSalesMapSidebarEmptyStateMessage": "Ajuste a regiao do mapa ou limpe o escopo ativo para listar filiais neste painel.",
+  "brazilStoreSalesMapSidebarEmptyStateMessage": "Ajuste a região do mapa ou limpe o escopo ativo para listar filiais neste painel.",
   "brazilStoreSalesMapSidebarSearchEmptyStateTitle": "Nenhuma filial encontrada",
   "brazilStoreSalesMapSidebarSearchEmptyStateMessage": "Ajuste a busca para localizar filiais neste recorte.",
   "brazilStoreSalesMapSidebarZeroSalesLabel": "Sem vendas no período",
