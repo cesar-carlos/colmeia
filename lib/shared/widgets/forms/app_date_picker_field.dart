@@ -592,9 +592,11 @@ class _AppDatePickerSheetState extends State<_AppDatePickerSheet> {
   void didUpdateWidget(covariant _AppDatePickerSheet oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.initialValue != oldWidget.initialValue) {
-      _selectedDate = widget.initialValue == null
-          ? null
-          : _normalizeDate(widget.initialValue!);
+      setState(() {
+        _selectedDate = widget.initialValue == null
+            ? null
+            : _normalizeDate(widget.initialValue!);
+      });
     }
   }
 
@@ -691,7 +693,7 @@ class _AppDateRangePickerSheetState extends State<_AppDateRangePickerSheet> {
   void didUpdateWidget(covariant _AppDateRangePickerSheet oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.initialValue != oldWidget.initialValue) {
-      _selectedRange = widget.initialValue;
+      setState(() => _selectedRange = widget.initialValue);
     }
   }
 

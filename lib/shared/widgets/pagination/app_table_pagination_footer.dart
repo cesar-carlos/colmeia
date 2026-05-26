@@ -1,6 +1,8 @@
 import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
+import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -245,8 +247,6 @@ class _SummaryRow extends StatelessWidget {
                 value: pageSize,
                 options: pageSizeOptions!,
                 onChanged: onPageSizeChanged!,
-                scheme: scheme,
-                tokens: tokens,
               ),
               SizedBox(width: tokens.gapMd),
             ],
@@ -290,54 +290,25 @@ class _PageSizeDropdown extends StatelessWidget {
     required this.value,
     required this.options,
     required this.onChanged,
-    required this.scheme,
-    required this.tokens,
   });
 
   final int value;
   final List<int> options;
   final ValueChanged<int> onChanged;
-  final ColorScheme scheme;
-  final AppThemeTokens tokens;
 
   @override
   Widget build(BuildContext context) {
-    final typography = Theme.of(context).appTypography;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerLow,
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
-        borderRadius: BorderRadius.circular(tokens.formFieldRadius),
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: tokens.gapSm),
-        child: DropdownButtonHideUnderline(
-          child: DropdownButton<int>(
-            value: value,
-            isDense: true,
-            iconSize: 18,
-            borderRadius: BorderRadius.circular(tokens.formFieldRadius),
-            dropdownColor: scheme.surfaceContainerLow,
-            style: typography.caption.copyWith(
-              color: scheme.onSurface,
-              fontWeight: FontWeight.w600,
-            ),
-            items: options
-                .map(
-                  (n) => DropdownMenuItem<int>(
-                    value: n,
-                    child: Text('$n'),
-                  ),
-                )
-                .toList(),
-            onChanged: (v) {
-              if (v != null) {
-                onChanged(v);
-              }
-            },
-          ),
-        ),
-      ),
+    return AppDropdownField<int>(
+      value: value,
+      options: options
+          .map((n) => AppDropdownOption<int>(value: n, label: '$n'))
+          .toList(growable: false),
+      density: AppTextFieldDensity.compact,
+      onChanged: (v) {
+        if (v != null) {
+          onChanged(v);
+        }
+      },
     );
   }
 }
