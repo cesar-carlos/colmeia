@@ -127,7 +127,7 @@ class _SalesMonthlyPnlBarChartCardState
   @override
   Widget build(BuildContext context) {
     final l10n = widget.l10n;
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final tokens = context.appTokens;
     final theme = Theme.of(context);
     final localeTag = l10n.localeName;
     final emptyMessage = widget.loadFailed
@@ -273,7 +273,7 @@ class _SalesMonthlyPnlBarChartBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = this.l10n;
     final theme = this.theme ?? Theme.of(context);
-    final tokens = this.tokens ?? theme.extension<AppThemeTokens>()!;
+    final tokens = this.tokens ?? theme.appTokens;
     final chartTheme =
         this.chartTheme ??
         AppChartTheme.fromContext(context, preset: AppChartPreset.standard);
@@ -651,9 +651,7 @@ Future<void> pushSalesMonthlyPnlBarChartFullscreen({
       chartSemanticsLabel: pageL10n.salesMonthlyPnlBarChartSemantics,
       chartBuilder: (fullscreenContext) {
         final l10nFs = AppLocalizations.of(fullscreenContext);
-        final tokensFs = Theme.of(
-          fullscreenContext,
-        ).extension<AppThemeTokens>()!;
+        final tokensFs = fullscreenContext.appTokens;
         final sessionHolder = <SalesMonthlyPnlBarChartPreferences>[
           initialSession,
         ];

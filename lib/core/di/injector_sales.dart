@@ -4,10 +4,11 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_periodo_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
-import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
+import 'package:colmeia/features/sales/application/ports/sales_live_map_catalog_cache.dart';
+import 'package:colmeia/features/sales/application/ports/sales_preferences_port.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_refresh_metrics.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
@@ -26,17 +27,16 @@ void registerInjectorSales(GetIt getIt) {
     ..registerSingleton<SalesPreferences>(
       SalesPreferences(getIt<SharedPreferences>()),
     )
+    ..registerLazySingleton<SalesPreferencesPort>(
+      () => getIt<SalesPreferences>(),
+    )
     ..registerLazySingleton<SalesSessionService>(
-      () => SalesSessionService(getIt<SalesPreferences>()),
+      () => SalesSessionService(getIt<SalesPreferencesPort>()),
     )
     ..registerLazySingleton<LoadAvailableAgentsForSales>(
       () => LoadAvailableAgentsForSales.fromTargetResolver(
         getIt<AgentQueryTargetResolver>(),
       ),
-    )
-    ..registerLazySingleton<LoadSalesAvailableAgentsUseCase>(
-      () =>
-          LoadSalesAvailableAgentsUseCase(getIt<LoadAvailableAgentsForSales>()),
     )
     ..registerLazySingleton<ResolveSalesAgentClientTokenUseCase>(
       () =>
@@ -55,6 +55,9 @@ void registerInjectorSales(GetIt getIt) {
     ..registerLazySingleton<SalesLiveMapCatalogDiskCache>(
       () => SalesLiveMapCatalogDiskCache(getIt<SharedPreferences>()),
     )
+    ..registerLazySingleton<SalesLiveMapCatalogCache>(
+      () => getIt<SalesLiveMapCatalogDiskCache>(),
+    )
     ..registerLazySingleton<SalesLiveMapRefreshMetrics>(
       SalesLiveMapRefreshMetrics.new,
     )
@@ -68,7 +71,7 @@ void registerInjectorSales(GetIt getIt) {
     ..registerFactory<LoadSalesLiveMapUseCase>(
       () => LoadSalesLiveMapUseCase(
         getIt<AgentQueryTargetResolver>(),
-        getIt<SalesLiveMapCatalogDiskCache>(),
+        getIt<SalesLiveMapCatalogCache>(),
         getIt<LoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase>(),
         getIt<LoadCadastroFilialAcrossAgentsUseCase>(),
         getIt<SalesLiveMapPointResolver>(),

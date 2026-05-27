@@ -34,7 +34,7 @@ class SalesCardFilterTrigger extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
+    final tokens = theme.appTokens;
     final typography = theme.appTypography;
     final colors = theme.appColors;
     final scheme = theme.colorScheme;

@@ -19,6 +19,26 @@ class SalesLiveMapCatalogScope {
          selectedBranches.map((branch) => branch.normalizedAgentId),
        );
 
+  /// Canonical signature for a set of agent ids — `'*'` when empty/null,
+  /// otherwise a comma-separated sorted list. Used as a cache key fragment so
+  /// equivalent selections share storage regardless of insertion order.
+  static String agentSignatureOf(Set<String>? selectedAgentIds) {
+    if (selectedAgentIds == null || selectedAgentIds.isEmpty) {
+      return '*';
+    }
+    final sorted = selectedAgentIds.toList(growable: false)..sort();
+    return sorted.join(',');
+  }
+
+  /// Canonical signature for a set of branch refs — `'*'` when empty,
+  /// otherwise delegates to [CadastroFilialBranchRef.signature]. Used as a
+  /// cache key fragment.
+  static String branchSignatureOf(
+    Iterable<CadastroFilialBranchRef> selectedBranches,
+  ) {
+    return CadastroFilialBranchRef.signature(selectedBranches);
+  }
+
   final SalesLiveMapCatalogScopeKind kind;
   final List<String> agentIds;
   final List<CadastroFilialBranchRef> selectedBranches;

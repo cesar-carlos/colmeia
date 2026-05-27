@@ -6,7 +6,6 @@ import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
-import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
@@ -351,9 +350,7 @@ Future<void> _pumpPage(
         home: Scaffold(
           body: SalesMonthlyPnlPage(
             sessionService: SalesSessionService(salesPreferences),
-            loadSalesAvailableAgentsUseCase: LoadSalesAvailableAgentsUseCase(
-              loadAvailableAgentsForSales,
-            ),
+            loadSalesAvailableAgentsUseCase: loadAvailableAgentsForSales,
             loadSalesMonthlyPnlLinesUseCase: loadMonthlyPnlLines,
             loadSalesDailyTotalsUseCase: loadDailyTotals,
             resolveSalesAgentClientTokenUseCase:

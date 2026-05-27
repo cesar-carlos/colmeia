@@ -13,6 +13,12 @@ abstract final class AppBreakpoints {
 
   static const double pageContentMaxWidth = 960;
 
+  /// KPI grid switches from 2 to 3 columns at or above this width.
+  static const double kpiGridWide = 720;
+
+  /// KPI grid switches from 3 to 5 columns at or above this width.
+  static const double kpiGridExtraWide = 960;
+
   /// Hides a report column when grid width is below this (very narrow layouts).
   static const double reportColumnHideExtraNarrow = 360;
 

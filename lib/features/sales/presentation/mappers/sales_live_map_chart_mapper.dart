@@ -2,6 +2,8 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dar
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 
+const int _kSalesLiveMapPointsDigestSeed = 0xBEE5CAFE;
+
 abstract final class SalesLiveMapChartMapper {
   static AppBrazilStoreSalesMapMetric toChartMetric(
     SalesLiveMapMetric metric,
@@ -70,7 +72,7 @@ abstract final class SalesLiveMapChartMapper {
     final pointList = points is List<SalesLiveMapPoint>
         ? points
         : points.toList(growable: false);
-    var h = Object.hash(0xBEE5CAFE, pointList.length);
+    var h = Object.hash(_kSalesLiveMapPointsDigestSeed, pointList.length);
     for (final point in pointList) {
       h = Object.hash(
         h,

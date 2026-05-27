@@ -1087,6 +1087,13 @@
       "count": {"type": "int"}
     }
   },
+  "salesLiveMapDateRangeFormat": "{start} a {end}",
+  "@salesLiveMapDateRangeFormat": {
+    "placeholders": {
+      "start": {"type": "String"},
+      "end": {"type": "String"}
+    }
+  },
   "salesLiveMapPeriodToday": "Hoje",
   "salesLiveMapPeriodLastSevenDays": "Últimos 7 dias",
   "salesLiveMapPeriodLastSevenDaysShort": "7 dias",

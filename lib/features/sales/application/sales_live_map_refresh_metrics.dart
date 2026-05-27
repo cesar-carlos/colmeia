@@ -1,6 +1,9 @@
+import 'package:colmeia/features/sales/application/sales_live_map_catalog_scope.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
-import 'package:colmeia/features/sales/data/sales_live_map_catalog_scope.dart';
 import 'package:flutter/foundation.dart';
+
+const int _kSalesLiveMapRefreshMetricsMaxEntries = 100;
+const int _kSalesLiveMapRefreshMetricsDefaultLimit = 20;
 
 enum SalesLiveMapCatalogSource {
   memory,
@@ -87,7 +90,9 @@ class SalesLiveMapRefreshMetricEvent {
 }
 
 class SalesLiveMapRefreshMetrics {
-  SalesLiveMapRefreshMetrics({this.maxEntries = 100});
+  SalesLiveMapRefreshMetrics({
+    this.maxEntries = _kSalesLiveMapRefreshMetricsMaxEntries,
+  });
 
   final int maxEntries;
   final List<SalesLiveMapRefreshMetricEvent> _events =
@@ -100,7 +105,9 @@ class SalesLiveMapRefreshMetrics {
     }
   }
 
-  List<SalesLiveMapRefreshMetricEvent> getRecentEvents({int limit = 20}) {
+  List<SalesLiveMapRefreshMetricEvent> getRecentEvents({
+    int limit = _kSalesLiveMapRefreshMetricsDefaultLimit,
+  }) {
     return _events.reversed.take(limit).toList(growable: false);
   }
 

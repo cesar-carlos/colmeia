@@ -2,6 +2,7 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref_codec.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
+import 'package:colmeia/shared/utils/app_unordered_set_equality.dart';
 import 'package:flutter/foundation.dart';
 
 /// SQL-driving slice of [SalesLiveMapFilter] (agents, period, persisted branch scope).
@@ -37,8 +38,8 @@ class SalesLiveMapDataFilter {
       return true;
     }
     return other is SalesLiveMapDataFilter &&
-        _setEquals(other.selectedAgentIds, selectedAgentIds) &&
-        _setEquals(other.selectedBranchIds, selectedBranchIds) &&
+        appSetEquals(other.selectedAgentIds, selectedAgentIds) &&
+        appSetEquals(other.selectedBranchIds, selectedBranchIds) &&
         other.periodMode == periodMode &&
         other.customDateRange == customDateRange;
   }
@@ -47,46 +48,15 @@ class SalesLiveMapDataFilter {
   int get hashCode => Object.hash(
     periodMode,
     customDateRange,
-    _orderedStringHash(selectedAgentIds),
-    _orderedBranchHash(selectedBranchIds),
+    appOrderedSetHash<String>(selectedAgentIds, _identityKey),
+    appOrderedSetHash<SalesLiveMapBranchRef>(
+      selectedBranchIds,
+      SalesLiveMapBranchRefCodec.encode,
+    ),
   );
-
-  static bool _setEquals<T>(Set<T>? a, Set<T>? b) {
-    if (identical(a, b)) {
-      return true;
-    }
-    if (a == null || b == null) {
-      return a == null && b == null;
-    }
-    if (a.length != b.length) {
-      return false;
-    }
-    for (final value in a) {
-      if (!b.contains(value)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  static int? _orderedStringHash(Set<String>? value) {
-    if (value == null) {
-      return null;
-    }
-    final sorted = value.toList(growable: false)..sort();
-    return Object.hashAll(sorted);
-  }
-
-  static int? _orderedBranchHash(Set<SalesLiveMapBranchRef>? value) {
-    if (value == null) {
-      return null;
-    }
-    final sorted =
-        value.map(SalesLiveMapBranchRefCodec.encode).toList(growable: false)
-          ..sort();
-    return Object.hashAll(sorted);
-  }
 }
+
+String _identityKey(String value) => value;
 
 extension SalesLiveMapFilterDataSlice on SalesLiveMapFilter {
   SalesLiveMapDataFilter get dataFilter =>

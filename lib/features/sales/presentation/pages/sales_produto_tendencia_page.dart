@@ -18,9 +18,9 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
+import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_agent_auto_refresh_mixin.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
@@ -93,7 +93,7 @@ class SalesProdutoTendenciaPage extends StatefulWidget {
   });
 
   final SalesSessionService sessionService;
-  final LoadSalesAvailableAgentsUseCase loadSalesAvailableAgentsUseCase;
+  final LoadAvailableAgentsForSales loadSalesAvailableAgentsUseCase;
   final ResolveSalesAgentClientTokenUseCase resolveSalesAgentClientTokenUseCase;
   final LoadProdutoVendidoTendenciaDeVendaScreenUseCase loadTrendScreenUseCase;
   final LoadGrupoProdutoOptionsUseCase loadGrupoProdutoOptionsUseCase;
@@ -115,7 +115,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
 
   late final SalesSessionService _sessionService;
   late final ResolveSalesAgentClientTokenUseCase _resolveClientTokenUseCase;
-  late final LoadSalesAvailableAgentsUseCase _loadAgentsUseCase;
+  late final LoadAvailableAgentsForSales _loadAgentsUseCase;
   late final LoadProdutoVendidoTendenciaDeVendaScreenUseCase _loadTrendScreen;
   late final LoadGrupoProdutoOptionsUseCase _loadGrupoOptions;
   late final LoadMarcaProdutoOptionsUseCase _loadMarcaOptions;
@@ -470,9 +470,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
           chartSemanticsLabel:
               l10n.salesProdutoTendenciaSummaryByClassificacaoTitle,
           chartBuilder: (fullscreenContext) {
-            final ft = Theme.of(
-              fullscreenContext,
-            ).extension<AppThemeTokens>()!;
+            final ft = fullscreenContext.appTokens;
             final fl10n = AppLocalizations.of(fullscreenContext);
             return LayoutBuilder(
               builder: (context, constraints) {
@@ -551,9 +549,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
           subtitle: subtitle,
           chartSemanticsLabel: title,
           chartBuilder: (fullscreenContext) {
-            final ft = Theme.of(
-              fullscreenContext,
-            ).extension<AppThemeTokens>()!;
+            final ft = fullscreenContext.appTokens;
             final fl10n = AppLocalizations.of(fullscreenContext);
             final axisFormat = NumberFormat.decimalPattern(fl10n.localeName);
             return LayoutBuilder(
@@ -795,7 +791,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final tokens = context.appTokens;
     final selectedBranch = _availableAgents
         .cast<DashboardAgentOption?>()
         .firstWhere(
@@ -957,7 +953,7 @@ class _TrendSummarySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
+    final tokens = theme.appTokens;
     final colors = theme.appColors;
     final summary = _buildSummary(summaryRows);
     final chartBlockHeight = AppComparisonBarChart.loadingBlockHeight(tokens);
@@ -1206,7 +1202,7 @@ class _TrendTopMoversSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
+    final tokens = theme.appTokens;
     final topGainers = _trendTopGainersRows(rows);
     final topLosers = _trendTopLosersRows(rows);
     final chartBlockHeight = AppComparisonBarChart.loadingBlockHeight(tokens);
@@ -1452,7 +1448,7 @@ class _TrendDetailsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
+    final tokens = theme.appTokens;
     final rowNumber = NumberFormat.decimalPattern(l10n.localeName);
     final hasNextPage = rows.length >= pageSize;
     final totalPages = hasNextPage ? currentPage + 1 : math.max(1, currentPage);
@@ -1643,7 +1639,7 @@ class _TrendDetailsTableHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
+    final tokens = theme.appTokens;
     final style = theme.textTheme.labelMedium?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
       fontWeight: FontWeight.w700,
@@ -1704,7 +1700,7 @@ class _TrendDetailsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
+    final tokens = theme.appTokens;
     final numberFmt = NumberFormat.decimalPattern(l10n.localeName);
     final percentText = '${row.percentualTendencia.toStringAsFixed(1)}%';
     const tabularFigures = <FontFeature>[FontFeature.tabularFigures()];

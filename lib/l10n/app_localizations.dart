@@ -4367,6 +4367,12 @@ abstract class AppLocalizations {
   /// **'{count} branch(es)'**
   String salesLiveMapAgentsSelectedSummary(int count);
 
+  /// No description provided for @salesLiveMapDateRangeFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'{start} to {end}'**
+  String salesLiveMapDateRangeFormat(String start, String end);
+
   /// No description provided for @salesLiveMapPeriodToday.
   ///
   /// In en, this message translates to:

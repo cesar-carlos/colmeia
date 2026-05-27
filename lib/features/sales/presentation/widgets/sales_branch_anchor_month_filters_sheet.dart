@@ -170,7 +170,7 @@ class _SalesBranchAnchorMonthFiltersSheetState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
+    final tokens = theme.appTokens;
     final l10n = widget.l10n;
     final selectedAgentMissingToken =
         _selectedAgentId != null &&

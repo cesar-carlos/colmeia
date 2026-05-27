@@ -1313,6 +1313,13 @@
       "count": {"type": "int"}
     }
   },
+  "salesLiveMapDateRangeFormat": "{start} to {end}",
+  "@salesLiveMapDateRangeFormat": {
+    "placeholders": {
+      "start": {"type": "String"},
+      "end": {"type": "String"}
+    }
+  },
   "salesLiveMapPeriodToday": "Today",
   "salesLiveMapPeriodLastSevenDays": "Last 7 days",
   "salesLiveMapPeriodLastSevenDaysShort": "7 days",

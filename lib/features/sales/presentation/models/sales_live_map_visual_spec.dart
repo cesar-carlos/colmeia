@@ -2,6 +2,8 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dar
 import 'package:flutter/foundation.dart';
 
 const double kSalesLiveMapOperationalHeight = 560;
+const int _kSalesLiveMapMunicipalityClusterTooltipStores = 8;
+const int _kSalesLiveMapDefaultClusterTooltipStores = 5;
 
 @immutable
 class SalesLiveMapVisualSpec {
@@ -24,10 +26,22 @@ class SalesLiveMapVisualSpec {
   final double height;
   final bool showRegionFilter;
 
-  SalesLiveMapMarkerVisual get resolvedMarkerVisual =>
-      detailLevel == SalesLiveMapMapDetail.states
-      ? SalesLiveMapMarkerVisual.bubble
-      : markerVisual;
+  /// Forces [SalesLiveMapMarkerVisual.bubble] when rendering at state-level
+  /// granularity; otherwise returns the user-selected [markerVisual].
+  static SalesLiveMapMarkerVisual resolveMarkerVisual({
+    required SalesLiveMapMapDetail detailLevel,
+    required SalesLiveMapMarkerVisual markerVisual,
+  }) {
+    if (detailLevel == SalesLiveMapMapDetail.states) {
+      return SalesLiveMapMarkerVisual.bubble;
+    }
+    return markerVisual;
+  }
+
+  SalesLiveMapMarkerVisual get resolvedMarkerVisual => resolveMarkerVisual(
+    detailLevel: detailLevel,
+    markerVisual: markerVisual,
+  );
 
   bool get showStoreDetail => detailLevel != SalesLiveMapMapDetail.states;
 
@@ -35,7 +49,9 @@ class SalesLiveMapVisualSpec {
       detailLevel == SalesLiveMapMapDetail.branches;
 
   int get maxClusterTooltipStores =>
-      detailLevel == SalesLiveMapMapDetail.municipalities ? 8 : 5;
+      detailLevel == SalesLiveMapMapDetail.municipalities
+      ? _kSalesLiveMapMunicipalityClusterTooltipStores
+      : _kSalesLiveMapDefaultClusterTooltipStores;
 
   SalesLiveMapVisualSpec copyWith({
     SalesLiveMapMapDetail? detailLevel,

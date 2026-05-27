@@ -9,12 +9,12 @@ import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.dart';
+import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_agent_auto_refresh_mixin.dart';
 import 'package:colmeia/features/sales/presentation/sales_monthly_pnl_chart_keys.dart';
@@ -112,7 +112,7 @@ class SalesMonthlyPnlPage extends StatefulWidget {
   });
 
   final SalesSessionService sessionService;
-  final LoadSalesAvailableAgentsUseCase loadSalesAvailableAgentsUseCase;
+  final LoadAvailableAgentsForSales loadSalesAvailableAgentsUseCase;
   final LoadSalesMonthlyPnlLinesUseCase loadSalesMonthlyPnlLinesUseCase;
   final LoadSalesDailyTotalsUseCase loadSalesDailyTotalsUseCase;
   final ResolveSalesAgentClientTokenUseCase resolveSalesAgentClientTokenUseCase;
@@ -128,7 +128,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
         SalesSingleAgentAutoRefreshMixin<SalesMonthlyPnlPage>,
         SalesCardAutoRefreshBinding<SalesMonthlyPnlPage> {
   late final SalesSessionService _sessionService;
-  late final LoadSalesAvailableAgentsUseCase _loadAgentsUseCase;
+  late final LoadAvailableAgentsForSales _loadAgentsUseCase;
   late final LoadSalesMonthlyPnlLinesUseCase _loadPnlLines;
   late final LoadSalesDailyTotalsUseCase _loadDailyTotals;
   late final ResolveSalesAgentClientTokenUseCase _resolveClientTokenUseCase;
@@ -492,7 +492,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final tokens = context.appTokens;
     final selectedBranch = _availableAgents
         .cast<DashboardAgentOption?>()
         .firstWhere(
@@ -627,7 +627,7 @@ class _SalesMonthlyPnlLineChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = this.l10n;
     final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
+    final tokens = theme.appTokens;
     final colors = theme.appColors;
     final localeTag = l10n.localeName;
     final chartTheme = AppChartTheme.fromContext(

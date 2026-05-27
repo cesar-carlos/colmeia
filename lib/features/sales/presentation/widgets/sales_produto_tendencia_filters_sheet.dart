@@ -211,7 +211,7 @@ class _SalesProdutoTendenciaFiltersSheetState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
+    final tokens = theme.appTokens;
     final l10n = widget.l10n;
     final periodValidationMessage = _periodValidationMessage;
     final selectedPreset = _selectedPreset;

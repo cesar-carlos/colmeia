@@ -73,7 +73,7 @@ class SalesLiveMapChartPanel extends StatelessWidget {
       return chart;
     }
 
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final tokens = context.appTokens;
     return AppSectionCard(
       padding: EdgeInsets.fromLTRB(
         tokens.contentSpacing,

@@ -32,6 +32,17 @@ class DashboardAgentOption {
       Object.hash(agentId, name, connectionStatus, missingLocalClientToken);
 }
 
+/// Convenience selectors over a collection of [DashboardAgentOption].
+extension DashboardAgentOptionListX on Iterable<DashboardAgentOption> {
+  /// Returns the ids of agents that have a local client token on this device
+  /// (i.e. those eligible to receive Agent SQL queries from the current user).
+  Set<String> tokenBackedAgentIds() {
+    return where((agent) => !agent.missingLocalClientToken)
+        .map((agent) => agent.agentId)
+        .toSet();
+  }
+}
+
 /// Year/month period selected by the user.
 ///
 /// [month] is 1-based (January = 1, December = 12).

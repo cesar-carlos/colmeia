@@ -10,7 +10,8 @@ import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_a
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_row.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
-import 'package:colmeia/features/sales/data/sales_live_map_catalog_scope.dart';
+import 'package:colmeia/features/sales/application/ports/sales_live_map_catalog_cache.dart';
+import 'package:colmeia/features/sales/application/sales_live_map_catalog_scope.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Short-lived on-device snapshot of branch catalog rows for faster first paint.
@@ -18,32 +19,26 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Omits secrets (no `client_token`). Reconstructed targets use
 /// [AgentConnectionStatus.unknown] — sufficient for map aggregation only;
 /// network load replaces this before final state.
-class SalesLiveMapCatalogDiskCache {
+class SalesLiveMapCatalogDiskCache implements SalesLiveMapCatalogCache {
   SalesLiveMapCatalogDiskCache(this._prefs);
 
   final SharedPreferences _prefs;
 
-  static const Duration ttl = Duration(minutes: 4);
+  static const Duration ttl = SalesLiveMapCatalogCache.ttl;
   static const int _schemaVersion = 2;
   static const String _keyPrefix = 'colmeia_sales_live_map_catalog_v2.';
   static const String _legacyKeyPrefix = 'colmeia_sales_live_map_catalog_v1.';
   static const int _legacyCompanyCode = 1;
   static const int _legacyBranchCode = 1;
 
-  static String agentSignature(Set<String>? selectedAgentIds) {
-    if (selectedAgentIds == null || selectedAgentIds.isEmpty) {
-      return '*';
-    }
-    final sorted = selectedAgentIds.toList(growable: false)..sort();
-    return sorted.join(',');
-  }
+  static String agentSignature(Set<String>? selectedAgentIds) =>
+      SalesLiveMapCatalogScope.agentSignatureOf(selectedAgentIds);
 
   static String branchSignature(
     Iterable<CadastroFilialBranchRef> selectedBranches,
-  ) {
-    return CadastroFilialBranchRef.signature(selectedBranches);
-  }
+  ) => SalesLiveMapCatalogScope.branchSignatureOf(selectedBranches);
 
+  @override
   CadastroFilialAcrossAgentsPageResult? readIfFresh({
     required String userId,
     required SalesLiveMapCatalogScope scope,
@@ -70,6 +65,7 @@ class SalesLiveMapCatalogDiskCache {
     return _decodeIfFresh(raw: legacyRaw, expectedScope: scope, now: now);
   }
 
+  @override
   Future<void> write({
     required String userId,
     required SalesLiveMapCatalogScope scope,
@@ -83,6 +79,7 @@ class SalesLiveMapCatalogDiskCache {
     await _prefs.setString(key, encoded);
   }
 
+  @override
   Future<void> invalidateUser(String userId) async {
     final trimmedUserId = userId.trim();
     final keys = _prefs

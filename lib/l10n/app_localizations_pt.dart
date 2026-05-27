@@ -2716,6 +2716,11 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String salesLiveMapDateRangeFormat(String start, String end) {
+    return '$start a $end';
+  }
+
+  @override
   String get salesLiveMapPeriodToday => 'Hoje';
 
   @override
@@ -6596,6 +6601,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String salesLiveMapAgentsSelectedSummary(int count) {
     return '$count filial(is)';
+  }
+
+  @override
+  String salesLiveMapDateRangeFormat(String start, String end) {
+    return '$start a $end';
   }
 
   @override

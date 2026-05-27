@@ -1,6 +1,6 @@
 import 'package:colmeia/core/refresh/auto_refresh_option_set.dart';
 import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
-import 'package:colmeia/features/sales/data/sales_preferences.dart';
+import 'package:colmeia/features/sales/application/ports/sales_preferences_port.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_bar_chart_preferences.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
@@ -8,10 +8,10 @@ import 'package:colmeia/shared/filters/dashboard_filter.dart';
 class SalesSessionService {
   SalesSessionService(this._preferences);
 
-  final SalesPreferences _preferences;
+  final SalesPreferencesPort _preferences;
 
   static const Set<String> produtoRankLucroSortByAllowedValues =
-      SalesPreferences.produtoRankLucroSortByAllowedValues;
+      kSalesProdutoRankLucroSortByAllowedValues;
 
   String? get selectedAgentId => _preferences.selectedAgentId;
 

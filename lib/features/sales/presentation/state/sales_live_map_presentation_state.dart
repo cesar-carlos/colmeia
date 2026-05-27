@@ -2,10 +2,9 @@ import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref_codec.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/presentation/models/sales_live_map_visual_spec.dart';
+import 'package:colmeia/features/sales/presentation/view_models/sales_live_map_view_model.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/foundation.dart';
-
-const int kSalesLiveMapAutoMunicipalityDetailPointThreshold = 200;
 
 @immutable
 class SalesLiveMapPresentationState {
@@ -48,20 +47,8 @@ class SalesLiveMapPresentationState {
         filter.metric != defaults.metric;
   }
 
-  bool get canScheduleAutoRefresh {
-    final tokenBacked = availableAgents
-        .where((agent) => !agent.missingLocalClientToken)
-        .map((agent) => agent.agentId)
-        .toSet();
-    if (tokenBacked.isEmpty) {
-      return false;
-    }
-    final selected = filter.selectedAgentIds;
-    if (selected == null) {
-      return true;
-    }
-    return selected.any(tokenBacked.contains);
-  }
+  bool get canScheduleAutoRefresh =>
+      SalesLiveMapViewModel.canScheduleAutoRefresh(this);
 
   bool get canReload =>
       !isLoading && (sessionExpired || availableAgents.isNotEmpty);
@@ -70,34 +57,13 @@ class SalesLiveMapPresentationState {
 
   bool get isMapRefreshing => isLoading && hasVisualResult;
 
-  bool get shouldShowEmptyNotice {
-    final currentResult = result;
-    if (currentResult == null ||
-        currentResult.salesDataPending ||
-        currentResult.loadFailed ||
-        currentResult.hasPartialIssue) {
-      return false;
-    }
-    return currentResult.totalSalesCount == 0 ||
-        currentResult.totalBranchCount == 0;
-  }
+  bool get shouldShowEmptyNotice =>
+      SalesLiveMapViewModel.shouldShowEmptyNotice(this);
 
-  SalesLiveMapMapDetail get effectiveDetailLevel {
-    final currentResult = result;
-    if (filter.detailLevel == SalesLiveMapMapDetail.branches &&
-        (currentResult?.mappedBranchCount ?? 0) >
-            kSalesLiveMapAutoMunicipalityDetailPointThreshold) {
-      return SalesLiveMapMapDetail.municipalities;
-    }
-    return filter.detailLevel;
-  }
+  SalesLiveMapMapDetail get effectiveDetailLevel =>
+      SalesLiveMapViewModel.effectiveDetailLevel(this);
 
-  SalesLiveMapVisualSpec get visualSpec {
-    return SalesLiveMapVisualSpec.operational(
-      detailLevel: effectiveDetailLevel,
-      markerVisual: filter.markerVisual,
-    );
-  }
+  SalesLiveMapVisualSpec get visualSpec => SalesLiveMapViewModel.visualSpec(this);
 
   SalesLiveMapPresentationState copyWith({
     SalesLiveMapFilter? filter,

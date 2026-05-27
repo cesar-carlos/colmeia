@@ -19,7 +19,7 @@ class SalesHubCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
+    final tokens = theme.appTokens;
     final colors = theme.appColors;
     final typography = theme.appTypography;
 

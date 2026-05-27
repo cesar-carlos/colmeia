@@ -6,7 +6,6 @@ import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
-import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
@@ -313,9 +312,7 @@ Future<void> _pumpPage(
           child: Scaffold(
             body: SalesDailyTotalsPage(
               sessionService: SalesSessionService(salesPreferences),
-              loadSalesAvailableAgentsUseCase: LoadSalesAvailableAgentsUseCase(
-                loadAvailableAgentsForSales,
-              ),
+              loadSalesAvailableAgentsUseCase: loadAvailableAgentsForSales,
               loadSalesDailyTotalsUseCase: loadDailyTotals,
               resolveSalesAgentClientTokenUseCase:
                   ResolveSalesAgentClientTokenUseCase(tokenReader),

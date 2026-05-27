@@ -7,12 +7,12 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_produto
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_screen_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_screen_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
-import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
+import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_daily_totals_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_hub_page.dart';
@@ -32,8 +32,7 @@ void _wireSalesAgentSqlRelayCancel(AgentQueriesCancelScope scope) {
 
 List<RouteBase> buildSalesRoutes() {
   final sessionService = getIt<SalesSessionService>();
-  final loadSalesAvailableAgentsUseCase =
-      getIt<LoadSalesAvailableAgentsUseCase>();
+  final loadSalesAvailableAgentsUseCase = getIt<LoadAvailableAgentsForSales>();
   final resolveSalesAgentClientTokenUseCase =
       getIt<ResolveSalesAgentClientTokenUseCase>();
 

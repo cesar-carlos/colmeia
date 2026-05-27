@@ -15,9 +15,9 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_summary_row.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
+import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_agent_auto_refresh_mixin.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_produto_tendencia_media_movel_widgets.dart';
@@ -45,7 +45,7 @@ class SalesProdutoTendenciaMediaMovelPage extends StatefulWidget {
   });
 
   final SalesSessionService sessionService;
-  final LoadSalesAvailableAgentsUseCase loadSalesAvailableAgentsUseCase;
+  final LoadAvailableAgentsForSales loadSalesAvailableAgentsUseCase;
   final ResolveSalesAgentClientTokenUseCase resolveSalesAgentClientTokenUseCase;
   final LoadProdutoVendidoTendenciaDeVendaMediaMovelScreenUseCase
   loadTrendScreenUseCase;
@@ -68,7 +68,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
 
   late final SalesSessionService _sessionService;
   late final ResolveSalesAgentClientTokenUseCase _resolveClientTokenUseCase;
-  late final LoadSalesAvailableAgentsUseCase _loadAgentsUseCase;
+  late final LoadAvailableAgentsForSales _loadAgentsUseCase;
   late final LoadProdutoVendidoTendenciaDeVendaMediaMovelScreenUseCase
   _loadTrendScreen;
   late final LoadGrupoProdutoOptionsUseCase _loadGrupoOptions;
@@ -528,7 +528,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
+    final tokens = theme.appTokens;
     final selectedBranch = _availableAgents
         .cast<DashboardAgentOption?>()
         .firstWhere(

@@ -12,9 +12,9 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_p
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_produto_rank_lucro_sort_by.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
+import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_agent_auto_refresh_mixin.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
@@ -49,7 +49,7 @@ class SalesProdutoRankLucroPage extends StatefulWidget {
   });
 
   final SalesSessionService sessionService;
-  final LoadSalesAvailableAgentsUseCase loadSalesAvailableAgentsUseCase;
+  final LoadAvailableAgentsForSales loadSalesAvailableAgentsUseCase;
   final ResolveSalesAgentClientTokenUseCase resolveSalesAgentClientTokenUseCase;
   final LoadProdutoVendidoProdutoRankLucroUseCase
   loadProdutoVendidoProdutoRankLucroUseCase;
@@ -67,7 +67,7 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
         SalesCardAutoRefreshBinding<SalesProdutoRankLucroPage> {
   late final SalesSessionService _sessionService;
   late final ResolveSalesAgentClientTokenUseCase _resolveClientTokenUseCase;
-  late final LoadSalesAvailableAgentsUseCase _loadAgentsUseCase;
+  late final LoadAvailableAgentsForSales _loadAgentsUseCase;
   late final LoadProdutoVendidoProdutoRankLucroUseCase _loadRanking;
 
   String? _selectedAgentId;
@@ -353,7 +353,7 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final tokens = context.appTokens;
     final theme = Theme.of(context);
     final sortKey = _filters['sortBy'] as String? ?? 'qtdItensVendido';
     final metricProfit = sortKey == 'totalValorLucro';
@@ -590,7 +590,7 @@ class _SalesProdutoRankLucroFiltersSheetState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
+    final tokens = theme.appTokens;
     final selectedAgentMissingToken =
         _selectedAgentId != null &&
         widget.availableAgents.any(
@@ -700,7 +700,7 @@ class _RankBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
+    final tokens = theme.appTokens;
     final colors = theme.appColors;
 
     final (background, foreground, icon) = switch (rank) {

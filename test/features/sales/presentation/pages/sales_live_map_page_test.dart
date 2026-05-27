@@ -7,7 +7,6 @@ import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
@@ -564,9 +563,7 @@ void main() {
                   create: (_) => SalesLiveMapController(
                     sessionService: SalesSessionService(_pumpSalesPreferences),
                     loadSalesAvailableAgentsUseCase:
-                        LoadSalesAvailableAgentsUseCase(
-                          _pumpLoadAvailableAgentsForSales,
-                        ),
+                        _pumpLoadAvailableAgentsForSales,
                     loadSalesLiveMapUseCase: _pumpLoadLiveMap,
                   ),
                   child: const Scaffold(body: SalesLiveMapPage()),
@@ -1209,9 +1206,7 @@ void main() {
                 create: (_) => SalesLiveMapController(
                   sessionService: SalesSessionService(_pumpSalesPreferences),
                   loadSalesAvailableAgentsUseCase:
-                      LoadSalesAvailableAgentsUseCase(
-                        _pumpLoadAvailableAgentsForSales,
-                      ),
+                      _pumpLoadAvailableAgentsForSales,
                   loadSalesLiveMapUseCase: _pumpLoadLiveMap,
                 ),
                 child: const Scaffold(body: SalesLiveMapPage()),
@@ -1283,9 +1278,7 @@ Future<void> _pumpPage(
               create: (_) => SalesLiveMapController(
                 sessionService: SalesSessionService(_pumpSalesPreferences),
                 loadSalesAvailableAgentsUseCase:
-                    LoadSalesAvailableAgentsUseCase(
-                      _pumpLoadAvailableAgentsForSales,
-                    ),
+                    _pumpLoadAvailableAgentsForSales,
                 loadSalesLiveMapUseCase: _pumpLoadLiveMap,
               ),
               child: const SalesLiveMapPage(),
@@ -1311,9 +1304,8 @@ Future<GoRouter> _pumpPageWithRouter(
           child: ChangeNotifierProvider<SalesLiveMapController>(
             create: (_) => SalesLiveMapController(
               sessionService: SalesSessionService(_pumpSalesPreferences),
-              loadSalesAvailableAgentsUseCase: LoadSalesAvailableAgentsUseCase(
-                _pumpLoadAvailableAgentsForSales,
-              ),
+              loadSalesAvailableAgentsUseCase:
+                  _pumpLoadAvailableAgentsForSales,
               loadSalesLiveMapUseCase: _pumpLoadLiveMap,
             ),
             child: const Scaffold(body: SalesLiveMapPage()),

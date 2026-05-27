@@ -2,6 +2,15 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dar
 import 'package:colmeia/features/sales/presentation/models/sales_live_map_visual_spec.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 
+const double _kSalesLiveMapDotMarkerMinSize = 10;
+const double _kSalesLiveMapDotMarkerMaxSize = 24;
+const double _kSalesLiveMapStateBubbleMinSize = 30;
+const double _kSalesLiveMapStateBubbleMaxSize = 76;
+const double _kSalesLiveMapBubbleMinSize = 34;
+const double _kSalesLiveMapBubbleMaxSize = 82;
+const double _kSalesLiveMapStoreIconMinSize = 24;
+const double _kSalesLiveMapStoreIconMaxSize = 34;
+
 abstract final class SalesLiveMapVisualSpecMapper {
   static AppBrazilStoreSalesMapStyle toChartStyle(
     SalesLiveMapVisualSpec spec,
@@ -21,12 +30,21 @@ abstract final class SalesLiveMapVisualSpecMapper {
         AppBrazilStoreSalesMarkerAggregation.states,
     };
     final (minSize, maxSize) = switch (spec.resolvedMarkerVisual) {
-      SalesLiveMapMarkerVisual.dot => (10.0, 24.0),
+      SalesLiveMapMarkerVisual.dot => (
+        _kSalesLiveMapDotMarkerMinSize,
+        _kSalesLiveMapDotMarkerMaxSize,
+      ),
       SalesLiveMapMarkerVisual.bubble =>
         spec.detailLevel == SalesLiveMapMapDetail.states
-            ? (30.0, 76.0)
-            : (34.0, 82.0),
-      SalesLiveMapMarkerVisual.storeIcon => (24.0, 34.0),
+            ? (
+                _kSalesLiveMapStateBubbleMinSize,
+                _kSalesLiveMapStateBubbleMaxSize,
+              )
+            : (_kSalesLiveMapBubbleMinSize, _kSalesLiveMapBubbleMaxSize),
+      SalesLiveMapMarkerVisual.storeIcon => (
+        _kSalesLiveMapStoreIconMinSize,
+        _kSalesLiveMapStoreIconMaxSize,
+      ),
     };
 
     return AppBrazilStoreSalesMapStyle(

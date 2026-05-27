@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
+import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -9,6 +10,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 final NumberFormat _integerFormat = NumberFormat.decimalPattern('pt_BR');
+
+const int _kSalesLiveMapKpiNarrowColumns = 2;
+const int _kSalesLiveMapKpiWideColumns = 3;
+const int _kSalesLiveMapKpiExtraWideColumns = 5;
 
 class SalesLiveMapKpiGrid extends StatelessWidget {
   const SalesLiveMapKpiGrid({
@@ -20,12 +25,16 @@ class SalesLiveMapKpiGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final tokens = context.appTokens;
     final l10n = AppLocalizations.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isWide = constraints.maxWidth >= 720;
-        final columns = constraints.maxWidth >= 960 ? 5 : (isWide ? 3 : 2);
+        final isWide = constraints.maxWidth >= AppBreakpoints.kpiGridWide;
+        final columns = constraints.maxWidth >= AppBreakpoints.kpiGridExtraWide
+            ? _kSalesLiveMapKpiExtraWideColumns
+            : (isWide
+                  ? _kSalesLiveMapKpiWideColumns
+                  : _kSalesLiveMapKpiNarrowColumns);
         final gap = tokens.gapMd;
         final width = math.max<double>(
           0,

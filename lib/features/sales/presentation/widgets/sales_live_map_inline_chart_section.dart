@@ -1,0 +1,100 @@
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart';
+import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
+import 'package:colmeia/features/sales/presentation/models/sales_live_map_visual_spec.dart';
+import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
+import 'package:colmeia/features/sales/presentation/view_models/sales_live_map_view_model.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_chart_panel.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+class SalesLiveMapInlineChartSection extends StatelessWidget {
+  const SalesLiveMapInlineChartSection({
+    required this.onOpenFullscreen,
+    super.key,
+  });
+
+  final VoidCallback onOpenFullscreen;
+
+  @override
+  Widget build(BuildContext context) {
+    return Selector<SalesLiveMapController, SalesLiveMapMapSlice>(
+      selector: (_, controller) =>
+          SalesLiveMapMapSlice.fromState(controller.state),
+      builder: (context, slice, _) {
+        final l10n = AppLocalizations.of(context);
+        final controller = context.read<SalesLiveMapController>();
+        final viewModel = SalesLiveMapViewModel.fromState(slice.state, l10n);
+        return SalesLiveMapChartPanel(
+          mode: SalesLiveMapChartPanelMode.inline,
+          title: l10n.salesLiveMapChartTitle,
+          subtitle: viewModel.mapSubtitle,
+          points: slice.points,
+          metric: slice.metric,
+          filterBranchIds: slice.filterBranchIds,
+          visualSpec: slice.visualSpec,
+          isRefreshing: slice.isRefreshing,
+          onMetricChanged: controller.updateMetric,
+          onOpenFullscreen: onOpenFullscreen,
+        );
+      },
+    );
+  }
+}
+
+@immutable
+class SalesLiveMapMapSlice {
+  const SalesLiveMapMapSlice({
+    required this.state,
+    required this.points,
+    required this.mapPayloadDigest,
+    required this.metric,
+    required this.filterBranchIds,
+    required this.visualSpec,
+    required this.isRefreshing,
+  });
+
+  factory SalesLiveMapMapSlice.fromState(SalesLiveMapPresentationState state) {
+    final filterBranchIds = Set<String>.unmodifiable(
+      state.filterBranchStorageKeys,
+    );
+    return SalesLiveMapMapSlice(
+      state: state,
+      points: state.visualResult?.points ?? const <SalesLiveMapPoint>[],
+      mapPayloadDigest: state.mapPayloadDigest,
+      metric: state.filter.metric,
+      filterBranchIds: filterBranchIds,
+      visualSpec: state.visualSpec,
+      isRefreshing: state.isMapRefreshing,
+    );
+  }
+
+  final SalesLiveMapPresentationState state;
+  final List<SalesLiveMapPoint> points;
+  final int mapPayloadDigest;
+  final SalesLiveMapMetric metric;
+  final Set<String> filterBranchIds;
+  final SalesLiveMapVisualSpec visualSpec;
+  final bool isRefreshing;
+
+  @override
+  bool operator ==(Object other) {
+    return other is SalesLiveMapMapSlice &&
+        other.mapPayloadDigest == mapPayloadDigest &&
+        other.metric == metric &&
+        setEquals(other.filterBranchIds, filterBranchIds) &&
+        other.visualSpec == visualSpec &&
+        other.isRefreshing == isRefreshing;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    mapPayloadDigest,
+    metric,
+    Object.hashAll(filterBranchIds.toList(growable: false)..sort()),
+    visualSpec,
+    isRefreshing,
+  );
+}

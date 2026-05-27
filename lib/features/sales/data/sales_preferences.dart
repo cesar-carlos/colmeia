@@ -4,6 +4,7 @@ import 'package:colmeia/core/preferences/persisted_page_session_store.dart';
 import 'package:colmeia/core/refresh/auto_refresh_option.dart';
 import 'package:colmeia/core/refresh/auto_refresh_option_set.dart';
 import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
+import 'package:colmeia/features/sales/application/ports/sales_preferences_port.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref_codec.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
@@ -13,15 +14,17 @@ import 'package:colmeia/features/sales/domain/sales_monthly_pnl_bar_chart_prefer
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class SalesPreferences {
+class SalesPreferences implements SalesPreferencesPort {
   SalesPreferences(this._prefs);
 
   final SharedPreferences _prefs;
 
   static const String _selectedAgentIdKey = 'colmeia_sales_agent_id_v1';
 
+  @override
   String? get selectedAgentId => _prefs.getString(_selectedAgentIdKey);
 
+  @override
   Future<void> setSelectedAgentId(String? agentId) async {
     try {
       if (agentId == null) {
@@ -38,6 +41,7 @@ class SalesPreferences {
     }
   }
 
+  @override
   Map<String, Object?> restoreCardFilters(String cardId) {
     final store = PersistedPageSessionStore(
       prefs: _prefs,
@@ -46,6 +50,7 @@ class SalesPreferences {
     return store.restoreJsonMap(suffix: 'filters');
   }
 
+  @override
   Future<void> persistCardFilters(
     String cardId,
     Map<String, Object?> filters,
@@ -61,11 +66,6 @@ class SalesPreferences {
   }
 
   /// produto_rank_lucro card: date range encoded as epochs + metric key.
-  static const Set<String> produtoRankLucroSortByAllowedValues = <String>{
-    'qtdItensVendido',
-    'totalValorLucro',
-  };
-
   static const String produtoRankLucroCardId = 'produto_rank_lucro';
 
   static const String salesDailyTotalsCardId = 'daily_totals';
@@ -80,10 +80,12 @@ class SalesPreferences {
   static const int _anchorYearMax = 2100;
 
   /// Reference month shared by Sales monthly P&L and daily totals (same storage).
+  @override
   DashboardYearMonth? restoreSalesChartReferenceMonth() =>
       restoreMonthlyPnlAnchor();
 
   /// Persists [anchor] for monthly P&L and daily totals charts.
+  @override
   Future<void> persistSalesChartReferenceMonth(DashboardYearMonth anchor) =>
       persistMonthlyPnlAnchor(anchor);
 
@@ -122,12 +124,14 @@ class SalesPreferences {
 
   /// Optional inclusive date range for daily totals only (see filters sheet).
   /// When absent or the stored flag is false, callers use the anchor month.
+  @override
   bool restoreSalesDailyTotalsUseCustomRange() {
     final raw = restoreCardFilters(monthlyPnlCardId);
     final v = raw[_dailyTotalsUseCustomRangeKey];
     return v == true;
   }
 
+  @override
   DashboardDateRange? restoreSalesDailyTotalsDateRange() {
     final raw = restoreCardFilters(monthlyPnlCardId);
     if (raw[_dailyTotalsUseCustomRangeKey] != true) {
@@ -146,6 +150,7 @@ class SalesPreferences {
     );
   }
 
+  @override
   Future<void> persistSalesDailyTotalsDateRange({
     required bool useCustomRange,
     DashboardDateRange? range,
@@ -183,6 +188,7 @@ class SalesPreferences {
     }
   }
 
+  @override
   SalesLiveMapFilter restoreSalesLiveMapFilter() {
     final raw = restoreCardFilters(salesLiveMapCardId);
     final mode = _salesLiveMapPeriodModeFromRaw(raw['period_mode']);
@@ -214,6 +220,7 @@ class SalesPreferences {
     );
   }
 
+  @override
   Future<void> persistSalesLiveMapFilter(SalesLiveMapFilter filter) async {
     final encoded = <String, Object?>{
       'period_mode': filter.periodMode.name,
@@ -247,6 +254,7 @@ class SalesPreferences {
     await persistCardFilters(salesLiveMapCardId, encoded);
   }
 
+  @override
   AutoRefreshSnapshot restoreAutoRefreshSnapshot({
     required String cardId,
     required AutoRefreshOptionSet optionSet,
@@ -285,6 +293,7 @@ class SalesPreferences {
     );
   }
 
+  @override
   Future<void> persistAutoRefreshSnapshot({
     required String cardId,
     required AutoRefreshSnapshot snapshot,
@@ -320,6 +329,7 @@ class SalesPreferences {
 
   static const String _monthlyPnlBarChartSuffix = 'bar_chart';
 
+  @override
   SalesMonthlyPnlBarChartPreferences restoreMonthlyPnlBarChartPreferences() {
     final store = PersistedPageSessionStore(
       prefs: _prefs,
@@ -332,6 +342,7 @@ class SalesPreferences {
     return SalesMonthlyPnlBarChartPreferences.fromRaw(raw);
   }
 
+  @override
   Future<void> persistMonthlyPnlBarChartPreferences(
     SalesMonthlyPnlBarChartPreferences value,
   ) async {
@@ -346,6 +357,7 @@ class SalesPreferences {
   }
 
   /// Converts stored epochs into `'periodo': DateTimeRange` and sort key.
+  @override
   Map<String, Object?> restoreProdutoRankLucroFilters() {
     final raw = restoreCardFilters(produtoRankLucroCardId);
     return PersistedFilterMapCodec.sanitize((draft) {
@@ -358,11 +370,12 @@ class SalesPreferences {
         ..stringIfAllowed(
           key: 'sortBy',
           rawValue: raw['sortBy'],
-          allowedValues: produtoRankLucroSortByAllowedValues,
+          allowedValues: kSalesProdutoRankLucroSortByAllowedValues,
         );
     });
   }
 
+  @override
   Future<void> persistProdutoRankLucroFilters(
     Map<String, Object?> filters,
   ) async {
@@ -376,7 +389,7 @@ class SalesPreferences {
         ..stringIfAllowed(
           key: 'sortBy',
           rawValue: filters['sortBy'],
-          allowedValues: produtoRankLucroSortByAllowedValues,
+          allowedValues: kSalesProdutoRankLucroSortByAllowedValues,
         );
     });
     final store = PersistedPageSessionStore(

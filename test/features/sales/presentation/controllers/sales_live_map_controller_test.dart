@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
@@ -64,9 +63,7 @@ void main() {
 
     controller = SalesLiveMapController(
       sessionService: SalesSessionService(salesPreferences),
-      loadSalesAvailableAgentsUseCase: LoadSalesAvailableAgentsUseCase(
-        loadAvailableAgentsForSales,
-      ),
+      loadSalesAvailableAgentsUseCase: loadAvailableAgentsForSales,
       loadSalesLiveMapUseCase: loadLiveMap,
     );
   });

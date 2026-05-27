@@ -140,7 +140,7 @@ class SalesProdutoTendenciaMediaMovelLoadingSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final tokens = context.appTokens;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -173,7 +173,7 @@ class SalesProdutoTendenciaMediaMovelSummarySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final tokens = context.appTokens;
     final numberFormat = NumberFormat.decimalPattern('pt_BR');
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -232,7 +232,7 @@ class SalesProdutoTendenciaMediaMovelCountChartSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final tokens = context.appTokens;
     final locale = Localizations.localeOf(context).toLanguageTag();
 
     return AppComparisonBarChart<SalesProdutoTendenciaMediaMovelClassBucket>(
@@ -274,7 +274,7 @@ class SalesProdutoTendenciaMediaMovelImpactChartSection
 
   @override
   Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final tokens = context.appTokens;
     final locale = Localizations.localeOf(context).toLanguageTag();
 
     return AppComparisonBarChart<SalesProdutoTendenciaMediaMovelClassBucket>(
@@ -338,7 +338,7 @@ class SalesProdutoTendenciaMediaMovelDetailsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final tokens = context.appTokens;
     final scrollHint =
         l10n.salesProdutoTendenciaMediaMovelDetailsHorizontalScrollCaption;
     return Column(
@@ -537,7 +537,7 @@ class SalesProdutoTendenciaMediaMovelSectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
+    final tokens = theme.appTokens;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -698,7 +698,7 @@ class _SalesProdutoTendenciaMediaMovelFiltersSheetState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
+    final tokens = theme.appTokens;
     final l10n = widget.l10n;
     final selectedAgentMissingToken =
         _selectedAgentId != null &&
@@ -982,7 +982,7 @@ class _SalesProdutoTendenciaMediaMovelFiltersSectionHeader
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
+    final tokens = theme.appTokens;
     final colors = theme.appColors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

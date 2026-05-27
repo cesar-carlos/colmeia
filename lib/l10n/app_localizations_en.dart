@@ -2674,6 +2674,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String salesLiveMapDateRangeFormat(String start, String end) {
+    return '$start to $end';
+  }
+
+  @override
   String get salesLiveMapPeriodToday => 'Today';
 
   @override

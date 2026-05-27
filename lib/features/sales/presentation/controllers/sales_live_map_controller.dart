@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_persistence.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
-import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
@@ -11,8 +10,9 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_data_filte
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart';
+import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
-import 'package:colmeia/features/sales/presentation/mappers/sales_live_map_chart_mapper.dart';
+import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_visual_snapshot_policy.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/foundation.dart';
@@ -45,7 +45,7 @@ class SalesLiveMapReloadOutcome {
 class SalesLiveMapController extends ChangeNotifier {
   SalesLiveMapController({
     required SalesSessionService sessionService,
-    required LoadSalesAvailableAgentsUseCase loadSalesAvailableAgentsUseCase,
+    required LoadAvailableAgentsForSales loadSalesAvailableAgentsUseCase,
     required LoadSalesLiveMapUseCase loadSalesLiveMapUseCase,
     AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder,
   }) : _sessionService = sessionService,
@@ -54,7 +54,7 @@ class SalesLiveMapController extends ChangeNotifier {
        _relayCancelScopeBinder = relayCancelScopeBinder;
 
   final SalesSessionService _sessionService;
-  final LoadSalesAvailableAgentsUseCase _loadAgentsUseCase;
+  final LoadAvailableAgentsForSales _loadAgentsUseCase;
   final LoadSalesLiveMapUseCase _loadLiveMap;
   final AgentQueriesRelayCancelScopeBinder? _relayCancelScopeBinder;
 
@@ -92,7 +92,9 @@ class SalesLiveMapController extends ChangeNotifier {
         availableAgents: const <DashboardAgentOption>[],
         result: sessionExpiredResult,
         visualResult: sessionExpiredResult,
-        mapPayloadDigest: _mapPayloadDigestFor(sessionExpiredResult),
+        mapPayloadDigest: SalesLiveMapVisualSnapshotPolicy.payloadDigestFor(
+          sessionExpiredResult,
+        ),
         isLoading: userId != null,
         sessionExpired: userId == null,
       ),
@@ -222,10 +224,7 @@ class SalesLiveMapController extends ChangeNotifier {
     required List<DashboardAgentOption> agents,
     required Set<String>? selectedAgentIds,
   }) {
-    final tokenBacked = agents
-        .where((agent) => !agent.missingLocalClientToken)
-        .map((agent) => agent.agentId)
-        .toSet();
+    final tokenBacked = agents.tokenBackedAgentIds();
     if (selectedAgentIds == null) {
       if (tokenBacked.isEmpty || tokenBacked.length == agents.length) {
         return null;
@@ -264,7 +263,9 @@ class SalesLiveMapController extends ChangeNotifier {
         isLoading: true,
         sessionExpired: userId == null,
         visualResult: preservedVisualResult,
-        mapPayloadDigest: _mapPayloadDigestFor(preservedVisualResult),
+        mapPayloadDigest: SalesLiveMapVisualSnapshotPolicy.payloadDigestFor(
+          preservedVisualResult,
+        ),
       ),
     );
 
@@ -281,7 +282,9 @@ class SalesLiveMapController extends ChangeNotifier {
           isLoading: false,
           result: sessionExpiredResult,
           visualResult: sessionExpiredResult,
-          mapPayloadDigest: _mapPayloadDigestFor(sessionExpiredResult),
+          mapPayloadDigest: SalesLiveMapVisualSnapshotPolicy.payloadDigestFor(
+            sessionExpiredResult,
+          ),
           sessionExpired: true,
         ),
       );
@@ -311,26 +314,26 @@ class SalesLiveMapController extends ChangeNotifier {
       }
 
       final previousResult = _state.result;
-      final nextVisualResult = _resolveNextVisualResult(
-        incomingResult: result,
-        previousVisualResult: _state.visualResult,
-      );
-      final nextMapPayloadDigest = _mapPayloadDigestFor(nextVisualResult);
-      if (previousResult != null) {
-        final mapPayloadUnchanged =
-            _state.mapPayloadDigest == nextMapPayloadDigest;
-        if (mapPayloadUnchanged &&
-            identical(_state.visualResult, nextVisualResult) &&
-            previousResult.salesDataPending == result.salesDataPending &&
-            previousResult.loadFailed == result.loadFailed &&
-            previousResult.refreshedAt == result.refreshedAt) {
-          if (_state.isLoading != result.salesDataPending) {
-            _setState(
-              _state.copyWith(isLoading: result.salesDataPending),
-            );
-          }
-          continue;
+      final nextVisualResult =
+          SalesLiveMapVisualSnapshotPolicy.resolveNextVisualResult(
+            incomingResult: result,
+            previousVisualResult: _state.visualResult,
+          );
+      final nextMapPayloadDigest = SalesLiveMapVisualSnapshotPolicy
+          .payloadDigestFor(nextVisualResult);
+      if (previousResult != null &&
+          !SalesLiveMapVisualSnapshotPolicy.hasObservableDelta(
+            previous: previousResult,
+            next: result,
+            previousVisualResult: _state.visualResult,
+            nextVisualResult: nextVisualResult,
+            previousDigest: _state.mapPayloadDigest,
+            nextDigest: nextMapPayloadDigest,
+          )) {
+        if (_state.isLoading != result.salesDataPending) {
+          _setState(_state.copyWith(isLoading: result.salesDataPending));
         }
+        continue;
       }
 
       _setState(
@@ -444,27 +447,4 @@ class SalesLiveMapController extends ChangeNotifier {
     _notifyListenersIfAlive();
   }
 
-  SalesLiveMapLoadResult? _resolveNextVisualResult({
-    required SalesLiveMapLoadResult incomingResult,
-    required SalesLiveMapLoadResult? previousVisualResult,
-  }) {
-    if (_shouldUseResultAsVisualSnapshot(incomingResult)) {
-      return incomingResult;
-    }
-    return previousVisualResult;
-  }
-
-  bool _shouldUseResultAsVisualSnapshot(SalesLiveMapLoadResult result) {
-    if (!result.salesDataPending) {
-      return true;
-    }
-    return result.points.isNotEmpty || result.branchOptions.isNotEmpty;
-  }
-
-  int _mapPayloadDigestFor(SalesLiveMapLoadResult? visualResult) {
-    if (visualResult == null) {
-      return 0;
-    }
-    return SalesLiveMapChartMapper.pointsContentDigest(visualResult.points);
-  }
 }

@@ -2,7 +2,11 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vend
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
+import 'package:colmeia/shared/utils/app_unordered_set_equality.dart';
 import 'package:flutter/foundation.dart';
+
+export 'package:colmeia/features/sales/domain/entities/sales_live_map_agent_option.dart';
+export 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_option.dart';
 
 const int kSalesLiveMapMaxCustomRangeInclusiveDays = 31;
 const String kSalesLiveMapDefaultOrigem = 'FrenteLoja';
@@ -151,8 +155,8 @@ class SalesLiveMapFilter {
       return true;
     }
     return other is SalesLiveMapFilter &&
-        _setEquals(other.selectedAgentIds, selectedAgentIds) &&
-        _setEquals(other.selectedBranchIds, selectedBranchIds) &&
+        appSetEquals(other.selectedAgentIds, selectedAgentIds) &&
+        appSetEquals(other.selectedBranchIds, selectedBranchIds) &&
         other.periodMode == periodMode &&
         other.customDateRange == customDateRange &&
         other.detailLevel == detailLevel &&
@@ -167,95 +171,14 @@ class SalesLiveMapFilter {
     detailLevel,
     markerVisual,
     metric,
-    _orderedStringHash(selectedAgentIds),
-    _orderedBranchHash(selectedBranchIds),
+    appOrderedSetHash<String>(selectedAgentIds, _identityKey),
+    appOrderedSetHash<SalesLiveMapBranchRef>(selectedBranchIds, _branchRefKey),
   );
 
-  static bool _setEquals<T>(Set<T>? a, Set<T>? b) {
-    if (identical(a, b)) {
-      return true;
-    }
-    if (a == null || b == null) {
-      return a == null && b == null;
-    }
-    if (a.length != b.length) {
-      return false;
-    }
-    for (final value in a) {
-      if (!b.contains(value)) {
-        return false;
-      }
-    }
-    return true;
-  }
+  static String _identityKey(String value) => value;
 
-  static int? _orderedStringHash(Set<String>? value) {
-    if (value == null) {
-      return null;
-    }
-    final sorted = value.toList(growable: false)..sort();
-    return Object.hashAll(sorted);
-  }
-
-  static int? _orderedBranchHash(Set<SalesLiveMapBranchRef>? value) {
-    if (value == null) {
-      return null;
-    }
-    final sorted =
-        value
-            .map(
-              (branchRef) =>
-                  '${branchRef.agentId}:${branchRef.codEmpresa}:${branchRef.codFilial}',
-            )
-            .toList(growable: false)
-          ..sort();
-    return Object.hashAll(sorted);
-  }
-}
-
-class SalesLiveMapBranchOption {
-  const SalesLiveMapBranchOption({
-    required this.id,
-    required this.agentId,
-    required this.agentName,
-    required this.codEmpresa,
-    required this.codFilial,
-    required this.registrationName,
-    required this.city,
-    required this.uf,
-    this.fantasyName,
-  });
-
-  final String id;
-  final String agentId;
-  final String agentName;
-  final int codEmpresa;
-  final int codFilial;
-  final String registrationName;
-  final String city;
-  final String uf;
-  final String? fantasyName;
-
-  String get name => registrationName;
-
-  SalesLiveMapBranchRef get branchRef => SalesLiveMapBranchRef(
-    agentId: agentId,
-    codEmpresa: codEmpresa,
-    codFilial: codFilial,
-  );
-
-  String get subtitle =>
-      '$city/$uf - Agente $agentName - Empresa $codEmpresa - Filial $codFilial';
-}
-
-class SalesLiveMapAgentOption {
-  const SalesLiveMapAgentOption({
-    required this.id,
-    required this.name,
-  });
-
-  final String id;
-  final String name;
+  static String _branchRefKey(SalesLiveMapBranchRef branchRef) =>
+      '${branchRef.agentId}:${branchRef.codEmpresa}:${branchRef.codFilial}';
 }
 
 const Object _sentinel = Object();

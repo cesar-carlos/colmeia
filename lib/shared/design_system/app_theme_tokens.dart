@@ -689,3 +689,11 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
     );
   }
 }
+
+extension AppThemeTokensThemeDataX on ThemeData {
+  AppThemeTokens get appTokens => extension<AppThemeTokens>()!;
+}
+
+extension AppThemeTokensBuildContextX on BuildContext {
+  AppThemeTokens get appTokens => Theme.of(this).appTokens;
+}

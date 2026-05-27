@@ -18,7 +18,7 @@ class SalesHubPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final tokens = context.appTokens;
     final scheme = Theme.of(context).colorScheme;
 
     return Column(

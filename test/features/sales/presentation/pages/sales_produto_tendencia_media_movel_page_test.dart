@@ -20,7 +20,6 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
-import 'package:colmeia/features/sales/application/load_sales_available_agents_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
@@ -221,9 +220,6 @@ void main() {
       )
       ..registerSingleton<SalesSessionService>(
         SalesSessionService(salesPreferences),
-      )
-      ..registerSingleton<LoadSalesAvailableAgentsUseCase>(
-        LoadSalesAvailableAgentsUseCase(loadAvailableAgentsForSales),
       )
       ..registerSingleton<ResolveSalesAgentClientTokenUseCase>(
         ResolveSalesAgentClientTokenUseCase(tokenReader),
@@ -658,9 +654,7 @@ Future<void> _pumpPage(
         home: Scaffold(
           body: SalesProdutoTendenciaMediaMovelPage(
             sessionService: SalesSessionService(_pumpSalesPreferences),
-            loadSalesAvailableAgentsUseCase: LoadSalesAvailableAgentsUseCase(
-              _pumpLoadAvailableAgentsForSales,
-            ),
+            loadSalesAvailableAgentsUseCase: _pumpLoadAvailableAgentsForSales,
             resolveSalesAgentClientTokenUseCase:
                 ResolveSalesAgentClientTokenUseCase(_pumpTokenReader),
             loadTrendScreenUseCase: _pumpLoadTrendScreenUseCase,
