@@ -1,3 +1,4 @@
+import 'package:colmeia/shared/design_system/app_motion_tokens.dart';
 import 'package:flutter/material.dart';
 
 /// Plays a one-shot fade + subtle slide-up the first time the wrapped chart
@@ -13,32 +14,29 @@ import 'package:flutter/material.dart';
 /// [MediaQueryData.disableAnimations] — when enabled, the [child] is rendered
 /// immediately without any opacity/translate work.
 ///
-/// Originated as the private `_StagedFadeIn` widget inside the overview home
-/// staged mounter; promoted to the design-system layer so any consumer chart
-/// card (overview, agent reports, future dashboards) can opt into the same
-/// entrance treatment.
+/// Defaults (`duration`, `slideOffsetPx`, `curve`) come from
+/// [AppMotionTokens] resolved from the active theme so charts across the app
+/// share the same entrance treatment.
 class AppChartFadeIn extends StatelessWidget {
   const AppChartFadeIn({
     required this.child,
     super.key,
-    this.duration = const Duration(milliseconds: 220),
-    this.slideOffsetPx = 6,
-    this.curve = Curves.easeOutCubic,
+    this.duration,
+    this.slideOffsetPx,
+    this.curve,
   });
 
   final Widget child;
 
-  /// Total tween duration. Default `220 ms` matches the value used by the
-  /// overview home staged mounter.
-  final Duration duration;
+  /// Overrides [AppMotionTokens.chartFadeIn] when provided.
+  final Duration? duration;
 
-  /// Initial vertical offset (in logical pixels) — the child slides up this
-  /// many pixels while fading in. Set to `0` to disable the slide and use
-  /// fade-only.
-  final double slideOffsetPx;
+  /// Overrides [AppMotionTokens.chartFadeInSlideOffsetPx]. Set to `0` to
+  /// disable the slide and use fade-only.
+  final double? slideOffsetPx;
 
-  /// Easing applied to the fade + translate.
-  final Curve curve;
+  /// Overrides [AppMotionTokens.chartFadeInCurve].
+  final Curve? curve;
 
   @override
   Widget build(BuildContext context) {
@@ -47,18 +45,22 @@ class AppChartFadeIn extends StatelessWidget {
     if (reduceMotion) {
       return child;
     }
+    final motion = context.appMotion;
+    final resolvedDuration = duration ?? motion.chartFadeIn;
+    final resolvedSlide = slideOffsetPx ?? motion.chartFadeInSlideOffsetPx;
+    final resolvedCurve = curve ?? motion.chartFadeInCurve;
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0, end: 1),
-      duration: duration,
-      curve: curve,
+      duration: resolvedDuration,
+      curve: resolvedCurve,
       builder: (context, t, c) {
-        if (slideOffsetPx == 0) {
+        if (resolvedSlide == 0) {
           return Opacity(opacity: t, child: c);
         }
         return Opacity(
           opacity: t,
           child: Transform.translate(
-            offset: Offset(0, (1 - t) * slideOffsetPx),
+            offset: Offset(0, (1 - t) * resolvedSlide),
             child: c,
           ),
         );

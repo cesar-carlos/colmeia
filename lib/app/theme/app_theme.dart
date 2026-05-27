@@ -1,4 +1,5 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
+import 'package:colmeia/shared/design_system/app_motion_tokens.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:flutter/foundation.dart';
@@ -72,7 +73,12 @@ abstract final class AppTheme {
       textTheme: textTheme,
       primaryTextTheme: textTheme,
       scaffoldBackgroundColor: colors.background,
-      extensions: <ThemeExtension<dynamic>>[colors, tokens, typography],
+      extensions: <ThemeExtension<dynamic>>[
+        colors,
+        tokens,
+        typography,
+        AppMotionTokens.standard,
+      ],
       scrollbarTheme: ScrollbarThemeData(
         thumbVisibility: WidgetStatePropertyAll<bool>(
           persistentDesktopScrollbar,

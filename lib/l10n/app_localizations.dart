@@ -923,6 +923,12 @@ abstract class AppLocalizations {
   /// **'Consolidated summary of approved branches (connected to the hub).'**
   String get overviewHomeSubtitle;
 
+  /// Screen-reader label for the RefreshIndicator wrapping the overview home page.
+  ///
+  /// In en, this message translates to:
+  /// **'Pull down to refresh the overview'**
+  String get overviewHomeRefreshSemanticsLabel;
+
   /// No description provided for @overviewHomeManageBranchesAction.
   ///
   /// In en, this message translates to:

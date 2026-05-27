@@ -8,7 +8,7 @@ they are rendered today, and the conventions every engine must follow.
 ### Currently rendered (production)
 
 The home dashboard mounts charts via
-[`OverviewHomeStagedBelowKpis`](../../lib/features/overview/presentation/widgets/overview_home_staged_below_kpis.dart),
+[`OverviewHomeChartsBelowKpis`](../../lib/features/overview/presentation/widgets/overview_home_charts_below_kpis.dart),
 each wrapped by [`AppChartFadeIn`](../../lib/shared/widgets/charts/app_chart_fade_in.dart)
 and a `RepaintBoundary` where applicable:
 
@@ -19,7 +19,7 @@ and a `RepaintBoundary` where applicable:
 | 3   | `OverviewMonthlyParcelsComboChart`       | `AppComboChart` (`ColumnSeries` + `LineSeries`)      |
 | 4   | `OverviewWeekdaySalesTrendChart`         | `AppComparisonBarChart`                              |
 | 5   | `OverviewWeekdayUserGroupedBarChart`     | direct `SfCartesianChart` (clustered columns)        |
-| 6   | `OverviewRankingsSection` (agent + user) | `AppComparisonBarChart` x2                           |
+| 6   | `OverviewAgentRankingCard` + `OverviewUserRankingCard` | `AppComparisonBarChart` x2 |
 | 7   | `OverviewLucratividadeChart`             | `AppComboChart` (one category per agent, branches summed); mode **Percentuais** defaults to gross-margin % with sub-options cost % / markup % via [`overview_lucratividade_percent_metrics.dart`](../../lib/features/overview/presentation/widgets/overview_lucratividade_percent_metrics.dart) |
 
 **Sales — resultado mensal (`SalesMonthlyPnlPage`):** [`SalesMonthlyPnlBarChartCard`](../../lib/features/sales/presentation/widgets/sales_monthly_pnl_bar_chart_card.dart) adds grouped monthly bars via [`AppGroupedColumnChart`](../../lib/shared/widgets/charts/app_grouped_column_chart.dart) (sales on primary Y-axis, profit + merchandise cost on secondary), optional **Percentuais** mode via `AppComparisonBarChart` with **~150 ms** series animation (via `resolveChartAnimationDurationMs`, matching the overview lucratividade percent chart); bar-chart mode and percent metric persist via [`SalesPreferences`](../../lib/features/sales/data/sales_preferences.dart); horizontal scroll regions use stable keys in [`sales_monthly_pnl_chart_keys.dart`](../../lib/features/sales/presentation/sales_monthly_pnl_chart_keys.dart) for tests; complements the existing three-series line chart on the same aggregates.
@@ -119,7 +119,7 @@ of any item should explain why in the engine's source.
 - **Animation defaults are intentionally short** (350 ms / 500 ms). Heavier
   tween durations (1200 / 1500 ms) used to cause visible jank on low-end
   Android during the staged dashboard mounting in
-  `OverviewHomeStagedBelowKpis`.
+  `OverviewHomeChartsBelowKpis`.
 - **Custom-painter charts (`custom_radar`, `custom_polar`, `custom_sunburst`,
   `custom_bullet`) do not animate** today — they paint statically. The
   reduce-motion guard does not apply because there is no motion to gate.

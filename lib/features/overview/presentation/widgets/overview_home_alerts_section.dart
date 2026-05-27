@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
+import 'package:colmeia/features/overview/presentation/overview_alert_banner_spec.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_agent_names_list_sheet.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_alert_detail_sheet.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_panel_actions.dart';
@@ -11,23 +12,10 @@ import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:flutter/material.dart';
 
-String _overviewAlertsBulletAgentList(List<String> names) {
-  if (names.isEmpty) {
-    return '';
-  }
-  return names.map((n) => '- $n').join('\n');
-}
-
-String _overviewAlertsComposeLoadError(String msg, String? diagnostic) {
-  final d = diagnostic?.trim();
-  if (d == null || d.isEmpty) {
-    return msg;
-  }
-  return '$msg\n\n$d';
-}
-
-/// Single surface for overview banners: same logical order as the previous
-/// stacked [AppInlineErrorPanel] list.
+/// Single surface for overview banners: derives a declarative list of specs
+/// from the overview/error state, then renders one `AppInlineErrorPanel`
+/// per spec. Banner derivation lives in
+/// [buildOverviewAlertBannerSpecs] for unit-testability.
 class OverviewHomeAlertsSection extends StatelessWidget {
   const OverviewHomeAlertsSection({
     required this.l10n,
@@ -65,323 +53,32 @@ class OverviewHomeAlertsSection extends StatelessWidget {
   /// button is shown as disabled regardless of [onRetryOverview].
   final String? retryCountdownLabel;
 
-  bool get _hasAnyBanner {
-    if (errorMessage != null) return true;
-    final o = overview;
-    if (o == null) return false;
-    if (o.requiresClientTokenSetup) return true;
-    if (o.isStaleCache) return true;
-    if (o.hasMissingClientToken && !o.requiresClientTokenSetup) return true;
-    if (o.hasAgentsSkippedDueToHubPresence) return true;
-    if (o.hasPartialAgentQueryFailure || o.hasLucratividadePartialFailure) {
-      return true;
-    }
-    if (o.shouldShowMultiAgentAggregationNote) return true;
-    return false;
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (!_hasAnyBanner) {
+    final specs = buildOverviewAlertBannerSpecs(
+      l10n: l10n,
+      errorMessage: errorMessage,
+      errorDiagnosticBody: errorDiagnosticBody,
+      overview: overview,
+      missingTokenAgentNames: missingTokenAgentNamesNormalized,
+      partialFailureAgentNames: partialFailureAgentNamesNormalized,
+      skippedDueToHubPresenceAgentNames:
+          skippedDueToHubPresenceAgentNamesNormalized,
+      retryCountdownLabel: retryCountdownLabel,
+    );
+
+    if (specs.isEmpty) {
       return const SizedBox.shrink();
     }
 
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    final sheetTitlePartialFailure =
-        l10n.dashboardAffectedAgentsSheetTitlePartialFailure;
-    final sheetTitleMissingToken =
-        l10n.dashboardAffectedAgentsSheetTitleMissingToken;
-    final sheetTitleSetupRequired =
-        l10n.dashboardAffectedAgentsSheetTitleSetupRequired;
 
     final children = <Widget>[];
-
-    void gapIfNeeded() {
-      if (children.isNotEmpty) {
+    for (var i = 0; i < specs.length; i++) {
+      if (i > 0) {
         children.add(SizedBox(height: tokens.gapMd));
       }
-    }
-
-    if (errorMessage case final String msg) {
-      gapIfNeeded();
-      children.add(
-        AppInlineErrorPanel(
-          title: l10n.overviewLoadErrorTitle,
-          message: msg,
-          actions: OverviewPanelActions(
-            onRetry: onRetryOverview,
-            onManageAgents: onOpenAgents,
-            onShowDetails: () => unawaited(
-              showOverviewAlertPlainDetailSheet(
-                context: context,
-                title: l10n.overviewLoadErrorTitle,
-                body: _overviewAlertsComposeLoadError(
-                  msg,
-                  errorDiagnosticBody,
-                ),
-              ),
-            ),
-            detailsLabel: l10n.overviewHomeAlertErrorDetailsButton,
-            detailsSemanticsLabel:
-                l10n.overviewHomeAlertErrorDetailsSemanticsLabel,
-            retryLabel: l10n.appInlineErrorRetry,
-            // Render the button as disabled with a countdown while the
-            // controller's `RetryAfterGate` is closed. The callback
-            // itself is also no-op'd by the controller — this is the
-            // visible feedback so the user understands why.
-            retryDisabledLabel: retryCountdownLabel,
-            manageAgentsLabel: l10n.overviewHomeManageBranchesAction,
-          ),
-        ),
-      );
-    }
-
-    final o = overview;
-    if (o != null && o.requiresClientTokenSetup) {
-      gapIfNeeded();
-      children.add(
-        AppInlineErrorPanel(
-          tone: AppInlinePanelTone.informational,
-          title: l10n.dashboardSetupRequiredTitle,
-          message: l10n.dashboardSetupRequiredMessage,
-          belowMessage: missingTokenAgentNamesNormalized.isEmpty
-              ? null
-              : _OverviewAffectedAgentsListLink(
-                  l10n: l10n,
-                  normalizedNames: missingTokenAgentNamesNormalized,
-                  sheetTitle: sheetTitleSetupRequired,
-                ),
-          actions: OverviewPanelActions(
-            onManageAgents: onOpenAgents,
-            primaryLabel: l10n.overviewHomeManageBranchesAction,
-            manageAgentsLabel: l10n.overviewHomeManageBranchesAction,
-            onShowDetails: () {
-              final parts = <String>[l10n.dashboardSetupRequiredMessage];
-              final bullets = _overviewAlertsBulletAgentList(
-                missingTokenAgentNamesNormalized,
-              );
-              if (bullets.isNotEmpty) {
-                parts
-                  ..add('')
-                  ..add(bullets);
-              }
-              unawaited(
-                showOverviewAlertPlainDetailSheet(
-                  context: context,
-                  title: l10n.dashboardSetupRequiredTitle,
-                  body: parts.join('\n'),
-                ),
-              );
-            },
-            detailsLabel: l10n.overviewHomeAlertErrorDetailsButton,
-            detailsSemanticsLabel:
-                l10n.overviewHomeAlertErrorDetailsSemanticsLabel,
-          ),
-        ),
-      );
-    }
-
-    if (o != null && o.isStaleCache) {
-      gapIfNeeded();
-      children.add(
-        AppInlineErrorPanel(
-          tone: AppInlinePanelTone.informational,
-          title: l10n.overviewStaleCacheTitle,
-          message: l10n.overviewStaleCacheMessage,
-          actions: OverviewPanelActions(
-            onRetry: onRetryOverview,
-            onManageAgents: o.hasMissingClientToken ? onOpenAgents : null,
-            onShowDetails: () {
-              final parts = <String>[
-                l10n.overviewHomeAlertDetailsStaleIntro.trimRight(),
-                l10n.overviewStaleCacheTitle,
-                l10n.overviewStaleCacheMessage,
-              ];
-              if (o.hasMissingClientToken) {
-                final bullets = _overviewAlertsBulletAgentList(
-                  missingTokenAgentNamesNormalized,
-                );
-                if (bullets.isNotEmpty) {
-                  parts
-                    ..add('')
-                    ..add(l10n.dashboardMissingClientTokenTitle)
-                    ..add(bullets);
-                }
-              }
-              unawaited(
-                showOverviewAlertPlainDetailSheet(
-                  context: context,
-                  title: l10n.overviewStaleCacheTitle,
-                  body: parts.join('\n'),
-                ),
-              );
-            },
-            detailsLabel: l10n.overviewHomeAlertErrorDetailsButton,
-            detailsSemanticsLabel:
-                l10n.overviewHomeAlertErrorDetailsSemanticsLabel,
-            retryLabel: l10n.appInlineErrorRetry,
-            manageAgentsLabel: l10n.overviewHomeManageBranchesAction,
-          ),
-        ),
-      );
-    }
-
-    if (o != null && o.hasMissingClientToken && !o.requiresClientTokenSetup) {
-      gapIfNeeded();
-      children.add(
-        AppInlineErrorPanel(
-          tone: AppInlinePanelTone.informational,
-          title: l10n.dashboardMissingClientTokenTitle,
-          message: l10n.dashboardMissingClientTokenMessage,
-          belowMessage: missingTokenAgentNamesNormalized.isEmpty
-              ? null
-              : _OverviewAffectedAgentsListLink(
-                  l10n: l10n,
-                  normalizedNames: missingTokenAgentNamesNormalized,
-                  sheetTitle: sheetTitleMissingToken,
-                ),
-          actions: OverviewPanelActions(
-            onManageAgents: onOpenAgents,
-            primaryLabel: l10n.overviewHomeManageBranchesAction,
-            manageAgentsLabel: l10n.overviewHomeManageBranchesAction,
-            onShowDetails: () {
-              final parts = <String>[l10n.dashboardMissingClientTokenMessage];
-              final bullets = _overviewAlertsBulletAgentList(
-                missingTokenAgentNamesNormalized,
-              );
-              if (bullets.isNotEmpty) {
-                parts
-                  ..add('')
-                  ..add(bullets);
-              }
-              unawaited(
-                showOverviewAlertPlainDetailSheet(
-                  context: context,
-                  title: l10n.dashboardMissingClientTokenTitle,
-                  body: parts.join('\n'),
-                ),
-              );
-            },
-            detailsLabel: l10n.overviewHomeAlertErrorDetailsButton,
-            detailsSemanticsLabel:
-                l10n.overviewHomeAlertErrorDetailsSemanticsLabel,
-          ),
-        ),
-      );
-    }
-
-    if (o != null && o.hasAgentsSkippedDueToHubPresence) {
-      gapIfNeeded();
-      children.add(
-        AppInlineErrorPanel(
-          tone: AppInlinePanelTone.informational,
-          title: l10n.dashboardAgentsOfflineTitle,
-          message: l10n.dashboardAgentsOfflineMessage,
-          belowMessage: skippedDueToHubPresenceAgentNamesNormalized.isEmpty
-              ? null
-              : _OverviewAffectedAgentsListLink(
-                  l10n: l10n,
-                  normalizedNames: skippedDueToHubPresenceAgentNamesNormalized,
-                  sheetTitle: l10n.dashboardAffectedAgentsSheetTitleOffline,
-                ),
-          actions: OverviewPanelActions(
-            onRetry: onRetryOverview,
-            onManageAgents: onOpenAgents,
-            onShowDetails: () {
-              final parts = <String>[l10n.dashboardAgentsOfflineMessage];
-              final bullets = _overviewAlertsBulletAgentList(
-                skippedDueToHubPresenceAgentNamesNormalized,
-              );
-              if (bullets.isNotEmpty) {
-                parts
-                  ..add('')
-                  ..add(bullets);
-              }
-              unawaited(
-                showOverviewAlertPlainDetailSheet(
-                  context: context,
-                  title: l10n.dashboardAgentsOfflineTitle,
-                  body: parts.join('\n'),
-                ),
-              );
-            },
-            detailsLabel: l10n.overviewHomeAlertErrorDetailsButton,
-            detailsSemanticsLabel:
-                l10n.overviewHomeAlertErrorDetailsSemanticsLabel,
-            retryLabel: l10n.appInlineErrorRetry,
-            manageAgentsLabel: l10n.overviewHomeManageBranchesAction,
-          ),
-        ),
-      );
-    }
-
-    if (o != null &&
-        (o.hasPartialAgentQueryFailure || o.hasLucratividadePartialFailure)) {
-      gapIfNeeded();
-      children.add(
-        AppInlineErrorPanel(
-          tone: AppInlinePanelTone.informational,
-          title: l10n.dashboardPartialAgentQueriesTitle,
-          message: l10n.dashboardPartialAgentQueriesMessage,
-          belowMessage: partialFailureAgentNamesNormalized.isEmpty
-              ? null
-              : _OverviewAffectedAgentsListLink(
-                  l10n: l10n,
-                  normalizedNames: partialFailureAgentNamesNormalized,
-                  sheetTitle: sheetTitlePartialFailure,
-                ),
-          actions: OverviewPanelActions(
-            onRetry: onRetryOverview,
-            onManageAgents: onOpenAgents,
-            onShowDetails: () {
-              if (o.partialQueryFailureDetails.isNotEmpty) {
-                unawaited(
-                  showOverviewPartialFailureDetailsSheet(
-                    context: context,
-                    l10n: l10n,
-                    details: o.partialQueryFailureDetails,
-                  ),
-                );
-                return;
-              }
-              final parts = <String>[
-                l10n.dashboardPartialAgentQueriesMessage,
-              ];
-              final bullets = _overviewAlertsBulletAgentList(
-                partialFailureAgentNamesNormalized,
-              );
-              if (bullets.isNotEmpty) {
-                parts
-                  ..add('')
-                  ..add(bullets);
-              }
-              unawaited(
-                showOverviewAlertPlainDetailSheet(
-                  context: context,
-                  title: sheetTitlePartialFailure,
-                  body: parts.join('\n'),
-                ),
-              );
-            },
-            detailsLabel: l10n.overviewHomeAlertErrorDetailsButton,
-            detailsSemanticsLabel:
-                l10n.overviewHomeAlertErrorDetailsSemanticsLabel,
-            retryLabel: l10n.appInlineErrorRetry,
-            manageAgentsLabel: l10n.overviewHomeManageBranchesAction,
-          ),
-        ),
-      );
-    }
-
-    if (o != null && o.shouldShowMultiAgentAggregationNote) {
-      gapIfNeeded();
-      children.add(
-        AppInlineErrorPanel(
-          tone: AppInlinePanelTone.informational,
-          title: l10n.dashboardMultiAgentAggregationTitle,
-          message: l10n.dashboardMultiAgentAggregationMessage,
-        ),
-      );
+      children.add(_OverviewAlertBanner(spec: specs[i], host: this));
     }
 
     return Column(
@@ -401,6 +98,85 @@ class OverviewHomeAlertsSection extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Renders one banner from its spec, wiring context-bound callbacks
+/// (retry / open agents / open details) by inspecting the spec kind.
+class _OverviewAlertBanner extends StatelessWidget {
+  const _OverviewAlertBanner({
+    required this.spec,
+    required this.host,
+  });
+
+  final OverviewAlertBannerSpec spec;
+  final OverviewHomeAlertsSection host;
+
+  VoidCallback? _resolveOnShowDetails(BuildContext context) {
+    final detailsBody = spec.detailsBody;
+    if (detailsBody == null) {
+      // The multi-agent aggregation banner has no details sheet.
+      return null;
+    }
+    if (spec.kind == OverviewAlertKind.partialAgentQueries) {
+      final overview = host.overview;
+      final details = overview?.partialQueryFailureDetails ?? const [];
+      if (details.isNotEmpty) {
+        return () => unawaited(
+              showOverviewPartialFailureDetailsSheet(
+                context: context,
+                l10n: host.l10n,
+                details: details,
+              ),
+            );
+      }
+    }
+    return () => unawaited(
+          showOverviewAlertPlainDetailSheet(
+            context: context,
+            title: _detailsSheetTitle(),
+            body: detailsBody,
+          ),
+        );
+  }
+
+  String _detailsSheetTitle() {
+    return spec.affectedAgents?.sheetTitle ?? spec.title;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final affected = spec.affectedAgents;
+    final l10n = host.l10n;
+    return AppInlineErrorPanel(
+      tone: spec.tone,
+      title: spec.title,
+      message: spec.message,
+      belowMessage: affected == null
+          ? null
+          : _OverviewAffectedAgentsListLink(
+              l10n: l10n,
+              normalizedNames: affected.normalizedNames,
+              sheetTitle: affected.sheetTitle,
+            ),
+      actions: _hasAnyAction
+          ? OverviewPanelActions(
+              onRetry: spec.showRetry ? host.onRetryOverview : null,
+              onManageAgents: spec.showManage ? host.onOpenAgents : null,
+              onShowDetails: _resolveOnShowDetails(context),
+              detailsLabel: l10n.overviewHomeAlertErrorDetailsButton,
+              detailsSemanticsLabel:
+                  l10n.overviewHomeAlertErrorDetailsSemanticsLabel,
+              retryLabel: l10n.appInlineErrorRetry,
+              retryDisabledLabel: spec.retryDisabledLabel,
+              primaryLabel: spec.primaryLabel,
+              manageAgentsLabel: l10n.overviewHomeManageBranchesAction,
+            )
+          : null,
+    );
+  }
+
+  bool get _hasAnyAction =>
+      spec.showRetry || spec.showManage || spec.detailsBody != null;
 }
 
 class _OverviewAffectedAgentsListLink extends StatelessWidget {

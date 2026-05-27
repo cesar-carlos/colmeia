@@ -499,6 +499,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Consolidated summary of approved branches (connected to the hub).';
 
   @override
+  String get overviewHomeRefreshSemanticsLabel =>
+      'Pull down to refresh the overview';
+
+  @override
   String get overviewHomeManageBranchesAction => 'Branch management';
 
   @override

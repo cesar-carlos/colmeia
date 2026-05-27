@@ -40,14 +40,18 @@ final class OverviewStoreRouteData implements AppRouteData {
   Map<String, dynamic> get queryParameters => const <String, dynamic>{};
 }
 
-Widget _buildOverviewHomeRoute(BuildContext context, GoRouterState state) {
+Widget _buildOverviewHomeRoute(
+  BuildContext context,
+  GoRouterState state, {
+  required bool storeScoped,
+}) {
   return MultiProvider(
     providers: [
       ChangeNotifierProvider<OverviewController>(
         create: (_) => getIt<OverviewController>(),
       ),
     ],
-    child: const OverviewHomePage(),
+    child: OverviewHomePage(storeScoped: storeScoped),
   );
 }
 
@@ -56,12 +60,14 @@ List<RouteBase> buildOverviewRoutes() {
     GoRoute(
       name: AppRoute.dashboardStore.name,
       path: AppRoute.dashboardStore.path,
-      builder: _buildOverviewHomeRoute,
+      builder: (context, state) =>
+          _buildOverviewHomeRoute(context, state, storeScoped: true),
     ),
     GoRoute(
       name: AppRoute.dashboard.name,
       path: AppRoute.dashboard.path,
-      builder: _buildOverviewHomeRoute,
+      builder: (context, state) =>
+          _buildOverviewHomeRoute(context, state, storeScoped: false),
     ),
   ];
 }

@@ -508,6 +508,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Resumo consolidado das filiais aprovadas (ligadas ao hub).';
 
   @override
+  String get overviewHomeRefreshSemanticsLabel =>
+      'Arraste para baixo para atualizar o resumo';
+
+  @override
   String get overviewHomeManageBranchesAction => 'Gestão de filiais';
 
   @override
@@ -4417,6 +4421,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get overviewHomeSubtitle =>
       'Resumo consolidado das filiais aprovadas (ligadas ao hub).';
+
+  @override
+  String get overviewHomeRefreshSemanticsLabel =>
+      'Arraste para baixo para atualizar o resumo';
 
   @override
   String get overviewHomeManageBranchesAction => 'Gestão de filiais';

@@ -56,7 +56,7 @@ class AppCategoryDonutCardStyle {
   /// Default donut sweep when [doughnutAnimationDurationMs] is null.
   ///
   /// Aligned with the comparison bar charts (~350-500 ms) so that the staged
-  /// dashboard mounting in `OverviewHomeStagedBelowKpis` doesn't have one
+  /// dashboard mounting in `OverviewHomeChartsBelowKpis` doesn't have one
   /// outlier card animating for nearly a second while sibling charts mount.
   static const int defaultDoughnutAnimationDurationMs = 500;
 
@@ -158,7 +158,7 @@ class AppCategoryDonutCard extends StatefulWidget {
 
   /// Loading-block height used when the card is mounted with `isLoading: true`
   /// (mirrors `_LoadingBlock`). Exposed so callers that render their own staged
-  /// placeholder (e.g. `OverviewHomeStagedBelowKpis`) reserve the same vertical
+  /// placeholder (e.g. `OverviewHomeChartsBelowKpis`) reserve the same vertical
   /// space and avoid layout shift when the real card mounts.
   static double loadingBlockHeight(
     AppThemeTokens tokens, {

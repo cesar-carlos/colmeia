@@ -51,6 +51,25 @@ class Overview {
     this.hubPresenceOnlineAgentIdsSnapshot,
   });
 
+  /// Neutral, zeroed snapshot used as a structural placeholder while the
+  /// real overview is still loading. Date fields are pinned to the epoch
+  /// to make it obvious in logs that this is not a real period.
+  factory Overview.empty() {
+    return Overview(
+      periodStart: DateTime(1970),
+      periodEnd: DateTime(1970),
+      kpis: const OverviewPaymentKpis(
+        totalSalesCount: 0,
+        totalAmount: 0,
+        averageTicket: 0,
+        paymentMethodCount: 0,
+      ),
+      paymentMethods: const <OverviewPaymentMethodBreakdown>[],
+      agentRankings: const <OverviewAgentRanking>[],
+      userRankings: const <OverviewUserRanking>[],
+    );
+  }
+
   final DateTime periodStart;
   final DateTime periodEnd;
   final OverviewPaymentKpis kpis;

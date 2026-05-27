@@ -230,6 +230,8 @@
     }
   },
   "overviewHomeSubtitle": "Resumo consolidado das filiais aprovadas (ligadas ao hub).",
+  "overviewHomeRefreshSemanticsLabel": "Arraste para baixo para atualizar o resumo",
+  "@overviewHomeRefreshSemanticsLabel": {"description": "Rótulo para leitor de tela no RefreshIndicator da página inicial do resumo."},
   "overviewHomeManageBranchesAction": "Gestão de filiais",
   "overviewHomeAlertsSectionTitle": "Avisos",
   "overviewLoadErrorTitle": "Não foi possível carregar a visão geral",

@@ -20,7 +20,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_controller.dart';
 import 'package:colmeia/features/overview/presentation/pages/overview_home_page.dart';
-import 'package:colmeia/features/overview/presentation/widgets/overview_home_staged_below_kpis.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_home_charts_below_kpis.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_weekday_sales_trend_chart.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -140,7 +140,9 @@ void main() {
     await tester.pump();
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
-    // [OverviewHomeStagedBelowKpis] mounts charts over successive post-frames.
+    // [OverviewHomeChartsBelowKpis] mounts charts under skeletons that fade
+    // in via [AppChartFadeIn]; a few extra frames let the post-skeleton
+    // entrance settle before we assert against the final layout.
     for (var i = 0; i < 24; i++) {
       await tester.pump();
     }
@@ -288,7 +290,7 @@ void main() {
             body: Builder(
               builder: (context) {
                 return SingleChildScrollView(
-                  child: OverviewHomeStagedBelowKpis(
+                  child: OverviewHomeChartsBelowKpis(
                     tokens: Theme.of(context).extension<AppThemeTokens>()!,
                     l10n: AppLocalizations.of(context),
                     showSkeleton: false,

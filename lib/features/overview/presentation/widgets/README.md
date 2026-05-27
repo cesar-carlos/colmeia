@@ -7,7 +7,7 @@ This folder hosts the dashboard widgets consumed by the overview feature
 
 ### Currently rendered
 
-These chart cards are mounted by `OverviewHomeStagedBelowKpis` on the home
+These chart cards are mounted by `OverviewHomeChartsBelowKpis` on the home
 screen and are the focus of design/polish work:
 
 - `OverviewDailySalesTrendChart` - line/area "Daily sales".
@@ -25,8 +25,9 @@ Plus the supporting non-chart cards:
 - `OverviewKpiBar` - KPI summary above the charts.
 - `OverviewHomeAlertsSection` - consolidated banners for load and agent states.
 - `OverviewFilterBar` - branch/agent and date filters.
-- `OverviewHomeStagedBelowKpis` - staged mounter that sequences the cards
-  above to keep the UI thread responsive while Syncfusion charts initialize.
+- `OverviewHomeChartsBelowKpis` - mounts the cards above with per-section
+  skeleton placeholders so each chart appears as its `OverviewProgressiveSection`
+  completes.
 
 ### NOT_RENDERED (kept for the upcoming overview revamp)
 

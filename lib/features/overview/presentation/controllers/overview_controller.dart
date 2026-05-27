@@ -13,8 +13,9 @@ import 'package:colmeia/features/overview/domain/entities/overview_agent_query_f
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_policy.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
+import 'package:colmeia/features/overview/presentation/controllers/overview_load_session.dart';
+import 'package:colmeia/features/overview/presentation/overview_agent_alert_names_projection.dart';
 import 'package:colmeia/features/overview/presentation/overview_available_agents_assembler.dart';
-import 'package:colmeia/features/overview/presentation/widgets/overview_agent_names_list_sheet.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
@@ -33,9 +34,11 @@ class OverviewController extends ChangeNotifier {
     RetryAfterGate? retryAfterGate,
     AgentRpcCapabilitiesRegistry? agentRpcCapabilitiesRegistry,
     AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder,
-  }) : _retryAfterGate = retryAfterGate ?? RetryAfterGate(),
-       _agentRpcCapabilitiesRegistry = agentRpcCapabilitiesRegistry,
-       _relayCancelScopeBinder = relayCancelScopeBinder {
+  })  : _retryAfterGate = retryAfterGate ?? RetryAfterGate(),
+        _agentRpcCapabilitiesRegistry = agentRpcCapabilitiesRegistry,
+        _session = OverviewLoadSession(
+          relayCancelScopeBinder: relayCancelScopeBinder,
+        ) {
     // Re-publish gate ticks (countdown updates + window expired) through
     // the controller so the home page's retry button reacts without
     // subscribing to the gate directly.
@@ -60,17 +63,16 @@ class OverviewController extends ChangeNotifier {
   /// is best-effort.
   final AgentRpcCapabilitiesRegistry? _agentRpcCapabilitiesRegistry;
 
-  final AgentQueriesRelayCancelScopeBinder? _relayCancelScopeBinder;
+  /// Encapsulates the per-load mutable state (generation, requested/
+  /// loaded signatures, SQL cancel scope) so the controller methods read
+  /// like orchestration steps instead of bookkeeping mutations.
+  final OverviewLoadSession _session;
 
   Overview? _overview;
   bool _isLoadingInitial = false;
   bool _isRefreshing = false;
   String? _errorMessage;
   String? _errorDiagnosticBody;
-  String? _requestedOverviewSignature;
-  String? _loadedOverviewSignature;
-  int _loadGeneration = 0;
-  AgentQueriesCancelScope? _overviewSqlCancelScope;
   bool _disposed = false;
   Set<OverviewProgressiveSection> _completedOverviewSections =
       const <OverviewProgressiveSection>{};
@@ -87,62 +89,33 @@ class OverviewController extends ChangeNotifier {
   List<DashboardAgentOption> _availableAgents = const <DashboardAgentOption>[];
   List<DashboardAgentOption> get availableAgents => _availableAgents;
 
-  Overview? _normalizedNamesCacheRef;
-  List<String> _missingTokenNamesNormalized = const <String>[];
-  List<String> _partialFailureNamesNormalized = const <String>[];
-  List<String> _skippedDueToHubPresenceNamesNormalized = const <String>[];
+  final OverviewAgentAlertNamesProjection _alertNamesProjection =
+      OverviewAgentAlertNamesProjection();
 
   /// Normalized display names for missing-token alerts (trim, sort, dedupe).
   List<String> get missingTokenAgentNamesNormalized {
-    _ensureNormalizedAlertNamesCache();
-    return _missingTokenNamesNormalized;
+    _alertNamesProjection.update(_overview);
+    return _alertNamesProjection.missingClientToken;
   }
 
   /// Normalized display names for partial query failure alerts.
   List<String> get partialQueryFailureAgentNamesNormalized {
-    _ensureNormalizedAlertNamesCache();
-    return _partialFailureNamesNormalized;
+    _alertNamesProjection.update(_overview);
+    return _alertNamesProjection.partialQueryFailure;
   }
 
   /// Normalized display names for the "agentes offline" alert (agents
   /// that have a stored client_token but were skipped because the hub
   /// reported them disconnected at dispatch time).
   List<String> get skippedDueToHubPresenceAgentNamesNormalized {
-    _ensureNormalizedAlertNamesCache();
-    return _skippedDueToHubPresenceNamesNormalized;
-  }
-
-  void _ensureNormalizedAlertNamesCache() {
-    final o = _overview;
-    if (identical(o, _normalizedNamesCacheRef)) {
-      return;
-    }
-    _normalizedNamesCacheRef = o;
-    if (o == null) {
-      _missingTokenNamesNormalized = const <String>[];
-      _partialFailureNamesNormalized = const <String>[];
-      _skippedDueToHubPresenceNamesNormalized = const <String>[];
-      return;
-    }
-    _missingTokenNamesNormalized = normalizeOverviewAgentNames(
-      o.agentNamesMissingClientToken,
-    );
-    _partialFailureNamesNormalized = normalizeOverviewAgentNames(
-      <String>[
-        ...o.agentNamesExcludedFromQueryFailure,
-        ...o.lucratividadePartialFailureAgentNames,
-      ],
-    );
-    _skippedDueToHubPresenceNamesNormalized = normalizeOverviewAgentNames(
-      o.agentNamesSkippedDueToHubPresence,
-    );
+    _alertNamesProjection.update(_overview);
+    return _alertNamesProjection.skippedDueToHubPresence;
   }
 
   @override
   void dispose() {
     _disposed = true;
-    _overviewSqlCancelScope?.cancelAll();
-    _overviewSqlCancelScope = null;
+    _session.dispose();
     _retryAfterGate
       ..removeListener(_notifyListenersIfAlive)
       ..dispose();
@@ -156,8 +129,7 @@ class OverviewController extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool _isOverviewLoadStale(int generation) =>
-      _disposed || generation != _loadGeneration;
+  bool _isOverviewLoadStale(int generation) => _session.isStale(generation);
 
   Overview? get overview => _overview;
   bool get isLoading => _isLoadingInitial || _isRefreshing;
@@ -189,7 +161,7 @@ class OverviewController extends ChangeNotifier {
     OverviewFailureMessageBuilder? failureMessageBuilder,
   }) async {
     _activeFilter = filter.normalizedForHomeDashboardReferenceRange();
-    _requestedOverviewSignature = null;
+    _session.resetRequested();
     await _loadOverview(
       userId: userId,
       policy: OverviewLoadPolicy.forceRefresh,
@@ -210,12 +182,12 @@ class OverviewController extends ChangeNotifier {
     OverviewFailureMessageBuilder? failureMessageBuilder,
   }) {
     final signature = _signatureFor(userId: userId);
-    if (_requestedOverviewSignature == signature) {
+    if (_session.requestedSignature == signature) {
       return;
     }
-    _requestedOverviewSignature = signature;
+    _session.requestedSignature = signature;
     SchedulerBinding.instance.addPostFrameCallback((_) {
-      if (_requestedOverviewSignature != signature) {
+      if (!_session.isRequestStillCurrent(signature)) {
         return;
       }
       unawaited(
@@ -261,7 +233,7 @@ class OverviewController extends ChangeNotifier {
     }
     final signature = _signatureFor(userId: userId);
     final keepContentVisible =
-        _loadedOverviewSignature == signature && _overview != null;
+        _session.isReloadingSameSignature(signature) && _overview != null;
     await _loadOverview(
       userId: userId,
       policy: OverviewLoadPolicy.forceRefresh,
@@ -284,7 +256,7 @@ class OverviewController extends ChangeNotifier {
     }
     final signature = _signatureFor(userId: userId);
     final keepContentVisible =
-        _loadedOverviewSignature == signature && _overview != null;
+        _session.isReloadingSameSignature(signature) && _overview != null;
     await _loadOverview(
       userId: userId,
       policy: keepContentVisible
@@ -306,18 +278,93 @@ class OverviewController extends ChangeNotifier {
     required OverviewLoadLabels rowLabels,
     required OverviewFailureMessageBuilder failureMessageBuilder,
   }) async {
+    final ctx = _beginLoad(
+      userId: userId,
+      keepContentVisible: keepContentVisible,
+      loadingMode: loadingMode,
+      policy: policy,
+    );
+
+    if (loadingMode == OverviewLoadingMode.progressive) {
+      await _loadOverviewProgressively(
+        userId: userId,
+        policy: policy,
+        keepContentVisible: keepContentVisible,
+        rowLabels: rowLabels,
+        failureMessageBuilder: failureMessageBuilder,
+        signature: ctx.signature,
+        generation: ctx.generation,
+        sqlCancelScope: ctx.sqlCancelScope,
+      );
+      return;
+    }
+
+    final result = await _loadOverviewUseCase(
+      userId: userId,
+      policy: policy,
+      filter: _activeFilter,
+      rowLabels: rowLabels,
+      cancelScope: ctx.sqlCancelScope,
+    );
+    if (_isOverviewLoadStale(ctx.generation)) {
+      return;
+    }
+
+    final overview = result.getOrNull();
+    if (overview != null) {
+      _applyOneShotSuccess(
+        overview: overview,
+        signature: ctx.signature,
+        userId: userId,
+        policy: policy,
+      );
+    } else {
+      final failure = result.exceptionOrNull();
+      if (failure != null) {
+        _applyFailure(
+          failure,
+          userId: userId,
+          policy: policy,
+          keepContentVisible: keepContentVisible,
+          failureMessageBuilder: failureMessageBuilder,
+        );
+      }
+    }
+
+    if (keepContentVisible) {
+      _isRefreshing = false;
+    } else {
+      _isLoadingInitial = false;
+    }
+    _notifyListenersIfAlive();
+
+    if (overview != null &&
+        await _updateAvailableAgents(overview, userId, ctx.generation)) {
+      _notifyListenersIfAlive();
+    }
+  }
+
+  /// Normalizes the filter, opens a fresh [OverviewLoadSession] entry,
+  /// primes the loading flags and returns the bookkeeping the calling
+  /// load path needs (signature + generation + cancel scope).
+  ({
+    String signature,
+    int generation,
+    AgentQueriesCancelScope sqlCancelScope,
+  }) _beginLoad({
+    required String userId,
+    required bool keepContentVisible,
+    required OverviewLoadingMode loadingMode,
+    required OverviewLoadPolicy policy,
+  }) {
     final normalized = _activeFilter.normalizedForHomeDashboardReferenceRange();
     if (normalized != _activeFilter) {
       _activeFilter = normalized;
       _notifyListenersIfAlive();
     }
     final signature = _signatureFor(userId: userId);
-    _requestedOverviewSignature = signature;
-    final generation = ++_loadGeneration;
-    _overviewSqlCancelScope?.cancelAll();
-    _overviewSqlCancelScope = AgentQueriesCancelScope();
-    _relayCancelScopeBinder?.call(_overviewSqlCancelScope!);
-    final sqlCancelScope = _overviewSqlCancelScope!;
+    final generation = _session.begin(signature);
+    final sqlCancelScope = _session.cancelScope!;
 
     AppLogger.debug(
       'Starting overview load in controller',
@@ -337,104 +384,80 @@ class OverviewController extends ChangeNotifier {
       _isRefreshing = false;
       _isLoadingInitial = true;
       _overview = null;
-      _loadedOverviewSignature = null;
+      _session.clearLoaded();
       _completedOverviewSections = const <OverviewProgressiveSection>{};
     }
     _errorMessage = null;
     _errorDiagnosticBody = null;
     _notifyListenersIfAlive();
-
-    if (loadingMode == OverviewLoadingMode.progressive) {
-      await _loadOverviewProgressively(
-        userId: userId,
-        policy: policy,
-        keepContentVisible: keepContentVisible,
-        rowLabels: rowLabels,
-        failureMessageBuilder: failureMessageBuilder,
-        signature: signature,
-        generation: generation,
-        sqlCancelScope: sqlCancelScope,
-      );
-      return;
-    }
-
-    final result = await _loadOverviewUseCase(
-      userId: userId,
-      policy: policy,
-      filter: _activeFilter,
-      rowLabels: rowLabels,
-      cancelScope: sqlCancelScope,
+    return (
+      signature: signature,
+      generation: generation,
+      sqlCancelScope: sqlCancelScope,
     );
-    if (_isOverviewLoadStale(generation)) {
-      return;
-    }
+  }
 
-    final overview = result.getOrNull();
-    if (overview != null) {
-      _overview = overview;
-      _completedOverviewSections = Set<OverviewProgressiveSection>.of(
-        OverviewProgressiveSection.values,
-      );
-      _loadedOverviewSignature = signature;
-      _errorMessage = null;
-      _errorDiagnosticBody = null;
-      AppLogger.info(
-        'Overview loaded in controller',
-        context: <String, Object?>{
-          'operation': 'loadOverview',
-          'userId': userId,
-          'paymentMethods': overview.paymentMethods.length,
-          'policy': policy.name,
+  void _applyOneShotSuccess({
+    required Overview overview,
+    required String signature,
+    required String userId,
+    required OverviewLoadPolicy policy,
+  }) {
+    _overview = overview;
+    _completedOverviewSections = Set<OverviewProgressiveSection>.of(
+      OverviewProgressiveSection.values,
+    );
+    _session.loadedSignature = signature;
+    _errorMessage = null;
+    _errorDiagnosticBody = null;
+    AppLogger.info(
+      'Overview loaded in controller',
+      context: <String, Object?>{
+        'operation': 'loadOverview',
+        'userId': userId,
+        'paymentMethods': overview.paymentMethods.length,
+        'policy': policy.name,
+      },
+    );
+  }
+
+  /// Shared failure path used by both one-shot and progressive loads:
+  /// arms the retry-after gate when the bridge sent a hint, captures the
+  /// user-facing message + diagnostic body, and logs the technical
+  /// failure with the same shape as the legacy in-line block.
+  void _applyFailure(
+    AppFailure failure, {
+    required String userId,
+    required OverviewLoadPolicy policy,
+    required bool keepContentVisible,
+    required OverviewFailureMessageBuilder failureMessageBuilder,
+  }) {
+    if (!keepContentVisible) {
+      _overview = null;
+      _session.clearLoaded();
+      _completedOverviewSections = const <OverviewProgressiveSection>{};
+    }
+    final retryAfter = appFailureRetryAfter(failure);
+    if (retryAfter != null) {
+      _retryAfterGate.arm(retryAfter);
+    }
+    _errorMessage = failureMessageBuilder(failure);
+    _errorDiagnosticBody = overviewAppFailureDiagnosticBody(failure);
+    AppLogger.warning(
+      'Overview load failed in controller',
+      context: <String, Object?>{
+        'operation': 'loadOverview',
+        'userId': userId,
+        'policy': policy.name,
+        'keepContentVisible': keepContentVisible,
+        'technicalMessage': switch (failure) {
+          RpcFailure(:final technicalMessage) => technicalMessage,
+          _ => failure.message,
         },
-      );
-    } else {
-      final failure = result.exceptionOrNull();
-      if (failure != null) {
-        if (!keepContentVisible) {
-          _overview = null;
-          _loadedOverviewSignature = null;
-          _completedOverviewSections = const <OverviewProgressiveSection>{};
-        }
-        // Arm the cool-down gate when the bridge propagated a
-        // `Retry-After` hint (HTTP header, JSON-RPC
-        // `error.data.retry_after_ms`, socket overload). Same
-        // semantics as the detail page and the request-access tab —
-        // the next `Reload` tap is debounced until the window closes.
-        final retryAfter = appFailureRetryAfter(failure);
-        if (retryAfter != null) {
-          _retryAfterGate.arm(retryAfter);
-        }
-        _errorMessage = failureMessageBuilder(failure);
-        _errorDiagnosticBody = overviewAppFailureDiagnosticBody(failure);
-        AppLogger.warning(
-          'Overview load failed in controller',
-          context: <String, Object?>{
-            'operation': 'loadOverview',
-            'userId': userId,
-            'policy': policy.name,
-            'keepContentVisible': keepContentVisible,
-            'technicalMessage': switch (failure) {
-              RpcFailure(:final technicalMessage) => technicalMessage,
-              _ => failure.message,
-            },
-          },
-          error: failure.cause ?? failure,
-          stackTrace: failure.stackTrace,
-        );
-      }
-    }
-
-    if (keepContentVisible) {
-      _isRefreshing = false;
-    } else {
-      _isLoadingInitial = false;
-    }
-    _notifyListenersIfAlive();
-
-    if (overview != null &&
-        await _updateAvailableAgents(overview, userId, generation)) {
-      _notifyListenersIfAlive();
-    }
+      },
+      error: failure.cause ?? failure,
+      stackTrace: failure.stackTrace,
+    );
   }
 
   Future<void> _loadOverviewProgressively({
@@ -470,7 +493,7 @@ class OverviewController extends ChangeNotifier {
           _isLoadingInitial = false;
         }
         if (snapshot.isFinal) {
-          _loadedOverviewSignature = signature;
+          _session.loadedSignature = signature;
           AppLogger.info(
             'Overview loaded progressively in controller',
             context: <String, Object?>{
@@ -496,7 +519,7 @@ class OverviewController extends ChangeNotifier {
 
       final failure = result.exceptionOrNull();
       if (failure != null) {
-        _handleProgressiveFailure(
+        _applyFailure(
           failure,
           userId: userId,
           policy: policy,
@@ -509,41 +532,6 @@ class OverviewController extends ChangeNotifier {
     }
 
     _finishProgressiveLoading(keepContentVisible: keepContentVisible);
-  }
-
-  void _handleProgressiveFailure(
-    AppFailure failure, {
-    required String userId,
-    required OverviewLoadPolicy policy,
-    required bool keepContentVisible,
-    required OverviewFailureMessageBuilder failureMessageBuilder,
-  }) {
-    if (!keepContentVisible) {
-      _overview = null;
-      _loadedOverviewSignature = null;
-      _completedOverviewSections = const <OverviewProgressiveSection>{};
-    }
-    final retryAfter = appFailureRetryAfter(failure);
-    if (retryAfter != null) {
-      _retryAfterGate.arm(retryAfter);
-    }
-    _errorMessage = failureMessageBuilder(failure);
-    _errorDiagnosticBody = overviewAppFailureDiagnosticBody(failure);
-    AppLogger.warning(
-      'Overview load failed in controller',
-      context: <String, Object?>{
-        'operation': 'loadOverview',
-        'userId': userId,
-        'policy': policy.name,
-        'keepContentVisible': keepContentVisible,
-        'technicalMessage': switch (failure) {
-          RpcFailure(:final technicalMessage) => technicalMessage,
-          _ => failure.message,
-        },
-      },
-      error: failure.cause ?? failure,
-      stackTrace: failure.stackTrace,
-    );
   }
 
   void _finishProgressiveLoading({required bool keepContentVisible}) {

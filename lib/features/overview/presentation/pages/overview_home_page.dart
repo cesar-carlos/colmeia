@@ -8,18 +8,14 @@ import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_controller.dart';
 import 'package:colmeia/features/overview/presentation/localization/overview_failure_l10n.dart';
 import 'package:colmeia/features/overview/presentation/localization/overview_load_labels_l10n.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_auto_loader.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_filter_bar.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_home_alerts_section.dart';
-import 'package:colmeia/features/overview/presentation/widgets/overview_home_staged_below_kpis.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_home_charts_below_kpis.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_kpi_bar.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -30,25 +26,15 @@ import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 class OverviewHomePage extends StatelessWidget {
-  const OverviewHomePage({super.key});
+  const OverviewHomePage({super.key, this.storeScoped = false});
 
-  static final Overview _neutralSkeletonOverview = Overview(
-    periodStart: DateTime(1970),
-    periodEnd: DateTime(1970),
-    kpis: const OverviewPaymentKpis(
-      totalSalesCount: 0,
-      totalAmount: 0,
-      averageTicket: 0,
-      paymentMethodCount: 0,
-    ),
-    paymentMethods: const <OverviewPaymentMethodBreakdown>[],
-    agentRankings: const <OverviewAgentRanking>[],
-    userRankings: const <OverviewUserRanking>[],
-  );
+  /// True when this page is mounted under the `dashboardStore` route.
+  /// Drives the back-to-dashboard chip in the page intro; the store id
+  /// itself is intentionally ignored by the consolidated overview.
+  final bool storeScoped;
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +48,7 @@ class OverviewHomePage extends StatelessWidget {
           sessionUserId: sessionUserId,
           tokens: tokens,
           l10n: l10n,
+          storeScoped: storeScoped,
         );
       },
     );
@@ -73,11 +60,13 @@ class _OverviewHomeSession extends StatelessWidget {
     required this.sessionUserId,
     required this.tokens,
     required this.l10n,
+    required this.storeScoped,
   });
 
   final String? sessionUserId;
   final AppThemeTokens tokens;
   final AppLocalizations l10n;
+  final bool storeScoped;
 
   @override
   Widget build(BuildContext context) {
@@ -88,41 +77,44 @@ class _OverviewHomeSession extends StatelessWidget {
           userContext.errorMessage == null &&
           userContext.hasResolvedData,
       builder: (context, isUserContextReady, _) {
-        final overviewController = context.read<OverviewController>();
-        final loadingMode =
-            context
-                .watch<AppUserExperiencePreferencesController?>()
-                ?.overviewLoadingMode ??
-            OverviewLoadingMode.progressive;
-
-        return OverviewAutoLoader(
-          controller: overviewController,
-          loadingMode: loadingMode,
-          userId: sessionUserId,
-          isReady: isUserContextReady,
-          rowLabels: l10n.overviewLoadLabels,
-          failureMessageBuilder: (failure) =>
-              overviewFailureUserMessage(failure, l10n),
-          child: RefreshIndicator(
-            onRefresh: () async {
-              final session = context.read<AuthController>().session;
-              if (session == null) return;
-              await context.read<OverviewController>().refreshOverview(
-                userId: session.userId,
-                loadingMode: loadingMode,
-                rowLabels: l10n.overviewLoadLabels,
-                failureMessageBuilder: (failure) =>
-                    overviewFailureUserMessage(failure, l10n),
-              );
-            },
-            child: _OverviewHomeScrollableContent(
-              sessionUserId: sessionUserId,
-              tokens: tokens,
-              l10n: l10n,
-              overviewController: overviewController,
+        return Selector<AppUserExperiencePreferencesController?,
+            OverviewLoadingMode>(
+          selector: (_, prefs) =>
+              prefs?.overviewLoadingMode ?? OverviewLoadingMode.progressive,
+          builder: (context, loadingMode, _) {
+            final overviewController = context.read<OverviewController>();
+            return OverviewAutoLoader(
+              controller: overviewController,
               loadingMode: loadingMode,
-            ),
-          ),
+              userId: sessionUserId,
+              isReady: isUserContextReady,
+              rowLabels: l10n.overviewLoadLabels,
+              failureMessageBuilder: (failure) =>
+                  overviewFailureUserMessage(failure, l10n),
+              child: RefreshIndicator(
+                semanticsLabel: l10n.overviewHomeRefreshSemanticsLabel,
+                onRefresh: () async {
+                  final session = context.read<AuthController>().session;
+                  if (session == null) return;
+                  await overviewController.refreshOverview(
+                    userId: session.userId,
+                    loadingMode: loadingMode,
+                    rowLabels: l10n.overviewLoadLabels,
+                    failureMessageBuilder: (failure) =>
+                        overviewFailureUserMessage(failure, l10n),
+                  );
+                },
+                child: _OverviewHomeScrollableContent(
+                  sessionUserId: sessionUserId,
+                  tokens: tokens,
+                  l10n: l10n,
+                  overviewController: overviewController,
+                  loadingMode: loadingMode,
+                  storeScoped: storeScoped,
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -136,6 +128,7 @@ class _OverviewHomeScrollableContent extends StatelessWidget {
     required this.l10n,
     required this.overviewController,
     required this.loadingMode,
+    required this.storeScoped,
   });
 
   final String? sessionUserId;
@@ -143,6 +136,7 @@ class _OverviewHomeScrollableContent extends StatelessWidget {
   final AppLocalizations l10n;
   final OverviewController overviewController;
   final OverviewLoadingMode loadingMode;
+  final bool storeScoped;
 
   @override
   Widget build(BuildContext context) {
@@ -154,7 +148,7 @@ class _OverviewHomeScrollableContent extends StatelessWidget {
             AppPageSpacingPresets.dashboardHorizontalAdjustment,
       ),
       children: <Widget>[
-        _OverviewHomeIntro(l10n: l10n),
+        _OverviewHomeIntro(l10n: l10n, storeScoped: storeScoped),
         SizedBox(height: tokens.gapMd),
         _OverviewFilterSection(
           l10n: l10n,
@@ -165,6 +159,7 @@ class _OverviewHomeScrollableContent extends StatelessWidget {
         _OverviewAlertsSection(
           l10n: l10n,
           sessionUserId: sessionUserId,
+          overviewController: overviewController,
           loadingMode: loadingMode,
         ),
         _OverviewMetricsSection(tokens: tokens, l10n: l10n),
@@ -222,11 +217,13 @@ class _OverviewAlertsSection extends StatelessWidget {
   const _OverviewAlertsSection({
     required this.l10n,
     required this.sessionUserId,
+    required this.overviewController,
     required this.loadingMode,
   });
 
   final AppLocalizations l10n;
   final String? sessionUserId;
+  final OverviewController overviewController;
   final OverviewLoadingMode loadingMode;
 
   @override
@@ -260,18 +257,15 @@ class _OverviewAlertsSection extends StatelessWidget {
           retryCountdownLabel: retryCountdown,
           onRetryOverview: sessionUserId == null
               ? null
-              : () {
-                  final uid = sessionUserId!;
-                  unawaited(
-                    context.read<OverviewController>().retryOverview(
-                      userId: uid,
-                      loadingMode: loadingMode,
-                      rowLabels: l10n.overviewLoadLabels,
-                      failureMessageBuilder: (failure) =>
-                          overviewFailureUserMessage(failure, l10n),
-                    ),
-                  );
-                },
+              : () => unawaited(
+                  overviewController.retryOverview(
+                    userId: sessionUserId!,
+                    loadingMode: loadingMode,
+                    rowLabels: l10n.overviewLoadLabels,
+                    failureMessageBuilder: (failure) =>
+                        overviewFailureUserMessage(failure, l10n),
+                  ),
+                ),
         );
       },
     );
@@ -299,7 +293,7 @@ class _OverviewMetricsSection extends StatelessWidget {
         final overview = slice.overview;
         final showSkeleton = slice.isLoadingInitial && overview == null;
         final displayOverview = showSkeleton
-            ? OverviewHomePage._neutralSkeletonOverview
+            ? _skeletonOverview
             : overview;
 
         if (displayOverview == null) {
@@ -320,7 +314,7 @@ class _OverviewMetricsSection extends StatelessWidget {
                 ),
               ),
               SizedBox(height: tokens.sectionSpacing),
-              OverviewHomeStagedBelowKpis(
+              OverviewHomeChartsBelowKpis(
                 tokens: tokens,
                 l10n: l10n,
                 showSkeleton: showSkeleton,
@@ -335,10 +329,16 @@ class _OverviewMetricsSection extends StatelessWidget {
   }
 }
 
+/// Cached skeleton placeholder so identity-based rebuild checks in child
+/// widgets (`OverviewHomeStagedBelowKpis`) don't see a fresh instance on
+/// every metrics rebuild while the real overview is still loading.
+final Overview _skeletonOverview = Overview.empty();
+
 class _OverviewHomeIntro extends StatelessWidget {
-  const _OverviewHomeIntro({required this.l10n});
+  const _OverviewHomeIntro({required this.l10n, required this.storeScoped});
 
   final AppLocalizations l10n;
+  final bool storeScoped;
 
   static String _greetingFirstName(String fullName, AppLocalizations l10n) {
     final trimmed = fullName.trim();
@@ -350,40 +350,52 @@ class _OverviewHomeIntro extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<CurrentUserContextController, String>(
-      selector: (_, c) => c.userScope.name,
-      builder: (context, fullName, _) {
-        final greetingName = _greetingFirstName(fullName, l10n);
-        return Selector<OverviewController, _PeriodTagSlice?>(
-          selector: (_, c) => _PeriodTagSlice.fromController(c),
-          builder: (context, slice, _) {
-            final periodLabel = slice?.label(l10n);
-            final router = GoRouter.maybeOf(context);
-            final route = router == null
-                ? AppRoute.dashboard
-                : AppRoute.fromLocation(
-                    GoRouterState.of(context).matchedLocation,
-                  );
-            final storeScoped = route == AppRoute.dashboardStore;
-            return AppShellPageIntro(
-              eyebrow: l10n.overviewGreetingEyebrow(greetingName),
-              sectionLabel: storeScoped ? l10n.shellNavDashboardLabel : null,
-              onSectionLabelTap: storeScoped
-                  ? () => context.goTo(AppRoute.dashboard)
-                  : null,
-              subtitle: l10n.overviewHomeSubtitle,
-              footer: periodLabel != null
-                  ? AppTagChip(
-                      label: periodLabel,
-                      icon: Icons.calendar_today_outlined,
-                    )
-                  : null,
-            );
-          },
+    // Single Provider Selector that watches both controllers and emits a
+    // tiny immutable slice with the only two values this widget consumes.
+    final userContext = context.watch<CurrentUserContextController>();
+    return Selector<OverviewController, _IntroSlice>(
+      selector: (_, c) => _IntroSlice(
+        fullName: userContext.userScope.name,
+        period: _PeriodTagSlice.fromController(c),
+      ),
+      builder: (context, slice, _) {
+        final greetingName = _greetingFirstName(slice.fullName, l10n);
+        final periodLabel = slice.period?.label(l10n);
+        return AppShellPageIntro(
+          eyebrow: l10n.overviewGreetingEyebrow(greetingName),
+          sectionLabel: storeScoped ? l10n.shellNavDashboardLabel : null,
+          onSectionLabelTap: storeScoped
+              ? () => context.goTo(AppRoute.dashboard)
+              : null,
+          subtitle: l10n.overviewHomeSubtitle,
+          footer: periodLabel != null
+              ? AppTagChip(
+                  label: periodLabel,
+                  icon: Icons.calendar_today_outlined,
+                )
+              : null,
         );
       },
     );
   }
+}
+
+@immutable
+class _IntroSlice {
+  const _IntroSlice({required this.fullName, required this.period});
+
+  final String fullName;
+  final _PeriodTagSlice? period;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is _IntroSlice &&
+          fullName == other.fullName &&
+          period == other.period);
+
+  @override
+  int get hashCode => Object.hash(fullName, period);
 }
 
 @immutable

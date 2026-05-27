@@ -208,6 +208,8 @@
     }
   },
   "overviewHomeSubtitle": "Consolidated summary of approved branches (connected to the hub).",
+  "overviewHomeRefreshSemanticsLabel": "Pull down to refresh the overview",
+  "@overviewHomeRefreshSemanticsLabel": {"description": "Screen-reader label for the RefreshIndicator wrapping the overview home page."},
   "overviewHomeManageBranchesAction": "Branch management",
   "overviewHomeAlertsSectionTitle": "Notices",
   "overviewLoadErrorTitle": "Unable to load the overview",
