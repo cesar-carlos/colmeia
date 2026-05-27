@@ -47,4 +47,46 @@ class ClientAccessibleAgentDto extends ClientAgentProfileDto {
       hasClientToken: base.hasClientToken,
     );
   }
+
+  /// Returns a new DTO with selected fields replaced. Nullable fields
+  /// use `Object?` sentinels so `null` arguments are treated as "leave
+  /// the original value" (the natural Dart copyWith semantics); callers
+  /// that need to explicitly clear a field should rebuild the DTO
+  /// directly.
+  ClientAccessibleAgentDto copyWith({
+    String? name,
+    String? tradeName,
+    String? document,
+    String? cnpjCpf,
+    String? documentType,
+    String? phone,
+    String? mobile,
+    String? email,
+    String? notes,
+    String? observation,
+    DateTime? profileUpdatedAt,
+    int? profileVersion,
+  }) {
+    return ClientAccessibleAgentDto(
+      agentId: agentId,
+      name: name ?? this.name,
+      status: status,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      tradeName: tradeName ?? this.tradeName,
+      document: document ?? this.document,
+      cnpjCpf: cnpjCpf ?? this.cnpjCpf,
+      documentType: documentType ?? this.documentType,
+      phone: phone ?? this.phone,
+      mobile: mobile ?? this.mobile,
+      email: email ?? this.email,
+      address: address,
+      notes: notes ?? this.notes,
+      observation: observation ?? this.observation,
+      profileUpdatedAt: profileUpdatedAt ?? this.profileUpdatedAt,
+      profileVersion: profileVersion ?? this.profileVersion,
+      isHubConnected: isHubConnected,
+      hasClientToken: hasClientToken,
+    );
+  }
 }
