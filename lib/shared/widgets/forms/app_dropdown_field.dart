@@ -837,9 +837,13 @@ class _AnimatedDropdownMenu extends StatelessWidget {
       transitionBuilder: (child, animation) {
         return FadeTransition(
           opacity: animation,
+          // `SizeTransition.alignment` exists only on Flutter >= 3.43; the
+          // CI pin (tool/flutter_ci_version.txt) is still 3.41.9, where
+          // vertical-axis alignment is expressed via `axisAlignment` (-1.0
+          // anchors the reveal at the top, matching `Alignment.topLeft`).
           child: SizeTransition(
             sizeFactor: animation,
-            alignment: Alignment.topLeft,
+            axisAlignment: -1,
             child: child,
           ),
         );
