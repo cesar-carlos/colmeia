@@ -116,7 +116,7 @@ abstract final class ResumoProdutoVendaLucratividadeMensalSql {
         tos.CodEmpresa = pv.CodEmpresa
         AND tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida
       WHERE CAST(pv.DataVenda AS DATE) BETWEEN :dataVendaInicio AND :dataVendaFim
-        AND pv.Origem LIKE :origem
+        AND pv.Origem = :origem
         AND tos.GeraFinanceiro = 'S'
         AND pv.PreVenda = 'N'
     ) DetalheProdutoVenda

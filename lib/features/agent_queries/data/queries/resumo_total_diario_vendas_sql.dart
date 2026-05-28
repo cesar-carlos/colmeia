@@ -6,6 +6,15 @@
 /// - `pv.Origem = :origem` (exact match); wildcards are rejected in
 ///   `resumo_vendas_produto_vendido_sql_periodo_filter.dart`.
 ///
+/// **Diverges from parcel-line resumos** (see
+/// `parcela_produto_vendido_detalhe_sql.dart` for the full caveat list):
+/// - Filters by `tos.GeraFinanceiro` only; parcel resumos override the
+///   operation flag with `ppv.GeraFinanceiro` when present.
+/// - Sums `pv.ValorLiquido` (gross liquid sale value), while parcel resumos
+///   compute `SUM(ValorParcela − ValorTrocoParcela)`. These two values are
+///   not guaranteed to match for sales with troco or partial financial
+///   parcels — that is a known data-model gap pending product decision.
+///
 /// Suggested indexes (validate with DBA / actual plans):
 ///
 /// ```sql

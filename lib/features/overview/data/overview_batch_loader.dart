@@ -1,6 +1,7 @@
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_sql_local_date.dart';
@@ -864,25 +865,56 @@ class OverviewBatchLoader {
       indexes.monthly,
       (row) => ResumoParcelasMensalRowModel.fromMap(row).toEntity(),
     );
+    _warnIfReachedMaxRows(
+      target: target,
+      section: 'monthly',
+      rowCount: monthly.rows.length,
+      maxRows: AgentQueriesBoundedResultMaxRows.resumoParcelasMensal,
+    );
     final weekday = OverviewSqlBatchItemRowsMapper.mapRowsForIndex(
       byIndex,
       indexes.weekday,
       (row) => ResumoParcelasDiaSemanaRowModel.fromMap(row).toEntity(),
+    );
+    _warnIfReachedMaxRows(
+      target: target,
+      section: 'weekday',
+      rowCount: weekday.rows.length,
+      maxRows: AgentQueriesBoundedResultMaxRows.resumoParcelasDiaSemana,
     );
     final daily = OverviewSqlBatchItemRowsMapper.mapRowsForIndex(
       byIndex,
       indexes.daily,
       (row) => ResumoTotalDiarioVendasRowModel.fromMap(row).toEntity(),
     );
+    _warnIfReachedMaxRows(
+      target: target,
+      section: 'daily',
+      rowCount: daily.rows.length,
+      maxRows: AgentQueriesBoundedResultMaxRows.resumoTotalDiarioVendas,
+    );
     final weekdayUser = OverviewSqlBatchItemRowsMapper.mapRowsForIndex(
       byIndex,
       indexes.weekdayUser,
       (row) => ResumoParcelasDiaSemanaUsuarioRowModel.fromMap(row).toEntity(),
     );
+    _warnIfReachedMaxRows(
+      target: target,
+      section: 'weekdayUser',
+      rowCount: weekdayUser.rows.length,
+      maxRows: AgentQueriesBoundedResultMaxRows.resumoParcelasDiaSemanaUsuario,
+    );
     final lucratividade = OverviewSqlBatchItemRowsMapper.mapRowsForIndex(
       byIndex,
       indexes.lucratividade,
       (row) => ResumoProdutoVendaLucratividadeRowModel.fromMap(row).toEntity(),
+    );
+    _warnIfReachedMaxRows(
+      target: target,
+      section: 'lucratividade',
+      rowCount: lucratividade.rows.length,
+      maxRows:
+          AgentQueriesBoundedResultMaxRows.resumoProdutoVendaLucratividade,
     );
     final lucratividadeMensal = indexes.lucratividadeMensal == null
         ? const OverviewSqlBatchItemRowsResult<
@@ -897,6 +929,15 @@ class OverviewBatchLoader {
               row,
             ).toEntity(),
           );
+    if (indexes.lucratividadeMensal != null) {
+      _warnIfReachedMaxRows(
+        target: target,
+        section: 'lucratividadeMensal',
+        rowCount: lucratividadeMensal.rows.length,
+        maxRows: AgentQueriesBoundedResultMaxRows
+            .resumoProdutoVendaLucratividadeMensal,
+      );
+    }
 
     return OverviewBatchTargetResult(
       target: target,
@@ -913,6 +954,33 @@ class OverviewBatchLoader {
       weekdayUserFailure: weekdayUser.failure,
       lucratividadeFailure: lucratividade.failure,
       lucratividadeMensalFailure: lucratividadeMensal.failure,
+    );
+  }
+
+  /// Logs a warning when a batch item returns exactly [maxRows] rows. The
+  /// hub caps result sets at the request's `max_rows`; reaching that bound
+  /// means the section probably got truncated silently. Standalone repos
+  /// (`resumoProdutoVendaLucratividade`, etc.) already do this; the overview
+  /// section batch needs the same guard so deployments with many filiais are
+  /// not surprised by missing rows.
+  void _warnIfReachedMaxRows({
+    required AgentQueryTarget target,
+    required String section,
+    required int rowCount,
+    required int maxRows,
+  }) {
+    if (rowCount < maxRows) {
+      return;
+    }
+    AppLogger.warning(
+      'Overview batch section reached max_rows cap (possible truncation)',
+      context: <String, Object?>{
+        'operation': 'loadOverviewBatch',
+        'section': section,
+        'agentId': target.agentId,
+        'rowCount': rowCount,
+        'maxRows': maxRows,
+      },
     );
   }
 

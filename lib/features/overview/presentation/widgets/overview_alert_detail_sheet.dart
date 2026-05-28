@@ -26,6 +26,18 @@ String _sourceLabel(
       l10n.overviewHomeAlertFailureSourcePaymentResumo,
     OverviewAgentQueryFailureSource.lucratividadePeriod =>
       l10n.overviewHomeAlertFailureSourceLucratividadePeriod,
+    OverviewAgentQueryFailureSource.userResumo =>
+      l10n.overviewHomeAlertFailureSourceUserResumo,
+    OverviewAgentQueryFailureSource.monthlyTrend =>
+      l10n.overviewHomeAlertFailureSourceMonthlyTrend,
+    OverviewAgentQueryFailureSource.weekdayTrend =>
+      l10n.overviewHomeAlertFailureSourceWeekdayTrend,
+    OverviewAgentQueryFailureSource.weekdayUserTrend =>
+      l10n.overviewHomeAlertFailureSourceWeekdayUserTrend,
+    OverviewAgentQueryFailureSource.dailyTrend =>
+      l10n.overviewHomeAlertFailureSourceDailyTrend,
+    OverviewAgentQueryFailureSource.lucratividadeMensalTrend =>
+      l10n.overviewHomeAlertFailureSourceLucratividadeMensalTrend,
   };
 }
 

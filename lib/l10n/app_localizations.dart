@@ -441,6 +441,42 @@ abstract class AppLocalizations {
   /// **'Profitability (period) query'**
   String get overviewHomeAlertFailureSourceLucratividadePeriod;
 
+  /// No description provided for @overviewHomeAlertFailureSourceUserResumo.
+  ///
+  /// In en, this message translates to:
+  /// **'Per-operator summary query'**
+  String get overviewHomeAlertFailureSourceUserResumo;
+
+  /// No description provided for @overviewHomeAlertFailureSourceMonthlyTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 12 months query'**
+  String get overviewHomeAlertFailureSourceMonthlyTrend;
+
+  /// No description provided for @overviewHomeAlertFailureSourceWeekdayTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales by weekday query'**
+  String get overviewHomeAlertFailureSourceWeekdayTrend;
+
+  /// No description provided for @overviewHomeAlertFailureSourceWeekdayUserTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekday by operator query'**
+  String get overviewHomeAlertFailureSourceWeekdayUserTrend;
+
+  /// No description provided for @overviewHomeAlertFailureSourceDailyTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily sales query'**
+  String get overviewHomeAlertFailureSourceDailyTrend;
+
+  /// No description provided for @overviewHomeAlertFailureSourceLucratividadeMensalTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly profitability query'**
+  String get overviewHomeAlertFailureSourceLucratividadeMensalTrend;
+
   /// No description provided for @overviewHomeAlertDetailsUserLine.
   ///
   /// In en, this message translates to:

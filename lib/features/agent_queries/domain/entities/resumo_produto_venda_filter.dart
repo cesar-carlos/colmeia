@@ -40,7 +40,8 @@ class ResumoProdutoVendaFilter {
   final DateTime dataVendaInicio;
   final DateTime dataVendaFim;
 
-  /// Bound to `pv.Origem LIKE :origem` (same default as parcel-line resumos).
+  /// Bound to `pv.Origem = :origem` (exact match; same default as parcel-line
+  /// resumos). Wildcards rejected by [validationError].
   final String origem;
 
   /// Primary sort column after the fixed `CodEmpresa ASC, CodFilial ASC` lead.
@@ -73,8 +74,13 @@ class ResumoProdutoVendaFilter {
     if (pageSize > maxPageSize) {
       return 'pageSize must be <= $maxPageSize';
     }
-    if (trimmedOrigem.isEmpty) {
+    final origemTrim = trimmedOrigem;
+    if (origemTrim.isEmpty) {
       return 'origem must not be empty';
+    }
+    if (origemTrim.contains('%') || origemTrim.contains('_')) {
+      return 'origem must not contain SQL LIKE wildcards (% or _) '
+          'for ProdutoVendido resumo queries (exact match only)';
     }
     final start = DateTime(
       dataVendaInicio.year,

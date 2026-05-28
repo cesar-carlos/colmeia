@@ -23,22 +23,19 @@ abstract final class OverviewLast12MonthsVendaRange {
   }
 
   /// First instant of the earliest month and last instant of that end month.
+  ///
+  /// `dataVendaFim` uses the same microsecond-precision end of month as
+  /// [DashboardYearMonth.end] so callers comparing the two never lose a
+  /// row on the last microsecond of the boundary day. The actual wire bind
+  /// truncates to `yyyy-MM-dd` (see `AgentQueriesSqlLocalDate`), but tests
+  /// and downstream code can rely on a consistent end-of-month instant.
   static ({DateTime dataVendaInicio, DateTime dataVendaFim}) fromPeriodEnd(
     DateTime periodEnd,
   ) {
     final y = periodEnd.year;
     final m = periodEnd.month;
     final dataVendaInicio = _startOfMonthYearsMonthsAgo(y, m, 11);
-    final lastDay = DateTime(y, m + 1, 0);
-    final dataVendaFim = DateTime(
-      lastDay.year,
-      lastDay.month,
-      lastDay.day,
-      23,
-      59,
-      59,
-      999,
-    );
+    final dataVendaFim = DashboardYearMonth(year: y, month: m).end;
     return (dataVendaInicio: dataVendaInicio, dataVendaFim: dataVendaFim);
   }
 

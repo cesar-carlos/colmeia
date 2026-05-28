@@ -112,7 +112,7 @@ abstract final class ProdutoVendidoTendenciaDeVendaSql {
         OR CAST(pv.DataVenda AS DATE)
           BETWEEN prm.PeriodoAnteriorInicio AND prm.PeriodoAnteriorFim
       )
-        AND pv.Origem LIKE :origem
+        AND pv.Origem = :origem
         AND COALESCE(tos.GeraFinanceiro, 'N') = 'S'
         AND pv.PreVenda = 'N'
 $codGrupoProdutoLine

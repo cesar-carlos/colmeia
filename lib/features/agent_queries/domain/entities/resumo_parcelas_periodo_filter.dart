@@ -22,8 +22,17 @@ class ResumoParcelasPeriodoFilter {
     if (dataVendaFim.isBefore(dataVendaInicio)) {
       return 'dataVendaFim must be on or after dataVendaInicio';
     }
-    if (trimmedOrigem.isEmpty) {
+    final origemTrim = trimmedOrigem;
+    if (origemTrim.isEmpty) {
       return 'origem must not be empty';
+    }
+    // Parcel resumo SQL binds `:origem` with an exact match (was `LIKE` —
+    // kept the parameter name for backwards compatibility). Reject SQL LIKE
+    // wildcards so a stray `%` does not silently widen the dataset and
+    // diverge from sibling reports.
+    if (origemTrim.contains('%') || origemTrim.contains('_')) {
+      return 'origem must not contain SQL LIKE wildcards (% or _) '
+          'for parcel resumo queries (exact match only)';
     }
     if (!_isFlag(trimmedGeraFinanceiro)) {
       return 'geraFinanceiro must be S or N';

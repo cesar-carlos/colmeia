@@ -204,6 +204,30 @@ class AppLocalizationsPt extends AppLocalizations {
       'Consulta lucratividade (período)';
 
   @override
+  String get overviewHomeAlertFailureSourceUserResumo =>
+      'Consulta resumo por operador';
+
+  @override
+  String get overviewHomeAlertFailureSourceMonthlyTrend =>
+      'Consulta dos últimos 12 meses';
+
+  @override
+  String get overviewHomeAlertFailureSourceWeekdayTrend =>
+      'Consulta de vendas por dia da semana';
+
+  @override
+  String get overviewHomeAlertFailureSourceWeekdayUserTrend =>
+      'Consulta por dia da semana e operador';
+
+  @override
+  String get overviewHomeAlertFailureSourceDailyTrend =>
+      'Consulta de vendas diárias';
+
+  @override
+  String get overviewHomeAlertFailureSourceLucratividadeMensalTrend =>
+      'Consulta lucratividade mensal';
+
+  @override
   String get overviewHomeAlertDetailsUserLine => 'O que ocorreu';
 
   @override
@@ -4117,6 +4141,30 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get overviewHomeAlertFailureSourceLucratividadePeriod =>
       'Consulta lucratividade (período)';
+
+  @override
+  String get overviewHomeAlertFailureSourceUserResumo =>
+      'Consulta resumo por operador';
+
+  @override
+  String get overviewHomeAlertFailureSourceMonthlyTrend =>
+      'Consulta dos últimos 12 meses';
+
+  @override
+  String get overviewHomeAlertFailureSourceWeekdayTrend =>
+      'Consulta de vendas por dia da semana';
+
+  @override
+  String get overviewHomeAlertFailureSourceWeekdayUserTrend =>
+      'Consulta por dia da semana e operador';
+
+  @override
+  String get overviewHomeAlertFailureSourceDailyTrend =>
+      'Consulta de vendas diárias';
+
+  @override
+  String get overviewHomeAlertFailureSourceLucratividadeMensalTrend =>
+      'Consulta lucratividade mensal';
 
   @override
   String get overviewHomeAlertDetailsUserLine => 'O que ocorreu';

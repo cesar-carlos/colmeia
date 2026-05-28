@@ -8,6 +8,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execu
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_por_usuario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_usuario_row.dart';
@@ -26,6 +27,7 @@ import 'package:colmeia/features/overview/data/mappers/overview_weekday_sales_tr
 import 'package:colmeia/features/overview/data/mappers/overview_weekday_user_sales_trend_mapper.dart';
 import 'package:colmeia/features/overview/data/models/overview_model.dart';
 import 'package:colmeia/features/overview/data/overview_batch_loader.dart';
+import 'package:colmeia/features/overview/data/overview_kpis_from_user_rows.dart';
 import 'package:colmeia/features/overview/data/overview_user_rankings_override_policy.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
@@ -269,6 +271,14 @@ class OverviewRepositoryImpl implements OverviewRepository {
               rowLabels: resolvedRowLabels,
               operation: 'loadOverviewProgressivelyBatch',
             );
+        // When the per-user resumo succeeded for at least one agent we also
+        // route KPIs and agent rankings through the same rows. The
+        // payment-method aggregation inflates sale counts for sales paid with
+        // multiple forma_pagamento; per-user rows are grouped by
+        // `(branch, user)` only and `COUNT(DISTINCT Id)` is applied once.
+        final userRankingRowsByAgentId = batchUserRankingsOverride == null
+            ? null
+            : _userRankingRowsByAgentId(batchResults);
         var overview = _buildOverview(
           _mapOverviewRows(report.mergedRows),
           rowsByAgentId: _mapRowsByAgentId(report.rowsByAgentId),
@@ -348,10 +358,41 @@ class OverviewRepositoryImpl implements OverviewRepository {
           partialQueryFailureDetails: <OverviewAgentQueryFailureDetail>[
             ...overviewPartialFailuresFromParticipants(report.participants),
             ..._batchLucratividadePartialFailureDetails(batchResults),
+            ..._batchSectionPartialFailureDetails(
+              batchResults,
+              failureOf: (result) => result.userRankingFailure,
+              source: OverviewAgentQueryFailureSource.userResumo,
+            ),
+            ..._batchSectionPartialFailureDetails(
+              batchResults,
+              failureOf: (result) => result.monthlyFailure,
+              source: OverviewAgentQueryFailureSource.monthlyTrend,
+            ),
+            ..._batchSectionPartialFailureDetails(
+              batchResults,
+              failureOf: (result) => result.weekdayFailure,
+              source: OverviewAgentQueryFailureSource.weekdayTrend,
+            ),
+            ..._batchSectionPartialFailureDetails(
+              batchResults,
+              failureOf: (result) => result.weekdayUserFailure,
+              source: OverviewAgentQueryFailureSource.weekdayUserTrend,
+            ),
+            ..._batchSectionPartialFailureDetails(
+              batchResults,
+              failureOf: (result) => result.dailyFailure,
+              source: OverviewAgentQueryFailureSource.dailyTrend,
+            ),
+            ..._batchSectionPartialFailureDetails(
+              batchResults,
+              failureOf: (result) => result.lucratividadeMensalFailure,
+              source: OverviewAgentQueryFailureSource.lucratividadeMensalTrend,
+            ),
           ],
           hubPresenceOnlineAgentIdsSnapshot:
               loaded.resolution.hubPresenceOnlineAgentIdsSnapshot,
           userRankingsOverride: batchUserRankingsOverride,
+          userRankingRowsByAgentId: userRankingRowsByAgentId,
         );
 
         if (report.requiresClientTokenSetup && sourceAgentIds != null) {
@@ -521,6 +562,23 @@ class OverviewRepositoryImpl implements OverviewRepository {
         .toList(growable: false);
   }
 
+  /// Per-agent `ResumoParcelaPorUsuario` rows for agents that succeeded in
+  /// both the main payment resumo and the user resumo. Agents with either
+  /// failure are dropped so KPI/agent rankings track exactly the same scope
+  /// as the user ranking card.
+  Map<String, List<ResumoParcelaPorUsuarioRow>> _userRankingRowsByAgentId(
+    List<OverviewBatchTargetResult> results,
+  ) {
+    final byAgent = <String, List<ResumoParcelaPorUsuarioRow>>{};
+    for (final result in results) {
+      if (result.mainFailure != null || result.userRankingFailure != null) {
+        continue;
+      }
+      byAgent[result.target.agentId] = result.userRankingRows;
+    }
+    return byAgent;
+  }
+
   List<String> _batchLucratividadePartialFailureAgentNames(
     List<OverviewBatchTargetResult> results,
   ) {
@@ -537,17 +595,37 @@ class OverviewRepositoryImpl implements OverviewRepository {
   _batchLucratividadePartialFailureDetails(
     List<OverviewBatchTargetResult> results,
   ) {
+    return _batchSectionPartialFailureDetails(
+      results,
+      failureOf: (result) => result.lucratividadeFailure,
+      source: OverviewAgentQueryFailureSource.lucratividadePeriod,
+    );
+  }
+
+  /// Generic per-section partial-failure mapper. Skips agents whose main
+  /// resumo failed (those are surfaced via `paymentResumo` already) so the
+  /// user does not see the same agent reported twice for a single batch.
+  /// Output is sorted by display name for stable UI.
+  List<OverviewAgentQueryFailureDetail> _batchSectionPartialFailureDetails(
+    List<OverviewBatchTargetResult> results, {
+    required AppFailure? Function(OverviewBatchTargetResult result) failureOf,
+    required OverviewAgentQueryFailureSource source,
+  }) {
     final details = <OverviewAgentQueryFailureDetail>[];
     for (final result in results) {
-      final failure = result.lucratividadeFailure;
+      if (result.mainFailure != null) {
+        continue;
+      }
+      final failure = failureOf(result);
       if (failure == null) {
         continue;
       }
       details.add(
-        overviewLucratividadePartialFailureDetail(
+        overviewPartialFailureDetailForSource(
           agentId: result.target.agentId,
           displayName: result.target.displayName,
           failure: failure,
+          source: source,
         ),
       );
     }
@@ -1063,15 +1141,16 @@ class OverviewRepositoryImpl implements OverviewRepository {
         rr.startInclusive.month,
         rr.startInclusive.day,
       );
+      // Mirror `DashboardYearMonth.end` semantics (microsecond precision):
+      // last instant of the inclusive end day. SQL formatters truncate to
+      // `yyyy-MM-dd`, so this only matters for in-process comparisons —
+      // keep it consistent across the period builders so tests and cache
+      // checks don't depend on a different millisecond/microsecond mix.
       final end = DateTime(
         rr.endInclusive.year,
         rr.endInclusive.month,
-        rr.endInclusive.day,
-        23,
-        59,
-        59,
-        999,
-      );
+        rr.endInclusive.day + 1,
+      ).subtract(const Duration(microseconds: 1));
       return _OverviewPeriod(start: start, end: end);
     }
 
@@ -1135,16 +1214,17 @@ class OverviewRepositoryImpl implements OverviewRepository {
         const <OverviewAgentQueryFailureDetail>[],
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     List<OverviewUserRanking>? userRankingsOverride,
+    Map<String, List<ResumoParcelaPorUsuarioRow>>? userRankingRowsByAgentId,
   }) {
     final paymentBuckets = <String, _PaymentMethodAggregate>{};
     final userBuckets = <String, _UserAggregate>{};
 
-    var totalSalesCount = 0;
-    var totalAmount = 0.0;
+    var paymentTotalSalesCount = 0;
+    var paymentTotalAmount = 0.0;
 
     for (final row in rows) {
-      totalSalesCount += row.qtdVendas;
-      totalAmount += row.valorParcela;
+      paymentTotalSalesCount += row.qtdVendas;
+      paymentTotalAmount += row.valorParcela;
 
       final paymentKey =
           '${row.codFormaPagamento.trim()}'
@@ -1187,33 +1267,62 @@ class OverviewRepositoryImpl implements OverviewRepository {
                 totalSalesCount: item.totalSalesCount,
                 totalAmount: item.totalAmount,
                 averageTicket: item.averageTicket,
-                sharePercent: totalAmount <= 0
+                sharePercent: paymentTotalAmount <= 0
                     ? 0
-                    : item.totalAmount / totalAmount * 100,
+                    : item.totalAmount / paymentTotalAmount * 100,
               ),
             )
             .toList(growable: false)
           ..sort(_compareBreakdowns);
 
-    final agentRankings =
-        rowsByAgentId.entries
-            .map((entry) {
-              final agentId = entry.key;
-              var sales = 0;
-              var amount = 0.0;
-              for (final row in entry.value) {
-                sales += row.qtdVendas;
-                amount += row.valorParcela;
-              }
-              return OverviewAgentRanking(
-                agentId: agentId,
-                displayName: agentDisplayNamesById[agentId] ?? agentId.trim(),
-                totalSalesCount: sales,
-                totalAmount: amount,
-              );
-            })
-            .toList(growable: false)
-          ..sort(_compareAgents);
+    // Prefer per-user resumo rows for KPIs and agent rankings: the
+    // payment-method resumo over-counts sales paid with multiple forma_pagamento
+    // (a single sale appears in N rows, one per method used). The per-user
+    // resumo groups by `(branch, user)` only, so `COUNT(DISTINCT Id)` is
+    // applied once per sale and sums are exact.
+    final OverviewPaymentKpis kpis;
+    final List<OverviewAgentRanking> agentRankings;
+    if (userRankingRowsByAgentId != null &&
+        userRankingRowsByAgentId.isNotEmpty) {
+      final exact = overviewKpisAndAgentRankingsFromUserRankingRowsByAgent(
+        source: OverviewKpisAndAgentRankingsSource(
+          rowsByAgentId: userRankingRowsByAgentId,
+          agentDisplayNamesById: agentDisplayNamesById,
+          paymentMethodCount: paymentMethods.length,
+        ),
+      );
+      kpis = exact.kpis;
+      agentRankings = exact.agentRankings;
+    } else {
+      kpis = OverviewPaymentKpis(
+        totalSalesCount: paymentTotalSalesCount,
+        totalAmount: paymentTotalAmount,
+        averageTicket: paymentTotalSalesCount == 0
+            ? 0
+            : paymentTotalAmount / paymentTotalSalesCount,
+        paymentMethodCount: paymentMethods.length,
+      );
+      agentRankings =
+          rowsByAgentId.entries
+              .map((entry) {
+                final agentId = entry.key;
+                var sales = 0;
+                var amount = 0.0;
+                for (final row in entry.value) {
+                  sales += row.qtdVendas;
+                  amount += row.valorParcela;
+                }
+                return OverviewAgentRanking(
+                  agentId: agentId,
+                  displayName:
+                      agentDisplayNamesById[agentId] ?? agentId.trim(),
+                  totalSalesCount: sales,
+                  totalAmount: amount,
+                );
+              })
+              .toList(growable: false)
+            ..sort(_compareAgents);
+    }
 
     final userRankings =
         userRankingsOverride ??
@@ -1232,12 +1341,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     return Overview(
       periodStart: periodStart,
       periodEnd: periodEnd,
-      kpis: OverviewPaymentKpis(
-        totalSalesCount: totalSalesCount,
-        totalAmount: totalAmount,
-        averageTicket: totalSalesCount == 0 ? 0 : totalAmount / totalSalesCount,
-        paymentMethodCount: paymentMethods.length,
-      ),
+      kpis: kpis,
       paymentMethods: paymentMethods,
       agentRankings: agentRankings,
       userRankings: userRankings,

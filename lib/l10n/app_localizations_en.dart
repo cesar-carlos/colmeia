@@ -199,6 +199,29 @@ class AppLocalizationsEn extends AppLocalizations {
       'Profitability (period) query';
 
   @override
+  String get overviewHomeAlertFailureSourceUserResumo =>
+      'Per-operator summary query';
+
+  @override
+  String get overviewHomeAlertFailureSourceMonthlyTrend =>
+      'Last 12 months query';
+
+  @override
+  String get overviewHomeAlertFailureSourceWeekdayTrend =>
+      'Sales by weekday query';
+
+  @override
+  String get overviewHomeAlertFailureSourceWeekdayUserTrend =>
+      'Weekday by operator query';
+
+  @override
+  String get overviewHomeAlertFailureSourceDailyTrend => 'Daily sales query';
+
+  @override
+  String get overviewHomeAlertFailureSourceLucratividadeMensalTrend =>
+      'Monthly profitability query';
+
+  @override
   String get overviewHomeAlertDetailsUserLine => 'What happened';
 
   @override

@@ -89,7 +89,7 @@ abstract final class ResumoParcelasDiaSemanaSql {
       ) Detalhe
     ) ResumoParcelasDiaSemana
     WHERE DataVenda BETWEEN :dataVendaInicio AND :dataVendaFim
-      AND Origem LIKE :origem
+      AND Origem = :origem
       AND GeraFinanceiro = :geraFinanceiro
       AND PreVenda = :preVenda
 __RESUMO_PARCELAS_DIMENSION_WHERE__

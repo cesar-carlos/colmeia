@@ -22,7 +22,8 @@ class ProdutoVendidoProdutoRankLucroFilter {
   final DateTime dataVendaInicio;
   final DateTime dataVendaFim;
 
-  /// Bound to `pv.Origem LIKE :origem`.
+  /// Bound to `pv.Origem = :origem` (exact match; wildcards rejected by
+  /// [validationError]).
   final String origem;
 
   final ProdutoVendidoProdutoRankLucroSortBy sortBy;
@@ -31,8 +32,13 @@ class ProdutoVendidoProdutoRankLucroFilter {
   String get trimmedOrigem => origem.trim();
 
   String? validationError() {
-    if (trimmedOrigem.isEmpty) {
+    final origemTrim = trimmedOrigem;
+    if (origemTrim.isEmpty) {
       return 'origem must not be empty';
+    }
+    if (origemTrim.contains('%') || origemTrim.contains('_')) {
+      return 'origem must not contain SQL LIKE wildcards (% or _) '
+          'for ProdutoVendido resumo queries (exact match only)';
     }
     final start = DateTime(
       dataVendaInicio.year,

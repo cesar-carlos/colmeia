@@ -70,7 +70,7 @@ WITH Resumo AS (
         AND cp.CodFilial = pv.CodFilial
         AND cp.CodProduto = ipv.CodProduto
     WHERE CAST(pv.DataVenda AS DATE) BETWEEN :dataVendaInicio AND :dataVendaFim
-      AND pv.Origem LIKE :origem
+      AND pv.Origem = :origem
       AND COALESCE(tos.GeraFinanceiro, 'N') = 'S'
       AND pv.PreVenda = 'N'
     GROUP BY

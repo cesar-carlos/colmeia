@@ -98,7 +98,7 @@ abstract final class ResumoVendasDiariasPorVendedorSql {
         ) Detalhe
       ) ResumoVendasDiarioVendedor
       WHERE DataVenda BETWEEN :dataVendaInicio AND :dataVendaFim
-        AND Origem LIKE :origem
+        AND Origem = :origem
         AND GeraFinanceiro = :geraFinanceiro
         AND PreVenda = :preVenda
 $codVendedorLine

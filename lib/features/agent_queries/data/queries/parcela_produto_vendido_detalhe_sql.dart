@@ -17,6 +17,29 @@
 ///
 /// The outer shape is `SELECT * FROM (…) alias`. No `ORDER BY` inside this
 /// fragment: callers aggregate or sort in their outer query.
+///
+/// **Pending product decisions** (kept here so every parcel resumo inherits
+/// the same caveat — see `docs/Features/charts_design_system.md` and
+/// `docs/server_adjustments/README.md`):
+///
+/// 1. `GeraFinanceiro` source divergence vs `ResumoTotalDiarioVendasSql`:
+///    this fragment computes `COALESCE(SUBSTRING(ppv.GeraFinanceiro, 1, 1),
+///    tos.GeraFinanceiro)` — i.e. the parcel flag overrides the operation
+///    flag. `ResumoTotalDiarioVendasSql` filters by `tos.GeraFinanceiro`
+///    only. Sales with mixed-flag parcels are counted differently between
+///    parcel-based and daily reports.
+/// 2. Value semantics: parcel-based aggregates use
+///    `SUM(ValorParcela − ValorTrocoParcela)` (net of troco rateio);
+///    `ResumoTotalDiarioVendasSql` uses `SUM(pv.ValorLiquido)`. They are
+///    only guaranteed to match when sales have no troco AND
+///    `SUM(ValorParcela) == ValorLiquido`.
+/// 3. Cancelled sales: no `Cancelado` / `Situacao` filter is applied here
+///    or in the daily resumo. If the ERP marks cancelled sales with a
+///    column that should exclude them (and `GeraFinanceiro` does not catch
+///    them), totals will overstate.
+/// 4. Multi-agent disjointness: `ResumoParcelasMensalRowMerger` and
+///    siblings sum across agents — correct only when the agents query
+///    disjoint datasets. Mirror/replica agents over-count silently.
 abstract final class ParcelaProdutoVendidoDetalheSql {
   static const String selectFromParcelLinesThroughJoins = '''
     SELECT *
