@@ -2229,6 +2229,124 @@ void main() {
     },
   );
 
+  test(
+    'broader catalog cache hit does not inflate planned/missing-token counts',
+    () async {
+      // First load: fullAgent scope for agents {agent-a, agent-x}. The
+      // catalog includes both planned and missing-token targets so the
+      // cached page captures a state where agent-x has no usable token.
+      _stubCatalogReport(
+        loadCadastroAcrossAgents,
+        _catalogReport(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          missingClientTokenTargets: <AgentQueryTarget>[
+            _target('agent-x', clientToken: null),
+          ],
+          skippedDueToHubPresenceTargets: <AgentQueryTarget>[_target('agent-y')],
+          participants: <AgentQueryExecutionParticipant<CadastroFilialRow>>[
+            _catalogParticipant(
+              'agent-a',
+              rows: <CadastroFilialRow>[_catalogRow(nomeFilial: 'Loja A')],
+            ),
+          ],
+        ),
+      );
+      _stubReport(
+        loadAcrossAgents,
+        _report(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          participants:
+              <
+                AgentQueryExecutionParticipant<
+                  ResumoTotalVendasMunicipioFilialPeriodoRow
+                >
+              >[
+                _participant(
+                  'agent-a',
+                  rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                    _row(totalVenda: 100),
+                  ],
+                ),
+              ],
+        ),
+      );
+
+      // Prime the in-memory catalog with fullAgent({agent-a}). This is the
+      // same scope the next branchSubset call will derive via
+      // `compatibleFullAgentScope`, so it can hit broaderCacheFiltered.
+      await useCase(
+        userId: userId,
+        filter: const SalesLiveMapFilter(
+          selectedAgentIds: <String>{'agent-a'},
+        ),
+      );
+
+      // Second load: branch subset under agent-a. The branchSubset scope
+      // misses exact memory/disk but the broader fullAgent({agent-a})
+      // lookup hits. Before the bug 1.1 fix the resulting metadata would
+      // keep `agent-x` (missing token) and `agent-y` (hub-skipped) from
+      // the cached broader report, inflating the counters surfaced in
+      // the attention panel / KPIs.
+      final result = await useCase(
+        userId: userId,
+        filter: SalesLiveMapFilter(
+          selectedBranchIds: <SalesLiveMapBranchRef>{
+            const SalesLiveMapBranchRef(
+              agentId: 'agent-a',
+              codEmpresa: 1,
+              codFilial: 1,
+            ),
+          },
+        ),
+      );
+
+      expect(
+        result.plannedAgentCount,
+        1,
+        reason: 'should reflect only the agent owning the selected branch',
+      );
+      expect(
+        result.queriedAgentCount,
+        1,
+        reason: 'only the participant for the selected agent must remain',
+      );
+      expect(
+        result.missingClientTokenAgentCount,
+        0,
+        reason:
+            'missing-token entries from other agents must not leak through '
+            'the broader cache filter',
+      );
+      expect(
+        result.skippedOfflineAgentCount,
+        0,
+        reason:
+            'hub-skipped entries from other agents must not leak through '
+            'the broader cache filter',
+      );
+      expect(result.totalBranchCount, 1);
+      expect(result.mappedBranchCount, 1);
+
+      // Sanity: the broader lookup must have been used (i.e. the catalog
+      // remote loader was called only once, for the first invocation).
+      verify(
+        () => loadCadastroAcrossAgents.loadAll(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          selectedAgentIds: any(named: 'selectedAgentIds'),
+          strategy: any(named: 'strategy'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          raceMaxSources: any(named: 'raceMaxSources'),
+          preResolvedResolution: any(named: 'preResolvedResolution'),
+          cancelScope: any(named: 'cancelScope'),
+          orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
+          dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
+          mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
+        ),
+      ).called(1);
+    },
+  );
+
   test('cancela processamento local obsoleto antes de geolocalizar', () async {
     final reportCompleter =
         Completer<

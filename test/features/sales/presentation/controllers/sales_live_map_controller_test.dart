@@ -555,6 +555,161 @@ void main() {
       SalesLiveMapReloadReason.manual,
     );
   });
+
+  test(
+    'bindUser persists the normalized filter when stale branches are dropped',
+    () async {
+      when(
+        () => salesPreferences.restoreSalesLiveMapFilter(),
+      ).thenReturn(
+        SalesLiveMapFilter(
+          selectedBranchIds: <SalesLiveMapBranchRef>{
+            const SalesLiveMapBranchRef(
+              agentId: 'agent-1',
+              codEmpresa: 1,
+              codFilial: 1,
+            ),
+          },
+        ),
+      );
+
+      await controller.bindUser('user-1');
+
+      final persistedFilters = verify(
+        () => salesPreferences.persistSalesLiveMapFilter(captureAny()),
+      ).captured.cast<SalesLiveMapFilter>();
+      // Two persists are expected: one from bindUser dropping the stale
+      // branch selection, and one from _loadAgents normalizing agents.
+      // Before the H1 fix the first one was never emitted.
+      expect(persistedFilters.length, greaterThanOrEqualTo(2));
+      expect(persistedFilters.first.selectedBranchIds, isNull);
+      expect(persistedFilters.first.selectedAgentIds, isNull);
+    },
+  );
+
+  test(
+    'bindUser does not persist on disk when there is no stale branch to drop',
+    () async {
+      when(
+        () => salesPreferences.restoreSalesLiveMapFilter(),
+      ).thenReturn(const SalesLiveMapFilter());
+
+      await controller.bindUser('user-1');
+
+      // Only _loadAgents persists — bindUser must not write to disk just
+      // because it ran the normalization no-op.
+      verify(
+        () => salesPreferences.persistSalesLiveMapFilter(any()),
+      ).called(1);
+    },
+  );
+
+  test(
+    'applyFilter forces reload when sessionExpired even on visual-only change',
+    () async {
+      await controller.bindUser('user-1');
+      expect(controller.state.sessionExpired, isFalse);
+
+      await controller.bindUser(null);
+      expect(controller.state.sessionExpired, isTrue);
+
+      final stateLog = <bool>[];
+      controller.addListener(() {
+        stateLog.add(controller.state.sessionExpired);
+      });
+
+      // Visual-only change while session is expired. Before the bug 1.2
+      // fix the apply would just flip sessionExpired to false in memory
+      // without ever triggering a reload, hiding the missing data behind
+      // a fake "success" state.
+      await controller.applyFilter(
+        controller.state.filter.copyWith(
+          markerVisual: SalesLiveMapMarkerVisual.bubble,
+        ),
+      );
+
+      expect(
+        controller.state.sessionExpired,
+        isTrue,
+        reason:
+            'reload must re-set sessionExpired=true because _boundUserId '
+            'is still null',
+      );
+      expect(
+        stateLog,
+        contains(false),
+        reason: 'state must momentarily transition to sessionExpired=false',
+      );
+      expect(
+        stateLog.last,
+        isTrue,
+        reason: 'state must end with sessionExpired=true after the reload',
+      );
+    },
+  );
+
+  test(
+    'updateMetric forces reload when sessionExpired',
+    () async {
+      await controller.bindUser('user-1');
+      await controller.bindUser(null);
+      expect(controller.state.sessionExpired, isTrue);
+
+      final stateLog = <bool>[];
+      controller
+        ..addListener(() {
+          stateLog.add(controller.state.sessionExpired);
+        })
+        ..updateMetric(SalesLiveMapMetric.salesCount);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(stateLog, contains(false));
+      expect(stateLog.last, isTrue);
+    },
+  );
+
+  test(
+    'bindUser cancels stale agent load after rebinding to a different user',
+    () async {
+      final firstAgentsCompleter = Completer<List<DashboardAgentOption>>();
+      when(
+        () => loadAvailableAgentsForSales.call('user-1'),
+      ).thenAnswer((_) => firstAgentsCompleter.future);
+      when(
+        () => loadAvailableAgentsForSales.call('user-2'),
+      ).thenAnswer(
+        (_) async => const <DashboardAgentOption>[
+          DashboardAgentOption(agentId: 'agent-2', name: 'Agent Two'),
+        ],
+      );
+
+      final firstBind = controller.bindUser('user-1');
+      await Future<void>.delayed(Duration.zero);
+      final secondBind = controller.bindUser('user-2');
+      await secondBind;
+
+      expect(
+        controller.state.availableAgents.map((agent) => agent.agentId).toList(),
+        <String>['agent-2'],
+      );
+
+      // Resolve user-1's pending agents load AFTER user-2 already bound.
+      // Without the safety check inside _loadAgents the stale agents would
+      // overwrite the live state and trigger a second reload with the
+      // wrong filter.
+      firstAgentsCompleter.complete(const <DashboardAgentOption>[
+        DashboardAgentOption(agentId: 'agent-1', name: 'Agent One'),
+      ]);
+      await firstBind;
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        controller.state.availableAgents.map((agent) => agent.agentId).toList(),
+        <String>['agent-2'],
+        reason: 'stale agent load must not pollute the new user state',
+      );
+    },
+  );
 }
 
 SalesLiveMapLoadResult _loadedResult() {
