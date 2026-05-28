@@ -20,12 +20,22 @@ class SocketMetricsSnapshot {
     this.gateAcquireWaitTimeoutTotal = 0,
     this.relayStreamingUnhandledErrorTotal = 0,
     this.relayPayloadDecodeWallClockMs = HistogramSnapshot.empty,
+    this.relayPayloadEncodeWallClockMs = HistogramSnapshot.empty,
     this.relayAcceptToFirstChunkMs = HistogramSnapshot.empty,
+    this.relayRequestToAcceptedMs = HistogramSnapshot.empty,
+    this.relayAcceptedToResponseMs = HistogramSnapshot.empty,
+    this.relayConversationStartMs = HistogramSnapshot.empty,
     this.relayGzipDecodeIsolateTotal = 0,
     this.relayJsonDecodeIsolateTotal = 0,
     this.relayDecodeFailureTotalByCode = const <String, int>{},
     this.relayDispatchMsByKey = const <String, HistogramSnapshot>{},
     this.relayOutcomesTotal = const <String, int>{},
+    this.relayBatchEmissionsTotal = 0,
+    this.relayBatchSizeDistribution = HistogramSnapshot.empty,
+    this.relayBatchPartialFailureTotal = 0,
+    this.relayBatchBypassTotalByReason = const <String, int>{},
+    this.serverPhaseMsByName = const <String, HistogramSnapshot>{},
+    this.serverTimingsSchemaMismatchTotal = 0,
     this.restFallbackLatchTotal = 0,
     this.lastGateSessionPeakSample = 0,
   });
@@ -85,9 +95,30 @@ class SocketMetricsSnapshot {
   /// `rpc.response` / `rpc.chunk` / `rpc.complete` (ms, reservoir).
   final HistogramSnapshot relayPayloadDecodeWallClockMs;
 
+  /// Wall-clock time for `PayloadFrameCodec.encodeJsonAsync` on relay
+  /// `rpc.request` (ms, reservoir). Pairs with the decode counterpart
+  /// to surface the JSON/PayloadFrame share of relay latency.
+  final HistogramSnapshot relayPayloadEncodeWallClockMs;
+
   /// Time from successful `relay:rpc.accepted` to first delivered chunk
   /// on streaming RPCs (ms, reservoir).
   final HistogramSnapshot relayAcceptToFirstChunkMs;
+
+  /// Time from `relay:rpc.request` emit to `relay:rpc.accepted` (ms,
+  /// reservoir). Diagnoses the consumer→hub leg plus hub-side
+  /// validation/enqueue cost on both unary and streaming RPCs.
+  final HistogramSnapshot relayRequestToAcceptedMs;
+
+  /// Time from `relay:rpc.accepted` to `relay:rpc.response` on unary
+  /// RPCs (ms, reservoir). Diagnoses the agent forward + SQL execute
+  /// + reply path; streaming RPCs are covered by
+  /// [relayAcceptToFirstChunkMs] instead.
+  final HistogramSnapshot relayAcceptedToResponseMs;
+
+  /// One `relay:conversation.start → relay:conversation.started`
+  /// round-trip per first-time `obtain(agentId)` call (ms, reservoir).
+  /// Exposes the cost the pre-warmer is meant to hide.
+  final HistogramSnapshot relayConversationStartMs;
 
   /// Inbound gzip frames decoded via a worker isolate.
   final int relayGzipDecodeIsolateTotal;
@@ -104,6 +135,33 @@ class SocketMetricsSnapshot {
   /// Relay outcome counts keyed like legacy outcomes
   /// (`RelayRpcSuccess|-`, `RelayRpcFailure|<code>`).
   final Map<String, int> relayOutcomesTotal;
+
+  /// Hub item 1: total `relay:rpc.request.batch` envelopes the relay
+  /// coordinator flushed (each wraps 1..32 RPCs).
+  final int relayBatchEmissionsTotal;
+
+  /// Hub item 1: histogram of items per relay batch envelope.
+  final HistogramSnapshot relayBatchSizeDistribution;
+
+  /// Hub item 1: number of relay batches with at least one item that
+  /// completed with an error.
+  final int relayBatchPartialFailureTotal;
+
+  /// Hub item 1: counts of relay `sendUnary` calls the coordinator
+  /// bypassed because they were ineligible for batch (`prefer_db_streaming`,
+  /// `multi_result`, `executeBatch`, `cancel`, `unknown_method`).
+  final Map<String, int> relayBatchBypassTotalByReason;
+
+  /// Per-phase histograms reported by the hub via `meta.serverTimings`
+  /// (relay) or `serverTimings` (`agents:command` / REST). Key is the
+  /// phase name (`encode_ms`, `agent_to_hub_ms`, etc.). Empty when no
+  /// request opted into `requestServerTimings: true`.
+  final Map<String, HistogramSnapshot> serverPhaseMsByName;
+
+  /// Number of `serverTimings` payloads observed with a `schemaVersion`
+  /// the client does not understand. Non-zero in this counter means a
+  /// hub bump rolled out — bump the client schema handling.
+  final int serverTimingsSchemaMismatchTotal;
 
   /// Times the SQL datasource latched to REST for auth/namespace failures.
   final int restFallbackLatchTotal;
@@ -132,7 +190,11 @@ class SocketMetricsSnapshot {
       'gateAcquireWaitTimeoutTotal': gateAcquireWaitTimeoutTotal,
       'relayStreamingUnhandledErrorTotal': relayStreamingUnhandledErrorTotal,
       'relayPayloadDecodeWallClockMs': relayPayloadDecodeWallClockMs.toJson(),
+      'relayPayloadEncodeWallClockMs': relayPayloadEncodeWallClockMs.toJson(),
       'relayAcceptToFirstChunkMs': relayAcceptToFirstChunkMs.toJson(),
+      'relayRequestToAcceptedMs': relayRequestToAcceptedMs.toJson(),
+      'relayAcceptedToResponseMs': relayAcceptedToResponseMs.toJson(),
+      'relayConversationStartMs': relayConversationStartMs.toJson(),
       'relayGzipDecodeIsolateTotal': relayGzipDecodeIsolateTotal,
       'relayJsonDecodeIsolateTotal': relayJsonDecodeIsolateTotal,
       'relayDecodeFailureTotalByCode': relayDecodeFailureTotalByCode,
@@ -141,6 +203,15 @@ class SocketMetricsSnapshot {
           entry.key: entry.value.toJson(),
       },
       'relayOutcomesTotal': relayOutcomesTotal,
+      'relayBatchEmissionsTotal': relayBatchEmissionsTotal,
+      'relayBatchSizeDistribution': relayBatchSizeDistribution.toJson(),
+      'relayBatchPartialFailureTotal': relayBatchPartialFailureTotal,
+      'relayBatchBypassTotalByReason': relayBatchBypassTotalByReason,
+      'serverPhaseMsByName': <String, Object?>{
+        for (final entry in serverPhaseMsByName.entries)
+          entry.key: entry.value.toJson(),
+      },
+      'serverTimingsSchemaMismatchTotal': serverTimingsSchemaMismatchTotal,
       'restFallbackLatchTotal': restFallbackLatchTotal,
       'lastGateSessionPeakSample': lastGateSessionPeakSample,
     };
@@ -169,9 +240,55 @@ class SocketMetricsSnapshot {
     if (decodeMs.count > 0) {
       out['relayPayloadDecodeWallClockMs'] = _histogramDebugMap(decodeMs);
     }
+    final encodeMs = relayPayloadEncodeWallClockMs;
+    if (encodeMs.count > 0) {
+      out['relayPayloadEncodeWallClockMs'] = _histogramDebugMap(encodeMs);
+    }
     final firstChunk = relayAcceptToFirstChunkMs;
     if (firstChunk.count > 0) {
       out['relayAcceptToFirstChunkMs'] = _histogramDebugMap(firstChunk);
+    }
+    final reqToAcc = relayRequestToAcceptedMs;
+    if (reqToAcc.count > 0) {
+      out['relayRequestToAcceptedMs'] = _histogramDebugMap(reqToAcc);
+    }
+    final accToResp = relayAcceptedToResponseMs;
+    if (accToResp.count > 0) {
+      out['relayAcceptedToResponseMs'] = _histogramDebugMap(accToResp);
+    }
+    final convStart = relayConversationStartMs;
+    if (convStart.count > 0) {
+      out['relayConversationStartMs'] = _histogramDebugMap(convStart);
+    }
+    if (relayBatchEmissionsTotal > 0) {
+      out['relayBatchEmissionsTotal'] = relayBatchEmissionsTotal;
+    }
+    if (relayBatchSizeDistribution.count > 0) {
+      out['relayBatchSizeDistribution'] = _histogramDebugMap(
+        relayBatchSizeDistribution,
+      );
+    }
+    if (relayBatchPartialFailureTotal > 0) {
+      out['relayBatchPartialFailureTotal'] = relayBatchPartialFailureTotal;
+    }
+    if (relayBatchBypassTotalByReason.isNotEmpty) {
+      out['relayBatchBypassTotalByReason'] = Map<String, int>.from(
+        relayBatchBypassTotalByReason,
+      );
+    }
+    if (serverPhaseMsByName.isNotEmpty) {
+      final entries = <String, Object?>{
+        for (final entry in serverPhaseMsByName.entries)
+          if (entry.value.count > 0)
+            entry.key: _histogramDebugMap(entry.value),
+      };
+      if (entries.isNotEmpty) {
+        out['serverPhaseMsByName'] = entries;
+      }
+    }
+    if (serverTimingsSchemaMismatchTotal > 0) {
+      out['serverTimingsSchemaMismatchTotal'] =
+          serverTimingsSchemaMismatchTotal;
     }
     return out;
   }

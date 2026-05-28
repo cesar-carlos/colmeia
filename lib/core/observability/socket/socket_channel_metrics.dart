@@ -1,3 +1,4 @@
+import 'package:colmeia/core/observability/socket/server_timings.dart';
 import 'package:colmeia/core/observability/socket/socket_metrics_snapshot.dart';
 import 'package:colmeia/core/socket/agent_command_outcome.dart';
 import 'package:colmeia/core/socket/relay/relay_rpc_outcome.dart';
@@ -25,9 +26,16 @@ class SocketChannelMetrics {
       _batchSizeDistribution = _ReservoirHistogram(reservoirSize),
       _batchBypassByReason = <String, int>{},
       _relayPayloadDecodeWallClockMs = _ReservoirHistogram(reservoirSize),
+      _relayPayloadEncodeWallClockMs = _ReservoirHistogram(reservoirSize),
       _relayAcceptToFirstChunkMs = _ReservoirHistogram(reservoirSize),
+      _relayRequestToAcceptedMs = _ReservoirHistogram(reservoirSize),
+      _relayAcceptedToResponseMs = _ReservoirHistogram(reservoirSize),
+      _relayConversationStartMs = _ReservoirHistogram(reservoirSize),
       _relayDispatchMsByKey = <String, _ReservoirHistogram>{},
-      _relayOutcomesTotal = <String, int>{};
+      _relayOutcomesTotal = <String, int>{},
+      _relayBatchSizeDistribution = _ReservoirHistogram(reservoirSize),
+      _relayBatchBypassByReason = <String, int>{},
+      _serverPhaseMsByName = <String, _ReservoirHistogram>{};
 
   /// Maximum number of samples kept per histogram. 1024 is the sweet spot
   /// for memory vs accuracy in client-side aggregation.
@@ -46,7 +54,11 @@ class SocketChannelMetrics {
   int _gateAcquireWaitTimeoutTotal = 0;
   int _relayStreamingUnhandledErrorTotal = 0;
   final _ReservoirHistogram _relayPayloadDecodeWallClockMs;
+  final _ReservoirHistogram _relayPayloadEncodeWallClockMs;
   final _ReservoirHistogram _relayAcceptToFirstChunkMs;
+  final _ReservoirHistogram _relayRequestToAcceptedMs;
+  final _ReservoirHistogram _relayAcceptedToResponseMs;
+  final _ReservoirHistogram _relayConversationStartMs;
   int _relayGzipDecodeIsolateTotal = 0;
   int _relayJsonDecodeIsolateTotal = 0;
   final Map<String, int> _relayDecodeFailureByCode = <String, int>{};
@@ -54,6 +66,12 @@ class SocketChannelMetrics {
   final Map<String, int> _batchBypassByReason;
   final Map<String, _ReservoirHistogram> _relayDispatchMsByKey;
   final Map<String, int> _relayOutcomesTotal;
+  int _relayBatchEmissionsTotal = 0;
+  int _relayBatchPartialFailureTotal = 0;
+  final _ReservoirHistogram _relayBatchSizeDistribution;
+  final Map<String, int> _relayBatchBypassByReason;
+  final Map<String, _ReservoirHistogram> _serverPhaseMsByName;
+  int _serverTimingsSchemaMismatchTotal = 0;
   int _restFallbackLatchTotal = 0;
   int lastGateSessionPeakSample = 0;
 
@@ -146,6 +164,35 @@ class SocketChannelMetrics {
     _relayPayloadDecodeWallClockMs.add(elapsed.inMicroseconds / 1000.0);
   }
 
+  /// Wall time spent in `encodeJsonAsync` for one relay request frame.
+  /// Symmetric to [recordRelayPayloadDecodeWallClock] — pairing both
+  /// makes the JSON/PayloadFrame share of relay latency visible.
+  void recordRelayPayloadEncodeWallClock({required Duration elapsed}) {
+    _relayPayloadEncodeWallClockMs.add(elapsed.inMicroseconds / 1000.0);
+  }
+
+  /// Elapsed from `relay:rpc.request` emit to `relay:rpc.accepted` for
+  /// a single RPC. Captures the consumer→hub round-trip plus hub-side
+  /// validation/enqueue time. Recorded for unary and streaming.
+  void recordRelayRequestToAccepted({required Duration elapsed}) {
+    _relayRequestToAcceptedMs.add(elapsed.inMicroseconds / 1000.0);
+  }
+
+  /// Elapsed from `relay:rpc.accepted` to `relay:rpc.response` on
+  /// unary RPCs. Captures the agent forward + SQL execute + reply
+  /// path; streaming RPCs use [recordRelayAcceptToFirstChunkWallClock]
+  /// instead.
+  void recordRelayAcceptedToResponse({required Duration elapsed}) {
+    _relayAcceptedToResponseMs.add(elapsed.inMicroseconds / 1000.0);
+  }
+
+  /// Elapsed of one `relay:conversation.start → relay:conversation.started`
+  /// round-trip. Sampled per first-time `obtain(agentId)` call so the
+  /// pre-warm hit rate and per-agent conversation cost stay visible.
+  void recordRelayConversationStart({required Duration elapsed}) {
+    _relayConversationStartMs.add(elapsed.inMicroseconds / 1000.0);
+  }
+
   /// Inbound gzip decoded via worker isolate for this frame.
   void recordRelayPayloadGzipDecodeIsolate() {
     _relayGzipDecodeIsolateTotal += 1;
@@ -189,6 +236,50 @@ class SocketChannelMetrics {
     _relayOutcomesTotal[key] = (_relayOutcomesTotal[key] ?? 0) + 1;
   }
 
+  /// Records that `RelayBatchCommandCoordinator` flushed a batch via
+  /// `relay:rpc.request.batch` with [size] items. Mirrors
+  /// [recordBatchEmission] for the relay channel so dashboards can keep
+  /// the two transports separate.
+  void recordRelayBatchEmission({
+    required int size,
+    required bool partialFailure,
+  }) {
+    _relayBatchEmissionsTotal += 1;
+    _relayBatchSizeDistribution.add(size.toDouble());
+    if (partialFailure) {
+      _relayBatchPartialFailureTotal += 1;
+    }
+  }
+
+  /// Records that a `sendUnary` call bypassed the relay batch coordinator
+  /// because the body was ineligible for batching (`prefer_db_streaming`,
+  /// `multi_result`, `sql.executeBatch`, `sql.cancel`, or no recognisable
+  /// method). Mirrors [recordBatchBypass] for the relay channel.
+  void recordRelayBatchBypass({required String reason}) {
+    _relayBatchBypassByReason[reason] =
+        (_relayBatchBypassByReason[reason] ?? 0) + 1;
+  }
+
+  /// Folds a server-side phase snapshot returned via
+  /// `meta.serverTimings` (relay) or `serverTimings` (`agents:command` /
+  /// REST) into per-phase histograms. Schema mismatches are counted
+  /// separately so dashboards can detect a hub bump that needs a client
+  /// update.
+  void recordServerTimings(ServerTimings timings) {
+    if (timings.schemaVersion != 1) {
+      _serverTimingsSchemaMismatchTotal += 1;
+      return;
+    }
+    if (timings.isEmpty) {
+      return;
+    }
+    timings.phasesMs.forEach((phase, ms) {
+      _serverPhaseMsByName
+          .putIfAbsent(phase, () => _ReservoirHistogram(reservoirSize))
+          .add(ms);
+    });
+  }
+
   // ----- Inspection API -----
 
   /// Snapshot of all the current values. Cheap to compute; safe for the
@@ -217,7 +308,11 @@ class SocketChannelMetrics {
       gateAcquireWaitTimeoutTotal: _gateAcquireWaitTimeoutTotal,
       relayStreamingUnhandledErrorTotal: _relayStreamingUnhandledErrorTotal,
       relayPayloadDecodeWallClockMs: _relayPayloadDecodeWallClockMs.snapshot(),
+      relayPayloadEncodeWallClockMs: _relayPayloadEncodeWallClockMs.snapshot(),
       relayAcceptToFirstChunkMs: _relayAcceptToFirstChunkMs.snapshot(),
+      relayRequestToAcceptedMs: _relayRequestToAcceptedMs.snapshot(),
+      relayAcceptedToResponseMs: _relayAcceptedToResponseMs.snapshot(),
+      relayConversationStartMs: _relayConversationStartMs.snapshot(),
       relayGzipDecodeIsolateTotal: _relayGzipDecodeIsolateTotal,
       relayJsonDecodeIsolateTotal: _relayJsonDecodeIsolateTotal,
       relayDecodeFailureTotalByCode: Map<String, int>.unmodifiable(
@@ -228,6 +323,17 @@ class SocketChannelMetrics {
           entry.key: entry.value.snapshot(),
       },
       relayOutcomesTotal: Map<String, int>.unmodifiable(_relayOutcomesTotal),
+      relayBatchEmissionsTotal: _relayBatchEmissionsTotal,
+      relayBatchSizeDistribution: _relayBatchSizeDistribution.snapshot(),
+      relayBatchPartialFailureTotal: _relayBatchPartialFailureTotal,
+      relayBatchBypassTotalByReason: Map<String, int>.unmodifiable(
+        _relayBatchBypassByReason,
+      ),
+      serverPhaseMsByName: <String, HistogramSnapshot>{
+        for (final entry in _serverPhaseMsByName.entries)
+          entry.key: entry.value.snapshot(),
+      },
+      serverTimingsSchemaMismatchTotal: _serverTimingsSchemaMismatchTotal,
       restFallbackLatchTotal: _restFallbackLatchTotal,
       lastGateSessionPeakSample: lastGateSessionPeakSample,
     );
@@ -253,11 +359,21 @@ class SocketChannelMetrics {
     _relayJsonDecodeIsolateTotal = 0;
     _relayDecodeFailureByCode.clear();
     _relayPayloadDecodeWallClockMs.clear();
+    _relayPayloadEncodeWallClockMs.clear();
     _relayAcceptToFirstChunkMs.clear();
+    _relayRequestToAcceptedMs.clear();
+    _relayAcceptedToResponseMs.clear();
+    _relayConversationStartMs.clear();
     _batchSizeDistribution.clear();
     _batchBypassByReason.clear();
     _relayDispatchMsByKey.clear();
     _relayOutcomesTotal.clear();
+    _relayBatchEmissionsTotal = 0;
+    _relayBatchPartialFailureTotal = 0;
+    _relayBatchSizeDistribution.clear();
+    _relayBatchBypassByReason.clear();
+    _serverPhaseMsByName.clear();
+    _serverTimingsSchemaMismatchTotal = 0;
     _restFallbackLatchTotal = 0;
     lastGateSessionPeakSample = 0;
   }

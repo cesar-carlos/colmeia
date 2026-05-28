@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/observability/socket/server_timings.dart';
 import 'package:colmeia/core/observability/socket/socket_channel_metrics.dart';
 import 'package:colmeia/core/socket/agent_latency_oracle.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
@@ -9,6 +11,7 @@ import 'package:colmeia/core/socket/consumer_socket_terminal_exception.dart';
 import 'package:colmeia/core/socket/payload_frame.dart';
 import 'package:colmeia/core/socket/payload_frame_codec.dart';
 import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
+import 'package:colmeia/core/socket/relay/relay_batch_item.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation_manager.dart';
@@ -187,6 +190,12 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       body: body,
       compression: compression,
       pending: pending,
+      // Unary RPCs can opt into the hub fast-path: if enabled, the hub
+      // skips `relay:rpc.accepted` on the happy path and goes straight
+      // from `rpc.request` → `rpc.response`. Streaming MUST NOT use it
+      // because the initial pull window depends on `accepted` arriving
+      // first.
+      allowFastPath: true,
     );
     return pending.completer.future;
   }
@@ -322,6 +331,356 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     );
 
     return controller.stream;
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> sendBatch({
+    required String agentId,
+    required List<RelayBatchItem> items,
+    Duration? timeout,
+    RelayPayloadFrameCompression compression =
+        RelayPayloadFrameCompression.auto,
+  }) async {
+    if (_isDisposed) {
+      throw const RelayDispatcherDisposed(message: 'Dispatcher disposed');
+    }
+    if (items.isEmpty) {
+      throw const RelayRequestRejected(
+        message: 'relay batch requires at least one item',
+        serverCode: 'BATCH_EMPTY',
+      );
+    }
+    if (items.length > _maxBatchItems) {
+      throw RelayRequestRejected(
+        message:
+            'relay batch is capped at $_maxBatchItems items '
+            '(got ${items.length}); split the call site.',
+        serverCode: 'BATCH_TOO_LARGE',
+      );
+    }
+    // Defensive duplicate detection — the hub fails the whole envelope
+    // with BATCH_DUPLICATE_ID, but catching it client-side avoids the
+    // round-trip and the `_pendingByClientId` collision below.
+    final seen = <String>{};
+    for (final item in items) {
+      if (!seen.add(item.clientRequestId)) {
+        throw RelayRequestRejected(
+          message:
+              'relay batch contains duplicate clientRequestId '
+              '"${item.clientRequestId}"',
+          serverCode: 'BATCH_DUPLICATE_ID',
+        );
+      }
+    }
+
+    // Register N pendings sharing the same conversation. The first call
+    // resolves the conversation; subsequent items piggyback. Any failure
+    // before emit (gate, conversation, encode) propagates as the envelope
+    // failure so every item completes with the same error.
+    final pendings = <_PendingUnary>[];
+    String? conversationId;
+    String? sharedAgentId;
+    try {
+      for (final item in items) {
+        final pending = await _prepareSend<_PendingUnary>(
+          agentId: agentId,
+          clientRequestId: item.clientRequestId,
+          makePending:
+              ({
+                required resolvedAgentId,
+                required resolvedConversationId,
+                required resolvedMethod,
+                required stopwatch,
+              }) {
+                conversationId ??= resolvedConversationId;
+                sharedAgentId ??= resolvedAgentId;
+                return _PendingUnary(
+                  agentId: resolvedAgentId,
+                  conversationId: resolvedConversationId,
+                  clientRequestId: item.clientRequestId,
+                  method: _extractMethod(item.body),
+                  stopwatch: stopwatch,
+                );
+              },
+        );
+        pendings.add(pending);
+      }
+    } on Object catch (e, s) {
+      // Roll back any partial registration so siblings do not leak.
+      for (final pending in pendings) {
+        _failPending(
+          pending.clientRequestId,
+          e is RelayDispatchException
+              ? e
+              : RelayConversationStartFailure(
+                  message: 'failed to prepare relay batch: $e',
+                  cause: e,
+                  stackTrace: s,
+                ),
+        );
+      }
+      rethrow;
+    }
+
+    final gate = _concurrencyGate;
+    if (gate != null) {
+      try {
+        // Acquire one slot per item, matching the hub-side gate behaviour
+        // described in `BATCH_RATE_LIMITED { availableSlots, requestedSlots }`.
+        for (final pending in pendings) {
+          await gate.acquire(
+            pending.agentId,
+            onQueuedWaiter: (c) => pending.gateQueueWaitCompleter = c,
+          );
+          pending
+            ..relayPerAgentSlotRelease =
+                (() => gate.release(pending.agentId))
+            ..gateQueueWaitCompleter = null;
+        }
+      } on Object catch (e, s) {
+        final failure = e is GateQueueWaitCancelled
+            ? RelayRequestCancelled(
+                message: 'relay batch gate wait cancelled',
+                conversationId: conversationId,
+              )
+            : RelayConversationStartFailure(
+                message: 'relay batch gate acquire failed: $e',
+                cause: e,
+                stackTrace: s,
+              );
+        for (final pending in pendings) {
+          _failPending(pending.clientRequestId, failure);
+        }
+        return _collectBatchResults(pendings);
+      }
+    }
+
+    final effectiveTimeout = timeout ?? _resolveBatchTimeout(items);
+    for (final pending in pendings) {
+      _armPendingTimeout(
+        pending,
+        effectiveTimeout,
+        rpcMethodHint: _extractMethod(items[pendings.indexOf(pending)].body),
+      );
+    }
+
+    // Encode the JSON-RPC array as a single PayloadFrame.
+    PayloadFrameEncodeResult encoded;
+    final encodeSw = Stopwatch()..start();
+    try {
+      encoded = await _codec.encodeJsonAsync(
+        items.map((item) => item.body).toList(growable: false),
+      );
+      encodeSw.stop();
+      _channelMetrics?.recordRelayPayloadEncodeWallClock(
+        elapsed: encodeSw.elapsed,
+      );
+    } on PayloadFrameDecodeException catch (e, s) {
+      encodeSw.stop();
+      _channelMetrics?.recordRelayPayloadEncodeWallClock(
+        elapsed: encodeSw.elapsed,
+      );
+      _channelMetrics?.recordRelayDecodeFailure(code: e.code);
+      final failure = RelayDecodeFailure(
+        message: 'failed to encode relay batch: ${e.message}',
+        code: e.code,
+        conversationId: conversationId,
+        cause: e,
+        stackTrace: s,
+      );
+      for (final pending in pendings) {
+        _failPending(pending.clientRequestId, failure);
+      }
+      return _collectBatchResults(pendings);
+    }
+
+    final emittedAt = pendings.first.stopwatch.elapsed;
+    try {
+      _connection.raw.emit(
+        RelayEventNames.rpcRequestBatch,
+        <String, Object?>{
+          'conversationId': conversationId,
+          'frame': encoded.frame.toMap(),
+          'payloadFrameCompression':
+              (compression == RelayPayloadFrameCompression.auto
+                      ? _defaultCompression
+                      : compression)
+                  .wireValue,
+          if (AppEnvironment.socketRequestServerTimingsEnabled)
+            'requestServerTimings': true,
+        },
+      );
+      for (final pending in pendings) {
+        pending.requestEmittedAtElapsed = emittedAt;
+      }
+    } on Object catch (e, s) {
+      final failure = RelayConversationLost(
+        message: 'failed to emit relay:rpc.request.batch: $e',
+        conversationId: conversationId,
+        cause: e,
+        stackTrace: s,
+      );
+      for (final pending in pendings) {
+        _failPending(pending.clientRequestId, failure);
+      }
+    }
+
+    return _collectBatchResults(pendings);
+  }
+
+  /// Awaits every pending's completer and collects responses in the
+  /// caller-supplied order. Per-item failures are surfaced as
+  /// [RelayDispatchException]; envelope failures already populated every
+  /// completer with the same exception, so the first error rethrows.
+  ///
+  /// We use [Future.wait] (over a manual `for await`) so that errors on
+  /// **every** sibling future receive a handler at the same microtask —
+  /// otherwise an envelope-level failure that completes 32 completers
+  /// at once would surface only the first error and leak the others as
+  /// "unhandled" into the surrounding zone.
+  Future<List<Map<String, dynamic>>> _collectBatchResults(
+    List<_PendingUnary> pendings,
+  ) {
+    return Future.wait<Map<String, dynamic>>(
+      pendings.map((pending) => pending.completer.future),
+    );
+  }
+
+  /// Hub-side cap on items per `relay:rpc.request.batch` envelope (v1).
+  /// Mirrored client-side so callers see the same failure shape without a
+  /// round-trip. Source: hub doc `adrs/0008-relay-batch-protocol.md`.
+  static const int _maxBatchItems = 32;
+
+  Duration _resolveBatchTimeout(List<RelayBatchItem> items) {
+    Duration? max;
+    for (final item in items) {
+      final value = item.timeout;
+      if (value != null && (max == null || value > max)) {
+        max = value;
+      }
+    }
+    return max ?? _defaultTimeout;
+  }
+
+  /// Routes the single `relay:rpc.batch_accepted` envelope received per
+  /// emitted batch. Populates the `clientRequestId → requestId` map so
+  /// the existing [_onResponseFrame] can route per-item responses, and
+  /// fails any item the hub reported with an inline `error`.
+  void _onBatchAccepted(Object? raw) {
+    final map = _toMap(raw);
+    if (map == null) {
+      return;
+    }
+    final success = map['success'];
+    if (success is bool && !success) {
+      final error = _toMap(map['error']);
+      final code = error?['code']?.toString() ?? 'request_rejected';
+      final message =
+          error?['message']?.toString() ??
+          'relay:rpc.batch_accepted reported success=false';
+      _failBatchByEnvelopeId(
+        map,
+        RelayRequestRejected(
+          message: message,
+          serverCode: code,
+          retryAfter: extractRetryAfterFromAppError(map),
+        ),
+      );
+      return;
+    }
+    final items = map['items'];
+    if (items is! List) {
+      _failBatchByEnvelopeId(
+        map,
+        const RelayDecodeFailure(
+          message: 'relay:rpc.batch_accepted missing items',
+        ),
+      );
+      return;
+    }
+    for (final raw in items) {
+      if (raw is! Map) {
+        continue;
+      }
+      final item = raw.cast<String, Object?>();
+      final clientRequestId = item['clientRequestId']?.toString();
+      if (clientRequestId == null || clientRequestId.isEmpty) {
+        continue;
+      }
+      final pending = _pendingByClientId[clientRequestId];
+      if (pending == null) {
+        continue;
+      }
+      // Record the request→accepted phase metric the same way unary does.
+      final acceptedAt = pending.stopwatch.elapsed;
+      final emittedAt = pending.requestEmittedAtElapsed;
+      if (emittedAt != null && acceptedAt >= emittedAt) {
+        _channelMetrics?.recordRelayRequestToAccepted(
+          elapsed: acceptedAt - emittedAt,
+        );
+      }
+      final itemError = _toMap(item['error']);
+      if (itemError != null) {
+        final code = itemError['code']?.toString() ?? 'item_failed';
+        final message =
+            itemError['message']?.toString() ?? 'relay batch item failed';
+        _failPending(
+          clientRequestId,
+          RelayRequestRejected(
+            message: message,
+            serverCode: code,
+            retryAfter: extractRetryAfterFromAppError(itemError),
+            conversationId: pending.conversationId,
+            clientRequestId: clientRequestId,
+          ),
+        );
+        continue;
+      }
+      final requestId = item['requestId']?.toString();
+      if (requestId != null && requestId.isNotEmpty) {
+        pending.requestId = requestId;
+        _clientIdByRequestId[requestId] = clientRequestId;
+      }
+      pending
+        ..deduplicated = item['deduplicated'] == true
+        ..replayed = item['replayed'] == true
+        ..unaryAcceptedAtElapsed = acceptedAt;
+    }
+  }
+
+  /// Drops every pending referenced by [batchPayload] when the hub
+  /// rejected the whole envelope. The reject ack typically omits
+  /// per-item `clientRequestId`s; we infer the set from the
+  /// `conversationId` and fail every pending currently tracked there.
+  void _failBatchByEnvelopeId(
+    Map<String, Object?> batchPayload,
+    RelayDispatchException failure,
+  ) {
+    final items = batchPayload['items'];
+    if (items is List) {
+      for (final raw in items) {
+        if (raw is! Map) {
+          continue;
+        }
+        final clientRequestId =
+            raw.cast<String, Object?>()['clientRequestId']?.toString();
+        if (clientRequestId != null && clientRequestId.isNotEmpty) {
+          _failPending(clientRequestId, failure);
+        }
+      }
+      return;
+    }
+    final conversationId = batchPayload['conversationId']?.toString();
+    if (conversationId == null) {
+      return;
+    }
+    final pendingIds = _pendingClientIdsByConversationId[conversationId];
+    if (pendingIds == null) {
+      return;
+    }
+    for (final clientRequestId in pendingIds.toList(growable: false)) {
+      _failPending(clientRequestId, failure);
+    }
   }
 
   @override
@@ -493,15 +852,22 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
   /// Callers stash the typed pending; this method only knows how to
   /// translate a logical body into the wire envelope and surface
   /// transport-level failures back through [_failPending].
+  ///
+  /// [allowFastPath] is `true` only for unary RPCs whose semantics
+  /// tolerate the hub skipping `relay:rpc.accepted`. Streaming RPCs
+  /// MUST keep the three-event flow because the initial pull window
+  /// depends on the accepted hop arriving first.
   Future<void> _emitRpcRequestAsync({
     required String conversationId,
     required String clientRequestId,
     required Map<String, Object?> body,
     required RelayPayloadFrameCompression compression,
     required _PendingRelay pending,
+    bool allowFastPath = false,
   }) async {
     pending.method ??= _extractMethod(body);
     PayloadFrameEncodeResult encoded;
+    final encodeSw = Stopwatch()..start();
     try {
       // The client_request_id in the JSON-RPC `id` field is what makes the
       // hub idempotent, so we mirror it on the envelope `requestId` for
@@ -510,7 +876,15 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
         body,
         requestId: clientRequestId,
       );
+      encodeSw.stop();
+      _channelMetrics?.recordRelayPayloadEncodeWallClock(
+        elapsed: encodeSw.elapsed,
+      );
     } on PayloadFrameDecodeException catch (e, s) {
+      encodeSw.stop();
+      _channelMetrics?.recordRelayPayloadEncodeWallClock(
+        elapsed: encodeSw.elapsed,
+      );
       _channelMetrics?.recordRelayDecodeFailure(code: e.code);
       _failPending(
         clientRequestId,
@@ -526,6 +900,8 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       return;
     }
 
+    final useFastPath =
+        allowFastPath && AppEnvironment.socketRelayFastPathEnabled;
     try {
       _connection.raw.emit(
         RelayEventNames.rpcRequest,
@@ -537,8 +913,12 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
                       ? _defaultCompression
                       : compression)
                   .wireValue,
+          if (AppEnvironment.socketRequestServerTimingsEnabled)
+            'requestServerTimings': true,
+          if (useFastPath) 'fastPath': true,
         },
       );
+      pending.requestEmittedAtElapsed = pending.stopwatch.elapsed;
     } on Object catch (e, s) {
       _failPending(
         clientRequestId,
@@ -561,6 +941,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     _detachListeners();
     socket
       ..on(RelayEventNames.rpcAccepted, _onAccepted)
+      ..on(RelayEventNames.rpcBatchAccepted, _onBatchAccepted)
       ..on(RelayEventNames.rpcResponse, _onResponseFrame)
       ..on(RelayEventNames.rpcChunk, _onChunkFrame)
       ..on(RelayEventNames.rpcComplete, _onCompleteFrame)
@@ -584,6 +965,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     try {
       socket
         ..off(RelayEventNames.rpcAccepted, _onAccepted)
+        ..off(RelayEventNames.rpcBatchAccepted, _onBatchAccepted)
         ..off(RelayEventNames.rpcResponse, _onResponseFrame)
         ..off(RelayEventNames.rpcChunk, _onChunkFrame)
         ..off(RelayEventNames.rpcComplete, _onCompleteFrame)
@@ -863,16 +1245,30 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       ..deduplicated = map['deduplicated'] == true
       ..replayed = map['replayed'] == true;
 
+    // Record the request→accepted phase for both unary and streaming
+    // pendings. The emit timestamp can be null if the accept fires
+    // before the emit Future returned (very rare; treat as 0 sample
+    // instead by skipping).
+    final acceptedAt = pending.stopwatch.elapsed;
+    final emittedAt = pending.requestEmittedAtElapsed;
+    if (emittedAt != null && acceptedAt >= emittedAt) {
+      _channelMetrics?.recordRelayRequestToAccepted(
+        elapsed: acceptedAt - emittedAt,
+      );
+    }
+
     // Streaming requests grant the initial pull window as soon as the hub
     // has acknowledged the request. Without an explicit budget the hub
     // would buffer chunks server-side and possibly abort the stream when
     // the buffer cap is hit.
     if (pending is _PendingStream) {
-      pending.streamAcceptedAtElapsed = pending.stopwatch.elapsed;
+      pending.streamAcceptedAtElapsed = acceptedAt;
       _enqueueRelayFrameWork(
         pending,
         () => _grantPullAsync(pending, pending.initialWindow),
       );
+    } else {
+      pending.unaryAcceptedAtElapsed = acceptedAt;
     }
   }
 
@@ -1254,10 +1650,75 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
               parseResult: parseResult,
             );
     }
-    final pending = _pendingFromRawCorrelation(raw);
-    return pending == null
-        ? null
-        : _PendingRelayFrameRoute(pending: pending, parseResult: parseResult);
+    final pendingFromRaw = _pendingFromRawCorrelation(raw);
+    if (pendingFromRaw != null) {
+      return _PendingRelayFrameRoute(
+        pending: pendingFromRaw,
+        parseResult: parseResult,
+      );
+    }
+    // Fast-path fallback: when neither the envelope `requestId` → client
+    // map nor the solo-conversation match resolves a pending, the hub
+    // most likely skipped `relay:rpc.accepted` (hub item 3 fast-path).
+    // Without that hop we never populated `_clientIdByRequestId` for
+    // this envelope `requestId`, and there can be more than one pending
+    // on the conversation, so solo-conversation also misses.
+    //
+    // Recover by decoding the JSON-RPC body in this PayloadFrame to read
+    // its `id` field — that field carries our `clientRequestId` because
+    // the dispatcher mirrors it onto the JSON-RPC envelope on send.
+    // Sync decode is cheap for the small unary responses fast-path is
+    // designed for (< 1 KiB typical); we cache the mapping so any
+    // sibling frames (`rpc.complete` after `rpc.response`) hit the
+    // fast O(1) lookup above on second visit.
+    final pendingFromBody = _pendingFromSyncDecodedBody(frame);
+    if (pendingFromBody != null) {
+      if (requestId != null && requestId.isNotEmpty) {
+        _clientIdByRequestId.putIfAbsent(
+          requestId,
+          () => pendingFromBody.clientRequestId,
+        );
+      }
+      return _PendingRelayFrameRoute(
+        pending: pendingFromBody,
+        parseResult: parseResult,
+      );
+    }
+    return null;
+  }
+
+  /// Last-resort routing path: decode the PayloadFrame body **sync** and
+  /// look up the JSON-RPC `id` in [_pendingByClientId]. Used only when
+  /// every earlier lookup missed, so the cost is bounded to fast-path
+  /// (or other future cases where the hub does not send a prior
+  /// `relay:rpc.accepted`). Errors and unrecognised shapes return
+  /// `null` quietly — the upper layer will discard the frame.
+  _PendingRelay? _pendingFromSyncDecodedBody(PayloadFrame frame) {
+    try {
+      final decoded = _codec.decodeJson(frame);
+      if (decoded is! Map) {
+        return null;
+      }
+      // Decoded JSON-RPC body: { jsonrpc, id, result|error, meta? }.
+      // CAVEAT (hub fast-path bug, 2026-05-28): when the hub honours
+      // `fastPath: true` it overwrites the JSON-RPC `id` with its own
+      // server-assigned UUID instead of echoing the client `id` (see
+      // `docs/server_adjustments/relay_unary_fast_path.md`). Lookup by
+      // this `id` therefore misses every pending in that case, and the
+      // routing falls through to the upper-layer null branch. The fix
+      // belongs to the hub; once it ships, this branch starts matching
+      // again with no client change.
+      final id = decoded['id']?.toString();
+      if (id == null || id.isEmpty) {
+        return null;
+      }
+      return _pendingByClientId[id];
+    } on Object {
+      // Sync decode raises `PayloadFrameDecodeException` on invalid
+      // frames; we MUST NOT propagate from a routing call (the caller
+      // returns null on failure and reports via metrics).
+      return null;
+    }
   }
 
   _PendingRelay? _pendingFromRawCorrelation(Object? raw) {
@@ -1303,7 +1764,22 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       _clientIdByRequestId.remove(requestId);
     }
     entry.timeoutTimer?.cancel();
+    final acceptedAt = entry.unaryAcceptedAtElapsed;
+    final respondedAt = entry.stopwatch.elapsed;
     entry.stopwatch.stop();
+    if (acceptedAt != null && respondedAt >= acceptedAt) {
+      _channelMetrics?.recordRelayAcceptedToResponse(
+        elapsed: respondedAt - acceptedAt,
+      );
+    }
+    // Hub item 4 (`requestServerTimings`): when the consumer opted in,
+    // the relay response carries a per-phase snapshot under
+    // `meta.serverTimings`. We fold it into the metrics service without
+    // touching the JSON-RPC body the caller sees.
+    final serverTimings = ServerTimings.tryParseFromRelayBody(response);
+    if (serverTimings != null) {
+      _channelMetrics?.recordServerTimings(serverTimings);
+    }
     if (!entry.completer.isCompleted) {
       entry.completer.complete(response);
       _safeAddRelayOutcome(_buildSuccessOutcome(entry));
@@ -1456,6 +1932,17 @@ sealed class _PendingRelay {
   bool deduplicated = false;
   bool replayed = false;
   Timer? timeoutTimer;
+
+  /// [Stopwatch.elapsed] right after `relay:rpc.request` was successfully
+  /// emitted (post encode + socket emit). Used to bound the
+  /// request→accepted phase metric without including local encode work.
+  Duration? requestEmittedAtElapsed;
+
+  /// [Stopwatch.elapsed] when `relay:rpc.accepted` arrived for **unary**
+  /// pendings. Streaming uses [_PendingStream.streamAcceptedAtElapsed]
+  /// instead, because its semantics (first chunk vs final response)
+  /// differ.
+  Duration? unaryAcceptedAtElapsed;
 
   /// Serializes async frame handling and initial pull emission per request.
   Future<void> frameRoutingChain = Future<void>.value();

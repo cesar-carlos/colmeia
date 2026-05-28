@@ -1,3 +1,4 @@
+import 'package:colmeia/core/socket/relay/relay_batch_item.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart' show RelayRequestCancelled;
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
 import 'package:colmeia/core/socket/relay/relay_rpc_outcome.dart';
@@ -75,6 +76,39 @@ abstract interface class RelayCommandDispatcher {
     Duration? timeout,
     int? initialWindowSize,
     int? refillThreshold,
+    RelayPayloadFrameCompression compression =
+        RelayPayloadFrameCompression.auto,
+  });
+
+  /// Emits a `relay:rpc.request.batch` envelope (hub item 1, v1 shipped
+  /// 2026-05-28) carrying [items] for the same conversation/[agentId].
+  ///
+  /// The hub answers with a single `relay:rpc.batch_accepted` JSON
+  /// envelope; per-item replies arrive on the regular
+  /// `relay:rpc.response` channel. The returned future resolves with the
+  /// per-item responses **in the same order as [items]**.
+  ///
+  /// Envelope-level rejections (`RELAY_BATCH_DISABLED`, `BATCH_TOO_LARGE`,
+  /// `RATE_LIMITED`, etc.) surface as a single `RelayRequestRejected`
+  /// failing every entry of the returned list. Per-item errors carried
+  /// inside a successful ack fail only that entry — sibling entries
+  /// still resolve when their own response arrives.
+  ///
+  /// v1 limitations (see
+  /// `docs/server_adjustments/relay_rpc_batch_protocol.md`):
+  ///
+  /// - Streaming-capable items are rejected with
+  ///   `BATCH_STREAMING_ITEM_REJECTED`. Callers must route them through
+  ///   [sendUnary] before reaching the coordinator.
+  /// - Each item MUST declare a JSON-RPC `id`; the wire format rejects
+  ///   notifications (`id: null`).
+  /// - Duplicate `id`s fail the whole envelope with `BATCH_DUPLICATE_ID`.
+  /// - Per-item `requestServerTimings`/`fastPath` are NOT propagated by
+  ///   the hub in v1.
+  Future<List<Map<String, dynamic>>> sendBatch({
+    required String agentId,
+    required List<RelayBatchItem> items,
+    Duration? timeout,
     RelayPayloadFrameCompression compression =
         RelayPayloadFrameCompression.auto,
   });

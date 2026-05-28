@@ -7,6 +7,7 @@ import argparse
 import dataclasses
 import pathlib
 import shutil
+import statistics
 import subprocess
 import time
 from collections.abc import Iterable
@@ -38,6 +39,35 @@ class RunResult:
     status: str
     seconds: float | None
     output: str = ""
+
+
+@dataclasses.dataclass(frozen=True)
+class AggregatedResult:
+    """Aggregated stats across N runs of the same target+transport.
+
+    Reports the median wall-clock for the **passing** runs and surfaces
+    pass/fail counts. Median is preferred over mean because a single
+    cold-start outlier (e.g. a hub 503 retry) skews the average a lot.
+    """
+
+    seconds: float | None  # median over passing runs; None when no pass.
+    minimum: float | None
+    maximum: float | None
+    pass_count: int
+    fail_count: int
+    timeout_count: int
+    total_runs: int
+    failure_outputs: list[str]
+
+    @property
+    def status(self) -> str:
+        if self.total_runs == 0:
+            return "no-runs"
+        if self.timeout_count > 0:
+            return f"timeout({self.timeout_count}/{self.total_runs})"
+        if self.fail_count > 0:
+            return f"fail({self.fail_count}/{self.total_runs})"
+        return f"pass({self.pass_count}/{self.total_runs})"
 
 
 def parse_args() -> argparse.Namespace:
@@ -87,6 +117,16 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=80,
         help="Lines of Flutter output to print for failed/timeout runs. Default: 80.",
+    )
+    parser.add_argument(
+        "--runs",
+        type=int,
+        default=1,
+        help=(
+            "Repeat each target/transport N times and report the median "
+            "wall-clock of the passing runs. Use 3..5 to dampen single-run "
+            "variance; CI defaults to 1. Default: 1."
+        ),
     )
     return parser.parse_args()
 
@@ -197,15 +237,55 @@ def run_command(
     return RunResult(status=status, seconds=elapsed, output=completed.stdout)
 
 
-def format_result(result: RunResult | None) -> str:
-    if result is None:
+def aggregate(results: list[RunResult]) -> AggregatedResult:
+    """Reduce a list of single-run [RunResult]s into a median + stats."""
+    pass_seconds: list[float] = []
+    pass_count = 0
+    fail_count = 0
+    timeout_count = 0
+    failure_outputs: list[str] = []
+
+    for result in results:
+        if result.status == "pass" and result.seconds is not None:
+            pass_seconds.append(result.seconds)
+            pass_count += 1
+        elif result.status == "timeout":
+            timeout_count += 1
+            failure_outputs.append(result.output)
+        elif result.status.startswith("fail"):
+            fail_count += 1
+            failure_outputs.append(result.output)
+
+    median = statistics.median(pass_seconds) if pass_seconds else None
+    return AggregatedResult(
+        seconds=median,
+        minimum=min(pass_seconds) if pass_seconds else None,
+        maximum=max(pass_seconds) if pass_seconds else None,
+        pass_count=pass_count,
+        fail_count=fail_count,
+        timeout_count=timeout_count,
+        total_runs=len(results),
+        failure_outputs=failure_outputs,
+    )
+
+
+def format_result(result: AggregatedResult | None) -> str:
+    if result is None or result.total_runs == 0:
         return "-"
     if result.seconds is None:
         return result.status
-    return f"{result.status} {result.seconds:.3f}s"
+    if result.total_runs == 1:
+        return f"{result.status} {result.seconds:.3f}s"
+    span = ""
+    if result.minimum is not None and result.maximum is not None:
+        span = f" [{result.minimum:.3f}..{result.maximum:.3f}]"
+    return f"{result.status} {result.seconds:.3f}s{span}"
 
 
-def format_delta(rest: RunResult | None, socket: RunResult | None) -> str:
+def format_delta(
+    rest: AggregatedResult | None,
+    socket: AggregatedResult | None,
+) -> str:
     if rest is None or socket is None:
         return "-"
     if rest.seconds is None or socket.seconds is None:
@@ -220,22 +300,34 @@ def rows_for(
     flutter_bin: str,
     timeout_seconds: int,
     dry_run: bool,
-) -> list[tuple[RunTarget, dict[str, RunResult]]]:
-    rows: list[tuple[RunTarget, dict[str, RunResult]]] = []
+    runs: int,
+) -> list[tuple[RunTarget, dict[str, AggregatedResult]]]:
+    rows: list[tuple[RunTarget, dict[str, AggregatedResult]]] = []
     for target in targets:
-        results: dict[str, RunResult] = {}
+        results: dict[str, AggregatedResult] = {}
         for transport in transports:
-            results[transport] = run_command(
-                command_for(target, transport, flutter_bin=flutter_bin),
-                timeout_seconds=timeout_seconds,
-                dry_run=dry_run,
-            )
+            command = command_for(target, transport, flutter_bin=flutter_bin)
+            single_runs: list[RunResult] = []
+            for _ in range(max(1, runs)):
+                single_runs.append(
+                    run_command(
+                        command,
+                        timeout_seconds=timeout_seconds,
+                        dry_run=dry_run,
+                    ),
+                )
+            results[transport] = aggregate(single_runs)
         rows.append((target, results))
     return rows
 
 
-def print_table(rows: list[tuple[RunTarget, dict[str, RunResult]]]) -> None:
-    print("| target | rest | socket | delta(socket-rest) |")
+def print_table(
+    rows: list[tuple[RunTarget, dict[str, AggregatedResult]]],
+    *,
+    runs: int,
+) -> None:
+    suffix = " (median)" if runs > 1 else ""
+    print(f"| target | rest{suffix} | socket{suffix} | delta(socket-rest) |")
     print("|---|---:|---:|---:|")
     for target, results in rows:
         rest = results.get("rest")
@@ -250,17 +342,17 @@ def print_table(rows: list[tuple[RunTarget, dict[str, RunResult]]]) -> None:
 
 
 def print_failure_tails(
-    rows: list[tuple[RunTarget, dict[str, RunResult]]],
+    rows: list[tuple[RunTarget, dict[str, AggregatedResult]]],
     *,
     tail_lines: int,
 ) -> None:
     if tail_lines <= 0:
         return
 
-    blocks: list[tuple[str, str, RunResult]] = []
+    blocks: list[tuple[str, str, AggregatedResult]] = []
     for target, results in rows:
         for transport, result in results.items():
-            if result.status.startswith("fail") or result.status == "timeout":
+            if result.fail_count > 0 or result.timeout_count > 0:
                 blocks.append((target.label, transport, result))
 
     if not blocks:
@@ -269,15 +361,19 @@ def print_failure_tails(
     print()
     print("## Failure output tails")
     for target, transport, result in blocks:
-        print()
-        print(f"### {target} [{transport}] {result.status}")
-        output = _redact_output(result.output)
-        lines = output.splitlines()
-        tail = lines[-tail_lines:] if lines else ["<no output captured>"]
-        print("```text")
-        for line in tail:
-            print(line)
-        print("```")
+        for index, output in enumerate(result.failure_outputs, start=1):
+            print()
+            label = f"{target} [{transport}] {result.status}"
+            if len(result.failure_outputs) > 1:
+                label += f" run#{index}"
+            print(f"### {label}")
+            redacted = _redact_output(output)
+            lines = redacted.splitlines()
+            tail = lines[-tail_lines:] if lines else ["<no output captured>"]
+            print("```text")
+            for line in tail:
+                print(line)
+            print("```")
 
 
 def _coerce_output(value: object) -> str:
@@ -315,11 +411,12 @@ def main() -> int:
         flutter_bin=flutter_executable(),
         timeout_seconds=args.timeout_seconds,
         dry_run=args.dry_run,
+        runs=args.runs,
     )
-    print_table(rows)
+    print_table(rows, runs=args.runs)
     print_failure_tails(rows, tail_lines=args.tail_lines)
     failed = any(
-        result.status.startswith("fail") or result.status == "timeout"
+        result.fail_count > 0 or result.timeout_count > 0
         for _, results in rows
         for result in results.values()
     )

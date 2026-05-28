@@ -1,22 +1,34 @@
 # `agents:command` cross-agent hang
 
-> **Status (revised by hub team, 2026-05-28):** **not reproducible as a
-> hub defect**. The hub's `agents:command` correlation map is keyed on
-> the JSON-RPC `id` globally, not on `(socketId, agentId)`. Two parallel
-> events from the same consumer to different agents do not collide.
-> The likely root cause is **client-side**:
-> `AgentCommandBatchCoordinator` may be packing commands targeted at
-> DIFFERENT agents into a single envelope, where the hub will dispatch
-> the whole batch to the single `agentId` declared in the envelope. The
-> hub now documents this contract explicitly in
-> [`plug_server/docs/api_rest_bridge.md`](../../../plug_database/plug_server/docs/api_rest_bridge.md)
-> ("Limite de um agentId por envelope"). Client action: audit the
-> coordinator's grouping, or provide a minimal repro (1 socket, 2 distinct
-> `agents:command` events, NOT 1 batch) with hub logs. See
-> [`DELIVERED.md`](DELIVERED.md) for details. **Priority:** high
-> (until repro confirms otherwise).
-> **Workaround:** Colmeia routes every SQL through relay on socket
-> transport, intentionally bypassing `agents:command`.
+> **Status (audit by Colmeia team, 2026-05-28):** the hub team asked us
+> to confirm that `AgentCommandBatchCoordinator` groups by `agentId`
+> before packing. **Audit passed.** The coordinator allocates one
+> `_AgentBatchCollector` per `agentId`, every batch envelope declares a
+> single envelope-level `agentId`, and the `command: [...]` array
+> contains only RPCs from that collector. A defensive invariant test was
+> added in
+> [`test/core/socket/agent_command_batch_coordinator_test.dart`](../../test/core/socket/agent_command_batch_coordinator_test.dart)
+> (`never mixes commands from different agents in one envelope`) to
+> guarantee future regressions are caught.
+>
+> Therefore the original hang was **not caused by envelope cross-agent
+> contamination** on the Colmeia side. The most likely remaining cause
+> is the target agent being offline / unreachable on the hub during the
+> repro window: `agents:command` waits for `agents:command_response`
+> with no per-agent fast-fail when the target socket is not connected.
+> The hub's relay path returns `RelayDispatchException(NOT_FOUND)`
+> immediately, which is why the relay route works while
+> `E2E_DISABLE_RELAY_DISPATCH=true` (legacy `agents:command`) hung.
+>
+> **Recommendation for the hub team:** add a fast-fail on
+> `agents:command` when the target `agentId` is not currently connected
+> to the hub (mirror what relay already does). The contract clause
+> "1 agentId per envelope" from `plug_server/docs/api_rest_bridge.md`
+> remains correct and is now exercised by client tests.
+>
+> **Workaround in production:** Colmeia keeps routing every SQL through
+> relay on socket transport (`injector_agent_queries.dart:348-354`).
+> This is safe regardless of the hub-side decision.
 
 ## Symptom
 

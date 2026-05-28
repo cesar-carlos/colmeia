@@ -19,6 +19,7 @@ import 'package:colmeia/core/socket/payload_frame.dart';
 import 'package:colmeia/core/socket/payload_frame_codec.dart';
 import 'package:colmeia/core/socket/payload_frame_signer.dart';
 import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
+import 'package:colmeia/core/socket/relay/relay_batch_command_coordinator.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher_impl.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation_manager.dart';
@@ -105,6 +106,8 @@ void registerInjectorSocket(GetIt getIt) {
         ),
         coalescingEnabled: AppEnvironment.socketCoalescingEnabled,
         onCoalesced: () => getIt<SocketChannelMetrics>().recordCoalesced(),
+        onServerTimings: (timings) =>
+            getIt<SocketChannelMetrics>().recordServerTimings(timings),
       ),
       dispose: (dispatcher) => dispatcher.dispose(),
     )
@@ -164,10 +167,11 @@ void registerInjectorSocket(GetIt getIt) {
           endTimeout: Duration(
             milliseconds: AppEnvironment.socketRelayConversationEndTimeoutMs,
           ),
+          channelMetrics: getIt<SocketChannelMetrics>(),
         ),
         dispose: (manager) => manager.dispose(),
       )
-      ..registerLazySingleton<RelayCommandDispatcher>(
+      ..registerLazySingleton<RelayCommandDispatcherImpl>(
         () => RelayCommandDispatcherImpl(
           connection: getIt<ConsumerSocketConnection>(),
           conversationManager: getIt<RelayConversationManager>(),
@@ -186,7 +190,29 @@ void registerInjectorSocket(GetIt getIt) {
           channelMetrics: getIt<SocketChannelMetrics>(),
           latencyOracle: _resolveLatencyOracle(getIt),
         ),
+        // Concrete impl owns the resources; the public interface below
+        // is a thin wrapper that just delegates, so disposing the impl
+        // (and not double-disposing through the wrapper) is enough.
         dispose: (dispatcher) => dispatcher.dispose(),
+      )
+      // Public `RelayCommandDispatcher` is the impl directly, OR wrapped
+      // by `RelayBatchCommandCoordinator` when the hub flag is on. The
+      // coordinator owns no transport resources of its own — its dispose
+      // only drains the local queue, the inner impl is already disposed
+      // by the registration above.
+      ..registerLazySingleton<RelayCommandDispatcher>(
+        () => AppEnvironment.socketRelayBatchEnabled
+            ? RelayBatchCommandCoordinator(
+                inner: getIt<RelayCommandDispatcherImpl>(),
+                onBatchEmission: ({required size, required partialFailure}) =>
+                    getIt<SocketChannelMetrics>().recordRelayBatchEmission(
+                      size: size,
+                      partialFailure: partialFailure,
+                    ),
+                onBypass: ({required reason}) => getIt<SocketChannelMetrics>()
+                    .recordRelayBatchBypass(reason: reason),
+              )
+            : getIt<RelayCommandDispatcherImpl>(),
       );
   }
 

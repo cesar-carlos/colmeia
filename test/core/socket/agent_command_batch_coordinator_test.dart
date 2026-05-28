@@ -218,6 +218,63 @@ void main() {
       ).deepEquals(<String>{'agent-A', 'agent-B'});
     });
 
+    // Defensive invariant the hub team asked us to confirm in
+    // `docs/server_adjustments/agents_command_cross_agent_hang.md`: each
+    // `agents:command` envelope MUST carry items targeted at exactly one
+    // agentId. A batch envelope with mixed-agent items would never receive
+    // responses for the off-target items and look like a "hang".
+    //
+    // We schedule N near-simultaneous pendings across A different agents
+    // within one window so they all race for the same flush slot. The
+    // assertion walks every emitted envelope and proves the items match
+    // the declared envelope-level agentId.
+    test(
+      'never mixes commands from different agents in one envelope',
+      () async {
+        const agents = <String>['agent-A', 'agent-B', 'agent-C'];
+        const perAgent = 3;
+        final futures = <Future<Map<String, dynamic>>>[];
+
+        for (final agent in agents) {
+          for (var i = 0; i < perAgent; i++) {
+            final rpcId = '$agent-rpc-$i';
+            futures.add(
+              coordinator.send(
+                agentId: agent,
+                body: _body(
+                  agentId: agent,
+                  rpcId: rpcId,
+                  params: <String, Object?>{'sql': 'SELECT $i FROM $agent'},
+                ),
+                rpcId: rpcId,
+              ),
+            );
+          }
+        }
+
+        await Future.wait(futures);
+
+        check(direct.calls.length).equals(agents.length);
+        final batchesByAgent = <String, _Send>{
+          for (final call in direct.calls) call.agentId: call,
+        };
+        check(batchesByAgent.keys.toSet()).deepEquals(agents.toSet());
+
+        for (final agent in agents) {
+          final batch = batchesByAgent[agent]!;
+          final command = batch.body['command']! as List<dynamic>;
+          check(command.length).equals(perAgent);
+          // Every JSON-RPC id in the array must belong to this agent's
+          // rpcId namespace; no off-target leakage.
+          for (final raw in command) {
+            final entry = raw as Map<String, Object?>;
+            final id = entry['id']! as String;
+            check(id.startsWith('$agent-rpc-')).isTrue();
+          }
+        }
+      },
+    );
+
     test('hitting maxBatchSize triggers immediate flush', () async {
       // With maxBatchSize=4, send 5 in a row → first 4 flush immediately
       // (size 4), the 5th fires after the window (size 1).

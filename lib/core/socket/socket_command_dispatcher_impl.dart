@@ -1,6 +1,8 @@
 import 'dart:async';
 
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/observability/socket/server_timings.dart';
 import 'package:colmeia/core/socket/agent_command_outcome.dart';
 import 'package:colmeia/core/socket/agent_latency_oracle.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
@@ -37,6 +39,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     Duration defaultTimeout = const Duration(seconds: 20),
     bool coalescingEnabled = true,
     void Function()? onCoalesced,
+    void Function(ServerTimings)? onServerTimings,
   }) : _connection = connection,
        _correlator = correlator,
        _concurrencyGate = concurrencyGate,
@@ -44,6 +47,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
        _defaultTimeout = defaultTimeout,
        _coalescingEnabled = coalescingEnabled,
        _onCoalesced = onCoalesced,
+       _onServerTimings = onServerTimings,
        _outcomes = StreamController<AgentCommandOutcome>.broadcast() {
     _stateSub = _connection.states().listen(_onConnectionState);
   }
@@ -55,6 +59,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
   final Duration _defaultTimeout;
   final bool _coalescingEnabled;
   final void Function()? _onCoalesced;
+  final void Function(ServerTimings)? _onServerTimings;
   final StreamController<AgentCommandOutcome> _outcomes;
 
   /// Maps `SocketCoalesceKey` → in-flight Future. Reused while the entry
@@ -320,7 +325,13 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     }
 
     try {
-      _connection.raw.emit('agents:command', body);
+      // Hub item 4 (`requestServerTimings`): augment the outbound body
+      // with the opt-in flag so the hub attaches `serverTimings` to the
+      // response. Shallow-copy preserves caller immutability.
+      final emitBody = AppEnvironment.socketRequestServerTimingsEnabled
+          ? <String, Object?>{...body, 'requestServerTimings': true}
+          : body;
+      _connection.raw.emit('agents:command', emitBody);
     } on Object catch (e, s) {
       _correlator.failWith(rpcId, e, s);
       _meta.remove(rpcId);
@@ -350,6 +361,13 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
         response: response,
         method: method,
       );
+      // Hub item 4: parse `serverTimings` from the response envelope and
+      // push to the metrics sink via the optional callback. Silent when
+      // the consumer did not opt in or the field is missing.
+      final serverTimings = ServerTimings.tryParseFromEnvelope(response);
+      if (serverTimings != null) {
+        _onServerTimings?.call(serverTimings);
+      }
       return response;
     } on SocketDispatchException catch (e) {
       stopwatch.stop();

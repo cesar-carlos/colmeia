@@ -315,6 +315,10 @@ void _registerAgentQueryTransport(GetIt getIt) {
         final rest = ApiAgentQueriesRemoteDataSource(
           dio: getIt<Dio>(),
           bodyMapper: getIt<AgentSqlExecuteRequestToBridgeBody>(),
+          onServerTimings: getIt.isRegistered<SocketChannelMetrics>()
+              ? (timings) =>
+                    getIt<SocketChannelMetrics>().recordServerTimings(timings)
+              : null,
         );
         final relay = _resolveRelayDatasource(getIt);
         AgentQueriesRemoteDataSource wrapWithRestFallback({

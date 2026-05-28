@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/observability/socket/socket_channel_metrics.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation.dart';
@@ -18,15 +19,18 @@ class RelayConversationManager {
     required ConsumerSocketConnection connection,
     Duration startTimeout = const Duration(seconds: 10),
     Duration endTimeout = const Duration(seconds: 5),
+    SocketChannelMetrics? channelMetrics,
   }) : _connection = connection,
        _startTimeout = startTimeout,
-       _endTimeout = endTimeout {
+       _endTimeout = endTimeout,
+       _channelMetrics = channelMetrics {
     _stateSub = _connection.states().listen(_onConnectionState);
   }
 
   final ConsumerSocketConnection _connection;
   final Duration _startTimeout;
   final Duration _endTimeout;
+  final SocketChannelMetrics? _channelMetrics;
 
   final Map<String, RelayConversation> _byAgentId =
       <String, RelayConversation>{};
@@ -55,7 +59,20 @@ class RelayConversationManager {
           endTimeout: _endTimeout,
         );
     _byAgentId[agentId] = conversation;
-    await conversation.start();
+    // Only the first-time open pays the round-trip; the metric reservoir
+    // therefore reflects per-agent cold starts (the pre-warmer is what
+    // keeps this off the first SQL wave).
+    final startSw = Stopwatch()..start();
+    try {
+      await conversation.start();
+      startSw.stop();
+      _channelMetrics?.recordRelayConversationStart(elapsed: startSw.elapsed);
+    } on Object {
+      startSw.stop();
+      // Don't record failed starts: the latency reservoir is for
+      // successful first opens, not for retried/timed-out attempts.
+      rethrow;
+    }
     return conversation;
   }
 

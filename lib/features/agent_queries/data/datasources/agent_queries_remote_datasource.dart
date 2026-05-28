@@ -1,5 +1,7 @@
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/network/api_routes.dart';
+import 'package:colmeia/core/observability/socket/server_timings.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_execute_batch_request_to_bridge_body.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_execute_request_to_bridge_body.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_http_receive_timeout.dart';
@@ -30,14 +32,31 @@ class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
         const AgentSqlExecuteRequestToBridgeBody(),
     AgentSqlExecuteBatchRequestToBridgeBody batchBodyMapper =
         const AgentSqlExecuteBatchRequestToBridgeBody(),
+    void Function(ServerTimings)? onServerTimings,
   }) : _dio = dio,
        _bodyMapper = bodyMapper,
-       _batchBodyMapper = batchBodyMapper;
+       _batchBodyMapper = batchBodyMapper,
+       _onServerTimings = onServerTimings;
 
   final Dio _dio;
   final AgentSqlExecuteRequestToBridgeBody _bodyMapper;
   final AgentSqlExecuteBatchRequestToBridgeBody _batchBodyMapper;
+  final void Function(ServerTimings)? _onServerTimings;
   static const Uuid _uuid = Uuid();
+
+  Map<String, Object?> _withServerTimingsFlag(Map<String, Object?> body) {
+    if (!AppEnvironment.socketRequestServerTimingsEnabled) {
+      return body;
+    }
+    return <String, Object?>{...body, 'requestServerTimings': true};
+  }
+
+  void _maybeRecordServerTimings(Map<String, dynamic>? payload) {
+    final timings = ServerTimings.tryParseFromEnvelope(payload);
+    if (timings != null) {
+      _onServerTimings?.call(timings);
+    }
+  }
 
   @override
   Future<Map<String, dynamic>> postSqlExecute(
@@ -45,7 +64,9 @@ class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
     AgentQueriesCancelScope? cancelScope,
   }) async {
     final rpcId = _uuid.v4();
-    final body = _bodyMapper.build(request: request, rpcId: rpcId);
+    final body = _withServerTimingsFlag(
+      _bodyMapper.build(request: request, rpcId: rpcId),
+    );
 
     final receiveTimeout = agentSqlHttpReceiveTimeout(
       bridgeTimeoutMs: request.bridgeTimeoutMs,
@@ -80,6 +101,7 @@ class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
       );
     }
 
+    _maybeRecordServerTimings(payload);
     return payload ?? const <String, dynamic>{};
   }
 
@@ -89,7 +111,9 @@ class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
     AgentQueriesCancelScope? cancelScope,
   }) async {
     final rpcId = _uuid.v4();
-    final body = _batchBodyMapper.build(request: request, rpcId: rpcId);
+    final body = _withServerTimingsFlag(
+      _batchBodyMapper.build(request: request, rpcId: rpcId),
+    );
 
     final receiveTimeout = agentSqlHttpReceiveTimeout(
       bridgeTimeoutMs: request.bridgeTimeoutMs,
@@ -115,6 +139,7 @@ class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
       );
     }
 
+    _maybeRecordServerTimings(payload);
     return payload ?? const <String, dynamic>{};
   }
 }

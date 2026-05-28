@@ -18,6 +18,7 @@ import 'package:colmeia/core/socket/consumer_socket_terminal_exception.dart';
 import 'package:colmeia/core/socket/payload_frame.dart';
 import 'package:colmeia/core/socket/payload_frame_codec.dart';
 import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
+import 'package:colmeia/core/socket/relay/relay_batch_item.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher_impl.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation_manager.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
@@ -1733,5 +1734,328 @@ void main() {
         );
       },
     );
+  });
+
+  group('RelayCommandDispatcherImpl.sendBatch', () {
+    test(
+      'emits `relay:rpc.request.batch` with one envelope per call',
+      () async {
+        final dispatcher = await dispatcherFor();
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final future = dispatcher.sendBatch(
+          agentId: 'agent-1',
+          items: <RelayBatchItem>[
+            const RelayBatchItem(
+              clientRequestId: 'rpc-a',
+              body: <String, Object?>{
+                'command': <String, Object?>{
+                  'jsonrpc': '2.0',
+                  'method': 'sql.execute',
+                  'id': 'rpc-a',
+                },
+              },
+            ),
+            const RelayBatchItem(
+              clientRequestId: 'rpc-b',
+              body: <String, Object?>{
+                'command': <String, Object?>{
+                  'jsonrpc': '2.0',
+                  'method': 'sql.execute',
+                  'id': 'rpc-b',
+                },
+              },
+            ),
+          ],
+        );
+        // Drain microtasks so `_emitRpcRequestBatch` fires before we ack.
+        await Future<void>.delayed(Duration.zero);
+
+        final batchEmits = wiring.emits
+            .where((e) => e.event == RelayEventNames.rpcRequestBatch)
+            .toList();
+        check(batchEmits.length).equals(1);
+        // No `relay:rpc.request` unary emits for this call site.
+        check(
+          wiring.emits.where((e) => e.event == RelayEventNames.rpcRequest),
+        ).isEmpty();
+
+        wiring.fire(
+          RelayEventNames.rpcBatchAccepted,
+          <String, Object?>{
+            'success': true,
+            'conversationId': 'conv-agent-1',
+            'batchSize': 2,
+            'items': <Map<String, Object?>>[
+              <String, Object?>{
+                'clientRequestId': 'rpc-a',
+                'requestId': 'srv-a',
+              },
+              <String, Object?>{
+                'clientRequestId': 'rpc-b',
+                'requestId': 'srv-b',
+              },
+            ],
+          },
+        );
+        wiring.fire(
+          RelayEventNames.rpcResponse,
+          _buildResponseFrame(
+            <String, Object?>{
+              'response': <String, Object?>{
+                'type': 'single',
+                'success': true,
+                'item': <String, Object?>{'id': 'rpc-a', 'success': true},
+              },
+            },
+            requestId: 'srv-a',
+          ),
+        );
+        wiring.fire(
+          RelayEventNames.rpcResponse,
+          _buildResponseFrame(
+            <String, Object?>{
+              'response': <String, Object?>{
+                'type': 'single',
+                'success': true,
+                'item': <String, Object?>{'id': 'rpc-b', 'success': true},
+              },
+            },
+            requestId: 'srv-b',
+          ),
+        );
+
+        final responses = await future;
+        check(responses.length).equals(2);
+        check(
+          (responses[0]['response']! as Map<String, Object?>)['type'],
+        ).equals('single');
+        check(
+          (responses[1]['response']! as Map<String, Object?>)['type'],
+        ).equals('single');
+      },
+    );
+
+    test(
+      'envelope-level failure fails every item with the same error code',
+      () async {
+        final dispatcher = await dispatcherFor();
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final future = dispatcher.sendBatch(
+          agentId: 'agent-1',
+          items: <RelayBatchItem>[
+            const RelayBatchItem(
+              clientRequestId: 'rpc-a',
+              body: <String, Object?>{
+                'command': <String, Object?>{
+                  'jsonrpc': '2.0',
+                  'method': 'sql.execute',
+                  'id': 'rpc-a',
+                },
+              },
+            ),
+            const RelayBatchItem(
+              clientRequestId: 'rpc-b',
+              body: <String, Object?>{
+                'command': <String, Object?>{
+                  'jsonrpc': '2.0',
+                  'method': 'sql.execute',
+                  'id': 'rpc-b',
+                },
+              },
+            ),
+          ],
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        wiring.fire(
+          RelayEventNames.rpcBatchAccepted,
+          <String, Object?>{
+            'success': false,
+            'conversationId': 'conv-agent-1',
+            'items': <Map<String, Object?>>[
+              <String, Object?>{'clientRequestId': 'rpc-a'},
+              <String, Object?>{'clientRequestId': 'rpc-b'},
+            ],
+            'error': <String, Object?>{
+              'code': 'RATE_LIMITED',
+              'message': 'requested 2 slots, only 1 available',
+            },
+          },
+        );
+
+        await check(future).throws<RelayRequestRejected>(
+          (subject) =>
+              subject.has((e) => e.code, 'code').equals('RATE_LIMITED'),
+        );
+      },
+    );
+
+    test(
+      'per-item error on a successful envelope fails only that entry',
+      () async {
+        final dispatcher = await dispatcherFor();
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final future = dispatcher.sendBatch(
+          agentId: 'agent-1',
+          items: <RelayBatchItem>[
+            const RelayBatchItem(
+              clientRequestId: 'rpc-ok',
+              body: <String, Object?>{
+                'command': <String, Object?>{
+                  'jsonrpc': '2.0',
+                  'method': 'sql.execute',
+                  'id': 'rpc-ok',
+                },
+              },
+            ),
+            const RelayBatchItem(
+              clientRequestId: 'rpc-bad',
+              body: <String, Object?>{
+                'command': <String, Object?>{
+                  'jsonrpc': '2.0',
+                  'method': 'sql.execute',
+                  'id': 'rpc-bad',
+                },
+              },
+            ),
+          ],
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        wiring.fire(
+          RelayEventNames.rpcBatchAccepted,
+          <String, Object?>{
+            'success': true,
+            'conversationId': 'conv-agent-1',
+            'batchSize': 2,
+            'items': <Map<String, Object?>>[
+              <String, Object?>{
+                'clientRequestId': 'rpc-ok',
+                'requestId': 'srv-ok',
+              },
+              <String, Object?>{
+                'clientRequestId': 'rpc-bad',
+                'error': <String, Object?>{
+                  'code': 'SERVICE_UNAVAILABLE',
+                  'message': 'agent offline',
+                  'itemIndex': 1,
+                },
+              },
+            ],
+          },
+        );
+        wiring.fire(
+          RelayEventNames.rpcResponse,
+          _buildResponseFrame(
+            <String, Object?>{
+              'response': <String, Object?>{
+                'type': 'single',
+                'success': true,
+                'item': <String, Object?>{'id': 'rpc-ok', 'success': true},
+              },
+            },
+            requestId: 'srv-ok',
+          ),
+        );
+
+        // The whole batch future fails on the first failing item we hit
+        // when collecting in order. `sendBatch` resolves in caller order
+        // and rethrows on the first error encountered.
+        await check(future).throws<RelayRequestRejected>(
+          (subject) =>
+              subject.has((e) => e.code, 'code').equals('SERVICE_UNAVAILABLE'),
+        );
+      },
+    );
+
+    test('rejects an empty batch with BATCH_EMPTY', () async {
+      final dispatcher = await dispatcherFor();
+      addTearDown(dispatcher.dispose);
+
+      await check(
+        dispatcher.sendBatch(
+          agentId: 'agent-1',
+          items: const <RelayBatchItem>[],
+        ),
+      ).throws<RelayRequestRejected>(
+        (subject) =>
+            subject.has((e) => e.code, 'code').equals('BATCH_EMPTY'),
+      );
+    });
+
+    test('rejects > 32 items with BATCH_TOO_LARGE', () async {
+      final dispatcher = await dispatcherFor();
+      addTearDown(dispatcher.dispose);
+
+      final tooMany = List<RelayBatchItem>.generate(
+        33,
+        (i) => RelayBatchItem(
+          clientRequestId: 'rpc-$i',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-$i',
+            },
+          },
+        ),
+      );
+
+      await check(
+        dispatcher.sendBatch(agentId: 'agent-1', items: tooMany),
+      ).throws<RelayRequestRejected>(
+        (subject) =>
+            subject.has((e) => e.code, 'code').equals('BATCH_TOO_LARGE'),
+      );
+    });
+
+    test('rejects duplicate clientRequestId before reaching the wire',
+        () async {
+      final dispatcher = await dispatcherFor();
+      addTearDown(dispatcher.dispose);
+
+      final dupes = <RelayBatchItem>[
+        const RelayBatchItem(
+          clientRequestId: 'rpc-dup',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-dup',
+            },
+          },
+        ),
+        const RelayBatchItem(
+          clientRequestId: 'rpc-dup',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-dup',
+            },
+          },
+        ),
+      ];
+
+      await check(
+        dispatcher.sendBatch(agentId: 'agent-1', items: dupes),
+      ).throws<RelayRequestRejected>(
+        (subject) =>
+            subject.has((e) => e.code, 'code').equals('BATCH_DUPLICATE_ID'),
+      );
+      // No envelope hit the wire.
+      check(
+        wiring.emits.where((e) => e.event == RelayEventNames.rpcRequestBatch),
+      ).isEmpty();
+    });
   });
 }

@@ -19,7 +19,14 @@ abstract final class RelayEventNames {
   static const String rpcChunk = 'relay:rpc.chunk';
   static const String rpcComplete = 'relay:rpc.complete';
   static const String rpcRequestAck = 'relay:rpc.request_ack';
-  static const String rpcBatchAck = 'relay:rpc.batch_ack';
+
+  // Batch envelope (v1 hub feature shipped 2026-05-28). Request carries a
+  // PayloadFrame whose JSON-RPC `data` is an array of 1..32 commands; the
+  // hub answers with one `relay:rpc.batch_accepted` JSON envelope (NOT a
+  // PayloadFrame) containing per-item correlation, then forwards each
+  // item's reply on the regular `relay:rpc.response` channel.
+  static const String rpcRequestBatch = 'relay:rpc.request.batch';
+  static const String rpcBatchAccepted = 'relay:rpc.batch_accepted';
 
   // Stream backpressure.
   static const String rpcStreamPull = 'relay:rpc.stream.pull';

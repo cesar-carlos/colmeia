@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/di/injector_agent_queries.dart';
 import 'package:colmeia/core/socket/agent_command_sender.dart';
+import 'package:colmeia/core/socket/relay/relay_batch_item.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
 import 'package:colmeia/core/socket/relay/relay_rpc_outcome.dart';
@@ -73,6 +74,20 @@ class _FakeRelayCommandDispatcher implements RelayCommandDispatcher {
         'execution_id': 'exec-unary-1',
       },
     };
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> sendBatch({
+    required String agentId,
+    required List<RelayBatchItem> items,
+    Duration? timeout,
+    RelayPayloadFrameCompression compression =
+        RelayPayloadFrameCompression.auto,
+  }) async {
+    // Tests in this file exercise the relay datasource via `sendUnary`
+    // only; batch is not expected to fire here. If it ever does, fail
+    // loudly so we can audit the call site.
+    throw StateError('fake relay dispatcher does not implement sendBatch');
   }
 
   @override

@@ -230,6 +230,22 @@ abstract final class EnvKeys {
   /// Future hub feature: JSON-RPC batch arrays on relay. Default `false`.
   static const String socketRelayBatchEnabled = 'SOCKET_RELAY_BATCH_ENABLED';
 
+  /// Opts the consumer into the hub relay unary fast-path
+  /// (`fastPath: true` on `relay:rpc.request`). The hub then skips
+  /// `relay:rpc.accepted` on the happy path. Default `false` until the
+  /// hub rollout is observed in production. Streaming RPCs always use
+  /// the legacy three-event flow regardless of this flag.
+  static const String socketRelayFastPathEnabled =
+      'SOCKET_RELAY_FAST_PATH_ENABLED';
+
+  /// Opts the consumer into per-phase server-side timings on every
+  /// outbound bridge request (relay, `agents:command`, REST). The hub
+  /// appends a `serverTimings` snapshot to the response. Default
+  /// `false`: phase diagnostics cost ~120 B per response, so we keep it
+  /// off in production and turn it on for E2E and ad-hoc investigation.
+  static const String socketRequestServerTimingsEnabled =
+      'SOCKET_REQUEST_SERVER_TIMINGS_ENABLED';
+
   /// Experimental multi-socket spike (`1` = single connection, default).
   static const String socketConnectionPoolSize = 'SOCKET_CONNECTION_POOL_SIZE';
 

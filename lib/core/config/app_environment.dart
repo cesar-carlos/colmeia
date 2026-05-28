@@ -566,6 +566,28 @@ abstract final class AppEnvironment {
         fallback: false,
       );
 
+  /// Hub opt-in: relay unary fast-path. See
+  /// `docs/server_adjustments/relay_unary_fast_path.md`.
+  static bool get socketRelayFastPathEnabled =>
+      AppEnvironmentResolution.resolveBool(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.socketRelayFastPathEnabled,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.socketRelayFastPathEnabled),
+        fallback: false,
+      );
+
+  /// Hub opt-in: per-phase server-side timings on responses. See
+  /// `docs/server_adjustments/server_side_phase_diagnostics.md`.
+  static bool get socketRequestServerTimingsEnabled =>
+      AppEnvironmentResolution.resolveBool(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.socketRequestServerTimingsEnabled,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.socketRequestServerTimingsEnabled),
+        fallback: false,
+      );
+
   /// Experimental socket pool size (1 = single connection). Default 1.
   static int get socketConnectionPoolSize =>
       AppEnvironmentResolution.resolveInt(

@@ -174,6 +174,45 @@ void main() {
       check(compact['lastGateSessionPeakSample']).equals(7);
     });
 
+    test('relay phase metrics record, surface in debug, and reset', () {
+      metrics
+        ..recordRelayPayloadEncodeWallClock(
+          elapsed: const Duration(milliseconds: 2),
+        )
+        ..recordRelayRequestToAccepted(
+          elapsed: const Duration(milliseconds: 18),
+        )
+        ..recordRelayAcceptedToResponse(
+          elapsed: const Duration(milliseconds: 42),
+        )
+        ..recordRelayConversationStart(
+          elapsed: const Duration(milliseconds: 73),
+        );
+
+      final phaseSnap = metrics.snapshot();
+      check(phaseSnap.relayPayloadEncodeWallClockMs.count).equals(1);
+      check(phaseSnap.relayPayloadEncodeWallClockMs.max).equals(2);
+      check(phaseSnap.relayRequestToAcceptedMs.count).equals(1);
+      check(phaseSnap.relayRequestToAcceptedMs.max).equals(18);
+      check(phaseSnap.relayAcceptedToResponseMs.count).equals(1);
+      check(phaseSnap.relayAcceptedToResponseMs.max).equals(42);
+      check(phaseSnap.relayConversationStartMs.count).equals(1);
+      check(phaseSnap.relayConversationStartMs.max).equals(73);
+
+      final phaseDebug = phaseSnap.relayDebugLogFields();
+      check(phaseDebug['relayPayloadEncodeWallClockMs']).isNotNull();
+      check(phaseDebug['relayRequestToAcceptedMs']).isNotNull();
+      check(phaseDebug['relayAcceptedToResponseMs']).isNotNull();
+      check(phaseDebug['relayConversationStartMs']).isNotNull();
+
+      metrics.reset();
+      final cleared = metrics.snapshot();
+      check(cleared.relayPayloadEncodeWallClockMs.count).equals(0);
+      check(cleared.relayRequestToAcceptedMs.count).equals(0);
+      check(cleared.relayAcceptedToResponseMs.count).equals(0);
+      check(cleared.relayConversationStartMs.count).equals(0);
+    });
+
     test('relay payload decode metrics record and reset', () {
       metrics
         ..recordRelayPayloadDecodeWallClock(
