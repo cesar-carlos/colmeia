@@ -83,7 +83,9 @@ class _SalesLiveMapBodyStatusContent extends StatelessWidget {
         if (result != null)
           AppSkeleton(
             enabled: result.salesDataPending,
-            child: SalesLiveMapKpiGrid(result: result),
+            child: SalesLiveMapKpiGrid(
+              model: SalesLiveMapKpiGridModel.fromLoadResult(result),
+            ),
           ),
         if (result != null &&
             !result.salesDataPending &&

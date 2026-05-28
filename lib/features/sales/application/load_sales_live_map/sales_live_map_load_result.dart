@@ -1,7 +1,17 @@
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_load_failure_reason.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_location_diagnostics.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart';
+
+/// Identity-keyed cache for [SalesLiveMapLoadResult.agentIdsByBranchRef].
+/// Lets the index be computed on demand without breaking the existing
+/// `const` constructor and is reclaimed with the owning result.
+final Expando<Map<SalesLiveMapBranchRef, String>>
+_agentIdsByBranchRefExpando =
+    Expando<Map<SalesLiveMapBranchRef, String>>(
+      'SalesLiveMapLoadResult.agentIdsByBranchRef',
+    );
 
 /// Result returned by `LoadSalesLiveMapUseCase` after a full or progressive
 /// run. Captures the rendered points, branch/agent counts, diagnostics for
@@ -103,4 +113,24 @@ class SalesLiveMapLoadResult {
       .where((e) => e.value)
       .map((e) => e.key)
       .toList(growable: false);
+
+  /// Lookup map from each [SalesLiveMapBranchRef] to the agent id that
+  /// owns it. Computed lazily from [branchOptions] on first access and
+  /// memoized for the rest of this result's lifetime.
+  ///
+  /// Consumers can use this to avoid O(n·m) scans when reconciling a
+  /// branch selection against the agents that should be queried (e.g.
+  /// `SalesLiveMapFilterNormalizer.normalizeForSelectedBranches`).
+  Map<SalesLiveMapBranchRef, String> get agentIdsByBranchRef {
+    final cached = _agentIdsByBranchRefExpando[this];
+    if (cached != null) {
+      return cached;
+    }
+    final computed = <SalesLiveMapBranchRef, String>{
+      for (final branch in branchOptions) branch.branchRef: branch.agentId,
+    };
+    final indexed = Map<SalesLiveMapBranchRef, String>.unmodifiable(computed);
+    _agentIdsByBranchRefExpando[this] = indexed;
+    return indexed;
+  }
 }

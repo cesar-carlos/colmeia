@@ -128,7 +128,9 @@ class SalesLiveMapBranchLocationCache {
 
   /// Returns the cached location for [aggregate] when one exists, is still
   /// fresh and was produced from the same `locationSourceSignature`. Stale
-  /// or signature-mismatched entries are evicted on access.
+  /// or signature-mismatched entries are evicted on access. Successful reads
+  /// promote the entry to the most-recent position so eviction follows true
+  /// LRU semantics (last touched, not last written).
   SalesLiveMapCachedBranchLocation? read(
     SalesLiveMapBranchAggregate aggregate, {
     required DateTime now,
@@ -142,6 +144,9 @@ class SalesLiveMapBranchLocationCache {
       _entries.remove(aggregate.id);
       return null;
     }
+    _entries
+      ..remove(aggregate.id)
+      ..[aggregate.id] = cached;
     return cached;
   }
 

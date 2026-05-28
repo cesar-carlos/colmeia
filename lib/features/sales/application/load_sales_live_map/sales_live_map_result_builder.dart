@@ -17,52 +17,54 @@ abstract final class SalesLiveMapResultBuilder {
     AppFailure failure, {
     required DateTime refreshedAt,
   }) {
-    return SalesLiveMapLoadResult(
-      points: const <SalesLiveMapPoint>[],
-      branchOptions: const <SalesLiveMapBranchOption>[],
-      totalRevenue: 0,
-      totalSalesCount: 0,
-      totalBranchCount: 0,
-      mappedBranchCount: 0,
-      mappedMunicipalityCount: 0,
-      queriedAgentCount: 0,
-      plannedAgentCount: 0,
-      failedAgentCount: 0,
-      missingClientTokenAgentCount: 0,
-      skippedOfflineAgentCount: 0,
-      rowCapReachedAgentCount: 0,
+    return _empty(
+      refreshedAt: refreshedAt,
       loadFailed: true,
       loadFailureMessage: failure.userMessage,
-      refreshedAt: refreshedAt,
     );
   }
 
   /// Empty pending baseline emitted while sales data is still in-flight but
   /// the use case wants to surface that the load has begun.
   static SalesLiveMapLoadResult pendingBase({required DateTime refreshedAt}) {
-    return SalesLiveMapLoadResult(
-      points: const <SalesLiveMapPoint>[],
-      branchOptions: const <SalesLiveMapBranchOption>[],
-      totalRevenue: 0,
-      totalSalesCount: 0,
-      totalBranchCount: 0,
-      mappedBranchCount: 0,
-      mappedMunicipalityCount: 0,
-      queriedAgentCount: 0,
-      plannedAgentCount: 0,
-      failedAgentCount: 0,
-      missingClientTokenAgentCount: 0,
-      skippedOfflineAgentCount: 0,
-      rowCapReachedAgentCount: 0,
-      salesDataPending: true,
-      refreshedAt: refreshedAt,
-    );
+    return _empty(refreshedAt: refreshedAt, salesDataPending: true);
   }
 
   /// Empty result flagged as `cancelled = true`. Pure builder — callers that
   /// also want to log the cancellation should do so explicitly before or
   /// after yielding this result.
   static SalesLiveMapLoadResult cancelled({required DateTime refreshedAt}) {
+    return _empty(refreshedAt: refreshedAt, cancelled: true);
+  }
+
+  /// Empty result for the "session expired" state surfaced by the
+  /// controller when the user logs out while the map is open. Reuses the
+  /// shared empty shape (with `loadFailed = true`) so the presentation
+  /// layer can render the same error panel it uses for transport failures.
+  static SalesLiveMapLoadResult sessionExpired({
+    required DateTime refreshedAt,
+  }) {
+    return _empty(refreshedAt: refreshedAt, loadFailed: true);
+  }
+
+  /// Plain empty result — no flags set. Used by callers that already
+  /// reported the load outcome separately (e.g. the use case mapping
+  /// step when neither catalog nor sales reports were available).
+  static SalesLiveMapLoadResult empty({required DateTime refreshedAt}) {
+    return _empty(refreshedAt: refreshedAt);
+  }
+
+  /// Single source of truth for "empty" `SalesLiveMapLoadResult` shapes
+  /// shared by `failed` / `pendingBase` / `cancelled`. Keeps the counter
+  /// zero defaults in one place so adding a new numeric field to
+  /// `SalesLiveMapLoadResult` only requires updating this builder once.
+  static SalesLiveMapLoadResult _empty({
+    required DateTime refreshedAt,
+    bool loadFailed = false,
+    String? loadFailureMessage,
+    bool salesDataPending = false,
+    bool cancelled = false,
+  }) {
     return SalesLiveMapLoadResult(
       points: const <SalesLiveMapPoint>[],
       branchOptions: const <SalesLiveMapBranchOption>[],
@@ -77,8 +79,11 @@ abstract final class SalesLiveMapResultBuilder {
       missingClientTokenAgentCount: 0,
       skippedOfflineAgentCount: 0,
       rowCapReachedAgentCount: 0,
+      loadFailed: loadFailed,
+      loadFailureMessage: loadFailureMessage,
+      salesDataPending: salesDataPending,
+      cancelled: cancelled,
       refreshedAt: refreshedAt,
-      cancelled: true,
     );
   }
 

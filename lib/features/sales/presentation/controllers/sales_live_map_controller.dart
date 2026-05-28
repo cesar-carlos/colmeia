@@ -3,15 +3,16 @@ import 'dart:async';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_persistence.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
+import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_result_builder.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_data_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dart';
-import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
+import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_filter_normalizer.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_visual_snapshot_policy.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
@@ -80,9 +81,13 @@ class SalesLiveMapController extends ChangeNotifier {
     _boundUserId = userId;
     _activeLoadCancelToken?.cancel();
 
-    final restoredFilter = _normalizeRestoredFilter(
-      _sessionService.restoreSalesLiveMapFilter(),
+    final persistedFilter = _sessionService.restoreSalesLiveMapFilter();
+    final restoredFilter = SalesLiveMapFilterNormalizer.normalizeRestoredFilter(
+      persistedFilter,
     );
+    final droppedStaleBranchSelection =
+        persistedFilter.selectedBranchIds != null &&
+        restoredFilter.selectedBranchIds == null;
     final sessionExpiredResult = userId == null
         ? _sessionExpiredResult()
         : null;
@@ -100,8 +105,10 @@ class SalesLiveMapController extends ChangeNotifier {
       ),
     );
 
-    if (restoredFilter.selectedBranchIds != null) {
-      unawaited(_sessionService.persistSalesLiveMapFilter(restoredFilter));
+    // Persist the normalized filter back so the next session does not have
+    // to re-clear the same stale branch selection from disk.
+    if (droppedStaleBranchSelection) {
+      _persistFilter(restoredFilter);
     }
     if (userId == null) {
       return;
@@ -120,12 +127,17 @@ class SalesLiveMapController extends ChangeNotifier {
   }
 
   Future<void> applyFilter(SalesLiveMapFilter filter) async {
-    final normalizedFilter = _normalizeFilterForSelectedBranches(filter);
+    final normalizedFilter =
+        SalesLiveMapFilterNormalizer.normalizeForSelectedBranches(
+          filter: filter,
+          result: _state.result,
+        );
     if (_state.filter == normalizedFilter && !_state.sessionExpired) {
       return;
     }
     final previousData = _state.filter.dataFilter;
     final nextData = normalizedFilter.dataFilter;
+    final wasSessionExpired = _state.sessionExpired;
 
     _setState(
       _state.copyWith(
@@ -133,11 +145,13 @@ class SalesLiveMapController extends ChangeNotifier {
         sessionExpired: false,
       ),
     );
-    unawaited(_sessionService.persistSalesLiveMapFilter(normalizedFilter));
+    _persistFilter(normalizedFilter);
 
     if (previousData != nextData) {
       _requestCloseFullscreenAfterDataChanged();
       await reload(force: true, reason: SalesLiveMapReloadReason.filterChange);
+    } else if (wasSessionExpired) {
+      await reload(force: true);
     }
   }
 
@@ -150,7 +164,7 @@ class SalesLiveMapController extends ChangeNotifier {
       return;
     }
     _setState(_state.copyWith(filter: next, sessionExpired: false));
-    unawaited(_sessionService.persistSalesLiveMapFilter(next));
+    _persistFilter(next);
     _requestCloseFullscreenAfterDataChanged();
     await reload(force: true, reason: SalesLiveMapReloadReason.filterChange);
   }
@@ -161,7 +175,7 @@ class SalesLiveMapController extends ChangeNotifier {
       return;
     }
     _setState(_state.copyWith(filter: next, sessionExpired: false));
-    unawaited(_sessionService.persistSalesLiveMapFilter(next));
+    _persistFilter(next);
     _requestCloseFullscreenAfterDataChanged();
     await reload(force: true, reason: SalesLiveMapReloadReason.filterChange);
   }
@@ -170,9 +184,13 @@ class SalesLiveMapController extends ChangeNotifier {
     if (_state.filter.metric == metric) {
       return;
     }
+    final wasSessionExpired = _state.sessionExpired;
     final next = _state.filter.copyWith(metric: metric);
-    _setState(_state.copyWith(filter: next));
-    unawaited(_sessionService.persistSalesLiveMapFilter(next));
+    _setState(_state.copyWith(filter: next, sessionExpired: false));
+    _persistFilter(next);
+    if (wasSessionExpired) {
+      unawaited(reload(force: true));
+    }
   }
 
   @override
@@ -182,16 +200,12 @@ class SalesLiveMapController extends ChangeNotifier {
     super.dispose();
   }
 
-  SalesLiveMapFilter _normalizeRestoredFilter(SalesLiveMapFilter filter) {
-    if (filter.selectedBranchIds == null) {
-      return filter;
-    }
-    return filter.copyWith(selectedAgentIds: null, selectedBranchIds: null);
-  }
-
   Future<void> _loadAgents(String userId) async {
     final stopwatch = _startTraceStopwatch();
     final agents = await _loadAgentsUseCase(userId);
+    if (_isStaleBoundUser(userId)) {
+      return;
+    }
     _logTrace(
       'Sales live map agents loaded',
       <String, Object?>{
@@ -204,7 +218,7 @@ class SalesLiveMapController extends ChangeNotifier {
     );
 
     final normalizedFilter = _state.filter.copyWith(
-      selectedAgentIds: _normalizeSelectedAgentIds(
+      selectedAgentIds: SalesLiveMapFilterNormalizer.normalizeSelectedAgentIds(
         agents: agents,
         selectedAgentIds: _state.filter.selectedAgentIds,
       ),
@@ -216,32 +230,22 @@ class SalesLiveMapController extends ChangeNotifier {
         sessionExpired: false,
       ),
     );
-    unawaited(_sessionService.persistSalesLiveMapFilter(normalizedFilter));
+    _persistFilter(normalizedFilter);
+    if (_isStaleBoundUser(userId)) {
+      return;
+    }
     await reload(reason: SalesLiveMapReloadReason.initial);
   }
 
-  Set<String>? _normalizeSelectedAgentIds({
-    required List<DashboardAgentOption> agents,
-    required Set<String>? selectedAgentIds,
-  }) {
-    final tokenBacked = agents.tokenBackedAgentIds();
-    if (selectedAgentIds == null) {
-      if (tokenBacked.isEmpty || tokenBacked.length == agents.length) {
-        return null;
-      }
-      return Set<String>.unmodifiable(tokenBacked);
-    }
+  bool _isStaleBoundUser(String userId) {
+    return _disposed || _boundUserId != userId;
+  }
 
-    final reconciled = selectedAgentIds.where(tokenBacked.contains).toSet();
-    if (reconciled.isEmpty) {
-      return tokenBacked.isEmpty ? null : Set<String>.unmodifiable(tokenBacked);
-    }
-    if (reconciled.length == tokenBacked.length) {
-      return tokenBacked.length == agents.length
-          ? null
-          : Set<String>.unmodifiable(reconciled);
-    }
-    return Set<String>.unmodifiable(reconciled);
+  /// Fire-and-forget persistence of the live map filter. Persistence
+  /// failures are already logged inside `SalesPreferences`; the controller
+  /// intentionally does not block the UI on disk IO.
+  void _persistFilter(SalesLiveMapFilter filter) {
+    unawaited(_sessionService.persistSalesLiveMapFilter(filter));
   }
 
   Future<SalesLiveMapReloadOutcome> _performReload({
@@ -359,45 +363,8 @@ class SalesLiveMapController extends ChangeNotifier {
     return SalesLiveMapReloadOutcome.completed(_state.result);
   }
 
-  SalesLiveMapFilter _normalizeFilterForSelectedBranches(
-    SalesLiveMapFilter filter,
-  ) {
-    final selectedBranchIds = filter.selectedBranchIds;
-    if (selectedBranchIds == null || selectedBranchIds.isEmpty) {
-      return filter.copyWith(selectedAgentIds: null);
-    }
-
-    final branches =
-        _state.result?.branchOptions ?? const <SalesLiveMapBranchOption>[];
-    final selectedAgents = branches
-        .where((branch) => selectedBranchIds.contains(branch.branchRef))
-        .map((branch) => branch.agentId)
-        .toSet();
-    if (selectedAgents.isEmpty) {
-      return filter;
-    }
-
-    return filter.copyWith(
-      selectedAgentIds: Set<String>.unmodifiable(selectedAgents),
-    );
-  }
-
   SalesLiveMapLoadResult _sessionExpiredResult() {
-    return SalesLiveMapLoadResult(
-      points: const <SalesLiveMapPoint>[],
-      branchOptions: const <SalesLiveMapBranchOption>[],
-      totalRevenue: 0,
-      totalSalesCount: 0,
-      totalBranchCount: 0,
-      mappedBranchCount: 0,
-      mappedMunicipalityCount: 0,
-      queriedAgentCount: 0,
-      plannedAgentCount: 0,
-      failedAgentCount: 0,
-      missingClientTokenAgentCount: 0,
-      skippedOfflineAgentCount: 0,
-      rowCapReachedAgentCount: 0,
-      loadFailed: true,
+    return SalesLiveMapResultBuilder.sessionExpired(
       refreshedAt: DateTime.now(),
     );
   }
@@ -440,7 +407,7 @@ class SalesLiveMapController extends ChangeNotifier {
   bool get _shouldTracePerformance => kDebugMode || kProfileMode;
 
   void _setState(SalesLiveMapPresentationState nextState) {
-    if (_state == nextState) {
+    if (_disposed || _state == nextState) {
       return;
     }
     _state = nextState;

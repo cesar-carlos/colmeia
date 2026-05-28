@@ -5,6 +5,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execu
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_branch_aggregate.dart';
+import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_branch_keys.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_policies.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 
@@ -20,8 +21,11 @@ class SalesLiveMapBranchAggregator {
   /// Aggregates branch rows coming **only** from the sales query report. Used
   /// when there is no catalog page to merge with (e.g. cache-miss + sales-only
   /// path).
+  ///
+  /// Takes a concrete `List` (not `Iterable`) so internal iteration patterns
+  /// cannot accidentally walk a lazy source twice and turn into O(N²).
   List<SalesLiveMapBranchAggregate> aggregateFromSalesReport(
-    Iterable<
+    List<
       AgentQueryExecutionParticipant<ResumoTotalVendasMunicipioFilialPeriodoRow>
     >
     participants,
@@ -231,7 +235,11 @@ class SalesLiveMapBranchAggregator {
   }
 
   String _branchKey(String agentId, int codEmpresa, int codFilial) {
-    return '$agentId:$codEmpresa:$codFilial';
+    return SalesLiveMapBranchKeys.of(
+      agentId: agentId,
+      codEmpresa: codEmpresa,
+      codFilial: codFilial,
+    );
   }
 
   static bool _isPrimaryBranch(int codEmpresa, int codFilial) {

@@ -22,11 +22,11 @@ class SalesLiveMapFilterSection extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final tokens = context.appTokens;
 
-    return Selector<SalesLiveMapController, SalesLiveMapPresentationState>(
-      selector: (_, controller) => controller.state,
-      builder: (context, state, _) {
+    return Selector<SalesLiveMapController, _SalesLiveMapFilterSectionSlice>(
+      selector: (_, controller) =>
+          _SalesLiveMapFilterSectionSlice.fromState(controller.state, l10n),
+      builder: (context, slice, _) {
         final controller = context.read<SalesLiveMapController>();
-        final viewModel = SalesLiveMapViewModel.fromState(state, l10n);
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -37,27 +37,27 @@ class SalesLiveMapFilterSection extends StatelessWidget {
               summaryItems: <SalesCardFilterSummaryItem>[
                 SalesCardFilterSummaryItem(
                   label: l10n.salesLiveMapAgentsLabel,
-                  value: viewModel.agentsSummary,
+                  value: slice.agentsSummary,
                 ),
                 SalesCardFilterSummaryItem(
                   label: l10n.salesLiveMapPeriodLabel,
-                  value: viewModel.periodSummary,
+                  value: slice.periodSummary,
                 ),
                 SalesCardFilterSummaryItem(
                   label: l10n.salesLiveMapDetailLabel,
-                  value: viewModel.detailSummary,
+                  value: slice.detailSummary,
                 ),
                 SalesCardFilterSummaryItem(
-                  label: viewModel.usesMapLabel
+                  label: slice.usesMapLabel
                       ? l10n.salesLiveMapMapLabel
                       : l10n.salesLiveMapVisualLabel,
-                  value: viewModel.visualSummary,
+                  value: slice.visualSummary,
                 ),
               ],
-              enabled: !state.isLoading,
+              enabled: !slice.isLoading,
             ),
-            if (state.hasSelectedBranchFilter ||
-                state.hasNonBranchNonDefaultFilter) ...<Widget>[
+            if (slice.hasSelectedBranchFilter ||
+                slice.hasNonBranchNonDefaultFilter) ...<Widget>[
               SizedBox(height: tokens.gapSm),
               Align(
                 alignment: Alignment.centerLeft,
@@ -65,9 +65,9 @@ class SalesLiveMapFilterSection extends StatelessWidget {
                   spacing: tokens.gapSm,
                   runSpacing: tokens.gapXs,
                   children: <Widget>[
-                    if (state.hasSelectedBranchFilter)
+                    if (slice.hasSelectedBranchFilter)
                       OutlinedButton.icon(
-                        onPressed: state.isLoading
+                        onPressed: slice.isLoading
                             ? null
                             : () => unawaited(
                                 controller.clearSelectedBranches(),
@@ -77,9 +77,9 @@ class SalesLiveMapFilterSection extends StatelessWidget {
                           l10n.salesLiveMapClearBranchSelectionAction,
                         ),
                       ),
-                    if (state.hasNonBranchNonDefaultFilter)
+                    if (slice.hasNonBranchNonDefaultFilter)
                       OutlinedButton.icon(
-                        onPressed: state.isLoading
+                        onPressed: slice.isLoading
                             ? null
                             : () => unawaited(controller.clearSavedFilters()),
                         icon: const Icon(Icons.filter_alt_off_rounded),
@@ -94,4 +94,69 @@ class SalesLiveMapFilterSection extends StatelessWidget {
       },
     );
   }
+}
+
+@immutable
+class _SalesLiveMapFilterSectionSlice {
+  const _SalesLiveMapFilterSectionSlice({
+    required this.agentsSummary,
+    required this.periodSummary,
+    required this.detailSummary,
+    required this.visualSummary,
+    required this.usesMapLabel,
+    required this.isLoading,
+    required this.hasSelectedBranchFilter,
+    required this.hasNonBranchNonDefaultFilter,
+  });
+
+  factory _SalesLiveMapFilterSectionSlice.fromState(
+    SalesLiveMapPresentationState state,
+    AppLocalizations l10n,
+  ) {
+    final viewModel = SalesLiveMapViewModel.fromState(state, l10n);
+    return _SalesLiveMapFilterSectionSlice(
+      agentsSummary: viewModel.agentsSummary,
+      periodSummary: viewModel.periodSummary,
+      detailSummary: viewModel.detailSummary,
+      visualSummary: viewModel.visualSummary,
+      usesMapLabel: viewModel.usesMapLabel,
+      isLoading: state.isLoading,
+      hasSelectedBranchFilter: state.hasSelectedBranchFilter,
+      hasNonBranchNonDefaultFilter: state.hasNonBranchNonDefaultFilter,
+    );
+  }
+
+  final String agentsSummary;
+  final String periodSummary;
+  final String detailSummary;
+  final String visualSummary;
+  final bool usesMapLabel;
+  final bool isLoading;
+  final bool hasSelectedBranchFilter;
+  final bool hasNonBranchNonDefaultFilter;
+
+  @override
+  bool operator ==(Object other) {
+    return other is _SalesLiveMapFilterSectionSlice &&
+        other.agentsSummary == agentsSummary &&
+        other.periodSummary == periodSummary &&
+        other.detailSummary == detailSummary &&
+        other.visualSummary == visualSummary &&
+        other.usesMapLabel == usesMapLabel &&
+        other.isLoading == isLoading &&
+        other.hasSelectedBranchFilter == hasSelectedBranchFilter &&
+        other.hasNonBranchNonDefaultFilter == hasNonBranchNonDefaultFilter;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    agentsSummary,
+    periodSummary,
+    detailSummary,
+    visualSummary,
+    usesMapLabel,
+    isLoading,
+    hasSelectedBranchFilter,
+    hasNonBranchNonDefaultFilter,
+  );
 }

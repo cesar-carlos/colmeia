@@ -15,13 +15,54 @@ const int _kSalesLiveMapKpiNarrowColumns = 2;
 const int _kSalesLiveMapKpiWideColumns = 3;
 const int _kSalesLiveMapKpiExtraWideColumns = 5;
 
+/// View model rendered by [SalesLiveMapKpiGrid]. Decouples the grid from
+/// [SalesLiveMapLoadResult] so the skeleton, tests and future widgets can
+/// supply numeric placeholders without faking a full load result.
+@immutable
+class SalesLiveMapKpiGridModel {
+  const SalesLiveMapKpiGridModel({
+    required this.totalRevenue,
+    required this.totalSalesCount,
+    required this.mappedBranchCount,
+    required this.totalBranchCount,
+    required this.mappedMunicipalityCount,
+    required this.queriedAgentCount,
+    required this.plannedAgentCount,
+    this.locationDiagnostics = const SalesLiveMapLocationDiagnostics(),
+  });
+
+  factory SalesLiveMapKpiGridModel.fromLoadResult(
+    SalesLiveMapLoadResult result,
+  ) {
+    return SalesLiveMapKpiGridModel(
+      totalRevenue: result.totalRevenue,
+      totalSalesCount: result.totalSalesCount,
+      mappedBranchCount: result.mappedBranchCount,
+      totalBranchCount: result.totalBranchCount,
+      mappedMunicipalityCount: result.mappedMunicipalityCount,
+      queriedAgentCount: result.queriedAgentCount,
+      plannedAgentCount: result.plannedAgentCount,
+      locationDiagnostics: result.locationDiagnostics,
+    );
+  }
+
+  final double totalRevenue;
+  final int totalSalesCount;
+  final int mappedBranchCount;
+  final int totalBranchCount;
+  final int mappedMunicipalityCount;
+  final int queriedAgentCount;
+  final int plannedAgentCount;
+  final SalesLiveMapLocationDiagnostics locationDiagnostics;
+}
+
 class SalesLiveMapKpiGrid extends StatelessWidget {
   const SalesLiveMapKpiGrid({
-    required this.result,
+    required this.model,
     super.key,
   });
 
-  final SalesLiveMapLoadResult result;
+  final SalesLiveMapKpiGridModel model;
 
   @override
   Widget build(BuildContext context) {
@@ -50,8 +91,8 @@ class SalesLiveMapKpiGrid extends StatelessWidget {
               child: AppMetricStatCard(
                 leading: const Icon(Icons.payments_outlined),
                 label: l10n.salesLiveMapKpiRevenue,
-                value: AppBrFormatters.compactCurrency(result.totalRevenue),
-                tooltipMessage: AppBrFormatters.currency(result.totalRevenue),
+                value: AppBrFormatters.compactCurrency(model.totalRevenue),
+                tooltipMessage: AppBrFormatters.currency(model.totalRevenue),
                 emphasis: AppMetricStatCardEmphasis.hero,
               ),
             ),
@@ -60,7 +101,7 @@ class SalesLiveMapKpiGrid extends StatelessWidget {
               child: AppMetricStatCard(
                 leading: const Icon(Icons.receipt_long_outlined),
                 label: l10n.salesLiveMapKpiSales,
-                value: _integerFormat.format(result.totalSalesCount),
+                value: _integerFormat.format(model.totalSalesCount),
               ),
             ),
             SizedBox(
@@ -68,7 +109,7 @@ class SalesLiveMapKpiGrid extends StatelessWidget {
               child: AppMetricStatCard(
                 leading: const Icon(Icons.storefront_outlined),
                 label: l10n.salesLiveMapKpiBranchesOnMap,
-                value: '${result.mappedBranchCount}/${result.totalBranchCount}',
+                value: '${model.mappedBranchCount}/${model.totalBranchCount}',
                 tooltipMessage: _branchesOnMapTooltip(l10n),
               ),
             ),
@@ -77,7 +118,7 @@ class SalesLiveMapKpiGrid extends StatelessWidget {
               child: AppMetricStatCard(
                 leading: const Icon(Icons.location_city_outlined),
                 label: l10n.salesLiveMapKpiMunicipalitiesOnMap,
-                value: _integerFormat.format(result.mappedMunicipalityCount),
+                value: _integerFormat.format(model.mappedMunicipalityCount),
               ),
             ),
             SizedBox(
@@ -86,7 +127,7 @@ class SalesLiveMapKpiGrid extends StatelessWidget {
                 leading: const Icon(Icons.hub_outlined),
                 label: l10n.salesLiveMapKpiQueriedAgents,
                 value:
-                    '${result.queriedAgentCount}/${result.plannedAgentCount}',
+                    '${model.queriedAgentCount}/${model.plannedAgentCount}',
               ),
             ),
           ],
@@ -96,7 +137,7 @@ class SalesLiveMapKpiGrid extends StatelessWidget {
   }
 
   String? _branchesOnMapTooltip(AppLocalizations l10n) {
-    final diagnostics = result.locationDiagnostics;
+    final diagnostics = model.locationDiagnostics;
     if (!diagnostics.hasAnySignal) {
       return null;
     }

@@ -23,7 +23,7 @@ class SalesLiveMapAttentionPanel extends StatelessWidget {
     return AppInlineErrorPanel(
       tone: AppInlinePanelTone.informational,
       title: l10n.salesLiveMapPartialTitle,
-      message: messages.join(' '),
+      message: messages.join('\n'),
       actions:
           result.unmappedBranchOptions.isEmpty &&
               result.noSalesAgentOptions.isEmpty

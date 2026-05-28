@@ -101,6 +101,21 @@ class _BranchSelectionPanel extends StatefulWidget {
 
 class _BranchSelectionPanelState extends State<_BranchSelectionPanel> {
   final TextEditingController _searchController = TextEditingController();
+  late List<_PreparedBranch> _preparedBranches;
+
+  @override
+  void initState() {
+    super.initState();
+    _preparedBranches = _prepareBranches(widget.branches);
+  }
+
+  @override
+  void didUpdateWidget(covariant _BranchSelectionPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.branches, widget.branches)) {
+      _preparedBranches = _prepareBranches(widget.branches);
+    }
+  }
 
   @override
   void dispose() {
@@ -108,32 +123,24 @@ class _BranchSelectionPanelState extends State<_BranchSelectionPanel> {
     super.dispose();
   }
 
-  List<SalesLiveMapBranchOption> _filterBranches(String rawQuery) {
+  static List<_PreparedBranch> _prepareBranches(
+    List<SalesLiveMapBranchOption> branches,
+  ) {
+    return branches.map(_PreparedBranch.fromOption).toList(growable: false);
+  }
+
+  List<_PreparedBranch> _filterBranches(String rawQuery) {
     final normalizedQuery = AppLocationLookupNormalizer.normalizeAddressLine(
       rawQuery,
     );
-    final branches = widget.branches;
     if (normalizedQuery == null || normalizedQuery.isEmpty) {
-      return branches;
+      return _preparedBranches;
     }
-    return branches
-        .where((branch) {
-          final searchTokens = resolveAppBranchDisplayModel(
-            registrationName: branch.registrationName,
-            fantasyName: branch.fantasyName,
-            fallbackName: branch.registrationName,
-            extraSearchTerms: <String>[
-              branch.city,
-              branch.uf,
-              branch.agentName,
-            ],
-          ).searchTokens;
-          final normalizedTokens =
-              AppLocationLookupNormalizer.normalizeAddressLine(
-                searchTokens,
-              );
-          return normalizedTokens?.contains(normalizedQuery) ?? false;
-        })
+    return _preparedBranches
+        .where(
+          (prepared) =>
+              prepared.normalizedSearchText?.contains(normalizedQuery) ?? false,
+        )
         .toList(growable: false);
   }
 
@@ -183,6 +190,11 @@ class _BranchSelectionPanelState extends State<_BranchSelectionPanel> {
             textInputAction: TextInputAction.search,
           ),
           SizedBox(height: tokens.gapSm),
+          // ValueListenableBuilder rebuilds on every TextEditingValue change
+          // (text + selection + composition). We only care about the text, so
+          // a Selector-like equality on .text would also work; the cost is
+          // dominated by the list rebuild below, which is now cheap because
+          // _preparedBranches is pre-computed.
           ValueListenableBuilder<TextEditingValue>(
             valueListenable: _searchController,
             builder: (context, value, _) {
@@ -198,27 +210,26 @@ class _BranchSelectionPanelState extends State<_BranchSelectionPanel> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  for (final branch in filteredBranches)
+                  for (final prepared in filteredBranches)
                     CheckboxListTile(
+                      key: ValueKey<SalesLiveMapBranchRef>(
+                        prepared.branch.branchRef,
+                      ),
                       dense: true,
                       contentPadding: EdgeInsets.zero,
                       value: widget.selectedBranchIds.contains(
-                        branch.branchRef,
+                        prepared.branch.branchRef,
                       ),
                       onChanged: (checked) => widget.onChanged(
-                        branch: branch,
+                        branch: prepared.branch,
                         checked: checked,
                       ),
                       title: Text(
-                        resolveAppBranchDisplayModel(
-                          registrationName: branch.registrationName,
-                          fantasyName: branch.fantasyName,
-                          fallbackName: branch.registrationName,
-                        ).primaryName,
+                        prepared.primaryName,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      subtitle: _BranchSelectionSubtitle(branch: branch),
+                      subtitle: _BranchSelectionSubtitle(prepared: prepared),
                     ),
                 ],
               );
@@ -230,21 +241,57 @@ class _BranchSelectionPanelState extends State<_BranchSelectionPanel> {
   }
 }
 
-class _BranchSelectionSubtitle extends StatelessWidget {
-  const _BranchSelectionSubtitle({required this.branch});
+/// Cached projection of a `SalesLiveMapBranchOption` used by the branch
+/// picker — pre-computes the normalized search corpus and the primary /
+/// secondary display names once per `widget.branches` update so each
+/// keystroke avoids per-row allocations.
+@immutable
+class _PreparedBranch {
+  const _PreparedBranch({
+    required this.branch,
+    required this.primaryName,
+    required this.secondaryName,
+    required this.normalizedSearchText,
+  });
+
+  factory _PreparedBranch.fromOption(SalesLiveMapBranchOption branch) {
+    final display = resolveAppBranchDisplayModel(
+      registrationName: branch.registrationName,
+      fantasyName: branch.fantasyName,
+      fallbackName: branch.registrationName,
+      extraSearchTerms: <String>[
+        branch.city,
+        branch.uf,
+        branch.agentName,
+      ],
+    );
+    return _PreparedBranch(
+      branch: branch,
+      primaryName: display.primaryName,
+      secondaryName: display.secondaryName,
+      normalizedSearchText: AppLocationLookupNormalizer.normalizeAddressLine(
+        display.searchTokens,
+      ),
+    );
+  }
 
   final SalesLiveMapBranchOption branch;
+  final String primaryName;
+  final String? secondaryName;
+  final String? normalizedSearchText;
+}
+
+class _BranchSelectionSubtitle extends StatelessWidget {
+  const _BranchSelectionSubtitle({required this.prepared});
+
+  final _PreparedBranch prepared;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final colorScheme = Theme.of(context).colorScheme;
-    final display = resolveAppBranchDisplayModel(
-      registrationName: branch.registrationName,
-      fantasyName: branch.fantasyName,
-      fallbackName: branch.registrationName,
-    );
-    final secondaryName = display.secondaryName;
+    final secondaryName = prepared.secondaryName;
+    final branch = prepared.branch;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

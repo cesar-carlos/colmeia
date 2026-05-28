@@ -1,5 +1,3 @@
-import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
-import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart';
 import 'package:colmeia/features/sales/presentation/models/sales_live_map_visual_spec.dart';
@@ -16,6 +14,17 @@ const int _kSalesLiveMapSkeletonBranchCount = 12;
 const int _kSalesLiveMapSkeletonMunicipalityCount = 8;
 const int _kSalesLiveMapSkeletonAgentCount = 3;
 
+const SalesLiveMapKpiGridModel _kSalesLiveMapSkeletonKpiModel =
+    SalesLiveMapKpiGridModel(
+      totalRevenue: _kSalesLiveMapSkeletonRevenue,
+      totalSalesCount: _kSalesLiveMapSkeletonSalesCount,
+      mappedBranchCount: _kSalesLiveMapSkeletonBranchCount,
+      totalBranchCount: _kSalesLiveMapSkeletonBranchCount,
+      mappedMunicipalityCount: _kSalesLiveMapSkeletonMunicipalityCount,
+      queriedAgentCount: _kSalesLiveMapSkeletonAgentCount,
+      plannedAgentCount: _kSalesLiveMapSkeletonAgentCount,
+    );
+
 class SalesLiveMapInitialSkeleton extends StatelessWidget {
   const SalesLiveMapInitialSkeleton({super.key});
 
@@ -27,24 +36,7 @@ class SalesLiveMapInitialSkeleton extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          const SalesLiveMapKpiGrid(
-            result: SalesLiveMapLoadResult(
-              points: <SalesLiveMapPoint>[],
-              branchOptions: <SalesLiveMapBranchOption>[],
-              totalRevenue: _kSalesLiveMapSkeletonRevenue,
-              totalSalesCount: _kSalesLiveMapSkeletonSalesCount,
-              totalBranchCount: _kSalesLiveMapSkeletonBranchCount,
-              mappedBranchCount: _kSalesLiveMapSkeletonBranchCount,
-              mappedMunicipalityCount: _kSalesLiveMapSkeletonMunicipalityCount,
-              queriedAgentCount: _kSalesLiveMapSkeletonAgentCount,
-              plannedAgentCount: _kSalesLiveMapSkeletonAgentCount,
-              failedAgentCount: 0,
-              missingClientTokenAgentCount: 0,
-              skippedOfflineAgentCount: 0,
-              rowCapReachedAgentCount: 0,
-              refreshedAt: null,
-            ),
-          ),
+          const SalesLiveMapKpiGrid(model: _kSalesLiveMapSkeletonKpiModel),
           SizedBox(height: tokens.sectionSpacing),
           SalesLiveMapChartPanel(
             mode: SalesLiveMapChartPanelMode.inline,

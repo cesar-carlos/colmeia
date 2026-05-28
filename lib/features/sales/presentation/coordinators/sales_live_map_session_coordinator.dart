@@ -43,6 +43,16 @@ class SalesLiveMapSessionCoordinator {
     return (force: force, reason: reason);
   }
 
+  /// Drops any pending manual reload that was never consumed by
+  /// `performAutoRefreshReload` (e.g. because `reloadWithAutoRefresh`
+  /// short-circuited while another reload was already active). Prevents a
+  /// subsequent auto-refresh tick from inheriting `manual` semantics it did
+  /// not earn.
+  void clearPendingReloadIfNotConsumed() {
+    pendingReloadForceCount = 0;
+    pendingReloadReason = null;
+  }
+
   /// Resolves the next "queued tick" threshold from the current auto-refresh
   /// configuration, or null when scheduling is paused.
   DateTime? resolveQueuedTickThreshold({

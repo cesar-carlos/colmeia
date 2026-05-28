@@ -9,6 +9,14 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart
 /// Mutable aggregate built per branch while mapping `LoadSalesLiveMapUseCase`
 /// reports. Owns location metadata, sales counters, and the optional pending
 /// / unavailable status applied when sales data is incomplete.
+///
+/// **Mutability is intentional**: `SalesLiveMapBranchAggregator` mutates
+/// `totalVenda`, `qtdVendas`, and the `salesData*` flags as it folds rows
+/// into the aggregate, avoiding short-lived intermediate allocations on
+/// hot paths. Instances must not be shared across loads — the aggregator
+/// produces fresh aggregates per `loadProgressive` call. Do **not** expose
+/// these objects to the presentation layer; map them to
+/// `SalesLiveMapBranchOption` or `SalesLiveMapPoint` first.
 class SalesLiveMapBranchAggregate {
   SalesLiveMapBranchAggregate({
     required this.agentId,

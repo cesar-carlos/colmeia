@@ -10,6 +10,7 @@ import 'package:colmeia/core/refresh/auto_refresh_ui_state.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
+import 'package:colmeia/features/sales/presentation/auto_refresh/sales_live_map_auto_refresh_observer.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
 import 'package:colmeia/features/sales/presentation/coordinators/sales_live_map_session_coordinator.dart';
 import 'package:colmeia/features/sales/presentation/view_models/sales_live_map_view_model.dart';
@@ -19,7 +20,6 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_filte
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_filters_sheet.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_fullscreen_chart.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_intro_section.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_scheduling_slice.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:flutter/material.dart';
@@ -60,14 +60,25 @@ class _SalesLiveMapSession extends StatefulWidget {
 class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
     with AutoRefreshStateMixin<_SalesLiveMapSession> {
   late final SalesLiveMapController _controller;
+  late final SalesLiveMapAutoRefreshObserver _autoRefreshObserver;
   final SalesLiveMapSessionCoordinator _coordinator =
       SalesLiveMapSessionCoordinator();
 
   @override
   void initState() {
     super.initState();
-    _controller = context.read<SalesLiveMapController>()
-      ..addListener(_handleControllerChanged);
+    _controller = context.read<SalesLiveMapController>();
+    _autoRefreshObserver = SalesLiveMapAutoRefreshObserver(
+      coordinator: _coordinator,
+      readAutoRefreshOption: () => autoRefreshOption,
+      readAutoRefreshNextDueAt: () => autoRefreshNextDueAt,
+      readCurrentAutoRefreshTime: () => currentAutoRefreshTime,
+      readAutoRefreshReloadInProgress: () => autoRefreshReloadInProgress,
+      refreshAutoRefreshScheduling: refreshAutoRefreshScheduling,
+      recordAutoRefreshSuccessfulReload: recordAutoRefreshSuccessfulReload,
+      onCloseFullscreenRequested: _maybePopChartFullscreenAfterDataChanged,
+    );
+    _controller.addListener(_handleControllerChanged);
     _coordinator.lastCloseFullscreenRequestId =
         _controller.state.closeFullscreenRequestId;
     _scheduleInitialize();
@@ -142,7 +153,11 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
 
   Future<void> _reload({bool force = false}) async {
     _coordinator.markManualReload(force: force);
-    await reloadWithAutoRefresh(force: force);
+    try {
+      await reloadWithAutoRefresh(force: force);
+    } finally {
+      _coordinator.clearPendingReloadIfNotConsumed();
+    }
   }
 
   @override
@@ -180,53 +195,7 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
     if (!mounted) {
       return;
     }
-    final state = _controller.state;
-    final wasControllerLoading = _coordinator.wasControllerLoading;
-    if (state.isLoading &&
-        !wasControllerLoading &&
-        !autoRefreshReloadInProgress) {
-      _coordinator.controllerReloadQueuedTickThreshold = _coordinator
-          .resolveQueuedTickThreshold(
-            option: autoRefreshOption,
-            nextDueAt: autoRefreshNextDueAt,
-            now: currentAutoRefreshTime,
-          );
-    }
-    if (state.isLoading) {
-      _coordinator.lastRecordedSuccessfulRefreshAt = null;
-    }
-    if (!state.isLoading && !state.canScheduleAutoRefresh) {
-      _coordinator.controllerReloadQueuedTickThreshold = null;
-    }
-    final schedulingSlice = SalesLiveMapSchedulingSlice.fromState(state);
-    if (_coordinator.lastSchedulingSlice != schedulingSlice) {
-      _coordinator.lastSchedulingSlice = schedulingSlice;
-      refreshAutoRefreshScheduling();
-    }
-    final successfulRefreshAt = SalesLiveMapViewModel.resolveSuccessfulRefreshAt(
-      state,
-    );
-    if (successfulRefreshAt != null &&
-        !autoRefreshReloadInProgress &&
-        successfulRefreshAt != _coordinator.lastRecordedSuccessfulRefreshAt) {
-      final shouldQueueElapsedTick = _coordinator
-          .didControllerReloadCrossQueuedTickThreshold(currentAutoRefreshTime);
-      _coordinator.lastRecordedSuccessfulRefreshAt = successfulRefreshAt;
-      _coordinator.controllerReloadQueuedTickThreshold = null;
-      recordAutoRefreshSuccessfulReload(
-        successfulRefreshAt,
-        scheduleNextCycle: !shouldQueueElapsedTick,
-      );
-    } else if (!state.isLoading && wasControllerLoading) {
-      _coordinator.controllerReloadQueuedTickThreshold = null;
-    }
-    _coordinator.wasControllerLoading = state.isLoading;
-    if (state.closeFullscreenRequestId !=
-        _coordinator.lastCloseFullscreenRequestId) {
-      _coordinator.lastCloseFullscreenRequestId =
-          state.closeFullscreenRequestId;
-      _maybePopChartFullscreenAfterDataChanged();
-    }
+    _autoRefreshObserver.onControllerChanged(_controller.state);
   }
 
   Future<void> _openFiltersSheet() async {
@@ -251,26 +220,40 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
     if (_coordinator.liveMapFullscreenOpen) {
       return;
     }
+    final router = GoRouter.maybeOf(context);
+    if (router != null &&
+        AppRoute.fromLocation(router.state.matchedLocation) ==
+            AppRoute.chartFullscreen) {
+      return;
+    }
     final l10n = AppLocalizations.of(context);
     _setLiveMapFullscreenOpen(true);
 
+    Future<void>? pushFuture;
+    try {
+      pushFuture = context.pushChartFullscreen<void>(
+        extra: AppChartFullscreenRouteExtra(
+          chartSemanticsLabel: l10n.salesLiveMapChartTitle,
+          headerBuilder: (_) =>
+              SalesLiveMapFullscreenHeader(controller: _controller),
+          chartBuilder: (_) =>
+              SalesLiveMapFullscreenChart(controller: _controller),
+        ),
+      );
+    } on Object {
+      if (mounted) {
+        _setLiveMapFullscreenOpen(false);
+      }
+      rethrow;
+    }
+
     unawaited(
-      context
-          .pushChartFullscreen<void>(
-            extra: AppChartFullscreenRouteExtra(
-              chartSemanticsLabel: l10n.salesLiveMapChartTitle,
-              headerBuilder: (_) =>
-                  SalesLiveMapFullscreenHeader(controller: _controller),
-              chartBuilder: (_) =>
-                  SalesLiveMapFullscreenChart(controller: _controller),
-            ),
-          )
-          .whenComplete(() {
-            if (!mounted) {
-              return;
-            }
-            _setLiveMapFullscreenOpen(false);
-          }),
+      pushFuture.whenComplete(() {
+        if (!mounted) {
+          return;
+        }
+        _setLiveMapFullscreenOpen(false);
+      }),
     );
   }
 

@@ -5,11 +5,14 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
+import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_branch_location_cache.dart';
+import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_in_memory_catalog_cache.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
 import 'package:colmeia/features/sales/application/ports/sales_live_map_catalog_cache.dart';
 import 'package:colmeia/features/sales/application/ports/sales_preferences_port.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
+import 'package:colmeia/features/sales/application/sales_live_map_policies.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_refresh_metrics.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/data/sales_live_map_catalog_disk_cache.dart';
@@ -61,6 +64,18 @@ void registerInjectorSales(GetIt getIt) {
     ..registerLazySingleton<SalesLiveMapRefreshMetrics>(
       SalesLiveMapRefreshMetrics.new,
     )
+    ..registerLazySingleton<SalesLiveMapInMemoryCatalogCache>(
+      () => SalesLiveMapInMemoryCatalogCache(
+        maxEntries: SalesLiveMapPolicies.branchCatalogCacheMaxEntries,
+        ttl: SalesLiveMapPolicies.branchCatalogCacheTtl,
+      ),
+    )
+    ..registerLazySingleton<SalesLiveMapBranchLocationCache>(
+      () => SalesLiveMapBranchLocationCache(
+        maxEntries: SalesLiveMapPolicies.branchLocationCacheMaxEntries,
+        ttl: SalesLiveMapPolicies.branchLocationCacheTtl,
+      ),
+    )
     ..registerLazySingleton<SalesLiveMapPointResolver>(
       () => SalesLiveMapPointResolverAdapter(
         delegate: AppBrazilStoreSalesPointResolver(
@@ -76,6 +91,8 @@ void registerInjectorSales(GetIt getIt) {
         getIt<LoadCadastroFilialAcrossAgentsUseCase>(),
         getIt<SalesLiveMapPointResolver>(),
         refreshMetrics: getIt<SalesLiveMapRefreshMetrics>(),
+        branchCatalogCache: getIt<SalesLiveMapInMemoryCatalogCache>(),
+        branchLocationCache: getIt<SalesLiveMapBranchLocationCache>(),
       ),
     );
 }

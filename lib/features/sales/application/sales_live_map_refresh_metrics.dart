@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:colmeia/features/sales/application/sales_live_map_catalog_scope.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
 import 'package:flutter/foundation.dart';
@@ -14,7 +16,7 @@ enum SalesLiveMapCatalogSource {
 
 @immutable
 class SalesLiveMapRefreshMetricEvent {
-  const SalesLiveMapRefreshMetricEvent({
+  SalesLiveMapRefreshMetricEvent({
     required this.recordedAt,
     required this.reloadReason,
     required this.catalogScopeKind,
@@ -29,13 +31,18 @@ class SalesLiveMapRefreshMetricEvent {
     required this.plannedAgentCount,
     required this.queriedAgentCount,
     required this.rowCapReachedAgentCount,
-    required this.paginationStalledAgentIds,
+    required Set<String> paginationStalledAgentIds,
     required this.partialFailure,
     required this.loadFailed,
     this.catalogSalesBatchMerged = false,
     this.mergeWaveSize = 0,
-    this.partialIssueBreakdown,
-  });
+    List<String>? partialIssueBreakdown,
+  }) : paginationStalledAgentIds = Set<String>.unmodifiable(
+         paginationStalledAgentIds,
+       ),
+       partialIssueBreakdown = partialIssueBreakdown == null
+           ? null
+           : List<String>.unmodifiable(partialIssueBreakdown);
 
   final DateTime recordedAt;
   final SalesLiveMapReloadReason reloadReason;
@@ -95,20 +102,24 @@ class SalesLiveMapRefreshMetrics {
   });
 
   final int maxEntries;
-  final List<SalesLiveMapRefreshMetricEvent> _events =
-      <SalesLiveMapRefreshMetricEvent>[];
+  // ListQueue gives O(1) push/pop on both ends so the bounded buffer trims
+  // older entries without the O(n) shift of `List.removeAt(0)`.
+  final ListQueue<SalesLiveMapRefreshMetricEvent> _events =
+      ListQueue<SalesLiveMapRefreshMetricEvent>();
 
   void record(SalesLiveMapRefreshMetricEvent event) {
-    _events.add(event);
-    if (_events.length > maxEntries) {
-      _events.removeAt(0);
+    _events.addLast(event);
+    while (_events.length > maxEntries) {
+      _events.removeFirst();
     }
   }
 
   List<SalesLiveMapRefreshMetricEvent> getRecentEvents({
     int limit = _kSalesLiveMapRefreshMetricsDefaultLimit,
   }) {
-    return _events.reversed.take(limit).toList(growable: false);
+    return _events.toList(growable: false).reversed.take(limit).toList(
+      growable: false,
+    );
   }
 
   SalesLiveMapRefreshMetricEvent? get latest =>

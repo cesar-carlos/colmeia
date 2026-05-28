@@ -19,7 +19,9 @@ class SalesLiveMapInMemoryCatalogCache {
 
   /// Returns the cached page when one exists for [userId] / [scope] and is
   /// still within [ttl] relative to [now]. Expired entries are evicted on
-  /// access and `null` is returned.
+  /// access and `null` is returned. Successful reads promote the entry to
+  /// the most-recent position so eviction follows true LRU semantics (last
+  /// touched, not last written).
   CadastroFilialAcrossAgentsPageResult? read({
     required String userId,
     required SalesLiveMapCatalogScope scope,
@@ -34,6 +36,9 @@ class SalesLiveMapInMemoryCatalogCache {
       _entries.remove(key);
       return null;
     }
+    _entries
+      ..remove(key)
+      ..[key] = cached;
     return cached.result;
   }
 

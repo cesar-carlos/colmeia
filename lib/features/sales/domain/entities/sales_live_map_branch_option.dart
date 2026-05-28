@@ -1,5 +1,7 @@
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
+import 'package:flutter/foundation.dart';
 
+@immutable
 class SalesLiveMapBranchOption {
   const SalesLiveMapBranchOption({
     required this.id,
@@ -29,5 +31,35 @@ class SalesLiveMapBranchOption {
     agentId: agentId,
     codEmpresa: codEmpresa,
     codFilial: codFilial,
+  );
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is SalesLiveMapBranchOption &&
+        other.id == id &&
+        other.agentId == agentId &&
+        other.agentName == agentName &&
+        other.codEmpresa == codEmpresa &&
+        other.codFilial == codFilial &&
+        other.registrationName == registrationName &&
+        other.city == city &&
+        other.uf == uf &&
+        other.fantasyName == fantasyName;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    agentId,
+    agentName,
+    codEmpresa,
+    codFilial,
+    registrationName,
+    city,
+    uf,
+    fantasyName,
   );
 }

@@ -84,7 +84,7 @@ class SalesLiveMapViewModel {
     if (availableAgents.isEmpty) {
       return AutoRefreshPauseReason.noEligibleSelection;
     }
-    final tokenBackedAgentIds = availableAgents.tokenBackedAgentIds();
+    final tokenBackedAgentIds = state.tokenBackedAgentIds;
     if (tokenBackedAgentIds.isEmpty) {
       return AutoRefreshPauseReason.missingLocalToken;
     }
@@ -128,7 +128,7 @@ class SalesLiveMapViewModel {
   /// Equivalent to the previous `state.canScheduleAutoRefresh` getter; kept
   /// here so product rules live in the view model instead of the state.
   static bool canScheduleAutoRefresh(SalesLiveMapPresentationState state) {
-    final tokenBacked = state.availableAgents.tokenBackedAgentIds();
+    final tokenBacked = state.tokenBackedAgentIds;
     if (tokenBacked.isEmpty) {
       return false;
     }

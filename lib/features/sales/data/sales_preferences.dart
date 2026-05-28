@@ -37,6 +37,9 @@ class SalesPreferences implements SalesPreferencesPort {
         'SalesPreferences.setSelectedAgentId failed',
         error: e,
         stackTrace: st,
+        context: const <String, Object?>{
+          'operation': 'SalesPreferences',
+        },
       );
     }
   }
@@ -222,36 +225,49 @@ class SalesPreferences implements SalesPreferencesPort {
 
   @override
   Future<void> persistSalesLiveMapFilter(SalesLiveMapFilter filter) async {
-    final encoded = <String, Object?>{
-      'period_mode': filter.periodMode.name,
-      'map_detail': filter.detailLevel.name,
-      'map_visual': filter.markerVisual.name,
-    };
+    try {
+      final encoded = <String, Object?>{
+        'period_mode': filter.periodMode.name,
+        'map_detail': filter.detailLevel.name,
+        'map_visual': filter.markerVisual.name,
+      };
 
-    final selected = filter.selectedAgentIds;
-    if (selected != null && selected.isNotEmpty) {
-      encoded['selected_agent_ids'] = (List<String>.from(selected)..sort());
-    }
-    final selectedBranches = filter.selectedBranchIds;
-    if (selectedBranches != null && selectedBranches.isNotEmpty) {
-      encoded['selected_branch_ids'] =
-          selectedBranches
-              .map(SalesLiveMapBranchRefCodec.encode)
-              .toList(growable: false)
-            ..sort();
-    }
-    encoded['metric'] = filter.metric.name;
+      final selected = filter.selectedAgentIds;
+      if (selected != null && selected.isNotEmpty) {
+        encoded['selected_agent_ids'] = (List<String>.from(selected)..sort());
+      }
+      final selectedBranches = filter.selectedBranchIds;
+      if (selectedBranches != null && selectedBranches.isNotEmpty) {
+        encoded['selected_branch_ids'] =
+            selectedBranches
+                .map(SalesLiveMapBranchRefCodec.encode)
+                .toList(growable: false)
+              ..sort();
+      }
+      encoded['metric'] = filter.metric.name;
 
-    final customRange = filter.customDateRange;
-    if (filter.periodMode == SalesLiveMapPeriodMode.customRange &&
-        customRange != null) {
-      encoded['custom_range_start_ms'] =
-          customRange.startInclusive.millisecondsSinceEpoch;
-      encoded['custom_range_end_ms'] =
-          customRange.endInclusive.millisecondsSinceEpoch;
-    }
+      final customRange = filter.customDateRange;
+      if (filter.periodMode == SalesLiveMapPeriodMode.customRange &&
+          customRange != null) {
+        // Stored as wall-clock epoch ms; range carries calendar-day semantics
+        // and is read back in the same way (local-aware).
+        encoded['custom_range_start_ms'] =
+            customRange.startInclusive.millisecondsSinceEpoch;
+        encoded['custom_range_end_ms'] =
+            customRange.endInclusive.millisecondsSinceEpoch;
+      }
 
-    await persistCardFilters(salesLiveMapCardId, encoded);
+      await persistCardFilters(salesLiveMapCardId, encoded);
+    } on Object catch (e, st) {
+      AppLogger.warning(
+        'SalesPreferences.persistSalesLiveMapFilter failed',
+        error: e,
+        stackTrace: st,
+        context: const <String, Object?>{
+          'operation': 'SalesPreferences',
+        },
+      );
+    }
   }
 
   @override
@@ -298,33 +314,45 @@ class SalesPreferences implements SalesPreferencesPort {
     required String cardId,
     required AutoRefreshSnapshot snapshot,
   }) async {
-    final store = PersistedPageSessionStore(
-      prefs: _prefs,
-      namespace: 'colmeia_sales_card.$cardId',
-    );
-    final option = snapshot.option;
-    if (option == null) {
+    try {
+      final store = PersistedPageSessionStore(
+        prefs: _prefs,
+        namespace: 'colmeia_sales_card.$cardId',
+      );
+      final option = snapshot.option;
+      if (option == null) {
+        await store.persistJsonMap(
+          suffix: _autoRefreshSuffix,
+          value: _disabledAutoRefreshSnapshot,
+        );
+        return;
+      }
       await store.persistJsonMap(
         suffix: _autoRefreshSuffix,
-        value: _disabledAutoRefreshSnapshot,
+        value: <String, Object?>{
+          'option_id': option.id,
+          if (snapshot.lastSuccessfulRefreshAt != null)
+            'last_successful_refresh_at_ms':
+                snapshot.lastSuccessfulRefreshAt!.millisecondsSinceEpoch,
+          if (snapshot.nextDueAt != null)
+            'next_due_at_ms': snapshot.nextDueAt!.millisecondsSinceEpoch,
+          if (snapshot.remainingDelay != null)
+            'remaining_delay_ms': snapshot.remainingDelay!.inMilliseconds,
+          if (snapshot.failureStreak > 0)
+            'failure_streak': snapshot.failureStreak,
+        },
       );
-      return;
+    } on Object catch (e, st) {
+      AppLogger.warning(
+        'SalesPreferences.persistAutoRefreshSnapshot failed',
+        error: e,
+        stackTrace: st,
+        context: <String, Object?>{
+          'operation': 'SalesPreferences',
+          'cardId': cardId,
+        },
+      );
     }
-    await store.persistJsonMap(
-      suffix: _autoRefreshSuffix,
-      value: <String, Object?>{
-        'option_id': option.id,
-        if (snapshot.lastSuccessfulRefreshAt != null)
-          'last_successful_refresh_at_ms':
-              snapshot.lastSuccessfulRefreshAt!.millisecondsSinceEpoch,
-        if (snapshot.nextDueAt != null)
-          'next_due_at_ms': snapshot.nextDueAt!.millisecondsSinceEpoch,
-        if (snapshot.remainingDelay != null)
-          'remaining_delay_ms': snapshot.remainingDelay!.inMilliseconds,
-        if (snapshot.failureStreak > 0)
-          'failure_streak': snapshot.failureStreak,
-      },
-    );
   }
 
   static const String _monthlyPnlBarChartSuffix = 'bar_chart';
@@ -526,6 +554,12 @@ class SalesPreferences implements SalesPreferencesPort {
     if (startMs is! int || endMs is! int) {
       return null;
     }
+    // The persisted millis were captured at write time as
+    // `localDateTime.millisecondsSinceEpoch` (calendar-day semantics in the
+    // user's then-current timezone). We restore back into the local timezone
+    // intentionally so the same calendar days appear in the picker. Users
+    // who change timezones between sessions will see the wall-clock day
+    // shift by the offset — acceptable for a single-timezone product.
     final range = DashboardDateRange.fromOrderedEndpoints(
       DateTime.fromMillisecondsSinceEpoch(startMs),
       DateTime.fromMillisecondsSinceEpoch(endMs),

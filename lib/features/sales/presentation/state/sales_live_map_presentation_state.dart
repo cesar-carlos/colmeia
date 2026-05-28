@@ -6,6 +6,12 @@ import 'package:colmeia/features/sales/presentation/view_models/sales_live_map_v
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/foundation.dart';
 
+/// Identity-keyed cache for `SalesLiveMapPresentationState.tokenBackedAgentIds`.
+/// `Expando` preserves the `const` constructor and weak-references state
+/// instances so cached sets are reclaimed with their owners.
+final Expando<Set<String>> _tokenBackedAgentIdsExpando =
+    Expando<Set<String>>('SalesLiveMapPresentationState.tokenBackedAgentIds');
+
 @immutable
 class SalesLiveMapPresentationState {
   const SalesLiveMapPresentationState({
@@ -49,6 +55,21 @@ class SalesLiveMapPresentationState {
 
   bool get canScheduleAutoRefresh =>
       SalesLiveMapViewModel.canScheduleAutoRefresh(this);
+
+  /// Memoized projection of `availableAgents` to the subset of agent ids
+  /// that carry a local client token. Recomputed on demand per state
+  /// instance and cached via an external `Expando`, so neighbouring slices
+  /// can read it multiple times per notification without rebuilding the
+  /// set each time.
+  Set<String> get tokenBackedAgentIds {
+    final cached = _tokenBackedAgentIdsExpando[this];
+    if (cached != null) {
+      return cached;
+    }
+    final computed = availableAgents.tokenBackedAgentIds();
+    _tokenBackedAgentIdsExpando[this] = computed;
+    return computed;
+  }
 
   bool get canReload =>
       !isLoading && (sessionExpired || availableAgents.isNotEmpty);
