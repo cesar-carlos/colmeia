@@ -1,9 +1,13 @@
 import 'package:colmeia/core/cache/app_cache_store.dart';
 import 'package:colmeia/core/config/app_environment.dart';
+import 'package:colmeia/core/network/auth_session_accessor.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
+import 'package:colmeia/core/socket/relay/relay_conversation_manager.dart';
+import 'package:colmeia/core/socket/relay/relay_conversation_pre_warmer.dart';
 import 'package:colmeia/core/socket/socket_command_dispatcher.dart';
 import 'package:colmeia/features/client_agents/application/client_agent_token_draft_store.dart';
 import 'package:colmeia/features/client_agents/application/client_agents_page_session_service.dart';
+import 'package:colmeia/features/client_agents/application/client_approved_agents_relay_pre_warm_loader.dart';
 import 'package:colmeia/features/client_agents/application/services/agent_presence_poller.dart';
 import 'package:colmeia/features/client_agents/application/usecases/approve_owner_access_request_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/discard_queued_client_agent_request_access_use_case.dart';
@@ -217,6 +221,31 @@ void registerInjectorClientAgents(GetIt getIt) {
           sink: getIt<SocketAgentPresenceStream>().sink,
         ),
         dispose: (poller) => poller.dispose(),
+      );
+  }
+
+  // Relay conversation pre-warm: opens `relay:conversation.start` for the
+  // client's approved agents as soon as the consumer socket is connected,
+  // so the first cross-agent `mergeAll` wave does not pay one synchronous
+  // round-trip per agent. Lives here because it bridges the relay manager
+  // (core/socket) and the client_agents data layer; the implementation
+  // itself stays in `core/socket/relay/` and only depends on a callback.
+  if (getIt.isRegistered<RelayConversationManager>()) {
+    getIt
+      ..registerLazySingleton<ClientApprovedAgentsRelayPreWarmLoader>(
+        () => ClientApprovedAgentsRelayPreWarmLoader(
+          sessionAccessor: getIt<AuthSessionAccessor>(),
+          approvedAgentsRepository: getIt<ClientAgentsRepository>(),
+        ),
+      )
+      ..registerLazySingleton<RelayConversationPreWarmer>(
+        () => RelayConversationPreWarmer(
+          connection: getIt<ConsumerSocketConnection>(),
+          conversationManager: getIt<RelayConversationManager>(),
+          loadAgentIds: getIt<ClientApprovedAgentsRelayPreWarmLoader>()
+              .loadApprovedAgentIds,
+        ),
+        dispose: (preWarmer) => preWarmer.dispose(),
       );
   }
 }

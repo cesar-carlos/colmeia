@@ -15,11 +15,14 @@ import 'package:colmeia/core/network/auth_session_accessor.dart';
 import 'package:colmeia/core/network/auth_session_events.dart';
 import 'package:colmeia/core/network/dio_transient_hub_error.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
+import 'package:colmeia/core/socket/relay/relay_conversation_manager.dart';
+import 'package:colmeia/core/socket/relay/relay_conversation_pre_warmer.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:colmeia/features/auth/data/models/auth_session_model.dart';
+import 'package:colmeia/features/client_agents/application/client_approved_agents_relay_pre_warm_loader.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:dio/dio.dart';
@@ -126,6 +129,7 @@ Future<void> _e2eSetupDependenciesBody() async {
     _registerE2eSocketStack(sessionHolder);
   }
   registerInjectorAgentQueries(getIt);
+  _e2eRegisterRelayConversationPreWarmerIfAvailable();
   await _e2eWarmConsumerSocketAfterQueriesRegistered();
 
   if (!_e2eAnnouncedConfiguredAgentId &&
@@ -162,6 +166,31 @@ void _registerE2eSocketStack(E2eAuthSessionHolder sessionHolder) {
       ),
     );
   registerInjectorSocket(getIt);
+}
+
+/// Mirrors the production `RelayConversationPreWarmer` wiring from
+/// `injector_client_agents.dart` so the E2E session also opens conversations
+/// proactively when relay is available. The stub `ClientAgentsRepository`
+/// exposes the configured `E2E_AGENT_ID`, so the sweep targets that agent.
+void _e2eRegisterRelayConversationPreWarmerIfAvailable() {
+  if (!getIt.isRegistered<RelayConversationManager>()) {
+    return;
+  }
+  if (getIt.isRegistered<RelayConversationPreWarmer>()) {
+    return;
+  }
+  final loader = ClientApprovedAgentsRelayPreWarmLoader(
+    sessionAccessor: getIt<AuthSessionAccessor>(),
+    approvedAgentsRepository: getIt<ClientAgentsRepository>(),
+  );
+  getIt.registerSingleton<RelayConversationPreWarmer>(
+    RelayConversationPreWarmer(
+      connection: getIt<ConsumerSocketConnection>(),
+      conversationManager: getIt<RelayConversationManager>(),
+      loadAgentIds: loader.loadApprovedAgentIds,
+    ),
+    dispose: (preWarmer) => preWarmer.dispose(),
+  );
 }
 
 /// Mirrors the app post-login consumer-socket warm-up when

@@ -15,6 +15,7 @@ import 'package:colmeia/core/observability/app_global_error_handlers.dart';
 import 'package:colmeia/core/observability/sentry_bootstrap.dart';
 import 'package:colmeia/core/observability/socket/socket_metrics_listener.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
+import 'package:colmeia/core/socket/relay/relay_conversation_pre_warmer.dart';
 import 'package:colmeia/core/update/windows_auto_update_controller.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
@@ -91,6 +92,13 @@ Future<void> bootstrap() async {
     );
     if (AppEnvironment.consumerSocketLifecycleEnabled) {
       getIt<SocketMetricsListener>().start();
+    }
+    // Touch the relay pre-warmer so its connection-state subscription
+    // attaches before the first `connect()` lands. It is a lazy singleton
+    // gated by relay availability inside `injector_client_agents.dart`, so
+    // REST-only or relay-disabled builds skip this entirely.
+    if (getIt.isRegistered<RelayConversationPreWarmer>()) {
+      getIt<RelayConversationPreWarmer>();
     }
     runApp(const ColmeiaBootstrap());
   });
