@@ -102,7 +102,14 @@ abstract interface class ClientAgentsRemoteDataSource {
     required Map<String, Object?> body,
     String? idempotencyKey,
   });
+}
 
+/// Segregated contract for the per-(client, agent) bearer token endpoints.
+///
+/// Token persistence has a single consumer (`RemoteAgentClientTokenRepository`)
+/// that does not touch catalog/access/owner operations, so it depends on this
+/// narrow interface instead of the broad [ClientAgentsRemoteDataSource] (ISP).
+abstract interface class ClientAgentTokenRemoteDataSource {
   /// `GET /client/me/agents/{agentId}/client-token` — returns the bearer token
   /// the hub forwards as `params.client_token` on the SQL bridge, or `null`
   /// when no token is stored. Throws on 401/403/404 so the repository layer
@@ -121,7 +128,8 @@ abstract interface class ClientAgentsRemoteDataSource {
   });
 }
 
-class ApiClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
+class ApiClientAgentsRemoteDataSource
+    implements ClientAgentsRemoteDataSource, ClientAgentTokenRemoteDataSource {
   ApiClientAgentsRemoteDataSource(this._dio);
 
   final Dio _dio;
@@ -488,7 +496,8 @@ AgentCatalogRecordDto _parseCatalogAgentBody(Map<String, dynamic> json) {
   return AgentCatalogRecordDto.fromJson(json);
 }
 
-class FakeClientAgentsRemoteDataSource implements ClientAgentsRemoteDataSource {
+class FakeClientAgentsRemoteDataSource
+    implements ClientAgentsRemoteDataSource, ClientAgentTokenRemoteDataSource {
   FakeClientAgentsRemoteDataSource();
 
   /// Per-agent server-side client tokens. Mirrors the `client-token` REST

@@ -20,7 +20,7 @@ import 'package:result_dart/result_dart.dart';
 /// dashboard refresh — `saveToken` keeps the cache hot for that path.
 class RemoteAgentClientTokenRepository implements AgentClientTokenRepository {
   RemoteAgentClientTokenRepository({
-    required ClientAgentsRemoteDataSource remoteDataSource,
+    required ClientAgentTokenRemoteDataSource remoteDataSource,
     required LocalAgentClientTokenStore localStore,
   }) : _remoteDataSource = remoteDataSource,
        _localStore = localStore;
@@ -28,7 +28,7 @@ class RemoteAgentClientTokenRepository implements AgentClientTokenRepository {
   static const int _readManyHydrationConcurrency = 6;
   static const Duration _readManyFreshCacheTtl = Duration(minutes: 1);
 
-  final ClientAgentsRemoteDataSource _remoteDataSource;
+  final ClientAgentTokenRemoteDataSource _remoteDataSource;
   final LocalAgentClientTokenStore _localStore;
 
   @override

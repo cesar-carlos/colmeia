@@ -13,7 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockClientAgentsRemoteDataSource extends Mock
-    implements ClientAgentsRemoteDataSource {}
+    implements ClientAgentTokenRemoteDataSource {}
 
 class _MockFlutterSecureStorage extends Mock implements FlutterSecureStorage {}
 

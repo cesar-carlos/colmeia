@@ -63,7 +63,7 @@ void registerInjectorClientAgents(GetIt getIt) {
     )
     ..registerLazySingleton<AgentClientTokenRepository>(
       () => RemoteAgentClientTokenRepository(
-        remoteDataSource: getIt<ClientAgentsRemoteDataSource>(),
+        remoteDataSource: getIt<ClientAgentTokenRemoteDataSource>(),
         localStore: getIt<LocalAgentClientTokenStore>(),
       ),
     )
@@ -81,6 +81,12 @@ void registerInjectorClientAgents(GetIt getIt) {
       () => AppEnvironment.useFakeBackend
           ? FakeClientAgentsRemoteDataSource()
           : ApiClientAgentsRemoteDataSource(getIt<Dio>()),
+    )
+    // Same concrete instance, exposed through the segregated token-only
+    // contract so the token repository depends on the narrow surface (ISP).
+    ..registerLazySingleton<ClientAgentTokenRemoteDataSource>(
+      () => getIt<ClientAgentsRemoteDataSource>()
+          as ClientAgentTokenRemoteDataSource,
     )
     ..registerLazySingleton<ClientAgentsRepository>(
       () => ClientAgentsRepositoryImpl(
