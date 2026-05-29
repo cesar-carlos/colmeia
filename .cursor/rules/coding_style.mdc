@@ -132,8 +132,9 @@ final List<String> activeIds = users
 
 ## Tooling
 
-- Use o conjunto de lints definido no projeto; em Colmeia, o projeto usa
-  `very_good_analysis` — nao adicione `flutter_lints` junto com ele
+- Use o conjunto de lints definido no projeto e nao misture dois conjuntos
+  concorrentes; a escolha do Colmeia vive em
+  `project_platform_dependencies.mdc`
 - Em novos projetos Flutter sem escolha definida, `flutter_lints` e um bom
   ponto de partida; em projetos Dart puro, use pelo menos `recommended`
 - Rode `dart format` apos mudancas relevantes, **apenas nos ficheiros que

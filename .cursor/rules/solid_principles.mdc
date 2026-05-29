@@ -52,6 +52,38 @@ Nao repita aqui as regras de camada da arquitetura. Para isso, use
   implementacao concreta
 - Evite criar classes de alto nivel que instanciam suas dependencias
 
+## Acoplamento e Coesao
+
+Alta coesao e baixo acoplamento sao o resultado pratico de aplicar SRP, ISP e
+DIP juntos; trate-os como criterio de revisao, nao como principio separado.
+
+### Alta coesao
+
+- Mantenha em um mesmo tipo apenas dados e comportamento que mudam pela mesma
+  razao (consequencia direta de SRP)
+- Se metodos de uma classe operam sobre subconjuntos disjuntos dos campos, ha
+  mais de uma responsabilidade escondida; separe
+- Prefira um tipo que faz uma coisa bem a um modulo "canivete" com membros sem
+  relacao entre si
+
+### Baixo acoplamento
+
+- Dependa de contratos estaveis, nao de implementacoes concretas (DIP)
+- Reduza o fan-out: quanto mais colaboradores um tipo precisa conhecer, mais
+  fragil ele fica a mudancas
+- Exponha o menor contrato suficiente para o chamador (ISP) e injete por
+  construtor para que a dependencia seja substituivel
+- Respeite a direcao de dependencia da arquitetura; nao atravesse camadas por
+  conveniencia (ver `clean_architecture.mdc`)
+
+### Sinais de problema
+
+- Uma mudanca pequena exige editar varios arquivos distantes (acoplamento alto)
+- Um tipo importa de muitas camadas ou features diferentes
+- Campos ou metodos de uma classe so sao usados por um subgrupo de chamadores
+  (coesao baixa)
+- Uma feature precisa conhecer detalhes internos de outra para funcionar
+
 ## Heuristicas Praticas
 
 - Se um nome termina com `Manager`, `Helper` ou `Service` e faz coisas demais,
@@ -75,3 +107,6 @@ Nao repita aqui as regras de camada da arquitetura. Para isso, use
 - [ ] Interfaces estao pequenas e coesas
 - [ ] Dependencias entram por abstracao e construtor
 - [ ] Implementacoes podem ser substituidas sem quebrar o contrato esperado
+- [ ] Cada tipo mantem alta coesao: dados e comportamento mudam pela mesma razao
+- [ ] O acoplamento foi reduzido por contratos estaveis, fan-out baixo e injecao
+      por construtor

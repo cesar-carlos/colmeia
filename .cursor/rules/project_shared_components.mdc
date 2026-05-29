@@ -14,7 +14,8 @@ e evoluir componentes compartilhados de UI sem duplicar codigo.
 - Antes de criar um novo componente de UI, verifique se `lib/shared/widgets/`
   ja tem um componente que resolve ou quase resolve a necessidade
 - Promova um componente para `lib/shared/widgets/` quando o mesmo padrao visual
-  ou de interacao aparecer em uma segunda feature com a mesma intencao
+  ou de interacao aparecer em uma segunda feature com a mesma intencao (regra de
+  dois em `general_rules.mdc`)
 - Mantenha organismos especificos de feature e widgets orientados ao dominio
   dentro da feature ate que a API e a semantica estejam estaveis para reuso
 - Nao mova um componente para `shared/` apenas porque ele ficou grande; mova
@@ -37,7 +38,8 @@ e evoluir componentes compartilhados de UI sem duplicar codigo.
 
 ## Tecnicas de reuso
 
-- Use composicao como forma padrao de especializar widgets
+- Use composicao como forma padrao de especializar widgets (detalhes em
+  `flutter_widgets.mdc`)
 - Use mixins para comportamento reutilizavel de `State`, como scroll, ticker ou
   keep-alive
 - Use estrategias, adaptadores ou contratos para variacao nao visual que nao

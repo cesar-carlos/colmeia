@@ -37,6 +37,7 @@ repositorio.
 - `hive_ce` para cache local chave-valor
 - `path` e `path_provider` para diretorios de dados no VM
 - `uuid` para identificadores tecnicos
+- `crypto` para hashing e operacoes criptograficas pontuais
 - `google_fonts` para tipografia do design system quando fizer sentido
 - `intl` para formatacao de moeda, data, hora e numeros
 - `brasil_fields` para mascaras e formatacoes brasileiras comuns
@@ -61,8 +62,6 @@ repositorio.
 - Nao adicione `protoc_plugin` sem pipeline real de protobuf
 - Evite `mailer` no app cliente; prefira envio de email no backend
 - Pacotes como `jose` devem entrar apenas quando existir caso de uso concreto
-  (`crypto` já está ativo; `socket_io_client` foi promovido para a lista de
-  dependências preferenciais — ver acima)
 
 ## Referencias
 

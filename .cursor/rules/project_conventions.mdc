@@ -18,11 +18,11 @@ nas rules universais de Dart e Flutter.
 - Valide antes do submit via `_formKey.currentState?.saveAndValidate()`
 - Prefira wrappers do app sobre widgets `FormBuilder*` quando configuracao ou
   validacao se repetirem entre telas
-- Fora de fluxos com `flutter_form_builder`, use `AppTextField` ou uma
-  molecula por composicao como base padrao de input
-- Nao deixe configuracao raw de `TextField`, `TextFormField` ou
-  `FormBuilderTextField` espalhada pelas paginas quando um wrapper puder ser o
-  dono do comportamento
+- Fora de fluxos com `flutter_form_builder`, a base de input segue
+  `flutter_widgets.mdc` (`AppTextField` ou molecula por composicao)
+- Nao deixe configuracao raw de `FormBuilderTextField`, `TextField` ou
+  `TextFormField` espalhada pelas paginas quando um wrapper puder ser o dono do
+  comportamento
 - Resete o formulario apos submit bem-sucedido ou ao sair do fluxo quando o
   estado residual puder ser prejudicial
 

@@ -339,7 +339,7 @@ class AppLoadingOrContent<T> extends StatelessWidget {
 - Quebre widgets grandes em widgets menores e focados
 - Prefira classes privadas pequenas a metodos `Widget _build...`
 - Quando o mesmo padrao visual surgir pela segunda vez com a mesma intencao,
-  extraia para `lib/shared/widgets/` — nao espere uma terceira ocorrencia
+  extraia para `lib/shared/widgets/` (regra de dois em `general_rules.mdc`)
 - Mantenha `build()` legivel e raso
 - Nao retorne `Widget` de funcoes auxiliares quando uma classe privada ou
   construtor direto resolver

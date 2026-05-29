@@ -31,6 +31,7 @@ em outras stacks.
   comentarios, reuso, duplicacao, valores magicos e estrategia de refatoracao
 - **`clean_architecture.mdc`**: fronteiras de camada e direcao de dependencias
 - **`solid_principles.mdc`**: orientacao de design baseada em SRP/OCP/LSP/ISP/DIP
+  e o criterio de baixo acoplamento e alta coesao
 - **`testing.mdc`**: estrategia universal de testes, isolamento, mocking e
   cobertura de falhas
 
@@ -75,7 +76,7 @@ Use estas rules apenas quando o codebase for Dart/Flutter.
 - Comportamento geral, docs e comentarios, reuso, duplicacao e refatoracao:
   `general_rules.mdc`
 - Camadas e direcao de dependencias: `clean_architecture.mdc`
-- Design de classes e interfaces: `solid_principles.mdc`
+- Design de classes e interfaces, acoplamento e coesao: `solid_principles.mdc`
 - Estrategia de testes em qualquer stack: `testing.mdc`
 - Sintaxe, estilo e tooling Dart: `coding_style.mdc`
 - Nullability em Dart: `null_safety.mdc`
