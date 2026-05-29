@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
@@ -205,7 +206,7 @@ class _AppRegionMapExplorerState<TItem, TFilters>
               metrics: <AppMapMetric<TItem>>[
                 AppMapMetric<TItem>(
                   key: 'loading',
-                  label: 'Carregando',
+                  label: AppLocalizations.of(context).appLoading,
                   valueBuilder: _zeroMetric,
                 ),
               ],

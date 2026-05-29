@@ -104,6 +104,265 @@ class AppBrazilStoreSalesMapChart extends StatefulWidget {
       _AppBrazilStoreSalesMapChartState();
 }
 
+/// Pure geometry policy for the optional desktop branch sidebar overlaid on
+/// the Brazil store-sales map. Extracted from the chart state so the sizing
+/// rules live in one focused, testable place.
+abstract final class _BrazilMapDesktopSidebarLayout {
+  static const double minWidth = 272;
+  static const double maxWidth = 336;
+  static const double minVisibleMapWidth = 920;
+  static const double topInsetBase = 12;
+
+  /// Sidebar width: 24% of the available width, clamped to [minWidth]..[maxWidth].
+  static double width(double availableWidth) {
+    if (!availableWidth.isFinite) {
+      return minWidth;
+    }
+    return (availableWidth * 0.24).clamp(minWidth, maxWidth);
+  }
+
+  /// Whether the sidebar fits without squeezing the visible map below
+  /// [minVisibleMapWidth] (and only on desktop-class widths).
+  static bool shouldShow({
+    required bool enabled,
+    required double availableWidth,
+    required double sidebarWidth,
+    required double horizontalInset,
+  }) {
+    if (!enabled) {
+      return false;
+    }
+    if (!availableWidth.isFinite || availableWidth < AppBreakpoints.desktop) {
+      return false;
+    }
+    final remainingVisibleMapWidth =
+        availableWidth - sidebarWidth - (horizontalInset * 2);
+    return remainingVisibleMapWidth >= minVisibleMapWidth;
+  }
+
+  static double maxHeight({
+    required double mapTileHeight,
+    required double topInset,
+  }) {
+    const bottomInset = 24.0;
+    final availableHeight = mapTileHeight - topInset - bottomInset;
+    final proportionalCap = mapTileHeight * 0.9;
+    final cappedHeight = availableHeight < proportionalCap
+        ? availableHeight
+        : proportionalCap;
+    return cappedHeight.clamp(240.0, availableHeight);
+  }
+}
+
+/// Presentation-mode derived flags for the Brazil store-sales map, computed
+/// purely from widget configuration (no [BuildContext]). Context-dependent
+/// decisions (e.g. compact branch sheet on mobile) stay on the chart state.
+@immutable
+class _BrazilMapChrome {
+  const _BrazilMapChrome({
+    required this.usesInlineOperationalChrome,
+    required this.usesCleanFullscreenChrome,
+    required this.includeVisibleBranchListItems,
+    required this.showsFloatingMetricSelector,
+    required this.showsFloatingScopeSelector,
+    required this.effectiveShowLegend,
+    required this.effectiveShowMarkerScaleLegend,
+    required this.effectiveShowDataQualityNotice,
+    required this.useWindowsSafeMarkerDetails,
+    required this.showBelowMapMarkerDetail,
+  });
+
+  factory _BrazilMapChrome.fromWidget(AppBrazilStoreSalesMapChart widget) {
+    final style = widget.style;
+    final usesInline =
+        widget.presentationMode ==
+        AppBrazilStoreSalesMapPresentationMode.inlineOperational;
+    final usesClean =
+        widget.presentationMode ==
+            AppBrazilStoreSalesMapPresentationMode.cleanFullscreen ||
+        widget.useCleanFullscreenChrome;
+    final usesFloating = usesInline || usesClean;
+    return _BrazilMapChrome(
+      usesInlineOperationalChrome: usesInline,
+      usesCleanFullscreenChrome: usesClean,
+      includeVisibleBranchListItems: widget.showDesktopBranchSidebar,
+      showsFloatingMetricSelector:
+          usesFloating &&
+          style.showMetricSelector &&
+          AppBrazilStoreSalesMapMetric.values.length > 1,
+      showsFloatingScopeSelector: usesFloating && style.showRegionFilter,
+      effectiveShowLegend: style.showLegend && !usesClean && !usesInline,
+      effectiveShowMarkerScaleLegend:
+          style.showMarkerScaleLegend && !usesClean && !usesInline,
+      effectiveShowDataQualityNotice: style.showDataQualityNotice,
+      useWindowsSafeMarkerDetails:
+          defaultTargetPlatform == TargetPlatform.windows,
+      showBelowMapMarkerDetail:
+          style.showStoreDetail &&
+          style.selectedMarkerDetailPlacement ==
+              AppBrazilStoreSalesSelectedMarkerDetailPlacement.belowMap,
+    );
+  }
+
+  final bool usesInlineOperationalChrome;
+  final bool usesCleanFullscreenChrome;
+  final bool includeVisibleBranchListItems;
+  final bool showsFloatingMetricSelector;
+  final bool showsFloatingScopeSelector;
+  final bool effectiveShowLegend;
+  final bool effectiveShowMarkerScaleLegend;
+  final bool effectiveShowDataQualityNotice;
+  final bool useWindowsSafeMarkerDetails;
+  final bool showBelowMapMarkerDetail;
+
+  bool get usesFloatingMapControls =>
+      usesInlineOperationalChrome || usesCleanFullscreenChrome;
+}
+
+/// Pure(ish) layout geometry for the Brazil store-sales map tile: resolves the
+/// map height by deducting header/footer reserves from the available space.
+/// Extracted from the chart state so the (intricate) sizing math lives in one
+/// focused place; methods take [BuildContext] only to read theme/text scaling.
+class _BrazilMapLayoutCalculator {
+  const _BrazilMapLayoutCalculator({required this.chrome, required this.style});
+
+  final _BrazilMapChrome chrome;
+  final AppBrazilStoreSalesMapStyle style;
+
+  /// Small shrink of the map tile when height is bounded: real layout (labels,
+  /// chips, legend padding) can exceed our header/footer estimates by a few
+  /// logical pixels and cause a [Column] overflow.
+  static const double _boundedSafetyPx = 6;
+  static const double _cleanFullscreenExtraSafetyPx = 14;
+  static const double _inlineOperationalExtraMapHeight = 116;
+
+  double mapTileHeight({
+    required BuildContext context,
+    required BoxConstraints constraints,
+    required _BrazilStoreSalesMapSnapshot snapshot,
+    required bool usesCompactMapChrome,
+  }) {
+    final requested = _effectiveRequestedHeight(style.height);
+    final maxParent = constraints.maxHeight;
+    if (!maxParent.isFinite || maxParent >= double.infinity) {
+      return requested;
+    }
+
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final headerReserve = _headerReserve(context);
+    final footerReserve = _footerReserve(
+      context: context,
+      snapshot: snapshot,
+      tokens: tokens,
+      maxWidth: constraints.maxWidth,
+      usesCompactMapChrome: usesCompactMapChrome,
+    );
+    final spare = maxParent - headerReserve - footerReserve;
+    if (!spare.isFinite) {
+      return requested;
+    }
+    final safetyPx =
+        _boundedSafetyPx +
+        (chrome.usesCleanFullscreenChrome ? _cleanFullscreenExtraSafetyPx : 0);
+    return (spare - safetyPx).clamp(200.0, 4000.0);
+  }
+
+  double _effectiveRequestedHeight(double requestedHeight) {
+    if (chrome.usesInlineOperationalChrome) {
+      return requestedHeight + _inlineOperationalExtraMapHeight;
+    }
+    return requestedHeight;
+  }
+
+  double _headerReserve(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final scaler = MediaQuery.textScalerOf(context);
+    final textTheme = Theme.of(context).textTheme;
+    final overlineBlock = chrome.usesCleanFullscreenChrome
+        ? scaler.scale((textTheme.bodySmall?.fontSize ?? 12) * 1.25 + 6)
+        : scaler.scale((textTheme.labelSmall?.fontSize ?? 11) * 1.3) +
+              tokens.gapXs +
+              scaler.scale((textTheme.bodySmall?.fontSize ?? 12) * 1.35 + 8);
+    var reserve = 0.0;
+    if (!chrome.showsFloatingMetricSelector &&
+        style.showMetricSelector &&
+        AppBrazilStoreSalesMapMetric.values.length > 1) {
+      reserve +=
+          overlineBlock +
+          (chrome.usesCleanFullscreenChrome ? tokens.gapXs : tokens.gapMd);
+    }
+    if (!chrome.showsFloatingScopeSelector && style.showRegionFilter) {
+      reserve +=
+          overlineBlock +
+          (chrome.usesCleanFullscreenChrome ? tokens.gapXs : tokens.gapMd);
+    }
+    return reserve.clamp(0.0, 260.0);
+  }
+
+  double _footerReserve({
+    required BuildContext context,
+    required _BrazilStoreSalesMapSnapshot snapshot,
+    required AppThemeTokens tokens,
+    required double maxWidth,
+    required bool usesCompactMapChrome,
+  }) {
+    final scaler = MediaQuery.textScalerOf(context);
+    var reserve = 0.0;
+    if (style.showDataQualityNotice &&
+        snapshot.diagnostics.hasDiscardedPoints) {
+      reserve += tokens.gapSm + scaler.scale(56);
+    }
+    if (chrome.effectiveShowMarkerScaleLegend && snapshot.hasMarkers) {
+      final compactLegend = shouldUseCompactMarkerLegend(
+        usesCompactMapChrome: usesCompactMapChrome,
+        maxWidth: maxWidth,
+      );
+      reserve += tokens.gapMd + scaler.scale(compactLegend ? 46 : 40);
+    }
+    final selectedMarkerGroup = snapshot.selectedMarkerGroup;
+    final selectedPoint = snapshot.selectedPoint;
+    if (chrome.showBelowMapMarkerDetail &&
+        selectedMarkerGroup != null &&
+        (selectedMarkerGroup.isMunicipalityAggregate ||
+            selectedMarkerGroup.isCluster)) {
+      reserve += tokens.gapMd + scaler.scale(300);
+    } else if (chrome.showBelowMapMarkerDetail && selectedPoint != null) {
+      reserve += tokens.gapMd + scaler.scale(220);
+    }
+    if (selectedPoint == null &&
+        selectedMarkerGroup == null &&
+        snapshot.selectedStateBucket != null) {
+      reserve += tokens.gapMd + scaler.scale(96);
+    }
+    return reserve;
+  }
+
+  bool shouldUseCompactMarkerLegend({
+    required bool usesCompactMapChrome,
+    required double maxWidth,
+  }) {
+    return usesCompactMapChrome || (maxWidth.isFinite && maxWidth < 420);
+  }
+
+  double floatingMapControlsHeight(
+    BuildContext context, {
+    required bool cleanMode,
+  }) {
+    final scaler = MediaQuery.textScalerOf(context);
+    var height = 0.0;
+    if (chrome.showsFloatingMetricSelector) {
+      height += scaler.scale(cleanMode ? 48 : 56);
+    }
+    if (chrome.showsFloatingScopeSelector) {
+      if (height > 0) {
+        height += cleanMode ? _floatingMapOverlayGap : 10;
+      }
+      height += scaler.scale(cleanMode ? 50 : 58);
+    }
+    return height;
+  }
+}
+
 abstract interface class AppBrazilStoreSalesMapChartPreviewTestHandle {
   void previewBranchForTesting(AppBrazilStoreSalesPoint point);
 
@@ -116,6 +375,10 @@ class _AppBrazilStoreSalesMapChartState
     extends State<AppBrazilStoreSalesMapChart>
     implements AppBrazilStoreSalesMapChartPreviewTestHandle {
   late AppBrazilStoreSalesMapMetric _selectedMetric;
+
+  /// Presentation-mode derived flags (config-pure). Context-dependent flags
+  /// such as [_shouldUseCompactBranchSheet] stay on the state.
+  late _BrazilMapChrome _chrome;
   String? _internalSelectedStoreId;
   String? _previewedStoreId;
   String? _internalSelectedStateKey;
@@ -152,11 +415,6 @@ class _AppBrazilStoreSalesMapChartState
     _snapshot = null;
   }
 
-  /// Small shrink of the map tile when height is bounded: real layout (labels,
-  /// chips, legend padding) can exceed our header/footer estimates by a few
-  /// logical pixels and cause a [Column] overflow.
-  static const double _boundedMapTileLayoutSafetyPx = 6;
-  static const double _cleanFullscreenExtraSafetyPx = 14;
   static const Duration _touchViewportClusterDebounceDuration = Duration(
     milliseconds: 180,
   );
@@ -169,18 +427,17 @@ class _AppBrazilStoreSalesMapChartState
   static const Duration _desktopBranchPreviewClearDelay = Duration(
     milliseconds: 80,
   );
-  static const double _desktopBranchSidebarMinWidth = 272;
-  static const double _desktopBranchSidebarMaxWidth = 336;
-  static const double _desktopBranchSidebarMinVisibleMapWidth = 920;
-  static const double _desktopBranchSidebarTopInset = 12;
   static const double _floatingMapControlsTopInset = 12;
   static const double _floatingMapControlsLeftInset = 12;
-  static const double _inlineOperationalExtraMapHeight = 116;
+
+  _BrazilMapLayoutCalculator get _layout =>
+      _BrazilMapLayoutCalculator(chrome: _chrome, style: widget.style);
 
   @override
   void initState() {
     super.initState();
     _selectedMetric = widget.initialMetric;
+    _chrome = _BrazilMapChrome.fromWidget(widget);
     _currentZoomLevel = widget.selectedStoreId != null
         ? widget.style.selectedStoreZoomLevel
         : AppBrazilMapStaticData.brazilViewport.zoomLevel;
@@ -189,6 +446,7 @@ class _AppBrazilStoreSalesMapChartState
   @override
   void didUpdateWidget(covariant AppBrazilStoreSalesMapChart oldWidget) {
     super.didUpdateWidget(oldWidget);
+    _chrome = _BrazilMapChrome.fromWidget(widget);
     if (oldWidget.initialMetric != widget.initialMetric) {
       _selectedMetric = widget.initialMetric;
       _invalidateResolvedSnapshotData();
@@ -267,34 +525,31 @@ class _AppBrazilStoreSalesMapChartState
           compact: usesCompactStateLabels,
           maxWidth: constraints.maxWidth,
         );
-        final useCompactMarkerLegend = _shouldUseCompactMarkerLegend(
+        final useCompactMarkerLegend = _layout.shouldUseCompactMarkerLegend(
           usesCompactMapChrome: usesCompactMapChrome,
           maxWidth: constraints.maxWidth,
         );
-        final sidebarWidth = _resolvedDesktopBranchSidebarWidth(
+        final sidebarWidth = _BrazilMapDesktopSidebarLayout.width(
           constraints.maxWidth,
         );
-        final sidebarHorizontalInset =
-            _resolvedDesktopBranchSidebarHorizontalInset(
-              tokens,
+        final sidebarHorizontalInset = tokens.gapMd;
+        final showsDesktopBranchSidebar = _BrazilMapDesktopSidebarLayout
+            .shouldShow(
+              enabled: widget.showDesktopBranchSidebar,
+              availableWidth: constraints.maxWidth,
+              sidebarWidth: sidebarWidth,
+              horizontalInset: sidebarHorizontalInset,
             );
-        final showsDesktopBranchSidebar = _showsDesktopBranchSidebar(
-          maxWidth: constraints.maxWidth,
-          sidebarWidth: sidebarWidth,
-          sidebarHorizontalInset: sidebarHorizontalInset,
-        );
         final sidebarTopInset = _resolvedDesktopBranchSidebarTopInset(
           context,
           tokens,
           cleanMode: _usesCleanFullscreenChrome,
         );
-        final mapTileHeight = _resolvedMapTileHeight(
+        final mapTileHeight = _layout.mapTileHeight(
           context: context,
           constraints: constraints,
-          style: widget.style,
           snapshot: snapshot,
           usesCompactMapChrome: usesCompactMapChrome,
-          showsDesktopBranchSidebar: showsDesktopBranchSidebar,
         );
         final mapContent = _BrazilStoreSalesMapContent(
           regionMap: AppRegionMapChart<AppBrazilStoreSalesStateBucket>(
@@ -469,127 +724,6 @@ class _AppBrazilStoreSalesMapChartState
     );
   }
 
-  /// [AppRegionMapChart] adds metric/scope controls above the map tile; this
-  /// chart adds optional notices and marker legend below. When the parent
-  /// height is bounded (e.g. chart fullscreen), the map tile height must leave
-  /// room for that vertical chrome to avoid [Column] overflow.
-  double _resolvedMapTileHeight({
-    required BuildContext context,
-    required BoxConstraints constraints,
-    required AppBrazilStoreSalesMapStyle style,
-    required _BrazilStoreSalesMapSnapshot snapshot,
-    required bool usesCompactMapChrome,
-    required bool showsDesktopBranchSidebar,
-  }) {
-    final requested = _effectiveRequestedMapHeight(style.height);
-    final maxParent = constraints.maxHeight;
-    if (!maxParent.isFinite || maxParent >= double.infinity) {
-      return requested;
-    }
-
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    final headerReserve = _estimateAppRegionMapHeaderReserve(context, style);
-    final footerReserve = _estimateFooterReserveBelowMap(
-      context,
-      style,
-      snapshot,
-      tokens,
-      constraints.maxWidth,
-      usesCompactMapChrome,
-      showsDesktopBranchSidebar,
-    );
-    final spare = maxParent - headerReserve - footerReserve;
-    if (!spare.isFinite) {
-      return requested;
-    }
-    final safetyPx =
-        _boundedMapTileLayoutSafetyPx +
-        (_usesCleanFullscreenChrome ? _cleanFullscreenExtraSafetyPx : 0);
-    return (spare - safetyPx).clamp(200.0, 4000.0);
-  }
-
-  double _estimateAppRegionMapHeaderReserve(
-    BuildContext context,
-    AppBrazilStoreSalesMapStyle style,
-  ) {
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    final scaler = MediaQuery.textScalerOf(context);
-    final textTheme = Theme.of(context).textTheme;
-    final overlineBlock = _usesCleanFullscreenChrome
-        ? scaler.scale((textTheme.bodySmall?.fontSize ?? 12) * 1.25 + 6)
-        : scaler.scale((textTheme.labelSmall?.fontSize ?? 11) * 1.3) +
-              tokens.gapXs +
-              scaler.scale((textTheme.bodySmall?.fontSize ?? 12) * 1.35 + 8);
-    var reserve = 0.0;
-    if (!_showsFloatingMetricSelector &&
-        style.showMetricSelector &&
-        AppBrazilStoreSalesMapMetric.values.length > 1) {
-      reserve +=
-          overlineBlock +
-          (_usesCleanFullscreenChrome ? tokens.gapXs : tokens.gapMd);
-    }
-    if (!_showsFloatingScopeSelector && style.showRegionFilter) {
-      reserve +=
-          overlineBlock +
-          (_usesCleanFullscreenChrome ? tokens.gapXs : tokens.gapMd);
-    }
-    return reserve.clamp(0.0, 260.0);
-  }
-
-  double _effectiveRequestedMapHeight(double requestedHeight) {
-    if (_usesInlineOperationalChrome) {
-      return requestedHeight + _inlineOperationalExtraMapHeight;
-    }
-    return requestedHeight;
-  }
-
-  double _estimateFooterReserveBelowMap(
-    BuildContext context,
-    AppBrazilStoreSalesMapStyle style,
-    _BrazilStoreSalesMapSnapshot snapshot,
-    AppThemeTokens tokens,
-    double maxWidth,
-    bool usesCompactMapChrome,
-    bool showsDesktopBranchSidebar,
-  ) {
-    final scaler = MediaQuery.textScalerOf(context);
-    var reserve = 0.0;
-    if (style.showDataQualityNotice &&
-        snapshot.diagnostics.hasDiscardedPoints) {
-      reserve += tokens.gapSm + scaler.scale(56);
-    }
-    if (_effectiveShowMarkerScaleLegend && snapshot.hasMarkers) {
-      final compactLegend = _shouldUseCompactMarkerLegend(
-        usesCompactMapChrome: usesCompactMapChrome,
-        maxWidth: maxWidth,
-      );
-      reserve += tokens.gapMd + scaler.scale(compactLegend ? 46 : 40);
-    }
-    final selectedMarkerGroup = snapshot.selectedMarkerGroup;
-    final selectedPoint = snapshot.selectedPoint;
-    if (_showBelowMapMarkerDetail &&
-        selectedMarkerGroup != null &&
-        (selectedMarkerGroup.isMunicipalityAggregate ||
-            selectedMarkerGroup.isCluster)) {
-      reserve += tokens.gapMd + scaler.scale(300);
-    } else if (_showBelowMapMarkerDetail && selectedPoint != null) {
-      reserve += tokens.gapMd + scaler.scale(220);
-    }
-    if (selectedPoint == null &&
-        selectedMarkerGroup == null &&
-        snapshot.selectedStateBucket != null) {
-      reserve += tokens.gapMd + scaler.scale(96);
-    }
-    return reserve;
-  }
-
-  bool _shouldUseCompactMarkerLegend({
-    required bool usesCompactMapChrome,
-    required double maxWidth,
-  }) {
-    return usesCompactMapChrome || (maxWidth.isFinite && maxWidth < 420);
-  }
-
   NumberFormat? get _legendFormat {
     if (widget.style.legendNumberFormat != null) {
       return widget.style.legendNumberFormat;
@@ -610,63 +744,17 @@ class _AppBrazilStoreSalesMapChartState
     return widget.style.emptyStateMessage;
   }
 
-  bool _showsDesktopBranchSidebar({
-    required double maxWidth,
-    required double sidebarWidth,
-    required double sidebarHorizontalInset,
-  }) {
-    if (!widget.showDesktopBranchSidebar) {
-      return false;
-    }
-    if (!maxWidth.isFinite || maxWidth < AppBreakpoints.desktop) {
-      return false;
-    }
-    final remainingVisibleMapWidth =
-        maxWidth - sidebarWidth - (sidebarHorizontalInset * 2);
-    return remainingVisibleMapWidth >= _desktopBranchSidebarMinVisibleMapWidth;
-  }
-
-  double _resolvedDesktopBranchSidebarWidth(double maxWidth) {
-    if (!maxWidth.isFinite) {
-      return _desktopBranchSidebarMinWidth;
-    }
-    return (maxWidth * 0.24).clamp(
-      _desktopBranchSidebarMinWidth,
-      _desktopBranchSidebarMaxWidth,
-    );
-  }
-
-  double _resolvedDesktopBranchSidebarHorizontalInset(AppThemeTokens tokens) {
-    return tokens.gapMd;
-  }
-
   double _resolvedDesktopBranchSidebarTopInset(
     BuildContext context,
     AppThemeTokens tokens, {
     required bool cleanMode,
   }) {
-    return _desktopBranchSidebarTopInset +
+    return _BrazilMapDesktopSidebarLayout.topInsetBase +
         (cleanMode ? 0 : tokens.gapXs) +
-        _resolvedFloatingMapControlsHeight(
+        _layout.floatingMapControlsHeight(
           context,
           cleanMode: cleanMode,
         );
-  }
-
-  double _resolvedDesktopBranchSidebarMaxHeight({
-    required double mapTileHeight,
-    required double topInset,
-  }) {
-    const bottomInset = 24.0;
-    final availableHeight = mapTileHeight - topInset - bottomInset;
-    final proportionalCap = mapTileHeight * 0.9;
-    final cappedHeight = availableHeight < proportionalCap
-        ? availableHeight
-        : proportionalCap;
-    return cappedHeight.clamp(
-      240.0,
-      availableHeight,
-    );
   }
 
   bool get _showOverlayMarkerDetail =>
@@ -675,48 +763,26 @@ class _AppBrazilStoreSalesMapChartState
       widget.style.selectedMarkerDetailPlacement ==
           AppBrazilStoreSalesSelectedMarkerDetailPlacement.overlay;
 
-  bool get _showBelowMapMarkerDetail =>
-      widget.style.showStoreDetail &&
-      widget.style.selectedMarkerDetailPlacement ==
-          AppBrazilStoreSalesSelectedMarkerDetailPlacement.belowMap;
+  bool get _showBelowMapMarkerDetail => _chrome.showBelowMapMarkerDetail;
 
-  bool get _useWindowsSafeMarkerDetails =>
-      defaultTargetPlatform == TargetPlatform.windows;
+  bool get _useWindowsSafeMarkerDetails => _chrome.useWindowsSafeMarkerDetails;
 
-  bool get _usesInlineOperationalChrome =>
-      widget.presentationMode ==
-      AppBrazilStoreSalesMapPresentationMode.inlineOperational;
+  bool get _usesCleanFullscreenChrome => _chrome.usesCleanFullscreenChrome;
 
-  bool get _usesCleanFullscreenChrome =>
-      widget.presentationMode ==
-          AppBrazilStoreSalesMapPresentationMode.cleanFullscreen ||
-      widget.useCleanFullscreenChrome;
+  bool get _includeVisibleBranchListItems =>
+      _chrome.includeVisibleBranchListItems;
 
-  bool get _usesFloatingMapControls =>
-      _usesInlineOperationalChrome || _usesCleanFullscreenChrome;
+  bool get _showsFloatingMetricSelector => _chrome.showsFloatingMetricSelector;
 
-  bool get _includeVisibleBranchListItems => widget.showDesktopBranchSidebar;
+  bool get _showsFloatingScopeSelector => _chrome.showsFloatingScopeSelector;
 
-  bool get _showsFloatingMetricSelector =>
-      _usesFloatingMapControls &&
-      widget.style.showMetricSelector &&
-      AppBrazilStoreSalesMapMetric.values.length > 1;
-
-  bool get _showsFloatingScopeSelector =>
-      _usesFloatingMapControls && widget.style.showRegionFilter;
-
-  bool get _effectiveShowLegend =>
-      widget.style.showLegend &&
-      !_usesCleanFullscreenChrome &&
-      !_usesInlineOperationalChrome;
+  bool get _effectiveShowLegend => _chrome.effectiveShowLegend;
 
   bool get _effectiveShowMarkerScaleLegend =>
-      widget.style.showMarkerScaleLegend &&
-      !_usesCleanFullscreenChrome &&
-      !_usesInlineOperationalChrome;
+      _chrome.effectiveShowMarkerScaleLegend;
 
   bool get _effectiveShowDataQualityNotice =>
-      widget.style.showDataQualityNotice;
+      _chrome.effectiveShowDataQualityNotice;
 
   Widget? _buildMapOverlay({
     required double mapTileHeight,
@@ -759,7 +825,7 @@ class _AppBrazilStoreSalesMapChartState
               )
             : _DesktopBranchSidebarOverlay(
                 width: sidebarWidth,
-                maxHeight: _resolvedDesktopBranchSidebarMaxHeight(
+                maxHeight: _BrazilMapDesktopSidebarLayout.maxHeight(
                   mapTileHeight: mapTileHeight,
                   topInset: sidebarTopInset,
                 ),
@@ -796,24 +862,6 @@ class _AppBrazilStoreSalesMapChartState
     setState(() {
       _desktopBranchSidebarCollapsed = !_desktopBranchSidebarCollapsed;
     });
-  }
-
-  double _resolvedFloatingMapControlsHeight(
-    BuildContext context, {
-    required bool cleanMode,
-  }) {
-    final scaler = MediaQuery.textScalerOf(context);
-    var height = 0.0;
-    if (_showsFloatingMetricSelector) {
-      height += scaler.scale(cleanMode ? 48 : 56);
-    }
-    if (_showsFloatingScopeSelector) {
-      if (height > 0) {
-        height += cleanMode ? _floatingMapOverlayGap : 10;
-      }
-      height += scaler.scale(cleanMode ? 50 : 58);
-    }
-    return height;
   }
 
   List<AppMapMetric<AppBrazilStoreSalesStateBucket>> _buildMetrics(

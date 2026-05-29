@@ -112,7 +112,7 @@ class AppRadialBarChart<T> extends StatelessWidget {
       emptyPlaceholder: emptyPlaceholder,
       semanticsLabel: _resolvedChartSemanticsLabel(),
       semanticsHint: _resolvedChartSemanticsHint(),
-      loadingSemanticsLabel: _resolvedLoadingSemanticsLabel(),
+      loadingSemanticsLabel: loadingSemanticsLabel,
       emptySemanticsLabel: _resolvedEmptySemanticsLabel(),
     );
 
@@ -157,19 +157,6 @@ class AppRadialBarChart<T> extends StatelessWidget {
       return null;
     }
     return 'Toque em um anel para destacar ou ver detalhes.';
-  }
-
-  String _resolvedLoadingSemanticsLabel() {
-    final custom = loadingSemanticsLabel?.trim();
-    if (custom != null && custom.isNotEmpty) {
-      return custom;
-    }
-
-    final trimmedTitle = title?.trim();
-    if (trimmedTitle != null && trimmedTitle.isNotEmpty) {
-      return 'Carregando $trimmedTitle...';
-    }
-    return 'Carregando grafico radial...';
   }
 
   String _resolvedEmptySemanticsLabel() {

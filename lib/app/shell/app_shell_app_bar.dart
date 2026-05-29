@@ -1,6 +1,7 @@
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/app/router/shell_section_navigation.dart';
+import 'package:colmeia/app/shell/app_shell_user_summary.dart';
 import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -9,7 +10,6 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_brand_icon.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_user_avatar.dart';
-import 'package:colmeia/shared/widgets/navigation/app_shell_user_summary.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

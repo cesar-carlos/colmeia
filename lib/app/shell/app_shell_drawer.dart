@@ -1,6 +1,6 @@
 import 'package:colmeia/app/router/app_routes.dart';
+import 'package:colmeia/app/shell/app_shell_navigation_panel.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:colmeia/shared/widgets/navigation/app_shell_navigation_panel.dart';
 import 'package:flutter/material.dart';
 
 class AppShellDrawer extends StatelessWidget {

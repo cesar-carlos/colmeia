@@ -52,30 +52,18 @@ class _AppReportInlineFiltersBarState extends State<AppReportInlineFiltersBar> {
       f.type == AppReportFilterType.text ||
       f.type == AppReportFilterType.search;
 
-  static bool _supportsInline(AppReportFilterType type) => switch (type) {
-    AppReportFilterType.text => true,
-    AppReportFilterType.search => true,
-    AppReportFilterType.singleSelect => true,
-    AppReportFilterType.dateRange => true,
-    AppReportFilterType.date => true,
-    _ => false,
-  };
-
   @override
   void initState() {
     super.initState();
     _currentValues = Map<String, Object?>.from(widget.initialValues);
-    _textControllers = <String, TextEditingController>{
-      for (final f in widget.filters.where(_isTextType))
-        f.name: TextEditingController(
-          text: widget.initialValues[f.name] as String? ?? '',
-        ),
-    };
+    _textControllers = <String, TextEditingController>{};
+    _reconcileTextControllers();
   }
 
   @override
   void didUpdateWidget(covariant AppReportInlineFiltersBar oldWidget) {
     super.didUpdateWidget(oldWidget);
+    _reconcileTextControllers();
     if (oldWidget.initialValues != widget.initialValues) {
       _currentValues = Map<String, Object?>.from(widget.initialValues);
       for (final entry in _textControllers.entries) {
@@ -84,6 +72,34 @@ class _AppReportInlineFiltersBarState extends State<AppReportInlineFiltersBar> {
           entry.value.text = newText;
         }
       }
+    }
+  }
+
+  /// Keeps [_textControllers] in sync with the current text-type filters.
+  ///
+  /// Without this, filters added after the first build would render without a
+  /// controller and removed filters would leak their controller until dispose.
+  void _reconcileTextControllers() {
+    final desiredNames = widget.filters
+        .where(_isTextType)
+        .map((f) => f.name)
+        .toSet();
+
+    final removedNames = _textControllers.keys
+        .where((name) => !desiredNames.contains(name))
+        .toList(growable: false);
+    for (final name in removedNames) {
+      _textDebouncers.remove(name)?.cancel();
+      _textControllers.remove(name)?.dispose();
+    }
+
+    for (final f in widget.filters.where(_isTextType)) {
+      _textControllers.putIfAbsent(
+        f.name,
+        () => TextEditingController(
+          text: widget.initialValues[f.name] as String? ?? '',
+        ),
+      );
     }
   }
 
@@ -155,11 +171,11 @@ class _AppReportInlineFiltersBarState extends State<AppReportInlineFiltersBar> {
     final tokens = theme.extension<AppThemeTokens>()!;
 
     final supported = widget.filters
-        .where((f) => _supportsInline(f.type))
+        .where((f) => f.type.supportsInlineLayout)
         .toList(growable: false);
     final hasAdvancedFilters =
         widget.showAdvancedFiltersButton &&
-        widget.filters.any((f) => !_supportsInline(f.type));
+        widget.filters.any((f) => !f.type.supportsInlineLayout);
 
     if (supported.isEmpty && !hasAdvancedFilters) {
       return const SizedBox.shrink();

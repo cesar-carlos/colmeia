@@ -1,3 +1,4 @@
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:flutter/material.dart';
 
@@ -8,21 +9,28 @@ class AppDataStaleBanner extends StatelessWidget {
   const AppDataStaleBanner({
     required this.onRefresh,
     super.key,
-    this.message = 'Dados podem estar desatualizados.',
-    this.actionLabel = 'Atualizar',
+    this.message,
+    this.actionLabel,
     this.icon = Icons.update_rounded,
   });
 
   final VoidCallback onRefresh;
-  final String message;
-  final String actionLabel;
+
+  /// Banner message. When null a localized default is used.
+  final String? message;
+
+  /// Refresh action label. When null a localized default is used.
+  final String? actionLabel;
   final IconData icon;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
+    final l10n = AppLocalizations.of(context);
     final color = theme.colorScheme.onSurfaceVariant;
+    final resolvedMessage = message ?? l10n.dataStaleBannerMessage;
+    final resolvedActionLabel = actionLabel ?? l10n.appRefreshAction;
 
     return Row(
       children: <Widget>[
@@ -30,7 +38,7 @@ class AppDataStaleBanner extends StatelessWidget {
         SizedBox(width: tokens.gapXs + 2),
         Expanded(
           child: Text(
-            message,
+            resolvedMessage,
             style: theme.textTheme.bodySmall?.copyWith(color: color),
           ),
         ),
@@ -40,7 +48,7 @@ class AppDataStaleBanner extends StatelessWidget {
             visualDensity: VisualDensity.compact,
             padding: EdgeInsets.symmetric(horizontal: tokens.gapSm),
           ),
-          child: Text(actionLabel),
+          child: Text(resolvedActionLabel),
         ),
       ],
     );

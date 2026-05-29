@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
+import 'package:colmeia/app/shell/app_shell_route_presentation.dart';
+import 'package:colmeia/app/shell/app_shell_user_summary.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -12,8 +14,6 @@ import 'package:colmeia/shared/widgets/navigation/app_shell_nav_header.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_nav_menu_item.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_nav_menu_list.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_nav_profile_card.dart';
-import 'package:colmeia/shared/widgets/navigation/app_shell_route_presentation.dart';
-import 'package:colmeia/shared/widgets/navigation/app_shell_user_summary.dart';
 import 'package:colmeia/shared/widgets/navigation/show_app_sign_out_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

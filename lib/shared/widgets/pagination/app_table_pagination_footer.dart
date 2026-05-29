@@ -1,4 +1,5 @@
 import 'package:colmeia/core/layout/app_breakpoints.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
@@ -76,7 +77,7 @@ class AppTablePaginationFooter extends StatelessWidget {
     super.key,
     this.pageSizeOptions,
     this.onPageSizeChanged,
-    this.itemsPerPageLabel = 'Itens por página:',
+    this.itemsPerPageLabel,
     this.showingLabelPrefix = 'Mostrando ',
     this.showingLabelMiddle = ' de ',
     this.style = const AppTablePaginationFooterStyle(),
@@ -95,7 +96,10 @@ class AppTablePaginationFooter extends StatelessWidget {
 
   final List<int>? pageSizeOptions;
   final ValueChanged<int>? onPageSizeChanged;
-  final String itemsPerPageLabel;
+
+  /// Label before the page-size selector. When null a localized default is
+  /// used.
+  final String? itemsPerPageLabel;
   final String showingLabelPrefix;
   final String showingLabelMiddle;
   final AppTablePaginationFooterStyle style;
@@ -107,6 +111,9 @@ class AppTablePaginationFooter extends StatelessWidget {
     final scheme = theme.colorScheme;
     final isMobile = AppBreakpoints.isMobile(context);
     final numberFormat = NumberFormat.decimalPattern('pt_BR');
+    final resolvedItemsPerPageLabel =
+        itemsPerPageLabel ??
+        AppLocalizations.of(context).reportPaginationItemsPerPage;
 
     final borderSide = BorderSide(
       color: scheme.outlineVariant.withValues(alpha: 0.9),
@@ -132,7 +139,7 @@ class AppTablePaginationFooter extends StatelessWidget {
                   pageSize: pageSize,
                   pageSizeOptions: pageSizeOptions,
                   onPageSizeChanged: onPageSizeChanged,
-                  itemsPerPageLabel: itemsPerPageLabel,
+                  itemsPerPageLabel: resolvedItemsPerPageLabel,
                   showingLabelPrefix: showingLabelPrefix,
                   showingLabelMiddle: showingLabelMiddle,
                   rangeStart: rangeStart,
@@ -167,7 +174,7 @@ class AppTablePaginationFooter extends StatelessWidget {
                     pageSize: pageSize,
                     pageSizeOptions: pageSizeOptions,
                     onPageSizeChanged: onPageSizeChanged,
-                    itemsPerPageLabel: itemsPerPageLabel,
+                    itemsPerPageLabel: resolvedItemsPerPageLabel,
                     showingLabelPrefix: showingLabelPrefix,
                     showingLabelMiddle: showingLabelMiddle,
                     rangeStart: rangeStart,
@@ -362,6 +369,7 @@ class _PaginationControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = Theme.of(context).appTypography;
+    final l10n = AppLocalizations.of(context);
     final slots = buildPaginationPageSlots(
       currentPage: currentPage,
       totalPages: totalPages,
@@ -406,7 +414,7 @@ class _PaginationControls extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         _PaginationIconButton(
-          tooltip: 'Página anterior',
+          tooltip: l10n.reportPaginationPrevious,
           icon: Icons.chevron_left_rounded,
           onPressed: canPrev ? onPrevious : null,
           size: style.iconButtonSize,
@@ -416,7 +424,7 @@ class _PaginationControls extends StatelessWidget {
         SizedBox(width: tokens.gapXs),
         ...pageChunks,
         _PaginationIconButton(
-          tooltip: 'Próxima página',
+          tooltip: l10n.reportPaginationNext,
           icon: Icons.chevron_right_rounded,
           onPressed: canNext ? onNext : null,
           size: style.iconButtonSize,
@@ -523,7 +531,7 @@ class _PageNumberCell extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: 'Página $page',
+      label: AppLocalizations.of(context).reportPaginationPageNumber(page),
       child: Material(
         color: selected
             ? scheme.primaryContainer

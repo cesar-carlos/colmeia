@@ -1,3 +1,4 @@
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
@@ -194,6 +195,7 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
     AppReportViewerStyle newStyle,
   ) {
     return oldStyle.alternateRowColor != newStyle.alternateRowColor ||
+        oldStyle.zebraRows != newStyle.zebraRows ||
         oldStyle.dataTextStyle != newStyle.dataTextStyle;
   }
 
@@ -324,10 +326,25 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
       rows: widget.rows,
       visibleColumns: _visibleColumns,
       context: context,
-      alternateRowColor: widget.style.alternateRowColor,
+      alternateRowColor: _resolvedAlternateRowColor,
       dataTextStyle: widget.style.dataTextStyle,
       onSortChanged: widget.events.onSortChanged,
     );
+  }
+
+  /// Resolves the effective zebra-row color: an explicit
+  /// [AppReportViewerStyle.alternateRowColor] override wins; otherwise a
+  /// theme-aware color is used when [AppReportViewerStyle.zebraRows] is set so
+  /// striping adapts to light/dark mode instead of a baked light-only color.
+  Color? get _resolvedAlternateRowColor {
+    final override = widget.style.alternateRowColor;
+    if (override != null) {
+      return override;
+    }
+    if (!widget.style.zebraRows) {
+      return null;
+    }
+    return Theme.of(context).colorScheme.surfaceContainerLow;
   }
 
   /// Columns visible at the current breakpoint; non-growable for stable layout.
@@ -403,32 +420,21 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
         .map((col) {
           final labelWidget = col.headerBuilder != null
               ? col.headerBuilder!(context, col.label)
-              : DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: headerBackgroundColor,
-                    border: Border(
-                      bottom: BorderSide(
-                        color: headerDividerColor,
+              : _ReportGridColumnHeader(
+                  label: widget.style.uppercaseHeaderLabels
+                      ? col.label.toUpperCase()
+                      : col.label,
+                  alignment: _sfAlignment(col.effectiveAlignment),
+                  height: headerHeight,
+                  horizontalPadding: tokens.gapMd,
+                  backgroundColor: headerBackgroundColor,
+                  dividerColor: headerDividerColor,
+                  textStyle: (col.headerTextStyle ?? defaultHeaderTextStyle)
+                      .copyWith(
+                        letterSpacing:
+                            widget.style.headerLetterSpacing ??
+                            defaultHeaderTextStyle.letterSpacing,
                       ),
-                    ),
-                  ),
-                  child: Container(
-                    alignment: _sfAlignment(col.effectiveAlignment),
-                    padding: EdgeInsets.symmetric(horizontal: tokens.gapMd),
-                    height: headerHeight,
-                    child: Text(
-                      widget.style.uppercaseHeaderLabels
-                          ? col.label.toUpperCase()
-                          : col.label,
-                      style: (col.headerTextStyle ?? defaultHeaderTextStyle)
-                          .copyWith(
-                            letterSpacing:
-                                widget.style.headerLetterSpacing ??
-                                defaultHeaderTextStyle.letterSpacing,
-                          ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
                 );
 
           return GridColumn(
@@ -568,9 +574,7 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
     final tokens = theme.extension<AppThemeTokens>()!;
     final density = widget.style.density;
     final visible = _visibleColumns;
-    final borderAlpha = widget.style.variant == AppReportViewerVariant.minimal
-        ? 0.28
-        : 0.48;
+    final borderAlpha = widget.style.cardBorderAlpha;
 
     if (widget.rows.isEmpty) {
       if (widget.isLoading) {
@@ -580,7 +584,7 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
         message:
             widget.emptyMessage ??
             widget.style.emptyMessage ??
-            'Nenhum resultado encontrado.',
+            AppLocalizations.of(context).reportEmptyDefaultMessage,
         style: widget.style,
         action: widget.emptyAction,
       );
@@ -679,9 +683,68 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
   }
 }
 
+/// Default header cell for a report grid column: background, bottom divider
+/// and an aligned, optionally-uppercased label.
+class _ReportGridColumnHeader extends StatelessWidget {
+  const _ReportGridColumnHeader({
+    required this.label,
+    required this.alignment,
+    required this.height,
+    required this.horizontalPadding,
+    required this.backgroundColor,
+    required this.dividerColor,
+    required this.textStyle,
+  });
+
+  final String label;
+  final Alignment alignment;
+  final double height;
+  final double horizontalPadding;
+  final Color backgroundColor;
+  final Color dividerColor;
+  final TextStyle textStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        border: Border(bottom: BorderSide(color: dividerColor)),
+      ),
+      child: Container(
+        alignment: alignment,
+        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+        height: height,
+        child: Text(
+          label,
+          style: textStyle,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Empty / loading placeholders
 // ---------------------------------------------------------------------------
+
+/// Single rounded placeholder bar used by the loading-grid skeleton.
+class _GridSkeletonBar extends StatelessWidget {
+  const _GridSkeletonBar();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+      ),
+    );
+  }
+}
 
 class _LoadingGridPlaceholder extends StatelessWidget {
   const _LoadingGridPlaceholder({required this.style});
@@ -708,26 +771,15 @@ class _LoadingGridPlaceholder extends StatelessWidget {
           borderRadius: BorderRadius.circular(tokens.cardRadius),
           border: Border.all(
             color: theme.colorScheme.outlineVariant.withValues(
-              alpha: style.variant == AppReportViewerVariant.minimal
-                  ? 0.28
-                  : 0.48,
+              alpha: style.cardBorderAlpha,
             ),
           ),
         ),
         child: Padding(
           padding: EdgeInsets.all(tokens.gapMd),
           child: style.gridHeight != null
-              ? _fixedHeightSkeleton(
-                  tokens,
-                  theme,
-                  headerHeight,
-                )
-              : _intrinsicSkeleton(
-                  tokens,
-                  theme,
-                  headerHeight,
-                  density,
-                ),
+              ? _fixedHeightSkeleton(tokens, headerHeight)
+              : _intrinsicSkeleton(tokens, headerHeight, density),
         ),
       ),
     );
@@ -735,20 +787,7 @@ class _LoadingGridPlaceholder extends StatelessWidget {
     return shell;
   }
 
-  Widget _bar(AppThemeTokens tokens, ThemeData theme) {
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(tokens.formFieldRadius),
-      ),
-    );
-  }
-
-  Widget _fixedHeightSkeleton(
-    AppThemeTokens tokens,
-    ThemeData theme,
-    double headerHeight,
-  ) {
+  Widget _fixedHeightSkeleton(AppThemeTokens tokens, double headerHeight) {
     return SizedBox(
       height: style.gridHeight,
       width: double.infinity,
@@ -756,7 +795,7 @@ class _LoadingGridPlaceholder extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           if (headerHeight > 0) ...<Widget>[
-            SizedBox(height: headerHeight, child: _bar(tokens, theme)),
+            SizedBox(height: headerHeight, child: const _GridSkeletonBar()),
             SizedBox(height: tokens.gapSm),
           ],
           Expanded(
@@ -767,7 +806,7 @@ class _LoadingGridPlaceholder extends StatelessWidget {
                     padding: EdgeInsets.only(
                       bottom: i < _skeletonRowCount - 1 ? tokens.gapXs : 0,
                     ),
-                    child: _bar(tokens, theme),
+                    child: const _GridSkeletonBar(),
                   ),
                 );
               }),
@@ -780,7 +819,6 @@ class _LoadingGridPlaceholder extends StatelessWidget {
 
   Widget _intrinsicSkeleton(
     AppThemeTokens tokens,
-    ThemeData theme,
     double headerHeight,
     AppReportDensity density,
   ) {
@@ -790,7 +828,7 @@ class _LoadingGridPlaceholder extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         if (headerHeight > 0) ...<Widget>[
-          SizedBox(height: headerHeight, child: _bar(tokens, theme)),
+          SizedBox(height: headerHeight, child: const _GridSkeletonBar()),
           SizedBox(height: tokens.gapSm),
         ],
         ...List<Widget>.generate(_skeletonRowCount, (i) {
@@ -798,7 +836,7 @@ class _LoadingGridPlaceholder extends StatelessWidget {
             padding: EdgeInsets.only(
               bottom: i < _skeletonRowCount - 1 ? tokens.gapXs : 0,
             ),
-            child: SizedBox(height: rowHeight, child: _bar(tokens, theme)),
+            child: SizedBox(height: rowHeight, child: const _GridSkeletonBar()),
           );
         }),
       ],
@@ -831,9 +869,7 @@ class _EmptyGridPlaceholder extends StatelessWidget {
           borderRadius: BorderRadius.circular(tokens.cardRadius),
           border: Border.all(
             color: theme.colorScheme.outlineVariant.withValues(
-              alpha: style.variant == AppReportViewerVariant.minimal
-                  ? 0.28
-                  : 0.48,
+              alpha: style.cardBorderAlpha,
             ),
           ),
         ),

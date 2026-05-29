@@ -39,7 +39,6 @@ class SyncfusionRangeAreaChart extends StatelessWidget {
         context: context,
         height: resolvedHeight,
         indicatorColor: chartTheme.primaryColor,
-        label: 'Carregando faixa de variacao...',
       );
     }
 

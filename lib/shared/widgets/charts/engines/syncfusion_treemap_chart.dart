@@ -52,7 +52,6 @@ class SyncfusionTreemapChart<T> extends StatelessWidget {
         context: context,
         height: resolvedHeight,
         indicatorColor: chartTheme.primaryColor,
-        label: 'Carregando mapa hierarquico...',
       );
     }
 

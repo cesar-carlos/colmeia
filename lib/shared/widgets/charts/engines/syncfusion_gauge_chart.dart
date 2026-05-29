@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
@@ -68,20 +69,21 @@ class SyncfusionGaugeChart extends StatelessWidget {
         !reduceMotion && style.animationDuration > 0;
 
     if (isLoading) {
+      final loadingLabel = AppLocalizations.of(context).chartLoadingGeneric;
       return SizedBox(
         height: resolvedHeight,
         child: Center(
           child: Semantics(
             container: true,
             liveRegion: true,
-            label: 'Carregando indicador...',
+            label: loadingLabel,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 CircularProgressIndicator(color: chartTheme.primaryColor),
                 const SizedBox(height: 12),
                 Text(
-                  'Carregando indicador...',
+                  loadingLabel,
                   style: typography.body.copyWith(
                     color: colors.onSurfaceVariant,
                   ),

@@ -3673,6 +3673,348 @@ abstract class AppLocalizations {
   /// **'Applied filters'**
   String get reportFiltersAppliedSectionTitle;
 
+  /// No description provided for @reportRowDetailDefaultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get reportRowDetailDefaultTitle;
+
+  /// No description provided for @reportLoadErrorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load data'**
+  String get reportLoadErrorTitle;
+
+  /// No description provided for @reportEmptyClearFiltersAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get reportEmptyClearFiltersAction;
+
+  /// No description provided for @reportEmptyDefaultMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No results found.'**
+  String get reportEmptyDefaultMessage;
+
+  /// No description provided for @reportLoadingFiltersSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading filters...'**
+  String get reportLoadingFiltersSemantics;
+
+  /// No description provided for @reportLoadingSummarySemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading summary...'**
+  String get reportLoadingSummarySemantics;
+
+  /// No description provided for @reportLoadingTableSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading table...'**
+  String get reportLoadingTableSemantics;
+
+  /// No description provided for @reportLoadingPaginationSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading pagination...'**
+  String get reportLoadingPaginationSemantics;
+
+  /// No description provided for @reportToolbarLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Table tools'**
+  String get reportToolbarLabel;
+
+  /// No description provided for @reportSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search...'**
+  String get reportSearchHint;
+
+  /// No description provided for @reportClearSearchTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get reportClearSearchTooltip;
+
+  /// No description provided for @reportSelectionPill.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 selected} other{{count} selected}}'**
+  String reportSelectionPill(int count);
+
+  /// No description provided for @reportSelectionPillTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected rows in the grid'**
+  String get reportSelectionPillTooltip;
+
+  /// No description provided for @reportGroupedPill.
+  ///
+  /// In en, this message translates to:
+  /// **'Grouped: {label}'**
+  String reportGroupedPill(String label);
+
+  /// No description provided for @reportGroupedPillTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Grouped by {label}'**
+  String reportGroupedPillTooltip(String label);
+
+  /// No description provided for @reportExpandGroupsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand groups'**
+  String get reportExpandGroupsTooltip;
+
+  /// No description provided for @reportCollapseGroupsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse groups'**
+  String get reportCollapseGroupsTooltip;
+
+  /// No description provided for @reportColumnsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Columns'**
+  String get reportColumnsLabel;
+
+  /// No description provided for @reportColumnsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Visible columns'**
+  String get reportColumnsTooltip;
+
+  /// No description provided for @reportPrintLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Print'**
+  String get reportPrintLabel;
+
+  /// No description provided for @reportRefreshTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get reportRefreshTooltip;
+
+  /// No description provided for @reportGroupLevelsTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Control grouping levels'**
+  String get reportGroupLevelsTooltip;
+
+  /// No description provided for @reportExpandToLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Expand to level {level}'**
+  String reportExpandToLevel(int level);
+
+  /// No description provided for @reportCollapseToLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse to level {level}'**
+  String reportCollapseToLevel(int level);
+
+  /// No description provided for @reportGroupLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Group'**
+  String get reportGroupLabel;
+
+  /// No description provided for @reportClearGroupingAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear grouping'**
+  String get reportClearGroupingAction;
+
+  /// No description provided for @reportDensityCompact.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact'**
+  String get reportDensityCompact;
+
+  /// No description provided for @reportDensityCompactTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Denser rows'**
+  String get reportDensityCompactTooltip;
+
+  /// No description provided for @reportDensityComfortable.
+  ///
+  /// In en, this message translates to:
+  /// **'Comfortable'**
+  String get reportDensityComfortable;
+
+  /// No description provided for @reportDensityComfortableTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance between readability and density'**
+  String get reportDensityComfortableTooltip;
+
+  /// No description provided for @reportDensityExpanded.
+  ///
+  /// In en, this message translates to:
+  /// **'Expanded'**
+  String get reportDensityExpanded;
+
+  /// No description provided for @reportDensityExpandedTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'More vertical breathing room'**
+  String get reportDensityExpandedTooltip;
+
+  /// No description provided for @reportExportLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get reportExportLabel;
+
+  /// No description provided for @reportExportScopeCurrentPage.
+  ///
+  /// In en, this message translates to:
+  /// **'{format} of current page'**
+  String reportExportScopeCurrentPage(String format);
+
+  /// No description provided for @reportExportScopeAllPages.
+  ///
+  /// In en, this message translates to:
+  /// **'{format} of all pages'**
+  String reportExportScopeAllPages(String format);
+
+  /// No description provided for @reportExportScopeSelection.
+  ///
+  /// In en, this message translates to:
+  /// **'{format} of selection ({count})'**
+  String reportExportScopeSelection(String format, int count);
+
+  /// No description provided for @reportExportScopeCurrentPageWithFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'{format} of current page + filters'**
+  String reportExportScopeCurrentPageWithFilters(String format);
+
+  /// No description provided for @reportExportScopeAllPagesWithFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'{format} of all pages + filters'**
+  String reportExportScopeAllPagesWithFilters(String format);
+
+  /// No description provided for @reportExportScopeSelectionWithFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'{format} of selection + filters'**
+  String reportExportScopeSelectionWithFilters(String format);
+
+  /// No description provided for @reportFilterRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get reportFilterRequired;
+
+  /// No description provided for @reportFilterOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional'**
+  String get reportFilterOptional;
+
+  /// No description provided for @reportFilterSelectOption.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an option'**
+  String get reportFilterSelectOption;
+
+  /// No description provided for @reportFilterRangeFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get reportFilterRangeFrom;
+
+  /// No description provided for @reportFilterRangeTo.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get reportFilterRangeTo;
+
+  /// No description provided for @reportFilterSearchTagsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search tags...'**
+  String get reportFilterSearchTagsHint;
+
+  /// No description provided for @reportPaginationItemsPerPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Items per page:'**
+  String get reportPaginationItemsPerPage;
+
+  /// No description provided for @reportPaginationPrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous page'**
+  String get reportPaginationPrevious;
+
+  /// No description provided for @reportPaginationNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next page'**
+  String get reportPaginationNext;
+
+  /// No description provided for @reportPaginationPageNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {page}'**
+  String reportPaginationPageNumber(int page);
+
+  /// No description provided for @appLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading…'**
+  String get appLoading;
+
+  /// No description provided for @appLoadingDataSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading data...'**
+  String get appLoadingDataSemantics;
+
+  /// No description provided for @appRefreshAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get appRefreshAction;
+
+  /// No description provided for @dataStaleBannerMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Data may be out of date.'**
+  String get dataStaleBannerMessage;
+
+  /// No description provided for @chartLoadingGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading chart…'**
+  String get chartLoadingGeneric;
+
+  /// No description provided for @reportColumnChooserReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get reportColumnChooserReset;
+
+  /// No description provided for @reportColumnChooserCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get reportColumnChooserCancel;
+
+  /// No description provided for @reportColumnChooserApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get reportColumnChooserApply;
+
   /// No description provided for @clientAgentsErrorLoadCatalog.
   ///
   /// In en, this message translates to:

@@ -1,3 +1,4 @@
+import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_daily_totals_chart_copy.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
@@ -36,6 +37,8 @@ class SalesDailyTotalsChartCard extends StatelessWidget {
         loadFailureMessage: loadFailureMessage,
         isLoading: isLoading,
         useSalesDailyTotalsLabels: true,
+        onRequestFullscreen: (context, request) =>
+            context.pushChartFullscreenFromRequest(request),
         salesSubtitleOverride: range != null
             ? salesDailyTotalsEffectiveSubtitle(
                 l10n,

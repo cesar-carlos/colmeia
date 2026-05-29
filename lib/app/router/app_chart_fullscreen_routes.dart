@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_route_data.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -56,6 +59,21 @@ extension AppChartFullscreenNavigation on BuildContext {
     return pushToData<T>(
       const AppChartFullscreenRouteData(),
       extra: extra,
+    );
+  }
+
+  /// Maps an app-agnostic [AppChartFullscreenRequest] emitted by a shared chart
+  /// to the fullscreen route, so shared widgets stay decoupled from `app/`.
+  void pushChartFullscreenFromRequest(AppChartFullscreenRequest request) {
+    unawaited(
+      pushChartFullscreen<void>(
+        extra: AppChartFullscreenRouteExtra(
+          title: request.title,
+          subtitle: request.subtitle,
+          chartSemanticsLabel: request.semanticsLabel,
+          chartBuilder: request.chartBuilder,
+        ),
+      ),
     );
   }
 }

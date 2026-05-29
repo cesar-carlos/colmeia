@@ -43,7 +43,12 @@ class AppReportToolbar<T> extends StatefulWidget {
     this.onClearSelection,
     this.onOpenFiltersSheet,
     this.activeFilterCount = 0,
+    this.searchHintText,
   });
+
+  /// Optional override for the search field hint. When null a generic localized
+  /// hint is used (shared widget must not assume domain-specific copy).
+  final String? searchHintText;
 
   final AppReportViewerStyle style;
   final AppReportEvents<T> events;
@@ -63,6 +68,10 @@ class AppReportToolbar<T> extends StatefulWidget {
   @override
   State<AppReportToolbar<T>> createState() => _AppReportToolbarState<T>();
 }
+
+/// Search field width on wide layouts, by toolbar mode.
+const double _compactToolbarSearchWidth = 220;
+const double _fullToolbarSearchWidth = 260;
 
 class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
   late final TextEditingController _searchController;
@@ -111,6 +120,7 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
     final typography = theme.appTypography;
+    final l10n = AppLocalizations.of(context);
     final style = widget.style;
     if (style.toolbarMode == AppReportToolbarMode.hidden) {
       return const SizedBox.shrink();
@@ -162,8 +172,8 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
     Widget buildContent(BoxConstraints constraints) {
       final isCompact = constraints.maxWidth < AppBreakpoints.mobile;
       final searchWidth = compactToolbar
-          ? (isCompact ? constraints.maxWidth : 220.0)
-          : (isCompact ? constraints.maxWidth : 260.0);
+          ? (isCompact ? constraints.maxWidth : _compactToolbarSearchWidth)
+          : (isCompact ? constraints.maxWidth : _fullToolbarSearchWidth);
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,7 +184,7 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
             Padding(
               padding: EdgeInsets.only(bottom: tokens.gapSm),
               child: Text(
-                'Ferramentas da tabela',
+                l10n.reportToolbarLabel,
                 style: typography.utilityOverline.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                   letterSpacing: 0.3,
@@ -192,7 +202,7 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
                   child: AppTextField(
                     controller: _searchController,
                     enabled: !widget.isLoading,
-                    hintText: 'Buscar vendedor, loja ou produto',
+                    hintText: widget.searchHintText ?? l10n.reportSearchHint,
                     prefixIcon: Icons.search_rounded,
                     density: AppTextFieldDensity.compact,
                     // Avoid rebuilding the whole AppTextField every keystroke:
@@ -212,18 +222,16 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
               if (showSelectionStatus)
                 _ToolbarPill(
                   icon: Icons.checklist_rounded,
-                  label: widget.selectedRowCount == 1
-                      ? '1 selecionado'
-                      : '${widget.selectedRowCount} selecionados',
-                  tooltip: 'Linhas selecionadas na grade',
+                  label: l10n.reportSelectionPill(widget.selectedRowCount),
+                  tooltip: l10n.reportSelectionPillTooltip,
                   onRemove: widget.isLoading ? null : widget.onClearSelection,
                 ),
               ...activeGroups.map((group) {
                 final label = groupLabels[group.columnKey] ?? group.columnKey;
                 return _ToolbarPill(
                   icon: Icons.layers_outlined,
-                  label: 'Agrupado: $label',
-                  tooltip: 'Agrupado por $label',
+                  label: l10n.reportGroupedPill(label),
+                  tooltip: l10n.reportGroupedPillTooltip(label),
                   onRemove: widget.isLoading
                       ? null
                       : () {
@@ -258,7 +266,7 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
               if (activeGroups.isNotEmpty)
                 _GroupStateButton(
                   icon: Icons.unfold_more_rounded,
-                  tooltip: 'Expandir grupos',
+                  tooltip: l10n.reportExpandGroupsTooltip,
                   onPressed: widget.isLoading
                       ? null
                       : () {
@@ -273,7 +281,7 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
               if (activeGroups.isNotEmpty)
                 _GroupStateButton(
                   icon: Icons.unfold_less_rounded,
-                  tooltip: 'Recolher grupos',
+                  tooltip: l10n.reportCollapseGroupsTooltip,
                   onPressed: widget.isLoading
                       ? null
                       : () {
@@ -294,53 +302,12 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
                   onGroupStateChanged: widget.events.onGroupStateChanged,
                 ),
               if (style.showColumnChooser)
-                Tooltip(
-                  message: 'Colunas visíveis',
-                  child: compactToolbar
-                      ? AppFlatButton(
-                          onPressed: canChooseColumns
-                              ? () async {
-                                  final result =
-                                      await showAppReportColumnChooser<T>(
-                                        context: context,
-                                        columns: widget.columns,
-                                        currentlyVisible:
-                                            widget.visibleColumnKeys,
-                                      );
-                                  if (result != null) {
-                                    widget.events.onColumnVisibilityChanged
-                                        ?.call(result);
-                                  }
-                                }
-                              : null,
-                          fillWidth: false,
-                          child: const Icon(
-                            Icons.view_column_outlined,
-                            size: 18,
-                          ),
-                        )
-                      : AppSecondaryButton(
-                          onPressed: canChooseColumns
-                              ? () async {
-                                  final result =
-                                      await showAppReportColumnChooser<T>(
-                                        context: context,
-                                        columns: widget.columns,
-                                        currentlyVisible:
-                                            widget.visibleColumnKeys,
-                                      );
-                                  if (result != null) {
-                                    widget.events.onColumnVisibilityChanged
-                                        ?.call(result);
-                                  }
-                                }
-                              : null,
-                          label: 'Colunas',
-                          icon: const Icon(
-                            Icons.view_column_outlined,
-                            size: 18,
-                          ),
-                        ),
+                _ColumnChooserButton<T>(
+                  enabled: canChooseColumns,
+                  columns: widget.columns,
+                  visibleColumnKeys: widget.visibleColumnKeys,
+                  compact: compactToolbar,
+                  onVisibilityChanged: widget.events.onColumnVisibilityChanged,
                 ),
               if (style.showExportActions)
                 _ExportButton(
@@ -352,7 +319,7 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
                 ),
               if (style.showPrintAction)
                 Tooltip(
-                  message: 'Imprimir',
+                  message: l10n.reportPrintLabel,
                   child: compactToolbar
                       ? AppFlatButton(
                           onPressed: canPrint
@@ -365,13 +332,13 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
                           onPressed: canPrint
                               ? widget.events.onPrintRequested
                               : null,
-                          label: 'Imprimir',
+                          label: l10n.reportPrintLabel,
                           icon: const Icon(Icons.print_outlined, size: 18),
                         ),
                 ),
               if (style.showRefreshAction)
                 Tooltip(
-                  message: 'Atualizar',
+                  message: l10n.reportRefreshTooltip,
                   child: AppFlatButton(
                     onPressed: canRefresh
                         ? () => widget.events.onRefresh?.call()
@@ -474,7 +441,7 @@ class _ToolbarPill extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(tokens.formFieldRadius + 10),
+          borderRadius: BorderRadius.circular(tokens.chipRadius),
           border: Border.all(
             color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
           ),
@@ -646,11 +613,12 @@ class _GroupLevelButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return MenuAnchor(
       style: _buildReportMenuStyle(context),
       builder: (context, menuController, child) {
         return Tooltip(
-          message: 'Controlar níveis de agrupamento',
+          message: l10n.reportGroupLevelsTooltip,
           child: AppFlatButton(
             onPressed: enabled
                 ? () {
@@ -684,7 +652,7 @@ class _GroupLevelButton extends StatelessWidget {
                     controller?.expandToLevel(level);
                   }
                 : null,
-            child: Text('Expandir até nível $level'),
+            child: Text(l10n.reportExpandToLevel(level)),
           ),
           MenuItemButton(
             style: _buildReportMenuItemStyle(context),
@@ -702,7 +670,7 @@ class _GroupLevelButton extends StatelessWidget {
                     controller?.collapseToLevel(level);
                   }
                 : null,
-            child: Text('Recolher até nível $level'),
+            child: Text(l10n.reportCollapseToLevel(level)),
           ),
           if (level < levelCount) const Divider(height: 1),
         ],
@@ -732,6 +700,7 @@ class _GroupButton<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return MenuAnchor(
       style: _buildReportMenuStyle(context),
       builder: (context, controller, child) {
@@ -746,7 +715,7 @@ class _GroupButton<T> extends StatelessWidget {
             : null;
         if (compact) {
           return Tooltip(
-            message: 'Agrupar',
+            message: l10n.reportGroupLabel,
             child: AppFlatButton(
               onPressed: onPressed,
               fillWidth: false,
@@ -757,7 +726,7 @@ class _GroupButton<T> extends StatelessWidget {
 
         return AppSecondaryButton(
           onPressed: onPressed,
-          label: 'Agrupar',
+          label: l10n.reportGroupLabel,
           icon: const Icon(Icons.layers_outlined, size: 18),
         );
       },
@@ -768,7 +737,7 @@ class _GroupButton<T> extends StatelessWidget {
           onPressed: currentGroups.isEmpty
               ? null
               : () => onChanged?.call(const <AppReportGroupDescriptor>[]),
-          child: const Text('Limpar agrupamento'),
+          child: Text(l10n.reportClearGroupingAction),
         ),
         if (groupableColumns.isNotEmpty) const Divider(height: 1),
         ...groupableColumns.map((column) {
@@ -815,26 +784,79 @@ class _DensityToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return AppSegmentedControl<AppReportDensity>(
-      options: const <AppSegmentedControlOption<AppReportDensity>>[
+      options: <AppSegmentedControlOption<AppReportDensity>>[
         AppSegmentedControlOption(
           value: AppReportDensity.compact,
-          label: 'Compacto',
-          tooltip: 'Linhas mais densas',
+          label: l10n.reportDensityCompact,
+          tooltip: l10n.reportDensityCompactTooltip,
         ),
         AppSegmentedControlOption(
           value: AppReportDensity.comfortable,
-          label: 'Conforto',
-          tooltip: 'Equilibrio entre leitura e densidade',
+          label: l10n.reportDensityComfortable,
+          tooltip: l10n.reportDensityComfortableTooltip,
         ),
         AppSegmentedControlOption(
           value: AppReportDensity.expanded,
-          label: 'Expandido',
-          tooltip: 'Mais respiro vertical',
+          label: l10n.reportDensityExpanded,
+          tooltip: l10n.reportDensityExpandedTooltip,
         ),
       ],
       value: current,
       onChanged: onChanged ?? (_) {},
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Column chooser button
+// ---------------------------------------------------------------------------
+
+class _ColumnChooserButton<T> extends StatelessWidget {
+  const _ColumnChooserButton({
+    required this.enabled,
+    required this.columns,
+    required this.visibleColumnKeys,
+    required this.compact,
+    this.onVisibilityChanged,
+  });
+
+  final bool enabled;
+  final List<AppReportColumn<T>> columns;
+  final Set<String> visibleColumnKeys;
+  final bool compact;
+  final ValueChanged<Set<String>>? onVisibilityChanged;
+
+  Future<void> _openChooser(BuildContext context) async {
+    final result = await showAppReportColumnChooser<T>(
+      context: context,
+      columns: columns,
+      currentlyVisible: visibleColumnKeys,
+    );
+    if (result != null) {
+      onVisibilityChanged?.call(result);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final onPressed = enabled ? () => _openChooser(context) : null;
+    const icon = Icon(Icons.view_column_outlined, size: 18);
+    return Tooltip(
+      message: l10n.reportColumnsTooltip,
+      child: compact
+          ? AppFlatButton(
+              onPressed: onPressed,
+              fillWidth: false,
+              child: icon,
+            )
+          : AppSecondaryButton(
+              onPressed: onPressed,
+              label: l10n.reportColumnsLabel,
+              icon: icon,
+            ),
     );
   }
 }
@@ -858,6 +880,7 @@ class _ExportButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return MenuAnchor(
       style: _buildReportMenuStyle(context),
       builder: (ctx, controller, child) {
@@ -872,7 +895,7 @@ class _ExportButton extends StatelessWidget {
             : null;
         if (compact) {
           return Tooltip(
-            message: 'Exportar',
+            message: l10n.reportExportLabel,
             child: AppFlatButton(
               onPressed: onPressed,
               fillWidth: false,
@@ -883,7 +906,7 @@ class _ExportButton extends StatelessWidget {
 
         return AppSecondaryButton(
           onPressed: onPressed,
-          label: 'Exportar',
+          label: l10n.reportExportLabel,
           icon: const Icon(Icons.download_outlined, size: 18),
         );
       },
@@ -904,27 +927,36 @@ class _ExportButton extends StatelessWidget {
     BuildContext context,
     AppReportExportFormat format,
   ) {
+    final l10n = AppLocalizations.of(context);
     final scopeLabel = format.label;
 
+    _ExportMenuItem item({
+      required AppReportExportScope scope,
+      required String label,
+      bool includeFilters = false,
+    }) {
+      return _ExportMenuItem(
+        format: format,
+        scope: scope,
+        label: label,
+        includeFilters: includeFilters,
+        onExportRequested: onExportRequested,
+      );
+    }
+
     final items = <Widget>[
-      _buildExportMenuItem(
-        context: context,
-        format: format,
+      item(
         scope: AppReportExportScope.currentPage,
-        label: '$scopeLabel da página atual',
+        label: l10n.reportExportScopeCurrentPage(scopeLabel),
       ),
-      _buildExportMenuItem(
-        context: context,
-        format: format,
+      item(
         scope: AppReportExportScope.allPages,
-        label: '$scopeLabel de todas as páginas',
+        label: l10n.reportExportScopeAllPages(scopeLabel),
       ),
       if (selectedRowCount > 0)
-        _buildExportMenuItem(
-          context: context,
-          format: format,
+        item(
           scope: AppReportExportScope.selection,
-          label: '$scopeLabel da seleção ($selectedRowCount)',
+          label: l10n.reportExportScopeSelection(scopeLabel, selectedRowCount),
         ),
     ];
 
@@ -932,31 +964,25 @@ class _ExportButton extends StatelessWidget {
       items
         ..add(const Divider(height: 1))
         ..add(
-          _buildExportMenuItem(
-            context: context,
-            format: format,
+          item(
             scope: AppReportExportScope.currentPage,
             includeFilters: true,
-            label: '$scopeLabel da página atual + filtros',
+            label: l10n.reportExportScopeCurrentPageWithFilters(scopeLabel),
           ),
         )
         ..add(
-          _buildExportMenuItem(
-            context: context,
-            format: format,
+          item(
             scope: AppReportExportScope.allPages,
             includeFilters: true,
-            label: '$scopeLabel de todas as páginas + filtros',
+            label: l10n.reportExportScopeAllPagesWithFilters(scopeLabel),
           ),
         );
       if (selectedRowCount > 0) {
         items.add(
-          _buildExportMenuItem(
-            context: context,
-            format: format,
+          item(
             scope: AppReportExportScope.selection,
             includeFilters: true,
-            label: '$scopeLabel da seleção + filtros',
+            label: l10n.reportExportScopeSelectionWithFilters(scopeLabel),
           ),
         );
       }
@@ -964,14 +990,25 @@ class _ExportButton extends StatelessWidget {
 
     return items;
   }
+}
 
-  Widget _buildExportMenuItem({
-    required BuildContext context,
-    required AppReportExportFormat format,
-    required AppReportExportScope scope,
-    required String label,
-    bool includeFilters = false,
-  }) {
+class _ExportMenuItem extends StatelessWidget {
+  const _ExportMenuItem({
+    required this.format,
+    required this.scope,
+    required this.label,
+    required this.onExportRequested,
+    this.includeFilters = false,
+  });
+
+  final AppReportExportFormat format;
+  final AppReportExportScope scope;
+  final String label;
+  final ValueChanged<AppReportExportRequest> onExportRequested;
+  final bool includeFilters;
+
+  @override
+  Widget build(BuildContext context) {
     return MenuItemButton(
       style: _buildReportMenuItemStyle(context),
       onPressed: () {
@@ -1016,7 +1053,7 @@ class _SearchClearButton extends StatelessWidget {
         }
         return IconButton(
           icon: const Icon(Icons.close_rounded, size: 18),
-          tooltip: 'Limpar busca',
+          tooltip: AppLocalizations.of(context).reportClearSearchTooltip,
           onPressed: isLoading
               ? null
               : () {

@@ -23,7 +23,7 @@ class CustomSunburstChart<T> extends StatelessWidget {
     this.emptyPlaceholder,
     this.semanticsLabel,
     this.semanticsHint,
-    this.loadingSemanticsLabel = 'Carregando grafico sunburst...',
+    this.loadingSemanticsLabel,
     this.emptySemanticsLabel = 'Grafico sunburst sem dados.',
   });
 
@@ -41,7 +41,7 @@ class CustomSunburstChart<T> extends StatelessWidget {
   final Widget? emptyPlaceholder;
   final String? semanticsLabel;
   final String? semanticsHint;
-  final String loadingSemanticsLabel;
+  final String? loadingSemanticsLabel;
   final String emptySemanticsLabel;
 
   @override

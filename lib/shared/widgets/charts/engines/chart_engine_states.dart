@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
@@ -15,14 +16,14 @@ Widget buildChartLoadingState({
   required BuildContext context,
   required double height,
   required Color indicatorColor,
-  required String label,
+  String? label,
   ChartLoadingPlaceholderVariant variant =
       ChartLoadingPlaceholderVariant.radial,
 }) {
   return AppSkeleton(
     enabled: true,
     showDelay: Duration.zero,
-    loadingSemanticsLabel: label,
+    loadingSemanticsLabel: label ?? AppLocalizations.of(context).chartLoadingGeneric,
     child: SizedBox(
       height: height,
       child: ExcludeSemantics(

@@ -17,6 +17,16 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 /// Slightly smaller type within this card (header, legend, center labels).
 const double _kCategoryDonutTypographyTightenFactor = 0.92;
 
+/// Transition when the donut center label swaps on selection change.
+const Duration _kCategoryDonutCenterLabelSwitchDuration = Duration(
+  milliseconds: 280,
+);
+
+/// Background highlight transition for a legend row on selection change.
+const Duration _kCategoryDonutLegendHighlightDuration = Duration(
+  milliseconds: 180,
+);
+
 TextStyle _tightenTypographyFontSize(TextStyle style) {
   final fs = style.fontSize;
   if (fs == null) {
@@ -710,7 +720,7 @@ class _DonutSection extends StatelessWidget {
                 children: <Widget>[
                   if (centerPrimary != null && centerPrimary!.isNotEmpty)
                     AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 280),
+                      duration: _kCategoryDonutCenterLabelSwitchDuration,
                       switchInCurve: Curves.easeOutCubic,
                       switchOutCurve: Curves.easeInCubic,
                       transitionBuilder: (child, animation) {
@@ -880,7 +890,7 @@ class _LegendRow extends StatelessWidget {
           onTap: onTap,
           borderRadius: borderRadius,
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
+            duration: _kCategoryDonutLegendHighlightDuration,
             curve: Curves.easeOut,
             decoration: BoxDecoration(
               color: isSelected ? selectedSurface : Colors.transparent,

@@ -1,6 +1,6 @@
 import 'package:colmeia/app/router/app_routes.dart';
+import 'package:colmeia/app/shell/app_shell_route_presentation.dart';
 import 'package:colmeia/l10n/app_localizations_pt.dart';
-import 'package:colmeia/shared/widgets/navigation/app_shell_route_presentation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

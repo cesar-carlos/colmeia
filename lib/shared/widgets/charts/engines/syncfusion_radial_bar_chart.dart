@@ -24,7 +24,7 @@ class SyncfusionRadialBarChart<T> extends StatelessWidget {
     this.emptyPlaceholder,
     this.semanticsLabel,
     this.semanticsHint,
-    this.loadingSemanticsLabel = 'Carregando grafico radial...',
+    this.loadingSemanticsLabel,
     this.emptySemanticsLabel = 'Grafico radial sem dados.',
   });
 
@@ -41,7 +41,7 @@ class SyncfusionRadialBarChart<T> extends StatelessWidget {
   final Widget? emptyPlaceholder;
   final String? semanticsLabel;
   final String? semanticsHint;
-  final String loadingSemanticsLabel;
+  final String? loadingSemanticsLabel;
   final String emptySemanticsLabel;
 
   double _resolveMaximumValue() {

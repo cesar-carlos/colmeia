@@ -1170,6 +1170,124 @@
   "reportInlineFiltersSelectPeriod": "Select period",
   "reportInlineFiltersSelectDate": "Select date",
   "reportFiltersAppliedSectionTitle": "Applied filters",
+  "reportRowDetailDefaultTitle": "Details",
+  "reportLoadErrorTitle": "Could not load data",
+  "reportEmptyClearFiltersAction": "Clear filters",
+  "reportEmptyDefaultMessage": "No results found.",
+  "reportLoadingFiltersSemantics": "Loading filters...",
+  "reportLoadingSummarySemantics": "Loading summary...",
+  "reportLoadingTableSemantics": "Loading table...",
+  "reportLoadingPaginationSemantics": "Loading pagination...",
+  "reportToolbarLabel": "Table tools",
+  "reportSearchHint": "Search...",
+  "reportClearSearchTooltip": "Clear search",
+  "reportSelectionPill": "{count, plural, =1{1 selected} other{{count} selected}}",
+  "@reportSelectionPill": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "reportSelectionPillTooltip": "Selected rows in the grid",
+  "reportGroupedPill": "Grouped: {label}",
+  "@reportGroupedPill": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "reportGroupedPillTooltip": "Grouped by {label}",
+  "@reportGroupedPillTooltip": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "reportExpandGroupsTooltip": "Expand groups",
+  "reportCollapseGroupsTooltip": "Collapse groups",
+  "reportColumnsLabel": "Columns",
+  "reportColumnsTooltip": "Visible columns",
+  "reportPrintLabel": "Print",
+  "reportRefreshTooltip": "Refresh",
+  "reportGroupLevelsTooltip": "Control grouping levels",
+  "reportExpandToLevel": "Expand to level {level}",
+  "@reportExpandToLevel": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "reportCollapseToLevel": "Collapse to level {level}",
+  "@reportCollapseToLevel": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "reportGroupLabel": "Group",
+  "reportClearGroupingAction": "Clear grouping",
+  "reportDensityCompact": "Compact",
+  "reportDensityCompactTooltip": "Denser rows",
+  "reportDensityComfortable": "Comfortable",
+  "reportDensityComfortableTooltip": "Balance between readability and density",
+  "reportDensityExpanded": "Expanded",
+  "reportDensityExpandedTooltip": "More vertical breathing room",
+  "reportExportLabel": "Export",
+  "reportExportScopeCurrentPage": "{format} of current page",
+  "@reportExportScopeCurrentPage": {
+    "placeholders": {
+      "format": {"type": "String"}
+    }
+  },
+  "reportExportScopeAllPages": "{format} of all pages",
+  "@reportExportScopeAllPages": {
+    "placeholders": {
+      "format": {"type": "String"}
+    }
+  },
+  "reportExportScopeSelection": "{format} of selection ({count})",
+  "@reportExportScopeSelection": {
+    "placeholders": {
+      "format": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "reportExportScopeCurrentPageWithFilters": "{format} of current page + filters",
+  "@reportExportScopeCurrentPageWithFilters": {
+    "placeholders": {
+      "format": {"type": "String"}
+    }
+  },
+  "reportExportScopeAllPagesWithFilters": "{format} of all pages + filters",
+  "@reportExportScopeAllPagesWithFilters": {
+    "placeholders": {
+      "format": {"type": "String"}
+    }
+  },
+  "reportExportScopeSelectionWithFilters": "{format} of selection + filters",
+  "@reportExportScopeSelectionWithFilters": {
+    "placeholders": {
+      "format": {"type": "String"}
+    }
+  },
+  "reportFilterRequired": "Required",
+  "reportFilterOptional": "Optional",
+  "reportFilterSelectOption": "Select an option",
+  "reportFilterRangeFrom": "From",
+  "reportFilterRangeTo": "To",
+  "reportFilterSearchTagsHint": "Search tags...",
+  "reportPaginationItemsPerPage": "Items per page:",
+  "reportPaginationPrevious": "Previous page",
+  "reportPaginationNext": "Next page",
+  "reportPaginationPageNumber": "Page {page}",
+  "@reportPaginationPageNumber": {
+    "placeholders": {
+      "page": {"type": "int"}
+    }
+  },
+  "appLoading": "Loading…",
+  "appLoadingDataSemantics": "Loading data...",
+  "appRefreshAction": "Update",
+  "dataStaleBannerMessage": "Data may be out of date.",
+  "chartLoadingGeneric": "Loading chart…",
+  "reportColumnChooserReset": "Reset",
+  "reportColumnChooserCancel": "Cancel",
+  "reportColumnChooserApply": "Apply",
   "clientAgentsErrorLoadCatalog": "Could not load the agent catalog.",
   "clientAgentsErrorLoadCatalogAgent": "Could not load this catalog agent.",
   "clientAgentsErrorLoadClientAccessStatus": "Could not read the access request status.",

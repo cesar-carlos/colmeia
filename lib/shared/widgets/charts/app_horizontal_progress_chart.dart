@@ -1,3 +1,4 @@
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
@@ -189,12 +190,12 @@ class AppHorizontalProgressChart<T> extends StatelessWidget {
       body = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          ..._buildChartHeader(
+          _ProgressChartHeader(
             titleWidget: titleWidget,
             title: title,
-            resolvedTitleStyle: resolvedTitleStyle,
+            titleStyle: resolvedTitleStyle,
             titleTextAlign: style.titleTextAlign,
-            titleBottomSpacing: titleBottomSpacing,
+            bottomSpacing: titleBottomSpacing,
           ),
           emptyPlaceholder ?? const SizedBox.shrink(),
         ],
@@ -269,12 +270,12 @@ class AppHorizontalProgressChart<T> extends StatelessWidget {
       body = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          ..._buildChartHeader(
+          _ProgressChartHeader(
             titleWidget: titleWidget,
             title: title,
-            resolvedTitleStyle: resolvedTitleStyle,
+            titleStyle: resolvedTitleStyle,
             titleTextAlign: style.titleTextAlign,
-            titleBottomSpacing: titleBottomSpacing,
+            bottomSpacing: titleBottomSpacing,
           ),
           ...rows,
         ],
@@ -293,32 +294,45 @@ class AppHorizontalProgressChart<T> extends StatelessWidget {
   }
 }
 
-List<Widget> _buildChartHeader({
-  required Widget? titleWidget,
-  required String? title,
-  required TextStyle? resolvedTitleStyle,
-  required TextAlign? titleTextAlign,
-  required double titleBottomSpacing,
-}) {
-  if (titleWidget != null) {
-    return <Widget>[
-      titleWidget,
-      SizedBox(height: titleBottomSpacing),
-    ];
-  }
+class _ProgressChartHeader extends StatelessWidget {
+  const _ProgressChartHeader({
+    required this.titleWidget,
+    required this.title,
+    required this.titleStyle,
+    required this.titleTextAlign,
+    required this.bottomSpacing,
+  });
 
-  if (title == null || title.trim().isEmpty) {
-    return const <Widget>[];
-  }
+  final Widget? titleWidget;
+  final String? title;
+  final TextStyle? titleStyle;
+  final TextAlign? titleTextAlign;
+  final double bottomSpacing;
 
-  return <Widget>[
-    Text(
-      title,
-      style: resolvedTitleStyle,
-      textAlign: titleTextAlign,
-    ),
-    SizedBox(height: titleBottomSpacing),
-  ];
+  @override
+  Widget build(BuildContext context) {
+    final custom = titleWidget;
+    if (custom != null) {
+      return Padding(
+        padding: EdgeInsets.only(bottom: bottomSpacing),
+        child: custom,
+      );
+    }
+
+    final resolvedTitle = title?.trim();
+    if (resolvedTitle == null || resolvedTitle.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomSpacing),
+      child: Text(
+        resolvedTitle,
+        style: titleStyle,
+        textAlign: titleTextAlign,
+      ),
+    );
+  }
 }
 
 class _LoadingRows extends StatelessWidget {
@@ -374,7 +388,10 @@ class _LoadingRows extends StatelessWidget {
               Row(
                 children: <Widget>[
                   Expanded(
-                    child: Text('Carregando…', style: placeholderStyle),
+                    child: Text(
+                      AppLocalizations.of(context).appLoading,
+                      style: placeholderStyle,
+                    ),
                   ),
                   SizedBox(
                     width: 40,
@@ -406,12 +423,12 @@ class _LoadingRows extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        ..._buildChartHeader(
+        _ProgressChartHeader(
           titleWidget: titleWidget,
           title: title,
-          resolvedTitleStyle: resolvedTitleStyle,
+          titleStyle: resolvedTitleStyle,
           titleTextAlign: titleTextAlign,
-          titleBottomSpacing: titleBottomSpacing,
+          bottomSpacing: titleBottomSpacing,
         ),
         ...rows,
       ],

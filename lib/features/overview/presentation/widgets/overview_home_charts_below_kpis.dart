@@ -1,3 +1,4 @@
+import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
 import 'package:colmeia/features/overview/presentation/overview_sorted_rankings.dart';
@@ -85,6 +86,8 @@ class _OverviewHomeChartsBelowKpisState
           points: overview.dailySalesTrend,
           loadFailed: overview.dailySalesTrendLoadFailed,
           loadFailureMessage: overview.dailySalesTrendLoadFailureMessage,
+          onRequestFullscreen: (context, request) =>
+              context.pushChartFullscreenFromRequest(request),
         ),
       ),
       _OverviewStageDescriptor(

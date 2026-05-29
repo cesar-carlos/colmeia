@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
@@ -9,7 +10,7 @@ class AppSkeleton extends StatefulWidget {
     required this.child,
     this.showDelay = const Duration(milliseconds: 180),
     this.transitionDuration = const Duration(milliseconds: 220),
-    this.loadingSemanticsLabel = 'Carregando dados...',
+    this.loadingSemanticsLabel,
     super.key,
   });
 
@@ -17,7 +18,10 @@ class AppSkeleton extends StatefulWidget {
   final Widget child;
   final Duration showDelay;
   final Duration transitionDuration;
-  final String loadingSemanticsLabel;
+
+  /// Accessibility label announced while the skeleton is visible. When null a
+  /// localized default is used.
+  final String? loadingSemanticsLabel;
 
   @override
   State<AppSkeleton> createState() => _AppSkeletonState();
@@ -106,7 +110,9 @@ class _AppSkeletonState extends State<AppSkeleton> {
         ? Semantics(
             container: true,
             liveRegion: true,
-            label: widget.loadingSemanticsLabel,
+            label:
+                widget.loadingSemanticsLabel ??
+                AppLocalizations.of(context).appLoadingDataSemantics,
             child: body,
           )
         : body;

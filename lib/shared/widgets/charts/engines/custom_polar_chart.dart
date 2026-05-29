@@ -40,7 +40,6 @@ class CustomPolarChart extends StatelessWidget {
         context: context,
         height: resolvedHeight,
         indicatorColor: chartTheme.primaryColor,
-        label: 'Carregando grafico polar...',
       );
     }
 

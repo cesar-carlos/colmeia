@@ -1,12 +1,12 @@
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/app/router/shell_section_navigation.dart';
+import 'package:colmeia/app/shell/app_shell_app_bar.dart';
+import 'package:colmeia/app/shell/app_shell_drawer.dart';
+import 'package:colmeia/app/shell/app_shell_rail.dart';
 import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/core/layout/app_content_constraint.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/shared/widgets/backgrounds/honeycomb_hex_background.dart';
-import 'package:colmeia/shared/widgets/navigation/app_shell_app_bar.dart';
-import 'package:colmeia/shared/widgets/navigation/app_shell_drawer.dart';
-import 'package:colmeia/shared/widgets/navigation/app_shell_rail.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

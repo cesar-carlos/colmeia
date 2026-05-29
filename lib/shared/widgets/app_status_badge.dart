@@ -1,5 +1,5 @@
-import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/app_chip_container.dart';
 import 'package:flutter/material.dart';
 
 enum AppStatusBadgeVariant {
@@ -29,7 +29,6 @@ class AppStatusBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
     final typography = theme.appTypography;
     final cs = theme.colorScheme;
     final palette = _resolvePalette(cs);
@@ -40,24 +39,15 @@ class AppStatusBadge extends StatelessWidget {
         palette.border ??
         resolvedForeground.withValues(alpha: 0.16);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: resolvedBackground,
-        borderRadius: BorderRadius.circular(tokens.formFieldRadius + 10),
-        border: Border.all(color: resolvedBorder),
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.gapMd,
-          vertical: tokens.gapXs,
-        ),
-        child: Text(
-          label,
-          style: typography.utilityOverline.copyWith(
-            color: resolvedForeground,
-            letterSpacing: 0.4,
-            fontWeight: FontWeight.w700,
-          ),
+    return AppChipContainer(
+      backgroundColor: resolvedBackground,
+      borderColor: resolvedBorder,
+      child: Text(
+        label,
+        style: typography.utilityOverline.copyWith(
+          color: resolvedForeground,
+          letterSpacing: 0.4,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

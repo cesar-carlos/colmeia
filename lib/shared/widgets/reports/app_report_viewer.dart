@@ -69,6 +69,7 @@ class AppReportViewer<T> extends StatefulWidget {
     this.errorMessage,
     this.onRetry,
     this.emptyMessage,
+    this.searchHintText,
   });
 
   /// Column definitions. Required -- defines schema and behaviour.
@@ -114,6 +115,10 @@ class AppReportViewer<T> extends StatefulWidget {
   final String? errorMessage;
   final VoidCallback? onRetry;
   final String? emptyMessage;
+
+  /// Optional override for the toolbar search field hint. When null a generic
+  /// localized hint is used.
+  final String? searchHintText;
 
   @override
   State<AppReportViewer<T>> createState() => _AppReportViewerState<T>();
@@ -263,7 +268,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
           context: context,
           row: row,
           columns: _visibleColumns,
-          title: widget.title ?? 'Detalhes',
+          title: widget.title ?? AppLocalizations.of(context).reportRowDetailDefaultTitle,
         ),
       );
     }
@@ -296,15 +301,6 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
     widget.events.onQueryChanged?.call(updated);
   }
 
-  bool _supportsInlineFilter(AppReportFilterType type) => switch (type) {
-    AppReportFilterType.text => true,
-    AppReportFilterType.search => true,
-    AppReportFilterType.singleSelect => true,
-    AppReportFilterType.date => true,
-    AppReportFilterType.dateRange => true,
-    _ => false,
-  };
-
   /// Builds a "Limpar filtros" CTA shown inside the empty-state placeholder
   /// when the user has active filters but the resulting page has no rows.
   /// Returns null when there are no active filters (i.e. the empty state is
@@ -318,18 +314,12 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
     if (!hasFiltersUi) {
       return null;
     }
-    return Builder(
-      builder: (context) {
-        return OutlinedButton.icon(
-          icon: const Icon(Icons.filter_alt_off_rounded, size: 18),
-          label: const Text('Limpar filtros'),
-          onPressed: () {
-            widget.events.onFilterCleared?.call();
-            _emitQueryChanged(
-              filters: const <String, Object?>{},
-              page: 1,
-            );
-          },
+    return _ReportEmptyClearFiltersAction(
+      onPressed: () {
+        widget.events.onFilterCleared?.call();
+        _emitQueryChanged(
+          filters: const <String, Object?>{},
+          page: 1,
         );
       },
     );
@@ -391,6 +381,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
+    final l10n = AppLocalizations.of(context);
     final style = widget.style;
     final groupableColumns = widget.columns
         .where(
@@ -415,7 +406,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
     final showPagination = style.showPagination && widget.pageInfo != null;
     final showAdvancedInlineFilters =
         showInlineFilters &&
-        (widget.filters?.any((f) => !_supportsInlineFilter(f.type)) ?? false);
+        (widget.filters?.any((f) => !f.type.supportsInlineLayout) ?? false);
     final isMinimal = style.variant == AppReportViewerVariant.minimal;
     final reportCardColor = isMinimal
         ? theme.colorScheme.surface
@@ -447,7 +438,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
         ],
         if (widget.errorMessage != null) ...<Widget>[
           AppInlineErrorPanel(
-            title: 'Não foi possível carregar os dados',
+            title: l10n.reportLoadErrorTitle,
             message: widget.errorMessage!,
             onRetry: widget.onRetry,
           ),
@@ -456,7 +447,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
         if (showPanelFilters) ...<Widget>[
           AppSkeleton(
             enabled: widget.isLoading,
-            loadingSemanticsLabel: 'Carregando filtros...',
+            loadingSemanticsLabel: l10n.reportLoadingFiltersSemantics,
             child: AppReportFiltersPanel(
               filters: widget.filters!,
               initialValues:
@@ -482,14 +473,14 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
         if (showSummary) ...<Widget>[
           AppSkeleton(
             enabled: widget.isLoading,
-            loadingSemanticsLabel: 'Carregando resumo...',
+            loadingSemanticsLabel: l10n.reportLoadingSummarySemantics,
             child: AppReportSummaryBar(items: widget.summaryItems!),
           ),
           SizedBox(height: tokens.sectionSpacing),
         ],
         AppSkeleton(
           enabled: widget.isLoading,
-          loadingSemanticsLabel: 'Carregando tabela...',
+          loadingSemanticsLabel: l10n.reportLoadingTableSemantics,
           child: AppSectionCard(
             color: reportCardColor,
             borderSide: reportCardBorder,
@@ -538,6 +529,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
                   isLoading: widget.isLoading,
                   groupController: _groupController,
                   searchTerm: widget.query?.searchTerm,
+                  searchHintText: widget.searchHintText,
                   selectedRowCount: widget.selectedRows?.length ?? 0,
                   onOpenFiltersSheet:
                       style.filterLayout == AppReportFilterLayout.sheet &&
@@ -583,33 +575,23 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
         ),
         if (showPagination) ...<Widget>[
           SizedBox(height: tokens.sectionSpacing),
-          AppSkeleton(
-            enabled: widget.isLoading,
-            loadingSemanticsLabel: 'Carregando paginação...',
-            child: AppSectionCard(
-              color: reportCardColor,
-              borderSide: reportCardBorder,
-              padding: EdgeInsets.symmetric(
-                horizontal: isMinimal ? tokens.gapMd : tokens.contentSpacing,
-              ),
-              child: AppReportPaginationBar(
-                pageInfo: widget.pageInfo!,
-                onPageChanged: (page) {
-                  widget.events.onPageChanged?.call(page);
-                  _emitQueryChanged(page: page);
-                },
-                onPageSizeChanged: (size) {
-                  widget.events.onPageSizeChanged?.call(size);
-                  _emitQueryChanged(page: 1, pageSize: size);
-                },
-                availablePageSizes: style.resolvedPageSizes,
-                isLoading: widget.isLoading,
-                entityLabel: style.entityLabel,
-                itemsPerPageLabel: style.itemsPerPageLabel,
-                showingLabelPrefix: style.showingLabelPrefix,
-                showingLabelMiddle: style.showingLabelMiddle,
-              ),
-            ),
+          _ReportViewerPaginationSection(
+            pageInfo: widget.pageInfo!,
+            style: style,
+            isLoading: widget.isLoading,
+            cardColor: reportCardColor,
+            cardBorder: reportCardBorder,
+            horizontalPadding: isMinimal
+                ? tokens.gapMd
+                : tokens.contentSpacing,
+            onPageChanged: (page) {
+              widget.events.onPageChanged?.call(page);
+              _emitQueryChanged(page: page);
+            },
+            onPageSizeChanged: (size) {
+              widget.events.onPageSizeChanged?.call(size);
+              _emitQueryChanged(page: 1, pageSize: size);
+            },
           ),
         ],
       ],
@@ -623,5 +605,72 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
     }
 
     return body;
+  }
+}
+
+/// "Limpar filtros" CTA shown inside the grid empty state when the current
+/// filters produced no rows.
+class _ReportEmptyClearFiltersAction extends StatelessWidget {
+  const _ReportEmptyClearFiltersAction({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      icon: const Icon(Icons.filter_alt_off_rounded, size: 18),
+      label: Text(AppLocalizations.of(context).reportEmptyClearFiltersAction),
+      onPressed: onPressed,
+    );
+  }
+}
+
+/// Pagination footer section: skeleton + card chrome around
+/// [AppReportPaginationBar].
+class _ReportViewerPaginationSection extends StatelessWidget {
+  const _ReportViewerPaginationSection({
+    required this.pageInfo,
+    required this.style,
+    required this.isLoading,
+    required this.cardColor,
+    required this.cardBorder,
+    required this.horizontalPadding,
+    required this.onPageChanged,
+    required this.onPageSizeChanged,
+  });
+
+  final AppReportPageInfo pageInfo;
+  final AppReportViewerStyle style;
+  final bool isLoading;
+  final Color cardColor;
+  final BorderSide cardBorder;
+  final double horizontalPadding;
+  final ValueChanged<int> onPageChanged;
+  final ValueChanged<int> onPageSizeChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppSkeleton(
+      enabled: isLoading,
+      loadingSemanticsLabel: AppLocalizations.of(
+        context,
+      ).reportLoadingPaginationSemantics,
+      child: AppSectionCard(
+        color: cardColor,
+        borderSide: cardBorder,
+        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+        child: AppReportPaginationBar(
+          pageInfo: pageInfo,
+          onPageChanged: onPageChanged,
+          onPageSizeChanged: onPageSizeChanged,
+          availablePageSizes: style.resolvedPageSizes,
+          isLoading: isLoading,
+          entityLabel: style.entityLabel,
+          itemsPerPageLabel: style.itemsPerPageLabel,
+          showingLabelPrefix: style.showingLabelPrefix,
+          showingLabelMiddle: style.showingLabelMiddle,
+        ),
+      ),
+    );
   }
 }

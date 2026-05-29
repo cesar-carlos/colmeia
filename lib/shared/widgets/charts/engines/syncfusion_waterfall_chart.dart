@@ -48,7 +48,6 @@ class SyncfusionWaterfallChart<T> extends StatelessWidget {
         context: context,
         height: resolvedHeight,
         indicatorColor: chartTheme.primaryColor,
-        label: 'Carregando variacoes...',
       );
     }
 

@@ -47,7 +47,6 @@ class SyncfusionAreaTrendChart extends StatelessWidget {
         context: context,
         height: resolvedHeight,
         indicatorColor: chartTheme.primaryColor,
-        label: 'Carregando serie temporal...',
       );
     }
 

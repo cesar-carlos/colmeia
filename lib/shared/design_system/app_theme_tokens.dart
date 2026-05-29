@@ -47,6 +47,7 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
     required this.authLoginGapBeforeFooter,
     required this.inlineAlertCornerRadius,
     required this.hexGridPatternOpacity,
+    required this.chipRadius,
     required this.formFieldRadius,
     required this.formFieldPaddingHorizontal,
     required this.formFieldPaddingVerticalComfortable,
@@ -103,6 +104,7 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
       authLoginGapBeforeFooter: 40,
       inlineAlertCornerRadius: 12,
       hexGridPatternOpacity: 0.048,
+      chipRadius: 18,
       formFieldRadius: 8,
       formFieldPaddingHorizontal: 16,
       formFieldPaddingVerticalComfortable: 16,
@@ -207,6 +209,10 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
   /// Default opacity for the shared honeycomb hex grid background.
   final double hexGridPatternOpacity;
 
+  /// Corner radius for pill-shaped chips and badges
+  /// (`AppTagChip`, `AppStatusBadge`).
+  final double chipRadius;
+
   /// Text fields, [InputDecoration] borders, and themed button corners.
   /// Aligned with Stitch control roundness (8dp) for a softer Hive look.
   final double formFieldRadius;
@@ -288,6 +294,7 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
     double? authLoginGapBeforeFooter,
     double? inlineAlertCornerRadius,
     double? hexGridPatternOpacity,
+    double? chipRadius,
     double? formFieldRadius,
     double? formFieldPaddingHorizontal,
     double? formFieldPaddingVerticalComfortable,
@@ -368,6 +375,7 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
           inlineAlertCornerRadius ?? this.inlineAlertCornerRadius,
       hexGridPatternOpacity:
           hexGridPatternOpacity ?? this.hexGridPatternOpacity,
+      chipRadius: chipRadius ?? this.chipRadius,
       formFieldRadius: formFieldRadius ?? this.formFieldRadius,
       formFieldPaddingHorizontal:
           formFieldPaddingHorizontal ?? this.formFieldPaddingHorizontal,
@@ -613,6 +621,7 @@ class AppThemeTokens extends ThemeExtension<AppThemeTokens> {
             t,
           ) ??
           hexGridPatternOpacity,
+      chipRadius: lerpDouble(chipRadius, other.chipRadius, t) ?? chipRadius,
       formFieldRadius:
           lerpDouble(formFieldRadius, other.formFieldRadius, t) ??
           formFieldRadius,

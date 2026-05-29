@@ -54,6 +54,7 @@ class AppReportViewerStyle {
     this.availablePageSizes,
     this.emptyMessage,
     this.alternateRowColor,
+    this.zebraRows = false,
     this.trustServerRowOrder = false,
   });
 
@@ -111,7 +112,7 @@ class AppReportViewerStyle {
       searchDebounce: const Duration(milliseconds: 250),
       uppercaseHeaderLabels: true,
       headerLetterSpacing: 0.6,
-      alternateRowColor: const Color(0xFFF8FAFC),
+      zebraRows: true,
     );
   }
 
@@ -154,8 +155,6 @@ class AppReportViewerStyle {
       entityLabel: entityLabel,
       uppercaseHeaderLabels: true,
       headerLetterSpacing: 0.35,
-      headerBackgroundColor: const Color(0xFFF8FAFC),
-      headerDividerColor: const Color(0xFFE2E8F0),
       headerTextStyle: const TextStyle(
         fontSize: 11,
         height: 1.2,
@@ -166,7 +165,7 @@ class AppReportViewerStyle {
         height: 1.3,
         fontWeight: FontWeight.w500,
       ),
-      alternateRowColor: const Color(0xFFF8FAFC),
+      zebraRows: true,
       gridHeight: gridHeight,
       dataRowHeight: dataRowHeight ?? 72,
       headerRowHeight: 48,
@@ -272,9 +271,15 @@ class AppReportViewerStyle {
   /// Message shown when the grid has no rows to display.
   final String? emptyMessage;
 
-  /// Alternate background color applied to even rows. When null rows share
-  /// the surface color.
+  /// Alternate background color applied to even rows. When null, [zebraRows]
+  /// decides whether a theme-resolved zebra color is used. Set this only to
+  /// override the theme-resolved color with a custom one.
   final Color? alternateRowColor;
+
+  /// When true, even rows use a theme-resolved alternate background (zebra
+  /// striping) that adapts to light/dark mode. Ignored when
+  /// [alternateRowColor] is set, which takes precedence.
+  final bool zebraRows;
 
   /// When true, the report grid updates sort indicators from the viewer query
   /// but does not reorder rows locally — use when the API already returns rows
@@ -283,6 +288,12 @@ class AppReportViewerStyle {
 
   List<int> get resolvedPageSizes =>
       availablePageSizes ?? const <int>[5, 10, 20, 50];
+
+  /// Outline alpha for the grid/placeholder card border, softer for the
+  /// minimal variant. Centralized so the grid and its empty/loading
+  /// placeholders stay visually consistent.
+  double get cardBorderAlpha =>
+      variant == AppReportViewerVariant.minimal ? 0.28 : 0.48;
 
   /// Row height resolved from density when [dataRowHeight] is null.
   double resolvedDataRowHeight(AppReportDensity effectiveDensity) {
@@ -351,6 +362,7 @@ class AppReportViewerStyle {
     List<int>? availablePageSizes,
     String? emptyMessage,
     Color? alternateRowColor,
+    bool? zebraRows,
     bool? trustServerRowOrder,
   }) {
     return AppReportViewerStyle(
@@ -402,6 +414,7 @@ class AppReportViewerStyle {
       availablePageSizes: availablePageSizes ?? this.availablePageSizes,
       emptyMessage: emptyMessage ?? this.emptyMessage,
       alternateRowColor: alternateRowColor ?? this.alternateRowColor,
+      zebraRows: zebraRows ?? this.zebraRows,
       trustServerRowOrder: trustServerRowOrder ?? this.trustServerRowOrder,
     );
   }

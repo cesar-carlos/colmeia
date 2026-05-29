@@ -2291,6 +2291,208 @@ class AppLocalizationsPt extends AppLocalizations {
   String get reportFiltersAppliedSectionTitle => 'Filtros aplicados';
 
   @override
+  String get reportRowDetailDefaultTitle => 'Detalhes';
+
+  @override
+  String get reportLoadErrorTitle => 'Não foi possível carregar os dados';
+
+  @override
+  String get reportEmptyClearFiltersAction => 'Limpar filtros';
+
+  @override
+  String get reportEmptyDefaultMessage => 'Nenhum resultado encontrado.';
+
+  @override
+  String get reportLoadingFiltersSemantics => 'Carregando filtros...';
+
+  @override
+  String get reportLoadingSummarySemantics => 'Carregando resumo...';
+
+  @override
+  String get reportLoadingTableSemantics => 'Carregando tabela...';
+
+  @override
+  String get reportLoadingPaginationSemantics => 'Carregando paginação...';
+
+  @override
+  String get reportToolbarLabel => 'Ferramentas da tabela';
+
+  @override
+  String get reportSearchHint => 'Buscar...';
+
+  @override
+  String get reportClearSearchTooltip => 'Limpar busca';
+
+  @override
+  String reportSelectionPill(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count selecionados',
+      one: '1 selecionado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reportSelectionPillTooltip => 'Linhas selecionadas na grade';
+
+  @override
+  String reportGroupedPill(String label) {
+    return 'Agrupado: $label';
+  }
+
+  @override
+  String reportGroupedPillTooltip(String label) {
+    return 'Agrupado por $label';
+  }
+
+  @override
+  String get reportExpandGroupsTooltip => 'Expandir grupos';
+
+  @override
+  String get reportCollapseGroupsTooltip => 'Recolher grupos';
+
+  @override
+  String get reportColumnsLabel => 'Colunas';
+
+  @override
+  String get reportColumnsTooltip => 'Colunas visíveis';
+
+  @override
+  String get reportPrintLabel => 'Imprimir';
+
+  @override
+  String get reportRefreshTooltip => 'Atualizar';
+
+  @override
+  String get reportGroupLevelsTooltip => 'Controlar níveis de agrupamento';
+
+  @override
+  String reportExpandToLevel(int level) {
+    return 'Expandir até nível $level';
+  }
+
+  @override
+  String reportCollapseToLevel(int level) {
+    return 'Recolher até nível $level';
+  }
+
+  @override
+  String get reportGroupLabel => 'Agrupar';
+
+  @override
+  String get reportClearGroupingAction => 'Limpar agrupamento';
+
+  @override
+  String get reportDensityCompact => 'Compacto';
+
+  @override
+  String get reportDensityCompactTooltip => 'Linhas mais densas';
+
+  @override
+  String get reportDensityComfortable => 'Conforto';
+
+  @override
+  String get reportDensityComfortableTooltip =>
+      'Equilibrio entre leitura e densidade';
+
+  @override
+  String get reportDensityExpanded => 'Expandido';
+
+  @override
+  String get reportDensityExpandedTooltip => 'Mais respiro vertical';
+
+  @override
+  String get reportExportLabel => 'Exportar';
+
+  @override
+  String reportExportScopeCurrentPage(String format) {
+    return '$format da página atual';
+  }
+
+  @override
+  String reportExportScopeAllPages(String format) {
+    return '$format de todas as páginas';
+  }
+
+  @override
+  String reportExportScopeSelection(String format, int count) {
+    return '$format da seleção ($count)';
+  }
+
+  @override
+  String reportExportScopeCurrentPageWithFilters(String format) {
+    return '$format da página atual + filtros';
+  }
+
+  @override
+  String reportExportScopeAllPagesWithFilters(String format) {
+    return '$format de todas as páginas + filtros';
+  }
+
+  @override
+  String reportExportScopeSelectionWithFilters(String format) {
+    return '$format da seleção + filtros';
+  }
+
+  @override
+  String get reportFilterRequired => 'Obrigatório';
+
+  @override
+  String get reportFilterOptional => 'Opcional';
+
+  @override
+  String get reportFilterSelectOption => 'Selecione uma opção';
+
+  @override
+  String get reportFilterRangeFrom => 'De';
+
+  @override
+  String get reportFilterRangeTo => 'Até';
+
+  @override
+  String get reportFilterSearchTagsHint => 'Buscar tags...';
+
+  @override
+  String get reportPaginationItemsPerPage => 'Itens por página:';
+
+  @override
+  String get reportPaginationPrevious => 'Página anterior';
+
+  @override
+  String get reportPaginationNext => 'Próxima página';
+
+  @override
+  String reportPaginationPageNumber(int page) {
+    return 'Página $page';
+  }
+
+  @override
+  String get appLoading => 'Carregando…';
+
+  @override
+  String get appLoadingDataSemantics => 'Carregando dados...';
+
+  @override
+  String get appRefreshAction => 'Atualizar';
+
+  @override
+  String get dataStaleBannerMessage => 'Dados podem estar desatualizados.';
+
+  @override
+  String get chartLoadingGeneric => 'Carregando gráfico…';
+
+  @override
+  String get reportColumnChooserReset => 'Redefinir';
+
+  @override
+  String get reportColumnChooserCancel => 'Cancelar';
+
+  @override
+  String get reportColumnChooserApply => 'Aplicar';
+
+  @override
   String get clientAgentsErrorLoadCatalog =>
       'Não foi possível carregar o catalogo de agentes.';
 
@@ -6214,6 +6416,208 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get reportFiltersAppliedSectionTitle => 'Filtros aplicados';
+
+  @override
+  String get reportRowDetailDefaultTitle => 'Detalhes';
+
+  @override
+  String get reportLoadErrorTitle => 'Não foi possível carregar os dados';
+
+  @override
+  String get reportEmptyClearFiltersAction => 'Limpar filtros';
+
+  @override
+  String get reportEmptyDefaultMessage => 'Nenhum resultado encontrado.';
+
+  @override
+  String get reportLoadingFiltersSemantics => 'Carregando filtros...';
+
+  @override
+  String get reportLoadingSummarySemantics => 'Carregando resumo...';
+
+  @override
+  String get reportLoadingTableSemantics => 'Carregando tabela...';
+
+  @override
+  String get reportLoadingPaginationSemantics => 'Carregando paginação...';
+
+  @override
+  String get reportToolbarLabel => 'Ferramentas da tabela';
+
+  @override
+  String get reportSearchHint => 'Buscar...';
+
+  @override
+  String get reportClearSearchTooltip => 'Limpar busca';
+
+  @override
+  String reportSelectionPill(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count selecionados',
+      one: '1 selecionado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get reportSelectionPillTooltip => 'Linhas selecionadas na grade';
+
+  @override
+  String reportGroupedPill(String label) {
+    return 'Agrupado: $label';
+  }
+
+  @override
+  String reportGroupedPillTooltip(String label) {
+    return 'Agrupado por $label';
+  }
+
+  @override
+  String get reportExpandGroupsTooltip => 'Expandir grupos';
+
+  @override
+  String get reportCollapseGroupsTooltip => 'Recolher grupos';
+
+  @override
+  String get reportColumnsLabel => 'Colunas';
+
+  @override
+  String get reportColumnsTooltip => 'Colunas visíveis';
+
+  @override
+  String get reportPrintLabel => 'Imprimir';
+
+  @override
+  String get reportRefreshTooltip => 'Atualizar';
+
+  @override
+  String get reportGroupLevelsTooltip => 'Controlar níveis de agrupamento';
+
+  @override
+  String reportExpandToLevel(int level) {
+    return 'Expandir até nível $level';
+  }
+
+  @override
+  String reportCollapseToLevel(int level) {
+    return 'Recolher até nível $level';
+  }
+
+  @override
+  String get reportGroupLabel => 'Agrupar';
+
+  @override
+  String get reportClearGroupingAction => 'Limpar agrupamento';
+
+  @override
+  String get reportDensityCompact => 'Compacto';
+
+  @override
+  String get reportDensityCompactTooltip => 'Linhas mais densas';
+
+  @override
+  String get reportDensityComfortable => 'Conforto';
+
+  @override
+  String get reportDensityComfortableTooltip =>
+      'Equilibrio entre leitura e densidade';
+
+  @override
+  String get reportDensityExpanded => 'Expandido';
+
+  @override
+  String get reportDensityExpandedTooltip => 'Mais respiro vertical';
+
+  @override
+  String get reportExportLabel => 'Exportar';
+
+  @override
+  String reportExportScopeCurrentPage(String format) {
+    return '$format da página atual';
+  }
+
+  @override
+  String reportExportScopeAllPages(String format) {
+    return '$format de todas as páginas';
+  }
+
+  @override
+  String reportExportScopeSelection(String format, int count) {
+    return '$format da seleção ($count)';
+  }
+
+  @override
+  String reportExportScopeCurrentPageWithFilters(String format) {
+    return '$format da página atual + filtros';
+  }
+
+  @override
+  String reportExportScopeAllPagesWithFilters(String format) {
+    return '$format de todas as páginas + filtros';
+  }
+
+  @override
+  String reportExportScopeSelectionWithFilters(String format) {
+    return '$format da seleção + filtros';
+  }
+
+  @override
+  String get reportFilterRequired => 'Obrigatório';
+
+  @override
+  String get reportFilterOptional => 'Opcional';
+
+  @override
+  String get reportFilterSelectOption => 'Selecione uma opção';
+
+  @override
+  String get reportFilterRangeFrom => 'De';
+
+  @override
+  String get reportFilterRangeTo => 'Até';
+
+  @override
+  String get reportFilterSearchTagsHint => 'Buscar tags...';
+
+  @override
+  String get reportPaginationItemsPerPage => 'Itens por página:';
+
+  @override
+  String get reportPaginationPrevious => 'Página anterior';
+
+  @override
+  String get reportPaginationNext => 'Próxima página';
+
+  @override
+  String reportPaginationPageNumber(int page) {
+    return 'Página $page';
+  }
+
+  @override
+  String get appLoading => 'Carregando…';
+
+  @override
+  String get appLoadingDataSemantics => 'Carregando dados...';
+
+  @override
+  String get appRefreshAction => 'Atualizar';
+
+  @override
+  String get dataStaleBannerMessage => 'Dados podem estar desatualizados.';
+
+  @override
+  String get chartLoadingGeneric => 'Carregando gráfico…';
+
+  @override
+  String get reportColumnChooserReset => 'Redefinir';
+
+  @override
+  String get reportColumnChooserCancel => 'Cancelar';
+
+  @override
+  String get reportColumnChooserApply => 'Aplicar';
 
   @override
   String get clientAgentsErrorLoadCatalog =>

@@ -10,6 +10,7 @@ import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart
 import 'package:colmeia/shared/widgets/charts/chart_pan_footnote_column.dart';
 import 'package:colmeia/shared/widgets/charts/comparison_bar_chart_margin.dart';
 import 'package:colmeia/shared/widgets/charts/comparison_bar_plot_floor.dart';
+import 'package:colmeia/shared/widgets/charts/engines/cartesian_scroll_geometry.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +19,15 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 /// Reserved height for a simple two-row legend below the plot when the primary
 /// Y-axis is sticky and the built-in chart legend is disabled on split charts.
 const double _kComboExternalLegendHeight = 36;
+
+/// External legend layout (below the plot when the Y-axis is sticky). These are
+/// legend-specific design values, not the standard spacing tokens.
+const double _kComboLegendTopGap = 4;
+const double _kComboLegendItemGap = 20;
+const double _kComboLegendSwatchLabelGap = 6;
+const Size _kComboLegendLineSwatchSize = Size(18, 10);
+const double _kComboLegendBoxSwatchSize = 12;
+const double _kComboLegendSwatchRadius = 2;
 
 enum _ComboLayout { full, yAxisStrip, plotScroll }
 
@@ -329,30 +339,19 @@ class SyncfusionComboChart<T> extends StatelessWidget {
       height: resolvedHeight,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final mediaWidth = MediaQuery.sizeOf(context).width;
-          var layoutWidth =
-              constraints.hasBoundedWidth &&
-                  constraints.maxWidth.isFinite &&
-                  constraints.maxWidth > 0
-              ? constraints.maxWidth
-              : mediaWidth;
-          if (!layoutWidth.isFinite || layoutWidth <= 0) {
-            layoutWidth = minSlotWidth * items.length;
-          }
-
-          final n = items.length;
-          final delta = style.categoryAutoScrollingDelta;
-          final crowded = n > 1 && (layoutWidth / n) < minSlotWidth;
-          final useCategoryViewportPan =
-              !style.enableAutoScroll &&
-              delta != null &&
-              delta > 0 &&
-              n > delta &&
-              crowded;
-          final slotDenom = useCategoryViewportPan ? math.min(n, delta) : n;
-          final footRaw = style.categoryViewportFootnote?.trim();
-          final showPanFootnote =
-              useCategoryViewportPan && footRaw != null && footRaw.isNotEmpty;
+          final geometry = CartesianScrollGeometry.resolve(
+            constraints: constraints,
+            mediaWidth: MediaQuery.sizeOf(context).width,
+            minSlotWidth: minSlotWidth,
+            itemCount: items.length,
+            enableAutoScroll: style.enableAutoScroll,
+            categoryAutoScrollingDelta: style.categoryAutoScrollingDelta,
+            categoryViewportFootnote: style.categoryViewportFootnote,
+          );
+          final layoutWidth = geometry.layoutWidth;
+          final n = geometry.itemCount;
+          final useCategoryViewportPan = geometry.useCategoryViewportPan;
+          final showPanFootnote = geometry.showPanFootnote;
 
           Widget sizedCombo(
             double width,
@@ -378,8 +377,8 @@ class SyncfusionComboChart<T> extends StatelessWidget {
           }
 
           if (!style.enableAutoScroll) {
-            final slotW = layoutWidth / slotDenom;
-            final footText = footRaw ?? '';
+            final slotW = geometry.nonScrollSlotWidth;
+            final footText = geometry.footnoteText;
             // Pan footnote layout matches [SyncfusionComparisonBarChart]
             // (shared [ChartPanFootnoteColumn]).
             var chart = showPanFootnote
@@ -423,10 +422,13 @@ class SyncfusionComboChart<T> extends StatelessWidget {
             return chart;
           }
 
-          final requiredFull = math.max(layoutWidth, minSlotWidth * n);
-          final needsScroll = requiredFull > layoutWidth;
+          final plot = geometry.resolveScrollPlot(
+            minSlotWidth: minSlotWidth,
+            sticky: style.stickyPrimaryYAxisWhileScrolling,
+            stickyWidth: style.stickyPrimaryYAxisWidth,
+          );
 
-          if (!needsScroll) {
+          if (!plot.needsScroll) {
             final slotWidth = layoutWidth / n;
             return buildCartesian(
               context,
@@ -442,12 +444,9 @@ class SyncfusionComboChart<T> extends StatelessWidget {
           }
 
           final sticky = style.stickyPrimaryYAxisWhileScrolling;
-          final stickyW = sticky ? style.stickyPrimaryYAxisWidth : 0.0;
-          final plotViewport = (layoutWidth - stickyW)
-              .clamp(1, double.infinity)
-              .toDouble();
-          final requiredPlot = math.max(plotViewport, minSlotWidth * n);
-          final slotWidth = requiredPlot / n;
+          final stickyW = plot.stickyWidth;
+          final requiredPlot = plot.requiredPlot;
+          final slotWidth = plot.slotWidth;
 
           final legendReserve = sticky && style.showLegend
               ? _kComboExternalLegendHeight
@@ -652,13 +651,13 @@ class _ComboExternalLegend extends StatelessWidget {
       isLine: false,
     );
     return Padding(
-      padding: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.only(top: _kComboLegendTopGap),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
           bar,
           if (showLine) ...<Widget>[
-            const SizedBox(width: 20),
+            const SizedBox(width: _kComboLegendItemGap),
             _LegendSwatch(
               color: lineColor,
               label: lineLabel,
@@ -692,19 +691,19 @@ class _LegendSwatch extends StatelessWidget {
       children: <Widget>[
         if (isLine)
           CustomPaint(
-            size: const Size(18, 10),
+            size: _kComboLegendLineSwatchSize,
             painter: _MiniLineLegendPainter(color: color),
           )
         else
           Container(
-            width: 12,
-            height: 12,
+            width: _kComboLegendBoxSwatchSize,
+            height: _kComboLegendBoxSwatchSize,
             decoration: BoxDecoration(
               color: color,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: BorderRadius.circular(_kComboLegendSwatchRadius),
             ),
           ),
-        const SizedBox(width: 6),
+        const SizedBox(width: _kComboLegendSwatchLabelGap),
         Text(label, style: textStyle),
       ],
     );

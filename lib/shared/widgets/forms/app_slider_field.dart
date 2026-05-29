@@ -1,6 +1,7 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/forms/app_form_field_message.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:flutter/material.dart';
 
@@ -175,43 +176,11 @@ class _AppSliderFieldState extends State<AppSliderField> {
               onChangeEnd: widget.enabled ? _handleChangeEnd : null,
             ),
           ),
-          _SliderFieldMessage(
+          AppFormFieldMessage(
             helperText: widget.helperText,
             errorText: widget.errorText,
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _SliderFieldMessage extends StatelessWidget {
-  const _SliderFieldMessage({
-    required this.helperText,
-    required this.errorText,
-  });
-
-  final String? helperText;
-  final String? errorText;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
-    final message = errorText ?? helperText;
-    if (message == null || message.trim().isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Padding(
-      padding: EdgeInsets.only(top: tokens.gapXs, left: tokens.gapXs),
-      child: Text(
-        message,
-        style: theme.appTypography.caption.copyWith(
-          color: errorText != null
-              ? theme.colorScheme.error
-              : theme.colorScheme.onSurfaceVariant,
-        ),
       ),
     );
   }

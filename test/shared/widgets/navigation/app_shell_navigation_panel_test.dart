@@ -1,9 +1,9 @@
 import 'package:colmeia/app/router/app_routes.dart';
+import 'package:colmeia/app/shell/app_shell_navigation_panel.dart';
 import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:colmeia/shared/widgets/navigation/app_shell_navigation_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';

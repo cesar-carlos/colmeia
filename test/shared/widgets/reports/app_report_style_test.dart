@@ -26,11 +26,15 @@ void main() {
       expect(style.dataRowHeight, 68);
       expect(style.headerRowHeight, 48);
       expect(style.frozenColumnsCount, 2);
-      expect(style.headerBackgroundColor, const Color(0xFFF8FAFC));
-      expect(style.headerDividerColor, const Color(0xFFE2E8F0));
+      // Header/zebra colors are resolved from the active theme at render time
+      // (theme-aware) instead of baked light-only constants, so the preset
+      // leaves the explicit color overrides null and opts into zebra striping.
+      expect(style.headerBackgroundColor, isNull);
+      expect(style.headerDividerColor, isNull);
       expect(style.headerTextStyle?.fontWeight, FontWeight.w800);
       expect(style.dataTextStyle?.fontSize, 14);
-      expect(style.alternateRowColor, const Color(0xFFF8FAFC));
+      expect(style.alternateRowColor, isNull);
+      expect(style.zebraRows, isTrue);
     });
   });
 }

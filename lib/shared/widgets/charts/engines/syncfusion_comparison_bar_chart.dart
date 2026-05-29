@@ -7,6 +7,7 @@ import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
 import 'package:colmeia/shared/widgets/charts/chart_pan_footnote_column.dart';
 import 'package:colmeia/shared/widgets/charts/comparison_bar_chart_margin.dart';
+import 'package:colmeia/shared/widgets/charts/engines/cartesian_scroll_geometry.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
@@ -404,30 +405,19 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
       height: resolvedHeight,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final mediaWidth = MediaQuery.sizeOf(context).width;
-          var layoutWidth =
-              constraints.hasBoundedWidth &&
-                  constraints.maxWidth.isFinite &&
-                  constraints.maxWidth > 0
-              ? constraints.maxWidth
-              : mediaWidth;
-          if (!layoutWidth.isFinite || layoutWidth <= 0) {
-            layoutWidth = minBarWidth * points.length;
-          }
-
-          final n = points.length;
-          final delta = style.categoryAutoScrollingDelta;
-          final crowded = n > 1 && (layoutWidth / n) < minBarWidth;
-          final useCategoryViewportPan =
-              !style.enableAutoScroll &&
-              delta != null &&
-              delta > 0 &&
-              n > delta &&
-              crowded;
-          final slotDenom = useCategoryViewportPan ? math.min(n, delta) : n;
-          final footRaw = style.categoryViewportFootnote?.trim();
-          final showPanFootnote =
-              useCategoryViewportPan && footRaw != null && footRaw.isNotEmpty;
+          final geometry = CartesianScrollGeometry.resolve(
+            constraints: constraints,
+            mediaWidth: MediaQuery.sizeOf(context).width,
+            minSlotWidth: minBarWidth,
+            itemCount: points.length,
+            enableAutoScroll: style.enableAutoScroll,
+            categoryAutoScrollingDelta: style.categoryAutoScrollingDelta,
+            categoryViewportFootnote: style.categoryViewportFootnote,
+          );
+          final layoutWidth = geometry.layoutWidth;
+          final n = geometry.itemCount;
+          final useCategoryViewportPan = geometry.useCategoryViewportPan;
+          final showPanFootnote = geometry.showPanFootnote;
 
           Widget sizedBarChart(
             double width,
@@ -451,8 +441,8 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
           }
 
           if (!style.enableAutoScroll) {
-            final slotW = layoutWidth / slotDenom;
-            final footText = footRaw ?? '';
+            final slotW = geometry.nonScrollSlotWidth;
+            final footText = geometry.footnoteText;
             // Pan footnote layout matches [SyncfusionComboChart] (shared
             // [ChartPanFootnoteColumn]).
             var chart = showPanFootnote
@@ -494,10 +484,13 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
             return chart;
           }
 
-          final requiredFull = math.max(layoutWidth, minBarWidth * n);
-          final needsScroll = requiredFull > layoutWidth;
+          final plot = geometry.resolveScrollPlot(
+            minSlotWidth: minBarWidth,
+            sticky: style.stickyPrimaryYAxisWhileScrolling,
+            stickyWidth: style.stickyPrimaryYAxisWidth,
+          );
 
-          if (!needsScroll) {
+          if (!plot.needsScroll) {
             final slotW = layoutWidth / n;
             return sizedBarChart(
               layoutWidth,
@@ -515,12 +508,9 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
           final chartBodyHeight = resolvedHeight - scrollSlot;
 
           final sticky = style.stickyPrimaryYAxisWhileScrolling;
-          final stickyW = sticky ? style.stickyPrimaryYAxisWidth : 0.0;
-          final plotViewport = (layoutWidth - stickyW)
-              .clamp(1, double.infinity)
-              .toDouble();
-          final requiredPlot = math.max(plotViewport, minBarWidth * n);
-          final slotW = requiredPlot / n;
+          final stickyW = plot.stickyWidth;
+          final requiredPlot = plot.requiredPlot;
+          final slotW = plot.slotWidth;
 
           if (!sticky) {
             return ChartHorizontalScrollShell(

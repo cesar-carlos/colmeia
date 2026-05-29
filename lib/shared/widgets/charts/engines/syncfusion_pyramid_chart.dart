@@ -44,7 +44,6 @@ class SyncfusionPyramidChart<T> extends StatelessWidget {
         context: context,
         height: resolvedHeight,
         indicatorColor: chartTheme.primaryColor,
-        label: 'Carregando distribuicao em piramide...',
       );
     }
 

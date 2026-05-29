@@ -1,3 +1,4 @@
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
 import 'package:flutter/material.dart';
@@ -47,6 +48,7 @@ class _AppReportColumnChooserSheetState<T>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
+    final l10n = AppLocalizations.of(context);
 
     return DraggableScrollableSheet(
       expand: false,
@@ -66,7 +68,7 @@ class _AppReportColumnChooserSheetState<T>
               child: Row(
                 children: <Widget>[
                   Text(
-                    'Colunas visíveis',
+                    l10n.reportColumnsTooltip,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -81,7 +83,7 @@ class _AppReportColumnChooserSheetState<T>
                             .toSet();
                       });
                     },
-                    child: const Text('Redefinir'),
+                    child: Text(l10n.reportColumnChooserReset),
                   ),
                 ],
               ),
@@ -118,14 +120,14 @@ class _AppReportColumnChooserSheetState<T>
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Cancelar'),
+                      child: Text(l10n.reportColumnChooserCancel),
                     ),
                   ),
                   SizedBox(width: tokens.gapMd),
                   Expanded(
                     child: FilledButton(
                       onPressed: () => Navigator.of(context).pop(_visible),
-                      child: const Text('Aplicar'),
+                      child: Text(l10n.reportColumnChooserApply),
                     ),
                   ),
                 ],

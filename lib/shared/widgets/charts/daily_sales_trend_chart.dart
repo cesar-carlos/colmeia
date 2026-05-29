@@ -1,12 +1,10 @@
-import 'dart:async';
-
-import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/charts/daily_sales_trend_chart_labels.dart';
 import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
 import 'package:colmeia/shared/charts/daily_sales_weekday_labels.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_dashboard_comparison_bar_chart_preset.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
@@ -29,6 +27,7 @@ class DailySalesTrendChart extends StatefulWidget {
     this.useSalesDailyTotalsLabels = false,
     this.salesSubtitleOverride,
     this.salesScopeHintOverride,
+    this.onRequestFullscreen,
     super.key,
   });
 
@@ -37,6 +36,11 @@ class DailySalesTrendChart extends StatefulWidget {
   final bool loadFailed;
   final bool isLoading;
   final String? loadFailureMessage;
+
+  /// When non-null, enables the fullscreen affordance: the chart emits an
+  /// app-agnostic [AppChartFullscreenRequest] that the app layer maps to its
+  /// fullscreen route, keeping this shared widget free of `app/` imports.
+  final AppChartFullscreenRequestCallback? onRequestFullscreen;
 
   /// When true, chart titles and messages use [DailySalesTrendChartLabels] sales
   /// branch/month strings instead of overview home copy.
@@ -104,132 +108,122 @@ class _OverviewDailySalesTrendChartState
     final resolvedSubtitle = widget.salesSubtitleOverride ?? labels.subtitle;
     final resolvedScopeHint = widget.salesScopeHintOverride ?? labels.scopeHint;
 
+    final onRequestFullscreen = widget.onRequestFullscreen;
+
     void openFullscreen() {
+      final emit = onRequestFullscreen;
+      if (emit == null) {
+        return;
+      }
       final chartPointsSnapshot = List<DailySalesTrendPoint>.of(
         chartPoints,
         growable: false,
       );
       final isSalesCountSnapshot = isSalesCount;
       final isLoadingSnapshot = widget.isLoading;
-      unawaited(
-        context.pushChartFullscreen<void>(
-          extra: AppChartFullscreenRouteExtra(
-            title: labels.titleForMetric(isSalesCount: isSalesCountSnapshot),
-            subtitle: resolvedSubtitle,
-            chartSemanticsLabel: labels.semanticsForMetric(
-              isSalesCount: isSalesCountSnapshot,
-            ),
-            chartBuilder: (fullscreenContext) {
-              final fullscreenTokens = Theme.of(
-                fullscreenContext,
-              ).extension<AppThemeTokens>()!;
-              var fullscreenMetric = _metric;
-              return StatefulBuilder(
-                builder: (context, setFullscreenState) {
-                  final fullscreenIsSalesCount =
-                      fullscreenMetric == _OverviewDailyMetric.salesCount;
-                  return LayoutBuilder(
-                    builder: (context, constraints) {
-                      final availableChartHeight =
-                          (constraints.maxHeight -
-                                  fullscreenTokens.contentSpacing -
-                                  48)
-                              .clamp(220.0, constraints.maxHeight);
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          AppSegmentedControl<_OverviewDailyMetric>(
-                            options:
-                                <
-                                  AppSegmentedControlOption<
-                                    _OverviewDailyMetric
-                                  >
-                                >[
-                                  AppSegmentedControlOption<
-                                    _OverviewDailyMetric
-                                  >(
-                                    value: _OverviewDailyMetric.salesCount,
-                                    label: labels.metricCountLabel,
-                                  ),
-                                  AppSegmentedControlOption<
-                                    _OverviewDailyMetric
-                                  >(
-                                    value: _OverviewDailyMetric.salesAmount,
-                                    label: labels.metricAmountLabel,
-                                  ),
-                                ],
-                            value: fullscreenMetric,
-                            onChanged: (value) => setFullscreenState(
-                              () => fullscreenMetric = value,
-                            ),
-                          ),
-                          SizedBox(height: fullscreenTokens.contentSpacing),
-                          SizedBox(
-                            height: availableChartHeight,
-                            child:
-                                AppComparisonBarChart<
-                                  DailySalesTrendPoint
-                                >(
-                                  items: chartPointsSnapshot,
-                                  isLoading: isLoadingSnapshot,
-                                  plotFloorAccessibilityNotice:
-                                      l10n.chartComparisonPlotFloorNotice,
-                                  extremeSpreadAccessibilityNotice: l10n
-                                      .chartComparisonExtremeValueSpreadNotice,
-                                  labelBuilder: _dayAxisLabel,
-                                  valueBuilder: (point) =>
-                                      fullscreenIsSalesCount
-                                      ? point.salesCount
-                                      : point.salesAmount,
-                                  tooltipLabelBuilder: (point, value) {
-                                    final dateStr = _tooltipDateLine(point);
-                                    return labels.tooltip(
-                                      dateStr,
-                                      salesCountFormat.format(
-                                        point.salesCount,
-                                      ),
-                                      AppBrFormatters.currency(
-                                        point.salesAmount,
-                                      ),
-                                    );
-                                  },
-                                  dataLabelBuilder: (_, value) =>
-                                      fullscreenIsSalesCount
-                                      ? compactSalesCountFormat.format(value)
-                                      : AppBrFormatters.compactCurrency(value),
-                                  style: appDashboardComparisonBarChartStyle(
-                                    tokens: fullscreenTokens,
-                                    kind: AppDashboardComparisonBarChartKind.daily,
-                                    l10n: l10n,
-                                    weekdayUsesCurrencyAxis:
-                                        !fullscreenIsSalesCount,
-                                    weekdayRevenueDataLabelBackground:
-                                        fullscreenIsSalesCount
-                                        ? null
-                                        : Theme.of(context).colorScheme.surface,
-                                    heightOverride: availableChartHeight,
-                                  ),
-                                  emptyPlaceholder: showEmptyPlaceholder
-                                      ? Center(
-                                          child: Text(
-                                            emptyMessage,
-                                            textAlign: TextAlign.center,
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodyMedium,
-                                          ),
-                                        )
-                                      : null,
-                                ),
-                          ),
-                        ],
-                      );
-                    },
-                  );
-                },
-              );
-            },
+      emit(
+        context,
+        AppChartFullscreenRequest(
+          title: labels.titleForMetric(isSalesCount: isSalesCountSnapshot),
+          subtitle: resolvedSubtitle,
+          semanticsLabel: labels.semanticsForMetric(
+            isSalesCount: isSalesCountSnapshot,
           ),
+          chartBuilder: (fullscreenContext) {
+            final fullscreenTokens = Theme.of(
+              fullscreenContext,
+            ).extension<AppThemeTokens>()!;
+            var fullscreenMetric = _metric;
+            return StatefulBuilder(
+              builder: (context, setFullscreenState) {
+                final fullscreenIsSalesCount =
+                    fullscreenMetric == _OverviewDailyMetric.salesCount;
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    final availableChartHeight =
+                        (constraints.maxHeight -
+                                fullscreenTokens.contentSpacing -
+                                48)
+                            .clamp(220.0, constraints.maxHeight);
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        AppSegmentedControl<_OverviewDailyMetric>(
+                          options:
+                              <
+                                AppSegmentedControlOption<_OverviewDailyMetric>
+                              >[
+                                AppSegmentedControlOption<_OverviewDailyMetric>(
+                                  value: _OverviewDailyMetric.salesCount,
+                                  label: labels.metricCountLabel,
+                                ),
+                                AppSegmentedControlOption<_OverviewDailyMetric>(
+                                  value: _OverviewDailyMetric.salesAmount,
+                                  label: labels.metricAmountLabel,
+                                ),
+                              ],
+                          value: fullscreenMetric,
+                          onChanged: (value) => setFullscreenState(
+                            () => fullscreenMetric = value,
+                          ),
+                        ),
+                        SizedBox(height: fullscreenTokens.contentSpacing),
+                        SizedBox(
+                          height: availableChartHeight,
+                          child: AppComparisonBarChart<DailySalesTrendPoint>(
+                            items: chartPointsSnapshot,
+                            isLoading: isLoadingSnapshot,
+                            plotFloorAccessibilityNotice:
+                                l10n.chartComparisonPlotFloorNotice,
+                            extremeSpreadAccessibilityNotice:
+                                l10n.chartComparisonExtremeValueSpreadNotice,
+                            labelBuilder: _dayAxisLabel,
+                            valueBuilder: (point) => fullscreenIsSalesCount
+                                ? point.salesCount
+                                : point.salesAmount,
+                            tooltipLabelBuilder: (point, value) {
+                              final dateStr = _tooltipDateLine(point);
+                              return labels.tooltip(
+                                dateStr,
+                                salesCountFormat.format(point.salesCount),
+                                AppBrFormatters.currency(point.salesAmount),
+                              );
+                            },
+                            dataLabelBuilder: (_, value) =>
+                                fullscreenIsSalesCount
+                                ? compactSalesCountFormat.format(value)
+                                : AppBrFormatters.compactCurrency(value),
+                            style: appDashboardComparisonBarChartStyle(
+                              tokens: fullscreenTokens,
+                              kind: AppDashboardComparisonBarChartKind.daily,
+                              l10n: l10n,
+                              weekdayUsesCurrencyAxis: !fullscreenIsSalesCount,
+                              weekdayRevenueDataLabelBackground:
+                                  fullscreenIsSalesCount
+                                  ? null
+                                  : Theme.of(context).colorScheme.surface,
+                              heightOverride: availableChartHeight,
+                            ),
+                            emptyPlaceholder: showEmptyPlaceholder
+                                ? Center(
+                                    child: Text(
+                                      emptyMessage,
+                                      textAlign: TextAlign.center,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodyMedium,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+            );
+          },
         ),
       );
     }
@@ -240,7 +234,7 @@ class _OverviewDailySalesTrendChartState
       child: AppComparisonBarChart<DailySalesTrendPoint>(
         title: labels.titleForMetric(isSalesCount: isSalesCount),
         subtitle: resolvedSubtitle,
-        onOpenFullscreen: openFullscreen,
+        onOpenFullscreen: onRequestFullscreen == null ? null : openFullscreen,
         belowSubtitle: AppSegmentedControl<_OverviewDailyMetric>(
           options: <AppSegmentedControlOption<_OverviewDailyMetric>>[
             AppSegmentedControlOption<_OverviewDailyMetric>(

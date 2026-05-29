@@ -1,3 +1,4 @@
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
@@ -68,20 +69,21 @@ class _SyncfusionDistributionChartState
     final resolvedHeight = widget.style.height ?? chartTheme.height;
 
     if (widget.isLoading) {
+      final loadingLabel = AppLocalizations.of(context).chartLoadingGeneric;
       return SizedBox(
         height: resolvedHeight,
         child: Center(
           child: Semantics(
             container: true,
             liveRegion: true,
-            label: 'Carregando distribuicao...',
+            label: loadingLabel,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 CircularProgressIndicator(color: chartTheme.primaryColor),
                 const SizedBox(height: 12),
                 Text(
-                  'Carregando distribuicao...',
+                  loadingLabel,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: colors.onSurfaceVariant,
                   ),

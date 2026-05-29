@@ -260,6 +260,22 @@ enum AppReportFilterType {
   search,
 }
 
+extension AppReportFilterTypeLayout on AppReportFilterType {
+  /// Whether this filter type can be rendered in the compact inline filter bar.
+  /// Types that need richer UI (multiSelect, numericRange, toggle) fall back to
+  /// the advanced filters panel/sheet.
+  bool get supportsInlineLayout => switch (this) {
+    AppReportFilterType.text => true,
+    AppReportFilterType.search => true,
+    AppReportFilterType.singleSelect => true,
+    AppReportFilterType.date => true,
+    AppReportFilterType.dateRange => true,
+    AppReportFilterType.multiSelect => false,
+    AppReportFilterType.numericRange => false,
+    AppReportFilterType.toggle => false,
+  };
+}
+
 class AppReportFilterOption {
   const AppReportFilterOption({required this.value, required this.label});
 

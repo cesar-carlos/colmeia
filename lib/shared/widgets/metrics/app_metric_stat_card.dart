@@ -168,23 +168,10 @@ class AppMetricStatCard extends StatelessWidget {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
     final colors = theme.appColors;
-    final typography = theme.appTypography;
 
     final body = switch (layout) {
-      AppMetricStatCardLayout.classic => _buildClassicColumn(
-        context: context,
-        theme: theme,
-        tokens: tokens,
-        colors: colors,
-        typography: typography,
-      ),
-      AppMetricStatCardLayout.stacked => _buildStackedColumn(
-        context: context,
-        theme: theme,
-        tokens: tokens,
-        colors: colors,
-        typography: typography,
-      ),
+      AppMetricStatCardLayout.classic => _MetricStatClassicLayout(card: this),
+      AppMetricStatCardLayout.stacked => _MetricStatStackedLayout(card: this),
     };
 
     final direction = Directionality.of(context);
@@ -240,13 +227,21 @@ class AppMetricStatCard extends StatelessWidget {
     return resolvedCardColor;
   }
 
-  Widget _buildClassicColumn({
-    required BuildContext context,
-    required ThemeData theme,
-    required AppThemeTokens tokens,
-    required AppColors colors,
-    required AppTypographyTokens typography,
-  }) {
+}
+
+class _MetricStatClassicLayout extends StatelessWidget {
+  const _MetricStatClassicLayout({required this.card});
+
+  final AppMetricStatCard card;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+    final colors = theme.appColors;
+    final typography = theme.appTypography;
+    final style = card.style;
+
     final leadingSpacing = style.leadingSpacing ?? tokens.gapSm;
     final topRowBottomSpacing = style.topRowBottomSpacing ?? tokens.gapMd;
     final labelBottomSpacing = style.labelBottomSpacing ?? tokens.gapXs;
@@ -254,7 +249,7 @@ class AppMetricStatCard extends StatelessWidget {
     final labelStyle =
         style.labelTextStyle ??
         typography.body.copyWith(
-          color: _useOnPrimaryContainer
+          color: card._useOnPrimaryContainer
               ? colors.onPrimaryContainer
               : colors.onSurfaceVariant,
         );
@@ -263,13 +258,13 @@ class AppMetricStatCard extends StatelessWidget {
         typography.displayH1.copyWith(
           fontSize: theme.textTheme.headlineSmall?.fontSize,
           fontWeight: FontWeight.w800,
-          color: _useOnPrimaryContainer ? colors.onPrimaryContainer : null,
+          color: card._useOnPrimaryContainer ? colors.onPrimaryContainer : null,
         );
 
-    final usePill = _effectiveTrendPill(AppMetricStatCardLayout.classic);
-    final trimmedTrend = trendLabel?.trim() ?? '';
+    final usePill = card._effectiveTrendPill(AppMetricStatCardLayout.classic);
+    final trimmedTrend = card.trendLabel?.trim() ?? '';
     final hasTextTrend = trimmedTrend.isNotEmpty;
-    final hasCustomTrend = trendWidget != null;
+    final hasCustomTrend = card.trendWidget != null;
     final showTrendRegion = hasCustomTrend || hasTextTrend;
 
     final Widget? builtTextTrend = !hasTextTrend
@@ -282,7 +277,7 @@ class AppMetricStatCard extends StatelessWidget {
             colors: colors,
             textAlign:
                 style.trendTextAlign ??
-                (trendPlacement == AppMetricStatTrendPlacement.end
+                (card.trendPlacement == AppMetricStatTrendPlacement.end
                     ? TextAlign.end
                     : TextAlign.start),
           )
@@ -290,7 +285,7 @@ class AppMetricStatCard extends StatelessWidget {
             trimmedTrend,
             textAlign:
                 style.trendTextAlign ??
-                (trendPlacement == AppMetricStatTrendPlacement.end
+                (card.trendPlacement == AppMetricStatTrendPlacement.end
                     ? TextAlign.end
                     : TextAlign.start),
             style:
@@ -305,15 +300,15 @@ class AppMetricStatCard extends StatelessWidget {
                 ),
           );
 
-    final resolvedTrend = hasCustomTrend ? trendWidget : builtTextTrend;
+    final resolvedTrend = hasCustomTrend ? card.trendWidget : builtTextTrend;
 
-    final Widget topRow = switch (trendPlacement) {
+    final Widget topRow = switch (card.trendPlacement) {
       AppMetricStatTrendPlacement.end =>
         showTrendRegion
             ? Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  leading,
+                  card.leading,
                   SizedBox(width: leadingSpacing),
                   Expanded(
                     child: Align(
@@ -325,21 +320,21 @@ class AppMetricStatCard extends StatelessWidget {
               )
             : Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[leading],
+                children: <Widget>[card.leading],
               ),
       AppMetricStatTrendPlacement.inlineStart =>
         showTrendRegion
             ? Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  leading,
+                  card.leading,
                   SizedBox(width: leadingSpacing),
                   resolvedTrend ?? const SizedBox.shrink(),
                 ],
               )
             : Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[leading],
+                children: <Widget>[card.leading],
               ),
     };
 
@@ -348,37 +343,44 @@ class AppMetricStatCard extends StatelessWidget {
       children: <Widget>[
         topRow,
         SizedBox(height: topRowBottomSpacing),
-        labelWidget ??
+        card.labelWidget ??
             Text(
-              label,
+              card.label,
               style: labelStyle,
               textAlign: style.labelTextAlign,
             ),
         SizedBox(height: labelBottomSpacing),
-        valueWidget ??
+        card.valueWidget ??
             Text(
-              value,
+              card.value,
               style: valueStyle,
               textAlign: style.valueTextAlign,
             ),
       ],
     );
   }
+}
 
-  Widget _buildStackedColumn({
-    required BuildContext context,
-    required ThemeData theme,
-    required AppThemeTokens tokens,
-    required AppColors colors,
-    required AppTypographyTokens typography,
-  }) {
+class _MetricStatStackedLayout extends StatelessWidget {
+  const _MetricStatStackedLayout({required this.card});
+
+  final AppMetricStatCard card;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+    final colors = theme.appColors;
+    final typography = theme.appTypography;
+    final style = card.style;
+
     final headerToValue = style.headerToValueSpacing ?? tokens.gapSm;
     final valueToTrend = style.valueToTrendSpacing ?? tokens.gapSm;
 
     final stackedLabelStyle =
         style.labelTextStyle ??
         typography.utilityOverline.copyWith(
-          color: _useOnPrimaryContainer
+          color: card._useOnPrimaryContainer
               ? colors.onPrimaryContainer
               : colors.onSurfaceVariant,
         );
@@ -388,13 +390,13 @@ class AppMetricStatCard extends StatelessWidget {
         typography.displayH1.copyWith(
           fontSize: theme.textTheme.headlineSmall?.fontSize,
           fontWeight: FontWeight.w800,
-          color: _useOnPrimaryContainer ? colors.onPrimaryContainer : null,
+          color: card._useOnPrimaryContainer ? colors.onPrimaryContainer : null,
         );
 
-    final usePill = _effectiveTrendPill(AppMetricStatCardLayout.stacked);
-    final trimmedTrend = trendLabel?.trim() ?? '';
+    final usePill = card._effectiveTrendPill(AppMetricStatCardLayout.stacked);
+    final trimmedTrend = card.trendLabel?.trim() ?? '';
     final hasTextTrend = trimmedTrend.isNotEmpty;
-    final hasCustomTrend = trendWidget != null;
+    final hasCustomTrend = card.trendWidget != null;
     final showTrendRegion = hasCustomTrend || hasTextTrend;
 
     final Widget? builtTextTrend = !hasTextTrend
@@ -424,11 +426,11 @@ class AppMetricStatCard extends StatelessWidget {
             children: <Widget>[
               Expanded(child: builtTextTrend),
               SizedBox(width: tokens.gapSm),
-              trendWidget!,
+              card.trendWidget!,
             ],
           )
         : hasCustomTrend
-        ? trendWidget
+        ? card.trendWidget
         : builtTextTrend;
 
     final headerRow = Row(
@@ -436,15 +438,15 @@ class AppMetricStatCard extends StatelessWidget {
       children: <Widget>[
         Expanded(
           child:
-              labelWidget ??
+              card.labelWidget ??
               Text(
-                label,
+                card.label,
                 style: stackedLabelStyle,
                 textAlign: style.labelTextAlign ?? TextAlign.start,
               ),
         ),
         SizedBox(width: tokens.gapSm),
-        leading,
+        card.leading,
       ],
     );
 
@@ -453,9 +455,9 @@ class AppMetricStatCard extends StatelessWidget {
       children: <Widget>[
         headerRow,
         SizedBox(height: headerToValue),
-        valueWidget ??
+        card.valueWidget ??
             Text(
-              value,
+              card.value,
               style: valueStyle,
               textAlign: style.valueTextAlign ?? TextAlign.start,
             ),

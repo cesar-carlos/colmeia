@@ -945,6 +945,124 @@
   "reportInlineFiltersSelectPeriod": "Selecionar período",
   "reportInlineFiltersSelectDate": "Selecionar data",
   "reportFiltersAppliedSectionTitle": "Filtros aplicados",
+  "reportRowDetailDefaultTitle": "Detalhes",
+  "reportLoadErrorTitle": "Não foi possível carregar os dados",
+  "reportEmptyClearFiltersAction": "Limpar filtros",
+  "reportEmptyDefaultMessage": "Nenhum resultado encontrado.",
+  "reportLoadingFiltersSemantics": "Carregando filtros...",
+  "reportLoadingSummarySemantics": "Carregando resumo...",
+  "reportLoadingTableSemantics": "Carregando tabela...",
+  "reportLoadingPaginationSemantics": "Carregando paginação...",
+  "reportToolbarLabel": "Ferramentas da tabela",
+  "reportSearchHint": "Buscar...",
+  "reportClearSearchTooltip": "Limpar busca",
+  "reportSelectionPill": "{count, plural, =1{1 selecionado} other{{count} selecionados}}",
+  "@reportSelectionPill": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "reportSelectionPillTooltip": "Linhas selecionadas na grade",
+  "reportGroupedPill": "Agrupado: {label}",
+  "@reportGroupedPill": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "reportGroupedPillTooltip": "Agrupado por {label}",
+  "@reportGroupedPillTooltip": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "reportExpandGroupsTooltip": "Expandir grupos",
+  "reportCollapseGroupsTooltip": "Recolher grupos",
+  "reportColumnsLabel": "Colunas",
+  "reportColumnsTooltip": "Colunas visíveis",
+  "reportPrintLabel": "Imprimir",
+  "reportRefreshTooltip": "Atualizar",
+  "reportGroupLevelsTooltip": "Controlar níveis de agrupamento",
+  "reportExpandToLevel": "Expandir até nível {level}",
+  "@reportExpandToLevel": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "reportCollapseToLevel": "Recolher até nível {level}",
+  "@reportCollapseToLevel": {
+    "placeholders": {
+      "level": {"type": "int"}
+    }
+  },
+  "reportGroupLabel": "Agrupar",
+  "reportClearGroupingAction": "Limpar agrupamento",
+  "reportDensityCompact": "Compacto",
+  "reportDensityCompactTooltip": "Linhas mais densas",
+  "reportDensityComfortable": "Conforto",
+  "reportDensityComfortableTooltip": "Equilibrio entre leitura e densidade",
+  "reportDensityExpanded": "Expandido",
+  "reportDensityExpandedTooltip": "Mais respiro vertical",
+  "reportExportLabel": "Exportar",
+  "reportExportScopeCurrentPage": "{format} da página atual",
+  "@reportExportScopeCurrentPage": {
+    "placeholders": {
+      "format": {"type": "String"}
+    }
+  },
+  "reportExportScopeAllPages": "{format} de todas as páginas",
+  "@reportExportScopeAllPages": {
+    "placeholders": {
+      "format": {"type": "String"}
+    }
+  },
+  "reportExportScopeSelection": "{format} da seleção ({count})",
+  "@reportExportScopeSelection": {
+    "placeholders": {
+      "format": {"type": "String"},
+      "count": {"type": "int"}
+    }
+  },
+  "reportExportScopeCurrentPageWithFilters": "{format} da página atual + filtros",
+  "@reportExportScopeCurrentPageWithFilters": {
+    "placeholders": {
+      "format": {"type": "String"}
+    }
+  },
+  "reportExportScopeAllPagesWithFilters": "{format} de todas as páginas + filtros",
+  "@reportExportScopeAllPagesWithFilters": {
+    "placeholders": {
+      "format": {"type": "String"}
+    }
+  },
+  "reportExportScopeSelectionWithFilters": "{format} da seleção + filtros",
+  "@reportExportScopeSelectionWithFilters": {
+    "placeholders": {
+      "format": {"type": "String"}
+    }
+  },
+  "reportFilterRequired": "Obrigatório",
+  "reportFilterOptional": "Opcional",
+  "reportFilterSelectOption": "Selecione uma opção",
+  "reportFilterRangeFrom": "De",
+  "reportFilterRangeTo": "Até",
+  "reportFilterSearchTagsHint": "Buscar tags...",
+  "reportPaginationItemsPerPage": "Itens por página:",
+  "reportPaginationPrevious": "Página anterior",
+  "reportPaginationNext": "Próxima página",
+  "reportPaginationPageNumber": "Página {page}",
+  "@reportPaginationPageNumber": {
+    "placeholders": {
+      "page": {"type": "int"}
+    }
+  },
+  "appLoading": "Carregando…",
+  "appLoadingDataSemantics": "Carregando dados...",
+  "appRefreshAction": "Atualizar",
+  "dataStaleBannerMessage": "Dados podem estar desatualizados.",
+  "chartLoadingGeneric": "Carregando gráfico…",
+  "reportColumnChooserReset": "Redefinir",
+  "reportColumnChooserCancel": "Cancelar",
+  "reportColumnChooserApply": "Aplicar",
   "clientAgentsErrorLoadCatalog": "Não foi possível carregar o catalogo de agentes.",
   "clientAgentsErrorLoadCatalogAgent": "Não foi possível carregar este agente do catalogo.",
   "clientAgentsErrorLoadClientAccessStatus": "Não foi possível ler o status da solicitação de acesso.",

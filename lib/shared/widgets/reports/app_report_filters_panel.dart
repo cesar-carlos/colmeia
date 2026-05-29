@@ -241,6 +241,10 @@ class _FilterField extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final typography = theme.appTypography;
+    final l10n = AppLocalizations.of(context);
+    final helperText = descriptor.required
+        ? l10n.reportFilterRequired
+        : l10n.reportFilterOptional;
     final initialValue =
         initialValues[descriptor.name] ?? descriptor.initialValue;
     final requiredValidator = descriptor.required
@@ -258,7 +262,7 @@ class _FilterField extends StatelessWidget {
           decoration: InputDecoration(
             labelText: descriptor.label,
             hintText: descriptor.hint,
-            helperText: descriptor.required ? 'Obrigatório' : 'Opcional',
+            helperText: helperText,
             prefixIcon: descriptor.type == AppReportFilterType.search
                 ? const Icon(Icons.search_rounded)
                 : null,
@@ -270,8 +274,8 @@ class _FilterField extends StatelessWidget {
         return AppFormBuilderDropdownField<String>(
           name: descriptor.name,
           label: descriptor.label,
-          hintText: 'Selecione uma opção',
-          helperText: descriptor.required ? 'Obrigatório' : 'Opcional',
+          hintText: l10n.reportFilterSelectOption,
+          helperText: helperText,
           initialValue: initialValue as String?,
           options: descriptor.options
               .map(
@@ -291,8 +295,8 @@ class _FilterField extends StatelessWidget {
               ? initialValue.whereType<String>().toList(growable: false)
               : null,
           label: descriptor.label,
-          helperText: descriptor.required ? 'Obrigatório' : 'Opcional',
-          searchHintText: 'Buscar tags...',
+          helperText: helperText,
+          searchHintText: l10n.reportFilterSearchTagsHint,
           options: descriptor.options
               .map(
                 (o) => AppDropdownOption<String>(
@@ -314,7 +318,7 @@ class _FilterField extends StatelessWidget {
         return AppFormBuilderDatePickerField(
           name: descriptor.name,
           label: descriptor.label,
-          helperText: descriptor.required ? 'Obrigatório' : 'Opcional',
+          helperText: helperText,
           pickerTitle: descriptor.label,
           initialValue: initialValue as DateTime?,
           firstDate: DateTime(2000),
@@ -332,7 +336,7 @@ class _FilterField extends StatelessWidget {
         return AppFormBuilderDateRangePickerField(
           name: descriptor.name,
           label: descriptor.label,
-          helperText: descriptor.required ? 'Obrigatório' : 'Opcional',
+          helperText: helperText,
           pickerTitle: descriptor.label,
           initialValue: initialValue as DateTimeRange?,
           firstDate: DateTime(2000),
@@ -365,7 +369,7 @@ class _FilterField extends StatelessWidget {
                     initialValue: initialValues['${descriptor.name}_min']
                         ?.toString(),
                     decoration: InputDecoration(
-                      labelText: 'De',
+                      labelText: l10n.reportFilterRangeFrom,
                       hintText: descriptor.minValue?.toString(),
                     ),
                     keyboardType: const TextInputType.numberWithOptions(
@@ -380,7 +384,7 @@ class _FilterField extends StatelessWidget {
                     initialValue: initialValues['${descriptor.name}_max']
                         ?.toString(),
                     decoration: InputDecoration(
-                      labelText: 'Até',
+                      labelText: l10n.reportFilterRangeTo,
                       hintText: descriptor.maxValue?.toString(),
                     ),
                     keyboardType: const TextInputType.numberWithOptions(

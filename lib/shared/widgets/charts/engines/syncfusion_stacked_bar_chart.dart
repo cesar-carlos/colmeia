@@ -50,7 +50,6 @@ class SyncfusionStackedBarChart<G> extends StatelessWidget {
         context: context,
         height: resolvedChartHeight,
         indicatorColor: chartTheme.primaryColor,
-        label: 'Carregando comparativo empilhado...',
       );
     }
 

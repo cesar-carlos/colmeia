@@ -1,4 +1,5 @@
 import 'package:colmeia/core/layout/app_breakpoints.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
@@ -39,8 +40,8 @@ class AppInlinePaginationBar extends StatelessWidget {
     this.centerSemanticsLabel,
     this.onPrevious,
     this.onNext,
-    this.previousLabel = 'Página anterior',
-    this.nextLabel = 'Próxima página',
+    this.previousLabel,
+    this.nextLabel,
     this.previousIcon,
     this.nextIcon,
     this.previousTooltip,
@@ -66,8 +67,14 @@ class AppInlinePaginationBar extends StatelessWidget {
   final String? centerSemanticsLabel;
   final VoidCallback? onPrevious;
   final VoidCallback? onNext;
-  final String previousLabel;
-  final String nextLabel;
+
+  /// Accessible label/tooltip for the previous action. When null a localized
+  /// default is used.
+  final String? previousLabel;
+
+  /// Accessible label/tooltip for the next action. When null a localized
+  /// default is used.
+  final String? nextLabel;
   final Widget? previousIcon;
   final Widget? nextIcon;
   final String? previousTooltip;
@@ -79,6 +86,10 @@ class AppInlinePaginationBar extends StatelessWidget {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
     final spacing = style.spacing ?? tokens.gapMd;
+    final resolvedPreviousLabel =
+        previousLabel ?? AppLocalizations.of(context).reportPaginationPrevious;
+    final resolvedNextLabel =
+        nextLabel ?? AppLocalizations.of(context).reportPaginationNext;
 
     final centerWidget =
         center ??
@@ -98,25 +109,25 @@ class AppInlinePaginationBar extends StatelessWidget {
     );
 
     final previousButton = Tooltip(
-      message: previousTooltip ?? previousLabel,
+      message: previousTooltip ?? resolvedPreviousLabel,
       child: AppSecondaryButton(
         onPressed: onPrevious,
-        label: previousLabel,
+        label: resolvedPreviousLabel,
         icon: previousIcon ?? const Icon(Icons.chevron_left_rounded),
         style: style.previousButtonStyle,
-        semanticsLabel: previousTooltip ?? previousLabel,
+        semanticsLabel: previousTooltip ?? resolvedPreviousLabel,
         fillWidth: style.buttonsExpanded,
       ),
     );
 
     final nextButton = Tooltip(
-      message: nextTooltip ?? nextLabel,
+      message: nextTooltip ?? resolvedNextLabel,
       child: AppPrimaryButton(
         onPressed: onNext,
-        label: nextLabel,
+        label: resolvedNextLabel,
         icon: nextIcon ?? const Icon(Icons.chevron_right_rounded),
         style: style.nextButtonStyle,
-        semanticsLabel: nextTooltip ?? nextLabel,
+        semanticsLabel: nextTooltip ?? resolvedNextLabel,
         fillWidth: style.buttonsExpanded,
       ),
     );

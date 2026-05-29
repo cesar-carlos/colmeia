@@ -140,7 +140,7 @@ class AppSunburstChart<T> extends StatelessWidget {
       emptyPlaceholder: emptyPlaceholder,
       semanticsLabel: _resolvedChartSemanticsLabel(),
       semanticsHint: _resolvedChartSemanticsHint(),
-      loadingSemanticsLabel: _resolvedLoadingSemanticsLabel(),
+      loadingSemanticsLabel: loadingSemanticsLabel,
       emptySemanticsLabel: _resolvedEmptySemanticsLabel(),
     );
 
@@ -183,19 +183,6 @@ class AppSunburstChart<T> extends StatelessWidget {
       return null;
     }
     return 'Toque em um segmento para explorar a hierarquia.';
-  }
-
-  String _resolvedLoadingSemanticsLabel() {
-    final custom = loadingSemanticsLabel?.trim();
-    if (custom != null && custom.isNotEmpty) {
-      return custom;
-    }
-
-    final trimmedTitle = title?.trim();
-    if (trimmedTitle != null && trimmedTitle.isNotEmpty) {
-      return 'Carregando $trimmedTitle...';
-    }
-    return 'Carregando grafico sunburst...';
   }
 
   String _resolvedEmptySemanticsLabel() {

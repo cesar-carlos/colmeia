@@ -1,6 +1,7 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/forms/app_form_field_message.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -128,11 +129,11 @@ class _AppDropdownFieldState<T> extends State<AppDropdownField<T>> {
 
     final borderRadius = BorderRadius.circular(tokens.formFieldRadius + 2);
     final fieldPadding = _contentPadding(tokens, widget.density);
-    final borderSide = _resolveBorderSide(
+    final borderSide = resolveFormFieldBorderSide(
       colors: colors,
       scheme: scheme,
       enabled: widget.enabled,
-      expanded: _expanded,
+      focused: _expanded,
       hasError: hasError,
     );
 
@@ -276,7 +277,7 @@ class _AppDropdownFieldState<T> extends State<AppDropdownField<T>> {
               ),
             ),
           ),
-          _FieldMessage(
+          AppFormFieldMessage(
             helperText: widget.helperText,
             errorText: widget.errorText,
           ),
@@ -418,11 +419,11 @@ class _AppMultiSelectSearchFieldState<T>
     final chipWrapSpacing = widget.density == AppTextFieldDensity.compact
         ? tokens.gapXs
         : tokens.gapSm;
-    final borderSide = _resolveBorderSide(
+    final borderSide = resolveFormFieldBorderSide(
       colors: colors,
       scheme: scheme,
       enabled: widget.enabled,
-      expanded: _expanded,
+      focused: _expanded,
       hasError: hasError,
     );
     final query = _searchController.text.trim().toLowerCase();
@@ -631,7 +632,7 @@ class _AppMultiSelectSearchFieldState<T>
               ),
             ),
           ),
-          _FieldMessage(
+          AppFormFieldMessage(
             helperText: widget.helperText,
             errorText: widget.errorText,
           ),
@@ -662,10 +663,8 @@ class _DropdownOptionTile extends StatelessWidget {
     final tokens = theme.extension<AppThemeTokens>()!;
     final typography = theme.appTypography;
     final scheme = theme.colorScheme;
-    final selectedBackground = theme.brightness == Brightness.dark
-        ? const Color(0xFF7A7A7A)
-        : const Color(0xFF8A8A8A);
-    final selectedForeground = Colors.white.withValues(alpha: 0.98);
+    final selectedBackground = scheme.inverseSurface;
+    final selectedForeground = scheme.onInverseSurface;
 
     return Material(
       color: selected ? selectedBackground : Colors.transparent,
@@ -837,53 +836,19 @@ class _AnimatedDropdownMenu extends StatelessWidget {
       transitionBuilder: (child, animation) {
         return FadeTransition(
           opacity: animation,
-          // `SizeTransition.alignment` exists only on Flutter >= 3.43; the
-          // CI pin (tool/flutter_ci_version.txt) is still 3.41.9, where
-          // vertical-axis alignment is expressed via `axisAlignment` (-1.0
-          // anchors the reveal at the top, matching `Alignment.topLeft`).
           child: SizeTransition(
             sizeFactor: animation,
+            // `SizeTransition.alignment` exists only on Flutter >= 3.43; the
+            // CI pin (tool/flutter_ci_version.txt) is still 3.41.9, where
+            // vertical-axis alignment is expressed via `axisAlignment` (-1.0
+            // anchors the reveal at the top, matching `Alignment.topLeft`).
+            // ignore: deprecated_member_use
             axisAlignment: -1,
             child: child,
           ),
         );
       },
       child: expanded ? child : const SizedBox.shrink(),
-    );
-  }
-}
-
-class _FieldMessage extends StatelessWidget {
-  const _FieldMessage({
-    required this.helperText,
-    required this.errorText,
-  });
-
-  final String? helperText;
-  final String? errorText;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
-    final message = errorText ?? helperText;
-    if (message == null || message.trim().isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Padding(
-      padding: EdgeInsets.only(
-        top: tokens.gapXs,
-        left: tokens.gapXs,
-      ),
-      child: Text(
-        message,
-        style: theme.appTypography.caption.copyWith(
-          color: errorText != null
-              ? theme.colorScheme.error
-              : theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
     );
   }
 }
@@ -900,23 +865,4 @@ EdgeInsets _contentPadding(
     horizontal: tokens.formFieldPaddingHorizontal,
     vertical: vertical,
   );
-}
-
-BorderSide _resolveBorderSide({
-  required AppColors colors,
-  required ColorScheme scheme,
-  required bool enabled,
-  required bool expanded,
-  required bool hasError,
-}) {
-  if (!enabled) {
-    return BorderSide(color: colors.onSurface.withValues(alpha: 0.12));
-  }
-  if (hasError) {
-    return BorderSide(color: scheme.error, width: 1.5);
-  }
-  if (expanded) {
-    return BorderSide(color: scheme.primary, width: 1.5);
-  }
-  return BorderSide(color: colors.outlineVariant.withValues(alpha: 0.82));
 }

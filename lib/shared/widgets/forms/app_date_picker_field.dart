@@ -7,6 +7,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
+import 'package:colmeia/shared/widgets/forms/app_form_field_message.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -307,11 +308,11 @@ class _AppPickerFieldBodyState extends State<_AppPickerFieldBody> {
     final compact = widget.density == AppTextFieldDensity.compact;
 
     final borderRadius = BorderRadius.circular(tokens.formFieldRadius + 2);
-    final borderSide = _resolveDatePickerBorderSide(
+    final borderSide = resolveFormFieldBorderSide(
       colors: colors,
       scheme: scheme,
       enabled: widget.enabled,
-      open: _openInProgress,
+      focused: _openInProgress,
       hasError: hasError,
     );
     final padding = EdgeInsets.symmetric(
@@ -416,7 +417,7 @@ class _AppPickerFieldBodyState extends State<_AppPickerFieldBody> {
               ),
             ),
           ),
-          _DatePickerFieldMessage(
+          AppFormFieldMessage(
             helperText: widget.helperText,
             errorText: widget.errorText,
           ),
@@ -504,60 +505,6 @@ class _TrailingPickerControl extends StatelessWidget {
       ),
     );
   }
-}
-
-class _DatePickerFieldMessage extends StatelessWidget {
-  const _DatePickerFieldMessage({
-    required this.helperText,
-    required this.errorText,
-  });
-
-  final String? helperText;
-  final String? errorText;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
-    final message = errorText ?? helperText;
-    if (message == null || message.trim().isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Padding(
-      padding: EdgeInsets.only(
-        top: tokens.gapXs,
-        left: tokens.gapXs,
-      ),
-      child: Text(
-        message,
-        style: theme.appTypography.caption.copyWith(
-          color: errorText != null
-              ? theme.colorScheme.error
-              : theme.colorScheme.onSurfaceVariant,
-        ),
-      ),
-    );
-  }
-}
-
-BorderSide _resolveDatePickerBorderSide({
-  required AppColors colors,
-  required ColorScheme scheme,
-  required bool enabled,
-  required bool open,
-  required bool hasError,
-}) {
-  if (!enabled) {
-    return BorderSide(color: colors.onSurface.withValues(alpha: 0.12));
-  }
-  if (hasError) {
-    return BorderSide(color: scheme.error, width: 1.5);
-  }
-  if (open) {
-    return BorderSide(color: scheme.primary, width: 1.5);
-  }
-  return BorderSide(color: colors.outlineVariant.withValues(alpha: 0.82));
 }
 
 class _AppDatePickerSheet extends StatefulWidget {
