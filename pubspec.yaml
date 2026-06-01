@@ -52,7 +52,7 @@ dependencies:
   syncfusion_flutter_charts: ^33.2.6
   syncfusion_flutter_datagrid: ^33.2.6
   syncfusion_flutter_datepicker: ^33.2.6
-  syncfusion_flutter_gauges: ^33.2.6
+  syncfusion_flutter_gauges: ^33.2.8
   syncfusion_flutter_maps: ^33.2.6
   syncfusion_flutter_treemap: ^33.2.6
   syncfusion_flutter_xlsio: ^33.2.6
