@@ -84,7 +84,13 @@ class OverviewHomeAlertsSection extends StatelessWidget {
       if (i > 0) {
         children.add(SizedBox(height: tokens.gapMd));
       }
-      children.add(_OverviewAlertBanner(spec: specs[i], host: this));
+      children.add(
+        _OverviewAlertBanner(
+          key: ValueKey<OverviewAlertKind>(specs[i].kind),
+          spec: specs[i],
+          host: this,
+        ),
+      );
     }
 
     return Column(
@@ -112,6 +118,7 @@ class _OverviewAlertBanner extends StatelessWidget {
   const _OverviewAlertBanner({
     required this.spec,
     required this.host,
+    super.key,
   });
 
   final OverviewAlertBannerSpec spec;

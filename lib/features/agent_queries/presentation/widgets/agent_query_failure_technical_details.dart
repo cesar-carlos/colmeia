@@ -41,6 +41,13 @@ class AgentQueryFailureTechnicalDetails extends StatefulWidget {
 class _AgentQueryFailureTechnicalDetailsState
     extends State<AgentQueryFailureTechnicalDetails> {
   late bool _expanded = widget.initiallyExpanded;
+  final ScrollController _detailsScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _detailsScrollController.dispose();
+    super.dispose();
+  }
 
   @override
   void didUpdateWidget(covariant AgentQueryFailureTechnicalDetails oldWidget) {
@@ -231,8 +238,11 @@ class _AgentQueryFailureTechnicalDetailsState
                           maxHeight: _kTechnicalDetailsMaxHeight,
                         ),
                         child: Scrollbar(
+                          controller: _detailsScrollController,
                           thumbVisibility: true,
                           child: SingleChildScrollView(
+                            primary: false,
+                            controller: _detailsScrollController,
                             child: SelectableText(
                               trimmed,
                               style: theme.textTheme.bodySmall?.copyWith(
