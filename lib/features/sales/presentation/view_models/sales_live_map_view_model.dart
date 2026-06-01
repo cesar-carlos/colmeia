@@ -1,5 +1,6 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/refresh/auto_refresh_ui_state.dart';
+import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/presentation/models/sales_live_map_visual_spec.dart';
@@ -336,6 +337,10 @@ class SalesLiveMapViewModel {
       return l10n.salesLiveMapSessionExpiredMessage;
     }
     final result = state.result;
+    final loadFailure = result?.loadFailure;
+    if (loadFailure != null) {
+      return agentQueryFailureUserMessage(loadFailure, l10n);
+    }
     return switch (result?.loadFailureReason) {
       SalesLiveMapLoadFailureReason.missingClientTokenSetup =>
         l10n.salesLiveMapMissingClientTokenSetupMessage,

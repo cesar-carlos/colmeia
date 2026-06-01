@@ -14,6 +14,9 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_summary_row.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
+import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_support_context.dart';
+import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after_host.dart';
+import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
@@ -28,6 +31,7 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_single_agent_p
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
+import 'package:colmeia/shared/widgets/agent_query_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
@@ -62,7 +66,8 @@ class _SalesProdutoTendenciaMediaMovelPageState
     with
         AutoRefreshStateMixin<SalesProdutoTendenciaMediaMovelPage>,
         SalesSingleAgentAutoRefreshMixin<SalesProdutoTendenciaMediaMovelPage>,
-        SalesCardAutoRefreshBinding<SalesProdutoTendenciaMediaMovelPage> {
+        SalesCardAutoRefreshBinding<SalesProdutoTendenciaMediaMovelPage>,
+        AgentQueryRetryAfterHost<SalesProdutoTendenciaMediaMovelPage> {
   static const String _cardId = 'produto_tendencia_venda_media_movel';
   static const List<int> _pageSizeOptions = <int>[10, 20, 50, 100];
 
@@ -94,6 +99,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
 
   bool _loading = false;
   String? _error;
+  AppFailure? _loadFailure;
   int _sqlLoadGeneration = 0;
   AgentQueriesCancelScope? _sqlCancelScope;
   String? _summaryError;
@@ -304,11 +310,13 @@ class _SalesProdutoTendenciaMediaMovelPageState
           _summaryRows = data.summaryRows;
           _loading = false;
           _error = null;
+          _loadFailure = null;
           _summaryError = null;
         });
         markAutoRefreshSuccess();
       },
       (failure) {
+        final l10n = AppLocalizations.of(context);
         setState(() {
           _pageResult =
               const ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
@@ -318,9 +326,11 @@ class _SalesProdutoTendenciaMediaMovelPageState
           _summaryRows =
               const <ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>[];
           _loading = false;
-          _error = _failureMessage(failure);
+          _loadFailure = failure;
+          _error = _failureMessage(failure, l10n);
           _summaryError = null;
         });
+        onAgentQueryLoadFailure(failure);
         markAutoRefreshFailure();
       },
     );
@@ -370,9 +380,10 @@ class _SalesProdutoTendenciaMediaMovelPageState
     });
   }
 
-  String _failureMessage(Object failure) {
-    final err = failure;
-    return err is AppFailure ? err.displayMessage : failure.toString();
+  String _failureMessage(Object failure, AppLocalizations l10n) {
+    return failure is AppFailure
+        ? agentQueryFailureUserMessage(failure, l10n)
+        : failure.toString();
   }
 
   int? _restorePositiveInt(Object? raw) {
@@ -639,6 +650,20 @@ class _SalesProdutoTendenciaMediaMovelPageState
                       title: l10n.salesBranchRequiredTitle,
                       message:
                           l10n.salesProdutoTendenciaMediaMovelSelectAgentHint,
+                    ),
+                  ] else if (_loadFailure != null) ...<Widget>[
+                    SizedBox(height: tokens.sectionSpacing),
+                    AgentQueryErrorPanel.fromFailure(
+                      _loadFailure!,
+                      l10n,
+                      onRetry: _reload,
+                      retryCountdownLabel: agentQueryRetryCountdownLabel(l10n),
+                      supportContext: AgentQueryFailureSupportContext.environment(
+                        extra: <String, String>{
+                          'agentId': ?_selectedAgentId,
+                          'screen': 'sales_produto_tendencia_media_movel',
+                        },
+                      ),
                     ),
                   ] else if (_error != null) ...<Widget>[
                     SizedBox(height: tokens.sectionSpacing),

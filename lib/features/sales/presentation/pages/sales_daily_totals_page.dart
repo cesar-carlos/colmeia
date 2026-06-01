@@ -2,10 +2,13 @@ import 'dart:async';
 
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
+import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after_host.dart';
+import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
@@ -54,7 +57,8 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
     with
         AutoRefreshStateMixin<SalesDailyTotalsPage>,
         SalesSingleAgentAutoRefreshMixin<SalesDailyTotalsPage>,
-        SalesCardAutoRefreshBinding<SalesDailyTotalsPage> {
+        SalesCardAutoRefreshBinding<SalesDailyTotalsPage>,
+        AgentQueryRetryAfterHost<SalesDailyTotalsPage> {
   late final SalesSessionService _sessionService;
   late final LoadAvailableAgentsForSales _loadAgentsUseCase;
   late final LoadSalesDailyTotalsUseCase _loadDailyTotals;
@@ -72,6 +76,7 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
       const <DailySalesTrendPoint>[];
   bool _loading = false;
   bool _loadFailed = false;
+  AppFailure? _loadFailure;
   String? _loadFailureMessage;
   int _loadGeneration = 0;
   AgentQueriesCancelScope? _sqlCancelScope;
@@ -184,6 +189,7 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
     setState(() {
       _loading = true;
       _loadFailed = false;
+      _loadFailure = null;
       _loadFailureMessage = null;
     });
 
@@ -237,9 +243,16 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
     setState(() {
       _dailyPoints = bundle.points;
       _loadFailed = bundle.loadFailed;
-      _loadFailureMessage = bundle.loadFailureMessage;
+      _loadFailure = bundle.loadFailure;
+      _loadFailureMessage = bundle.loadFailure == null
+          ? null
+          : agentQueryFailureUserMessage(
+              bundle.loadFailure!,
+              AppLocalizations.of(context),
+            );
       _loading = false;
     });
+    onAgentQueryLoadFailure(bundle.loadFailure);
     if (bundle.loadFailed) {
       markAutoRefreshFailure();
       return;
@@ -364,9 +377,13 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
             onChanged: setAutoRefreshOption,
             onRefreshNow: () => unawaited(_reload()),
             enabled: canScheduleAutoRefresh,
+            refreshNowEnabled:
+                canScheduleAutoRefresh && !isAgentQueryRetryCooldown,
             lastUpdatedAt: autoRefreshLastUpdatedAt,
-            isPaused: autoRefreshIsPaused,
-            pauseReason: autoRefreshPauseReason,
+            isPaused: autoRefreshIsPaused || isAgentQueryRetryCooldown,
+            pauseReason: isAgentQueryRetryCooldown
+                ? null
+                : autoRefreshPauseReason,
             l10n: l10n,
           ),
           SizedBox(height: tokens.sectionSpacing),
@@ -381,6 +398,7 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
               l10n: l10n,
               points: _dailyPoints,
               loadFailed: _loadFailed,
+              loadFailure: _loadFailure,
               loadFailureMessage: _loadFailureMessage,
               isLoading: _loading && _selectedAgentId != null,
               dailySaleDateRange: _dailyTotalsDateRange,

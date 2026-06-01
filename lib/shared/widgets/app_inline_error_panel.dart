@@ -30,6 +30,7 @@ class AppInlineErrorPanel extends StatelessWidget {
     this.belowMessage,
     this.onRetry,
     this.actions,
+    this.footer,
     this.retryLabel = 'Tentar novamente',
     this.variant = AppInlineErrorPanelVariant.card,
     this.tone = AppInlinePanelTone.error,
@@ -42,6 +43,9 @@ class AppInlineErrorPanel extends StatelessWidget {
   final Widget? belowMessage;
   final VoidCallback? onRetry;
   final Widget? actions;
+
+  /// Shown after [actions] / retry (e.g. collapsible support diagnostics).
+  final Widget? footer;
   final String retryLabel;
   final AppInlineErrorPanelVariant variant;
   final AppInlinePanelTone tone;
@@ -92,6 +96,10 @@ class AppInlineErrorPanel extends StatelessWidget {
             onPressed: onRetry,
             child: Text(retryLabel),
           ),
+        ],
+        if (footer != null) ...<Widget>[
+          SizedBox(height: tokens.gapMd),
+          footer!,
         ],
       ],
     );

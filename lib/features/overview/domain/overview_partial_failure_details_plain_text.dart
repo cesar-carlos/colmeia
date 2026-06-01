@@ -1,11 +1,10 @@
 import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 
 /// Plain-text diagnostic for partial agent failures (clipboard / logs).
-///
-/// [sourceLabel] and line labels are injected so this stays free of UI/l10n
-/// imports and is easy to unit test.
 String formatOverviewPartialFailureDetailsPlainText({
   required List<OverviewAgentQueryFailureDetail> details,
+  required AppLocalizations l10n,
   required String emptyMessage,
   required String Function(OverviewAgentQueryFailureSource) sourceLabel,
   required String userLineLabel,
@@ -26,7 +25,7 @@ String formatOverviewPartialFailureDetailsPlainText({
     b
       ..writeln('${d.displayName} (${d.agentId})')
       ..writeln(sourceLabel(d.source))
-      ..writeln('$userLineLabel: ${d.userMessage}');
+      ..writeln('$userLineLabel: ${d.userMessageFor(l10n)}');
     final tech = d.technicalSummary?.trim();
     if (tech != null && tech.isNotEmpty) {
       b.writeln('$technicalLineLabel: $tech');

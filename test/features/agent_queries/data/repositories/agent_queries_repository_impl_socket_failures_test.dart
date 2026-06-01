@@ -7,6 +7,7 @@ import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_failure_codes.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
@@ -123,7 +124,9 @@ void main() {
         );
         final failure = _failureOf(await repo.executeSql(request));
         check(failure).isA<AuthorizationFailure>();
-        check(failure.userMessage).isNotNull().contains('nao tem acesso');
+        check(
+          failure.context[AgentSqlRpcFailureUiKey.field],
+        ).equals(AgentSqlRpcFailureUiKey.permissionDenied);
       },
     );
 
@@ -158,7 +161,9 @@ void main() {
         );
         final failure = _failureOf(await repo.executeSql(request));
         check(failure).isA<SessionFailure>();
-        check(failure.userMessage).isNotNull().contains('sessao expirou');
+        check(
+          failure.context[AgentSqlRpcFailureUiKey.field],
+        ).equals(AgentSqlRpcFailureUiKey.authenticationFailed);
       },
     );
 
@@ -264,7 +269,9 @@ void main() {
         );
         final failure = _failureOf(await repo.executeSql(request));
         check(failure).isA<NetworkFailure>();
-        check(failure.userMessage).isNotNull().contains('demorou mais');
+        check(
+          failure.context[AgentSqlRpcFailureUiKey.field],
+        ).equals(AgentSqlRpcFailureUiKey.transportTimeout);
         check(
           failure.context[AgentQueriesFailureContext.transportField],
         ).equals('relay');
@@ -288,8 +295,8 @@ void main() {
       final failure = _failureOf(await repo.executeSql(request));
       check(failure).isA<NetworkFailure>();
       check(
-        failure.userMessage,
-      ).isNotNull().contains('conexao com o servidor caiu');
+        failure.context[AgentSqlRpcFailureUiKey.field],
+      ).equals(AgentSqlRpcFailureUiKey.networkError);
       check(
         failure.context[AgentQueriesFailureContext.transportCodeField],
       ).equals('conversation_lost');
@@ -305,7 +312,9 @@ void main() {
         );
         final failure = _failureOf(await repo.executeSql(request));
         check(failure).isA<NetworkFailure>();
-        check(failure.userMessage).isNotNull().contains('abrir o canal');
+        check(
+          failure.context[AgentSqlRpcFailureUiKey.field],
+        ).equals(AgentSqlRpcFailureUiKey.networkError);
         check(
           failure.context[AgentQueriesFailureContext.transportCodeField],
         ).equals('conversation_start_failed');
@@ -328,7 +337,9 @@ void main() {
         );
         final failure = _failureOf(await repo.executeSql(request));
         check(failure).isA<AuthorizationFailure>();
-        check(failure.userMessage).isNotNull().contains('nao tem acesso');
+        check(
+          failure.context[AgentSqlRpcFailureUiKey.field],
+        ).equals(AgentSqlRpcFailureUiKey.permissionDenied);
       },
     );
 
@@ -366,6 +377,9 @@ void main() {
       check(
         failure.context[AgentQueriesFailureContext.transportCodeField],
       ).equals('RATE_LIMITED');
+      check(
+        failure.context[AgentSqlRpcFailureUiKey.field],
+      ).equals(AgentSqlRpcFailureUiKey.rateLimited);
     });
 
     test('maps RelayStreamTerminated(aborted) to NetworkFailure', () async {
@@ -380,7 +394,9 @@ void main() {
       );
       final failure = _failureOf(await repo.executeSql(request));
       check(failure).isA<NetworkFailure>();
-      check(failure.userMessage).isNotNull().contains('interrompida');
+      check(
+        failure.context[AgentSqlRpcFailureUiKey.field],
+      ).equals(AgentSqlRpcFailureUiKey.networkError);
       check(
         failure.context[AgentQueriesFailureContext.transportCodeField],
       ).equals('stream_aborted');
@@ -399,7 +415,9 @@ void main() {
         );
         final failure = _failureOf(await repo.executeSql(request));
         check(failure).isA<NetworkFailure>();
-        check(failure.userMessage).isNotNull().contains('formato invalido');
+        check(
+          failure.context[AgentSqlRpcFailureUiKey.field],
+        ).equals(AgentSqlRpcFailureUiKey.generic);
       },
     );
 

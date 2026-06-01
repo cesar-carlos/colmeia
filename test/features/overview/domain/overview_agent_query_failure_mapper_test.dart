@@ -2,6 +2,7 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
 import 'package:colmeia/features/overview/domain/overview_agent_query_failure_mapper.dart';
+import 'package:colmeia/l10n/app_localizations_en.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -40,7 +41,7 @@ void main() {
       expect(d.agentId, 'a1');
       expect(d.displayName, 'Agent One');
       expect(d.source, OverviewAgentQueryFailureSource.paymentResumo);
-      expect(d.userMessage, 'User sees this');
+      expect(d.userMessageFor(AppLocalizationsEn()), 'User sees this');
       expect(
         d.technicalSummary,
         'ValidationFailure: technical',
@@ -67,7 +68,7 @@ void main() {
       ];
 
       final details = overviewPartialFailuresFromParticipants(participants);
-      expect(details.single.userMessage, 'rpc-user');
+      expect(details.single.userMessageFor(AppLocalizationsEn()), 'rpc-user');
       expect(
         details.single.technicalSummary,
         'RpcFailure: rpc-msg | rpcCode=42 | reason=busy | correlationId=corr-1',

@@ -1,5 +1,5 @@
 import 'package:colmeia/core/errors/app_failure.dart';
-import 'package:colmeia/features/agent_queries/presentation/localization/agent_sql_rpc_failure_l10n.dart';
+import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
 import 'package:colmeia/features/overview/domain/overview_failure_ui_key.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 
@@ -22,8 +22,5 @@ String overviewFailureUserMessage(
     };
   }
 
-  if (failure is RpcFailure) {
-    return agentSqlRpcFailureUserMessage(failure, l10n);
-  }
-  return failure.displayMessage;
+  return agentQueryFailureUserMessage(failure, l10n);
 }

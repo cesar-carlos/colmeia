@@ -4,10 +4,14 @@ import 'dart:math' as math;
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
+import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after_host.dart';
+import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
+import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_chart_failure_placeholder_content.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
@@ -126,7 +130,8 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
     with
         AutoRefreshStateMixin<SalesMonthlyPnlPage>,
         SalesSingleAgentAutoRefreshMixin<SalesMonthlyPnlPage>,
-        SalesCardAutoRefreshBinding<SalesMonthlyPnlPage> {
+        SalesCardAutoRefreshBinding<SalesMonthlyPnlPage>,
+        AgentQueryRetryAfterHost<SalesMonthlyPnlPage> {
   late final SalesSessionService _sessionService;
   late final LoadAvailableAgentsForSales _loadAgentsUseCase;
   late final LoadSalesMonthlyPnlLinesUseCase _loadPnlLines;
@@ -146,8 +151,10 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
       const <DailySalesTrendPoint>[];
   bool _loading = false;
   bool _chartLoadFailed = false;
+  AppFailure? _chartLoadFailure;
   String? _chartLoadFailureMessage;
   bool _dailyChartLoadFailed = false;
+  AppFailure? _dailyChartLoadFailure;
   String? _dailyChartLoadFailureMessage;
   int _chartLoadGeneration = 0;
   AgentQueriesCancelScope? _sqlCancelScope;
@@ -262,8 +269,10 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
     setState(() {
       _loading = true;
       _chartLoadFailed = false;
+      _chartLoadFailure = null;
       _chartLoadFailureMessage = null;
       _dailyChartLoadFailed = false;
+      _dailyChartLoadFailure = null;
       _dailyChartLoadFailureMessage = null;
     });
 
@@ -278,6 +287,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
         _chartLoadFailureMessage = null;
         _dailyPoints = const <DailySalesTrendPoint>[];
         _dailyChartLoadFailed = false;
+      _dailyChartLoadFailure = null;
         _dailyChartLoadFailureMessage = null;
       });
       return;
@@ -334,12 +344,25 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
     setState(() {
       _points = bundle.points;
       _chartLoadFailed = bundle.loadFailed;
-      _chartLoadFailureMessage = bundle.loadFailureMessage;
+      _chartLoadFailure = bundle.loadFailure;
+      _chartLoadFailureMessage = bundle.loadFailure == null
+          ? null
+          : agentQueryFailureUserMessage(
+              bundle.loadFailure!,
+              AppLocalizations.of(context),
+            );
       _dailyPoints = dailyBundle.points;
       _dailyChartLoadFailed = dailyBundle.loadFailed;
-      _dailyChartLoadFailureMessage = dailyBundle.loadFailureMessage;
+      _dailyChartLoadFailure = dailyBundle.loadFailure;
+      _dailyChartLoadFailureMessage = dailyBundle.loadFailure == null
+          ? null
+          : agentQueryFailureUserMessage(
+              dailyBundle.loadFailure!,
+              AppLocalizations.of(context),
+            );
       _loading = false;
     });
+    onAgentQueryLoadFailure(bundle.loadFailure ?? dailyBundle.loadFailure);
     if (bundle.loadFailed || dailyBundle.loadFailed) {
       markAutoRefreshFailure();
       return;
@@ -544,9 +567,13 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
             onChanged: setAutoRefreshOption,
             onRefreshNow: () => unawaited(_reload()),
             enabled: canScheduleAutoRefresh,
+            refreshNowEnabled:
+                canScheduleAutoRefresh && !isAgentQueryRetryCooldown,
             lastUpdatedAt: autoRefreshLastUpdatedAt,
-            isPaused: autoRefreshIsPaused,
-            pauseReason: autoRefreshPauseReason,
+            isPaused: autoRefreshIsPaused || isAgentQueryRetryCooldown,
+            pauseReason: isAgentQueryRetryCooldown
+                ? null
+                : autoRefreshPauseReason,
             l10n: l10n,
           ),
           SizedBox(height: tokens.sectionSpacing),
@@ -565,6 +592,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
                     l10n: l10n,
                     points: _points,
                     loadFailed: _chartLoadFailed,
+                    loadFailure: _chartLoadFailure,
                     loadFailureMessage: _chartLoadFailureMessage,
                     isLoading: _loading && _selectedAgentId != null,
                     onOpenFullscreen: _openChartFullscreen,
@@ -576,6 +604,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
                     l10n: l10n,
                     points: _points,
                     loadFailed: _chartLoadFailed,
+                    loadFailure: _chartLoadFailure,
                     loadFailureMessage: _chartLoadFailureMessage,
                     isLoading: _loading && _selectedAgentId != null,
                     initialSession: _sessionService
@@ -590,6 +619,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
                   l10n: l10n,
                   points: _dailyPoints,
                   loadFailed: _dailyChartLoadFailed,
+                  loadFailure: _dailyChartLoadFailure,
                   loadFailureMessage: _dailyChartLoadFailureMessage,
                   isLoading: _loading && _selectedAgentId != null,
                   dailySaleDateRange: _dailyTotalsDateRange,
@@ -608,6 +638,7 @@ class _SalesMonthlyPnlLineChart extends StatelessWidget {
     required this.points,
     required this.loadFailed,
     required this.isLoading,
+    this.loadFailure,
     this.loadFailureMessage,
     this.onOpenFullscreen,
     this.useChartShell = true,
@@ -618,6 +649,7 @@ class _SalesMonthlyPnlLineChart extends StatelessWidget {
   final List<SalesMonthlyPnlPoint> points;
   final bool loadFailed;
   final bool isLoading;
+  final AppFailure? loadFailure;
   final String? loadFailureMessage;
   final VoidCallback? onOpenFullscreen;
   final bool useChartShell;
@@ -662,15 +694,11 @@ class _SalesMonthlyPnlLineChart extends StatelessWidget {
             context: context,
             height: resolvedHeight,
             message: emptyMessage,
-            placeholder: Padding(
-              padding: EdgeInsets.symmetric(vertical: tokens.contentSpacing),
-              child: Center(
-                child: Text(
-                  emptyMessage,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium,
-                ),
-              ),
+            placeholder: AgentQueryChartFailurePlaceholderContent(
+              emptyMessage: emptyMessage,
+              textStyle: theme.textTheme.bodyMedium,
+              verticalPadding: tokens.contentSpacing,
+              loadFailure: loadFailed ? loadFailure : null,
             ),
           )
         : LayoutBuilder(

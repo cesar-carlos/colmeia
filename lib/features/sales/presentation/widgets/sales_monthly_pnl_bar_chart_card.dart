@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
+import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_chart_failure_placeholder_content.dart';
 import 'package:colmeia/features/agent_queries/presentation/widgets/dashboard_lucratividade_percent_metrics.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.dart';
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_bar_chart_preferences.dart';
@@ -32,6 +34,7 @@ class SalesMonthlyPnlBarChartCard extends StatefulWidget {
     required this.initialSession,
     required this.persistSession,
     super.key,
+    this.loadFailure,
     this.loadFailureMessage,
     this.onOpenFullscreen,
   });
@@ -43,6 +46,7 @@ class SalesMonthlyPnlBarChartCard extends StatefulWidget {
   final SalesMonthlyPnlBarChartPreferences initialSession;
   final Future<void> Function(SalesMonthlyPnlBarChartPreferences session)
   persistSession;
+  final AppFailure? loadFailure;
   final String? loadFailureMessage;
   final VoidCallback? onOpenFullscreen;
 
@@ -178,6 +182,7 @@ class _SalesMonthlyPnlBarChartCardState
         l10n: l10n,
         points: widget.points,
         loadFailed: widget.loadFailed,
+        loadFailure: widget.loadFailure,
         loadFailureMessage: widget.loadFailureMessage,
         isLoading: widget.isLoading,
         session: _session,
@@ -223,6 +228,7 @@ class _SalesMonthlyPnlBarChartBody extends StatelessWidget {
     required this.session,
     required this.chartHeightOverride,
     required this.useChartShell,
+    this.loadFailure,
     this.loadFailureMessage,
     this.onSessionChanged,
     this.emptyMessage,
@@ -242,6 +248,7 @@ class _SalesMonthlyPnlBarChartBody extends StatelessWidget {
   final AppLocalizations l10n;
   final List<SalesMonthlyPnlPoint> points;
   final bool loadFailed;
+  final AppFailure? loadFailure;
   final bool isLoading;
   final SalesMonthlyPnlBarChartPreferences session;
   final double chartHeightOverride;
@@ -320,15 +327,11 @@ class _SalesMonthlyPnlBarChartBody extends StatelessWidget {
         context: context,
         height: chartHeightOverride,
         message: emptyMsg,
-        placeholder: Padding(
-          padding: EdgeInsets.symmetric(vertical: tokens.contentSpacing),
-          child: Center(
-            child: Text(
-              emptyMsg,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium,
-            ),
-          ),
+        placeholder: AgentQueryChartFailurePlaceholderContent(
+          emptyMessage: emptyMsg,
+          textStyle: theme.textTheme.bodyMedium,
+          verticalPadding: tokens.contentSpacing,
+          loadFailure: loadFailed ? loadFailure : null,
         ),
       );
     } else if (showZerosOnly) {

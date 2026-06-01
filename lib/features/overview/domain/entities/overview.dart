@@ -1,3 +1,4 @@
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
@@ -20,22 +21,28 @@ class Overview {
     required this.userRankings,
     this.monthlyParcelTrend = const <OverviewMonthlyParcelPoint>[],
     this.monthlyParcelTrendLoadFailed = false,
+    this.monthlyParcelTrendLoadFailure,
     this.monthlyParcelTrendLoadFailureMessage,
     this.weekdaySalesTrend = const <OverviewWeekdaySalesTrendPoint>[],
     this.weekdaySalesTrendLoadFailed = false,
+    this.weekdaySalesTrendLoadFailure,
     this.weekdaySalesTrendLoadFailureMessage,
     this.weekdayUserSalesTrend = const <OverviewWeekdayUserSalesTrendPoint>[],
     this.weekdayUserSalesTrendLoadFailed = false,
+    this.weekdayUserSalesTrendLoadFailure,
     this.weekdayUserSalesTrendLoadFailureMessage,
     this.dailySalesTrend = const <DailySalesTrendPoint>[],
     this.dailySalesTrendLoadFailed = false,
+    this.dailySalesTrendLoadFailure,
     this.dailySalesTrendLoadFailureMessage,
     this.lucratividadeMensalTrend =
         const <ResumoProdutoVendaLucratividadeMensalRow>[],
     this.lucratividadeMensalTrendLoadFailed = false,
+    this.lucratividadeMensalTrendLoadFailure,
     this.lucratividadeMensalTrendLoadFailureMessage,
     this.lucratividadeTrend = const <ResumoProdutoVendaLucratividadeRow>[],
     this.lucratividadeTrendLoadFailed = false,
+    this.lucratividadeTrendLoadFailure,
     this.lucratividadeTrendLoadFailureMessage,
     this.lucratividadePartialFailureAgentNames = const <String>[],
     this.isStaleCache = false,
@@ -85,11 +92,12 @@ class Overview {
   /// empty for this reason instead of genuinely having no rows.
   final bool monthlyParcelTrendLoadFailed;
 
-  /// Specific user-facing message extracted from the underlying `AppFailure`
-  /// (e.g. "Voce nao tem acesso a este agente.", "SQL invalido na query …").
-  /// Charts use this when [monthlyParcelTrendLoadFailed] is true to give the
-  /// user actionable context instead of a generic "could not load chart".
-  /// Null when the failure was not user-facing or the load succeeded.
+  /// First section-wide `AppFailure` when every agent in the batch failed.
+  /// Localize at presentation via `agentQueryFailureUserMessage`. Transient:
+  /// not persisted in overview cache JSON.
+  final AppFailure? monthlyParcelTrendLoadFailure;
+
+  /// Legacy cached string from older loads; prefer [monthlyParcelTrendLoadFailure].
   final String? monthlyParcelTrendLoadFailureMessage;
 
   /// Weekday distribution (Sunday..Saturday) for the selected period.
@@ -99,8 +107,9 @@ class Overview {
   /// empty for this reason instead of genuinely having no rows.
   final bool weekdaySalesTrendLoadFailed;
 
-  /// See [monthlyParcelTrendLoadFailureMessage] — same semantics for the
-  /// weekday-sales chart.
+  final AppFailure? weekdaySalesTrendLoadFailure;
+
+  /// See [monthlyParcelTrendLoadFailureMessage] — legacy fallback string.
   final String? weekdaySalesTrendLoadFailureMessage;
 
   /// Weekday distribution per user (merged across branches/agents) for the
@@ -111,8 +120,8 @@ class Overview {
   /// may be empty for this reason instead of genuinely having no rows.
   final bool weekdayUserSalesTrendLoadFailed;
 
-  /// See [monthlyParcelTrendLoadFailureMessage] — same semantics for the
-  /// weekday-by-user chart.
+  final AppFailure? weekdayUserSalesTrendLoadFailure;
+
   final String? weekdayUserSalesTrendLoadFailureMessage;
 
   /// Daily sales totals for the selected period (merged across agents/branches).
@@ -120,8 +129,8 @@ class Overview {
 
   final bool dailySalesTrendLoadFailed;
 
-  /// See [monthlyParcelTrendLoadFailureMessage] — same semantics for the
-  /// daily-sales chart.
+  final AppFailure? dailySalesTrendLoadFailure;
+
   final String? dailySalesTrendLoadFailureMessage;
 
   /// Monthly product profitability trend (lucratividade mensal): 12 months
@@ -134,8 +143,8 @@ class Overview {
   /// True when the lucratividade mensal query failed.
   final bool lucratividadeMensalTrendLoadFailed;
 
-  /// See [monthlyParcelTrendLoadFailureMessage] — same semantics for the
-  /// lucratividade mensal chart.
+  final AppFailure? lucratividadeMensalTrendLoadFailure;
+
   final String? lucratividadeMensalTrendLoadFailureMessage;
 
   /// Period product profitability (lucratividade): **one row per agent** for
@@ -146,8 +155,8 @@ class Overview {
   /// True when the lucratividade (period, by agent) query failed.
   final bool lucratividadeTrendLoadFailed;
 
-  /// See [monthlyParcelTrendLoadFailureMessage] — same semantics for the
-  /// lucratividade chart.
+  final AppFailure? lucratividadeTrendLoadFailure;
+
   final String? lucratividadeTrendLoadFailureMessage;
 
   /// Agents whose period lucratividade SQL failed while other agents still
@@ -248,21 +257,27 @@ class Overview {
     List<String>? agentNamesSkippedDueToHubPresence,
     List<OverviewMonthlyParcelPoint>? monthlyParcelTrend,
     bool? monthlyParcelTrendLoadFailed,
+    AppFailure? monthlyParcelTrendLoadFailure,
     String? monthlyParcelTrendLoadFailureMessage,
     List<OverviewWeekdaySalesTrendPoint>? weekdaySalesTrend,
     bool? weekdaySalesTrendLoadFailed,
+    AppFailure? weekdaySalesTrendLoadFailure,
     String? weekdaySalesTrendLoadFailureMessage,
     List<OverviewWeekdayUserSalesTrendPoint>? weekdayUserSalesTrend,
     bool? weekdayUserSalesTrendLoadFailed,
+    AppFailure? weekdayUserSalesTrendLoadFailure,
     String? weekdayUserSalesTrendLoadFailureMessage,
     List<DailySalesTrendPoint>? dailySalesTrend,
     bool? dailySalesTrendLoadFailed,
+    AppFailure? dailySalesTrendLoadFailure,
     String? dailySalesTrendLoadFailureMessage,
     List<ResumoProdutoVendaLucratividadeMensalRow>? lucratividadeMensalTrend,
     bool? lucratividadeMensalTrendLoadFailed,
+    AppFailure? lucratividadeMensalTrendLoadFailure,
     String? lucratividadeMensalTrendLoadFailureMessage,
     List<ResumoProdutoVendaLucratividadeRow>? lucratividadeTrend,
     bool? lucratividadeTrendLoadFailed,
+    AppFailure? lucratividadeTrendLoadFailure,
     String? lucratividadeTrendLoadFailureMessage,
     List<String>? lucratividadePartialFailureAgentNames,
     bool? mainResumoHadPlannedTargets,
@@ -279,12 +294,16 @@ class Overview {
       monthlyParcelTrend: monthlyParcelTrend ?? this.monthlyParcelTrend,
       monthlyParcelTrendLoadFailed:
           monthlyParcelTrendLoadFailed ?? this.monthlyParcelTrendLoadFailed,
+      monthlyParcelTrendLoadFailure:
+          monthlyParcelTrendLoadFailure ?? this.monthlyParcelTrendLoadFailure,
       monthlyParcelTrendLoadFailureMessage:
           monthlyParcelTrendLoadFailureMessage ??
           this.monthlyParcelTrendLoadFailureMessage,
       weekdaySalesTrend: weekdaySalesTrend ?? this.weekdaySalesTrend,
       weekdaySalesTrendLoadFailed:
           weekdaySalesTrendLoadFailed ?? this.weekdaySalesTrendLoadFailed,
+      weekdaySalesTrendLoadFailure:
+          weekdaySalesTrendLoadFailure ?? this.weekdaySalesTrendLoadFailure,
       weekdaySalesTrendLoadFailureMessage:
           weekdaySalesTrendLoadFailureMessage ??
           this.weekdaySalesTrendLoadFailureMessage,
@@ -293,12 +312,17 @@ class Overview {
       weekdayUserSalesTrendLoadFailed:
           weekdayUserSalesTrendLoadFailed ??
           this.weekdayUserSalesTrendLoadFailed,
+      weekdayUserSalesTrendLoadFailure:
+          weekdayUserSalesTrendLoadFailure ??
+          this.weekdayUserSalesTrendLoadFailure,
       weekdayUserSalesTrendLoadFailureMessage:
           weekdayUserSalesTrendLoadFailureMessage ??
           this.weekdayUserSalesTrendLoadFailureMessage,
       dailySalesTrend: dailySalesTrend ?? this.dailySalesTrend,
       dailySalesTrendLoadFailed:
           dailySalesTrendLoadFailed ?? this.dailySalesTrendLoadFailed,
+      dailySalesTrendLoadFailure:
+          dailySalesTrendLoadFailure ?? this.dailySalesTrendLoadFailure,
       dailySalesTrendLoadFailureMessage:
           dailySalesTrendLoadFailureMessage ??
           this.dailySalesTrendLoadFailureMessage,
@@ -307,12 +331,17 @@ class Overview {
       lucratividadeMensalTrendLoadFailed:
           lucratividadeMensalTrendLoadFailed ??
           this.lucratividadeMensalTrendLoadFailed,
+      lucratividadeMensalTrendLoadFailure:
+          lucratividadeMensalTrendLoadFailure ??
+          this.lucratividadeMensalTrendLoadFailure,
       lucratividadeMensalTrendLoadFailureMessage:
           lucratividadeMensalTrendLoadFailureMessage ??
           this.lucratividadeMensalTrendLoadFailureMessage,
       lucratividadeTrend: lucratividadeTrend ?? this.lucratividadeTrend,
       lucratividadeTrendLoadFailed:
           lucratividadeTrendLoadFailed ?? this.lucratividadeTrendLoadFailed,
+      lucratividadeTrendLoadFailure:
+          lucratividadeTrendLoadFailure ?? this.lucratividadeTrendLoadFailure,
       lucratividadeTrendLoadFailureMessage:
           lucratividadeTrendLoadFailureMessage ??
           this.lucratividadeTrendLoadFailureMessage,

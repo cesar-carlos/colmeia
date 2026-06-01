@@ -4189,6 +4189,12 @@ abstract class AppLocalizations {
   /// **'Too many query attempts were made. Please wait a moment and try again.'**
   String get agentSqlErrorRateLimited;
 
+  /// Rate-limited agent query when the hub sent Retry-After or retry_after_ms.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many query attempts were made. Try again in {seconds}s.'**
+  String agentSqlErrorRateLimitedWithWait(int seconds);
+
   /// No description provided for @agentSqlErrorValidationFailed.
   ///
   /// In en, this message translates to:
@@ -4254,6 +4260,192 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The query could not be completed on the agent.'**
   String get agentSqlErrorGeneric;
+
+  /// No description provided for @agentSqlFailureTitleRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many queries'**
+  String get agentSqlFailureTitleRateLimited;
+
+  /// No description provided for @agentSqlFailureTitleAuthenticationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Session expired'**
+  String get agentSqlFailureTitleAuthenticationFailed;
+
+  /// No description provided for @agentSqlFailureTitlePermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Access denied'**
+  String get agentSqlFailureTitlePermissionDenied;
+
+  /// No description provided for @agentSqlFailureTitleTransportTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent timed out'**
+  String get agentSqlFailureTitleTransportTimeout;
+
+  /// No description provided for @agentSqlFailureTitleNetworkError.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection problem'**
+  String get agentSqlFailureTitleNetworkError;
+
+  /// No description provided for @agentSqlFailureTitleValidationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid query'**
+  String get agentSqlFailureTitleValidationFailed;
+
+  /// No description provided for @agentSqlFailureTitleExecutionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Query failed'**
+  String get agentSqlFailureTitleExecutionFailed;
+
+  /// No description provided for @agentSqlFailureTitleTransactionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction failed'**
+  String get agentSqlFailureTitleTransactionFailed;
+
+  /// No description provided for @agentSqlFailureTitleConnectionPoolExhausted.
+  ///
+  /// In en, this message translates to:
+  /// **'Server busy'**
+  String get agentSqlFailureTitleConnectionPoolExhausted;
+
+  /// No description provided for @agentSqlFailureTitleResultTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Result too large'**
+  String get agentSqlFailureTitleResultTooLarge;
+
+  /// No description provided for @agentSqlFailureTitleDatabaseConnectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Database unreachable'**
+  String get agentSqlFailureTitleDatabaseConnectionFailed;
+
+  /// No description provided for @agentSqlFailureTitleQueryTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Query timed out'**
+  String get agentSqlFailureTitleQueryTimeout;
+
+  /// No description provided for @agentSqlFailureTitleInvalidDatabaseConfig.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid database setup'**
+  String get agentSqlFailureTitleInvalidDatabaseConfig;
+
+  /// No description provided for @agentSqlFailureTitleExecutionNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Execution not found'**
+  String get agentSqlFailureTitleExecutionNotFound;
+
+  /// No description provided for @agentSqlFailureTitleExecutionCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Query cancelled'**
+  String get agentSqlFailureTitleExecutionCancelled;
+
+  /// No description provided for @agentSqlFailureTitleGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Query failed'**
+  String get agentSqlFailureTitleGeneric;
+
+  /// No description provided for @agentSqlFailureActionManageAgents.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage agents'**
+  String get agentSqlFailureActionManageAgents;
+
+  /// No description provided for @agentSqlFailureActionShowDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'View details'**
+  String get agentSqlFailureActionShowDetails;
+
+  /// No description provided for @agentSqlFailureActionOpenFullDiagnostic.
+  ///
+  /// In en, this message translates to:
+  /// **'Open full diagnostic'**
+  String get agentSqlFailureActionOpenFullDiagnostic;
+
+  /// No description provided for @agentSqlFailureActionViewAffectedAgents.
+  ///
+  /// In en, this message translates to:
+  /// **'View affected agents'**
+  String get agentSqlFailureActionViewAffectedAgents;
+
+  /// No description provided for @agentSqlFailureActionShowTechnicalDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Support details'**
+  String get agentSqlFailureActionShowTechnicalDetails;
+
+  /// No description provided for @agentSqlFailureActionHideTechnicalDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide support details'**
+  String get agentSqlFailureActionHideTechnicalDetails;
+
+  /// No description provided for @agentSqlFailureTechnicalDetailsHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Support details'**
+  String get agentSqlFailureTechnicalDetailsHeading;
+
+  /// No description provided for @agentSqlFailureTechnicalDetailsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy and send to your technical team'**
+  String get agentSqlFailureTechnicalDetailsSubtitle;
+
+  /// No description provided for @agentSqlFailureTechnicalDetailsCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy technical details'**
+  String get agentSqlFailureTechnicalDetailsCopy;
+
+  /// No description provided for @agentSqlFailureTechnicalDetailsCopySummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy summary'**
+  String get agentSqlFailureTechnicalDetailsCopySummary;
+
+  /// No description provided for @agentSqlFailureTechnicalDetailsCopyFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy all'**
+  String get agentSqlFailureTechnicalDetailsCopyFull;
+
+  /// No description provided for @agentSqlFailureTechnicalDetailsShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get agentSqlFailureTechnicalDetailsShare;
+
+  /// No description provided for @agentSqlFailureTechnicalDetailsCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard'**
+  String get agentSqlFailureTechnicalDetailsCopied;
+
+  /// No description provided for @agentSqlFailurePauseReasonWaitingServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the server'**
+  String get agentSqlFailurePauseReasonWaitingServer;
+
+  /// No description provided for @overviewChartViewAgentFailureDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'View affected agents'**
+  String get overviewChartViewAgentFailureDetails;
 
   /// No description provided for @formsDemoDatePickersFormTitle.
   ///

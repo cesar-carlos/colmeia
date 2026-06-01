@@ -105,6 +105,16 @@ AgentSqlRpcUserMessageResolution _localizedResolution({
   );
 }
 
+bool _isRateLimitedReason(String? reasonLower) {
+  if (reasonLower == null || reasonLower.isEmpty) {
+    return false;
+  }
+  if (reasonLower == 'rate_limited') {
+    return true;
+  }
+  return reasonLower.endsWith('_rate_limited');
+}
+
 AgentSqlRpcUserMessageResolution _sqlValidationResolution(String bridge) {
   final trimmed = bridge.trim();
   if (trimmed.isNotEmpty) {
@@ -212,7 +222,7 @@ AgentSqlRpcUserMessageResolution resolveAgentSqlRpcUserMessage(
     );
   }
 
-  if (code == -32013 || reasonLower == 'rate_limited') {
+  if (code == -32013 || _isRateLimitedReason(reasonLower)) {
     return const AgentSqlRpcUserMessageResolution(
       userMessage: _En.rateLimited,
       uiKey: AgentSqlRpcFailureUiKey.rateLimited,

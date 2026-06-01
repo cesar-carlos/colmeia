@@ -1,3 +1,4 @@
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_diario_vendas_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_complete_period.dart';
@@ -10,7 +11,7 @@ import 'package:colmeia/shared/filters/dashboard_filter.dart';
 typedef SalesDailyTotalsLoadResult = ({
   List<DailySalesTrendPoint> points,
   bool loadFailed,
-  String? loadFailureMessage,
+  AppFailure? loadFailure,
 });
 
 class LoadSalesDailyTotalsUseCase {
@@ -71,7 +72,7 @@ class LoadSalesDailyTotalsUseCase {
         return (
           points: dailySalesTrendPointsFromRows(filled),
           loadFailed: false,
-          loadFailureMessage: null,
+          loadFailure: null,
         );
       },
       (failure) {
@@ -86,7 +87,7 @@ class LoadSalesDailyTotalsUseCase {
         return (
           points: const <DailySalesTrendPoint>[],
           loadFailed: true,
-          loadFailureMessage: failure.userMessage,
+          loadFailure: failure,
         );
       },
     );

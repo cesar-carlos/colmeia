@@ -100,6 +100,22 @@ void main() {
   );
 
   test(
+    'client_token_get_policy_rate_limited with -32013 maps to rateLimited',
+    () {
+      final resolution = resolveAgentSqlRpcUserMessage(
+        const AgentSqlRpcErrorDetails(
+          userMessage: '',
+          message: 'Rate limited',
+          code: -32013,
+          reason: 'client_token_get_policy_rate_limited',
+        ),
+      );
+      check(resolution.uiKey).equals(AgentSqlRpcFailureUiKey.rateLimited);
+      check(resolution.userMessage).equals(en.agentSqlErrorRateLimited);
+    },
+  );
+
+  test(
     '-32002 unauthorized with odbc_reason invalid_policy maps to sql '
     'validation (hub policy rejection), not permission denied',
     () {

@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
+import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_support_context.dart';
+import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_load_error_surface.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
@@ -43,6 +45,7 @@ import 'package:flutter/material.dart';
 ///     onExportRequested: controller.onExportRequested,
 ///   ),
 ///   isLoading: controller.isLoading,
+///   loadFailure: controller.loadFailure,
 ///   errorMessage: controller.errorMessage,
 ///   onRetry: controller.reload,
 /// )
@@ -66,8 +69,11 @@ class AppReportViewer<T> extends StatefulWidget {
     this.events = const AppReportEvents(),
     this.style = const AppReportViewerStyle(),
     this.isLoading = false,
+    this.loadFailure,
     this.errorMessage,
     this.onRetry,
+    this.retryCountdownLabel,
+    this.supportContext,
     this.emptyMessage,
     this.searchHintText,
   });
@@ -112,8 +118,11 @@ class AppReportViewer<T> extends StatefulWidget {
   final AppReportEvents<T> events;
   final AppReportViewerStyle style;
   final bool isLoading;
+  final AppFailure? loadFailure;
   final String? errorMessage;
   final VoidCallback? onRetry;
+  final String? retryCountdownLabel;
+  final AgentQueryFailureSupportContext? supportContext;
   final String? emptyMessage;
 
   /// Optional override for the toolbar search field hint. When null a generic
@@ -130,6 +139,11 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
   late List<AppReportSortDescriptor> _sorts;
   late List<AppReportGroupDescriptor> _groups;
   late final AppReportGroupController _groupController;
+
+  bool get _hasLoadError => AgentQueryLoadErrorSurface.hasErrorFor(
+        loadFailure: widget.loadFailure,
+        errorMessage: widget.errorMessage,
+      );
 
   @override
   void initState() {
@@ -436,11 +450,14 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
           ),
           SizedBox(height: tokens.sectionSpacing),
         ],
-        if (widget.errorMessage != null) ...<Widget>[
-          AppInlineErrorPanel(
-            title: l10n.reportLoadErrorTitle,
-            message: widget.errorMessage!,
+        if (_hasLoadError) ...<Widget>[
+          AgentQueryLoadErrorSurface(
+            loadFailure: widget.loadFailure,
+            errorMessage: widget.errorMessage,
             onRetry: widget.onRetry,
+            retryCountdownLabel: widget.retryCountdownLabel,
+            supportContext: widget.supportContext,
+            legacyTitle: l10n.reportLoadErrorTitle,
           ),
           SizedBox(height: tokens.sectionSpacing),
         ],

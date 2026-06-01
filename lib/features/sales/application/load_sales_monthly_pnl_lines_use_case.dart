@@ -1,3 +1,4 @@
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_produto_venda_lucratividade_mensal_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_filter.dart';
@@ -11,7 +12,7 @@ import 'package:flutter/foundation.dart';
 typedef SalesMonthlyPnlLinesLoadResult = ({
   List<SalesMonthlyPnlPoint> points,
   bool loadFailed,
-  String? loadFailureMessage,
+  AppFailure? loadFailure,
 });
 
 class LoadSalesMonthlyPnlLinesUseCase {
@@ -53,7 +54,7 @@ class LoadSalesMonthlyPnlLinesUseCase {
           end: last12.dataVendaFim,
         ),
         loadFailed: false,
-        loadFailureMessage: null,
+        loadFailure: null,
       ),
       (failure) {
         AppLogger.warning(
@@ -67,7 +68,7 @@ class LoadSalesMonthlyPnlLinesUseCase {
         return (
           points: const <SalesMonthlyPnlPoint>[],
           loadFailed: true,
-          loadFailureMessage: failure.userMessage,
+          loadFailure: failure,
         );
       },
     );

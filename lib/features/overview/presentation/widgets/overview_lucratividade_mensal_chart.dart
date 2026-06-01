@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/presentation/widgets/dashboard_lucratividade_percent_metrics.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_chart_load_failure_helpers.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
@@ -61,15 +63,19 @@ class OverviewLucratividadeMensalChart extends StatefulWidget {
     required this.points,
     required this.loadFailed,
     required this.isSingleAgentSelected,
+    this.loadFailure,
     this.loadFailureMessage,
+    this.onViewAgentFailureDetails,
     super.key,
   });
 
   final AppLocalizations l10n;
   final List<ResumoProdutoVendaLucratividadeMensalRow> points;
   final bool loadFailed;
+  final AppFailure? loadFailure;
   final bool isSingleAgentSelected;
   final String? loadFailureMessage;
+  final VoidCallback? onViewAgentFailureDetails;
 
   @override
   State<OverviewLucratividadeMensalChart> createState() =>
@@ -158,6 +164,15 @@ class _OverviewLucratividadeMensalChartState
       return _emptyPlaceholderCache!;
     }
     _emptyMessageCache = message;
+    if (widget.loadFailed) {
+      return _emptyPlaceholderCache = overviewChartEmptyPlaceholder(
+        emptyMessage: message,
+        textStyle: Theme.of(context).textTheme.bodyMedium,
+        verticalPadding: tokens.contentSpacing,
+        onViewAgentFailureDetails: widget.onViewAgentFailureDetails,
+        loadFailure: widget.loadFailure,
+      );
+    }
     return _emptyPlaceholderCache = Padding(
       padding: EdgeInsets.symmetric(vertical: tokens.contentSpacing),
       child: Center(
@@ -188,7 +203,13 @@ class _OverviewLucratividadeMensalChartState
     final barColor = isCost ? tokens.warning : tokens.chartSeriesPrimary;
 
     final emptyMessage = widget.loadFailed
-        ? (widget.loadFailureMessage ?? l10n.overviewMonthlyParcelsLoadFailed)
+        ? overviewChartLoadFailureMessage(
+            l10n: l10n,
+            loadFailed: true,
+            loadFailure: widget.loadFailure,
+            legacyMessage: widget.loadFailureMessage,
+            genericFallback: l10n.overviewMonthlyParcelsLoadFailed,
+          )
         : widget.isSingleAgentSelected
         ? l10n.overviewLucratividadeMensalEmpty
         : l10n.overviewLucratividadeMensalMultiAgentHint;

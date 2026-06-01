@@ -180,7 +180,7 @@ void main() {
       );
 
       check(result.loadFailed).isTrue();
-      check(result.loadFailureMessage).equals('Falhou');
+      check(result.loadFailure?.userMessage).equals('Falhou');
       check(result.points).isEmpty();
     },
   );

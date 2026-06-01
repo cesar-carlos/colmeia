@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_chart_load_failure_helpers.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
@@ -70,7 +72,9 @@ class OverviewMonthlyParcelsComboChart extends StatefulWidget {
     required this.l10n,
     required this.points,
     required this.loadFailed,
+    this.loadFailure,
     this.loadFailureMessage,
+    this.onViewAgentFailureDetails,
     this.chartStrings,
     this.isLoading = false,
     super.key,
@@ -79,6 +83,8 @@ class OverviewMonthlyParcelsComboChart extends StatefulWidget {
   final AppLocalizations l10n;
   final List<OverviewMonthlyParcelPoint> points;
   final bool loadFailed;
+  final AppFailure? loadFailure;
+  final VoidCallback? onViewAgentFailureDetails;
 
   /// When true, shows the chart loading state (e.g. first fetch on a page).
   final bool isLoading;
@@ -262,6 +268,15 @@ class _OverviewMonthlyParcelsComboChartState
       return _emptyPlaceholderCache;
     }
     _emptyMessageCache = message;
+    if (widget.loadFailed) {
+      return _emptyPlaceholderCache = overviewChartEmptyPlaceholder(
+        emptyMessage: message,
+        textStyle: Theme.of(context).textTheme.bodyMedium,
+        verticalPadding: tokens.contentSpacing,
+        onViewAgentFailureDetails: widget.onViewAgentFailureDetails,
+        loadFailure: widget.loadFailure,
+      );
+    }
     return _emptyPlaceholderCache = Padding(
       padding: EdgeInsets.symmetric(vertical: tokens.contentSpacing),
       child: Center(
@@ -288,11 +303,15 @@ class _OverviewMonthlyParcelsComboChartState
     );
 
     final copy = widget.chartStrings;
-    final emptyMessage = widget.loadFailed
-        ? (widget.loadFailureMessage ??
-              (copy?.loadFailedMessage ??
-                  l10n.overviewMonthlyParcelsLoadFailed))
-        : (copy?.emptyMessage ?? l10n.overviewMonthlyParcelsEmpty);
+    final emptyMessage = overviewChartLoadFailureMessage(
+      l10n: l10n,
+      loadFailed: widget.loadFailed,
+      loadFailure: widget.loadFailure,
+      legacyMessage: widget.loadFailureMessage,
+      genericFallback: widget.loadFailed
+          ? (copy?.loadFailedMessage ?? l10n.overviewMonthlyParcelsLoadFailed)
+          : (copy?.emptyMessage ?? l10n.overviewMonthlyParcelsEmpty),
+    );
 
     final activeStyle = valuePrimary ? _cachedStyleValue! : _cachedStyleSales!;
 

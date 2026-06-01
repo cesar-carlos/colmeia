@@ -110,6 +110,35 @@ group('MinhaRepository (e2e)', () {
 final payloadSql = sql.replaceAll(RegExp(r'\s*\r?\n\s*'), ' ').trim();
 ```
 
+## Falhas de consulta e copy na UI
+
+- Na camada de apresentacao, use `agentQueryFailureUserMessage(failure, l10n)`
+  ou `AgentQueryFailurePresentation.from(failure, l10n)` — nao exiba
+  `failure.userMessage` / `failure.displayMessage` diretamente em widgets.
+- Transporte (socket/relay) e HTTP 429 devem preencher
+  `context[AgentSqlRpcFailureUiKey.field]` no mapper; strings ao usuario
+  vivem nos `.arb` (`agentSqlError*`, `agentSqlFailureTitle*`).
+- Rate limit: hub JSON-RPC `-32013`, socket `RATE_LIMITED` /
+  `TOO_MANY_REQUESTS`, REST 429 — UI key `rateLimited`; mensagem com
+  `agentSqlErrorRateLimitedWithWait` quando houver `retryAfter`.
+- Cancelamento (`context['cancelled'] == true` ou
+  `OperationCancelledFailure`): nao renderizar painel de erro; suprimir via
+  `shouldSuppressAgentQueryFailureUi`.
+- Detalhes tecnicos: `AgentQueryFailureTechnicalDetails` (expandir + copiar)
+  usa `agentQueryFailureDiagnosticBody` — mensagem amigavel continua em
+  `agentQueryFailureUserMessage`; o bloco tecnico expoe wire `message`,
+  `userMessage` do hub, contexto e metadados RPC (sem stack trace).
+- Limites do hub: `plug_server/docs/limits` (repo irmao).
+
+| Origem | uiKey tipico | l10n corpo |
+| --- | --- | --- |
+| RPC `-32013` / rate_limited | `rateLimited` | `agentSqlErrorRateLimited*` |
+| Sessao / UNAUTHORIZED | `authenticationFailed` | `agentSqlErrorAuthenticationFailed` |
+| Permissao / AGENT_ACCESS_DENIED | `permissionDenied` | `agentSqlErrorPermissionDenied` |
+| Relay timeout | `transportTimeout` | `agentSqlErrorTransportTimeout` |
+| Rede / conversa perdida | `networkError` | `agentSqlErrorNetworkError` |
+| SQL invalido (bridge copy) | `sqlValidationFailed` | bridge ou `agentSqlErrorValidationFailed` |
+
 ## Referencias
 
 - Opcoes do bridge relevantes ao RPC (`multi_result`, `sql.executeBatch`, batch

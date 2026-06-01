@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/agent_queries/data/agent_query_app_failure_enrichment.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
@@ -427,7 +428,7 @@ class AgentQueryExecutor<Row> {
       );
     } on Object catch (error, stackTrace) {
       stopwatch.stop();
-      final failure = mapToAppFailure(
+      final failure = mapAgentQueryToAppFailure(
         error,
         stackTrace: stackTrace,
         fallbackMessage: 'Agent query target load failed',

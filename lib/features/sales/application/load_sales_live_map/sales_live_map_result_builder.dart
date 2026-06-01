@@ -20,7 +20,7 @@ abstract final class SalesLiveMapResultBuilder {
     return _empty(
       refreshedAt: refreshedAt,
       loadFailed: true,
-      loadFailureMessage: failure.userMessage,
+      loadFailure: failure,
     );
   }
 
@@ -61,6 +61,7 @@ abstract final class SalesLiveMapResultBuilder {
   static SalesLiveMapLoadResult _empty({
     required DateTime refreshedAt,
     bool loadFailed = false,
+    AppFailure? loadFailure,
     String? loadFailureMessage,
     bool salesDataPending = false,
     bool cancelled = false,
@@ -80,6 +81,7 @@ abstract final class SalesLiveMapResultBuilder {
       skippedOfflineAgentCount: 0,
       rowCapReachedAgentCount: 0,
       loadFailed: loadFailed,
+      loadFailure: loadFailure,
       loadFailureMessage: loadFailureMessage,
       salesDataPending: salesDataPending,
       cancelled: cancelled,

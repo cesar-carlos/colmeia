@@ -6,10 +6,11 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
 import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_registry.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
+import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_diagnostic.dart';
+import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_online_agent_ids_use_case.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_policy.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
@@ -437,12 +438,13 @@ class OverviewController extends ChangeNotifier {
       _session.clearLoaded();
       _completedOverviewSections = const <OverviewProgressiveSection>{};
     }
-    final retryAfter = appFailureRetryAfter(failure);
-    if (retryAfter != null) {
-      _retryAfterGate.arm(retryAfter);
-    }
-    _errorMessage = failureMessageBuilder(failure);
-    _errorDiagnosticBody = overviewAppFailureDiagnosticBody(failure);
+    armAgentQueryRetryAfterGate(_retryAfterGate, failure);
+    final userMessage = failureMessageBuilder(failure);
+    _errorMessage = userMessage;
+    _errorDiagnosticBody = overviewAppFailureDiagnosticBody(
+      failure,
+      localizedUserMessage: userMessage,
+    );
     AppLogger.warning(
       'Overview load failed in controller',
       context: <String, Object?>{

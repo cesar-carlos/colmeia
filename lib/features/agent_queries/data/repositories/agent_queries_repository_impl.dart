@@ -4,6 +4,7 @@ import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
+import 'package:colmeia/features/agent_queries/data/agent_query_app_failure_enrichment.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_rpc_user_message_resolver.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/models/agent_sql_bridge_response.dart';
@@ -148,7 +149,7 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
     } on DioException catch (error, stackTrace) {
       const sqlHttpUserMessage =
           'Nao foi possivel executar a consulta no agente. Tente novamente.';
-      final failure = mapToAppFailure(
+      final failure = mapAgentQueryToAppFailure(
         error,
         stackTrace: stackTrace,
         fallbackMessage: 'Agent SQL request failed',
@@ -330,7 +331,7 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
         ),
       );
     } on DioException catch (error, stackTrace) {
-      final failure = mapToAppFailure(
+      final failure = mapAgentQueryToAppFailure(
         error,
         stackTrace: stackTrace,
         fallbackMessage: 'Agent SQL batch request failed',
@@ -372,7 +373,7 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
       return Failure<AgentSqlBatchExecutionResult, AppFailure>(failure);
     } on Object catch (error, stackTrace) {
       return Failure<AgentSqlBatchExecutionResult, AppFailure>(
-        mapToAppFailure(
+        mapAgentQueryToAppFailure(
           error,
           stackTrace: stackTrace,
           fallbackMessage: 'Unexpected error during agent SQL batch execute',

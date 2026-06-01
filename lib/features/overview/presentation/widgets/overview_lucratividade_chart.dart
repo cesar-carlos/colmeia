@@ -1,9 +1,11 @@
 import 'dart:async';
 
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
 import 'package:colmeia/features/agent_queries/presentation/widgets/dashboard_lucratividade_percent_metrics.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_chart_load_failure_helpers.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
@@ -76,18 +78,19 @@ class OverviewLucratividadeChart extends StatefulWidget {
     required this.points,
     required this.loadFailed,
     required this.overviewApprovedAgentCount,
+    this.loadFailure,
     this.loadFailureMessage,
+    this.onViewAgentFailureDetails,
     super.key,
   });
 
   final AppLocalizations l10n;
   final List<ResumoProdutoVendaLucratividadeRow> points;
   final bool loadFailed;
-
-  /// Approved agents from the last overview load (pagination total). Used
-  /// only to choose empty-state copy when [points] is empty.
+  final AppFailure? loadFailure;
   final int overviewApprovedAgentCount;
   final String? loadFailureMessage;
+  final VoidCallback? onViewAgentFailureDetails;
 
   @override
   State<OverviewLucratividadeChart> createState() =>
@@ -178,6 +181,15 @@ class _OverviewLucratividadeChartState
       return _emptyPlaceholderCache!;
     }
     _emptyMessageCache = message;
+    if (widget.loadFailed) {
+      return _emptyPlaceholderCache = overviewChartEmptyPlaceholder(
+        emptyMessage: message,
+        textStyle: Theme.of(context).textTheme.bodyMedium,
+        verticalPadding: tokens.contentSpacing,
+        onViewAgentFailureDetails: widget.onViewAgentFailureDetails,
+        loadFailure: widget.loadFailure,
+      );
+    }
     return _emptyPlaceholderCache = Padding(
       padding: EdgeInsets.symmetric(vertical: tokens.contentSpacing),
       child: Center(
@@ -261,7 +273,13 @@ class _OverviewLucratividadeChartState
     final barColor = isCost ? tokens.warning : tokens.chartSeriesPrimary;
 
     final emptyMessage = widget.loadFailed
-        ? (widget.loadFailureMessage ?? l10n.overviewMonthlyParcelsLoadFailed)
+        ? overviewChartLoadFailureMessage(
+            l10n: l10n,
+            loadFailed: true,
+            loadFailure: widget.loadFailure,
+            legacyMessage: widget.loadFailureMessage,
+            genericFallback: l10n.overviewMonthlyParcelsLoadFailed,
+          )
         : widget.overviewApprovedAgentCount > 0
         ? l10n.overviewLucratividadeEmpty
         : l10n.overviewLucratividadeMultiAgentHint;

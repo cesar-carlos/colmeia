@@ -1,4 +1,11 @@
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_diagnostic.dart'
+    show truncateAgentQueryDiagnosticField;
+import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
+
+export 'package:colmeia/features/agent_queries/presentation/agent_query_failure_diagnostic.dart'
+    show overviewAppFailureDiagnosticBody;
 
 /// Which overview query produced this partial failure row.
 enum OverviewAgentQueryFailureSource {
@@ -18,39 +25,28 @@ class OverviewAgentQueryFailureDetail {
     required this.agentId,
     required this.displayName,
     required this.source,
-    required this.userMessage,
-    this.technicalSummary,
+    required this.failure,
   });
 
   final String agentId;
   final String displayName;
   final OverviewAgentQueryFailureSource source;
+  final AppFailure failure;
 
-  /// User-facing text (typically [AppFailure.displayMessage]).
-  final String userMessage;
+  String userMessageFor(AppLocalizations l10n) =>
+      agentQueryFailureUserMessage(failure, l10n);
 
   /// Optional support-oriented line (failure type, RPC codes); no stack traces.
-  final String? technicalSummary;
+  String? get technicalSummary =>
+      overviewAgentQueryFailureTechnicalSummary(failure);
 }
 
-const int _overviewDiagnosticWireFieldMaxChars = 512;
-const int _overviewDiagnosticTechnicalSummaryMaxChars = 4096;
+const int _overviewTechnicalSummaryMaxChars = 4096;
 
-String _truncateDiagnosticWireField(String? value) {
-  if (value == null || value.isEmpty) {
-    return '';
-  }
-  final t = value.trim();
-  if (t.length <= _overviewDiagnosticWireFieldMaxChars) {
-    return t;
-  }
-  return '${t.substring(0, _overviewDiagnosticWireFieldMaxChars)}…(${t.length} chars)';
-}
-
-/// Builds a short technical line for support (no stack traces).
+/// Compact one-line technical summary for partial-failure list rows.
 String overviewAgentQueryFailureTechnicalSummary(AppFailure failure) {
   final buffer = StringBuffer()
-    ..write(failure.runtimeType.toString())
+    ..write(failure.runtimeType)
     ..write(': ')
     ..write(failure.message);
   if (failure is RpcFailure) {
@@ -58,25 +54,16 @@ String overviewAgentQueryFailureTechnicalSummary(AppFailure failure) {
       ..write(' | rpcCode=')
       ..write(failure.rpcCode)
       ..write(' | reason=')
-      ..write(_truncateDiagnosticWireField(failure.reason))
+      ..write(truncateAgentQueryDiagnosticField(failure.reason))
       ..write(' | correlationId=')
-      ..write(_truncateDiagnosticWireField(failure.correlationId));
+      ..write(truncateAgentQueryDiagnosticField(failure.correlationId));
   }
   var out = buffer.toString();
-  if (out.length > _overviewDiagnosticTechnicalSummaryMaxChars) {
+  if (out.length > _overviewTechnicalSummaryMaxChars) {
     out =
-        '${out.substring(0, _overviewDiagnosticTechnicalSummaryMaxChars)}…(truncated)';
+        '${out.substring(0, _overviewTechnicalSummaryMaxChars)}…(truncated)';
   }
   return out;
-}
-
-/// Multi-line diagnostic for a top-level overview load failure (no stack traces).
-String overviewAppFailureDiagnosticBody(AppFailure failure) {
-  return <String>[
-    failure.runtimeType.toString(),
-    failure.displayMessage,
-    overviewAgentQueryFailureTechnicalSummary(failure),
-  ].join('\n');
 }
 
 OverviewAgentQueryFailureDetail overviewLucratividadePartialFailureDetail({
@@ -104,7 +91,6 @@ OverviewAgentQueryFailureDetail overviewPartialFailureDetailForSource({
     agentId: agentId,
     displayName: displayName,
     source: source,
-    userMessage: failure.displayMessage,
-    technicalSummary: overviewAgentQueryFailureTechnicalSummary(failure),
+    failure: failure,
   );
 }

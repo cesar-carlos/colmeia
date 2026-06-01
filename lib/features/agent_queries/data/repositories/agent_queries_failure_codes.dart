@@ -46,6 +46,20 @@ bool isSocketAuthenticationFailedCode(String code) {
   return kSocketAuthenticationFailedCodes.contains(code.toUpperCase());
 }
 
+/// Socket / relay / HTTP envelope codes that mean **query rate limit** (hub
+/// window, per-socket inflight, or REST `TOO_MANY_REQUESTS` on commands).
+///
+/// Comparison is case-insensitive.
+const Set<String> kSocketRateLimitedCodes = <String>{
+  'RATE_LIMITED',
+  'TOO_MANY_REQUESTS',
+};
+
+/// Returns true when [code] (case-insensitive) is in [kSocketRateLimitedCodes].
+bool isSocketRateLimitedCode(String code) {
+  return kSocketRateLimitedCodes.contains(code.toUpperCase());
+}
+
 /// Stable context fields produced by the repository for downstream
 /// consumers (controllers, telemetry, UI gating).
 abstract final class AgentQueriesFailureContext {

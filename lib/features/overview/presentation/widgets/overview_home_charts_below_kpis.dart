@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
 import 'package:colmeia/features/overview/presentation/overview_sorted_rankings.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_alert_detail_sheet.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_chart_load_failure_helpers.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_lucratividade_chart.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_monthly_parcels_combo_chart.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_payment_mix_card.dart';
@@ -70,11 +75,26 @@ class _OverviewHomeChartsBelowKpisState
   }
 
   List<_OverviewStageDescriptor> _buildChartStages(
+    BuildContext context,
     double chartBlockHeight,
     AppMotionTokens motion,
   ) {
     final overview = widget.displayOverview;
     final l10n = widget.l10n;
+
+    VoidCallback? partialDetailsLink(OverviewAgentQueryFailureSource source) {
+      if (!overviewHasPartialFailuresForSource(overview, source)) {
+        return null;
+      }
+      return () => unawaited(
+            showOverviewPartialFailureDetailsSheet(
+              context: context,
+              l10n: l10n,
+              details: overview.partialQueryFailureDetails,
+            ),
+          );
+    }
+
     return <_OverviewStageDescriptor>[
       _OverviewStageDescriptor(
         section: OverviewProgressiveSection.dailySales,
@@ -85,6 +105,7 @@ class _OverviewHomeChartsBelowKpisState
           l10n: l10n,
           points: overview.dailySalesTrend,
           loadFailed: overview.dailySalesTrendLoadFailed,
+          loadFailure: overview.dailySalesTrendLoadFailure,
           loadFailureMessage: overview.dailySalesTrendLoadFailureMessage,
           onRequestFullscreen: (context, request) =>
               context.pushChartFullscreenFromRequest(request),
@@ -99,7 +120,10 @@ class _OverviewHomeChartsBelowKpisState
           l10n: l10n,
           points: overview.monthlyParcelTrend,
           loadFailed: overview.monthlyParcelTrendLoadFailed,
+          loadFailure: overview.monthlyParcelTrendLoadFailure,
           loadFailureMessage: overview.monthlyParcelTrendLoadFailureMessage,
+          onViewAgentFailureDetails:
+              partialDetailsLink(OverviewAgentQueryFailureSource.monthlyTrend),
         ),
       ),
       _OverviewStageDescriptor(
@@ -123,7 +147,10 @@ class _OverviewHomeChartsBelowKpisState
           l10n: l10n,
           points: overview.weekdaySalesTrend,
           loadFailed: overview.weekdaySalesTrendLoadFailed,
+          loadFailure: overview.weekdaySalesTrendLoadFailure,
           loadFailureMessage: overview.weekdaySalesTrendLoadFailureMessage,
+          onViewAgentFailureDetails:
+              partialDetailsLink(OverviewAgentQueryFailureSource.weekdayTrend),
         ),
       ),
       _OverviewStageDescriptor(
@@ -135,7 +162,11 @@ class _OverviewHomeChartsBelowKpisState
           l10n: l10n,
           points: overview.weekdayUserSalesTrend,
           loadFailed: overview.weekdayUserSalesTrendLoadFailed,
+          loadFailure: overview.weekdayUserSalesTrendLoadFailure,
           loadFailureMessage: overview.weekdayUserSalesTrendLoadFailureMessage,
+          onViewAgentFailureDetails: partialDetailsLink(
+            OverviewAgentQueryFailureSource.weekdayUserTrend,
+          ),
         ),
       ),
     ];
@@ -149,7 +180,7 @@ class _OverviewHomeChartsBelowKpisState
     final showSkeleton = widget.showSkeleton;
     final overview = widget.displayOverview;
     final chartBlockHeight = tokens.chartStandardHeight + tokens.contentSpacing;
-    final stages = _buildChartStages(chartBlockHeight, motion);
+    final stages = _buildChartStages(context, chartBlockHeight, motion);
     final rankings = showSkeleton
         ? OverviewSortedRankings.empty
         : _rankingsCache.resolve(overview);
@@ -328,13 +359,26 @@ class _OverviewRankingsAndLucratividade extends StatelessWidget {
     );
   }
 
-  Widget _buildLucratividadeCard() {
+  Widget _buildLucratividadeCard(BuildContext context) {
     return OverviewLucratividadeChart(
       l10n: l10n,
       points: overview.lucratividadeTrend,
       loadFailed: overview.lucratividadeTrendLoadFailed,
+      loadFailure: overview.lucratividadeTrendLoadFailure,
       loadFailureMessage: overview.lucratividadeTrendLoadFailureMessage,
       overviewApprovedAgentCount: overview.approvedAgentCount,
+      onViewAgentFailureDetails: overviewHasPartialFailuresForSource(
+        overview,
+        OverviewAgentQueryFailureSource.lucratividadePeriod,
+      )
+          ? () => unawaited(
+                showOverviewPartialFailureDetailsSheet(
+                  context: context,
+                  l10n: l10n,
+                  details: overview.partialQueryFailureDetails,
+                ),
+              )
+          : null,
     );
   }
 
@@ -360,7 +404,7 @@ class _OverviewRankingsAndLucratividade extends StatelessWidget {
             SizedBox(height: tokens.sectionSpacing),
             _buildUserCard(),
             SizedBox(height: tokens.sectionSpacing),
-            _buildLucratividadeCard(),
+            _buildLucratividadeCard(context),
           ],
         ),
       );
@@ -391,7 +435,7 @@ class _OverviewRankingsAndLucratividade extends StatelessWidget {
     final lucratividadeSlot = lucratividadeReady
         ? _wrapReady(
             key: const ValueKey<String>('overview-lucratividade-period'),
-            child: _buildLucratividadeCard(),
+            child: _buildLucratividadeCard(context),
           )
         : SizedBox(height: chartBlockHeight);
 

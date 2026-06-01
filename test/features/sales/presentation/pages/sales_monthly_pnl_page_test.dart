@@ -156,7 +156,7 @@ void main() {
       (_) async => (
         points: const <DailySalesTrendPoint>[],
         loadFailed: false,
-        loadFailureMessage: null,
+        loadFailure: null,
       ),
     );
   });
@@ -377,7 +377,7 @@ SalesMonthlyPnlLinesLoadResult _bundleWithBaseValue(double baseValue) => (
     );
   }),
   loadFailed: false,
-  loadFailureMessage: null,
+  loadFailure: null,
 );
 
 void _expectSalesSeriesBaseValue(WidgetTester tester, double expectedValue) {

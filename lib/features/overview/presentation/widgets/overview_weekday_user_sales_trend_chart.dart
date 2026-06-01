@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_user_sales_trend_point.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_chart_load_failure_helpers.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_weekday_user_grouped_bar_chart.dart';
 import 'package:colmeia/features/overview/presentation/widgets/weekday_user_grouped_chart_data.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -18,18 +20,18 @@ class OverviewWeekdayUserSalesTrendChart extends StatefulWidget {
     required this.l10n,
     required this.points,
     required this.loadFailed,
+    this.loadFailure,
     this.loadFailureMessage,
+    this.onViewAgentFailureDetails,
     super.key,
   });
 
   final AppLocalizations l10n;
   final List<OverviewWeekdayUserSalesTrendPoint> points;
   final bool loadFailed;
-
-  /// Specific message extracted from the underlying `AppFailure`. When set
-  /// AND [loadFailed] is true, the chart shows this instead of the generic
-  /// l10n "load failed" label (BUG #4 — actionable error context).
+  final AppFailure? loadFailure;
   final String? loadFailureMessage;
+  final VoidCallback? onViewAgentFailureDetails;
 
   @override
   State<OverviewWeekdayUserSalesTrendChart> createState() =>
@@ -119,9 +121,15 @@ class _OverviewWeekdayUserSalesTrendChartState
     final localeName = Localizations.localeOf(context).toString();
     final salesCountFormat = NumberFormat.decimalPattern(localeName);
     final isSalesCount = _metric == _OverviewWeekdayUserMetric.salesCount;
-    final emptyMessage = widget.loadFailed
-        ? (widget.loadFailureMessage ?? l10n.overviewWeekdayUserSalesLoadFailed)
-        : l10n.overviewWeekdayUserSalesEmpty;
+    final emptyMessage = overviewChartLoadFailureMessage(
+      l10n: l10n,
+      loadFailed: widget.loadFailed,
+      loadFailure: widget.loadFailure,
+      legacyMessage: widget.loadFailureMessage,
+      genericFallback: widget.loadFailed
+          ? l10n.overviewWeekdayUserSalesLoadFailed
+          : l10n.overviewWeekdayUserSalesEmpty,
+    );
     final summary = _semanticsSummaryForBuild(
       l10n: l10n,
       salesCountFormat: salesCountFormat,
@@ -256,15 +264,12 @@ class _OverviewWeekdayUserSalesTrendChartState
             subtitle: l10n.overviewWeekdayUserSalesSubtitle,
             onOpenFullscreen: openFullscreen,
             belowSubtitle: segmented,
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: tokens.contentSpacing),
-              child: Center(
-                child: Text(
-                  emptyMessage,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ),
+            child: overviewChartEmptyPlaceholder(
+              emptyMessage: emptyMessage,
+              textStyle: Theme.of(context).textTheme.bodyMedium,
+              verticalPadding: tokens.contentSpacing,
+              onViewAgentFailureDetails: widget.onViewAgentFailureDetails,
+              loadFailure: widget.loadFailed ? widget.loadFailure : null,
             ),
           )
         : OverviewWeekdayUserGroupedBarChart(
@@ -299,10 +304,15 @@ class _OverviewWeekdayUserSalesTrendChartState
   }) {
     final points = widget.points;
     if (points.isEmpty) {
-      return widget.loadFailed
-          ? (widget.loadFailureMessage ??
-                l10n.overviewWeekdayUserSalesLoadFailed)
-          : l10n.overviewWeekdayUserSalesEmpty;
+      return overviewChartLoadFailureMessage(
+        l10n: l10n,
+        loadFailed: widget.loadFailed,
+        loadFailure: widget.loadFailure,
+        legacyMessage: widget.loadFailureMessage,
+        genericFallback: widget.loadFailed
+            ? l10n.overviewWeekdayUserSalesLoadFailed
+            : l10n.overviewWeekdayUserSalesEmpty,
+      );
     }
 
     final totalSalesCount = points.fold<int>(

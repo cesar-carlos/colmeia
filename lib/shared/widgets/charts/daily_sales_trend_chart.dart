@@ -1,4 +1,7 @@
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
+import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
+import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_chart_failure_placeholder_content.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/charts/daily_sales_trend_chart_labels.dart';
 import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
@@ -23,6 +26,7 @@ class DailySalesTrendChart extends StatefulWidget {
     required this.points,
     required this.loadFailed,
     this.isLoading = false,
+    this.loadFailure,
     this.loadFailureMessage,
     this.useSalesDailyTotalsLabels = false,
     this.salesSubtitleOverride,
@@ -35,6 +39,7 @@ class DailySalesTrendChart extends StatefulWidget {
   final List<DailySalesTrendPoint> points;
   final bool loadFailed;
   final bool isLoading;
+  final AppFailure? loadFailure;
   final String? loadFailureMessage;
 
   /// When non-null, enables the fullscreen affordance: the chart emits an
@@ -98,10 +103,18 @@ class _OverviewDailySalesTrendChartState
     final salesCountFormat = NumberFormat.decimalPattern(localeName);
     final compactSalesCountFormat = NumberFormat.compact(locale: localeName);
     final isSalesCount = _metric == _OverviewDailyMetric.salesCount;
-    final emptyMessage = labels.resolveEmptyMessage(
-      loadFailed: widget.loadFailed,
-      loadFailureMessage: widget.loadFailureMessage,
-    );
+    final emptyMessage = widget.loadFailed
+        ? chartAgentQueryLoadFailureMessage(
+            l10n: l10n,
+            loadFailure: widget.loadFailure,
+            legacyMessage: widget.loadFailureMessage,
+            genericFallback: labels.resolveEmptyMessage(
+              loadFailed: true,
+            ),
+          )
+        : labels.resolveEmptyMessage(
+            loadFailed: false,
+          );
     final chartPoints = _chartPointsNonZero();
     final showEmptyPlaceholder = widget.points.isEmpty || chartPoints.isEmpty;
 
@@ -205,14 +218,16 @@ class _OverviewDailySalesTrendChartState
                               heightOverride: availableChartHeight,
                             ),
                             emptyPlaceholder: showEmptyPlaceholder
-                                ? Center(
-                                    child: Text(
-                                      emptyMessage,
-                                      textAlign: TextAlign.center,
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodyMedium,
-                                    ),
+                                ? AgentQueryChartFailurePlaceholderContent(
+                                    emptyMessage: emptyMessage,
+                                    textStyle: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium,
+                                    verticalPadding:
+                                        fullscreenTokens.contentSpacing,
+                                    loadFailure: widget.loadFailed
+                                        ? widget.loadFailure
+                                        : null,
                                   )
                                 : null,
                           ),
@@ -275,15 +290,12 @@ class _OverviewDailySalesTrendChartState
               : Theme.of(context).colorScheme.surface,
         ),
         emptyPlaceholder: showEmptyPlaceholder
-            ? Padding(
-                padding: EdgeInsets.symmetric(vertical: tokens.contentSpacing),
-                child: Center(
-                  child: Text(
-                    emptyMessage,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ),
+            ? AgentQueryChartFailurePlaceholderContent(
+                emptyMessage: emptyMessage,
+                textStyle: Theme.of(context).textTheme.bodyMedium,
+                verticalPadding: tokens.contentSpacing,
+                loadFailure:
+                    widget.loadFailed ? widget.loadFailure : null,
               )
             : null,
       ),

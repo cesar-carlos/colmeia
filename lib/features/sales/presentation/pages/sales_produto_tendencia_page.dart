@@ -17,6 +17,9 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
+import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_support_context.dart';
+import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after_host.dart';
+import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
@@ -33,6 +36,7 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
+import 'package:colmeia/shared/widgets/agent_query_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
@@ -109,7 +113,8 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     with
         AutoRefreshStateMixin<SalesProdutoTendenciaPage>,
         SalesSingleAgentAutoRefreshMixin<SalesProdutoTendenciaPage>,
-        SalesCardAutoRefreshBinding<SalesProdutoTendenciaPage> {
+        SalesCardAutoRefreshBinding<SalesProdutoTendenciaPage>,
+        AgentQueryRetryAfterHost<SalesProdutoTendenciaPage> {
   static const String _cardId = 'produto_tendencia_venda';
   static const List<int> _pageSizeOptions = <int>[10, 20, 50, 100];
 
@@ -125,6 +130,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
   List<GrupoProdutoOption> _grupoOptions = const <GrupoProdutoOption>[];
   List<MarcaProdutoOption> _marcaOptions = const <MarcaProdutoOption>[];
   String? _optionsLoadedForAgentId;
+  AppFailure? _dimensionOptionsLoadFailure;
 
   String? _cachedClientTokenUserId;
   String? _cachedClientTokenAgentId;
@@ -141,6 +147,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
 
   bool _loading = false;
   String? _error;
+  AppFailure? _loadFailure;
   int _sqlLoadGeneration = 0;
   AgentQueriesCancelScope? _sqlCancelScope;
   List<ProdutoVendidoTendenciaDeVendaRow> _rows =
@@ -359,16 +366,20 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
           _summaryRows = data.summaryRows;
           _loading = false;
           _error = null;
+          _loadFailure = null;
         });
         markAutoRefreshSuccess();
       },
       (failure) {
+        final l10n = AppLocalizations.of(context);
         setState(() {
           _rows = const <ProdutoVendidoTendenciaDeVendaRow>[];
           _summaryRows = const <ProdutoVendidoTendenciaDeVendaSummaryRow>[];
           _loading = false;
-          _error = _failureMessage(failure);
+          _loadFailure = failure;
+          _error = _failureMessage(failure, l10n);
         });
+        onAgentQueryLoadFailure(failure);
         markAutoRefreshFailure();
       },
     );
@@ -389,6 +400,26 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     _cachedClientTokenUserId = userId;
     _cachedClientTokenAgentId = agentId;
     return _cachedClientToken = resolved;
+  }
+
+  Future<void> _retryDimensionOptionsLoad() async {
+    final userId = context.read<AuthController>().session?.userId;
+    final agentId = _selectedAgentId?.trim();
+    if (userId == null || agentId == null || agentId.isEmpty) {
+      return;
+    }
+    final clientToken = await _resolveClientToken(
+      userId: userId,
+      agentId: agentId,
+    );
+    if (!mounted || clientToken == null) {
+      return;
+    }
+    await _loadDimensionOptions(
+      userId: userId,
+      agentId: agentId,
+      clientToken: clientToken,
+    );
   }
 
   Future<void> _loadDimensionOptions({
@@ -414,25 +445,35 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
       return;
     }
 
+    AppFailure? optionsFailure;
     final nextGrupos = grupoResult.fold(
       (options) => options,
-      (_) => const <GrupoProdutoOption>[],
+      (failure) {
+        optionsFailure ??= failure;
+        return const <GrupoProdutoOption>[];
+      },
     );
     final nextMarcas = marcaResult.fold(
       (options) => options,
-      (_) => const <MarcaProdutoOption>[],
+      (failure) {
+        optionsFailure ??= failure;
+        return const <MarcaProdutoOption>[];
+      },
     );
 
     setState(() {
       _grupoOptions = nextGrupos;
       _marcaOptions = nextMarcas;
       _optionsLoadedForAgentId = agentId;
+      _dimensionOptionsLoadFailure = optionsFailure;
     });
+    onAgentQueryLoadFailure(optionsFailure);
   }
 
-  String _failureMessage(Object failure) {
-    final err = failure;
-    return err is AppFailure ? err.displayMessage : failure.toString();
+  String _failureMessage(Object failure, AppLocalizations l10n) {
+    return failure is AppFailure
+        ? agentQueryFailureUserMessage(failure, l10n)
+        : failure.toString();
   }
 
   void _showFiltersAppliedSnackBar() {
@@ -625,6 +666,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
       if (_optionsLoadedForAgentId != normalizedAgentId) {
         _grupoOptions = const <GrupoProdutoOption>[];
         _marcaOptions = const <MarcaProdutoOption>[];
+        _dimensionOptionsLoadFailure = null;
       }
       _optionsLoadedForAgentId = normalizedAgentId == _optionsLoadedForAgentId
           ? _optionsLoadedForAgentId
@@ -685,8 +727,9 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
       useSafeArea: true,
       showDragHandle: false,
       builder: (context) {
+        final sheetL10n = AppLocalizations.of(context);
         return SalesProdutoTendenciaFiltersSheet(
-          l10n: AppLocalizations.of(context),
+          l10n: sheetL10n,
           availableAgents: _availableAgents,
           initialSelectedAgentId: _selectedAgentId,
           initialPeriodoAtual: _periodoAtual,
@@ -698,6 +741,12 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
           initialPageSize: _pageSize,
           grupoOptions: _grupoOptions,
           marcaOptions: _marcaOptions,
+          dimensionOptionsLoadFailure: _dimensionOptionsLoadFailure,
+          onRetryDimensionOptions: _selectedAgentId == null
+              ? null
+              : () => unawaited(_retryDimensionOptionsLoad()),
+          dimensionOptionsRetryCountdownLabel:
+              agentQueryRetryCountdownLabel(sheetL10n),
           onApply: _onFiltersChanged,
         );
       },
@@ -876,6 +925,19 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
                 tone: AppInlinePanelTone.informational,
                 title: l10n.salesBranchRequiredTitle,
                 message: l10n.salesBranchRequiredMessage,
+              ),
+            ] else if (_loadFailure != null) ...<Widget>[
+              AgentQueryErrorPanel.fromFailure(
+                _loadFailure!,
+                l10n,
+                onRetry: () => unawaited(_reload()),
+                retryCountdownLabel: agentQueryRetryCountdownLabel(l10n),
+                supportContext: AgentQueryFailureSupportContext.environment(
+                  extra: <String, String>{
+                    'agentId': ?_selectedAgentId,
+                    'screen': 'sales_produto_tendencia',
+                  },
+                ),
               ),
             ] else if (_error != null && _error!.trim().isNotEmpty) ...<Widget>[
               AppInlineErrorPanel(

@@ -11,6 +11,9 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_p
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_produto_rank_lucro_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_produto_rank_lucro_sort_by.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
+import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_support_context.dart';
+import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after_host.dart';
+import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
@@ -27,6 +30,7 @@ import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
+import 'package:colmeia/shared/widgets/agent_query_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/charts/app_horizontal_progress_chart.dart';
@@ -64,7 +68,8 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
     with
         AutoRefreshStateMixin<SalesProdutoRankLucroPage>,
         SalesSingleAgentAutoRefreshMixin<SalesProdutoRankLucroPage>,
-        SalesCardAutoRefreshBinding<SalesProdutoRankLucroPage> {
+        SalesCardAutoRefreshBinding<SalesProdutoRankLucroPage>,
+        AgentQueryRetryAfterHost<SalesProdutoRankLucroPage> {
   late final SalesSessionService _sessionService;
   late final ResolveSalesAgentClientTokenUseCase _resolveClientTokenUseCase;
   late final LoadAvailableAgentsForSales _loadAgentsUseCase;
@@ -82,6 +87,7 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
 
   bool _loading = false;
   String? _error;
+  AppFailure? _loadFailure;
 
   int _sqlLoadGeneration = 0;
   AgentQueriesCancelScope? _sqlCancelScope;
@@ -273,23 +279,29 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
           _rows = rows;
           _loading = false;
           _error = null;
+          _loadFailure = null;
         });
         markAutoRefreshSuccess();
       },
       (exception) {
+        final l10n = AppLocalizations.of(context);
+        final failure = exception;
         setState(() {
           _loading = false;
           _rows = const <ProdutoVendidoProdutoRankLucroRow>[];
-          _error = _failureMessage(exception);
+          _loadFailure = failure;
+          _error = _failureMessage(exception, l10n);
         });
+        onAgentQueryLoadFailure(failure);
         markAutoRefreshFailure();
       },
     );
   }
 
-  String _failureMessage(Object exception) {
-    final err = exception;
-    return err is AppFailure ? err.displayMessage : exception.toString();
+  String _failureMessage(Object exception, AppLocalizations l10n) {
+    return exception is AppFailure
+        ? agentQueryFailureUserMessage(exception, l10n)
+        : exception.toString();
   }
 
   void _onFiltersChanged(Map<String, Object?> next) {
@@ -451,6 +463,19 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
               tone: AppInlinePanelTone.informational,
               title: l10n.salesBranchRequiredTitle,
               message: l10n.salesBranchRequiredMessage,
+            )
+          else if (_loadFailure != null)
+            AgentQueryErrorPanel.fromFailure(
+              _loadFailure!,
+              l10n,
+              onRetry: () => unawaited(_reload()),
+              retryCountdownLabel: agentQueryRetryCountdownLabel(l10n),
+              supportContext: AgentQueryFailureSupportContext.environment(
+                extra: <String, String>{
+                  'agentId': ?_selectedAgentId,
+                  'screen': 'sales_produto_rank_lucro',
+                },
+              ),
             )
           else if (_error != null && _error!.trim().isNotEmpty)
             AppInlineErrorPanel(

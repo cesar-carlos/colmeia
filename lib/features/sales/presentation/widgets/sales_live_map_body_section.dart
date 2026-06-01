@@ -10,6 +10,7 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_inlin
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_kpi_grid.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/agent_query_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:flutter/material.dart';
@@ -97,11 +98,17 @@ class _SalesLiveMapBodyStatusContent extends StatelessWidget {
         if (result?.loadFailed ?? false)
           Padding(
             padding: EdgeInsets.only(top: tokens.gapMd),
-            child: AppInlineErrorPanel(
-              title: l10n.salesLiveMapLoadErrorTitle,
-              message: viewModel.loadErrorMessage,
-              onRetry: state.canReload ? onRetryReload : null,
-            ),
+            child: result!.loadFailure != null
+                ? AgentQueryErrorPanel.fromFailure(
+                    result.loadFailure!,
+                    l10n,
+                    onRetry: state.canReload ? onRetryReload : null,
+                  )
+                : AppInlineErrorPanel(
+                    title: l10n.salesLiveMapLoadErrorTitle,
+                    message: viewModel.loadErrorMessage,
+                    onRetry: state.canReload ? onRetryReload : null,
+                  ),
           ),
         if (state.shouldShowEmptyNotice && result != null)
           Padding(

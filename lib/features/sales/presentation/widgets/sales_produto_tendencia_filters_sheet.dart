@@ -1,6 +1,9 @@
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/grupo_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/marca_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_filter.dart';
+import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_support_context.dart';
+import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_load_error_surface.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_trend_date_preset.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_filters_sheet_scaffold.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_single_agent_picker_control.dart';
@@ -41,6 +44,9 @@ class SalesProdutoTendenciaFiltersSheet extends StatefulWidget {
     required this.marcaOptions,
     required this.onApply,
     super.key,
+    this.dimensionOptionsLoadFailure,
+    this.onRetryDimensionOptions,
+    this.dimensionOptionsRetryCountdownLabel,
   });
 
   final AppLocalizations l10n;
@@ -56,6 +62,9 @@ class SalesProdutoTendenciaFiltersSheet extends StatefulWidget {
   final List<GrupoProdutoOption> grupoOptions;
   final List<MarcaProdutoOption> marcaOptions;
   final ValueChanged<Map<String, Object?>> onApply;
+  final AppFailure? dimensionOptionsLoadFailure;
+  final VoidCallback? onRetryDimensionOptions;
+  final String? dimensionOptionsRetryCountdownLabel;
 
   @override
   State<SalesProdutoTendenciaFiltersSheet> createState() =>
@@ -265,6 +274,23 @@ class _SalesProdutoTendenciaFiltersSheetState
                 message: l10n.salesBranchFilterMissingClientTokenBanner,
               ),
             ],
+            if (AgentQueryLoadErrorSurface.hasErrorFor(
+              loadFailure: widget.dimensionOptionsLoadFailure,
+            )) ...<Widget>[
+              SizedBox(height: tokens.gapMd),
+              AgentQueryLoadErrorSurface(
+                loadFailure: widget.dimensionOptionsLoadFailure,
+                onRetry: widget.onRetryDimensionOptions,
+                retryCountdownLabel: widget.dimensionOptionsRetryCountdownLabel,
+                variant: AppInlineErrorPanelVariant.plain,
+                supportContext: AgentQueryFailureSupportContext.environment(
+                  extra: <String, String>{
+                    'agentId': ?_selectedAgentId,
+                    'screen': 'sales_produto_tendencia_filters',
+                  },
+                ),
+              ),
+            ],
             SizedBox(height: tokens.sectionSpacing),
             SalesFiltersSectionHeader(
               title: l10n.reportFiltersTitle,
@@ -298,8 +324,7 @@ class _SalesProdutoTendenciaFiltersSheetState
                         label:
                             l10n.salesProdutoTendenciaFilterPresetCurrentMonth,
                         selected:
-                            selectedPreset ==
-                            SalesTrendDatePreset.currentMonth,
+                            selectedPreset == SalesTrendDatePreset.currentMonth,
                         icon: Icons.calendar_view_month_rounded,
                         onSelected: () => _applyPreset(
                           SalesTrendDatePreset.currentMonth,

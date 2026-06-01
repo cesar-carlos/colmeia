@@ -3,6 +3,7 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_failure_codes.dart';
+import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 
 final class AgentQueriesTransportFailureMapper {
   const AgentQueriesTransportFailureMapper();
@@ -22,36 +23,38 @@ final class AgentQueriesTransportFailureMapper {
     if (error is SocketDispatchCancelled) {
       return UnknownFailure(
         message: error.message,
-        userMessage: 'A consulta foi cancelada.',
         cause: error,
         stackTrace: stackTrace,
-        context: <String, Object?>{
-          ...context,
-          AgentQueriesFailureContext.cancelledField: true,
-        },
+        context: _cancelledContext(
+          _withUiKey(
+            context,
+            AgentSqlRpcFailureUiKey.executionCancelled,
+          ),
+        ),
       );
     }
 
     if (error is SocketDispatchNamespaceForbidden) {
       return AuthorizationFailure(
         message: error.message,
-        userMessage:
-            'Servidor indisponivel para o seu perfil de acesso. '
-            'Contate o administrador (perfil "${error.role ?? '?'}" '
-            'nao autorizado em ${error.namespace ?? '/consumers'}).',
         cause: error,
         stackTrace: stackTrace,
-        context: context,
+        context: _withUiKey(
+          context,
+          AgentSqlRpcFailureUiKey.permissionDenied,
+        ),
       );
     }
 
     if (error is SocketDispatchUnauthorized) {
       return SessionFailure(
         message: error.message,
-        userMessage: 'Sua sessao expirou. Faca login novamente para continuar.',
         cause: error,
         stackTrace: stackTrace,
-        context: context,
+        context: _withUiKey(
+          context,
+          AgentSqlRpcFailureUiKey.authenticationFailed,
+        ),
       );
     }
 
@@ -69,21 +72,17 @@ final class AgentQueriesTransportFailureMapper {
     if (error is SocketDispatchLegacyStreamingUnsupported) {
       return UnknownFailure(
         message: error.message,
-        userMessage:
-            'Esta consulta precisa do canal relay ou REST. '
-            'Use relay (useRelay) ou altere o transporte do bridge.',
         cause: error,
         stackTrace: stackTrace,
-        context: context,
+        context: _withUiKey(context, AgentSqlRpcFailureUiKey.generic),
       );
     }
 
     return NetworkFailure(
       message: error.message,
-      userMessage: 'Falha de comunicacao com o servidor. Tente novamente.',
       cause: error,
       stackTrace: stackTrace,
-      context: context,
+      context: _withUiKey(context, AgentSqlRpcFailureUiKey.networkError),
     );
   }
 
@@ -102,13 +101,14 @@ final class AgentQueriesTransportFailureMapper {
     if (error is RelayDispatcherDisposed) {
       return UnknownFailure(
         message: error.message,
-        userMessage: 'A consulta foi cancelada.',
         cause: error,
         stackTrace: stackTrace,
-        context: <String, Object?>{
-          ...context,
-          AgentQueriesFailureContext.cancelledField: true,
-        },
+        context: _cancelledContext(
+          _withUiKey(
+            context,
+            AgentSqlRpcFailureUiKey.executionCancelled,
+          ),
+        ),
       );
     }
 
@@ -126,88 +126,56 @@ final class AgentQueriesTransportFailureMapper {
     if (error is RelayRequestTimeout) {
       return NetworkFailure(
         message: error.message,
-        userMessage:
-            'A consulta demorou mais do que o esperado. Tente novamente.',
         cause: error,
         stackTrace: stackTrace,
-        context: context,
+        context: _withUiKey(
+          context,
+          AgentSqlRpcFailureUiKey.transportTimeout,
+        ),
       );
     }
 
     if (error is RelayRequestCancelled) {
       return OperationCancelledFailure(
         message: error.message,
-        context: <String, Object?>{
-          ...context,
-          AgentQueriesFailureContext.cancelledField: true,
-        },
+        context: _cancelledContext(context),
       );
     }
 
-    if (error is RelayConversationLost) {
+    if (error is RelayConversationLost ||
+        error is RelayConversationStartFailure ||
+        error is RelayStreamTerminated) {
       return NetworkFailure(
         message: error.message,
-        userMessage:
-            'A conexao com o servidor caiu durante a consulta. '
-            'Tente novamente.',
         cause: error,
         stackTrace: stackTrace,
-        context: context,
-      );
-    }
-
-    if (error is RelayConversationStartFailure) {
-      return NetworkFailure(
-        message: error.message,
-        userMessage:
-            'Nao foi possivel abrir o canal com o servidor para esta '
-            'consulta. Tente novamente.',
-        cause: error,
-        stackTrace: stackTrace,
-        context: context,
-      );
-    }
-
-    if (error is RelayStreamTerminated) {
-      return NetworkFailure(
-        message: error.message,
-        userMessage:
-            'A consulta foi interrompida antes de terminar. Tente novamente.',
-        cause: error,
-        stackTrace: stackTrace,
-        context: context,
+        context: _withUiKey(context, AgentSqlRpcFailureUiKey.networkError),
       );
     }
 
     if (error is RelayDecodeFailure) {
       return NetworkFailure(
         message: error.message,
-        userMessage:
-            'A resposta do servidor chegou em formato invalido. '
-            'Tente novamente.',
         cause: error,
         stackTrace: stackTrace,
-        context: context,
+        context: _withUiKey(context, AgentSqlRpcFailureUiKey.generic),
       );
     }
 
     if (error is RelayDuplicateRequestId) {
       return UnknownFailure(
         message: error.message,
-        userMessage:
-            'Ocorreu um erro inesperado ao consultar o agente. Tente novamente.',
         cause: error,
         stackTrace: stackTrace,
-        context: context,
+        context: _withUiKey(context, AgentSqlRpcFailureUiKey.generic),
       );
     }
 
     return NetworkFailure(
       message: error.message,
-      userMessage: 'Falha de comunicacao com o servidor. Tente novamente.',
       cause: error,
       stackTrace: stackTrace,
-      context: context,
+      context: _withUiKey(context, AgentSqlRpcFailureUiKey.networkError),
     );
   }
 
@@ -280,30 +248,60 @@ final class AgentQueriesTransportFailureMapper {
     if (isSocketAuthenticationFailedCode(serverCode)) {
       return SessionFailure(
         message: message,
-        userMessage: 'Sua sessao expirou. Faca login novamente para continuar.',
         cause: cause,
         stackTrace: stackTrace,
-        context: baseContext,
+        context: _withUiKey(
+          baseContext,
+          AgentSqlRpcFailureUiKey.authenticationFailed,
+        ),
       );
     }
     if (isSocketAuthorizationDeniedCode(serverCode)) {
       return AuthorizationFailure(
         message: message,
-        userMessage: 'Voce nao tem acesso a este agente.',
         cause: cause,
         stackTrace: stackTrace,
-        context: baseContext,
+        context: _withUiKey(
+          baseContext,
+          AgentSqlRpcFailureUiKey.permissionDenied,
+        ),
+      );
+    }
+    if (isSocketRateLimitedCode(serverCode)) {
+      return NetworkFailure(
+        message: message,
+        retryAfter: retryAfter,
+        cause: cause,
+        stackTrace: stackTrace,
+        context: _withUiKey(
+          baseContext,
+          AgentSqlRpcFailureUiKey.rateLimited,
+        ),
       );
     }
     return NetworkFailure(
       message: message,
-      userMessage:
-          'O servidor nao conseguiu processar a consulta agora. '
-          'Tente novamente.',
       retryAfter: retryAfter,
       cause: cause,
       stackTrace: stackTrace,
-      context: baseContext,
+      context: _withUiKey(baseContext, AgentSqlRpcFailureUiKey.networkError),
     );
+  }
+
+  Map<String, Object?> _withUiKey(
+    Map<String, Object?> base,
+    String uiKey,
+  ) {
+    return <String, Object?>{
+      ...base,
+      AgentSqlRpcFailureUiKey.field: uiKey,
+    };
+  }
+
+  Map<String, Object?> _cancelledContext(Map<String, Object?> base) {
+    return <String, Object?>{
+      ...base,
+      AgentQueriesFailureContext.cancelledField: true,
+    };
   }
 }

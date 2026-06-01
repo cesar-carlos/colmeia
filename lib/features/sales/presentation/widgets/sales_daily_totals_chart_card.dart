@@ -1,4 +1,5 @@
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_daily_totals_chart_copy.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
@@ -12,6 +13,7 @@ class SalesDailyTotalsChartCard extends StatelessWidget {
     required this.points,
     required this.loadFailed,
     required this.isLoading,
+    this.loadFailure,
     this.loadFailureMessage,
     this.dailySaleDateRange,
     super.key,
@@ -21,6 +23,7 @@ class SalesDailyTotalsChartCard extends StatelessWidget {
   final List<DailySalesTrendPoint> points;
   final bool loadFailed;
   final bool isLoading;
+  final AppFailure? loadFailure;
   final String? loadFailureMessage;
 
   /// When non-null, daily totals were loaded for this inclusive span instead of the anchor month.
@@ -34,6 +37,7 @@ class SalesDailyTotalsChartCard extends StatelessWidget {
         l10n: l10n,
         points: points,
         loadFailed: loadFailed,
+        loadFailure: loadFailure,
         loadFailureMessage: loadFailureMessage,
         isLoading: isLoading,
         useSalesDailyTotalsLabels: true,

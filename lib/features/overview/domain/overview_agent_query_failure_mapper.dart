@@ -16,8 +16,7 @@ List<OverviewAgentQueryFailureDetail> overviewPartialFailuresFromParticipants<
         agentId: participant.agentId,
         displayName: participant.displayName,
         source: OverviewAgentQueryFailureSource.paymentResumo,
-        userMessage: failure.displayMessage,
-        technicalSummary: overviewAgentQueryFailureTechnicalSummary(failure),
+        failure: failure,
       ),
     );
   }

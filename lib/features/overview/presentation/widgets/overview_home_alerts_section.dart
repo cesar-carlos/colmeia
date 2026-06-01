@@ -1,7 +1,13 @@
 import 'dart:async';
 
+import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_failure_technical_details.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
-import 'package:colmeia/features/overview/presentation/overview_alert_banner_spec.dart';
+import 'package:colmeia/features/overview/presentation/overview_alert_banner_spec.dart'
+    show
+        OverviewAlertAffectedAgents,
+        OverviewAlertBannerSpec,
+        OverviewAlertKind,
+        buildOverviewAlertBannerSpecs;
 import 'package:colmeia/features/overview/presentation/widgets/overview_agent_names_list_sheet.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_alert_detail_sheet.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_panel_actions.dart';
@@ -143,27 +149,53 @@ class _OverviewAlertBanner extends StatelessWidget {
     return spec.affectedAgents?.sheetTitle ?? spec.title;
   }
 
+  Widget? _buildBelowMessage(OverviewAlertAffectedAgents? affected) {
+    if (affected == null) {
+      return null;
+    }
+    return _OverviewAffectedAgentsListLink(
+      l10n: host.l10n,
+      normalizedNames: affected.normalizedNames,
+      sheetTitle: affected.sheetTitle,
+    );
+  }
+
+  Widget? _buildTechnicalFooter() {
+    final technical = spec.detailsBody?.trim();
+    if (technical == null || technical.isEmpty) {
+      return null;
+    }
+    return AgentQueryFailureTechnicalDetails(body: technical);
+  }
+
+  String? _detailsActionLabel(AppLocalizations l10n) {
+    if (spec.detailsBody == null) {
+      return null;
+    }
+    if (spec.kind == OverviewAlertKind.partialAgentQueries) {
+      return l10n.agentSqlFailureActionViewAffectedAgents;
+    }
+    return l10n.agentSqlFailureActionOpenFullDiagnostic;
+  }
+
   @override
   Widget build(BuildContext context) {
     final affected = spec.affectedAgents;
     final l10n = host.l10n;
+    final detailsLabel = _detailsActionLabel(l10n);
     return AppInlineErrorPanel(
       tone: spec.tone,
       title: spec.title,
       message: spec.message,
-      belowMessage: affected == null
-          ? null
-          : _OverviewAffectedAgentsListLink(
-              l10n: l10n,
-              normalizedNames: affected.normalizedNames,
-              sheetTitle: affected.sheetTitle,
-            ),
+      belowMessage: _buildBelowMessage(affected),
+      footer: _buildTechnicalFooter(),
       actions: _hasAnyAction
           ? OverviewPanelActions(
               onRetry: spec.showRetry ? host.onRetryOverview : null,
               onManageAgents: spec.showManage ? host.onOpenAgents : null,
               onShowDetails: _resolveOnShowDetails(context),
-              detailsLabel: l10n.overviewHomeAlertErrorDetailsButton,
+              detailsLabel:
+                  detailsLabel ?? l10n.agentSqlFailureActionOpenFullDiagnostic,
               detailsSemanticsLabel:
                   l10n.overviewHomeAlertErrorDetailsSemanticsLabel,
               retryLabel: l10n.appInlineErrorRetry,

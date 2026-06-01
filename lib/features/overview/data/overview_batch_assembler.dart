@@ -1,3 +1,4 @@
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_por_usuario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
@@ -41,26 +42,32 @@ class OverviewBatchAssembler {
     List<OverviewMonthlyParcelPoint> monthlyParcelTrend =
         const <OverviewMonthlyParcelPoint>[],
     bool monthlyParcelTrendLoadFailed = false,
+    AppFailure? monthlyParcelTrendLoadFailure,
     String? monthlyParcelTrendLoadFailureMessage,
     List<OverviewWeekdaySalesTrendPoint> weekdaySalesTrend =
         const <OverviewWeekdaySalesTrendPoint>[],
     bool weekdaySalesTrendLoadFailed = false,
+    AppFailure? weekdaySalesTrendLoadFailure,
     String? weekdaySalesTrendLoadFailureMessage,
     List<DailySalesTrendPoint> dailySalesTrend =
         const <DailySalesTrendPoint>[],
     bool dailySalesTrendLoadFailed = false,
+    AppFailure? dailySalesTrendLoadFailure,
     String? dailySalesTrendLoadFailureMessage,
     List<OverviewWeekdayUserSalesTrendPoint> weekdayUserSalesTrend =
         const <OverviewWeekdayUserSalesTrendPoint>[],
     bool weekdayUserSalesTrendLoadFailed = false,
+    AppFailure? weekdayUserSalesTrendLoadFailure,
     String? weekdayUserSalesTrendLoadFailureMessage,
     List<ResumoProdutoVendaLucratividadeMensalRow> lucratividadeMensalTrend =
         const <ResumoProdutoVendaLucratividadeMensalRow>[],
     bool lucratividadeMensalTrendLoadFailed = false,
+    AppFailure? lucratividadeMensalTrendLoadFailure,
     String? lucratividadeMensalTrendLoadFailureMessage,
     List<ResumoProdutoVendaLucratividadeRow> lucratividadeTrend =
         const <ResumoProdutoVendaLucratividadeRow>[],
     bool lucratividadeTrendLoadFailed = false,
+    AppFailure? lucratividadeTrendLoadFailure,
     String? lucratividadeTrendLoadFailureMessage,
     List<String> lucratividadePartialFailureAgentNames = const <String>[],
     bool mainResumoHadPlannedTargets = false,
@@ -201,24 +208,30 @@ class OverviewBatchAssembler {
       userRankings: userRankings,
       monthlyParcelTrend: monthlyParcelTrend,
       monthlyParcelTrendLoadFailed: monthlyParcelTrendLoadFailed,
+      monthlyParcelTrendLoadFailure: monthlyParcelTrendLoadFailure,
       monthlyParcelTrendLoadFailureMessage:
           monthlyParcelTrendLoadFailureMessage,
       weekdaySalesTrend: weekdaySalesTrend,
       weekdaySalesTrendLoadFailed: weekdaySalesTrendLoadFailed,
+      weekdaySalesTrendLoadFailure: weekdaySalesTrendLoadFailure,
       weekdaySalesTrendLoadFailureMessage: weekdaySalesTrendLoadFailureMessage,
       dailySalesTrend: dailySalesTrend,
       dailySalesTrendLoadFailed: dailySalesTrendLoadFailed,
+      dailySalesTrendLoadFailure: dailySalesTrendLoadFailure,
       dailySalesTrendLoadFailureMessage: dailySalesTrendLoadFailureMessage,
       weekdayUserSalesTrend: weekdayUserSalesTrend,
       weekdayUserSalesTrendLoadFailed: weekdayUserSalesTrendLoadFailed,
+      weekdayUserSalesTrendLoadFailure: weekdayUserSalesTrendLoadFailure,
       weekdayUserSalesTrendLoadFailureMessage:
           weekdayUserSalesTrendLoadFailureMessage,
       lucratividadeMensalTrend: lucratividadeMensalTrend,
       lucratividadeMensalTrendLoadFailed: lucratividadeMensalTrendLoadFailed,
+      lucratividadeMensalTrendLoadFailure: lucratividadeMensalTrendLoadFailure,
       lucratividadeMensalTrendLoadFailureMessage:
           lucratividadeMensalTrendLoadFailureMessage,
       lucratividadeTrend: lucratividadeTrend,
       lucratividadeTrendLoadFailed: lucratividadeTrendLoadFailed,
+      lucratividadeTrendLoadFailure: lucratividadeTrendLoadFailure,
       lucratividadeTrendLoadFailureMessage:
           lucratividadeTrendLoadFailureMessage,
       lucratividadePartialFailureAgentNames:

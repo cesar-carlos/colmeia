@@ -1,6 +1,8 @@
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
 import 'package:colmeia/features/overview/domain/overview_partial_failure_details_plain_text.dart';
+import 'package:colmeia/l10n/app_localizations_en.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -35,17 +37,18 @@ void main() {
   });
 
   group('overviewAppFailureDiagnosticBody', () {
-    test('joins type, display message, and technical line', () {
+    test('includes friendly line and wire diagnostic fields', () {
       const failure = ValidationFailure(
         message: 'msg',
         userMessage: 'friendly',
       );
-      final body = overviewAppFailureDiagnosticBody(failure);
-      expect(body.split('\n'), <String>[
-        'ValidationFailure',
-        'friendly',
-        'ValidationFailure: msg',
-      ]);
+      final body = overviewAppFailureDiagnosticBody(
+        failure,
+        localizedUserMessage: 'friendly',
+      );
+      expect(body, startsWith('userFacingMessage: friendly'));
+      expect(body, contains('failureType: ValidationFailure'));
+      expect(body, contains('message: msg'));
     });
   });
 
@@ -60,15 +63,17 @@ void main() {
       expect(d.source, OverviewAgentQueryFailureSource.lucratividadePeriod);
       expect(d.agentId, 'id1');
       expect(d.displayName, 'N1');
-      expect(d.userMessage, 'm');
+      expect(d.userMessageFor(AppLocalizationsEn()), 'm');
       expect(d.technicalSummary, 'ValidationFailure: m');
     });
   });
 
   group('formatOverviewPartialFailureDetailsPlainText', () {
     test('returns empty message when details empty', () {
+      final l10n = AppLocalizationsEn();
       final out = formatOverviewPartialFailureDetailsPlainText(
         details: const <OverviewAgentQueryFailureDetail>[],
+        l10n: l10n,
         emptyMessage: 'EMPTY',
         sourceLabel: (_) => 'src',
         userLineLabel: 'U',
@@ -78,23 +83,33 @@ void main() {
     });
 
     test('formats multiple entries with separators', () {
+      final l10n = AppLocalizationsEn();
       final details = <OverviewAgentQueryFailureDetail>[
         const OverviewAgentQueryFailureDetail(
           agentId: 'a',
           displayName: 'A',
           source: OverviewAgentQueryFailureSource.paymentResumo,
-          userMessage: 'u1',
-          technicalSummary: 't1',
+          failure: ValidationFailure(message: 'u1'),
         ),
         const OverviewAgentQueryFailureDetail(
           agentId: 'b',
           displayName: 'B',
           source: OverviewAgentQueryFailureSource.lucratividadePeriod,
-          userMessage: 'u2',
+          failure: RpcFailure(
+            message: 'u2',
+            userMessage: 'u2',
+            rpcCode: -32013,
+            retryable: false,
+            context: <String, Object?>{
+              AgentSqlRpcFailureUiKey.field:
+                  AgentSqlRpcFailureUiKey.rateLimited,
+            },
+          ),
         ),
       ];
       final out = formatOverviewPartialFailureDetailsPlainText(
         details: details,
+        l10n: l10n,
         emptyMessage: 'EMPTY',
         sourceLabel: (s) => s.name,
         userLineLabel: 'User',
@@ -103,12 +118,13 @@ void main() {
       expect(out, contains('A (a)'));
       expect(out, contains('paymentResumo'));
       expect(out, contains('User: u1'));
-      expect(out, contains('Tech: t1'));
+      expect(out, contains('Tech: ValidationFailure: u1'));
+      expect(out, contains('Tech: RpcFailure: u2'));
       expect(out, contains('---'));
       expect(out, contains('B (b)'));
       expect(out, contains('lucratividadePeriod'));
-      expect(out, contains('User: u2'));
-      expect(RegExp('Tech:').allMatches(out).length, 1);
+      expect(out, contains('User: ${l10n.agentSqlErrorRateLimited}'));
+      expect(RegExp('Tech:').allMatches(out).length, 2);
     });
   });
 }

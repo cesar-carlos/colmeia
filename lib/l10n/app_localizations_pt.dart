@@ -2609,6 +2609,11 @@ class AppLocalizationsPt extends AppLocalizations {
       'Muitas tentativas de consulta foram feitas. Aguarde um instante e tente novamente.';
 
   @override
+  String agentSqlErrorRateLimitedWithWait(int seconds) {
+    return 'Muitas tentativas de consulta foram feitas. Tente novamente em ${seconds}s.';
+  }
+
+  @override
   String get agentSqlErrorValidationFailed => 'The query is invalid.';
 
   @override
@@ -2649,6 +2654,107 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get agentSqlErrorGeneric =>
       'Não foi possível concluir a consulta no agente.';
+
+  @override
+  String get agentSqlFailureTitleRateLimited => 'Muitas consultas';
+
+  @override
+  String get agentSqlFailureTitleAuthenticationFailed => 'Sessão expirada';
+
+  @override
+  String get agentSqlFailureTitlePermissionDenied => 'Sem permissão';
+
+  @override
+  String get agentSqlFailureTitleTransportTimeout =>
+      'Agente demorou para responder';
+
+  @override
+  String get agentSqlFailureTitleNetworkError => 'Problema de conexão';
+
+  @override
+  String get agentSqlFailureTitleValidationFailed => 'Consulta inválida';
+
+  @override
+  String get agentSqlFailureTitleExecutionFailed => 'Falha na consulta';
+
+  @override
+  String get agentSqlFailureTitleTransactionFailed => 'Falha na transação';
+
+  @override
+  String get agentSqlFailureTitleConnectionPoolExhausted => 'Servidor ocupado';
+
+  @override
+  String get agentSqlFailureTitleResultTooLarge => 'Resultado muito grande';
+
+  @override
+  String get agentSqlFailureTitleDatabaseConnectionFailed =>
+      'Banco indisponível';
+
+  @override
+  String get agentSqlFailureTitleQueryTimeout => 'Consulta expirou';
+
+  @override
+  String get agentSqlFailureTitleInvalidDatabaseConfig =>
+      'Configuração inválida';
+
+  @override
+  String get agentSqlFailureTitleExecutionNotFound => 'Execução não encontrada';
+
+  @override
+  String get agentSqlFailureTitleExecutionCancelled => 'Consulta cancelada';
+
+  @override
+  String get agentSqlFailureTitleGeneric => 'Falha na consulta';
+
+  @override
+  String get agentSqlFailureActionManageAgents => 'Ir para agentes';
+
+  @override
+  String get agentSqlFailureActionShowDetails => 'Ver detalhes';
+
+  @override
+  String get agentSqlFailureActionOpenFullDiagnostic =>
+      'Abrir diagnóstico completo';
+
+  @override
+  String get agentSqlFailureActionViewAffectedAgents => 'Ver agentes com falha';
+
+  @override
+  String get agentSqlFailureActionShowTechnicalDetails =>
+      'Detalhes para suporte';
+
+  @override
+  String get agentSqlFailureActionHideTechnicalDetails =>
+      'Ocultar detalhes para suporte';
+
+  @override
+  String get agentSqlFailureTechnicalDetailsHeading => 'Detalhes para suporte';
+
+  @override
+  String get agentSqlFailureTechnicalDetailsSubtitle =>
+      'Copie e envie ao time técnico';
+
+  @override
+  String get agentSqlFailureTechnicalDetailsCopy => 'Copiar detalhes técnicos';
+
+  @override
+  String get agentSqlFailureTechnicalDetailsCopySummary => 'Copiar resumo';
+
+  @override
+  String get agentSqlFailureTechnicalDetailsCopyFull => 'Copiar tudo';
+
+  @override
+  String get agentSqlFailureTechnicalDetailsShare => 'Compartilhar';
+
+  @override
+  String get agentSqlFailureTechnicalDetailsCopied =>
+      'Copiado para a área de transferência';
+
+  @override
+  String get agentSqlFailurePauseReasonWaitingServer => 'Aguardando o servidor';
+
+  @override
+  String get overviewChartViewAgentFailureDetails => 'Ver agentes com falha';
 
   @override
   String get formsDemoDatePickersFormTitle => 'Date pickers no Form';
@@ -6736,6 +6842,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Muitas tentativas de consulta foram feitas. Aguarde um instante e tente novamente.';
 
   @override
+  String agentSqlErrorRateLimitedWithWait(int seconds) {
+    return 'Muitas tentativas de consulta foram feitas. Tente novamente em ${seconds}s.';
+  }
+
+  @override
   String get agentSqlErrorExecutionFailed =>
       'Não foi possível executar a consulta.';
 
@@ -6773,6 +6884,107 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get agentSqlErrorGeneric =>
       'Não foi possível concluir a consulta no agente.';
+
+  @override
+  String get agentSqlFailureTitleRateLimited => 'Muitas consultas';
+
+  @override
+  String get agentSqlFailureTitleAuthenticationFailed => 'Sessão expirada';
+
+  @override
+  String get agentSqlFailureTitlePermissionDenied => 'Sem permissão';
+
+  @override
+  String get agentSqlFailureTitleTransportTimeout =>
+      'Agente demorou para responder';
+
+  @override
+  String get agentSqlFailureTitleNetworkError => 'Problema de conexão';
+
+  @override
+  String get agentSqlFailureTitleValidationFailed => 'Consulta inválida';
+
+  @override
+  String get agentSqlFailureTitleExecutionFailed => 'Falha na consulta';
+
+  @override
+  String get agentSqlFailureTitleTransactionFailed => 'Falha na transação';
+
+  @override
+  String get agentSqlFailureTitleConnectionPoolExhausted => 'Servidor ocupado';
+
+  @override
+  String get agentSqlFailureTitleResultTooLarge => 'Resultado muito grande';
+
+  @override
+  String get agentSqlFailureTitleDatabaseConnectionFailed =>
+      'Banco indisponível';
+
+  @override
+  String get agentSqlFailureTitleQueryTimeout => 'Consulta expirou';
+
+  @override
+  String get agentSqlFailureTitleInvalidDatabaseConfig =>
+      'Configuração inválida';
+
+  @override
+  String get agentSqlFailureTitleExecutionNotFound => 'Execução não encontrada';
+
+  @override
+  String get agentSqlFailureTitleExecutionCancelled => 'Consulta cancelada';
+
+  @override
+  String get agentSqlFailureTitleGeneric => 'Falha na consulta';
+
+  @override
+  String get agentSqlFailureActionManageAgents => 'Ir para agentes';
+
+  @override
+  String get agentSqlFailureActionShowDetails => 'Ver detalhes';
+
+  @override
+  String get agentSqlFailureActionOpenFullDiagnostic =>
+      'Abrir diagnóstico completo';
+
+  @override
+  String get agentSqlFailureActionViewAffectedAgents => 'Ver agentes com falha';
+
+  @override
+  String get agentSqlFailureActionShowTechnicalDetails =>
+      'Detalhes para suporte';
+
+  @override
+  String get agentSqlFailureActionHideTechnicalDetails =>
+      'Ocultar detalhes para suporte';
+
+  @override
+  String get agentSqlFailureTechnicalDetailsHeading => 'Detalhes para suporte';
+
+  @override
+  String get agentSqlFailureTechnicalDetailsSubtitle =>
+      'Copie e envie ao time técnico';
+
+  @override
+  String get agentSqlFailureTechnicalDetailsCopy => 'Copiar detalhes técnicos';
+
+  @override
+  String get agentSqlFailureTechnicalDetailsCopySummary => 'Copiar resumo';
+
+  @override
+  String get agentSqlFailureTechnicalDetailsCopyFull => 'Copiar tudo';
+
+  @override
+  String get agentSqlFailureTechnicalDetailsShare => 'Compartilhar';
+
+  @override
+  String get agentSqlFailureTechnicalDetailsCopied =>
+      'Copiado para a área de transferência';
+
+  @override
+  String get agentSqlFailurePauseReasonWaitingServer => 'Aguardando o servidor';
+
+  @override
+  String get overviewChartViewAgentFailureDetails => 'Ver agentes com falha';
 
   @override
   String get formsDemoDatePickersFormTitle => 'Date pickers no Form';

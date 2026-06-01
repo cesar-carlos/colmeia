@@ -72,11 +72,11 @@ Overview _overviewMergeCachedWithFreshReportSlice({
 class _OverviewBatchSectionFailure {
   const _OverviewBatchSectionFailure({
     required this.loadFailed,
-    this.message,
+    this.failure,
   });
 
   final bool loadFailed;
-  final String? message;
+  final AppFailure? failure;
 }
 
 class OverviewRepositoryImpl implements OverviewRepository {
@@ -301,46 +301,46 @@ class OverviewRepositoryImpl implements OverviewRepository {
             batchResults,
             (result) => result.monthlyFailure,
           ).loadFailed,
-          monthlyParcelTrendLoadFailureMessage: _batchSectionFailure(
+          monthlyParcelTrendLoadFailure: _batchSectionFailure(
             batchResults,
             (result) => result.monthlyFailure,
-          ).message,
+          ).failure,
           weekdaySalesTrend: _batchWeekdayPoints(batchResults),
           weekdaySalesTrendLoadFailed: _batchSectionFailure(
             batchResults,
             (result) => result.weekdayFailure,
           ).loadFailed,
-          weekdaySalesTrendLoadFailureMessage: _batchSectionFailure(
+          weekdaySalesTrendLoadFailure: _batchSectionFailure(
             batchResults,
             (result) => result.weekdayFailure,
-          ).message,
+          ).failure,
           dailySalesTrend: _batchDailyPoints(batchResults, dailyTotalFilter),
           dailySalesTrendLoadFailed: _batchSectionFailure(
             batchResults,
             (result) => result.dailyFailure,
           ).loadFailed,
-          dailySalesTrendLoadFailureMessage: _batchSectionFailure(
+          dailySalesTrendLoadFailure: _batchSectionFailure(
             batchResults,
             (result) => result.dailyFailure,
-          ).message,
+          ).failure,
           weekdayUserSalesTrend: _batchWeekdayUserPoints(batchResults),
           weekdayUserSalesTrendLoadFailed: _batchSectionFailure(
             batchResults,
             (result) => result.weekdayUserFailure,
           ).loadFailed,
-          weekdayUserSalesTrendLoadFailureMessage: _batchSectionFailure(
+          weekdayUserSalesTrendLoadFailure: _batchSectionFailure(
             batchResults,
             (result) => result.weekdayUserFailure,
-          ).message,
+          ).failure,
           lucratividadeTrend: _batchLucratividadePoints(batchResults),
           lucratividadeTrendLoadFailed: _batchSectionFailure(
             batchResults,
             (result) => result.lucratividadeFailure,
           ).loadFailed,
-          lucratividadeTrendLoadFailureMessage: _batchSectionFailure(
+          lucratividadeTrendLoadFailure: _batchSectionFailure(
             batchResults,
             (result) => result.lucratividadeFailure,
-          ).message,
+          ).failure,
           lucratividadePartialFailureAgentNames:
               _batchLucratividadePartialFailureAgentNames(batchResults),
           lucratividadeMensalTrend: _batchLucratividadeMensalRows(batchResults),
@@ -348,10 +348,10 @@ class OverviewRepositoryImpl implements OverviewRepository {
             batchResults,
             (result) => result.lucratividadeMensalFailure,
           ).loadFailed,
-          lucratividadeMensalTrendLoadFailureMessage: _batchSectionFailure(
+          lucratividadeMensalTrendLoadFailure: _batchSectionFailure(
             batchResults,
             (result) => result.lucratividadeMensalFailure,
-          ).message,
+          ).failure,
           mainResumoHadPlannedTargets: report.plannedTargets.isNotEmpty,
           partialQueryFailureDetails: <OverviewAgentQueryFailureDetail>[
             ...overviewPartialFailuresFromParticipants(report.participants),
@@ -666,14 +666,14 @@ class OverviewRepositoryImpl implements OverviewRepository {
     List<OverviewBatchTargetResult> results,
     AppFailure? Function(OverviewBatchTargetResult result) failureOf,
   ) {
-    String? firstFailureMessage;
+    AppFailure? firstFailure;
     var hasFailure = false;
     var hasSuccess = false;
     for (final result in results) {
       final failure = failureOf(result);
       if (failure != null) {
         hasFailure = true;
-        firstFailureMessage ??= failure.userMessage;
+        firstFailure ??= failure;
       } else {
         hasSuccess = true;
       }
@@ -681,7 +681,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     if (hasFailure && !hasSuccess) {
       return _OverviewBatchSectionFailure(
         loadFailed: true,
-        message: firstFailureMessage,
+        failure: firstFailure,
       );
     }
     return const _OverviewBatchSectionFailure(loadFailed: false);

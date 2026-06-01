@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_clipboard.dart';
+import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_support_context.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
 import 'package:colmeia/features/overview/domain/overview_partial_failure_details_plain_text.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -8,6 +11,7 @@ import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/bottom_sheet_compact_drag_handle.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart' show ShareParams, SharePlus;
 
 const Duration _kCopyConfirmationSnackBarDuration = Duration(seconds: 2);
 
@@ -47,6 +51,7 @@ String formatOverviewPartialFailuresDiagnosticBody(
 ) {
   return formatOverviewPartialFailureDetailsPlainText(
     details: details,
+    l10n: l10n,
     emptyMessage: l10n.overviewHomeAlertDetailsNoEntries,
     sourceLabel: (s) => _sourceLabel(l10n, s),
     userLineLabel: l10n.overviewHomeAlertDetailsUserLine,
@@ -168,9 +173,26 @@ class _OverviewAlertDetailSheetScaffold extends StatelessWidget {
                         IconButton(
                           tooltip:
                               l10n.overviewHomeAlertDetailsCopySemanticsLabel,
+                          constraints: const BoxConstraints(
+                            minWidth: 48,
+                            minHeight: 48,
+                          ),
                           onPressed: () async {
+                            final l10n = AppLocalizations.of(context);
+                            final locale =
+                                Localizations.localeOf(context).toString();
+                            final clipboardText = formatAgentQueryFailureClipboard(
+                              diagnosticBody: bodyText,
+                              supportContext:
+                                  AgentQueryFailureSupportContext.environment(
+                                localeName: locale,
+                                extra: const <String, String>{
+                                  'surface': 'overview_alert_detail_sheet',
+                                },
+                              ),
+                            );
                             await Clipboard.setData(
-                              ClipboardData(text: bodyText),
+                              ClipboardData(text: clipboardText),
                             );
                             if (!context.mounted) {
                               return;
@@ -180,7 +202,15 @@ class _OverviewAlertDetailSheetScaffold extends StatelessWidget {
                                 behavior: SnackBarBehavior.floating,
                                 duration: _kCopyConfirmationSnackBarDuration,
                                 content: Text(
-                                  l10n.overviewHomeAlertDetailsCopiedSnackbar,
+                                  l10n.agentSqlFailureTechnicalDetailsCopied,
+                                ),
+                                action: SnackBarAction(
+                                  label: l10n.agentSqlFailureTechnicalDetailsShare,
+                                  onPressed: () => unawaited(
+                                    SharePlus.instance.share(
+                                      ShareParams(text: clipboardText),
+                                    ),
+                                  ),
                                 ),
                               ),
                             );
@@ -223,7 +253,7 @@ class _OverviewAlertDetailSheetScaffold extends StatelessWidget {
                                       d.displayName,
                                       d.agentId,
                                       _sourceLabel(l10n, d.source),
-                                      d.userMessage,
+                                      d.userMessageFor(l10n),
                                     ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,7 +275,7 @@ class _OverviewAlertDetailSheetScaffold extends StatelessWidget {
                                     ),
                                     SizedBox(height: tokens.gapSm),
                                     SelectableText(
-                                      '${l10n.overviewHomeAlertDetailsUserLine}: ${d.userMessage}',
+                                      '${l10n.overviewHomeAlertDetailsUserLine}: ${d.userMessageFor(l10n)}',
                                       style: typography.body.copyWith(
                                         color: theme.colorScheme.onSurface,
                                       ),

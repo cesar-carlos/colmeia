@@ -1,3 +1,4 @@
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_load_failure_reason.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_location_diagnostics.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
@@ -47,6 +48,7 @@ class SalesLiveMapLoadResult {
     this.locationDiagnostics = const SalesLiveMapLocationDiagnostics(),
     this.loadFailed = false,
     this.loadFailureReason,
+    this.loadFailure,
     this.loadFailureMessage,
     this.cancelled = false,
     this.partialGeoReuseCount = 0,
@@ -80,6 +82,7 @@ class SalesLiveMapLoadResult {
   final SalesLiveMapLocationDiagnostics locationDiagnostics;
   final bool loadFailed;
   final SalesLiveMapLoadFailureReason? loadFailureReason;
+  final AppFailure? loadFailure;
   final String? loadFailureMessage;
   final DateTime? refreshedAt;
   final bool cancelled;

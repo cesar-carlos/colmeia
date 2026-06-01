@@ -134,7 +134,7 @@ void main() {
       (_) async => (
         points: const <DailySalesTrendPoint>[],
         loadFailed: false,
-        loadFailureMessage: null,
+        loadFailure: null,
       ),
     );
   });
