@@ -35,6 +35,7 @@ AppComparisonBarChartStyle appDashboardComparisonBarChartStyle({
   bool showDataLabels = true,
   bool weekdayUsesCurrencyAxis = false,
   Color? weekdayRevenueDataLabelBackground,
+  Color? rankingValueLabelBackground,
 }) {
   final localeName = l10n.localeName;
   final isRanking = kind == AppDashboardComparisonBarChartKind.ranking;
@@ -82,11 +83,15 @@ AppComparisonBarChartStyle appDashboardComparisonBarChartStyle({
         ? EdgeInsets.only(bottom: tokens.gapSm)
         : null,
     dataLabelOffset: Offset(0, dataLabelLiftY),
-    yAxisRangePadding: metricRevenueAxis
+    yAxisRangePadding: metricRevenueAxis || isRanking
         ? ChartRangePadding.additionalEnd
         : null,
     dataLabelBackgroundColor: metricRevenueAxis
         ? weekdayRevenueDataLabelBackground
+        : (isRanking ? rankingValueLabelBackground : null),
+    outerDataLabelTopReserve: isRanking ? tokens.gapSm : 0,
+    dataLabelTextStyle: isRanking
+        ? const TextStyle(fontSize: 11, height: 1.2, fontWeight: FontWeight.w600)
         : null,
     tooltipLabelMaxChars: 56,
     minPlottedValueShareOfMax: isRanking

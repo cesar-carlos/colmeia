@@ -2,6 +2,8 @@ import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/core/refresh/auto_refresh_option.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_control.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/l10n/app_localizations_en.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -69,7 +71,11 @@ void main() {
       onChanged: (value) => selected = value,
     );
 
-    await tester.tap(find.text(SalesAutoRefreshOptions.fiveMinutes.salesLabel));
+    await tester.tap(
+      find.text(
+        AppLocalizationsEn().salesAutoRefreshIntervalFiveMinutes,
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(
       find.byKey(const ValueKey<String>('sales-auto-refresh-off')),
@@ -87,6 +93,9 @@ Future<void> _pumpControl(
 }) async {
   await tester.pumpWidget(
     MaterialApp(
+      locale: const Locale('en'),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       theme: AppTheme.light(),
       home: Scaffold(
         body: Center(

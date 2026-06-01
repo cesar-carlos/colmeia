@@ -27,7 +27,7 @@ String _overviewUserRankingDataLabel(
 ) {
   final v = barValue.toDouble();
   return '${AppBrFormatters.compactCurrency(v)}\n'
-      '${l10n.overviewKpiAvgTicket}: ${AppBrFormatters.currency(u.averageTicket)}';
+      '${l10n.overviewKpiAvgTicket}: ${AppBrFormatters.compactCurrency(u.averageTicket)}';
 }
 
 class OverviewAgentRankingCard extends StatelessWidget {
@@ -144,6 +144,13 @@ class OverviewUserRankingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final rankingChartStyle = appDashboardComparisonBarChartStyle(
+      tokens: tokens,
+      kind: AppDashboardComparisonBarChartKind.ranking,
+      l10n: l10n,
+      rankingValueLabelBackground: colorScheme.surface,
+    );
     final showEmpty = userRankings.isEmpty;
     void openFullscreen() {
       final rankingsSnapshot = List<OverviewUserRanking>.of(
@@ -179,6 +186,9 @@ class OverviewUserRankingCard extends StatelessWidget {
                       kind: AppDashboardComparisonBarChartKind.ranking,
                       l10n: l10n,
                       heightOverride: constraints.maxHeight,
+                      rankingValueLabelBackground: Theme.of(
+                        fullscreenContext,
+                      ).colorScheme.surface,
                     ),
                     emptyPlaceholder: showEmpty
                         ? Center(
@@ -210,11 +220,7 @@ class OverviewUserRankingCard extends StatelessWidget {
       valueBuilder: (u) => u.totalAmount,
       tooltipLabelBuilder: (u, v) => _overviewUserRankingTooltip(l10n, u, v),
       dataLabelBuilder: (u, v) => _overviewUserRankingDataLabel(l10n, u, v),
-      style: appDashboardComparisonBarChartStyle(
-        tokens: tokens,
-        kind: AppDashboardComparisonBarChartKind.ranking,
-        l10n: l10n,
-      ),
+      style: rankingChartStyle,
       emptyPlaceholder: showEmpty
           ? Padding(
               padding: EdgeInsets.symmetric(vertical: tokens.contentSpacing),

@@ -1,5 +1,6 @@
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
+import 'package:colmeia/features/sales/presentation/localization/sales_live_map_l10n.dart';
 import 'package:colmeia/features/sales/presentation/view_models/sales_live_map_view_model.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -123,6 +124,7 @@ class _SalesLiveMapUnmappedBranchesList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final tokens = context.appTokens;
     final colorScheme = Theme.of(context).colorScheme;
     final visibleBranches = branches
@@ -148,7 +150,7 @@ class _SalesLiveMapUnmappedBranchesList extends StatelessWidget {
                 SizedBox(width: tokens.gapSm),
                 Expanded(
                   child: Text(
-                    SalesLiveMapViewModel.formatUnmappedBranchLabel(branch),
+                    SalesLiveMapL10n.formatUnmappedBranchLabel(l10n, branch),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurface,
                       fontWeight: FontWeight.w600,

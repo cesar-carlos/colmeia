@@ -101,8 +101,7 @@ class SalesLiveMapCachedBranchLocation {
         aggregate.salesDataStatusLabel,
       ),
       locationResolution: locationResolution,
-      subtitle:
-          'Agente ${aggregate.agentName} - Empresa ${aggregate.codEmpresa} - Filial ${aggregate.codFilial}',
+      subtitle: null,
       payload: aggregate,
     );
   }

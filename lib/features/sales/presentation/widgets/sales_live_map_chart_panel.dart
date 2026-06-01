@@ -3,6 +3,7 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart
 import 'package:colmeia/features/sales/presentation/mappers/sales_live_map_chart_mapper.dart';
 import 'package:colmeia/features/sales/presentation/mappers/sales_live_map_visual_spec_mapper.dart';
 import 'package:colmeia/features/sales/presentation/models/sales_live_map_visual_spec.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart.dart';
@@ -46,7 +47,8 @@ class SalesLiveMapChartPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final chartPoints = SalesLiveMapChartMapper.toChartPoints(points);
+    final l10n = AppLocalizations.of(context);
+    final chartPoints = SalesLiveMapChartMapper.toChartPoints(points, l10n);
     final chartStyle = SalesLiveMapVisualSpecMapper.toChartStyle(visualSpec);
     final chart = AppBrazilStoreSalesMapChart(
       title: showHeader ? title : null,

@@ -3447,6 +3447,30 @@ class AppLocalizationsPt extends AppLocalizations {
       'Atualização automática pausada enquanto a tela estiver oculta';
 
   @override
+  String get salesAutoRefreshIntervalFiveMinutes => '5 min';
+
+  @override
+  String get salesAutoRefreshIntervalTenMinutes => '10 min';
+
+  @override
+  String get salesAutoRefreshIntervalFifteenMinutes => '15 min';
+
+  @override
+  String get salesAutoRefreshIntervalThirtyMinutes => '30 min';
+
+  @override
+  String salesLiveMapBranchPointSubtitle(
+    String agentName,
+    int companyCode,
+    int branchCode,
+  ) {
+    return 'Agente $agentName - Empresa $companyCode - Filial $branchCode';
+  }
+
+  @override
+  String get salesLiveMapMissingMunicipalityLabel => 'Sem município';
+
+  @override
   String get salesDailyTotalsChartTitle => 'Vendas por dia';
 
   @override
@@ -7669,6 +7693,30 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get salesAutoRefreshPausedHidden =>
       'Atualização automática pausada enquanto a tela estiver oculta';
+
+  @override
+  String get salesAutoRefreshIntervalFiveMinutes => '5 min';
+
+  @override
+  String get salesAutoRefreshIntervalTenMinutes => '10 min';
+
+  @override
+  String get salesAutoRefreshIntervalFifteenMinutes => '15 min';
+
+  @override
+  String get salesAutoRefreshIntervalThirtyMinutes => '30 min';
+
+  @override
+  String salesLiveMapBranchPointSubtitle(
+    String agentName,
+    int companyCode,
+    int branchCode,
+  ) {
+    return 'Agente $agentName - Empresa $companyCode - Filial $branchCode';
+  }
+
+  @override
+  String get salesLiveMapMissingMunicipalityLabel => 'Sem município';
 
   @override
   String get salesDailyTotalsChartTitle => 'Vendas por dia';

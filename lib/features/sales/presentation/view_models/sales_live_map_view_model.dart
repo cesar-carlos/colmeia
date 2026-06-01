@@ -7,8 +7,6 @@ import 'package:colmeia/features/sales/presentation/models/sales_live_map_visual
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
-import 'package:colmeia/shared/utils/app_branch_display_model.dart';
-import 'package:colmeia/shared/utils/app_branch_display_name.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_filter_summary.dart';
 
 /// Mapped branch count above which the live map auto-downgrades the user's
@@ -178,21 +176,6 @@ class SalesLiveMapViewModel {
       detailLevel: effectiveDetailLevel(state),
       markerVisual: state.filter.markerVisual,
     );
-  }
-
-  /// Display label for an unmapped branch in the attention panel — combines
-  /// the branch display name, location (city/UF) and agent label.
-  static String formatUnmappedBranchLabel(SalesLiveMapBranchOption branch) {
-    final location = '${branch.city} / ${branch.uf}';
-    final display = resolveAppBranchDisplayModel(
-      registrationName: branch.registrationName,
-      fantasyName: branch.fantasyName,
-      fallbackName: branch.registrationName,
-    );
-    final primary = display.primaryName;
-    final secondary = display.secondaryName;
-    final nameLabel = secondary == null ? primary : '$primary - $secondary';
-    return '$nameLabel - $location - ${appBranchDisplayName(branch.agentName)}';
   }
 
   /// Localized messages displayed inside the attention panel when the live

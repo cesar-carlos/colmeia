@@ -7,6 +7,7 @@ import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
 import 'package:colmeia/shared/widgets/charts/chart_pan_footnote_column.dart';
 import 'package:colmeia/shared/widgets/charts/comparison_bar_chart_margin.dart';
+import 'package:colmeia/shared/widgets/charts/comparison_bar_value_label.dart';
 import 'package:colmeia/shared/widgets/charts/engines/cartesian_scroll_geometry.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
@@ -368,22 +369,12 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
                       final resolvedTextStyle = baseStyle.copyWith(
                         color: textColor,
                       );
-                      Widget label = Text(text, style: resolvedTextStyle);
-                      final bg = style.dataLabelBackgroundColor;
-                      if (bg != null) {
-                        label = Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: bg,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: label,
-                        );
-                      }
-                      return label;
+                      return buildComparisonBarOuterValueLabel(
+                        text: text,
+                        baseStyle: resolvedTextStyle,
+                        colorScheme: colorScheme,
+                        backgroundColor: style.dataLabelBackgroundColor,
+                      );
                     }
                   : null,
             ),
@@ -610,20 +601,14 @@ List<CartesianChartAnnotation> _comparisonBarValueLabelAnnotations({
     final textColor = explicitColor ?? colorScheme.onSurface;
     final baseStyle = style.dataLabelTextStyle ?? const TextStyle();
     final resolvedTextStyle = baseStyle.copyWith(color: textColor);
-    Widget label = Text(text, style: resolvedTextStyle);
-    final bg = style.dataLabelBackgroundColor;
-    if (bg != null) {
-      label = Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: label,
-      );
-    }
+    var label = buildComparisonBarOuterValueLabel(
+      text: text,
+      baseStyle: resolvedTextStyle,
+      colorScheme: colorScheme,
+      backgroundColor: style.dataLabelBackgroundColor,
+    );
     final outerMargin = style.dataLabelBackgroundColor != null
-        ? const EdgeInsets.symmetric(horizontal: 6, vertical: 8)
+        ? const EdgeInsets.symmetric(horizontal: 4, vertical: 4)
         : const EdgeInsets.all(5);
     label = Padding(
       padding: outerMargin,

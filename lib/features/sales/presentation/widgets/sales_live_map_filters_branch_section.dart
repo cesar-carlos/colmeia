@@ -1,5 +1,6 @@
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
+import 'package:colmeia/features/sales/presentation/localization/sales_live_map_l10n.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_filters_sheet_scaffold.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -308,7 +309,10 @@ class _BranchSelectionSubtitle extends StatelessWidget {
           ),
         Text(
           AppLocalizations.of(context).salesLiveMapFilterBranchSummaryLine(
-            branch.city,
+            SalesLiveMapL10n.displayCity(
+              AppLocalizations.of(context),
+              branch.city,
+            ),
             branch.uf,
             appBranchDisplayName(branch.agentName),
           ),

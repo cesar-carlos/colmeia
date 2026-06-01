@@ -130,11 +130,14 @@ EdgeInsets resolveComparisonBarChartMargin(
   }
   final lineCount = math.max(1, maxDataLabelLines);
   final interLineGap = lineCount > 1
-      ? textScaler.scale(tokens?.gapXs ?? 4.0)
+      ? textScaler.scale(tokens?.gapXs ?? 4.0) + 2
       : 0.0;
   final labelBlockHeight =
       estimatedLineHeight * lineCount + interLineGap * (lineCount - 1);
-  var minTop = labelBlockHeight + lift.abs() + clearance;
+  final multiLineHeadroom = lineCount > 1
+      ? textScaler.scale(tokens?.gapSm ?? 8.0)
+      : 0.0;
+  var minTop = labelBlockHeight + lift.abs() + clearance + multiLineHeadroom;
   if (valueLabelsRenderedAsChartAnnotations) {
     minTop += kComparisonBarAnnotationLabelVerticalInset;
     if (dataLabelAnnotationUsesPillBackground) {

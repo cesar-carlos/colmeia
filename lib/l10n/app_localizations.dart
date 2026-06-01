@@ -5596,6 +5596,46 @@ abstract class AppLocalizations {
   /// **'Auto-refresh paused while this screen is hidden'**
   String get salesAutoRefreshPausedHidden;
 
+  /// No description provided for @salesAutoRefreshIntervalFiveMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'5 min'**
+  String get salesAutoRefreshIntervalFiveMinutes;
+
+  /// No description provided for @salesAutoRefreshIntervalTenMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'10 min'**
+  String get salesAutoRefreshIntervalTenMinutes;
+
+  /// No description provided for @salesAutoRefreshIntervalFifteenMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'15 min'**
+  String get salesAutoRefreshIntervalFifteenMinutes;
+
+  /// No description provided for @salesAutoRefreshIntervalThirtyMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'30 min'**
+  String get salesAutoRefreshIntervalThirtyMinutes;
+
+  /// No description provided for @salesLiveMapBranchPointSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent {agentName} - Company {companyCode} - Branch {branchCode}'**
+  String salesLiveMapBranchPointSubtitle(
+    String agentName,
+    int companyCode,
+    int branchCode,
+  );
+
+  /// No description provided for @salesLiveMapMissingMunicipalityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'No municipality'**
+  String get salesLiveMapMissingMunicipalityLabel;
+
   /// No description provided for @salesDailyTotalsChartTitle.
   ///
   /// In en, this message translates to:

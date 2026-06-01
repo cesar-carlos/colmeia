@@ -2,6 +2,7 @@ import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/core/refresh/auto_refresh_option.dart';
 import 'package:colmeia/core/refresh/auto_refresh_ui_state.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
+import 'package:colmeia/features/sales/presentation/localization/sales_auto_refresh_l10n.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/refresh/auto_refresh_actions_row.dart';
 import 'package:flutter/material.dart';
@@ -39,7 +40,7 @@ class SalesAutoRefreshActionsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return AutoRefreshActionsRow(
       options: SalesAutoRefreshOptions.values,
-      optionLabelBuilder: (option) => option.salesLabel,
+      optionLabelBuilder: (option) => SalesAutoRefreshL10n.intervalLabel(l10n, option),
       value: value,
       onChanged: onChanged,
       onRefreshNow: onRefreshNow,

@@ -1459,6 +1459,19 @@
   "salesAutoRefreshPausedNoEligibleSelection": "Atualização automática pausada: selecione uma filial válida",
   "salesAutoRefreshPausedUnsupportedViewport": "Atualização automática disponível no desktop",
   "salesAutoRefreshPausedHidden": "Atualização automática pausada enquanto a tela estiver oculta",
+  "salesAutoRefreshIntervalFiveMinutes": "5 min",
+  "salesAutoRefreshIntervalTenMinutes": "10 min",
+  "salesAutoRefreshIntervalFifteenMinutes": "15 min",
+  "salesAutoRefreshIntervalThirtyMinutes": "30 min",
+  "salesLiveMapBranchPointSubtitle": "Agente {agentName} - Empresa {companyCode} - Filial {branchCode}",
+  "@salesLiveMapBranchPointSubtitle": {
+    "placeholders": {
+      "agentName": {"type": "String"},
+      "companyCode": {"type": "int"},
+      "branchCode": {"type": "int"}
+    }
+  },
+  "salesLiveMapMissingMunicipalityLabel": "Sem município",
   "salesDailyTotalsChartTitle": "Vendas por dia",
   "salesDailyTotalsChartTitleAmount": "Faturamento diário",
   "salesDailyTotalsChartSubtitle": "Totais por dia civil na filial e no mês de referência selecionados.",

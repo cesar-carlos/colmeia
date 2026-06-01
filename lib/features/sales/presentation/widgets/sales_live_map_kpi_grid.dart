@@ -9,8 +9,6 @@ import 'package:colmeia/shared/widgets/metrics/app_metric_stat_card.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-final NumberFormat _integerFormat = NumberFormat.decimalPattern('pt_BR');
-
 const int _kSalesLiveMapKpiNarrowColumns = 2;
 const int _kSalesLiveMapKpiWideColumns = 3;
 const int _kSalesLiveMapKpiExtraWideColumns = 5;
@@ -68,6 +66,7 @@ class SalesLiveMapKpiGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.appTokens;
     final l10n = AppLocalizations.of(context);
+    final integerFormat = NumberFormat.decimalPattern(l10n.localeName);
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth >= AppBreakpoints.kpiGridWide;
@@ -91,7 +90,10 @@ class SalesLiveMapKpiGrid extends StatelessWidget {
               child: AppMetricStatCard(
                 leading: const Icon(Icons.payments_outlined),
                 label: l10n.salesLiveMapKpiRevenue,
-                value: AppBrFormatters.compactCurrency(model.totalRevenue),
+                value: AppBrFormatters.smartCompactCurrencyForLocale(
+                  model.totalRevenue,
+                  l10n.localeName,
+                ),
                 tooltipMessage: AppBrFormatters.currency(model.totalRevenue),
                 emphasis: AppMetricStatCardEmphasis.hero,
               ),
@@ -101,7 +103,7 @@ class SalesLiveMapKpiGrid extends StatelessWidget {
               child: AppMetricStatCard(
                 leading: const Icon(Icons.receipt_long_outlined),
                 label: l10n.salesLiveMapKpiSales,
-                value: _integerFormat.format(model.totalSalesCount),
+                value: integerFormat.format(model.totalSalesCount),
               ),
             ),
             SizedBox(
@@ -118,7 +120,7 @@ class SalesLiveMapKpiGrid extends StatelessWidget {
               child: AppMetricStatCard(
                 leading: const Icon(Icons.location_city_outlined),
                 label: l10n.salesLiveMapKpiMunicipalitiesOnMap,
-                value: _integerFormat.format(model.mappedMunicipalityCount),
+                value: integerFormat.format(model.mappedMunicipalityCount),
               ),
             ),
             SizedBox(

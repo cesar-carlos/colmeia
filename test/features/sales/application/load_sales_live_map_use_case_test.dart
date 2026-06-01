@@ -23,6 +23,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vend
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_catalog_scope.dart';
+import 'package:colmeia/features/sales/application/sales_live_map_internal_labels.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_refresh_metrics.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
 import 'package:colmeia/features/sales/data/sales_live_map_catalog_disk_cache.dart';
@@ -818,7 +819,7 @@ void main() {
                   '${branch.agentId}:${branch.codEmpresa}:${branch.codFilial}',
             )
             .toList(),
-      ).deepEquals(<String>['agent-a:1:1', 'agent-a:1:2']);
+      ).deepEquals(<String>['agent-a:1:1']);
       check(selectedAgentIds).deepEquals(<String>{'agent-a'});
     },
   );
@@ -1528,7 +1529,9 @@ void main() {
       check(result.totalBranchCount).equals(1);
       check(result.mappedBranchCount).equals(0);
       check(result.points).isEmpty();
-      check(result.branchOptions.single.city).equals('Sem municipio');
+      check(
+        result.branchOptions.single.city,
+      ).equals(SalesLiveMapInternalLabels.missingMunicipalityCity);
       check(result.branchOptions.single.uf).equals('--');
       check(result.locationDiagnostics.unresolvedBranchCount).equals(1);
     },

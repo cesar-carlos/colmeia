@@ -48,16 +48,6 @@ abstract final class SalesAutoRefreshCardIds {
       'produto_tendencia_venda_media_movel';
 }
 
-extension SalesAutoRefreshOptionLabel on AutoRefreshOption {
-  String get salesLabel => switch (id) {
-    'fiveMinutes' => '5 min',
-    'tenMinutes' => '10 min',
-    'fifteenMinutes' => '15 min',
-    'thirtyMinutes' => '30 min',
-    _ => id,
-  };
-}
-
 bool salesAutoRefreshIsAvailableForViewport(BuildContext context) =>
     AppBreakpoints.isDesktop(context);
 

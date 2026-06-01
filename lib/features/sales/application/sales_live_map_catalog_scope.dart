@@ -1,4 +1,5 @@
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_filter.dart';
+import 'package:colmeia/features/sales/application/sales_live_map_policies.dart';
 import 'package:flutter/foundation.dart';
 
 enum SalesLiveMapCatalogScopeKind { fullAgent, branchSubset }
@@ -75,11 +76,32 @@ class SalesLiveMapCatalogScope {
     return SalesLiveMapCatalogScope.fullAgent(agentIds: agentIds);
   }
 
+  /// Builds the catalog filter for cadastro filial SQL.
+  ///
+  /// Always scopes SQL to the live-map primary branch (company 1 / branch 1),
+  /// matching the sales aggregate filter for the same codes.
   CadastroFilialFilter toCatalogFilter() {
+    final primaryBranches = isBranchSubset
+        ? _primaryBranchesOnly(selectedBranches)
+        : const <CadastroFilialBranchRef>[];
     return CadastroFilialFilter(
-      selectedBranches: isBranchSubset ? selectedBranches : const [],
+      codEmpresa: SalesLiveMapPolicies.primaryCompanyCode,
+      codFilial: SalesLiveMapPolicies.primaryBranchCode,
+      selectedBranches: primaryBranches,
       pageSize: CadastroFilialFilter.maxPageSize,
     );
+  }
+
+  static List<CadastroFilialBranchRef> _primaryBranchesOnly(
+    Iterable<CadastroFilialBranchRef> branches,
+  ) {
+    return branches
+        .where(
+          (branch) =>
+              branch.codEmpresa == SalesLiveMapPolicies.primaryCompanyCode &&
+              branch.codFilial == SalesLiveMapPolicies.primaryBranchCode,
+        )
+        .toList(growable: false);
   }
 
   static List<String> _normalizeAgentIds(Iterable<String>? agentIds) {

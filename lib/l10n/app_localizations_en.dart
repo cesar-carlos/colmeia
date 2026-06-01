@@ -3398,6 +3398,30 @@ class AppLocalizationsEn extends AppLocalizations {
       'Auto-refresh paused while this screen is hidden';
 
   @override
+  String get salesAutoRefreshIntervalFiveMinutes => '5 min';
+
+  @override
+  String get salesAutoRefreshIntervalTenMinutes => '10 min';
+
+  @override
+  String get salesAutoRefreshIntervalFifteenMinutes => '15 min';
+
+  @override
+  String get salesAutoRefreshIntervalThirtyMinutes => '30 min';
+
+  @override
+  String salesLiveMapBranchPointSubtitle(
+    String agentName,
+    int companyCode,
+    int branchCode,
+  ) {
+    return 'Agent $agentName - Company $companyCode - Branch $branchCode';
+  }
+
+  @override
+  String get salesLiveMapMissingMunicipalityLabel => 'No municipality';
+
+  @override
   String get salesDailyTotalsChartTitle => 'Daily sales';
 
   @override

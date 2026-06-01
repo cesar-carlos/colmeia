@@ -1,6 +1,7 @@
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
+import 'package:colmeia/features/sales/application/sales_live_map_internal_labels.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_point_factory.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
@@ -159,7 +160,7 @@ class SalesLiveMapBranchAggregate {
       salesDataLoading: salesDataLoading,
       salesDataUnavailable: salesDataUnavailable,
       salesDataStatusLabel: salesLiveMapTrimmedOrNull(salesDataStatusLabel),
-      subtitle: 'Agente $agentName - Empresa $codEmpresa - Filial $codFilial',
+      subtitle: null,
       payload: this,
     );
   }
@@ -184,7 +185,7 @@ class SalesLiveMapBranchAggregate {
       return city;
     }
 
-    return 'Sem municipio';
+    return SalesLiveMapInternalLabels.missingMunicipalityCity;
   }
 
   String get _branchUfLabel {

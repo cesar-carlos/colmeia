@@ -1,6 +1,7 @@
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart';
 import 'package:colmeia/features/sales/presentation/mappers/sales_live_map_chart_mapper.dart';
+import 'package:colmeia/l10n/app_localizations_pt.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -30,6 +31,7 @@ void main() {
     });
 
     test('maps every point field to the shared chart model', () {
+      final l10n = AppLocalizationsPt();
       const point = SalesLiveMapPoint(
         id: 'agent-a|1|2',
         name: 'Filial Centro',
@@ -48,11 +50,10 @@ void main() {
         salesDataLoading: true,
         salesDataStatusLabel: 'Processando',
         locationResolution: SalesLiveMapLocationResolution.cityUf,
-        subtitle: 'Agente A - Empresa 1 - Filial 2',
         payload: 'aggregate',
       );
 
-      final mapped = SalesLiveMapChartMapper.toChartPoint(point);
+      final mapped = SalesLiveMapChartMapper.toChartPoint(point, l10n);
 
       expect(mapped.id, point.id);
       expect(mapped.name, point.name);
@@ -75,7 +76,10 @@ void main() {
         mapped.locationResolution,
         AppBrazilStoreSalesLocationResolution.cityUf,
       );
-      expect(mapped.subtitle, point.subtitle);
+      expect(
+        mapped.subtitle,
+        l10n.salesLiveMapBranchPointSubtitle('Agente A', 1, 2),
+      );
       expect(mapped.payload, point.payload);
     });
 

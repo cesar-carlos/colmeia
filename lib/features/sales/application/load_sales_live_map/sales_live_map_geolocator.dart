@@ -238,8 +238,7 @@ class SalesLiveMapGeolocator {
       salesDataStatusLabel: salesLiveMapTrimmedOrNull(
         aggregate.salesDataStatusLabel,
       ),
-      subtitle:
-          'Agente ${aggregate.agentName} - Empresa ${aggregate.codEmpresa} - Filial ${aggregate.codFilial}',
+      subtitle: null,
       payload: aggregate,
     );
   }
