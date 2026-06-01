@@ -5,7 +5,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execu
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row_v2.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_por_usuario_row.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/overview/data/overview_batch_loader.dart';
@@ -17,37 +17,29 @@ import 'package:result_dart/result_dart.dart';
 void main() {
   const labels = OverviewLoadLabels.englishFallback;
 
-  test('counts payment rows with non-empty trimmed nomeUsuario', () {
+  test('counts payment merged rows for V2 resumo', () {
     check(
-      overviewPaymentMergedRowsWithNamedUsuarioCount(
-        const <ResumoParcelaFormaPagamentoRow>[
-          ResumoParcelaFormaPagamentoRow(
+      overviewPaymentMergedRowCountV2(
+        const <ResumoParcelaFormaPagamentoRowV2>[
+          ResumoParcelaFormaPagamentoRowV2(
             codEmpresa: 1,
             codFilial: 1,
-            nomeUsuario: '  Ana  ',
-            anoDataVenda: 2026,
-            mesDataVenda: 4,
-            anoMesDataVenda: '2026/04',
             codFormaPagamento: 'PIX',
             descricaoFormaPagamento: 'Pix',
             qtdVendas: 1,
             valorParcela: 10,
           ),
-          ResumoParcelaFormaPagamentoRow(
+          ResumoParcelaFormaPagamentoRowV2(
             codEmpresa: 1,
-            codFilial: 1,
-            nomeUsuario: '   ',
-            anoDataVenda: 2026,
-            mesDataVenda: 4,
-            anoMesDataVenda: '2026/04',
-            codFormaPagamento: 'PIX',
-            descricaoFormaPagamento: 'Pix',
+            codFilial: 2,
+            codFormaPagamento: 'DH',
+            descricaoFormaPagamento: 'Dinheiro',
             qtdVendas: 1,
             valorParcela: 5,
           ),
         ],
       ),
-    ).equals(1);
+    ).equals(2);
   });
 
   test(
@@ -84,7 +76,7 @@ void main() {
               AgentQueryExecutionReport<ResumoParcelaPorUsuarioRow>,
               AppFailure
             >(report),
-        paymentMergedRows: const <ResumoParcelaFormaPagamentoRow>[],
+        paymentMergedRows: const <ResumoParcelaFormaPagamentoRowV2>[],
         userId: 'user-1',
         rowLabels: labels,
         operation: 'test',
@@ -133,7 +125,7 @@ void main() {
             AgentQueryExecutionReport<ResumoParcelaPorUsuarioRow>,
             AppFailure
           >(report),
-      paymentMergedRows: const <ResumoParcelaFormaPagamentoRow>[],
+      paymentMergedRows: const <ResumoParcelaFormaPagamentoRowV2>[],
       userId: 'user-1',
       rowLabels: labels,
       operation: 'test',
@@ -159,7 +151,7 @@ void main() {
           elapsedMs: 1,
         ),
       ],
-      paymentMergedRows: const <ResumoParcelaFormaPagamentoRow>[],
+      paymentMergedRows: const <ResumoParcelaFormaPagamentoRowV2>[],
       userId: 'user-1',
       rowLabels: labels,
       operation: 'test',
@@ -211,7 +203,7 @@ void main() {
           ],
         ),
       ],
-      paymentMergedRows: const <ResumoParcelaFormaPagamentoRow>[],
+      paymentMergedRows: const <ResumoParcelaFormaPagamentoRowV2>[],
       userId: 'user-1',
       rowLabels: labels,
       operation: 'test',
@@ -232,7 +224,7 @@ void main() {
           >(
             ValidationFailure(message: 'bridge failed'),
           ),
-      paymentMergedRows: const <ResumoParcelaFormaPagamentoRow>[],
+      paymentMergedRows: const <ResumoParcelaFormaPagamentoRowV2>[],
       userId: 'user-1',
       rowLabels: labels,
       operation: 'test',
@@ -278,7 +270,7 @@ void main() {
             ],
           ),
         ],
-        paymentMergedRows: const <ResumoParcelaFormaPagamentoRow>[],
+        paymentMergedRows: const <ResumoParcelaFormaPagamentoRowV2>[],
         userId: 'user-1',
         rowLabels: labels,
         operation: 'test',

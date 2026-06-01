@@ -6,7 +6,7 @@ import 'package:colmeia/features/agent_queries/application/orchestration/agent_q
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_sql_local_date.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_read_only_batch_options.dart';
-import 'package:colmeia/features/agent_queries/data/models/resumo_parcela_forma_pagamento_row_model.dart';
+import 'package:colmeia/features/agent_queries/data/models/resumo_parcela_forma_pagamento_row_model_v2.dart';
 import 'package:colmeia/features/agent_queries/data/models/resumo_parcela_por_usuario_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/models/resumo_parcelas_dia_semana_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/models/resumo_parcelas_dia_semana_usuario_row_model.dart';
@@ -16,7 +16,7 @@ import 'package:colmeia/features/agent_queries/data/models/resumo_produto_venda_
 import 'package:colmeia/features/agent_queries/data/models/resumo_total_diario_vendas_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_transport_policy.dart';
-import 'package:colmeia/features/agent_queries/data/queries/resumo_parcela_forma_pagamento_sql.dart';
+import 'package:colmeia/features/agent_queries/data/queries/resumo_parcela_forma_pagamento_sql_v2.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcela_por_usuario_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_dia_semana_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_dia_semana_usuario_sql.dart';
@@ -34,7 +34,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_query_targe
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_filter.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row_v2.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_por_usuario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row.dart';
@@ -76,7 +76,7 @@ final class OverviewBatchLoadResult {
   final AgentQueryPlan plan;
   final AgentQueryExecutionStrategy strategy;
   final List<OverviewBatchTargetResult> targetResults;
-  final AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow>
+  final AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRowV2>
   mainResumoReport;
   final int totalElapsedMs;
   final bool isFinal;
@@ -97,7 +97,7 @@ final class OverviewBatchTargetResult {
   const OverviewBatchTargetResult({
     required this.target,
     required this.elapsedMs,
-    this.mainRows = const <ResumoParcelaFormaPagamentoRow>[],
+    this.mainRows = const <ResumoParcelaFormaPagamentoRowV2>[],
     this.userRankingRows = const <ResumoParcelaPorUsuarioRow>[],
     this.monthlyRows = const <ResumoParcelasMensalRow>[],
     this.weekdayRows = const <ResumoParcelasDiaSemanaRow>[],
@@ -118,7 +118,7 @@ final class OverviewBatchTargetResult {
 
   final AgentQueryTarget target;
   final int elapsedMs;
-  final List<ResumoParcelaFormaPagamentoRow> mainRows;
+  final List<ResumoParcelaFormaPagamentoRowV2> mainRows;
   final List<ResumoParcelaPorUsuarioRow> userRankingRows;
   final List<ResumoParcelasMensalRow> monthlyRows;
   final List<ResumoParcelasDiaSemanaRow> weekdayRows;
@@ -327,7 +327,7 @@ class OverviewBatchLoader {
     }
 
     final planResult = _planBuilder.build(
-      queryKey: AgentQueryKey.resumoParcelaFormaPagamento,
+      queryKey: AgentQueryKey.resumoParcelaFormaPagamentoV2,
       strategy: executionStrategy,
       resolution: resolution,
       bridgeTimeoutMs: overviewBatchBridgeTimeoutMs,
@@ -568,7 +568,7 @@ class OverviewBatchLoader {
     final main = commands.length;
     commands.add(
       AgentSqlExecuteBatchCommand(
-        sql: ResumoParcelaFormaPagamentoSql.query,
+        sql: ResumoParcelaFormaPagamentoSqlV2.query,
         namedParams: parcelPeriodParams,
         executionOrder: main,
       ),
@@ -657,7 +657,7 @@ class OverviewBatchLoader {
     }
 
     final main = add(
-      ResumoParcelaFormaPagamentoSql.query,
+      ResumoParcelaFormaPagamentoSqlV2.query,
       _parcelPeriodSqlParamsFromPeriodo(
         ResumoParcelaFormaPagamentoFilter(
           dataVendaInicio: periodStart,
@@ -832,7 +832,7 @@ class OverviewBatchLoader {
     final main = OverviewSqlBatchItemRowsMapper.mapRowsForIndex(
       byIndex,
       indexes.main,
-      (row) => ResumoParcelaFormaPagamentoRowModel.fromMap(row).toEntity(),
+      (row) => ResumoParcelaFormaPagamentoRowModelV2.fromMap(row).toEntity(),
     );
     final userRanking = OverviewSqlBatchItemRowsMapper.mapRowsForIndex(
       byIndex,
@@ -1021,15 +1021,15 @@ class OverviewBatchLoader {
         .toList(growable: false);
   }
 
-  AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow>
+  AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRowV2>
   _buildMainResumoReport({
     required AgentQueryExecutionStrategy strategy,
     required AgentQueryPlan plan,
     required List<OverviewBatchTargetResult> targetResults,
     required int totalElapsedMs,
   }) {
-    return AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow>(
-      queryKey: AgentQueryKey.resumoParcelaFormaPagamento,
+    return AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRowV2>(
+      queryKey: AgentQueryKey.resumoParcelaFormaPagamentoV2,
       strategy: strategy,
       consideredApprovedAgentCount: plan.consideredApprovedAgentCount,
       plannedTargets: plan.plannedTargets,
@@ -1039,7 +1039,7 @@ class OverviewBatchLoader {
       participants: targetResults
           .map(
             (result) =>
-                AgentQueryExecutionParticipant<ResumoParcelaFormaPagamentoRow>(
+                AgentQueryExecutionParticipant<ResumoParcelaFormaPagamentoRowV2>(
                   agentId: result.target.agentId,
                   displayName: result.target.displayName,
                   rows: result.mainRows,

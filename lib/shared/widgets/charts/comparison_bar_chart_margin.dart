@@ -27,6 +27,30 @@ const double kComparisonBarAnnotationLabelVerticalInset = 10;
 /// assumed ~5px outer padding, not 16px above the line.
 const double kComparisonBarAnnotationPillExtraTopAllowance = 22;
 
+/// Logical line count in a bar data label (`\n`-separated). Returns `0` when
+/// [label] is null or empty.
+int comparisonBarDataLabelLineCount(String? label) {
+  if (label == null || label.isEmpty) {
+    return 0;
+  }
+  return label.split(RegExp(r'\r?\n')).length;
+}
+
+/// Maximum [comparisonBarDataLabelLineCount] across [labels]; at least `1`.
+int comparisonBarMaxDataLabelLines(Iterable<String?>? labels) {
+  if (labels == null) {
+    return 1;
+  }
+  var maxLines = 1;
+  for (final label in labels) {
+    final count = comparisonBarDataLabelLineCount(label);
+    if (count > maxLines) {
+      maxLines = count;
+    }
+  }
+  return maxLines;
+}
+
 /// Whether data labels sit outside the column and need extra top margin.
 bool comparisonBarChartNeedsOuterDataLabelHeadroom({
   required bool showDataLabels,
@@ -65,6 +89,7 @@ EdgeInsets resolveComparisonBarChartMargin(
   double outerDataLabelTopReserve = 0,
   bool valueLabelsRenderedAsChartAnnotations = false,
   bool dataLabelAnnotationUsesPillBackground = false,
+  int maxDataLabelLines = 1,
 }) {
   final base = chartPadding ?? EdgeInsets.zero;
   if (!comparisonBarChartNeedsOuterDataLabelHeadroom(
@@ -103,7 +128,13 @@ EdgeInsets resolveComparisonBarChartMargin(
   if (!reserveOuterDataLabelTopMargin) {
     return EdgeInsets.fromLTRB(left, base.top, right, base.bottom);
   }
-  var minTop = estimatedLineHeight + lift.abs() + clearance;
+  final lineCount = math.max(1, maxDataLabelLines);
+  final interLineGap = lineCount > 1
+      ? textScaler.scale(tokens?.gapXs ?? 4.0)
+      : 0.0;
+  final labelBlockHeight =
+      estimatedLineHeight * lineCount + interLineGap * (lineCount - 1);
+  var minTop = labelBlockHeight + lift.abs() + clearance;
   if (valueLabelsRenderedAsChartAnnotations) {
     minTop += kComparisonBarAnnotationLabelVerticalInset;
     if (dataLabelAnnotationUsesPillBackground) {

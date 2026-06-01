@@ -7,7 +7,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execu
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row_v2.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_por_usuario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row.dart';
@@ -641,7 +641,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     AppFailure? Function(OverviewBatchTargetResult result) failureOf,
   ) {
     return AgentQueryExecutionReport<Row>(
-      queryKey: AgentQueryKey.resumoParcelaFormaPagamento,
+      queryKey: AgentQueryKey.resumoParcelaFormaPagamentoV2,
       strategy: _resolveExecutionStrategy(const DashboardFilter()),
       consideredApprovedAgentCount: results.length,
       plannedTargets: results.map((result) => result.target).toList(),
@@ -805,15 +805,15 @@ class OverviewRepositoryImpl implements OverviewRepository {
   }
 
   List<OverviewPaymentResumoRow> _mapOverviewRows(
-    List<ResumoParcelaFormaPagamentoRow> rows,
+    List<ResumoParcelaFormaPagamentoRowV2> rows,
   ) {
     return rows
-        .map(overviewPaymentResumoRowFromAgentRow)
+        .map(overviewPaymentResumoRowFromResumoParcelaFormaPagamentoRowV2)
         .toList(growable: false);
   }
 
   Map<String, List<OverviewPaymentResumoRow>> _mapRowsByAgentId(
-    Map<String, List<ResumoParcelaFormaPagamentoRow>> rowsByAgentId,
+    Map<String, List<ResumoParcelaFormaPagamentoRowV2>> rowsByAgentId,
   ) {
     return <String, List<OverviewPaymentResumoRow>>{
       for (final entry in rowsByAgentId.entries)
@@ -822,7 +822,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
   }
 
   Map<String, String> _resolveAgentDisplayNames(
-    AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow> report,
+    AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRowV2> report,
   ) {
     return <String, String>{
       for (final target in report.plannedTargets)
@@ -833,7 +833,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
   }
 
   List<String> _resolveSourceAgentIds(
-    AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRow> report,
+    AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRowV2> report,
   ) {
     final ids = <String>{
       for (final target in report.plannedTargets) target.agentId,

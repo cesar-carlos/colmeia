@@ -25,9 +25,11 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_produto
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_summary_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_across_agents_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_across_agents_use_case_v2.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_diario_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_diario_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_use_case_v2.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_por_usuario_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_por_usuario_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_anual_across_agents_use_case.dart';
@@ -83,9 +85,11 @@ import 'package:colmeia/features/agent_queries/data/repositories/produto_vendido
 import 'package:colmeia/features/agent_queries/data/repositories/produto_vendido_tendencia_de_venda_media_movel_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/produto_vendido_tendencia_de_venda_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_forma_pagamento_across_agents_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_forma_pagamento_across_agents_repository_impl_v2.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_forma_pagamento_diario_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_forma_pagamento_diario_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_forma_pagamento_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_forma_pagamento_repository_impl_v2.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_por_usuario_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcela_por_usuario_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_parcelas_anual_across_agents_repository_impl.dart';
@@ -116,6 +120,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_executi
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_diario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row_v2.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_por_usuario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_anual_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row.dart';
@@ -141,9 +146,11 @@ import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendi
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_tendencia_de_venda_media_movel_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_tendencia_de_venda_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_across_agents_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_across_agents_repository_v2.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_diario_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_diario_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_repository_v2.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_por_usuario_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_por_usuario_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_anual_across_agents_repository.dart';
@@ -590,6 +597,19 @@ void _registerSingleAgentQueryRepositories(GetIt getIt) {
   );
 
   _registerSingle<
+    ResumoParcelaFormaPagamentoRepositoryV2,
+    LoadResumoParcelaFormaPagamentoUseCaseV2
+  >(
+    getIt,
+    repo: () => ResumoParcelaFormaPagamentoRepositoryImplV2(
+      getIt<AgentQueriesRepository>(),
+    ),
+    useCase: () => LoadResumoParcelaFormaPagamentoUseCaseV2(
+      getIt<ResumoParcelaFormaPagamentoRepositoryV2>(),
+    ),
+  );
+
+  _registerSingle<
     ResumoParcelaPorUsuarioRepository,
     LoadResumoParcelaPorUsuarioUseCase
   >(
@@ -755,6 +775,11 @@ void _registerAcrossAgentQueryRepositories(GetIt getIt) {
         mergeAllConcurrency: mergeAllConcurrency,
       ),
     )
+    ..registerLazySingleton<AgentQueryExecutor<ResumoParcelaFormaPagamentoRowV2>>(
+      () => AgentQueryExecutor<ResumoParcelaFormaPagamentoRowV2>(
+        mergeAllConcurrency: mergeAllConcurrency,
+      ),
+    )
     ..registerLazySingleton<AgentQueryExecutor<ResumoParcelaPorUsuarioRow>>(
       () => AgentQueryExecutor<ResumoParcelaPorUsuarioRow>(
         mergeAllConcurrency: mergeAllConcurrency,
@@ -836,6 +861,19 @@ void _registerAcrossAgentQueryRepositories(GetIt getIt) {
     ..registerLazySingleton<LoadResumoParcelaFormaPagamentoAcrossAgentsUseCase>(
       () => LoadResumoParcelaFormaPagamentoAcrossAgentsUseCase(
         getIt<ResumoParcelaFormaPagamentoAcrossAgentsRepository>(),
+      ),
+    )
+    ..registerLazySingleton<ResumoParcelaFormaPagamentoAcrossAgentsRepositoryV2>(
+      () => ResumoParcelaFormaPagamentoAcrossAgentsRepositoryImplV2(
+        targetResolver: getIt<AgentQueryTargetResolver>(),
+        planBuilder: getIt<AgentQueryPlanBuilder>(),
+        executor: getIt<AgentQueryExecutor<ResumoParcelaFormaPagamentoRowV2>>(),
+        loadResumo: getIt<LoadResumoParcelaFormaPagamentoUseCaseV2>(),
+      ),
+    )
+    ..registerLazySingleton<LoadResumoParcelaFormaPagamentoAcrossAgentsUseCaseV2>(
+      () => LoadResumoParcelaFormaPagamentoAcrossAgentsUseCaseV2(
+        getIt<ResumoParcelaFormaPagamentoAcrossAgentsRepositoryV2>(),
       ),
     )
     ..registerLazySingleton<ResumoParcelaPorUsuarioAcrossAgentsRepository>(

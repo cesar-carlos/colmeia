@@ -27,6 +27,10 @@ const Duration _kCategoryDonutLegendHighlightDuration = Duration(
   milliseconds: 180,
 );
 
+/// Right inset for scrollable legends so the platform scrollbar does not sit
+/// on top of currency / percent columns (see map sidebar gutter).
+const double _kCategoryDonutLegendScrollbarGutter = 14;
+
 TextStyle _tightenTypographyFontSize(TextStyle style) {
   final fs = style.fontSize;
   if (fs == null) {
@@ -823,14 +827,10 @@ class _LegendSection extends StatelessWidget {
     if (maxLegendHeight != null) {
       return ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxLegendHeight),
-        child: ListView.separated(
-          shrinkWrap: true,
-          primary: false,
-          padding: EdgeInsets.zero,
-          physics: const ClampingScrollPhysics(),
+        child: _ScrollableDonutLegendList(
+          spacing: spacing,
           itemCount: segments.length,
-          separatorBuilder: (_, _) => SizedBox(height: spacing),
-          itemBuilder: (context, i) => rowAt(i),
+          itemBuilder: rowAt,
         ),
       );
     }
@@ -843,6 +843,69 @@ class _LegendSection extends StatelessWidget {
           rowAt(i),
         ],
       ],
+    );
+  }
+}
+
+class _ScrollableDonutLegendList extends StatefulWidget {
+  const _ScrollableDonutLegendList({
+    required this.spacing,
+    required this.itemCount,
+    required this.itemBuilder,
+  });
+
+  final double spacing;
+  final int itemCount;
+  final Widget Function(int index) itemBuilder;
+
+  @override
+  State<_ScrollableDonutLegendList> createState() =>
+      _ScrollableDonutLegendListState();
+}
+
+class _ScrollableDonutLegendListState extends State<_ScrollableDonutLegendList> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(
+        context,
+      ).copyWith(scrollbars: false),
+      child: ScrollbarTheme(
+        data: ScrollbarTheme.of(context).copyWith(
+          thumbColor: WidgetStatePropertyAll(
+            colorScheme.onSurfaceVariant.withValues(alpha: 0.34),
+          ),
+          thickness: const WidgetStatePropertyAll(6),
+          radius: const Radius.circular(999),
+        ),
+        child: Scrollbar(
+          controller: _scrollController,
+          thumbVisibility: false,
+          trackVisibility: false,
+          interactive: true,
+          child: ListView.separated(
+            controller: _scrollController,
+            shrinkWrap: true,
+            primary: false,
+            padding: const EdgeInsets.only(
+              right: _kCategoryDonutLegendScrollbarGutter,
+            ),
+            physics: const ClampingScrollPhysics(),
+            itemCount: widget.itemCount,
+            separatorBuilder: (_, _) => SizedBox(height: widget.spacing),
+            itemBuilder: (context, i) => widget.itemBuilder(i),
+          ),
+        ),
+      ),
     );
   }
 }

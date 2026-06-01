@@ -161,6 +161,9 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
           dataLabelAnnotationUsesPillBackground:
               useAnnotationValueLabels &&
               style.dataLabelBackgroundColor != null,
+          maxDataLabelLines: dataLabels != null
+              ? comparisonBarMaxDataLabelLines(dataLabels)
+              : 1,
         ),
         plotAreaBorderWidth: 0,
         plotAreaBackgroundColor: style.plotAreaBackgroundColor,

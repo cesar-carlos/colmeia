@@ -1,6 +1,7 @@
 /// Shared inner SELECT for parcel-line resumo queries (troco inputs + joins).
 ///
 /// Used by `ResumoParcelaFormaPagamentoSql`,
+/// `ResumoParcelaFormaPagamentoSqlV2`,
 /// `ResumoParcelaPorUsuarioSql`,
 /// `ResumoParcelaFormaPagamentoDiarioSql`,
 /// `ResumoParcelasFormaPagamentoPorMesSql`, `ResumoParcelasDiaSemanaSql`,

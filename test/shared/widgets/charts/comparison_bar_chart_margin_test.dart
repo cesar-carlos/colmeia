@@ -5,6 +5,54 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 void main() {
+  group('comparisonBarDataLabelLineCount', () {
+    test('counts newline-separated lines', () {
+      expect(comparisonBarDataLabelLineCount(r'R$ 65,4 mil'), 1);
+      expect(
+        comparisonBarDataLabelLineCount(
+          'R\$ 65,4 mil\nTicket médio: R\$ 82,71',
+        ),
+        2,
+      );
+      expect(comparisonBarDataLabelLineCount(null), 0);
+      expect(comparisonBarDataLabelLineCount(''), 0);
+    });
+  });
+
+  testWidgets(
+    'resolveComparisonBarChartMargin reserves extra top for multi-line labels',
+    (tester) async {
+      late EdgeInsets singleLine;
+      late EdgeInsets twoLines;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: Builder(
+            builder: (context) {
+              singleLine = resolveComparisonBarChartMargin(
+                context,
+                showDataLabels: true,
+                dataLabelAlignment: ChartDataLabelAlignment.outer,
+                dataLabelOffset: const Offset(0, 8),
+                chartPadding: null,
+              );
+              twoLines = resolveComparisonBarChartMargin(
+                context,
+                showDataLabels: true,
+                dataLabelAlignment: ChartDataLabelAlignment.outer,
+                dataLabelOffset: const Offset(0, 8),
+                chartPadding: null,
+                maxDataLabelLines: 2,
+              );
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      expect(twoLines.top, greaterThan(singleLine.top));
+    },
+  );
+
   testWidgets('resolveComparisonBarChartMargin reserves top for outer labels', (
     tester,
   ) async {

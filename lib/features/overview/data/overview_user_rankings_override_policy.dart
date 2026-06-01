@@ -2,29 +2,23 @@ import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row_v2.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_por_usuario_row.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_user_ranking_mapper.dart';
 import 'package:colmeia/features/overview/data/overview_batch_loader.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
 
-int overviewPaymentMergedRowsWithNamedUsuarioCount(
-  List<ResumoParcelaFormaPagamentoRow> paymentMergedRows,
+int overviewPaymentMergedRowCountV2(
+  List<ResumoParcelaFormaPagamentoRowV2> paymentMergedRows,
 ) {
-  var count = 0;
-  for (final row in paymentMergedRows) {
-    if (row.nomeUsuario.trim().isNotEmpty) {
-      count++;
-    }
-  }
-  return count;
+  return paymentMergedRows.length;
 }
 
 List<OverviewUserRanking>? overviewUserRankingsOverrideFromAcrossAgentsResult({
   required AppResult<AgentQueryExecutionReport<ResumoParcelaPorUsuarioRow>>
   userPorResult,
-  required List<ResumoParcelaFormaPagamentoRow> paymentMergedRows,
+  required List<ResumoParcelaFormaPagamentoRowV2> paymentMergedRows,
   required String userId,
   required OverviewLoadLabels rowLabels,
   required String operation,
@@ -40,8 +34,7 @@ List<OverviewUserRanking>? overviewUserRankingsOverrideFromAcrossAgentsResult({
           'userId': userId,
           'queryKey': AgentQueryKey.resumoParcelaPorUsuario.name,
           'paymentRowCount': paymentMergedRows.length,
-          'paymentRowsWithNamedOperator':
-              overviewPaymentMergedRowsWithNamedUsuarioCount(paymentMergedRows),
+          'paymentRowCountV2': overviewPaymentMergedRowCountV2(paymentMergedRows),
         },
       );
       return null;
@@ -70,7 +63,7 @@ List<OverviewUserRanking>? overviewUserRankingsOverrideFromAcrossAgentsResult({
 
 List<OverviewUserRanking>? overviewUserRankingsOverrideFromBatchTargetResults({
   required List<OverviewBatchTargetResult> batchResults,
-  required List<ResumoParcelaFormaPagamentoRow> paymentMergedRows,
+  required List<ResumoParcelaFormaPagamentoRowV2> paymentMergedRows,
   required String userId,
   required OverviewLoadLabels rowLabels,
   required String operation,
@@ -124,8 +117,7 @@ List<OverviewUserRanking>? overviewUserRankingsOverrideFromBatchTargetResults({
         'userId': userId,
         'queryKey': AgentQueryKey.resumoParcelaPorUsuario.name,
         'paymentRowCount': paymentMergedRows.length,
-        'paymentRowsWithNamedOperator':
-            overviewPaymentMergedRowsWithNamedUsuarioCount(paymentMergedRows),
+        'paymentRowCountV2': overviewPaymentMergedRowCountV2(paymentMergedRows),
       },
     );
     return null;
