@@ -46,6 +46,6 @@ void main() {
     final listView = tester.widget<ListView>(find.byType(ListView));
     final padding = listView.padding;
     expect(padding, isA<EdgeInsets>());
-    expect((padding! as EdgeInsets).right, 14);
+    expect((padding! as EdgeInsets).right, 18);
   });
 }

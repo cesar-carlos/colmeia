@@ -1669,6 +1669,28 @@
   },
   "salesRankingProdutosFaturamentoDiversosLabel": "Other products (MISC)",
   "salesRankingProdutosFaturamentoMetricFaturamento": "Revenue",
+  "salesRankingProdutosFaturamentoGridColumnPosicao": "#",
+  "salesRankingProdutosFaturamentoGridColumnProduto": "Product",
+  "salesRankingProdutosFaturamentoGridColumnVenda": "Sales",
+  "salesRankingProdutosFaturamentoGridColumnPercent": "%",
+  "salesRankingProdutosFaturamentoBranchTotalLabel": "Total revenue",
+  "salesRankingProdutosFaturamentoEmptyMessage": "No sales in the selected period for this branch.",
+  "salesRankingProdutosFaturamentoPercentSumHint": "Percent sum for this branch is {sum}%. Expected ~100%.",
+  "@salesRankingProdutosFaturamentoPercentSumHint": {
+    "placeholders": {
+      "sum": { "type": "String" }
+    }
+  },
+  "salesRankingProdutosFaturamentoExportTooltip": "Export CSV",
+  "salesRankingProdutosFaturamentoFullscreenTooltip": "Open table fullscreen",
+  "salesRankingProdutosFaturamentoRankSemantics": "Rank {position}, {product}",
+  "@salesRankingProdutosFaturamentoRankSemantics": {
+    "placeholders": {
+      "position": { "type": "int" },
+      "product": { "type": "String" }
+    }
+  },
+  "salesRankingProdutosFaturamentoDiversosSemantics": "Other products, DIVERSOS aggregate slice",
   "salesCardMonthlyPnlTitle": "Monthly P&L",
   "salesCardResumoTotalDiarioVendasTitle": "Daily sales totals",
   "salesAutoRefreshOff": "Off",

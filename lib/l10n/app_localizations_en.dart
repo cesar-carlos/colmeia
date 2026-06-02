@@ -3373,6 +3373,49 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesRankingProdutosFaturamentoMetricFaturamento => 'Revenue';
 
   @override
+  String get salesRankingProdutosFaturamentoGridColumnPosicao => '#';
+
+  @override
+  String get salesRankingProdutosFaturamentoGridColumnProduto => 'Product';
+
+  @override
+  String get salesRankingProdutosFaturamentoGridColumnVenda => 'Sales';
+
+  @override
+  String get salesRankingProdutosFaturamentoGridColumnPercent => '%';
+
+  @override
+  String get salesRankingProdutosFaturamentoBranchTotalLabel => 'Total revenue';
+
+  @override
+  String get salesRankingProdutosFaturamentoEmptyMessage =>
+      'No sales in the selected period for this branch.';
+
+  @override
+  String salesRankingProdutosFaturamentoPercentSumHint(String sum) {
+    return 'Percent sum for this branch is $sum%. Expected ~100%.';
+  }
+
+  @override
+  String get salesRankingProdutosFaturamentoExportTooltip => 'Export CSV';
+
+  @override
+  String get salesRankingProdutosFaturamentoFullscreenTooltip =>
+      'Open table fullscreen';
+
+  @override
+  String salesRankingProdutosFaturamentoRankSemantics(
+    int position,
+    String product,
+  ) {
+    return 'Rank $position, $product';
+  }
+
+  @override
+  String get salesRankingProdutosFaturamentoDiversosSemantics =>
+      'Other products, DIVERSOS aggregate slice';
+
+  @override
   String get salesCardMonthlyPnlTitle => 'Monthly P&L';
 
   @override

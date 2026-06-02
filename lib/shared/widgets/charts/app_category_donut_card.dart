@@ -27,9 +27,9 @@ const Duration _kCategoryDonutLegendHighlightDuration = Duration(
   milliseconds: 180,
 );
 
-/// Right inset for scrollable legends so the platform scrollbar does not sit
-/// on top of currency / percent columns (see map sidebar gutter).
-const double _kCategoryDonutLegendScrollbarGutter = 14;
+/// Default right inset for scrollable legends so the platform scrollbar does
+/// not sit on top of currency / percent columns (see map sidebar gutter).
+const double kCategoryDonutLegendScrollbarGutterDefault = 18;
 
 TextStyle _tightenTypographyFontSize(TextStyle style) {
   final fs = style.fontSize;
@@ -65,6 +65,14 @@ class AppCategoryDonutCardStyle {
     /// When non-null, the legend is placed in a scrollable column with this max
     /// height (useful for many categories beside the chart).
     this.legendMaxHeight,
+
+    /// Right padding inside scrollable legends so values are not covered by the
+    /// scrollbar thumb. Defaults to [kCategoryDonutLegendScrollbarGutterDefault].
+    this.legendScrollbarGutter,
+
+    /// When false, only the chart is shown (no category legend). Use when detail
+    /// rows below already list the same breakdown.
+    this.showLegend = true,
   });
 
   /// Default donut sweep when [doughnutAnimationDurationMs] is null.
@@ -102,6 +110,10 @@ class AppCategoryDonutCardStyle {
 
   final double? legendMaxHeight;
 
+  final double? legendScrollbarGutter;
+
+  final bool showLegend;
+
   AppCategoryDonutCardStyle copyWith({
     double? chartSize,
     double? chartMinHeight,
@@ -117,6 +129,8 @@ class AppCategoryDonutCardStyle {
     double? compactBreakpointWidth,
     int? doughnutAnimationDurationMs,
     double? legendMaxHeight,
+    double? legendScrollbarGutter,
+    bool? showLegend,
   }) {
     return AppCategoryDonutCardStyle(
       chartSize: chartSize ?? this.chartSize,
@@ -136,6 +150,9 @@ class AppCategoryDonutCardStyle {
       doughnutAnimationDurationMs:
           doughnutAnimationDurationMs ?? this.doughnutAnimationDurationMs,
       legendMaxHeight: legendMaxHeight ?? this.legendMaxHeight,
+      legendScrollbarGutter:
+          legendScrollbarGutter ?? this.legendScrollbarGutter,
+      showLegend: showLegend ?? this.showLegend,
     );
   }
 }
@@ -168,6 +185,8 @@ class AppCategoryDonutCard extends StatefulWidget {
     this.semanticsLabel,
     this.loadingSemanticsLabel,
     this.reselectFiresSegmentTap = false,
+    this.wrapInSectionCard = true,
+    this.showHeader = true,
   });
 
   /// Loading-block height used when the card is mounted with `isLoading: true`
@@ -229,6 +248,14 @@ class AppCategoryDonutCard extends StatefulWidget {
   /// When false (default), [onSegmentTap] is not called if the tapped segment
   /// is already selected.
   final bool reselectFiresSegmentTap;
+
+  /// When false, chart content is not wrapped in [AppSectionCard] (embed in a
+  /// parent surface such as a branch report card).
+  final bool wrapInSectionCard;
+
+  /// When false, title/subtitle/trailing header is omitted (use with an outer
+  /// heading or [wrapInSectionCard] false).
+  final bool showHeader;
 
   @override
   State<AppCategoryDonutCard> createState() => _AppCategoryDonutCardState();
@@ -327,13 +354,15 @@ class _AppCategoryDonutCardState extends State<AppCategoryDonutCard> {
     final breakpoint =
         widget.style.compactBreakpointWidth ?? AppBreakpoints.mobile;
 
-    final header = _CategoryDonutCardHeader(
-      title: widget.title,
-      subtitle: widget.subtitle,
-      accentColor: widget.titleAccentColor,
-      titleTrailing: widget.titleTrailing,
-      style: widget.style,
-    );
+    final header = widget.showHeader
+        ? _CategoryDonutCardHeader(
+            title: widget.title,
+            subtitle: widget.subtitle,
+            accentColor: widget.titleAccentColor,
+            titleTrailing: widget.titleTrailing,
+            style: widget.style,
+          )
+        : null;
 
     Widget buildChartRegion() {
       return LayoutBuilder(
@@ -344,6 +373,14 @@ class _AppCategoryDonutCardState extends State<AppCategoryDonutCard> {
           AppCategoryDonutCardStyle styleForLayout(
             AppCategoryDonutCardStyle s,
           ) {
+            if (!s.showLegend) {
+              if (maxH.isFinite && maxH > 0) {
+                final preferred = s.chartMinHeight ?? chartTheme.height;
+                final chartH = math.max(preferred, maxH);
+                return s.copyWith(chartMinHeight: chartH, chartSize: chartH);
+              }
+              return s;
+            }
             if (!maxH.isFinite) {
               return s;
             }
@@ -398,6 +435,17 @@ class _AppCategoryDonutCardState extends State<AppCategoryDonutCard> {
             onSelect: _setSelected,
             style: effectiveStyle,
           );
+
+          if (!widget.style.showLegend) {
+            final chartH = maxH.isFinite && maxH > 0
+                ? maxH
+                : (effectiveStyle.chartMinHeight ?? chartTheme.height);
+            return SizedBox(
+              height: chartH,
+              width: double.infinity,
+              child: chartSection,
+            );
+          }
 
           if (useStacked) {
             final chartH =
@@ -471,44 +519,54 @@ class _AppCategoryDonutCardState extends State<AppCategoryDonutCard> {
       );
     }
 
-    final card = AppSectionCard(
-      child: LayoutBuilder(
+    Widget buildBody({required bool expandChartWhenBounded}) {
+      return LayoutBuilder(
         builder: (context, cardConstraints) {
           final heightBound =
+              expandChartWhenBounded &&
               cardConstraints.hasBoundedHeight &&
               cardConstraints.maxHeight.isFinite;
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              header,
-              SizedBox(height: tokens.contentSpacing),
-              if (widget.isLoading)
-                _LoadingBlock(
+          final chartChild = widget.isLoading
+              ? _LoadingBlock(
                   tokens: tokens,
                   chartTheme: chartTheme,
                 )
-              else if (widget.segments.isEmpty)
-                _EmptyBlock(
+              : widget.segments.isEmpty
+              ? _EmptyBlock(
                   placeholder: widget.emptyPlaceholder,
                   tokens: tokens,
                   theme: theme,
                 )
-              else if (heightBound)
-                Expanded(child: buildChartRegion())
-              else
-                buildChartRegion(),
+              : heightBound
+              ? Expanded(child: buildChartRegion())
+              : buildChartRegion();
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              if (header != null) ...<Widget>[
+                header,
+                SizedBox(height: tokens.contentSpacing),
+              ],
+              chartChild,
             ],
           );
         },
-      ),
-    );
+      );
+    }
 
-    return Semantics(
+    final semantics = Semantics(
       container: true,
       label: _resolvedCardSemanticsLabel(context),
-      child: card,
+      child: widget.wrapInSectionCard
+          ? AppSectionCard(
+              child: buildBody(expandChartWhenBounded: true),
+            )
+          : buildBody(expandChartWhenBounded: true),
     );
+
+    return semantics;
   }
 }
 
@@ -831,6 +889,9 @@ class _LegendSection extends StatelessWidget {
           spacing: spacing,
           itemCount: segments.length,
           itemBuilder: rowAt,
+          scrollbarGutter:
+              style.legendScrollbarGutter ??
+              kCategoryDonutLegendScrollbarGutterDefault,
         ),
       );
     }
@@ -852,18 +913,21 @@ class _ScrollableDonutLegendList extends StatefulWidget {
     required this.spacing,
     required this.itemCount,
     required this.itemBuilder,
+    required this.scrollbarGutter,
   });
 
   final double spacing;
   final int itemCount;
   final Widget Function(int index) itemBuilder;
+  final double scrollbarGutter;
 
   @override
   State<_ScrollableDonutLegendList> createState() =>
       _ScrollableDonutLegendListState();
 }
 
-class _ScrollableDonutLegendListState extends State<_ScrollableDonutLegendList> {
+class _ScrollableDonutLegendListState
+    extends State<_ScrollableDonutLegendList> {
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -896,9 +960,7 @@ class _ScrollableDonutLegendListState extends State<_ScrollableDonutLegendList> 
             controller: _scrollController,
             shrinkWrap: true,
             primary: false,
-            padding: const EdgeInsets.only(
-              right: _kCategoryDonutLegendScrollbarGutter,
-            ),
+            padding: EdgeInsets.only(right: widget.scrollbarGutter),
             physics: const ClampingScrollPhysics(),
             itemCount: widget.itemCount,
             separatorBuilder: (_, _) => SizedBox(height: widget.spacing),
@@ -983,26 +1045,31 @@ class _LegendRow extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Text(
-                      valueLabel,
-                      style: _tightenTypographyFontSize(typography.body)
-                          .copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
-                    ),
-                    Text(
-                      percentLabel,
-                      style: _tightenTypographyFontSize(typography.caption)
-                          .copyWith(
-                            color: swatchColor,
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                  ],
+                Padding(
+                  padding: EdgeInsets.only(
+                    right: theme.extension<AppThemeTokens>()!.gapXs / 2,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(
+                        valueLabel,
+                        style: _tightenTypographyFontSize(typography.body)
+                            .copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
+                      ),
+                      Text(
+                        percentLabel,
+                        style: _tightenTypographyFontSize(typography.caption)
+                            .copyWith(
+                              color: swatchColor,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

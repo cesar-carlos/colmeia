@@ -23,16 +23,17 @@ import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sal
 import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_filters_sheet_scaffold.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_ranking_produtos_faturamento_branch_card.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_single_agent_picker_control.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/agent_query_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
-import 'package:colmeia/shared/widgets/charts/app_horizontal_progress_chart.dart';
+import 'package:colmeia/shared/widgets/app_skeleton.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_fade_in.dart';
 import 'package:colmeia/shared/widgets/forms/app_date_picker_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
@@ -53,7 +54,8 @@ class SalesRankingProdutosFaturamentoPage extends StatefulWidget {
   final SalesSessionService sessionService;
   final LoadAvailableAgentsForSales loadSalesAvailableAgentsUseCase;
   final ResolveSalesAgentClientTokenUseCase resolveSalesAgentClientTokenUseCase;
-  final LoadRankingProdutosFaturamentoUseCase loadRankingProdutosFaturamentoUseCase;
+  final LoadRankingProdutosFaturamentoUseCase
+  loadRankingProdutosFaturamentoUseCase;
   final AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder;
 
   @override
@@ -98,7 +100,10 @@ class _SalesRankingProdutosFaturamentoPageState
   int get _quantidadeProdutos {
     final raw = _filters['quantidadeProdutos'];
     if (raw is int) {
-      return raw.clamp(1, RankingProdutosFaturamentoFilter.maxQuantidadeProdutos);
+      return raw.clamp(
+        1,
+        RankingProdutosFaturamentoFilter.maxQuantidadeProdutos,
+      );
     }
     return 15;
   }
@@ -312,7 +317,9 @@ class _SalesRankingProdutosFaturamentoPageState
       _filters = nextFilters;
     });
     unawaited(_sessionService.setSelectedAgentId(normalizedAgentId));
-    unawaited(_sessionService.persistRankingProdutosFaturamentoFilters(nextFilters));
+    unawaited(
+      _sessionService.persistRankingProdutosFaturamentoFilters(nextFilters),
+    );
     unawaited(_reload());
   }
 
@@ -338,10 +345,18 @@ class _SalesRankingProdutosFaturamentoPageState
     );
   }
 
-  List<({int codEmpresa, int codFilial, List<RankingProdutosFaturamentoRow> rows})>
+  List<
+    ({int codEmpresa, int codFilial, List<RankingProdutosFaturamentoRow> rows})
+  >
   _branchSections() {
     final sections =
-        <({int codEmpresa, int codFilial, List<RankingProdutosFaturamentoRow> rows})>[];
+        <
+          ({
+            int codEmpresa,
+            int codFilial,
+            List<RankingProdutosFaturamentoRow> rows,
+          })
+        >[];
     int? currentEmpresa;
     int? currentFilial;
     List<RankingProdutosFaturamentoRow>? currentRows;
@@ -350,7 +365,10 @@ class _SalesRankingProdutosFaturamentoPageState
       final rows = currentRows;
       final empresa = currentEmpresa;
       final filial = currentFilial;
-      if (empresa != null && filial != null && rows != null && rows.isNotEmpty) {
+      if (empresa != null &&
+          filial != null &&
+          rows != null &&
+          rows.isNotEmpty) {
         sections.add((
           codEmpresa: empresa,
           codFilial: filial,
@@ -469,14 +487,42 @@ class _SalesRankingProdutosFaturamentoPageState
               onRetry: () => unawaited(_reload()),
             )
           else if (_loading && sections.isEmpty)
-            const AppSectionCard(
-              child: Center(child: CircularProgressIndicator()),
+            AppSkeleton(
+              enabled: true,
+              child: AppSectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Text(
+                      l10n.salesRankingProdutosFaturamentoChartTitle,
+                      style: theme.appTypography.sectionHeaderH2,
+                    ),
+                    SizedBox(height: tokens.gapMd),
+                    Text(
+                      metricSubtitle,
+                      style: theme.appTypography.utilityOverline,
+                    ),
+                    SizedBox(height: tokens.contentSpacing),
+                    SizedBox(
+                      height: tokens.chartStandardHeight,
+                      child: const DecoratedBox(
+                        decoration: BoxDecoration(),
+                      ),
+                    ),
+                    SizedBox(height: tokens.contentSpacing),
+                    const DecoratedBox(
+                      decoration: BoxDecoration(),
+                      child: SizedBox(height: 120),
+                    ),
+                  ],
+                ),
+              ),
             )
           else if (sections.isEmpty)
             AppSectionCard(
               child: Center(
                 child: Text(
-                  l10n.chartComparisonEmptyDefault,
+                  l10n.salesRankingProdutosFaturamentoEmptyMessage,
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyLarge?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
@@ -486,97 +532,16 @@ class _SalesRankingProdutosFaturamentoPageState
             )
           else
             ...sections.map((section) {
-              final ranked = section.rows
-                  .where((row) => !row.isDiversos)
-                  .toList(growable: false);
-              final diversos = section.rows
-                  .where((row) => row.isDiversos)
-                  .toList(growable: false);
-              final maxValue = ranked.isEmpty
-                  ? 0.0
-                  : ranked
-                        .map((row) => row.valorVenda)
-                        .reduce((a, b) => a > b ? a : b);
-
               return Padding(
                 padding: EdgeInsets.only(bottom: tokens.sectionSpacing),
-                child: AppSectionCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      Text(
-                        l10n.salesRankingProdutosFaturamentoBranchHeader(
-                          section.codEmpresa,
-                          section.codFilial,
-                        ),
-                        style: theme.appTypography.sectionHeaderH2.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      SizedBox(height: tokens.gapSm),
-                      Text(
-                        metricSubtitle,
-                        style: theme.appTypography.utilityOverline.copyWith(
-                          color: theme.appColors.onSurfaceVariant,
-                        ),
-                      ),
-                      SizedBox(height: tokens.contentSpacing),
-                      if (ranked.isNotEmpty)
-                        AppHorizontalProgressChart<RankingProdutosFaturamentoRow>(
-                          titleWidget: Text(
-                            l10n.salesRankingProdutosFaturamentoChartTitle,
-                            style: theme.appTypography.body.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          items: ranked,
-                          labelBuilder: (row) => row.nomeProduto.trim(),
-                          valueBuilder: (row) => row.valorVenda,
-                          maxValue: maxValue,
-                          rowLeadingBuilder: (context, row) => _RankBadge(
-                            rank: row.posicao ?? 0,
-                          ),
-                          rowTooltipBuilder: (row, value, _) {
-                            final name = row.nomeProduto.trim();
-                            return '$name • ${AppBrFormatters.smartCompactCurrency(value)}';
-                          },
-                          valueLabelBuilder: (row, value, _) =>
-                              AppBrFormatters.smartCompactCurrency(value),
-                          showDividers: true,
-                          style: AppHorizontalProgressChartStyle(
-                            barColor: theme.appColors.primary,
-                            trackColor:
-                                theme.colorScheme.surfaceContainerHigh,
-                            rowSpacing: tokens.gapMd,
-                            barHeight: 10,
-                            rowPadding: EdgeInsets.symmetric(
-                              vertical: tokens.gapXs,
-                            ),
-                            valueTextStyle: theme.appTypography.body.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: theme.appColors.primary,
-                            ),
-                          ),
-                          wrapInCard: false,
-                        ),
-                      if (diversos.isNotEmpty) ...<Widget>[
-                        SizedBox(height: tokens.gapMd),
-                        for (final row in diversos)
-                          ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(
-                              l10n.salesRankingProdutosFaturamentoDiversosLabel,
-                              style: theme.appTypography.body.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            subtitle: Text(
-                              '${AppBrFormatters.smartCompactCurrency(row.valorVenda)} • '
-                              '${row.percentual.toStringAsFixed(1)}%',
-                            ),
-                          ),
-                      ],
-                    ],
+                child: AppChartFadeIn(
+                  child: SalesRankingProdutosFaturamentoBranchCard(
+                    l10n: l10n,
+                    codEmpresa: section.codEmpresa,
+                    codFilial: section.codFilial,
+                    rows: section.rows,
+                    metricSubtitle: metricSubtitle,
+                    isLoading: _loading,
                   ),
                 ),
               );
@@ -732,8 +697,10 @@ class _SalesRankingProdutosFaturamentoFiltersSheetState
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   AppDateRangePickerField(
-                    label: widget.l10n.salesRankingProdutosFaturamentoFilterPeriod,
-                    pickerTitle: widget.l10n.salesRankingProdutosFaturamentoFilterPeriod,
+                    label:
+                        widget.l10n.salesRankingProdutosFaturamentoFilterPeriod,
+                    pickerTitle:
+                        widget.l10n.salesRankingProdutosFaturamentoFilterPeriod,
                     value: _period,
                     firstDate: DateTime(2000),
                     lastDate: DateTime.now(),
@@ -745,7 +712,9 @@ class _SalesRankingProdutosFaturamentoFiltersSheetState
                   SizedBox(height: tokens.contentSpacing),
                   AppTextField(
                     controller: _quantidadeController,
-                    label: widget.l10n.salesRankingProdutosFaturamentoFilterQuantidade,
+                    label: widget
+                        .l10n
+                        .salesRankingProdutosFaturamentoFilterQuantidade,
                     keyboardType: TextInputType.number,
                     inputFormatters: <TextInputFormatter>[
                       FilteringTextInputFormatter.digitsOnly,
@@ -759,75 +728,6 @@ class _SalesRankingProdutosFaturamentoFiltersSheetState
           ],
         );
       },
-    );
-  }
-}
-
-class _RankBadge extends StatelessWidget {
-  const _RankBadge({required this.rank});
-
-  final int rank;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = theme.appTokens;
-    final colors = theme.appColors;
-
-    final (background, foreground, icon) = switch (rank) {
-      1 => (
-        colors.primaryContainer,
-        colors.onPrimaryContainer,
-        Icons.workspace_premium_rounded,
-      ),
-      2 => (
-        colors.secondaryContainer,
-        colors.onSecondaryContainer,
-        Icons.military_tech_rounded,
-      ),
-      3 => (
-        colors.tertiaryFixed,
-        colors.onTertiaryFixed,
-        Icons.stars_rounded,
-      ),
-      _ => (
-        theme.colorScheme.surfaceContainerHigh,
-        colors.onSurfaceVariant,
-        null,
-      ),
-    };
-    final showMedal = rank >= 1 && rank <= 3;
-
-    return Container(
-      width: 40,
-      height: 40,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(tokens.formFieldRadius),
-      ),
-      child: showMedal
-          ? Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Icon(icon, size: 12, color: foreground),
-                Text(
-                  '$rank',
-                  style: theme.appTypography.caption.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: foreground,
-                    height: 1,
-                  ),
-                ),
-              ],
-            )
-          : Text(
-              rank > 0 ? '$rank' : '–',
-              style: theme.appTypography.caption.copyWith(
-                fontWeight: FontWeight.w800,
-                color: foreground,
-              ),
-            ),
     );
   }
 }

@@ -3424,6 +3424,50 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesRankingProdutosFaturamentoMetricFaturamento => 'Faturamento';
 
   @override
+  String get salesRankingProdutosFaturamentoGridColumnPosicao => '#';
+
+  @override
+  String get salesRankingProdutosFaturamentoGridColumnProduto => 'Produto';
+
+  @override
+  String get salesRankingProdutosFaturamentoGridColumnVenda => 'Venda';
+
+  @override
+  String get salesRankingProdutosFaturamentoGridColumnPercent => '%';
+
+  @override
+  String get salesRankingProdutosFaturamentoBranchTotalLabel =>
+      'Total faturamento';
+
+  @override
+  String get salesRankingProdutosFaturamentoEmptyMessage =>
+      'Nenhuma venda no período selecionado para esta filial.';
+
+  @override
+  String salesRankingProdutosFaturamentoPercentSumHint(String sum) {
+    return 'A soma dos percentuais desta filial é $sum%. Esperado ~100%.';
+  }
+
+  @override
+  String get salesRankingProdutosFaturamentoExportTooltip => 'Exportar CSV';
+
+  @override
+  String get salesRankingProdutosFaturamentoFullscreenTooltip =>
+      'Abrir tabela em tela cheia';
+
+  @override
+  String salesRankingProdutosFaturamentoRankSemantics(
+    int position,
+    String product,
+  ) {
+    return 'Posição $position, $product';
+  }
+
+  @override
+  String get salesRankingProdutosFaturamentoDiversosSemantics =>
+      'Demais produtos, fatia agregada DIVERSOS';
+
+  @override
   String get salesCardMonthlyPnlTitle => 'Resultado mensal';
 
   @override
@@ -7700,6 +7744,50 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesRankingProdutosFaturamentoMetricFaturamento => 'Faturamento';
+
+  @override
+  String get salesRankingProdutosFaturamentoGridColumnPosicao => '#';
+
+  @override
+  String get salesRankingProdutosFaturamentoGridColumnProduto => 'Produto';
+
+  @override
+  String get salesRankingProdutosFaturamentoGridColumnVenda => 'Venda';
+
+  @override
+  String get salesRankingProdutosFaturamentoGridColumnPercent => '%';
+
+  @override
+  String get salesRankingProdutosFaturamentoBranchTotalLabel =>
+      'Total faturamento';
+
+  @override
+  String get salesRankingProdutosFaturamentoEmptyMessage =>
+      'Nenhuma venda no período selecionado para esta filial.';
+
+  @override
+  String salesRankingProdutosFaturamentoPercentSumHint(String sum) {
+    return 'A soma dos percentuais desta filial é $sum%. Esperado ~100%.';
+  }
+
+  @override
+  String get salesRankingProdutosFaturamentoExportTooltip => 'Exportar CSV';
+
+  @override
+  String get salesRankingProdutosFaturamentoFullscreenTooltip =>
+      'Abrir tabela em tela cheia';
+
+  @override
+  String salesRankingProdutosFaturamentoRankSemantics(
+    int position,
+    String product,
+  ) {
+    return 'Posição $position, $product';
+  }
+
+  @override
+  String get salesRankingProdutosFaturamentoDiversosSemantics =>
+      'Demais produtos, fatia agregada DIVERSOS';
 
   @override
   String get salesCardMonthlyPnlTitle => 'Resultado mensal';

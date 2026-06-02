@@ -5557,6 +5557,75 @@ abstract class AppLocalizations {
   /// **'Revenue'**
   String get salesRankingProdutosFaturamentoMetricFaturamento;
 
+  /// No description provided for @salesRankingProdutosFaturamentoGridColumnPosicao.
+  ///
+  /// In en, this message translates to:
+  /// **'#'**
+  String get salesRankingProdutosFaturamentoGridColumnPosicao;
+
+  /// No description provided for @salesRankingProdutosFaturamentoGridColumnProduto.
+  ///
+  /// In en, this message translates to:
+  /// **'Product'**
+  String get salesRankingProdutosFaturamentoGridColumnProduto;
+
+  /// No description provided for @salesRankingProdutosFaturamentoGridColumnVenda.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales'**
+  String get salesRankingProdutosFaturamentoGridColumnVenda;
+
+  /// No description provided for @salesRankingProdutosFaturamentoGridColumnPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'%'**
+  String get salesRankingProdutosFaturamentoGridColumnPercent;
+
+  /// No description provided for @salesRankingProdutosFaturamentoBranchTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Total revenue'**
+  String get salesRankingProdutosFaturamentoBranchTotalLabel;
+
+  /// No description provided for @salesRankingProdutosFaturamentoEmptyMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No sales in the selected period for this branch.'**
+  String get salesRankingProdutosFaturamentoEmptyMessage;
+
+  /// No description provided for @salesRankingProdutosFaturamentoPercentSumHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Percent sum for this branch is {sum}%. Expected ~100%.'**
+  String salesRankingProdutosFaturamentoPercentSumHint(String sum);
+
+  /// No description provided for @salesRankingProdutosFaturamentoExportTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Export CSV'**
+  String get salesRankingProdutosFaturamentoExportTooltip;
+
+  /// No description provided for @salesRankingProdutosFaturamentoFullscreenTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Open table fullscreen'**
+  String get salesRankingProdutosFaturamentoFullscreenTooltip;
+
+  /// No description provided for @salesRankingProdutosFaturamentoRankSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Rank {position}, {product}'**
+  String salesRankingProdutosFaturamentoRankSemantics(
+    int position,
+    String product,
+  );
+
+  /// No description provided for @salesRankingProdutosFaturamentoDiversosSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Other products, DIVERSOS aggregate slice'**
+  String get salesRankingProdutosFaturamentoDiversosSemantics;
+
   /// No description provided for @salesCardMonthlyPnlTitle.
   ///
   /// In en, this message translates to:

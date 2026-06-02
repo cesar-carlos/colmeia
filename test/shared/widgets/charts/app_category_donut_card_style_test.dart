@@ -7,9 +7,15 @@ void main() {
     const s = AppCategoryDonutCardStyle();
     check(s.doughnutAnimationDurationMs).isNull();
     check(s.legendMaxHeight).isNull();
+    check(s.showLegend).isTrue();
     check(
       AppCategoryDonutCardStyle.defaultDoughnutAnimationDurationMs,
     ).equals(500);
+  });
+
+  test('AppCategoryDonutCardStyle can hide legend', () {
+    const s = AppCategoryDonutCardStyle(showLegend: false);
+    check(s.showLegend).isFalse();
   });
 
   test('AppCategoryDonutCardStyle can disable animation and cap legend', () {

@@ -10,6 +10,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 
+/// Right strip reserved when the grid has a fixed height and may scroll
+/// vertically, so the Syncfusion scrollbar does not cover the last column.
+const double kAppReportGridVerticalScrollbarGutter = 14;
+
 /// Grid widget backed by [SfDataGrid] that consumes [AppReportColumn]
 /// definitions and handles responsive column visibility, sorting callbacks,
 /// and row interaction events.
@@ -637,7 +641,17 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
           ),
         ),
         child: widget.style.gridHeight != null
-            ? SizedBox(height: widget.style.gridHeight, child: grid)
+            ? SizedBox(
+                height: widget.style.gridHeight,
+                child: Stack(
+                  children: <Widget>[
+                    Positioned.fill(
+                      right: kAppReportGridVerticalScrollbarGutter,
+                      child: grid,
+                    ),
+                  ],
+                ),
+              )
             : grid,
       ),
     );

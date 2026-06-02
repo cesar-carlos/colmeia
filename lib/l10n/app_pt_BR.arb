@@ -1443,6 +1443,28 @@
   },
   "salesRankingProdutosFaturamentoDiversosLabel": "Demais produtos (DIVERSOS)",
   "salesRankingProdutosFaturamentoMetricFaturamento": "Faturamento",
+  "salesRankingProdutosFaturamentoGridColumnPosicao": "#",
+  "salesRankingProdutosFaturamentoGridColumnProduto": "Produto",
+  "salesRankingProdutosFaturamentoGridColumnVenda": "Venda",
+  "salesRankingProdutosFaturamentoGridColumnPercent": "%",
+  "salesRankingProdutosFaturamentoBranchTotalLabel": "Total faturamento",
+  "salesRankingProdutosFaturamentoEmptyMessage": "Nenhuma venda no período selecionado para esta filial.",
+  "salesRankingProdutosFaturamentoPercentSumHint": "A soma dos percentuais desta filial é {sum}%. Esperado ~100%.",
+  "@salesRankingProdutosFaturamentoPercentSumHint": {
+    "placeholders": {
+      "sum": { "type": "String" }
+    }
+  },
+  "salesRankingProdutosFaturamentoExportTooltip": "Exportar CSV",
+  "salesRankingProdutosFaturamentoFullscreenTooltip": "Abrir tabela em tela cheia",
+  "salesRankingProdutosFaturamentoRankSemantics": "Posição {position}, {product}",
+  "@salesRankingProdutosFaturamentoRankSemantics": {
+    "placeholders": {
+      "position": { "type": "int" },
+      "product": { "type": "String" }
+    }
+  },
+  "salesRankingProdutosFaturamentoDiversosSemantics": "Demais produtos, fatia agregada DIVERSOS",
   "salesCardMonthlyPnlTitle": "Resultado mensal",
   "salesCardResumoTotalDiarioVendasTitle": "Vendas diárias",
   "salesAutoRefreshOff": "Desligado",
