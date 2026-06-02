@@ -63,30 +63,23 @@ class SalesRankingProdutosFaturamentoPieSection extends StatelessWidget {
       builder: (context, constraints) {
         final boundedHeight =
             constraints.hasBoundedHeight && constraints.maxHeight.isFinite;
-        final double chartHeight;
-        if (boundedHeight) {
-          chartHeight = math.max(
-            160,
-            constraints.maxHeight - kSalesRankingFaturamentoPieTitleBandHeight,
-          );
-        } else {
-          chartHeight = kSalesRankingFaturamentoPieChartHeight;
-        }
 
-        final chart = AppCategoryDonutCard(
-          title: l10n.salesRankingProdutosFaturamentoChartTitle,
-          showHeader: false,
-          wrapInSectionCard: false,
-          isLoading: isLoading && rows.isEmpty,
-          segments: segments,
-          centerPrimaryLabel: total > 0
-              ? AppBrFormatters.compactCurrency(total)
-              : null,
-          centerSecondaryLabel: rows.isEmpty
-              ? null
-              : '${percentFormat.format(branchPercentSum(rows))}%',
-          style: _basePieStyle.copyWith(chartMinHeight: chartHeight),
-        );
+        Widget buildChart({required double chartHeight}) {
+          return AppCategoryDonutCard(
+            title: l10n.salesRankingProdutosFaturamentoChartTitle,
+            showHeader: false,
+            wrapInSectionCard: false,
+            isLoading: isLoading && rows.isEmpty,
+            segments: segments,
+            centerPrimaryLabel: total > 0
+                ? AppBrFormatters.compactCurrency(total)
+                : null,
+            centerSecondaryLabel: rows.isEmpty
+                ? null
+                : '${percentFormat.format(branchPercentSum(rows))}%',
+            style: _basePieStyle.copyWith(chartMinHeight: chartHeight),
+          );
+        }
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -105,11 +98,23 @@ class SalesRankingProdutosFaturamentoPieSection extends StatelessWidget {
             ),
             SizedBox(height: tokens.gapSm),
             if (boundedHeight)
-              Expanded(child: chart)
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, chartConstraints) {
+                    final chartHeight = math.max(
+                      160,
+                      chartConstraints.maxHeight,
+                    ).toDouble();
+                    return buildChart(chartHeight: chartHeight);
+                  },
+                ),
+              )
             else
               SizedBox(
-                height: chartHeight,
-                child: chart,
+                height: kSalesRankingFaturamentoPieChartHeight,
+                child: buildChart(
+                  chartHeight: kSalesRankingFaturamentoPieChartHeight,
+                ),
               ),
           ],
         );

@@ -67,15 +67,16 @@ class SalesRankingProdutosFaturamentoDetailsTable extends StatelessWidget {
       onSortChanged: onSortChanged,
     );
 
+    final boundedVertically = expandVertically || maxHeight != null;
+
     final list = _RankingFaturamentoScrollableBody(
       rows: rows,
       l10n: l10n,
       dividerColor: dividerColor,
+      shrinkWrap: !boundedVertically,
     );
 
-    final scrollableBody = expandVertically || maxHeight != null
-        ? Expanded(child: list)
-        : list;
+    final scrollableBody = boundedVertically ? Expanded(child: list) : list;
 
     final tableColumn = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -136,11 +137,13 @@ class _RankingFaturamentoScrollableBody extends StatefulWidget {
     required this.rows,
     required this.l10n,
     required this.dividerColor,
+    this.shrinkWrap = true,
   });
 
   final List<RankingProdutosFaturamentoRow> rows;
   final AppLocalizations l10n;
   final Color dividerColor;
+  final bool shrinkWrap;
 
   @override
   State<_RankingFaturamentoScrollableBody> createState() =>
@@ -167,7 +170,7 @@ class _RankingFaturamentoScrollableBodyState
 
     final listView = ListView.separated(
       controller: _scrollController,
-      shrinkWrap: true,
+      shrinkWrap: widget.shrinkWrap,
       primary: false,
       padding: const EdgeInsets.only(
         right: _kRankingFaturamentoTableScrollbarGutter,
