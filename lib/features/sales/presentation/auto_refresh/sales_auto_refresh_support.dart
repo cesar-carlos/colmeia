@@ -43,6 +43,7 @@ abstract final class SalesAutoRefreshCardIds {
   static const String monthlyPnl = 'monthly_pnl';
   static const String liveMap = 'sales_live_map';
   static const String produtoRankLucro = 'produto_rank_lucro';
+  static const String rankingProdutosFaturamento = 'ranking_produtos_faturamento';
   static const String produtoTendencia = 'produto_tendencia_venda';
   static const String produtoTendenciaMediaMovel =
       'produto_tendencia_venda_media_movel';

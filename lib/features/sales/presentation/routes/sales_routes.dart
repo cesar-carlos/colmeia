@@ -6,6 +6,7 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_marca_p
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_produto_rank_lucro_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_screen_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_screen_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_ranking_produtos_faturamento_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
@@ -21,6 +22,7 @@ import 'package:colmeia/features/sales/presentation/pages/sales_monthly_pnl_page
 import 'package:colmeia/features/sales/presentation/pages/sales_produto_rank_lucro_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_produto_tendencia_media_movel_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_produto_tendencia_page.dart';
+import 'package:colmeia/features/sales/presentation/pages/sales_ranking_produtos_faturamento_page.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_under_construction_page.dart';
 import 'package:go_router/go_router.dart';
@@ -76,6 +78,18 @@ List<RouteBase> buildSalesRoutes() {
                 resolveSalesAgentClientTokenUseCase,
             loadProdutoVendidoProdutoRankLucroUseCase:
                 getIt<LoadProdutoVendidoProdutoRankLucroUseCase>(),
+            relayCancelScopeBinder: _wireSalesAgentSqlRelayCancel,
+          );
+        }
+
+        if (cardId == 'ranking_produtos_faturamento') {
+          return SalesRankingProdutosFaturamentoPage(
+            sessionService: sessionService,
+            loadSalesAvailableAgentsUseCase: loadSalesAvailableAgentsUseCase,
+            resolveSalesAgentClientTokenUseCase:
+                resolveSalesAgentClientTokenUseCase,
+            loadRankingProdutosFaturamentoUseCase:
+                getIt<LoadRankingProdutosFaturamentoUseCase>(),
             relayCancelScopeBinder: _wireSalesAgentSqlRelayCancel,
           );
         }

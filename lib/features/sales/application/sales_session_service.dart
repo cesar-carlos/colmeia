@@ -103,4 +103,14 @@ class SalesSessionService {
   ) {
     return _preferences.persistProdutoRankLucroFilters(filters);
   }
+
+  Map<String, Object?> restoreRankingProdutosFaturamentoFilters() {
+    return _preferences.restoreRankingProdutosFaturamentoFilters();
+  }
+
+  Future<void> persistRankingProdutosFaturamentoFilters(
+    Map<String, Object?> filters,
+  ) {
+    return _preferences.persistRankingProdutosFaturamentoFilters(filters);
+  }
 }

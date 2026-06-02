@@ -1430,6 +1430,19 @@
   "salesCardPaymentHistoryTitle": "Histórico de Pagamentos",
   "salesCardNewPaymentTitle": "Novo Pagamento",
   "salesCardProdutoRankLucroTitle": "Ranking de produtos",
+  "salesCardRankingProdutosFaturamentoTitle": "Ranking por faturamento",
+  "salesRankingProdutosFaturamentoChartTitle": "Top produtos por faturamento",
+  "salesRankingProdutosFaturamentoFilterPeriod": "Período",
+  "salesRankingProdutosFaturamentoFilterQuantidade": "Quantidade no ranking",
+  "salesRankingProdutosFaturamentoBranchHeader": "Empresa {codEmpresa} • Filial {codFilial}",
+  "@salesRankingProdutosFaturamentoBranchHeader": {
+    "placeholders": {
+      "codEmpresa": { "type": "int" },
+      "codFilial": { "type": "int" }
+    }
+  },
+  "salesRankingProdutosFaturamentoDiversosLabel": "Demais produtos (DIVERSOS)",
+  "salesRankingProdutosFaturamentoMetricFaturamento": "Faturamento",
   "salesCardMonthlyPnlTitle": "Resultado mensal",
   "salesCardResumoTotalDiarioVendasTitle": "Vendas diárias",
   "salesAutoRefreshOff": "Desligado",

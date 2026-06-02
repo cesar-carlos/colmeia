@@ -64,4 +64,10 @@ abstract class SalesPreferencesPort {
   Map<String, Object?> restoreProdutoRankLucroFilters();
 
   Future<void> persistProdutoRankLucroFilters(Map<String, Object?> filters);
+
+  Map<String, Object?> restoreRankingProdutosFaturamentoFilters();
+
+  Future<void> persistRankingProdutosFaturamentoFilters(
+    Map<String, Object?> filters,
+  );
 }

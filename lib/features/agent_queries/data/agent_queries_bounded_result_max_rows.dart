@@ -74,6 +74,10 @@ abstract final class AgentQueriesBoundedResultMaxRows {
   /// `TOP 15` product ranking rows — margin above the nominal cap as a safety net.
   static const int produtoVendidoProdutoRankLucro = 32;
 
+  /// Billing ranking per branch: up to (N+1) rows × many filiais — aligned with
+  /// [aggregateMultiBranchCap].
+  static const int rankingProdutosFaturamento = aggregateMultiBranchCap;
+
   /// Trend rows by product between two periods; can be high cardinality for
   /// catalogs with many active SKUs.
   static const int produtoVendidoTendenciaDeVenda = 10000;

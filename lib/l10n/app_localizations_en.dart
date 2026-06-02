@@ -3345,6 +3345,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesCardProdutoRankLucroTitle => 'Product ranking';
 
   @override
+  String get salesCardRankingProdutosFaturamentoTitle => 'Revenue ranking';
+
+  @override
+  String get salesRankingProdutosFaturamentoChartTitle =>
+      'Top products by revenue';
+
+  @override
+  String get salesRankingProdutosFaturamentoFilterPeriod => 'Period';
+
+  @override
+  String get salesRankingProdutosFaturamentoFilterQuantidade => 'Ranking size';
+
+  @override
+  String salesRankingProdutosFaturamentoBranchHeader(
+    int codEmpresa,
+    int codFilial,
+  ) {
+    return 'Company $codEmpresa • Branch $codFilial';
+  }
+
+  @override
+  String get salesRankingProdutosFaturamentoDiversosLabel =>
+      'Other products (MISC)';
+
+  @override
+  String get salesRankingProdutosFaturamentoMetricFaturamento => 'Revenue';
+
+  @override
   String get salesCardMonthlyPnlTitle => 'Monthly P&L';
 
   @override

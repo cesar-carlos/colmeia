@@ -1,10 +1,10 @@
-import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_sql_local_date.dart';
 import 'package:colmeia/features/agent_queries/data/models/produto_vendido_produto_rank_lucro_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_produto_rank_lucro_sql.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_bridge_timeout.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repository_execution.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
@@ -18,9 +18,6 @@ import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendi
 class ProdutoVendidoProdutoRankLucroRepositoryImpl
     implements ProdutoVendidoProdutoRankLucroRepository {
   ProdutoVendidoProdutoRankLucroRepositoryImpl(this._agentQueriesRepository);
-
-  static const int _defaultSqlTimeoutMs = 162000;
-  static const int _minSqlTimeoutMs = 5000;
 
   static const String _operation = 'loadProdutoVendidoProdutoRankLucro';
 
@@ -48,11 +45,8 @@ class ProdutoVendidoProdutoRankLucroRepositoryImpl
       );
     }
 
-    final effectiveBridgeMs =
-        bridgeTimeoutMs ?? AppEnvironment.agentSqlBridgeMediumTimeoutMs;
-    final effectiveSqlMs = (effectiveBridgeMs * 0.9).round().clamp(
-      _minSqlTimeoutMs,
-      _defaultSqlTimeoutMs,
+    final timeouts = AgentSqlBridgeTimeout.resolve(
+      bridgeTimeoutMs: bridgeTimeoutMs,
     );
 
     final request = AgentSqlExecuteRequest(
@@ -65,7 +59,7 @@ class ProdutoVendidoProdutoRankLucroRepositoryImpl
         sortDirection: filter.sortDirection,
       ),
       clientToken: clientToken,
-      bridgeTimeoutMs: effectiveBridgeMs,
+      bridgeTimeoutMs: timeouts.bridgeMs,
       namedParams: <String, Object?>{
         'dataVendaInicio': AgentQueriesSqlLocalDate.format(
           filter.dataVendaInicio,
@@ -77,7 +71,7 @@ class ProdutoVendidoProdutoRankLucroRepositoryImpl
         executionMode: AgentSqlExecutionMode.preserve,
         maxRows:
             AgentQueriesBoundedResultMaxRows.produtoVendidoProdutoRankLucro,
-        sqlTimeoutMs: effectiveSqlMs,
+        sqlTimeoutMs: timeouts.sqlMs,
         preferDbStreaming: true,
       ),
       useRelay: true,

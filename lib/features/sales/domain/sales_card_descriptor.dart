@@ -18,6 +18,10 @@ const List<SalesCardDescriptor> allSalesCards = <SalesCardDescriptor>[
     icon: Icons.leaderboard_outlined,
   ),
   SalesCardDescriptor(
+    id: 'ranking_produtos_faturamento',
+    icon: Icons.payments_outlined,
+  ),
+  SalesCardDescriptor(
     id: 'monthly_pnl',
     icon: Icons.show_chart_rounded,
   ),

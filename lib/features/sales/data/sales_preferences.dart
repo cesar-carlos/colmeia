@@ -4,6 +4,7 @@ import 'package:colmeia/core/preferences/persisted_page_session_store.dart';
 import 'package:colmeia/core/refresh/auto_refresh_option.dart';
 import 'package:colmeia/core/refresh/auto_refresh_option_set.dart';
 import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/ranking_produtos_faturamento_filter.dart';
 import 'package:colmeia/features/sales/application/ports/sales_preferences_port.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref_codec.dart';
@@ -70,6 +71,9 @@ class SalesPreferences implements SalesPreferencesPort {
 
   /// produto_rank_lucro card: date range encoded as epochs + metric key.
   static const String produtoRankLucroCardId = 'produto_rank_lucro';
+
+  static const String rankingProdutosFaturamentoCardId =
+      'ranking_produtos_faturamento';
 
   static const String salesDailyTotalsCardId = 'daily_totals';
   static const String monthlyPnlCardId = 'monthly_pnl';
@@ -401,6 +405,59 @@ class SalesPreferences implements SalesPreferencesPort {
           allowedValues: kSalesProdutoRankLucroSortByAllowedValues,
         );
     });
+  }
+
+  @override
+  Map<String, Object?> restoreRankingProdutosFaturamentoFilters() {
+    final raw = restoreCardFilters(rankingProdutosFaturamentoCardId);
+    final restored = PersistedFilterMapCodec.sanitize((draft) {
+      draft.dateRangeFromEpoch(
+        targetKey: 'periodo',
+        startEpochMs: raw['periodo_start_ms'],
+        endEpochMs: raw['periodo_end_ms'],
+      );
+    });
+    final quantity = raw['quantidade_produtos'];
+    if (quantity is int &&
+        quantity >= 1 &&
+        quantity <= RankingProdutosFaturamentoFilter.maxQuantidadeProdutos) {
+      restored['quantidadeProdutos'] = quantity;
+    } else if (quantity is num) {
+      final rounded = quantity.round();
+      if (rounded >= 1 &&
+          rounded <= RankingProdutosFaturamentoFilter.maxQuantidadeProdutos) {
+        restored['quantidadeProdutos'] = rounded;
+      }
+    }
+    return restored;
+  }
+
+  @override
+  Future<void> persistRankingProdutosFaturamentoFilters(
+    Map<String, Object?> filters,
+  ) async {
+    final encoded = PersistedFilterMapCodec.sanitize((draft) {
+      draft.dateRangeToEpoch(
+        startEpochKey: 'periodo_start_ms',
+        endEpochKey: 'periodo_end_ms',
+        rawValue: filters['periodo'],
+      );
+    });
+    final quantity = filters['quantidadeProdutos'];
+    if (quantity is int) {
+      encoded['quantidade_produtos'] = quantity.clamp(
+        1,
+        RankingProdutosFaturamentoFilter.maxQuantidadeProdutos,
+      );
+    }
+    final store = PersistedPageSessionStore(
+      prefs: _prefs,
+      namespace: 'colmeia_sales_card.$rankingProdutosFaturamentoCardId',
+    );
+    await store.persistJsonMap(
+      suffix: 'filters',
+      value: encoded,
+    );
   }
 
   @override

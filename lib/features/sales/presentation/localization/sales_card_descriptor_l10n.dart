@@ -5,6 +5,8 @@ extension SalesCardDescriptorL10n on SalesCardDescriptor {
   String resolvedTitle(AppLocalizations l10n) {
     return switch (id) {
       'produto_rank_lucro' => l10n.salesCardProdutoRankLucroTitle,
+      'ranking_produtos_faturamento' =>
+        l10n.salesCardRankingProdutosFaturamentoTitle,
       'monthly_pnl' => l10n.salesCardMonthlyPnlTitle,
       'resumo_total_diario_vendas' =>
         l10n.salesCardResumoTotalDiarioVendasTitle,

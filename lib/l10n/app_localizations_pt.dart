@@ -3394,6 +3394,36 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesCardProdutoRankLucroTitle => 'Ranking de produtos';
 
   @override
+  String get salesCardRankingProdutosFaturamentoTitle =>
+      'Ranking por faturamento';
+
+  @override
+  String get salesRankingProdutosFaturamentoChartTitle =>
+      'Top produtos por faturamento';
+
+  @override
+  String get salesRankingProdutosFaturamentoFilterPeriod => 'Período';
+
+  @override
+  String get salesRankingProdutosFaturamentoFilterQuantidade =>
+      'Quantidade no ranking';
+
+  @override
+  String salesRankingProdutosFaturamentoBranchHeader(
+    int codEmpresa,
+    int codFilial,
+  ) {
+    return 'Empresa $codEmpresa • Filial $codFilial';
+  }
+
+  @override
+  String get salesRankingProdutosFaturamentoDiversosLabel =>
+      'Demais produtos (DIVERSOS)';
+
+  @override
+  String get salesRankingProdutosFaturamentoMetricFaturamento => 'Faturamento';
+
+  @override
   String get salesCardMonthlyPnlTitle => 'Resultado mensal';
 
   @override
@@ -7640,6 +7670,36 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesCardProdutoRankLucroTitle => 'Ranking de produtos';
+
+  @override
+  String get salesCardRankingProdutosFaturamentoTitle =>
+      'Ranking por faturamento';
+
+  @override
+  String get salesRankingProdutosFaturamentoChartTitle =>
+      'Top produtos por faturamento';
+
+  @override
+  String get salesRankingProdutosFaturamentoFilterPeriod => 'Período';
+
+  @override
+  String get salesRankingProdutosFaturamentoFilterQuantidade =>
+      'Quantidade no ranking';
+
+  @override
+  String salesRankingProdutosFaturamentoBranchHeader(
+    int codEmpresa,
+    int codFilial,
+  ) {
+    return 'Empresa $codEmpresa • Filial $codFilial';
+  }
+
+  @override
+  String get salesRankingProdutosFaturamentoDiversosLabel =>
+      'Demais produtos (DIVERSOS)';
+
+  @override
+  String get salesRankingProdutosFaturamentoMetricFaturamento => 'Faturamento';
 
   @override
   String get salesCardMonthlyPnlTitle => 'Resultado mensal';

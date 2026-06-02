@@ -5512,6 +5512,51 @@ abstract class AppLocalizations {
   /// **'Product ranking'**
   String get salesCardProdutoRankLucroTitle;
 
+  /// No description provided for @salesCardRankingProdutosFaturamentoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue ranking'**
+  String get salesCardRankingProdutosFaturamentoTitle;
+
+  /// No description provided for @salesRankingProdutosFaturamentoChartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Top products by revenue'**
+  String get salesRankingProdutosFaturamentoChartTitle;
+
+  /// No description provided for @salesRankingProdutosFaturamentoFilterPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Period'**
+  String get salesRankingProdutosFaturamentoFilterPeriod;
+
+  /// No description provided for @salesRankingProdutosFaturamentoFilterQuantidade.
+  ///
+  /// In en, this message translates to:
+  /// **'Ranking size'**
+  String get salesRankingProdutosFaturamentoFilterQuantidade;
+
+  /// No description provided for @salesRankingProdutosFaturamentoBranchHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Company {codEmpresa} • Branch {codFilial}'**
+  String salesRankingProdutosFaturamentoBranchHeader(
+    int codEmpresa,
+    int codFilial,
+  );
+
+  /// No description provided for @salesRankingProdutosFaturamentoDiversosLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Other products (MISC)'**
+  String get salesRankingProdutosFaturamentoDiversosLabel;
+
+  /// No description provided for @salesRankingProdutosFaturamentoMetricFaturamento.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue'**
+  String get salesRankingProdutosFaturamentoMetricFaturamento;
+
   /// No description provided for @salesCardMonthlyPnlTitle.
   ///
   /// In en, this message translates to:

@@ -1656,6 +1656,19 @@
   "salesCardPaymentHistoryTitle": "Payment History",
   "salesCardNewPaymentTitle": "New Payment",
   "salesCardProdutoRankLucroTitle": "Product ranking",
+  "salesCardRankingProdutosFaturamentoTitle": "Revenue ranking",
+  "salesRankingProdutosFaturamentoChartTitle": "Top products by revenue",
+  "salesRankingProdutosFaturamentoFilterPeriod": "Period",
+  "salesRankingProdutosFaturamentoFilterQuantidade": "Ranking size",
+  "salesRankingProdutosFaturamentoBranchHeader": "Company {codEmpresa} • Branch {codFilial}",
+  "@salesRankingProdutosFaturamentoBranchHeader": {
+    "placeholders": {
+      "codEmpresa": { "type": "int" },
+      "codFilial": { "type": "int" }
+    }
+  },
+  "salesRankingProdutosFaturamentoDiversosLabel": "Other products (MISC)",
+  "salesRankingProdutosFaturamentoMetricFaturamento": "Revenue",
   "salesCardMonthlyPnlTitle": "Monthly P&L",
   "salesCardResumoTotalDiarioVendasTitle": "Daily sales totals",
   "salesAutoRefreshOff": "Off",
