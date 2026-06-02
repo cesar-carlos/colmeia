@@ -9,6 +9,7 @@ installer/setup_icon.ico
 # Miscellaneous
 .worktrees/
 .claude/
+docs/superpowers/
 *.class
 *.log
 *.pyc
