@@ -198,7 +198,7 @@ void main() {
           ],
           child: MaterialApp(
             home: Builder(
-              builder: (BuildContext context) {
+              builder: (context) {
                 context.read<OverviewController>();
                 return const SizedBox.shrink();
               },

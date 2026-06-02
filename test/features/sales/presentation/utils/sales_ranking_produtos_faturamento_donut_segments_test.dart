@@ -70,7 +70,6 @@ void main() {
       ],
       diversosLabel: 'Demais produtos',
       palette: palette,
-      maxHighlightedSegments: 5,
     );
 
     expect(segments, hasLength(6));
