@@ -104,6 +104,11 @@ Future<void> bootstrap() async {
   });
 }
 
+/// GetIt lazy singletons must not be [ChangeNotifier.dispose]d by Provider
+/// when the widget tree is torn down (tests, hot restart). Process lifetime
+/// is owned by GetIt reset, not by [ColmeiaBootstrap] mount cycles.
+void _noopProviderDispose<T>(BuildContext _, T _) {}
+
 class ColmeiaBootstrap extends StatelessWidget {
   const ColmeiaBootstrap({super.key});
 
@@ -111,7 +116,7 @@ class ColmeiaBootstrap extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: <SingleChildWidget>[
-        ChangeNotifierProvider<AuthController>(
+        ListenableProvider<AuthController>(
           create: (_) {
             final controller = getIt<AuthController>();
             unawaited(
@@ -128,15 +133,19 @@ class ColmeiaBootstrap extends StatelessWidget {
             );
             return controller;
           },
+          dispose: _noopProviderDispose,
         ),
-        ChangeNotifierProvider<CurrentUserContextController>(
+        ListenableProvider<CurrentUserContextController>(
           create: (_) => getIt<CurrentUserContextController>(),
+          dispose: _noopProviderDispose,
         ),
-        ChangeNotifierProvider<AppThemeModeController>(
+        ListenableProvider<AppThemeModeController>(
           create: (_) => getIt<AppThemeModeController>(),
+          dispose: _noopProviderDispose,
         ),
-        ChangeNotifierProvider<AppUserExperiencePreferencesController>(
+        ListenableProvider<AppUserExperiencePreferencesController>(
           create: (_) => getIt<AppUserExperiencePreferencesController>(),
+          dispose: _noopProviderDispose,
         ),
         Provider<GoRouter>(
           create: (context) {

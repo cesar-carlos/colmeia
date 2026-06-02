@@ -87,8 +87,10 @@ class ClientAgentsController extends ChangeNotifier
        _retryClientAccessRequestUseCase = retryClientAccessRequestUseCase,
        _targetResolutionInvalidator = targetResolutionInvalidator,
        _syncRetryAfterGate = syncRetryAfterGate ?? RetryAfterGate(),
+       _ownsSyncRetryAfterGate = syncRetryAfterGate == null,
        _requestAccessRetryAfterGate =
-           requestAccessRetryAfterGate ?? RetryAfterGate() {
+           requestAccessRetryAfterGate ?? RetryAfterGate(),
+       _ownsRequestAccessRetryAfterGate = requestAccessRetryAfterGate == null {
     _presence = ClientAgentsPresenceCoordinator(
       host: this,
       loadClientAgentDetailUseCase: loadClientAgentDetailUseCase,
@@ -139,10 +141,14 @@ class ClientAgentsController extends ChangeNotifier
   /// [syncRetryAfter] / [isSyncOnCooldown] to gray the button out.
   final RetryAfterGate _syncRetryAfterGate;
 
+  final bool _ownsSyncRetryAfterGate;
+
   /// Same idea for the request-access flow. The hub returns
   /// `Retry-After` for the dedicated `REST_CLIENT_ME_AGENTS_POST_RATE_LIMIT_*`
   /// quota, so a flurry of submissions does not bypass the throttle.
   final RetryAfterGate _requestAccessRetryAfterGate;
+
+  final bool _ownsRequestAccessRetryAfterGate;
 
   bool _isDisposed = false;
   bool _isLoadingInitial = false;
@@ -1895,12 +1901,14 @@ class ClientAgentsController extends ChangeNotifier
     }
     _stopApprovalPolling(clearTracked: true);
     _presence.dispose();
-    _syncRetryAfterGate
-      ..removeListener(_handleSyncRetryAfterGateChanged)
-      ..dispose();
-    _requestAccessRetryAfterGate
-      ..removeListener(_notifyListenersIfAlive)
-      ..dispose();
+    _syncRetryAfterGate.removeListener(_handleSyncRetryAfterGateChanged);
+    if (_ownsSyncRetryAfterGate) {
+      _syncRetryAfterGate.dispose();
+    }
+    _requestAccessRetryAfterGate.removeListener(_notifyListenersIfAlive);
+    if (_ownsRequestAccessRetryAfterGate) {
+      _requestAccessRetryAfterGate.dispose();
+    }
     _isDisposed = true;
     super.dispose();
   }

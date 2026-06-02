@@ -36,6 +36,7 @@ class OverviewController extends ChangeNotifier {
     AgentRpcCapabilitiesRegistry? agentRpcCapabilitiesRegistry,
     AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder,
   })  : _retryAfterGate = retryAfterGate ?? RetryAfterGate(),
+        _ownsRetryAfterGate = retryAfterGate == null,
         _agentRpcCapabilitiesRegistry = agentRpcCapabilitiesRegistry,
         _session = OverviewLoadSession(
           relayCancelScopeBinder: relayCancelScopeBinder,
@@ -55,6 +56,10 @@ class OverviewController extends ChangeNotifier {
   /// refresh, so a rate-limit hit by **any** agent throttles the whole
   /// "Reload" CTA — that is what the hub quotas are designed to enforce.
   final RetryAfterGate _retryAfterGate;
+
+  /// `true` when this controller created [_retryAfterGate]; injected
+  /// singletons from DI must outlive route-scoped providers.
+  final bool _ownsRetryAfterGate;
 
   /// Optional bulk feature-gating cache. When provided we kick off a
   /// `rpc.discover` for every approved agent right after the overview
@@ -117,9 +122,10 @@ class OverviewController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _session.dispose();
-    _retryAfterGate
-      ..removeListener(_notifyListenersIfAlive)
-      ..dispose();
+    _retryAfterGate.removeListener(_notifyListenersIfAlive);
+    if (_ownsRetryAfterGate) {
+      _retryAfterGate.dispose();
+    }
     super.dispose();
   }
 

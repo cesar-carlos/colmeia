@@ -16,11 +16,16 @@ List<RouteBase> buildClientAgentsRoutes() {
     GoRoute(
       name: AppRoute.agents.name,
       path: AppRoute.agents.path,
-      builder: (context, state) => ClientAgentsPage(
-        controller: getIt<ClientAgentsController>(),
-        ownerController: getIt<ClientAgentsOwnerController>(),
-        pageSessionService: getIt<ClientAgentsPageSessionService>(),
-      ),
+      builder: (context, state) {
+        // Factory-scoped controllers: [ClientAgentsPage] disposes them on
+        // route exit. RetryAfterGates are owned by the controller unless
+        // injected from GetIt (see project_architecture DI lifecycle).
+        return ClientAgentsPage(
+          controller: getIt<ClientAgentsController>(),
+          ownerController: getIt<ClientAgentsOwnerController>(),
+          pageSessionService: getIt<ClientAgentsPageSessionService>(),
+        );
+      },
       routes: <RouteBase>[
         GoRoute(
           name: AppRoute.agentsDetail.name,

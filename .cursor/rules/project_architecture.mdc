@@ -123,6 +123,21 @@ sem trocar dados nem aplicar regra. Nesses casos:
 - Em testes, use `GetIt.instance.reset()` no `tearDown` para evitar vazamento
   de estado
 
+### Ciclo de vida: singleton GetIt vs controller de rota
+
+- `ChangeNotifier` compartilhados registrados no GetIt (por exemplo
+  `RetryAfterGate`, `AuthController`, `CurrentUserContextController`) vivem
+  enquanto o processo estiver aberto; o reset do GetIt encerra o ciclo de vida
+- Controllers de rota registrados com `registerFactory` e expostos via
+  `ChangeNotifierProvider` na rota **nao** devem chamar `dispose()` em
+  dependencias injetadas do GetIt — apenas `removeListener` e `dispose` no que
+  o proprio controller criou (`retryAfterGate == null` no construtor)
+- No `ColmeiaBootstrap`, singletons expostos por `Provider` usam dispose
+  noop: o Provider nao pode destruir instancias que o GetIt ainda referencia
+- Servicos singleton nao-`ChangeNotifier` (por exemplo `AgentPresencePoller`)
+  recebem `stop()` ou cancelamento de subscription na rota; `dispose` fica para
+  o callback de registro do GetIt
+
 ```dart
 // lib/features/auth/auth_module.dart
 void setupAuthDependencies(GetIt sl) {

@@ -78,7 +78,8 @@ class ClientAgentDetailController extends ChangeNotifier {
        _targetResolutionInvalidator = targetResolutionInvalidator,
        _idempotencyKeyGenerator =
            idempotencyKeyGenerator ?? _defaultIdempotencyKeyGenerator,
-       _retryAfterGate = retryAfterGate ?? RetryAfterGate() {
+       _retryAfterGate = retryAfterGate ?? RetryAfterGate(),
+       _ownsRetryAfterGate = retryAfterGate == null {
     // Re-publish gate ticks (countdown updates + window expired) so any
     // listener of this controller — typically the detail page — reacts
     // to the cooldown without subscribing to the gate directly.
@@ -116,6 +117,8 @@ class ClientAgentDetailController extends ChangeNotifier {
   /// this controller because hub quotas are per-user / per-socket — a
   /// rate-limit on save token throttles refresh-from-agent too.
   final RetryAfterGate _retryAfterGate;
+
+  final bool _ownsRetryAfterGate;
 
   ClientAgent? _agent;
   ClientAgentsPresentationMessage? _errorMessage;
@@ -903,9 +906,10 @@ class ClientAgentDetailController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
-    _retryAfterGate
-      ..removeListener(_notifyListenersIfAlive)
-      ..dispose();
+    _retryAfterGate.removeListener(_notifyListenersIfAlive);
+    if (_ownsRetryAfterGate) {
+      _retryAfterGate.dispose();
+    }
     super.dispose();
   }
 }

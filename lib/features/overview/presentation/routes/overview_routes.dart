@@ -48,6 +48,8 @@ Widget _buildOverviewHomeRoute(
   return MultiProvider(
     providers: [
       ChangeNotifierProvider<OverviewController>(
+        // Factory controller; shared RetryAfterGate comes from GetIt — must
+        // not be disposed when this provider is torn down.
         create: (_) => getIt<OverviewController>(),
       ),
     ],

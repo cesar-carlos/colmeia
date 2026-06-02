@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
@@ -173,6 +174,47 @@ void main() {
 
     await tester.pump(const Duration(seconds: 2));
   });
+
+  testWidgets(
+    'survives route provider teardown when RetryAfterGate is a shared singleton',
+    (tester) async {
+      final sharedGate = RetryAfterGate();
+      addTearDown(sharedGate.dispose);
+
+      Widget buildRoute() {
+        return MultiProvider(
+          providers: [
+            Provider<AuthController>.value(value: authController),
+            Provider<CurrentUserContextController>.value(
+              value: currentUserContextController,
+            ),
+            ChangeNotifierProvider<OverviewController>(
+              create: (_) => OverviewController(
+                LoadOverviewUseCase(overviewRepository),
+                LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
+                retryAfterGate: sharedGate,
+              ),
+            ),
+          ],
+          child: MaterialApp(
+            home: Builder(
+              builder: (BuildContext context) {
+                context.read<OverviewController>();
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+      }
+
+      await tester.pumpWidget(buildRoute());
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpWidget(buildRoute());
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('waits for user context before loading overview', (
     tester,

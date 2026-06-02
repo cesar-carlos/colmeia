@@ -87,6 +87,7 @@ Future<void> registerInjectorCore(GetIt getIt) async {
         preferencesStore: getIt<AppUserPreferencesStore>(),
       ),
     )
+    // App scope — [ColmeiaBootstrap] exposes these via Provider with noop dispose.
     ..registerLazySingleton<AppThemeModeController>(
       () => AppThemeModeController(getIt<AppUserPreferencesStore>()),
     )

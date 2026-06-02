@@ -70,6 +70,7 @@ void registerInjectorAuth(GetIt getIt) {
     ..registerLazySingleton<LogoutUseCase>(
       () => LogoutUseCase(getIt<AuthRepository>()),
     )
+    // Process lifetime — [ColmeiaBootstrap] must not dispose via Provider.
     ..registerLazySingleton<AuthController>(
       () => AuthController(
         loginUseCase: getIt<LoginUseCase>(),

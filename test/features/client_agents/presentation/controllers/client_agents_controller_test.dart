@@ -1126,6 +1126,63 @@ void main() {
 
   group('Retry-After integration', () {
     test(
+      'should not dispose injected RetryAfterGate instances when torn down',
+      () {
+        final sharedSyncGate = RetryAfterGate();
+        final sharedRequestGate = RetryAfterGate();
+        ClientAgentsController(
+          authController: authController,
+          clientTokenDraftStore: ClientAgentTokenDraftStore(clientTokenStore),
+          loadApprovedAgentsUseCase: loadApprovedAgentsUseCase,
+          loadAccessRequestsUseCase: loadAccessRequestsUseCase,
+          loadClientAccessStatusUseCase: loadClientAccessStatusUseCase,
+          loadClientAgentDetailUseCase: loadClientAgentDetailUseCase,
+          queueRequestAccessUseCase: queueRequestAccessUseCase,
+          queueRemoveAccessUseCase: queueRemoveAccessUseCase,
+          probeClientApprovedAgentUseCase: probeClientApprovedAgentUseCase,
+          discardQueuedClientAgentRequestAccessUseCase:
+              discardQueuedClientAgentRequestAccessUseCase,
+          readPendingActionsUseCase: readPendingActionsUseCase,
+          syncPendingActionsUseCase: syncPendingActionsUseCase,
+          getClientAgentTokenUseCase: getClientAgentTokenUseCase,
+          saveClientAgentTokenUseCase: saveClientAgentTokenUseCase,
+          retryClientAccessRequestUseCase: retryClientAccessRequestUseCase,
+          targetResolutionInvalidator: targetResolutionInvalidator,
+          syncRetryAfterGate: sharedSyncGate,
+          requestAccessRetryAfterGate: sharedRequestGate,
+        ).dispose();
+
+        expect(
+          () => ClientAgentsController(
+            authController: authController,
+            clientTokenDraftStore: ClientAgentTokenDraftStore(clientTokenStore),
+            loadApprovedAgentsUseCase: loadApprovedAgentsUseCase,
+            loadAccessRequestsUseCase: loadAccessRequestsUseCase,
+            loadClientAccessStatusUseCase: loadClientAccessStatusUseCase,
+            loadClientAgentDetailUseCase: loadClientAgentDetailUseCase,
+            queueRequestAccessUseCase: queueRequestAccessUseCase,
+            queueRemoveAccessUseCase: queueRemoveAccessUseCase,
+            probeClientApprovedAgentUseCase: probeClientApprovedAgentUseCase,
+            discardQueuedClientAgentRequestAccessUseCase:
+                discardQueuedClientAgentRequestAccessUseCase,
+            readPendingActionsUseCase: readPendingActionsUseCase,
+            syncPendingActionsUseCase: syncPendingActionsUseCase,
+            getClientAgentTokenUseCase: getClientAgentTokenUseCase,
+            saveClientAgentTokenUseCase: saveClientAgentTokenUseCase,
+            retryClientAccessRequestUseCase: retryClientAccessRequestUseCase,
+            targetResolutionInvalidator: targetResolutionInvalidator,
+            syncRetryAfterGate: sharedSyncGate,
+            requestAccessRetryAfterGate: sharedRequestGate,
+          ),
+          returnsNormally,
+        );
+
+        sharedSyncGate.dispose();
+        sharedRequestGate.dispose();
+      },
+    );
+
+    test(
       'syncPending arms the cooldown gate when failure carries retryAfter',
       () async {
         when(

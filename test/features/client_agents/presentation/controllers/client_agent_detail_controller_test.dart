@@ -626,6 +626,45 @@ void main() {
     );
 
     test(
+      'should not dispose an injected RetryAfterGate when torn down',
+      () {
+        final sharedGate = RetryAfterGate();
+        ClientAgentDetailController(
+          authController: auth,
+          loadClientAgentDetailUseCase: loadDetail,
+          updateClientAgentProfileUseCase: updateProfile,
+          getClientAgentTokenUseCase: getToken,
+          saveClientAgentTokenUseCase: saveToken,
+          removeClientAgentTokenUseCase: removeToken,
+          persistClientAgentProfileSnapshotUseCase: persistSnapshot,
+          refreshAgentProfileUseCase: refreshFromAgent,
+          loadClientTokenPolicyUseCase: loadPolicy,
+          discoverAgentRpcMethodsUseCase: discoverRpc,
+          retryAfterGate: sharedGate,
+        ).dispose();
+
+        expect(
+          () => ClientAgentDetailController(
+            authController: auth,
+            loadClientAgentDetailUseCase: loadDetail,
+            updateClientAgentProfileUseCase: updateProfile,
+            getClientAgentTokenUseCase: getToken,
+            saveClientAgentTokenUseCase: saveToken,
+            removeClientAgentTokenUseCase: removeToken,
+            persistClientAgentProfileSnapshotUseCase: persistSnapshot,
+            refreshAgentProfileUseCase: refreshFromAgent,
+            loadClientTokenPolicyUseCase: loadPolicy,
+            discoverAgentRpcMethodsUseCase: discoverRpc,
+            retryAfterGate: sharedGate,
+          ),
+          returnsNormally,
+        );
+
+        sharedGate.dispose();
+      },
+    );
+
+    test(
       'gate forwards listener notifications through the controller',
       () async {
         var notifyCount = 0;

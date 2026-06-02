@@ -16,6 +16,8 @@ import 'package:colmeia/features/overview/domain/repositories/overview_repositor
 import 'package:get_it/get_it.dart';
 
 void registerInjectorOverview(GetIt getIt) {
+  // Process-lifetime gate shared with overview + fact prefetch. Route-scoped
+  // controllers must not dispose it — see RetryAfterGate class docs.
   if (!getIt.isRegistered<RetryAfterGate>()) {
     getIt.registerLazySingleton<RetryAfterGate>(RetryAfterGate.new);
   }

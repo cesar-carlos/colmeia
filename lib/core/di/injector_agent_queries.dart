@@ -207,6 +207,7 @@ void registerInjectorAgentQueries(GetIt getIt) {
   _registerAgentQueriesRepositoryChain(getIt);
   _registerSingleAgentQueryRepositories(getIt);
   _registerAcrossAgentQueryRepositories(getIt);
+  // Same singleton as overview — do not dispose from route-scoped controllers.
   if (!getIt.isRegistered<RetryAfterGate>()) {
     getIt.registerLazySingleton<RetryAfterGate>(RetryAfterGate.new);
   }

@@ -328,6 +328,8 @@ class ClientAgentsPresenceCoordinator {
     _presenceSub = null;
     unawaited(_socketStateSub?.cancel());
     _socketStateSub = null;
+    // Shared GetIt singleton — stop the timer only; never call
+    // [AgentPresencePoller.dispose] from a route-scoped coordinator.
     _agentPresencePoller?.stop();
     _lastPresenceObservedByAgentId.clear();
   }

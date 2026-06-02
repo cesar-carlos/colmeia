@@ -26,6 +26,16 @@ import 'package:flutter/foundation.dart';
 /// the countdown without subscribing to a separate `Stream`. The internal
 /// [Timer] is cancelled on [dispose] and on every new [arm] / [release]
 /// to keep the pump count predictable in tests.
+///
+/// ## App-wide singleton vs route-scoped controllers
+///
+/// A single [RetryAfterGate] may be registered in GetIt and shared with
+/// prefetch coordinators (for example overview fact backfill). Route-scoped
+/// controllers that receive an injected gate must **not** call [dispose] on
+/// it — only [removeListener] for subscriptions they added. Controllers that
+/// construct their own gate (`retryAfterGate ?? RetryAfterGate()`) should
+/// dispose it when they own the instance. See `OverviewController` for the
+/// ownership flag pattern.
 class RetryAfterGate extends ChangeNotifier {
   RetryAfterGate({
     Duration tickInterval = const Duration(seconds: 1),

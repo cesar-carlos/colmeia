@@ -325,6 +325,29 @@ void main() {
       },
     );
 
+    test(
+      'should not dispose an injected RetryAfterGate when the controller '
+      'is torn down',
+      () {
+        final sharedGate = RetryAfterGate();
+        OverviewController(
+          LoadOverviewUseCase(_QueuedOverviewRepository(const [])),
+          LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
+          retryAfterGate: sharedGate,
+        ).dispose();
+
+        expect(
+          () => OverviewController(
+            LoadOverviewUseCase(_QueuedOverviewRepository(const [])),
+            LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
+            retryAfterGate: sharedGate,
+          ),
+          returnsNormally,
+        );
+        sharedGate.dispose();
+      },
+    );
+
     test('should ignore late use case completion after dispose', () async {
       final completer = Completer<AppResult<Overview>>();
       final controller = OverviewController(

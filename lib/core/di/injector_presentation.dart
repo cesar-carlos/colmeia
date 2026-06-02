@@ -46,7 +46,8 @@ import 'package:get_it/get_it.dart';
 
 void registerInjectorPresentation(GetIt getIt) {
   getIt
-    ..registerFactory<CurrentUserContextController>(
+    // App scope — same instance as [ColmeiaBootstrap]; Provider must not dispose.
+    ..registerLazySingleton<CurrentUserContextController>(
       () => CurrentUserContextController(
         authController: getIt<AuthController>(),
         loadCurrentUserContextUseCase: getIt<LoadCurrentUserContextUseCase>(),
@@ -58,6 +59,7 @@ void registerInjectorPresentation(GetIt getIt) {
       () => OverviewController(
         getIt<LoadOverviewUseCase>(),
         getIt<LoadOverviewOnlineAgentIdsUseCase>(),
+        // App singleton — OverviewController must not dispose it on route exit.
         retryAfterGate: getIt<RetryAfterGate>(),
         agentRpcCapabilitiesRegistry: getIt<AgentRpcCapabilitiesRegistry>(),
         relayCancelScopeBinder: (scope) =>
