@@ -1231,18 +1231,18 @@ packages:
     dependency: "direct main"
     description:
       name: syncfusion_flutter_xlsio
-      sha256: a35bf0e8a2cf68cf0c2ab725f226e8759794eb18ed7da93458a3c05d901accaf
+      sha256: "5d41fb87ad580ab77be97e5dcb13befead36bb5d0df4e333bf8c31f64087b461"
       url: "https://pub.dev"
     source: hosted
-    version: "33.2.6"
+    version: "33.2.8"
   syncfusion_officecore:
     dependency: transitive
     description:
       name: syncfusion_officecore
-      sha256: "4810bac271eeca149db9f38ef48160062a60ef46e97984d0ada65ef9bd5f05d4"
+      sha256: "338eff9559303c35bd8b960e86701b6a9367bbabce1065d9d9ec32f85f5f2f8d"
       url: "https://pub.dev"
     source: hosted
-    version: "33.2.6"
+    version: "33.2.8"
   term_glyph:
     dependency: transitive
     description:
