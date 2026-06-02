@@ -434,6 +434,18 @@ class _SalesRankingProdutosFaturamentoPageState
           SalesCardFilterTrigger(
             onTap: () => unawaited(_openFiltersSheet()),
             buttonSemanticsLabel: l10n.reportFiltersButton,
+            editActionLabel:
+                l10n.salesRankingProdutosFaturamentoEditFiltersAction,
+            footer: SalesAutoRefreshActionsRow(
+              value: autoRefreshOption,
+              onChanged: setAutoRefreshOption,
+              onRefreshNow: () => unawaited(_reload()),
+              enabled: canScheduleAutoRefresh,
+              lastUpdatedAt: autoRefreshLastUpdatedAt,
+              isPaused: autoRefreshIsPaused,
+              pauseReason: autoRefreshPauseReason,
+              l10n: l10n,
+            ),
             summaryItems: <SalesCardFilterSummaryItem>[
               SalesCardFilterSummaryItem(
                 label: l10n.salesBranchFilterLabel,
@@ -449,17 +461,6 @@ class _SalesRankingProdutosFaturamentoPageState
               ),
             ],
             enabled: !_loading,
-          ),
-          SizedBox(height: tokens.gapMd),
-          SalesAutoRefreshActionsRow(
-            value: autoRefreshOption,
-            onChanged: setAutoRefreshOption,
-            onRefreshNow: () => unawaited(_reload()),
-            enabled: canScheduleAutoRefresh,
-            lastUpdatedAt: autoRefreshLastUpdatedAt,
-            isPaused: autoRefreshIsPaused,
-            pauseReason: autoRefreshPauseReason,
-            l10n: l10n,
           ),
           SizedBox(height: tokens.sectionSpacing),
           if (_selectedAgentId == null)
@@ -539,6 +540,7 @@ class _SalesRankingProdutosFaturamentoPageState
                     l10n: l10n,
                     codEmpresa: section.codEmpresa,
                     codFilial: section.codFilial,
+                    branchDisplayName: selectedBranch?.name,
                     rows: section.rows,
                     metricSubtitle: metricSubtitle,
                     isLoading: _loading,

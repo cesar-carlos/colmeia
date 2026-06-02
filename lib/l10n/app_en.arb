@@ -1660,6 +1660,7 @@
   "salesRankingProdutosFaturamentoChartTitle": "Top products by revenue",
   "salesRankingProdutosFaturamentoFilterPeriod": "Period",
   "salesRankingProdutosFaturamentoFilterQuantidade": "Ranking size",
+  "salesRankingProdutosFaturamentoEditFiltersAction": "Edit filters",
   "salesRankingProdutosFaturamentoBranchHeader": "Company {codEmpresa} • Branch {codFilial}",
   "@salesRankingProdutosFaturamentoBranchHeader": {
     "placeholders": {
@@ -1669,6 +1670,14 @@
   },
   "salesRankingProdutosFaturamentoDiversosLabel": "Other products (MISC)",
   "salesRankingProdutosFaturamentoMetricFaturamento": "Revenue",
+  "salesRankingProdutosFaturamentoChartSummary": "Top 5 + Others",
+  "salesRankingProdutosFaturamentoLeadInsight": "Leading product: {productName} • {percentual}% of revenue",
+  "@salesRankingProdutosFaturamentoLeadInsight": {
+    "placeholders": {
+      "productName": { "type": "String" },
+      "percentual": { "type": "String" }
+    }
+  },
   "salesRankingProdutosFaturamentoGridColumnPosicao": "#",
   "salesRankingProdutosFaturamentoGridColumnProduto": "Product",
   "salesRankingProdutosFaturamentoGridColumnVenda": "Sales",

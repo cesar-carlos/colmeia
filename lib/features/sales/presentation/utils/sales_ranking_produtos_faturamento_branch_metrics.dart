@@ -3,8 +3,36 @@ import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 
 const double kRankingProdutosFaturamentoPercentSumTolerance = 0.5;
 
+class BranchLeadProductInsight {
+  const BranchLeadProductInsight({
+    required this.productName,
+    required this.percentual,
+  });
+
+  final String productName;
+  final double percentual;
+}
+
 double branchRevenueTotal(List<RankingProdutosFaturamentoRow> rows) {
   return rows.fold<double>(0, (sum, row) => sum + row.valorVenda);
+}
+
+BranchLeadProductInsight? branchLeadProductInsight(
+  List<RankingProdutosFaturamentoRow> rows,
+) {
+  for (final row in rows) {
+    if (row.isDiversos) {
+      continue;
+    }
+    final productName = row.nomeProduto.trim();
+    return BranchLeadProductInsight(
+      productName: productName.isEmpty
+          ? RankingProdutosFaturamentoRow.diversosNomeProduto
+          : productName,
+      percentual: row.percentual,
+    );
+  }
+  return null;
 }
 
 double branchPercentSum(List<RankingProdutosFaturamentoRow> rows) {

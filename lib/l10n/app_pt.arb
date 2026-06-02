@@ -1434,6 +1434,7 @@
   "salesRankingProdutosFaturamentoChartTitle": "Top produtos por faturamento",
   "salesRankingProdutosFaturamentoFilterPeriod": "Período",
   "salesRankingProdutosFaturamentoFilterQuantidade": "Quantidade no ranking",
+  "salesRankingProdutosFaturamentoEditFiltersAction": "Editar filtros",
   "salesRankingProdutosFaturamentoBranchHeader": "Empresa {codEmpresa} • Filial {codFilial}",
   "@salesRankingProdutosFaturamentoBranchHeader": {
     "placeholders": {
@@ -1443,6 +1444,14 @@
   },
   "salesRankingProdutosFaturamentoDiversosLabel": "Demais produtos (DIVERSOS)",
   "salesRankingProdutosFaturamentoMetricFaturamento": "Faturamento",
+  "salesRankingProdutosFaturamentoChartSummary": "Top 5 + Demais",
+  "salesRankingProdutosFaturamentoLeadInsight": "Produto líder: {productName} • {percentual}% do faturamento",
+  "@salesRankingProdutosFaturamentoLeadInsight": {
+    "placeholders": {
+      "productName": { "type": "String" },
+      "percentual": { "type": "String" }
+    }
+  },
   "salesRankingProdutosFaturamentoGridColumnPosicao": "#",
   "salesRankingProdutosFaturamentoGridColumnProduto": "Produto",
   "salesRankingProdutosFaturamentoGridColumnVenda": "Venda",

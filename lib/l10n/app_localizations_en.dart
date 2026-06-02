@@ -3358,6 +3358,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesRankingProdutosFaturamentoFilterQuantidade => 'Ranking size';
 
   @override
+  String get salesRankingProdutosFaturamentoEditFiltersAction => 'Edit filters';
+
+  @override
   String salesRankingProdutosFaturamentoBranchHeader(
     int codEmpresa,
     int codFilial,
@@ -3371,6 +3374,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesRankingProdutosFaturamentoMetricFaturamento => 'Revenue';
+
+  @override
+  String get salesRankingProdutosFaturamentoChartSummary => 'Top 5 + Others';
+
+  @override
+  String salesRankingProdutosFaturamentoLeadInsight(
+    String productName,
+    String percentual,
+  ) {
+    return 'Leading product: $productName • $percentual% of revenue';
+  }
 
   @override
   String get salesRankingProdutosFaturamentoGridColumnPosicao => '#';

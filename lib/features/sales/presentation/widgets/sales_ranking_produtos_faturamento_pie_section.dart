@@ -6,6 +6,7 @@ import 'package:colmeia/features/sales/presentation/utils/sales_ranking_produtos
 import 'package:colmeia/features/sales/presentation/utils/sales_ranking_produtos_faturamento_donut_segments.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_ranking_produtos_faturamento_grid_style.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card.dart';
@@ -94,6 +95,13 @@ class SalesRankingProdutosFaturamentoPieSection extends StatelessWidget {
             Text(
               l10n.salesRankingProdutosFaturamentoChartTitle,
               style: titleStyle,
+            ),
+            SizedBox(height: tokens.gapSm),
+            Text(
+              l10n.salesRankingProdutosFaturamentoChartSummary,
+              style: theme.appTypography.utilityOverline.copyWith(
+                color: theme.appColors.onSurfaceVariant,
+              ),
             ),
             SizedBox(height: tokens.gapSm),
             if (boundedHeight)

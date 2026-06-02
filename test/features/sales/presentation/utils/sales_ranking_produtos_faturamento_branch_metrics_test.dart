@@ -98,4 +98,31 @@ void main() {
       expect(sorted.map((r) => r.codProduto).toList(), <int>[1, 2, 0]);
     });
   });
+
+  group('branchLeadProductInsight', () {
+    test('returns lead product insight with highest revenue row', () {
+      final rows = <RankingProdutosFaturamentoRow>[
+        _row(
+          codProduto: 1,
+          nome: 'Cafe',
+          valor: 320,
+          percentual: 32,
+          posicao: 1,
+        ),
+        _row(
+          codProduto: 2,
+          nome: 'Acucar',
+          valor: 180,
+          percentual: 18,
+          posicao: 2,
+        ),
+      ];
+
+      final insight = branchLeadProductInsight(rows);
+
+      expect(insight, isNotNull);
+      expect(insight!.productName, 'Cafe');
+      expect(insight.percentual, 32);
+    });
+  });
 }

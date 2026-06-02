@@ -24,12 +24,16 @@ class SalesCardFilterTrigger extends StatelessWidget {
     required this.buttonSemanticsLabel,
     super.key,
     this.enabled = true,
+    this.editActionLabel,
+    this.footer,
   }) : assert(summaryItems.length > 0, 'summaryItems cannot be empty');
 
   final List<SalesCardFilterSummaryItem> summaryItems;
   final VoidCallback onTap;
   final String buttonSemanticsLabel;
   final bool enabled;
+  final String? editActionLabel;
+  final Widget? footer;
 
   @override
   Widget build(BuildContext context) {
@@ -83,56 +87,77 @@ class SalesCardFilterTrigger extends StatelessWidget {
     }
 
     return AppSectionCard(
-      child: Stack(
-        clipBehavior: Clip.none,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Padding(
-            padding: EdgeInsetsDirectional.only(
-              end: _kSalesFilterCircleSize + tokens.gapSm,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                for (var i = 0; i < summaryItems.length; i++) ...<Widget>[
-                  summaryBlock(summaryItems[i]),
-                  if (i < summaryItems.length - 1)
-                    SizedBox(height: tokens.gapSm),
-                ],
-              ],
-            ),
-          ),
-          PositionedDirectional(
-            end: 0,
-            top: 0,
-            bottom: 0,
-            child: Center(
-              child: Semantics(
-                button: true,
-                label: buttonSemanticsLabel,
-                child: Material(
-                  color: SalesFilterCirclePalette.fill,
-                  shape: const CircleBorder(),
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: enabled ? open : null,
-                    child: SizedBox(
-                      width: _kSalesFilterCircleSize,
-                      height: _kSalesFilterCircleSize,
-                      child: Icon(
-                        Icons.filter_list_rounded,
-                        size: 22,
-                        color: enabled
-                            ? SalesFilterCirclePalette.icon
-                            : scheme.onSurfaceVariant,
+          Stack(
+            clipBehavior: Clip.none,
+            children: <Widget>[
+              Padding(
+                padding: EdgeInsetsDirectional.only(
+                  end: _kSalesFilterCircleSize + tokens.gapSm,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    for (var i = 0; i < summaryItems.length; i++) ...<Widget>[
+                      summaryBlock(summaryItems[i]),
+                      if (i < summaryItems.length - 1)
+                        SizedBox(height: tokens.gapSm),
+                    ],
+                  ],
+                ),
+              ),
+              PositionedDirectional(
+                end: 0,
+                top: 0,
+                bottom: 0,
+                child: Center(
+                  child: Semantics(
+                    button: true,
+                    label: buttonSemanticsLabel,
+                    child: Material(
+                      color: SalesFilterCirclePalette.fill,
+                      shape: const CircleBorder(),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: enabled ? open : null,
+                        child: SizedBox(
+                          width: _kSalesFilterCircleSize,
+                          height: _kSalesFilterCircleSize,
+                          child: Icon(
+                            Icons.filter_list_rounded,
+                            size: 22,
+                            color: enabled
+                                ? SalesFilterCirclePalette.icon
+                                : scheme.onSurfaceVariant,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
+          if (editActionLabel != null) ...<Widget>[
+            SizedBox(height: tokens.gapMd),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: enabled ? open : null,
+                icon: const Icon(Icons.tune_rounded),
+                label: Text(editActionLabel!),
+              ),
+            ),
+          ],
+          if (footer != null) ...<Widget>[
+            SizedBox(height: tokens.gapMd),
+            footer!,
+          ],
         ],
       ),
     );

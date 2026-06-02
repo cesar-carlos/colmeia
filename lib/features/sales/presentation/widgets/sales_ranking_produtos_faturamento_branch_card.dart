@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
+import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/ranking_produtos_faturamento_row.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_ranking_produtos_faturamento_branch_metrics.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_ranking_produtos_faturamento_details_table.dart';
@@ -28,6 +29,7 @@ class SalesRankingProdutosFaturamentoBranchCard extends StatefulWidget {
     required this.codFilial,
     required this.rows,
     required this.metricSubtitle,
+    this.branchDisplayName,
     this.isLoading = false,
     super.key,
   });
@@ -37,6 +39,7 @@ class SalesRankingProdutosFaturamentoBranchCard extends StatefulWidget {
   final int codFilial;
   final List<RankingProdutosFaturamentoRow> rows;
   final String metricSubtitle;
+  final String? branchDisplayName;
   final bool isLoading;
 
   @override
@@ -69,7 +72,15 @@ class _SalesRankingProdutosFaturamentoBranchCardState
     }
   }
 
-  String get _branchTitle =>
+  String get _branchTitle {
+    final displayName = widget.branchDisplayName?.trim();
+    if (displayName != null && displayName.isNotEmpty) {
+      return displayName;
+    }
+    return _branchMeta;
+  }
+
+  String get _branchMeta =>
       widget.l10n.salesRankingProdutosFaturamentoBranchHeader(
         widget.codEmpresa,
         widget.codFilial,
@@ -156,81 +167,138 @@ class _SalesRankingProdutosFaturamentoBranchCardState
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildHeader(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.appTokens;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                _branchTitle,
+                style: theme.appTypography.sectionHeaderH2.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              if (_branchTitle != _branchMeta) ...<Widget>[
+                SizedBox(height: tokens.gapXs),
+                Text(
+                  _branchMeta,
+                  style: theme.appTypography.body.copyWith(
+                    color: theme.appColors.onSurfaceVariant,
+                  ),
+                ),
+              ],
+              SizedBox(height: tokens.gapXs),
+              Text(
+                widget.metricSubtitle,
+                style: theme.appTypography.utilityOverline.copyWith(
+                  color: theme.appColors.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+        IconButton(
+          onPressed: widget.rows.isEmpty ? null : _openFullscreen,
+          tooltip: widget.l10n.salesRankingProdutosFaturamentoFullscreenTooltip,
+          icon: const Icon(Icons.open_in_full),
+        ),
+        IconButton(
+          onPressed: widget.rows.isEmpty ? null : _exportCsv,
+          tooltip: widget.l10n.salesRankingProdutosFaturamentoExportTooltip,
+          icon: const Icon(Icons.download_outlined),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildChartColumn(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.appTokens;
     final total = branchRevenueTotal(widget.rows);
     final percentFormat = NumberFormat('#,##0.0', 'pt_BR');
     final showPercentHint = branchPercentSumDiverges(widget.rows);
+    final leadInsight = branchLeadProductInsight(widget.rows);
 
-    return AppSectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Expanded(
-                child: Column(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        _buildHeader(context),
+        SizedBox(height: tokens.gapMd),
+        AppCompactKpiStat(
+          label: widget.l10n.salesRankingProdutosFaturamentoBranchTotalLabel,
+          value: AppBrFormatters.compactCurrency(total),
+        ),
+        if (leadInsight != null) ...<Widget>[
+          SizedBox(height: tokens.gapSm),
+          Text(
+            widget.l10n.salesRankingProdutosFaturamentoLeadInsight(
+              leadInsight.productName,
+              percentFormat.format(leadInsight.percentual),
+            ),
+            style: theme.appTypography.body.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+        SizedBox(height: tokens.contentSpacing),
+        SalesRankingProdutosFaturamentoPieSection(
+          l10n: widget.l10n,
+          rows: widget.rows,
+          isLoading: widget.isLoading,
+        ),
+        if (showPercentHint) ...<Widget>[
+          SizedBox(height: tokens.gapMd),
+          AppInlineErrorPanel(
+            tone: AppInlinePanelTone.informational,
+            message: widget.l10n.salesRankingProdutosFaturamentoPercentSumHint(
+              percentFormat.format(branchPercentSum(widget.rows)),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).appTokens;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useDesktopLayout = constraints.maxWidth >= AppBreakpoints.desktop;
+
+        return AppSectionCard(
+          child: useDesktopLayout
+              ? Row(
+                  key: const Key('sales-ranking-branch-desktop-layout'),
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(
-                      _branchTitle,
-                      style: theme.appTypography.sectionHeaderH2.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Expanded(
+                      flex: 5,
+                      child: _buildChartColumn(context),
                     ),
-                    SizedBox(height: tokens.gapXs),
-                    Text(
-                      widget.metricSubtitle,
-                      style: theme.appTypography.utilityOverline.copyWith(
-                        color: theme.appColors.onSurfaceVariant,
-                      ),
+                    SizedBox(width: tokens.sectionSpacing),
+                    Expanded(
+                      flex: 6,
+                      child: _buildGrid(context, heightOverride: 520),
                     ),
                   ],
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    _buildChartColumn(context),
+                    SizedBox(height: tokens.contentSpacing),
+                    _buildGrid(context),
+                  ],
                 ),
-              ),
-              IconButton(
-                onPressed: widget.rows.isEmpty ? null : _openFullscreen,
-                tooltip: widget
-                    .l10n
-                    .salesRankingProdutosFaturamentoFullscreenTooltip,
-                icon: const Icon(Icons.open_in_full),
-              ),
-              IconButton(
-                onPressed: widget.rows.isEmpty ? null : _exportCsv,
-                tooltip:
-                    widget.l10n.salesRankingProdutosFaturamentoExportTooltip,
-                icon: const Icon(Icons.download_outlined),
-              ),
-            ],
-          ),
-          SizedBox(height: tokens.gapMd),
-          AppCompactKpiStat(
-            label: widget.l10n.salesRankingProdutosFaturamentoBranchTotalLabel,
-            value: AppBrFormatters.compactCurrency(total),
-          ),
-          SizedBox(height: tokens.contentSpacing),
-          SalesRankingProdutosFaturamentoPieSection(
-            l10n: widget.l10n,
-            rows: widget.rows,
-            isLoading: widget.isLoading,
-          ),
-          SizedBox(height: tokens.contentSpacing),
-          _buildGrid(context),
-          if (showPercentHint) ...<Widget>[
-            SizedBox(height: tokens.gapMd),
-            AppInlineErrorPanel(
-              tone: AppInlinePanelTone.informational,
-              message: widget.l10n
-                  .salesRankingProdutosFaturamentoPercentSumHint(
-                    percentFormat.format(branchPercentSum(widget.rows)),
-                  ),
-            ),
-          ],
-        ],
-      ),
+        );
+      },
     );
   }
 }

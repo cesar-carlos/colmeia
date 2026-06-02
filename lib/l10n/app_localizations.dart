@@ -5536,6 +5536,12 @@ abstract class AppLocalizations {
   /// **'Ranking size'**
   String get salesRankingProdutosFaturamentoFilterQuantidade;
 
+  /// No description provided for @salesRankingProdutosFaturamentoEditFiltersAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit filters'**
+  String get salesRankingProdutosFaturamentoEditFiltersAction;
+
   /// No description provided for @salesRankingProdutosFaturamentoBranchHeader.
   ///
   /// In en, this message translates to:
@@ -5556,6 +5562,21 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Revenue'**
   String get salesRankingProdutosFaturamentoMetricFaturamento;
+
+  /// No description provided for @salesRankingProdutosFaturamentoChartSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Top 5 + Others'**
+  String get salesRankingProdutosFaturamentoChartSummary;
+
+  /// No description provided for @salesRankingProdutosFaturamentoLeadInsight.
+  ///
+  /// In en, this message translates to:
+  /// **'Leading product: {productName} • {percentual}% of revenue'**
+  String salesRankingProdutosFaturamentoLeadInsight(
+    String productName,
+    String percentual,
+  );
 
   /// No description provided for @salesRankingProdutosFaturamentoGridColumnPosicao.
   ///

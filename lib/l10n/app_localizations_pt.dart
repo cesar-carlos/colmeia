@@ -3409,6 +3409,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Quantidade no ranking';
 
   @override
+  String get salesRankingProdutosFaturamentoEditFiltersAction =>
+      'Editar filtros';
+
+  @override
   String salesRankingProdutosFaturamentoBranchHeader(
     int codEmpresa,
     int codFilial,
@@ -3422,6 +3426,17 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesRankingProdutosFaturamentoMetricFaturamento => 'Faturamento';
+
+  @override
+  String get salesRankingProdutosFaturamentoChartSummary => 'Top 5 + Demais';
+
+  @override
+  String salesRankingProdutosFaturamentoLeadInsight(
+    String productName,
+    String percentual,
+  ) {
+    return 'Produto líder: $productName • $percentual% do faturamento';
+  }
 
   @override
   String get salesRankingProdutosFaturamentoGridColumnPosicao => '#';
@@ -7731,6 +7746,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Quantidade no ranking';
 
   @override
+  String get salesRankingProdutosFaturamentoEditFiltersAction =>
+      'Editar filtros';
+
+  @override
   String salesRankingProdutosFaturamentoBranchHeader(
     int codEmpresa,
     int codFilial,
@@ -7744,6 +7763,17 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesRankingProdutosFaturamentoMetricFaturamento => 'Faturamento';
+
+  @override
+  String get salesRankingProdutosFaturamentoChartSummary => 'Top 5 + Demais';
+
+  @override
+  String salesRankingProdutosFaturamentoLeadInsight(
+    String productName,
+    String percentual,
+  ) {
+    return 'Produto líder: $productName • $percentual% do faturamento';
+  }
 
   @override
   String get salesRankingProdutosFaturamentoGridColumnPosicao => '#';

@@ -13,24 +13,68 @@ List<AppCategoryDonutSegment> rankingProdutosFaturamentoDonutSegments({
   required String diversosLabel,
   required List<Color> palette,
   Color? diversosColor,
+  int maxHighlightedSegments = 5,
 }) {
   if (rows.isEmpty) {
     return const <AppCategoryDonutSegment>[];
   }
 
   final segments = <AppCategoryDonutSegment>[];
-  for (var index = 0; index < rows.length; index++) {
-    final row = rows[index];
-    final label = row.isDiversos ? diversosLabel : row.nomeProduto.trim();
+
+  final highlightedCount = maxHighlightedSegments < 1
+      ? rows.length
+      : maxHighlightedSegments;
+  final highlightedRows = rows.take(highlightedCount).toList(growable: false);
+  final overflowRows = rows.skip(highlightedCount).toList(growable: false);
+
+  for (var index = 0; index < highlightedRows.length; index++) {
+    final row = highlightedRows[index];
+    segments.add(
+      _segmentFromRow(
+        row,
+        index: index,
+        diversosLabel: diversosLabel,
+        palette: palette,
+        diversosColor: diversosColor,
+      ),
+    );
+  }
+
+  if (overflowRows.isNotEmpty) {
+    final overflowPercent = overflowRows.fold<double>(
+      0,
+      (sum, row) => sum + row.percentual,
+    );
+    final overflowValue = overflowRows.fold<double>(
+      0,
+      (sum, row) => sum + row.valorVenda,
+    );
     segments.add(
       AppCategoryDonutSegment(
-        label: label.isEmpty ? diversosLabel : label,
-        value: row.percentual,
-        valueLabel: AppBrFormatters.currency(row.valorVenda),
-        percentLabel: '${_percentLabelFormat.format(row.percentual)}%',
-        color: row.isDiversos ? diversosColor : palette[index % palette.length],
+        label: diversosLabel,
+        value: overflowPercent,
+        valueLabel: AppBrFormatters.currency(overflowValue),
+        percentLabel: '${_percentLabelFormat.format(overflowPercent)}%',
+        color: diversosColor,
       ),
     );
   }
   return segments;
+}
+
+AppCategoryDonutSegment _segmentFromRow(
+  RankingProdutosFaturamentoRow row, {
+  required int index,
+  required String diversosLabel,
+  required List<Color> palette,
+  required Color? diversosColor,
+}) {
+  final label = row.isDiversos ? diversosLabel : row.nomeProduto.trim();
+  return AppCategoryDonutSegment(
+    label: label.isEmpty ? diversosLabel : label,
+    value: row.percentual,
+    valueLabel: AppBrFormatters.currency(row.valorVenda),
+    percentLabel: '${_percentLabelFormat.format(row.percentual)}%',
+    color: row.isDiversos ? diversosColor : palette[index % palette.length],
+  );
 }
