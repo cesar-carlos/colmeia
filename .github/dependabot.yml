@@ -1,7 +1,9 @@
+# Dependabot paused: open-pull-requests-limit 0 blocks new PRs/branches.
+# Raise the limit (e.g. 5) and restore schedule when you want monthly pub bumps again.
 version: 2
 updates:
   - package-ecosystem: pub
     directory: /
     schedule:
       interval: monthly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 0
