@@ -21,6 +21,9 @@ const int _kMaxInlineChips = 3;
 /// straight token radius.
 const double _kAgentFilterSurfaceExtraRadius = 2;
 
+/// [InputChip] avatar slot width from Material; dual-status icons must fit here.
+const double _kAgentFilterChipAvatarSize = 20;
+
 /// Home overview agent filter: compact summary, sheet for bulk selection.
 ///
 /// The summary row, the "many selected" condensed row and the inline chips
@@ -220,14 +223,24 @@ Widget? _agentFilterChipAvatar(DashboardAgentOption agent, ColorScheme scheme) {
   final offline = agent.connectionStatus == AgentConnectionStatus.offline;
   final noToken = agent.missingLocalClientToken;
   if (offline && noToken) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
-        Icon(Icons.cloud_off_outlined, size: 14, color: scheme.error),
-        const SizedBox(width: 3),
-        Icon(Icons.vpn_key_off_outlined, size: 14, color: scheme.tertiary),
-      ],
+    return SizedBox(
+      width: _kAgentFilterChipAvatarSize,
+      height: _kAgentFilterChipAvatarSize,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(Icons.cloud_off_outlined, size: 14, color: scheme.error),
+            const SizedBox(width: 3),
+            Icon(
+              Icons.vpn_key_off_outlined,
+              size: 14,
+              color: scheme.tertiary,
+            ),
+          ],
+        ),
+      ),
     );
   }
   if (offline) {
