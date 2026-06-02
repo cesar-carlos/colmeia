@@ -761,6 +761,10 @@ void main() {
     try {
       await _pumpMap(
         tester,
+        style: _baseStyle.copyWith(
+          selectedMarkerDetailPlacement:
+              AppBrazilStoreSalesSelectedMarkerDetailPlacement.overlay,
+        ),
         points: const <AppBrazilStoreSalesPoint>[
           AppBrazilStoreSalesPoint(
             id: 'store-1',
@@ -790,6 +794,21 @@ void main() {
           );
       expect(regionMap.onPointTap, isNotNull);
       expect(regionMap.markerTooltipBuilder, isNull);
+      expect(regionMap.style.showTooltip, isFalse);
+      expect(
+        find.byType(AppBrazilStoreSalesBranchHoverDetailAnchor),
+        findsNothing,
+      );
+      expect(
+        find.byType(AppBrazilStoreSalesSelectedMarkerDetailAnchor),
+        findsNothing,
+      );
+      expect(
+        find.byKey(
+          const ValueKey<String>('brazil-store-sales-map-store-detail'),
+        ),
+        findsOneWidget,
+      );
     } finally {
       debugDefaultTargetPlatformOverride = null;
     }

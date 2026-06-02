@@ -76,6 +76,10 @@ abstract final class EnvKeys {
   static const String agentQueryFactsPrefetchEnabled =
       'AGENT_QUERY_FACTS_PREFETCH_ENABLED';
 
+  /// TTL in milliseconds for in-memory agent query target resolution cache.
+  static const String agentQueryTargetResolutionCacheTtlMs =
+      'AGENT_QUERY_TARGET_RESOLUTION_CACHE_TTL_MS';
+
   /// Default per-call bridge timeout (ms) for `agent_queries` repositories.
   /// Used as fallback when callers do not pass `bridgeTimeoutMs`. Default
   /// 120000 ms.

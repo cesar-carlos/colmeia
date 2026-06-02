@@ -134,6 +134,7 @@ abstract final class AppEnvironment {
   static const int defaultAgentSqlParseIsolateRowThreshold = 2000;
   static const int defaultAgentSqlCatalogCacheTtlMs = 30000;
   static const int defaultAgentQueryMergeAllConcurrency = 8;
+  static const int defaultAgentQueryTargetResolutionCacheTtlMs = 30000;
   static const int defaultAgentSqlOverviewBatchMaxParallelReadOnlyItems = 4;
   static const int defaultAgentSqlRelayStreamingMaxConcurrentPerAgent = 4;
   static const int defaultAgentSqlBridgeTimeoutMs = 120000;
@@ -272,6 +273,17 @@ abstract final class AppEnvironment {
   ).clamp(60000, 86400000);
 
   static const bool defaultAgentQueryFactsPrefetchEnabled = true;
+
+  static Duration get agentQueryTargetResolutionCacheTtl {
+    final ms = AppEnvironmentResolution.resolveInt(
+      fromDefine: const String.fromEnvironment(
+        EnvKeys.agentQueryTargetResolutionCacheTtlMs,
+      ),
+      fromDotenv: _dotenvMaybe(EnvKeys.agentQueryTargetResolutionCacheTtlMs),
+      fallback: defaultAgentQueryTargetResolutionCacheTtlMs,
+    ).clamp(1000, 300000);
+    return Duration(milliseconds: ms);
+  }
 
   static bool get agentQueryFactsPrefetchEnabled =>
       AppEnvironmentResolution.resolveBool(

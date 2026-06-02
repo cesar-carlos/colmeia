@@ -199,8 +199,12 @@ class _BrazilMapChrome {
           defaultTargetPlatform == TargetPlatform.windows,
       showBelowMapMarkerDetail:
           style.showStoreDetail &&
-          style.selectedMarkerDetailPlacement ==
-              AppBrazilStoreSalesSelectedMarkerDetailPlacement.belowMap,
+          (style.selectedMarkerDetailPlacement ==
+                  AppBrazilStoreSalesSelectedMarkerDetailPlacement.belowMap ||
+              (defaultTargetPlatform == TargetPlatform.windows &&
+                  style.selectedMarkerDetailPlacement ==
+                      AppBrazilStoreSalesSelectedMarkerDetailPlacement
+                          .overlay)),
     );
   }
 
@@ -598,7 +602,8 @@ class _AppBrazilStoreSalesMapChartState
                   ? EdgeInsets.all(tokens.gapSm)
                   : null,
               showLegend: _effectiveShowLegend,
-              showTooltip: widget.style.showTooltip,
+              showTooltip:
+                  widget.style.showTooltip && !_useWindowsSafeMarkerDetails,
               showShapeTooltip: false,
               showDataLabels: widget.style.showDataLabels,
               showMetricSelector:
@@ -761,7 +766,8 @@ class _AppBrazilStoreSalesMapChartState
       widget.style.showStoreDetail &&
       !_shouldUseCompactBranchSheet &&
       widget.style.selectedMarkerDetailPlacement ==
-          AppBrazilStoreSalesSelectedMarkerDetailPlacement.overlay;
+          AppBrazilStoreSalesSelectedMarkerDetailPlacement.overlay &&
+      !_useWindowsSafeMarkerDetails;
 
   bool get _showBelowMapMarkerDetail => _chrome.showBelowMapMarkerDetail;
 
@@ -1570,7 +1576,9 @@ class _AppBrazilStoreSalesMapChartState
         group.points.any((point) => point.id == previewedStoreId);
 
     if (!showDetailOverlay && !showPreviewOverlay) {
-      if (group == null || !widget.style.showTooltip) {
+      if (group == null ||
+          !widget.style.showTooltip ||
+          _useWindowsSafeMarkerDetails) {
         return marker;
       }
 
@@ -1581,7 +1589,7 @@ class _AppBrazilStoreSalesMapChartState
       );
     }
 
-    if (showPreviewOverlay) {
+    if (showPreviewOverlay && !_useWindowsSafeMarkerDetails) {
       return AppBrazilStoreSalesBranchHoverDetailAnchor(
         group: group,
         metric: _selectedMetric,
@@ -1591,18 +1599,23 @@ class _AppBrazilStoreSalesMapChartState
       );
     }
 
-    return AppBrazilStoreSalesSelectedMarkerDetailAnchor(
-      group: group,
-      selectedStoreId: selectedStoreId!,
-      metric: _selectedMetric,
-      marker: marker,
-      onClose: _clearSelectedMarkerDetail,
-      onClearSelection: _clearSelectedMarkerDetail,
-      onSelectBranch: (point) =>
-          _handleMarkerBranchAction(point: point, index: index),
-      selectBranchLabelBuilder: (_) =>
-          AppLocalizations.of(context).brazilStoreSalesMapShowBranchOnMapAction,
-    );
+    if (showDetailOverlay) {
+      return AppBrazilStoreSalesSelectedMarkerDetailAnchor(
+        group: group,
+        selectedStoreId: selectedStoreId,
+        metric: _selectedMetric,
+        marker: marker,
+        onClose: _clearSelectedMarkerDetail,
+        onClearSelection: _clearSelectedMarkerDetail,
+        onSelectBranch: (point) =>
+            _handleMarkerBranchAction(point: point, index: index),
+        selectBranchLabelBuilder: (_) => AppLocalizations.of(
+          context,
+        ).brazilStoreSalesMapShowBranchOnMapAction,
+      );
+    }
+
+    return marker;
   }
 
   Widget _buildMarkerTooltip(

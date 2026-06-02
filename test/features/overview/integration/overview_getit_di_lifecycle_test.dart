@@ -10,7 +10,6 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_m
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_filter.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
-import 'package:colmeia/features/overview/application/usecases/load_overview_online_agent_ids_use_case.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_controller.dart';
@@ -70,7 +69,6 @@ void main() {
       ..registerFactory<OverviewController>(
         () => OverviewController(
           LoadOverviewUseCase(overviewRepository),
-          LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
           retryAfterGate: getIt<RetryAfterGate>(),
         ),
       );

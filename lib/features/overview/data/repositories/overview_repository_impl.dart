@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
-import 'package:colmeia/features/agent_queries/application/sync/agent_query_facts_prefetch_coordinator.dart';
 import 'package:colmeia/features/agent_queries/domain/cache/agent_query_facts_key_prefix.dart';
 import 'package:colmeia/features/agent_queries/domain/cache/agent_query_facts_store.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
@@ -62,18 +61,15 @@ class OverviewRepositoryImpl implements OverviewRepository {
   OverviewRepositoryImpl({
     required OverviewBatchLoader batchLoader,
     AgentQueryFactsStore? factsStore,
-    AgentQueryFactsPrefetchCoordinator? factsPrefetchCoordinator,
     DateTime Function()? now,
     OverviewBatchAssembler assembler = const OverviewBatchAssembler(),
   }) : _batchLoader = batchLoader,
        _factsStore = factsStore,
-       _factsPrefetchCoordinator = factsPrefetchCoordinator,
        _now = now ?? DateTime.now,
        _assembler = assembler;
 
   final OverviewBatchLoader _batchLoader;
   final AgentQueryFactsStore? _factsStore;
-  final AgentQueryFactsPrefetchCoordinator? _factsPrefetchCoordinator;
   final DateTime Function() _now;
   final OverviewBatchAssembler _assembler;
 
@@ -382,37 +378,15 @@ class OverviewRepositoryImpl implements OverviewRepository {
           userRankingRowsByAgentId: userRankingRowsByAgentId,
         );
 
-        if (loaded.isFinal && policy == OverviewLoadPolicy.defaultLoad) {
-          final prefetch = _factsPrefetchCoordinator;
-          if (prefetch != null) {
-            unawaited(
-              prefetch.prefetchForPlannedTargets(
-                userId: userId,
-                targets: loaded.plan.plannedTargets,
-                dailyFilter: dailyTotalFilter,
-                monthlyFilter: mensalFilter,
-                hubPresenceOnlineAgentIdsSnapshot:
-                    loaded.resolution.hubPresenceOnlineAgentIdsSnapshot,
-                bridgeTimeoutMs: OverviewBatchLoader.overviewBatchBridgeTimeoutMs,
-              ),
-            );
-          }
-          AppLogger.info(
-            'Overview loaded from agent query batch',
-            context: <String, Object?>{
-              'operation': 'loadOverview',
-              'userId': userId,
-              'agentCount': report.consideredApprovedAgentCount,
-              'plannedAgentCount': report.plannedTargets.length,
-              'periodStart': period.start.toIso8601String(),
-              'periodEnd': period.end.toIso8601String(),
-              'paymentMethods': overview.paymentMethods.length,
-              'partialQueryFailures':
-                  overview.agentIdsExcludedFromQueryFailure.length,
-              'agentsMissingClientToken':
-                  overview.agentIdsMissingClientToken.length,
-              'batchElapsedMs': loaded.totalElapsedMs,
-            },
+        if (loaded.isFinal) {
+          _logOverviewLoadTelemetry(
+            userId: userId,
+            policy: policy,
+            loaded: loaded,
+            report: report,
+            overview: overview,
+            batchResults: batchResults,
+            period: period,
           );
         }
 
@@ -853,6 +827,70 @@ class OverviewRepositoryImpl implements OverviewRepository {
     }
 
     return failure;
+  }
+
+  void _logOverviewLoadTelemetry({
+    required String userId,
+    required OverviewLoadPolicy policy,
+    required OverviewBatchLoadResult loaded,
+    required AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRowV2> report,
+    required Overview overview,
+    required List<OverviewBatchTargetResult> batchResults,
+    required _OverviewPeriod period,
+  }) {
+    var monthlySectionFailures = 0;
+    var dailySectionFailures = 0;
+    var weekdaySectionFailures = 0;
+    var weekdayUserSectionFailures = 0;
+    var lucratividadeSectionFailures = 0;
+    var lucratividadeMensalSectionFailures = 0;
+    for (final result in batchResults) {
+      if (result.monthlyFailure != null) {
+        monthlySectionFailures++;
+      }
+      if (result.dailyFailure != null) {
+        dailySectionFailures++;
+      }
+      if (result.weekdayFailure != null) {
+        weekdaySectionFailures++;
+      }
+      if (result.weekdayUserFailure != null) {
+        weekdayUserSectionFailures++;
+      }
+      if (result.lucratividadeFailure != null) {
+        lucratividadeSectionFailures++;
+      }
+      if (result.lucratividadeMensalFailure != null) {
+        lucratividadeMensalSectionFailures++;
+      }
+    }
+
+    AppLogger.info(
+      'Overview loaded from agent query batch',
+      context: <String, Object?>{
+        'operation': 'loadOverview',
+        'userId': userId,
+        'policy': policy.name,
+        'isFinal': loaded.isFinal,
+        'consideredApprovedAgentCount': report.consideredApprovedAgentCount,
+        'plannedTargetCount': loaded.plan.plannedTargets.length,
+        'sqlEligibleConsideredTargetCount':
+            loaded.resolution.sqlEligibleConsideredTargetCount,
+        'periodStart': period.start.toIso8601String(),
+        'periodEnd': period.end.toIso8601String(),
+        'paymentMethods': overview.paymentMethods.length,
+        'partialQueryFailures':
+            overview.agentIdsExcludedFromQueryFailure.length,
+        'agentsMissingClientToken': overview.agentIdsMissingClientToken.length,
+        'batchElapsedMs': loaded.totalElapsedMs,
+        'monthlySectionFailures': monthlySectionFailures,
+        'dailySectionFailures': dailySectionFailures,
+        'weekdaySectionFailures': weekdaySectionFailures,
+        'weekdayUserSectionFailures': weekdayUserSectionFailures,
+        'lucratividadeSectionFailures': lucratividadeSectionFailures,
+        'lucratividadeMensalSectionFailures': lucratividadeMensalSectionFailures,
+      },
+    );
   }
 
   Future<AppResult<Overview>> _recoverOrFail({

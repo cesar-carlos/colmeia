@@ -1,6 +1,7 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
+import 'package:colmeia/features/agent_queries/data/orchestration/in_memory_agent_query_target_resolution_cache.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_catalog_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
@@ -22,6 +23,7 @@ void main() {
   late _MockClientAgentsRepository agentsRepository;
   late _MockAgentClientTokenReader tokenStore;
   late AgentQueryTargetResolver resolver;
+  late InMemoryAgentQueryTargetResolutionCache resolutionCache;
 
   setUpAll(() {
     registerFallbackValue(const PaginatedQuery(pageSize: 1));
@@ -31,9 +33,11 @@ void main() {
   setUp(() {
     agentsRepository = _MockClientAgentsRepository();
     tokenStore = _MockAgentClientTokenReader();
+    resolutionCache = InMemoryAgentQueryTargetResolutionCache();
     resolver = AgentQueryTargetResolver(
       clientAgentsRepository: agentsRepository,
       clientTokenReader: tokenStore,
+      resolutionCache: resolutionCache,
     );
     when(
       () => tokenStore.readMany(
@@ -197,10 +201,11 @@ void main() {
     'should reuse recent all-target resolution for selected calls',
     () async {
       var current = DateTime.utc(2026, 5, 14, 10);
+      final cache = InMemoryAgentQueryTargetResolutionCache(now: () => current);
       resolver = AgentQueryTargetResolver(
         clientAgentsRepository: agentsRepository,
         clientTokenReader: tokenStore,
-        now: () => current,
+        resolutionCache: cache,
       );
       when(
         () => agentsRepository.loadApprovedAgents(
@@ -269,10 +274,11 @@ void main() {
 
   test('invalidate clears cached resolution for the user', () async {
     var current = DateTime.utc(2026, 5, 14, 10);
+    final cache = InMemoryAgentQueryTargetResolutionCache(now: () => current);
     resolver = AgentQueryTargetResolver(
       clientAgentsRepository: agentsRepository,
       clientTokenReader: tokenStore,
-      now: () => current,
+      resolutionCache: cache,
     );
     when(
       () => agentsRepository.loadApprovedAgents(

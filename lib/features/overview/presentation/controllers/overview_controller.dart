@@ -8,7 +8,6 @@ import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_r
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_diagnostic.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after.dart';
-import 'package:colmeia/features/overview/application/usecases/load_overview_online_agent_ids_use_case.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
@@ -30,8 +29,7 @@ typedef OverviewFailureMessageBuilder = String Function(AppFailure failure);
 /// are still loading ([completedOverviewSections]).
 class OverviewController extends ChangeNotifier {
   OverviewController(
-    this._loadOverviewUseCase,
-    this._loadOverviewOnlineAgentIdsUseCase, {
+    this._loadOverviewUseCase, {
     RetryAfterGate? retryAfterGate,
     AgentRpcCapabilitiesRegistry? agentRpcCapabilitiesRegistry,
     AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder,
@@ -48,7 +46,6 @@ class OverviewController extends ChangeNotifier {
   }
 
   final LoadOverviewUseCase _loadOverviewUseCase;
-  final LoadOverviewOnlineAgentIdsUseCase _loadOverviewOnlineAgentIdsUseCase;
 
   /// Cool-down gate fed by `Retry-After` hints surfaced by the bridge
   /// (HTTP header, JSON-RPC `error.data.retry_after_ms`). The overview
@@ -575,9 +572,16 @@ class OverviewController extends ChangeNotifier {
     String userId,
     int generation,
   ) async {
-    final onlineIds =
-        overview.hubPresenceOnlineAgentIdsSnapshot ??
-        await _loadOverviewOnlineAgentIdsUseCase(userId: userId);
+    final onlineIds = overview.hubPresenceOnlineAgentIdsSnapshot;
+    if (onlineIds == null) {
+      AppLogger.debug(
+        'Overview agent filter missing hub presence snapshot',
+        context: <String, Object?>{
+          'operation': 'updateAvailableAgents',
+          'userId': userId,
+        },
+      );
+    }
 
     if (_isOverviewLoadStale(generation)) {
       return false;
@@ -586,7 +590,7 @@ class OverviewController extends ChangeNotifier {
     final assembled = OverviewAvailableAgentsAssembler.assemble(
       overview: overview,
       previousOptions: _availableAgents,
-      onlineAgentIds: onlineIds,
+      onlineAgentIds: onlineIds ?? const <String>{},
     );
     if (assembled.isEmpty) {
       return false;

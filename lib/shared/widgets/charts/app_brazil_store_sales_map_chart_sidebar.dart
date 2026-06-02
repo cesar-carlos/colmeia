@@ -69,33 +69,35 @@ class _DesktopBranchSidebarCollapsedOverlay extends StatelessWidget {
     final appColors = context.appColors;
     final l10n = AppLocalizations.of(context);
 
-    return Positioned(
-      top: topInset,
-      left: horizontalInset,
-      child: KeyedSubtree(
-        key: const ValueKey<String>(
-          'brazil-store-sales-map-sidebar-collapsed',
-        ),
-        child: AppSectionCard(
-          color: colorScheme.surface.withValues(alpha: 0.94),
-          borderRadius: BorderRadius.circular(_floatingMapOverlaySurfaceRadius),
-          borderSide: BorderSide(
-            color: appColors.secondary.withValues(alpha: 0.12),
+    return AppBrazilStoreSalesMapOverlayTooltipScope(
+      child: Positioned(
+        top: topInset,
+        left: horizontalInset,
+        child: KeyedSubtree(
+          key: const ValueKey<String>(
+            'brazil-store-sales-map-sidebar-collapsed',
           ),
-          padding: EdgeInsets.zero,
-          child: Tooltip(
-            message: l10n.brazilStoreSalesMapSidebarExpandTooltip,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(
-                _floatingMapOverlaySurfaceRadius,
-              ),
-              onTap: onExpand,
-              child: Padding(
-                padding: EdgeInsets.all(tokens.gapSm),
-                child: Icon(
-                  Icons.chevron_right_rounded,
-                  color: appColors.secondary,
-                  size: 18,
+          child: AppSectionCard(
+            color: colorScheme.surface.withValues(alpha: 0.94),
+            borderRadius: BorderRadius.circular(_floatingMapOverlaySurfaceRadius),
+            borderSide: BorderSide(
+              color: appColors.secondary.withValues(alpha: 0.12),
+            ),
+            padding: EdgeInsets.zero,
+            child: Tooltip(
+              message: l10n.brazilStoreSalesMapSidebarExpandTooltip,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(
+                  _floatingMapOverlaySurfaceRadius,
+                ),
+                onTap: onExpand,
+                child: Padding(
+                  padding: EdgeInsets.all(tokens.gapSm),
+                  child: Icon(
+                    Icons.chevron_right_rounded,
+                    color: appColors.secondary,
+                    size: 18,
+                  ),
                 ),
               ),
             ),
@@ -338,23 +340,24 @@ class _DesktopBranchSidebarState extends State<_DesktopBranchSidebar> {
         ? l10n.brazilStoreSalesMapSidebarSearchEmptyStateMessage
         : l10n.brazilStoreSalesMapSidebarEmptyStateMessage;
 
-    return SizedBox(
-      width: widget.width,
-      height: widget.maxHeight,
-      child: AppSectionCard(
-        color: colorScheme.surface.withValues(alpha: 0.94),
-        borderRadius: BorderRadius.circular(_floatingMapOverlaySurfaceRadius),
-        borderSide: BorderSide(
-          color: appColors.secondary.withValues(alpha: 0.12),
-        ),
-        padding: EdgeInsets.fromLTRB(
-          tokens.gapSm,
-          tokens.gapSm,
-          tokens.gapSm,
-          tokens.gapXs,
-        ),
-        child: FocusTraversalGroup(
-          child: Focus(
+    return AppBrazilStoreSalesMapOverlayTooltipScope(
+      child: SizedBox(
+        width: widget.width,
+        height: widget.maxHeight,
+        child: AppSectionCard(
+          color: colorScheme.surface.withValues(alpha: 0.94),
+          borderRadius: BorderRadius.circular(_floatingMapOverlaySurfaceRadius),
+          borderSide: BorderSide(
+            color: appColors.secondary.withValues(alpha: 0.12),
+          ),
+          padding: EdgeInsets.fromLTRB(
+            tokens.gapSm,
+            tokens.gapSm,
+            tokens.gapSm,
+            tokens.gapXs,
+          ),
+          child: FocusTraversalGroup(
+            child: Focus(
             autofocus: filteredEntries.isNotEmpty,
             onKeyEvent: _handleKeyEvent,
             child: Column(
@@ -524,6 +527,7 @@ class _DesktopBranchSidebarState extends State<_DesktopBranchSidebar> {
           ),
         ),
       ),
+    ),
     );
   }
 }

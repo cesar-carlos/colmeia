@@ -137,13 +137,15 @@ class _FloatingMapControlsOverlay extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return Positioned(
-      top: topInset,
-      left: leftInset,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: controls,
+    return AppBrazilStoreSalesMapOverlayTooltipScope(
+      child: Positioned(
+        top: topInset,
+        left: leftInset,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: controls,
+        ),
       ),
     );
   }

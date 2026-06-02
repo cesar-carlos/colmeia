@@ -430,8 +430,9 @@ void main() {
     );
 
     test(
-      'dispatches executeSqlBatch calls for every agent target in parallel',
+      'limits concurrent executeSqlBatch calls per target wave',
       () async {
+        const waveConcurrency = 3;
         final targets = List<AgentQueryTarget>.generate(
           6,
           (i) => _agentTarget('agent-${i + 1}', token: 'token-${i + 1}'),
@@ -466,7 +467,14 @@ void main() {
           );
         });
 
-        await loader.load(
+        final waveLoader = OverviewBatchLoader(
+          targetResolver: targetResolver,
+          planBuilder: const AgentQueryPlanBuilder(),
+          agentQueriesRepository: agentQueriesRepository,
+          targetWaveConcurrency: waveConcurrency,
+        );
+
+        await waveLoader.load(
           userId: 'user-1',
           filter: DashboardFilter(
             selectedAgentIds: <String>{
@@ -485,7 +493,8 @@ void main() {
           executionStrategy: AgentQueryExecutionStrategy.mergeAll,
         );
 
-        check(maxActive).equals(targets.length);
+        check(maxActive <= waveConcurrency).isTrue();
+        check(maxActive).isGreaterThan(1);
       },
     );
 

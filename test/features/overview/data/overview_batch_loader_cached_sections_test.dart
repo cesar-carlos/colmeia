@@ -1,7 +1,5 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_mensal_use_case.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_diario_vendas_use_case.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_mensal_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_total_diario_vendas_sql.dart';
@@ -13,9 +11,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_e
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_filter.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_row.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/overview/data/overview_batch_loader.dart';
@@ -29,15 +25,9 @@ class _MockTargetResolver extends Mock implements AgentQueryTargetResolver {}
 class _MockAgentQueriesRepository extends Mock
     implements AgentQueriesRepository {}
 
-class _MockLoadDaily extends Mock implements LoadResumoTotalDiarioVendasUseCase {}
-
-class _MockLoadMonthly extends Mock implements LoadResumoParcelasMensalUseCase {}
-
 void main() {
   late _MockTargetResolver targetResolver;
   late _MockAgentQueriesRepository agentQueriesRepository;
-  late _MockLoadDaily loadDaily;
-  late _MockLoadMonthly loadMonthly;
 
   const target = AgentQueryTarget(
     agentId: 'agent-1',
@@ -76,8 +66,6 @@ void main() {
   setUp(() {
     targetResolver = _MockTargetResolver();
     agentQueriesRepository = _MockAgentQueriesRepository();
-    loadDaily = _MockLoadDaily();
-    loadMonthly = _MockLoadMonthly();
 
     when(
       () => targetResolver.resolve(
@@ -95,50 +83,9 @@ void main() {
         ),
       ),
     );
-
-    when(
-      () => loadDaily.call(
-        userId: any(named: 'userId'),
-        agentId: any(named: 'agentId'),
-        filter: any(named: 'filter'),
-        clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
-        ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
-        cachePolicy: any(named: 'cachePolicy'),
-      ),
-    ).thenAnswer(
-      (_) async => const Success<List<ResumoTotalDiarioVendasRow>, AppFailure>(
-        <ResumoTotalDiarioVendasRow>[],
-      ),
-    );
-    when(
-      () => loadMonthly.call(
-        userId: any(named: 'userId'),
-        agentId: any(named: 'agentId'),
-        filter: any(named: 'filter'),
-        clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
-        ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
-        cachePolicy: any(named: 'cachePolicy'),
-      ),
-    ).thenAnswer(
-      (_) async => const Success<List<ResumoParcelasMensalRow>, AppFailure>(
-        <ResumoParcelasMensalRow>[],
-      ),
-    );
   });
 
-  test('section batch omits daily and monthly SQL when use cases are wired', () async {
+  test('section batch includes daily and monthly SQL', () async {
     when(() => agentQueriesRepository.executeSqlBatch(any())).thenAnswer((
       invocation,
     ) async {
@@ -164,8 +111,6 @@ void main() {
       targetResolver: targetResolver,
       planBuilder: const AgentQueryPlanBuilder(),
       agentQueriesRepository: agentQueriesRepository,
-      loadDailySales: loadDaily,
-      loadMonthlyParcels: loadMonthly,
     );
 
     final periodStart = DateTime(2026, 4);
@@ -202,12 +147,12 @@ void main() {
     ).captured.cast<AgentSqlExecuteBatchRequest>();
     expect(batchRequests.length, greaterThanOrEqualTo(2));
     final sectionRequest = batchRequests.firstWhere(
-      (request) => request.commands.length == 3,
+      (request) => request.commands.length == 5,
     );
     final sqlBodies = sectionRequest.commands
         .map((command) => command.sql)
         .join('\n');
-    expect(sqlBodies.contains(ResumoTotalDiarioVendasSql.query), isFalse);
+    expect(sqlBodies.contains(ResumoTotalDiarioVendasSql.query), isTrue);
     expect(
       sqlBodies.contains(
         ResumoParcelasMensalSql.query(
@@ -216,40 +161,8 @@ void main() {
           codVendedor: mensalFilter.codVendedor,
         ),
       ),
-      isFalse,
+      isTrue,
     );
-    verify(
-      () => loadDaily.call(
-        userId: 'user-1',
-        agentId: 'agent-1',
-        filter: dailyFilter,
-        clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
-        ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
-        cachePolicy: any(named: 'cachePolicy'),
-      ),
-    ).called(1);
-    verify(
-      () => loadMonthly.call(
-        userId: 'user-1',
-        agentId: 'agent-1',
-        filter: mensalFilter,
-        clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
-        ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
-        cachePolicy: any(named: 'cachePolicy'),
-      ),
-    ).called(1);
   });
 
   test('forceRefresh sets skipTransportCache on batch requests', () async {
@@ -278,8 +191,6 @@ void main() {
       targetResolver: targetResolver,
       planBuilder: const AgentQueryPlanBuilder(),
       agentQueriesRepository: agentQueriesRepository,
-      loadDailySales: loadDaily,
-      loadMonthlyParcels: loadMonthly,
     );
 
     final periodStart = DateTime(2026, 4);

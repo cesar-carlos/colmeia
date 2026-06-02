@@ -8,7 +8,6 @@ import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
-import 'package:colmeia/features/overview/application/usecases/load_overview_online_agent_ids_use_case.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
@@ -66,7 +65,6 @@ void main() {
     currentUserContextController = _MockCurrentUserContextController();
     overviewController = OverviewController(
       LoadOverviewUseCase(overviewRepository),
-      LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
     );
 
     when(() => authController.session).thenReturn(
@@ -191,7 +189,6 @@ void main() {
             ChangeNotifierProvider<OverviewController>(
               create: (_) => OverviewController(
                 LoadOverviewUseCase(overviewRepository),
-                LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
                 retryAfterGate: sharedGate,
               ),
             ),

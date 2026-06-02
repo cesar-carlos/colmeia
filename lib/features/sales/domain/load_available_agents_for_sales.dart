@@ -1,26 +1,33 @@
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_result.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
+import 'package:colmeia/shared/ports/agent_query_target_resolution_cache.dart';
 
 class LoadAvailableAgentsForSales {
   LoadAvailableAgentsForSales(
     this._repository,
     this._clientTokenReader,
-  ) : _targetResolver = null;
+  ) : _targetResolver = null,
+      _resolutionCache = null;
 
-  LoadAvailableAgentsForSales.fromTargetResolver(this._targetResolver)
-    : _repository = null,
-      _clientTokenReader = null;
+  LoadAvailableAgentsForSales.fromTargetResolver(
+    this._targetResolver, {
+    AgentQueryTargetResolutionCache? resolutionCache,
+  }) : _repository = null,
+       _clientTokenReader = null,
+       _resolutionCache = resolutionCache;
 
   static const int _pageSize = 100;
 
   final ClientAgentsRepository? _repository;
   final AgentClientTokenReader? _clientTokenReader;
   final AgentQueryTargetResolver? _targetResolver;
+  final AgentQueryTargetResolutionCache? _resolutionCache;
 
   Future<List<DashboardAgentOption>> call(String userId) async {
     final resolver = _targetResolver;
@@ -57,8 +64,7 @@ class LoadAvailableAgentsForSales {
     AgentQueryTargetResolver resolver, {
     required String userId,
   }) async {
-    final result = await resolver.resolve(userId: userId);
-    final resolution = result.getOrNull();
+    final resolution = await _resolveForSales(userId: userId, resolver: resolver);
     if (resolution == null) {
       return <DashboardAgentOption>[];
     }
@@ -73,6 +79,18 @@ class LoadAvailableAgentsForSales {
           ),
         )
         .toList(growable: false);
+  }
+
+  Future<AgentQueryTargetResolution?> _resolveForSales({
+    required String userId,
+    required AgentQueryTargetResolver resolver,
+  }) async {
+    final cached = _resolutionCache?.read(userId: userId);
+    if (cached != null) {
+      return cached;
+    }
+    final result = await resolver.resolve(userId: userId);
+    return result.getOrNull();
   }
 
   Future<List<ClientAgent>?> _loadAllApprovedAgents(String userId) async {

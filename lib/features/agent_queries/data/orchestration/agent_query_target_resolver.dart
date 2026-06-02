@@ -12,6 +12,7 @@ import 'package:colmeia/features/client_agents/domain/entities/paginated_query.d
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:colmeia/features/client_agents/domain/services/agent_connection_status_resolver.dart';
+import 'package:colmeia/shared/ports/agent_query_target_resolution_cache.dart';
 import 'package:colmeia/shared/ports/agent_query_target_resolution_invalidator.dart';
 import 'package:result_dart/result_dart.dart';
 
@@ -20,23 +21,21 @@ class AgentQueryTargetResolver
   AgentQueryTargetResolver({
     required ClientAgentsRepository clientAgentsRepository,
     required AgentClientTokenReader clientTokenReader,
+    required AgentQueryTargetResolutionCache resolutionCache,
     AgentSqlExecutionEligibilityPolicy policy =
         const AgentSqlExecutionEligibilityPolicy(),
-    DateTime Function()? now,
   }) : _clientAgentsRepository = clientAgentsRepository,
        _clientTokenReader = clientTokenReader,
-       _presencePolicy = policy,
-       _now = now;
+       _resolutionCache = resolutionCache,
+       _presencePolicy = policy;
 
   final ClientAgentsRepository _clientAgentsRepository;
   final AgentClientTokenReader _clientTokenReader;
+  final AgentQueryTargetResolutionCache _resolutionCache;
   final AgentSqlExecutionEligibilityPolicy _presencePolicy;
-  final DateTime Function()? _now;
-  _AgentQueryTargetResolutionCacheEntry? _cacheEntry;
 
   static const int _maxApprovedAgentsPaginationPages = 400;
   static const String _paginationSignatureSeparator = '\u001f';
-  static const Duration _resolutionCacheTtl = Duration(seconds: 10);
 
   Future<AppResult<AgentQueryTargetResolution>> resolve({
     required String userId,
@@ -100,13 +99,12 @@ class AgentQueryTargetResolver
     >
   >
   _resolveAllApprovedTargets({required String userId}) async {
-    final now = _resolveNow();
-    final cached = _cacheEntry;
-    if (cached != null && cached.isValid(userId: userId, now: now)) {
+    final cached = _resolutionCache.read(userId: userId);
+    if (cached != null) {
       return Success<
         ({AgentQueryTargetResolution resolution, bool cacheHit}),
         AppFailure
-      >((resolution: cached.resolution, cacheHit: true));
+      >((resolution: cached, cacheHit: true));
     }
 
     final approvedAgentsResult = await _loadAllApprovedAgents(userId: userId);
@@ -198,11 +196,7 @@ class AgentQueryTargetResolver
       skippedDueToHubPresenceTargets: skippedDueToHubPresenceTargets,
       sqlEligibleConsideredTargetCount: sqlEligibleConsideredTargetCount,
     );
-    _cacheEntry = _AgentQueryTargetResolutionCacheEntry(
-      userId: userId,
-      resolution: resolution,
-      resolvedAt: now,
-    );
+    _resolutionCache.publish(userId: userId, resolution: resolution);
     return Success<
       ({AgentQueryTargetResolution resolution, bool cacheHit}),
       AppFailure
@@ -375,33 +369,9 @@ class AgentQueryTargetResolver
     );
   }
 
-  DateTime _resolveNow() => (_now ?? DateTime.now)();
-
   @override
   void invalidate({required String userId}) {
-    final cached = _cacheEntry;
-    if (cached == null || cached.userId != userId) {
-      return;
-    }
-    _cacheEntry = null;
-  }
-}
-
-class _AgentQueryTargetResolutionCacheEntry {
-  const _AgentQueryTargetResolutionCacheEntry({
-    required this.userId,
-    required this.resolution,
-    required this.resolvedAt,
-  });
-
-  final String userId;
-  final AgentQueryTargetResolution resolution;
-  final DateTime resolvedAt;
-
-  bool isValid({required String userId, required DateTime now}) {
-    return this.userId == userId &&
-        now.difference(resolvedAt) <=
-            AgentQueryTargetResolver._resolutionCacheTtl;
+    _resolutionCache.invalidate(userId: userId);
   }
 }
 

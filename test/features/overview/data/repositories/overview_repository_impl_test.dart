@@ -1,8 +1,6 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_mensal_use_case.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_diario_vendas_use_case.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/domain/cache/agent_query_facts_key_prefix.dart';
 import 'package:colmeia/features/agent_queries/domain/cache/agent_query_facts_store.dart';
@@ -13,9 +11,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_query_targe
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_filter.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_row.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/overview/data/overview_batch_loader.dart';
@@ -32,18 +28,11 @@ class _MockAgentQueryTargetResolver extends Mock
 class _MockAgentQueriesRepository extends Mock
     implements AgentQueriesRepository {}
 
-class _MockLoadDaily extends Mock implements LoadResumoTotalDiarioVendasUseCase {}
-
-class _MockLoadMonthly extends Mock implements LoadResumoParcelasMensalUseCase {}
-
 class _MockFactsStore extends Mock implements AgentQueryFactsStore {}
 
 void main() {
   late _MockAgentQueryTargetResolver batchTargetResolver;
   late _MockAgentQueriesRepository batchAgentQueriesRepository;
-  late _MockLoadDaily loadDaily;
-  late _MockLoadMonthly loadMonthly;
-
   final fixedNow = DateTime(2026, 4, 8);
 
   setUpAll(() {
@@ -75,69 +64,21 @@ void main() {
   setUp(() {
     batchTargetResolver = _MockAgentQueryTargetResolver();
     batchAgentQueriesRepository = _MockAgentQueriesRepository();
-    loadDaily = _MockLoadDaily();
-    loadMonthly = _MockLoadMonthly();
-
-    when(
-      () => loadMonthly.call(
-        userId: any(named: 'userId'),
-        agentId: any(named: 'agentId'),
-        filter: any(named: 'filter'),
-        clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
-        ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
-        cachePolicy: any(named: 'cachePolicy'),
-      ),
-    ).thenAnswer(
-      (_) async => const Success<List<ResumoParcelasMensalRow>, AppFailure>(
-        <ResumoParcelasMensalRow>[],
-      ),
-    );
-    when(
-      () => loadDaily.call(
-        userId: any(named: 'userId'),
-        agentId: any(named: 'agentId'),
-        filter: any(named: 'filter'),
-        clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
-        ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
-        cachePolicy: any(named: 'cachePolicy'),
-      ),
-    ).thenAnswer(
-      (_) async => const Success<List<ResumoTotalDiarioVendasRow>, AppFailure>(
-        <ResumoTotalDiarioVendasRow>[],
-      ),
-    );
   });
 
-  OverviewRepositoryImpl makeRepository({
-    AgentQueryFactsStore? factsStore,
-    bool useCachedDailyMonthly = false,
-  }) {
+  OverviewRepositoryImpl makeRepository({AgentQueryFactsStore? factsStore}) {
     return OverviewRepositoryImpl(
       batchLoader: OverviewBatchLoader(
         targetResolver: batchTargetResolver,
         planBuilder: const AgentQueryPlanBuilder(),
         agentQueriesRepository: batchAgentQueriesRepository,
-        loadDailySales: useCachedDailyMonthly ? loadDaily : null,
-        loadMonthlyParcels: useCachedDailyMonthly ? loadMonthly : null,
       ),
       factsStore: factsStore,
       now: () => fixedNow,
     );
   }
 
-  void stubSuccessfulBatches() {
+  void stubSuccessfulBatches({Set<int> sectionFailedIndexes = const <int>{}}) {
     when(
       () => batchAgentQueriesRepository.executeSqlBatch(any()),
     ).thenAnswer((invocation) async {
@@ -153,6 +94,9 @@ void main() {
                   1: <Map<String, dynamic>>[_userRankingBatchRow()],
                 }
               : const <int, List<Map<String, dynamic>>>{},
+          failedIndexes: request.commands.length == 2
+              ? const <int>{}
+              : sectionFailedIndexes,
         ),
       );
     });
@@ -531,7 +475,7 @@ void main() {
     );
 
     test(
-      'cached daily failures for every agent mark daily trend load failed',
+      'section batch daily item failure marks daily trend load failed',
       () async {
         const target = AgentQueryTarget(
           agentId: 'agent-1',
@@ -556,34 +500,9 @@ void main() {
             ),
           ),
         );
-        when(
-          () => loadDaily.call(
-            userId: any(named: 'userId'),
-            agentId: any(named: 'agentId'),
-            filter: any(named: 'filter'),
-            clientToken: any(named: 'clientToken'),
-            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-            hubPresenceOnlineAgentIdsSnapshot: any(
-              named: 'hubPresenceOnlineAgentIdsSnapshot',
-            ),
-            hubConnectedFromApprovedCatalogRow: any(
-              named: 'hubConnectedFromApprovedCatalogRow',
-            ),
-            cachePolicy: any(named: 'cachePolicy'),
-          ),
-        ).thenAnswer(
-          (_) async => const Failure<List<ResumoTotalDiarioVendasRow>, AppFailure>(
-            RpcFailure(
-              message: 'daily failed',
-              userMessage: 'Daily trend unavailable.',
-              rpcCode: -32001,
-              retryable: false,
-            ),
-          ),
-        );
-        stubSuccessfulBatches();
+        stubSuccessfulBatches(sectionFailedIndexes: const <int>{2});
 
-        final repository = makeRepository(useCachedDailyMonthly: true);
+        final repository = makeRepository();
         final result = await repository.loadOverview(
           userId: 'user-1',
           filter: const DashboardFilter(
@@ -598,7 +517,7 @@ void main() {
     );
 
     test(
-      'partial cached daily failure surfaces detail and keeps successful agent data',
+      'partial section daily failure surfaces detail and keeps successful agent data',
       () async {
         const first = AgentQueryTarget(
           agentId: 'agent-1',
@@ -631,45 +550,48 @@ void main() {
           ),
         );
         when(
-          () => loadDaily.call(
-            userId: any(named: 'userId'),
-            agentId: any(named: 'agentId'),
-            filter: any(named: 'filter'),
-            clientToken: any(named: 'clientToken'),
-            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-            hubPresenceOnlineAgentIdsSnapshot: any(
-              named: 'hubPresenceOnlineAgentIdsSnapshot',
-            ),
-            hubConnectedFromApprovedCatalogRow: any(
-              named: 'hubConnectedFromApprovedCatalogRow',
-            ),
-            cachePolicy: any(named: 'cachePolicy'),
-          ),
+          () => batchAgentQueriesRepository.executeSqlBatch(any()),
         ).thenAnswer((invocation) async {
-          final agentId = invocation.namedArguments[#agentId] as String;
-          if (agentId == 'agent-2') {
-            return const Failure<List<ResumoTotalDiarioVendasRow>, AppFailure>(
-              RpcFailure(
-                message: 'daily failed',
-                userMessage: 'Daily trend unavailable.',
-                rpcCode: -32001,
-                retryable: false,
+          final request =
+              invocation.positionalArguments.single
+                  as AgentSqlExecuteBatchRequest;
+          if (request.commands.length == 2) {
+            return Success<AgentSqlBatchExecutionResult, AppFailure>(
+              _batchResult(
+                commandCount: 2,
+                rowsByIndex: <int, List<Map<String, dynamic>>>{
+                  0: <Map<String, dynamic>>[_mainBatchRow()],
+                  1: <Map<String, dynamic>>[_userRankingBatchRow()],
+                },
               ),
             );
           }
-          return Success<List<ResumoTotalDiarioVendasRow>, AppFailure>([
-            ResumoTotalDiarioVendasRow(
-              codEmpresa: 1,
-              codFilial: 1,
-              dataVenda: DateTime(2026, 4, 7),
-              qtdVendas: 3,
-              valorTotalDiarioVenda: 300,
+          final failedIndexes = request.agentId == 'agent-2'
+              ? const <int>{2}
+              : const <int>{};
+          final rowsByIndex = request.agentId == 'agent-1'
+              ? <int, List<Map<String, dynamic>>>{
+                  2: <Map<String, dynamic>>[
+                    <String, dynamic>{
+                      'CodEmpresa': 1,
+                      'CodFilial': 1,
+                      'DataVenda': '2026-04-07',
+                      'QtdVendas': 3,
+                      'ValorTotalDiarioVenda': 300.0,
+                    },
+                  ],
+                }
+              : const <int, List<Map<String, dynamic>>>{};
+          return Success<AgentSqlBatchExecutionResult, AppFailure>(
+            _batchResult(
+              commandCount: request.commands.length,
+              rowsByIndex: rowsByIndex,
+              failedIndexes: failedIndexes,
             ),
-          ]);
+          );
         });
-        stubSuccessfulBatches();
 
-        final repository = makeRepository(useCachedDailyMonthly: true);
+        final repository = makeRepository();
         final result = await repository.loadOverview(
           userId: 'user-1',
           filter: const DashboardFilter(

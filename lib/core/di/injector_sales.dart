@@ -21,6 +21,7 @@ import 'package:colmeia/features/sales/data/sales_preferences.dart';
 import 'package:colmeia/features/sales/domain/contracts/sales_live_map_point_resolver.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/shared/maps/app_location_resolver.dart';
+import 'package:colmeia/shared/ports/agent_query_target_resolution_cache.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_point_resolver.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -39,6 +40,7 @@ void registerInjectorSales(GetIt getIt) {
     ..registerLazySingleton<LoadAvailableAgentsForSales>(
       () => LoadAvailableAgentsForSales.fromTargetResolver(
         getIt<AgentQueryTargetResolver>(),
+        resolutionCache: getIt<AgentQueryTargetResolutionCache>(),
       ),
     )
     ..registerLazySingleton<ResolveSalesAgentClientTokenUseCase>(

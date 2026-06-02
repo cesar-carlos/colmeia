@@ -81,6 +81,7 @@ import 'package:colmeia/features/agent_queries/data/datasources/socket_agent_que
 import 'package:colmeia/features/agent_queries/data/datasources/socket_with_rest_fallback_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/facts/hive_agent_query_facts_store.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
+import 'package:colmeia/features/agent_queries/data/orchestration/in_memory_agent_query_target_resolution_cache.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_repository_chain_factory.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/caching/caching_resumo_parcelas_mensal_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/caching/caching_resumo_total_diario_vendas_repository_impl.dart';
@@ -192,6 +193,7 @@ import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:colmeia/shared/maps/resolve_postal_address_location_use_case.dart';
+import 'package:colmeia/shared/ports/agent_query_target_resolution_cache.dart';
 import 'package:colmeia/shared/ports/agent_query_target_resolution_invalidator.dart';
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
@@ -809,10 +811,14 @@ void _registerAcrossAgentQueryRepositories(GetIt getIt) {
   // AGENT_QUERY_MERGE_ALL_CONCURRENCY and per-agent inflight limits.
   final mergeAllConcurrency = AppEnvironment.agentQueryMergeAllConcurrency;
   getIt
+    ..registerLazySingleton<AgentQueryTargetResolutionCache>(
+      InMemoryAgentQueryTargetResolutionCache.new,
+    )
     ..registerLazySingleton<AgentQueryTargetResolver>(
       () => AgentQueryTargetResolver(
         clientAgentsRepository: getIt(),
         clientTokenReader: getIt<AgentClientTokenReader>(),
+        resolutionCache: getIt<AgentQueryTargetResolutionCache>(),
         policy: getIt<AgentSqlExecutionEligibilityPolicy>(),
       ),
     )

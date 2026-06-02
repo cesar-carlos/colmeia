@@ -12,8 +12,6 @@ import 'package:colmeia/features/agent_meta/domain/entities/agent_rpc_descriptor
 import 'package:colmeia/features/agent_meta/domain/entities/client_token_policy.dart';
 import 'package:colmeia/features/agent_meta/domain/repositories/agent_meta_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
-import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
-import 'package:colmeia/features/overview/application/usecases/load_overview_online_agent_ids_use_case.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
@@ -28,21 +26,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:result_dart/result_dart.dart';
 
-class _MockClientAgentsRepository extends Mock
-    implements ClientAgentsRepository {}
-
 void main() {
-  late _MockClientAgentsRepository clientAgentsRepository;
-
-  setUp(() {
-    clientAgentsRepository = _MockClientAgentsRepository();
-    when(
-      () => clientAgentsRepository.loadOnlineAgentIds(
-        userId: any(named: 'userId'),
-      ),
-    ).thenAnswer((_) async => null);
-  });
-
   group('OverviewController', () {
     test('should load overview from use case', () async {
       final repository = _QueuedOverviewRepository(
@@ -54,7 +38,6 @@ void main() {
       );
       final controller = OverviewController(
         LoadOverviewUseCase(repository),
-        LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
       );
 
       await controller.loadOverview(userId: 'demo-user');
@@ -85,7 +68,6 @@ void main() {
         );
         final controller = OverviewController(
           LoadOverviewUseCase(repository),
-          LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
         );
 
         await controller.loadOverview(userId: 'demo-user');
@@ -135,7 +117,6 @@ void main() {
       );
       final controller = OverviewController(
         LoadOverviewUseCase(repository),
-        LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
       );
 
       await controller.loadOverview(userId: 'demo-user');
@@ -170,7 +151,6 @@ void main() {
       );
       final controller = OverviewController(
         LoadOverviewUseCase(repository),
-        LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
       );
 
       final firstLoadFuture = controller.loadOverview(userId: 'demo-user');
@@ -218,7 +198,6 @@ void main() {
         );
         final controller = OverviewController(
           LoadOverviewUseCase(repository),
-          LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
           // Speed up the ticker so the test does not depend on wall
           // clock seconds while still exercising the same code path.
           retryAfterGate: RetryAfterGate(
@@ -265,7 +244,6 @@ void main() {
 
         final controller = OverviewController(
           LoadOverviewUseCase(repository),
-          LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
           agentRpcCapabilitiesRegistry: registry,
         );
 
@@ -312,7 +290,6 @@ void main() {
 
         final controller = OverviewController(
           LoadOverviewUseCase(repository),
-          LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
           agentRpcCapabilitiesRegistry: registry,
         );
 
@@ -332,14 +309,12 @@ void main() {
         final sharedGate = RetryAfterGate();
         OverviewController(
           LoadOverviewUseCase(_QueuedOverviewRepository(const [])),
-          LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
           retryAfterGate: sharedGate,
         ).dispose();
 
         expect(
           () => OverviewController(
             LoadOverviewUseCase(_QueuedOverviewRepository(const [])),
-            LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
             retryAfterGate: sharedGate,
           ),
           returnsNormally,
@@ -354,7 +329,6 @@ void main() {
         LoadOverviewUseCase(
           _PendingOverviewRepository(completer.future),
         ),
-        LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
       );
 
       final loadFuture = controller.loadOverview(userId: 'demo-user');
@@ -372,35 +346,16 @@ void main() {
     test(
       'should ignore stale available-agent hydration from older load',
       () async {
-        final firstOnlineIds = Completer<Set<String>?>();
-        final secondOnlineIds = Completer<Set<String>?>();
-        final onlineIdLoads = <Future<Set<String>?>>[
-          firstOnlineIds.future,
-          secondOnlineIds.future,
-        ];
-        when(
-          () => clientAgentsRepository.loadOnlineAgentIds(
-            userId: any(named: 'userId'),
-          ),
-        ).thenAnswer((_) => onlineIdLoads.removeAt(0));
-
+        final firstLoadCompleter = Completer<AppResult<Overview>>();
+        final secondLoadCompleter = Completer<AppResult<Overview>>();
         final repository = _QueuedOverviewRepository(
           <Future<AppResult<Overview>>>[
-            Future<AppResult<Overview>>.value(
-              Success<Overview, AppFailure>(
-                _overviewWithAgent('old-agent', 'Old Agent'),
-              ),
-            ),
-            Future<AppResult<Overview>>.value(
-              Success<Overview, AppFailure>(
-                _overviewWithAgent('new-agent', 'New Agent'),
-              ),
-            ),
+            firstLoadCompleter.future,
+            secondLoadCompleter.future,
           ],
         );
         final controller = OverviewController(
           LoadOverviewUseCase(repository),
-          LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
         );
 
         final firstLoad = controller.loadOverview(
@@ -415,12 +370,28 @@ void main() {
         );
         await Future<void>.delayed(Duration.zero);
 
-        firstOnlineIds.complete(const <String>{'old-agent'});
+        firstLoadCompleter.complete(
+          Success<Overview, AppFailure>(
+            _overviewWithAgent(
+              'old-agent',
+              'Old Agent',
+              hubPresenceOnlineAgentIds: const <String>{'old-agent'},
+            ),
+          ),
+        );
         await firstLoad;
 
         check(controller.availableAgents).isEmpty();
 
-        secondOnlineIds.complete(const <String>{'new-agent'});
+        secondLoadCompleter.complete(
+          Success<Overview, AppFailure>(
+            _overviewWithAgent(
+              'new-agent',
+              'New Agent',
+              hubPresenceOnlineAgentIds: const <String>{'new-agent'},
+            ),
+          ),
+        );
         await secondLoad;
 
         check(
@@ -457,7 +428,6 @@ void main() {
         );
         final controller = OverviewController(
           LoadOverviewUseCase(repository),
-          LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
         );
 
         await controller.loadOverview(userId: 'demo-user');
@@ -475,7 +445,6 @@ void main() {
         final repository = _GatedProgressiveOverviewRepository(secondStage);
         final controller = OverviewController(
           LoadOverviewUseCase(repository),
-          LoadOverviewOnlineAgentIdsUseCase(clientAgentsRepository),
         );
 
         final loadFuture = controller.loadOverview(userId: 'demo-user');
@@ -492,7 +461,11 @@ void main() {
   });
 }
 
-Overview _overviewWithAgent(String agentId, String displayName) {
+Overview _overviewWithAgent(
+  String agentId,
+  String displayName, {
+  Set<String>? hubPresenceOnlineAgentIds,
+}) {
   return _overview('Pix').copyWith(
     agentRankings: <OverviewAgentRanking>[
       OverviewAgentRanking(
@@ -502,6 +475,7 @@ Overview _overviewWithAgent(String agentId, String displayName) {
         totalAmount: 9000,
       ),
     ],
+    hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIds,
   );
 }
 
