@@ -18,4 +18,5 @@ abstract final class AppKvCacheKeyPrefixes {
   static const String locationGeocode = 'location_geocode_';
   static const String locationGeocodeEntry = 'location_geocode_entry_';
   static const String locationGeocodeIndex = 'location_geocode_index';
+  static const String agentQueryFacts = 'agent_query_facts_';
 }

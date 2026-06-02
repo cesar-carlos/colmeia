@@ -97,6 +97,7 @@ class AgentQueryTransportPolicy {
       useRelay: true,
       apiVersion: request.apiVersion,
       payloadFrameCompression: request.payloadFrameCompression,
+      skipTransportCache: request.skipTransportCache,
     );
   }
 }

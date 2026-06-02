@@ -19,6 +19,7 @@ import 'package:result_dart/result_dart.dart';
 import 'package:test_api/scaffolding.dart' show group;
 
 import 'support/e2e_dependency_bootstrap.dart';
+import 'support/e2e_in_memory_app_cache_store.dart';
 
 const String _e2eOverviewRepositoryScopeName = 'e2e_overview_repository';
 
@@ -34,7 +35,7 @@ void main() {
         }
         getIt
           ..pushNewScope(scopeName: _e2eOverviewRepositoryScopeName)
-          ..registerSingleton<AppCacheStore>(_E2eInMemoryAppCacheStore());
+          ..registerSingleton<AppCacheStore>(E2eInMemoryAppCacheStore());
         registerInjectorOverview(getIt);
       });
 
@@ -193,29 +194,4 @@ void _expectOverviewRepositoryE2eFailure(AppFailure failure) {
         'transport, queue saturation, or transient bridge HTTP 5xx. '
         '${e2eAgentSqlFailureDiagnostic(failure)}',
   );
-}
-
-final class _E2eInMemoryAppCacheStore implements AppCacheStore {
-  final Map<String, String> _data = <String, String>{};
-
-  @override
-  Future<void> clearAll() async {
-    _data.clear();
-  }
-
-  @override
-  Future<String?> getString(String key) async => _data[key];
-
-  @override
-  Future<void> putString({
-    required String key,
-    required String value,
-  }) async {
-    _data[key] = value;
-  }
-
-  @override
-  Future<void> removeString(String key) async {
-    _data.remove(key);
-  }
 }

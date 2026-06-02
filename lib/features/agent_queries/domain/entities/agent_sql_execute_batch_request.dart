@@ -15,6 +15,7 @@ class AgentSqlExecuteBatchRequest {
     this.useRelay = false,
     this.apiVersion = kColmeiaAgentBatchApiVersion,
     this.payloadFrameCompression,
+    this.skipTransportCache = false,
   });
 
   final String agentId;
@@ -28,6 +29,7 @@ class AgentSqlExecuteBatchRequest {
   final bool useRelay;
   final String apiVersion;
   final RelayPayloadFrameCompression? payloadFrameCompression;
+  final bool skipTransportCache;
 
   String get trimmedAgentId => agentId.trim();
   String? get trimmedClientToken => clientToken?.trim();

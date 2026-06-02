@@ -7,6 +7,7 @@ import 'package:colmeia/features/agent_queries/data/repositories/agent_query_lis
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_mensal_across_agents_repository.dart';
@@ -38,6 +39,7 @@ class ResumoParcelasMensalAcrossAgentsRepositoryImpl
     AgentQueryExecutionStrategy strategy = AgentQueryExecutionStrategy.mergeAll,
     int? bridgeTimeoutMs,
     int? raceMaxSources,
+    AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
   }) {
     return AgentQueryListReportAcrossAgentsCoordinator.execute<
       ResumoParcelasMensalFilter,
@@ -50,7 +52,27 @@ class ResumoParcelasMensalAcrossAgentsRepositoryImpl
       targetResolver: _targetResolver,
       planBuilder: _planBuilder,
       executor: _executor,
-      loadRowsForTarget: _loadResumo.call,
+      loadRowsForTarget:
+          ({
+            required userId,
+            required agentId,
+            required filter,
+            clientToken,
+            bridgeTimeoutMs,
+            hubPresenceOnlineAgentIdsSnapshot,
+            hubConnectedFromApprovedCatalogRow,
+          }) => _loadResumo.call(
+            userId: userId,
+            agentId: agentId,
+            filter: filter,
+            clientToken: clientToken,
+            bridgeTimeoutMs: bridgeTimeoutMs,
+            hubPresenceOnlineAgentIdsSnapshot:
+                hubPresenceOnlineAgentIdsSnapshot,
+            hubConnectedFromApprovedCatalogRow:
+                hubConnectedFromApprovedCatalogRow,
+            cachePolicy: cachePolicy,
+          ),
       selectedAgentIds: selectedAgentIds,
       strategy: strategy,
       bridgeTimeoutMs: bridgeTimeoutMs,

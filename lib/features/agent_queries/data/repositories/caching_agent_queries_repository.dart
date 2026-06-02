@@ -77,20 +77,22 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
     final now = DateTime.now();
     final ttl = _effectiveTtlForSql(request.trimmedSql);
 
-    final entry = _sqlCache[key];
-    if (entry != null && now.difference(entry.cachedAt) <= ttl) {
-      _cacheHits++;
-      AppLogger.debug(
-        'Cache hit for SQL query',
-        context: <String, Object?>{
-          'operation': 'executeAgentSql',
-          'agentId': request.trimmedAgentId,
-          'cacheHits': _cacheHits,
-          'cacheMisses': _cacheMisses,
-          'age': now.difference(entry.cachedAt).inMilliseconds,
-        },
-      );
-      return entry.result;
+    if (!request.skipTransportCache) {
+      final entry = _sqlCache[key];
+      if (entry != null && now.difference(entry.cachedAt) <= ttl) {
+        _cacheHits++;
+        AppLogger.debug(
+          'Cache hit for SQL query',
+          context: <String, Object?>{
+            'operation': 'executeAgentSql',
+            'agentId': request.trimmedAgentId,
+            'cacheHits': _cacheHits,
+            'cacheMisses': _cacheMisses,
+            'age': now.difference(entry.cachedAt).inMilliseconds,
+          },
+        );
+        return entry.result;
+      }
     }
 
     _cacheMisses++;
@@ -99,7 +101,7 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
       cancelScope: cancelScope,
     );
 
-    if (result.isSuccess()) {
+    if (result.isSuccess() && !request.skipTransportCache) {
       _sqlCache[key] = _SqlCacheEntry(
         result: result,
         cachedAt: DateTime.now(),
@@ -119,20 +121,22 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
     final key = AgentQueriesRequestKey.buildBatch(request);
     final now = DateTime.now();
 
-    final entry = _batchCache[key];
-    if (entry != null && now.difference(entry.cachedAt) <= _cacheTtl) {
-      _batchCacheHits++;
-      AppLogger.debug(
-        'Cache hit for SQL batch',
-        context: <String, Object?>{
-          'operation': 'executeAgentSqlBatch',
-          'agentId': request.trimmedAgentId,
-          'batchCacheHits': _batchCacheHits,
-          'batchCacheMisses': _batchCacheMisses,
-          'age': now.difference(entry.cachedAt).inMilliseconds,
-        },
-      );
-      return entry.result;
+    if (!request.skipTransportCache) {
+      final entry = _batchCache[key];
+      if (entry != null && now.difference(entry.cachedAt) <= _cacheTtl) {
+        _batchCacheHits++;
+        AppLogger.debug(
+          'Cache hit for SQL batch',
+          context: <String, Object?>{
+            'operation': 'executeAgentSqlBatch',
+            'agentId': request.trimmedAgentId,
+            'batchCacheHits': _batchCacheHits,
+            'batchCacheMisses': _batchCacheMisses,
+            'age': now.difference(entry.cachedAt).inMilliseconds,
+          },
+        );
+        return entry.result;
+      }
     }
 
     _batchCacheMisses++;
@@ -141,7 +145,7 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
       cancelScope: cancelScope,
     );
 
-    if (result.isSuccess()) {
+    if (result.isSuccess() && !request.skipTransportCache) {
       _batchCache[key] = _BatchCacheEntry(
         result: result,
         cachedAt: DateTime.now(),

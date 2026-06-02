@@ -36,6 +36,7 @@ Este diretorio concentra os levantamentos de negocio, arquitetura e evolucao do 
 - permissao especifica para agentes modelada, mas ainda nao aplicada como restricao fina de rota
 - infraestrutura visual de relatorios pronta para reuso
 - estrategia de cache e fallback aplicada em modulos ja ativos
+- design para cache de fatos consolidados por repositorio: `docs/cache_repo/`
 
 ### Planejado
 

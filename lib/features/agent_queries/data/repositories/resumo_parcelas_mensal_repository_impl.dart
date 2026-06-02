@@ -6,6 +6,8 @@ import 'package:colmeia/features/agent_queries/data/agent_queries_sql_local_date
 import 'package:colmeia/features/agent_queries/data/models/resumo_parcelas_mensal_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_mensal_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repository_execution.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy_extensions.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
@@ -51,6 +53,7 @@ class ResumoParcelasMensalRepositoryImpl
     int? bridgeTimeoutMs,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {
@@ -93,6 +96,7 @@ class ResumoParcelasMensalRepositoryImpl
       ),
       useRelay: true,
       relayMode: AgentSqlRelayMode.streaming,
+      skipTransportCache: cachePolicy.bypassTransportCache,
     );
 
     return AgentSqlRepositoryExecution.execute<List<ResumoParcelasMensalRow>>(

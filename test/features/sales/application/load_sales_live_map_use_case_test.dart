@@ -2772,4 +2772,19 @@ class _MemoryCacheStore implements AppCacheStore {
   Future<void> removeString(String key) async {
     _values.remove(key);
   }
+
+  @override
+  Future<void> removeKeysWithPrefix(String prefix) async {
+    _values.removeWhere((key, _) => key.startsWith(prefix));
+  }
+
+  @override
+  Future<void> removeKeysWhere({
+    required String prefix,
+    required bool Function(String key) predicate,
+  }) async {
+    _values.removeWhere(
+      (key, _) => key.startsWith(prefix) && predicate(key),
+    );
+  }
 }

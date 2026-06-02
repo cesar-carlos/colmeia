@@ -72,6 +72,10 @@ abstract final class EnvKeys {
   /// offline fallback and fast home reopen. Default 30 minutes.
   static const String overviewCacheMaxAgeMs = 'OVERVIEW_CACHE_MAX_AGE_MS';
 
+  /// When true, backfills closed agent-query fact buckets after overview load.
+  static const String agentQueryFactsPrefetchEnabled =
+      'AGENT_QUERY_FACTS_PREFETCH_ENABLED';
+
   /// Default per-call bridge timeout (ms) for `agent_queries` repositories.
   /// Used as fallback when callers do not pass `bridgeTimeoutMs`. Default
   /// 120000 ms.

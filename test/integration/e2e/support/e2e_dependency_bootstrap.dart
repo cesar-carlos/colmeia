@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:colmeia/core/cache/app_cache_store.dart';
 import 'package:colmeia/core/config/agent_bridge_transport.dart';
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/config/env_keys.dart';
@@ -31,6 +32,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:logger/logger.dart';
 import 'package:result_dart/result_dart.dart';
 
+import 'e2e_in_memory_app_cache_store.dart';
 import 'e2e_refreshing_auth_interceptor.dart';
 import 'e2e_stub_client_agents_for_agent_queries.dart';
 
@@ -119,6 +121,7 @@ Future<void> _e2eSetupDependenciesBody() async {
 
   getIt
     ..registerSingleton<Dio>(dio)
+    ..registerSingleton<AppCacheStore>(E2eInMemoryAppCacheStore())
     ..registerSingleton<ClientAgentsRepository>(
       E2eStubClientAgentsRepository(),
     )

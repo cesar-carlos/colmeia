@@ -13,6 +13,15 @@ abstract class AppCacheStore {
   /// Removes a single entry when present (e.g. invalidate stale agent detail).
   Future<void> removeString(String key);
 
+  /// Removes every entry whose key starts with [prefix].
+  Future<void> removeKeysWithPrefix(String prefix);
+
+  /// Removes entries under [prefix] that satisfy [predicate].
+  Future<void> removeKeysWhere({
+    required String prefix,
+    required bool Function(String key) predicate,
+  });
+
   /// Clears all cached entries (e.g. after sign-out so another user never reads
   /// stale dashboard or report snapshots).
   Future<void> clearAll();

@@ -1,5 +1,7 @@
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/caching_agent_queries_repository.dart' show CachingAgentQueriesRepository;
 import 'package:colmeia/features/agent_queries/domain/entities/agent_outbound_compression.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart' show AgentQueryLoadPolicy;
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 
@@ -38,6 +40,7 @@ class AgentSqlExecuteRequest {
     this.apiVersion = kColmeiaAgentApiVersion,
     this.outboundCompression,
     this.payloadFrameCompression,
+    this.skipTransportCache = false,
   });
 
   final String agentId;
@@ -119,6 +122,10 @@ class AgentSqlExecuteRequest {
   /// re-encodes after decoding our request. `null` keeps the channel
   /// default (`auto`).
   final RelayPayloadFrameCompression? payloadFrameCompression;
+
+  /// When true, [CachingAgentQueriesRepository] does not return a cached SQL
+  /// result (used with business-layer [AgentQueryLoadPolicy.forceRefresh]).
+  final bool skipTransportCache;
 
   String get trimmedAgentId => agentId.trim();
   String get trimmedSql => sql.trim();

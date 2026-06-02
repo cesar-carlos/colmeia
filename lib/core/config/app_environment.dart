@@ -271,6 +271,17 @@ abstract final class AppEnvironment {
     fallback: defaultOverviewCacheMaxAgeMs,
   ).clamp(60000, 86400000);
 
+  static const bool defaultAgentQueryFactsPrefetchEnabled = true;
+
+  static bool get agentQueryFactsPrefetchEnabled =>
+      AppEnvironmentResolution.resolveBool(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.agentQueryFactsPrefetchEnabled,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.agentQueryFactsPrefetchEnabled),
+        fallback: defaultAgentQueryFactsPrefetchEnabled,
+      );
+
   /// Agent bridge + client-auth data for a full stack e2e run.
   static bool get hasE2eAgentBridgeCredentials =>
       hasE2eAgentQueryCredentials && hasE2eClientLoginCredentials;

@@ -41,6 +41,61 @@ class HiveAppCacheStore implements AppCacheStore {
   }
 
   @override
+  Future<void> removeKeysWithPrefix(String prefix) async {
+    if (prefix.isEmpty) {
+      return;
+    }
+    try {
+      final keys = _box.keys
+          .whereType<String>()
+          .where((key) => key.startsWith(prefix))
+          .toList(growable: false);
+      for (final key in keys) {
+        await _box.delete(key);
+      }
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Hive cache prefix delete failed',
+        context: <String, Object?>{
+          'operation': 'removeKeysWithPrefix',
+          'prefixLength': prefix.length,
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
+  Future<void> removeKeysWhere({
+    required String prefix,
+    required bool Function(String key) predicate,
+  }) async {
+    if (prefix.isEmpty) {
+      return;
+    }
+    try {
+      final keys = _box.keys
+          .whereType<String>()
+          .where((key) => key.startsWith(prefix) && predicate(key))
+          .toList(growable: false);
+      for (final key in keys) {
+        await _box.delete(key);
+      }
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Hive cache predicate delete failed',
+        context: <String, Object?>{
+          'operation': 'removeKeysWhere',
+          'prefixLength': prefix.length,
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @override
   Future<void> putString({
     required String key,
     required String value,

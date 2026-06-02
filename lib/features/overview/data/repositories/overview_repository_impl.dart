@@ -1,6 +1,11 @@
+import 'dart:async';
+
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/agent_queries/application/sync/agent_query_facts_prefetch_coordinator.dart';
+import 'package:colmeia/features/agent_queries/domain/cache/agent_query_facts_key_prefix.dart';
+import 'package:colmeia/features/agent_queries/domain/cache/agent_query_facts_store.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report_resumo_parcelas.dart';
@@ -19,12 +24,11 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_ve
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_row.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
-import 'package:colmeia/features/overview/data/datasources/overview_local_datasource.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_agent_resumo_mapper.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_monthly_parcel_mapper.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_weekday_sales_trend_mapper.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_weekday_user_sales_trend_mapper.dart';
-import 'package:colmeia/features/overview/data/models/overview_model.dart';
+import 'package:colmeia/features/overview/data/overview_agent_query_load_policy_mapper.dart';
 import 'package:colmeia/features/overview/data/overview_batch_assembler.dart';
 import 'package:colmeia/features/overview/data/overview_batch_loader.dart';
 import 'package:colmeia/features/overview/data/overview_user_rankings_override_policy.dart';
@@ -44,31 +48,6 @@ import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
 import 'package:colmeia/shared/data/charts/daily_sales_trend_point_mappers.dart';
 import 'package:result_dart/result_dart.dart';
 
-/// When the overview falls back to cached KPIs because no agent could run the
-/// main resumo (missing local `client_token`), keep chart payloads from cache
-/// but preserve **this request's** resumo report metadata (partial failures,
-/// skipped/offline agent ids) so alerts and diagnostics stay accurate.
-Overview _overviewMergeCachedWithFreshReportSlice({
-  required Overview cachedEntity,
-  required Overview freshReportOverview,
-}) {
-  return cachedEntity.copyWith(
-    partialQueryFailureDetails: freshReportOverview.partialQueryFailureDetails,
-    hubPresenceOnlineAgentIdsSnapshot:
-        freshReportOverview.hubPresenceOnlineAgentIdsSnapshot,
-    agentIdsExcludedFromQueryFailure:
-        freshReportOverview.agentIdsExcludedFromQueryFailure,
-    agentNamesExcludedFromQueryFailure:
-        freshReportOverview.agentNamesExcludedFromQueryFailure,
-    agentIdsSkippedDueToHubPresence:
-        freshReportOverview.agentIdsSkippedDueToHubPresence,
-    agentNamesSkippedDueToHubPresence:
-        freshReportOverview.agentNamesSkippedDueToHubPresence,
-    mainResumoHadPlannedTargets:
-        freshReportOverview.mainResumoHadPlannedTargets,
-  );
-}
-
 class _OverviewBatchSectionFailure {
   const _OverviewBatchSectionFailure({
     required this.loadFailed,
@@ -81,22 +60,24 @@ class _OverviewBatchSectionFailure {
 
 class OverviewRepositoryImpl implements OverviewRepository {
   OverviewRepositoryImpl({
-    required OverviewLocalDataSource localDataSource,
     required OverviewBatchLoader batchLoader,
+    AgentQueryFactsStore? factsStore,
+    AgentQueryFactsPrefetchCoordinator? factsPrefetchCoordinator,
     DateTime Function()? now,
     OverviewBatchAssembler assembler = const OverviewBatchAssembler(),
-  }) : _localDataSource = localDataSource,
-       _batchLoader = batchLoader,
+  }) : _batchLoader = batchLoader,
+       _factsStore = factsStore,
+       _factsPrefetchCoordinator = factsPrefetchCoordinator,
        _now = now ?? DateTime.now,
        _assembler = assembler;
 
-  final OverviewLocalDataSource _localDataSource;
   final OverviewBatchLoader _batchLoader;
+  final AgentQueryFactsStore? _factsStore;
+  final AgentQueryFactsPrefetchCoordinator? _factsPrefetchCoordinator;
   final DateTime Function() _now;
   final OverviewBatchAssembler _assembler;
 
   static const String _sourceAgentIdsContextField = 'sourceAgentIds';
-  static const Duration _overviewCacheMaxAge = Duration(hours: 48);
 
   static const Set<OverviewProgressiveSection> _allProgressiveSections =
       <OverviewProgressiveSection>{
@@ -196,6 +177,14 @@ class OverviewRepositoryImpl implements OverviewRepository {
       dataVendaFim: period.end,
     );
     final executionStrategy = _resolveExecutionStrategy(filter);
+    final cachePolicy = mapOverviewLoadPolicyToAgentQuery(policy);
+
+    if (policy == OverviewLoadPolicy.forceRefresh) {
+      final factsStore = _factsStore;
+      if (factsStore != null) {
+        await factsStore.removeMatching(AgentQueryFactsKeyPrefix.forUser(userId));
+      }
+    }
 
     try {
       await for (final loadResult in _batchLoader.loadProgressively(
@@ -209,6 +198,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
         dailyTotalFilter: dailyTotalFilter,
         executionStrategy: executionStrategy,
         cancelScope: cancelScope,
+        cachePolicy: cachePolicy,
       )) {
         final loaded = loadResult.getOrNull();
         if (loaded == null) {
@@ -260,7 +250,6 @@ class OverviewRepositoryImpl implements OverviewRepository {
           return;
         }
 
-        var shouldSaveFinalOverview = report.consideredApprovedAgentCount > 0;
         final batchUserRankingsOverride =
             overviewUserRankingsOverrideFromBatchTargetResults(
               batchResults: batchResults,
@@ -277,7 +266,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
         final userRankingRowsByAgentId = batchUserRankingsOverride == null
             ? null
             : _userRankingRowsByAgentId(batchResults);
-        var overview = _assembler.buildOverview(
+        final overview = _assembler.buildOverview(
           _mapOverviewRows(report.mergedRows),
           rowsByAgentId: _mapRowsByAgentId(report.rowsByAgentId),
           agentDisplayNamesById: _resolveAgentDisplayNames(report),
@@ -393,36 +382,21 @@ class OverviewRepositoryImpl implements OverviewRepository {
           userRankingRowsByAgentId: userRankingRowsByAgentId,
         );
 
-        if (report.requiresClientTokenSetup && sourceAgentIds != null) {
-          final freshReportOverview = overview;
-          final cachedEntity = await _readCachedOverviewForMissingClientTokens(
-            userId: userId,
-            policy: policy,
-            period: period,
-            expectedSortedAgentIds: sourceAgentIds,
-            agentIdsMissingClientToken: report.missingClientTokenAgentIds,
-            agentNamesMissingClientToken: report.missingClientTokenAgentNames,
-          );
-          if (cachedEntity != null) {
-            overview = _overviewMergeCachedWithFreshReportSlice(
-              cachedEntity: cachedEntity,
-              freshReportOverview: freshReportOverview,
+        if (loaded.isFinal && policy == OverviewLoadPolicy.defaultLoad) {
+          final prefetch = _factsPrefetchCoordinator;
+          if (prefetch != null) {
+            unawaited(
+              prefetch.prefetchForPlannedTargets(
+                userId: userId,
+                targets: loaded.plan.plannedTargets,
+                dailyFilter: dailyTotalFilter,
+                monthlyFilter: mensalFilter,
+                hubPresenceOnlineAgentIdsSnapshot:
+                    loaded.resolution.hubPresenceOnlineAgentIdsSnapshot,
+                bridgeTimeoutMs: OverviewBatchLoader.overviewBatchBridgeTimeoutMs,
+              ),
             );
-            shouldSaveFinalOverview = false;
           }
-        }
-
-        if (loaded.isFinal &&
-            shouldSaveFinalOverview &&
-            sourceAgentIds != null) {
-          await _saveOverviewCache(
-            userId: userId,
-            overview: overview,
-            sourceAgentIds: sourceAgentIds,
-          );
-        }
-
-        if (loaded.isFinal) {
           AppLogger.info(
             'Overview loaded from agent query batch',
             context: <String, Object?>{
@@ -485,6 +459,12 @@ class OverviewRepositoryImpl implements OverviewRepository {
     List<OverviewBatchTargetResult> results,
     ResumoParcelasMensalFilter filter,
   ) {
+    if (_batchSectionFailure(
+      results,
+      (result) => result.monthlyFailure,
+    ).loadFailed) {
+      return const <OverviewMonthlyParcelPoint>[];
+    }
     final report = _batchReport<ResumoParcelasMensalRow>(
       results,
       (result) => result.monthlyRows,
@@ -510,6 +490,12 @@ class OverviewRepositoryImpl implements OverviewRepository {
     List<OverviewBatchTargetResult> results,
     ResumoTotalDiarioVendasFilter filter,
   ) {
+    if (_batchSectionFailure(
+      results,
+      (result) => result.dailyFailure,
+    ).loadFailed) {
+      return const <DailySalesTrendPoint>[];
+    }
     final report = _batchReport<ResumoTotalDiarioVendasRow>(
       results,
       (result) => result.dailyRows,
@@ -720,32 +706,6 @@ class OverviewRepositoryImpl implements OverviewRepository {
     );
   }
 
-  Future<void> _saveOverviewCache({
-    required String userId,
-    required Overview overview,
-    required List<String> sourceAgentIds,
-  }) async {
-    final model = OverviewModel.fromEntity(
-      overview,
-      cachedAt: _now(),
-      sourceAgentIds: sourceAgentIds,
-    );
-
-    try {
-      await _localDataSource.saveOverview(userId: userId, overview: model);
-    } on Object catch (error, stackTrace) {
-      AppLogger.warning(
-        'Overview cache save failed; returning computed overview',
-        context: <String, Object?>{
-          'operation': 'loadOverview',
-          'userId': userId,
-        },
-        error: error,
-        stackTrace: stackTrace,
-      );
-    }
-  }
-
   /// Merge-all loads every planned agent in parallel and merges rows (required
   /// for consolidated KPIs). Race would keep only the first successful agent.
   /// Single-source when exactly one agent is selected.
@@ -904,21 +864,6 @@ class OverviewRepositoryImpl implements OverviewRepository {
     Object? error,
     StackTrace? stackTrace,
   }) async {
-    final cachedOverview = await _readCachedOverviewIfAllowed(
-      userId: userId,
-      policy: policy,
-      failure: failure,
-      period: period,
-      expectedSortedAgentIds: sourceAgentIds,
-      error: error ?? failure.cause ?? failure,
-      stackTrace: stackTrace ?? failure.stackTrace ?? StackTrace.current,
-    );
-    if (cachedOverview != null) {
-      return Success<Overview, AppFailure>(
-        cachedOverview.toEntity(isStaleCache: true),
-      );
-    }
-
     _logTerminalFailure(
       failure: failure,
       userId: userId,
@@ -969,160 +914,6 @@ class OverviewRepositoryImpl implements OverviewRepository {
       error: error,
       stackTrace: stackTrace,
     );
-  }
-
-  Future<OverviewModel?> _readCachedOverviewIfAllowed({
-    required String userId,
-    required OverviewLoadPolicy policy,
-    required AppFailure failure,
-    required _OverviewPeriod period,
-    required List<String>? expectedSortedAgentIds,
-    required Object error,
-    required StackTrace stackTrace,
-  }) async {
-    if (!_shouldFallbackToCache(policy: policy, failure: failure)) {
-      return null;
-    }
-
-    final cachedOverview = await _localDataSource.readOverview(userId: userId);
-    if (cachedOverview == null) {
-      return null;
-    }
-
-    if (!_isCacheAcceptable(
-      cached: cachedOverview,
-      period: period,
-      expectedSortedAgentIds: expectedSortedAgentIds,
-    )) {
-      return null;
-    }
-
-    final warningContext = <String, Object?>{
-      'operation': 'loadOverview',
-      'userId': userId,
-      'policy': policy.name,
-      'failureType': failure.runtimeType.toString(),
-    };
-    if (cachedOverview.sourceAgentIds == null) {
-      warningContext['legacyCacheMissingAgentSignature'] = true;
-    }
-
-    AppLogger.warning(
-      'Overview fallback to cached data',
-      context: warningContext,
-      error: error,
-      stackTrace: stackTrace,
-    );
-    return cachedOverview;
-  }
-
-  Future<Overview?> _readCachedOverviewForMissingClientTokens({
-    required String userId,
-    required OverviewLoadPolicy policy,
-    required _OverviewPeriod period,
-    required List<String> expectedSortedAgentIds,
-    required List<String> agentIdsMissingClientToken,
-    required List<String> agentNamesMissingClientToken,
-  }) async {
-    final cachedOverview = await _localDataSource.readOverview(userId: userId);
-    if (cachedOverview == null) {
-      return null;
-    }
-
-    if (!_isCacheAcceptable(
-      cached: cachedOverview,
-      period: period,
-      expectedSortedAgentIds: expectedSortedAgentIds,
-    )) {
-      return null;
-    }
-
-    AppLogger.warning(
-      policy == OverviewLoadPolicy.forceRefresh
-          ? 'Overview fallback to cached data (missing local client_token; '
-                'force refresh cannot run queries)'
-          : 'Overview fallback to cached data (missing local client token)',
-      context: <String, Object?>{
-        'operation': 'loadOverview',
-        'userId': userId,
-        'policy': policy.name,
-        'missingTokenCount': agentIdsMissingClientToken.length,
-        'missingTokenAgentIds': agentIdsMissingClientToken.join(', '),
-      },
-    );
-
-    return cachedOverview
-        .toEntity(isStaleCache: true)
-        .copyWith(
-          approvedAgentCount: expectedSortedAgentIds.length,
-          agentIdsMissingClientToken: agentIdsMissingClientToken,
-          agentNamesMissingClientToken: agentNamesMissingClientToken,
-        );
-  }
-
-  bool _isCacheAcceptable({
-    required OverviewModel cached,
-    required _OverviewPeriod period,
-    required List<String>? expectedSortedAgentIds,
-  }) {
-    if (!_sameCalendarDay(cached.periodStart, period.start) ||
-        !_sameCalendarDay(cached.periodEnd, period.end)) {
-      return false;
-    }
-
-    if (cached.cachedAt != null) {
-      final age = _now().difference(cached.cachedAt!);
-      if (age > _overviewCacheMaxAge) {
-        return false;
-      }
-    }
-
-    if (expectedSortedAgentIds != null) {
-      if (cached.sourceAgentIds == null) {
-        return false;
-      }
-      final actual = List<String>.from(cached.sourceAgentIds!)..sort();
-      final expected = List<String>.from(expectedSortedAgentIds)..sort();
-      if (!_listEquals(expected, actual)) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  static bool _sameCalendarDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
-  }
-
-  static bool _listEquals(List<String> a, List<String> b) {
-    if (a.length != b.length) {
-      return false;
-    }
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  bool _shouldFallbackToCache({
-    required OverviewLoadPolicy policy,
-    required AppFailure failure,
-  }) {
-    if (policy == OverviewLoadPolicy.forceRefresh) {
-      return false;
-    }
-    if (failure is ValidationFailure ||
-        failure is SessionFailure ||
-        failure is AuthorizationFailure) {
-      return false;
-    }
-    if (failure case RpcFailure(:final retryable)) {
-      return retryable;
-    }
-    return failure.isTransient || failure is UnknownFailure;
   }
 
   bool _isNoApprovedAgentsFailure(AppFailure failure) {
