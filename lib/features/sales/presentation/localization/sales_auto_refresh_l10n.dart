@@ -10,7 +10,9 @@ abstract final class SalesAutoRefreshL10n {
       'fiveMinutes' => l10n.salesAutoRefreshIntervalFiveMinutes,
       'tenMinutes' => l10n.salesAutoRefreshIntervalTenMinutes,
       'fifteenMinutes' => l10n.salesAutoRefreshIntervalFifteenMinutes,
+      'twentyFiveMinutes' => l10n.salesAutoRefreshIntervalTwentyFiveMinutes,
       'thirtyMinutes' => l10n.salesAutoRefreshIntervalThirtyMinutes,
+      'thirtyFiveMinutes' => l10n.salesAutoRefreshIntervalThirtyFiveMinutes,
       _ => option.id,
     };
   }

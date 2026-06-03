@@ -163,6 +163,25 @@ void main() {
     verify(() => delegate.executeSql(request)).called(1);
   });
 
+  test('RpcFailure replay_detected (-32014): no retry', () async {
+    const failure = RpcFailure(
+      message: 'Replay detected',
+      userMessage: 'Duplicate',
+      rpcCode: -32014,
+      retryable: false,
+      reason: 'replay_detected',
+    );
+    when(() => delegate.executeSql(any())).thenAnswer(
+      (_) async => const Failure<AgentSqlExecutionResult, AppFailure>(failure),
+    );
+
+    final result = await retrying.executeSql(request);
+
+    check(result.isError()).isTrue();
+    check(result.exceptionOrNull()).isA<RpcFailure>();
+    verify(() => delegate.executeSql(request)).called(1);
+  });
+
   test('RpcFailure rate limit (-32013) without retryAfter: no retry', () async {
     const failure = RpcFailure(
       message: 'Rate window exceeded',

@@ -51,6 +51,11 @@ String agentQueryFailureCategoryFallbackUiKey(AppFailure failure) {
   if (failure is RpcFailure && failure.rpcCode == -32013) {
     return AgentSqlRpcFailureUiKey.rateLimited;
   }
+  if (failure is RpcFailure &&
+      (failure.rpcCode == -32014 ||
+          failure.reason?.toLowerCase() == 'replay_detected')) {
+    return AgentSqlRpcFailureUiKey.replayDetected;
+  }
   if (failure is SessionFailure) {
     return AgentSqlRpcFailureUiKey.authenticationFailed;
   }

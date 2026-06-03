@@ -38,6 +38,35 @@ abstract final class SalesAutoRefreshOptions {
   static List<AutoRefreshOption> get values => optionSet.values;
 }
 
+/// Auto-refresh intervals for the sales live map only (desktop).
+///
+/// Minimum interval is 15 minutes; options advance in 10-minute steps.
+abstract final class SalesLiveMapAutoRefreshOptions {
+  static const AutoRefreshOption fifteenMinutes = AutoRefreshOption(
+    id: 'fifteenMinutes',
+    duration: Duration(minutes: 15),
+  );
+  static const AutoRefreshOption twentyFiveMinutes = AutoRefreshOption(
+    id: 'twentyFiveMinutes',
+    duration: Duration(minutes: 25),
+  );
+  static const AutoRefreshOption thirtyFiveMinutes = AutoRefreshOption(
+    id: 'thirtyFiveMinutes',
+    duration: Duration(minutes: 35),
+  );
+
+  static final AutoRefreshOptionSet optionSet = AutoRefreshOptionSet(
+    values: const <AutoRefreshOption>[
+      fifteenMinutes,
+      twentyFiveMinutes,
+      thirtyFiveMinutes,
+    ],
+    defaultOption: fifteenMinutes,
+  );
+
+  static List<AutoRefreshOption> get values => optionSet.values;
+}
+
 abstract final class SalesAutoRefreshCardIds {
   static const String dailyTotals = 'daily_totals';
   static const String monthlyPnl = 'monthly_pnl';

@@ -1,6 +1,7 @@
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/di/injector_agent_queries.dart';
+import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_produto_rank_lucro_use_case.dart';
@@ -53,6 +54,7 @@ List<RouteBase> buildSalesRoutes() {
               sessionService: sessionService,
               loadSalesAvailableAgentsUseCase: loadSalesAvailableAgentsUseCase,
               loadSalesLiveMapUseCase: getIt<LoadSalesLiveMapUseCase>(),
+              retryAfterGate: getIt<RetryAfterGate>(),
               relayCancelScopeBinder: _wireSalesAgentSqlRelayCancel,
             ),
             child: const SalesLiveMapPage(),

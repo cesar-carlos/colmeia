@@ -297,6 +297,17 @@ abstract final class AppEnvironment {
         fallback: false,
       );
 
+  static bool get agentSqlSalesLiveMapMergeSqlBatchesPerTarget =>
+      AppEnvironmentResolution.resolveBool(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.agentSqlSalesLiveMapMergeSqlBatchesPerTarget,
+        ),
+        fromDotenv: _dotenvMaybe(
+          EnvKeys.agentSqlSalesLiveMapMergeSqlBatchesPerTarget,
+        ),
+        fallback: false,
+      );
+
   static int get agentSqlRelayStreamingMaxConcurrentPerAgent =>
       AppEnvironmentResolution.resolveInt(
         fromDefine: const String.fromEnvironment(

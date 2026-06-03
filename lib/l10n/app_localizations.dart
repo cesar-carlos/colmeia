@@ -4189,6 +4189,12 @@ abstract class AppLocalizations {
   /// **'Too many query attempts were made. Please wait a moment and try again.'**
   String get agentSqlErrorRateLimited;
 
+  /// No description provided for @agentSqlErrorReplayDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'This query was already submitted. Wait a moment and try again.'**
+  String get agentSqlErrorReplayDetected;
+
   /// Rate-limited agent query when the hub sent Retry-After or retry_after_ms.
   ///
   /// In en, this message translates to:
@@ -4266,6 +4272,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Too many queries'**
   String get agentSqlFailureTitleRateLimited;
+
+  /// No description provided for @agentSqlFailureTitleReplayDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate query'**
+  String get agentSqlFailureTitleReplayDetected;
 
   /// No description provided for @agentSqlFailureTitleAuthenticationFailed.
   ///
@@ -5749,11 +5761,23 @@ abstract class AppLocalizations {
   /// **'15 min'**
   String get salesAutoRefreshIntervalFifteenMinutes;
 
+  /// No description provided for @salesAutoRefreshIntervalTwentyFiveMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'25 min'**
+  String get salesAutoRefreshIntervalTwentyFiveMinutes;
+
   /// No description provided for @salesAutoRefreshIntervalThirtyMinutes.
   ///
   /// In en, this message translates to:
   /// **'30 min'**
   String get salesAutoRefreshIntervalThirtyMinutes;
+
+  /// No description provided for @salesAutoRefreshIntervalThirtyFiveMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'35 min'**
+  String get salesAutoRefreshIntervalThirtyFiveMinutes;
 
   /// No description provided for @salesLiveMapBranchPointSubtitle.
   ///

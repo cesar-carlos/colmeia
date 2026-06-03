@@ -149,7 +149,10 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
 
   @override
   AutoRefreshPauseReason? resolveAutoRefreshPauseReason() =>
-      SalesLiveMapViewModel.resolveAutoRefreshPauseReason(_controller.state);
+      SalesLiveMapViewModel.resolveAutoRefreshPauseReason(
+        _controller.state,
+        isOnRetryCooldown: _controller.isOnRetryCooldown,
+      );
 
   Future<void> _reload({bool force = false}) async {
     _coordinator.markManualReload(force: force);
@@ -167,6 +170,11 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
       force: pending.force,
       reason: pending.reason,
     );
+    if (outcome.isBlockedByCooldown) {
+      _coordinator.lastAutoRefreshReloadResult =
+          const AutoRefreshReloadResult.cancelled();
+      return;
+    }
     final result = outcome.result;
     if (outcome.isCancelled || outcome.isSuperseded) {
       _coordinator.lastAutoRefreshReloadResult =
@@ -211,7 +219,36 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
         availableBranches:
             state.result?.branchOptions ?? const <SalesLiveMapBranchOption>[],
         initialFilter: state.filter,
-        onApply: (filter) => unawaited(_controller.applyFilter(filter)),
+        isApplyEnabled: !_controller.isOnRetryCooldown,
+        onApply: (filter) => unawaited(_applyFilterFromSheet(filter)),
+      ),
+    );
+  }
+
+  Future<void> _applyFilterFromSheet(SalesLiveMapFilter filter) async {
+    final outcome = await _controller.applyFilter(filter);
+    if (!mounted) {
+      return;
+    }
+    if (outcome == SalesLiveMapFilterMutationOutcome.blockedByCooldown) {
+      _showRetryCooldownSnackbar();
+    }
+  }
+
+  void _showRetryCooldownSnackbar() {
+    final remainingSeconds = _controller.retryAfterGate.remaining?.inSeconds;
+    if (remainingSeconds == null || remainingSeconds <= 0) {
+      return;
+    }
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    messenger.showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text(l10n.appInlineErrorRetryCountdown(remainingSeconds)),
       ),
     );
   }

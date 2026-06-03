@@ -897,6 +897,9 @@ Map<String, String> _processEnvironmentOverrides() {
     EnvKeys.e2eClientEmail,
     EnvKeys.e2eClientPassword,
     EnvKeys.e2eDisableRelayDispatch,
+    EnvKeys.agentSqlOverviewMergeSqlBatchesPerTarget,
+    EnvKeys.agentSqlSalesLiveMapMergeSqlBatchesPerTarget,
+    EnvKeys.salesLiveMapMergeWaveSize,
   ];
   final overrides = <String, String>{};
   for (final name in names) {

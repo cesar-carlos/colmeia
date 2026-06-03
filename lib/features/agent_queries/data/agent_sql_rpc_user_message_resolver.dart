@@ -48,6 +48,8 @@ abstract final class _En {
       'Could not reach the agent right now. Please try again.';
   static const rateLimited =
       'Too many query attempts were made. Please wait a moment and try again.';
+  static const replayDetected =
+      'This query was already submitted. Wait a moment and try again.';
   static const sqlValidationFailed = 'The query is invalid.';
   static const sqlExecutionFailed = 'The query could not be executed.';
   static const transactionFailed =
@@ -235,14 +237,10 @@ AgentSqlRpcUserMessageResolution resolveAgentSqlRpcUserMessage(
     );
   }
 
-  // replay_detected (-32014): hub idempotency guard fired (typically from
-  // network-level packet duplication). RetryingAgentQueriesRepository retries
-  // with a fresh UUID automatically; this mapping only applies when all retry
-  // attempts are exhausted, in which case a generic transient message is shown.
   if (code == -32014 || reasonLower == 'replay_detected') {
     return const AgentSqlRpcUserMessageResolution(
-      userMessage: _En.networkError,
-      uiKey: AgentSqlRpcFailureUiKey.networkError,
+      userMessage: _En.replayDetected,
+      uiKey: AgentSqlRpcFailureUiKey.replayDetected,
     );
   }
 

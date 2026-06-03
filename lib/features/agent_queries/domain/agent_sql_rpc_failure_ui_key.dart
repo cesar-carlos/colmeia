@@ -14,6 +14,7 @@ abstract final class AgentSqlRpcFailureUiKey {
   static const String transportTimeout = 'transportTimeout';
   static const String networkError = 'networkError';
   static const String rateLimited = 'rateLimited';
+  static const String replayDetected = 'replayDetected';
   static const String sqlValidationFailed = 'sqlValidationFailed';
   static const String sqlExecutionFailed = 'sqlExecutionFailed';
   static const String transactionFailed = 'transactionFailed';

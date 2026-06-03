@@ -21,9 +21,11 @@ class SalesAutoRefreshActionsRow extends StatelessWidget {
     this.isBackingOff = false,
     this.isPaused = false,
     this.pauseReason,
+    this.options,
     super.key,
   });
 
+  final List<AutoRefreshOption>? options;
   final AutoRefreshOption? value;
   final ValueChanged<AutoRefreshOption?> onChanged;
   final VoidCallback onRefreshNow;
@@ -39,7 +41,7 @@ class SalesAutoRefreshActionsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AutoRefreshActionsRow(
-      options: SalesAutoRefreshOptions.values,
+      options: options ?? SalesAutoRefreshOptions.values,
       optionLabelBuilder: (option) => SalesAutoRefreshL10n.intervalLabel(l10n, option),
       value: value,
       onChanged: onChanged,

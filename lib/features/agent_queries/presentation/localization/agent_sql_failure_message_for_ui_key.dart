@@ -12,6 +12,7 @@ String agentSqlFailureMessageForUiKey(String key, AppLocalizations l10n) {
       l10n.agentSqlErrorTransportTimeout,
     AgentSqlRpcFailureUiKey.networkError => l10n.agentSqlErrorNetworkError,
     AgentSqlRpcFailureUiKey.rateLimited => l10n.agentSqlErrorRateLimited,
+    AgentSqlRpcFailureUiKey.replayDetected => l10n.agentSqlErrorReplayDetected,
     AgentSqlRpcFailureUiKey.sqlValidationFailed =>
       l10n.agentSqlErrorValidationFailed,
     AgentSqlRpcFailureUiKey.sqlExecutionFailed =>
@@ -46,6 +47,8 @@ String agentSqlFailureTitleForUiKey(String key, AppLocalizations l10n) {
       l10n.agentSqlFailureTitleTransportTimeout,
     AgentSqlRpcFailureUiKey.networkError => l10n.agentSqlFailureTitleNetworkError,
     AgentSqlRpcFailureUiKey.rateLimited => l10n.agentSqlFailureTitleRateLimited,
+    AgentSqlRpcFailureUiKey.replayDetected =>
+      l10n.agentSqlFailureTitleReplayDetected,
     AgentSqlRpcFailureUiKey.sqlValidationFailed =>
       l10n.agentSqlFailureTitleValidationFailed,
     AgentSqlRpcFailureUiKey.sqlExecutionFailed =>

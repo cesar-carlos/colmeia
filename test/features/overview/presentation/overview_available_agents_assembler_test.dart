@@ -194,6 +194,26 @@ void main() {
       expect(byId['bad']!.missingLocalClientToken, isTrue);
     });
 
+    test('marks connection unknown when onlineAgentIds is null', () {
+      final overview = _minimalOverview(
+        rankings: const [
+          OverviewAgentRanking(
+            agentId: 'a1',
+            displayName: 'Alpha',
+            totalAmount: 1,
+            totalSalesCount: 1,
+          ),
+        ],
+      );
+      final out = OverviewAvailableAgentsAssembler.assemble(
+        overview: overview,
+        previousOptions: const [],
+        onlineAgentIds: null,
+      );
+
+      expect(out.single.connectionStatus, AgentConnectionStatus.unknown);
+    });
+
     test('includes agents skipped because hub presence is offline', () {
       final overview = _minimalOverview(
         skippedDueToHubPresenceIds: const ['offline-1'],

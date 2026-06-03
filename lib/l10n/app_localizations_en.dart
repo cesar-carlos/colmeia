@@ -2570,6 +2570,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Too many query attempts were made. Please wait a moment and try again.';
 
   @override
+  String get agentSqlErrorReplayDetected =>
+      'This query was already submitted. Wait a moment and try again.';
+
+  @override
   String agentSqlErrorRateLimitedWithWait(int seconds) {
     return 'Too many query attempts were made. Try again in ${seconds}s.';
   }
@@ -2617,6 +2621,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentSqlFailureTitleRateLimited => 'Too many queries';
+
+  @override
+  String get agentSqlFailureTitleReplayDetected => 'Duplicate query';
 
   @override
   String get agentSqlFailureTitleAuthenticationFailed => 'Session expired';
@@ -3492,7 +3499,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesAutoRefreshIntervalFifteenMinutes => '15 min';
 
   @override
+  String get salesAutoRefreshIntervalTwentyFiveMinutes => '25 min';
+
+  @override
   String get salesAutoRefreshIntervalThirtyMinutes => '30 min';
+
+  @override
+  String get salesAutoRefreshIntervalThirtyFiveMinutes => '35 min';
 
   @override
   String salesLiveMapBranchPointSubtitle(

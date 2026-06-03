@@ -1092,6 +1092,7 @@
   "agentSqlErrorTransportTimeout": "O agente demorou mais do que o esperado para responder. Tente novamente.",
   "agentSqlErrorNetworkError": "Não foi possível alcancar o agente agora. Tente novamente.",
   "agentSqlErrorRateLimited": "Muitas tentativas de consulta foram feitas. Aguarde um instante e tente novamente.",
+  "agentSqlErrorReplayDetected": "Esta consulta já foi enviada. Aguarde um momento e tente novamente.",
   "agentSqlErrorRateLimitedWithWait": "Muitas tentativas de consulta foram feitas. Tente novamente em {seconds}s.",
   "@agentSqlErrorRateLimitedWithWait": {
     "placeholders": {
@@ -1110,6 +1111,7 @@
   "agentSqlErrorExecutionCancelled": "A consulta foi cancelada.",
   "agentSqlErrorGeneric": "Não foi possível concluir a consulta no agente.",
   "agentSqlFailureTitleRateLimited": "Muitas consultas",
+  "agentSqlFailureTitleReplayDetected": "Consulta duplicada",
   "agentSqlFailureTitleAuthenticationFailed": "Sessão expirada",
   "agentSqlFailureTitlePermissionDenied": "Sem permissão",
   "agentSqlFailureTitleTransportTimeout": "Agente demorou para responder",
@@ -1506,7 +1508,9 @@
   "salesAutoRefreshIntervalFiveMinutes": "5 min",
   "salesAutoRefreshIntervalTenMinutes": "10 min",
   "salesAutoRefreshIntervalFifteenMinutes": "15 min",
+  "salesAutoRefreshIntervalTwentyFiveMinutes": "25 min",
   "salesAutoRefreshIntervalThirtyMinutes": "30 min",
+  "salesAutoRefreshIntervalThirtyFiveMinutes": "35 min",
   "salesLiveMapBranchPointSubtitle": "Agente {agentName} - Empresa {companyCode} - Filial {branchCode}",
   "@salesLiveMapBranchPointSubtitle": {
     "placeholders": {

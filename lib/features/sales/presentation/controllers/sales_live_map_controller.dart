@@ -1,8 +1,11 @@
 import 'dart:async';
 
+import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_persistence.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
+import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_result_builder.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
@@ -14,11 +17,23 @@ import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.da
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_filter_normalizer.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_visual_snapshot_policy.dart';
+import 'package:colmeia/features/sales/presentation/sales_live_map_available_agents_assembler.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/foundation.dart';
 
-enum SalesLiveMapReloadOutcomeKind { completed, cancelled, superseded }
+enum SalesLiveMapReloadOutcomeKind {
+  completed,
+  cancelled,
+  superseded,
+  blockedByCooldown,
+}
+
+enum SalesLiveMapFilterMutationOutcome {
+  applied,
+  blockedByCooldown,
+  unchanged,
+}
 
 @immutable
 class SalesLiveMapReloadOutcome {
@@ -33,6 +48,10 @@ class SalesLiveMapReloadOutcome {
   const SalesLiveMapReloadOutcome.superseded([SalesLiveMapLoadResult? result])
     : this._(SalesLiveMapReloadOutcomeKind.superseded, result);
 
+  const SalesLiveMapReloadOutcome.blockedByCooldown([
+    SalesLiveMapLoadResult? result,
+  ]) : this._(SalesLiveMapReloadOutcomeKind.blockedByCooldown, result);
+
   final SalesLiveMapReloadOutcomeKind kind;
   final SalesLiveMapLoadResult? result;
 
@@ -41,6 +60,9 @@ class SalesLiveMapReloadOutcome {
   bool get isCancelled => kind == SalesLiveMapReloadOutcomeKind.cancelled;
 
   bool get isSuperseded => kind == SalesLiveMapReloadOutcomeKind.superseded;
+
+  bool get isBlockedByCooldown =>
+      kind == SalesLiveMapReloadOutcomeKind.blockedByCooldown;
 }
 
 class SalesLiveMapController extends ChangeNotifier {
@@ -48,15 +70,22 @@ class SalesLiveMapController extends ChangeNotifier {
     required SalesSessionService sessionService,
     required LoadAvailableAgentsForSales loadSalesAvailableAgentsUseCase,
     required LoadSalesLiveMapUseCase loadSalesLiveMapUseCase,
+    RetryAfterGate? retryAfterGate,
     AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder,
   }) : _sessionService = sessionService,
        _loadAgentsUseCase = loadSalesAvailableAgentsUseCase,
        _loadLiveMap = loadSalesLiveMapUseCase,
-       _relayCancelScopeBinder = relayCancelScopeBinder;
+       _retryAfterGate = retryAfterGate ?? RetryAfterGate(),
+       _ownsRetryAfterGate = retryAfterGate == null,
+       _relayCancelScopeBinder = relayCancelScopeBinder {
+    _retryAfterGate.addListener(_notifyListenersIfAlive);
+  }
 
   final SalesSessionService _sessionService;
   final LoadAvailableAgentsForSales _loadAgentsUseCase;
   final LoadSalesLiveMapUseCase _loadLiveMap;
+  final RetryAfterGate _retryAfterGate;
+  final bool _ownsRetryAfterGate;
   final AgentQueriesRelayCancelScopeBinder? _relayCancelScopeBinder;
 
   SalesLiveMapPresentationState _state = const SalesLiveMapPresentationState();
@@ -67,11 +96,15 @@ class SalesLiveMapController extends ChangeNotifier {
 
   SalesLiveMapPresentationState get state => _state;
 
+  RetryAfterGate get retryAfterGate => _retryAfterGate;
+
+  bool get isOnRetryCooldown => !_retryAfterGate.isOpen;
+
   AutoRefreshStatePersistence get autoRefreshPersistence =>
       SalesCardAutoRefreshPersistence(
         sessionService: _sessionService,
         cardId: SalesAutoRefreshCardIds.liveMap,
-        optionSet: SalesAutoRefreshOptions.optionSet,
+        optionSet: SalesLiveMapAutoRefreshOptions.optionSet,
       );
 
   Future<void> bindUser(String? userId) async {
@@ -79,6 +112,7 @@ class SalesLiveMapController extends ChangeNotifier {
       return;
     }
     _boundUserId = userId;
+    _loadGeneration++;
     _activeLoadCancelToken?.cancel();
 
     final persistedFilter = _sessionService.restoreSalesLiveMapFilter();
@@ -120,20 +154,28 @@ class SalesLiveMapController extends ChangeNotifier {
     bool force = false,
     SalesLiveMapReloadReason reason = SalesLiveMapReloadReason.manual,
   }) async {
+    if (isOnRetryCooldown) {
+      return SalesLiveMapReloadOutcome.blockedByCooldown(_state.result);
+    }
     if (force) {
       _activeLoadCancelToken?.cancel();
     }
     return _performReload(reason: reason);
   }
 
-  Future<void> applyFilter(SalesLiveMapFilter filter) async {
+  Future<SalesLiveMapFilterMutationOutcome> applyFilter(
+    SalesLiveMapFilter filter,
+  ) async {
+    if (isOnRetryCooldown) {
+      return SalesLiveMapFilterMutationOutcome.blockedByCooldown;
+    }
     final normalizedFilter =
         SalesLiveMapFilterNormalizer.normalizeForSelectedBranches(
           filter: filter,
           result: _state.result,
         );
     if (_state.filter == normalizedFilter && !_state.sessionExpired) {
-      return;
+      return SalesLiveMapFilterMutationOutcome.unchanged;
     }
     final previousData = _state.filter.dataFilter;
     final nextData = normalizedFilter.dataFilter;
@@ -153,31 +195,40 @@ class SalesLiveMapController extends ChangeNotifier {
     } else if (wasSessionExpired) {
       await reload(force: true);
     }
+    return SalesLiveMapFilterMutationOutcome.applied;
   }
 
-  Future<void> clearSelectedBranches() async {
+  Future<SalesLiveMapFilterMutationOutcome> clearSelectedBranches() async {
+    if (isOnRetryCooldown) {
+      return SalesLiveMapFilterMutationOutcome.blockedByCooldown;
+    }
     final next = _state.filter.copyWith(
       selectedAgentIds: null,
       selectedBranchIds: null,
     );
     if (_state.filter == next && !_state.sessionExpired) {
-      return;
+      return SalesLiveMapFilterMutationOutcome.unchanged;
     }
     _setState(_state.copyWith(filter: next, sessionExpired: false));
     _persistFilter(next);
     _requestCloseFullscreenAfterDataChanged();
     await reload(force: true, reason: SalesLiveMapReloadReason.filterChange);
+    return SalesLiveMapFilterMutationOutcome.applied;
   }
 
-  Future<void> clearSavedFilters() async {
+  Future<SalesLiveMapFilterMutationOutcome> clearSavedFilters() async {
+    if (isOnRetryCooldown) {
+      return SalesLiveMapFilterMutationOutcome.blockedByCooldown;
+    }
     const next = SalesLiveMapFilter();
     if (_state.filter == next && !_state.sessionExpired) {
-      return;
+      return SalesLiveMapFilterMutationOutcome.unchanged;
     }
     _setState(_state.copyWith(filter: next, sessionExpired: false));
     _persistFilter(next);
     _requestCloseFullscreenAfterDataChanged();
     await reload(force: true, reason: SalesLiveMapReloadReason.filterChange);
+    return SalesLiveMapFilterMutationOutcome.applied;
   }
 
   void updateMetric(SalesLiveMapMetric metric) {
@@ -197,6 +248,10 @@ class SalesLiveMapController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _activeLoadCancelToken?.cancel();
+    _retryAfterGate.removeListener(_notifyListenersIfAlive);
+    if (_ownsRetryAfterGate) {
+      _retryAfterGate.dispose();
+    }
     super.dispose();
   }
 
@@ -340,6 +395,8 @@ class SalesLiveMapController extends ChangeNotifier {
         continue;
       }
 
+      _armRetryAfterFromLoadResult(result);
+      final nextAvailableAgents = _rehydrateAvailableAgents(result);
       _setState(
         _state.copyWith(
           result: result,
@@ -347,6 +404,7 @@ class SalesLiveMapController extends ChangeNotifier {
           mapPayloadDigest: nextMapPayloadDigest,
           isLoading: result.salesDataPending,
           sessionExpired: false,
+          availableAgents: nextAvailableAgents ?? _state.availableAgents,
         ),
       );
     }
@@ -412,6 +470,32 @@ class SalesLiveMapController extends ChangeNotifier {
     }
     _state = nextState;
     _notifyListenersIfAlive();
+  }
+
+  List<DashboardAgentOption>? _rehydrateAvailableAgents(
+    SalesLiveMapLoadResult result,
+  ) {
+    return SalesLiveMapAvailableAgentsAssembler.rehydrate(
+      previousOptions: _state.availableAgents,
+      onlineAgentIds: result.hubPresenceOnlineAgentIdsSnapshot,
+      result: result,
+    );
+  }
+
+  void _armRetryAfterFromLoadResult(SalesLiveMapLoadResult result) {
+    final failure = result.loadFailure;
+    if (failure != null) {
+      _armRetryAfterFromFailure(failure);
+    }
+    for (final agentFailure in result.agentQueryFailures) {
+      if (shouldArmRetryAfterFromPartialAgentQueryFailure(agentFailure)) {
+        _armRetryAfterFromFailure(agentFailure);
+      }
+    }
+  }
+
+  void _armRetryAfterFromFailure(AppFailure failure) {
+    armAgentQueryRetryAfterGate(_retryAfterGate, failure);
   }
 
 }

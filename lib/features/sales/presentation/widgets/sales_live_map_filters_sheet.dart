@@ -20,6 +20,7 @@ class SalesLiveMapFiltersSheet extends StatefulWidget {
     required this.availableBranches,
     required this.initialFilter,
     required this.onApply,
+    this.isApplyEnabled = true,
     super.key,
   });
 
@@ -28,6 +29,7 @@ class SalesLiveMapFiltersSheet extends StatefulWidget {
   final List<SalesLiveMapBranchOption> availableBranches;
   final SalesLiveMapFilter initialFilter;
   final ValueChanged<SalesLiveMapFilter> onApply;
+  final bool isApplyEnabled;
 
   @override
   State<SalesLiveMapFiltersSheet> createState() =>
@@ -226,7 +228,7 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
       description: widget.l10n.salesLiveMapFiltersDescription,
       primaryActionLabel: widget.l10n.reportFiltersApplyAction,
       secondaryActionLabel: widget.l10n.reportFiltersClearAction,
-      canPrimaryAction: _canApply,
+      canPrimaryAction: widget.isApplyEnabled && _canApply,
       onPrimaryAction: _apply,
       onSecondaryAction: _clear,
       bodyBuilder: (scrollController) {

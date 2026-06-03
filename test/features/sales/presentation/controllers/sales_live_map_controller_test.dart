@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_diagnostic.dart';
+import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
@@ -790,6 +792,216 @@ void main() {
         <String>['agent-2'],
         reason: 'stale agent load must not pollute the new user state',
       );
+    },
+  );
+
+  test('reload and applyFilter no-op while RetryAfterGate is closed', () async {
+    final gate = RetryAfterGate(tickInterval: const Duration(milliseconds: 5))
+      ..arm(const Duration(seconds: 30));
+    controller = SalesLiveMapController(
+      sessionService: SalesSessionService(salesPreferences),
+      loadSalesAvailableAgentsUseCase: loadAvailableAgentsForSales,
+      loadSalesLiveMapUseCase: loadLiveMap,
+      retryAfterGate: gate,
+    );
+
+    await controller.bindUser('user-1');
+    clearInteractions(loadLiveMap);
+
+    final reloadOutcome = await controller.reload();
+    final applyOutcome = await controller.applyFilter(controller.state.filter);
+
+    expect(controller.isOnRetryCooldown, isTrue);
+    expect(reloadOutcome.isBlockedByCooldown, isTrue);
+    expect(applyOutcome, SalesLiveMapFilterMutationOutcome.blockedByCooldown);
+    verifyNever(
+      () => loadLiveMap.loadProgressive(
+        userId: any(named: 'userId'),
+        filter: any(named: 'filter'),
+        reason: any(named: 'reason'),
+        cancelToken: any(named: 'cancelToken'),
+      ),
+    );
+    gate.dispose();
+  });
+
+  test(
+    'clearSelectedBranches and clearSavedFilters do not mutate filter while '
+    'RetryAfterGate is closed',
+    () async {
+      final gate = RetryAfterGate(tickInterval: const Duration(milliseconds: 5))
+        ..arm(const Duration(seconds: 30));
+      controller = SalesLiveMapController(
+        sessionService: SalesSessionService(salesPreferences),
+        loadSalesAvailableAgentsUseCase: loadAvailableAgentsForSales,
+        loadSalesLiveMapUseCase: loadLiveMap,
+        retryAfterGate: gate,
+      );
+
+      await controller.bindUser('user-1');
+      await controller.applyFilter(
+        SalesLiveMapFilter(
+          selectedBranchIds: <SalesLiveMapBranchRef>{
+            const SalesLiveMapBranchRef(
+              agentId: 'agent-1',
+              codEmpresa: 1,
+              codFilial: 1,
+            ),
+          },
+          periodMode: SalesLiveMapPeriodMode.lastSevenDays,
+        ),
+      );
+      clearInteractions(loadLiveMap);
+      clearInteractions(salesPreferences);
+      final filterBeforeClear = controller.state.filter;
+      final closeRequestBefore = controller.state.closeFullscreenRequestId;
+
+      final clearBranchesOutcome = await controller.clearSelectedBranches();
+      final clearSavedOutcome = await controller.clearSavedFilters();
+
+      expect(clearBranchesOutcome,
+          SalesLiveMapFilterMutationOutcome.blockedByCooldown);
+      expect(clearSavedOutcome, SalesLiveMapFilterMutationOutcome.blockedByCooldown);
+      expect(controller.state.filter, filterBeforeClear);
+      expect(
+        controller.state.closeFullscreenRequestId,
+        closeRequestBefore,
+      );
+      verifyNever(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      );
+      verifyNever(() => salesPreferences.persistSalesLiveMapFilter(any()));
+      gate.dispose();
+    },
+  );
+
+  test(
+    'arms RetryAfterGate from rate-limited agent query failure on load',
+    () async {
+      final gate = RetryAfterGate(tickInterval: const Duration(milliseconds: 5));
+      controller = SalesLiveMapController(
+        sessionService: SalesSessionService(salesPreferences),
+        loadSalesAvailableAgentsUseCase: loadAvailableAgentsForSales,
+        loadSalesLiveMapUseCase: loadLiveMap,
+        retryAfterGate: gate,
+      );
+      when(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      ).thenAnswer(
+        (_) => Stream<SalesLiveMapLoadResult>.value(
+          SalesLiveMapLoadResult(
+            points: const <SalesLiveMapPoint>[],
+            branchOptions: const <SalesLiveMapBranchOption>[],
+            totalRevenue: 0,
+            totalSalesCount: 0,
+            totalBranchCount: 0,
+            mappedBranchCount: 0,
+            mappedMunicipalityCount: 0,
+            queriedAgentCount: 0,
+            plannedAgentCount: 0,
+            failedAgentCount: 1,
+            missingClientTokenAgentCount: 0,
+            skippedOfflineAgentCount: 0,
+            rowCapReachedAgentCount: 0,
+            refreshedAt: DateTime(2026, 5, 9, 12),
+            loadFailed: true,
+            loadFailure: const RpcFailure(
+              message: 'Rate limited',
+              userMessage: 'Wait',
+              rpcCode: -32013,
+              retryable: true,
+              retryAfter: Duration(seconds: 10),
+            ),
+            agentQueryFailures: const <AppFailure>[
+              RpcFailure(
+                message: 'Rate limited',
+                userMessage: 'Wait',
+                rpcCode: -32013,
+                retryable: true,
+                retryAfter: Duration(seconds: 10),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await controller.bindUser('user-1');
+
+      expect(controller.isOnRetryCooldown, isTrue);
+      gate.dispose();
+    },
+  );
+
+  test(
+    'arms RetryAfterGate from replay_detected agent query failure on load',
+    () async {
+      final gate = RetryAfterGate(tickInterval: const Duration(milliseconds: 5));
+      controller = SalesLiveMapController(
+        sessionService: SalesSessionService(salesPreferences),
+        loadSalesAvailableAgentsUseCase: loadAvailableAgentsForSales,
+        loadSalesLiveMapUseCase: loadLiveMap,
+        retryAfterGate: gate,
+      );
+      when(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      ).thenAnswer(
+        (_) => Stream<SalesLiveMapLoadResult>.value(
+          SalesLiveMapLoadResult(
+            points: const <SalesLiveMapPoint>[],
+            branchOptions: const <SalesLiveMapBranchOption>[],
+            totalRevenue: 0,
+            totalSalesCount: 0,
+            totalBranchCount: 0,
+            mappedBranchCount: 0,
+            mappedMunicipalityCount: 0,
+            queriedAgentCount: 0,
+            plannedAgentCount: 0,
+            failedAgentCount: 1,
+            missingClientTokenAgentCount: 0,
+            skippedOfflineAgentCount: 0,
+            rowCapReachedAgentCount: 0,
+            refreshedAt: DateTime(2026, 5, 9, 12),
+            loadFailed: true,
+            loadFailure: const RpcFailure(
+              message: 'Replay detected',
+              userMessage: 'Duplicate request',
+              rpcCode: -32014,
+              retryable: false,
+              reason: 'replay_detected',
+            ),
+            agentQueryFailures: const <AppFailure>[
+              RpcFailure(
+                message: 'Replay detected',
+                userMessage: 'Duplicate request',
+                rpcCode: -32014,
+                retryable: false,
+                reason: 'replay_detected',
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await controller.bindUser('user-1');
+
+      expect(controller.isOnRetryCooldown, isTrue);
+      expect(gate.remaining, kAgentQueryReplayDetectedCooldown);
+      gate.dispose();
     },
   );
 }

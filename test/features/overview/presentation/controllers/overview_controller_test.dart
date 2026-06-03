@@ -12,8 +12,11 @@ import 'package:colmeia/features/agent_meta/domain/entities/agent_rpc_descriptor
 import 'package:colmeia/features/agent_meta/domain/entities/client_token_policy.dart';
 import 'package:colmeia/features/agent_meta/domain/repositories/agent_meta_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
+import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after.dart';
+import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
@@ -296,6 +299,115 @@ void main() {
       },
     );
 
+    test(
+      'should arm RetryAfterGate when failure is replay_detected and '
+      'short-circuit refreshOverview while the window is open',
+      () async {
+        final initialFailure = Future<AppResult<Overview>>.value(
+          const Failure<Overview, AppFailure>(
+            RpcFailure(
+              message: 'Replay detected',
+              userMessage: 'Duplicate request',
+              rpcCode: -32014,
+              retryable: false,
+              reason: 'replay_detected',
+            ),
+          ),
+        );
+        final repository = _QueuedOverviewRepository(
+          <Future<AppResult<Overview>>>[initialFailure],
+        );
+        final controller = OverviewController(
+          LoadOverviewUseCase(repository),
+          retryAfterGate: RetryAfterGate(
+            tickInterval: const Duration(milliseconds: 5),
+          ),
+        );
+
+        await controller.loadOverview(userId: 'demo-user');
+
+        check(controller.errorMessage).isNotNull();
+        check(controller.isOnRetryCooldown).isTrue();
+        check(controller.retryAfterGate.remaining)
+            .equals(kAgentQueryReplayDetectedCooldown);
+
+        await controller.refreshOverview(userId: 'demo-user');
+        await controller.retryOverview(userId: 'demo-user');
+
+        check(repository.requestedPolicies).deepEquals(
+          <OverviewLoadPolicy>[OverviewLoadPolicy.defaultLoad],
+        );
+      },
+    );
+
+    test(
+      'should arm RetryAfterGate from replay_detected partial query failure',
+      () async {
+        final repository = _QueuedOverviewRepository(
+          <Future<AppResult<Overview>>>[
+            Future<AppResult<Overview>>.value(
+              Success<Overview, AppFailure>(
+                _overview('Pix').copyWith(
+                  partialQueryFailureDetails: const <OverviewAgentQueryFailureDetail>[
+                    OverviewAgentQueryFailureDetail(
+                      agentId: 'agent-1',
+                      displayName: 'Agent 1',
+                      source: OverviewAgentQueryFailureSource.dailyTrend,
+                      failure: RpcFailure(
+                        message: 'Replay detected',
+                        userMessage: 'Duplicate request',
+                        rpcCode: -32014,
+                        retryable: false,
+                        reason: 'replay_detected',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+        final gate = RetryAfterGate(tickInterval: const Duration(milliseconds: 5));
+        final controller = OverviewController(
+          LoadOverviewUseCase(repository),
+          retryAfterGate: gate,
+        );
+
+        await controller.loadOverview(userId: 'demo-user');
+
+        check(controller.isOnRetryCooldown).isTrue();
+        check(gate.remaining).equals(kAgentQueryReplayDetectedCooldown);
+        gate.dispose();
+      },
+    );
+
+    test('applyFilter no-ops while RetryAfterGate is closed', () async {
+      final repository = _QueuedOverviewRepository(
+        <Future<AppResult<Overview>>>[
+          Future<AppResult<Overview>>.value(
+            Success<Overview, AppFailure>(_overview('Pix')),
+          ),
+        ],
+      );
+      final gate = RetryAfterGate(tickInterval: const Duration(milliseconds: 5))
+        ..arm(const Duration(seconds: 30));
+      final controller = OverviewController(
+        LoadOverviewUseCase(repository),
+        retryAfterGate: gate,
+      );
+
+      await controller.applyFilter(
+        userId: 'demo-user',
+        filter: const DashboardFilter(
+          selectedAgentIds: <String>{'agent-2'},
+        ),
+      );
+
+      check(controller.isOnRetryCooldown).isTrue();
+      check(repository.requestedPolicies).isEmpty();
+      gate.dispose();
+    });
+
     test('loadOverview no-ops while RetryAfterGate is closed', () async {
       final repository = _QueuedOverviewRepository(
         <Future<AppResult<Overview>>>[
@@ -436,6 +548,35 @@ void main() {
 
       await loadFuture;
     });
+
+    test(
+      'should mark agent connection unknown when hub presence snapshot is null',
+      () async {
+        final repository = _QueuedOverviewRepository(
+          <Future<AppResult<Overview>>>[
+            Future<AppResult<Overview>>.value(
+              Success<Overview, AppFailure>(
+                _overviewWithAgent(
+                  'agent-1',
+                  'Agent One',
+                ),
+              ),
+            ),
+          ],
+        );
+        final controller = OverviewController(
+          LoadOverviewUseCase(repository),
+        );
+
+        await controller.loadOverview(userId: 'demo-user');
+
+        check(controller.availableAgents.length).equals(1);
+        check(controller.availableAgents.single.agentId).equals('agent-1');
+        check(
+          controller.availableAgents.single.connectionStatus,
+        ).equals(AgentConnectionStatus.unknown);
+      },
+    );
 
     test(
       'should ignore stale available-agent hydration from older load',

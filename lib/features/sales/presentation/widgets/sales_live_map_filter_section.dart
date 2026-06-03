@@ -23,8 +23,11 @@ class SalesLiveMapFilterSection extends StatelessWidget {
     final tokens = context.appTokens;
 
     return Selector<SalesLiveMapController, _SalesLiveMapFilterSectionSlice>(
-      selector: (_, controller) =>
-          _SalesLiveMapFilterSectionSlice.fromState(controller.state, l10n),
+      selector: (_, controller) => _SalesLiveMapFilterSectionSlice.fromState(
+        controller.state,
+        l10n,
+        isOnRetryCooldown: controller.isOnRetryCooldown,
+      ),
       builder: (context, slice, _) {
         final controller = context.read<SalesLiveMapController>();
 
@@ -54,7 +57,7 @@ class SalesLiveMapFilterSection extends StatelessWidget {
                   value: slice.visualSummary,
                 ),
               ],
-              enabled: !slice.isLoading,
+              enabled: !slice.isLoading && !slice.isOnRetryCooldown,
             ),
             if (slice.hasSelectedBranchFilter ||
                 slice.hasNonBranchNonDefaultFilter) ...<Widget>[
@@ -67,10 +70,13 @@ class SalesLiveMapFilterSection extends StatelessWidget {
                   children: <Widget>[
                     if (slice.hasSelectedBranchFilter)
                       OutlinedButton.icon(
-                        onPressed: slice.isLoading
+                        onPressed: slice.isLoading || slice.isOnRetryCooldown
                             ? null
                             : () => unawaited(
-                                controller.clearSelectedBranches(),
+                                _clearSelectedBranchesWithFeedback(
+                                  context,
+                                  controller,
+                                ),
                               ),
                         icon: const Icon(Icons.storefront_outlined),
                         label: Text(
@@ -79,9 +85,14 @@ class SalesLiveMapFilterSection extends StatelessWidget {
                       ),
                     if (slice.hasNonBranchNonDefaultFilter)
                       OutlinedButton.icon(
-                        onPressed: slice.isLoading
+                        onPressed: slice.isLoading || slice.isOnRetryCooldown
                             ? null
-                            : () => unawaited(controller.clearSavedFilters()),
+                            : () => unawaited(
+                                _clearSavedFiltersWithFeedback(
+                                  context,
+                                  controller,
+                                ),
+                              ),
                         icon: const Icon(Icons.filter_alt_off_rounded),
                         label: Text(l10n.salesLiveMapClearSavedFiltersAction),
                       ),
@@ -92,6 +103,53 @@ class SalesLiveMapFilterSection extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+
+  Future<void> _clearSelectedBranchesWithFeedback(
+    BuildContext context,
+    SalesLiveMapController controller,
+  ) async {
+    final outcome = await controller.clearSelectedBranches();
+    if (!context.mounted) {
+      return;
+    }
+    if (outcome == SalesLiveMapFilterMutationOutcome.blockedByCooldown) {
+      _showRetryCooldownSnackbar(context, controller);
+    }
+  }
+
+  Future<void> _clearSavedFiltersWithFeedback(
+    BuildContext context,
+    SalesLiveMapController controller,
+  ) async {
+    final outcome = await controller.clearSavedFilters();
+    if (!context.mounted) {
+      return;
+    }
+    if (outcome == SalesLiveMapFilterMutationOutcome.blockedByCooldown) {
+      _showRetryCooldownSnackbar(context, controller);
+    }
+  }
+
+  void _showRetryCooldownSnackbar(
+    BuildContext context,
+    SalesLiveMapController controller,
+  ) {
+    final remainingSeconds = controller.retryAfterGate.remaining?.inSeconds;
+    if (remainingSeconds == null || remainingSeconds <= 0) {
+      return;
+    }
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    messenger.showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text(l10n.appInlineErrorRetryCountdown(remainingSeconds)),
+      ),
     );
   }
 }
@@ -105,14 +163,16 @@ class _SalesLiveMapFilterSectionSlice {
     required this.visualSummary,
     required this.usesMapLabel,
     required this.isLoading,
+    required this.isOnRetryCooldown,
     required this.hasSelectedBranchFilter,
     required this.hasNonBranchNonDefaultFilter,
   });
 
   factory _SalesLiveMapFilterSectionSlice.fromState(
     SalesLiveMapPresentationState state,
-    AppLocalizations l10n,
-  ) {
+    AppLocalizations l10n, {
+    required bool isOnRetryCooldown,
+  }) {
     final viewModel = SalesLiveMapViewModel.fromState(state, l10n);
     return _SalesLiveMapFilterSectionSlice(
       agentsSummary: viewModel.agentsSummary,
@@ -121,6 +181,7 @@ class _SalesLiveMapFilterSectionSlice {
       visualSummary: viewModel.visualSummary,
       usesMapLabel: viewModel.usesMapLabel,
       isLoading: state.isLoading,
+      isOnRetryCooldown: isOnRetryCooldown,
       hasSelectedBranchFilter: state.hasSelectedBranchFilter,
       hasNonBranchNonDefaultFilter: state.hasNonBranchNonDefaultFilter,
     );
@@ -132,6 +193,7 @@ class _SalesLiveMapFilterSectionSlice {
   final String visualSummary;
   final bool usesMapLabel;
   final bool isLoading;
+  final bool isOnRetryCooldown;
   final bool hasSelectedBranchFilter;
   final bool hasNonBranchNonDefaultFilter;
 
@@ -144,6 +206,7 @@ class _SalesLiveMapFilterSectionSlice {
         other.visualSummary == visualSummary &&
         other.usesMapLabel == usesMapLabel &&
         other.isLoading == isLoading &&
+        other.isOnRetryCooldown == isOnRetryCooldown &&
         other.hasSelectedBranchFilter == hasSelectedBranchFilter &&
         other.hasNonBranchNonDefaultFilter == hasNonBranchNonDefaultFilter;
   }
@@ -156,6 +219,7 @@ class _SalesLiveMapFilterSectionSlice {
     visualSummary,
     usesMapLabel,
     isLoading,
+    isOnRetryCooldown,
     hasSelectedBranchFilter,
     hasNonBranchNonDefaultFilter,
   );

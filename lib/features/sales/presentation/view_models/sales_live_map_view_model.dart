@@ -74,8 +74,12 @@ class SalesLiveMapViewModel {
   /// Resolves the auto-refresh pause reason from the current presentation
   /// state. Returns `null` when scheduling can proceed normally.
   static AutoRefreshPauseReason? resolveAutoRefreshPauseReason(
-    SalesLiveMapPresentationState state,
-  ) {
+    SalesLiveMapPresentationState state, {
+    bool isOnRetryCooldown = false,
+  }) {
+    if (isOnRetryCooldown) {
+      return AutoRefreshPauseReason.pageLoading;
+    }
     if (state.isLoading) {
       return AutoRefreshPauseReason.pageLoading;
     }
@@ -254,17 +258,41 @@ class SalesLiveMapViewModel {
   ) {
     final branchOptions =
         state.result?.branchOptions ?? const <SalesLiveMapBranchOption>[];
+    final selected = state.filter.selectedBranchIds;
+    if (selected != null) {
+      return l10n.salesLiveMapAgentsSelectedSummary(selected.length);
+    }
+
+    final implicitAllCount = _implicitAllBranchFilterCount(state);
+    if (implicitAllCount > 0) {
+      return l10n.salesLiveMapAgentsAllWithTokenSummary(implicitAllCount);
+    }
     if (branchOptions.isEmpty) {
       if (state.result != null && !state.isLoading) {
         return l10n.salesLiveMapAgentsNoneSummary;
       }
       return l10n.salesLiveMapAgentsLoadingSummary;
     }
-    final selected = state.filter.selectedBranchIds;
-    if (selected == null) {
-      return l10n.salesLiveMapAgentsAllWithTokenSummary(branchOptions.length);
+    return l10n.salesLiveMapAgentsAllWithTokenSummary(branchOptions.length);
+  }
+
+  /// Count for the "Todas (N)" branch filter chip when no explicit branch
+  /// subset is selected. Prefer the loaded catalog size, then token-backed
+  /// agents (one primary filial each once data arrives).
+  static int _implicitAllBranchFilterCount(
+    SalesLiveMapPresentationState state,
+  ) {
+    final result = state.result;
+    if (result != null && result.totalBranchCount > 0) {
+      return result.totalBranchCount;
     }
-    return l10n.salesLiveMapAgentsSelectedSummary(selected.length);
+    final tokenBackedCount = state.tokenBackedAgentIds.length;
+    if (tokenBackedCount > 0) {
+      return tokenBackedCount;
+    }
+    return state.availableAgents
+        .where((agent) => !agent.missingLocalClientToken)
+        .length;
   }
 
   static String _periodSummary(

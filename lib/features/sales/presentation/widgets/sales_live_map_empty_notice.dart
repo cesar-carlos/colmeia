@@ -8,14 +8,14 @@ class SalesLiveMapEmptyNotice extends StatelessWidget {
   const SalesLiveMapEmptyNotice({
     required this.result,
     required this.hasSelectedBranches,
-    required this.onClearSelectedBranches,
     required this.l10n,
+    this.onClearSelectedBranches,
     super.key,
   });
 
   final SalesLiveMapLoadResult result;
   final bool hasSelectedBranches;
-  final VoidCallback onClearSelectedBranches;
+  final VoidCallback? onClearSelectedBranches;
   final AppLocalizations l10n;
 
   @override

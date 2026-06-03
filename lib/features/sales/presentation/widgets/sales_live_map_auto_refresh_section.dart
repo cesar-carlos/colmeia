@@ -35,8 +35,11 @@ class SalesLiveMapAutoRefreshSection extends StatelessWidget {
       valueListenable: stateListenable,
       builder: (context, refreshState, _) {
         return Selector<SalesLiveMapController, _SalesLiveMapAutoRefreshSlice>(
-          selector: (_, controller) =>
-              _SalesLiveMapAutoRefreshSlice.fromState(controller.state),
+          selector: (_, controller) => _SalesLiveMapAutoRefreshSlice.from(
+            state: controller.state,
+            retryRemainingSeconds:
+                controller.retryAfterGate.remaining?.inSeconds ?? 0,
+          ),
           builder: (context, slice, _) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -47,6 +50,7 @@ class SalesLiveMapAutoRefreshSection extends StatelessWidget {
                   onRefreshNow: slice.canReload ? onRefreshNow : () {},
                   enabled: slice.canScheduleAutoRefresh,
                   refreshNowEnabled: slice.canReload,
+                  options: SalesLiveMapAutoRefreshOptions.values,
                   lastUpdatedAt: refreshState.lastUpdatedAt,
                   nextDueAt: autoRefreshSupported
                       ? refreshState.nextDueAt
@@ -79,11 +83,13 @@ class _SalesLiveMapAutoRefreshSlice {
     required this.showReloadProgress,
   });
 
-  factory _SalesLiveMapAutoRefreshSlice.fromState(
-    SalesLiveMapPresentationState state,
-  ) {
+  factory _SalesLiveMapAutoRefreshSlice.from({
+    required SalesLiveMapPresentationState state,
+    required int retryRemainingSeconds,
+  }) {
+    final onCooldown = retryRemainingSeconds > 0;
     return _SalesLiveMapAutoRefreshSlice(
-      canReload: state.canReload,
+      canReload: state.canReload && !onCooldown,
       canScheduleAutoRefresh: state.canScheduleAutoRefresh,
       showReloadProgress: state.isLoading && state.result != null,
     );

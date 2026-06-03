@@ -1,4 +1,4 @@
-import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
+﻿import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
@@ -6,7 +6,7 @@ import 'package:colmeia/shared/filters/dashboard_filter.dart';
 /// Pure helpers used by `SalesLiveMapController` to keep its filter slice
 /// internally consistent.
 ///
-/// All methods are stateless — the controller owns lifecycle and triggers
+/// All methods are stateless â€” the controller owns lifecycle and triggers
 /// `setState` / reload; this class only encapsulates the rules that decide
 /// "given the current data, what does the next [SalesLiveMapFilter] look
 /// like?". Extracted from the controller so the rules can be unit-tested
@@ -19,7 +19,7 @@ abstract final class SalesLiveMapFilterNormalizer {
   static SalesLiveMapFilter normalizeRestoredFilter(
     SalesLiveMapFilter filter,
   ) {
-    if (filter.selectedBranchIds == null) {
+    if (filter.selectedBranchIds == null && filter.selectedAgentIds == null) {
       return filter;
     }
     return filter.copyWith(selectedAgentIds: null, selectedBranchIds: null);
@@ -31,7 +31,7 @@ abstract final class SalesLiveMapFilterNormalizer {
   ///   so the next load runs against all branches the agent surfaces;
   /// - Otherwise looks up the agents owning the selected branches via
   ///   [SalesLiveMapLoadResult.agentIdsByBranchRef] and rewrites
-  ///   `selectedAgentIds` to that subset — preserves the invariant that
+  ///   `selectedAgentIds` to that subset â€” preserves the invariant that
   ///   the agent scope of an SQL call always covers every selected branch.
   static SalesLiveMapFilter normalizeForSelectedBranches({
     required SalesLiveMapFilter filter,
@@ -53,7 +53,7 @@ abstract final class SalesLiveMapFilterNormalizer {
       for (final branchRef in selectedBranchIds) ?agentIndex[branchRef],
     };
     if (selectedAgents.isEmpty) {
-      return filter;
+      return filter.copyWith(selectedAgentIds: null, selectedBranchIds: null);
     }
 
     return filter.copyWith(
@@ -61,24 +61,20 @@ abstract final class SalesLiveMapFilterNormalizer {
     );
   }
 
-  /// Decides which agents the next load should target given the available
-  /// agents and the user's current selection.
+  /// Reconciles an explicit agent selection against the current approved list.
   ///
-  /// - Returns `null` to mean "all token-backed agents" — keeps `null` as
-  ///   the canonical "no explicit filter" representation;
-  /// - Returns an unmodifiable subset when the previous selection is no
-  ///   longer fully valid and needs to be reconciled against the agents
-  ///   that actually carry a local client token.
+  /// Returns `null` when there is no explicit selection (query all approved
+  /// agents and let the agent-query plan apply token/presence gates, same as
+  /// overview home). Does **not** materialize token-backed ids into an
+  /// explicit set â€” that would shrink the agent query target resolver and catalog
+  /// scope to a subset while the UI still reads as "all".
   static Set<String>? normalizeSelectedAgentIds({
     required List<DashboardAgentOption> agents,
     required Set<String>? selectedAgentIds,
   }) {
     final tokenBacked = agents.tokenBackedAgentIds();
     if (selectedAgentIds == null) {
-      if (tokenBacked.isEmpty || tokenBacked.length == agents.length) {
-        return null;
-      }
-      return Set<String>.unmodifiable(tokenBacked);
+      return null;
     }
 
     final reconciled = selectedAgentIds.where(tokenBacked.contains).toSet();

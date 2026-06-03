@@ -34,8 +34,11 @@ class SalesLiveMapBodySection extends StatelessWidget {
     final tokens = context.appTokens;
 
     return Selector<SalesLiveMapController, _SalesLiveMapBodyStatusSlice>(
-      selector: (_, controller) =>
-          _SalesLiveMapBodyStatusSlice.fromState(controller.state),
+      selector: (_, controller) => _SalesLiveMapBodyStatusSlice.from(
+        state: controller.state,
+        retryRemainingSeconds:
+            controller.retryAfterGate.remaining?.inSeconds ?? 0,
+      ),
       builder: (context, slice, _) {
         if (slice.showInitialSkeleton) {
           return const SalesLiveMapInitialSkeleton();
@@ -82,6 +85,7 @@ class _SalesLiveMapBodyStatusContent extends StatelessWidget {
     final state = slice.state;
     final result = state.result;
     final viewModel = SalesLiveMapViewModel.fromState(state, l10n);
+    final retryCountdown = slice.retryCountdownLabel(l10n);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -111,12 +115,13 @@ class _SalesLiveMapBodyStatusContent extends StatelessWidget {
                       result.loadFailure!,
                       l10n: l10n,
                     ),
-                    onRetry: state.canReload ? onRetryReload : null,
+                    onRetry: slice.canReload ? onRetryReload : null,
+                    retryCountdownLabel: retryCountdown,
                   )
                 : AppInlineErrorPanel(
                     title: l10n.salesLiveMapLoadErrorTitle,
                     message: viewModel.loadErrorMessage,
-                    onRetry: state.canReload ? onRetryReload : null,
+                    onRetry: slice.canReload ? onRetryReload : null,
                   ),
           ),
         if (state.shouldShowEmptyNotice && result != null)
@@ -125,9 +130,9 @@ class _SalesLiveMapBodyStatusContent extends StatelessWidget {
             child: SalesLiveMapEmptyNotice(
               result: result,
               hasSelectedBranches: state.hasSelectedBranchFilter,
-              onClearSelectedBranches: () => unawaited(
-                controller.clearSelectedBranches(),
-              ),
+              onClearSelectedBranches: slice.canReload
+                  ? () => unawaited(controller.clearSelectedBranches())
+                  : null,
               l10n: l10n,
             ),
           ),
@@ -141,19 +146,34 @@ class _SalesLiveMapBodyStatusSlice {
   const _SalesLiveMapBodyStatusSlice({
     required this.state,
     required this.showInitialSkeleton,
+    required this.canReload,
+    required this.retryRemainingSeconds,
   });
 
-  factory _SalesLiveMapBodyStatusSlice.fromState(
-    SalesLiveMapPresentationState state,
-  ) {
+  factory _SalesLiveMapBodyStatusSlice.from({
+    required SalesLiveMapPresentationState state,
+    required int retryRemainingSeconds,
+  }) {
+    final onCooldown = retryRemainingSeconds > 0;
     return _SalesLiveMapBodyStatusSlice(
       state: state,
       showInitialSkeleton: !state.hasVisualResult && state.isLoading,
+      canReload: state.canReload && !onCooldown,
+      retryRemainingSeconds: retryRemainingSeconds,
     );
   }
 
   final SalesLiveMapPresentationState state;
   final bool showInitialSkeleton;
+  final bool canReload;
+  final int retryRemainingSeconds;
+
+  String? retryCountdownLabel(AppLocalizations l10n) {
+    if (retryRemainingSeconds <= 0) {
+      return null;
+    }
+    return l10n.appInlineErrorRetryCountdown(retryRemainingSeconds);
+  }
 
   @override
   bool operator ==(Object other) {
@@ -163,7 +183,9 @@ class _SalesLiveMapBodyStatusSlice {
         other.state.sessionExpired == state.sessionExpired &&
         other.state.canReload == state.canReload &&
         other.state.hasSelectedBranchFilter == state.hasSelectedBranchFilter &&
-        other.showInitialSkeleton == showInitialSkeleton;
+        other.showInitialSkeleton == showInitialSkeleton &&
+        other.canReload == canReload &&
+        other.retryRemainingSeconds == retryRemainingSeconds;
   }
 
   @override
@@ -174,5 +196,7 @@ class _SalesLiveMapBodyStatusSlice {
     state.canReload,
     state.hasSelectedBranchFilter,
     showInitialSkeleton,
+    canReload,
+    retryRemainingSeconds,
   );
 }

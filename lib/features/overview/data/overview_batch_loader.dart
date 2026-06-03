@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
@@ -22,6 +20,7 @@ import 'package:colmeia/features/agent_queries/data/models/resumo_produto_venda_
 import 'package:colmeia/features/agent_queries/data/models/resumo_total_diario_vendas_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_transport_policy.dart';
+import 'package:colmeia/features/agent_queries/data/orchestration/agent_sql_batch_target_wave_runner.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcela_forma_pagamento_sql_v2.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcela_por_usuario_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_dia_semana_sql.dart';
@@ -317,6 +316,8 @@ class OverviewBatchLoader {
   final int _targetWaveConcurrency;
   final AgentQueryTransportPolicy _transportPolicy;
 
+  static const _targetWaveRunner = AgentSqlBatchTargetWaveRunner();
+
   /// Hub validates `sql.executeBatch` `options.timeout_ms` at <= 300_000.
   static const int overviewBatchBridgeTimeoutMs = 300000;
   static const int overviewBatchSqlTimeoutMs = 300000;
@@ -435,7 +436,6 @@ class OverviewBatchLoader {
         weekdayFilter: weekdayFilter,
         dailyTotalFilter: dailyTotalFilter,
         includeLucratividadeMensal: includeLucratividadeMensal,
-        omitCachedSectionsFromSqlBatch: omitCachedSectionsFromSqlBatch,
         cancelScope: cancelScope,
         cachePolicy: cachePolicy,
       );
@@ -455,9 +455,10 @@ class OverviewBatchLoader {
     );
     final started = DateTime.now();
     final targets = plan.plannedTargets.toList();
-    final mainResults = await _runTargetTasksInWaves(
-      targets,
-      (target) => _loadMainForTarget(
+    final mainResults = await _targetWaveRunner.run(
+      targets: targets,
+      waveConcurrencyCap: _targetWaveConcurrency,
+      task: (target) => _loadMainForTarget(
         userId: userId,
         target: target,
         planBridgeTimeoutMs: plan.bridgeTimeoutMs,
@@ -501,9 +502,10 @@ class OverviewBatchLoader {
         .where((result) => result.mainFailure == null)
         .map((result) => result.target)
         .toList(growable: false);
-    final sectionResults = await _runTargetTasksInWaves(
-      sectionTargets,
-      (target) => _loadSectionsForTarget(
+    final sectionResults = await _targetWaveRunner.run(
+      targets: sectionTargets,
+      waveConcurrencyCap: _targetWaveConcurrency,
+      task: (target) => _loadSectionsForTarget(
         userId: userId,
         target: target,
         planBridgeTimeoutMs: plan.bridgeTimeoutMs,
@@ -840,7 +842,6 @@ class OverviewBatchLoader {
     required ResumoParcelasDiaSemanaFilter weekdayFilter,
     required ResumoTotalDiarioVendasFilter dailyTotalFilter,
     required bool includeLucratividadeMensal,
-    required _CachedSectionSqlOmission omitCachedSectionsFromSqlBatch,
     AgentQueriesCancelScope? cancelScope,
     AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
   }) async* {
@@ -852,15 +853,13 @@ class OverviewBatchLoader {
       weekdayFilter: weekdayFilter,
       dailyTotalFilter: dailyTotalFilter,
       includeLucratividadeMensal: includeLucratividadeMensal,
-      omitCachedSectionsFromSqlBatch: _cachedSectionSqlOmissionFor(
-        cachePolicy: cachePolicy,
-      ),
     );
     final started = DateTime.now();
     final targets = plan.plannedTargets.toList();
-    final results = await _runTargetTasksInWaves(
-      targets,
-      (target) => _loadMergedBatchForTarget(
+    final results = await _targetWaveRunner.run(
+      targets: targets,
+      waveConcurrencyCap: _targetWaveConcurrency,
+      task: (target) => _loadMergedBatchForTarget(
         userId: userId,
         target: target,
         planBridgeTimeoutMs: plan.bridgeTimeoutMs,
@@ -931,17 +930,6 @@ class OverviewBatchLoader {
       batchRequest,
       cancelScope: cancelScope,
     );
-    final cachedSections = await _loadCachedSectionsViaUseCases(
-      userId: userId,
-      target: target,
-      mensalFilter: mensalFilter,
-      weekdayFilter: weekdayFilter,
-      dailyTotalFilter: dailyTotalFilter,
-      planBridgeTimeoutMs: planBridgeTimeoutMs,
-      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
-      cancelScope: cancelScope,
-      cachePolicy: cachePolicy,
-    );
     final elapsedMs = DateTime.now().difference(started).inMilliseconds;
     final execution = result.getOrNull();
     if (execution == null) {
@@ -950,7 +938,6 @@ class OverviewBatchLoader {
         elapsedMs: elapsedMs,
         failure: result.exceptionOrNull()!,
         includeLucratividadeMensal: includeLucratividadeMensal,
-        cachedSections: cachedSections,
         mainFailure: result.exceptionOrNull(),
       );
     }
@@ -1006,7 +993,7 @@ class OverviewBatchLoader {
       dailyRows: merged.dailyRows,
       cachePolicy: cachePolicy,
     );
-    return _mergeCachedSections(base: merged, cached: cachedSections);
+    return merged;
   }
 
   _OverviewSectionBatchCommandIndexes _sectionIndexesFromFull(
@@ -1663,25 +1650,4 @@ class OverviewBatchLoader {
     return ids;
   }
 
-  Future<List<T>> _runTargetTasksInWaves<T>(
-    List<AgentQueryTarget> targets,
-    Future<T> Function(AgentQueryTarget target) task,
-  ) async {
-    if (targets.isEmpty) {
-      return <T>[];
-    }
-    final waveSize = math.max(1, _targetWaveConcurrency);
-    final results = <T>[];
-    for (var start = 0; start < targets.length; start += waveSize) {
-      final end = math.min(start + waveSize, targets.length);
-      final chunk = await Future.wait(
-        List<Future<T>>.generate(
-          end - start,
-          (offset) => task(targets[start + offset]),
-        ),
-      );
-      results.addAll(chunk);
-    }
-    return results;
-  }
 }

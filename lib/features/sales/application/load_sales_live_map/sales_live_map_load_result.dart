@@ -52,6 +52,8 @@ class SalesLiveMapLoadResult {
     this.loadFailureMessage,
     this.cancelled = false,
     this.partialGeoReuseCount = 0,
+    this.hubPresenceOnlineAgentIdsSnapshot,
+    this.agentQueryFailures = const <AppFailure>[],
   });
 
   final List<SalesLiveMapPoint> points;
@@ -87,6 +89,14 @@ class SalesLiveMapLoadResult {
   final DateTime? refreshedAt;
   final bool cancelled;
   final int partialGeoReuseCount;
+
+  /// Hub `/client/me/agents` online ids captured at target resolution time.
+  ///
+  /// `null` when presence was not loaded — UI must treat connection as unknown.
+  final Set<String>? hubPresenceOnlineAgentIdsSnapshot;
+
+  /// Per-agent SQL failures from catalog/sales reports (for retry-after arming).
+  final List<AppFailure> agentQueryFailures;
 
   bool get hasPartialIssue =>
       failedAgentCount > 0 ||

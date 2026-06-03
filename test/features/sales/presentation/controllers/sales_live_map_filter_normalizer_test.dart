@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('normalizeRestoredFilter', () {
-    test('returns the filter unchanged when there is no branch selection', () {
+    test('returns the filter unchanged when there is no persisted selection', () {
       const filter = SalesLiveMapFilter(
         periodMode: SalesLiveMapPeriodMode.lastSevenDays,
       );
@@ -18,6 +18,23 @@ void main() {
 
       expect(identical(normalized, filter), isTrue);
     });
+
+    test(
+      'drops orphan agent selection persisted without branches on restore',
+      () {
+        const filter = SalesLiveMapFilter(
+          selectedAgentIds: <String>{'agent-1', 'agent-2'},
+        );
+
+        final normalized = SalesLiveMapFilterNormalizer.normalizeRestoredFilter(
+          filter,
+        );
+
+        expect(normalized.selectedAgentIds, isNull);
+        expect(normalized.selectedBranchIds, isNull);
+        expect(normalized.periodMode, filter.periodMode);
+      },
+    );
 
     test('drops branch + agent selection when restoring with branches', () {
       final filter = SalesLiveMapFilter(
@@ -130,7 +147,7 @@ void main() {
     );
 
     test(
-      'returns the filter unchanged when none of the selected branches '
+      'clears branch and agent selection when none of the selected branches '
       'match the catalog',
       () {
         final result = _resultWithBranches(const <SalesLiveMapBranchOption>[
@@ -163,9 +180,8 @@ void main() {
               result: result,
             );
 
-        // Stale branch isn't in the catalog -> agent normalization can't
-        // run; the filter is returned as-is so the caller can decide.
-        expect(identical(normalized, filter), isTrue);
+        expect(normalized.selectedBranchIds, isNull);
+        expect(normalized.selectedAgentIds, isNull);
       },
     );
   });
@@ -196,8 +212,8 @@ void main() {
     );
 
     test(
-      'returns token-backed subset when some agents lack token and '
-      'there is no explicit selection',
+      'returns null when there is no explicit selection even if some agents '
+      'lack a local token',
       () {
         final normalized =
             SalesLiveMapFilterNormalizer.normalizeSelectedAgentIds(
@@ -208,7 +224,7 @@ void main() {
               selectedAgentIds: null,
             );
 
-        expect(normalized, <String>{'agent-1'});
+        expect(normalized, isNull);
       },
     );
 

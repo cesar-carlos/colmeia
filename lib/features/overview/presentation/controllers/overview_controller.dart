@@ -5,10 +5,8 @@ import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
 import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_registry.dart';
-import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_diagnostic.dart';
-import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
@@ -422,16 +420,10 @@ class OverviewController extends ChangeNotifier {
 
   void _armRetryAfterFromPartialFailures(Overview overview) {
     for (final detail in overview.partialQueryFailureDetails) {
-      if (_isRateLimitedAgentQueryFailure(detail.failure)) {
+      if (shouldArmRetryAfterFromPartialAgentQueryFailure(detail.failure)) {
         _armRetryAfterFromFailures(detail.failure);
       }
     }
-  }
-
-  bool _isRateLimitedAgentQueryFailure(AppFailure failure) {
-    return resolveAgentQueryFailureUiKey(failure) ==
-            AgentSqlRpcFailureUiKey.rateLimited ||
-        (failure is RpcFailure && failure.rpcCode == -32013);
   }
 
   void _applyOneShotSuccess({
@@ -628,7 +620,7 @@ class OverviewController extends ChangeNotifier {
     final assembled = OverviewAvailableAgentsAssembler.assemble(
       overview: overview,
       previousOptions: _availableAgents,
-      onlineAgentIds: onlineIds ?? const <String>{},
+      onlineAgentIds: onlineIds,
     );
     if (assembled.isEmpty) {
       return false;

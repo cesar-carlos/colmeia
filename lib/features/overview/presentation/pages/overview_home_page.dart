@@ -191,13 +191,14 @@ class _OverviewFilterSection extends StatelessWidget {
         // Keep filters interactive after the first successful agent list; only
         // block edits on the true cold start before branch options exist.
         isLoading: c.isLoadingInitial && c.availableAgents.isEmpty,
+        isOnRetryCooldown: c.isOnRetryCooldown,
       ),
       builder: (context, slice, _) {
         return OverviewFilterBar(
           l10n: l10n,
           filter: slice.filter,
           availableAgents: slice.agents,
-          isLoading: slice.isLoading,
+          isLoading: slice.isLoading || slice.isOnRetryCooldown,
           onFilterChanged: sessionUserId == null
               ? null
               : (filter) => unawaited(
@@ -467,11 +468,13 @@ class _FilterSlice {
     required this.filter,
     required this.agents,
     required this.isLoading,
+    required this.isOnRetryCooldown,
   });
 
   final DashboardFilter filter;
   final List<DashboardAgentOption> agents;
   final bool isLoading;
+  final bool isOnRetryCooldown;
 
   @override
   bool operator ==(Object other) {
@@ -479,11 +482,13 @@ class _FilterSlice {
     return other is _FilterSlice &&
         filter == other.filter &&
         isLoading == other.isLoading &&
+        isOnRetryCooldown == other.isOnRetryCooldown &&
         listEquals(agents, other.agents);
   }
 
   @override
-  int get hashCode => Object.hash(filter, isLoading, Object.hashAll(agents));
+  int get hashCode =>
+      Object.hash(filter, isLoading, isOnRetryCooldown, Object.hashAll(agents));
 }
 
 @immutable

@@ -430,6 +430,130 @@ void main() {
     );
 
     test(
+      'runs all targets in parallel when wave concurrency covers target count',
+      () async {
+        const agentCount = 5;
+        final targets = List<AgentQueryTarget>.generate(
+          agentCount,
+          (i) => _agentTarget('agent-${i + 1}', token: 'token-${i + 1}'),
+        );
+        _stubResolution(
+          targetResolver,
+          AgentQueryTargetResolution(
+            consideredApprovedTargets: targets,
+            missingClientTokenTargets: const <AgentQueryTarget>[],
+            consideredApprovedAgentCount: agentCount,
+            selectedAgentIds: <String>{
+              for (var i = 0; i < agentCount; i++) 'agent-${i + 1}',
+            },
+          ),
+        );
+        var active = 0;
+        var maxActive = 0;
+        when(
+          () => agentQueriesRepository.executeSqlBatch(any()),
+        ).thenAnswer((invocation) async {
+          final request =
+              invocation.positionalArguments.single
+                  as AgentSqlExecuteBatchRequest;
+          active++;
+          if (active > maxActive) {
+            maxActive = active;
+          }
+          await Future<void>.delayed(const Duration(milliseconds: 40));
+          active--;
+          return Success<AgentSqlBatchExecutionResult, AppFailure>(
+            _batchResult(commandCount: request.commands.length),
+          );
+        });
+
+        final parallelLoader = OverviewBatchLoader(
+          targetResolver: targetResolver,
+          planBuilder: const AgentQueryPlanBuilder(),
+          agentQueriesRepository: agentQueriesRepository,
+          targetWaveConcurrency: agentCount,
+        );
+
+        await parallelLoader.load(
+          userId: 'user-1',
+          filter: DashboardFilter(
+            selectedAgentIds: <String>{
+              for (var i = 0; i < agentCount; i++) 'agent-${i + 1}',
+            },
+          ),
+          periodStart: DateTime(2026, 4),
+          periodEnd: DateTime(2026, 4, 30),
+          last12Range: (
+            dataVendaInicio: DateTime(2025, 5),
+            dataVendaFim: DateTime(2026, 4, 30),
+          ),
+          mensalFilter: _mensalFilter(),
+          weekdayFilter: _weekdayFilter(),
+          dailyTotalFilter: _dailyFilter(),
+          executionStrategy: AgentQueryExecutionStrategy.mergeAll,
+          mergeSqlBatchesPerTarget: true,
+        );
+
+        check(maxActive).equals(agentCount);
+      },
+    );
+
+    test(
+      'mergeSqlBatchesPerTarget sends one batch with main and section SQL',
+      () async {
+        final target = _agentTarget('agent-1', token: 'token-1');
+        _stubResolution(
+          targetResolver,
+          AgentQueryTargetResolution(
+            consideredApprovedTargets: <AgentQueryTarget>[target],
+            missingClientTokenTargets: const <AgentQueryTarget>[],
+            consideredApprovedAgentCount: 1,
+            selectedAgentIds: const <String>{'agent-1'},
+            hubPresenceOnlineAgentIdsSnapshot: const <String>{'agent-1'},
+          ),
+        );
+        when(
+          () => agentQueriesRepository.executeSqlBatch(any()),
+        ).thenAnswer((invocation) async {
+          final request =
+              invocation.positionalArguments.single
+                  as AgentSqlExecuteBatchRequest;
+          return Success<AgentSqlBatchExecutionResult, AppFailure>(
+            _batchResult(
+              commandCount: request.commands.length,
+              rowsByIndex: <int, List<Map<String, dynamic>>>{
+                0: <Map<String, dynamic>>[_mainRow()],
+                1: <Map<String, dynamic>>[_userRankingRow()],
+              },
+            ),
+          );
+        });
+
+        await loader.load(
+          userId: 'user-1',
+          filter: const DashboardFilter(selectedAgentIds: <String>{'agent-1'}),
+          periodStart: DateTime(2026, 4),
+          periodEnd: DateTime(2026, 4, 30),
+          last12Range: (
+            dataVendaInicio: DateTime(2025, 5),
+            dataVendaFim: DateTime(2026, 4, 30),
+          ),
+          mensalFilter: _mensalFilter(),
+          weekdayFilter: _weekdayFilter(),
+          dailyTotalFilter: _dailyFilter(),
+          executionStrategy: AgentQueryExecutionStrategy.singleSource,
+          mergeSqlBatchesPerTarget: true,
+        );
+
+        final requests = verify(
+          () => agentQueriesRepository.executeSqlBatch(captureAny()),
+        ).captured.cast<AgentSqlExecuteBatchRequest>();
+        check(requests.length).equals(1);
+        check(requests.single.commands.length).equals(8);
+      },
+    );
+
+    test(
       'limits concurrent executeSqlBatch calls per target wave',
       () async {
         const waveConcurrency = 3;

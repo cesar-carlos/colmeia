@@ -1,0 +1,276 @@
+import 'package:checks/checks.dart';
+import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
+import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
+import 'package:colmeia/features/sales/application/sales_live_map_policies.dart';
+import 'package:colmeia/features/sales/data/sales_live_map_batch_loader.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:result_dart/result_dart.dart';
+
+class _MockAgentQueriesRepository extends Mock
+    implements AgentQueriesRepository {}
+
+void main() {
+  late _MockAgentQueriesRepository agentQueriesRepository;
+  late SalesLiveMapBatchLoader loader;
+
+  setUpAll(() {
+    registerFallbackValue(
+      const AgentSqlExecuteBatchRequest(
+        agentId: 'agent-fallback',
+        commands: <AgentSqlExecuteBatchCommand>[
+          AgentSqlExecuteBatchCommand(sql: 'SELECT 1'),
+        ],
+      ),
+    );
+  });
+
+  setUp(() {
+    agentQueriesRepository = _MockAgentQueriesRepository();
+    loader = SalesLiveMapBatchLoader(
+      planBuilder: const AgentQueryPlanBuilder(),
+      agentQueriesRepository: agentQueriesRepository,
+    );
+  });
+
+  group('SalesLiveMapBatchLoader', () {
+    test(
+      'sends one merged batch with catalog and sales commands per agent',
+      () async {
+        final target = _agentTarget('agent-1', token: 'token-1');
+        when(
+          () => agentQueriesRepository.executeSqlBatch(any()),
+        ).thenAnswer(
+          (_) async => Success<AgentSqlBatchExecutionResult, AppFailure>(
+            _batchResult(
+              commandCount: salesLiveMapBatchCommandCount,
+              rowsByIndex: <int, List<Map<String, dynamic>>>{
+                0: <Map<String, dynamic>>[_catalogRow()],
+                1: <Map<String, dynamic>>[_salesRow()],
+              },
+            ),
+          ),
+        );
+
+        final result = await loader.load(
+          userId: 'user-1',
+          catalogFilter: _catalogFilter(),
+          salesFilter: _salesFilter(),
+          preResolvedResolution: _resolution(target),
+        );
+
+        check(result.isSuccess()).isTrue();
+        final batch = result.getOrThrow();
+        check(batch.catalogPage.report.participants.single.rows.length).equals(1);
+        check(batch.catalogPage.report.participants.single.rows.single.nomeFilial)
+            .equals('Filial');
+        check(batch.salesReport.participants.single.rows.single.qtdVendas)
+            .equals(3);
+        check(batch.salesReport.participants.single.rows.single.totalVenda)
+            .equals(150);
+
+        final requests = verify(
+          () => agentQueriesRepository.executeSqlBatch(captureAny()),
+        ).captured.cast<AgentSqlExecuteBatchRequest>();
+        check(requests.length).equals(1);
+        final request = requests.single;
+        check(request.agentId).equals('agent-1');
+        check(request.clientToken).equals('token-1');
+        check(request.requestingUserId).equals('user-1');
+        check(request.commands.length).equals(salesLiveMapBatchCommandCount);
+        check(request.bridgeTimeoutMs).equals(
+          SalesLiveMapBatchLoader.batchBridgeTimeoutMs,
+        );
+        check(request.options?.maxRows).equals(
+          SalesLiveMapBatchLoader.batchMaxRows,
+        );
+        check(request.options?.maxParallelReadOnlyBatchItems).isNotNull();
+        check(request.commands.first.sql).contains('Filial');
+        check(request.commands.last.sql).contains('ProdutoVendido');
+      },
+    );
+
+    test('keeps sales failure local when catalog succeeds', () async {
+      final target = _agentTarget('agent-1', token: 'token-1');
+      when(
+        () => agentQueriesRepository.executeSqlBatch(any()),
+      ).thenAnswer(
+        (_) async => Success<AgentSqlBatchExecutionResult, AppFailure>(
+          _batchResult(
+            commandCount: salesLiveMapBatchCommandCount,
+            rowsByIndex: <int, List<Map<String, dynamic>>>{
+              0: <Map<String, dynamic>>[_catalogRow()],
+            },
+            failedIndexes: const <int>{1},
+          ),
+        ),
+      );
+
+      final result = await loader.load(
+        userId: 'user-1',
+        catalogFilter: _catalogFilter(),
+        salesFilter: _salesFilter(),
+        preResolvedResolution: _resolution(target),
+      );
+
+      check(result.isSuccess()).isTrue();
+      final loaded = result.getOrThrow();
+      check(loaded.catalogPage.report.participants.single.failure).isNull();
+      check(loaded.salesReport.participants.single.failure).isA<RpcFailure>();
+      check(loaded.salesReport.participants.single.rows).isEmpty();
+    });
+
+    test('limits concurrent executeSqlBatch calls per wave', () async {
+      const waveConcurrency = 2;
+      final waveLoader = SalesLiveMapBatchLoader(
+        planBuilder: const AgentQueryPlanBuilder(),
+        agentQueriesRepository: agentQueriesRepository,
+        targetWaveConcurrency: waveConcurrency,
+      );
+      final targets = List<AgentQueryTarget>.generate(
+        5,
+        (index) => _agentTarget('agent-${index + 1}', token: 'token'),
+      );
+      var active = 0;
+      var maxActive = 0;
+      when(
+        () => agentQueriesRepository.executeSqlBatch(any()),
+      ).thenAnswer((_) async {
+        active++;
+        if (active > maxActive) {
+          maxActive = active;
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        active--;
+        return Success<AgentSqlBatchExecutionResult, AppFailure>(
+          _batchResult(
+            commandCount: salesLiveMapBatchCommandCount,
+            rowsByIndex: <int, List<Map<String, dynamic>>>{
+              0: <Map<String, dynamic>>[_catalogRow()],
+              1: <Map<String, dynamic>>[_salesRow()],
+            },
+          ),
+        );
+      });
+
+      await waveLoader.load(
+        userId: 'user-1',
+        catalogFilter: _catalogFilter(),
+        salesFilter: _salesFilter(),
+        preResolvedResolution: AgentQueryTargetResolution(
+          consideredApprovedTargets: targets,
+          missingClientTokenTargets: const <AgentQueryTarget>[],
+          consideredApprovedAgentCount: targets.length,
+          selectedAgentIds: <String>{
+            for (var i = 0; i < targets.length; i++) 'agent-${i + 1}',
+          },
+        ),
+        targetWaveConcurrency: waveConcurrency,
+      );
+
+      check(maxActive <= waveConcurrency).isTrue();
+      check(maxActive).isGreaterThan(1);
+      verify(
+        () => agentQueriesRepository.executeSqlBatch(any()),
+      ).called(targets.length);
+    });
+  });
+}
+
+AgentQueryTarget _agentTarget(String agentId, {String? token}) {
+  return AgentQueryTarget(
+    agentId: agentId,
+    displayName: agentId,
+    clientToken: token,
+    connectionStatus: AgentConnectionStatus.online,
+    hubConnectedFromApprovedCatalogRow: true,
+  );
+}
+
+AgentQueryTargetResolution _resolution(AgentQueryTarget target) {
+  return AgentQueryTargetResolution(
+    consideredApprovedTargets: <AgentQueryTarget>[target],
+    missingClientTokenTargets: const <AgentQueryTarget>[],
+    consideredApprovedAgentCount: 1,
+    selectedAgentIds: <String>{target.agentId},
+    hubPresenceOnlineAgentIdsSnapshot: <String>{target.agentId},
+  );
+}
+
+CadastroFilialFilter _catalogFilter() {
+  return const CadastroFilialFilter(
+    codEmpresa: SalesLiveMapPolicies.primaryCompanyCode,
+    codFilial: SalesLiveMapPolicies.primaryBranchCode,
+    pageSize: CadastroFilialFilter.maxPageSize,
+    mapCatalogProjection: true,
+  );
+}
+
+ResumoTotalVendasMunicipioFilialPeriodoFilter _salesFilter() {
+  return ResumoTotalVendasMunicipioFilialPeriodoFilter(
+    dataVendaInicio: DateTime(2026, 4),
+    dataVendaFim: DateTime(2026, 4, 30),
+    codEmpresa: SalesLiveMapPolicies.primaryCompanyCode,
+    codFilial: SalesLiveMapPolicies.primaryBranchCode,
+  );
+}
+
+Map<String, dynamic> _catalogRow() {
+  return <String, dynamic>{
+    'TotalCount': 1,
+    'CodEmpresa': 1,
+    'CodFilial': 1,
+    'NomeFilial': 'Filial',
+    'NomeFantasia': 'Fantasia',
+    'CEP': '78005123',
+    'NomeMunicipio': 'Cuiaba',
+    'CodigoIBGE': 5103403,
+    'UFMunicipio': 'MT',
+  };
+}
+
+Map<String, dynamic> _salesRow() {
+  return <String, dynamic>{
+    'CodEmpresa': 1,
+    'CodFilial': 1,
+    'NomeFilial': 'Filial',
+    'NomeFantasiaFilial': 'Fantasia',
+    'CEPFilial': '78005123',
+    'CodMunicipioFilial': 1,
+    'NomeMunicipioFilial': 'Cuiaba',
+    'UFMunicipioFilial': 'MT',
+    'CodigoIBGEMunicipioFilial': 5103403,
+    'QtdVendas': 3,
+    'TotalVenda': 150,
+  };
+}
+
+AgentSqlBatchExecutionResult _batchResult({
+  required int commandCount,
+  Map<int, List<Map<String, dynamic>>> rowsByIndex =
+      const <int, List<Map<String, dynamic>>>{},
+  Set<int> failedIndexes = const <int>{},
+}) {
+  return AgentSqlBatchExecutionResult(
+    totalCommands: commandCount,
+    successfulCommands: commandCount - failedIndexes.length,
+    failedCommands: failedIndexes.length,
+    items: List<AgentSqlBatchExecutionItem>.generate(
+      commandCount,
+      (index) => AgentSqlBatchExecutionItem(
+        index: index,
+        ok: !failedIndexes.contains(index),
+        rows: rowsByIndex[index] ?? const <Map<String, dynamic>>[],
+        rowCount: rowsByIndex[index]?.length ?? 0,
+      ),
+    ),
+  );
+}

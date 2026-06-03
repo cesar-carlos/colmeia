@@ -3,7 +3,6 @@ import 'package:colmeia/features/agent_queries/data/cache/strategies/resumo_parc
 import 'package:colmeia/features/agent_queries/data/repositories/caching/agent_query_facts_bucket_batch_support.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/caching/agent_query_facts_bucket_batch_supports.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/caching/base_cached_agent_query_repository.dart';
-import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
@@ -19,7 +18,7 @@ final class CachingResumoParcelasMensalRepositoryImpl
   CachingResumoParcelasMensalRepositoryImpl({
     required ResumoParcelasMensalRepository delegate,
     required super.factsStore,
-    AgentQueriesRepository? agentQueriesRepository,
+    super.agentQueriesRepository,
     AgentQueryFactsBucketBatchSupport<ResumoParcelasMensalFilter,
             ResumoParcelasMensalRow>?
         bucketBatchSupport,
@@ -27,7 +26,6 @@ final class CachingResumoParcelasMensalRepositoryImpl
         const ResumoParcelasMensalCacheStrategy(),
     super.clock,
   }) : super(
-         agentQueriesRepository: agentQueriesRepository,
          bucketBatchSupport:
              bucketBatchSupport ??
              const ResumoParcelasMensalFactsBucketBatchSupport(),

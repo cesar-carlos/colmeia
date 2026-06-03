@@ -9,9 +9,12 @@ import 'package:colmeia/core/di/injector_overview.dart';
 import 'package:colmeia/core/errors/app_failure.dart'
     show AppFailure, SessionFailure, UnknownFailure;
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/features/agent_queries/data/queries/resumo_parcela_forma_pagamento_sql_v2.dart';
+import 'package:colmeia/features/agent_queries/data/queries/resumo_parcela_por_usuario_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_dia_semana_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_dia_semana_usuario_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_mensal_sql.dart';
+import 'package:colmeia/features/agent_queries/data/queries/resumo_produto_venda_lucratividade_mensal_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_produto_venda_lucratividade_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_total_diario_vendas_sql.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
@@ -118,7 +121,7 @@ void main() {
         },
       );
 
-      group('merged batch and cached section SQL', () {
+      group('merged batch with full section SQL', () {
         late E2eCountingAgentQueriesRepository countingRepository;
 
         setUp(() {
@@ -143,7 +146,7 @@ void main() {
         });
 
         test(
-          'loadOverview uses one merged sql.executeBatch and omits cached section SQL',
+          'loadOverview uses one merged sql.executeBatch with all section SQL',
           () async {
             final missingKeys = missingE2eRepositoryKeys();
             if (missingKeys.isNotEmpty) {
@@ -226,25 +229,29 @@ void _expectOverviewMergedBatchSql(
 ) {
   expect(countingRepository.executeSqlBatchCallCount, 1);
   expect(countingRepository.batchRequests, hasLength(1));
-  final sqlBodies = countingRepository.batchRequests.single.commands
+  final batchRequest = countingRepository.batchRequests.single;
+  expect(batchRequest.commands.length, inInclusiveRange(7, 8));
+  final sqlBodies = batchRequest.commands
       .map((command) => command.sql)
       .join('\n');
-  expect(sqlBodies.contains(ResumoTotalDiarioVendasSql.query), isFalse);
+  expect(sqlBodies.contains(ResumoParcelaFormaPagamentoSqlV2.query), isTrue);
+  expect(sqlBodies.contains(ResumoParcelaPorUsuarioSql.query), isTrue);
+  expect(sqlBodies.contains(ResumoTotalDiarioVendasSql.query), isTrue);
   expect(
     sqlBodies.contains(
       ResumoParcelasMensalSql.query(),
     ),
-    isFalse,
+    isTrue,
   );
   expect(
     sqlBodies.contains(
       ResumoParcelasDiaSemanaSql.query(),
     ),
-    isFalse,
+    isTrue,
   );
   expect(
     sqlBodies.contains(ResumoProdutoVendaLucratividadeSql.query),
-    isFalse,
+    isTrue,
   );
   expect(
     sqlBodies.contains(
@@ -252,6 +259,12 @@ void _expectOverviewMergedBatchSql(
     ),
     isTrue,
   );
+  if (batchRequest.commands.length == 8) {
+    expect(
+      sqlBodies.contains(ResumoProdutoVendaLucratividadeMensalSql.query),
+      isTrue,
+    );
+  }
 }
 
 Future<AppResult<Overview>> _loadOverviewProgressiveEnd(

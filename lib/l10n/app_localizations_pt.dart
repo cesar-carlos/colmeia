@@ -2609,6 +2609,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Muitas tentativas de consulta foram feitas. Aguarde um instante e tente novamente.';
 
   @override
+  String get agentSqlErrorReplayDetected =>
+      'Esta consulta já foi enviada. Aguarde um momento e tente novamente.';
+
+  @override
   String agentSqlErrorRateLimitedWithWait(int seconds) {
     return 'Muitas tentativas de consulta foram feitas. Tente novamente em ${seconds}s.';
   }
@@ -2657,6 +2661,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get agentSqlFailureTitleRateLimited => 'Muitas consultas';
+
+  @override
+  String get agentSqlFailureTitleReplayDetected => 'Consulta duplicada';
 
   @override
   String get agentSqlFailureTitleAuthenticationFailed => 'Sessão expirada';
@@ -3545,7 +3552,13 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesAutoRefreshIntervalFifteenMinutes => '15 min';
 
   @override
+  String get salesAutoRefreshIntervalTwentyFiveMinutes => '25 min';
+
+  @override
   String get salesAutoRefreshIntervalThirtyMinutes => '30 min';
+
+  @override
+  String get salesAutoRefreshIntervalThirtyFiveMinutes => '35 min';
 
   @override
   String salesLiveMapBranchPointSubtitle(
@@ -6955,6 +6968,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Muitas tentativas de consulta foram feitas. Aguarde um instante e tente novamente.';
 
   @override
+  String get agentSqlErrorReplayDetected =>
+      'Esta consulta já foi enviada. Aguarde um momento e tente novamente.';
+
+  @override
   String agentSqlErrorRateLimitedWithWait(int seconds) {
     return 'Muitas tentativas de consulta foram feitas. Tente novamente em ${seconds}s.';
   }
@@ -7000,6 +7017,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get agentSqlFailureTitleRateLimited => 'Muitas consultas';
+
+  @override
+  String get agentSqlFailureTitleReplayDetected => 'Consulta duplicada';
 
   @override
   String get agentSqlFailureTitleAuthenticationFailed => 'Sessão expirada';
@@ -7882,7 +7902,13 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesAutoRefreshIntervalFifteenMinutes => '15 min';
 
   @override
+  String get salesAutoRefreshIntervalTwentyFiveMinutes => '25 min';
+
+  @override
   String get salesAutoRefreshIntervalThirtyMinutes => '30 min';
+
+  @override
+  String get salesAutoRefreshIntervalThirtyFiveMinutes => '35 min';
 
   @override
   String salesLiveMapBranchPointSubtitle(

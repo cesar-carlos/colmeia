@@ -88,6 +88,11 @@ abstract final class EnvKeys {
   static const String agentSqlOverviewMergeSqlBatchesPerTarget =
       'AGENT_SQL_OVERVIEW_MERGE_SQL_BATCHES_PER_TARGET';
 
+  /// When true, sales live map loads merge catalog + sales SQL into one
+  /// `sql.executeBatch` per agent (not yet implemented — env reserved).
+  static const String agentSqlSalesLiveMapMergeSqlBatchesPerTarget =
+      'AGENT_SQL_SALES_LIVE_MAP_MERGE_SQL_BATCHES_PER_TARGET';
+
   /// Max collected relay streaming `sql.execute` calls allowed concurrently
   /// per agent before the client queues locally.
   static const String agentSqlRelayStreamingMaxConcurrentPerAgent =

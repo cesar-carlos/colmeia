@@ -3,7 +3,6 @@ import 'package:colmeia/features/agent_queries/data/cache/strategies/resumo_prod
 import 'package:colmeia/features/agent_queries/data/repositories/caching/agent_query_facts_bucket_batch_support.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/caching/agent_query_facts_bucket_batch_supports.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/caching/base_cached_agent_query_repository.dart';
-import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
@@ -21,7 +20,7 @@ final class CachingResumoProdutoVendaLucratividadeRepositoryImpl
   CachingResumoProdutoVendaLucratividadeRepositoryImpl({
     required ResumoProdutoVendaLucratividadeRepository delegate,
     required super.factsStore,
-    AgentQueriesRepository? agentQueriesRepository,
+    super.agentQueriesRepository,
     AgentQueryFactsBucketBatchSupport<ResumoProdutoVendaLucratividadeFilter,
             ResumoProdutoVendaLucratividadeRow>?
         bucketBatchSupport,
@@ -29,7 +28,6 @@ final class CachingResumoProdutoVendaLucratividadeRepositoryImpl
         const ResumoProdutoVendaLucratividadeCacheStrategy(),
     super.clock,
   }) : super(
-         agentQueriesRepository: agentQueriesRepository,
          bucketBatchSupport:
              bucketBatchSupport ??
              const ResumoProdutoVendaLucratividadeFactsBucketBatchSupport(),

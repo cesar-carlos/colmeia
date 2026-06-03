@@ -29,13 +29,17 @@ import 'package:flutter/foundation.dart';
 ///
 /// ## App-wide singleton vs route-scoped controllers
 ///
-/// A single [RetryAfterGate] may be registered in GetIt and shared with
-/// prefetch coordinators (for example overview fact backfill). Route-scoped
-/// controllers that receive an injected gate must **not** call [dispose] on
-/// it — only [removeListener] for subscriptions they added. Controllers that
-/// construct their own gate (`retryAfterGate ?? RetryAfterGate()`) should
-/// dispose it when they own the instance. See `OverviewController` for the
-/// ownership flag pattern.
+/// A single [RetryAfterGate] may be registered in GetIt and shared across
+/// features that hit the same agent-query rate limits — for example overview
+/// home and sales live map both receive `getIt<RetryAfterGate>()` via
+/// `injector_agent_queries.dart` / `injector_sales.dart`. Arming the gate
+/// from one surface (a 429 on overview load) therefore pauses reload/filter
+/// actions on the other until the cooldown expires. Route-scoped controllers
+/// that receive an injected gate must **not** call [dispose] on it — only
+/// [removeListener] for subscriptions they added. Controllers that construct
+/// their own gate (`retryAfterGate ?? RetryAfterGate()`) should dispose it
+/// when they own the instance. See `OverviewController` for the ownership
+/// flag pattern.
 class RetryAfterGate extends ChangeNotifier {
   RetryAfterGate({
     Duration tickInterval = const Duration(seconds: 1),

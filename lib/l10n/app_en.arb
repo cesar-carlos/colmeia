@@ -1317,6 +1317,7 @@
   "agentSqlErrorTransportTimeout": "The agent took too long to respond. Please try again.",
   "agentSqlErrorNetworkError": "Could not reach the agent right now. Please try again.",
   "agentSqlErrorRateLimited": "Too many query attempts were made. Please wait a moment and try again.",
+  "agentSqlErrorReplayDetected": "This query was already submitted. Wait a moment and try again.",
   "agentSqlErrorRateLimitedWithWait": "Too many query attempts were made. Try again in {seconds}s.",
   "@agentSqlErrorRateLimitedWithWait": {
     "description": "Rate-limited agent query when the hub sent Retry-After or retry_after_ms.",
@@ -1336,6 +1337,7 @@
   "agentSqlErrorExecutionCancelled": "The query was cancelled.",
   "agentSqlErrorGeneric": "The query could not be completed on the agent.",
   "agentSqlFailureTitleRateLimited": "Too many queries",
+  "agentSqlFailureTitleReplayDetected": "Duplicate query",
   "agentSqlFailureTitleAuthenticationFailed": "Session expired",
   "agentSqlFailureTitlePermissionDenied": "Access denied",
   "agentSqlFailureTitleTransportTimeout": "Agent timed out",
@@ -1732,7 +1734,9 @@
   "salesAutoRefreshIntervalFiveMinutes": "5 min",
   "salesAutoRefreshIntervalTenMinutes": "10 min",
   "salesAutoRefreshIntervalFifteenMinutes": "15 min",
+  "salesAutoRefreshIntervalTwentyFiveMinutes": "25 min",
   "salesAutoRefreshIntervalThirtyMinutes": "30 min",
+  "salesAutoRefreshIntervalThirtyFiveMinutes": "35 min",
   "salesLiveMapBranchPointSubtitle": "Agent {agentName} - Company {companyCode} - Branch {branchCode}",
   "@salesLiveMapBranchPointSubtitle": {
     "placeholders": {
