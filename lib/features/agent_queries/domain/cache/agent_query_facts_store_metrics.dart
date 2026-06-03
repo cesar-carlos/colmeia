@@ -9,12 +9,14 @@ final class AgentQueryFactsStoreMetrics {
   int misses = 0;
   int writes = 0;
   int staleSchemaEvictions = 0;
+  int evictions = 0;
 
   Map<String, Object?> appendix() => <String, Object?>{
     'factsHits': hits,
     'factsMisses': misses,
     'factsWrites': writes,
     'factsStaleSchemaEvictions': staleSchemaEvictions,
+    'factsEvictions': evictions,
   };
 
   void reset() {
@@ -22,5 +24,6 @@ final class AgentQueryFactsStoreMetrics {
     misses = 0;
     writes = 0;
     staleSchemaEvictions = 0;
+    evictions = 0;
   }
 }

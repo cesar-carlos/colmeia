@@ -96,6 +96,22 @@ class SalesLiveMapGeolocator {
       );
   }
 
+  /// Resolves map points from SQL municipality metadata (IBGE code and
+  /// city/UF) without CEP or broader fallbacks. Used for the first
+  /// progressive emission before [resolveBranchPoints] runs.
+  Future<SalesLiveMapGeolocationResult> resolveSqlMunicipalityPoints(
+    List<SalesLiveMapBranchAggregate> aggregates, {
+    required DateTime refreshedAt,
+    SalesLiveMapLoadCancelToken? cancelToken,
+  }) {
+    return _resolvePoints(
+      aggregates,
+      refreshedAt: refreshedAt,
+      cancelToken: cancelToken,
+      sqlMunicipalityOnly: true,
+    );
+  }
+
   /// Resolves geographic points for [aggregates], honouring the cache
   /// hierarchy (partial snapshot → memory cache → remote resolver). When
   /// [allowPartialGeoReuse] is `true`, points captured by the previous
@@ -107,6 +123,21 @@ class SalesLiveMapGeolocator {
     required DateTime refreshedAt,
     SalesLiveMapLoadCancelToken? cancelToken,
     bool allowPartialGeoReuse = false,
+  }) {
+    return _resolvePoints(
+      aggregates,
+      refreshedAt: refreshedAt,
+      cancelToken: cancelToken,
+      allowPartialGeoReuse: allowPartialGeoReuse,
+    );
+  }
+
+  Future<SalesLiveMapGeolocationResult> _resolvePoints(
+    List<SalesLiveMapBranchAggregate> aggregates, {
+    required DateTime refreshedAt,
+    SalesLiveMapLoadCancelToken? cancelToken,
+    bool allowPartialGeoReuse = false,
+    bool sqlMunicipalityOnly = false,
   }) async {
     if (aggregates.isEmpty) {
       return const SalesLiveMapGeolocationResult();
@@ -159,10 +190,18 @@ class SalesLiveMapGeolocator {
     var resolvedAndCachedCount = 0;
     var unresolvedAndCachedCount = 0;
     if (pending.isNotEmpty) {
-      final resolved = await _pointResolver.resolveAllWithDetails(
-        pending.map((item) => item.aggregate.toPointSource(_pointFactory)),
-        maxConcurrent: _concurrencyFor(pending.length),
+      final sources = pending.map(
+        (item) => item.aggregate.toPointSource(_pointFactory),
       );
+      final resolved = sqlMunicipalityOnly
+          ? await _pointResolver.resolveAllSqlMunicipalityWithDetails(
+              sources,
+              maxConcurrent: _concurrencyFor(pending.length),
+            )
+          : await _pointResolver.resolveAllWithDetails(
+              sources,
+              maxConcurrent: _concurrencyFor(pending.length),
+            );
       if (cancelToken?.isCancelled ?? false) {
         return const SalesLiveMapGeolocationResult(cancelled: true);
       }

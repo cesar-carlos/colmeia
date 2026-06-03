@@ -1,5 +1,8 @@
 import 'dart:async';
 
+import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
+import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_diagnostic.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
@@ -10,6 +13,7 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dar
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
+import 'package:colmeia/l10n/app_localizations_en.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -665,6 +669,84 @@ void main() {
 
       expect(stateLog, contains(false));
       expect(stateLog.last, isTrue);
+    },
+  );
+
+  test(
+    'reload applies progressive map point updates from the use case stream',
+    () async {
+      final ibgePending = SalesLiveMapLoadResult(
+        points: <SalesLiveMapPoint>[
+          const SalesLiveMapPoint(
+            id: 'agent-1-1-1',
+            name: 'Branch One',
+            uf: 'MT',
+            latitude: -11.86,
+            longitude: -55.51,
+            salesAmount: 0,
+            salesCount: 0,
+            city: 'Sinop',
+            locationResolution:
+                SalesLiveMapLocationResolution.ibgeMunicipalityCode,
+          ),
+        ],
+        branchOptions: const <SalesLiveMapBranchOption>[],
+        totalRevenue: 0,
+        totalSalesCount: 0,
+        totalBranchCount: 1,
+        mappedBranchCount: 1,
+        mappedMunicipalityCount: 1,
+        queriedAgentCount: 0,
+        plannedAgentCount: 0,
+        failedAgentCount: 0,
+        missingClientTokenAgentCount: 0,
+        skippedOfflineAgentCount: 0,
+        rowCapReachedAgentCount: 0,
+        salesDataPending: true,
+        refreshedAt: DateTime(2026, 5, 9, 12),
+      );
+      when(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      ).thenAnswer(
+        (_) => Stream<SalesLiveMapLoadResult>.fromIterable(
+          <SalesLiveMapLoadResult>[ibgePending, _loadedResult()],
+        ),
+      );
+
+      await controller.bindUser('user-1');
+
+      expect(controller.state.visualResult?.points, hasLength(1));
+      expect(controller.state.visualResult?.points.single.latitude, -15.60);
+      expect(controller.state.result?.salesDataPending, isFalse);
+      expect(controller.state.result?.totalRevenue, 1200);
+    },
+  );
+
+  test(
+    'load failure technical details expose transport timeout class',
+    () {
+      const failure = NetworkFailure(
+        message: 'bridge timeout',
+        context: <String, Object?>{
+          AgentSqlRpcFailureUiKey.field:
+              AgentSqlRpcFailureUiKey.transportTimeout,
+        },
+      );
+      final body = agentQueryFailureTechnicalDetailsBody(
+        failure,
+        l10n: AppLocalizationsEn(),
+      );
+
+      expect(
+        body,
+        contains(AppLocalizationsEn().agentSqlFailureTitleTransportTimeout),
+      );
+      expect(body, contains(AgentSqlRpcFailureUiKey.transportTimeout));
     },
   );
 

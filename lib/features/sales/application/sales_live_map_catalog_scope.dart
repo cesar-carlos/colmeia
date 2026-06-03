@@ -89,6 +89,7 @@ class SalesLiveMapCatalogScope {
       codFilial: SalesLiveMapPolicies.primaryBranchCode,
       selectedBranches: primaryBranches,
       pageSize: CadastroFilialFilter.maxPageSize,
+      mapCatalogProjection: true,
     );
   }
 

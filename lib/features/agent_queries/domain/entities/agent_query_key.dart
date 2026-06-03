@@ -9,6 +9,8 @@ enum AgentQueryKey {
   resumoParcelasAnual,
   resumoParcelasFormaPagamentoPorMes,
   resumoParcelasMensal,
+  resumoProdutoVendaLucratividade,
+  resumoProdutoVendaLucratividadeMensal,
   resumoTotalDiarioVendas,
   resumoTotalVendasMunicipioFilialDiario,
   resumoTotalVendasMunicipioFilialPeriodo,

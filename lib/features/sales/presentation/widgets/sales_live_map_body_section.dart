@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_diagnostic.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
 import 'package:colmeia/features/sales/presentation/view_models/sales_live_map_view_model.dart';
@@ -47,7 +48,11 @@ class SalesLiveMapBodySection extends StatelessWidget {
               slice: slice,
               onRetryReload: onRetryReload,
             ),
-            if (showInlineChart) ...<Widget>[
+            if (showInlineChart &&
+                (slice.state.hasVisualResult ||
+                    SalesLiveMapViewModel.shouldShowChartFailurePlaceholder(
+                      slice.state,
+                    ))) ...<Widget>[
               SizedBox(height: tokens.sectionSpacing),
               SalesLiveMapInlineChartSection(
                 onOpenFullscreen: onOpenFullscreen,
@@ -102,6 +107,10 @@ class _SalesLiveMapBodyStatusContent extends StatelessWidget {
                 ? AgentQueryErrorPanel.fromFailure(
                     result.loadFailure!,
                     l10n,
+                    detailsBody: agentQueryFailureTechnicalDetailsBody(
+                      result.loadFailure!,
+                      l10n: l10n,
+                    ),
                     onRetry: state.canReload ? onRetryReload : null,
                   )
                 : AppInlineErrorPanel(

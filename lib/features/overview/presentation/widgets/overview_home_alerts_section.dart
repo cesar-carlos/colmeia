@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_failure_technical_details.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/presentation/overview_alert_banner_spec.dart'
@@ -31,6 +32,7 @@ class OverviewHomeAlertsSection extends StatelessWidget {
     required this.partialFailureAgentNamesNormalized,
     required this.onOpenAgents,
     this.errorDiagnosticBody,
+    this.loadFailure,
     this.skippedDueToHubPresenceAgentNamesNormalized = const <String>[],
     this.onRetryOverview,
     this.retryCountdownLabel,
@@ -44,6 +46,7 @@ class OverviewHomeAlertsSection extends StatelessWidget {
   final List<String> partialFailureAgentNamesNormalized;
   final VoidCallback onOpenAgents;
   final String? errorDiagnosticBody;
+  final AppFailure? loadFailure;
 
   /// Display names for the dedicated "agentes offline" banner — agents
   /// that DO have a stored client_token but were skipped at dispatch
@@ -65,6 +68,7 @@ class OverviewHomeAlertsSection extends StatelessWidget {
       l10n: l10n,
       errorMessage: errorMessage,
       errorDiagnosticBody: errorDiagnosticBody,
+      loadFailure: loadFailure,
       overview: overview,
       missingTokenAgentNames: missingTokenAgentNamesNormalized,
       partialFailureAgentNames: partialFailureAgentNamesNormalized,

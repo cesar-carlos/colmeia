@@ -15,7 +15,14 @@ constants.
 | `docs/configuration.md` | Socket/relay env vars, rate limits, inflight gates, and payload frame defaults. |
 | `docs/observability.md` | Metrics and logs for bridge latency, socket rooms, relay queues, and troubleshooting. |
 | `docs/nginx_production.md` | Reverse proxy and WebSocket deployment settings. |
+| `docs/limits/limites_acesso_e_quotas.md` | Access limits, quotas, rate-limit buckets, and fair-share rules that cap REST, `agents:command`, and relay throughput. |
+| `docs/performance_hub_agent.md` | Hub/agent performance tuning: Socket.IO transport, relay buffer caps, inflight gates, and staging smoke env hints referenced from Colmeia rollout checklists. |
+| `docs/adrs/0008-relay-batch-protocol.md` | ADR for relay JSON-RPC batch (`relay:rpc.request.batch`, v1 shipped **2026-05-28**). |
+| `docs/adrs/0009-relay-unary-fast-path.md` | ADR for relay unary fast-path (`fastPath` opt-in; hub defect on JSON-RPC `id` echo blocks client rollout — see Colmeia [`docs/server_adjustments/relay_unary_fast_path.md`](server_adjustments/relay_unary_fast_path.md)). |
+| `docs/adrs/0010-request-server-timings.md` | ADR for per-phase `requestServerTimings` on relay, `agents:command`, and REST. |
+| `docs/plug_agente/03_performance_roadmap.md` | Agent-side performance roadmap and expectations for bridge SQL, streaming, and batch semantics. |
 | Colmeia [`docs/bridge_agent_sql_api_options.md`](bridge_agent_sql_api_options.md) | Colmeia-facing bridge SQL summary: `sql.execute` / `sql.executeBatch`, choosing `multi_result` vs semantic batch vs JSON-RPC batch arrays, overview read-only parallelism (`max_parallel_read_only_batch_items`). Payload examples: `plug_server/docs/snippets/agent_command_performance_options.ts`. |
+| Colmeia [`docs/server_adjustments/README.md`](server_adjustments/README.md) | Colmeia-side hub performance gap matrix, smoke validation, and env flip guidance for relay batch / fast-path / server timings. |
 
 ## Socket contract used by Colmeia
 
@@ -52,8 +59,11 @@ constants.
   client-side limiting.
 - `SOCKET_WARM_UP_AFTER_LOGIN=true` preconnects `/consumers` after login so the
   first socket SQL call does not pay the handshake cost.
-- Relay accepts one correlatable JSON-RPC request per `relay:rpc.request`; do
-  not send JSON-RPC batch arrays or notifications (`id: null`) through relay.
+- Relay unary uses one correlatable JSON-RPC command per `relay:rpc.request`.
+  Multi-RPC relay batching uses `relay:rpc.request.batch` when both hub and
+  client enable `SOCKET_RELAY_BATCH_ENABLED` (hub v1 shipped **2026-05-28**;
+  Colmeia default remains `false` until staging validation). Do not send
+  JSON-RPC notifications (`id: null`) through relay.
 - `client:agent.profile.updated` is treated as PayloadFrame-only by default.
   Raw JSON maps are accepted only when Colmeia is explicitly running in
   `SOCKET_PROFILE_UPDATED_LEGACY_RAW_JSON_ENABLED=true` migration mode.
@@ -70,6 +80,24 @@ constants.
 - Unknown root keys and unknown `signature` keys are invalid.
 - `meta.outbound_compression` is currently not a runtime performance tuning
   knob; rely on PayloadFrame gzip policy and SQL options above.
+
+## Colmeia ↔ hub feature flags
+
+These flags must be enabled on **both** the hub deployment and the Colmeia
+build (via `assets/env/local.env`, `default.env`, or `--dart-define`). Colmeia
+code is already wired; flipping a client flag before the hub accepts the
+contract causes rejections or retries. See
+[`docs/server_adjustments/DELIVERED.md`](server_adjustments/DELIVERED.md) for
+envelope shapes and validation.
+
+| Flag | Hub / client contract | Colmeia default | Rollout notes |
+| --- | --- | --- | --- |
+| `SOCKET_RELAY_BATCH_ENABLED` | `relay:rpc.request.batch` — multiple JSON-RPC commands per relay emit (ADR 0008). | `false` | Hub v1 shipped **2026-05-28**. Enable on hub staging first, then set `true` in Colmeia staging and run the E2E comparator. Distinct from `SOCKET_BATCH_ENABLED` (see [`bridge_agent_sql_api_options.md`](bridge_agent_sql_api_options.md)). |
+| `SOCKET_RELAY_FAST_PATH_ENABLED` | Relay unary skips `relay:rpc.accepted` when `fastPath: true` (ADR 0009). | `false` | **Keep false** until the hub echoes the client JSON-RPC `id` on fast-path responses (documented defect in [`server_adjustments/relay_unary_fast_path.md`](server_adjustments/relay_unary_fast_path.md)). |
+| `SOCKET_REQUEST_SERVER_TIMINGS_ENABLED` | Appends `serverTimings` phase snapshot to relay, `agents:command`, and REST responses (ADR 0010). | `false` | Safe for E2E and diagnostic builds (~120 B per response). Enable when correlating client metrics with hub queue/SQL phases. |
+
+Related client-only socket tuning (no hub mirror flag): `SOCKET_BATCH_ENABLED`
+coalesces multiple JSON-RPC objects into one `agents:command` emit — not relay.
 
 ## Legacy removal plan
 
@@ -111,5 +139,31 @@ unrelated perf tuning):
 4. **Production:** Flip `default.env` only after sign-off; keep
    `RestInflightAgentQueriesRepository` for REST and REST fallback paths.
 
-Optional after stable rollout: `SOCKET_BATCH_ENABLED`, relay/stream tuning
-already documented in `docs/bridge_agent_sql_api_options.md`.
+Optional after stable rollout: `SOCKET_BATCH_ENABLED` (`agents:command` only),
+`SOCKET_RELAY_BATCH_ENABLED` (relay batch, hub shipped 2026-05-28), and
+relay/stream tuning documented in `docs/bridge_agent_sql_api_options.md`.
+
+## Staging validation checklist (relay batch)
+
+Use before enabling `SOCKET_RELAY_BATCH_ENABLED` in production `default.env`:
+
+1. **Hub staging:** `SOCKET_RELAY_BATCH_ENABLED=true` on the hub deployment
+   (v1 shipped **2026-05-28**); `SOCKET_CONSUMER_ROLES` includes `client`;
+   sticky Socket.IO sessions per `docs/nginx_production.md` in plug_server.
+2. **Colmeia staging:** merge `assets/env/staging.env` into
+   `assets/env/local.env` or pass
+   `--dart-define=SOCKET_RELAY_BATCH_ENABLED=true` (see
+   `assets/env/.env.example`).
+3. **E2E comparator:** run with batch off, then on (`--concurrency=1`):
+   `overview_batch_loader_e2e_test.dart`,
+   `load_sales_live_map_use_case_e2e_test.dart`,
+   `agent_queries_socket_relay_smoke_e2e_test.dart`, and
+   `agent_query_across_agents_repositories_e2e_test.dart` (worst-case fan-out).
+4. **Do not enable** `SOCKET_RELAY_FAST_PATH_ENABLED` until the hub echoes the
+   client JSON-RPC `id` on fast-path responses
+   ([`server_adjustments/relay_unary_fast_path.md`](server_adjustments/relay_unary_fast_path.md)).
+5. **Optional:** `SOCKET_REQUEST_SERVER_TIMINGS_ENABLED=true` on hub + client
+   for phase correlation during staging only.
+6. **Sign-off:** no new `relay_batch_not_supported` / `RATE_LIMITED` spikes;
+   wall-clock within expected variance vs batch-off baseline
+   ([`server_adjustments/README.md`](server_adjustments/README.md) smoke matrix).

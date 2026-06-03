@@ -11,6 +11,13 @@
 /// `ValorTrocoParcela` is computed here from
 /// parcel totals and `TipoForma` so callers only pass it through.
 ///
+/// **Projections:** [selectFromParcelLinesThroughJoins] keeps cliente/municipio/
+/// vendedor/regiao columns for reports that filter or display them.
+/// [selectFromParcelLinesForOverviewAggregate] omits those joins and columns
+/// for overview resumos that only GROUP BY branch, calendar, payment method,
+/// or user — use that variant in outer queries that do not need dimension
+/// drill-down columns.
+///
 /// **Performance:** per-sale totals (`ValorTotalParcelas`, troco inputs) use
 /// `LEFT JOIN` to pre-aggregated subqueries instead of correlated scalar
 /// subqueries on each parcel row — friendlier to SQL Server and SAP SQL
@@ -42,7 +49,21 @@
 ///    siblings sum across agents — correct only when the agents query
 ///    disjoint datasets. Mirror/replica agents over-count silently.
 abstract final class ParcelaProdutoVendidoDetalheSql {
-  static const String selectFromParcelLinesThroughJoins = '''
+  /// Full parcel-line detail (cliente, municipio, vendedor, regiao, document).
+  static const String selectFromParcelLinesThroughJoins =
+      _selectWithTrocoLayerPrefix +
+      _detSelectFull +
+      _fromJoinsFull +
+      _selectWithTrocoLayerSuffix;
+
+  /// Slim inner slice for overview aggregate resumos (no cliente/municipio joins).
+  static const String selectFromParcelLinesForOverviewAggregate =
+      _selectWithTrocoLayerPrefix +
+      _detSelectOverviewAggregate +
+      _fromJoinsOverviewAggregate +
+      _selectWithTrocoLayerSuffix;
+
+  static const String _selectWithTrocoLayerPrefix = '''
     SELECT *
     FROM (
       SELECT
@@ -57,6 +78,41 @@ abstract final class ParcelaProdutoVendidoDetalheSql {
           ELSE 0
         END AS ValorTrocoParcela
       FROM (
+  ''';
+
+  static const String _selectWithTrocoLayerSuffix = '''
+      ) det
+    ) ParcelaProdutoVendidoDetalhe
+  ''';
+
+  static const String _detSelectOverviewAggregate = '''
+      SELECT
+        pv.CodEmpresa,
+        pv.CodFilial,
+        pv.CodProdutoVendido,
+        CAST(pv.CodEmpresa AS VARCHAR) + '-' +
+          CAST(pv.CodFilial AS VARCHAR) + '-' +
+          CAST(pv.CodProdutoVendido AS VARCHAR) AS Id,
+        pv.Origem,
+        pv.CodOrigem,
+        COALESCE(SUBSTRING(ppv.GeraFinanceiro, 1, 1), tos.GeraFinanceiro) AS GeraFinanceiro,
+        pv.PreVenda,
+        pv.CodVendedor,
+        CAST(pv.DataVenda AS DATE) AS DataVenda,
+        COALESCE(
+          NULLIF(LTRIM(RTRIM(pv.NomeUsuario)), ''),
+          'Usuario nao informado'
+        ) AS NomeUsuario,
+        ppv.TipoForma,
+        ppv.CodFormaPagamento,
+        fp.Descricao AS DescricaoFormaPagamento,
+        COALESCE(par_tot.ValorTotalParcelas, 0) AS ValorTotalParcelas,
+        COALESCE(par_tot.ValorTotalParcelasRateioTroco, 0) AS ValorTotalParcelasRateioTroco,
+        COALESCE(troco_fp.TotalTrocoForma, 0) + COALESCE(vale_ob.ValeOb, 0) AS ValorTotalTrocoVenda,
+        ppv.ValorParcela
+  ''';
+
+  static const String _detSelectFull = '''
       SELECT
         pv.CodEmpresa,
         pv.CodFilial,
@@ -100,6 +156,22 @@ abstract final class ParcelaProdutoVendidoDetalheSql {
         COALESCE(par_tot.ValorTotalParcelasRateioTroco, 0) AS ValorTotalParcelasRateioTroco,
         COALESCE(troco_fp.TotalTrocoForma, 0) + COALESCE(vale_ob.ValeOb, 0) AS ValorTotalTrocoVenda,
         ppv.ValorParcela
+  ''';
+
+  static const String _fromJoinsOverviewAggregate = '''
+      FROM ParcelaProdutoVendido ppv
+      INNER JOIN ProdutoVendido pv ON
+        pv.CodEmpresa = ppv.CodEmpresa
+        AND pv.CodProdutoVendido = ppv.CodProdutoVendido
+      INNER JOIN FormaPagamento fp ON
+        fp.CodFormaPagamento = ppv.CodFormaPagamento
+      INNER JOIN TipoOperacaoSaida tos ON
+        tos.CodEmpresa = pv.CodEmpresa
+        AND tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida
+$_parcelAggregateJoins
+  ''';
+
+  static const String _fromJoinsFull = '''
       FROM ParcelaProdutoVendido ppv
       INNER JOIN ProdutoVendido pv ON
         pv.CodEmpresa = ppv.CodEmpresa
@@ -119,6 +191,10 @@ abstract final class ParcelaProdutoVendidoDetalheSql {
         r.CodRegiao = c.CodRegiao
       LEFT JOIN Vendedor v ON
         v.CodVendedor = pv.CodVendedor
+$_parcelAggregateJoins
+  ''';
+
+  static const String _parcelAggregateJoins = '''
       LEFT JOIN (
         SELECT
           CodEmpresa,
@@ -156,7 +232,5 @@ abstract final class ParcelaProdutoVendidoDetalheSql {
       ) vale_ob ON
         vale_ob.CodEmpresa = pv.CodEmpresa
         AND vale_ob.CodOrigem = pv.CodOrigem
-      ) det
-    ) ParcelaProdutoVendidoDetalhe
   ''';
 }

@@ -65,6 +65,41 @@ void main() {
     check(
       agentQueryFailureUserMessage(failure, en),
     ).equals(en.agentSqlErrorTransportTimeout);
+    check(
+      agentQueryFailureTitle(failure, en),
+    ).equals(en.agentSqlFailureTitleTransportTimeout);
+  });
+
+  test('RpcFailure -32107 without context ui key uses query timeout copy', () {
+    const failure = RpcFailure(
+      message: 'timeout',
+      userMessage: 'The query took longer than expected.',
+      rpcCode: -32107,
+      retryable: true,
+    );
+    check(
+      agentQueryFailureUserMessage(failure, en),
+    ).equals(en.agentSqlErrorQueryTimeout);
+    check(
+      agentQueryFailureTitle(failure, en),
+    ).equals(en.agentSqlFailureTitleQueryTimeout);
+  });
+
+  test('RpcFailure -32008 without context ui key uses transport timeout copy', () {
+    const failure = RpcFailure(
+      message: 'timeout',
+      userMessage: 'The agent took too long to respond. Please try again.',
+      rpcCode: -32008,
+      retryable: true,
+      reason: 'timeout',
+      category: 'transport',
+    );
+    check(
+      agentQueryFailureUserMessage(failure, en),
+    ).equals(en.agentSqlErrorTransportTimeout);
+    check(
+      agentQueryFailureTitle(failure, en),
+    ).equals(en.agentSqlFailureTitleTransportTimeout);
   });
 
   test('cancelled failure returns null from OrNull helper', () {

@@ -9,6 +9,12 @@ import 'package:colmeia/core/di/injector_overview.dart';
 import 'package:colmeia/core/errors/app_failure.dart'
     show AppFailure, SessionFailure, UnknownFailure;
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_dia_semana_sql.dart';
+import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_dia_semana_usuario_sql.dart';
+import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_mensal_sql.dart';
+import 'package:colmeia/features/agent_queries/data/queries/resumo_produto_venda_lucratividade_sql.dart';
+import 'package:colmeia/features/agent_queries/data/queries/resumo_total_diario_vendas_sql.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
@@ -18,10 +24,13 @@ import 'package:flutter_test/flutter_test.dart' hide group;
 import 'package:result_dart/result_dart.dart';
 import 'package:test_api/scaffolding.dart' show group;
 
+import 'support/e2e_counting_agent_queries_repository.dart';
 import 'support/e2e_dependency_bootstrap.dart';
 import 'support/e2e_in_memory_app_cache_store.dart';
 
 const String _e2eOverviewRepositoryScopeName = 'e2e_overview_repository';
+const String _e2eOverviewRepositoryBatchScopeName =
+    'e2e_overview_repository_batch';
 
 void main() {
   group(
@@ -108,18 +117,151 @@ void main() {
           );
         },
       );
+
+      group('merged batch and cached section SQL', () {
+        late E2eCountingAgentQueriesRepository countingRepository;
+
+        setUp(() {
+          if (missingE2eRepositoryKeys().isNotEmpty) {
+            return;
+          }
+          getIt
+            ..pushNewScope(scopeName: _e2eOverviewRepositoryBatchScopeName)
+            ..registerSingleton<AppCacheStore>(E2eInMemoryAppCacheStore());
+          countingRepository = E2eCountingAgentQueriesRepository(
+            getIt<AgentQueriesRepository>(),
+          );
+          getIt.registerSingleton<AgentQueriesRepository>(countingRepository);
+          registerInjectorOverview(getIt);
+        });
+
+        tearDown(() async {
+          if (getIt.currentScopeName != _e2eOverviewRepositoryBatchScopeName) {
+            return;
+          }
+          await getIt.popScope();
+        });
+
+        test(
+          'loadOverview uses one merged sql.executeBatch and omits cached section SQL',
+          () async {
+            final missingKeys = missingE2eRepositoryKeys();
+            if (missingKeys.isNotEmpty) {
+              // E2E skip hint; stdout is intentional for local diagnostics.
+              // ignore: avoid_print
+              print(
+                'SKIP overview_repository_merged_batch_e2e: missing '
+                '${missingKeys.join(', ')}.',
+              );
+              return;
+            }
+
+            final useCase = getIt<LoadOverviewUseCase>();
+            final result = await runE2eAppResultWithHubRetry(
+              () => useCase(
+                userId: 'user-1',
+                policy: OverviewLoadPolicy.forceRefresh,
+                filter: DashboardFilter(
+                  selectedAgentIds: <String>{AppEnvironment.e2eAgentId},
+                ),
+                rowLabels: OverviewLoadLabels.englishFallback,
+              ),
+              actionLabel: 'overview_repository_merged_batch',
+            );
+
+            result.fold(
+              (_) => _expectOverviewMergedBatchSql(countingRepository),
+              _expectOverviewRepositoryE2eFailure,
+            );
+          },
+        );
+
+        test(
+          'loadOverviewProgressively uses one batch when merge flag is enabled',
+          () async {
+            final missingKeys = missingE2eRepositoryKeys();
+            if (missingKeys.isNotEmpty) {
+              // E2E skip hint; stdout is intentional for local diagnostics.
+              // ignore: avoid_print
+              print(
+                'SKIP overview_repository_progressive_merge_e2e: missing '
+                '${missingKeys.join(', ')}.',
+              );
+              return;
+            }
+            if (!AppEnvironment.agentSqlOverviewMergeSqlBatchesPerTarget) {
+              // E2E skip hint when merge flag is off; stdout is intentional.
+              // ignore: avoid_print
+              print(
+                'SKIP overview_repository_progressive_merge_e2e: set '
+                '--dart-define=AGENT_SQL_OVERVIEW_MERGE_SQL_BATCHES_PER_TARGET=true '
+                '(or env) to assert merged progressive batches.',
+              );
+              return;
+            }
+
+            final repository = getIt<OverviewRepository>();
+            final result = await runE2eAppResultWithHubRetry(
+              () => _loadOverviewProgressiveEnd(
+                repository,
+                policy: OverviewLoadPolicy.defaultLoad,
+              ),
+              actionLabel: 'overview_repository_progressive_merge',
+            );
+
+            result.fold(
+              (_) => _expectOverviewMergedBatchSql(countingRepository),
+              _expectOverviewRepositoryE2eFailure,
+            );
+          },
+        );
+      });
     },
     tags: <String>['e2e'],
   );
 }
 
+void _expectOverviewMergedBatchSql(
+  E2eCountingAgentQueriesRepository countingRepository,
+) {
+  expect(countingRepository.executeSqlBatchCallCount, 1);
+  expect(countingRepository.batchRequests, hasLength(1));
+  final sqlBodies = countingRepository.batchRequests.single.commands
+      .map((command) => command.sql)
+      .join('\n');
+  expect(sqlBodies.contains(ResumoTotalDiarioVendasSql.query), isFalse);
+  expect(
+    sqlBodies.contains(
+      ResumoParcelasMensalSql.query(),
+    ),
+    isFalse,
+  );
+  expect(
+    sqlBodies.contains(
+      ResumoParcelasDiaSemanaSql.query(),
+    ),
+    isFalse,
+  );
+  expect(
+    sqlBodies.contains(ResumoProdutoVendaLucratividadeSql.query),
+    isFalse,
+  );
+  expect(
+    sqlBodies.contains(
+      ResumoParcelasDiaSemanaUsuarioSql.query(),
+    ),
+    isTrue,
+  );
+}
+
 Future<AppResult<Overview>> _loadOverviewProgressiveEnd(
-  OverviewRepository repository,
-) async {
+  OverviewRepository repository, {
+  OverviewLoadPolicy policy = OverviewLoadPolicy.forceRefresh,
+}) async {
   OverviewProgressiveSnapshot? lastSnapshot;
   await for (final chunk in repository.loadOverviewProgressively(
     userId: 'user-1',
-    policy: OverviewLoadPolicy.forceRefresh,
+    policy: policy,
     filter: DashboardFilter(
       selectedAgentIds: <String>{AppEnvironment.e2eAgentId},
     ),

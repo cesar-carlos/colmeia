@@ -10,6 +10,10 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute
 /// Aligned with the current hub profile `plug-jsonrpc-profile/2.10`.
 /// Forward-compatible: the bridge silently ignores the field on agents that
 /// do not check it. Pass an explicit value for legacy agents.
+///
+/// Bump to `2.11` / `2.11.2` only after hub contract tests and staging smoke
+/// confirm the target profile rejects or accepts the new semantics Colmeia relies
+/// on (relay batch, `max_parallel_read_only_batch_items`, profile validation).
 const String kColmeiaAgentApiVersion = '2.10';
 
 /// Semantic input for a single `sql.execute` call through the bridge.

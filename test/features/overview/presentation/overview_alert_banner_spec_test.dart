@@ -1,3 +1,5 @@
+import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/presentation/overview_alert_banner_spec.dart';
@@ -26,6 +28,7 @@ void main() {
     List<String> partialFailureAgentNames = const <String>[],
     List<String> skippedDueToHubPresenceAgentNames = const <String>[],
     String? retryCountdownLabel,
+    AppFailure? loadFailure,
   }) {
     return buildOverviewAlertBannerSpecs(
       l10n: l10n,
@@ -36,6 +39,7 @@ void main() {
       partialFailureAgentNames: partialFailureAgentNames,
       skippedDueToHubPresenceAgentNames: skippedDueToHubPresenceAgentNames,
       retryCountdownLabel: retryCountdownLabel,
+      loadFailure: loadFailure,
     );
   }
 
@@ -46,6 +50,23 @@ void main() {
   test('returns no specs when overview is clean and there is no error', () {
     final overview = Overview.empty().copyWith(mainResumoHadPlannedTargets: true);
     expect(build(overview: overview), isEmpty);
+  });
+
+  test('loadError uses agent-query title for SQL query timeout', () {
+    const failure = RpcFailure(
+      message: 'timeout',
+      userMessage: 'The query took longer than expected.',
+      rpcCode: -32107,
+      retryable: true,
+    );
+    final specs = build(
+      errorMessage: l10n.agentSqlErrorQueryTimeout,
+      loadFailure: failure,
+    );
+
+    expect(specs.single.title, l10n.agentSqlFailureTitleQueryTimeout);
+    expect(specs.single.message, l10n.agentSqlErrorQueryTimeout);
+    expect(specs.single.detailsBody, contains(l10n.agentSqlFailureTitleQueryTimeout));
   });
 
   test('builds a loadError spec including the diagnostic body in details', () {
@@ -97,31 +118,6 @@ void main() {
     );
     expect(spec.showManage, isTrue);
     expect(spec.showRetry, isFalse);
-  });
-
-  test('emits staleCache banner with optional manage when token is missing',
-      () {
-    final staleWithoutToken = Overview.empty().copyWith(
-      isStaleCache: true,
-      mainResumoHadPlannedTargets: true,
-    );
-    final staleWithMissingToken = Overview.empty().copyWith(
-      isStaleCache: true,
-      mainResumoHadPlannedTargets: true,
-      agentIdsMissingClientToken: const <String>['a'],
-      agentNamesMissingClientToken: const <String>['Alpha'],
-    );
-
-    final withoutToken =
-        build(overview: staleWithoutToken).where((s) => s.kind == OverviewAlertKind.staleCache).single;
-    final withToken = build(
-      overview: staleWithMissingToken,
-      missingTokenAgentNames: const <String>['Alpha'],
-    ).where((s) => s.kind == OverviewAlertKind.staleCache).single;
-
-    expect(withoutToken.showManage, isFalse);
-    expect(withToken.showManage, isTrue);
-    expect(withToken.detailsBody, contains('Alpha'));
   });
 
   test(
@@ -208,10 +204,9 @@ void main() {
     expect(spec.detailsBody, isNull);
   });
 
-  test('orders banners deterministically (error → setup → stale → token → '
+  test('orders banners deterministically (error → setup → token → '
       'offline → partial → aggregation)', () {
     final overview = Overview.empty().copyWith(
-      isStaleCache: true,
       mainResumoHadPlannedTargets: true,
       agentIdsMissingClientToken: const <String>['a'],
       agentNamesMissingClientToken: const <String>['Alpha'],
@@ -235,7 +230,6 @@ void main() {
 
     expect(kinds, <OverviewAlertKind>[
       OverviewAlertKind.loadError,
-      OverviewAlertKind.staleCache,
       OverviewAlertKind.missingClientToken,
       OverviewAlertKind.agentsOffline,
       OverviewAlertKind.partialAgentQueries,

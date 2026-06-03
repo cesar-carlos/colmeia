@@ -1,3 +1,4 @@
+import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_chart_failure_placeholder_content.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
@@ -6,6 +7,8 @@ import 'package:colmeia/features/sales/presentation/state/sales_live_map_present
 import 'package:colmeia/features/sales/presentation/view_models/sales_live_map_view_model.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_chart_panel.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -27,6 +30,21 @@ class SalesLiveMapInlineChartSection extends StatelessWidget {
         final l10n = AppLocalizations.of(context);
         final controller = context.read<SalesLiveMapController>();
         final viewModel = SalesLiveMapViewModel.fromState(slice.state, l10n);
+        if (SalesLiveMapViewModel.shouldShowChartFailurePlaceholder(slice.state)) {
+          final result = slice.state.result;
+          final tokens = context.appTokens;
+          return AppSectionCard(
+            child: AgentQueryChartFailurePlaceholderContent(
+              emptyMessage: SalesLiveMapViewModel.chartLoadFailureMessage(
+                slice.state,
+                l10n,
+              ),
+              textStyle: Theme.of(context).textTheme.bodyMedium,
+              verticalPadding: tokens.contentSpacing,
+              loadFailure: result?.loadFailure,
+            ),
+          );
+        }
         return SalesLiveMapChartPanel(
           mode: SalesLiveMapChartPanelMode.inline,
           title: l10n.salesLiveMapChartTitle,
@@ -54,6 +72,7 @@ class SalesLiveMapMapSlice {
     required this.filterBranchIds,
     required this.visualSpec,
     required this.isRefreshing,
+    required this.showChartFailurePlaceholder,
   });
 
   factory SalesLiveMapMapSlice.fromState(SalesLiveMapPresentationState state) {
@@ -68,6 +87,8 @@ class SalesLiveMapMapSlice {
       filterBranchIds: filterBranchIds,
       visualSpec: state.visualSpec,
       isRefreshing: state.isMapRefreshing,
+      showChartFailurePlaceholder:
+          SalesLiveMapViewModel.shouldShowChartFailurePlaceholder(state),
     );
   }
 
@@ -78,6 +99,7 @@ class SalesLiveMapMapSlice {
   final Set<String> filterBranchIds;
   final SalesLiveMapVisualSpec visualSpec;
   final bool isRefreshing;
+  final bool showChartFailurePlaceholder;
 
   @override
   bool operator ==(Object other) {
@@ -86,7 +108,8 @@ class SalesLiveMapMapSlice {
         other.metric == metric &&
         setEquals(other.filterBranchIds, filterBranchIds) &&
         other.visualSpec == visualSpec &&
-        other.isRefreshing == isRefreshing;
+        other.isRefreshing == isRefreshing &&
+        other.showChartFailurePlaceholder == showChartFailurePlaceholder;
   }
 
   @override
@@ -96,5 +119,6 @@ class SalesLiveMapMapSlice {
     Object.hashAll(filterBranchIds.toList(growable: false)..sort()),
     visualSpec,
     isRefreshing,
+    showChartFailurePlaceholder,
   );
 }

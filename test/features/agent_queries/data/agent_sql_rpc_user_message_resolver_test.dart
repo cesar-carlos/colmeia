@@ -38,6 +38,7 @@ void main() {
           ),
         );
         check(resolution.userMessage).equals(entry.value);
+        check(resolution.uiKey).isNotNull();
       }
     },
   );

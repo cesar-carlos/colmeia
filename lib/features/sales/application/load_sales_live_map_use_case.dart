@@ -13,6 +13,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_f
     show CadastroFilialBranchRef;
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
+import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_branch_aggregate.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_branch_aggregator.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_branch_location_cache.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_catalog_lookup.dart';
@@ -77,7 +78,7 @@ class LoadSalesLiveMapUseCase {
              ttl: SalesLiveMapPolicies.branchLocationCacheTtl,
            );
 
-  static const int bridgeTimeoutMs = SalesLiveMapPolicies.bridgeTimeoutMs;
+  static int get bridgeTimeoutMs => SalesLiveMapPolicies.bridgeTimeoutMs;
   static const int geolocationMaxConcurrency =
       SalesLiveMapPolicies.geolocationMaxConcurrency;
   static const int primaryCompanyCode = SalesLiveMapPolicies.primaryCompanyCode;
@@ -178,19 +179,20 @@ class LoadSalesLiveMapUseCase {
           ),
         },
       );
-      final diskPartial = await _mapReport(
+      await for (final diskPartial in _mapReportEmissions(
         null,
         catalogResult: cachedCatalogPage,
         filter: filter,
         refreshedAt: now,
         cancelToken: cancelToken,
         salesDataPending: true,
-      );
-      if (diskPartial.result.cancelled) {
+      )) {
+        if (diskPartial.result.cancelled) {
+          yield diskPartial.result;
+          return;
+        }
         yield diskPartial.result;
-        return;
       }
-      yield diskPartial.result;
       if (cancelToken?.isCancelled ?? false) {
         yield _cancelledResult(refreshedAt: now);
         return;
@@ -297,7 +299,7 @@ class LoadSalesLiveMapUseCase {
     }
 
     if (catalogPage != null && cachedCatalogPage == null) {
-      final partialMapped = await _mapReport(
+      await for (final partialMapped in _mapReportEmissions(
         null,
         catalogResult: catalogPage,
         catalogFailure: catalogResult.exceptionOrNull(),
@@ -305,12 +307,13 @@ class LoadSalesLiveMapUseCase {
         refreshedAt: now,
         cancelToken: cancelToken,
         salesDataPending: true,
-      );
-      if (partialMapped.result.cancelled) {
+      )) {
+        if (partialMapped.result.cancelled) {
+          yield partialMapped.result;
+          return;
+        }
         yield partialMapped.result;
-        return;
       }
-      yield partialMapped.result;
     }
 
     final salesResult = await salesFuture;
@@ -384,7 +387,8 @@ class LoadSalesLiveMapUseCase {
       return;
     }
 
-    final mapped = await _mapReport(
+    _SalesLiveMapMappedResult? mapped;
+    await for (final emission in _mapReportEmissions(
       salesReport,
       catalogResult: catalogPage,
       salesFailure: salesResult.exceptionOrNull(),
@@ -393,9 +397,18 @@ class LoadSalesLiveMapUseCase {
       refreshedAt: now,
       cancelToken: cancelToken,
       allowPartialGeoReuse: true,
+    )) {
+      mapped = emission;
+      if (emission.result.cancelled) {
+        yield emission.result;
+        return;
+      }
+      yield emission.result;
+    }
+    mapped ??= _SalesLiveMapMappedResult(
+      result: _cancelledResult(refreshedAt: now),
     );
     if (mapped.result.cancelled) {
-      yield mapped.result;
       return;
     }
     final metricEvent = SalesLiveMapRefreshMetricEvent(
@@ -435,7 +448,6 @@ class LoadSalesLiveMapUseCase {
         'queriedAgentCount': mapped.result.queriedAgentCount,
       },
     );
-    yield mapped.result;
   }
 
   SalesLiveMapCatalogScope _catalogScope({
@@ -461,7 +473,7 @@ class LoadSalesLiveMapUseCase {
     );
   }
 
-  Future<_SalesLiveMapMappedResult> _mapReport(
+  Stream<_SalesLiveMapMappedResult> _mapReportEmissions(
     AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow>?
     salesReport, {
     required SalesLiveMapFilter filter,
@@ -472,21 +484,23 @@ class LoadSalesLiveMapUseCase {
     SalesLiveMapLoadCancelToken? cancelToken,
     bool salesDataPending = false,
     bool allowPartialGeoReuse = false,
-  }) async {
+  }) async* {
     final mapStopwatch = _diagnosticsLogger.startTraceStopwatch();
     if (cancelToken?.isCancelled ?? false) {
-      return _SalesLiveMapMappedResult(
+      yield _SalesLiveMapMappedResult(
         result: _cancelledResult(refreshedAt: refreshedAt),
       );
+      return;
     }
     final aggregateStopwatch = _diagnosticsLogger.startTraceStopwatch();
     final catalogReport = catalogResult?.report;
     final AgentQueryExecutionReport<dynamic>? baseReport =
         catalogReport ?? salesReport;
     if (baseReport == null) {
-      return _SalesLiveMapMappedResult(
+      yield _SalesLiveMapMappedResult(
         result: SalesLiveMapResultBuilder.empty(refreshedAt: refreshedAt),
       );
+      return;
     }
     final successfulParticipants = baseReport.participants
         .where((participant) => participant.isSuccess)
@@ -581,22 +595,71 @@ class LoadSalesLiveMapUseCase {
       },
     );
     if (cancelToken?.isCancelled ?? false) {
-      return _SalesLiveMapMappedResult(
+      yield _SalesLiveMapMappedResult(
         result: _cancelledResult(refreshedAt: refreshedAt),
       );
+      return;
     }
-    final geolocationStopwatch = _diagnosticsLogger.startTraceStopwatch();
+
+    var geoDurationMs = 0;
+    final sqlGeolocationStopwatch = _diagnosticsLogger.startTraceStopwatch();
+    final sqlGeolocation = await _geolocator.resolveSqlMunicipalityPoints(
+      visibleAggregates,
+      refreshedAt: refreshedAt,
+      cancelToken: cancelToken,
+    );
+    geoDurationMs += sqlGeolocationStopwatch?.elapsedMilliseconds ?? 0;
+    if (sqlGeolocation.cancelled) {
+      yield _SalesLiveMapMappedResult(
+        result: _cancelledResult(refreshedAt: refreshedAt),
+      );
+      return;
+    }
+    _diagnosticsLogger.trace(
+      'Sales live map SQL municipality geolocation completed',
+      <String, Object?>{
+        'elapsedMs': sqlGeolocationStopwatch?.elapsedMilliseconds,
+        'inputBranchCount': visibleAggregates.length,
+        'pointCount': sqlGeolocation.points.length,
+        'cacheHitCount': sqlGeolocation.cacheHitCount,
+        'cacheMissCount': sqlGeolocation.cacheMissCount,
+      },
+    );
+    yield _mappedResultFromGeolocation(
+      geolocation: sqlGeolocation,
+      mapStopwatch: mapStopwatch,
+      geoDurationMs: geoDurationMs,
+      branchOptions: branchOptions,
+      visibleAggregates: visibleAggregates,
+      baseReport: baseReport,
+      salesReport: salesReport,
+      agentDiagnostics: agentDiagnostics,
+      failedAgentCount: failedAgentCount,
+      salesBranchCount: salesBranchCount,
+      salesPendingBranchCount: salesPendingBranchCount,
+      salesUnavailableBranchCount: salesUnavailableBranchCount,
+      noSalesBranchCount: noSalesBranchCount,
+      zeroedBranchCount: zeroedBranchCount,
+      salesDataPending: salesDataPending,
+      failedCatalogAgentCount: failedCatalogAgentCount,
+      failedSalesAgentCount: failedSalesAgentCount,
+      refreshedAt: refreshedAt,
+    );
+
+    final fullGeolocationStopwatch = _diagnosticsLogger.startTraceStopwatch();
     final geolocation = await _geolocator.resolveBranchPoints(
       visibleAggregates,
       refreshedAt: refreshedAt,
       cancelToken: cancelToken,
       allowPartialGeoReuse: allowPartialGeoReuse,
     );
+    geoDurationMs += fullGeolocationStopwatch?.elapsedMilliseconds ?? 0;
     final points = geolocation.points;
     if (geolocation.cancelled) {
-      return _SalesLiveMapMappedResult(
+      yield _SalesLiveMapMappedResult(
         result: _cancelledResult(refreshedAt: refreshedAt),
       );
+      return;
     }
     if (salesDataPending) {
       _geolocator.recordPartialGeoSnapshot(
@@ -607,7 +670,7 @@ class LoadSalesLiveMapUseCase {
     _diagnosticsLogger.trace(
       'Sales live map branch geolocation completed',
       <String, Object?>{
-        'elapsedMs': geolocationStopwatch?.elapsedMilliseconds,
+        'elapsedMs': fullGeolocationStopwatch?.elapsedMilliseconds,
         'inputBranchCount': visibleAggregates.length,
         'pointCount': points.length,
         'cacheHitCount': geolocation.cacheHitCount,
@@ -618,6 +681,56 @@ class LoadSalesLiveMapUseCase {
         'partialGeoReuseCount': geolocation.partialGeoReuseCount,
       },
     );
+    yield _mappedResultFromGeolocation(
+      geolocation: geolocation,
+      mapStopwatch: mapStopwatch,
+      geoDurationMs: geoDurationMs,
+      branchOptions: branchOptions,
+      visibleAggregates: visibleAggregates,
+      baseReport: baseReport,
+      salesReport: salesReport,
+      agentDiagnostics: agentDiagnostics,
+      failedAgentCount: failedAgentCount,
+      salesBranchCount: salesBranchCount,
+      salesPendingBranchCount: salesPendingBranchCount,
+      salesUnavailableBranchCount: salesUnavailableBranchCount,
+      noSalesBranchCount: noSalesBranchCount,
+      zeroedBranchCount: zeroedBranchCount,
+      salesDataPending: salesDataPending,
+      failedCatalogAgentCount: failedCatalogAgentCount,
+      failedSalesAgentCount: failedSalesAgentCount,
+      refreshedAt: refreshedAt,
+    );
+  }
+
+  _SalesLiveMapMappedResult _mappedResultFromGeolocation({
+    required SalesLiveMapGeolocationResult geolocation,
+    required Stopwatch? mapStopwatch,
+    required int geoDurationMs,
+    required List<SalesLiveMapBranchOption> branchOptions,
+    required List<SalesLiveMapBranchAggregate> visibleAggregates,
+    required AgentQueryExecutionReport<dynamic> baseReport,
+    required AgentQueryExecutionReport<
+      ResumoTotalVendasMunicipioFilialPeriodoRow
+    >?
+    salesReport,
+    required ({
+      int salesAgentCount,
+      List<SalesLiveMapAgentOption> noSalesAgentOptions,
+    })
+    agentDiagnostics,
+    required int failedAgentCount,
+    required int salesBranchCount,
+    required int salesPendingBranchCount,
+    required int salesUnavailableBranchCount,
+    required int noSalesBranchCount,
+    required int zeroedBranchCount,
+    required bool salesDataPending,
+    required int failedCatalogAgentCount,
+    required int failedSalesAgentCount,
+    required DateTime refreshedAt,
+  }) {
+    final points = geolocation.points;
     final locationDiagnostics = SalesLiveMapLocationDiagnostics.fromPoints(
       points: points,
       totalBranchCount: visibleAggregates.length,
@@ -630,7 +743,6 @@ class LoadSalesLiveMapUseCase {
           visibleAggregates: visibleAggregates,
           points: points,
         );
-
     final loadFailed = baseReport.requiresClientTokenSetup;
     return _SalesLiveMapMappedResult(
       result: SalesLiveMapLoadResult(
@@ -678,7 +790,7 @@ class LoadSalesLiveMapUseCase {
         partialGeoReuseCount: geolocation.partialGeoReuseCount,
       ),
       mapDurationMs: mapStopwatch?.elapsedMilliseconds ?? 0,
-      geoDurationMs: geolocationStopwatch?.elapsedMilliseconds ?? 0,
+      geoDurationMs: geoDurationMs,
     );
   }
 

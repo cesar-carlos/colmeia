@@ -31,7 +31,10 @@ class AgentQueryChartFailurePlaceholderContent extends StatelessWidget {
     final failure = loadFailure;
     final technicalBody = failure == null
         ? null
-        : agentQueryFailureDiagnosticBody(failure).trim();
+        : agentQueryFailureTechnicalDetailsBody(
+            failure,
+            l10n: AppLocalizations.of(context),
+          ).trim();
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: verticalPadding),

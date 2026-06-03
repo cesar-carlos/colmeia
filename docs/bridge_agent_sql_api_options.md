@@ -26,7 +26,9 @@ top-level body:
 
 - `agentId` is required.
 - `command` can be a single JSON-RPC object on REST/`agents:command`.
-- REST/`agents:command` may support JSON-RPC batch arrays; relay does not.
+- REST/`agents:command` may support JSON-RPC batch arrays. Relay unary accepts
+  one RPC per `relay:rpc.request`; multi-RPC relay batch requires
+  `SOCKET_RELAY_BATCH_ENABLED` on hub and client (see below).
 - Relay sends one JSON-RPC command inside the PayloadFrame for
   `relay:rpc.request`. Do not wrap it in the REST top-level body; the decoded
   frame starts at `{ "jsonrpc": "2.0", "method": "...", "id": ..., "params": ... }`.
@@ -99,7 +101,32 @@ product change.
 |-----------|--------------|------------------|
 | `sql.executeBatch` | Multiple `commands[]`, each with its own `params`; optional `max_parallel_read_only_batch_items` for read-only parallelism (see `plug_server/docs/snippets/agent_command_performance_options.ts`). | Main batch runs **forma pagamento** + **per-user** resumo (`OverviewBatchLoader`); section batch runs monthly/weekday/daily/etc. Filter-options and moving-average screens batch independent `sql.execute` calls where the hub allows read-only batching. |
 | `multi_result` | Single `sql.execute`, one SQL string with multiple statements; **cannot** be combined with named `params` or pagination (`plug_server/docs/api_rest_bridge.md`). | **Not used** for overview (all resumo queries use `:named` binds). |
-| JSON-RPC `command: []` | Up to 32 independent RPC objects in one REST body. | Not used for overview batch; relay intentionally accepts a single correlatable RPC per frame. |
+| JSON-RPC `command: []` | Up to 32 independent RPC objects in one REST body. | Not used for overview batch; relay unary still uses one RPC per `relay:rpc.request` unless relay batch is enabled (below). |
+
+## Relay batch vs `SOCKET_BATCH_ENABLED`
+
+Two different batch mechanisms apply on socket builds. Do not conflate them.
+
+| Mechanism | Env flag | Transport event | What gets batched |
+| --- | --- | --- | --- |
+| **`agents:command` JSON-RPC batch** | `SOCKET_BATCH_ENABLED` (default `true` in bundled `default.env`) | `agents:command` with `command: [rpc, …]` (max 32) | Independent `sql.execute` / other JSON-RPC objects addressed to the **same** `agentId` within the coordinator window (`SOCKET_BATCH_WINDOW_MS`, default 8 ms). Implemented by `AgentCommandBatchCoordinator`. Does **not** apply to `useRelay: true` SQL. |
+| **Relay JSON-RPC batch** | `SOCKET_RELAY_BATCH_ENABLED` (default `false`) | `relay:rpc.request.batch` (hub v1 shipped **2026-05-28**, ADR 0008) | Multiple JSON-RPC commands in one relay emit per conversation. Implemented by `RelayBatchCommandCoordinator` + `RelayCommandDispatcherImpl.sendBatch`. Gated by `RelayBatchProtocolGuard` when `itemCount > 1`. |
+
+**When to use which**
+
+- Overview and semantic `sql.executeBatch` (`commands[]` inside one RPC) are
+  unchanged — neither flag replaces `sql.executeBatch`.
+- Cross-agent fan-out over **relay** benefits from `SOCKET_RELAY_BATCH_ENABLED`
+  once hub staging validates batch envelopes (see
+  [`docs/server_adjustments/relay_rpc_batch_protocol.md`](server_adjustments/relay_rpc_batch_protocol.md)).
+- Non-relay socket SQL that still goes through `agents:command` can use
+  `SOCKET_BATCH_ENABLED` without touching relay batch.
+- REST transport ignores both socket batch flags; REST may still send JSON-RPC
+  batch arrays on `POST /api/v1/agents/commands` per hub limits.
+
+**v1 hub limitations (relay batch):** envelope-level `requestServerTimings` and
+`fastPath` are accepted in schema but not propagated per batch item; see
+`plug_server/docs/adrs/0008-relay-batch-protocol.md`.
 
 ## `payloadFrameCompression`
 
@@ -137,6 +164,11 @@ Allowed values:
     comparator before increasing further.
   - `AGENT_SQL_REST_MAX_INFLIGHT_PER_AGENT` defaults to `8` on REST (per-agent
     cap on concurrent `POST .../agents/commands`); set `0` to disable.
+  - Hub-mirrored opt-ins (default `false` on Colmeia): `SOCKET_RELAY_BATCH_ENABLED`,
+    `SOCKET_RELAY_FAST_PATH_ENABLED`, `SOCKET_REQUEST_SERVER_TIMINGS_ENABLED`.
+    See [`plug_server_docs_index_for_colmeia.md`](plug_server_docs_index_for_colmeia.md)
+    ("Colmeia ↔ hub feature flags" and **Staging validation checklist**).
+    Committed staging overlay (no secrets): `assets/env/staging.env`.
 - **SQL cache counters (diagnostics):** `CachingAgentQueriesRepository` exposes
   `cacheHits`, `cacheMisses`, `batchCacheHits`, `batchCacheMisses`, and
   `cacheSize` for tests and ad-hoc inspection. Production observability should

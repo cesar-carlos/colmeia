@@ -491,19 +491,28 @@ Duration? appFailureRetryAfter(AppFailure failure) {
 ///
 /// 1. The `Retry-After` HTTP header (RFC 7231 — either delta-seconds or
 ///    HTTP-date).
-/// 2. JSON-RPC `error.data.retry_after_ms` propagated by the hub for the
+/// 2. `RateLimit-Reset` / `X-RateLimit-Reset` when `Retry-After` is absent
+///    (delta-seconds, HTTP-date, or Unix epoch seconds).
+/// 3. JSON-RPC `error.data.retry_after_ms` propagated by the hub for the
 ///    `-32013` rate-limit family (e.g. `client_token.getPolicy`).
-/// 3. JSON-RPC `error.data.reset_at` (HTTP-date or epoch seconds).
+/// 4. JSON-RPC `error.data.reset_at` (HTTP-date or epoch seconds).
 ///
 /// Returns `null` when the response did not carry a hint.
 Duration? _extractRetryAfterFromDio(DioException error) {
-  final headerValue = _firstHeaderValue(
-    error.response?.headers.map,
-    'retry-after',
+  final headers = error.response?.headers.map;
+  final headerHint = _parseRetryAfterHeader(
+    _firstHeaderValue(headers, 'retry-after'),
   );
-  final headerHint = _parseRetryAfterHeader(headerValue);
   if (headerHint != null) {
     return headerHint;
+  }
+  for (final name in _rateLimitResetHeaderNames) {
+    final resetHint = _parseRateLimitResetHeader(
+      _firstHeaderValue(headers, name),
+    );
+    if (resetHint != null) {
+      return resetHint;
+    }
   }
   final responseData = error.response?.data;
   if (responseData is Map) {
@@ -525,6 +534,40 @@ Duration? _extractRetryAfterFromDio(DioException error) {
     }
   }
   return null;
+}
+
+const _rateLimitResetHeaderNames = <String>[
+  'ratelimit-reset',
+  'x-ratelimit-reset',
+  'rate-limit-reset',
+];
+
+/// Parses rate-limit reset headers when [Retry-After] is missing.
+Duration? _parseRateLimitResetHeader(String? raw) {
+  if (raw == null) {
+    return null;
+  }
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) {
+    return null;
+  }
+  final asInt = int.tryParse(trimmed);
+  if (asInt != null) {
+    if (asInt <= 0) {
+      return Duration.zero;
+    }
+    // Values >= 1e9 are treated as Unix epoch seconds (common on REST 429).
+    if (asInt >= 1000000000) {
+      final resetAt = DateTime.fromMillisecondsSinceEpoch(asInt * 1000, isUtc: true);
+      final delta = resetAt.difference(DateTime.now().toUtc());
+      if (delta.isNegative) {
+        return Duration.zero;
+      }
+      return delta;
+    }
+    return Duration(seconds: asInt);
+  }
+  return _parseRetryAfterHeader(trimmed);
 }
 
 String? _firstHeaderValue(

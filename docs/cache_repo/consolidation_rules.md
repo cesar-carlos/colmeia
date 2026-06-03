@@ -22,14 +22,17 @@ Queries that return one row set for the whole `[dataVendaInicio, dataVendaFim]` 
 
 Until then, catalog marks these as **hybrid / later**.
 
-### Derived series
+### Weekday and lucratividade period facts
 
-**Weekday** charts (`resumoParcelasDiaSemana`, `resumoParcelasDiaSemanaUsuario`) are aggregations over a period. Prefer:
+**Weekday** (`resumoParcelasDiaSemana`) and **lucratividade period**
+(`resumoProdutoVendaLucratividade`) use `persistClosedBuckets` in
+[consolidation_catalog.dart](../../lib/features/agent_queries/domain/cache/consolidation_catalog.dart):
+closed buckets are written by their canonical writer keys; open buckets stay
+live SQL or in-memory for the session.
 
-- compute from cached daily facts when available, or
-- run live SQL when the filter includes open days.
-
-Do **not** persist weekday SQL output as canonical facts (avoids overlapping with daily store).
+**Weekday-by-user** (`resumoParcelasDiaSemanaUsuario`) remains `derivedOnly` —
+not persisted as canonical facts. Prefer computing from cached daily facts when
+available, or live SQL when the filter includes open days.
 
 ## Catalog (initial)
 
@@ -40,9 +43,9 @@ Do **not** persist weekday SQL output as canonical facts (avoids overlapping wit
 | `resumoProdutoVendaLucratividadeMensal` | `lucratividadeMensal` | `yyyy-MM` | month &lt; current | Yes | Later |
 | `resumoParcelaFormaPagamentoV2` | `paymentPeriod` | period | hybrid | Later | Derive or month blob |
 | `resumoParcelaPorUsuario` | `userPeriod` | period | hybrid | Later | Same |
-| `resumoParcelasDiaSemana` | `weekdayPeriod` | — | derived | No | Derived |
+| `resumoParcelasDiaSemana` | `weekdayPeriod` | period | open if range includes today | Yes (closed buckets) | Active |
 | `resumoParcelasDiaSemanaUsuario` | `weekdayUserPeriod` | — | derived | No | Derived |
-| `resumoProdutoVendaLucratividade` | `lucratividadePeriod` | period | open if range includes today | Optional | Later |
+| `resumoProdutoVendaLucratividade` | `lucratividadePeriod` | period | open if range includes today | Yes (closed buckets) | Active |
 | Catalog / options | — | — | volatile | No | Never |
 
 Canonical writers (enforced at store write):
@@ -51,6 +54,8 @@ Canonical writers (enforced at store write):
 | ---------- | ---------------------- |
 | `dailySales` | `resumoTotalDiarioVendas` |
 | `monthlyParcels` | `resumoParcelasMensal` |
+| `weekdayPeriod` | `resumoParcelasDiaSemana` |
+| `lucratividadePeriod` | `resumoProdutoVendaLucratividade` |
 | `lucratividadeMensal` | `resumoProdutoVendaLucratividadeMensal` |
 
 ## Filter → buckets
@@ -92,6 +97,6 @@ Invalid JSON or empty payload on read evicts the key (same as stale schema versi
 
 ## Out of scope (v1)
 
-- Unifying all overview sections (weekday, lucratividade, payment resumo) into the facts store — overview remains hybrid facts + SQL batch for some sections.
+- Unifying all overview sections (payment resumo, weekday-by-user) into the facts store — overview remains hybrid facts + SQL batch for sections without a catalog writer.
 - Business-day clock aligned with ERP timezone — bucket closure uses device local calendar; see [Timezone](#timezone) above.
 - Global mutex between prefetch and interactive load — mitigated by user invalidation on `forceRefresh` and no prefetch on that policy.

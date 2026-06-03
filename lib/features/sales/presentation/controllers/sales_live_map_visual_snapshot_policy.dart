@@ -1,3 +1,5 @@
+import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/presentation/mappers/sales_live_map_chart_mapper.dart';
 
@@ -71,7 +73,20 @@ abstract final class SalesLiveMapVisualSnapshotPolicy {
     return false;
   }
 
+  /// True when [failure] is a bridge transport timeout (refresh should keep
+  /// the last good map snapshot and surface the error as a banner only).
+  static bool isTransportTimeoutFailure(AppFailure? failure) {
+    if (failure == null) {
+      return false;
+    }
+    return failure.context[AgentSqlRpcFailureUiKey.field] ==
+        AgentSqlRpcFailureUiKey.transportTimeout;
+  }
+
   static bool _shouldUseAsSnapshot(SalesLiveMapLoadResult result) {
+    if (result.loadFailed) {
+      return false;
+    }
     if (!result.salesDataPending) {
       return true;
     }

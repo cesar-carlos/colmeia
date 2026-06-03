@@ -4,6 +4,7 @@ library;
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart' show SessionFailure;
+import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_mensal_repository.dart';
 import 'package:flutter_test/flutter_test.dart' hide group;
@@ -54,6 +55,12 @@ void main() {
 
           result.fold(
             (rows) {
+              expect(
+                rows.length,
+                lessThanOrEqualTo(
+                  AgentQueriesBoundedResultMaxRows.resumoParcelasMensal,
+                ),
+              );
               for (final row in rows) {
                 expect(row.ano, greaterThan(1900));
                 expect(row.mes, inInclusiveRange(1, 12));

@@ -33,15 +33,24 @@ abstract final class ConsolidationCatalog {
           storageMode: ConsolidationStorageMode.persistClosedBuckets,
           canonicalWriter: AgentQueryKey.resumoTotalDiarioVendas,
         ),
+        AgentQueryFactKind.branchMunicipalityPeriodSales: const _CatalogEntry(
+          storageMode: ConsolidationStorageMode.persistClosedBuckets,
+          canonicalWriter: AgentQueryKey.resumoTotalVendasMunicipioFilialPeriodo,
+        ),
         AgentQueryFactKind.monthlyParcels: const _CatalogEntry(
           storageMode: ConsolidationStorageMode.persistClosedBuckets,
           canonicalWriter: AgentQueryKey.resumoParcelasMensal,
         ),
         AgentQueryFactKind.weekdayPeriod: const _CatalogEntry(
-          storageMode: ConsolidationStorageMode.derivedOnly,
+          storageMode: ConsolidationStorageMode.persistClosedBuckets,
+          canonicalWriter: AgentQueryKey.resumoParcelasDiaSemana,
         ),
         AgentQueryFactKind.weekdayUserPeriod: const _CatalogEntry(
           storageMode: ConsolidationStorageMode.derivedOnly,
+        ),
+        AgentQueryFactKind.lucratividadePeriod: const _CatalogEntry(
+          storageMode: ConsolidationStorageMode.persistClosedBuckets,
+          canonicalWriter: AgentQueryKey.resumoProdutoVendaLucratividade,
         ),
       };
 }

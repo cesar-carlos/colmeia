@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
-import 'package:colmeia/features/agent_queries/domain/cache/agent_query_facts_key_prefix.dart';
+import 'package:colmeia/features/agent_queries/application/sync/agent_query_facts_prefetch_coordinator.dart';
+import 'package:colmeia/features/agent_queries/domain/cache/agent_query_fact_kind.dart';
 import 'package:colmeia/features/agent_queries/domain/cache/agent_query_facts_store.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
@@ -61,15 +63,18 @@ class OverviewRepositoryImpl implements OverviewRepository {
   OverviewRepositoryImpl({
     required OverviewBatchLoader batchLoader,
     AgentQueryFactsStore? factsStore,
+    AgentQueryFactsPrefetchCoordinator? factsPrefetchCoordinator,
     DateTime Function()? now,
     OverviewBatchAssembler assembler = const OverviewBatchAssembler(),
   }) : _batchLoader = batchLoader,
        _factsStore = factsStore,
+       _factsPrefetchCoordinator = factsPrefetchCoordinator,
        _now = now ?? DateTime.now,
        _assembler = assembler;
 
   final OverviewBatchLoader _batchLoader;
   final AgentQueryFactsStore? _factsStore;
+  final AgentQueryFactsPrefetchCoordinator? _factsPrefetchCoordinator;
   final DateTime Function() _now;
   final OverviewBatchAssembler _assembler;
 
@@ -106,12 +111,13 @@ class OverviewRepositoryImpl implements OverviewRepository {
     AgentQueriesCancelScope? cancelScope,
   }) async {
     AppResult<Overview>? lastResult;
-    await for (final result in loadOverviewProgressively(
+    await for (final result in _loadOverviewProgressivelyBatch(
       userId: userId,
       policy: policy,
       filter: filter,
       rowLabels: rowLabels,
       cancelScope: cancelScope,
+      mergeSqlBatchesPerTarget: true,
     )) {
       final snapshot = result.getOrNull();
       if (snapshot != null) {
@@ -143,6 +149,9 @@ class OverviewRepositoryImpl implements OverviewRepository {
       filter: filter,
       rowLabels: rowLabels,
       cancelScope: cancelScope,
+      mergeSqlBatchesPerTarget:
+          policy == OverviewLoadPolicy.forceRefresh ||
+          AppEnvironment.agentSqlOverviewMergeSqlBatchesPerTarget,
     );
   }
 
@@ -153,6 +162,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     required DashboardFilter filter,
     OverviewLoadLabels? rowLabels,
     AgentQueriesCancelScope? cancelScope,
+    bool mergeSqlBatchesPerTarget = false,
   }) async* {
     final resolvedRowLabels = rowLabels ?? OverviewLoadLabels.englishFallback;
     final period = _buildPeriod(filter);
@@ -176,10 +186,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     final cachePolicy = mapOverviewLoadPolicyToAgentQuery(policy);
 
     if (policy == OverviewLoadPolicy.forceRefresh) {
-      final factsStore = _factsStore;
-      if (factsStore != null) {
-        await factsStore.removeMatching(AgentQueryFactsKeyPrefix.forUser(userId));
-      }
+      await _invalidateOverviewCachedFacts(userId: userId);
     }
 
     try {
@@ -195,6 +202,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
         executionStrategy: executionStrategy,
         cancelScope: cancelScope,
         cachePolicy: cachePolicy,
+        mergeSqlBatchesPerTarget: mergeSqlBatchesPerTarget,
       )) {
         final loaded = loadResult.getOrNull();
         if (loaded == null) {
@@ -387,6 +395,15 @@ class OverviewRepositoryImpl implements OverviewRepository {
             overview: overview,
             batchResults: batchResults,
             period: period,
+          );
+          _scheduleFactsPrefetch(
+            userId: userId,
+            targets: loaded.plan.plannedTargets,
+            dailyFilter: dailyTotalFilter,
+            monthlyFilter: mensalFilter,
+            hubPresenceOnlineAgentIdsSnapshot:
+                loaded.resolution.hubPresenceOnlineAgentIdsSnapshot,
+            bridgeTimeoutMs: loaded.plan.bridgeTimeoutMs,
           );
         }
 
@@ -958,6 +975,45 @@ class OverviewRepositoryImpl implements OverviewRepository {
     return failure is ValidationFailure &&
         failure.context[OverviewFailureUiKey.field] ==
             OverviewFailureUiKey.noApprovedAgents;
+  }
+
+  Future<void> _invalidateOverviewCachedFacts({required String userId}) async {
+    final factsStore = _factsStore;
+    if (factsStore == null) {
+      return;
+    }
+    await factsStore.removeMatchingFactKind(
+      userId: userId,
+      factKind: AgentQueryFactKind.dailySales,
+    );
+    await factsStore.removeMatchingFactKind(
+      userId: userId,
+      factKind: AgentQueryFactKind.monthlyParcels,
+    );
+  }
+
+  void _scheduleFactsPrefetch({
+    required String userId,
+    required List<AgentQueryTarget> targets,
+    required ResumoTotalDiarioVendasFilter dailyFilter,
+    required ResumoParcelasMensalFilter monthlyFilter,
+    required Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    required int bridgeTimeoutMs,
+  }) {
+    final coordinator = _factsPrefetchCoordinator;
+    if (coordinator == null || targets.isEmpty) {
+      return;
+    }
+    unawaited(
+      coordinator.prefetchForPlannedTargets(
+        userId: userId,
+        targets: targets,
+        dailyFilter: dailyFilter,
+        monthlyFilter: monthlyFilter,
+        hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+        bridgeTimeoutMs: bridgeTimeoutMs,
+      ),
+    );
   }
 
   _OverviewPeriod _buildPeriod(DashboardFilter filter) {

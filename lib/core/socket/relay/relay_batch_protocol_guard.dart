@@ -1,8 +1,9 @@
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 
-/// Guard for future hub relay batch support. Today the relay channel accepts
-/// exactly one JSON-RPC command per `relay:rpc.request`.
+/// Guard for relay JSON-RPC batch when [AppEnvironment.socketRelayBatchEnabled]
+/// is false. Hub v1 shipped 2026-05-28; with the flag off, multi-item batch
+/// attempts are rejected before emit.
 abstract final class RelayBatchProtocolGuard {
   static void assertBatchNotRequested({required int itemCount}) {
     if (itemCount <= 1) {

@@ -2,7 +2,6 @@
 ///
 /// TTL and invalidation remain owned by repositories and use cases.
 abstract final class AppKvCacheKeyPrefixes {
-  static const String dashboardOverview = 'dashboard_overview_';
   static const String clientAgentsCatalog = 'client_agents_catalog_';
   static const String clientAgentsCatalogAgent = 'client_agents_catalog_agent_';
   static const String clientAgentsApproved = 'client_agents_approved_';

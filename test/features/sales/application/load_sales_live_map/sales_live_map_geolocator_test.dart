@@ -30,6 +30,35 @@ void main() {
     );
   });
 
+  test(
+    'resolveSqlMunicipalityPoints uses the SQL municipality resolver path',
+    () async {
+      final refreshedAt = DateTime(2026, 5, 27, 12);
+      final aggregate = _aggregate(id: 'agent-1-1-1');
+      pointResolver.resolved[aggregate.id] = SalesLiveMapResolvedPoint(
+        point: SalesLiveMapPoint(
+          id: aggregate.id,
+          name: aggregate.name,
+          uf: 'MT',
+          latitude: -15.60,
+          longitude: -56.10,
+          salesAmount: 0,
+          salesCount: 0,
+          city: 'Cuiaba',
+        ),
+      );
+
+      final outcome = await geolocator.resolveSqlMunicipalityPoints(
+        <SalesLiveMapBranchAggregate>[aggregate],
+        refreshedAt: refreshedAt,
+      );
+
+      expect(outcome.points, hasLength(1));
+      expect(pointResolver.sqlMunicipalityResolveCalls, 1);
+      expect(pointResolver.resolveCalls, 0);
+    },
+  );
+
   test('returns an empty result when there are no aggregates to resolve', () async {
     final outcome = await geolocator.resolveBranchPoints(
       const <SalesLiveMapBranchAggregate>[],
@@ -227,6 +256,7 @@ class _FakePointResolver implements SalesLiveMapPointResolver {
   final Map<String, SalesLiveMapResolvedPoint> resolved =
       <String, SalesLiveMapResolvedPoint>{};
   int resolveCalls = 0;
+  int sqlMunicipalityResolveCalls = 0;
 
   @override
   Future<List<SalesLiveMapResolvedPoint>> resolveAllWithDetails(
@@ -234,6 +264,18 @@ class _FakePointResolver implements SalesLiveMapPointResolver {
     int maxConcurrent = 1,
   }) async {
     resolveCalls += 1;
+    return sources
+        .map((source) => resolved[source.id])
+        .whereType<SalesLiveMapResolvedPoint>()
+        .toList(growable: false);
+  }
+
+  @override
+  Future<List<SalesLiveMapResolvedPoint>> resolveAllSqlMunicipalityWithDetails(
+    Iterable<SalesLiveMapPointSource> sources, {
+    int maxConcurrent = 1,
+  }) async {
+    sqlMunicipalityResolveCalls += 1;
     return sources
         .map((source) => resolved[source.id])
         .whereType<SalesLiveMapResolvedPoint>()

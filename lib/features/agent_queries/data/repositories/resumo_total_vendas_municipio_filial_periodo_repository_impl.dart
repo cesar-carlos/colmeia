@@ -7,6 +7,7 @@ import 'package:colmeia/features/agent_queries/data/agent_queries_warn_if_sql_ro
 import 'package:colmeia/features/agent_queries/data/models/resumo_total_vendas_municipio_filial_periodo_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_total_vendas_municipio_filial_periodo_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repository_execution.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_loaded_rows.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
@@ -42,6 +43,7 @@ class ResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
     AgentQueriesCancelScope? cancelScope,
+    AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {

@@ -1,4 +1,8 @@
+import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_diagnostic.dart';
+import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
+import 'package:colmeia/features/overview/domain/overview_failure_ui_key.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 
@@ -7,7 +11,6 @@ import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 enum OverviewAlertKind {
   loadError,
   setupRequired,
-  staleCache,
   missingClientToken,
   agentsOffline,
   partialAgentQueries,
@@ -87,17 +90,24 @@ List<OverviewAlertBannerSpec> buildOverviewAlertBannerSpecs({
   required List<String> partialFailureAgentNames,
   required List<String> skippedDueToHubPresenceAgentNames,
   required String? retryCountdownLabel,
+  AppFailure? loadFailure,
 }) {
   final specs = <OverviewAlertBannerSpec>[];
 
   if (errorMessage != null) {
+    final technicalBody = loadFailure != null
+        ? agentQueryFailureTechnicalDetailsBody(
+            loadFailure,
+            l10n: l10n,
+          )
+        : errorDiagnosticBody;
     specs.add(
       OverviewAlertBannerSpec(
         kind: OverviewAlertKind.loadError,
         tone: AppInlinePanelTone.error,
-        title: l10n.overviewLoadErrorTitle,
+        title: _overviewLoadErrorTitle(l10n, loadFailure),
         message: errorMessage,
-        detailsBody: _composeLoadErrorBody(errorMessage, errorDiagnosticBody),
+        detailsBody: _composeLoadErrorBody(errorMessage, technicalBody),
         showRetry: true,
         showManage: true,
         retryDisabledLabel: retryCountdownLabel,
@@ -125,24 +135,6 @@ List<OverviewAlertBannerSpec> buildOverviewAlertBannerSpecs({
               ),
         showManage: true,
         primaryLabel: l10n.overviewHomeManageBranchesAction,
-      ),
-    );
-  }
-
-  if (o != null && o.isStaleCache) {
-    specs.add(
-      OverviewAlertBannerSpec(
-        kind: OverviewAlertKind.staleCache,
-        tone: AppInlinePanelTone.informational,
-        title: l10n.overviewStaleCacheTitle,
-        message: l10n.overviewStaleCacheMessage,
-        detailsBody: _composeStaleCacheBody(
-          l10n,
-          o.hasMissingClientToken,
-          missingTokenAgentNames,
-        ),
-        showRetry: true,
-        showManage: o.hasMissingClientToken,
       ),
     );
   }
@@ -240,30 +232,20 @@ String _composeLoadErrorBody(String message, String? diagnostic) {
   return '$message\n\n$d';
 }
 
+String _overviewLoadErrorTitle(AppLocalizations l10n, AppFailure? loadFailure) {
+  if (loadFailure == null) {
+    return l10n.overviewLoadErrorTitle;
+  }
+  if (loadFailure.context[OverviewFailureUiKey.field] != null) {
+    return l10n.overviewLoadErrorTitle;
+  }
+  return agentQueryFailureTitle(loadFailure, l10n);
+}
+
 String _composeBodyWithAgents(String message, List<String> names) {
   if (names.isEmpty) {
     return message;
   }
   final bullets = names.map((n) => '- $n').join('\n');
   return '$message\n\n$bullets';
-}
-
-String _composeStaleCacheBody(
-  AppLocalizations l10n,
-  bool hasMissingClientToken,
-  List<String> missingTokenAgentNames,
-) {
-  final parts = <String>[
-    l10n.overviewHomeAlertDetailsStaleIntro.trimRight(),
-    l10n.overviewStaleCacheTitle,
-    l10n.overviewStaleCacheMessage,
-  ];
-  if (hasMissingClientToken && missingTokenAgentNames.isNotEmpty) {
-    final bullets = missingTokenAgentNames.map((n) => '- $n').join('\n');
-    parts
-      ..add('')
-      ..add(l10n.dashboardMissingClientTokenTitle)
-      ..add(bullets);
-  }
-  return parts.join('\n');
 }

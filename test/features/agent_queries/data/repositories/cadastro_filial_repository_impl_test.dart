@@ -111,6 +111,35 @@ void main() {
     check(captured.useRelay).isTrue();
   });
 
+  test('map catalog filter uses slim SQL projection', () async {
+    when(
+      () => agentQueriesRepository.executeSql(any()),
+    ).thenAnswer(
+      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+      ),
+    );
+
+    await repository.loadPage(
+      userId: 'user-1',
+      agentId: 'agent-1',
+      filter: const CadastroFilialFilter(mapCatalogProjection: true),
+    );
+
+    final captured =
+        verify(
+              () => agentQueriesRepository.executeSql(captureAny()),
+            ).captured.single
+            as AgentSqlExecuteRequest;
+
+    check(captured.sql).equals(
+      CadastroFilialSql.query(
+        projection: CadastroFilialSqlProjection.mapCatalog,
+      ),
+    );
+    check(captured.sql).not((it) => it.contains('f.CNPJ'));
+  });
+
   test('builds exact selected-branch SQL for one branch', () async {
     when(
       () => agentQueriesRepository.executeSql(any()),

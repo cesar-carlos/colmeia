@@ -255,6 +255,67 @@ void main() {
     });
 
     test(
+      'should use RateLimit-Reset when Retry-After is absent on 429',
+      () {
+        final resetEpoch =
+            DateTime.now().toUtc().add(const Duration(seconds: 30)).millisecondsSinceEpoch ~/
+            1000;
+        final failure = mapToAppFailure(
+          DioException(
+            requestOptions: RequestOptions(path: '/api/v1/agents/commands'),
+            response: Response<Map<String, dynamic>>(
+              requestOptions: RequestOptions(
+                path: '/api/v1/agents/commands',
+              ),
+              statusCode: 429,
+              headers: Headers.fromMap(<String, List<String>>{
+                'RateLimit-Reset': <String>['$resetEpoch'],
+              }),
+              data: <String, dynamic>{'message': 'rate limited'},
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        );
+
+        check(failure).isA<NetworkFailure>();
+        final retryAfter = (failure as NetworkFailure).retryAfter;
+        check(retryAfter).isNotNull();
+        expect(retryAfter!.inSeconds, inInclusiveRange(25, 35));
+      },
+    );
+
+    test(
+      'prefers Retry-After over RateLimit-Reset when both are present',
+      () {
+        final resetEpoch =
+            DateTime.now().toUtc().add(const Duration(minutes: 5)).millisecondsSinceEpoch ~/
+            1000;
+        final failure = mapToAppFailure(
+          DioException(
+            requestOptions: RequestOptions(path: '/api/v1/agents/commands'),
+            response: Response<Map<String, dynamic>>(
+              requestOptions: RequestOptions(
+                path: '/api/v1/agents/commands',
+              ),
+              statusCode: 429,
+              headers: Headers.fromMap(<String, List<String>>{
+                'retry-after': <String>['9'],
+                'RateLimit-Reset': <String>['$resetEpoch'],
+              }),
+              data: <String, dynamic>{'message': 'rate limited'},
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        );
+
+        check(failure).isA<NetworkFailure>();
+        check((failure as NetworkFailure).retryAfter).equals(
+          const Duration(seconds: 9),
+        );
+      },
+    );
+
+    test(
       'should propagate retry_after_ms from JSON-RPC error.data',
       () {
         final failure = mapToAppFailure(

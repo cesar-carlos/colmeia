@@ -5,8 +5,8 @@ abstract final class ResumoParcelasMensalSql {
   /// Monthly parcel summary by company, branch, and calendar month, with
   /// distinct sale counts and net parcel totals after troco allocation.
   ///
-  /// Inner `Detalhe` comes from `ParcelaProdutoVendidoDetalheSql`; extra
-  /// columns exist for future filters.
+  /// Inner `Detalhe` comes from
+  /// `ParcelaProdutoVendidoDetalheSql.selectFromParcelLinesForOverviewAggregate`.
   ///
   /// Optional dimensions are inlined (see [ResumoParcelasSqlDimensionFilters])
   /// for the Agent SQL bridge named-parameter limit.
@@ -41,36 +41,14 @@ abstract final class ResumoParcelasMensalSql {
       SELECT
         CodEmpresa,
         CodFilial,
-        CodProdutoVendido,
         Id,
         Origem,
-        CodOrigem,
         GeraFinanceiro,
         PreVenda,
         CodVendedor,
-        NomeVendedor,
-        CodCliente,
-        NomeCliente,
-        CodGrupoCliente,
-        NomeGrupoCliente,
-        CodMunicipio,
-        NomeMunicipio,
-        UFMunicipio,
-        CodRegiao,
-        NomeRegiao,
         DataVenda,
         YEAR(DataVenda) AS Ano,
         MONTH(DataVenda) AS Mes,
-        DataEmissao,
-        DataVencimento,
-        NumeroDocumento,
-        NomeUsuario,
-        NumeroParcela,
-        AnoDataVenda,
-        MesDataVenda,
-        AnoMesDataVenda,
-        CodFormaPagamento,
-        DescricaoFormaPagamento,
         ValorTrocoParcela,
         ValorParcela
       FROM (
@@ -108,7 +86,7 @@ __RESUMO_PARCELAS_DIMENSION_WHERE__
       codVendedor: codVendedor,
     );
     return _queryHead +
-        ParcelaProdutoVendidoDetalheSql.selectFromParcelLinesThroughJoins +
+        ParcelaProdutoVendidoDetalheSql.selectFromParcelLinesForOverviewAggregate +
         tail;
   }
 }

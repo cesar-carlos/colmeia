@@ -70,16 +70,36 @@ class AppBrazilStoreSalesPointResolver {
   Future<AppBrazilStoreSalesResolvedPoint?> resolveWithDetails(
     AppBrazilStoreSalesPointSource source,
   ) {
-    return _resolveWithDetails(source);
+    return _resolveWithDetails(
+      source,
+      lookupInputsFor: _lookupInputsFor,
+    );
+  }
+
+  /// Resolves coordinates from SQL municipality signals only (IBGE code and
+  /// city/UF). Skips CEP and broader fallbacks so the live map can paint fast
+  /// before the full geolocation pass runs.
+  Future<AppBrazilStoreSalesResolvedPoint?> resolveSqlMunicipalityWithDetails(
+    AppBrazilStoreSalesPointSource source,
+  ) {
+    return _resolveWithDetails(
+      source,
+      lookupInputsFor: _sqlMunicipalityLookupInputsFor,
+    );
   }
 
   Future<AppBrazilStoreSalesResolvedPoint?> _resolveWithDetails(
     AppBrazilStoreSalesPointSource source, {
+    required List<AppLocationLookupInput> Function(
+      AppBrazilStoreSalesPointSource source,
+    )
+    lookupInputsFor,
     Map<String, Future<_ResolvedLocationLookup?>>? locationCache,
   }) async {
     final lookup = await _resolveLocationLookup(
       source,
       locationCache: locationCache,
+      lookupInputsFor: lookupInputsFor,
     );
     if (lookup == null) {
       return null;
@@ -136,9 +156,35 @@ class AppBrazilStoreSalesPointResolver {
     return points;
   }
 
+  Future<List<AppBrazilStoreSalesResolvedPoint>> resolveAllSqlMunicipalityWithDetails(
+    Iterable<AppBrazilStoreSalesPointSource> sources, {
+    int maxConcurrent = 1,
+  }) async {
+    return _resolveAllWithDetails(
+      sources,
+      maxConcurrent: maxConcurrent,
+      lookupInputsFor: _sqlMunicipalityLookupInputsFor,
+    );
+  }
+
   Future<List<AppBrazilStoreSalesResolvedPoint>> resolveAllWithDetails(
     Iterable<AppBrazilStoreSalesPointSource> sources, {
     int maxConcurrent = 1,
+  }) async {
+    return _resolveAllWithDetails(
+      sources,
+      maxConcurrent: maxConcurrent,
+      lookupInputsFor: _lookupInputsFor,
+    );
+  }
+
+  Future<List<AppBrazilStoreSalesResolvedPoint>> _resolveAllWithDetails(
+    Iterable<AppBrazilStoreSalesPointSource> sources, {
+    required int maxConcurrent,
+    required List<AppLocationLookupInput> Function(
+      AppBrazilStoreSalesPointSource source,
+    )
+    lookupInputsFor,
   }) async {
     final sourceList = sources.toList(growable: false);
     if (sourceList.isEmpty) {
@@ -152,6 +198,7 @@ class AppBrazilStoreSalesPointResolver {
         final resolved = await _resolveWithDetails(
           source,
           locationCache: locationCache,
+          lookupInputsFor: lookupInputsFor,
         );
         if (resolved != null) {
           points.add(resolved);
@@ -182,6 +229,7 @@ class AppBrazilStoreSalesPointResolver {
         final resolved = await _resolveWithDetails(
           source,
           locationCache: locationCache,
+          lookupInputsFor: lookupInputsFor,
         );
         if (resolved != null) {
           results[index] = resolved;
@@ -200,9 +248,13 @@ class AppBrazilStoreSalesPointResolver {
 
   Future<_ResolvedLocationLookup?> _resolveLocationLookup(
     AppBrazilStoreSalesPointSource source, {
+    required List<AppLocationLookupInput> Function(
+      AppBrazilStoreSalesPointSource source,
+    )
+    lookupInputsFor,
     Map<String, Future<_ResolvedLocationLookup?>>? locationCache,
   }) async {
-    for (final input in _lookupInputsFor(source)) {
+    for (final input in lookupInputsFor(source)) {
       final cacheKey = _lookupInputCacheKey(input);
       final resolved = cacheKey == null || locationCache == null
           ? await _resolveLookupInput(input)
@@ -247,6 +299,43 @@ class AppBrazilStoreSalesPointResolver {
     }
 
     return AppLocationLookupNormalizer.cacheKeyFor(input);
+  }
+
+  List<AppLocationLookupInput> _sqlMunicipalityLookupInputsFor(
+    AppBrazilStoreSalesPointSource source,
+  ) {
+    final inputs = <AppLocationLookupInput>[];
+    final latitude = source.latitude;
+    final longitude = source.longitude;
+    final uf = AppLocationLookupNormalizer.normalizeUf(source.uf);
+    if (latitude != null &&
+        longitude != null &&
+        uf != null &&
+        AppGeoPoint(latitude: latitude, longitude: longitude).isValid) {
+      inputs.add(
+        AppLocationLookupInput.geoPoint(
+          geoPoint: AppGeoPoint(latitude: latitude, longitude: longitude),
+        ),
+      );
+    }
+
+    final ibgeCode = AppLocationLookupNormalizer.normalizeIbgeMunicipalityCode(
+      source.ibgeMunicipalityCode,
+    );
+    if (ibgeCode != null) {
+      inputs.add(
+        AppLocationLookupInput.ibgeMunicipalityCode(
+          ibgeMunicipalityCode: ibgeCode,
+        ),
+      );
+    }
+
+    final city = AppLocationLookupNormalizer.normalizeCity(source.city);
+    if (city != null && uf != null) {
+      inputs.add(AppLocationLookupInput.cityUf(city: source.city!, uf: uf));
+    }
+
+    return inputs;
   }
 
   List<AppLocationLookupInput> _lookupInputsFor(

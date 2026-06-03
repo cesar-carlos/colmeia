@@ -9,6 +9,37 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   final en = AppLocalizationsEn();
 
+  test('query timeout uses query-specific title and body', () {
+    const failure = RpcFailure(
+      message: 'timeout',
+      userMessage: 'The query took longer than expected.',
+      rpcCode: -32107,
+      retryable: true,
+    );
+    final presentation = AgentQueryFailurePresentation.from(failure, en);
+    check(presentation.title).equals(en.agentSqlFailureTitleQueryTimeout);
+    check(presentation.message).equals(en.agentSqlErrorQueryTimeout);
+    check(presentation.detailsBody).isNotNull().which(
+      (body) => body.contains(en.agentSqlFailureTitleQueryTimeout),
+    );
+  });
+
+  test('transport timeout uses transport-specific title and body', () {
+    const failure = NetworkFailure(
+      message: 'relay timeout',
+      context: <String, Object?>{
+        AgentSqlRpcFailureUiKey.field:
+            AgentSqlRpcFailureUiKey.transportTimeout,
+      },
+    );
+    final presentation = AgentQueryFailurePresentation.from(failure, en);
+    check(presentation.title).equals(en.agentSqlFailureTitleTransportTimeout);
+    check(presentation.message).equals(en.agentSqlErrorTransportTimeout);
+    check(presentation.detailsBody).isNotNull().which(
+      (body) => body.contains(en.agentSqlFailureTitleTransportTimeout),
+    );
+  });
+
   test('rate limit uses informational category and title', () {
     const failure = NetworkFailure(
       message: 'limited',

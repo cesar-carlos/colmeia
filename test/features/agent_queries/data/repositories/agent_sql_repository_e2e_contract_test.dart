@@ -15,7 +15,11 @@ void main() {
             .listSync()
             .whereType<File>()
             .where(
-              (file) => p.basename(file.path).endsWith('_repository_impl.dart'),
+              (file) {
+                final name = p.basename(file.path);
+                return name.endsWith('_repository_impl.dart') ||
+                    name.endsWith('_repository_impl_v2.dart');
+              },
             )
             .where(_isDirectAgentSqlRepository)
             .toList()
@@ -23,9 +27,7 @@ void main() {
 
     final missing = <String>[];
     for (final repositoryFile in repositoryFiles) {
-      final repositoryName = p
-          .basenameWithoutExtension(repositoryFile.path)
-          .replaceFirst(RegExp(r'_impl$'), '');
+      final repositoryName = _repositoryE2eBaseName(repositoryFile.path);
       final expectedE2e = File(
         p.join(
           root,
@@ -58,4 +60,11 @@ bool _isDirectAgentSqlRepository(File file) {
   return source.contains('AgentSqlExecuteRequest(') &&
       (source.contains('AgentSqlRepositoryExecution.execute') ||
           source.contains('.executeSql('));
+}
+
+String _repositoryE2eBaseName(String repositoryPath) {
+  return p
+      .basenameWithoutExtension(repositoryPath)
+      .replaceFirst(RegExp(r'_impl_v2$'), '')
+      .replaceFirst(RegExp(r'_impl$'), '');
 }

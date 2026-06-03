@@ -53,6 +53,24 @@ class SalesLiveMapPointResolverAdapter implements SalesLiveMapPointResolver {
       sources.map(_toSharedSource),
       maxConcurrent: maxConcurrent,
     );
+    return _toResolvedPoints(resolved);
+  }
+
+  @override
+  Future<List<SalesLiveMapResolvedPoint>> resolveAllSqlMunicipalityWithDetails(
+    Iterable<SalesLiveMapPointSource> sources, {
+    int maxConcurrent = 1,
+  }) async {
+    final resolved = await _delegate.resolveAllSqlMunicipalityWithDetails(
+      sources.map(_toSharedSource),
+      maxConcurrent: maxConcurrent,
+    );
+    return _toResolvedPoints(resolved);
+  }
+
+  List<SalesLiveMapResolvedPoint> _toResolvedPoints(
+    List<AppBrazilStoreSalesResolvedPoint> resolved,
+  ) {
     return resolved
         .map(
           (item) => SalesLiveMapResolvedPoint(

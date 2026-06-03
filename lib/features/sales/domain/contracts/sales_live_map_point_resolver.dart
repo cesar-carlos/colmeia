@@ -17,4 +17,10 @@ abstract class SalesLiveMapPointResolver {
     Iterable<SalesLiveMapPointSource> sources, {
     int maxConcurrent = 1,
   });
+
+  /// Fast path: IBGE municipality code and city/UF from SQL only.
+  Future<List<SalesLiveMapResolvedPoint>> resolveAllSqlMunicipalityWithDetails(
+    Iterable<SalesLiveMapPointSource> sources, {
+    int maxConcurrent = 1,
+  });
 }

@@ -6,11 +6,14 @@ import 'package:colmeia/features/agent_queries/data/agent_queries_sql_local_date
 import 'package:colmeia/features/agent_queries/data/models/resumo_produto_venda_lucratividade_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_produto_venda_lucratividade_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repository_execution.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy_extensions.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_produto_venda_lucratividade_repository.dart';
 
@@ -35,6 +38,8 @@ class ResumoProdutoVendaLucratividadeRepositoryImpl
     int? bridgeTimeoutMs,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
+    AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {
@@ -78,6 +83,7 @@ class ResumoProdutoVendaLucratividadeRepositoryImpl
       ),
       useRelay: true,
       relayMode: AgentSqlRelayMode.streaming,
+      skipTransportCache: cachePolicy.bypassTransportCache,
     );
 
     return AgentSqlRepositoryExecution.execute<
@@ -90,6 +96,7 @@ class ResumoProdutoVendaLucratividadeRepositoryImpl
       unexpectedRowsLogMessage: 'Unexpected row shape for $_operation',
       mapExecution: (executionResult) =>
           _mapExecution(executionResult, agentId: agentId.trim()),
+      cancelScope: cancelScope,
     );
   }
 

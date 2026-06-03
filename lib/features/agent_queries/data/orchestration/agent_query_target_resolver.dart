@@ -54,6 +54,23 @@ class AgentQueryTargetResolver
         ),
       );
     }
+
+    final cachedSelection = _resolutionCache.read(
+      userId: userId,
+      selectedAgentIds: normalizedSelectedIds,
+    );
+    if (cachedSelection != null) {
+      stopwatch.stop();
+      _logResolutionSummary(
+        userId: userId,
+        selectedAgentIds: normalizedSelectedIds,
+        resolution: cachedSelection,
+        elapsedMs: stopwatch.elapsedMilliseconds,
+        cacheHit: true,
+      );
+      return Success<AgentQueryTargetResolution, AppFailure>(cachedSelection);
+    }
+
     final baseResult = await _resolveAllApprovedTargets(userId: userId);
     final base = baseResult.getOrNull();
     if (base == null) {
@@ -77,6 +94,11 @@ class AgentQueryTargetResolver
 
     final resolution = _filterResolution(
       base.resolution,
+      selectedAgentIds: normalizedSelectedIds,
+    );
+    _resolutionCache.publish(
+      userId: userId,
+      resolution: resolution,
       selectedAgentIds: normalizedSelectedIds,
     );
     stopwatch.stop();
@@ -196,7 +218,10 @@ class AgentQueryTargetResolver
       skippedDueToHubPresenceTargets: skippedDueToHubPresenceTargets,
       sqlEligibleConsideredTargetCount: sqlEligibleConsideredTargetCount,
     );
-    _resolutionCache.publish(userId: userId, resolution: resolution);
+    _resolutionCache.publish(
+      userId: userId,
+      resolution: resolution,
+    );
     return Success<
       ({AgentQueryTargetResolution resolution, bool cacheHit}),
       AppFailure

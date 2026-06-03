@@ -14,6 +14,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_executi
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_labels.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_mensal_repository.dart';
 import 'package:flutter/foundation.dart';
@@ -53,6 +54,7 @@ class ResumoParcelasMensalRepositoryImpl
     int? bridgeTimeoutMs,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
     AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
   }) async {
     final validationError = filter.validationError();
@@ -110,6 +112,7 @@ class ResumoParcelasMensalRepositoryImpl
         agentId: agentId.trim(),
         filter: filter,
       ),
+      cancelScope: cancelScope,
     );
   }
 

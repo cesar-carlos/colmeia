@@ -76,6 +76,7 @@ class OverviewController extends ChangeNotifier {
   bool _isRefreshing = false;
   String? _errorMessage;
   String? _errorDiagnosticBody;
+  AppFailure? _loadFailure;
   bool _disposed = false;
   Set<OverviewProgressiveSection> _completedOverviewSections =
       const <OverviewProgressiveSection>{};
@@ -142,6 +143,9 @@ class OverviewController extends ChangeNotifier {
   bool get hasContent => _overview != null;
   String? get errorMessage => _errorMessage;
 
+  /// Last full overview load failure for agent-query UX (title, technical body).
+  AppFailure? get loadFailure => _loadFailure;
+
   /// Technical lines for the last full overview load failure (no stack trace).
   String? get errorDiagnosticBody => _errorDiagnosticBody;
   Set<OverviewProgressiveSection> get completedOverviewSections =>
@@ -168,7 +172,7 @@ class OverviewController extends ChangeNotifier {
     _session.resetRequested();
     await _loadOverview(
       userId: userId,
-      policy: OverviewLoadPolicy.forceRefresh,
+      policy: OverviewLoadPolicy.defaultLoad,
       keepContentVisible: _overview != null,
       loadingMode: loadingMode,
       rowLabels: rowLabels ?? OverviewLoadLabels.englishFallback,
@@ -393,6 +397,7 @@ class OverviewController extends ChangeNotifier {
     }
     _errorMessage = null;
     _errorDiagnosticBody = null;
+    _loadFailure = null;
     _notifyListenersIfAlive();
     return (
       signature: signature,
@@ -414,6 +419,7 @@ class OverviewController extends ChangeNotifier {
     _session.loadedSignature = signature;
     _errorMessage = null;
     _errorDiagnosticBody = null;
+    _loadFailure = null;
     AppLogger.info(
       'Overview loaded in controller',
       context: <String, Object?>{
@@ -444,6 +450,7 @@ class OverviewController extends ChangeNotifier {
     armAgentQueryRetryAfterGate(_retryAfterGate, failure);
     final userMessage = failureMessageBuilder(failure);
     _errorMessage = userMessage;
+    _loadFailure = failure;
     _errorDiagnosticBody = overviewAppFailureDiagnosticBody(
       failure,
       localizedUserMessage: userMessage,
@@ -492,6 +499,7 @@ class OverviewController extends ChangeNotifier {
         _completedOverviewSections = snapshot.completedSections;
         _errorMessage = null;
         _errorDiagnosticBody = null;
+        _loadFailure = null;
         if (snapshot.completedSections.contains(
           OverviewProgressiveSection.summary,
         )) {

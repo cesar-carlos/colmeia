@@ -108,6 +108,25 @@ void main() {
       expect(second, isNull);
     });
 
+    test('evicts oldest entries when per-user cap is exceeded', () async {
+      final memory = MemoryAppCacheStore();
+      final store = HiveAgentQueryFactsStore(memory, maxEntriesPerUser: 4);
+      const userId = 'user-cap';
+      final prefix = AgentQueryFactsKeyPrefix.forUser(userId);
+
+      for (var index = 0; index < 6; index++) {
+        await store.writePayload(
+          storageKey: '${prefix}agent1:dailySales:2026-01-0$index',
+          payload: <int>[index],
+          schemaVersion: 1,
+        );
+      }
+
+      expect(await memory.getString('${prefix}agent1:dailySales:2026-01-00'), isNull);
+      expect(await memory.getString('${prefix}agent1:dailySales:2026-01-01'), isNull);
+      expect(await memory.getString('${prefix}agent1:dailySales:2026-01-05'), isNotNull);
+    });
+
     test('removeMatchingFactKind deletes only matching fact kind', () async {
       final memory = MemoryAppCacheStore();
       final store = HiveAgentQueryFactsStore(memory);

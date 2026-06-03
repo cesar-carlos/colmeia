@@ -68,8 +68,11 @@ import 'package:colmeia/features/agent_queries/application/usecases/resolve_cada
 import 'package:colmeia/features/agent_queries/data/agent_sql_execute_batch_request_to_bridge_body.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_execute_request_to_bridge_body.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_execution_eligibility_checker.dart';
+import 'package:colmeia/features/agent_queries/data/cache/strategies/resumo_parcelas_dia_semana_cache_strategy.dart';
 import 'package:colmeia/features/agent_queries/data/cache/strategies/resumo_parcelas_mensal_cache_strategy.dart';
+import 'package:colmeia/features/agent_queries/data/cache/strategies/resumo_produto_venda_lucratividade_cache_strategy.dart';
 import 'package:colmeia/features/agent_queries/data/cache/strategies/resumo_total_diario_vendas_cache_strategy.dart';
+import 'package:colmeia/features/agent_queries/data/cache/strategies/resumo_total_vendas_municipio_filial_periodo_cache_strategy.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_streaming_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/collecting_relay_streaming_agent_queries_remote_datasource.dart';
@@ -83,8 +86,11 @@ import 'package:colmeia/features/agent_queries/data/facts/hive_agent_query_facts
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/in_memory_agent_query_target_resolution_cache.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_repository_chain_factory.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/caching/caching_resumo_parcelas_dia_semana_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/caching/caching_resumo_parcelas_mensal_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/caching/caching_resumo_produto_venda_lucratividade_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/caching/caching_resumo_total_diario_vendas_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/caching/caching_resumo_total_vendas_municipio_filial_periodo_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/cadastro_filial_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/cadastro_filial_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/grupo_produto_options_repository_impl.dart';
@@ -475,7 +481,12 @@ void _registerSingleAgentQueryRepositories(GetIt getIt) {
       () => HiveAgentQueryFactsStore(getIt<AppCacheStore>()),
     )
     ..registerLazySingleton(ResumoTotalDiarioVendasCacheStrategy.new)
-    ..registerLazySingleton(ResumoParcelasMensalCacheStrategy.new);
+    ..registerLazySingleton(ResumoParcelasMensalCacheStrategy.new)
+    ..registerLazySingleton(ResumoParcelasDiaSemanaCacheStrategy.new)
+    ..registerLazySingleton(ResumoProdutoVendaLucratividadeCacheStrategy.new)
+    ..registerLazySingleton(
+      ResumoTotalVendasMunicipioFilialPeriodoCacheStrategy.new,
+    );
 
   _registerSingle<CadastroFilialRepository, LoadCadastroFilialPageUseCase>(
     getIt,
@@ -544,8 +555,12 @@ void _registerSingleAgentQueryRepositories(GetIt getIt) {
     LoadResumoProdutoVendaLucratividadeUseCase
   >(
     getIt,
-    repo: () => ResumoProdutoVendaLucratividadeRepositoryImpl(
-      getIt<AgentQueriesRepository>(),
+    repo: () => CachingResumoProdutoVendaLucratividadeRepositoryImpl(
+      delegate: ResumoProdutoVendaLucratividadeRepositoryImpl(
+        getIt<AgentQueriesRepository>(),
+      ),
+      factsStore: getIt<AgentQueryFactsStore>(),
+      strategy: getIt<ResumoProdutoVendaLucratividadeCacheStrategy>(),
     ),
     useCase: () => LoadResumoProdutoVendaLucratividadeUseCase(
       getIt<ResumoProdutoVendaLucratividadeRepository>(),
@@ -687,8 +702,12 @@ void _registerSingleAgentQueryRepositories(GetIt getIt) {
     LoadResumoParcelasDiaSemanaUseCase
   >(
     getIt,
-    repo: () => ResumoParcelasDiaSemanaRepositoryImpl(
-      getIt<AgentQueriesRepository>(),
+    repo: () => CachingResumoParcelasDiaSemanaRepositoryImpl(
+      delegate: ResumoParcelasDiaSemanaRepositoryImpl(
+        getIt<AgentQueriesRepository>(),
+      ),
+      factsStore: getIt<AgentQueryFactsStore>(),
+      strategy: getIt<ResumoParcelasDiaSemanaCacheStrategy>(),
     ),
     useCase: () => LoadResumoParcelasDiaSemanaUseCase(
       getIt<ResumoParcelasDiaSemanaRepository>(),
@@ -797,8 +816,12 @@ void _registerSingleAgentQueryRepositories(GetIt getIt) {
     LoadResumoTotalVendasMunicipioFilialPeriodoUseCase
   >(
     getIt,
-    repo: () => ResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl(
-      getIt<AgentQueriesRepository>(),
+    repo: () => CachingResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl(
+      delegate: ResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl(
+        getIt<AgentQueriesRepository>(),
+      ),
+      factsStore: getIt<AgentQueryFactsStore>(),
+      strategy: getIt<ResumoTotalVendasMunicipioFilialPeriodoCacheStrategy>(),
     ),
     useCase: () => LoadResumoTotalVendasMunicipioFilialPeriodoUseCase(
       getIt<ResumoTotalVendasMunicipioFilialPeriodoRepository>(),

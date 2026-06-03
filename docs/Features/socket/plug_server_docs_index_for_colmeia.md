@@ -1,5 +1,7 @@
 # plug_server documentation — map for Colmeia
 
+> **Canonical:** [docs/plug_server_docs_index_for_colmeia.md](../../plug_server_docs_index_for_colmeia.md) — prefer that file for routing; this copy is feature-scoped legacy.
+
 Colmeia integrates with the Plug hub (`plug_server`) and agents (`plug_agente`) for SQL reports and multi-agent orchestration. This note maps **plug_server/docs** so we know where to look without duplicating the full spec.
 
 **Canonical navigation** inside plug_server (from `docs/README.md`):

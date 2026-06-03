@@ -46,5 +46,18 @@ void main() {
         expect(sql, contains('AND 1 = 0'));
       },
     );
+
+    test('mapCatalog projection omits CNPJ and CodMunicipio', () {
+      final sql = CadastroFilialSql.query(
+        projection: CadastroFilialSqlProjection.mapCatalog,
+      );
+
+      expect(sql, contains('NomeFilial'));
+      expect(sql, contains('Endereco'));
+      expect(sql, contains('NomeMunicipio'));
+      expect(sql, isNot(contains('f.CNPJ')));
+      expect(sql, isNot(contains('AS CodMunicipio')));
+      expect(sql, isNot(contains('N.CodMunicipio')));
+    });
   });
 }

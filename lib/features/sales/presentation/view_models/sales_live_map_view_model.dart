@@ -138,6 +138,31 @@ class SalesLiveMapViewModel {
     return selected.any(tokenBacked.contains);
   }
 
+  /// True when the inline map should render a failure placeholder instead of
+  /// an empty Brazil map (initial hard failure with no prior snapshot).
+  static bool shouldShowChartFailurePlaceholder(
+    SalesLiveMapPresentationState state,
+  ) {
+    final result = state.result;
+    if (result == null || !result.loadFailed || state.hasVisualResult) {
+      return false;
+    }
+    return true;
+  }
+
+  static String chartLoadFailureMessage(
+    SalesLiveMapPresentationState state,
+    AppLocalizations l10n,
+  ) {
+    final result = state.result;
+    return chartAgentQueryLoadFailureMessage(
+      l10n: l10n,
+      loadFailure: result?.loadFailure,
+      legacyMessage: result?.loadFailureMessage,
+      genericFallback: _loadErrorMessage(state, l10n),
+    );
+  }
+
   /// True when the current result is loaded successfully but has no rows to
   /// show — the empty notice should be displayed instead of a chart.
   static bool shouldShowEmptyNotice(SalesLiveMapPresentationState state) {

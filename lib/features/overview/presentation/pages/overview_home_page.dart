@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:colmeia/app/preferences/app_user_experience_preferences_controller.dart';
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
@@ -232,6 +233,7 @@ class _OverviewAlertsSection extends StatelessWidget {
       selector: (_, c) => _AlertsSlice(
         errorMessage: c.errorMessage,
         errorDiagnosticBody: c.errorDiagnosticBody,
+        loadFailure: c.loadFailure,
         overview: c.overview,
         missingTokenNames: c.missingTokenAgentNamesNormalized,
         partialFailureNames: c.partialQueryFailureAgentNamesNormalized,
@@ -252,6 +254,7 @@ class _OverviewAlertsSection extends StatelessWidget {
           partialFailureAgentNamesNormalized: slice.partialFailureNames,
           onOpenAgents: () => context.goTo(AppRoute.agents),
           errorDiagnosticBody: slice.errorDiagnosticBody,
+          loadFailure: slice.loadFailure,
           skippedDueToHubPresenceAgentNamesNormalized:
               slice.skippedDueToHubPresenceNames,
           retryCountdownLabel: retryCountdown,
@@ -486,6 +489,7 @@ class _AlertsSlice {
   const _AlertsSlice({
     required this.errorMessage,
     required this.errorDiagnosticBody,
+    required this.loadFailure,
     required this.overview,
     required this.missingTokenNames,
     required this.partialFailureNames,
@@ -495,6 +499,7 @@ class _AlertsSlice {
 
   final String? errorMessage;
   final String? errorDiagnosticBody;
+  final AppFailure? loadFailure;
   final Overview? overview;
   final List<String> missingTokenNames;
   final List<String> partialFailureNames;
@@ -512,6 +517,7 @@ class _AlertsSlice {
     return other is _AlertsSlice &&
         errorMessage == other.errorMessage &&
         errorDiagnosticBody == other.errorDiagnosticBody &&
+        identical(loadFailure, other.loadFailure) &&
         identical(overview, other.overview) &&
         retryRemainingSeconds == other.retryRemainingSeconds &&
         listEquals(missingTokenNames, other.missingTokenNames) &&
@@ -526,6 +532,7 @@ class _AlertsSlice {
   int get hashCode => Object.hash(
     errorMessage,
     errorDiagnosticBody,
+    loadFailure,
     overview,
     retryRemainingSeconds,
     Object.hashAll(missingTokenNames),

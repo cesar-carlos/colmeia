@@ -11,9 +11,9 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diar
 
 /// In-app backfill of closed fact buckets while the process is alive.
 ///
-/// Does not schedule OS background work. The overview home load path does not
-/// invoke this after a successful batch load because daily/monthly resumos are
-/// already fetched during overview section batch loading.
+/// Does not schedule OS background work. The overview repository schedules
+/// [prefetchForPlannedTargets] after a successful final overview load so
+/// closed buckets can warm while the user stays on the dashboard.
 ///
 /// Callers should pass the same [RetryAfterGate] used by agent-query surfaces
 /// so prefetch does not amplify hub pressure during cooldown.

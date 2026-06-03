@@ -434,8 +434,13 @@ void main() {
         ),
       );
 
+      await Future<void>.delayed(Duration.zero);
       check(await iterator.moveNext()).isTrue();
-      final partial = iterator.current;
+      var partial = iterator.current;
+      if (partial.points.isEmpty) {
+        check(await iterator.moveNext()).isTrue();
+        partial = iterator.current;
+      }
       check(partial.salesDataPending).isTrue();
       check(partial.salesPendingBranchCount).equals(1);
       check(partial.points.single.salesDataLoading).isTrue();
@@ -466,16 +471,100 @@ void main() {
         ),
       );
 
-      check(await iterator.moveNext()).isTrue();
-      final finalResult = iterator.current;
-      check(finalResult.salesDataPending).isFalse();
+      SalesLiveMapLoadResult? finalResult;
+      while (await iterator.moveNext()) {
+        finalResult = iterator.current;
+      }
+      check(finalResult).isNotNull();
+      check(finalResult!.salesDataPending).isFalse();
       check(finalResult.salesPendingBranchCount).equals(0);
       check(finalResult.points.single.salesDataLoading).isFalse();
       check(finalResult.points.single.salesAmount).equals(220);
       check(finalResult.points.single.salesCount).equals(6);
       check(finalResult.partialGeoReuseCount).equals(1);
       check(geocoder.lookups).has((it) => it.length, 'length').equals(1);
-      check(await iterator.moveNext()).isFalse();
+    },
+  );
+
+  test(
+    'loadProgressive emite pontos IBGE antes da geolocalizacao completa',
+    () async {
+      final catalogCompleter =
+          Completer<AppResult<CadastroFilialAcrossAgentsPageResult>>();
+      final salesCompleter =
+          Completer<
+            AppResult<
+              AgentQueryExecutionReport<
+                ResumoTotalVendasMunicipioFilialPeriodoRow
+              >
+            >
+          >();
+      _stubCatalogFuture(loadCadastroAcrossAgents, catalogCompleter.future);
+      _stubReportFuture(loadAcrossAgents, salesCompleter.future);
+
+      final emissions = <SalesLiveMapLoadResult>[];
+      final subscription = useCase
+          .loadProgressive(
+            userId: userId,
+            filter: const SalesLiveMapFilter(),
+          )
+          .listen(emissions.add);
+      addTearDown(subscription.cancel);
+
+      await Future<void>.delayed(Duration.zero);
+      check(emissions.single.points).isEmpty();
+
+      catalogCompleter.complete(
+        Success<CadastroFilialAcrossAgentsPageResult, AppFailure>(
+          CadastroFilialAcrossAgentsPageResult.fromReport(
+            _catalogReport(
+              plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+              participants: <AgentQueryExecutionParticipant<CadastroFilialRow>>[
+                _catalogParticipant(
+                  'agent-a',
+                  rows: <CadastroFilialRow>[_catalogRow()],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      final pendingWithPoints = emissions
+          .where(
+            (result) => result.salesDataPending && result.points.isNotEmpty,
+          )
+          .toList(growable: false);
+      check(pendingWithPoints).isNotEmpty();
+      check(
+        pendingWithPoints.first.points.single.locationResolution,
+      ).equals(SalesLiveMapLocationResolution.ibgeMunicipalityCode);
+
+      salesCompleter.complete(
+        Success<
+          AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow>,
+          AppFailure
+        >(
+          _report(
+            plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+            participants:
+                <
+                  AgentQueryExecutionParticipant<
+                    ResumoTotalVendasMunicipioFilialPeriodoRow
+                  >
+                >[
+                  _participant(
+                    'agent-a',
+                    rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                      _row(),
+                    ],
+                  ),
+                ],
+          ),
+        ),
+      );
+      await subscription.cancel();
     },
   );
 
@@ -503,9 +592,10 @@ void main() {
           )
           .toList();
 
-      check(emissions).has((items) => items.length, 'length').equals(3);
-      check(emissions[1].salesDataPending).isTrue();
-      check(emissions[1].points.single.salesDataLoading).isTrue();
+      final pendingEmission = emissions.lastWhere(
+        (result) => result.salesDataPending && result.points.isNotEmpty,
+      );
+      check(pendingEmission.points.single.salesDataLoading).isTrue();
       final finalResult = emissions.last;
       check(finalResult.salesDataPending).isFalse();
       check(finalResult.points.single.salesDataLoading).isFalse();
@@ -544,7 +634,6 @@ void main() {
           )
           .toList();
 
-      check(emissions).has((items) => items.length, 'length').equals(2);
       check(emissions.first.salesDataPending).isTrue();
       final finalResult = emissions.last;
       check(finalResult.salesDataPending).isFalse();

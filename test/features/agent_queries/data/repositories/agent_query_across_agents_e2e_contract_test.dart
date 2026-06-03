@@ -27,18 +27,20 @@ void main() {
             .listSync()
             .whereType<File>()
             .where(
-              (file) => p
-                  .basename(file.path)
-                  .endsWith('_across_agents_repository_impl.dart'),
+              (file) {
+                final name = p.basename(file.path);
+                return name.endsWith('_across_agents_repository_impl.dart') ||
+                    name.endsWith('_across_agents_repository_impl_v2.dart');
+              },
             )
             .toList()
           ..sort((a, b) => a.path.compareTo(b.path));
 
     final missing = <String>[];
     for (final repositoryFile in repositoryFiles) {
-      final repositoryName = p
-          .basenameWithoutExtension(repositoryFile.path)
-          .replaceFirst(RegExp(r'_impl$'), '');
+      final repositoryName = _acrossAgentsRepositoryE2eBaseName(
+        repositoryFile.path,
+      );
       final expectedFileNames = <String>{
         '${repositoryName}_e2e_test.dart',
         'load_${repositoryName}_e2e_test.dart',
@@ -91,11 +93,19 @@ List<String> _expectedUseCaseSymbols(String repositoryName) {
     ];
   }
 
-  final useCaseName = repositoryName.replaceFirst(
-    RegExp(r'_repository$'),
-    '',
-  );
-  return <String>['Load${_snakeToPascal(useCaseName)}UseCase'];
+  final isV2 = repositoryName.endsWith('_repository_v2');
+  final useCaseName = repositoryName
+      .replaceFirst(RegExp(r'_repository_v2$'), '')
+      .replaceFirst(RegExp(r'_repository$'), '');
+  final suffix = isV2 ? 'UseCaseV2' : 'UseCase';
+  return <String>['Load${_snakeToPascal(useCaseName)}$suffix'];
+}
+
+String _acrossAgentsRepositoryE2eBaseName(String repositoryPath) {
+  return p
+      .basenameWithoutExtension(repositoryPath)
+      .replaceFirst(RegExp(r'_impl_v2$'), '')
+      .replaceFirst(RegExp(r'_impl$'), '');
 }
 
 String _snakeToPascal(String value) {

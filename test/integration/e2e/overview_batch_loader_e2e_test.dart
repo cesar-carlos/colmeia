@@ -25,6 +25,7 @@ import 'package:result_dart/result_dart.dart';
 import 'package:test_api/scaffolding.dart' show group;
 
 import 'support/e2e_dependency_bootstrap.dart';
+import 'support/e2e_soft_perf_guard.dart';
 
 void main() {
   group(
@@ -60,6 +61,7 @@ void main() {
           final periodStart = periodEnd.subtract(const Duration(days: 14));
           final last12Start = DateTime(periodEnd.year - 1, periodEnd.month + 1);
 
+          final stopwatch = Stopwatch()..start();
           final result = await runE2eAppResultWithHubRetry(
             () => loader.load(
               userId: 'user-1',
@@ -88,9 +90,15 @@ void main() {
             ),
             actionLabel: 'overview_batch_loader',
           );
+          stopwatch.stop();
 
           result.fold(
             (success) {
+              e2eAssertSoftPerfWithinMedianMultiple(
+                label: 'overview_batch_loader',
+                elapsed: stopwatch.elapsed,
+                median: kOverviewBatchLoaderE2eMedianSuccessDuration,
+              );
               expect(
                 countingRepository.batchCallCount,
                 greaterThanOrEqualTo(1),

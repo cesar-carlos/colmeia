@@ -320,7 +320,7 @@ class OverviewModel {
   /// Sorted at persistence time; used to avoid mixing datasets across agents.
   final List<String>? sourceAgentIds;
 
-  Overview toEntity({bool isStaleCache = false}) {
+  Overview toEntity() {
     return Overview(
       periodStart: periodStart,
       periodEnd: periodEnd,
@@ -350,7 +350,6 @@ class OverviewModel {
       lucratividadeTrendLoadFailed: lucratividadeTrendLoadFailed,
       lucratividadeTrendLoadFailureMessage:
           lucratividadeTrendLoadFailureMessage,
-      isStaleCache: isStaleCache,
     );
   }
 

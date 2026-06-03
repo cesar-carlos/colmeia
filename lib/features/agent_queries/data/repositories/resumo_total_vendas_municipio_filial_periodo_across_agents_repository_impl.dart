@@ -7,6 +7,7 @@ import 'package:colmeia/features/agent_queries/data/repositories/agent_query_lis
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
@@ -53,6 +54,7 @@ class ResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsRepositoryImpl
     bool orderTargetsOnlineFirst = false,
     bool dedupeTargetsByAgentId = false,
     int? mergeAllConcurrencyOverride,
+    AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
   }) {
     return AgentQueryListReportAcrossAgentsCoordinator.executeLoadedRows<
       ResumoTotalVendasMunicipioFilialPeriodoFilter,
@@ -86,6 +88,7 @@ class ResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsRepositoryImpl
                 hubConnectedFromApprovedCatalogRow:
                     hubConnectedFromApprovedCatalogRow,
                 cancelScope: cancelScope,
+                cachePolicy: cachePolicy,
               ),
       selectedAgentIds: selectedAgentIds,
       strategy: strategy,

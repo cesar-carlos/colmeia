@@ -2,7 +2,7 @@ import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
-import 'package:colmeia/features/agent_queries/domain/cache/agent_query_facts_key_prefix.dart';
+import 'package:colmeia/features/agent_queries/domain/cache/agent_query_fact_kind.dart';
 import 'package:colmeia/features/agent_queries/domain/cache/agent_query_facts_store.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart';
@@ -36,6 +36,7 @@ void main() {
   final fixedNow = DateTime(2026, 4, 8);
 
   setUpAll(() {
+    registerFallbackValue(AgentQueryFactKind.dailySales);
     registerFallbackValue(AgentQueryExecutionStrategy.mergeAll);
     registerFallbackValue(
       const AgentSqlExecuteBatchRequest(
@@ -88,7 +89,7 @@ void main() {
       return Success<AgentSqlBatchExecutionResult, AppFailure>(
         _batchResult(
           commandCount: request.commands.length,
-          rowsByIndex: request.commands.length == 2
+          rowsByIndex: request.commands.length >= 2
               ? <int, List<Map<String, dynamic>>>{
                   0: <Map<String, dynamic>>[_mainBatchRow()],
                   1: <Map<String, dynamic>>[_userRankingBatchRow()],
@@ -96,7 +97,10 @@ void main() {
               : const <int, List<Map<String, dynamic>>>{},
           failedIndexes: request.commands.length == 2
               ? const <int>{}
-              : sectionFailedIndexes,
+              : _overviewSectionFailedIndexesInBatch(
+                  request,
+                  sectionFailedIndexes,
+                ),
         ),
       );
     });
@@ -235,8 +239,16 @@ void main() {
               ),
             );
           }
+          final monthlyIndex = request.commands.length >= 7 ? 2 : 0;
           return Success<AgentSqlBatchExecutionResult, AppFailure>(
-            _batchResult(commandCount: 6, failedIndexes: const <int>{0}),
+            _batchResult(
+              commandCount: request.commands.length,
+              rowsByIndex: <int, List<Map<String, dynamic>>>{
+                0: <Map<String, dynamic>>[_mainBatchRow()],
+                1: <Map<String, dynamic>>[_userRankingBatchRow()],
+              },
+              failedIndexes: <int>{monthlyIndex},
+            ),
           );
         });
 
@@ -371,21 +383,18 @@ void main() {
         final captured = verify(
           () => batchAgentQueriesRepository.executeSqlBatch(captureAny()),
         ).captured;
-        check(captured.length).equals(4);
+        check(captured.length).equals(2);
         final requests = captured.cast<AgentSqlExecuteBatchRequest>().toList(
           growable: false,
         );
-        for (final request in requests.take(2)) {
-          check(request.commands.length).equals(2);
-        }
-        for (final request in requests.skip(2)) {
-          check(request.commands.length).equals(5);
+        for (final request in requests) {
+          check(request.commands.length).equals(7);
         }
       },
     );
 
     test(
-      'forceRefresh invalidates all facts for the user before load',
+      'forceRefresh invalidates daily and monthly facts before load',
       () async {
         const target = AgentQueryTarget(
           agentId: 'agent-1',
@@ -412,7 +421,10 @@ void main() {
           ),
         );
         when(
-          () => factsStore.removeMatching(any()),
+          () => factsStore.removeMatchingFactKind(
+            userId: any(named: 'userId'),
+            factKind: any(named: 'factKind'),
+          ),
         ).thenAnswer((_) async {});
         stubSuccessfulBatches();
 
@@ -426,10 +438,18 @@ void main() {
         );
 
         verify(
-          () => factsStore.removeMatching(
-            AgentQueryFactsKeyPrefix.forUser('user-1'),
+          () => factsStore.removeMatchingFactKind(
+            userId: 'user-1',
+            factKind: AgentQueryFactKind.dailySales,
           ),
         ).called(1);
+        verify(
+          () => factsStore.removeMatchingFactKind(
+            userId: 'user-1',
+            factKind: AgentQueryFactKind.monthlyParcels,
+          ),
+        ).called(1);
+        verifyNever(() => factsStore.removeMatching(any()));
       },
     );
 
@@ -566,22 +586,24 @@ void main() {
               ),
             );
           }
+          final dailyIndex = _overviewDailyCommandIndexInBatch(request);
           final failedIndexes = request.agentId == 'agent-2'
-              ? const <int>{2}
+              ? <int>{dailyIndex}
               : const <int>{};
-          final rowsByIndex = request.agentId == 'agent-1'
-              ? <int, List<Map<String, dynamic>>>{
-                  2: <Map<String, dynamic>>[
-                    <String, dynamic>{
-                      'CodEmpresa': 1,
-                      'CodFilial': 1,
-                      'DataVenda': '2026-04-07',
-                      'QtdVendas': 3,
-                      'ValorTotalDiarioVenda': 300.0,
-                    },
-                  ],
-                }
-              : const <int, List<Map<String, dynamic>>>{};
+          final rowsByIndex = <int, List<Map<String, dynamic>>>{
+            0: <Map<String, dynamic>>[_mainBatchRow()],
+            1: <Map<String, dynamic>>[_userRankingBatchRow()],
+            if (request.agentId == 'agent-1')
+              dailyIndex: <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'CodEmpresa': 1,
+                  'CodFilial': 1,
+                  'DataVenda': '2026-04-07',
+                  'QtdVendas': 3,
+                  'ValorTotalDiarioVenda': 300.0,
+                },
+              ],
+          };
           return Success<AgentSqlBatchExecutionResult, AppFailure>(
             _batchResult(
               commandCount: request.commands.length,
@@ -612,6 +634,27 @@ void main() {
       },
     );
   });
+}
+
+const int _overviewMainBatchCommandCount = 2;
+
+Set<int> _overviewSectionFailedIndexesInBatch(
+  AgentSqlExecuteBatchRequest request,
+  Set<int> sectionFailedIndexes,
+) {
+  if (request.commands.length < _overviewMainBatchCommandCount + 5) {
+    return sectionFailedIndexes;
+  }
+  return sectionFailedIndexes
+      .map((index) => index + _overviewMainBatchCommandCount)
+      .toSet();
+}
+
+int _overviewDailyCommandIndexInBatch(AgentSqlExecuteBatchRequest request) {
+  if (request.commands.length >= _overviewMainBatchCommandCount + 5) {
+    return _overviewMainBatchCommandCount + 2;
+  }
+  return 2;
 }
 
 AgentSqlBatchExecutionResult _batchResult({

@@ -171,6 +171,17 @@ abstract final class AppEnvironment {
         fallback: defaultAgentSqlCatalogCacheTtlMs,
       )._atLeastOrFallback(0, defaultAgentSqlCatalogCacheTtlMs);
 
+  /// Parallel mergeAll wave size for across-agent orchestration.
+  ///
+  /// Tuning guide:
+  /// - Default `8` balances hub throughput and per-agent inflight limits on
+  ///   typical owner dashboards with a handful of agents.
+  /// - Lower to `4` when bridge timeouts or hub 429/503 spikes appear during
+  ///   multi-agent overview or sales map loads.
+  /// - Raise toward `16` only on stable networks with few agents and headroom
+  ///   under [agentSqlRestMaxInflightPerAgent] / socket inflight gates.
+  /// - Overview batch loader and sales live map reuse this cap unless
+  ///   [salesLiveMapMergeWaveSize] overrides the map path.
   static int get agentQueryMergeAllConcurrency =>
       AppEnvironmentResolution.resolveInt(
         fromDefine: const String.fromEnvironment(
@@ -179,6 +190,23 @@ abstract final class AppEnvironment {
         fromDotenv: _dotenvMaybe(EnvKeys.agentQueryMergeAllConcurrency),
         fallback: defaultAgentQueryMergeAllConcurrency,
       ).clamp(1, 64);
+
+  /// Bridge timeout for sales live map period sales and catalog SQL.
+  ///
+  /// Falls back to [agentSqlBridgeMediumTimeoutMs] when unset.
+  static int get salesLiveMapBridgeTimeoutMs {
+    final configured = AppEnvironmentResolution.resolveInt(
+      fromDefine: const String.fromEnvironment(
+        EnvKeys.salesLiveMapBridgeTimeoutMs,
+      ),
+      fromDotenv: _dotenvMaybe(EnvKeys.salesLiveMapBridgeTimeoutMs),
+      fallback: 0,
+    );
+    if (configured > 0) {
+      return configured._atLeastOrFallback(1, agentSqlBridgeMediumTimeoutMs);
+    }
+    return agentSqlBridgeMediumTimeoutMs;
+  }
 
   /// Wave size for sales live map mergeAll; falls back to per-agent inflight cap.
   static int get salesLiveMapMergeWaveSize {
@@ -208,6 +236,17 @@ abstract final class AppEnvironment {
       )._atLeastOrFallback(
         1,
         defaultAgentSqlOverviewBatchMaxParallelReadOnlyItems,
+      );
+
+  static bool get agentSqlOverviewMergeSqlBatchesPerTarget =>
+      AppEnvironmentResolution.resolveBool(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.agentSqlOverviewMergeSqlBatchesPerTarget,
+        ),
+        fromDotenv: _dotenvMaybe(
+          EnvKeys.agentSqlOverviewMergeSqlBatchesPerTarget,
+        ),
+        fallback: false,
       );
 
   static int get agentSqlRelayStreamingMaxConcurrentPerAgent =>
@@ -262,15 +301,6 @@ abstract final class AppEnvironment {
         fromDotenv: _dotenvMaybe(EnvKeys.agentSqlRestMaxInflightPerAgent),
         fallback: defaultAgentSqlRestMaxInflightPerAgent,
       ).clamp(0, 64);
-
-  /// Hive overview snapshot TTL for `OverviewLocalDataSource` reads.
-  static const int defaultOverviewCacheMaxAgeMs = 1800000;
-
-  static int get overviewCacheMaxAgeMs => AppEnvironmentResolution.resolveInt(
-    fromDefine: const String.fromEnvironment(EnvKeys.overviewCacheMaxAgeMs),
-    fromDotenv: _dotenvMaybe(EnvKeys.overviewCacheMaxAgeMs),
-    fallback: defaultOverviewCacheMaxAgeMs,
-  ).clamp(60000, 86400000);
 
   static const bool defaultAgentQueryFactsPrefetchEnabled = true;
 
@@ -579,7 +609,10 @@ abstract final class AppEnvironment {
     );
   }
 
-  /// Relay JSON-RPC batch arrays (hub protocol not available yet). Default false.
+  /// Relay JSON-RPC batch arrays (`relay:rpc.request.batch`). Hub v1 shipped
+  /// 2026-05-28; Colmeia default remains `false` until staging validates hub
+  /// batch envelopes end-to-end. Distinct from [socketBatchEnabled]
+  /// (`agents:command` only). See `docs/bridge_agent_sql_api_options.md`.
   static bool get socketRelayBatchEnabled =>
       AppEnvironmentResolution.resolveBool(
         fromDefine: const String.fromEnvironment(

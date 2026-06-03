@@ -45,7 +45,6 @@ class Overview {
     this.lucratividadeTrendLoadFailure,
     this.lucratividadeTrendLoadFailureMessage,
     this.lucratividadePartialFailureAgentNames = const <String>[],
-    this.isStaleCache = false,
     this.approvedAgentCount = 0,
     this.agentIdsExcludedFromQueryFailure = const <String>[],
     this.agentNamesExcludedFromQueryFailure = const <String>[],
@@ -163,9 +162,6 @@ class Overview {
   /// contributed rows (partial chart). Empty when all succeeded or all failed.
   final List<String> lucratividadePartialFailureAgentNames;
 
-  /// True when recovered from local cache after a remote error.
-  final bool isStaleCache;
-
   /// Number of approved agents considered for this load (pagination total).
   final int approvedAgentCount;
 
@@ -247,7 +243,6 @@ class Overview {
     List<OverviewPaymentMethodBreakdown>? paymentMethods,
     List<OverviewAgentRanking>? agentRankings,
     List<OverviewUserRanking>? userRankings,
-    bool? isStaleCache,
     int? approvedAgentCount,
     List<String>? agentIdsExcludedFromQueryFailure,
     List<String>? agentNamesExcludedFromQueryFailure,
@@ -348,7 +343,6 @@ class Overview {
       lucratividadePartialFailureAgentNames:
           lucratividadePartialFailureAgentNames ??
           this.lucratividadePartialFailureAgentNames,
-      isStaleCache: isStaleCache ?? this.isStaleCache,
       approvedAgentCount: approvedAgentCount ?? this.approvedAgentCount,
       agentIdsExcludedFromQueryFailure:
           agentIdsExcludedFromQueryFailure ??

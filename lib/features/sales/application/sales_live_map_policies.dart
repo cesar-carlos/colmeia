@@ -1,3 +1,4 @@
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/features/sales/application/ports/sales_live_map_catalog_cache.dart';
 
 /// Tunables for `LoadSalesLiveMapUseCase` and its collaborators.
@@ -6,7 +7,12 @@ import 'package:colmeia/features/sales/application/ports/sales_live_map_catalog_
 /// so the use case body stays focused on orchestration and tests can override
 /// each tunable explicitly.
 abstract final class SalesLiveMapPolicies {
-  static const int bridgeTimeoutMs = 120000;
+  /// Bridge wait for period sales SQL and catalog loads.
+  ///
+  /// Uses [AppEnvironment.salesLiveMapBridgeTimeoutMs], which falls back to
+  /// [AppEnvironment.agentSqlBridgeMediumTimeoutMs] when
+  /// `SALES_LIVE_MAP_BRIDGE_TIMEOUT_MS` is unset.
+  static int get bridgeTimeoutMs => AppEnvironment.salesLiveMapBridgeTimeoutMs;
   static const int geolocationMaxConcurrency = 6;
 
   /// Default `(cod_empresa, cod_filial)` of the "primary" branch used by the

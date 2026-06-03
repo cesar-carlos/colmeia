@@ -7,6 +7,9 @@ import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_f
 /// Company / branch predicates are validated in Dart and inlined into the SQL
 /// to support exact multi-branch subsets without exhausting the bridge named
 /// parameter budget.
+///
+/// Use [CadastroFilialSqlProjection.mapCatalog] for the live sales map catalog
+/// (omits `CNPJ` and `CodMunicipio`; keeps address fields for geocoding).
 abstract final class CadastroFilialSql {
   static String query({
     Iterable<CadastroFilialBranchRef> branches =
@@ -14,6 +17,7 @@ abstract final class CadastroFilialSql {
     bool hasSelectedBranches = false,
     int? codEmpresa,
     int? codFilial,
+    CadastroFilialSqlProjection projection = CadastroFilialSqlProjection.registration,
   }) {
     final branchPredicate = _branchPredicate(
       branches: branches,
@@ -21,22 +25,16 @@ abstract final class CadastroFilialSql {
       codEmpresa: codEmpresa,
       codFilial: codFilial,
     );
+    final baseColumns = projection == CadastroFilialSqlProjection.mapCatalog
+        ? _baseColumnsMapCatalog
+        : _baseColumnsRegistration;
+    final outerColumns = projection == CadastroFilialSqlProjection.mapCatalog
+        ? _outerColumnsMapCatalog
+        : _outerColumnsRegistration;
     return '''
     WITH Base AS (
       SELECT
-        f.CodEmpresa,
-        f.CodFilial,
-        f.Nome AS NomeFilial,
-        f.NomeFantasia AS NomeFantasia,
-        f.CNPJ,
-        f.Logradouro AS Endereco,
-        f.NumeroLogradouro AS NumeroEndereco,
-        f.Bairro,
-        REPLACE(REPLACE(REPLACE(TRIM(f.CEP), '.', ''), '-', ''), ' ', '') AS CEP,
-        f.CodMunicipio,
-        TRIM(m.Nome) AS NomeMunicipio,
-        m.CodigoIBGE AS CodigoIBGE,
-        TRIM(m.UF) AS UFMunicipio
+$baseColumns
       FROM Filial f
       LEFT JOIN Municipio m ON
         m.CodMunicipio = f.CodMunicipio
@@ -54,6 +52,45 @@ $branchPredicate
     )
     SELECT
       Tot.TotalCount,
+$outerColumns
+      N.Rn
+    FROM Tot
+    LEFT JOIN Numbered N ON N.Rn BETWEEN :startRow AND :endRow
+    ORDER BY COALESCE(N.Rn, 2147483647)
+  ''';
+  }
+
+  static const String _baseColumnsRegistration = '''
+        f.CodEmpresa,
+        f.CodFilial,
+        f.Nome AS NomeFilial,
+        f.NomeFantasia AS NomeFantasia,
+        f.CNPJ,
+        f.Logradouro AS Endereco,
+        f.NumeroLogradouro AS NumeroEndereco,
+        f.Bairro,
+        REPLACE(REPLACE(REPLACE(TRIM(f.CEP), '.', ''), '-', ''), ' ', '') AS CEP,
+        f.CodMunicipio,
+        TRIM(m.Nome) AS NomeMunicipio,
+        m.CodigoIBGE AS CodigoIBGE,
+        TRIM(m.UF) AS UFMunicipio
+''';
+
+  static const String _baseColumnsMapCatalog = '''
+        f.CodEmpresa,
+        f.CodFilial,
+        f.Nome AS NomeFilial,
+        f.NomeFantasia AS NomeFantasia,
+        f.Logradouro AS Endereco,
+        f.NumeroLogradouro AS NumeroEndereco,
+        f.Bairro,
+        REPLACE(REPLACE(REPLACE(TRIM(f.CEP), '.', ''), '-', ''), ' ', '') AS CEP,
+        TRIM(m.Nome) AS NomeMunicipio,
+        m.CodigoIBGE AS CodigoIBGE,
+        TRIM(m.UF) AS UFMunicipio
+''';
+
+  static const String _outerColumnsRegistration = '''
       N.CodEmpresa,
       N.CodFilial,
       N.NomeFilial,
@@ -67,12 +104,21 @@ $branchPredicate
       N.NomeMunicipio,
       N.CodigoIBGE,
       N.UFMunicipio,
-      N.Rn
-    FROM Tot
-    LEFT JOIN Numbered N ON N.Rn BETWEEN :startRow AND :endRow
-    ORDER BY COALESCE(N.Rn, 2147483647)
-  ''';
-  }
+''';
+
+  static const String _outerColumnsMapCatalog = '''
+      N.CodEmpresa,
+      N.CodFilial,
+      N.NomeFilial,
+      N.NomeFantasia,
+      N.Endereco,
+      N.NumeroEndereco,
+      N.Bairro,
+      N.CEP,
+      N.NomeMunicipio,
+      N.CodigoIBGE,
+      N.UFMunicipio,
+''';
 
   static String _branchPredicate({
     required Iterable<CadastroFilialBranchRef> branches,
@@ -129,4 +175,13 @@ $branchPredicate
         .join(' OR ');
     return '        AND ($clauses)';
   }
+}
+
+/// Column projection for [CadastroFilialSql.query].
+enum CadastroFilialSqlProjection {
+  /// Full branch registration (CNPJ, CodMunicipio, all address fields).
+  registration,
+
+  /// Live sales map catalog: omits CNPJ and CodMunicipio; keeps address for geocoding.
+  mapCatalog,
 }

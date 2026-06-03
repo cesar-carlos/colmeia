@@ -45,6 +45,7 @@ abstract final class EnvKeys {
       'AGENT_SQL_CATALOG_CACHE_TTL_MS';
 
   /// Parallel mergeAll wave size for across-agent orchestration. Default 8.
+  /// See AppEnvironment agentQueryMergeAllConcurrency tuning notes.
   static const String agentQueryMergeAllConcurrency =
       'AGENT_QUERY_MERGE_ALL_CONCURRENCY';
 
@@ -53,10 +54,20 @@ abstract final class EnvKeys {
   static const String salesLiveMapMergeWaveSize =
       'SALES_LIVE_MAP_MERGE_WAVE_SIZE';
 
+  /// Bridge timeout (ms) for sales live map SQL loads. When unset, falls back
+  /// to [agentSqlBridgeMediumTimeoutMs].
+  static const String salesLiveMapBridgeTimeoutMs =
+      'SALES_LIVE_MAP_BRIDGE_TIMEOUT_MS';
+
   /// Optional bridge hint for overview read-only `sql.executeBatch`
   /// parallelism. Positive integer; the agent keeps the final safety cap.
   static const String agentSqlOverviewBatchMaxParallelReadOnlyItems =
       'AGENT_SQL_OVERVIEW_BATCH_MAX_PARALLEL_READ_ONLY_ITEMS';
+
+  /// When true, overview loads use one merged `sql.executeBatch` per agent
+  /// instead of separate main + section batches.
+  static const String agentSqlOverviewMergeSqlBatchesPerTarget =
+      'AGENT_SQL_OVERVIEW_MERGE_SQL_BATCHES_PER_TARGET';
 
   /// Max collected relay streaming `sql.execute` calls allowed concurrently
   /// per agent before the client queues locally.
@@ -67,10 +78,6 @@ abstract final class EnvKeys {
   /// path. `0` disables client-side limiting. Default 8 (conservative vs hub).
   static const String agentSqlRestMaxInflightPerAgent =
       'AGENT_SQL_REST_MAX_INFLIGHT_PER_AGENT';
-
-  /// Max age in milliseconds for the Hive-backed overview snapshot used for
-  /// offline fallback and fast home reopen. Default 30 minutes.
-  static const String overviewCacheMaxAgeMs = 'OVERVIEW_CACHE_MAX_AGE_MS';
 
   /// When true, backfills closed agent-query fact buckets after overview load.
   static const String agentQueryFactsPrefetchEnabled =
@@ -166,8 +173,8 @@ abstract final class EnvKeys {
   /// Enables `AgentLatencyOracle`-driven adaptive timeouts. When `true`,
   /// the dispatcher consults the oracle for a per `(agentId, method)`
   /// recommended timeout when the caller did not pass one explicitly.
-  /// Default `false`: opt-in until baseline metrics confirm the upside
-  /// (review §5.3, P2).
+  /// Default `true` in bundled `default.env`; set `false` for fixed bridge
+  /// timeouts during A/B.
   static const String socketTimeoutAdaptiveEnabled =
       'SOCKET_TIMEOUT_ADAPTIVE_ENABLED';
 
@@ -235,7 +242,9 @@ abstract final class EnvKeys {
   static const String socketRelayStreamRefillThreshold =
       'SOCKET_RELAY_STREAM_REFILL_THRESHOLD';
 
-  /// Future hub feature: JSON-RPC batch arrays on relay. Default `false`.
+  /// Relay JSON-RPC batch (`relay:rpc.request.batch`). Hub v1 shipped
+  /// 2026-05-28; default `false` until staging validation. Not
+  /// [socketBatchEnabled] (`agents:command` batch only).
   static const String socketRelayBatchEnabled = 'SOCKET_RELAY_BATCH_ENABLED';
 
   /// Opts the consumer into the hub relay unary fast-path

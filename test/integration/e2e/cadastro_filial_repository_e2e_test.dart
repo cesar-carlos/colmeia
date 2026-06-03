@@ -4,6 +4,7 @@ library;
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart' show SessionFailure;
+import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/cadastro_filial_repository.dart';
 import 'package:flutter_test/flutter_test.dart' hide group;
@@ -64,7 +65,16 @@ void main() {
           }
 
           expect(page.totalCount, greaterThanOrEqualTo(0));
-          expect(page.items.length, lessThanOrEqualTo(20));
+          expect(
+            page.items.length,
+            lessThanOrEqualTo(CadastroFilialFilter.defaultPageSize),
+          );
+          expect(
+            page.items.length,
+            lessThanOrEqualTo(
+              AgentQueriesBoundedResultMaxRows.cadastroFilialPage,
+            ),
+          );
           for (final row in page.items) {
             expect(row.codEmpresa, greaterThan(0));
             expect(row.codFilial, greaterThanOrEqualTo(0));

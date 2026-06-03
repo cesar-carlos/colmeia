@@ -92,30 +92,36 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row>
       cachePolicy: cachePolicy,
     );
 
+    final bucketResults = await Future.wait(
+      plan.allBucketIdsInRange.map(
+        (bucketId) => _loadBucket(
+          userId: userId,
+          agentId: agentId,
+          rangeFilter: filter,
+          bucketId: bucketId,
+          plan: plan,
+          cachePolicy: cachePolicy,
+          clock: clock,
+          prefetchedPayload: prefetchedPayloads[
+            _strategy.storageKey(
+              userId: userId,
+              agentId: agentId,
+              bucketId: bucketId,
+              rangeFilter: filter,
+            )
+          ],
+          clientToken: clientToken,
+          bridgeTimeoutMs: bridgeTimeoutMs,
+          hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+          hubConnectedFromApprovedCatalogRow:
+              hubConnectedFromApprovedCatalogRow,
+          cancelScope: cancelScope,
+        ),
+      ),
+    );
+
     final rows = <Row>[];
-    for (final bucketId in plan.allBucketIdsInRange) {
-      final bucketResult = await _loadBucket(
-        userId: userId,
-        agentId: agentId,
-        rangeFilter: filter,
-        bucketId: bucketId,
-        plan: plan,
-        cachePolicy: cachePolicy,
-        clock: clock,
-        prefetchedPayload: prefetchedPayloads[
-          _strategy.storageKey(
-            userId: userId,
-            agentId: agentId,
-            bucketId: bucketId,
-            rangeFilter: filter,
-          )
-        ],
-        clientToken: clientToken,
-        bridgeTimeoutMs: bridgeTimeoutMs,
-        hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
-        hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
-        cancelScope: cancelScope,
-      );
+    for (final bucketResult in bucketResults) {
       final bucketRows = bucketResult.getOrNull();
       if (bucketRows == null) {
         return Failure<List<Row>, AppFailure>(bucketResult.exceptionOrNull()!);

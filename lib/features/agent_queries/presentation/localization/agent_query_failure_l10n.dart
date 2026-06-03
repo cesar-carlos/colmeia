@@ -1,6 +1,7 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_failure_codes.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
+import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/presentation/localization/agent_sql_failure_message_for_ui_key.dart';
 import 'package:colmeia/features/agent_queries/presentation/localization/agent_sql_rpc_failure_l10n.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -47,6 +48,12 @@ String? agentQueryFailureUserMessageOrNull(
     return null;
   }
   return agentQueryFailureUserMessage(failure, l10n);
+}
+
+/// Localized short title for agent-query error panels and overview load banners.
+String agentQueryFailureTitle(AppFailure failure, AppLocalizations l10n) {
+  final uiKey = agentQueryFailureResolvedUiKey(failure);
+  return agentSqlFailureTitleForUiKey(uiKey, l10n);
 }
 
 /// Localized user-facing text for agent SQL / bridge / transport failures.

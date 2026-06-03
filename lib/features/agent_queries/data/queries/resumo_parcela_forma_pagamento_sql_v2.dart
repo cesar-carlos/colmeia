@@ -8,9 +8,12 @@ abstract final class ResumoParcelaFormaPagamentoSqlV2 {
   /// month series come from `ResumoParcelaPorUsuarioSql` and
   /// `ResumoParcelasMensalSql`, not from this query.
   ///
-  /// Inner slice is [ParcelaProdutoVendidoDetalheSql] for troco semantics;
-  /// outer aggregate uses `SUM(ValorParcela - ValorTrocoParcela)` and
-  /// `COUNT(DISTINCT Id)`.
+  /// Inner slice is [ParcelaProdutoVendidoDetalheSql.selectFromParcelLinesForOverviewAggregate]
+  /// for troco semantics; outer aggregate uses `SUM(ValorParcela - ValorTrocoParcela)`
+  /// and `COUNT(DISTINCT Id)`.
+  ///
+  /// Date filter uses a half-open calendar range on `DataVenda` (sargable, aligned
+  /// with map/daily SQL).
   static const String _queryHead = '''
     SELECT
       CodEmpresa,
@@ -41,7 +44,8 @@ abstract final class ResumoParcelaFormaPagamentoSqlV2 {
   static const String _queryTail = '''
       ) Detalhe
     ) ResumoParcelaFormaPagamentoV2
-    WHERE DataVenda BETWEEN :dataVendaInicio AND :dataVendaFim
+    WHERE DataVenda >= CAST(:dataVendaInicio AS DATE)
+      AND DataVenda < DATEADD(day, 1, CAST(:dataVendaFim AS DATE))
       AND Origem = :origem
       AND GeraFinanceiro = :geraFinanceiro
       AND PreVenda = :preVenda
@@ -60,6 +64,6 @@ abstract final class ResumoParcelaFormaPagamentoSqlV2 {
   static const String query =
       _queryHead +
       _queryMiddleSelect +
-      ParcelaProdutoVendidoDetalheSql.selectFromParcelLinesThroughJoins +
+      ParcelaProdutoVendidoDetalheSql.selectFromParcelLinesForOverviewAggregate +
       _queryTail;
 }

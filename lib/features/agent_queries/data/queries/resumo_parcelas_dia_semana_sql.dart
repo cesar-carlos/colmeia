@@ -6,8 +6,8 @@ abstract final class ResumoParcelasDiaSemanaSql {
   /// date, with distinct sale counts and net parcel totals after troco
   /// allocation.
   ///
-  /// Inner `Detalhe` comes from `ParcelaProdutoVendidoDetalheSql`; extra
-  /// columns exist for future filters.
+  /// Inner `Detalhe` comes from
+  /// `ParcelaProdutoVendidoDetalheSql.selectFromParcelLinesForOverviewAggregate`.
   ///
   /// Optional dimensions are inlined (see [ResumoParcelasSqlDimensionFilters])
   /// for the Agent SQL bridge named-parameter limit.
@@ -50,36 +50,14 @@ abstract final class ResumoParcelasDiaSemanaSql {
       SELECT
         CodEmpresa,
         CodFilial,
-        CodProdutoVendido,
         Id,
         Origem,
-        CodOrigem,
         GeraFinanceiro,
         PreVenda,
         CodVendedor,
-        NomeVendedor,
-        CodCliente,
-        NomeCliente,
-        CodGrupoCliente,
-        NomeGrupoCliente,
-        CodMunicipio,
-        NomeMunicipio,
-        UFMunicipio,
-        CodRegiao,
-        NomeRegiao,
         DataVenda,
         ((DATEDIFF(DAY, CAST('2000-01-02' AS DATE), DataVenda) % 7) + 7) % 7
           + 1 AS DiaSemanaNumero,
-        DataEmissao,
-        DataVencimento,
-        NumeroDocumento,
-        NomeUsuario,
-        NumeroParcela,
-        AnoDataVenda,
-        MesDataVenda,
-        AnoMesDataVenda,
-        CodFormaPagamento,
-        DescricaoFormaPagamento,
         ValorTrocoParcela,
         ValorParcela
       FROM (
@@ -115,7 +93,7 @@ __RESUMO_PARCELAS_DIMENSION_WHERE__
       codVendedor: codVendedor,
     );
     return _queryHead +
-        ParcelaProdutoVendidoDetalheSql.selectFromParcelLinesThroughJoins +
+        ParcelaProdutoVendidoDetalheSql.selectFromParcelLinesForOverviewAggregate +
         tail;
   }
 }

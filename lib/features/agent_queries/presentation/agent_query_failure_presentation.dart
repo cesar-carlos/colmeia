@@ -1,8 +1,6 @@
 import 'package:colmeia/core/errors/app_failure.dart';
-import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_diagnostic.dart';
 import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
-import 'package:colmeia/features/agent_queries/presentation/localization/agent_sql_failure_message_for_ui_key.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 
@@ -44,14 +42,14 @@ class AgentQueryFailurePresentation {
     }
 
     final category = _categoryFor(failure);
-    final uiKey = _uiKeyFor(failure, category);
-    final title = uiKey == null
-        ? _fallbackTitle(category, l10n)
-        : agentSqlFailureTitleForUiKey(uiKey, l10n);
+    final title = agentQueryFailureTitle(failure, l10n);
     final message = agentQueryFailureUserMessage(failure, l10n);
 
-    final resolvedDetails =
-        detailsBody ?? agentQueryFailureDiagnosticBody(failure);
+    final resolvedDetails = detailsBody ??
+        agentQueryFailureTechnicalDetailsBody(
+          failure,
+          l10n: l10n,
+        );
 
     return AgentQueryFailurePresentation(
       category: category,
@@ -100,45 +98,4 @@ class AgentQueryFailurePresentation {
     return AgentQueryFailureCategory.unknown;
   }
 
-  static String? _uiKeyFor(
-    AppFailure failure,
-    AgentQueryFailureCategory category,
-  ) {
-    final fromContext = failure.context[AgentSqlRpcFailureUiKey.field];
-    if (fromContext is String && fromContext.isNotEmpty) {
-      return fromContext;
-    }
-    return switch (category) {
-      AgentQueryFailureCategory.rateLimit =>
-        AgentSqlRpcFailureUiKey.rateLimited,
-      AgentQueryFailureCategory.session =>
-        AgentSqlRpcFailureUiKey.authenticationFailed,
-      AgentQueryFailureCategory.permission =>
-        AgentSqlRpcFailureUiKey.permissionDenied,
-      AgentQueryFailureCategory.validation =>
-        AgentSqlRpcFailureUiKey.sqlValidationFailed,
-      AgentQueryFailureCategory.transient =>
-        AgentSqlRpcFailureUiKey.networkError,
-      _ => AgentSqlRpcFailureUiKey.generic,
-    };
-  }
-
-  static String _fallbackTitle(
-    AgentQueryFailureCategory category,
-    AppLocalizations l10n,
-  ) {
-    return switch (category) {
-      AgentQueryFailureCategory.rateLimit =>
-        l10n.agentSqlFailureTitleRateLimited,
-      AgentQueryFailureCategory.session =>
-        l10n.agentSqlFailureTitleAuthenticationFailed,
-      AgentQueryFailureCategory.permission =>
-        l10n.agentSqlFailureTitlePermissionDenied,
-      AgentQueryFailureCategory.validation =>
-        l10n.agentSqlFailureTitleValidationFailed,
-      AgentQueryFailureCategory.transient =>
-        l10n.agentSqlFailureTitleNetworkError,
-      _ => l10n.agentSqlFailureTitleGeneric,
-    };
-  }
 }

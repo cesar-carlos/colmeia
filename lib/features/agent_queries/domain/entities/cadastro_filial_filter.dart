@@ -6,6 +6,7 @@ class CadastroFilialFilter {
     this.selectedBranches = const <CadastroFilialBranchRef>[],
     this.page = 1,
     this.pageSize = defaultPageSize,
+    this.mapCatalogProjection = false,
   });
 
   static const int defaultPageSize = 20;
@@ -19,6 +20,9 @@ class CadastroFilialFilter {
   final List<CadastroFilialBranchRef> selectedBranches;
   final int page;
   final int pageSize;
+
+  /// When true, SQL omits CNPJ/CodMunicipio columns unused by the sales map.
+  final bool mapCatalogProjection;
 
   bool get hasSelectedBranches => selectedBranches.isNotEmpty;
 
@@ -55,6 +59,7 @@ class CadastroFilialFilter {
     Object? selectedBranches = _sentinel,
     int? page,
     int? pageSize,
+    bool? mapCatalogProjection,
   }) {
     return CadastroFilialFilter(
       codEmpresa: codEmpresa ?? this.codEmpresa,
@@ -67,6 +72,8 @@ class CadastroFilialFilter {
             ),
       page: page ?? this.page,
       pageSize: pageSize ?? this.pageSize,
+      mapCatalogProjection:
+          mapCatalogProjection ?? this.mapCatalogProjection,
     );
   }
 

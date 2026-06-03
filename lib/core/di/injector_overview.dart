@@ -1,6 +1,11 @@
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
+import 'package:colmeia/features/agent_queries/application/sync/agent_query_facts_prefetch_coordinator.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_mensal_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_produto_venda_lucratividade_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_diario_vendas_use_case.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/domain/cache/agent_query_facts_store.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
@@ -27,6 +32,10 @@ void registerInjectorOverview(GetIt getIt) {
         factsPersister: OverviewBatchFactsPersister(
           factsStore: getIt<AgentQueryFactsStore>(),
         ),
+        loadDaily: getIt<LoadResumoTotalDiarioVendasUseCase>(),
+        loadMonthly: getIt<LoadResumoParcelasMensalUseCase>(),
+        loadWeekday: getIt<LoadResumoParcelasDiaSemanaUseCase>(),
+        loadLucratividade: getIt<LoadResumoProdutoVendaLucratividadeUseCase>(),
         maxParallelReadOnlyBatchItems:
             AppEnvironment.agentSqlOverviewBatchMaxParallelReadOnlyItems,
       ),
@@ -35,6 +44,7 @@ void registerInjectorOverview(GetIt getIt) {
       () => OverviewRepositoryImpl(
         batchLoader: getIt<OverviewBatchLoader>(),
         factsStore: getIt<AgentQueryFactsStore>(),
+        factsPrefetchCoordinator: getIt<AgentQueryFactsPrefetchCoordinator>(),
       ),
     )
     ..registerLazySingleton<LoadOverviewUseCase>(

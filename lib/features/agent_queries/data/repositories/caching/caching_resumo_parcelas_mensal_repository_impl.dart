@@ -4,6 +4,7 @@ import 'package:colmeia/features/agent_queries/data/repositories/caching/base_ca
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_mensal_repository.dart';
 
 final class CachingResumoParcelasMensalRepositoryImpl
@@ -41,6 +42,7 @@ final class CachingResumoParcelasMensalRepositoryImpl
                      hubPresenceOnlineAgentIdsSnapshot,
                  hubConnectedFromApprovedCatalogRow:
                      hubConnectedFromApprovedCatalogRow,
+                 cancelScope: cancelScope,
                  cachePolicy: cachePolicy,
                );
              },
@@ -55,6 +57,7 @@ final class CachingResumoParcelasMensalRepositoryImpl
     int? bridgeTimeoutMs,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
     AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
   }) {
     return loadWithCache(
@@ -66,6 +69,7 @@ final class CachingResumoParcelasMensalRepositoryImpl
       bridgeTimeoutMs: bridgeTimeoutMs,
       hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
       hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
+      cancelScope: cancelScope,
     );
   }
 

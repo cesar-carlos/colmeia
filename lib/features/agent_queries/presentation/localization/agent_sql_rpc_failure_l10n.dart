@@ -1,5 +1,6 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
+import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/presentation/localization/agent_sql_failure_message_for_ui_key.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 
@@ -12,7 +13,7 @@ String agentSqlRpcFailureUserMessage(
   RpcFailure failure,
   AppLocalizations l10n,
 ) {
-  final key = failure.context[AgentSqlRpcFailureUiKey.field] as String?;
+  final key = resolveAgentQueryFailureUiKey(failure);
   final preferBridge =
       failure.context[AgentSqlRpcFailureUiKey.preferBridgeUserMessageField] ==
       true;

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/data/cache/strategies/resumo_total_diario_vendas_cache_strategy.dart';
@@ -17,13 +19,13 @@ void main() {
   final clock = DateTime(2026, 6, 3);
 
   group('CachingResumoTotalDiarioVendasRepositoryImpl', () {
-    late _FakeDelegate delegate;
+    late _FakeDelegate fakeDelegate;
     late CachingResumoTotalDiarioVendasRepositoryImpl cachingRepo;
 
     setUp(() {
-      delegate = _FakeDelegate();
+      fakeDelegate = _FakeDelegate();
       cachingRepo = CachingResumoTotalDiarioVendasRepositoryImpl(
-        delegate: delegate,
+        delegate: fakeDelegate,
         factsStore: memoryAgentQueryFactsStore(),
         clock: () => clock,
       );
@@ -62,7 +64,7 @@ void main() {
       final loaded = result.getOrNull();
       expect(loaded, isNotNull);
       expect(loaded!.single.qtdVendas, row.qtdVendas);
-      expect(delegate.loadCount, 0);
+      expect(fakeDelegate.loadCount, 0);
     });
 
     test('forceRefresh calls delegate even when store has data', () async {
@@ -77,7 +79,7 @@ void main() {
         qtdVendas: 1,
         valorTotalDiarioVenda: 5,
       );
-      delegate.rows = [row];
+      fakeDelegate.rows = [row];
       final storageKey = strategy.storageKey(
         userId: 'u1',
         agentId: 'a1',
@@ -106,7 +108,7 @@ void main() {
       );
 
       expect(result.getOrNull(), [row]);
-      expect(delegate.loadCount, greaterThan(0));
+      expect(fakeDelegate.loadCount, greaterThan(0));
     });
 
     test('networkOnly never reads store and always calls delegate', () async {
@@ -133,7 +135,7 @@ void main() {
         ]),
         schemaVersion: strategy.schemaVersion,
       );
-      delegate.rows = [
+      fakeDelegate.rows = [
         ResumoTotalDiarioVendasRow(
           codEmpresa: 1,
           codFilial: 1,
@@ -151,7 +153,86 @@ void main() {
       );
 
       expect(result.getOrNull()?.single.qtdVendas, 1);
-      expect(delegate.loadCount, greaterThan(0));
+      expect(fakeDelegate.loadCount, greaterThan(0));
+    });
+
+    test(
+      'defaultLoad fetches independent network buckets concurrently',
+      () async {
+        final gateDelegate = _GateDelegate();
+        cachingRepo = CachingResumoTotalDiarioVendasRepositoryImpl(
+          delegate: gateDelegate,
+          factsStore: memoryAgentQueryFactsStore(),
+          clock: () => clock,
+        );
+
+        final filter = ResumoTotalDiarioVendasFilter(
+          dataVendaInicio: DateTime(2026, 6, 3),
+          dataVendaFim: DateTime(2026, 6, 5, 23, 59, 59, 999, 999),
+        );
+
+        final loadFuture = cachingRepo.load(
+          userId: 'u1',
+          agentId: 'a1',
+          filter: filter,
+        );
+
+        await gateDelegate.waitUntilInFlight(atLeast: 2);
+        expect(gateDelegate.peakConcurrent, greaterThanOrEqualTo(2));
+
+        gateDelegate.releaseAll();
+        await loadFuture;
+
+        expect(gateDelegate.loadCount, 3);
+      },
+    );
+
+    test('forceRefresh merges bucket rows in plan order', () async {
+      cachingRepo = CachingResumoTotalDiarioVendasRepositoryImpl(
+        delegate: _PerDayDelegate(),
+        factsStore: memoryAgentQueryFactsStore(),
+        clock: () => clock,
+      );
+
+      final filter = ResumoTotalDiarioVendasFilter(
+        dataVendaInicio: DateTime(2026, 6),
+        dataVendaFim: DateTime(2026, 6, 3, 23, 59, 59, 999, 999),
+      );
+
+      final result = await cachingRepo.load(
+        userId: 'u1',
+        agentId: 'a1',
+        filter: filter,
+        cachePolicy: AgentQueryLoadPolicy.forceRefresh,
+      );
+
+      expect(
+        result.getOrNull()?.map((row) => row.qtdVendas).toList(),
+        <int>[1, 2, 3],
+      );
+    });
+
+    test('returns first bucket failure in plan order', () async {
+      cachingRepo = CachingResumoTotalDiarioVendasRepositoryImpl(
+        delegate: _FailingDelegate(failOnDay: DateTime(2026, 6, 2)),
+        factsStore: memoryAgentQueryFactsStore(),
+        clock: () => clock,
+      );
+
+      final filter = ResumoTotalDiarioVendasFilter(
+        dataVendaInicio: DateTime(2026, 6),
+        dataVendaFim: DateTime(2026, 6, 3, 23, 59, 59, 999, 999),
+      );
+
+      final result = await cachingRepo.load(
+        userId: 'u1',
+        agentId: 'a1',
+        filter: filter,
+        cachePolicy: AgentQueryLoadPolicy.forceRefresh,
+      );
+
+      expect(result.isError(), isTrue);
+      expect(result.exceptionOrNull()?.message, 'bucket-2026-06-02');
     });
   });
 }
@@ -174,5 +255,149 @@ final class _FakeDelegate implements ResumoTotalDiarioVendasRepository {
   }) async {
     loadCount++;
     return Success<List<ResumoTotalDiarioVendasRow>, AppFailure>(rows);
+  }
+}
+
+/// Holds each delegate [load] until [releaseAll] so tests can observe overlap.
+final class _GateDelegate implements ResumoTotalDiarioVendasRepository {
+  int loadCount = 0;
+  int peakConcurrent = 0;
+  int _inFlight = 0;
+  final List<Completer<void>> _pending = <Completer<void>>[];
+  final _inFlightReached = Completer<void>();
+
+  Future<void> waitUntilInFlight({required int atLeast}) async {
+    while (_inFlight < atLeast) {
+      if (_inFlightReached.isCompleted) {
+        break;
+      }
+      await Future<void>.delayed(Duration.zero);
+    }
+    if (_inFlight < atLeast && !_inFlightReached.isCompleted) {
+      await _inFlightReached.future.timeout(
+        const Duration(seconds: 2),
+        onTimeout: () {},
+      );
+    }
+  }
+
+  void releaseAll() {
+    for (final pending in _pending) {
+      if (!pending.isCompleted) {
+        pending.complete();
+      }
+    }
+    _pending.clear();
+  }
+
+  @override
+  Future<AppResult<List<ResumoTotalDiarioVendasRow>>> load({
+    required String userId,
+    required String agentId,
+    required ResumoTotalDiarioVendasFilter filter,
+    String? clientToken,
+    int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
+    AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
+  }) async {
+    loadCount++;
+    _inFlight++;
+    if (_inFlight > peakConcurrent) {
+      peakConcurrent = _inFlight;
+    }
+    if (_inFlight >= 2 && !_inFlightReached.isCompleted) {
+      _inFlightReached.complete();
+    }
+
+    final release = Completer<void>();
+    _pending.add(release);
+    await release.future;
+
+    _inFlight--;
+    return Success<List<ResumoTotalDiarioVendasRow>, AppFailure>(
+      <ResumoTotalDiarioVendasRow>[
+        ResumoTotalDiarioVendasRow(
+          codEmpresa: 1,
+          codFilial: 1,
+          dataVenda: filter.dataVendaInicio,
+          qtdVendas: 1,
+          valorTotalDiarioVenda: 1,
+        ),
+      ],
+    );
+  }
+}
+
+final class _PerDayDelegate implements ResumoTotalDiarioVendasRepository {
+  @override
+  Future<AppResult<List<ResumoTotalDiarioVendasRow>>> load({
+    required String userId,
+    required String agentId,
+    required ResumoTotalDiarioVendasFilter filter,
+    String? clientToken,
+    int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
+    AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
+  }) async {
+    final day = filter.dataVendaInicio.day;
+    return Success<List<ResumoTotalDiarioVendasRow>, AppFailure>(
+      <ResumoTotalDiarioVendasRow>[
+        ResumoTotalDiarioVendasRow(
+          codEmpresa: 1,
+          codFilial: 1,
+          dataVenda: filter.dataVendaInicio,
+          qtdVendas: day,
+          valorTotalDiarioVenda: day.toDouble(),
+        ),
+      ],
+    );
+  }
+}
+
+final class _FailingDelegate implements ResumoTotalDiarioVendasRepository {
+  _FailingDelegate({required this.failOnDay});
+
+  final DateTime failOnDay;
+
+  @override
+  Future<AppResult<List<ResumoTotalDiarioVendasRow>>> load({
+    required String userId,
+    required String agentId,
+    required ResumoTotalDiarioVendasFilter filter,
+    String? clientToken,
+    int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
+    AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
+  }) async {
+    final day = DateTime(
+      filter.dataVendaInicio.year,
+      filter.dataVendaInicio.month,
+      filter.dataVendaInicio.day,
+    );
+    if (day == failOnDay) {
+      return Failure<List<ResumoTotalDiarioVendasRow>, AppFailure>(
+        ValidationFailure(
+          message:
+              'bucket-${failOnDay.year}-${failOnDay.month.toString().padLeft(2, '0')}-${failOnDay.day.toString().padLeft(2, '0')}',
+        ),
+      );
+    }
+    return Success<List<ResumoTotalDiarioVendasRow>, AppFailure>(
+      <ResumoTotalDiarioVendasRow>[
+        ResumoTotalDiarioVendasRow(
+          codEmpresa: 1,
+          codFilial: 1,
+          dataVenda: filter.dataVendaInicio,
+          qtdVendas: day.day,
+          valorTotalDiarioVenda: day.day.toDouble(),
+        ),
+      ],
+    );
   }
 }

@@ -23,7 +23,6 @@ import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:result_dart/result_dart.dart';
 
 void main() {
@@ -104,6 +103,35 @@ void main() {
         ]);
       },
     );
+
+    test('applyFilter reloads with defaultLoad for cache read-through', () async {
+      final repository = _QueuedOverviewRepository(
+        <Future<AppResult<Overview>>>[
+          Future<AppResult<Overview>>.value(
+            Success<Overview, AppFailure>(_overview('Pix')),
+          ),
+          Future<AppResult<Overview>>.value(
+            Success<Overview, AppFailure>(_overview('Pix')),
+          ),
+        ],
+      );
+      final controller = OverviewController(
+        LoadOverviewUseCase(repository),
+      );
+
+      await controller.loadOverview(userId: 'demo-user');
+      await controller.applyFilter(
+        userId: 'demo-user',
+        filter: const DashboardFilter(
+          selectedAgentIds: <String>{'agent-2'},
+        ),
+      );
+
+      check(repository.requestedPolicies).deepEquals(<OverviewLoadPolicy>[
+        OverviewLoadPolicy.defaultLoad,
+        OverviewLoadPolicy.defaultLoad,
+      ]);
+    });
 
     test('should clear stale content when a second load starts', () async {
       final secondLoadCompleter = Completer<AppResult<Overview>>();
