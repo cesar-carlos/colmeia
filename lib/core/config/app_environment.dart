@@ -610,8 +610,8 @@ abstract final class AppEnvironment {
   }
 
   /// Relay JSON-RPC batch arrays (`relay:rpc.request.batch`). Hub v1 shipped
-  /// 2026-05-28; Colmeia default remains `false` until staging validates hub
-  /// batch envelopes end-to-end. Distinct from [socketBatchEnabled]
+  /// 2026-05-28; bundled [default.env] sets `true` (code fallback `false` when
+  /// dotenv/define absent). Distinct from [socketBatchEnabled]
   /// (`agents:command` only). See `docs/bridge_agent_sql_api_options.md`.
   static bool get socketRelayBatchEnabled =>
       AppEnvironmentResolution.resolveBool(

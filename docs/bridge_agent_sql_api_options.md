@@ -110,7 +110,7 @@ Two different batch mechanisms apply on socket builds. Do not conflate them.
 | Mechanism | Env flag | Transport event | What gets batched |
 | --- | --- | --- | --- |
 | **`agents:command` JSON-RPC batch** | `SOCKET_BATCH_ENABLED` (default `true` in bundled `default.env`) | `agents:command` with `command: [rpc, …]` (max 32) | Independent `sql.execute` / other JSON-RPC objects addressed to the **same** `agentId` within the coordinator window (`SOCKET_BATCH_WINDOW_MS`, default 8 ms). Implemented by `AgentCommandBatchCoordinator`. Does **not** apply to `useRelay: true` SQL. |
-| **Relay JSON-RPC batch** | `SOCKET_RELAY_BATCH_ENABLED` (default `false`) | `relay:rpc.request.batch` (hub v1 shipped **2026-05-28**, ADR 0008) | Multiple JSON-RPC commands in one relay emit per conversation. Implemented by `RelayBatchCommandCoordinator` + `RelayCommandDispatcherImpl.sendBatch`. Gated by `RelayBatchProtocolGuard` when `itemCount > 1`. |
+| **Relay JSON-RPC batch** | `SOCKET_RELAY_BATCH_ENABLED` (default `true` in bundled `default.env`; code fallback `false`) | `relay:rpc.request.batch` (hub v1 shipped **2026-05-28**, ADR 0008) | Multiple JSON-RPC commands in one relay emit per conversation. Implemented by `RelayBatchCommandCoordinator` + `RelayCommandDispatcherImpl.sendBatch`. Gated by `RelayBatchProtocolGuard` when `itemCount > 1`. |
 
 **When to use which**
 
@@ -164,8 +164,9 @@ Allowed values:
     comparator before increasing further.
   - `AGENT_SQL_REST_MAX_INFLIGHT_PER_AGENT` defaults to `8` on REST (per-agent
     cap on concurrent `POST .../agents/commands`); set `0` to disable.
-  - Hub-mirrored opt-ins (default `false` on Colmeia): `SOCKET_RELAY_BATCH_ENABLED`,
-    `SOCKET_RELAY_FAST_PATH_ENABLED`, `SOCKET_REQUEST_SERVER_TIMINGS_ENABLED`.
+  - Hub-mirrored opt-ins: `SOCKET_RELAY_BATCH_ENABLED` (`true` in bundled
+    `default.env`; code fallback `false`), `SOCKET_RELAY_FAST_PATH_ENABLED`,
+    `SOCKET_REQUEST_SERVER_TIMINGS_ENABLED` (both default `false`).
     See [`plug_server_docs_index_for_colmeia.md`](plug_server_docs_index_for_colmeia.md)
     ("Colmeia ↔ hub feature flags" and **Staging validation checklist**).
     Committed staging overlay (no secrets): `assets/env/staging.env`.

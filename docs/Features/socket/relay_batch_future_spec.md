@@ -2,19 +2,17 @@
 
 Roadmap phase 4. **Not implemented on the hub today.**
 
-## Current state
+## Current state (shipped)
 
-- `relay:rpc.request` accepts **one** JSON-RPC object per frame.
-- Batch arrays up to 32 RPCs are supported on **`agents:command`** and REST
-  bridge only (`docs/plug_server_docs_index_for_colmeia.md`).
+- Hub v1: `relay:rpc.request.batch` (ADR 0008, **2026-05-28**).
+- Colmeia: `RelayBatchCommandCoordinator` + `RelayBatchProtocolGuard`; production
+  default `SOCKET_RELAY_BATCH_ENABLED=true` in `assets/env/default.env`.
 
 ## Colmeia client guard
 
-When `SOCKET_RELAY_BATCH_ENABLED=false` (default), `RelayBatchProtocolGuard`
-rejects client attempts to send multi-item relay batches with
-`RelayRequestRejected` / `relay_batch_not_supported`.
-
-Enable the flag only after hub + agent implement the spec below.
+When `SOCKET_RELAY_BATCH_ENABLED=false`, `RelayBatchProtocolGuard` rejects
+multi-item relay batches with `RelayRequestRejected` / `relay_batch_not_supported`.
+Unary relay (`itemCount <= 1`) is always allowed.
 
 ## Proposed hub spec (draft)
 

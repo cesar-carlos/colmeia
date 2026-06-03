@@ -92,7 +92,7 @@ envelope shapes and validation.
 
 | Flag | Hub / client contract | Colmeia default | Rollout notes |
 | --- | --- | --- | --- |
-| `SOCKET_RELAY_BATCH_ENABLED` | `relay:rpc.request.batch` — multiple JSON-RPC commands per relay emit (ADR 0008). | `false` | Hub v1 shipped **2026-05-28**. Enable on hub staging first, then set `true` in Colmeia staging and run the E2E comparator. Distinct from `SOCKET_BATCH_ENABLED` (see [`bridge_agent_sql_api_options.md`](bridge_agent_sql_api_options.md)). |
+| `SOCKET_RELAY_BATCH_ENABLED` | `relay:rpc.request.batch` — multiple JSON-RPC commands per relay emit (ADR 0008). | `true` in bundled `default.env` | Hub v1 shipped **2026-05-28**; E2E validated before production default. Override `false` for A/B. Distinct from `SOCKET_BATCH_ENABLED` (see [`bridge_agent_sql_api_options.md`](bridge_agent_sql_api_options.md)). |
 | `SOCKET_RELAY_FAST_PATH_ENABLED` | Relay unary skips `relay:rpc.accepted` when `fastPath: true` (ADR 0009). | `false` | **Keep false** until the hub echoes the client JSON-RPC `id` on fast-path responses (documented defect in [`server_adjustments/relay_unary_fast_path.md`](server_adjustments/relay_unary_fast_path.md)). |
 | `SOCKET_REQUEST_SERVER_TIMINGS_ENABLED` | Appends `serverTimings` phase snapshot to relay, `agents:command`, and REST responses (ADR 0010). | `false` | Safe for E2E and diagnostic builds (~120 B per response). Enable when correlating client metrics with hub queue/SQL phases. |
 
@@ -145,7 +145,8 @@ relay/stream tuning documented in `docs/bridge_agent_sql_api_options.md`.
 
 ## Staging validation checklist (relay batch)
 
-Use before enabling `SOCKET_RELAY_BATCH_ENABLED` in production `default.env`:
+Production `assets/env/default.env` sets `SOCKET_RELAY_BATCH_ENABLED=true`.
+Use this checklist when re-validating hub rollouts or local overrides:
 
 1. **Hub staging:** `SOCKET_RELAY_BATCH_ENABLED=true` on the hub deployment
    (v1 shipped **2026-05-28**); `SOCKET_CONSUMER_ROLES` includes `client`;
