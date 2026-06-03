@@ -1,4 +1,5 @@
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/features/agent_queries/data/agent_sql_batch_item_rpc_failure_mapper.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 
 /// Rows (or failure) parsed from one [AgentSqlBatchExecutionItem] slot.
@@ -24,32 +25,18 @@ abstract final class AgentSqlBatchItemRowsMapper {
     if (item == null) {
       return AgentSqlBatchItemRowsResult<Row>(
         rows: List<Row>.empty(),
-        failure: RpcFailure(
-          message: 'sql.executeBatch item $index is missing',
-          userMessage: 'Nao foi possivel carregar esta consulta.',
-          rpcCode: null,
-          retryable: false,
-          reason: 'missing_batch_item',
-          context: <String, Object?>{
-            'operation': operation,
-            'batchItemIndex': index,
-          },
+        failure: AgentSqlBatchItemRpcFailureMapper.missingItem(
+          index: index,
+          operation: operation,
         ),
       );
     }
     if (!item.ok) {
       return AgentSqlBatchItemRowsResult<Row>(
         rows: List<Row>.empty(),
-        failure: RpcFailure(
-          message: item.error ?? 'sql.executeBatch item failed',
-          userMessage: item.error ?? 'Nao foi possivel carregar esta consulta.',
-          rpcCode: null,
-          retryable: false,
-          reason: 'batch_item_failed',
-          context: <String, Object?>{
-            'operation': operation,
-            'batchItemIndex': index,
-          },
+        failure: AgentSqlBatchItemRpcFailureMapper.fromFailedItem(
+          item: item,
+          operation: operation,
         ),
       );
     }

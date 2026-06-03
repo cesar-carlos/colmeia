@@ -252,6 +252,28 @@ void main() {
       },
     );
 
+    test('loadOverview no-ops while RetryAfterGate is closed', () async {
+      final repository = _QueuedOverviewRepository(
+        <Future<AppResult<Overview>>>[
+          Future<AppResult<Overview>>.value(
+            Success<Overview, AppFailure>(_overview('Pix')),
+          ),
+        ],
+      );
+      final gate = RetryAfterGate(tickInterval: const Duration(milliseconds: 5));
+      gate.arm(const Duration(seconds: 30));
+      final controller = OverviewController(
+        LoadOverviewUseCase(repository),
+        retryAfterGate: gate,
+      );
+
+      await controller.loadOverview(userId: 'demo-user');
+
+      check(controller.isOnRetryCooldown).isTrue();
+      check(repository.requestedPolicies).isEmpty();
+      gate.dispose();
+    });
+
     test(
       'should prefetch agent RPC capabilities for every available agent '
       'after a successful overview load',

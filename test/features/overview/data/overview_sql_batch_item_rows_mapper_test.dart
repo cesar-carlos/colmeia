@@ -37,6 +37,34 @@ void main() {
       expect((result.failure! as RpcFailure).reason, 'batch_item_failed');
     });
 
+    test('propagates structured rate limit metadata from batch item', () {
+      final byIndex = <int, AgentSqlBatchExecutionItem>{
+        1: const AgentSqlBatchExecutionItem(
+          index: 1,
+          ok: false,
+          rows: <Map<String, dynamic>>[],
+          rowCount: 0,
+          error: 'Rate window exceeded',
+          errorPayload: <String, dynamic>{
+            'code': -32013,
+            'message': 'Rate window exceeded',
+            'data': <String, dynamic>{
+              'reason': 'rate_window_exceeded',
+              'retry_after_ms': 30000,
+            },
+          },
+        ),
+      };
+      final result = OverviewSqlBatchItemRowsMapper.mapRowsForIndex<int>(
+        byIndex,
+        1,
+        (row) => row['v']! as int,
+      );
+      final failure = result.failure! as RpcFailure;
+      expect(failure.rpcCode, -32013);
+      expect(failure.retryAfter, const Duration(milliseconds: 30000));
+    });
+
     test('maps rows when item is ok', () {
       final byIndex = <int, AgentSqlBatchExecutionItem>{
         2: const AgentSqlBatchExecutionItem(

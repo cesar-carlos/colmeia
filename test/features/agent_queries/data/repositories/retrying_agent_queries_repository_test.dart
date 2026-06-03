@@ -3,7 +3,9 @@ import 'dart:math' as math;
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_retry_backoff.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_failure_codes.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/retrying_agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
@@ -158,6 +160,65 @@ void main() {
 
     check(result.isError()).isTrue();
     check(result.exceptionOrNull()).isA<NetworkFailure>();
+    verify(() => delegate.executeSql(request)).called(1);
+  });
+
+  test('RpcFailure rate limit (-32013) without retryAfter: no retry', () async {
+    const failure = RpcFailure(
+      message: 'Rate window exceeded',
+      userMessage: 'Too many requests',
+      rpcCode: -32013,
+      retryable: true,
+    );
+    when(() => delegate.executeSql(any())).thenAnswer(
+      (_) async => const Failure<AgentSqlExecutionResult, AppFailure>(failure),
+    );
+
+    final result = await retrying.executeSql(request);
+
+    check(result.isError()).isTrue();
+    verify(() => delegate.executeSql(request)).called(1);
+  });
+
+  test(
+    'RpcFailure rate limit via uiKey without retryAfter: no retry',
+    () async {
+      const failure = RpcFailure(
+        message: 'Rate window exceeded',
+        userMessage: 'Too many requests',
+        rpcCode: null,
+        retryable: true,
+        reason: 'rate_window_exceeded',
+        context: <String, Object?>{
+          AgentSqlRpcFailureUiKey.field: AgentSqlRpcFailureUiKey.rateLimited,
+        },
+      );
+      when(() => delegate.executeSql(any())).thenAnswer(
+        (_) async => const Failure<AgentSqlExecutionResult, AppFailure>(failure),
+      );
+
+      final result = await retrying.executeSql(request);
+
+      check(result.isError()).isTrue();
+      verify(() => delegate.executeSql(request)).called(1);
+    },
+  );
+
+  test('NetworkFailure RATE_LIMITED transport code: no retry', () async {
+    const failure = NetworkFailure(
+      message: 'rate limited',
+      userMessage: 'Too many requests',
+      context: <String, Object?>{
+        AgentQueriesFailureContext.transportCodeField: 'RATE_LIMITED',
+      },
+    );
+    when(() => delegate.executeSql(any())).thenAnswer(
+      (_) async => const Failure<AgentSqlExecutionResult, AppFailure>(failure),
+    );
+
+    final result = await retrying.executeSql(request);
+
+    check(result.isError()).isTrue();
     verify(() => delegate.executeSql(request)).called(1);
   });
 

@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/domain/cache/agent_query_bucket_plan.dart';
@@ -34,15 +37,20 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row>
     required AgentQueryFactsStore factsStore,
     required AgentQueryCacheStrategy<Filter, Row> strategy,
     DateTime Function()? clock,
+    int? bucketLoadConcurrency,
   }) : _delegateLoad = delegateLoad,
        _factsStore = factsStore,
        _strategy = strategy,
-       _clock = clock ?? DateTime.now;
+       _clock = clock ?? DateTime.now,
+       _bucketLoadConcurrency =
+           bucketLoadConcurrency ??
+           AppEnvironment.agentQueryFactsBucketLoadConcurrency;
 
   final AgentQuerySingleLoad<Filter, Row> _delegateLoad;
   final AgentQueryFactsStore _factsStore;
   final AgentQueryCacheStrategy<Filter, Row> _strategy;
   final DateTime Function() _clock;
+  final int _bucketLoadConcurrency;
 
   AgentQueryCacheStrategy<Filter, Row> get strategy => _strategy;
 
@@ -92,31 +100,30 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row>
       cachePolicy: cachePolicy,
     );
 
-    final bucketResults = await Future.wait(
-      plan.allBucketIdsInRange.map(
-        (bucketId) => _loadBucket(
-          userId: userId,
-          agentId: agentId,
-          rangeFilter: filter,
-          bucketId: bucketId,
-          plan: plan,
-          cachePolicy: cachePolicy,
-          clock: clock,
-          prefetchedPayload: prefetchedPayloads[
-            _strategy.storageKey(
-              userId: userId,
-              agentId: agentId,
-              bucketId: bucketId,
-              rangeFilter: filter,
-            )
-          ],
-          clientToken: clientToken,
-          bridgeTimeoutMs: bridgeTimeoutMs,
-          hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
-          hubConnectedFromApprovedCatalogRow:
-              hubConnectedFromApprovedCatalogRow,
-          cancelScope: cancelScope,
-        ),
+    final bucketResults = await _loadBucketsInWaves(
+      bucketIds: plan.allBucketIdsInRange,
+      loadBucket: (bucketId) => _loadBucket(
+        userId: userId,
+        agentId: agentId,
+        rangeFilter: filter,
+        bucketId: bucketId,
+        plan: plan,
+        cachePolicy: cachePolicy,
+        clock: clock,
+        prefetchedPayload: prefetchedPayloads[
+          _strategy.storageKey(
+            userId: userId,
+            agentId: agentId,
+            bucketId: bucketId,
+            rangeFilter: filter,
+          )
+        ],
+        clientToken: clientToken,
+        bridgeTimeoutMs: bridgeTimeoutMs,
+        hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+        hubConnectedFromApprovedCatalogRow:
+            hubConnectedFromApprovedCatalogRow,
+        cancelScope: cancelScope,
       ),
     );
 
@@ -177,6 +184,28 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row>
     required String bucketId,
   }) {
     return '${AgentQueryFactsKeyPrefix.forAgent(userId: userId, agentId: agentId)}${_strategy.factKind.name}:$cacheScopeId:$bucketId';
+  }
+
+  Future<List<AppResult<List<Row>>>> _loadBucketsInWaves({
+    required List<String> bucketIds,
+    required Future<AppResult<List<Row>>> Function(String bucketId) loadBucket,
+  }) async {
+    if (bucketIds.isEmpty) {
+      return <AppResult<List<Row>>>[];
+    }
+    final waveSize = math.max(1, _bucketLoadConcurrency);
+    final results = <AppResult<List<Row>>>[];
+    for (var start = 0; start < bucketIds.length; start += waveSize) {
+      final end = math.min(start + waveSize, bucketIds.length);
+      final chunk = await Future.wait(
+        List<Future<AppResult<List<Row>>>>.generate(
+          end - start,
+          (offset) => loadBucket(bucketIds[start + offset]),
+        ),
+      );
+      results.addAll(chunk);
+    }
+    return results;
   }
 
   Future<Map<String, List<int>>> _readClosedBucketPayloads({

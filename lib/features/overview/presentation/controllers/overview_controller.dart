@@ -7,6 +7,8 @@ import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
 import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_registry.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_diagnostic.dart';
+import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
+import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
@@ -168,6 +170,9 @@ class OverviewController extends ChangeNotifier {
     OverviewLoadLabels? rowLabels,
     OverviewFailureMessageBuilder? failureMessageBuilder,
   }) async {
+    if (isOnRetryCooldown) {
+      return;
+    }
     _activeFilter = filter.normalizedForHomeDashboardReferenceRange();
     _session.resetRequested();
     await _loadOverview(
@@ -215,6 +220,9 @@ class OverviewController extends ChangeNotifier {
     OverviewLoadLabels? rowLabels,
     OverviewFailureMessageBuilder? failureMessageBuilder,
   }) async {
+    if (isOnRetryCooldown) {
+      return;
+    }
     await _loadOverview(
       userId: userId,
       policy: OverviewLoadPolicy.defaultLoad,
@@ -406,12 +414,31 @@ class OverviewController extends ChangeNotifier {
     );
   }
 
+  void _armRetryAfterFromFailures(AppFailure failure) {
+    armAgentQueryRetryAfterGate(_retryAfterGate, failure);
+  }
+
+  void _armRetryAfterFromPartialFailures(Overview overview) {
+    for (final detail in overview.partialQueryFailureDetails) {
+      if (_isRateLimitedAgentQueryFailure(detail.failure)) {
+        _armRetryAfterFromFailures(detail.failure);
+      }
+    }
+  }
+
+  bool _isRateLimitedAgentQueryFailure(AppFailure failure) {
+    return resolveAgentQueryFailureUiKey(failure) ==
+            AgentSqlRpcFailureUiKey.rateLimited ||
+        (failure is RpcFailure && failure.rpcCode == -32013);
+  }
+
   void _applyOneShotSuccess({
     required Overview overview,
     required String signature,
     required String userId,
     required OverviewLoadPolicy policy,
   }) {
+    _armRetryAfterFromPartialFailures(overview);
     _overview = overview;
     _completedOverviewSections = Set<OverviewProgressiveSection>.of(
       OverviewProgressiveSection.values,
@@ -447,7 +474,7 @@ class OverviewController extends ChangeNotifier {
       _session.clearLoaded();
       _completedOverviewSections = const <OverviewProgressiveSection>{};
     }
-    armAgentQueryRetryAfterGate(_retryAfterGate, failure);
+    _armRetryAfterFromFailures(failure);
     final userMessage = failureMessageBuilder(failure);
     _errorMessage = userMessage;
     _loadFailure = failure;
@@ -497,6 +524,7 @@ class OverviewController extends ChangeNotifier {
       if (snapshot != null) {
         _overview = snapshot.overview;
         _completedOverviewSections = snapshot.completedSections;
+        _armRetryAfterFromPartialFailures(snapshot.overview);
         _errorMessage = null;
         _errorDiagnosticBody = null;
         _loadFailure = null;

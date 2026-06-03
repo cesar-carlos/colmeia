@@ -22,6 +22,7 @@ class AgentSqlBatchExecutionItem {
     required this.rowCount,
     this.affectedRows,
     this.error,
+    this.errorPayload,
     this.columnMetadata = const <Map<String, dynamic>>[],
   });
 
@@ -31,5 +32,6 @@ class AgentSqlBatchExecutionItem {
   final int rowCount;
   final int? affectedRows;
   final String? error;
+  final Map<String, dynamic>? errorPayload;
   final List<Map<String, dynamic>> columnMetadata;
 }

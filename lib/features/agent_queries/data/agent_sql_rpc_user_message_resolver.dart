@@ -109,7 +109,7 @@ bool _isRateLimitedReason(String? reasonLower) {
   if (reasonLower == null || reasonLower.isEmpty) {
     return false;
   }
-  if (reasonLower == 'rate_limited') {
+  if (reasonLower == 'rate_limited' || reasonLower == 'rate_window_exceeded') {
     return true;
   }
   return reasonLower.endsWith('_rate_limited');

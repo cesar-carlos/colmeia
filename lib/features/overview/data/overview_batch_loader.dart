@@ -299,7 +299,7 @@ class OverviewBatchLoader {
        _loadLucratividade = loadLucratividade,
        _maxParallelReadOnlyBatchItems = maxParallelReadOnlyBatchItems,
        _targetWaveConcurrency =
-           targetWaveConcurrency ?? AppEnvironment.agentQueryMergeAllConcurrency,
+           targetWaveConcurrency ?? AppEnvironment.overviewTargetWaveConcurrency,
        _transportPolicy = transportPolicy ??
            AgentQueryTransportPolicy(
              mode: AppEnvironment.agentQueryTransportPolicyMode,
@@ -419,10 +419,8 @@ class OverviewBatchLoader {
     final selectedNorm = _normalizeSelectedAgentIds(filter.selectedAgentIds);
     final includeLucratividadeMensal =
         selectedNorm != null && selectedNorm.length == 1;
-    final omitCachedSectionsFromSqlBatch = _CachedSectionSqlOmission(
-      dailyMonthly: _usesCachedDailyMonthlySections,
-      weekday: _usesCachedWeekdaySection,
-      lucratividade: _usesCachedLucratividadeSection,
+    final omitCachedSectionsFromSqlBatch = _cachedSectionSqlOmissionFor(
+      cachePolicy: cachePolicy,
     );
     if (mergeSqlBatchesPerTarget) {
       yield* _loadProgressivelySingleBatchPerTarget(
@@ -610,7 +608,16 @@ class OverviewBatchLoader {
     AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
   }) async {
     final started = DateTime.now();
-    final cachedSectionsFuture = _loadCachedSectionsViaUseCases(
+    final batchOutcome = await _executeSectionSqlBatch(
+      userId: userId,
+      target: target,
+      planBridgeTimeoutMs: planBridgeTimeoutMs,
+      batch: batch,
+      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+      cancelScope: cancelScope,
+      cachePolicy: cachePolicy,
+    );
+    final cachedSections = await _loadCachedSectionsViaUseCases(
       userId: userId,
       target: target,
       mensalFilter: mensalFilter,
@@ -621,16 +628,6 @@ class OverviewBatchLoader {
       cancelScope: cancelScope,
       cachePolicy: cachePolicy,
     );
-    final batchOutcome = await _executeSectionSqlBatch(
-      userId: userId,
-      target: target,
-      planBridgeTimeoutMs: planBridgeTimeoutMs,
-      batch: batch,
-      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
-      cancelScope: cancelScope,
-      cachePolicy: cachePolicy,
-    );
-    final cachedSections = await cachedSectionsFuture;
     final elapsedMs = DateTime.now().difference(started).inMilliseconds;
     if (batchOutcome.failure != null) {
       return _targetResultWithSectionFailures(
@@ -671,6 +668,28 @@ class OverviewBatchLoader {
 
   bool get _usesCachedLucratividadeSection => _loadLucratividade != null;
 
+  _CachedSectionSqlOmission _cachedSectionSqlOmissionFor({
+    required AgentQueryLoadPolicy cachePolicy,
+  }) {
+    if (cachePolicy != AgentQueryLoadPolicy.defaultLoad) {
+      return const _CachedSectionSqlOmission();
+    }
+    return _CachedSectionSqlOmission(
+      dailyMonthly: _usesCachedDailyMonthlySections,
+      weekday: _usesCachedWeekdaySection,
+      lucratividade: _usesCachedLucratividadeSection,
+    );
+  }
+
+  bool _loadsCachedSectionsViaUseCases(AgentQueryLoadPolicy cachePolicy) {
+    if (cachePolicy != AgentQueryLoadPolicy.defaultLoad) {
+      return false;
+    }
+    return _usesCachedDailyMonthlySections ||
+        _usesCachedWeekdaySection ||
+        _usesCachedLucratividadeSection;
+  }
+
   Future<_OverviewCachedSections?> _loadCachedSectionsViaUseCases({
     required String userId,
     required AgentQueryTarget target,
@@ -682,6 +701,10 @@ class OverviewBatchLoader {
     required Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     AgentQueriesCancelScope? cancelScope,
   }) async {
+    if (!_loadsCachedSectionsViaUseCases(cachePolicy)) {
+      return null;
+    }
+
     final loadDaily = _loadDaily;
     final loadMonthly = _loadMonthly;
     final loadWeekday = _loadWeekday;
@@ -698,104 +721,66 @@ class OverviewBatchLoader {
       dataVendaFim: dailyTotalFilter.dataVendaFim,
     );
 
-    final futures = <Future<Object>>[];
-    int? dailyIndex;
-    if (loadDaily != null) {
-      dailyIndex = futures.length;
-      futures.add(
-        loadDaily.call(
-          userId: userId,
-          agentId: target.agentId,
-          filter: dailyTotalFilter,
-          clientToken: target.clientToken,
-          bridgeTimeoutMs: planBridgeTimeoutMs,
-          hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
-          hubConnectedFromApprovedCatalogRow:
-              target.hubConnectedFromApprovedCatalogRow,
-          cancelScope: cancelScope,
-          cachePolicy: cachePolicy,
-        ),
-      );
-    }
-    int? monthlyIndex;
-    if (loadMonthly != null) {
-      monthlyIndex = futures.length;
-      futures.add(
-        loadMonthly.call(
-          userId: userId,
-          agentId: target.agentId,
-          filter: mensalFilter,
-          clientToken: target.clientToken,
-          bridgeTimeoutMs: planBridgeTimeoutMs,
-          hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
-          hubConnectedFromApprovedCatalogRow:
-              target.hubConnectedFromApprovedCatalogRow,
-          cancelScope: cancelScope,
-          cachePolicy: cachePolicy,
-        ),
-      );
-    }
-    int? weekdayIndex;
-    if (loadWeekday != null) {
-      weekdayIndex = futures.length;
-      futures.add(
-        loadWeekday.call(
-          userId: userId,
-          agentId: target.agentId,
-          filter: weekdayFilter,
-          clientToken: target.clientToken,
-          bridgeTimeoutMs: planBridgeTimeoutMs,
-          hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
-          hubConnectedFromApprovedCatalogRow:
-              target.hubConnectedFromApprovedCatalogRow,
-          cancelScope: cancelScope,
-          cachePolicy: cachePolicy,
-        ),
-      );
-    }
-    int? lucratividadeIndex;
-    if (loadLucratividade != null) {
-      lucratividadeIndex = futures.length;
-      futures.add(
-        loadLucratividade.call(
-          userId: userId,
-          agentId: target.agentId,
-          filter: lucratividadeFilter,
-          clientToken: target.clientToken,
-          bridgeTimeoutMs: planBridgeTimeoutMs,
-          hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
-          hubConnectedFromApprovedCatalogRow:
-              target.hubConnectedFromApprovedCatalogRow,
-          cancelScope: cancelScope,
-          cachePolicy: cachePolicy,
-        ),
-      );
-    }
-
-    if (futures.isEmpty) {
-      return null;
-    }
-
-    final results = await Future.wait<Object>(futures);
     AppResult<List<ResumoTotalDiarioVendasRow>>? dailyResult;
     AppResult<List<ResumoParcelasMensalRow>>? monthlyResult;
     AppResult<List<ResumoParcelasDiaSemanaRow>>? weekdayResult;
     AppResult<List<ResumoProdutoVendaLucratividadeRow>>? lucratividadeResult;
-    if (dailyIndex != null) {
-      dailyResult =
-          results[dailyIndex] as AppResult<List<ResumoTotalDiarioVendasRow>>;
+
+    if (loadDaily != null) {
+      dailyResult = await loadDaily.call(
+        userId: userId,
+        agentId: target.agentId,
+        filter: dailyTotalFilter,
+        clientToken: target.clientToken,
+        bridgeTimeoutMs: planBridgeTimeoutMs,
+        hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+        hubConnectedFromApprovedCatalogRow:
+            target.hubConnectedFromApprovedCatalogRow,
+        cancelScope: cancelScope,
+        cachePolicy: cachePolicy,
+      );
     }
-    if (monthlyIndex != null) {
-      monthlyResult =
-          results[monthlyIndex] as AppResult<List<ResumoParcelasMensalRow>>;
+    if (loadMonthly != null) {
+      monthlyResult = await loadMonthly.call(
+        userId: userId,
+        agentId: target.agentId,
+        filter: mensalFilter,
+        clientToken: target.clientToken,
+        bridgeTimeoutMs: planBridgeTimeoutMs,
+        hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+        hubConnectedFromApprovedCatalogRow:
+            target.hubConnectedFromApprovedCatalogRow,
+        cancelScope: cancelScope,
+        cachePolicy: cachePolicy,
+      );
     }
-    if (weekdayIndex != null) {
-      weekdayResult =
-          results[weekdayIndex] as AppResult<List<ResumoParcelasDiaSemanaRow>>;
+    if (loadWeekday != null) {
+      weekdayResult = await loadWeekday.call(
+        userId: userId,
+        agentId: target.agentId,
+        filter: weekdayFilter,
+        clientToken: target.clientToken,
+        bridgeTimeoutMs: planBridgeTimeoutMs,
+        hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+        hubConnectedFromApprovedCatalogRow:
+            target.hubConnectedFromApprovedCatalogRow,
+        cancelScope: cancelScope,
+        cachePolicy: cachePolicy,
+      );
     }
-    if (lucratividadeIndex != null) {
-      lucratividadeResult = results[lucratividadeIndex]
-          as AppResult<List<ResumoProdutoVendaLucratividadeRow>>;
+    if (loadLucratividade != null) {
+      lucratividadeResult = await loadLucratividade.call(
+        userId: userId,
+        agentId: target.agentId,
+        filter: lucratividadeFilter,
+        clientToken: target.clientToken,
+        bridgeTimeoutMs: planBridgeTimeoutMs,
+        hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+        hubConnectedFromApprovedCatalogRow:
+            target.hubConnectedFromApprovedCatalogRow,
+        cancelScope: cancelScope,
+        cachePolicy: cachePolicy,
+      );
     }
 
     return _OverviewCachedSections(
@@ -867,7 +852,9 @@ class OverviewBatchLoader {
       weekdayFilter: weekdayFilter,
       dailyTotalFilter: dailyTotalFilter,
       includeLucratividadeMensal: includeLucratividadeMensal,
-      omitCachedSectionsFromSqlBatch: omitCachedSectionsFromSqlBatch,
+      omitCachedSectionsFromSqlBatch: _cachedSectionSqlOmissionFor(
+        cachePolicy: cachePolicy,
+      ),
     );
     final started = DateTime.now();
     final targets = plan.plannedTargets.toList();
@@ -920,17 +907,6 @@ class OverviewBatchLoader {
     AgentQueriesCancelScope? cancelScope,
     AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
   }) async {
-    final cachedSectionsFuture = _loadCachedSectionsViaUseCases(
-      userId: userId,
-      target: target,
-      mensalFilter: mensalFilter,
-      weekdayFilter: weekdayFilter,
-      dailyTotalFilter: dailyTotalFilter,
-      planBridgeTimeoutMs: planBridgeTimeoutMs,
-      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
-      cancelScope: cancelScope,
-      cachePolicy: cachePolicy,
-    );
     final started = DateTime.now();
     final batchRequest = _transportPolicy.applyBatch(
       AgentSqlExecuteBatchRequest(
@@ -955,7 +931,17 @@ class OverviewBatchLoader {
       batchRequest,
       cancelScope: cancelScope,
     );
-    final cachedSections = await cachedSectionsFuture;
+    final cachedSections = await _loadCachedSectionsViaUseCases(
+      userId: userId,
+      target: target,
+      mensalFilter: mensalFilter,
+      weekdayFilter: weekdayFilter,
+      dailyTotalFilter: dailyTotalFilter,
+      planBridgeTimeoutMs: planBridgeTimeoutMs,
+      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+      cancelScope: cancelScope,
+      cachePolicy: cachePolicy,
+    );
     final elapsedMs = DateTime.now().difference(started).inMilliseconds;
     final execution = result.getOrNull();
     if (execution == null) {

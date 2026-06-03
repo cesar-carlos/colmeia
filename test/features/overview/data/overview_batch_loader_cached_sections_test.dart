@@ -429,6 +429,75 @@ void main() {
     );
   });
 
+  test(
+    'forceRefresh includes daily monthly weekday lucratividade in section batch',
+    () async {
+      when(() => agentQueriesRepository.executeSqlBatch(any())).thenAnswer((
+        invocation,
+      ) async {
+        final request =
+            invocation.positionalArguments.single as AgentSqlExecuteBatchRequest;
+        if (request.commands.length == 2) {
+          return Success<AgentSqlBatchExecutionResult, AppFailure>(
+            _batchResult(
+              commandCount: 2,
+              rowsByIndex: <int, List<Map<String, dynamic>>>{
+                0: <Map<String, dynamic>>[_mainRow()],
+                1: <Map<String, dynamic>>[_userRankingRow()],
+              },
+            ),
+          );
+        }
+        return Success<AgentSqlBatchExecutionResult, AppFailure>(
+          _batchResult(commandCount: request.commands.length),
+        );
+      });
+
+      await runDefaultLoad(
+        loader: loaderWithCachedSections(),
+        cachePolicy: AgentQueryLoadPolicy.forceRefresh,
+      );
+
+      final batchRequests = verify(
+        () => agentQueriesRepository.executeSqlBatch(captureAny()),
+      ).captured.cast<AgentSqlExecuteBatchRequest>();
+      final sectionRequest = batchRequests.last;
+      final sqlBodies = sectionRequest.commands
+          .map((command) => command.sql)
+          .join('\n');
+      expect(sqlBodies.contains(ResumoTotalDiarioVendasSql.query), isTrue);
+      expect(
+        sqlBodies.contains(ResumoParcelasMensalSql.query()),
+        isTrue,
+      );
+      expect(
+        sqlBodies.contains(ResumoParcelasDiaSemanaSql.query()),
+        isTrue,
+      );
+      expect(
+        sqlBodies.contains(ResumoProdutoVendaLucratividadeSql.query),
+        isTrue,
+      );
+      verifyNever(
+        () => loadDaily.call(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+          filter: any(named: 'filter'),
+          clientToken: any(named: 'clientToken'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          hubPresenceOnlineAgentIdsSnapshot: any(
+            named: 'hubPresenceOnlineAgentIdsSnapshot',
+          ),
+          hubConnectedFromApprovedCatalogRow: any(
+            named: 'hubConnectedFromApprovedCatalogRow',
+          ),
+          cancelScope: any(named: 'cancelScope'),
+          cachePolicy: any(named: 'cachePolicy'),
+        ),
+      );
+    },
+  );
+
   test('forceRefresh sets skipTransportCache on batch requests', () async {
     when(() => agentQueriesRepository.executeSqlBatch(any())).thenAnswer((
       invocation,

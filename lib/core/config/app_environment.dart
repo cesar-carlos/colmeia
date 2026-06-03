@@ -133,7 +133,9 @@ abstract final class AppEnvironment {
   static const int defaultAgentSqlCacheTtlMs = 3000;
   static const int defaultAgentSqlParseIsolateRowThreshold = 2000;
   static const int defaultAgentSqlCatalogCacheTtlMs = 30000;
-  static const int defaultAgentQueryMergeAllConcurrency = 8;
+  static const int defaultAgentQueryMergeAllConcurrency = 4;
+  static const int defaultAgentQueryFactsBucketLoadConcurrency = 3;
+  static const int defaultAgentQueryFactsPrefetchDelayMs = 2000;
   static const int defaultAgentQueryTargetResolutionCacheTtlMs = 30000;
   static const int defaultAgentSqlOverviewBatchMaxParallelReadOnlyItems = 4;
   static const int defaultAgentSqlRelayStreamingMaxConcurrentPerAgent = 4;
@@ -174,14 +176,12 @@ abstract final class AppEnvironment {
   /// Parallel mergeAll wave size for across-agent orchestration.
   ///
   /// Tuning guide:
-  /// - Default `8` balances hub throughput and per-agent inflight limits on
-  ///   typical owner dashboards with a handful of agents.
-  /// - Lower to `4` when bridge timeouts or hub 429/503 spikes appear during
-  ///   multi-agent overview or sales map loads.
-  /// - Raise toward `16` only on stable networks with few agents and headroom
+  /// - Default `4` reduces burst load on hub rate windows during multi-agent
+  ///   overview and sales map loads.
+  /// - Raise toward `8` only on stable networks with few agents and headroom
   ///   under [agentSqlRestMaxInflightPerAgent] / socket inflight gates.
-  /// - Overview batch loader and sales live map reuse this cap unless
-  ///   [salesLiveMapMergeWaveSize] overrides the map path.
+  /// - Overview batch loader uses [overviewTargetWaveConcurrency] when set;
+  ///   sales live map uses [salesLiveMapMergeWaveSize] when set.
   static int get agentQueryMergeAllConcurrency =>
       AppEnvironmentResolution.resolveInt(
         fromDefine: const String.fromEnvironment(
@@ -190,6 +190,43 @@ abstract final class AppEnvironment {
         fromDotenv: _dotenvMaybe(EnvKeys.agentQueryMergeAllConcurrency),
         fallback: defaultAgentQueryMergeAllConcurrency,
       ).clamp(1, 64);
+
+  /// Across-agent wave size for overview SQL batch loads. Falls back to
+  /// [agentQueryMergeAllConcurrency] when unset (`0`).
+  static int get overviewTargetWaveConcurrency {
+    final configured = AppEnvironmentResolution.resolveInt(
+      fromDefine: const String.fromEnvironment(
+        EnvKeys.overviewTargetWaveConcurrency,
+      ),
+      fromDotenv: _dotenvMaybe(EnvKeys.overviewTargetWaveConcurrency),
+      fallback: 0,
+    );
+    if (configured > 0) {
+      return configured.clamp(1, 64);
+    }
+    return agentQueryMergeAllConcurrency;
+  }
+
+  /// Parallel closed-bucket loads inside cached agent-query repositories.
+  static int get agentQueryFactsBucketLoadConcurrency =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.agentQueryFactsBucketLoadConcurrency,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.agentQueryFactsBucketLoadConcurrency),
+        fallback: defaultAgentQueryFactsBucketLoadConcurrency,
+      ).clamp(1, 16);
+
+  /// Delay before post-overview fact prefetch to avoid overlapping with the
+  /// dashboard's own SQL burst. `0` disables the delay.
+  static int get agentQueryFactsPrefetchDelayMs =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.agentQueryFactsPrefetchDelayMs,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.agentQueryFactsPrefetchDelayMs),
+        fallback: defaultAgentQueryFactsPrefetchDelayMs,
+      )._atLeastOrFallback(0, defaultAgentQueryFactsPrefetchDelayMs);
 
   /// Bridge timeout for sales live map period sales and catalog SQL.
   ///

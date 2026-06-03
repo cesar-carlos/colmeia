@@ -204,13 +204,27 @@ abstract final class AgentSqlBridgeResponse {
       }
     }
 
+    final rawError = item['error'];
+    Map<String, dynamic>? errorPayload;
+    String? errorMessage;
+    if (rawError is Map) {
+      errorPayload = Map<String, dynamic>.from(rawError);
+      errorMessage = _readNonEmptyString(
+        errorPayload,
+        const <String>['message'],
+      );
+    } else if (rawError != null) {
+      errorMessage = rawError.toString();
+    }
+
     return AgentSqlBatchExecutionItem(
       index: _readInt(item['index']) ?? 0,
       ok: item['ok'] == true,
       rows: rows,
       rowCount: _readInt(item['row_count']) ?? rows.length,
       affectedRows: _readInt(item['affected_rows']),
-      error: item['error']?.toString(),
+      error: errorMessage,
+      errorPayload: errorPayload,
       columnMetadata: metadata,
     );
   }

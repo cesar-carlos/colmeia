@@ -48,6 +48,14 @@ final class AgentQueryFactsPrefetchCoordinator {
       return;
     }
 
+    final delayMs = AppEnvironment.agentQueryFactsPrefetchDelayMs;
+    if (delayMs > 0) {
+      await Future<void>.delayed(Duration(milliseconds: delayMs));
+      if (!_retryAfterGate.isOpen) {
+        return;
+      }
+    }
+
     var index = 0;
     Future<void> worker() async {
       while (index < targets.length) {

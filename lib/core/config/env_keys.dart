@@ -44,10 +44,23 @@ abstract final class EnvKeys {
   static const String agentSqlCatalogCacheTtlMs =
       'AGENT_SQL_CATALOG_CACHE_TTL_MS';
 
-  /// Parallel mergeAll wave size for across-agent orchestration. Default 8.
+  /// Parallel mergeAll wave size for across-agent orchestration. Default 4.
   /// See AppEnvironment agentQueryMergeAllConcurrency tuning notes.
   static const String agentQueryMergeAllConcurrency =
       'AGENT_QUERY_MERGE_ALL_CONCURRENCY';
+
+  /// Overview batch loader across-agent wave cap. `0` mirrors
+  /// [agentQueryMergeAllConcurrency].
+  static const String overviewTargetWaveConcurrency =
+      'OVERVIEW_TARGET_WAVE_CONCURRENCY';
+
+  /// Max concurrent closed-bucket network loads per cached agent-query repo.
+  static const String agentQueryFactsBucketLoadConcurrency =
+      'AGENT_QUERY_FACTS_BUCKET_LOAD_CONCURRENCY';
+
+  /// Delay (ms) after overview completes before fact-bucket prefetch starts.
+  static const String agentQueryFactsPrefetchDelayMs =
+      'AGENT_QUERY_FACTS_PREFETCH_DELAY_MS';
 
   /// mergeAll wave cap for sales live map loads. `0` (default) mirrors
   /// [socketMaxInflightPerAgent] or 8 when the gate is disabled.

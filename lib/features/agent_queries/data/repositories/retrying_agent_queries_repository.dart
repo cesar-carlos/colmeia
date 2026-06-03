@@ -3,7 +3,10 @@ import 'dart:math' as math;
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_failure_codes.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_retry_backoff.dart';
+import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
+import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
@@ -148,6 +151,9 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
   }
 
   bool _shouldRetry(AppFailure failure) {
+    if (_isRateLimitedFailure(failure)) {
+      return false;
+    }
     if (_retryAfterOf(failure) != null) {
       return false;
     }
@@ -155,6 +161,27 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
       return true;
     }
     return _isCooperativeHubWarmupFailure(failure);
+  }
+
+  bool _isRateLimitedFailure(AppFailure failure) {
+    if (resolveAgentQueryFailureUiKey(failure) ==
+        AgentSqlRpcFailureUiKey.rateLimited) {
+      return true;
+    }
+    if (failure is RpcFailure && failure.rpcCode == -32013) {
+      return true;
+    }
+    if (failure is NetworkFailure) {
+      if (failure.context['httpStatusCode'] == 429) {
+        return true;
+      }
+      final transportCode =
+          failure.context[AgentQueriesFailureContext.transportCodeField];
+      if (transportCode is String && isSocketRateLimitedCode(transportCode)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /// Hub sometimes returns `SERVICE_UNAVAILABLE` / "protocol negotiation is
