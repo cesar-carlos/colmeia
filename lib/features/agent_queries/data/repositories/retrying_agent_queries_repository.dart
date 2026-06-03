@@ -3,16 +3,17 @@ import 'dart:math' as math;
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/agent_queries/data/agent_sql_rpc_user_message_resolver.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_failure_codes.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_retry_backoff.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
-import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_ui_key.dart';
 
 /// Decorator that retries transient failures automatically with exponential
 /// backoff, preserving the original request semantics while improving
@@ -168,8 +169,13 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
         AgentSqlRpcFailureUiKey.rateLimited) {
       return true;
     }
-    if (failure is RpcFailure && failure.rpcCode == -32013) {
-      return true;
+    if (failure is RpcFailure) {
+      if (failure.rpcCode == -32013) {
+        return true;
+      }
+      if (isAgentSqlRpcRateLimitedReason(failure.reason)) {
+        return true;
+      }
     }
     if (failure is NetworkFailure) {
       if (failure.context['httpStatusCode'] == 429) {

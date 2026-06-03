@@ -105,15 +105,21 @@ AgentSqlRpcUserMessageResolution _localizedResolution({
   );
 }
 
-bool _isRateLimitedReason(String? reasonLower) {
+bool isAgentSqlRpcRateLimitedReason(String? reason) {
+  final reasonLower = reason?.trim().toLowerCase();
   if (reasonLower == null || reasonLower.isEmpty) {
     return false;
   }
-  if (reasonLower == 'rate_limited' || reasonLower == 'rate_window_exceeded') {
+  if (reasonLower == 'rate_limited' ||
+      reasonLower == 'rate_window_exceeded' ||
+      reasonLower == 'concurrent_handlers_exceeded') {
     return true;
   }
   return reasonLower.endsWith('_rate_limited');
 }
+
+bool _isRateLimitedReason(String? reasonLower) =>
+    isAgentSqlRpcRateLimitedReason(reasonLower);
 
 AgentSqlRpcUserMessageResolution _sqlValidationResolution(String bridge) {
   final trimmed = bridge.trim();

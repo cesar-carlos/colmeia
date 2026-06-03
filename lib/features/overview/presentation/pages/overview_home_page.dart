@@ -188,7 +188,9 @@ class _OverviewFilterSection extends StatelessWidget {
       selector: (_, c) => _FilterSlice(
         filter: c.activeFilter,
         agents: c.availableAgents,
-        isLoading: c.isLoading,
+        // Keep filters interactive after the first successful agent list; only
+        // block edits on the true cold start before branch options exist.
+        isLoading: c.isLoadingInitial && c.availableAgents.isEmpty,
       ),
       builder: (context, slice, _) {
         return OverviewFilterBar(

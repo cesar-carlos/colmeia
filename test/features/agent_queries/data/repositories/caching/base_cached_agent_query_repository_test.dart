@@ -157,13 +157,15 @@ void main() {
     });
 
     test(
-      'defaultLoad fetches independent network buckets concurrently',
+      'defaultLoad without batch support fetches network buckets via delegate',
       () async {
         final gateDelegate = _GateDelegate();
         cachingRepo = CachingResumoTotalDiarioVendasRepositoryImpl(
           delegate: gateDelegate,
           factsStore: memoryAgentQueryFactsStore(),
           clock: () => clock,
+          useExecuteBatchForBuckets: false,
+          bucketLoadConcurrency: 3,
         );
 
         final filter = ResumoTotalDiarioVendasFilter(

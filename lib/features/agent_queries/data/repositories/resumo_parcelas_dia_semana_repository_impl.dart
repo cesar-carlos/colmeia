@@ -22,7 +22,8 @@ class ResumoParcelasDiaSemanaRepositoryImpl
     implements ResumoParcelasDiaSemanaRepository {
   ResumoParcelasDiaSemanaRepositoryImpl(this._agentQueriesRepository);
 
-  static const String _operation = 'loadResumoParcelasDiaSemana';
+  static const String operation = 'loadResumoParcelasDiaSemana';
+  static const String _operation = operation;
 
   final AgentQueriesRepository _agentQueriesRepository;
 

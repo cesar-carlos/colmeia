@@ -2,8 +2,8 @@ import 'dart:math' as math;
 
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
-import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_retry_backoff.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_failure_codes.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_retry_backoff.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/retrying_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
@@ -179,6 +179,27 @@ void main() {
     check(result.isError()).isTrue();
     verify(() => delegate.executeSql(request)).called(1);
   });
+
+  test(
+    'RpcFailure concurrent_handlers_exceeded reason without rpcCode: no retry',
+    () async {
+      const failure = RpcFailure(
+        message: 'Too many concurrent handlers',
+        userMessage: 'Server busy',
+        rpcCode: null,
+        retryable: true,
+        reason: 'concurrent_handlers_exceeded',
+      );
+      when(() => delegate.executeSql(any())).thenAnswer(
+        (_) async => const Failure<AgentSqlExecutionResult, AppFailure>(failure),
+      );
+
+      final result = await retrying.executeSql(request);
+
+      check(result.isError()).isTrue();
+      verify(() => delegate.executeSql(request)).called(1);
+    },
+  );
 
   test(
     'RpcFailure rate limit via uiKey without retryAfter: no retry',

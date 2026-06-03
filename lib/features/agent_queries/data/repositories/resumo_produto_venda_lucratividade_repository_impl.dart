@@ -25,7 +25,8 @@ class ResumoProdutoVendaLucratividadeRepositoryImpl
   static const int _defaultSqlTimeoutMs = 108000;
   static const int _minSqlTimeoutMs = 5000;
 
-  static const String _operation = 'loadResumoProdutoVendaLucratividade';
+  static const String operation = 'loadResumoProdutoVendaLucratividade';
+  static const String _operation = operation;
 
   final AgentQueriesRepository _agentQueriesRepository;
 

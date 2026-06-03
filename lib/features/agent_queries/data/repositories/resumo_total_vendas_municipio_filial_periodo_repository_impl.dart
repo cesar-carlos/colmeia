@@ -25,8 +25,8 @@ class ResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl
     this._agentQueriesRepository,
   );
 
-  static const String _operation =
-      'loadResumoTotalVendasMunicipioFilialPeriodo';
+  static const String operation = 'loadResumoTotalVendasMunicipioFilialPeriodo';
+  static const String _operation = operation;
 
   final AgentQueriesRepository _agentQueriesRepository;
 

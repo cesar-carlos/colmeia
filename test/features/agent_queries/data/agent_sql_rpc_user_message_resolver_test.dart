@@ -113,6 +113,21 @@ void main() {
   });
 
   test(
+    'concurrent_handlers_exceeded maps to rateLimited without -32013',
+    () {
+      final resolution = resolveAgentSqlRpcUserMessage(
+        const AgentSqlRpcErrorDetails(
+          userMessage: '',
+          message: 'Too many concurrent handlers',
+          reason: 'concurrent_handlers_exceeded',
+        ),
+      );
+      check(resolution.uiKey).equals(AgentSqlRpcFailureUiKey.rateLimited);
+      check(resolution.userMessage).equals(en.agentSqlErrorRateLimited);
+    },
+  );
+
+  test(
     'client_token_get_policy_rate_limited with -32013 maps to rateLimited',
     () {
       final resolution = resolveAgentSqlRpcUserMessage(

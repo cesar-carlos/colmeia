@@ -555,13 +555,15 @@ void _registerSingleAgentQueryRepositories(GetIt getIt) {
     LoadResumoProdutoVendaLucratividadeUseCase
   >(
     getIt,
-    repo: () => CachingResumoProdutoVendaLucratividadeRepositoryImpl(
-      delegate: ResumoProdutoVendaLucratividadeRepositoryImpl(
-        getIt<AgentQueriesRepository>(),
-      ),
-      factsStore: getIt<AgentQueryFactsStore>(),
-      strategy: getIt<ResumoProdutoVendaLucratividadeCacheStrategy>(),
-    ),
+    repo: () {
+      final agentQueries = getIt<AgentQueriesRepository>();
+      return CachingResumoProdutoVendaLucratividadeRepositoryImpl(
+        delegate: ResumoProdutoVendaLucratividadeRepositoryImpl(agentQueries),
+        factsStore: getIt<AgentQueryFactsStore>(),
+        strategy: getIt<ResumoProdutoVendaLucratividadeCacheStrategy>(),
+        agentQueriesRepository: agentQueries,
+      );
+    },
     useCase: () => LoadResumoProdutoVendaLucratividadeUseCase(
       getIt<ResumoProdutoVendaLucratividadeRepository>(),
     ),
@@ -702,13 +704,15 @@ void _registerSingleAgentQueryRepositories(GetIt getIt) {
     LoadResumoParcelasDiaSemanaUseCase
   >(
     getIt,
-    repo: () => CachingResumoParcelasDiaSemanaRepositoryImpl(
-      delegate: ResumoParcelasDiaSemanaRepositoryImpl(
-        getIt<AgentQueriesRepository>(),
-      ),
-      factsStore: getIt<AgentQueryFactsStore>(),
-      strategy: getIt<ResumoParcelasDiaSemanaCacheStrategy>(),
-    ),
+    repo: () {
+      final agentQueries = getIt<AgentQueriesRepository>();
+      return CachingResumoParcelasDiaSemanaRepositoryImpl(
+        delegate: ResumoParcelasDiaSemanaRepositoryImpl(agentQueries),
+        factsStore: getIt<AgentQueryFactsStore>(),
+        strategy: getIt<ResumoParcelasDiaSemanaCacheStrategy>(),
+        agentQueriesRepository: agentQueries,
+      );
+    },
     useCase: () => LoadResumoParcelasDiaSemanaUseCase(
       getIt<ResumoParcelasDiaSemanaRepository>(),
     ),
@@ -756,13 +760,15 @@ void _registerSingleAgentQueryRepositories(GetIt getIt) {
     LoadResumoParcelasMensalUseCase
   >(
     getIt,
-    repo: () => CachingResumoParcelasMensalRepositoryImpl(
-      delegate: ResumoParcelasMensalRepositoryImpl(
-        getIt<AgentQueriesRepository>(),
-      ),
-      factsStore: getIt<AgentQueryFactsStore>(),
-      strategy: getIt<ResumoParcelasMensalCacheStrategy>(),
-    ),
+    repo: () {
+      final agentQueries = getIt<AgentQueriesRepository>();
+      return CachingResumoParcelasMensalRepositoryImpl(
+        delegate: ResumoParcelasMensalRepositoryImpl(agentQueries),
+        factsStore: getIt<AgentQueryFactsStore>(),
+        strategy: getIt<ResumoParcelasMensalCacheStrategy>(),
+        agentQueriesRepository: agentQueries,
+      );
+    },
     useCase: () => LoadResumoParcelasMensalUseCase(
       getIt<ResumoParcelasMensalRepository>(),
     ),
@@ -786,13 +792,15 @@ void _registerSingleAgentQueryRepositories(GetIt getIt) {
     LoadResumoTotalDiarioVendasUseCase
   >(
     getIt,
-    repo: () => CachingResumoTotalDiarioVendasRepositoryImpl(
-      delegate: ResumoTotalDiarioVendasRepositoryImpl(
-        getIt<AgentQueriesRepository>(),
-      ),
-      factsStore: getIt<AgentQueryFactsStore>(),
-      strategy: getIt<ResumoTotalDiarioVendasCacheStrategy>(),
-    ),
+    repo: () {
+      final agentQueries = getIt<AgentQueriesRepository>();
+      return CachingResumoTotalDiarioVendasRepositoryImpl(
+        delegate: ResumoTotalDiarioVendasRepositoryImpl(agentQueries),
+        factsStore: getIt<AgentQueryFactsStore>(),
+        strategy: getIt<ResumoTotalDiarioVendasCacheStrategy>(),
+        agentQueriesRepository: agentQueries,
+      );
+    },
     useCase: () => LoadResumoTotalDiarioVendasUseCase(
       getIt<ResumoTotalDiarioVendasRepository>(),
     ),
@@ -816,13 +824,17 @@ void _registerSingleAgentQueryRepositories(GetIt getIt) {
     LoadResumoTotalVendasMunicipioFilialPeriodoUseCase
   >(
     getIt,
-    repo: () => CachingResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl(
-      delegate: ResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl(
-        getIt<AgentQueriesRepository>(),
-      ),
-      factsStore: getIt<AgentQueryFactsStore>(),
-      strategy: getIt<ResumoTotalVendasMunicipioFilialPeriodoCacheStrategy>(),
-    ),
+    repo: () {
+      final agentQueries = getIt<AgentQueriesRepository>();
+      return CachingResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl(
+        delegate: ResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl(
+          agentQueries,
+        ),
+        factsStore: getIt<AgentQueryFactsStore>(),
+        strategy: getIt<ResumoTotalVendasMunicipioFilialPeriodoCacheStrategy>(),
+        agentQueriesRepository: agentQueries,
+      );
+    },
     useCase: () => LoadResumoTotalVendasMunicipioFilialPeriodoUseCase(
       getIt<ResumoTotalVendasMunicipioFilialPeriodoRepository>(),
     ),

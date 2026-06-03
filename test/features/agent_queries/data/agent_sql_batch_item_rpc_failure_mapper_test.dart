@@ -1,4 +1,3 @@
-import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_batch_item_rpc_failure_mapper.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';

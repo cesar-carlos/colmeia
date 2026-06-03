@@ -1,5 +1,4 @@
 import 'package:colmeia/core/errors/app_failure.dart';
-import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/presentation/overview_alert_banner_spec.dart';

@@ -23,7 +23,8 @@ class ResumoTotalDiarioVendasRepositoryImpl
     implements ResumoTotalDiarioVendasRepository {
   ResumoTotalDiarioVendasRepositoryImpl(this._agentQueriesRepository);
 
-  static const String _operation = 'loadResumoTotalDiarioVendas';
+  static const String operation = 'loadResumoTotalDiarioVendas';
+  static const String _operation = operation;
 
   final AgentQueriesRepository _agentQueriesRepository;
 

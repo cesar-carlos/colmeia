@@ -1,6 +1,9 @@
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/data/cache/strategies/resumo_parcelas_dia_semana_cache_strategy.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/caching/agent_query_facts_bucket_batch_support.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/caching/agent_query_facts_bucket_batch_supports.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/caching/base_cached_agent_query_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row.dart';
@@ -18,10 +21,18 @@ final class CachingResumoParcelasDiaSemanaRepositoryImpl
   CachingResumoParcelasDiaSemanaRepositoryImpl({
     required ResumoParcelasDiaSemanaRepository delegate,
     required super.factsStore,
+    AgentQueriesRepository? agentQueriesRepository,
+    AgentQueryFactsBucketBatchSupport<ResumoParcelasDiaSemanaFilter,
+            ResumoParcelasDiaSemanaRow>?
+        bucketBatchSupport,
     ResumoParcelasDiaSemanaCacheStrategy super.strategy =
         const ResumoParcelasDiaSemanaCacheStrategy(),
     super.clock,
   }) : super(
+         agentQueriesRepository: agentQueriesRepository,
+         bucketBatchSupport:
+             bucketBatchSupport ??
+             const ResumoParcelasDiaSemanaFactsBucketBatchSupport(),
          delegateLoad:
              ({
                required userId,

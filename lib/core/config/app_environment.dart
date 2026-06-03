@@ -134,10 +134,11 @@ abstract final class AppEnvironment {
   static const int defaultAgentSqlParseIsolateRowThreshold = 2000;
   static const int defaultAgentSqlCatalogCacheTtlMs = 30000;
   static const int defaultAgentQueryMergeAllConcurrency = 4;
-  static const int defaultAgentQueryFactsBucketLoadConcurrency = 3;
+  static const int defaultAgentQueryFactsBucketLoadConcurrency = 1;
   static const int defaultAgentQueryFactsPrefetchDelayMs = 2000;
   static const int defaultAgentQueryTargetResolutionCacheTtlMs = 30000;
-  static const int defaultAgentSqlOverviewBatchMaxParallelReadOnlyItems = 4;
+  static const int defaultAgentSqlOverviewBatchMaxParallelReadOnlyItems = 1;
+  static const bool defaultAgentQueryFactsBucketUseExecuteBatch = true;
   static const int defaultAgentSqlRelayStreamingMaxConcurrentPerAgent = 4;
   static const int defaultAgentSqlBridgeTimeoutMs = 120000;
   static const int defaultAgentSqlBridgeMediumTimeoutMs = 180000;
@@ -216,6 +217,16 @@ abstract final class AppEnvironment {
         fromDotenv: _dotenvMaybe(EnvKeys.agentQueryFactsBucketLoadConcurrency),
         fallback: defaultAgentQueryFactsBucketLoadConcurrency,
       ).clamp(1, 16);
+
+  /// When true, cached repos batch missing closed buckets via `executeSqlBatch`.
+  static bool get agentQueryFactsBucketUseExecuteBatch =>
+      AppEnvironmentResolution.resolveBool(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.agentQueryFactsBucketUseExecuteBatch,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.agentQueryFactsBucketUseExecuteBatch),
+        fallback: defaultAgentQueryFactsBucketUseExecuteBatch,
+      );
 
   /// Delay before post-overview fact prefetch to avoid overlapping with the
   /// dashboard's own SQL burst. `0` disables the delay.

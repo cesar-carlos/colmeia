@@ -55,8 +55,14 @@ abstract final class EnvKeys {
       'OVERVIEW_TARGET_WAVE_CONCURRENCY';
 
   /// Max concurrent closed-bucket network loads per cached agent-query repo.
+  /// Default 1 in AppEnvironment (reduces concurrent_handlers_exceeded on overview).
   static const String agentQueryFactsBucketLoadConcurrency =
       'AGENT_QUERY_FACTS_BUCKET_LOAD_CONCURRENCY';
+
+  /// When true, cold-cache bucket loads use `sql.executeBatch` instead of
+  /// per-bucket unary `executeSql`.
+  static const String agentQueryFactsBucketUseExecuteBatch =
+      'AGENT_QUERY_FACTS_BUCKET_USE_EXECUTE_BATCH';
 
   /// Delay (ms) after overview completes before fact-bucket prefetch starts.
   static const String agentQueryFactsPrefetchDelayMs =
@@ -73,7 +79,7 @@ abstract final class EnvKeys {
       'SALES_LIVE_MAP_BRIDGE_TIMEOUT_MS';
 
   /// Optional bridge hint for overview read-only `sql.executeBatch`
-  /// parallelism. Positive integer; the agent keeps the final safety cap.
+  /// parallelism. Positive integer; default 2. The agent keeps the final safety cap.
   static const String agentSqlOverviewBatchMaxParallelReadOnlyItems =
       'AGENT_SQL_OVERVIEW_BATCH_MAX_PARALLEL_READ_ONLY_ITEMS';
 

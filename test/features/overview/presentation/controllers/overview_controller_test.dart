@@ -133,6 +133,50 @@ void main() {
       ]);
     });
 
+    test(
+      'applyFilter clears stale overview and uses initial loading state',
+      () async {
+        final filterReloadCompleter = Completer<AppResult<Overview>>();
+        final repository = _QueuedOverviewRepository(
+          <Future<AppResult<Overview>>>[
+            Future<AppResult<Overview>>.value(
+              Success<Overview, AppFailure>(_overview('Pix')),
+            ),
+            filterReloadCompleter.future,
+          ],
+        );
+        final controller = OverviewController(
+          LoadOverviewUseCase(repository),
+        );
+
+        await controller.loadOverview(userId: 'demo-user');
+
+        final filterFuture = controller.applyFilter(
+          userId: 'demo-user',
+          filter: const DashboardFilter(
+            selectedAgentIds: <String>{'agent-2'},
+          ),
+        );
+
+        await Future<void>.delayed(Duration.zero);
+
+        check(controller.overview).isNull();
+        check(controller.hasContent).isFalse();
+        check(controller.isLoadingInitial).isTrue();
+        check(controller.isRefreshing).isFalse();
+
+        filterReloadCompleter.complete(
+          Success<Overview, AppFailure>(_overview('Credito')),
+        );
+
+        await filterFuture;
+
+        check(controller.isLoadingInitial).isFalse();
+        check(controller.overview).isNotNull();
+        check(controller.overview!.paymentMethods.single.code).equals('Credito');
+      },
+    );
+
     test('should clear stale content when a second load starts', () async {
       final secondLoadCompleter = Completer<AppResult<Overview>>();
       final repository = _QueuedOverviewRepository(
@@ -260,8 +304,8 @@ void main() {
           ),
         ],
       );
-      final gate = RetryAfterGate(tickInterval: const Duration(milliseconds: 5));
-      gate.arm(const Duration(seconds: 30));
+      final gate = RetryAfterGate(tickInterval: const Duration(milliseconds: 5))
+        ..arm(const Duration(seconds: 30));
       final controller = OverviewController(
         LoadOverviewUseCase(repository),
         retryAfterGate: gate,

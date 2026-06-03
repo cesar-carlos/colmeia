@@ -41,7 +41,8 @@ class ResumoParcelasMensalRepositoryImpl
     this._agentQueriesRepository,
   );
 
-  static const String _operation = 'loadResumoParcelasMensal';
+  static const String operation = 'loadResumoParcelasMensal';
+  static const String _operation = operation;
 
   final AgentQueriesRepository _agentQueriesRepository;
 

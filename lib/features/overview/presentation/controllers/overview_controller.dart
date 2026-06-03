@@ -5,9 +5,9 @@ import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
 import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_registry.dart';
+import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_diagnostic.dart';
-import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
@@ -178,7 +178,9 @@ class OverviewController extends ChangeNotifier {
     await _loadOverview(
       userId: userId,
       policy: OverviewLoadPolicy.defaultLoad,
-      keepContentVisible: _overview != null,
+      // Clear prior overview so KPI/chart sections show skeleton instead of
+      // stale data from the previous filter signature.
+      keepContentVisible: false,
       loadingMode: loadingMode,
       rowLabels: rowLabels ?? OverviewLoadLabels.englishFallback,
       failureMessageBuilder:

@@ -1,6 +1,9 @@
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/data/cache/strategies/resumo_total_vendas_municipio_filial_periodo_cache_strategy.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/caching/agent_query_facts_bucket_batch_support.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/caching/agent_query_facts_bucket_batch_supports.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/caching/base_cached_agent_query_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_loaded_rows.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
@@ -18,10 +21,19 @@ final class CachingResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl
   CachingResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl({
     required ResumoTotalVendasMunicipioFilialPeriodoRepository delegate,
     required super.factsStore,
+    AgentQueriesRepository? agentQueriesRepository,
+    AgentQueryFactsBucketBatchSupport<
+            ResumoTotalVendasMunicipioFilialPeriodoFilter,
+            ResumoTotalVendasMunicipioFilialPeriodoRow>?
+        bucketBatchSupport,
     ResumoTotalVendasMunicipioFilialPeriodoCacheStrategy super.strategy =
         const ResumoTotalVendasMunicipioFilialPeriodoCacheStrategy(),
     super.clock,
   }) : super(
+         agentQueriesRepository: agentQueriesRepository,
+         bucketBatchSupport:
+             bucketBatchSupport ??
+             const ResumoTotalVendasMunicipioFilialPeriodoFactsBucketBatchSupport(),
          delegateLoad:
              ({
                required userId,
