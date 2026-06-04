@@ -829,31 +829,58 @@ class _SelectedMarkerDetailSurface extends StatelessWidget {
 
 class _BrazilStoreSalesMapContent extends StatelessWidget {
   const _BrazilStoreSalesMapContent({
-    required this.regionMap,
+    required this.regionMapBuilder,
+    required this.fixedRegionMapHeight,
+    this.regionMapStyleHeightForAvailableArea,
+    this.expandMapVertically = false,
+    super.key,
     this.mapOverlay,
     this.diagnostics,
     this.markerLegend,
     this.detail,
   });
 
-  final Widget regionMap;
+  final Widget Function(double height) regionMapBuilder;
+  final double fixedRegionMapHeight;
+  final double Function(double availableMapAreaHeight)?
+  regionMapStyleHeightForAvailableArea;
+  final bool expandMapVertically;
   final Widget? mapOverlay;
   final Widget? diagnostics;
   final Widget? markerLegend;
   final Widget? detail;
 
+  Widget _regionMapStack(double height) {
+    final regionMap = regionMapBuilder(height);
+    if (mapOverlay == null) {
+      return regionMap;
+    }
+    return Stack(
+      clipBehavior: Clip.none,
+      children: <Widget>[
+        regionMap,
+        mapOverlay!,
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final regionMapContent = mapOverlay == null
-        ? regionMap
-        : Stack(
-            clipBehavior: Clip.none,
-            children: <Widget>[
-              regionMap,
-              mapOverlay!,
-            ],
-          );
-    final children = <Widget>[regionMapContent];
+    final mapSection = expandMapVertically
+        ? Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final resolvedHeight =
+                    regionMapStyleHeightForAvailableArea?.call(
+                      constraints.maxHeight,
+                    ) ??
+                    fixedRegionMapHeight;
+                return _regionMapStack(resolvedHeight);
+              },
+            ),
+          )
+        : _regionMapStack(fixedRegionMapHeight);
+    final children = <Widget>[mapSection];
     if (diagnostics != null) {
       children.add(diagnostics!);
     }

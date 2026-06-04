@@ -20,8 +20,14 @@ void main() {
       expect(style.markerMinSize, 10);
       expect(style.markerMaxSize, 24);
       expect(style.enableProximityCluster, isTrue);
+      expect(style.enableZoomPan, isTrue);
       expect(style.showStoreDetail, isTrue);
       expect(style.showRegionFilter, isFalse);
+      expect(style.autoFocusSelectedStore, isFalse);
+      expect(
+        style.selectedMarkerDetailPlacement,
+        AppBrazilStoreSalesSelectedMarkerDetailPlacement.overlay,
+      );
     });
 
     test('maps municipalities + bubble with municipality tooltip budget', () {

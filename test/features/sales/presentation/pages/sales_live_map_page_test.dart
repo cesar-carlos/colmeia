@@ -164,15 +164,15 @@ void main() {
     ).called(1);
 
     await tester.tap(find.text('Off'));
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
     await tester.tap(
-      find.byKey(const ValueKey<String>('sales-auto-refresh-fiveMinutes')),
+      find.byKey(
+        const ValueKey<String>('sales-auto-refresh-fifteenMinutes'),
+      ),
     );
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
 
-    await tester.pump(const Duration(minutes: 5));
+    await tester.pump(const Duration(minutes: 15));
     await tester.pump();
 
     verify(

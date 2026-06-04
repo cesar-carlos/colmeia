@@ -47,6 +47,7 @@ class SalesLiveMapInlineChartSection extends StatelessWidget {
         }
         return SalesLiveMapChartPanel(
           mode: SalesLiveMapChartPanelMode.inline,
+          mapPayloadDigest: slice.mapPayloadDigest,
           title: l10n.salesLiveMapChartTitle,
           subtitle: viewModel.mapSubtitle,
           points: slice.points,

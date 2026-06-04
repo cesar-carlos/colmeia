@@ -56,6 +56,7 @@ abstract final class SalesLiveMapVisualSpecMapper {
       maxClusterTooltipStores: spec.maxClusterTooltipStores,
       showStoreDetail: spec.showStoreDetail,
       showRegionFilter: spec.showRegionFilter,
+      autoFocusSelectedStore: false,
       enableProximityCluster: spec.enableProximityCluster,
     );
   }

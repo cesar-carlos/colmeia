@@ -40,6 +40,7 @@ class SalesLiveMapInitialSkeleton extends StatelessWidget {
           SizedBox(height: tokens.sectionSpacing),
           SalesLiveMapChartPanel(
             mode: SalesLiveMapChartPanelMode.inline,
+            mapPayloadDigest: 0,
             title: AppLocalizations.of(context).salesLiveMapChartTitle,
             points: const <SalesLiveMapPoint>[],
             metric: SalesLiveMapMetric.revenue,

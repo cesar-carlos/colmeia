@@ -8,6 +8,7 @@ import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_region_map_chart.dart';
+import 'package:colmeia/shared/widgets/charts/region_map_viewport_sync_policy.dart';
 import 'package:colmeia/shared/widgets/forms/app_choice_chip.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
@@ -206,6 +207,7 @@ class AppRegionMapChart<T> extends StatefulWidget {
     this.markerBuilder,
     this.markerTooltipBuilder,
     this.onPointTap,
+    this.viewportController,
   });
 
   final List<T> items;
@@ -267,6 +269,9 @@ class AppRegionMapChart<T> extends StatefulWidget {
 
   /// Called when the user taps a marker.
   final ValueChanged<AppMapPointTapEvent>? onPointTap;
+
+  /// Optional controller to suppress programmatic viewport after store taps.
+  final RegionMapViewportController? viewportController;
 
   @override
   State<AppRegionMapChart<T>> createState() => _AppRegionMapChartState<T>();
@@ -345,6 +350,7 @@ class _AppRegionMapChartState<T> extends State<AppRegionMapChart<T>> {
       markerBuilder: widget.markerBuilder,
       markerTooltipBuilder: widget.markerTooltipBuilder,
       onPointTap: widget.onPointTap,
+      viewportController: widget.viewportController,
     );
 
     final drillUpButton = _buildDrillUpButton(l10n);

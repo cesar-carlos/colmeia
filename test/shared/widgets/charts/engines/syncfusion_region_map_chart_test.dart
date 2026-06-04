@@ -305,6 +305,50 @@ void main() {
     },
   );
 
+  testWidgets(
+    'rebuild with unchanged preferred viewport keeps manual wheel zoom',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+      final viewports = <AppMapViewport>[];
+      try {
+        await tester.pumpWidget(
+          _TestApp(
+            child: _MutablePreferredViewportRegionMap(
+              preset: AppChartPreset.explorable,
+              preferredViewport: const AppMapViewport(
+                zoomLevel: 1.45,
+                centerLatitude: -14.235,
+                centerLongitude: -51.9253,
+              ),
+              style: const AppRegionMapChartStyle(
+                height: 240,
+                maxZoomLevel: 2,
+              ),
+              onViewportChanged: (event) => viewports.add(event.viewport),
+            ),
+          ),
+        );
+
+        await _sendPointerScrollOver(tester, find.byType(SfMaps), -120);
+        await tester.pump();
+        final zoomAfterScroll = viewports.last.zoomLevel;
+        expect(zoomAfterScroll, greaterThan(1.45));
+
+        await tester.tap(find.byKey(const ValueKey<String>('rebuild-map')));
+        await tester.pump();
+
+        expect(viewports.last.zoomLevel, greaterThan(1.45));
+
+        await _sendPointerScrollOver(tester, find.byType(SfMaps), -120);
+        await tester.pump();
+
+        expect(viewports.last.zoomLevel, greaterThan(zoomAfterScroll - 0.01));
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    },
+  );
+
   testWidgets('preserves manual zoom state across marker updates', (
     tester,
   ) async {
@@ -530,6 +574,76 @@ class _TestRegionMap extends StatelessWidget {
       isLoading: isLoading,
       points: points,
       onViewportChanged: onViewportChanged,
+    );
+  }
+}
+
+class _MutablePreferredViewportRegionMap extends StatelessWidget {
+  const _MutablePreferredViewportRegionMap({
+    required this.preferredViewport,
+    required this.preset,
+    required this.style,
+    this.onViewportChanged,
+  });
+
+  final AppMapViewport preferredViewport;
+  final AppChartPreset preset;
+  final AppRegionMapChartStyle style;
+  final ValueChanged<AppMapViewportChangedEvent>? onViewportChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return _MutablePreferredViewportRegionMapBody(
+      preferredViewport: preferredViewport,
+      preset: preset,
+      style: style,
+      onViewportChanged: onViewportChanged,
+    );
+  }
+}
+
+class _MutablePreferredViewportRegionMapBody extends StatefulWidget {
+  const _MutablePreferredViewportRegionMapBody({
+    required this.preferredViewport,
+    required this.preset,
+    required this.style,
+    this.onViewportChanged,
+  });
+
+  final AppMapViewport preferredViewport;
+  final AppChartPreset preset;
+  final AppRegionMapChartStyle style;
+  final ValueChanged<AppMapViewportChangedEvent>? onViewportChanged;
+
+  @override
+  State<_MutablePreferredViewportRegionMapBody> createState() =>
+      _MutablePreferredViewportRegionMapBodyState();
+}
+
+class _MutablePreferredViewportRegionMapBodyState
+    extends State<_MutablePreferredViewportRegionMapBody> {
+  var _rebuildCount = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        ElevatedButton(
+          key: const ValueKey<String>('rebuild-map'),
+          onPressed: () {
+            setState(() {
+              _rebuildCount++;
+            });
+          },
+          child: Text('Rebuild $_rebuildCount'),
+        ),
+        _TestRegionMap(
+          preset: widget.preset,
+          style: widget.style,
+          preferredViewport: widget.preferredViewport,
+          onViewportChanged: widget.onViewportChanged,
+        ),
+      ],
     );
   }
 }

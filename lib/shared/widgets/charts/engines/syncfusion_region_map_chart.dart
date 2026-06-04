@@ -7,6 +7,8 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
+import 'package:colmeia/shared/widgets/charts/brazil_map_layout_constants.dart';
+import 'package:colmeia/shared/widgets/charts/region_map_viewport_sync_policy.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -39,6 +41,7 @@ class SyncfusionRegionMapChart<T> extends StatefulWidget {
     this.markerBuilder,
     this.markerTooltipBuilder,
     this.onPointTap,
+    this.viewportController,
   });
 
   final List<T> items;
@@ -77,6 +80,7 @@ class SyncfusionRegionMapChart<T> extends StatefulWidget {
   final Widget Function(BuildContext context, AppMapPoint point, int index)?
   markerTooltipBuilder;
   final ValueChanged<AppMapPointTapEvent>? onPointTap;
+  final RegionMapViewportController? viewportController;
 
   @override
   State<SyncfusionRegionMapChart<T>> createState() =>
@@ -96,6 +100,8 @@ class _SyncfusionRegionMapChartState<T>
 
   MapShapeSource? _cachedMapShapeSource;
   int? _cachedGeometryShapeFingerprint;
+  AppMapViewport? _lastAppliedPreferredViewport;
+  bool _lockPreferredViewportReapply = false;
 
   /// Stable identity for [SfMaps] and for deciding when to drop the cached
   /// [MapShapeSource]. Must not depend on marker lat/lng: remounting [SfMaps]
@@ -146,12 +152,29 @@ class _SyncfusionRegionMapChartState<T>
       ..maxZoomLevel = widget.style.maxZoomLevel
       ..showToolbar = widget.preset == AppChartPreset.explorable;
     _viewportState = _clampedViewportState(_viewportState);
-    if (oldWidget.preferredViewport != widget.preferredViewport) {
+    if (!_isPreferredViewportSuppressed &&
+        RegionMapViewportSyncPolicy.shouldApplyPreferredViewportOnWidgetUpdate(
+          previousPreferred: oldWidget.preferredViewport,
+          nextPreferred: widget.preferredViewport,
+          userHasManualViewport: _viewportState.userHasManualViewport,
+        )) {
       _applyPreferredViewport();
-    } else {
+    } else if (!_isPreferredViewportSuppressed &&
+        RegionMapViewportSyncPolicy.shouldSyncZoomPanBehaviorOnWidgetUpdate(
+      hasPreferredViewport: widget.preferredViewport != null,
+      userHasManualViewport: _viewportState.userHasManualViewport,
+      lockPreferredViewportReapply: _lockPreferredViewportReapply,
+      behaviorZoomLevel: _zoomPanBehavior.zoomLevel,
+      behaviorCenterLatitude: _zoomPanBehavior.focalLatLng?.latitude,
+      behaviorCenterLongitude: _zoomPanBehavior.focalLatLng?.longitude,
+      stateZoomLevel: _viewportState.zoomLevel,
+      stateCenterLatitude: _viewportState.centerLatitude,
+      stateCenterLongitude: _viewportState.centerLongitude,
+    )) {
       _applyZoomPanBehaviorViewport(
         reason: 'widget_update_sync',
         shouldLog: false,
+        suppressViewportCallbacks: true,
       );
     }
   }
@@ -166,6 +189,9 @@ class _SyncfusionRegionMapChartState<T>
 
   bool get _isZoomPanEnabled =>
       widget.style.enableZoomPan && widget.preset == AppChartPreset.explorable;
+
+  bool get _isPreferredViewportSuppressed =>
+      widget.viewportController?.suppressPreferredViewport ?? false;
 
   bool get _isPointerWheelZoomEnabled {
     if (!_isZoomPanEnabled) {
@@ -603,6 +629,9 @@ class _SyncfusionRegionMapChartState<T>
                                 }
                               },
                               onWillZoom: (details) {
+                                if (_shouldIgnoreGestureViewportFeedback()) {
+                                  return true;
+                                }
                                 _viewportState = _viewportState.copyWith(
                                   zoomLevel: _clampZoomLevel(
                                     details.newZoomLevel ??
@@ -610,12 +639,15 @@ class _SyncfusionRegionMapChartState<T>
                                   ),
                                 );
                                 _emitViewportChanged(
-                                  source: AppMapViewportChangeSource.user,
+                                  source: _viewportChangeSourceForGesture(),
                                   bounds: details.newVisibleBounds,
                                 );
                                 return true;
                               },
                               onWillPan: (details) {
+                                if (_shouldIgnoreGestureViewportFeedback()) {
+                                  return true;
+                                }
                                 _viewportState = _viewportState.copyWith(
                                   zoomLevel: _clampZoomLevel(
                                     details.zoomLevel ??
@@ -623,7 +655,7 @@ class _SyncfusionRegionMapChartState<T>
                                   ),
                                 );
                                 _emitViewportChanged(
-                                  source: AppMapViewportChangeSource.user,
+                                  source: _viewportChangeSourceForGesture(),
                                   bounds: details.newVisibleBounds,
                                 );
                                 return true;
@@ -703,7 +735,7 @@ class _SyncfusionRegionMapChartState<T>
   }
 
   void _applyPointerScrollZoom(PointerScrollEvent event) {
-    if (!mounted || event.scrollDelta.dy == 0) {
+    if (!mounted || event.scrollDelta.dy == 0 || _isPreferredViewportSuppressed) {
       return;
     }
 
@@ -732,7 +764,17 @@ class _SyncfusionRegionMapChartState<T>
     setState(() {
       _viewportState = _viewportState.copyWith(userHasManualViewport: false);
     });
-    _applyPreferredViewport();
+    _lastAppliedPreferredViewport = null;
+    _lockPreferredViewportReapply = false;
+    _applyPreferredViewport(overrideManualViewport: true);
+  }
+
+  bool _shouldIgnoreGestureViewportFeedback() {
+    if (_viewportState.suppressProgrammaticViewportEvents) {
+      return true;
+    }
+    return defaultTargetPlatform == TargetPlatform.windows &&
+        widget.preferredViewport == null;
   }
 
   MapZoomPanBehavior _buildZoomPanBehavior() {
@@ -749,9 +791,14 @@ class _SyncfusionRegionMapChartState<T>
     );
   }
 
-  void _applyPreferredViewport() {
+  void _applyPreferredViewport({bool overrideManualViewport = false}) {
     if (!mounted || widget.isLoading) {
       _logViewportGuard('preferred_viewport_skipped');
+      return;
+    }
+
+    if (_isPreferredViewportSuppressed) {
+      _logViewportGuard('preferred_viewport_skipped_store_selection');
       return;
     }
 
@@ -761,12 +808,23 @@ class _SyncfusionRegionMapChartState<T>
       return;
     }
 
+    if (!overrideManualViewport && _viewportState.userHasManualViewport) {
+      _logViewportGuard('preferred_viewport_skipped_manual');
+      return;
+    }
+
+    if (_preferredViewportMatches(_lastAppliedPreferredViewport, viewport)) {
+      _logViewportGuard('preferred_viewport_skipped_unchanged');
+      return;
+    }
+
     _viewportState = _clampedViewportState(
       _viewportState.copyWith(
         zoomLevel: viewport.zoomLevel,
         centerLatitude: viewport.centerLatitude,
         centerLongitude: viewport.centerLongitude,
-        userHasManualViewport: false,
+        userHasManualViewport:
+            !overrideManualViewport && _viewportState.userHasManualViewport,
         suppressProgrammaticViewportEvents: true,
       ),
     );
@@ -782,7 +840,42 @@ class _SyncfusionRegionMapChartState<T>
       },
     );
     _applyZoomPanBehaviorViewport(reason: 'preferred_viewport');
+    _lastAppliedPreferredViewport = viewport;
+    _lockPreferredViewportReapply = true;
     _releaseProgrammaticViewportSuppressionAfterFrame();
+  }
+
+  AppMapViewportChangeSource _viewportChangeSourceForGesture() {
+    return _viewportState.userHasManualViewport
+        ? AppMapViewportChangeSource.user
+        : AppMapViewportChangeSource.programmatic;
+  }
+
+  bool _preferredViewportMatches(
+    AppMapViewport? previous,
+    AppMapViewport next,
+  ) {
+    if (previous == null) {
+      return false;
+    }
+    if ((previous.zoomLevel - next.zoomLevel).abs() >=
+        BrazilMapLayoutConstants.preferredViewportZoomEpsilon) {
+      return false;
+    }
+    final previousLat = previous.centerLatitude;
+    final previousLng = previous.centerLongitude;
+    final nextLat = next.centerLatitude;
+    final nextLng = next.centerLongitude;
+    if (previousLat == null ||
+        previousLng == null ||
+        nextLat == null ||
+        nextLng == null) {
+      return previousLat == nextLat && previousLng == nextLng;
+    }
+    return (previousLat - nextLat).abs() <
+            BrazilMapLayoutConstants.preferredViewportCenterEpsilon &&
+        (previousLng - nextLng).abs() <
+            BrazilMapLayoutConstants.preferredViewportCenterEpsilon;
   }
 
   double _clampZoomLevel(double zoomLevel) {
@@ -856,10 +949,29 @@ class _SyncfusionRegionMapChartState<T>
   bool _applyZoomPanBehaviorViewport({
     required String reason,
     bool shouldLog = true,
+    bool suppressViewportCallbacks = false,
   }) {
     if (!mounted || widget.isLoading) {
       _logViewportGuard(reason);
       return false;
+    }
+
+    if (!RegionMapViewportSyncPolicy.zoomPanBehaviorDriftsFromViewportState(
+      behaviorZoomLevel: _zoomPanBehavior.zoomLevel,
+      behaviorCenterLatitude: _zoomPanBehavior.focalLatLng?.latitude,
+      behaviorCenterLongitude: _zoomPanBehavior.focalLatLng?.longitude,
+      stateZoomLevel: _viewportState.zoomLevel,
+      stateCenterLatitude: _viewportState.centerLatitude,
+      stateCenterLongitude: _viewportState.centerLongitude,
+    )) {
+      return false;
+    }
+
+    final previousSuppression = _viewportState.suppressProgrammaticViewportEvents;
+    if (suppressViewportCallbacks) {
+      _viewportState = _viewportState.copyWith(
+        suppressProgrammaticViewportEvents: true,
+      );
     }
 
     _viewportState = _clampedViewportState(_viewportState);
@@ -882,6 +994,17 @@ class _SyncfusionRegionMapChartState<T>
           'centerLongitude': _viewportState.centerLongitude,
         },
       );
+    }
+
+    if (suppressViewportCallbacks) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        _viewportState = _viewportState.copyWith(
+          suppressProgrammaticViewportEvents: previousSuppression,
+        );
+      });
     }
     return true;
   }
@@ -1058,7 +1181,9 @@ class _SyncfusionRegionMapChartState<T>
         centerLongitude: centerLongitude,
       ),
     );
-    _scheduleManualViewportState();
+    if (source == AppMapViewportChangeSource.user) {
+      _scheduleManualViewportState();
+    }
 
     final callback = widget.onViewportChanged;
     if (callback == null) {

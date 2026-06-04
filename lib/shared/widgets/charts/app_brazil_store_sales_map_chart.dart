@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_breakpoints.dart';
@@ -20,6 +21,10 @@ import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_snapsho
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
+import 'package:colmeia/shared/widgets/charts/brazil_map_layout_constants.dart';
+import 'package:colmeia/shared/widgets/charts/brazil_map_selection_policy.dart';
+import 'package:colmeia/shared/widgets/charts/brazil_map_zoom_controller.dart';
+import 'package:colmeia/shared/widgets/charts/region_map_viewport_sync_policy.dart';
 import 'package:colmeia/shared/widgets/forms/app_choice_chip.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
@@ -37,9 +42,6 @@ String _formatSalesCount(BuildContext context, num value) {
   final locale = Localizations.localeOf(context);
   return NumberFormat('#,##0', locale.toLanguageTag()).format(value.round());
 }
-
-const double _floatingMapOverlayGap = 8;
-const double _floatingMapOverlaySurfaceRadius = 16;
 
 class AppBrazilStoreSalesMapChart extends StatefulWidget {
   const AppBrazilStoreSalesMapChart({
@@ -107,7 +109,8 @@ class AppBrazilStoreSalesMapChart extends StatefulWidget {
 /// Pure geometry policy for the optional desktop branch sidebar overlaid on
 /// the Brazil store-sales map. Extracted from the chart state so the sizing
 /// rules live in one focused, testable place.
-abstract final class _BrazilMapDesktopSidebarLayout {
+@visibleForTesting
+abstract final class BrazilMapDesktopSidebarLayout {
   static const double minWidth = 272;
   static const double maxWidth = 336;
   static const double minVisibleMapWidth = 920;
@@ -144,13 +147,22 @@ abstract final class _BrazilMapDesktopSidebarLayout {
     required double mapTileHeight,
     required double topInset,
   }) {
-    const bottomInset = 24.0;
+    const bottomInset = BrazilMapLayoutConstants.desktopSidebarBottomInset;
     final availableHeight = mapTileHeight - topInset - bottomInset;
-    final proportionalCap = mapTileHeight * 0.9;
+    if (availableHeight <= 0) {
+      return 0;
+    }
+    final proportionalCap =
+        mapTileHeight *
+        BrazilMapLayoutConstants.desktopSidebarProportionalCapFactor;
     final cappedHeight = availableHeight < proportionalCap
         ? availableHeight
         : proportionalCap;
-    return cappedHeight.clamp(240.0, availableHeight);
+    final lower = math.min(
+      BrazilMapLayoutConstants.desktopSidebarMinHeight,
+      availableHeight,
+    );
+    return cappedHeight.clamp(lower, availableHeight);
   }
 }
 
@@ -233,18 +245,33 @@ class _BrazilMapLayoutCalculator {
   final _BrazilMapChrome chrome;
   final AppBrazilStoreSalesMapStyle style;
 
+  /// When the parent supplies a finite max height, the map column uses [Expanded]
+  /// and below-map selection detail uses its intrinsic height. Fixed footer
+  /// reserves for those details would leave empty space under the detail bar.
+  @visibleForTesting
+  static bool usesBoundedVerticalLayout(BoxConstraints constraints) {
+    final maxHeight = constraints.maxHeight;
+    return maxHeight.isFinite && maxHeight < double.infinity;
+  }
+
   /// Small shrink of the map tile when height is bounded: real layout (labels,
   /// chips, legend padding) can exceed our header/footer estimates by a few
   /// logical pixels and cause a [Column] overflow.
-  static const double _boundedSafetyPx = 6;
-  static const double _cleanFullscreenExtraSafetyPx = 14;
-  static const double _inlineOperationalExtraMapHeight = 116;
+  static const double _boundedSafetyPx =
+      BrazilMapLayoutConstants.boundedLayoutSafetyPx;
+  static const double _cleanFullscreenExtraSafetyPx =
+      BrazilMapLayoutConstants.cleanFullscreenExtraSafetyPx;
+  static const double _inlineOperationalExtraMapHeight =
+      BrazilMapLayoutConstants.inlineOperationalExtraMapHeight;
 
   double mapTileHeight({
     required BuildContext context,
     required BoxConstraints constraints,
     required _BrazilStoreSalesMapSnapshot snapshot,
     required bool usesCompactMapChrome,
+    AppBrazilStoreSalesPoint? detailPoint,
+    AppBrazilStoreSalesMarkerGroup? detailGroup,
+    bool reserveBelowMapSelectionDetail = true,
   }) {
     final requested = _effectiveRequestedHeight(style.height);
     final maxParent = constraints.maxHeight;
@@ -252,23 +279,68 @@ class _BrazilMapLayoutCalculator {
       return requested;
     }
 
-    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    return regionMapStyleHeightForMapArea(
+      context: context,
+      mapAreaHeight: mapAreaHeight(
+        context: context,
+        constraints: constraints,
+        snapshot: snapshot,
+        usesCompactMapChrome: usesCompactMapChrome,
+        detailPoint: detailPoint,
+        detailGroup: detailGroup,
+        reserveBelowMapSelectionDetail: reserveBelowMapSelectionDetail,
+      ),
+    );
+  }
+
+  /// Syncfusion map tile height for a fixed vertical area that may also contain
+  /// in-chart metric/scope controls above the tile.
+  double regionMapStyleHeightForMapArea({
+    required BuildContext context,
+    required double mapAreaHeight,
+  }) {
     final headerReserve = _headerReserve(context);
+    return (mapAreaHeight - headerReserve).clamp(
+      BrazilMapLayoutConstants.regionMapMinHeight,
+      BrazilMapLayoutConstants.regionMapMaxHeight,
+    );
+  }
+
+  /// Vertical space for the full [AppRegionMapChart] column (controls + tile).
+  double mapAreaHeight({
+    required BuildContext context,
+    required BoxConstraints constraints,
+    required _BrazilStoreSalesMapSnapshot snapshot,
+    required bool usesCompactMapChrome,
+    AppBrazilStoreSalesPoint? detailPoint,
+    AppBrazilStoreSalesMarkerGroup? detailGroup,
+    AppBrazilStoreSalesStateBucket? detailStateBucket,
+    bool reserveBelowMapSelectionDetail = true,
+  }) {
+    final maxParent = constraints.maxHeight;
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final footerReserve = _footerReserve(
       context: context,
       snapshot: snapshot,
       tokens: tokens,
       maxWidth: constraints.maxWidth,
       usesCompactMapChrome: usesCompactMapChrome,
+      detailPoint: detailPoint,
+      detailGroup: detailGroup,
+      detailStateBucket: detailStateBucket,
+      reserveBelowMapSelectionDetail: reserveBelowMapSelectionDetail,
     );
-    final spare = maxParent - headerReserve - footerReserve;
+    final spare = maxParent - footerReserve;
     if (!spare.isFinite) {
-      return requested;
+      return _effectiveRequestedHeight(style.height);
     }
     final safetyPx =
         _boundedSafetyPx +
         (chrome.usesCleanFullscreenChrome ? _cleanFullscreenExtraSafetyPx : 0);
-    return (spare - safetyPx).clamp(200.0, 4000.0);
+    return (spare - safetyPx).clamp(
+      BrazilMapLayoutConstants.regionMapMinHeight,
+      BrazilMapLayoutConstants.regionMapMaxHeight,
+    );
   }
 
   double _effectiveRequestedHeight(double requestedHeight) {
@@ -300,7 +372,7 @@ class _BrazilMapLayoutCalculator {
           overlineBlock +
           (chrome.usesCleanFullscreenChrome ? tokens.gapXs : tokens.gapMd);
     }
-    return reserve.clamp(0.0, 260.0);
+    return reserve.clamp(0.0, BrazilMapLayoutConstants.headerReserveMax);
   }
 
   double _footerReserve({
@@ -309,34 +381,56 @@ class _BrazilMapLayoutCalculator {
     required AppThemeTokens tokens,
     required double maxWidth,
     required bool usesCompactMapChrome,
+    AppBrazilStoreSalesPoint? detailPoint,
+    AppBrazilStoreSalesMarkerGroup? detailGroup,
+    AppBrazilStoreSalesStateBucket? detailStateBucket,
+    bool reserveBelowMapSelectionDetail = true,
   }) {
     final scaler = MediaQuery.textScalerOf(context);
     var reserve = 0.0;
     if (style.showDataQualityNotice &&
         snapshot.diagnostics.hasDiscardedPoints) {
-      reserve += tokens.gapSm + scaler.scale(56);
+      reserve +=
+          tokens.gapSm +
+          scaler.scale(BrazilMapLayoutConstants.dataQualityNoticeReserve);
     }
     if (chrome.effectiveShowMarkerScaleLegend && snapshot.hasMarkers) {
       final compactLegend = shouldUseCompactMarkerLegend(
         usesCompactMapChrome: usesCompactMapChrome,
         maxWidth: maxWidth,
       );
-      reserve += tokens.gapMd + scaler.scale(compactLegend ? 46 : 40);
+      reserve +=
+          tokens.gapMd +
+          scaler.scale(
+            compactLegend
+                ? BrazilMapLayoutConstants.markerLegendCompactReserve
+                : BrazilMapLayoutConstants.markerLegendStandardReserve,
+          );
     }
-    final selectedMarkerGroup = snapshot.selectedMarkerGroup;
-    final selectedPoint = snapshot.selectedPoint;
-    if (chrome.showBelowMapMarkerDetail &&
-        selectedMarkerGroup != null &&
-        (selectedMarkerGroup.isMunicipalityAggregate ||
-            selectedMarkerGroup.isCluster)) {
-      reserve += tokens.gapMd + scaler.scale(300);
-    } else if (chrome.showBelowMapMarkerDetail && selectedPoint != null) {
-      reserve += tokens.gapMd + scaler.scale(220);
-    }
-    if (selectedPoint == null &&
-        selectedMarkerGroup == null &&
-        snapshot.selectedStateBucket != null) {
-      reserve += tokens.gapMd + scaler.scale(96);
+    if (reserveBelowMapSelectionDetail) {
+      final selectedMarkerGroup = detailGroup ?? snapshot.selectedMarkerGroup;
+      final selectedPoint = detailPoint ?? snapshot.selectedPoint;
+      if (chrome.showBelowMapMarkerDetail &&
+          selectedMarkerGroup != null &&
+          (selectedMarkerGroup.isMunicipalityAggregate ||
+              selectedMarkerGroup.isCluster)) {
+        reserve +=
+            tokens.gapMd +
+            scaler.scale(BrazilMapLayoutConstants.belowMapClusterDetailReserve);
+      } else if (chrome.showBelowMapMarkerDetail && selectedPoint != null) {
+        reserve +=
+            tokens.gapMd +
+            scaler.scale(
+              BrazilMapLayoutConstants.belowMapSingleStoreDetailReserve,
+            );
+      }
+      if (selectedPoint == null &&
+          selectedMarkerGroup == null &&
+          detailStateBucket != null) {
+        reserve +=
+            tokens.gapMd +
+            scaler.scale(BrazilMapLayoutConstants.belowMapStateDetailReserve);
+      }
     }
     return reserve;
   }
@@ -345,7 +439,9 @@ class _BrazilMapLayoutCalculator {
     required bool usesCompactMapChrome,
     required double maxWidth,
   }) {
-    return usesCompactMapChrome || (maxWidth.isFinite && maxWidth < 420);
+    return usesCompactMapChrome ||
+        (maxWidth.isFinite &&
+            maxWidth < BrazilMapLayoutConstants.compactMarkerLegendMaxWidth);
   }
 
   double floatingMapControlsHeight(
@@ -355,13 +451,23 @@ class _BrazilMapLayoutCalculator {
     final scaler = MediaQuery.textScalerOf(context);
     var height = 0.0;
     if (chrome.showsFloatingMetricSelector) {
-      height += scaler.scale(cleanMode ? 48 : 56);
+      height += scaler.scale(
+        cleanMode
+            ? BrazilMapLayoutConstants.floatingMetricSelectorHeightClean
+            : BrazilMapLayoutConstants.floatingMetricSelectorHeightStandard,
+      );
     }
     if (chrome.showsFloatingScopeSelector) {
       if (height > 0) {
-        height += cleanMode ? _floatingMapOverlayGap : 10;
+        height += cleanMode
+            ? BrazilMapLayoutConstants.floatingMapOverlayGap
+            : BrazilMapLayoutConstants.floatingScopeSelectorGapStandard;
       }
-      height += scaler.scale(cleanMode ? 50 : 58);
+      height += scaler.scale(
+        cleanMode
+            ? BrazilMapLayoutConstants.floatingScopeSelectorHeightClean
+            : BrazilMapLayoutConstants.floatingScopeSelectorHeightStandard,
+      );
     }
     return height;
   }
@@ -373,6 +479,12 @@ abstract interface class AppBrazilStoreSalesMapChartPreviewTestHandle {
   void clearPreviewBranchForTesting();
 
   Object? get snapshotDataIdentityForTesting;
+
+  Object? get snapshotMapPointsIdentityForTesting;
+
+  String? get previewedStoreIdForTesting;
+
+  bool get suppressPreferredViewportForTesting;
 }
 
 class _AppBrazilStoreSalesMapChartState
@@ -383,13 +495,16 @@ class _AppBrazilStoreSalesMapChartState
   /// Presentation-mode derived flags (config-pure). Context-dependent flags
   /// such as [_shouldUseCompactBranchSheet] stay on the state.
   late _BrazilMapChrome _chrome;
-  String? _internalSelectedStoreId;
+  final BrazilMapSelectionPolicy _selection = BrazilMapSelectionPolicy();
+  final BrazilMapZoomController _zoom = BrazilMapZoomController();
+  final RegionMapViewportController _viewportController =
+      RegionMapViewportController();
+  final ValueNotifier<BrazilMapMarkerSelection> _markerSelection =
+      ValueNotifier<BrazilMapMarkerSelection>(const BrazilMapMarkerSelection());
   String? _previewedStoreId;
-  String? _internalSelectedStateKey;
-  String? _dismissedControlledSelectedStoreId;
   String? _activeRegionKey;
-  late double _currentZoomLevel;
   bool _desktopBranchSidebarCollapsed = false;
+  bool _compactBranchSheetLayout = false;
   AppBrazilStoreSalesMapDiagnostics? _lastEmittedDiagnostics;
   AppBrazilStoreSalesMapSnapshotData? _snapshotData;
   _BrazilStoreSalesMapSnapshot? _snapshot;
@@ -398,6 +513,9 @@ class _AppBrazilStoreSalesMapChartState
   Timer? _viewportClusterDebounceTimer;
   double? _pendingViewportClusterZoomLevel;
   Timer? _previewClearTimer;
+  AppMapViewport? _cachedPreferredViewport;
+  bool _userHasManualMapViewport = false;
+  String? _cachedPreferredViewportBinding;
 
   void _cancelPendingViewportClusterSampling() {
     _viewportClusterDebounceTimer?.cancel();
@@ -408,6 +526,15 @@ class _AppBrazilStoreSalesMapChartState
   void _cancelPendingPreviewClear() {
     _previewClearTimer?.cancel();
     _previewClearTimer = null;
+  }
+
+  void _scheduleConsumeCameraFocus() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_selection.focusCameraOnSelectedStore) {
+        return;
+      }
+      setState(_selection.consumeCameraFocus);
+    });
   }
 
   void _invalidateResolvedSnapshotData() {
@@ -431,20 +558,50 @@ class _AppBrazilStoreSalesMapChartState
   static const Duration _desktopBranchPreviewClearDelay = Duration(
     milliseconds: 80,
   );
-  static const double _floatingMapControlsTopInset = 12;
-  static const double _floatingMapControlsLeftInset = 12;
-
   _BrazilMapLayoutCalculator get _layout =>
       _BrazilMapLayoutCalculator(chrome: _chrome, style: widget.style);
+
+  void _publishMarkerSelection() {
+    _markerSelection.value = BrazilMapMarkerSelection(
+      selectedStoreId: _selectedStoreId,
+      previewedStoreId: _previewedStoreId,
+      shapeHighlightRegionKey: _selection.internalSelectedStateKey,
+    );
+  }
+
+  bool get _suppressMapLayoutShiftOnStoreSelection =>
+      !widget.style.autoFocusSelectedStore ||
+      defaultTargetPlatform == TargetPlatform.windows;
+
+  AppMapViewportChangedEvent? _filterViewportChangedEvent(
+    AppMapViewportChangedEvent event,
+  ) {
+    if (defaultTargetPlatform == TargetPlatform.windows &&
+        _selection.blocksViewportDrivenClustering(widget.selectedStoreId)) {
+      return null;
+    }
+    return event;
+  }
+
+  void _handleRegionMapViewportChanged(AppMapViewportChangedEvent event) {
+    final filtered = _filterViewportChangedEvent(event);
+    if (filtered == null) {
+      return;
+    }
+    _handleViewportChanged(filtered);
+  }
 
   @override
   void initState() {
     super.initState();
     _selectedMetric = widget.initialMetric;
     _chrome = _BrazilMapChrome.fromWidget(widget);
-    _currentZoomLevel = widget.selectedStoreId != null
-        ? widget.style.selectedStoreZoomLevel
-        : AppBrazilMapStaticData.brazilViewport.zoomLevel;
+    _publishMarkerSelection();
+    if (widget.selectedStoreId != null && widget.style.autoFocusSelectedStore) {
+      _selection.adoptControlledSelectionOnInit();
+      _zoom.clusteringZoomLevel = widget.style.selectedStoreZoomLevel;
+      _scheduleConsumeCameraFocus();
+    }
   }
 
   @override
@@ -458,22 +615,38 @@ class _AppBrazilStoreSalesMapChartState
 
     if (oldWidget.selectedStoreId != widget.selectedStoreId ||
         oldWidget.style != widget.style) {
-      if (oldWidget.selectedStoreId != null && widget.selectedStoreId == null) {
-        _dismissedControlledSelectedStoreId = null;
-        _currentZoomLevel = AppBrazilMapStaticData.brazilViewport.zoomLevel;
-        _cancelPendingViewportClusterSampling();
+      if (widget.selectedStoreId == null) {
+        _viewportController.reset();
+      } else if (!widget.style.autoFocusSelectedStore) {
+        _viewportController.withdrawPreferredViewportForStoreSelection();
       }
-      if (oldWidget.selectedStoreId != widget.selectedStoreId &&
-          widget.selectedStoreId != null) {
-        _currentZoomLevel = widget.style.selectedStoreZoomLevel;
-        _dismissedControlledSelectedStoreId = null;
-        _cancelPendingViewportClusterSampling();
-      }
+      _selection.syncControlledSelection(
+        previousControlledId: oldWidget.selectedStoreId,
+        nextControlledId: widget.selectedStoreId,
+        selectedStoreZoomLevel: widget.style.selectedStoreZoomLevel,
+        onAdoptControlledSelection: () {
+          if (widget.style.autoFocusSelectedStore) {
+            _zoom.clusteringZoomLevel = widget.style.selectedStoreZoomLevel;
+          }
+          _cancelPendingViewportClusterSampling();
+        },
+        onReleaseControlledSelection: () {
+          if (oldWidget.style.autoFocusSelectedStore ||
+              widget.style.autoFocusSelectedStore) {
+            _zoom.resetToBrazilDefault();
+          }
+          _cancelPendingViewportClusterSampling();
+        },
+      );
       if (oldWidget.style != widget.style) {
         _invalidateResolvedSnapshotData();
-      } else {
-        _invalidateResolvedSnapshotVisual();
       }
+      if (widget.selectedStoreId != null &&
+          widget.style.autoFocusSelectedStore &&
+          _selection.focusCameraOnSelectedStore) {
+        _scheduleConsumeCameraFocus();
+      }
+      _publishMarkerSelection();
     }
 
     if (oldWidget.filterBranchIds != widget.filterBranchIds ||
@@ -490,12 +663,34 @@ class _AppBrazilStoreSalesMapChartState
       _invalidateResolvedSnapshotVisual();
     }
 
+    if (!identical(oldWidget.points, widget.points)) {
+      if (identical(_cachedPointsDigestSource, widget.points)) {
+        _cachedPointsDigest = null;
+      } else {
+        _cachedPointsDigestSource = null;
+      }
+      _cachedPreferredViewport = null;
+      final selectedStoreId = _selection.resolveSelectedStoreId(
+        widget.selectedStoreId,
+      );
+      if (selectedStoreId != null && _pointById(selectedStoreId) == null) {
+        _selection.clearStoreSelection(
+          controlledSelectedStoreId: widget.selectedStoreId,
+        );
+        _previewedStoreId = null;
+        if (widget.style.autoFocusSelectedStore) {
+          _zoom.resetToBrazilDefault();
+        }
+        _cancelPendingViewportClusterSampling();
+        _invalidateResolvedSnapshotData();
+      }
+    }
+
     final previewedStoreId = _previewedStoreId;
     if (previewedStoreId != null &&
         (_pointById(previewedStoreId) == null ||
             !_pointMatchesActiveRegion(previewedStoreId))) {
       _previewedStoreId = null;
-      _invalidateResolvedSnapshotVisual();
     }
   }
 
@@ -503,6 +698,7 @@ class _AppBrazilStoreSalesMapChartState
   void dispose() {
     _cancelPendingViewportClusterSampling();
     _cancelPendingPreviewClear();
+    _markerSelection.dispose();
     super.dispose();
   }
 
@@ -510,15 +706,27 @@ class _AppBrazilStoreSalesMapChartState
   Widget build(BuildContext context) {
     final snapshot = _resolveSnapshot(context);
     _emitDiagnosticsIfNeeded(snapshot.diagnostics);
-    final selectedPoint = snapshot.selectedPoint;
-    final selectedMarkerGroup = snapshot.selectedMarkerGroup;
+    final markerSelection = _markerSelection.value;
+    final markerDetail = _resolveMarkerDetailSelection(snapshot, markerSelection);
+    final layoutSelectionPoint = _suppressMapLayoutShiftOnStoreSelection
+        ? null
+        : markerDetail.point;
+    final layoutSelectionGroup = _suppressMapLayoutShiftOnStoreSelection
+        ? null
+        : markerDetail.group;
+    final layoutSelectionStateBucket = _suppressMapLayoutShiftOnStoreSelection
+        ? null
+        : _resolveSelectedStateBucket(snapshot, markerSelection);
     final selectedRegionKey = widget.style.highlightSelectedState
-        ? snapshot.selectedStateKey ?? _internalSelectedStateKey
+        ? markerSelection.shapeHighlightRegionKey
         : null;
-    final preferredViewport = _preferredViewport(snapshot);
+    final preferredViewport = _resolvePreferredViewportForBuild(snapshot);
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        _compactBranchSheetLayout =
+            widget.style.showStoreDetail &&
+            constraints.maxWidth < AppBreakpoints.mobile;
         final l10n = AppLocalizations.of(context);
         final tokens = Theme.of(context).extension<AppThemeTokens>()!;
         final usesCompactMapChrome = constraints.hasBoundedHeight;
@@ -533,12 +741,12 @@ class _AppBrazilStoreSalesMapChartState
           usesCompactMapChrome: usesCompactMapChrome,
           maxWidth: constraints.maxWidth,
         );
-        final sidebarWidth = _BrazilMapDesktopSidebarLayout.width(
+        final sidebarWidth = BrazilMapDesktopSidebarLayout.width(
           constraints.maxWidth,
         );
         final sidebarHorizontalInset = tokens.gapMd;
-        final showsDesktopBranchSidebar = _BrazilMapDesktopSidebarLayout
-            .shouldShow(
+        final showsDesktopBranchSidebar =
+            BrazilMapDesktopSidebarLayout.shouldShow(
               enabled: widget.showDesktopBranchSidebar,
               availableWidth: constraints.maxWidth,
               sidebarWidth: sidebarWidth,
@@ -549,14 +757,39 @@ class _AppBrazilStoreSalesMapChartState
           tokens,
           cleanMode: _usesCleanFullscreenChrome,
         );
-        final mapTileHeight = _layout.mapTileHeight(
+        final usesBoundedVerticalLayout =
+            _BrazilMapLayoutCalculator.usesBoundedVerticalLayout(constraints);
+        final reserveBelowMapSelectionDetail = !usesBoundedVerticalLayout;
+        final mapAreaHeight = _layout.mapAreaHeight(
           context: context,
           constraints: constraints,
           snapshot: snapshot,
           usesCompactMapChrome: usesCompactMapChrome,
+          detailPoint: layoutSelectionPoint,
+          detailGroup: layoutSelectionGroup,
+          detailStateBucket: layoutSelectionStateBucket,
+          reserveBelowMapSelectionDetail: reserveBelowMapSelectionDetail &&
+              !_suppressMapLayoutShiftOnStoreSelection,
         );
-        final mapContent = _BrazilStoreSalesMapContent(
-          regionMap: AppRegionMapChart<AppBrazilStoreSalesStateBucket>(
+        final mapTileHeight = _layout.regionMapStyleHeightForMapArea(
+          context: context,
+          mapAreaHeight: mapAreaHeight,
+        );
+        final sidebarMapAreaHeight = usesBoundedVerticalLayout
+            ? _layout.mapAreaHeight(
+                context: context,
+                constraints: constraints,
+                snapshot: snapshot,
+                usesCompactMapChrome: usesCompactMapChrome,
+                detailPoint: layoutSelectionPoint,
+                detailGroup: layoutSelectionGroup,
+                detailStateBucket: layoutSelectionStateBucket,
+                reserveBelowMapSelectionDetail: false,
+              )
+            : mapAreaHeight;
+        Widget buildRegionMap(double height) {
+          return RepaintBoundary(
+            child: AppRegionMapChart<AppBrazilStoreSalesStateBucket>(
             mapDefinition: AppBrazilMapStaticData.brazilUfMapDefinition,
             items: snapshot.buckets,
             metrics: _buildMetrics(l10n),
@@ -578,7 +811,14 @@ class _AppBrazilStoreSalesMapChartState
               color: _markerColor(context),
               strokeColor: _markerStrokeColor(context),
             ),
-            markerBuilder: _buildMarker,
+            markerBuilder: (context, point, index) {
+              return ValueListenableBuilder<BrazilMapMarkerSelection>(
+                valueListenable: _markerSelection,
+                builder: (context, selection, _) {
+                  return _buildMarker(context, point, index, selection);
+                },
+              );
+            },
             markerTooltipBuilder: _useWindowsSafeMarkerDetails
                 ? null
                 : _buildMarkerTooltip,
@@ -592,12 +832,13 @@ class _AppBrazilStoreSalesMapChartState
                 : null,
             onRegionTapEvent: _handleStateTap,
             onPointTap: _handlePointTap,
-            onViewportChanged: _handleViewportChanged,
+            onViewportChanged: _handleRegionMapViewportChanged,
+            viewportController: _viewportController,
             preset: widget.style.enableZoomPan
                 ? AppChartPreset.explorable
                 : AppChartPreset.standard,
             style: AppRegionMapChartStyle(
-              height: mapTileHeight,
+              height: height,
               chartPadding: usesCompactMapChrome
                   ? EdgeInsets.all(tokens.gapSm)
                   : null,
@@ -627,9 +868,24 @@ class _AppBrazilStoreSalesMapChartState
                   !_usesCleanFullscreenChrome && !usesCompactMapChrome,
             ),
             isRefreshing: widget.isRefreshing,
-          ),
+            ),
+          );
+        }
+
+        final mapContent = _BrazilStoreSalesMapContent(
+          key: const ValueKey<String>('brazil-store-sales-map-content'),
+          expandMapVertically: usesBoundedVerticalLayout,
+          regionMapBuilder: buildRegionMap,
+          fixedRegionMapHeight: mapTileHeight,
+          regionMapStyleHeightForAvailableArea: usesBoundedVerticalLayout
+              ? (availableMapAreaHeight) =>
+                    _layout.regionMapStyleHeightForMapArea(
+                      context: context,
+                      mapAreaHeight: availableMapAreaHeight,
+                    )
+              : null,
           mapOverlay: _buildMapOverlay(
-            mapTileHeight: mapTileHeight,
+            mapTileHeight: sidebarMapAreaHeight,
             showsDesktopBranchSidebar: showsDesktopBranchSidebar,
             sidebarWidth: sidebarWidth,
             sidebarTopInset: sidebarTopInset,
@@ -672,36 +928,16 @@ class _AppBrazilStoreSalesMapChartState
                   visual: widget.style.markerVisual,
                 )
               : null,
-          detail:
-              _showBelowMapMarkerDetail &&
-                  selectedMarkerGroup != null &&
-                  (selectedMarkerGroup.isMunicipalityAggregate ||
-                      selectedMarkerGroup.isCluster)
-              ? _SelectedMunicipalityDetail(
-                  group: selectedMarkerGroup,
-                  metric: _selectedMetric,
-                  selectedStoreId: _selectedStoreId,
-                  onSelectBranch: (point) => _handleMarkerBranchAction(
-                    point: point,
-                    index: _mapPointIndexFor(point, snapshot),
-                  ),
-                  selectBranchLabelBuilder: (_) => AppLocalizations.of(
-                    context,
-                  ).brazilStoreSalesMapShowBranchOnMapAction,
-                )
-              : _showBelowMapMarkerDetail && selectedPoint != null
-              ? _SelectedStoreDetail(
-                  point: selectedPoint,
-                  metric: _selectedMetric,
-                )
-              : selectedPoint == null &&
-                    selectedMarkerGroup == null &&
-                    snapshot.selectedStateBucket != null
-              ? _SelectedStateDetail(
-                  bucket: snapshot.selectedStateBucket!,
-                  metric: _selectedMetric,
-                )
-              : null,
+          detail: ValueListenableBuilder<BrazilMapMarkerSelection>(
+            valueListenable: _markerSelection,
+            builder: (context, selection, _) {
+              return _buildBelowMapSelectionDetail(
+                context: context,
+                snapshot: snapshot,
+                selection: selection,
+              );
+            },
+          ),
         );
         final content = mapContent;
 
@@ -754,7 +990,7 @@ class _AppBrazilStoreSalesMapChartState
     AppThemeTokens tokens, {
     required bool cleanMode,
   }) {
-    return _BrazilMapDesktopSidebarLayout.topInsetBase +
+    return BrazilMapDesktopSidebarLayout.topInsetBase +
         (cleanMode ? 0 : tokens.gapXs) +
         _layout.floatingMapControlsHeight(
           context,
@@ -769,9 +1005,13 @@ class _AppBrazilStoreSalesMapChartState
           AppBrazilStoreSalesSelectedMarkerDetailPlacement.overlay &&
       !_useWindowsSafeMarkerDetails;
 
-  bool get _showBelowMapMarkerDetail => _chrome.showBelowMapMarkerDetail;
+  bool get _showBelowMapMarkerDetail =>
+      _chrome.showBelowMapMarkerDetail && !_shouldUseCompactBranchSheet;
 
   bool get _useWindowsSafeMarkerDetails => _chrome.useWindowsSafeMarkerDetails;
+
+  bool get _blocksViewportDrivenClustering =>
+      _selection.blocksViewportDrivenClustering(widget.selectedStoreId);
 
   bool get _usesCleanFullscreenChrome => _chrome.usesCleanFullscreenChrome;
 
@@ -805,8 +1045,8 @@ class _AppBrazilStoreSalesMapChartState
     if (_showsFloatingMetricSelector || _showsFloatingScopeSelector) {
       overlays.add(
         _FloatingMapControlsOverlay(
-          topInset: _floatingMapControlsTopInset,
-          leftInset: _floatingMapControlsLeftInset,
+          topInset: BrazilMapLayoutConstants.floatingMapControlsTopInset,
+          leftInset: BrazilMapLayoutConstants.floatingMapControlsLeftInset,
           metrics: _showsFloatingMetricSelector ? _buildMetrics(l10n) : null,
           selectedMetricKey: _selectedMetric.key,
           onMetricChanged: _handleMetricChanged,
@@ -822,33 +1062,36 @@ class _AppBrazilStoreSalesMapChartState
       );
     }
     if (showsDesktopBranchSidebar) {
-      overlays.add(
-        _desktopBranchSidebarCollapsed
-            ? _DesktopBranchSidebarCollapsedOverlay(
-                topInset: sidebarTopInset,
-                horizontalInset: sidebarHorizontalInset,
-                onExpand: _toggleDesktopBranchSidebarCollapsed,
-              )
-            : _DesktopBranchSidebarOverlay(
-                width: sidebarWidth,
-                maxHeight: _BrazilMapDesktopSidebarLayout.maxHeight(
-                  mapTileHeight: mapTileHeight,
-                  topInset: sidebarTopInset,
-                ),
-                topInset: sidebarTopInset,
-                horizontalInset: sidebarHorizontalInset,
-                entries: entries,
-                selectedStoreId: selectedStoreId,
-                allowCollapse: _usesCleanFullscreenChrome,
-                onToggleCollapsed: _toggleDesktopBranchSidebarCollapsed,
-                onSelectBranch: (point) => _handleMarkerBranchAction(
-                  point: point,
-                  index: _mapPointIndexFor(point, snapshot),
-                ),
-                onPreviewBranchStart: _setPreviewedPoint,
-                onPreviewBranchEnd: _clearPreviewedPoint,
-              ),
+      final sidebarMaxHeight = BrazilMapDesktopSidebarLayout.maxHeight(
+        mapTileHeight: mapTileHeight,
+        topInset: sidebarTopInset,
       );
+      if (sidebarMaxHeight > 0) {
+        overlays.add(
+          _desktopBranchSidebarCollapsed
+              ? _DesktopBranchSidebarCollapsedOverlay(
+                  topInset: sidebarTopInset,
+                  horizontalInset: sidebarHorizontalInset,
+                  onExpand: _toggleDesktopBranchSidebarCollapsed,
+                )
+              : _DesktopBranchSidebarOverlay(
+                  width: sidebarWidth,
+                  maxHeight: sidebarMaxHeight,
+                  topInset: sidebarTopInset,
+                  horizontalInset: sidebarHorizontalInset,
+                  entries: entries,
+                  selectedStoreId: selectedStoreId,
+                  allowCollapse: _usesCleanFullscreenChrome,
+                  onToggleCollapsed: _toggleDesktopBranchSidebarCollapsed,
+                  onSelectBranch: (point) => _handleMarkerBranchAction(
+                    point: point,
+                    index: _mapPointIndexFor(point, snapshot),
+                  ),
+                  onPreviewBranchStart: _setPreviewedPoint,
+                  onPreviewBranchEnd: _clearPreviewedPoint,
+                ),
+        );
+      }
     }
     if (overlays.isEmpty) {
       return null;
@@ -889,15 +1132,57 @@ class _AppBrazilStoreSalesMapChartState
     ),
   ];
 
-  AppMapViewport _preferredViewport(_BrazilStoreSalesMapSnapshot snapshot) {
-    final selectedPoint = snapshot.selectedPoint;
-    if (widget.style.autoFocusSelectedStore && selectedPoint != null) {
+  AppMapViewport? _resolvePreferredViewportForBuild(
+    _BrazilStoreSalesMapSnapshot snapshot,
+  ) {
+    final next = _preferredViewportForSyncfusion(snapshot);
+    if (next == null) {
+      _cachedPreferredViewport = null;
+      return null;
+    }
+    final cached = _cachedPreferredViewport;
+    if (cached == next) {
+      return cached;
+    }
+    _cachedPreferredViewport = next;
+    return next;
+  }
+
+  String get _regionViewportBindingKey => _activeRegionKey ?? '__brazil__';
+
+  /// Preferred viewport passed to Syncfusion. Returns null when the map should
+  /// keep the current camera (manual zoom/pan, open store detail, or region
+  /// already bound) to avoid programmatic pan/zoom fighting on Windows.
+  AppMapViewport? _preferredViewportForSyncfusion(
+    _BrazilStoreSalesMapSnapshot snapshot,
+  ) {
+    if (_userHasManualMapViewport) {
+      return null;
+    }
+
+    final selectedPoint =
+        snapshot.selectedPoint ?? _pointById(_selectedStoreId);
+    if (_selection.shouldFocusCameraOnSelectedStore(
+          controlledSelectedStoreId: widget.selectedStoreId,
+          autoFocusSelectedStore: widget.style.autoFocusSelectedStore,
+        ) &&
+        selectedPoint != null) {
       return AppMapViewport(
         centerLatitude: selectedPoint.latitude,
         centerLongitude: selectedPoint.longitude,
         zoomLevel: widget.style.selectedStoreZoomLevel,
       );
     }
+
+    if (_selectedStoreId != null) {
+      return null;
+    }
+
+    final bindingKey = _regionViewportBindingKey;
+    if (_cachedPreferredViewportBinding == bindingKey) {
+      return null;
+    }
+    _cachedPreferredViewportBinding = bindingKey;
 
     final regionKey = _activeRegionKey;
     if (regionKey == null) {
@@ -1003,7 +1288,7 @@ class _AppBrazilStoreSalesMapChartState
       style: widget.style,
       metric: _selectedMetric,
       activeRegionKey: _activeRegionKey,
-      zoomLevel: _currentZoomLevel,
+      zoomLevel: _zoom.clusteringZoomLevel,
       includeVisibleBranchListItems: _includeVisibleBranchListItems,
       pointsDigest: pointsDigest,
     );
@@ -1038,7 +1323,7 @@ class _AppBrazilStoreSalesMapChartState
         points: widget.points,
         metric: _selectedMetric,
         activeRegionKey: _activeRegionKey,
-        zoomLevel: _currentZoomLevel,
+        zoomLevel: _zoom.clusteringZoomLevel,
         style: widget.style,
         includeVisibleBranchListItems: _includeVisibleBranchListItems,
       ),
@@ -1072,12 +1357,14 @@ class _AppBrazilStoreSalesMapChartState
   _BrazilStoreSalesMapSnapshot _resolveSnapshot(BuildContext context) {
     final data = _resolveSnapshotData(context);
     final selectedStoreId = _selectedStoreId;
-    final visualReuseKey = [
-      data.cachedReuseKey,
-      'ss=$selectedStoreId',
-      'rs=$_internalSelectedStateKey',
-      'pv=$_previewedStoreId',
-    ].join(';');
+    final visualReuseKey = widget.style.autoFocusSelectedStore
+        ? [
+            data.cachedReuseKey,
+            'ss=',
+            'rs=',
+            'pv=',
+          ].join(';')
+        : data.cachedReuseKey;
     final snapshot = _snapshot;
     if (snapshot != null && snapshot.visualReuseKey == visualReuseKey) {
       return snapshot;
@@ -1087,8 +1374,7 @@ class _AppBrazilStoreSalesMapChartState
       context: context,
       data: data,
       selectedStoreId: selectedStoreId,
-      previewedStoreId: _previewedStoreId,
-      requestedStateKey: _internalSelectedStateKey,
+      requestedStateKey: _selection.internalSelectedStateKey,
       style: widget.style,
       visualReuseKey: visualReuseKey,
     );
@@ -1096,14 +1382,8 @@ class _AppBrazilStoreSalesMapChartState
     return nextSnapshot;
   }
 
-  String? get _selectedStoreId {
-    final controlledSelectedStoreId = widget.selectedStoreId;
-    if (controlledSelectedStoreId != null &&
-        controlledSelectedStoreId != _dismissedControlledSelectedStoreId) {
-      return controlledSelectedStoreId;
-    }
-    return _internalSelectedStoreId;
-  }
+  String? get _selectedStoreId =>
+      _selection.resolveSelectedStoreId(widget.selectedStoreId);
 
   void _handleMetricChanged(AppMapMetricChangedEvent event) {
     final metric = AppBrazilStoreSalesMapMetric.values.firstWhere(
@@ -1124,27 +1404,26 @@ class _AppBrazilStoreSalesMapChartState
 
   void _handleScopeChanged(AppMapScopeChangedEvent event) {
     setState(() {
+      _viewportController.reset();
+      _userHasManualMapViewport = false;
+      _cachedPreferredViewportBinding = null;
+      _cachedPreferredViewport = null;
       _activeRegionKey = event.currentScopeKey;
-      _currentZoomLevel =
-          (event.currentScopeKey == null
-                  ? AppBrazilMapStaticData.brazilViewport
-                  : AppBrazilMapStaticData.regionViewports[event
-                        .currentScopeKey])
-              ?.zoomLevel ??
-          AppBrazilMapStaticData.brazilViewport.zoomLevel;
-      final selectedStoreId = _selectedStoreId;
-      final selectedPoint = _pointById(selectedStoreId);
-      if (selectedPoint != null &&
-          !AppBrazilStoreSalesMapData.pointMatchesRegion(
-            selectedPoint,
-            _activeRegionKey,
-          )) {
-        _internalSelectedStoreId = null;
-        _internalSelectedStateKey = null;
-      }
+      _zoom.applyScopeZoom(
+        (event.currentScopeKey == null
+                ? AppBrazilMapStaticData.brazilViewport
+                : AppBrazilMapStaticData.regionViewports[event.currentScopeKey])
+            ?.zoomLevel,
+      );
+      _selection.clearStoreIfOutsideActiveRegion(
+        activeRegionKey: _activeRegionKey,
+        controlledSelectedStoreId: widget.selectedStoreId,
+        pointById: _pointById,
+      );
       if (!_pointMatchesActiveRegion(_previewedStoreId)) {
         _previewedStoreId = null;
       }
+      _publishMarkerSelection();
       _invalidateResolvedSnapshotData();
     });
   }
@@ -1152,11 +1431,32 @@ class _AppBrazilStoreSalesMapChartState
   void _handleStateTap(
     AppMapRegionTapEvent<AppBrazilStoreSalesStateBucket> event,
   ) {
+    final preserveStoreSelection = _selection
+        .shouldPreserveStoreSelectionForRegionTap(
+          regionKey: event.regionKey,
+          controlledSelectedStoreId: widget.selectedStoreId,
+          pointById: _pointById,
+        );
+    if (_selection.shouldSkipRedundantRegionTap(
+      regionKey: event.regionKey,
+      preserveStoreSelection: preserveStoreSelection,
+      controlledSelectedStoreId: widget.selectedStoreId,
+    )) {
+      widget.onStateTap?.call(event);
+      return;
+    }
+
     setState(() {
-      _internalSelectedStoreId = null;
-      _previewedStoreId = null;
-      _internalSelectedStateKey = event.regionKey;
+      _selection.applyRegionTap(
+        regionKey: event.regionKey,
+        preserveStoreSelection: preserveStoreSelection,
+      );
+      if (!preserveStoreSelection) {
+        _previewedStoreId = null;
+        _viewportController.reset();
+      }
       _invalidateResolvedSnapshotVisual();
+      _publishMarkerSelection();
     });
     widget.onStateTap?.call(event);
   }
@@ -1173,7 +1473,9 @@ class _AppBrazilStoreSalesMapChartState
     }
 
     final point = payload.primaryPoint;
-    _selectPoint(point);
+    final focusSelectedStore =
+        !payload.isCluster && !payload.isMunicipalityAggregate;
+    _selectPoint(point, focusStore: focusSelectedStore);
     if (_shouldUseCompactBranchSheet) {
       unawaited(
         _openCompactBranchDetailSheet(
@@ -1217,18 +1519,41 @@ class _AppBrazilStoreSalesMapChartState
     _emitStoreTap(point: point, index: event.index);
   }
 
-  void _selectPoint(AppBrazilStoreSalesPoint point) {
+  void _selectPoint(
+    AppBrazilStoreSalesPoint point, {
+    bool focusStore = true,
+  }) {
     _cancelPendingPreviewClear();
-    setState(() {
-      _internalSelectedStoreId = point.id;
-      _previewedStoreId = null;
-      _dismissedControlledSelectedStoreId = null;
-      _internalSelectedStateKey = AppBrazilStoreSalesMapData.normalizeUf(
-        point.uf,
+    _cancelPendingViewportClusterSampling();
+    final shouldAutoFocusStore =
+        focusStore && widget.style.autoFocusSelectedStore;
+
+    if (!shouldAutoFocusStore) {
+      _viewportController.withdrawPreferredViewportForStoreSelection();
+      _selection.applyStoreSelection(
+        point,
+        focusStore: false,
+        linkRegionHighlight: false,
       );
-      _currentZoomLevel = widget.style.selectedStoreZoomLevel;
+      _previewedStoreId = null;
+      _publishMarkerSelection();
+      return;
+    }
+
+    _viewportController.reset();
+    setState(() {
+      _selection.applyStoreSelection(
+        point,
+        focusStore: true,
+      );
+      _previewedStoreId = null;
+      _cachedPreferredViewport = null;
+      _cachedPreferredViewportBinding = null;
+      _zoom.clusteringZoomLevel = widget.style.selectedStoreZoomLevel;
       _invalidateResolvedSnapshotData();
     });
+    _publishMarkerSelection();
+    _scheduleConsumeCameraFocus();
   }
 
   void _emitStoreTap({
@@ -1267,8 +1592,7 @@ class _AppBrazilStoreSalesMapChartState
     _emitStoreTap(point: point, index: index);
   }
 
-  bool get _shouldUseCompactBranchSheet =>
-      widget.style.showStoreDetail && AppBreakpoints.isMobile(context);
+  bool get _shouldUseCompactBranchSheet => _compactBranchSheetLayout;
 
   Future<void> _openCompactBranchDetailSheet({
     required AppBrazilStoreSalesMarkerGroup group,
@@ -1315,13 +1639,15 @@ class _AppBrazilStoreSalesMapChartState
 
   void _clearSelectedMarkerDetail() {
     _cancelPendingPreviewClear();
+    _viewportController.reset();
     setState(() {
-      if (widget.selectedStoreId != null) {
-        _dismissedControlledSelectedStoreId = widget.selectedStoreId;
-      }
-      _internalSelectedStoreId = null;
+      _selection.clearStoreSelection(
+        controlledSelectedStoreId: widget.selectedStoreId,
+      );
       _previewedStoreId = null;
-      _invalidateResolvedSnapshotVisual();
+      _cachedPreferredViewportBinding = null;
+      _cachedPreferredViewport = null;
+      _publishMarkerSelection();
     });
   }
 
@@ -1331,10 +1657,11 @@ class _AppBrazilStoreSalesMapChartState
   ) {
     final bucket = bubble.bucket;
     setState(() {
-      _internalSelectedStoreId = null;
+      _viewportController.reset();
+      _selection.clearStoreAndStateSelection();
       _previewedStoreId = null;
-      _internalSelectedStateKey = bucket.uf;
-      _invalidateResolvedSnapshotVisual();
+      _selection.internalSelectedStateKey = bucket.uf;
+      _publishMarkerSelection();
     });
 
     widget.onStateTap?.call(
@@ -1350,25 +1677,30 @@ class _AppBrazilStoreSalesMapChartState
   }
 
   void _handleViewportChanged(AppMapViewportChangedEvent event) {
+    if (event.source == AppMapViewportChangeSource.user) {
+      _userHasManualMapViewport = true;
+    }
+
     if (!widget.style.enableProximityCluster) {
       return;
     }
 
-    // Syncfusion Maps + debounced viewport zoom + OverlayPortals overload the
-    // Windows accessibility bridge (AXTree) in practice. In release builds we
-    // still follow zoom with a heavy throttle; in debug/profile/tests we skip
-    // viewport-driven clustering updates entirely on Windows.
-    if (defaultTargetPlatform == TargetPlatform.windows && !kReleaseMode) {
+    if (event.source == AppMapViewportChangeSource.programmatic) {
+      return;
+    }
+
+    // Syncfusion Maps + debounced viewport clustering + overlay rebuilds can
+    // freeze or crash the Windows desktop host (AXTree / "Lost connection to
+    // device"). Keep clustering zoom driven by scope/selection only on Windows.
+    if (defaultTargetPlatform == TargetPlatform.windows) {
       _cancelPendingViewportClusterSampling();
       return;
     }
 
-    // While auto-focus keeps the camera on a selected branch, the engine
-    // still reports the *current* zoom during transitions (e.g. Brazil ~1.0
-    // right after we set clustering zoom to [selectedStoreZoomLevel]).
-    // Applying those samples overwrites [_currentZoomLevel], invalidates the
-    // snapshot on every tick, and can spin rebuilds + Windows AXTree updates.
-    if (widget.style.autoFocusSelectedStore && _selectedStoreId != null) {
+    // While a store is selected, ignore viewport-driven re-clustering. Syncfusion
+    // emits many zoom ticks during marker focus and detail layout; each sample
+    // rebuilds snapshot data synchronously and can freeze the UI.
+    if (_blocksViewportDrivenClustering) {
       _cancelPendingViewportClusterSampling();
       return;
     }
@@ -1417,15 +1749,21 @@ class _AppBrazilStoreSalesMapChartState
   }
 
   void _applyViewportClusterZoomLevel(double nextZoomLevel) {
-    if (widget.style.autoFocusSelectedStore && _selectedStoreId != null) {
+    if (!mounted) {
       return;
     }
-    if (!mounted || (nextZoomLevel - _currentZoomLevel).abs() < 0.25) {
+    if (_blocksViewportDrivenClustering) {
+      return;
+    }
+    if (!_zoom.shouldApplyViewportClusterSample(
+      nextZoomLevel,
+      blocksViewportDrivenClustering: _blocksViewportDrivenClustering,
+    )) {
       return;
     }
 
     setState(() {
-      _currentZoomLevel = nextZoomLevel;
+      _zoom.clusteringZoomLevel = nextZoomLevel;
       _invalidateResolvedSnapshotData();
     });
     if (kDebugMode || kProfileMode) {
@@ -1472,6 +1810,102 @@ class _AppBrazilStoreSalesMapChartState
     return null;
   }
 
+  Widget _buildBelowMapSelectionDetail({
+    required BuildContext context,
+    required _BrazilStoreSalesMapSnapshot snapshot,
+    required BrazilMapMarkerSelection selection,
+  }) {
+    final markerDetail = _resolveMarkerDetailSelection(snapshot, selection);
+    final selectedPoint = markerDetail.point;
+    final selectedMarkerGroup = markerDetail.group;
+    final selectedStateBucket = _resolveSelectedStateBucket(
+      snapshot,
+      selection,
+    );
+
+    if (_showBelowMapMarkerDetail &&
+        selectedMarkerGroup != null &&
+        (selectedMarkerGroup.isMunicipalityAggregate ||
+            selectedMarkerGroup.isCluster)) {
+      return _SelectedMunicipalityDetail(
+        group: selectedMarkerGroup,
+        metric: _selectedMetric,
+        selectedStoreId: selection.selectedStoreId,
+        onSelectBranch: (point) => _handleMarkerBranchAction(
+          point: point,
+          index: _mapPointIndexFor(point, snapshot),
+        ),
+        selectBranchLabelBuilder: (_) => AppLocalizations.of(
+          context,
+        ).brazilStoreSalesMapShowBranchOnMapAction,
+      );
+    }
+    if (_showBelowMapMarkerDetail && selectedPoint != null) {
+      return _SelectedStoreDetail(
+        point: selectedPoint,
+        metric: _selectedMetric,
+      );
+    }
+    if (selectedPoint == null &&
+        selectedMarkerGroup == null &&
+        selectedStateBucket != null) {
+      return _SelectedStateDetail(
+        bucket: selectedStateBucket,
+        metric: _selectedMetric,
+      );
+    }
+    return const SizedBox.shrink();
+  }
+
+  AppBrazilStoreSalesStateBucket? _resolveSelectedStateBucket(
+    _BrazilStoreSalesMapSnapshot snapshot,
+    BrazilMapMarkerSelection selection,
+  ) {
+    final stateKey =
+        selection.shapeHighlightRegionKey ?? snapshot.selectedStateKey;
+    if (stateKey == null) {
+      return null;
+    }
+
+    for (final bucket in snapshot.buckets) {
+      if (bucket.uf == stateKey) {
+        return bucket;
+      }
+    }
+
+    return null;
+  }
+
+  ({AppBrazilStoreSalesPoint? point, AppBrazilStoreSalesMarkerGroup? group})
+  _resolveMarkerDetailSelection(
+    _BrazilStoreSalesMapSnapshot snapshot,
+    BrazilMapMarkerSelection selection,
+  ) {
+    final selectedStoreId = selection.selectedStoreId;
+    var point = snapshot.selectedPoint;
+    var group = snapshot.selectedMarkerGroup;
+    if (selectedStoreId == null) {
+      return (point: null, group: null);
+    }
+
+    point ??= _pointById(selectedStoreId);
+    if (group == null) {
+      for (final candidate in snapshot.data.markerGroups) {
+        if (candidate.points.any((branch) => branch.id == selectedStoreId)) {
+          group = candidate;
+          break;
+        }
+      }
+      if (group == null && point != null) {
+        group = AppBrazilStoreSalesMarkerGroup(
+          points: <AppBrazilStoreSalesPoint>[point],
+        );
+      }
+    }
+
+    return (point: point, group: group);
+  }
+
   bool _pointMatchesActiveRegion(String? pointId) {
     final point = _pointById(pointId);
     if (point == null) {
@@ -1492,7 +1926,7 @@ class _AppBrazilStoreSalesMapChartState
     }
     setState(() {
       _previewedStoreId = point.id;
-      _invalidateResolvedSnapshotVisual();
+      _publishMarkerSelection();
     });
   }
 
@@ -1507,7 +1941,7 @@ class _AppBrazilStoreSalesMapChartState
       }
       setState(() {
         _previewedStoreId = null;
-        _invalidateResolvedSnapshotVisual();
+        _publishMarkerSelection();
       });
     });
   }
@@ -1516,43 +1950,115 @@ class _AppBrazilStoreSalesMapChartState
   @visibleForTesting
   void previewBranchForTesting(AppBrazilStoreSalesPoint point) {
     _cancelPendingPreviewClear();
-    setState(() {
-      _previewedStoreId = point.id;
-      _invalidateResolvedSnapshotVisual();
-    });
+    _previewedStoreId = point.id;
+    _publishMarkerSelection();
   }
 
   @override
   @visibleForTesting
   void clearPreviewBranchForTesting() {
     _cancelPendingPreviewClear();
-    setState(() {
-      _previewedStoreId = null;
-      _invalidateResolvedSnapshotVisual();
-    });
+    _previewedStoreId = null;
+    _publishMarkerSelection();
+  }
+
+  AppMapMarkerStyle _resolveStateBubbleMarkerStyle(
+    BuildContext context,
+    AppMapMarkerStyle base,
+    AppBrazilStoreSalesStateBucket bucket,
+  ) {
+    final selectedStateKey = _selection.internalSelectedStateKey;
+    if (selectedStateKey == null || bucket.uf != selectedStateKey) {
+      return base;
+    }
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final selectedMarkerColor =
+        widget.style.selectedMarkerColor ?? context.appColors.secondary;
+    final selectedMarkerStrokeColor =
+        widget.style.selectedMarkerStrokeColor ?? colorScheme.surface;
+    return base.copyWith(
+      size: base.size + 4,
+      color: selectedMarkerColor,
+      strokeColor: selectedMarkerStrokeColor,
+      strokeWidth: 2.4,
+    );
+  }
+
+  AppMapMarkerStyle _resolveStoreGroupMarkerStyle(
+    BuildContext context,
+    AppMapMarkerStyle base,
+    AppBrazilStoreSalesMarkerGroup group,
+    BrazilMapMarkerSelection selection,
+  ) {
+    final selectedStoreId = selection.selectedStoreId;
+    final previewedStoreId = selection.previewedStoreId;
+    final selected =
+        selectedStoreId != null &&
+        group.points.any((point) => point.id == selectedStoreId);
+    final previewed =
+        previewedStoreId != null &&
+        group.points.any((point) => point.id == previewedStoreId);
+    if (!selected && !previewed) {
+      return base;
+    }
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final selectedMarkerColor =
+        widget.style.selectedMarkerColor ?? context.appColors.secondary;
+    final selectedMarkerStrokeColor =
+        widget.style.selectedMarkerStrokeColor ?? colorScheme.surface;
+    return base.copyWith(
+      size: previewed ? base.size + 8 : base.size + 4,
+      color: selectedMarkerColor,
+      strokeColor: selectedMarkerStrokeColor,
+      strokeWidth: previewed ? 3 : 2.4,
+    );
   }
 
   @override
   @visibleForTesting
   Object? get snapshotDataIdentityForTesting => _snapshotData;
 
+  @override
+  @visibleForTesting
+  Object? get snapshotMapPointsIdentityForTesting => _snapshot?.mapPoints;
+
+  @override
+  @visibleForTesting
+  String? get previewedStoreIdForTesting => _previewedStoreId;
+
+  @override
+  @visibleForTesting
+  bool get suppressPreferredViewportForTesting =>
+      _viewportController.suppressPreferredViewport;
+
   Widget _buildMarker(
     BuildContext context,
     AppMapPoint point,
     int index,
+    BrazilMapMarkerSelection selection,
   ) {
     final payload = point.payload;
     if (payload is AppBrazilStoreSalesStateBubble) {
+      final baseStyle = point.style ?? const AppMapMarkerStyle();
       return _StateBubbleMarker(
         bucket: payload.bucket,
         metric: _selectedMetric,
-        style: point.style ?? const AppMapMarkerStyle(),
+        style: _resolveStateBubbleMarkerStyle(
+          context,
+          baseStyle,
+          payload.bucket,
+        ),
         semanticLabel: _stateBubbleSemanticLabel(payload.bucket),
       );
     }
 
     final group = payload is AppBrazilStoreSalesMarkerGroup ? payload : null;
-    final style = point.style ?? const AppMapMarkerStyle();
+    final baseStyle = point.style ?? const AppMapMarkerStyle();
+    final style = group == null
+        ? baseStyle
+        : _resolveStoreGroupMarkerStyle(context, baseStyle, group, selection);
     final marker = _StoreMapMarker(
       key: ValueKey<String>('brazil-store-sales-map-marker-$index'),
       style: style,
@@ -1560,8 +2066,8 @@ class _AppBrazilStoreSalesMapChartState
       visual: widget.style.markerVisual,
       semanticLabel: _markerSemanticLabel(group),
     );
-    final selectedStoreId = _selectedStoreId;
-    final previewedStoreId = _previewedStoreId;
+    final selectedStoreId = selection.selectedStoreId;
+    final previewedStoreId = selection.previewedStoreId;
     final showDetailOverlay =
         _showOverlayMarkerDetail &&
         previewedStoreId == null &&
@@ -1753,7 +2259,6 @@ class _BrazilStoreSalesMapSnapshot {
     required BuildContext context,
     required AppBrazilStoreSalesMapSnapshotData data,
     required String? selectedStoreId,
-    required String? previewedStoreId,
     required String? requestedStateKey,
     required AppBrazilStoreSalesMapStyle style,
     required String visualReuseKey,
@@ -1770,9 +2275,6 @@ class _BrazilStoreSalesMapSnapshot {
       context: context,
       data: data,
       style: style,
-      selectedStateKey: selectedState.selectedStateKey,
-      selectedStoreId: selectedStoreId,
-      previewedStoreId: previewedStoreId,
     );
 
     final snapshot = _BrazilStoreSalesMapSnapshot(
@@ -1833,19 +2335,12 @@ class _BrazilStoreSalesMapSnapshot {
     required BuildContext context,
     required AppBrazilStoreSalesMapSnapshotData data,
     required AppBrazilStoreSalesMapStyle style,
-    required String? selectedStateKey,
-    required String? selectedStoreId,
-    required String? previewedStoreId,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     final markerColor = style.markerColor ?? context.appColors.tertiary;
     final markerStrokeColor = style.markerStrokeColor ?? colorScheme.surface;
     final pendingMarkerColor = context.appColors.secondary;
     final unavailableMarkerColor = colorScheme.onSurfaceVariant;
-    final selectedMarkerColor =
-        style.selectedMarkerColor ?? context.appColors.secondary;
-    final selectedMarkerStrokeColor =
-        style.selectedMarkerStrokeColor ?? colorScheme.surface;
     final mapPoints = <AppMapPoint>[];
 
     for (final bucket in data.stateBubbleBuckets) {
@@ -1854,7 +2349,6 @@ class _BrazilStoreSalesMapSnapshot {
         continue;
       }
 
-      final selected = bucket.uf == selectedStateKey;
       final value = data.metric.valueForBucket(bucket);
       final markerSize = _effectiveMarkerSize(
         size: AppBrazilStoreSalesMapData.markerSizeFor(
@@ -1878,24 +2372,15 @@ class _BrazilStoreSalesMapSnapshot {
               : null,
           payload: AppBrazilStoreSalesStateBubble(bucket: bucket),
           style: AppMapMarkerStyle(
-            size: selected ? markerSize + 4 : markerSize,
-            color: selected ? selectedMarkerColor : markerColor,
-            strokeColor: selected
-                ? selectedMarkerStrokeColor
-                : markerStrokeColor,
-            strokeWidth: selected ? 2.4 : 1.5,
+            size: markerSize,
+            color: markerColor,
+            strokeColor: markerStrokeColor,
           ),
         ),
       );
     }
 
     for (final group in data.markerGroups) {
-      final selected =
-          selectedStoreId != null &&
-          group.points.any((point) => point.id == selectedStoreId);
-      final previewed =
-          previewedStoreId != null &&
-          group.points.any((point) => point.id == previewedStoreId);
       final size = AppBrazilStoreSalesMapData.markerSizeFor(
         value: group.valueForMetric(data.metric),
         minValue: data.minMarkerValue,
@@ -1914,20 +2399,12 @@ class _BrazilStoreSalesMapSnapshot {
       final hasUnavailableSales =
           !hasLoadingSales &&
           group.points.any((point) => point.salesDataUnavailable);
-      final effectiveMarkerColor = selected
-          ? selectedMarkerColor
-          : previewed
-          ? selectedMarkerColor
-          : hasLoadingSales
+      final effectiveMarkerColor = hasLoadingSales
           ? pendingMarkerColor
           : hasUnavailableSales
           ? unavailableMarkerColor
           : markerColor;
-      final effectiveStrokeColor = selected
-          ? selectedMarkerStrokeColor
-          : previewed
-          ? selectedMarkerStrokeColor
-          : hasLoadingSales
+      final effectiveStrokeColor = hasLoadingSales
           ? colorScheme.surface
           : markerStrokeColor;
       mapPoints.add(
@@ -1936,18 +2413,10 @@ class _BrazilStoreSalesMapSnapshot {
           longitude: group.longitude,
           payload: group,
           style: AppMapMarkerStyle(
-            size: previewed
-                ? markerSize + 8
-                : selected
-                ? markerSize + 4
-                : markerSize,
+            size: markerSize,
             color: effectiveMarkerColor,
             strokeColor: effectiveStrokeColor,
-            strokeWidth: previewed
-                ? 3
-                : selected || hasLoadingSales
-                ? 2.4
-                : 1.5,
+            strokeWidth: hasLoadingSales ? 2.4 : 1.5,
           ),
         ),
       );

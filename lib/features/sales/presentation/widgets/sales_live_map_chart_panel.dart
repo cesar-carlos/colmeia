@@ -15,9 +15,10 @@ enum SalesLiveMapChartPanelMode {
   fullscreen,
 }
 
-class SalesLiveMapChartPanel extends StatelessWidget {
+class SalesLiveMapChartPanel extends StatefulWidget {
   const SalesLiveMapChartPanel({
     required this.mode,
+    required this.mapPayloadDigest,
     required this.points,
     required this.metric,
     required this.filterBranchIds,
@@ -33,6 +34,7 @@ class SalesLiveMapChartPanel extends StatelessWidget {
   });
 
   final SalesLiveMapChartPanelMode mode;
+  final int mapPayloadDigest;
   final List<SalesLiveMapPoint> points;
   final SalesLiveMapMetric metric;
   final Set<String> filterBranchIds;
@@ -46,24 +48,77 @@ class SalesLiveMapChartPanel extends StatelessWidget {
   final String? subtitle;
 
   @override
+  State<SalesLiveMapChartPanel> createState() => _SalesLiveMapChartPanelState();
+}
+
+class _SalesLiveMapChartPanelState extends State<SalesLiveMapChartPanel> {
+  int? _cachedMapPayloadDigest;
+  SalesLiveMapMetric? _cachedMetric;
+  SalesLiveMapVisualSpec? _cachedVisualSpec;
+  Locale? _cachedLocale;
+  List<AppBrazilStoreSalesPoint>? _cachedChartPoints;
+  AppBrazilStoreSalesMapStyle? _cachedChartStyle;
+
+  List<AppBrazilStoreSalesPoint> _resolveChartPoints(AppLocalizations l10n) {
+    final locale = Localizations.localeOf(context);
+    if (_cachedChartPoints != null &&
+        _cachedMapPayloadDigest == widget.mapPayloadDigest &&
+        _cachedMetric == widget.metric &&
+        _cachedVisualSpec == widget.visualSpec &&
+        _cachedLocale == locale) {
+      return _cachedChartPoints!;
+    }
+
+    final chartPoints = SalesLiveMapChartMapper.toChartPoints(
+      widget.points,
+      l10n,
+    );
+    _cachedMapPayloadDigest = widget.mapPayloadDigest;
+    _cachedMetric = widget.metric;
+    _cachedVisualSpec = widget.visualSpec;
+    _cachedLocale = locale;
+    _cachedChartPoints = chartPoints;
+    return chartPoints;
+  }
+
+  AppBrazilStoreSalesMapStyle _resolveChartStyle() {
+    if (_cachedChartStyle != null &&
+        _cachedMapPayloadDigest == widget.mapPayloadDigest &&
+        _cachedMetric == widget.metric &&
+        _cachedVisualSpec == widget.visualSpec) {
+      return _cachedChartStyle!;
+    }
+
+    final chartStyle = SalesLiveMapVisualSpecMapper.toChartStyle(
+      widget.visualSpec,
+    );
+    _cachedMapPayloadDigest = widget.mapPayloadDigest;
+    _cachedMetric = widget.metric;
+    _cachedVisualSpec = widget.visualSpec;
+    _cachedChartStyle = chartStyle;
+    return chartStyle;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final chartPoints = SalesLiveMapChartMapper.toChartPoints(points, l10n);
-    final chartStyle = SalesLiveMapVisualSpecMapper.toChartStyle(visualSpec);
+    final chartPoints = _resolveChartPoints(l10n);
+    final chartStyle = _resolveChartStyle();
     final chart = AppBrazilStoreSalesMapChart(
-      title: showHeader ? title : null,
-      subtitle: showHeader ? subtitle : null,
+      title: widget.showHeader ? widget.title : null,
+      subtitle: widget.showHeader ? widget.subtitle : null,
       points: chartPoints,
-      initialMetric: SalesLiveMapChartMapper.toChartMetric(metric),
-      filterBranchIds: filterBranchIds,
-      fixedBranchIds: filterBranchIds,
+      initialMetric: SalesLiveMapChartMapper.toChartMetric(widget.metric),
+      filterBranchIds: widget.filterBranchIds,
+      fixedBranchIds: widget.filterBranchIds,
       style: chartStyle,
-      isRefreshing: isRefreshing,
-      onMetricChanged: (metric) =>
-          onMetricChanged(SalesLiveMapChartMapper.fromChartMetric(metric)),
-      onOpenFullscreen: showHeader ? onOpenFullscreen : null,
-      showDesktopBranchSidebar: showSidebar,
-      presentationMode: switch (mode) {
+      isRefreshing: widget.isRefreshing,
+      onMetricChanged: (metric) => widget.onMetricChanged(
+        SalesLiveMapChartMapper.fromChartMetric(metric),
+      ),
+      onOpenFullscreen: widget.showHeader ? widget.onOpenFullscreen : null,
+      showDesktopBranchSidebar: widget.showSidebar,
+      presentationMode: switch (widget.mode) {
         SalesLiveMapChartPanelMode.inline =>
           AppBrazilStoreSalesMapPresentationMode.inlineOperational,
         SalesLiveMapChartPanelMode.fullscreen =>
@@ -71,7 +126,7 @@ class SalesLiveMapChartPanel extends StatelessWidget {
       },
     );
 
-    if (mode == SalesLiveMapChartPanelMode.inline) {
+    if (widget.mode == SalesLiveMapChartPanelMode.inline) {
       return chart;
     }
 

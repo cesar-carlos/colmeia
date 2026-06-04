@@ -64,7 +64,9 @@ class _FloatingMapControlsOverlay extends StatelessWidget {
     }
     if (onScopeChanged != null && scopeOptions.isNotEmpty) {
       if (controls.isNotEmpty) {
-        controls.add(const SizedBox(height: _floatingMapOverlayGap));
+        controls.add(
+          const SizedBox(height: BrazilMapLayoutConstants.floatingMapOverlayGap),
+        );
       }
       controls.add(
         _FloatingControlSurface(
@@ -163,7 +165,9 @@ class _FloatingControlSurface extends StatelessWidget {
       color: colorScheme.surface.withValues(alpha: 0.94),
       elevation: 2,
       shadowColor: Colors.black.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(_floatingMapOverlaySurfaceRadius),
+      borderRadius: BorderRadius.circular(
+        BrazilMapLayoutConstants.floatingMapOverlaySurfaceRadius,
+      ),
       child: Padding(
         padding: const EdgeInsets.all(3),
         child: child,

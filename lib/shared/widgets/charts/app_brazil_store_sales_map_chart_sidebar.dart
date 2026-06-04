@@ -79,7 +79,9 @@ class _DesktopBranchSidebarCollapsedOverlay extends StatelessWidget {
           ),
           child: AppSectionCard(
             color: colorScheme.surface.withValues(alpha: 0.94),
-            borderRadius: BorderRadius.circular(_floatingMapOverlaySurfaceRadius),
+            borderRadius: BorderRadius.circular(
+              BrazilMapLayoutConstants.floatingMapOverlaySurfaceRadius,
+            ),
             borderSide: BorderSide(
               color: appColors.secondary.withValues(alpha: 0.12),
             ),
@@ -88,7 +90,7 @@ class _DesktopBranchSidebarCollapsedOverlay extends StatelessWidget {
               message: l10n.brazilStoreSalesMapSidebarExpandTooltip,
               child: InkWell(
                 borderRadius: BorderRadius.circular(
-                  _floatingMapOverlaySurfaceRadius,
+                  BrazilMapLayoutConstants.floatingMapOverlaySurfaceRadius,
                 ),
                 onTap: onExpand,
                 child: Padding(
@@ -137,11 +139,14 @@ class _DesktopBranchSidebar extends StatefulWidget {
 
 class _DesktopBranchSidebarState extends State<_DesktopBranchSidebar> {
   static const double _scrollbarContentGutter = 14;
+  static const Duration _focusRequestDebounce = Duration(milliseconds: 48);
 
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   List<FocusNode> _focusNodes = const <FocusNode>[];
   int _focusedIndex = 0;
+  Timer? _focusRequestDebounceTimer;
+  String? _lastQueuedFocusStoreId;
   _DesktopBranchSidebarFilterResult? _filterResultCache;
   String? _filterResultQueryCache;
   List<AppBrazilStoreSalesVisibleBranchListItem>? _filterResultEntriesCache;
@@ -157,16 +162,35 @@ class _DesktopBranchSidebarState extends State<_DesktopBranchSidebar> {
   @override
   void didUpdateWidget(covariant _DesktopBranchSidebar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.entries != widget.entries ||
-        oldWidget.selectedStoreId != widget.selectedStoreId) {
+    final selectionChanged =
+        oldWidget.selectedStoreId != widget.selectedStoreId;
+    final entriesChanged = !_sidebarEntriesEquivalent(
+      oldWidget.entries,
+      widget.entries,
+    );
+    if (!entriesChanged && !selectionChanged) {
+      return;
+    }
+
+    if (entriesChanged) {
       _invalidateFilterResultCache();
       _syncFocusNodes();
+    } else {
+      _invalidateFilterResultCache();
+      final selectedIndex = _selectedIndex;
+      if (selectedIndex >= 0) {
+        _focusedIndex = selectedIndex;
+      }
+    }
+
+    if (selectionChanged) {
       _queueFocusRequest();
     }
   }
 
   @override
   void dispose() {
+    _focusRequestDebounceTimer?.cancel();
     _searchController
       ..removeListener(_handleSearchChanged)
       ..dispose();
@@ -271,7 +295,13 @@ class _DesktopBranchSidebarState extends State<_DesktopBranchSidebar> {
   }
 
   void _queueFocusRequest() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    final selectedStoreId = widget.selectedStoreId;
+    if (selectedStoreId == _lastQueuedFocusStoreId) {
+      return;
+    }
+    _lastQueuedFocusStoreId = selectedStoreId;
+    _focusRequestDebounceTimer?.cancel();
+    _focusRequestDebounceTimer = Timer(_focusRequestDebounce, () {
       if (!mounted || _focusNodes.isEmpty) {
         return;
       }
@@ -346,7 +376,7 @@ class _DesktopBranchSidebarState extends State<_DesktopBranchSidebar> {
         height: widget.maxHeight,
         child: AppSectionCard(
           color: colorScheme.surface.withValues(alpha: 0.94),
-          borderRadius: BorderRadius.circular(_floatingMapOverlaySurfaceRadius),
+          borderRadius: BorderRadius.circular(BrazilMapLayoutConstants.floatingMapOverlaySurfaceRadius),
           borderSide: BorderSide(
             color: appColors.secondary.withValues(alpha: 0.12),
           ),
@@ -538,6 +568,29 @@ String? _normalizedSearchToken(String? value) {
     return null;
   }
   return normalized;
+}
+
+bool _sidebarEntriesEquivalent(
+  List<AppBrazilStoreSalesVisibleBranchListItem> left,
+  List<AppBrazilStoreSalesVisibleBranchListItem> right,
+) {
+  if (identical(left, right)) {
+    return true;
+  }
+  if (left.length != right.length) {
+    return false;
+  }
+  for (var index = 0; index < left.length; index++) {
+    final leftEntry = left[index];
+    final rightEntry = right[index];
+    if (leftEntry.id != rightEntry.id ||
+        leftEntry.isSelected != rightEntry.isSelected ||
+        leftEntry.state != rightEntry.state ||
+        leftEntry.salesAmount != rightEntry.salesAmount) {
+      return false;
+    }
+  }
+  return true;
 }
 
 class _DesktopBranchSidebarFilterResult {

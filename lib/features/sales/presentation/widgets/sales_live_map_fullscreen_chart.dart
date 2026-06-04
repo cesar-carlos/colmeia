@@ -53,6 +53,7 @@ class SalesLiveMapFullscreenChart extends StatelessWidget {
         builder: (context, slice, _) {
           return SalesLiveMapChartPanel(
             mode: SalesLiveMapChartPanelMode.fullscreen,
+            mapPayloadDigest: slice.mapPayloadDigest,
             points: slice.points,
             metric: slice.metric,
             filterBranchIds: slice.filterBranchIds,

@@ -110,8 +110,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      final l10n =
-        localizedFromWidget<AppBrazilStoreSalesMapChart>(tester);
+      final l10n = localizedFromWidget<AppBrazilStoreSalesMapChart>(tester);
       expect(find.text(l10n.brazilStoreSalesMapSidebarTitle), findsOneWidget);
       expect(
         find.text(l10n.brazilStoreSalesMapSidebarSummary(2, r'R$ 14.000,00')),
@@ -173,6 +172,113 @@ void main() {
               as BoxDecoration;
       expect(selectedDecoration.border, isA<Border>());
       expect((selectedDecoration.border! as Border).top.width, 1.8);
+    },
+  );
+
+  testWidgets(
+    'bounded height leaves no gap below store detail when selection is below map',
+    (tester) async {
+      const viewportHeight = 780.0;
+      await tester.binding.setSurfaceSize(const Size(1400, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await _pumpMap(
+        tester,
+        width: 1400,
+        height: viewportHeight,
+        showDesktopBranchSidebar: true,
+        style: _baseStyle.copyWith(showStoreDetail: true),
+        points: const <AppBrazilStoreSalesPoint>[
+          AppBrazilStoreSalesPoint(
+            id: 'store-1',
+            name: 'Casa do Mel Barra do Garcas',
+            fantasyName: 'Casa do Mel',
+            uf: 'MT',
+            city: 'Barra do Garcas',
+            latitude: -15.8908,
+            longitude: -52.2569,
+            salesAmount: 12500,
+            salesCount: 210,
+          ),
+        ],
+      );
+
+      await tester.tap(
+        find.byKey(
+          const ValueKey<String>(
+            'brazil-store-sales-map-sidebar-item-store-1',
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final storeDetail = find.byKey(
+        const ValueKey<String>('brazil-store-sales-map-store-detail'),
+      );
+      expect(storeDetail, findsOneWidget);
+
+      final contentRect = tester.getRect(
+        find.byKey(const ValueKey<String>('brazil-store-sales-map-content')),
+      );
+      final detailRect = tester.getRect(storeDetail);
+      expect(contentRect.bottom - detailRect.bottom, lessThan(8));
+    },
+  );
+
+  testWidgets(
+    'bounded height leaves no gap below UF state detail',
+    (tester) async {
+      const viewportHeight = 780.0;
+      await _pumpMap(
+        tester,
+        height: viewportHeight,
+        style: _baseStyle.copyWith(showStoreDetail: true),
+        points: const <AppBrazilStoreSalesPoint>[
+          AppBrazilStoreSalesPoint(
+            id: 'store-1',
+            name: 'Casa do Mel',
+            uf: 'MS',
+            city: 'Campo Grande',
+            latitude: -20.4697,
+            longitude: -54.6201,
+            salesAmount: 5000,
+            salesCount: 80,
+          ),
+        ],
+      );
+
+      final regionMap = tester
+          .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
+            ),
+          );
+      final bucket = regionMap.items.firstWhere((item) => item.uf == 'MS');
+      regionMap.onRegionTapEvent?.call(
+        AppMapRegionTapEvent<AppBrazilStoreSalesStateBucket>(
+          item: bucket,
+          regionKey: bucket.uf,
+          regionLabel: bucket.stateName,
+          metricKey: AppBrazilStoreSalesMapMetric.revenue.key,
+          metricValue: bucket.salesAmount,
+          index: regionMap.items.indexOf(bucket),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final stateDetail = find.byKey(
+        const ValueKey<String>('brazil-store-sales-map-state-detail'),
+      );
+      expect(stateDetail, findsOneWidget);
+
+      final contentRect = tester.getRect(
+        find.byKey(const ValueKey<String>('brazil-store-sales-map-content')),
+      );
+      final detailRect = tester.getRect(stateDetail);
+      expect(contentRect.bottom - detailRect.bottom, lessThan(8));
     },
   );
 
@@ -443,8 +549,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      final l10n =
-        localizedFromWidget<AppBrazilStoreSalesMapChart>(tester);
+      final l10n = localizedFromWidget<AppBrazilStoreSalesMapChart>(tester);
       expect(
         find.text(l10n.brazilStoreSalesMapSidebarEmptyStateTitle),
         findsOneWidget,
@@ -521,14 +626,15 @@ void main() {
       expect(find.text('Mel Sul'), findsOneWidget);
       expect(find.text('Filial Sao Paulo'), findsNothing);
       expect(find.text('Filial Cuiaba'), findsNothing);
-      final l10n =
-        localizedFromWidget<AppBrazilStoreSalesMapChart>(tester);
+      final l10n = localizedFromWidget<AppBrazilStoreSalesMapChart>(tester);
       expect(
         find.text(l10n.brazilStoreSalesMapSidebarCountSummary(1)),
         findsOneWidget,
       );
       expect(
-        find.text(l10n.brazilStoreSalesMapSidebarRevenueSummary(r'R$ 7.300,00')),
+        find.text(
+          l10n.brazilStoreSalesMapSidebarRevenueSummary(r'R$ 7.300,00'),
+        ),
         findsOneWidget,
       );
     },
@@ -577,52 +683,26 @@ void main() {
         points: points,
       );
 
-      final regionMapBefore = tester
-          .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
-            find
-                .byWidgetPredicate(
-                  (widget) =>
-                      widget
-                          is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
-                )
-                .first,
-          );
-      final storeTwoPointBefore = regionMapBefore.points.firstWhere((point) {
-        final payload = point.payload;
-        return payload is AppBrazilStoreSalesMarkerGroup &&
-            payload.points.any((groupPoint) => groupPoint.id == 'store-2');
-      });
-      final storeTwoSizeBefore = storeTwoPointBefore.style?.size;
       final previewHandle =
           tester.state(
                 find.byType(AppBrazilStoreSalesMapChart),
               )
               as AppBrazilStoreSalesMapChartPreviewTestHandle;
       final snapshotDataBefore = previewHandle.snapshotDataIdentityForTesting;
+      final mapPointsBefore = previewHandle.snapshotMapPointsIdentityForTesting;
 
       previewHandle.previewBranchForTesting(points[1]);
       await tester.pump();
       await tester.pump();
 
-      final regionMapAfter = tester
-          .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
-            find
-                .byWidgetPredicate(
-                  (widget) =>
-                      widget
-                          is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
-                )
-                .first,
-          );
-      final storeTwoPointAfter = regionMapAfter.points.firstWhere((point) {
-        final payload = point.payload;
-        return payload is AppBrazilStoreSalesMarkerGroup &&
-            payload.points.any((groupPoint) => groupPoint.id == 'store-2');
-      });
-      expect(storeTwoPointAfter.style?.size, greaterThan(storeTwoSizeBefore!));
+      expect(previewHandle.previewedStoreIdForTesting, 'store-2');
       expect(
         previewHandle.snapshotDataIdentityForTesting,
         same(snapshotDataBefore),
+      );
+      expect(
+        previewHandle.snapshotMapPointsIdentityForTesting,
+        same(mapPointsBefore),
       );
       expect(
         find.byKey(
@@ -634,25 +714,14 @@ void main() {
       previewHandle.clearPreviewBranchForTesting();
       await tester.pump(const Duration(milliseconds: 200));
 
-      final regionMapReset = tester
-          .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
-            find
-                .byWidgetPredicate(
-                  (widget) =>
-                      widget
-                          is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
-                )
-                .first,
-          );
-      final storeTwoPointReset = regionMapReset.points.firstWhere((point) {
-        final payload = point.payload;
-        return payload is AppBrazilStoreSalesMarkerGroup &&
-            payload.points.any((groupPoint) => groupPoint.id == 'store-2');
-      });
-      expect(storeTwoPointReset.style?.size, storeTwoSizeBefore);
+      expect(previewHandle.previewedStoreIdForTesting, isNull);
       expect(
         previewHandle.snapshotDataIdentityForTesting,
         same(snapshotDataBefore),
+      );
+      expect(
+        previewHandle.snapshotMapPointsIdentityForTesting,
+        same(mapPointsBefore),
       );
 
       await tester.enterText(
@@ -813,6 +882,773 @@ void main() {
       debugDefaultTargetPlatformOverride = null;
     }
   });
+
+  testWidgets(
+    'marker tap shows branch detail on Windows with production style',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+      try {
+        await _pumpMap(
+          tester,
+          width: 1280,
+          height: 720,
+          showDesktopBranchSidebar: true,
+          presentationMode:
+              AppBrazilStoreSalesMapPresentationMode.cleanFullscreen,
+          points: const <AppBrazilStoreSalesPoint>[
+            AppBrazilStoreSalesPoint(
+              id: 'store-1',
+              name: 'Casa do Mel',
+              fantasyName: 'Casa do Mel',
+              uf: 'MT',
+              city: 'Tangara da Serra',
+              latitude: -14.6229,
+              longitude: -57.4933,
+              salesAmount: 84246.26,
+              salesCount: 1568,
+            ),
+          ],
+          style: const AppBrazilStoreSalesMapStyle(
+            height: 560,
+            showLegend: false,
+            showMetricSelector: false,
+            showRegionFilter: false,
+            showMarkerScaleLegend: false,
+            enableProximityCluster: true,
+          ),
+        );
+
+        final regionMap = tester
+            .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
+              find.byWidgetPredicate(
+                (widget) =>
+                    widget is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
+              ),
+            );
+        regionMap.onPointTap?.call(
+          AppMapPointTapEvent(
+            point: regionMap.points.first,
+            index: 0,
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(
+          find.byKey(
+            const ValueKey<String>('brazil-store-sales-map-store-detail'),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Casa do Mel'), findsOneWidget);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    },
+  );
+
+  testWidgets(
+    'marker tap keeps branch detail when map emits region tap for same UF',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+      try {
+        const store = AppBrazilStoreSalesPoint(
+          id: 'store-1',
+          name: 'Casa do Mel',
+          fantasyName: 'Casa do Mel',
+          uf: 'MT',
+          city: 'Tangara da Serra',
+          latitude: -14.6229,
+          longitude: -57.4933,
+          salesAmount: 84246.26,
+          salesCount: 1568,
+        );
+        await _pumpMap(
+          tester,
+          width: 1280,
+          height: 720,
+          presentationMode:
+              AppBrazilStoreSalesMapPresentationMode.cleanFullscreen,
+          points: const <AppBrazilStoreSalesPoint>[store],
+          style: const AppBrazilStoreSalesMapStyle(
+            height: 560,
+            showLegend: false,
+            showMetricSelector: false,
+            showRegionFilter: false,
+            showMarkerScaleLegend: false,
+            enableProximityCluster: true,
+          ),
+        );
+
+        final regionMap = tester
+            .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
+              find.byWidgetPredicate(
+                (widget) =>
+                    widget is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
+              ),
+            );
+        final markerIndex = regionMap.points.indexWhere((point) {
+          final payload = point.payload;
+          return payload is AppBrazilStoreSalesMarkerGroup &&
+              !payload.isCluster;
+        });
+        expect(markerIndex, greaterThanOrEqualTo(0));
+
+        regionMap.onPointTap?.call(
+          AppMapPointTapEvent(
+            point: regionMap.points[markerIndex],
+            index: markerIndex,
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        final bucket = regionMap.items.firstWhere((item) => item.uf == 'MT');
+        regionMap.onRegionTapEvent?.call(
+          AppMapRegionTapEvent<AppBrazilStoreSalesStateBucket>(
+            item: bucket,
+            regionKey: bucket.uf,
+            regionLabel: bucket.stateName,
+            metricKey: AppBrazilStoreSalesMapMetric.revenue.key,
+            metricValue: bucket.salesAmount,
+            index: regionMap.items.indexOf(bucket),
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          find.byKey(
+            const ValueKey<String>('brazil-store-sales-map-store-detail'),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('Casa do Mel'), findsOneWidget);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    },
+  );
+
+  testWidgets(
+    'repeated region tap while store selected keeps snapshot data stable',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+      try {
+        const store = AppBrazilStoreSalesPoint(
+          id: 'store-1',
+          name: 'Casa do Mel',
+          fantasyName: 'Casa do Mel',
+          uf: 'MT',
+          city: 'Tangara da Serra',
+          latitude: -14.6229,
+          longitude: -57.4933,
+          salesAmount: 84246.26,
+          salesCount: 1568,
+        );
+        await _pumpMap(
+          tester,
+          width: 1280,
+          height: 720,
+          presentationMode:
+              AppBrazilStoreSalesMapPresentationMode.cleanFullscreen,
+          points: const <AppBrazilStoreSalesPoint>[store],
+          style: const AppBrazilStoreSalesMapStyle(
+            height: 560,
+            showLegend: false,
+            showMetricSelector: false,
+            showRegionFilter: false,
+            showMarkerScaleLegend: false,
+            enableProximityCluster: true,
+          ),
+        );
+
+        final chartState =
+            tester.state<State<AppBrazilStoreSalesMapChart>>(
+                  find.byType(AppBrazilStoreSalesMapChart),
+                )
+                as AppBrazilStoreSalesMapChartPreviewTestHandle;
+        final regionMap = tester
+            .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
+              find.byWidgetPredicate(
+                (widget) =>
+                    widget is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
+              ),
+            );
+        final markerIndex = regionMap.points.indexWhere((point) {
+          final payload = point.payload;
+          return payload is AppBrazilStoreSalesMarkerGroup &&
+              !payload.isCluster;
+        });
+        expect(markerIndex, greaterThanOrEqualTo(0));
+
+        regionMap.onPointTap?.call(
+          AppMapPointTapEvent(
+            point: regionMap.points[markerIndex],
+            index: markerIndex,
+          ),
+        );
+        await tester.pump();
+        final identityAfterTap = chartState.snapshotDataIdentityForTesting;
+
+        final bucket = regionMap.items.firstWhere((item) => item.uf == 'MT');
+        final regionTap = AppMapRegionTapEvent<AppBrazilStoreSalesStateBucket>(
+          item: bucket,
+          regionKey: bucket.uf,
+          regionLabel: bucket.stateName,
+          metricKey: AppBrazilStoreSalesMapMetric.revenue.key,
+          metricValue: bucket.salesAmount,
+          index: regionMap.items.indexOf(bucket),
+        );
+        for (var repeat = 0; repeat < 8; repeat++) {
+          regionMap.onRegionTapEvent?.call(regionTap);
+          await tester.pump();
+        }
+
+        expect(
+          chartState.snapshotDataIdentityForTesting,
+          same(identityAfterTap),
+        );
+        expect(
+          find.byKey(
+            const ValueKey<String>('brazil-store-sales-map-store-detail'),
+          ),
+          findsOneWidget,
+        );
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    },
+  );
+
+  testWidgets(
+    'region tap on different UF clears store detail selection',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+      try {
+        const store = AppBrazilStoreSalesPoint(
+          id: 'store-1',
+          name: 'Casa do Mel',
+          fantasyName: 'Casa do Mel',
+          uf: 'MT',
+          city: 'Tangara da Serra',
+          latitude: -14.6229,
+          longitude: -57.4933,
+          salesAmount: 84246.26,
+          salesCount: 1568,
+        );
+        await _pumpMap(
+          tester,
+          width: 1280,
+          height: 720,
+          presentationMode:
+              AppBrazilStoreSalesMapPresentationMode.cleanFullscreen,
+          points: const <AppBrazilStoreSalesPoint>[store],
+          style: const AppBrazilStoreSalesMapStyle(
+            height: 560,
+            showLegend: false,
+            showMetricSelector: false,
+            showRegionFilter: false,
+            showMarkerScaleLegend: false,
+            enableProximityCluster: true,
+          ),
+        );
+
+        final regionMap = tester
+            .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
+              find.byWidgetPredicate(
+                (widget) =>
+                    widget is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
+              ),
+            );
+        final markerIndex = regionMap.points.indexWhere((point) {
+          final payload = point.payload;
+          return payload is AppBrazilStoreSalesMarkerGroup &&
+              !payload.isCluster;
+        });
+        expect(markerIndex, greaterThanOrEqualTo(0));
+
+        regionMap.onPointTap?.call(
+          AppMapPointTapEvent(
+            point: regionMap.points[markerIndex],
+            index: markerIndex,
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(
+          find.byKey(
+            const ValueKey<String>('brazil-store-sales-map-store-detail'),
+          ),
+          findsOneWidget,
+        );
+
+        final spBucket = regionMap.items.firstWhere((item) => item.uf == 'SP');
+        regionMap.onRegionTapEvent?.call(
+          AppMapRegionTapEvent<AppBrazilStoreSalesStateBucket>(
+            item: spBucket,
+            regionKey: spBucket.uf,
+            regionLabel: spBucket.stateName,
+            metricKey: AppBrazilStoreSalesMapMetric.revenue.key,
+            metricValue: spBucket.salesAmount,
+            index: regionMap.items.indexOf(spBucket),
+          ),
+        );
+        await tester.pump();
+
+        expect(
+          find.byKey(
+            const ValueKey<String>('brazil-store-sales-map-store-detail'),
+          ),
+          findsNothing,
+        );
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    },
+  );
+
+  testWidgets(
+    'cluster tap stabilizes snapshot data under auto-focus and sidebar',
+    (tester) async {
+      const clusterPoints = <AppBrazilStoreSalesPoint>[
+        AppBrazilStoreSalesPoint(
+          id: 'store-1',
+          name: 'Casa do Mel',
+          fantasyName: 'Casa do Mel',
+          uf: 'MT',
+          city: 'Tangara da Serra',
+          latitude: -14.6229,
+          longitude: -57.4933,
+          salesAmount: 84246.26,
+          salesCount: 1568,
+        ),
+        AppBrazilStoreSalesPoint(
+          id: 'store-2',
+          name: 'Mel Norte',
+          fantasyName: 'Mel Norte',
+          uf: 'MT',
+          city: 'Tangara da Serra',
+          latitude: -14.6229,
+          longitude: -57.4933,
+          salesAmount: 4200,
+          salesCount: 88,
+        ),
+      ];
+
+      await _pumpMap(
+        tester,
+        points: clusterPoints,
+        width: 1280,
+        height: 720,
+        showDesktopBranchSidebar: true,
+        presentationMode:
+            AppBrazilStoreSalesMapPresentationMode.cleanFullscreen,
+        style: _baseStyle.copyWith(
+          enableZoomPan: true,
+          enableProximityCluster: true,
+        ),
+      );
+
+      final chartState =
+          tester.state<State<AppBrazilStoreSalesMapChart>>(
+                find.byType(AppBrazilStoreSalesMapChart),
+              )
+              as AppBrazilStoreSalesMapChartPreviewTestHandle;
+      final identityBeforeTap = chartState.snapshotDataIdentityForTesting;
+
+      final regionMap = tester
+          .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
+            ),
+          );
+      final clusterIndex = regionMap.points.indexWhere((point) {
+        final payload = point.payload;
+        return payload is AppBrazilStoreSalesMarkerGroup && payload.isCluster;
+      });
+      expect(clusterIndex, greaterThanOrEqualTo(0));
+      regionMap.onPointTap?.call(
+        AppMapPointTapEvent(
+          point: regionMap.points[clusterIndex],
+          index: clusterIndex,
+        ),
+      );
+      await tester.pump();
+      final identityAfterTap = chartState.snapshotDataIdentityForTesting;
+      expect(identityAfterTap, same(identityBeforeTap));
+
+      for (var frame = 0; frame < 8; frame++) {
+        await tester.pump(const Duration(milliseconds: 120));
+      }
+
+      expect(
+        chartState.snapshotDataIdentityForTesting,
+        same(identityBeforeTap),
+      );
+
+      for (var zoomStep = 0; zoomStep < 12; zoomStep++) {
+        regionMap.onViewportChanged?.call(
+          AppMapViewportChangedEvent(
+            viewport: AppMapViewport(zoomLevel: 1.0 + zoomStep * 0.15),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 60));
+      }
+
+      expect(
+        chartState.snapshotDataIdentityForTesting,
+        same(identityBeforeTap),
+      );
+      expect(
+        find.byKey(
+          const ValueKey<String>('brazil-store-sales-map-municipality-detail'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'single store focus ignores viewport clustering churn after tap',
+    (tester) async {
+      const store = AppBrazilStoreSalesPoint(
+        id: 'store-1',
+        name: 'Casa do Mel',
+        fantasyName: 'Casa do Mel',
+        uf: 'MT',
+        city: 'Tangara da Serra',
+        latitude: -14.6229,
+        longitude: -57.4933,
+        salesAmount: 84246.26,
+        salesCount: 1568,
+      );
+
+      await _pumpMap(
+        tester,
+        points: const <AppBrazilStoreSalesPoint>[store],
+        style: _baseStyle.copyWith(
+          enableZoomPan: true,
+          enableProximityCluster: true,
+        ),
+      );
+
+      final chartState =
+          tester.state<State<AppBrazilStoreSalesMapChart>>(
+                find.byType(AppBrazilStoreSalesMapChart),
+              )
+              as AppBrazilStoreSalesMapChartPreviewTestHandle;
+      final regionMap = tester
+          .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
+            ),
+          );
+      final markerIndex = regionMap.points.indexWhere((point) {
+        final payload = point.payload;
+        return payload is AppBrazilStoreSalesMarkerGroup && !payload.isCluster;
+      });
+      expect(markerIndex, greaterThanOrEqualTo(0));
+
+      regionMap.onPointTap?.call(
+        AppMapPointTapEvent(
+          point: regionMap.points[markerIndex],
+          index: markerIndex,
+        ),
+      );
+      await tester.pump();
+      final identityAfterTap = chartState.snapshotDataIdentityForTesting;
+
+      for (var zoomStep = 0; zoomStep < 12; zoomStep++) {
+        regionMap.onViewportChanged?.call(
+          AppMapViewportChangedEvent(
+            viewport: AppMapViewport(zoomLevel: 1.0 + zoomStep * 0.2),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 60));
+      }
+
+      expect(
+        chartState.snapshotDataIdentityForTesting,
+        same(identityAfterTap),
+      );
+    },
+  );
+
+  testWidgets(
+    'single store tap without auto focus keeps snapshot data stable',
+    (tester) async {
+      const store = AppBrazilStoreSalesPoint(
+        id: 'store-1',
+        name: 'Casa do Mel',
+        fantasyName: 'Casa do Mel',
+        uf: 'MT',
+        city: 'Tangara da Serra',
+        latitude: -14.6229,
+        longitude: -57.4933,
+        salesAmount: 84246.26,
+        salesCount: 1568,
+      );
+
+      await _pumpMap(
+        tester,
+        points: const <AppBrazilStoreSalesPoint>[store],
+        style: _baseStyle.copyWith(
+          enableZoomPan: true,
+          enableProximityCluster: true,
+          autoFocusSelectedStore: false,
+        ),
+      );
+
+      final chartState =
+          tester.state<State<AppBrazilStoreSalesMapChart>>(
+                find.byType(AppBrazilStoreSalesMapChart),
+              )
+              as AppBrazilStoreSalesMapChartPreviewTestHandle;
+      final identityBeforeTap = chartState.snapshotDataIdentityForTesting;
+      final mapPointsBeforeTap =
+          chartState.snapshotMapPointsIdentityForTesting;
+      final regionMap = tester
+          .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
+            ),
+          );
+      final markerIndex = regionMap.points.indexWhere((point) {
+        final payload = point.payload;
+        return payload is AppBrazilStoreSalesMarkerGroup && !payload.isCluster;
+      });
+      expect(markerIndex, greaterThanOrEqualTo(0));
+
+      regionMap.onPointTap?.call(
+        AppMapPointTapEvent(
+          point: regionMap.points[markerIndex],
+          index: markerIndex,
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        chartState.snapshotDataIdentityForTesting,
+        same(identityBeforeTap),
+      );
+      expect(
+        chartState.snapshotMapPointsIdentityForTesting,
+        same(mapPointsBeforeTap),
+      );
+      expect(
+        find.byKey(
+          const ValueKey<String>('brazil-store-sales-map-store-detail'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'marker tap withdraws preferred viewport after user zoom',
+    (tester) async {
+      const store = AppBrazilStoreSalesPoint(
+        id: 'store-1',
+        name: 'Casa do Mel',
+        fantasyName: 'Casa do Mel',
+        uf: 'MT',
+        city: 'Tangara da Serra',
+        latitude: -14.6229,
+        longitude: -57.4933,
+        salesAmount: 84246.26,
+        salesCount: 1568,
+      );
+
+      await _pumpMap(
+        tester,
+        points: const <AppBrazilStoreSalesPoint>[store],
+        style: _baseStyle.copyWith(
+          enableZoomPan: true,
+          enableProximityCluster: true,
+          autoFocusSelectedStore: false,
+        ),
+      );
+
+      final regionMap = tester
+          .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
+            ),
+          );
+      expect(regionMap.preferredViewport, isNotNull);
+
+      regionMap.onViewportChanged?.call(
+        const AppMapViewportChangedEvent(
+          viewport: AppMapViewport(zoomLevel: 1.8),
+          source: AppMapViewportChangeSource.user,
+        ),
+      );
+      await tester.pump();
+
+      final markerIndex = regionMap.points.indexWhere((point) {
+        final payload = point.payload;
+        return payload is AppBrazilStoreSalesMarkerGroup && !payload.isCluster;
+      });
+      expect(markerIndex, greaterThanOrEqualTo(0));
+
+      final chartState =
+          tester.state<State<AppBrazilStoreSalesMapChart>>(
+                find.byType(AppBrazilStoreSalesMapChart),
+              )
+              as AppBrazilStoreSalesMapChartPreviewTestHandle;
+
+      regionMap.onPointTap?.call(
+        AppMapPointTapEvent(
+          point: regionMap.points[markerIndex],
+          index: markerIndex,
+        ),
+      );
+      await tester.pump();
+
+      expect(chartState.suppressPreferredViewportForTesting, isTrue);
+      expect(
+        find.byKey(
+          const ValueKey<String>('brazil-store-sales-map-store-detail'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'controlled selected store without auto focus keeps snapshot data stable',
+    (tester) async {
+      const store = AppBrazilStoreSalesPoint(
+        id: 'store-1',
+        name: 'Casa do Mel',
+        fantasyName: 'Casa do Mel',
+        uf: 'MT',
+        city: 'Tangara da Serra',
+        latitude: -14.6229,
+        longitude: -57.4933,
+        salesAmount: 84246.26,
+        salesCount: 1568,
+      );
+
+      const style = AppBrazilStoreSalesMapStyle(
+        height: 360,
+        showLegend: false,
+        showMetricSelector: false,
+        showRegionFilter: false,
+        showMarkerScaleLegend: false,
+        enableProximityCluster: true,
+        autoFocusSelectedStore: false,
+        markerVisual: AppBrazilStoreSalesMarkerVisual.storeIcon,
+        selectedMarkerDetailPlacement:
+            AppBrazilStoreSalesSelectedMarkerDetailPlacement.belowMap,
+      );
+
+      await _pumpMap(
+        tester,
+        points: const <AppBrazilStoreSalesPoint>[store],
+        style: style,
+      );
+
+      final chartState =
+          tester.state<State<AppBrazilStoreSalesMapChart>>(
+                find.byType(AppBrazilStoreSalesMapChart),
+              )
+              as AppBrazilStoreSalesMapChartPreviewTestHandle;
+      final identityBeforeSelection = chartState.snapshotDataIdentityForTesting;
+
+      await _pumpMap(
+        tester,
+        points: const <AppBrazilStoreSalesPoint>[store],
+        selectedStoreId: 'store-1',
+        style: style,
+      );
+
+      expect(
+        chartState.snapshotDataIdentityForTesting,
+        same(identityBeforeSelection),
+      );
+      expect(
+        find.byKey(
+          const ValueKey<String>('brazil-store-sales-map-store-detail'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'Windows wheel zoom without selection does not resample snapshot data',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+      try {
+        await _pumpMap(
+          tester,
+          points: const <AppBrazilStoreSalesPoint>[
+            AppBrazilStoreSalesPoint(
+              id: 'store-1',
+              name: 'Casa do Mel',
+              uf: 'MT',
+              city: 'Tangara',
+              latitude: -14.62,
+              longitude: -57.49,
+              salesAmount: 100,
+              salesCount: 10,
+            ),
+            AppBrazilStoreSalesPoint(
+              id: 'store-2',
+              name: 'Mel Norte',
+              uf: 'SP',
+              city: 'Sao Paulo',
+              latitude: -23.55,
+              longitude: -46.63,
+              salesAmount: 200,
+              salesCount: 20,
+            ),
+          ],
+          style: _baseStyle.copyWith(
+            enableZoomPan: true,
+            enableProximityCluster: true,
+          ),
+        );
+
+        final chartState =
+            tester.state<State<AppBrazilStoreSalesMapChart>>(
+                  find.byType(AppBrazilStoreSalesMapChart),
+                )
+                as AppBrazilStoreSalesMapChartPreviewTestHandle;
+        final identityBeforeZoom = chartState.snapshotDataIdentityForTesting;
+        final regionMap = tester
+            .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
+              find.byWidgetPredicate(
+                (widget) =>
+                    widget is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
+              ),
+            );
+
+        for (var zoomStep = 0; zoomStep < 12; zoomStep++) {
+          regionMap.onViewportChanged?.call(
+            AppMapViewportChangedEvent(
+              viewport: AppMapViewport(zoomLevel: 1.45 - zoomStep * 0.05),
+            ),
+          );
+          await tester.pump(const Duration(milliseconds: 60));
+        }
+        await tester.pump(const Duration(milliseconds: 600));
+
+        expect(
+          chartState.snapshotDataIdentityForTesting,
+          same(identityBeforeZoom),
+        );
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    },
+  );
 
   testWidgets(
     'selected marker detail anchor shows a persistent floating card',
@@ -1416,6 +2252,63 @@ void main() {
     );
   });
 
+  testWidgets(
+    'mobile marker tap does not render below-map detail duplicate',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 720));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await _pumpMap(
+        tester,
+        width: 390,
+        height: 640,
+        style: _baseStyle.copyWith(showStoreDetail: true),
+        points: const <AppBrazilStoreSalesPoint>[
+          AppBrazilStoreSalesPoint(
+            id: 'store-1',
+            name: 'Casa do Mel',
+            fantasyName: 'Casa do Mel',
+            uf: 'MT',
+            city: 'Tangara da Serra',
+            latitude: -14.6229,
+            longitude: -57.4933,
+            salesAmount: 84246.26,
+            salesCount: 1568,
+          ),
+        ],
+      );
+
+      final regionMap = tester
+          .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
+            ),
+          );
+      final markerIndex = regionMap.points.indexWhere((point) {
+        final payload = point.payload;
+        return payload is AppBrazilStoreSalesMarkerGroup && !payload.isCluster;
+      });
+      expect(markerIndex, greaterThanOrEqualTo(0));
+
+      regionMap.onPointTap?.call(
+        AppMapPointTapEvent(
+          point: regionMap.points[markerIndex],
+          index: markerIndex,
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        find.byKey(
+          const ValueKey<String>('brazil-store-sales-map-store-detail'),
+        ),
+        findsNothing,
+      );
+    },
+  );
+
   testWidgets('fits common mobile map widths without layout overflow', (
     tester,
   ) async {
@@ -1629,6 +2522,106 @@ void main() {
     expect(regionMap.points.single.style?.color, AppColors.light.secondary);
     expect(regionMap.points.single.style?.strokeWidth, 2.4);
   });
+
+  testWidgets(
+    'clears internal store selection when refreshed points omit the store',
+    (tester) async {
+      const storeOne = AppBrazilStoreSalesPoint(
+        id: 'store-1',
+        name: 'Casa do Mel',
+        fantasyName: 'Casa do Mel',
+        uf: 'MT',
+        city: 'Tangara da Serra',
+        latitude: -14.6229,
+        longitude: -57.4933,
+        salesAmount: 84246.26,
+        salesCount: 1568,
+      );
+      const storeTwo = AppBrazilStoreSalesPoint(
+        id: 'store-2',
+        name: 'Filial Sul',
+        fantasyName: 'Mel Sul',
+        uf: 'SP',
+        city: 'Sao Paulo',
+        latitude: -23.55,
+        longitude: -46.63,
+        salesAmount: 1200,
+        salesCount: 12,
+      );
+      var points = const <AppBrazilStoreSalesPoint>[storeOne, storeTwo];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) {
+                return Column(
+                  children: [
+                    TextButton(
+                      onPressed: () => setState(() {
+                        points = const <AppBrazilStoreSalesPoint>[storeTwo];
+                      }),
+                      child: const Text('refresh points'),
+                    ),
+                    SizedBox(
+                      width: 720,
+                      height: 400,
+                      child: AppBrazilStoreSalesMapChart(
+                        points: points,
+                        style: _baseStyle,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final regionMapFinder = find.byWidgetPredicate(
+        (widget) => widget is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
+      );
+      final regionMapBefore =
+          tester.widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
+        regionMapFinder.first,
+      );
+      final storeOneIndex = regionMapBefore.points.indexWhere((point) {
+        final payload = point.payload;
+        return payload is AppBrazilStoreSalesMarkerGroup &&
+            payload.points.any((branch) => branch.id == 'store-1');
+      });
+      expect(storeOneIndex, greaterThanOrEqualTo(0));
+
+      regionMapBefore.onPointTap?.call(
+        AppMapPointTapEvent(
+          point: regionMapBefore.points[storeOneIndex],
+          index: storeOneIndex,
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Casa do Mel'), findsOneWidget);
+
+      await tester.tap(find.text('refresh points'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Casa do Mel'), findsNothing);
+      expect(
+        find.byKey(
+          const ValueKey<String>('brazil-store-sales-map-store-detail'),
+        ),
+        findsNothing,
+      );
+    },
+  );
 
   testWidgets(
     'does not re-emit diagnostics when points list is recreated with same data',
