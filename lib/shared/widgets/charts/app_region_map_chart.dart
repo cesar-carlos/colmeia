@@ -208,6 +208,8 @@ class AppRegionMapChart<T> extends StatefulWidget {
     this.markerTooltipBuilder,
     this.onPointTap,
     this.viewportController,
+    this.resetViewport,
+    this.onResetViewport,
   });
 
   final List<T> items;
@@ -272,6 +274,12 @@ class AppRegionMapChart<T> extends StatefulWidget {
 
   /// Optional controller to suppress programmatic viewport after store taps.
   final RegionMapViewportController? viewportController;
+
+  /// Camera target for the reset control when [preferredViewport] is withheld.
+  final AppMapViewport? resetViewport;
+
+  /// Clears parent manual-viewport state before the map recenters.
+  final VoidCallback? onResetViewport;
 
   @override
   State<AppRegionMapChart<T>> createState() => _AppRegionMapChartState<T>();
@@ -351,6 +359,8 @@ class _AppRegionMapChartState<T> extends State<AppRegionMapChart<T>> {
       markerTooltipBuilder: widget.markerTooltipBuilder,
       onPointTap: widget.onPointTap,
       viewportController: widget.viewportController,
+      resetViewport: widget.resetViewport,
+      onResetViewport: widget.onResetViewport,
     );
 
     final drillUpButton = _buildDrillUpButton(l10n);

@@ -56,6 +56,11 @@ abstract final class SalesLiveMapVisualSpecMapper {
       maxClusterTooltipStores: spec.maxClusterTooltipStores,
       showStoreDetail: spec.showStoreDetail,
       showRegionFilter: spec.showRegionFilter,
+      // Intentionally false: autoFocusSelectedStore: true triggers camera zoom
+      // animation + layout shift simultaneously, causing Syncfusion to emit
+      // dozens of viewport events that each rebuild snapshot data synchronously
+      // and freeze the UI. Keep false until the Syncfusion rendering pipeline
+      // is isolated from layout-shift on selection.
       autoFocusSelectedStore: false,
       enableProximityCluster: spec.enableProximityCluster,
     );

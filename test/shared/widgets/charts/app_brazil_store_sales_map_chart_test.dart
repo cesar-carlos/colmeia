@@ -283,7 +283,7 @@ void main() {
   );
 
   testWidgets(
-    'desktop sidebar requires useful width and clears branch selection when scope hides the store',
+    'desktop sidebar shows at 1220px and clears branch selection when scope hides the store',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1220, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -319,9 +319,11 @@ void main() {
         ],
       );
 
+      // With the reduced minVisibleMapWidth (760px), 1220px is now wide enough
+      // for the sidebar to appear (remaining map ≈ 895px > 760px).
       expect(
         find.byKey(const ValueKey<String>('brazil-store-sales-map-sidebar')),
-        findsNothing,
+        findsOneWidget,
       );
 
       await tester.binding.setSurfaceSize(const Size(1400, 900));
@@ -392,7 +394,7 @@ void main() {
   );
 
   testWidgets(
-    'clean fullscreen chrome hides legends and supports collapsing the floating sidebar',
+    'clean fullscreen chrome shows marker-scale legend and supports collapsing the floating sidebar',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(1400, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -465,15 +467,13 @@ void main() {
         find.text(l10n.regionMapScopeGroupLabel.toUpperCase()),
         findsNothing,
       );
+      // cleanFullscreen now shows the marker-scale legend (U1 fix):
+      // effectiveShowMarkerScaleLegend is true when !usesInline.
       expect(
         find.byKey(
           const ValueKey<String>('brazil-store-sales-map-legend-button'),
         ),
-        findsNothing,
-      );
-      expect(
-        find.text(l10n.brazilStoreSalesMapLegendButton),
-        findsNothing,
+        findsOneWidget,
       );
 
       await tester.tap(

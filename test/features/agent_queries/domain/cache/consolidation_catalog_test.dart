@@ -16,15 +16,29 @@ void main() {
       );
     });
 
-    test('weekday period is derived only', () {
+    test('weekday period persists via resumo parcelas dia semana', () {
       expect(
         ConsolidationCatalog.storageModeFor(AgentQueryFactKind.weekdayPeriod),
-        ConsolidationStorageMode.derivedOnly,
+        ConsolidationStorageMode.persistClosedBuckets,
       );
       expect(
         ConsolidationCatalog.mayPersist(
           factKind: AgentQueryFactKind.weekdayPeriod,
           writer: AgentQueryKey.resumoParcelasDiaSemana,
+        ),
+        isTrue,
+      );
+    });
+
+    test('weekday user period is derived only', () {
+      expect(
+        ConsolidationCatalog.storageModeFor(AgentQueryFactKind.weekdayUserPeriod),
+        ConsolidationStorageMode.derivedOnly,
+      );
+      expect(
+        ConsolidationCatalog.mayPersist(
+          factKind: AgentQueryFactKind.weekdayUserPeriod,
+          writer: AgentQueryKey.resumoParcelasDiaSemanaUsuario,
         ),
         isFalse,
       );

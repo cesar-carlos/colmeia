@@ -33,6 +33,16 @@ abstract final class BrazilMapLayoutConstants {
   static const double desktopSidebarBottomInset = 24;
   static const double desktopSidebarProportionalCapFactor = 0.9;
 
+  /// Width below which compact UF labels are used instead of full state names
+  /// when the map is in a bounded-height layout.
+  static const double compactStateLabelsMaxWidth = 900;
+
+  /// Internal padding of the floating control surface (segmented control /
+  /// scope chip container) and cluster count badge circles. Smaller than any
+  /// token gap intentionally — the surface needs only a thin halo to visually
+  /// separate the control from the material edge.
+  static const double tightInternalPadding = 3;
+
   /// Minimum delta before applying a debounced viewport clustering sample.
   static const double viewportClusterZoomEpsilon = 0.25;
 

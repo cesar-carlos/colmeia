@@ -255,11 +255,12 @@ class _SelectedMarkerBranchCarouselCardState
       return;
     }
 
+    final nextIndex = (_selectedIndex + delta).clamp(0, count - 1);
+    if (nextIndex == _selectedIndex) {
+      return;
+    }
     setState(() {
-      _selectedIndex = (_selectedIndex + delta) % count;
-      if (_selectedIndex < 0) {
-        _selectedIndex += count;
-      }
+      _selectedIndex = nextIndex;
     });
   }
 
@@ -384,19 +385,10 @@ class _SelectedMarkerBranchDetailSurface extends StatelessWidget {
       container: true,
       label: l10n.brazilStoreSalesMapBranchDetailSemanticsLabel,
       child: AppBrazilStoreSalesMapOverlayTooltipScope(
-        child: Material(
+        child: _MapDetailCard(
           key: const ValueKey<String>('brazil-store-sales-branch-card'),
-          color: colorScheme.surface,
           elevation: 8,
-          shadowColor: Colors.black.withValues(alpha: 0.22),
-          borderRadius: BorderRadius.circular(tokens.formFieldRadius),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(tokens.formFieldRadius),
-              border: Border.all(color: colorScheme.outlineVariant),
-            ),
-            child: ConstrainedBox(
+          child: ConstrainedBox(
               constraints: BoxConstraints(maxHeight: maxCardHeight),
               child: SingleChildScrollView(
                 key: const ValueKey<String>(
@@ -455,7 +447,7 @@ class _SelectedMarkerBranchDetailSurface extends StatelessWidget {
                             icon: Icons.close_rounded,
                             iconSize: 18,
                             dimension: 32,
-                            onPressed: onClose!,
+                            onPressed: onClose,
                             tooltipMessage: l10n
                                 .brazilStoreSalesMapCloseBranchDetailsTooltip,
                           ),
@@ -582,7 +574,6 @@ class _SelectedMarkerBranchDetailSurface extends StatelessWidget {
             ),
           ),
         ),
-      ),
     );
   }
 }
@@ -645,7 +636,7 @@ class _BranchCarouselNavigation extends StatelessWidget {
           ),
           icon: Icons.chevron_left_rounded,
           dimension: 34,
-          onPressed: onPrevious,
+          onPressed: currentIndex > 0 ? onPrevious : null,
           tooltipMessage:
               l10n.brazilStoreSalesMapBranchNavigationPreviousTooltip,
         ),
@@ -667,7 +658,7 @@ class _BranchCarouselNavigation extends StatelessWidget {
           key: const ValueKey<String>('brazil-store-sales-branch-card-next'),
           icon: Icons.chevron_right_rounded,
           dimension: 34,
-          onPressed: onNext,
+          onPressed: currentIndex < branchCount - 1 ? onNext : null,
           tooltipMessage: l10n.brazilStoreSalesMapBranchNavigationNextTooltip,
         ),
       ],
@@ -770,9 +761,73 @@ class _SelectedMarkerDetailSurface extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context);
 
+    return _MapDetailCard(
+      child: Padding(
+        padding: EdgeInsets.all(tokens.contentSpacing),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(icon, color: context.appColors.secondary, size: 20),
+                SizedBox(width: tokens.gapSm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleSmall
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      SizedBox(height: tokens.gapXs),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall
+                            ?.copyWith(color: colorScheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: tokens.gapSm),
+                AppTagChip(label: _metricShortLabel(l10n, metric)),
+              ],
+            ),
+            SizedBox(height: tokens.gapMd),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shared surface for overlay and below-map detail cards in the Brazil
+/// store-sales map. Wraps a [Material] + [DecoratedBox] pair to provide the
+/// correct radius, border, background colour, and shadow for map-local cards
+/// without using the full [AppSectionCard] radius (which is too large for
+/// compact detail surfaces).
+class _MapDetailCard extends StatelessWidget {
+  const _MapDetailCard({required this.child, super.key, this.elevation = 0});
+
+  final Widget child;
+  final double elevation;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Material(
       color: colorScheme.surface,
-      shadowColor: Colors.black.withValues(alpha: 0.22),
+      elevation: elevation,
+      shadowColor: colorScheme.shadow.withValues(alpha: 0.22),
       borderRadius: BorderRadius.circular(tokens.formFieldRadius),
       child: DecoratedBox(
         decoration: BoxDecoration(
@@ -780,48 +835,7 @@ class _SelectedMarkerDetailSurface extends StatelessWidget {
           borderRadius: BorderRadius.circular(tokens.formFieldRadius),
           border: Border.all(color: colorScheme.outlineVariant),
         ),
-        child: Padding(
-          padding: EdgeInsets.all(tokens.contentSpacing),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(icon, color: context.appColors.secondary, size: 20),
-                  SizedBox(width: tokens.gapSm),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                        SizedBox(height: tokens.gapXs),
-                        Text(
-                          subtitle,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: colorScheme.onSurfaceVariant),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: tokens.gapSm),
-                  AppTagChip(label: _metricShortLabel(l10n, metric)),
-                ],
-              ),
-              SizedBox(height: tokens.gapMd),
-              child,
-            ],
-          ),
-        ),
+        child: child,
       ),
     );
   }

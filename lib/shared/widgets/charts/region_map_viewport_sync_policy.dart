@@ -17,6 +17,25 @@ class RegionMapViewportController {
 
 /// Pure viewport drift checks for the Syncfusion region map update/sync paths.
 abstract final class RegionMapViewportSyncPolicy {
+  /// Whether the "Centralizar mapa" control should be visible.
+  ///
+  /// Shown when a programmatic target exists or the user has panned/zoomed
+  /// manually (including when the programmatic target is withheld).
+  static bool shouldShowResetViewportButton({
+    required bool hasPreferredViewport,
+    required bool userHasManualViewport,
+  }) {
+    return hasPreferredViewport || userHasManualViewport;
+  }
+
+  /// Programmatic preferred viewport suppression (store selection freeze fix)
+  /// must not block pointer-wheel zoom; only programmatic apply paths.
+  static bool allowsPointerWheelZoom({
+    required bool isZoomPanEnabled,
+  }) {
+    return isZoomPanEnabled;
+  }
+
   static bool zoomPanBehaviorDriftsFromViewportState({
     required double behaviorZoomLevel,
     required double? behaviorCenterLatitude,

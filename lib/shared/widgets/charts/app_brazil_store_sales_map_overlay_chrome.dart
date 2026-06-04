@@ -25,6 +25,7 @@ class AppBrazilStoreSalesMapOverlayTooltipScope extends StatelessWidget {
 }
 
 /// Icon control for map overlay rows: avoids [IconButton] tooltips on Windows.
+/// Pass [onPressed] as null to disable the button.
 class AppBrazilStoreSalesMapWindowsSafeOverlayIconButton
     extends StatelessWidget {
   const AppBrazilStoreSalesMapWindowsSafeOverlayIconButton({
@@ -37,7 +38,7 @@ class AppBrazilStoreSalesMapWindowsSafeOverlayIconButton
   });
 
   final IconData icon;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final String tooltipMessage;
   final double dimension;
   final double? iconSize;
@@ -47,6 +48,7 @@ class AppBrazilStoreSalesMapWindowsSafeOverlayIconButton
     if (defaultTargetPlatform == TargetPlatform.windows) {
       final colors = Theme.of(context).colorScheme;
       final resolvedIconSize = iconSize ?? dimension * 0.56;
+      final isDisabled = onPressed == null;
       return Material(
         color: Colors.transparent,
         child: InkWell(
@@ -55,7 +57,13 @@ class AppBrazilStoreSalesMapWindowsSafeOverlayIconButton
           child: SizedBox(
             width: dimension,
             height: dimension,
-            child: Icon(icon, size: resolvedIconSize, color: colors.onSurface),
+            child: Icon(
+              icon,
+              size: resolvedIconSize,
+              color: isDisabled
+                  ? colors.onSurface.withValues(alpha: 0.38)
+                  : colors.onSurface,
+            ),
           ),
         ),
       );

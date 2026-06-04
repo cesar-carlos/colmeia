@@ -42,6 +42,8 @@ class SyncfusionRegionMapChart<T> extends StatefulWidget {
     this.markerTooltipBuilder,
     this.onPointTap,
     this.viewportController,
+    this.resetViewport,
+    this.onResetViewport,
   });
 
   final List<T> items;
@@ -81,6 +83,14 @@ class SyncfusionRegionMapChart<T> extends StatefulWidget {
   markerTooltipBuilder;
   final ValueChanged<AppMapPointTapEvent>? onPointTap;
   final RegionMapViewportController? viewportController;
+
+  /// Fallback camera target for "Centralizar mapa" when [preferredViewport] is
+  /// withheld (manual zoom, store selection suppress).
+  final AppMapViewport? resetViewport;
+
+  /// Notifies the parent to clear manual-viewport state before re-applying
+  /// [resetViewport] or [preferredViewport].
+  final VoidCallback? onResetViewport;
 
   @override
   State<SyncfusionRegionMapChart<T>> createState() =>
@@ -211,7 +221,11 @@ class _SyncfusionRegionMapChartState<T>
   }
 
   bool get _showResetViewportButton =>
-      widget.preferredViewport != null && _isZoomPanEnabled;
+      _isZoomPanEnabled &&
+      RegionMapViewportSyncPolicy.shouldShowResetViewportButton(
+        hasPreferredViewport: widget.preferredViewport != null,
+        userHasManualViewport: _viewportState.userHasManualViewport,
+      );
 
   bool get _renderLegacyResetViewportButton => false;
 
@@ -735,7 +749,11 @@ class _SyncfusionRegionMapChartState<T>
   }
 
   void _applyPointerScrollZoom(PointerScrollEvent event) {
-    if (!mounted || event.scrollDelta.dy == 0 || _isPreferredViewportSuppressed) {
+    if (!mounted ||
+        event.scrollDelta.dy == 0 ||
+        !RegionMapViewportSyncPolicy.allowsPointerWheelZoom(
+          isZoomPanEnabled: _isZoomPanEnabled,
+        )) {
       return;
     }
 
@@ -761,12 +779,20 @@ class _SyncfusionRegionMapChartState<T>
   }
 
   void _resetPreferredViewport() {
+    widget.onResetViewport?.call();
     setState(() {
       _viewportState = _viewportState.copyWith(userHasManualViewport: false);
     });
     _lastAppliedPreferredViewport = null;
     _lockPreferredViewportReapply = false;
-    _applyPreferredViewport(overrideManualViewport: true);
+    final target = widget.resetViewport ?? widget.preferredViewport;
+    if (target == null) {
+      return;
+    }
+    _applyPreferredViewport(
+      overrideManualViewport: true,
+      viewportOverride: target,
+    );
   }
 
   bool _shouldIgnoreGestureViewportFeedback() {
@@ -791,18 +817,21 @@ class _SyncfusionRegionMapChartState<T>
     );
   }
 
-  void _applyPreferredViewport({bool overrideManualViewport = false}) {
+  void _applyPreferredViewport({
+    bool overrideManualViewport = false,
+    AppMapViewport? viewportOverride,
+  }) {
     if (!mounted || widget.isLoading) {
       _logViewportGuard('preferred_viewport_skipped');
       return;
     }
 
-    if (_isPreferredViewportSuppressed) {
+    if (_isPreferredViewportSuppressed && viewportOverride == null) {
       _logViewportGuard('preferred_viewport_skipped_store_selection');
       return;
     }
 
-    final viewport = widget.preferredViewport;
+    final viewport = viewportOverride ?? widget.preferredViewport;
     if (viewport == null) {
       _viewportState = _viewportState.copyWith(userHasManualViewport: false);
       return;

@@ -113,7 +113,7 @@ class AppBrazilStoreSalesMapChart extends StatefulWidget {
 abstract final class BrazilMapDesktopSidebarLayout {
   static const double minWidth = 272;
   static const double maxWidth = 336;
-  static const double minVisibleMapWidth = 920;
+  static const double minVisibleMapWidth = 760;
   static const double topInsetBase = 12;
 
   /// Sidebar width: 24% of the available width, clamped to [minWidth]..[maxWidth].
@@ -205,7 +205,7 @@ class _BrazilMapChrome {
       showsFloatingScopeSelector: usesFloating && style.showRegionFilter,
       effectiveShowLegend: style.showLegend && !usesClean && !usesInline,
       effectiveShowMarkerScaleLegend:
-          style.showMarkerScaleLegend && !usesClean && !usesInline,
+          style.showMarkerScaleLegend && !usesInline,
       effectiveShowDataQualityNotice: style.showDataQualityNotice,
       useWindowsSafeMarkerDetails:
           defaultTargetPlatform == TargetPlatform.windows,
@@ -556,7 +556,7 @@ class _AppBrazilStoreSalesMapChartState
     milliseconds: 500,
   );
   static const Duration _desktopBranchPreviewClearDelay = Duration(
-    milliseconds: 80,
+    milliseconds: 200,
   );
   _BrazilMapLayoutCalculator get _layout =>
       _BrazilMapLayoutCalculator(chrome: _chrome, style: widget.style);
@@ -721,9 +721,14 @@ class _AppBrazilStoreSalesMapChartState
         ? markerSelection.shapeHighlightRegionKey
         : null;
     final preferredViewport = _resolvePreferredViewportForBuild(snapshot);
+    final resetViewport = _resetTargetViewportForScope();
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        // Intentional layout-state capture: _compactBranchSheetLayout is read
+        // from async event handlers (_handlePointTap) that run after the frame
+        // completes, so it cannot be a local variable. The write happens during
+        // the layout phase but never triggers a rebuild (no setState call).
         _compactBranchSheetLayout =
             widget.style.showStoreDetail &&
             constraints.maxWidth < AppBreakpoints.mobile;
@@ -731,7 +736,9 @@ class _AppBrazilStoreSalesMapChartState
         final tokens = Theme.of(context).extension<AppThemeTokens>()!;
         final usesCompactMapChrome = constraints.hasBoundedHeight;
         final usesCompactStateLabels =
-            usesCompactMapChrome && constraints.maxWidth < 900;
+            usesCompactMapChrome &&
+            constraints.maxWidth <
+                BrazilMapLayoutConstants.compactStateLabelsMaxWidth;
         final stateDataLabelTextStyle = _stateDataLabelTextStyle(
           context,
           compact: usesCompactStateLabels,
@@ -805,6 +812,8 @@ class _AppBrazilStoreSalesMapChartState
                 : const <AppMapScopeOption>[],
             activeScopeKey: _activeRegionKey,
             preferredViewport: preferredViewport,
+            resetViewport: resetViewport,
+            onResetViewport: _handleResetViewport,
             points: snapshot.mapPoints,
             markerStyle: AppMapMarkerStyle(
               size: widget.style.markerMinSize,
@@ -1153,6 +1162,26 @@ class _AppBrazilStoreSalesMapChartState
   /// Preferred viewport passed to Syncfusion. Returns null when the map should
   /// keep the current camera (manual zoom/pan, open store detail, or region
   /// already bound) to avoid programmatic pan/zoom fighting on Windows.
+  AppMapViewport _resetTargetViewportForScope() {
+    final regionKey = _activeRegionKey;
+    if (regionKey == null) {
+      return AppBrazilMapStaticData.brazilViewport;
+    }
+
+    return AppBrazilMapStaticData.regionViewports[regionKey] ??
+        AppBrazilMapStaticData.brazilViewport;
+  }
+
+  void _handleResetViewport() {
+    setState(() {
+      _viewportController.reset();
+      _userHasManualMapViewport = false;
+      _cachedPreferredViewportBinding = null;
+      _cachedPreferredViewport = null;
+      _zoom.applyScopeZoom(_resetTargetViewportForScope().zoomLevel);
+    });
+  }
+
   AppMapViewport? _preferredViewportForSyncfusion(
     _BrazilStoreSalesMapSnapshot snapshot,
   ) {
@@ -1182,6 +1211,10 @@ class _AppBrazilStoreSalesMapChartState
     if (_cachedPreferredViewportBinding == bindingKey) {
       return null;
     }
+    // Intentional memoization: records which binding key last triggered a
+    // preferred-viewport update so the same viewport is not re-applied on
+    // every build when the region/store selection has not changed.
+    // Invalidated by setState calls in selection, filter, and scope handlers.
     _cachedPreferredViewportBinding = bindingKey;
 
     final regionKey = _activeRegionKey;

@@ -625,11 +625,12 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining('Branches:'), findsOneWidget);
+      // cleanFullscreen now shows the compact marker-scale legend (U1 fix).
       expect(
         find.byKey(
           const ValueKey<String>('brazil-store-sales-map-legend-button'),
         ),
-        findsNothing,
+        findsOneWidget,
       );
     },
   );

@@ -26,6 +26,7 @@ class _FloatingMapControlsOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final controls = <Widget>[];
     final visibleMetrics = metrics;
     if (visibleMetrics != null && visibleMetrics.isNotEmpty) {
@@ -76,12 +77,10 @@ class _FloatingMapControlsOverlay extends StatelessWidget {
               label: l10n.regionMapScopeSemanticsLabel,
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 360),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: <Widget>[
+                child: Wrap(
+                  spacing: tokens.gapSm,
+                  runSpacing: tokens.gapSm,
+                  children: <Widget>[
                       AppChoiceChip(
                         label: scopeRootLabel,
                         selected: activeScopeKey == null,
@@ -125,8 +124,7 @@ class _FloatingMapControlsOverlay extends StatelessWidget {
                             );
                           },
                         ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
             ),
@@ -164,12 +162,14 @@ class _FloatingControlSurface extends StatelessWidget {
     return Material(
       color: colorScheme.surface.withValues(alpha: 0.94),
       elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.08),
+      shadowColor: colorScheme.shadow.withValues(alpha: 0.08),
       borderRadius: BorderRadius.circular(
         BrazilMapLayoutConstants.floatingMapOverlaySurfaceRadius,
       ),
       child: Padding(
-        padding: const EdgeInsets.all(3),
+        padding: const EdgeInsets.all(
+          BrazilMapLayoutConstants.tightInternalPadding,
+        ),
         child: child,
       ),
     );
@@ -701,7 +701,7 @@ class _StoreMapMarker extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.16),
+                  color: colorScheme.shadow.withValues(alpha: 0.16),
                   blurRadius: 5,
                   offset: const Offset(0, 2),
                 ),
@@ -768,7 +768,7 @@ class _StoreMapMarker extends StatelessWidget {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.18),
+                        color: colorScheme.shadow.withValues(alpha: 0.18),
                         blurRadius: 6,
                         offset: const Offset(0, 2),
                       ),
@@ -795,7 +795,9 @@ class _StoreMapMarker extends StatelessWidget {
                       ),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.all(3),
+                      padding: const EdgeInsets.all(
+                        BrazilMapLayoutConstants.tightInternalPadding,
+                      ),
                       child: Text(
                         count > 99 ? '99+' : count.toString(),
                         maxLines: 1,
@@ -878,7 +880,7 @@ class _PlainMapTooltipCard extends StatelessWidget {
     return Material(
       color: colorScheme.surface,
       elevation: 8,
-      shadowColor: Colors.black.withValues(alpha: 0.22),
+      shadowColor: colorScheme.shadow.withValues(alpha: 0.22),
       borderRadius: BorderRadius.circular(tokens.formFieldRadius),
       child: DecoratedBox(
         decoration: BoxDecoration(

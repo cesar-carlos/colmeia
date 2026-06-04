@@ -17,6 +17,51 @@ void main() {
   });
 
   group('RegionMapViewportSyncPolicy', () {
+    test('shouldShowResetViewportButton when preferred or manual viewport', () {
+      expect(
+        RegionMapViewportSyncPolicy.shouldShowResetViewportButton(
+          hasPreferredViewport: true,
+          userHasManualViewport: false,
+        ),
+        isTrue,
+      );
+      expect(
+        RegionMapViewportSyncPolicy.shouldShowResetViewportButton(
+          hasPreferredViewport: false,
+          userHasManualViewport: true,
+        ),
+        isTrue,
+      );
+      expect(
+        RegionMapViewportSyncPolicy.shouldShowResetViewportButton(
+          hasPreferredViewport: false,
+          userHasManualViewport: false,
+        ),
+        isFalse,
+      );
+    });
+
+    test(
+      'allowsPointerWheelZoom stays enabled when preferred viewport is suppressed',
+      () {
+        final controller = RegionMapViewportController()
+          ..withdrawPreferredViewportForStoreSelection();
+        expect(controller.suppressPreferredViewport, isTrue);
+        expect(
+          RegionMapViewportSyncPolicy.allowsPointerWheelZoom(
+            isZoomPanEnabled: true,
+          ),
+          isTrue,
+        );
+        expect(
+          RegionMapViewportSyncPolicy.allowsPointerWheelZoom(
+            isZoomPanEnabled: false,
+          ),
+          isFalse,
+        );
+      },
+    );
+
     test(
       'shouldSyncZoomPanBehaviorOnWidgetUpdate is false when behavior matches state',
       () {
