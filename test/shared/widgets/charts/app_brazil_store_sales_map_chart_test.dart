@@ -1485,7 +1485,6 @@ void main() {
       regionMap.onViewportChanged?.call(
         const AppMapViewportChangedEvent(
           viewport: AppMapViewport(zoomLevel: 1.8),
-          source: AppMapViewportChangeSource.user,
         ),
       );
       await tester.pump();

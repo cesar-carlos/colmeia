@@ -172,7 +172,6 @@ void main() {
             previousPreferred: viewport,
             nextPreferred: viewport,
             userHasManualViewport: false,
-            forcePreferredViewport: false,
           ),
           isFalse,
         );
@@ -197,7 +196,6 @@ void main() {
             previousPreferred: previous,
             nextPreferred: next,
             userHasManualViewport: true,
-            forcePreferredViewport: false,
           ),
           isFalse,
         );
