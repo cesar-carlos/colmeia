@@ -141,6 +141,7 @@ String _statusLabel(WindowsAutoUpdateState state) {
   return switch (state.status) {
     WindowsAutoUpdateStatus.updateAvailable => 'Nova release disponivel',
     WindowsAutoUpdateStatus.upToDate => 'Build atualizado',
+    WindowsAutoUpdateStatus.feedWithoutReleases => 'Feed sem releases',
     WindowsAutoUpdateStatus.readyToInstall => 'Pronto para instalar',
     WindowsAutoUpdateStatus.failed => 'Verificacao com falha',
     WindowsAutoUpdateStatus.unavailable => 'Atualizacoes indisponiveis',
@@ -199,6 +200,10 @@ class _AutoUpdateStatusIndicator extends StatelessWidget {
       WindowsAutoUpdateStatus.upToDate => (
         Icons.verified_rounded,
         cs.primary,
+      ),
+      WindowsAutoUpdateStatus.feedWithoutReleases => (
+        Icons.info_outline_rounded,
+        cs.onSurfaceVariant,
       ),
       WindowsAutoUpdateStatus.readyToInstall => (
         Icons.task_alt_rounded,

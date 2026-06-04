@@ -6,6 +6,7 @@ enum WindowsAutoUpdateStatus {
   checking,
   updateAvailable,
   upToDate,
+  feedWithoutReleases,
   readyToInstall,
   failed,
 }

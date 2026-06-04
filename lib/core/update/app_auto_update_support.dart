@@ -19,7 +19,7 @@ abstract final class AppAutoUpdateSupport {
       return AppAutoUpdateAvailability.feedUrlMissing;
     }
 
-    if (!isXmlFeedUrl(normalizedFeedUrl)) {
+    if (!isXmlFeedUrl(normalizedFeedUrl) || !isHttpsFeedUrl(normalizedFeedUrl)) {
       return AppAutoUpdateAvailability.feedUrlInvalid;
     }
 
@@ -27,6 +27,16 @@ abstract final class AppAutoUpdateSupport {
   }
 
   static String normalizeFeedUrl(String raw) => raw.trim();
+
+  static bool isHttpsFeedUrl(String raw) {
+    final normalized = normalizeFeedUrl(raw);
+    if (normalized.isEmpty) {
+      return true;
+    }
+
+    final uri = Uri.tryParse(normalized);
+    return uri?.scheme.toLowerCase() == 'https';
+  }
 
   static bool isXmlFeedUrl(String raw) {
     final normalized = normalizeFeedUrl(raw);
@@ -37,5 +47,15 @@ abstract final class AppAutoUpdateSupport {
     final uri = Uri.tryParse(normalized);
     final path = uri?.path.trim() ?? '';
     return path.toLowerCase().endsWith('.xml');
+  }
+
+  /// Local validation shared with the appcast probe client before network I/O.
+  static bool isProbeableFeedUrl(String raw) {
+    final normalized = normalizeFeedUrl(raw);
+    if (normalized.isEmpty) {
+      return false;
+    }
+
+    return isHttpsFeedUrl(normalized) && isXmlFeedUrl(normalized);
   }
 }

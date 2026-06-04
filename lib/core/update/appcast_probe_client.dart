@@ -1,3 +1,4 @@
+import 'package:colmeia/core/update/app_auto_update_support.dart';
 import 'package:dio/dio.dart';
 
 enum AppcastProbeFailureKind {
@@ -13,13 +14,15 @@ class AppcastProbeResult {
     required this.success,
     required this.failureKind,
     required this.details,
+    required this.hasReleases,
   });
 
-  const AppcastProbeResult.success()
+  const AppcastProbeResult.success({bool hasReleases = true})
     : this._(
         success: true,
         failureKind: null,
         details: null,
+        hasReleases: hasReleases,
       );
 
   const AppcastProbeResult.failure({
@@ -29,11 +32,13 @@ class AppcastProbeResult {
          success: false,
          failureKind: failureKind,
          details: details,
+         hasReleases: false,
        );
 
   final bool success;
   final AppcastProbeFailureKind? failureKind;
   final String? details;
+  final bool hasReleases;
 }
 
 typedef AppcastProbeClient =
@@ -54,21 +59,34 @@ final class DioAppcastProbeClient {
             ),
           );
 
+  static const Duration _retryDelay = Duration(milliseconds: 400);
+  static const int _maxAttempts = 2;
+
   final Dio _dio;
 
   Future<AppcastProbeResult> probe({required String feedUrl}) async {
     final normalizedFeedUrl = feedUrl.trim();
-    final uri = Uri.tryParse(normalizedFeedUrl);
-    final normalizedPath = uri?.path.toLowerCase() ?? '';
-    if (uri == null ||
-        !uri.hasScheme ||
-        !uri.hasAuthority ||
-        !normalizedPath.endsWith('.xml')) {
+    if (!AppAutoUpdateSupport.isProbeableFeedUrl(normalizedFeedUrl)) {
       return const AppcastProbeResult.failure(
         failureKind: AppcastProbeFailureKind.invalidUrl,
       );
     }
 
+    AppcastProbeResult? lastResult;
+    for (var attempt = 0; attempt < _maxAttempts; attempt++) {
+      lastResult = await _probeOnce(normalizedFeedUrl);
+      if (lastResult.success || !_shouldRetry(lastResult)) {
+        return lastResult;
+      }
+      if (attempt < _maxAttempts - 1) {
+        await Future<void>.delayed(_retryDelay);
+      }
+    }
+
+    return lastResult!;
+  }
+
+  Future<AppcastProbeResult> _probeOnce(String normalizedFeedUrl) async {
     try {
       final response = await _dio.get<String>(normalizedFeedUrl);
       final statusCode = response.statusCode ?? 0;
@@ -80,14 +98,16 @@ final class DioAppcastProbeClient {
       }
 
       final payload = (response.data ?? '').trim();
-      if (!_looksLikeSparkleAppcast(payload)) {
+      if (!_isValidSparkleAppcastShell(payload)) {
         return const AppcastProbeResult.failure(
           failureKind: AppcastProbeFailureKind.invalidPayload,
           details: 'O feed respondeu sem um XML appcast compativel.',
         );
       }
 
-      return const AppcastProbeResult.success();
+      return AppcastProbeResult.success(
+        hasReleases: _hasReleaseEntries(payload),
+      );
     } on DioException catch (error) {
       return switch (error.type) {
         DioExceptionType.connectionTimeout ||
@@ -114,15 +134,41 @@ final class DioAppcastProbeClient {
     }
   }
 
-  static bool _looksLikeSparkleAppcast(String payload) {
+  static bool _shouldRetry(AppcastProbeResult result) {
+    return switch (result.failureKind) {
+      AppcastProbeFailureKind.timeout ||
+      AppcastProbeFailureKind.network => true,
+      AppcastProbeFailureKind.httpError =>
+        _isRetryableHttpStatus(result.details),
+      _ => false,
+    };
+  }
+
+  static bool _isRetryableHttpStatus(String? details) {
+    if (details == null || details.isEmpty) {
+      return false;
+    }
+
+    final match = RegExp(r'HTTP (\d+)').firstMatch(details);
+    if (match == null) {
+      return false;
+    }
+
+    final statusCode = int.tryParse(match.group(1) ?? '');
+    return statusCode != null && statusCode >= 500;
+  }
+
+  static bool _isValidSparkleAppcastShell(String payload) {
     if (payload.isEmpty) {
       return false;
     }
 
     final normalized = payload.toLowerCase();
-    return normalized.contains('<rss') &&
-        normalized.contains('<channel') &&
-        normalized.contains('<item') &&
-        normalized.contains('sparkle:version');
+    return normalized.contains('<rss') && normalized.contains('<channel');
+  }
+
+  static bool _hasReleaseEntries(String payload) {
+    final normalized = payload.toLowerCase();
+    return normalized.contains('<item') && normalized.contains('sparkle:version');
   }
 }

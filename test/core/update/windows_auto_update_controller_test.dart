@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:auto_updater/auto_updater.dart';
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
@@ -179,6 +181,120 @@ void main() {
     });
 
     test(
+      'should treat empty appcast as feed without releases without native check',
+      () async {
+        final client = _FakeAutoUpdaterClient();
+        final probeHarness = _FakeProbeHarness(
+          nextResult: const AppcastProbeResult.success(hasReleases: false),
+        );
+        final controller = WindowsAutoUpdateController(
+          autoUpdaterClient: client,
+          appcastProbeClient: probeHarness.client,
+          feedUrlResolver: () => 'https://example.com/appcast.xml',
+          preferencesStore: await _createPreferencesStore(),
+          supportsNativeUpdates: () => true,
+        );
+
+        await controller.initialize();
+        client.checkCalls.clear();
+
+        await controller.checkForUpdates();
+
+        check(client.checkCalls).isEmpty();
+        check(controller.state.status).equals(
+          WindowsAutoUpdateStatus.feedWithoutReleases,
+        );
+        check(controller.state.headline).equals(
+          'Feed sem releases publicadas.',
+        );
+        check(controller.state.details!).contains('ainda nao ha itens de release');
+        check(controller.state.lastCheckedAt).isNotNull();
+      },
+    );
+
+    test('should ignore concurrent check while probe is in flight', () async {
+      final client = _FakeAutoUpdaterClient();
+      final probeHarness = _SlowProbeHarness();
+      final controller = WindowsAutoUpdateController(
+        autoUpdaterClient: client,
+        appcastProbeClient: probeHarness.client,
+        feedUrlResolver: () => 'https://example.com/appcast.xml',
+        preferencesStore: await _createPreferencesStore(),
+        supportsNativeUpdates: () => true,
+      );
+
+      final firstCheck = controller.checkForUpdates();
+      await Future<void>.delayed(Duration.zero);
+      await controller.checkForUpdates();
+      probeHarness.complete();
+      await firstCheck;
+
+      check(probeHarness.feedUrls.length).equals(1);
+    });
+
+    test(
+      'should ignore persisted diagnostic when feed url changed',
+      () async {
+        final checkedAt = DateTime(2026, 5, 5, 12);
+        final prefsStore = await _createPreferencesStore();
+        await prefsStore.persistWindowsAutoUpdateDiagnostic(
+          WindowsAutoUpdateDiagnostic(
+            status: WindowsAutoUpdateStatus.upToDate,
+            headline: 'Este build ja esta atualizado.',
+            details: 'Nenhuma release mais nova foi encontrada.',
+            feedUrl: 'https://old.example.com/appcast.xml',
+            lastCheckedAt: checkedAt,
+          ),
+        );
+
+        final controller = WindowsAutoUpdateController(
+          autoUpdaterClient: _FakeAutoUpdaterClient(),
+          appcastProbeClient: _FakeProbeHarness().client,
+          feedUrlResolver: () => 'https://example.com/appcast.xml',
+          preferencesStore: prefsStore,
+          supportsNativeUpdates: () => true,
+        );
+
+        await controller.initialize();
+
+        expect(
+          controller.state.headline,
+          isNot(contains('Este build ja esta atualizado.')),
+        );
+        check(controller.state.lastCheckedAt).isNull();
+      },
+    );
+
+    test(
+      'should reset persisted in-flight status before background check',
+      () async {
+        final prefsStore = await _createPreferencesStore();
+        await prefsStore.persistWindowsAutoUpdateDiagnostic(
+          WindowsAutoUpdateDiagnostic(
+            status: WindowsAutoUpdateStatus.updateAvailable,
+            headline: 'Nova versao encontrada.',
+            details: 'Download em andamento.',
+            feedUrl: 'https://example.com/appcast.xml',
+            lastCheckedAt: DateTime(2026, 5, 5, 12),
+          ),
+        );
+
+        final controller = WindowsAutoUpdateController(
+          autoUpdaterClient: _FakeAutoUpdaterClient(),
+          appcastProbeClient: _FakeProbeHarness().client,
+          feedUrlResolver: () => 'https://example.com/appcast.xml',
+          preferencesStore: prefsStore,
+          supportsNativeUpdates: () => true,
+        );
+
+        await controller.initialize();
+        await Future<void>.delayed(Duration.zero);
+
+        check(controller.state.status).equals(WindowsAutoUpdateStatus.checking);
+      },
+    );
+
+    test(
       'should restore persisted last check while a new probe starts',
       () async {
         final checkedAt = DateTime(2026, 5, 5, 12);
@@ -257,6 +373,25 @@ final class _FakeProbeHarness {
   }
 
   AppcastProbeClient get client => _invoke;
+}
+
+final class _SlowProbeHarness {
+  final List<String> feedUrls = <String>[];
+  final Completer<void> _gate = Completer<void>();
+
+  Future<AppcastProbeResult> _invoke({required String feedUrl}) async {
+    feedUrls.add(feedUrl);
+    await _gate.future;
+    return const AppcastProbeResult.success();
+  }
+
+  AppcastProbeClient get client => _invoke;
+
+  void complete() {
+    if (!_gate.isCompleted) {
+      _gate.complete();
+    }
+  }
 }
 
 Future<AppUserPreferencesStore> _createPreferencesStore() async {

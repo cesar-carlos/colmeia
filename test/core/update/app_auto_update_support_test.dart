@@ -36,6 +36,15 @@ void main() {
       check(availability).equals(AppAutoUpdateAvailability.feedUrlInvalid);
     });
 
+    test('should return feedUrlInvalid when url is not https', () {
+      final availability = AppAutoUpdateSupport.resolveAvailability(
+        supportsNativeUpdates: true,
+        feedUrl: 'http://example.com/appcast.xml',
+      );
+
+      check(availability).equals(AppAutoUpdateAvailability.feedUrlInvalid);
+    });
+
     test('should accept xml feed urls with query string', () {
       final availability = AppAutoUpdateSupport.resolveAvailability(
         supportsNativeUpdates: true,
