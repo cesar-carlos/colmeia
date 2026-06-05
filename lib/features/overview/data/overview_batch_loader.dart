@@ -309,6 +309,9 @@ class OverviewBatchLoader {
 
   static const _targetWaveRunner = AgentSqlBatchTargetWaveRunner();
 
+  /// Main phased batch always issues payment resumo + per-user ranking.
+  static const int _mainBatchCommandCount = 2;
+
   /// Hub validates `sql.executeBatch` `options.timeout_ms` at <= 300_000.
   static const int overviewBatchBridgeTimeoutMs = 300000;
   static const int overviewBatchSqlTimeoutMs = 300000;
@@ -427,6 +430,7 @@ class OverviewBatchLoader {
         weekdayFilter: weekdayFilter,
         dailyTotalFilter: dailyTotalFilter,
         includeLucratividadeMensal: includeLucratividadeMensal,
+        omitCachedSectionsFromSqlBatch: omitCachedSectionsFromSqlBatch,
         cancelScope: cancelScope,
         cachePolicy: cachePolicy,
       );
@@ -601,6 +605,17 @@ class OverviewBatchLoader {
     AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
   }) async {
     final started = DateTime.now();
+    final cachedSectionsFuture = _loadCachedSectionsIfConfigured(
+      cachePolicy: cachePolicy,
+      userId: userId,
+      target: target,
+      mensalFilter: mensalFilter,
+      weekdayFilter: weekdayFilter,
+      dailyTotalFilter: dailyTotalFilter,
+      planBridgeTimeoutMs: planBridgeTimeoutMs,
+      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+      cancelScope: cancelScope,
+    );
     final batchOutcome = await _executeSectionSqlBatch(
       userId: userId,
       target: target,
@@ -610,17 +625,7 @@ class OverviewBatchLoader {
       cancelScope: cancelScope,
       cachePolicy: cachePolicy,
     );
-    final cachedSections = await _loadCachedSectionsViaUseCases(
-      userId: userId,
-      target: target,
-      mensalFilter: mensalFilter,
-      weekdayFilter: weekdayFilter,
-      dailyTotalFilter: dailyTotalFilter,
-      planBridgeTimeoutMs: planBridgeTimeoutMs,
-      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
-      cancelScope: cancelScope,
-      cachePolicy: cachePolicy,
-    );
+    final cachedSections = await cachedSectionsFuture;
     final elapsedMs = DateTime.now().difference(started).inMilliseconds;
     if (batchOutcome.failure != null) {
       return _targetResultWithSectionFailures(
@@ -681,6 +686,33 @@ class OverviewBatchLoader {
     return _usesCachedDailyMonthlySections ||
         _usesCachedWeekdaySection ||
         _usesCachedLucratividadeSection;
+  }
+
+  Future<_OverviewCachedSections?> _loadCachedSectionsIfConfigured({
+    required AgentQueryLoadPolicy cachePolicy,
+    required String userId,
+    required AgentQueryTarget target,
+    required ResumoParcelasMensalFilter mensalFilter,
+    required ResumoParcelasDiaSemanaFilter weekdayFilter,
+    required ResumoTotalDiarioVendasFilter dailyTotalFilter,
+    required int planBridgeTimeoutMs,
+    required Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    AgentQueriesCancelScope? cancelScope,
+  }) {
+    if (!_loadsCachedSectionsViaUseCases(cachePolicy)) {
+      return Future<_OverviewCachedSections?>.value();
+    }
+    return _loadCachedSectionsViaUseCases(
+      userId: userId,
+      target: target,
+      mensalFilter: mensalFilter,
+      weekdayFilter: weekdayFilter,
+      dailyTotalFilter: dailyTotalFilter,
+      planBridgeTimeoutMs: planBridgeTimeoutMs,
+      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+      cancelScope: cancelScope,
+      cachePolicy: cachePolicy,
+    );
   }
 
   Future<_OverviewCachedSections?> _loadCachedSectionsViaUseCases({
@@ -834,6 +866,8 @@ class OverviewBatchLoader {
     required ResumoParcelasDiaSemanaFilter weekdayFilter,
     required ResumoTotalDiarioVendasFilter dailyTotalFilter,
     required bool includeLucratividadeMensal,
+    _CachedSectionSqlOmission omitCachedSectionsFromSqlBatch =
+        const _CachedSectionSqlOmission(),
     AgentQueriesCancelScope? cancelScope,
     AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
   }) async* {
@@ -845,6 +879,7 @@ class OverviewBatchLoader {
       weekdayFilter: weekdayFilter,
       dailyTotalFilter: dailyTotalFilter,
       includeLucratividadeMensal: includeLucratividadeMensal,
+      omitCachedSectionsFromSqlBatch: omitCachedSectionsFromSqlBatch,
     );
     final started = DateTime.now();
     final targets = plan.plannedTargets.toList();
@@ -899,6 +934,17 @@ class OverviewBatchLoader {
     AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
   }) async {
     final started = DateTime.now();
+    final cachedSectionsFuture = _loadCachedSectionsIfConfigured(
+      cachePolicy: cachePolicy,
+      userId: userId,
+      target: target,
+      mensalFilter: mensalFilter,
+      weekdayFilter: weekdayFilter,
+      dailyTotalFilter: dailyTotalFilter,
+      planBridgeTimeoutMs: planBridgeTimeoutMs,
+      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+      cancelScope: cancelScope,
+    );
     final batchRequest = _transportPolicy.applyBatch(
       AgentSqlExecuteBatchRequest(
         agentId: target.agentId,
@@ -922,6 +968,7 @@ class OverviewBatchLoader {
       batchRequest,
       cancelScope: cancelScope,
     );
+    final cachedSections = await cachedSectionsFuture;
     final elapsedMs = DateTime.now().difference(started).inMilliseconds;
     final execution = result.getOrNull();
     if (execution == null) {
@@ -930,6 +977,7 @@ class OverviewBatchLoader {
         elapsedMs: elapsedMs,
         failure: result.exceptionOrNull()!,
         includeLucratividadeMensal: includeLucratividadeMensal,
+        cachedSections: cachedSections,
         mainFailure: result.exceptionOrNull(),
       );
     }
@@ -956,25 +1004,28 @@ class OverviewBatchLoader {
         lucratividadeMensal: batch.indexes.lucratividadeMensal,
       ),
     );
-    final merged = OverviewBatchTargetResult(
-      target: target,
-      elapsedMs: elapsedMs,
-      mainRows: mainMapped.mainRows,
-      userRankingRows: mainMapped.userRankingRows,
-      monthlyRows: sectionMapped.monthlyRows,
-      weekdayRows: sectionMapped.weekdayRows,
-      dailyRows: sectionMapped.dailyRows,
-      weekdayUserRows: sectionMapped.weekdayUserRows,
-      lucratividadeRows: sectionMapped.lucratividadeRows,
-      lucratividadeMensalRows: sectionMapped.lucratividadeMensalRows,
-      mainFailure: mainMapped.mainFailure,
-      userRankingFailure: mainMapped.userRankingFailure,
-      monthlyFailure: sectionMapped.monthlyFailure,
-      weekdayFailure: sectionMapped.weekdayFailure,
-      dailyFailure: sectionMapped.dailyFailure,
-      weekdayUserFailure: sectionMapped.weekdayUserFailure,
-      lucratividadeFailure: sectionMapped.lucratividadeFailure,
-      lucratividadeMensalFailure: sectionMapped.lucratividadeMensalFailure,
+    final merged = _mergeCachedSections(
+      base: OverviewBatchTargetResult(
+        target: target,
+        elapsedMs: elapsedMs,
+        mainRows: mainMapped.mainRows,
+        userRankingRows: mainMapped.userRankingRows,
+        monthlyRows: sectionMapped.monthlyRows,
+        weekdayRows: sectionMapped.weekdayRows,
+        dailyRows: sectionMapped.dailyRows,
+        weekdayUserRows: sectionMapped.weekdayUserRows,
+        lucratividadeRows: sectionMapped.lucratividadeRows,
+        lucratividadeMensalRows: sectionMapped.lucratividadeMensalRows,
+        mainFailure: mainMapped.mainFailure,
+        userRankingFailure: mainMapped.userRankingFailure,
+        monthlyFailure: sectionMapped.monthlyFailure,
+        weekdayFailure: sectionMapped.weekdayFailure,
+        dailyFailure: sectionMapped.dailyFailure,
+        weekdayUserFailure: sectionMapped.weekdayUserFailure,
+        lucratividadeFailure: sectionMapped.lucratividadeFailure,
+        lucratividadeMensalFailure: sectionMapped.lucratividadeMensalFailure,
+      ),
+      cached: cachedSections,
     );
     await _persistSectionFacts(
       userId: userId,
@@ -1121,11 +1172,7 @@ class OverviewBatchLoader {
     _CachedSectionSqlOmission omitCachedSectionsFromSqlBatch =
         const _CachedSectionSqlOmission(),
   }) {
-    final mainBatch = _buildMainCommands(
-      periodStart: dailyTotalFilter.dataVendaInicio,
-      periodEnd: dailyTotalFilter.dataVendaFim,
-    );
-    final mainOffset = mainBatch.commands.length;
+    const mainOffset = _mainBatchCommandCount;
     final full = _buildCommands(
       periodStart: dailyTotalFilter.dataVendaInicio,
       periodEnd: dailyTotalFilter.dataVendaFim,

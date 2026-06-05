@@ -378,130 +378,105 @@ void main() {
     },
   );
 
-  test('mergeSqlBatchesPerTarget uses one executeSqlBatch per agent', () async {
-    when(() => agentQueriesRepository.executeSqlBatch(any())).thenAnswer((
-      invocation,
-    ) async {
-      final request =
-          invocation.positionalArguments.single as AgentSqlExecuteBatchRequest;
-      return Success<AgentSqlBatchExecutionResult, AppFailure>(
-        _batchResult(
-          commandCount: request.commands.length,
-          rowsByIndex: request.commands.length >= 2
-              ? <int, List<Map<String, dynamic>>>{
-                  0: <Map<String, dynamic>>[_mainRow()],
-                  1: <Map<String, dynamic>>[_userRankingRow()],
-                }
-              : const <int, List<Map<String, dynamic>>>{},
-        ),
+  test(
+    'mergeSqlBatchesPerTarget uses one batch and cached use cases on defaultLoad',
+    () async {
+      when(() => agentQueriesRepository.executeSqlBatch(any())).thenAnswer((
+        invocation,
+      ) async {
+        final request =
+            invocation.positionalArguments.single as AgentSqlExecuteBatchRequest;
+        return Success<AgentSqlBatchExecutionResult, AppFailure>(
+          _batchResult(
+            commandCount: request.commands.length,
+            rowsByIndex: request.commands.length >= 2
+                ? <int, List<Map<String, dynamic>>>{
+                    0: <Map<String, dynamic>>[_mainRow()],
+                    1: <Map<String, dynamic>>[_userRankingRow()],
+                  }
+                : const <int, List<Map<String, dynamic>>>{},
+          ),
+        );
+      });
+
+      await runDefaultLoad(
+        loader: loaderWithCachedSections(),
+        mergeSqlBatchesPerTarget: true,
       );
-    });
 
-    await runDefaultLoad(
-      loader: loaderWithCachedSections(),
-      mergeSqlBatchesPerTarget: true,
-    );
-
-    final batchRequests = verify(
-      () => agentQueriesRepository.executeSqlBatch(captureAny()),
-    ).captured.cast<AgentSqlExecuteBatchRequest>();
-    expect(batchRequests.length, 1);
-    expect(batchRequests.single.commands.length, 7);
-    final sqlBodies = batchRequests.single.commands
-        .map((command) => command.sql)
-        .join('\n');
-    expect(sqlBodies.contains(ResumoTotalDiarioVendasSql.query), isTrue);
-    expect(
-      sqlBodies.contains(
-        ResumoParcelasMensalSql.query(),
-      ),
-      isTrue,
-    );
-    expect(
-      sqlBodies.contains(
-        ResumoParcelasDiaSemanaSql.query(),
-      ),
-      isTrue,
-    );
-    expect(
-      sqlBodies.contains(ResumoProdutoVendaLucratividadeSql.query),
-      isTrue,
-    );
-    expect(
-      sqlBodies.contains(
-        ResumoParcelasDiaSemanaUsuarioSql.query(),
-      ),
-      isTrue,
-    );
-    verifyNever(
-      () => loadDaily.call(
-        userId: any(named: 'userId'),
-        agentId: any(named: 'agentId'),
-        filter: any(named: 'filter'),
-        clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
-        ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
-        cancelScope: any(named: 'cancelScope'),
-        cachePolicy: any(named: 'cachePolicy'),
-      ),
-    );
-    verifyNever(
-      () => loadMonthly.call(
-        userId: any(named: 'userId'),
-        agentId: any(named: 'agentId'),
-        filter: any(named: 'filter'),
-        clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
-        ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
-        cancelScope: any(named: 'cancelScope'),
-        cachePolicy: any(named: 'cachePolicy'),
-      ),
-    );
-    verifyNever(
-      () => loadWeekday.call(
-        userId: any(named: 'userId'),
-        agentId: any(named: 'agentId'),
-        filter: any(named: 'filter'),
-        clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
-        ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
-        cancelScope: any(named: 'cancelScope'),
-        cachePolicy: any(named: 'cachePolicy'),
-      ),
-    );
-    verifyNever(
-      () => loadLucratividade.call(
-        userId: any(named: 'userId'),
-        agentId: any(named: 'agentId'),
-        filter: any(named: 'filter'),
-        clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
-        ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
-        cancelScope: any(named: 'cancelScope'),
-        cachePolicy: any(named: 'cachePolicy'),
-      ),
-    );
-  });
+      final batchRequests = verify(
+        () => agentQueriesRepository.executeSqlBatch(captureAny()),
+      ).captured.cast<AgentSqlExecuteBatchRequest>();
+      expect(batchRequests.length, 1);
+      expect(batchRequests.single.commands.length, 3);
+      final sqlBodies = batchRequests.single.commands
+          .map((command) => command.sql)
+          .join('\n');
+      expect(sqlBodies.contains(ResumoTotalDiarioVendasSql.query), isFalse);
+      expect(sqlBodies.contains(ResumoParcelasMensalSql.query()), isFalse);
+      expect(sqlBodies.contains(ResumoParcelasDiaSemanaSql.query()), isFalse);
+      expect(
+        sqlBodies.contains(ResumoProdutoVendaLucratividadeSql.query),
+        isFalse,
+      );
+      expect(
+        sqlBodies.contains(ResumoParcelasDiaSemanaUsuarioSql.query()),
+        isTrue,
+      );
+      verify(() => loadDaily.call(
+            userId: 'user-1',
+            agentId: 'agent-1',
+            filter: any(named: 'filter'),
+            clientToken: 'token',
+            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+            hubPresenceOnlineAgentIdsSnapshot: any(
+              named: 'hubPresenceOnlineAgentIdsSnapshot',
+            ),
+            hubConnectedFromApprovedCatalogRow: true,
+            cancelScope: any(named: 'cancelScope'),
+            cachePolicy: any(named: 'cachePolicy'),
+          )).called(1);
+      verify(() => loadMonthly.call(
+            userId: 'user-1',
+            agentId: 'agent-1',
+            filter: any(named: 'filter'),
+            clientToken: 'token',
+            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+            hubPresenceOnlineAgentIdsSnapshot: any(
+              named: 'hubPresenceOnlineAgentIdsSnapshot',
+            ),
+            hubConnectedFromApprovedCatalogRow: true,
+            cancelScope: any(named: 'cancelScope'),
+            cachePolicy: any(named: 'cachePolicy'),
+          )).called(1);
+      verify(() => loadWeekday.call(
+            userId: 'user-1',
+            agentId: 'agent-1',
+            filter: any(named: 'filter'),
+            clientToken: 'token',
+            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+            hubPresenceOnlineAgentIdsSnapshot: any(
+              named: 'hubPresenceOnlineAgentIdsSnapshot',
+            ),
+            hubConnectedFromApprovedCatalogRow: true,
+            cancelScope: any(named: 'cancelScope'),
+            cachePolicy: any(named: 'cachePolicy'),
+          )).called(1);
+      verify(() => loadLucratividade.call(
+            userId: 'user-1',
+            agentId: 'agent-1',
+            filter: any(named: 'filter'),
+            clientToken: 'token',
+            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+            hubPresenceOnlineAgentIdsSnapshot: any(
+              named: 'hubPresenceOnlineAgentIdsSnapshot',
+            ),
+            hubConnectedFromApprovedCatalogRow: true,
+            cancelScope: any(named: 'cancelScope'),
+            cachePolicy: any(named: 'cachePolicy'),
+          )).called(1);
+    },
+  );
 
   test(
     'forceRefresh includes daily monthly weekday lucratividade in section batch',

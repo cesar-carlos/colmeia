@@ -213,7 +213,10 @@ void main() {
             );
 
             result.fold(
-              (_) => _expectOverviewMergedBatchSql(countingRepository),
+              (_) => _expectOverviewMergedBatchSql(
+                countingRepository,
+                omitCachedSectionSql: true,
+              ),
               _expectOverviewRepositoryE2eFailure,
             );
           },
@@ -225,17 +228,53 @@ void main() {
 }
 
 void _expectOverviewMergedBatchSql(
-  E2eCountingAgentQueriesRepository countingRepository,
-) {
+  E2eCountingAgentQueriesRepository countingRepository, {
+  bool omitCachedSectionSql = false,
+}) {
   expect(countingRepository.executeSqlBatchCallCount, 1);
   expect(countingRepository.batchRequests, hasLength(1));
   final batchRequest = countingRepository.batchRequests.single;
-  expect(batchRequest.commands.length, inInclusiveRange(7, 8));
   final sqlBodies = batchRequest.commands
       .map((command) => command.sql)
       .join('\n');
   expect(sqlBodies.contains(ResumoParcelaFormaPagamentoSqlV2.query), isTrue);
   expect(sqlBodies.contains(ResumoParcelaPorUsuarioSql.query), isTrue);
+  expect(
+    sqlBodies.contains(
+      ResumoParcelasDiaSemanaUsuarioSql.query(),
+    ),
+    isTrue,
+  );
+
+  if (omitCachedSectionSql) {
+    expect(batchRequest.commands.length, inInclusiveRange(3, 4));
+    expect(sqlBodies.contains(ResumoTotalDiarioVendasSql.query), isFalse);
+    expect(
+      sqlBodies.contains(
+        ResumoParcelasMensalSql.query(),
+      ),
+      isFalse,
+    );
+    expect(
+      sqlBodies.contains(
+        ResumoParcelasDiaSemanaSql.query(),
+      ),
+      isFalse,
+    );
+    expect(
+      sqlBodies.contains(ResumoProdutoVendaLucratividadeSql.query),
+      isFalse,
+    );
+    if (batchRequest.commands.length == 4) {
+      expect(
+        sqlBodies.contains(ResumoProdutoVendaLucratividadeMensalSql.query),
+        isTrue,
+      );
+    }
+    return;
+  }
+
+  expect(batchRequest.commands.length, inInclusiveRange(7, 8));
   expect(sqlBodies.contains(ResumoTotalDiarioVendasSql.query), isTrue);
   expect(
     sqlBodies.contains(
@@ -251,12 +290,6 @@ void _expectOverviewMergedBatchSql(
   );
   expect(
     sqlBodies.contains(ResumoProdutoVendaLucratividadeSql.query),
-    isTrue,
-  );
-  expect(
-    sqlBodies.contains(
-      ResumoParcelasDiaSemanaUsuarioSql.query(),
-    ),
     isTrue,
   );
   if (batchRequest.commands.length == 8) {
