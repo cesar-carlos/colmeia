@@ -8,7 +8,6 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_produto_venda_lucratividade_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_diario_vendas_use_case.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
-import 'package:colmeia/features/agent_queries/data/agent_queries_sql_local_date.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_read_only_batch_options.dart';
 import 'package:colmeia/features/agent_queries/data/models/resumo_parcela_forma_pagamento_row_model_v2.dart';
 import 'package:colmeia/features/agent_queries/data/models/resumo_parcela_por_usuario_row_model.dart';
@@ -21,14 +20,6 @@ import 'package:colmeia/features/agent_queries/data/models/resumo_total_diario_v
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_transport_policy.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_sql_batch_target_wave_runner.dart';
-import 'package:colmeia/features/agent_queries/data/queries/resumo_parcela_forma_pagamento_sql_v2.dart';
-import 'package:colmeia/features/agent_queries/data/queries/resumo_parcela_por_usuario_sql.dart';
-import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_dia_semana_sql.dart';
-import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_dia_semana_usuario_sql.dart';
-import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_mensal_sql.dart';
-import 'package:colmeia/features/agent_queries/data/queries/resumo_produto_venda_lucratividade_mensal_sql.dart';
-import 'package:colmeia/features/agent_queries/data/queries/resumo_produto_venda_lucratividade_sql.dart';
-import 'package:colmeia/features/agent_queries/data/queries/resumo_total_diario_vendas_sql.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
@@ -40,7 +31,6 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_query_targe
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row_v2.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_por_usuario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
@@ -48,7 +38,6 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_d
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_usuario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_periodo_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
@@ -56,6 +45,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diar
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_row.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
+import 'package:colmeia/features/overview/data/overview_batch_command_builder.dart';
 import 'package:colmeia/features/overview/data/overview_batch_facts_persister.dart';
 import 'package:colmeia/features/overview/data/overview_sql_batch_item_rows_mapper.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
@@ -155,18 +145,6 @@ final class OverviewBatchTargetResult {
 }
 
 
-final class _CachedSectionSqlOmission {
-  const _CachedSectionSqlOmission({
-    this.dailyMonthly = false,
-    this.weekday = false,
-    this.lucratividade = false,
-  });
-
-  final bool dailyMonthly;
-  final bool weekday;
-  final bool lucratividade;
-}
-
 final class _OverviewCachedSections {
   const _OverviewCachedSections({
     this.dailyRows = const <ResumoTotalDiarioVendasRow>[],
@@ -187,83 +165,6 @@ final class _OverviewCachedSections {
   final AppFailure? monthlyFailure;
   final AppFailure? weekdayFailure;
   final AppFailure? lucratividadeFailure;
-}
-
-final class _OverviewBatchCommandIndexes {
-  const _OverviewBatchCommandIndexes({
-    required this.main,
-    required this.userRanking,
-    required this.monthly,
-    required this.weekday,
-    required this.daily,
-    required this.weekdayUser,
-    required this.lucratividade,
-    this.lucratividadeMensal,
-  });
-
-  final int main;
-  final int userRanking;
-  final int? monthly;
-  final int? weekday;
-  final int? daily;
-  final int weekdayUser;
-  final int? lucratividade;
-  final int? lucratividadeMensal;
-}
-
-final class _OverviewMainBatchCommandIndexes {
-  const _OverviewMainBatchCommandIndexes({
-    required this.main,
-    required this.userRanking,
-  });
-
-  final int main;
-  final int userRanking;
-}
-
-final class _OverviewSectionBatchCommandIndexes {
-  const _OverviewSectionBatchCommandIndexes({
-    required this.weekday, required this.weekdayUser, required this.lucratividade, this.monthly,
-    this.daily,
-    this.lucratividadeMensal,
-  });
-
-  final int? monthly;
-  final int? weekday;
-  final int? daily;
-  final int weekdayUser;
-  final int? lucratividade;
-  final int? lucratividadeMensal;
-}
-
-final class _OverviewBatchCommands {
-  const _OverviewBatchCommands({
-    required this.commands,
-    required this.indexes,
-  });
-
-  final List<AgentSqlExecuteBatchCommand> commands;
-  final _OverviewBatchCommandIndexes indexes;
-}
-
-final class _OverviewMainBatchCommands {
-  const _OverviewMainBatchCommands({
-    required this.commands,
-    required this.indexes,
-  });
-
-  final List<AgentSqlExecuteBatchCommand> commands;
-  final _OverviewMainBatchCommandIndexes indexes;
-}
-
-final class _OverviewSectionBatchCommands {
-  const _OverviewSectionBatchCommands({
-    required this.commands,
-    required this.indexes,
-  });
-
-  final List<AgentSqlExecuteBatchCommand> commands;
-  final _OverviewSectionBatchCommandIndexes indexes;
 }
 
 class OverviewBatchLoader {
@@ -308,9 +209,7 @@ class OverviewBatchLoader {
   final AgentQueryTransportPolicy _transportPolicy;
 
   static const _targetWaveRunner = AgentSqlBatchTargetWaveRunner();
-
-  /// Main phased batch always issues payment resumo + per-user ranking.
-  static const int _mainBatchCommandCount = 2;
+  static const _commandBuilder = OverviewBatchCommandBuilder();
 
   /// Hub validates `sql.executeBatch` `options.timeout_ms` at <= 300_000.
   static const int overviewBatchBridgeTimeoutMs = 300000;
@@ -436,11 +335,11 @@ class OverviewBatchLoader {
       );
       return;
     }
-    final mainBatch = _buildMainCommands(
+    final mainBatch = _commandBuilder.buildMainCommands(
       periodStart: periodStart,
       periodEnd: periodEnd,
     );
-    final sectionBatch = _buildSectionCommands(
+    final sectionBatch = _commandBuilder.buildSectionCommands(
       last12Range: last12Range,
       mensalFilter: mensalFilter,
       weekdayFilter: weekdayFilter,
@@ -543,7 +442,7 @@ class OverviewBatchLoader {
     required String userId,
     required AgentQueryTarget target,
     required int planBridgeTimeoutMs,
-    required _OverviewMainBatchCommands batch,
+    required OverviewMainBatchCommands batch,
     required Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     AgentQueriesCancelScope? cancelScope,
     AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
@@ -595,7 +494,7 @@ class OverviewBatchLoader {
     required String userId,
     required AgentQueryTarget target,
     required int planBridgeTimeoutMs,
-    required _OverviewSectionBatchCommands batch,
+    required OverviewSectionBatchCommands batch,
     required ResumoParcelasMensalFilter mensalFilter,
     required ResumoParcelasDiaSemanaFilter weekdayFilter,
     required ResumoTotalDiarioVendasFilter dailyTotalFilter,
@@ -666,13 +565,13 @@ class OverviewBatchLoader {
 
   bool get _usesCachedLucratividadeSection => _loadLucratividade != null;
 
-  _CachedSectionSqlOmission _cachedSectionSqlOmissionFor({
+  OverviewCachedSectionSqlOmission _cachedSectionSqlOmissionFor({
     required AgentQueryLoadPolicy cachePolicy,
   }) {
     if (cachePolicy != AgentQueryLoadPolicy.defaultLoad) {
-      return const _CachedSectionSqlOmission();
+      return const OverviewCachedSectionSqlOmission();
     }
-    return _CachedSectionSqlOmission(
+    return OverviewCachedSectionSqlOmission(
       dailyMonthly: _usesCachedDailyMonthlySections,
       weekday: _usesCachedWeekdaySection,
       lucratividade: _usesCachedLucratividadeSection,
@@ -866,12 +765,12 @@ class OverviewBatchLoader {
     required ResumoParcelasDiaSemanaFilter weekdayFilter,
     required ResumoTotalDiarioVendasFilter dailyTotalFilter,
     required bool includeLucratividadeMensal,
-    _CachedSectionSqlOmission omitCachedSectionsFromSqlBatch =
-        const _CachedSectionSqlOmission(),
+    OverviewCachedSectionSqlOmission omitCachedSectionsFromSqlBatch =
+        const OverviewCachedSectionSqlOmission(),
     AgentQueriesCancelScope? cancelScope,
     AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
   }) async* {
-    final batch = _buildCommands(
+    final batch = _commandBuilder.buildCommands(
       periodStart: periodStart,
       periodEnd: periodEnd,
       last12Range: last12Range,
@@ -924,7 +823,7 @@ class OverviewBatchLoader {
     required String userId,
     required AgentQueryTarget target,
     required int planBridgeTimeoutMs,
-    required _OverviewBatchCommands batch,
+    required OverviewBatchCommands batch,
     required ResumoParcelasMensalFilter mensalFilter,
     required ResumoParcelasDiaSemanaFilter weekdayFilter,
     required ResumoTotalDiarioVendasFilter dailyTotalFilter,
@@ -986,7 +885,7 @@ class OverviewBatchLoader {
       target: target,
       elapsedMs: elapsedMs,
       execution: execution,
-      indexes: _OverviewMainBatchCommandIndexes(
+      indexes: OverviewMainBatchCommandIndexes(
         main: batch.indexes.main,
         userRanking: batch.indexes.userRanking,
       ),
@@ -995,7 +894,7 @@ class OverviewBatchLoader {
       target: target,
       elapsedMs: elapsedMs,
       execution: execution,
-      indexes: _OverviewSectionBatchCommandIndexes(
+      indexes: OverviewSectionBatchCommandIndexes(
         monthly: batch.indexes.monthly,
         weekday: batch.indexes.weekday,
         daily: batch.indexes.daily,
@@ -1039,23 +938,6 @@ class OverviewBatchLoader {
     return merged;
   }
 
-  _OverviewSectionBatchCommandIndexes _sectionIndexesFromFull(
-    _OverviewBatchCommandIndexes full, {
-    required int mainOffset,
-  }) {
-    int? subtract(int? index) =>
-        index == null ? null : index - mainOffset;
-    return _OverviewSectionBatchCommandIndexes(
-      monthly: subtract(full.monthly),
-      weekday: subtract(full.weekday),
-      daily: subtract(full.daily),
-      weekdayUser: full.weekdayUser - mainOffset,
-      lucratividade: subtract(full.lucratividade),
-      lucratividadeMensal: subtract(full.lucratividadeMensal),
-    );
-  }
-
-
   Future<void> _persistSectionFacts({
     required String userId,
     required AgentQueryTarget target,
@@ -1092,7 +974,7 @@ class OverviewBatchLoader {
     required String userId,
     required AgentQueryTarget target,
     required int planBridgeTimeoutMs,
-    required _OverviewSectionBatchCommands batch,
+    required OverviewSectionBatchCommands batch,
     required Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     AgentQueriesCancelScope? cancelScope,
     AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
@@ -1125,272 +1007,6 @@ class OverviewBatchLoader {
       return (execution: null, failure: result.exceptionOrNull());
     }
     return (execution: execution, failure: null);
-  }
-
-  _OverviewMainBatchCommands _buildMainCommands({
-    required DateTime periodStart,
-    required DateTime periodEnd,
-  }) {
-    final commands = <AgentSqlExecuteBatchCommand>[];
-    final parcelPeriodParams = _parcelPeriodSqlParamsFromPeriodo(
-      ResumoParcelaFormaPagamentoFilter(
-        dataVendaInicio: periodStart,
-        dataVendaFim: periodEnd,
-      ),
-    );
-    final main = commands.length;
-    commands.add(
-      AgentSqlExecuteBatchCommand(
-        sql: ResumoParcelaFormaPagamentoSqlV2.query,
-        namedParams: parcelPeriodParams,
-        executionOrder: main,
-      ),
-    );
-    final userRanking = commands.length;
-    commands.add(
-      AgentSqlExecuteBatchCommand(
-        sql: ResumoParcelaPorUsuarioSql.query,
-        namedParams: parcelPeriodParams,
-        executionOrder: userRanking,
-      ),
-    );
-    return _OverviewMainBatchCommands(
-      commands: commands,
-      indexes: _OverviewMainBatchCommandIndexes(
-        main: main,
-        userRanking: userRanking,
-      ),
-    );
-  }
-
-  _OverviewSectionBatchCommands _buildSectionCommands({
-    required ({DateTime dataVendaInicio, DateTime dataVendaFim}) last12Range,
-    required ResumoParcelasMensalFilter mensalFilter,
-    required ResumoParcelasDiaSemanaFilter weekdayFilter,
-    required ResumoTotalDiarioVendasFilter dailyTotalFilter,
-    required bool includeLucratividadeMensal,
-    _CachedSectionSqlOmission omitCachedSectionsFromSqlBatch =
-        const _CachedSectionSqlOmission(),
-  }) {
-    const mainOffset = _mainBatchCommandCount;
-    final full = _buildCommands(
-      periodStart: dailyTotalFilter.dataVendaInicio,
-      periodEnd: dailyTotalFilter.dataVendaFim,
-      last12Range: last12Range,
-      mensalFilter: mensalFilter,
-      weekdayFilter: weekdayFilter,
-      dailyTotalFilter: dailyTotalFilter,
-      includeLucratividadeMensal: includeLucratividadeMensal,
-      omitCachedSectionsFromSqlBatch: omitCachedSectionsFromSqlBatch,
-    );
-    final commands = full.commands
-        .skip(mainOffset)
-        .toList(growable: false);
-    for (var i = 0; i < commands.length; i++) {
-      final command = commands[i];
-      commands[i] = AgentSqlExecuteBatchCommand(
-        sql: command.sql,
-        namedParams: command.namedParams,
-        executionOrder: i,
-      );
-    }
-    return _OverviewSectionBatchCommands(
-      commands: commands,
-      indexes: _sectionIndexesFromFull(full.indexes, mainOffset: mainOffset),
-    );
-  }
-
-  _OverviewBatchCommands _buildCommands({
-    required DateTime periodStart,
-    required DateTime periodEnd,
-    required ({DateTime dataVendaInicio, DateTime dataVendaFim}) last12Range,
-    required ResumoParcelasMensalFilter mensalFilter,
-    required ResumoParcelasDiaSemanaFilter weekdayFilter,
-    required ResumoTotalDiarioVendasFilter dailyTotalFilter,
-    required bool includeLucratividadeMensal,
-    _CachedSectionSqlOmission omitCachedSectionsFromSqlBatch =
-        const _CachedSectionSqlOmission(),
-  }) {
-    final commands = <AgentSqlExecuteBatchCommand>[];
-
-    int add(String sql, Map<String, Object?> namedParams) {
-      final index = commands.length;
-      commands.add(
-        AgentSqlExecuteBatchCommand(
-          sql: sql,
-          namedParams: namedParams,
-          executionOrder: index,
-        ),
-      );
-      return index;
-    }
-
-    final main = add(
-      ResumoParcelaFormaPagamentoSqlV2.query,
-      _parcelPeriodSqlParamsFromPeriodo(
-        ResumoParcelaFormaPagamentoFilter(
-          dataVendaInicio: periodStart,
-          dataVendaFim: periodEnd,
-        ),
-      ),
-    );
-    final userRanking = add(
-      ResumoParcelaPorUsuarioSql.query,
-      _parcelPeriodSqlParamsFromPeriodo(
-        ResumoParcelaFormaPagamentoFilter(
-          dataVendaInicio: periodStart,
-          dataVendaFim: periodEnd,
-        ),
-      ),
-    );
-    final int? monthly;
-    if (!omitCachedSectionsFromSqlBatch.dailyMonthly) {
-      monthly = add(
-      ResumoParcelasMensalSql.query(
-        codEmpresa: mensalFilter.codEmpresa,
-        codFilial: mensalFilter.codFilial,
-        codVendedor: mensalFilter.codVendedor,
-      ),
-      _parcelPeriodSqlParamsFromMensal(mensalFilter),
-    );
-    } else {
-      monthly = null;
-    }
-    final int? weekday;
-    if (!omitCachedSectionsFromSqlBatch.weekday) {
-      weekday = add(
-      ResumoParcelasDiaSemanaSql.query(
-        codEmpresa: weekdayFilter.codEmpresa,
-        codFilial: weekdayFilter.codFilial,
-        codVendedor: weekdayFilter.codVendedor,
-      ),
-      _parcelPeriodSqlParamsFromWeekday(weekdayFilter),
-    );
-    } else {
-      weekday = null;
-    }
-    final int? daily;
-    if (!omitCachedSectionsFromSqlBatch.dailyMonthly) {
-      daily = add(
-      ResumoTotalDiarioVendasSql.query,
-      _produtoVendidoPeriodParams(dailyTotalFilter),
-    );
-    } else {
-      daily = null;
-    }
-    final weekdayUser = add(
-      ResumoParcelasDiaSemanaUsuarioSql.query(
-        codEmpresa: weekdayFilter.codEmpresa,
-        codFilial: weekdayFilter.codFilial,
-        codVendedor: weekdayFilter.codVendedor,
-      ),
-      _parcelPeriodSqlParamsFromWeekday(weekdayFilter),
-    );
-    final lucratividadePeriodFilter = ResumoProdutoVendaLucratividadeFilter(
-      dataVendaInicio: periodStart,
-      dataVendaFim: periodEnd,
-    );
-    final lucratividadeMensalFilter = ResumoProdutoVendaLucratividadeFilter(
-      dataVendaInicio: last12Range.dataVendaInicio,
-      dataVendaFim: last12Range.dataVendaFim,
-    );
-    final int? lucratividade;
-    if (!omitCachedSectionsFromSqlBatch.lucratividade) {
-      lucratividade = add(
-      ResumoProdutoVendaLucratividadeSql.query,
-      _lucratividadeParams(lucratividadePeriodFilter),
-    );
-    } else {
-      lucratividade = null;
-    }
-    final lucratividadeMensal = includeLucratividadeMensal
-        ? add(
-            ResumoProdutoVendaLucratividadeMensalSql.query,
-            _lucratividadeParams(lucratividadeMensalFilter),
-          )
-        : null;
-
-    return _OverviewBatchCommands(
-      commands: commands,
-      indexes: _OverviewBatchCommandIndexes(
-        main: main,
-        userRanking: userRanking,
-        monthly: monthly,
-        weekday: weekday,
-        daily: daily,
-        weekdayUser: weekdayUser,
-        lucratividade: lucratividade,
-        lucratividadeMensal: lucratividadeMensal,
-      ),
-    );
-  }
-
-  Map<String, Object?> _parcelPeriodSqlParamsFromPeriodo(
-    ResumoParcelasPeriodoFilter filter,
-  ) {
-    return <String, Object?>{
-      'dataVendaInicio': AgentQueriesSqlLocalDate.format(
-        filter.dataVendaInicio,
-      ),
-      'dataVendaFim': AgentQueriesSqlLocalDate.format(filter.dataVendaFim),
-      'origem': filter.trimmedOrigem,
-      'geraFinanceiro': filter.trimmedGeraFinanceiro,
-      'preVenda': filter.trimmedPreVenda,
-    };
-  }
-
-  Map<String, Object?> _parcelPeriodSqlParamsFromMensal(
-    ResumoParcelasMensalFilter filter,
-  ) {
-    return _parcelPeriodSqlParamsFromPeriodo(
-      ResumoParcelasPeriodoFilter(
-        dataVendaInicio: filter.dataVendaInicio,
-        dataVendaFim: filter.dataVendaFim,
-        origem: filter.origem,
-        geraFinanceiro: filter.geraFinanceiro,
-        preVenda: filter.preVenda,
-      ),
-    );
-  }
-
-  Map<String, Object?> _parcelPeriodSqlParamsFromWeekday(
-    ResumoParcelasDiaSemanaFilter filter,
-  ) {
-    return _parcelPeriodSqlParamsFromPeriodo(
-      ResumoParcelasPeriodoFilter(
-        dataVendaInicio: filter.dataVendaInicio,
-        dataVendaFim: filter.dataVendaFim,
-        origem: filter.origem,
-        geraFinanceiro: filter.geraFinanceiro,
-        preVenda: filter.preVenda,
-      ),
-    );
-  }
-
-  Map<String, Object?> _produtoVendidoPeriodParams(
-    ResumoTotalDiarioVendasFilter filter,
-  ) {
-    return <String, Object?>{
-      'dataVendaInicio': AgentQueriesSqlLocalDate.format(
-        filter.dataVendaInicio,
-      ),
-      'dataVendaFim': AgentQueriesSqlLocalDate.format(filter.dataVendaFim),
-      'origem': filter.trimmedOrigem,
-      'geraFinanceiro': filter.trimmedGeraFinanceiro,
-      'preVenda': filter.trimmedPreVenda,
-    };
-  }
-
-  Map<String, Object?> _lucratividadeParams(
-    ResumoProdutoVendaLucratividadeFilter filter,
-  ) {
-    return <String, Object?>{
-      'dataVendaInicio': AgentQueriesSqlLocalDate.format(
-        filter.dataVendaInicio,
-      ),
-      'dataVendaFim': AgentQueriesSqlLocalDate.format(filter.dataVendaFim),
-      'origem': filter.trimmedOrigem,
-    };
   }
 
   OverviewBatchTargetResult _targetResultWithSectionFailures({
@@ -1430,7 +1046,7 @@ class OverviewBatchLoader {
     required AgentQueryTarget target,
     required int elapsedMs,
     required AgentSqlBatchExecutionResult execution,
-    required _OverviewMainBatchCommandIndexes indexes,
+    required OverviewMainBatchCommandIndexes indexes,
   }) {
     final byIndex = <int, AgentSqlBatchExecutionItem>{
       for (final item in execution.items) item.index: item,
@@ -1461,7 +1077,7 @@ class OverviewBatchLoader {
     required AgentQueryTarget target,
     required int elapsedMs,
     required AgentSqlBatchExecutionResult execution,
-    required _OverviewSectionBatchCommandIndexes indexes,
+    required OverviewSectionBatchCommandIndexes indexes,
   }) {
     final byIndex = <int, AgentSqlBatchExecutionItem>{
       for (final item in execution.items) item.index: item,

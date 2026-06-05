@@ -137,7 +137,8 @@ abstract final class AppEnvironment {
   static const int defaultAgentQueryFactsBucketLoadConcurrency = 1;
   static const int defaultAgentQueryFactsPrefetchDelayMs = 2000;
   static const int defaultAgentQueryTargetResolutionCacheTtlMs = 30000;
-  static const int defaultAgentSqlOverviewBatchMaxParallelReadOnlyItems = 1;
+  static const int defaultAgentSqlOverviewBatchMaxParallelReadOnlyItems = 4;
+  static const bool defaultAgentSqlOverviewMergeSqlBatchesPerTarget = true;
   static const bool defaultAgentQueryFactsBucketUseExecuteBatch = true;
   static const int defaultAgentSqlRelayStreamingMaxConcurrentPerAgent = 4;
   static const int defaultAgentSqlBridgeTimeoutMs = 120000;
@@ -294,7 +295,7 @@ abstract final class AppEnvironment {
         fromDotenv: _dotenvMaybe(
           EnvKeys.agentSqlOverviewMergeSqlBatchesPerTarget,
         ),
-        fallback: false,
+        fallback: defaultAgentSqlOverviewMergeSqlBatchesPerTarget,
       );
 
   static bool get agentSqlSalesLiveMapMergeSqlBatchesPerTarget =>
