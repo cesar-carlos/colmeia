@@ -230,11 +230,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
         final sourceAgentIds = report.consideredApprovedAgentCount == 0
             ? null
             : _resolveSourceAgentIds(report);
-        final successfulMainResults = batchResults
-            .where((result) => result.mainFailure == null)
-            .toList(growable: false);
-        if (loaded.plan.plannedTargets.isNotEmpty &&
-            successfulMainResults.isEmpty) {
+        if (loaded.completedWithOnlyTargetFailures) {
           final firstMainFailure = batchResults
               .map((result) => result.mainFailure)
               .whereType<AppFailure>()
@@ -270,6 +266,30 @@ class OverviewRepositoryImpl implements OverviewRepository {
         final userRankingRowsByAgentId = batchUserRankingsOverride == null
             ? null
             : _userRankingRowsByAgentId(batchResults);
+        final monthlySectionFailure = _batchSectionFailure(
+          batchResults,
+          (result) => result.monthlyFailure,
+        );
+        final weekdaySectionFailure = _batchSectionFailure(
+          batchResults,
+          (result) => result.weekdayFailure,
+        );
+        final dailySectionFailure = _batchSectionFailure(
+          batchResults,
+          (result) => result.dailyFailure,
+        );
+        final weekdayUserSectionFailure = _batchSectionFailure(
+          batchResults,
+          (result) => result.weekdayUserFailure,
+        );
+        final lucratividadeSectionFailure = _batchSectionFailure(
+          batchResults,
+          (result) => result.lucratividadeFailure,
+        );
+        final lucratividadeMensalSectionFailure = _batchSectionFailure(
+          batchResults,
+          (result) => result.lucratividadeMensalFailure,
+        );
         final overview = _assembler.buildOverview(
           _mapOverviewRows(report.mergedRows),
           rowsByAgentId: _mapRowsByAgentId(report.rowsByAgentId),
@@ -289,62 +309,41 @@ class OverviewRepositoryImpl implements OverviewRepository {
           monthlyParcelTrend: _batchMonthlyPoints(
             batchResults,
             mensalFilter,
+            sectionLoadFailed: monthlySectionFailure.loadFailed,
+            strategy: executionStrategy,
           ),
-          monthlyParcelTrendLoadFailed: _batchSectionFailure(
+          monthlyParcelTrendLoadFailed: monthlySectionFailure.loadFailed,
+          monthlyParcelTrendLoadFailure: monthlySectionFailure.failure,
+          weekdaySalesTrend: _batchWeekdayPoints(
             batchResults,
-            (result) => result.monthlyFailure,
-          ).loadFailed,
-          monthlyParcelTrendLoadFailure: _batchSectionFailure(
+            strategy: executionStrategy,
+          ),
+          weekdaySalesTrendLoadFailed: weekdaySectionFailure.loadFailed,
+          weekdaySalesTrendLoadFailure: weekdaySectionFailure.failure,
+          dailySalesTrend: _batchDailyPoints(
             batchResults,
-            (result) => result.monthlyFailure,
-          ).failure,
-          weekdaySalesTrend: _batchWeekdayPoints(batchResults),
-          weekdaySalesTrendLoadFailed: _batchSectionFailure(
+            dailyTotalFilter,
+            sectionLoadFailed: dailySectionFailure.loadFailed,
+            strategy: executionStrategy,
+          ),
+          dailySalesTrendLoadFailed: dailySectionFailure.loadFailed,
+          dailySalesTrendLoadFailure: dailySectionFailure.failure,
+          weekdayUserSalesTrend: _batchWeekdayUserPoints(
             batchResults,
-            (result) => result.weekdayFailure,
-          ).loadFailed,
-          weekdaySalesTrendLoadFailure: _batchSectionFailure(
-            batchResults,
-            (result) => result.weekdayFailure,
-          ).failure,
-          dailySalesTrend: _batchDailyPoints(batchResults, dailyTotalFilter),
-          dailySalesTrendLoadFailed: _batchSectionFailure(
-            batchResults,
-            (result) => result.dailyFailure,
-          ).loadFailed,
-          dailySalesTrendLoadFailure: _batchSectionFailure(
-            batchResults,
-            (result) => result.dailyFailure,
-          ).failure,
-          weekdayUserSalesTrend: _batchWeekdayUserPoints(batchResults),
-          weekdayUserSalesTrendLoadFailed: _batchSectionFailure(
-            batchResults,
-            (result) => result.weekdayUserFailure,
-          ).loadFailed,
-          weekdayUserSalesTrendLoadFailure: _batchSectionFailure(
-            batchResults,
-            (result) => result.weekdayUserFailure,
-          ).failure,
+            strategy: executionStrategy,
+          ),
+          weekdayUserSalesTrendLoadFailed: weekdayUserSectionFailure.loadFailed,
+          weekdayUserSalesTrendLoadFailure: weekdayUserSectionFailure.failure,
           lucratividadeTrend: _batchLucratividadePoints(batchResults),
-          lucratividadeTrendLoadFailed: _batchSectionFailure(
-            batchResults,
-            (result) => result.lucratividadeFailure,
-          ).loadFailed,
-          lucratividadeTrendLoadFailure: _batchSectionFailure(
-            batchResults,
-            (result) => result.lucratividadeFailure,
-          ).failure,
+          lucratividadeTrendLoadFailed: lucratividadeSectionFailure.loadFailed,
+          lucratividadeTrendLoadFailure: lucratividadeSectionFailure.failure,
           lucratividadePartialFailureAgentNames:
               _batchLucratividadePartialFailureAgentNames(batchResults),
           lucratividadeMensalTrend: _batchLucratividadeMensalRows(batchResults),
-          lucratividadeMensalTrendLoadFailed: _batchSectionFailure(
-            batchResults,
-            (result) => result.lucratividadeMensalFailure,
-          ).loadFailed,
-          lucratividadeMensalTrendLoadFailure: _batchSectionFailure(
-            batchResults,
-            (result) => result.lucratividadeMensalFailure,
-          ).failure,
+          lucratividadeMensalTrendLoadFailed:
+              lucratividadeMensalSectionFailure.loadFailed,
+          lucratividadeMensalTrendLoadFailure:
+              lucratividadeMensalSectionFailure.failure,
           mainResumoHadPlannedTargets: report.plannedTargets.isNotEmpty,
           partialQueryFailureDetails: <OverviewAgentQueryFailureDetail>[
             ...overviewPartialFailuresFromParticipants(report.participants),
@@ -448,18 +447,19 @@ class OverviewRepositoryImpl implements OverviewRepository {
 
   List<OverviewMonthlyParcelPoint> _batchMonthlyPoints(
     List<OverviewBatchTargetResult> results,
-    ResumoParcelasMensalFilter filter,
-  ) {
-    if (_batchSectionFailure(
-      results,
-      (result) => result.monthlyFailure,
-    ).loadFailed) {
+    ResumoParcelasMensalFilter filter, {
+    required bool sectionLoadFailed,
+    required AgentQueryExecutionStrategy strategy,
+  }) {
+    if (sectionLoadFailed) {
       return const <OverviewMonthlyParcelPoint>[];
     }
     final report = _batchReport<ResumoParcelasMensalRow>(
       results,
       (result) => result.monthlyRows,
       (result) => result.monthlyFailure,
+      queryKey: AgentQueryKey.resumoParcelasMensal,
+      strategy: strategy,
     );
     return overviewMonthlyParcelPointsFromRows(
       report.chartRowsFilledPeriod(filter),
@@ -467,30 +467,34 @@ class OverviewRepositoryImpl implements OverviewRepository {
   }
 
   List<OverviewWeekdaySalesTrendPoint> _batchWeekdayPoints(
-    List<OverviewBatchTargetResult> results,
-  ) {
+    List<OverviewBatchTargetResult> results, {
+    required AgentQueryExecutionStrategy strategy,
+  }) {
     final report = _batchReport<ResumoParcelasDiaSemanaRow>(
       results,
       (result) => result.weekdayRows,
       (result) => result.weekdayFailure,
+      queryKey: AgentQueryKey.resumoParcelasDiaSemana,
+      strategy: strategy,
     );
     return overviewWeekdaySalesTrendPointsFromRows(report.chartRowsWeek);
   }
 
   List<DailySalesTrendPoint> _batchDailyPoints(
     List<OverviewBatchTargetResult> results,
-    ResumoTotalDiarioVendasFilter filter,
-  ) {
-    if (_batchSectionFailure(
-      results,
-      (result) => result.dailyFailure,
-    ).loadFailed) {
+    ResumoTotalDiarioVendasFilter filter, {
+    required bool sectionLoadFailed,
+    required AgentQueryExecutionStrategy strategy,
+  }) {
+    if (sectionLoadFailed) {
       return const <DailySalesTrendPoint>[];
     }
     final report = _batchReport<ResumoTotalDiarioVendasRow>(
       results,
       (result) => result.dailyRows,
       (result) => result.dailyFailure,
+      queryKey: AgentQueryKey.resumoTotalDiarioVendas,
+      strategy: strategy,
     );
     return dailySalesTrendPointsFromRows(
       report.chartRowsFilledPeriod(filter),
@@ -498,12 +502,15 @@ class OverviewRepositoryImpl implements OverviewRepository {
   }
 
   List<OverviewWeekdayUserSalesTrendPoint> _batchWeekdayUserPoints(
-    List<OverviewBatchTargetResult> results,
-  ) {
+    List<OverviewBatchTargetResult> results, {
+    required AgentQueryExecutionStrategy strategy,
+  }) {
     final report = _batchReport<ResumoParcelasDiaSemanaUsuarioRow>(
       results,
       (result) => result.weekdayUserRows,
       (result) => result.weekdayUserFailure,
+      queryKey: AgentQueryKey.resumoParcelasDiaSemanaUsuario,
+      strategy: strategy,
     );
     return overviewWeekdayUserSalesTrendPointsFromRows(
       report.aggregatedMergedRows,
@@ -615,11 +622,13 @@ class OverviewRepositoryImpl implements OverviewRepository {
   AgentQueryExecutionReport<Row> _batchReport<Row>(
     List<OverviewBatchTargetResult> results,
     List<Row> Function(OverviewBatchTargetResult result) rowsOf,
-    AppFailure? Function(OverviewBatchTargetResult result) failureOf,
-  ) {
+    AppFailure? Function(OverviewBatchTargetResult result) failureOf, {
+    required AgentQueryKey queryKey,
+    required AgentQueryExecutionStrategy strategy,
+  }) {
     return AgentQueryExecutionReport<Row>(
-      queryKey: AgentQueryKey.resumoParcelaFormaPagamentoV2,
-      strategy: _resolveExecutionStrategy(const DashboardFilter()),
+      queryKey: queryKey,
+      strategy: strategy,
       consideredApprovedAgentCount: results.length,
       plannedTargets: results.map((result) => result.target).toList(),
       missingClientTokenTargets: const <AgentQueryTarget>[],
@@ -741,10 +750,12 @@ class OverviewRepositoryImpl implements OverviewRepository {
       pontoEquilibrio += r.pontoEquilibrio;
       valorTotalItem += r.valorTotalItem;
     }
-    final head = branches.first;
+    // Multi-branch agents aggregate totals across filiais; codEmpresa/codFilial
+    // are sentinel zeros so downstream code does not treat the first branch as
+    // the sole scope. Use chartAxisLabel for display identity.
     return ResumoProdutoVendaLucratividadeRow(
-      codEmpresa: head.codEmpresa,
-      codFilial: head.codFilial,
+      codEmpresa: 0,
+      codFilial: 0,
       qtdVendas: qtdVendas,
       qtdItensVendido: qtdItensVendido,
       valorTotalCustoMedio: valorTotalCustoMedio,
@@ -982,14 +993,16 @@ class OverviewRepositoryImpl implements OverviewRepository {
     if (factsStore == null) {
       return;
     }
-    await factsStore.removeMatchingFactKind(
-      userId: userId,
-      factKind: AgentQueryFactKind.dailySales,
-    );
-    await factsStore.removeMatchingFactKind(
-      userId: userId,
-      factKind: AgentQueryFactKind.monthlyParcels,
-    );
+    await Future.wait([
+      factsStore.removeMatchingFactKind(
+        userId: userId,
+        factKind: AgentQueryFactKind.dailySales,
+      ),
+      factsStore.removeMatchingFactKind(
+        userId: userId,
+        factKind: AgentQueryFactKind.monthlyParcels,
+      ),
+    ]);
   }
 
   void _scheduleFactsPrefetch({
