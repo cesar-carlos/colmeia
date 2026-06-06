@@ -110,6 +110,13 @@
       "userMessage": {"type": "String"}
     }
   },
+  "overviewHomeAlertDetailsReferencedBridgeIdNote": "O detalhe técnico menciona o id de bridge {referencedId}; esta linha é da filial {branchId}.",
+  "@overviewHomeAlertDetailsReferencedBridgeIdNote": {
+    "placeholders": {
+      "referencedId": {"type": "String"},
+      "branchId": {"type": "String"}
+    }
+  },
   "dashboardPaymentSummaryTitle": "Resumo por forma de pagamento",
   "dashboardPaymentSummarySubtitle": "Detalhamento de vendas, ticket médio e participação.",
   "dashboardPaymentSummaryEmptyTitle": "Sem formas de pagamento",

@@ -92,7 +92,7 @@ void main() {
         check(request.commands.length).equals(3);
         check(
           request.options?.maxParallelReadOnlyBatchItems,
-        ).equals(4);
+        ).equals(2);
         return Success<AgentSqlBatchExecutionResult, AppFailure>(
           AgentSqlBatchExecutionResult(
             totalCommands: request.commands.length,

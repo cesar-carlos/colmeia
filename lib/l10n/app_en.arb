@@ -88,6 +88,13 @@
       "userMessage": {"type": "String"}
     }
   },
+  "overviewHomeAlertDetailsReferencedBridgeIdNote": "Technical detail mentions bridge id {referencedId}; this row is for store branch {branchId}.",
+  "@overviewHomeAlertDetailsReferencedBridgeIdNote": {
+    "placeholders": {
+      "referencedId": {"type": "String"},
+      "branchId": {"type": "String"}
+    }
+  },
   "dashboardPaymentSummaryTitle": "Summary by payment method",
   "dashboardPaymentSummarySubtitle": "Sales, average ticket, and share of revenue by method.",
   "dashboardPaymentSummaryEmptyTitle": "No payment methods",

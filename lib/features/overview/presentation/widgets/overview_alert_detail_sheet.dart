@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:colmeia/core/observability/agent_query_failure_support_metrics.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_clipboard.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_support_context.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
+import 'package:colmeia/features/overview/domain/overview_failure_referenced_agent_id.dart';
 import 'package:colmeia/features/overview/domain/overview_partial_failure_details_plain_text.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -186,8 +188,10 @@ class _OverviewAlertDetailSheetScaffold extends StatelessWidget {
                               supportContext:
                                   AgentQueryFailureSupportContext.environment(
                                 localeName: locale,
-                                extra: const <String, String>{
+                                extra: <String, String>{
                                   'surface': 'overview_alert_detail_sheet',
+                                  ...AgentQueryFailureSupportMetrics
+                                      .collectOptional(),
                                 },
                               ),
                             );
@@ -246,6 +250,11 @@ class _OverviewAlertDetailSheetScaffold extends StatelessWidget {
                             itemBuilder: (context, index) {
                               final d = structured[index];
                               final tech = d.technicalSummary?.trim();
+                              final referencedBridgeId =
+                                  overviewFailureReferencedAgentId(
+                                    detailAgentId: d.agentId,
+                                    failure: d.failure,
+                                  );
                               return Semantics(
                                 container: true,
                                 label: l10n
@@ -280,6 +289,20 @@ class _OverviewAlertDetailSheetScaffold extends StatelessWidget {
                                         color: theme.colorScheme.onSurface,
                                       ),
                                     ),
+                                    if (referencedBridgeId != null) ...[
+                                      SizedBox(height: tokens.gapSm),
+                                      Text(
+                                        l10n
+                                            .overviewHomeAlertDetailsReferencedBridgeIdNote(
+                                          referencedBridgeId,
+                                          d.agentId,
+                                        ),
+                                        style: typography.caption.copyWith(
+                                          color:
+                                              theme.colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
                                     if (tech != null && tech.isNotEmpty) ...[
                                       SizedBox(height: tokens.gapSm),
                                       SelectableText(

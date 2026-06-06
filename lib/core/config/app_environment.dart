@@ -133,12 +133,12 @@ abstract final class AppEnvironment {
   static const int defaultAgentSqlCacheTtlMs = 3000;
   static const int defaultAgentSqlParseIsolateRowThreshold = 2000;
   static const int defaultAgentSqlCatalogCacheTtlMs = 30000;
-  static const int defaultAgentQueryMergeAllConcurrency = 4;
+  static const int defaultAgentQueryMergeAllConcurrency = 2;
   static const int defaultAgentQueryFactsBucketLoadConcurrency = 1;
   static const int defaultAgentQueryFactsPrefetchDelayMs = 2000;
   static const int defaultAgentQueryTargetResolutionCacheTtlMs = 30000;
-  static const int defaultAgentSqlOverviewBatchMaxParallelReadOnlyItems = 4;
-  static const bool defaultAgentSqlOverviewMergeSqlBatchesPerTarget = true;
+  static const int defaultAgentSqlOverviewBatchMaxParallelReadOnlyItems = 2;
+  static const bool defaultAgentSqlOverviewMergeSqlBatchesPerTarget = false;
   static const bool defaultAgentQueryFactsBucketUseExecuteBatch = true;
   static const int defaultAgentSqlRelayStreamingMaxConcurrentPerAgent = 4;
   static const int defaultAgentSqlBridgeTimeoutMs = 120000;
@@ -178,9 +178,9 @@ abstract final class AppEnvironment {
   /// Parallel mergeAll wave size for across-agent orchestration.
   ///
   /// Tuning guide:
-  /// - Default `4` reduces burst load on hub rate windows during multi-agent
+  /// - Default `2` reduces burst load on hub rate windows during multi-agent
   ///   overview and sales map loads.
-  /// - Raise toward `8` only on stable networks with few agents and headroom
+  /// - Raise toward `4`–`8` only on stable networks with few agents and headroom
   ///   under [agentSqlRestMaxInflightPerAgent] / socket inflight gates.
   /// - Overview batch loader uses [overviewTargetWaveConcurrency] when set;
   ///   sales live map uses [salesLiveMapMergeWaveSize] when set.

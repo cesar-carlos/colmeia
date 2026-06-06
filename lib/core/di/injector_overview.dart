@@ -12,6 +12,7 @@ import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/data/overview_batch_facts_persister.dart';
 import 'package:colmeia/features/overview/data/overview_batch_loader.dart';
+import 'package:colmeia/features/overview/data/overview_cached_facts_warmth_checker.dart';
 import 'package:colmeia/features/overview/data/repositories/overview_repository_impl.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
 import 'package:get_it/get_it.dart';
@@ -36,6 +37,9 @@ void registerInjectorOverview(GetIt getIt) {
         loadMonthly: getIt<LoadResumoParcelasMensalUseCase>(),
         loadWeekday: getIt<LoadResumoParcelasDiaSemanaUseCase>(),
         loadLucratividade: getIt<LoadResumoProdutoVendaLucratividadeUseCase>(),
+        factsWarmthChecker: OverviewCachedFactsWarmthChecker(
+          factsStore: getIt<AgentQueryFactsStore>(),
+        ),
         maxParallelReadOnlyBatchItems:
             AppEnvironment.agentSqlOverviewBatchMaxParallelReadOnlyItems,
       ),

@@ -114,8 +114,14 @@ class AgentRpcCapabilitiesRegistry extends ChangeNotifier {
   ///
   /// Safe to call repeatedly; ids that already have a descriptor or
   /// an in-flight request are skipped.
-  Future<void> prefetch(Iterable<String> agentIds) async {
+  Future<void> prefetch(
+    Iterable<String> agentIds, {
+    bool Function()? shouldAbort,
+  }) async {
     if (_disposed) {
+      return;
+    }
+    if (shouldAbort?.call() ?? false) {
       return;
     }
     final unique = <String>{};
@@ -135,9 +141,12 @@ class AgentRpcCapabilitiesRegistry extends ChangeNotifier {
         'agentCount': unique.length,
       },
     );
-    await Future.wait(<Future<void>>[
-      for (final id in unique) _fetchOne(id).then((_) {}),
-    ]);
+    for (final id in unique) {
+      if (shouldAbort?.call() ?? false) {
+        return;
+      }
+      await _fetchOne(id);
+    }
   }
 
   /// Same as [prefetch] but for a single id, returning the descriptor

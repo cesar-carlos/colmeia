@@ -661,6 +661,12 @@ class OverviewController extends ChangeNotifier {
     if (ids.isEmpty) {
       return;
     }
-    unawaited(registry.prefetch(ids));
+    final cancelScope = _session.cancelScope;
+    unawaited(
+      registry.prefetch(
+        ids,
+        shouldAbort: () => cancelScope?.isCancelled ?? false,
+      ),
+    );
   }
 }

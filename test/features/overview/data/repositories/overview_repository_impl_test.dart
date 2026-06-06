@@ -1,4 +1,5 @@
 import 'package:checks/checks.dart';
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/config/env_keys.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
@@ -75,6 +76,8 @@ void main() {
         targetResolver: batchTargetResolver,
         planBuilder: const AgentQueryPlanBuilder(),
         agentQueriesRepository: batchAgentQueriesRepository,
+        maxParallelReadOnlyBatchItems:
+            AppEnvironment.agentSqlOverviewBatchMaxParallelReadOnlyItems,
       ),
       factsStore: factsStore,
       now: () => fixedNow,
@@ -112,6 +115,17 @@ void main() {
     test(
       'batch load resolves targets once and emits final snapshot with merged batch',
       () async {
+        dotenv.loadFromString(
+          envString:
+              '${EnvKeys.agentSqlOverviewMergeSqlBatchesPerTarget}=true',
+        );
+        addTearDown(() {
+          dotenv.loadFromString(
+            envString:
+                '${EnvKeys.agentSqlOverviewMergeSqlBatchesPerTarget}=false',
+          );
+        });
+
         const target = AgentQueryTarget(
           agentId: 'agent-1',
           displayName: 'Agent 1',
@@ -186,23 +200,13 @@ void main() {
         check(capturedRequests[0].useRelay).isTrue();
         check(
           capturedRequests[0].options?.maxParallelReadOnlyBatchItems,
-        ).equals(4);
+        ).equals(2);
       },
     );
 
     test(
       'batch load emits phased snapshots when merge flag is disabled',
       () async {
-        dotenv.loadFromString(
-          envString:
-              '${EnvKeys.agentSqlOverviewMergeSqlBatchesPerTarget}=false',
-        );
-        addTearDown(() {
-          dotenv.loadFromString(
-            envString:
-                '${EnvKeys.agentSqlOverviewMergeSqlBatchesPerTarget}=true',
-          );
-        });
 
         const target = AgentQueryTarget(
           agentId: 'agent-1',

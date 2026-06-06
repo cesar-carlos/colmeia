@@ -254,6 +254,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String overviewHomeAlertDetailsReferencedBridgeIdNote(
+    String referencedId,
+    String branchId,
+  ) {
+    return 'Technical detail mentions bridge id $referencedId; this row is for store branch $branchId.';
+  }
+
+  @override
   String get dashboardPaymentSummaryTitle => 'Summary by payment method';
 
   @override

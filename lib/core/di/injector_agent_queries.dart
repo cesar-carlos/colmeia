@@ -5,6 +5,7 @@ import 'package:colmeia/core/config/agent_bridge_transport.dart';
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/observability/agent_query_failure_support_metrics.dart';
 import 'package:colmeia/core/observability/socket/socket_channel_metrics.dart';
 import 'package:colmeia/core/observability/socket/socket_metrics_listener.dart';
 import 'package:colmeia/core/socket/agent_command_sender.dart';
@@ -251,6 +252,16 @@ void wireAgentQueriesSocketMetricsExport(GetIt getIt) {
       ),
       ...AgentQueryFactsStoreMetrics.instance.appendix(),
     };
+  };
+  AgentQueryFailureSupportMetrics.resolver = () {
+    return AgentQueryFailureSupportMetrics.collect(
+      channelMetrics: getIt.isRegistered<SocketChannelMetrics>()
+          ? getIt<SocketChannelMetrics>()
+          : null,
+      coalescingRepository: getIt.isRegistered<AgentQueriesRepositoryChain>()
+          ? getIt<AgentQueriesRepositoryChain>().coalescingRepository
+          : null,
+    );
   };
 }
 

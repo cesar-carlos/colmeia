@@ -524,6 +524,15 @@ abstract class AppLocalizations {
     String userMessage,
   );
 
+  /// No description provided for @overviewHomeAlertDetailsReferencedBridgeIdNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical detail mentions bridge id {referencedId}; this row is for store branch {branchId}.'**
+  String overviewHomeAlertDetailsReferencedBridgeIdNote(
+    String referencedId,
+    String branchId,
+  );
+
   /// No description provided for @dashboardPaymentSummaryTitle.
   ///
   /// In en, this message translates to:

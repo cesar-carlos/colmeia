@@ -403,6 +403,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
             hubPresenceOnlineAgentIdsSnapshot:
                 loaded.resolution.hubPresenceOnlineAgentIdsSnapshot,
             bridgeTimeoutMs: loaded.plan.bridgeTimeoutMs,
+            cancelScope: cancelScope,
+            skipAgentIds: loaded.factsPersistedAgentIds,
           );
         }
 
@@ -1012,9 +1014,14 @@ class OverviewRepositoryImpl implements OverviewRepository {
     required ResumoParcelasMensalFilter monthlyFilter,
     required Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     required int bridgeTimeoutMs,
+    AgentQueriesCancelScope? cancelScope,
+    Set<String> skipAgentIds = const <String>{},
   }) {
     final coordinator = _factsPrefetchCoordinator;
     if (coordinator == null || targets.isEmpty) {
+      return;
+    }
+    if (cancelScope?.isCancelled ?? false) {
       return;
     }
     unawaited(
@@ -1025,6 +1032,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
         monthlyFilter: monthlyFilter,
         hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
         bridgeTimeoutMs: bridgeTimeoutMs,
+        cancelScope: cancelScope,
+        skipAgentIds: skipAgentIds,
       ),
     );
   }

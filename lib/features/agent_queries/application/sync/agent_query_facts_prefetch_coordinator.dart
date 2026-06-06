@@ -8,6 +8,7 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 
 /// In-app backfill of closed fact buckets while the process is alive.
 ///
@@ -40,6 +41,8 @@ final class AgentQueryFactsPrefetchCoordinator {
     required ResumoParcelasMensalFilter monthlyFilter,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     int? bridgeTimeoutMs,
+    AgentQueriesCancelScope? cancelScope,
+    Set<String> skipAgentIds = const <String>{},
   }) async {
     if (!AppEnvironment.agentQueryFactsPrefetchEnabled) {
       return;
@@ -47,11 +50,14 @@ final class AgentQueryFactsPrefetchCoordinator {
     if (!_retryAfterGate.isOpen || targets.isEmpty) {
       return;
     }
+    if (cancelScope?.isCancelled ?? false) {
+      return;
+    }
 
     final delayMs = AppEnvironment.agentQueryFactsPrefetchDelayMs;
     if (delayMs > 0) {
       await Future<void>.delayed(Duration(milliseconds: delayMs));
-      if (!_retryAfterGate.isOpen) {
+      if (!_retryAfterGate.isOpen || (cancelScope?.isCancelled ?? false)) {
         return;
       }
     }
@@ -59,7 +65,7 @@ final class AgentQueryFactsPrefetchCoordinator {
     var index = 0;
     Future<void> worker() async {
       while (index < targets.length) {
-        if (!_retryAfterGate.isOpen) {
+        if (!_retryAfterGate.isOpen || (cancelScope?.isCancelled ?? false)) {
           return;
         }
         final targetIndex = index++;
@@ -67,6 +73,9 @@ final class AgentQueryFactsPrefetchCoordinator {
           return;
         }
         final target = targets[targetIndex];
+        if (skipAgentIds.contains(target.agentId)) {
+          continue;
+        }
         await prefetchForAgent(
           userId: userId,
           agentId: target.agentId,
@@ -77,6 +86,7 @@ final class AgentQueryFactsPrefetchCoordinator {
           hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
           hubConnectedFromApprovedCatalogRow:
               target.hubConnectedFromApprovedCatalogRow,
+          cancelScope: cancelScope,
         );
       }
     }
@@ -97,11 +107,12 @@ final class AgentQueryFactsPrefetchCoordinator {
     int? bridgeTimeoutMs,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
   }) async {
     if (!AppEnvironment.agentQueryFactsPrefetchEnabled) {
       return;
     }
-    if (!_retryAfterGate.isOpen) {
+    if (!_retryAfterGate.isOpen || (cancelScope?.isCancelled ?? false)) {
       return;
     }
 
@@ -113,8 +124,9 @@ final class AgentQueryFactsPrefetchCoordinator {
       bridgeTimeoutMs: bridgeTimeoutMs,
       hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
       hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
+      cancelScope: cancelScope,
     );
-    if (!_retryAfterGate.isOpen) {
+    if (!_retryAfterGate.isOpen || (cancelScope?.isCancelled ?? false)) {
       return;
     }
     final monthlyResult = await _loadMonthly.call(
@@ -125,6 +137,7 @@ final class AgentQueryFactsPrefetchCoordinator {
       bridgeTimeoutMs: bridgeTimeoutMs,
       hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
       hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
+      cancelScope: cancelScope,
     );
 
     if (dailyResult.getOrNull() == null || monthlyResult.getOrNull() == null) {

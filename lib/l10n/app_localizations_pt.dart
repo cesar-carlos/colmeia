@@ -260,6 +260,14 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String overviewHomeAlertDetailsReferencedBridgeIdNote(
+    String referencedId,
+    String branchId,
+  ) {
+    return 'O detalhe técnico menciona o id de bridge $referencedId; esta linha é da filial $branchId.';
+  }
+
+  @override
   String get dashboardPaymentSummaryTitle => 'Resumo por forma de pagamento';
 
   @override

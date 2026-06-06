@@ -10,6 +10,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_m
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -212,5 +213,129 @@ void main() {
         cachePolicy: any(named: 'cachePolicy'),
       ),
     ).called(1);
+  });
+
+  test('prefetchForPlannedTargets skips agents in skipAgentIds', () async {
+    when(
+      () => loadDaily.call(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        filter: any(named: 'filter'),
+        clientToken: any(named: 'clientToken'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        hubPresenceOnlineAgentIdsSnapshot: any(
+          named: 'hubPresenceOnlineAgentIdsSnapshot',
+        ),
+        hubConnectedFromApprovedCatalogRow: any(
+          named: 'hubConnectedFromApprovedCatalogRow',
+        ),
+        cancelScope: any(named: 'cancelScope'),
+        cachePolicy: any(named: 'cachePolicy'),
+      ),
+    ).thenAnswer(
+      (_) async => const Success<List<ResumoTotalDiarioVendasRow>, AppFailure>(
+        <ResumoTotalDiarioVendasRow>[],
+      ),
+    );
+    when(
+      () => loadMonthly.call(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        filter: any(named: 'filter'),
+        clientToken: any(named: 'clientToken'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        hubPresenceOnlineAgentIdsSnapshot: any(
+          named: 'hubPresenceOnlineAgentIdsSnapshot',
+        ),
+        hubConnectedFromApprovedCatalogRow: any(
+          named: 'hubConnectedFromApprovedCatalogRow',
+        ),
+        cancelScope: any(named: 'cancelScope'),
+        cachePolicy: any(named: 'cachePolicy'),
+      ),
+    ).thenAnswer(
+      (_) async => const Success<List<ResumoParcelasMensalRow>, AppFailure>(
+        <ResumoParcelasMensalRow>[],
+      ),
+    );
+
+    final coordinator = AgentQueryFactsPrefetchCoordinator(
+      loadDaily: loadDaily,
+      loadMonthly: loadMonthly,
+      retryAfterGate: gate,
+    );
+
+    await coordinator.prefetchForPlannedTargets(
+      userId: 'u1',
+      targets: const [
+        AgentQueryTarget(
+          agentId: 'a1',
+          displayName: 'A1',
+          connectionStatus: AgentConnectionStatus.online,
+        ),
+      ],
+      dailyFilter: dailyFilter,
+      monthlyFilter: monthlyFilter,
+      skipAgentIds: const <String>{'a1'},
+    );
+
+    verifyNever(
+      () => loadDaily.call(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        filter: any(named: 'filter'),
+        clientToken: any(named: 'clientToken'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        hubPresenceOnlineAgentIdsSnapshot: any(
+          named: 'hubPresenceOnlineAgentIdsSnapshot',
+        ),
+        hubConnectedFromApprovedCatalogRow: any(
+          named: 'hubConnectedFromApprovedCatalogRow',
+        ),
+        cancelScope: any(named: 'cancelScope'),
+        cachePolicy: any(named: 'cachePolicy'),
+      ),
+    );
+  });
+
+  test('prefetchForPlannedTargets aborts when cancel scope is cancelled', () async {
+    final scope = AgentQueriesCancelScope()..cancelAll();
+    final coordinator = AgentQueryFactsPrefetchCoordinator(
+      loadDaily: loadDaily,
+      loadMonthly: loadMonthly,
+      retryAfterGate: gate,
+    );
+
+    await coordinator.prefetchForPlannedTargets(
+      userId: 'u1',
+      targets: const [
+        AgentQueryTarget(
+          agentId: 'a1',
+          displayName: 'A1',
+          connectionStatus: AgentConnectionStatus.online,
+        ),
+      ],
+      dailyFilter: dailyFilter,
+      monthlyFilter: monthlyFilter,
+      cancelScope: scope,
+    );
+
+    verifyNever(
+      () => loadDaily.call(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        filter: any(named: 'filter'),
+        clientToken: any(named: 'clientToken'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        hubPresenceOnlineAgentIdsSnapshot: any(
+          named: 'hubPresenceOnlineAgentIdsSnapshot',
+        ),
+        hubConnectedFromApprovedCatalogRow: any(
+          named: 'hubConnectedFromApprovedCatalogRow',
+        ),
+        cancelScope: any(named: 'cancelScope'),
+        cachePolicy: any(named: 'cachePolicy'),
+      ),
+    );
   });
 }
