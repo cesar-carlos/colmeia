@@ -13,6 +13,9 @@ class AppHubNavigationCard extends StatelessWidget {
     super.key,
     this.aspectRatio = 1.15,
     this.compact = false,
+    this.labelStyle,
+    this.showReadyBadge = false,
+    this.semanticsLabel,
   });
 
   final IconData icon;
@@ -20,6 +23,9 @@ class AppHubNavigationCard extends StatelessWidget {
   final VoidCallback? onTap;
   final double aspectRatio;
   final bool compact;
+  final TextStyle? labelStyle;
+  final bool showReadyBadge;
+  final String? semanticsLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -31,17 +37,18 @@ class AppHubNavigationCard extends StatelessWidget {
     final iconCircleSize = compact ? 28.0 : 48.0;
     final iconSize = compact ? 16.0 : 24.0;
     final iconLabelGap = compact ? tokens.gapXs : tokens.gapMd;
-    final labelStyle = compact
-        ? typography.caption.copyWith(
-            fontWeight: FontWeight.w600,
-            color: colors.onSurface,
-            height: 1.15,
-          )
-        : typography.body.copyWith(
-            fontWeight: FontWeight.w600,
-            color: colors.onSurface,
-            height: 1.2,
-          );
+    final resolvedLabelStyle = labelStyle ??
+        (compact
+            ? typography.caption.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colors.onSurface,
+                height: 1.15,
+              )
+            : typography.body.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colors.onSurface,
+                height: 1.2,
+              ));
     final cardPadding = compact
         ? EdgeInsets.symmetric(
             horizontal: tokens.gapXs,
@@ -49,54 +56,72 @@ class AppHubNavigationCard extends StatelessWidget {
           )
         : null;
 
-    return AspectRatio(
+    final card = AspectRatio(
       aspectRatio: aspectRatio,
       child: AppSectionCard(
         padding: cardPadding,
         child: Material(
           type: MaterialType.transparency,
           child: Semantics(
-            label: label,
+            label: semanticsLabel ?? label,
             button: true,
             enabled: onTap != null,
             child: InkWell(
               onTap: onTap,
               borderRadius: BorderRadius.circular(tokens.cardRadius),
               child: ExcludeSemantics(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: compact ? tokens.gapXs : tokens.gapSm,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: colors.primary.withValues(alpha: 0.12),
-                          shape: BoxShape.circle,
-                        ),
-                        child: SizedBox(
-                          width: iconCircleSize,
-                          height: iconCircleSize,
-                          child: Center(
-                            child: Icon(
-                              icon,
-                              size: iconSize,
-                              color: colors.primary,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: <Widget>[
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: compact ? tokens.gapXs : tokens.gapSm,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: colors.primary.withValues(alpha: 0.12),
+                              shape: BoxShape.circle,
                             ),
+                            child: SizedBox(
+                              width: iconCircleSize,
+                              height: iconCircleSize,
+                              child: Center(
+                                child: Icon(
+                                  icon,
+                                  size: iconSize,
+                                  color: colors.primary,
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: iconLabelGap),
+                          Text(
+                            label,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: resolvedLabelStyle,
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (showReadyBadge)
+                      Positioned(
+                        top: compact ? 2 : tokens.gapXs,
+                        right: compact ? 2 : tokens.gapXs,
+                        child: Semantics(
+                          label: label,
+                          child: Icon(
+                            Icons.check_circle_outline,
+                            size: compact ? 12 : 14,
+                            color: colors.primary,
                           ),
                         ),
                       ),
-                      SizedBox(height: iconLabelGap),
-                      Text(
-                        label,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: labelStyle,
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
             ),
@@ -104,5 +129,10 @@ class AppHubNavigationCard extends StatelessWidget {
         ),
       ),
     );
+
+    if (compact) {
+      return Tooltip(message: label, child: card);
+    }
+    return card;
   }
 }

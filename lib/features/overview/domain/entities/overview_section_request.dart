@@ -5,6 +5,8 @@ final class OverviewSectionRequest {
   const OverviewSectionRequest({
     required this.runMainBatch,
     required this.sectionBatchSections,
+    this.mainBatchIncludePaymentResumo = true,
+    this.mainBatchIncludeUserRanking = true,
   });
 
   /// Lazy chart detail surfaces.
@@ -12,14 +14,23 @@ final class OverviewSectionRequest {
     OverviewProgressiveSection section,
   ) {
     return switch (section) {
-      OverviewProgressiveSection.summary ||
-      OverviewProgressiveSection.paymentMix ||
-      OverviewProgressiveSection.agentRanking ||
-      OverviewProgressiveSection.userRanking =>
-        const OverviewSectionRequest(
-          runMainBatch: true,
-          sectionBatchSections: <OverviewProgressiveSection>{},
-        ),
+      OverviewProgressiveSection.paymentMix => const OverviewSectionRequest(
+        runMainBatch: true,
+        mainBatchIncludePaymentResumo: true,
+        mainBatchIncludeUserRanking: false,
+        sectionBatchSections: <OverviewProgressiveSection>{},
+      ),
+      OverviewProgressiveSection.userRanking ||
+      OverviewProgressiveSection.agentRanking => const OverviewSectionRequest(
+        runMainBatch: true,
+        mainBatchIncludePaymentResumo: false,
+        mainBatchIncludeUserRanking: true,
+        sectionBatchSections: <OverviewProgressiveSection>{},
+      ),
+      OverviewProgressiveSection.summary => const OverviewSectionRequest(
+        runMainBatch: true,
+        sectionBatchSections: <OverviewProgressiveSection>{},
+      ),
       OverviewProgressiveSection.dailySales ||
       OverviewProgressiveSection.monthlyParcels ||
       OverviewProgressiveSection.weekdaySales ||
@@ -33,9 +44,13 @@ final class OverviewSectionRequest {
     };
   }
 
-  /// Home dashboard: KPIs + agent ranking chart + monthly chart only.
+  /// Home dashboard: KPIs + agent ranking + monthly chart only.
+  ///
+  /// Payment mix and per-user ranking cards load on demand (prefetch or detail).
   static const OverviewSectionRequest home = OverviewSectionRequest(
     runMainBatch: true,
+    mainBatchIncludePaymentResumo: false,
+    mainBatchIncludeUserRanking: true,
     sectionBatchSections: <OverviewProgressiveSection>{
       OverviewProgressiveSection.monthlyParcels,
     },
@@ -43,9 +58,8 @@ final class OverviewSectionRequest {
 
   /// Full overview load (legacy / tests).
   ///
-  /// Includes [OverviewProgressiveSection.lucratividadeMensal] for batch
-  /// coverage, but there is no active chart card or detail route for that
-  /// section yet (monthly lucratividade is surfaced via Sales monthly PnL).
+  /// Monthly lucratividade is surfaced via Sales monthly PnL — there is no
+  /// active chart card or detail route for [OverviewProgressiveSection.lucratividadeMensal].
   static const OverviewSectionRequest full = OverviewSectionRequest(
     runMainBatch: true,
     sectionBatchSections: <OverviewProgressiveSection>{
@@ -54,28 +68,36 @@ final class OverviewSectionRequest {
       OverviewProgressiveSection.weekdaySales,
       OverviewProgressiveSection.weekdayUserSales,
       OverviewProgressiveSection.lucratividadePeriod,
-      OverviewProgressiveSection.lucratividadeMensal,
     },
   );
 
-  static const Set<OverviewProgressiveSection> _mainBatchCompletedSections =
-      <OverviewProgressiveSection>{
-        OverviewProgressiveSection.summary,
-        OverviewProgressiveSection.paymentMix,
-        OverviewProgressiveSection.agentRanking,
-        OverviewProgressiveSection.userRanking,
-      };
-
-  /// Runs payment resumo + per-user ranking SQL (KPIs, mix, rankings).
+  /// Runs selective payment resumo and/or per-user ranking SQL.
   final bool runMainBatch;
+
+  /// When [runMainBatch] is true, issues payment resumo SQL.
+  final bool mainBatchIncludePaymentResumo;
+
+  /// When [runMainBatch] is true, issues per-user ranking SQL.
+  final bool mainBatchIncludeUserRanking;
 
   /// Section-batch SQL subsets (daily, monthly, weekday, lucratividade, …).
   final Set<OverviewProgressiveSection> sectionBatchSections;
 
   Set<OverviewProgressiveSection> completedAfterMainBatch() {
-    return runMainBatch
-        ? _mainBatchCompletedSections
-        : const <OverviewProgressiveSection>{};
+    if (!runMainBatch) {
+      return const <OverviewProgressiveSection>{};
+    }
+    final sections = <OverviewProgressiveSection>{
+      OverviewProgressiveSection.summary,
+    };
+    if (mainBatchIncludePaymentResumo) {
+      sections.add(OverviewProgressiveSection.paymentMix);
+    }
+    if (mainBatchIncludeUserRanking) {
+      sections.add(OverviewProgressiveSection.agentRanking);
+      sections.add(OverviewProgressiveSection.userRanking);
+    }
+    return sections;
   }
 
   Set<OverviewProgressiveSection> completedWhenFinal() {
@@ -90,4 +112,18 @@ final class OverviewSectionRequest {
 
   bool get isSectionBatchOnly =>
       !runMainBatch && sectionBatchSections.isNotEmpty;
+
+  int get mainBatchCommandCount {
+    if (!runMainBatch) {
+      return 0;
+    }
+    var count = 0;
+    if (mainBatchIncludePaymentResumo) {
+      count++;
+    }
+    if (mainBatchIncludeUserRanking) {
+      count++;
+    }
+    return count;
+  }
 }

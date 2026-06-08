@@ -400,6 +400,45 @@ void main() {
 
     expect(capturedExtra, equals(activeFilter));
   });
+
+  testWidgets('nav grid shows ready badge when section data is cached', (
+    tester,
+  ) async {
+    when(
+      () => overviewRepository.loadOverviewProgressively(
+        userId: any(named: 'userId'),
+        policy: any(named: 'policy'),
+        filter: any(named: 'filter'),
+        rowLabels: any(named: 'rowLabels'),
+        cancelScope: any(named: 'cancelScope'),
+        sectionRequest: any(named: 'sectionRequest'),
+      ),
+    ).thenAnswer(
+      (_) => Stream<AppResult<OverviewProgressiveSnapshot>>.value(
+        Success<OverviewProgressiveSnapshot, AppFailure>(
+          _snapshot(_overview()),
+        ),
+      ),
+    );
+    unawaited(overviewController.loadOverview(userId: 'user-1'));
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: ChangeNotifierProvider<OverviewController>.value(
+          value: overviewController,
+          child: const Scaffold(body: OverviewChartNavGrid()),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.byIcon(Icons.check_circle_outline), findsNWidgets(6));
+  });
 }
 
 OverviewProgressiveSnapshot _snapshot(Overview overview) {

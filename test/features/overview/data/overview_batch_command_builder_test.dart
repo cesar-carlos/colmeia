@@ -52,6 +52,34 @@ void main() {
       check(batch.commands[0].namedParams['dataVendaFim']).equals('2026-04-30');
     });
 
+    test('buildMainCommands can omit payment resumo for slim home', () {
+      final batch = builder.buildMainCommands(
+        periodStart: periodStart,
+        periodEnd: periodEnd,
+        includePaymentResumo: false,
+        includeUserRanking: true,
+      );
+
+      check(batch.commands.length).equals(1);
+      check(batch.commands.single.sql).equals(ResumoParcelaPorUsuarioSql.query);
+      check(batch.indexes.paymentResumo).isNull();
+      check(batch.indexes.userRanking).equals(0);
+    });
+
+    test('buildMainCommands can load payment resumo only for mix card', () {
+      final batch = builder.buildMainCommands(
+        periodStart: periodStart,
+        periodEnd: periodEnd,
+        includePaymentResumo: true,
+        includeUserRanking: false,
+      );
+
+      check(batch.commands.length).equals(1);
+      check(batch.commands.single.sql).equals(ResumoParcelaFormaPagamentoSqlV2.query);
+      check(batch.indexes.paymentResumo).equals(0);
+      check(batch.indexes.userRanking).isNull();
+    });
+
     test('buildCommands includes all sections when nothing is omitted', () {
       final batch = builder.buildCommands(
         periodStart: periodStart,

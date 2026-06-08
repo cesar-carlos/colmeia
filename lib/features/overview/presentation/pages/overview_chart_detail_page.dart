@@ -11,13 +11,18 @@ import 'package:colmeia/features/overview/presentation/controllers/overview_char
 import 'package:colmeia/features/overview/presentation/localization/overview_chart_card_descriptor_l10n.dart';
 import 'package:colmeia/features/overview/presentation/localization/overview_failure_l10n.dart';
 import 'package:colmeia/features/overview/presentation/localization/overview_load_labels_l10n.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_agent_filter_summary.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_chart_detail_content.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_chart_detail_loading_block.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_filter_period_chip.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart'
     show AppInlineErrorPanel, AppInlinePanelTone;
+import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -91,6 +96,8 @@ class _OverviewChartDetailPageState extends State<OverviewChartDetailPage> {
         errorMessage: controller.errorMessage,
         overview: controller.overview,
         section: controller.section,
+        activeFilter: controller.activeFilter,
+        availableAgents: controller.availableAgents,
       ),
       builder: (context, slice, _) {
         return RefreshIndicator(
@@ -111,6 +118,27 @@ class _OverviewChartDetailPageState extends State<OverviewChartDetailPage> {
                   subtitle: l10n.overviewHomeSubtitle,
                   sectionLabel: l10n.shellNavDashboardLabel,
                   onSectionLabelTap: () => context.goTo(AppRoute.dashboard),
+                ),
+                SizedBox(height: tokens.gapSm),
+                Wrap(
+                  spacing: tokens.gapSm,
+                  runSpacing: tokens.gapSm,
+                  children: <Widget>[
+                    OverviewFilterPeriodChip(
+                      data: OverviewFilterPeriodChipData.fromOverview(
+                        overview: slice.overview,
+                        filter: slice.activeFilter,
+                      ),
+                    ),
+                    AppTagChip(
+                      label: overviewAgentFilterSummaryLabel(
+                        filter: slice.activeFilter,
+                        availableAgents: slice.availableAgents,
+                        l10n: l10n,
+                      ),
+                      icon: Icons.storefront_outlined,
+                    ),
+                  ],
                 ),
                 SizedBox(height: tokens.sectionSpacing),
                 if (slice.errorMessage != null)
@@ -158,6 +186,8 @@ class _ChartDetailSlice {
     required this.errorMessage,
     required this.overview,
     required this.section,
+    required this.activeFilter,
+    required this.availableAgents,
   });
 
   final bool isLoading;
@@ -165,6 +195,8 @@ class _ChartDetailSlice {
   final String? errorMessage;
   final Overview? overview;
   final OverviewProgressiveSection? section;
+  final DashboardFilter activeFilter;
+  final List<DashboardAgentOption> availableAgents;
 
   @override
   bool operator ==(Object other) {
@@ -173,7 +205,9 @@ class _ChartDetailSlice {
         other.hasContent == hasContent &&
         other.errorMessage == errorMessage &&
         identical(other.overview, overview) &&
-        other.section == section;
+        other.section == section &&
+        other.activeFilter == activeFilter &&
+        listEquals(other.availableAgents, availableAgents);
   }
 
   @override
@@ -183,5 +217,7 @@ class _ChartDetailSlice {
     errorMessage,
     overview,
     section,
+    activeFilter,
+    Object.hashAll(availableAgents),
   );
 }

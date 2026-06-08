@@ -92,7 +92,6 @@ class OverviewRepositoryImpl implements OverviewRepository {
         OverviewProgressiveSection.agentRanking,
         OverviewProgressiveSection.userRanking,
         OverviewProgressiveSection.lucratividadePeriod,
-        OverviewProgressiveSection.lucratividadeMensal,
       };
 
   @override

@@ -933,6 +933,31 @@ class AppLocalizationsPt extends AppLocalizations {
   String get chartOpenFullscreenTooltip => 'Abrir gráfico em tela cheia';
 
   @override
+  String get chartShareTooltip => 'Compartilhar gráfico';
+
+  @override
+  String get chartShareFailed =>
+      'Não foi possível compartilhar o gráfico. Tente novamente.';
+
+  @override
+  String get chartSharePdfColumnDate => 'Data';
+
+  @override
+  String get chartSharePdfColumnWeekday => 'Dia da semana';
+
+  @override
+  String get chartSharePdfColumnAgent => 'Agente';
+
+  @override
+  String get chartSharePdfColumnRevenue => 'Receita';
+
+  @override
+  String get chartSharePdfColumnCost => 'Custo';
+
+  @override
+  String get chartSharePdfColumnProfit => 'Lucro';
+
+  @override
   String get chartCloseFullscreenTooltip => 'Fechar gráfico em tela cheia';
 
   @override
@@ -2770,6 +2795,19 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get overviewChartViewAgentFailureDetails => 'Ver agentes com falha';
+
+  @override
+  String get overviewChartNavLoadingSemanticsSuffix => 'carregando';
+
+  @override
+  String get overviewChartNotFoundTitle => 'Gráfico não encontrado';
+
+  @override
+  String get overviewChartNotFoundMessage =>
+      'Este gráfico não está disponível. Volte à visão geral para escolher outro.';
+
+  @override
+  String get overviewChartNotFoundBackAction => 'Voltar à visão geral';
 
   @override
   String get formsDemoDatePickersFormTitle => 'Date pickers no Form';
@@ -5306,6 +5344,31 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get chartOpenFullscreenTooltip => 'Abrir gráfico em tela cheia';
 
   @override
+  String get chartShareTooltip => 'Compartilhar gráfico';
+
+  @override
+  String get chartShareFailed =>
+      'Não foi possível compartilhar o gráfico. Tente novamente.';
+
+  @override
+  String get chartSharePdfColumnDate => 'Data';
+
+  @override
+  String get chartSharePdfColumnWeekday => 'Dia da semana';
+
+  @override
+  String get chartSharePdfColumnAgent => 'Agente';
+
+  @override
+  String get chartSharePdfColumnRevenue => 'Receita';
+
+  @override
+  String get chartSharePdfColumnCost => 'Custo';
+
+  @override
+  String get chartSharePdfColumnProfit => 'Lucro';
+
+  @override
   String get chartCloseFullscreenTooltip => 'Fechar gráfico em tela cheia';
 
   @override
@@ -7126,6 +7189,19 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get overviewChartViewAgentFailureDetails => 'Ver agentes com falha';
+
+  @override
+  String get overviewChartNavLoadingSemanticsSuffix => 'carregando';
+
+  @override
+  String get overviewChartNotFoundTitle => 'Gráfico não encontrado';
+
+  @override
+  String get overviewChartNotFoundMessage =>
+      'Este gráfico não está disponível. Volte à visão geral para escolher outro.';
+
+  @override
+  String get overviewChartNotFoundBackAction => 'Voltar à visão geral';
 
   @override
   String get formsDemoDatePickersFormTitle => 'Date pickers no Form';

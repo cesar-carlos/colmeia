@@ -389,6 +389,8 @@ class OverviewBatchLoader {
         ? _commandBuilder.buildMainCommands(
             periodStart: periodStart,
             periodEnd: periodEnd,
+            includePaymentResumo: sectionRequest.mainBatchIncludePaymentResumo,
+            includeUserRanking: sectionRequest.mainBatchIncludeUserRanking,
           )
         : null;
 
@@ -676,7 +678,7 @@ class OverviewBatchLoader {
       elapsedMs: elapsedMs,
       execution: execution,
       indexes: OverviewMainBatchCommandIndexes(
-        main: batch.indexes.main,
+        paymentResumo: batch.indexes.main,
         userRanking: batch.indexes.userRanking,
       ),
     );

@@ -11,8 +11,7 @@ import 'package:colmeia/features/overview/presentation/widgets/overview_rankings
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_motion_tokens.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:colmeia/shared/widgets/app_skeleton.dart';
-import 'package:colmeia/shared/widgets/charts/app_chart_fade_in.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_chart_staged_block.dart';
 import 'package:flutter/material.dart';
 
 /// Charts that remain embedded on the overview home (monthly trend + agent ranking).
@@ -67,14 +66,14 @@ class _OverviewHomeChartsBelowKpisState extends State<OverviewHomeChartsBelowKpi
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        _OverviewStagedChartBlock(
+        OverviewChartStagedBlock(
           visualState: _resolveVisualState(
             OverviewProgressiveSection.monthlyParcels,
           ),
           placeholderHeight: chartBlockHeight,
           showDelay: motion.dashboardStageDelay(0),
           loadingSemanticsLabel: l10n.overviewLoadingMonthlyParcelsSemantics,
-          builder: () => OverviewMonthlyParcelsComboChart(
+          child: OverviewMonthlyParcelsComboChart(
             l10n: l10n,
             points: overview.monthlyParcelTrend,
             loadFailed: overview.monthlyParcelTrendLoadFailed,
@@ -96,14 +95,14 @@ class _OverviewHomeChartsBelowKpisState extends State<OverviewHomeChartsBelowKpi
           ),
         ),
         SizedBox(height: tokens.sectionSpacing),
-        _OverviewStagedChartBlock(
+        OverviewChartStagedBlock(
           visualState: _resolveVisualState(
             OverviewProgressiveSection.agentRanking,
           ),
           placeholderHeight: chartBlockHeight,
           showDelay: motion.dashboardStageDelay(1),
           loadingSemanticsLabel: l10n.overviewLoadingRankingsSemantics,
-          builder: () => OverviewAgentRankingCard(
+          child: OverviewAgentRankingCard(
             l10n: l10n,
             agentRankings: agentRankings,
           ),
@@ -112,65 +111,14 @@ class _OverviewHomeChartsBelowKpisState extends State<OverviewHomeChartsBelowKpi
     );
   }
 
-  _OverviewStageVisualState _resolveVisualState(
+  OverviewChartStageVisualState _resolveVisualState(
     OverviewProgressiveSection section,
   ) {
     if (widget.showSkeleton) {
-      return _OverviewStageVisualState.skeletonWithChart;
+      return OverviewChartStageVisualState.skeletonWithChart;
     }
     return _sectionReady(section)
-        ? _OverviewStageVisualState.ready
-        : _OverviewStageVisualState.placeholder;
-  }
-}
-
-enum _OverviewStageVisualState {
-  skeletonWithChart,
-  placeholder,
-  ready,
-}
-
-class _OverviewStagedChartBlock extends StatelessWidget {
-  const _OverviewStagedChartBlock({
-    required this.visualState,
-    required this.placeholderHeight,
-    required this.showDelay,
-    required this.loadingSemanticsLabel,
-    required this.builder,
-  });
-
-  final _OverviewStageVisualState visualState;
-  final double placeholderHeight;
-  final Duration showDelay;
-  final String loadingSemanticsLabel;
-  final Widget Function() builder;
-
-  @override
-  Widget build(BuildContext context) {
-    switch (visualState) {
-      case _OverviewStageVisualState.skeletonWithChart:
-        return AppSkeleton(
-          enabled: true,
-          showDelay: showDelay,
-          loadingSemanticsLabel: loadingSemanticsLabel,
-          child: builder(),
-        );
-      case _OverviewStageVisualState.placeholder:
-        return AppSkeleton(
-          enabled: true,
-          showDelay: showDelay,
-          loadingSemanticsLabel: loadingSemanticsLabel,
-          child: SizedBox(height: placeholderHeight),
-        );
-      case _OverviewStageVisualState.ready:
-        return AppSkeleton(
-          enabled: false,
-          showDelay: showDelay,
-          loadingSemanticsLabel: loadingSemanticsLabel,
-          child: AppChartFadeIn(
-            child: RepaintBoundary(child: builder()),
-          ),
-        );
-    }
+        ? OverviewChartStageVisualState.ready
+        : OverviewChartStageVisualState.placeholder;
   }
 }

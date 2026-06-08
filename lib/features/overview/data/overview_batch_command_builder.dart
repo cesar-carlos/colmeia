@@ -52,12 +52,15 @@ final class OverviewBatchCommandIndexes {
 
 final class OverviewMainBatchCommandIndexes {
   const OverviewMainBatchCommandIndexes({
-    required this.main,
-    required this.userRanking,
+    this.paymentResumo,
+    this.userRanking,
   });
 
-  final int main;
-  final int userRanking;
+  final int? paymentResumo;
+  final int? userRanking;
+
+  /// Legacy alias for [paymentResumo].
+  int? get main => paymentResumo;
 }
 
 final class OverviewSectionBatchCommandIndexes {
@@ -112,13 +115,19 @@ final class OverviewSectionBatchCommands {
 final class OverviewBatchCommandBuilder {
   const OverviewBatchCommandBuilder();
 
-  /// Main phased batch always issues payment resumo + per-user ranking.
+  /// Full main phased batch issues payment resumo + per-user ranking.
   static const int mainBatchCommandCount = 2;
 
   OverviewMainBatchCommands buildMainCommands({
     required DateTime periodStart,
     required DateTime periodEnd,
+    bool includePaymentResumo = true,
+    bool includeUserRanking = true,
   }) {
+    assert(
+      includePaymentResumo || includeUserRanking,
+      'main batch must include at least one SQL command',
+    );
     final commands = <AgentSqlExecuteBatchCommand>[];
     final parcelPeriodParams = _parcelPeriodSqlParamsFromPeriodo(
       ResumoParcelaFormaPagamentoFilter(
@@ -126,26 +135,32 @@ final class OverviewBatchCommandBuilder {
         dataVendaFim: periodEnd,
       ),
     );
-    final main = commands.length;
-    commands.add(
-      AgentSqlExecuteBatchCommand(
-        sql: ResumoParcelaFormaPagamentoSqlV2.query,
-        namedParams: parcelPeriodParams,
-        executionOrder: main,
-      ),
-    );
-    final userRanking = commands.length;
-    commands.add(
-      AgentSqlExecuteBatchCommand(
-        sql: ResumoParcelaPorUsuarioSql.query,
-        namedParams: parcelPeriodParams,
-        executionOrder: userRanking,
-      ),
-    );
+    int? paymentResumo;
+    if (includePaymentResumo) {
+      paymentResumo = commands.length;
+      commands.add(
+        AgentSqlExecuteBatchCommand(
+          sql: ResumoParcelaFormaPagamentoSqlV2.query,
+          namedParams: parcelPeriodParams,
+          executionOrder: paymentResumo,
+        ),
+      );
+    }
+    int? userRanking;
+    if (includeUserRanking) {
+      userRanking = commands.length;
+      commands.add(
+        AgentSqlExecuteBatchCommand(
+          sql: ResumoParcelaPorUsuarioSql.query,
+          namedParams: parcelPeriodParams,
+          executionOrder: userRanking,
+        ),
+      );
+    }
     return OverviewMainBatchCommands(
       commands: commands,
       indexes: OverviewMainBatchCommandIndexes(
-        main: main,
+        paymentResumo: paymentResumo,
         userRanking: userRanking,
       ),
     );

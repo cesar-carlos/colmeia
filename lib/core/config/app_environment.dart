@@ -243,6 +243,18 @@ abstract final class AppEnvironment {
         fallback: defaultAgentQueryFactsPrefetchDelayMs,
       )._atLeastOrFallback(0, defaultAgentQueryFactsPrefetchDelayMs);
 
+  static const int defaultOverviewSectionPrefetchDelayMs = 2000;
+
+  /// Delay before post-home chart-section prefetch. `0` disables the delay.
+  static int get overviewSectionPrefetchDelayMs =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.overviewSectionPrefetchDelayMs,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.overviewSectionPrefetchDelayMs),
+        fallback: defaultOverviewSectionPrefetchDelayMs,
+      )._atLeastOrFallback(0, defaultOverviewSectionPrefetchDelayMs);
+
   /// Bridge timeout for sales live map period sales and catalog SQL.
   ///
   /// Falls back to [agentSqlBridgeMediumTimeoutMs] when unset.

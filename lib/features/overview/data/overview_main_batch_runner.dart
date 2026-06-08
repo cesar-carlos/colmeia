@@ -102,12 +102,12 @@ final class OverviewMainBatchRunner {
       for (final item in execution.items) item.index: item,
     };
 
-    final main = OverviewSqlBatchItemRowsMapper.mapRowsForIndex(
+    final main = OverviewSqlBatchItemRowsMapper.mapRowsForOptionalIndex(
       byIndex,
-      indexes.main,
+      indexes.paymentResumo,
       (row) => ResumoParcelaFormaPagamentoRowModelV2.fromMap(row).toEntity(),
     );
-    final userRanking = OverviewSqlBatchItemRowsMapper.mapRowsForIndex(
+    final userRanking = OverviewSqlBatchItemRowsMapper.mapRowsForOptionalIndex(
       byIndex,
       indexes.userRanking,
       (row) => ResumoParcelaPorUsuarioRowModel.fromMap(row).toEntity(),

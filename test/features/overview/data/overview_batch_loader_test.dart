@@ -114,9 +114,6 @@ void main() {
         check(targetResult.dailyRows.single.valorTotalDiarioVenda).equals(88);
         check(targetResult.weekdayUserRows.single.nomeUsuario).equals('Caixa');
         check(targetResult.lucratividadeRows.single.valorTotalItem).equals(140);
-        check(targetResult.lucratividadeMensalRows.single.anoMes).equals(
-          '2026/04',
-        );
         check(batch.mainResumoReport.participants.single.rows.length).equals(1);
 
         verify(
@@ -156,7 +153,7 @@ void main() {
         check(
           sectionRequest.commands.map((command) => command.executionOrder),
         ).deepEquals(
-          <int>[0, 1, 2, 3, 4, 5],
+          <int>[0, 1, 2, 3, 4],
         );
 
         final body = const AgentSqlExecuteBatchRequestToBridgeBody().build(
@@ -169,7 +166,7 @@ void main() {
         final options = params['options']! as Map<String, Object?>;
         check(options['max_parallel_read_only_batch_items']).equals(4);
         final commands = params['commands']! as List<Object?>;
-        check(commands.length).equals(6);
+        check(commands.length).equals(5);
         for (final rawCommand in commands) {
           final batchCommand = rawCommand! as Map<String, Object?>;
           final sql = batchCommand['sql']! as String;
@@ -549,7 +546,7 @@ void main() {
           () => agentQueriesRepository.executeSqlBatch(captureAny()),
         ).captured.cast<AgentSqlExecuteBatchRequest>();
         check(requests.length).equals(1);
-        check(requests.single.commands.length).equals(8);
+        check(requests.single.commands.length).equals(7);
       },
     );
 

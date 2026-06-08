@@ -185,7 +185,7 @@ void main() {
         final finalSnapshot = snapshots.last.getOrThrow();
         check(finalSnapshot.isFinal).isTrue();
         check(finalSnapshot.pendingSections).isEmpty();
-        check(finalSnapshot.completedSections.length).equals(10);
+        check(finalSnapshot.completedSections.length).equals(9);
 
         verify(
           () => batchTargetResolver.resolve(
@@ -200,7 +200,7 @@ void main() {
         check(capturedRequests[0].agentId).equals('agent-1');
         check(capturedRequests[0].clientToken).equals('token-1');
         check(capturedRequests[0].commands.length).equals(2);
-        check(capturedRequests[1].commands.length).equals(6);
+        check(capturedRequests[1].commands.length).equals(5);
         check(capturedRequests[0].useRelay).isTrue();
         check(
           capturedRequests[0].options?.maxParallelReadOnlyBatchItems,
@@ -271,14 +271,14 @@ void main() {
         final finalSnapshot = snapshots.last.getOrThrow();
         check(finalSnapshot.isFinal).isTrue();
         check(finalSnapshot.pendingSections).isEmpty();
-        check(finalSnapshot.completedSections.length).equals(10);
+        check(finalSnapshot.completedSections.length).equals(9);
 
         final capturedRequests = verify(
           () => batchAgentQueriesRepository.executeSqlBatch(captureAny()),
         ).captured.cast<AgentSqlExecuteBatchRequest>().toList(growable: false);
         check(capturedRequests.length).equals(2);
         check(capturedRequests[0].commands.length).equals(2);
-        check(capturedRequests[1].commands.length).equals(6);
+        check(capturedRequests[1].commands.length).equals(5);
       },
     );
 

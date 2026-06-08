@@ -761,6 +761,49 @@ void main() {
       ).equals('Pix');
     });
 
+    test('chartNavReadySections merges home load with shell cache', () async {
+      final shellCache = OverviewShellCache();
+      final repository = _QueuedOverviewRepository(
+        <Future<AppResult<Overview>>>[
+          Future<AppResult<Overview>>.value(
+            Success<Overview, AppFailure>(_overview('Pix')),
+          ),
+        ],
+      );
+      final controller = OverviewController(
+        LoadOverviewUseCase(repository),
+        shellCache: shellCache,
+      );
+
+      await controller.loadOverview(userId: 'demo-user');
+
+      check(
+        controller.chartNavReadySections,
+      ).contains(OverviewProgressiveSection.userRanking);
+      check(
+        controller.chartNavReadySections.contains(
+          OverviewProgressiveSection.paymentMix,
+        ),
+      ).isFalse();
+
+      final signature = overviewLoadSignature(
+        userId: 'demo-user',
+        filter: controller.activeFilter,
+      );
+      shellCache.mergePublish(
+        signature: signature,
+        detailOverview: Overview.empty(),
+        section: OverviewProgressiveSection.dailySales,
+        addedSections: <OverviewProgressiveSection>{
+          OverviewProgressiveSection.dailySales,
+        },
+      );
+
+      check(
+        controller.chartNavReadySections,
+      ).contains(OverviewProgressiveSection.dailySales);
+    });
+
     test(
       'refreshOverview invalidates shell cache before force refresh',
       () async {
@@ -920,16 +963,15 @@ class _PendingOverviewRepository implements OverviewRepository {
     AgentQueriesCancelScope? cancelScope,
     OverviewSectionRequest sectionRequest = OverviewSectionRequest.full,
   }) async* {
-    yield _asSnapshot(
-      await loadOverview(
-        userId: userId,
-        policy: policy,
-        filter: filter,
-        rowLabels: rowLabels,
-        cancelScope: cancelScope,
-        sectionRequest: sectionRequest,
-      ),
+    final result = await loadOverview(
+      userId: userId,
+      policy: policy,
+      filter: filter,
+      rowLabels: rowLabels,
+      cancelScope: cancelScope,
+      sectionRequest: sectionRequest,
     );
+    yield _asSnapshot(result, sectionRequest: sectionRequest);
   }
 }
 
@@ -962,29 +1004,27 @@ class _QueuedOverviewRepository implements OverviewRepository {
     AgentQueriesCancelScope? cancelScope,
     OverviewSectionRequest sectionRequest = OverviewSectionRequest.full,
   }) async* {
-    yield _asSnapshot(
-      await loadOverview(
-        userId: userId,
-        policy: policy,
-        filter: filter,
-        rowLabels: rowLabels,
-        cancelScope: cancelScope,
-        sectionRequest: sectionRequest,
-      ),
+    final result = await loadOverview(
+      userId: userId,
+      policy: policy,
+      filter: filter,
+      rowLabels: rowLabels,
+      cancelScope: cancelScope,
+      sectionRequest: sectionRequest,
     );
+    yield _asSnapshot(result, sectionRequest: sectionRequest);
   }
 }
 
 AppResult<OverviewProgressiveSnapshot> _asSnapshot(
-  AppResult<Overview> result,
-) {
+  AppResult<Overview> result, {
+  OverviewSectionRequest sectionRequest = OverviewSectionRequest.full,
+}) {
   return result.fold(
     (overview) => Success<OverviewProgressiveSnapshot, AppFailure>(
       OverviewProgressiveSnapshot(
         overview: overview,
-        completedSections: Set<OverviewProgressiveSection>.of(
-          OverviewProgressiveSection.values,
-        ),
+        completedSections: sectionRequest.completedWhenFinal(),
         pendingSections: const <OverviewProgressiveSection>{},
         isFinal: true,
       ),

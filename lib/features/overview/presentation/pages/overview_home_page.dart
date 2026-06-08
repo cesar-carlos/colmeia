@@ -4,7 +4,6 @@ import 'package:colmeia/app/preferences/app_user_experience_preferences_controll
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
-import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
@@ -15,6 +14,7 @@ import 'package:colmeia/features/overview/presentation/localization/overview_fai
 import 'package:colmeia/features/overview/presentation/localization/overview_load_labels_l10n.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_auto_loader.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_chart_nav_grid.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_filter_period_chip.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_filter_bar.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_home_alerts_section.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_home_charts_below_kpis.dart';
@@ -24,7 +24,6 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
-import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -361,13 +360,22 @@ class _OverviewHomeIntro extends StatelessWidget {
   Widget build(BuildContext context) {
     return Selector2<CurrentUserContextController, OverviewController,
         _IntroSlice>(
-      selector: (_, userContext, overviewController) => _IntroSlice(
-        fullName: userContext.userScope.name,
-        period: _PeriodTagSlice.fromController(overviewController),
-      ),
+      selector: (_, userContext, overviewController) {
+        final overview = overviewController.overview;
+        final showSkeleton =
+            overviewController.isLoadingInitial && overview == null;
+        return _IntroSlice(
+          fullName: userContext.userScope.name,
+          period: showSkeleton || overview == null
+              ? null
+              : OverviewFilterPeriodChipData.fromOverview(
+                  overview: overview,
+                  filter: overviewController.activeFilter,
+                ),
+        );
+      },
       builder: (context, slice, _) {
         final greetingName = _greetingFirstName(slice.fullName, l10n);
-        final periodLabel = slice.period?.label(l10n);
         return AppShellPageIntro(
           eyebrow: l10n.overviewGreetingEyebrow(greetingName),
           sectionLabel: storeScoped ? l10n.shellNavDashboardLabel : null,
@@ -375,12 +383,7 @@ class _OverviewHomeIntro extends StatelessWidget {
               ? () => context.goTo(AppRoute.dashboard)
               : null,
           subtitle: l10n.overviewHomeSubtitle,
-          footer: periodLabel != null
-              ? AppTagChip(
-                  label: periodLabel,
-                  icon: Icons.calendar_today_outlined,
-                )
-              : null,
+          footer: OverviewFilterPeriodChip(data: slice.period),
         );
       },
     );
@@ -392,7 +395,7 @@ class _IntroSlice {
   const _IntroSlice({required this.fullName, required this.period});
 
   final String fullName;
-  final _PeriodTagSlice? period;
+  final OverviewFilterPeriodChipData? period;
 
   @override
   bool operator ==(Object other) =>
@@ -403,64 +406,6 @@ class _IntroSlice {
 
   @override
   int get hashCode => Object.hash(fullName, period);
-}
-
-@immutable
-class _PeriodTagSlice {
-  const _PeriodTagSlice({
-    required this.startYmd,
-    required this.endYmd,
-    required this.hasCustomRange,
-  });
-
-  final int startYmd;
-  final int endYmd;
-  final bool hasCustomRange;
-
-  static int _packYmd(DateTime d) => d.year * 10000 + d.month * 100 + d.day;
-
-  static _PeriodTagSlice? fromController(OverviewController c) {
-    final overview = c.overview;
-    final showSkeleton = c.isLoadingInitial && overview == null;
-    if (overview == null || showSkeleton) {
-      return null;
-    }
-    return _PeriodTagSlice(
-      startYmd: _packYmd(overview.periodStart),
-      endYmd: _packYmd(overview.periodEnd),
-      hasCustomRange: c.activeFilter.referenceRange != null,
-    );
-  }
-
-  String label(AppLocalizations l10n) {
-    final start = DateTime(
-      startYmd ~/ 10000,
-      (startYmd % 10000) ~/ 100,
-      startYmd % 100,
-    );
-    final end = DateTime(
-      endYmd ~/ 10000,
-      (endYmd % 10000) ~/ 100,
-      endYmd % 100,
-    );
-    final dates =
-        '${AppBrFormatters.shortDate(start)} – ${AppBrFormatters.shortDate(end)}';
-    if (hasCustomRange) {
-      return '${l10n.overviewPeriodTagCustomRangePrefix}: $dates';
-    }
-    return dates;
-  }
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is _PeriodTagSlice &&
-          startYmd == other.startYmd &&
-          endYmd == other.endYmd &&
-          hasCustomRange == other.hasCustomRange);
-
-  @override
-  int get hashCode => Object.hash(startYmd, endYmd, hasCustomRange);
 }
 
 @immutable

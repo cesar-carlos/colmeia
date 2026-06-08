@@ -68,6 +68,10 @@ abstract final class EnvKeys {
   static const String agentQueryFactsPrefetchDelayMs =
       'AGENT_QUERY_FACTS_PREFETCH_DELAY_MS';
 
+  /// Delay (ms) after overview home load before chart-section prefetch starts.
+  static const String overviewSectionPrefetchDelayMs =
+      'OVERVIEW_SECTION_PREFETCH_DELAY_MS';
+
   /// Sales live map across-agent wave cap. `0` mirrors
   /// [agentQueryMergeAllConcurrency]. Unset defaults to 64 (overview policy).
   static const String salesLiveMapMergeWaveSize =

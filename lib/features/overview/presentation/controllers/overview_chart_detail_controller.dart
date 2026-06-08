@@ -68,6 +68,9 @@ class OverviewChartDetailController extends ChangeNotifier {
   AppFailure? get loadFailure => _loadFailure;
   bool get hasContent => _overview != null;
   DashboardFilter get activeFilter => _activeFilter;
+
+  List<DashboardAgentOption> get availableAgents =>
+      _shellCache.latestEntry?.availableAgents ?? const <DashboardAgentOption>[];
   OverviewChartCardDescriptor? get descriptor => _descriptor;
   bool get isOnRetryCooldown => !_retryAfterGate.isOpen;
 

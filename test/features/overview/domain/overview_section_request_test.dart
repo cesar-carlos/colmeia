@@ -4,10 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('OverviewSectionRequest', () {
-    test('home runs main batch and monthly section batch only', () {
+    test('home runs slim main batch and monthly section batch only', () {
       const request = OverviewSectionRequest.home;
 
       expect(request.runMainBatch, isTrue);
+      expect(request.mainBatchIncludePaymentResumo, isFalse);
+      expect(request.mainBatchIncludeUserRanking, isTrue);
       expect(
         request.sectionBatchSections,
         equals(<OverviewProgressiveSection>{
@@ -16,9 +18,10 @@ void main() {
       );
       expect(request.isMainBatchOnly, isFalse);
       expect(request.isSectionBatchOnly, isFalse);
+      expect(request.mainBatchCommandCount, 1);
     });
 
-    test('full includes all section-batch sections', () {
+    test('full excludes lucratividadeMensal section batch', () {
       const request = OverviewSectionRequest.full;
 
       expect(request.runMainBatch, isTrue);
@@ -28,8 +31,11 @@ void main() {
         OverviewProgressiveSection.weekdaySales,
         OverviewProgressiveSection.weekdayUserSales,
         OverviewProgressiveSection.lucratividadePeriod,
-        OverviewProgressiveSection.lucratividadeMensal,
       }));
+      expect(
+        request.sectionBatchSections,
+        isNot(contains(OverviewProgressiveSection.lucratividadeMensal)),
+      );
       expect(request.isMainBatchOnly, isFalse);
     });
 
@@ -48,31 +54,36 @@ void main() {
       );
     });
 
-    test('forChartSection(paymentMix) is main-batch only', () {
+    test('forChartSection(paymentMix) loads payment resumo only', () {
       final request = OverviewSectionRequest.forChartSection(
         OverviewProgressiveSection.paymentMix,
       );
 
       expect(request.runMainBatch, isTrue);
+      expect(request.mainBatchIncludePaymentResumo, isTrue);
+      expect(request.mainBatchIncludeUserRanking, isFalse);
       expect(request.isMainBatchOnly, isTrue);
       expect(request.sectionBatchSections, isEmpty);
+      expect(request.mainBatchCommandCount, 1);
     });
 
-    test('forChartSection(userRanking) is main-batch only', () {
+    test('forChartSection(userRanking) loads user ranking only', () {
       final request = OverviewSectionRequest.forChartSection(
         OverviewProgressiveSection.userRanking,
       );
 
       expect(request.runMainBatch, isTrue);
+      expect(request.mainBatchIncludePaymentResumo, isFalse);
+      expect(request.mainBatchIncludeUserRanking, isTrue);
       expect(request.isMainBatchOnly, isTrue);
+      expect(request.mainBatchCommandCount, 1);
     });
 
-    test('completedWhenFinal(home) includes main and monthly sections', () {
+    test('completedWhenFinal(home) excludes payment mix', () {
       expect(
         OverviewSectionRequest.home.completedWhenFinal(),
         equals(<OverviewProgressiveSection>{
           OverviewProgressiveSection.summary,
-          OverviewProgressiveSection.paymentMix,
           OverviewProgressiveSection.agentRanking,
           OverviewProgressiveSection.userRanking,
           OverviewProgressiveSection.monthlyParcels,
@@ -99,6 +110,20 @@ void main() {
       );
 
       expect(request.completedAfterMainBatch(), isEmpty);
+    });
+
+    test('completedAfterMainBatch(paymentMix) marks payment and summary', () {
+      final request = OverviewSectionRequest.forChartSection(
+        OverviewProgressiveSection.paymentMix,
+      );
+
+      expect(
+        request.completedAfterMainBatch(),
+        equals(<OverviewProgressiveSection>{
+          OverviewProgressiveSection.summary,
+          OverviewProgressiveSection.paymentMix,
+        }),
+      );
     });
   });
 }

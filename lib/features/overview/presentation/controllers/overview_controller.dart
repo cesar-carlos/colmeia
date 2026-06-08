@@ -1,5 +1,5 @@
 import 'dart:async';
-
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
@@ -18,6 +18,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_progressive_s
 import 'package:colmeia/features/overview/domain/entities/overview_section_request.dart';
 import 'package:colmeia/features/overview/domain/overview_load_signature.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_load_session.dart';
+import 'package:colmeia/features/overview/presentation/controllers/overview_prefetch_session.dart';
 import 'package:colmeia/features/overview/presentation/overview_agent_alert_names_projection.dart';
 import 'package:colmeia/features/overview/presentation/overview_available_agents_assembler.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
@@ -53,15 +54,25 @@ class OverviewController extends ChangeNotifier {
     _retryAfterGate.addListener(_notifyListenersIfAlive);
   }
 
-  // Lazy sections not loaded by OverviewSectionRequest.home, ordered by
+  // Lazy sections not loaded by [OverviewSectionRequest.home], ordered by
   // likelihood of being opened first so the most useful data warms earliest.
-  static const List<OverviewProgressiveSection> _prefetchSections =
+  static const List<OverviewProgressiveSection> _prefetchSectionsWide =
       <OverviewProgressiveSection>[
+    OverviewProgressiveSection.paymentMix,
+    OverviewProgressiveSection.userRanking,
     OverviewProgressiveSection.dailySales,
     OverviewProgressiveSection.weekdaySales,
     OverviewProgressiveSection.weekdayUserSales,
     OverviewProgressiveSection.lucratividadePeriod,
   ];
+
+  static const List<OverviewProgressiveSection> _prefetchSectionsNarrow =
+      <OverviewProgressiveSection>[
+    OverviewProgressiveSection.dailySales,
+    OverviewProgressiveSection.weekdaySales,
+  ];
+
+  static const double _narrowPrefetchViewportWidth = 600;
 
   final LoadOverviewUseCase _loadOverviewUseCase;
   final LoadOverviewSectionsUseCase? _loadSectionsUseCase;
@@ -92,6 +103,7 @@ class OverviewController extends ChangeNotifier {
   /// loaded signatures, SQL cancel scope) so the controller methods read
   /// like orchestration steps instead of bookkeeping mutations.
   final OverviewLoadSession _session;
+  final OverviewPrefetchSession _prefetchSession = OverviewPrefetchSession();
 
   Overview? _overview;
   bool _isLoadingInitial = false;
@@ -135,6 +147,7 @@ class OverviewController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _prefetchSession.dispose();
     _session.dispose();
     _retryAfterGate.removeListener(_notifyListenersIfAlive);
     if (_ownsRetryAfterGate) {
@@ -183,6 +196,21 @@ class OverviewController extends ChangeNotifier {
   String? get errorDiagnosticBody => _errorDiagnosticBody;
   Set<OverviewProgressiveSection> get completedOverviewSections =>
       _completedOverviewSections;
+
+  /// Chart nav cards whose SQL data is already in the home load or shell cache.
+  Set<OverviewProgressiveSection> get chartNavReadySections {
+    final ready = Set<OverviewProgressiveSection>.from(
+      _completedOverviewSections,
+    );
+    final signature = _session.loadedSignature;
+    if (signature != null) {
+      final cached = _shellCache?.read(signature);
+      if (cached != null) {
+        ready.addAll(cached.completedSections);
+      }
+    }
+    return Set<OverviewProgressiveSection>.unmodifiable(ready);
+  }
 
   /// Read-only access to the cool-down gate so the home page can render
   /// a "Retry in Ns" countdown.
@@ -438,6 +466,7 @@ class OverviewController extends ChangeNotifier {
       _notifyListenersIfAlive();
     }
     final signature = _signatureFor(userId: userId);
+    _prefetchSession.cancel();
     final generation = _session.begin(signature);
     final sqlCancelScope = _session.cancelScope!;
 
@@ -737,19 +766,45 @@ class OverviewController extends ChangeNotifier {
   }) {
     final useCase = _loadSectionsUseCase;
     final cache = _shellCache;
-    if (useCase == null || cache == null) {
+    if (useCase == null || cache == null || isOnRetryCooldown) {
       return;
     }
+    final prefetchGeneration = _prefetchSession.begin();
     unawaited(
       _prefetchSectionsInBackground(
         useCase: useCase,
         cache: cache,
         userId: userId,
         signature: signature,
-        generation: generation,
+        loadGeneration: generation,
+        prefetchGeneration: prefetchGeneration,
         rowLabels: rowLabels,
       ),
     );
+  }
+
+  List<OverviewProgressiveSection> _prefetchSectionsForViewport() {
+    return _isNarrowPrefetchViewport()
+        ? _prefetchSectionsNarrow
+        : _prefetchSectionsWide;
+  }
+
+  bool _isNarrowPrefetchViewport() {
+    final view = PlatformDispatcher.instance.implicitView;
+    if (view == null) {
+      return false;
+    }
+    final width = view.physicalSize.width / view.devicePixelRatio;
+    return width < _narrowPrefetchViewportWidth;
+  }
+
+  bool _isPrefetchStale({
+    required int loadGeneration,
+    required int prefetchGeneration,
+  }) {
+    return _disposed ||
+        _isOverviewLoadStale(loadGeneration) ||
+        _prefetchSession.isStale(prefetchGeneration);
   }
 
   Future<void> _prefetchSectionsInBackground({
@@ -757,19 +812,39 @@ class OverviewController extends ChangeNotifier {
     required OverviewShellCache cache,
     required String userId,
     required String signature,
-    required int generation,
+    required int loadGeneration,
+    required int prefetchGeneration,
     required OverviewLoadLabels rowLabels,
   }) async {
+    final sections = _prefetchSectionsForViewport();
+    final delayMs = AppEnvironment.overviewSectionPrefetchDelayMs;
+    if (delayMs > 0) {
+      await Future<void>.delayed(Duration(milliseconds: delayMs));
+      if (_isPrefetchStale(
+        loadGeneration: loadGeneration,
+        prefetchGeneration: prefetchGeneration,
+      )) {
+        return;
+      }
+    }
+
     AppLogger.debug(
       'Overview section prefetch started',
       context: <String, Object?>{
         'operation': 'prefetchOverviewSections',
         'userId': userId,
-        'sections': _prefetchSections.map((s) => s.name).toList(),
+        'sections': sections.map((s) => s.name).toList(),
       },
     );
-    for (final section in _prefetchSections) {
-      if (_isOverviewLoadStale(generation) || _disposed) {
+    final cancelScope = _prefetchSession.cancelScope;
+    for (final section in sections) {
+      if (_isPrefetchStale(
+        loadGeneration: loadGeneration,
+        prefetchGeneration: prefetchGeneration,
+      )) {
+        return;
+      }
+      if (isOnRetryCooldown || isLoading) {
         return;
       }
       final entry = cache.read(signature);
@@ -786,25 +861,32 @@ class OverviewController extends ChangeNotifier {
         sectionRequest: request,
         filter: _activeFilter,
         rowLabels: rowLabels,
+        cancelScope: cancelScope,
       )) {
-        if (_isOverviewLoadStale(generation) || _disposed) {
+        if (_isPrefetchStale(
+          loadGeneration: loadGeneration,
+          prefetchGeneration: prefetchGeneration,
+        )) {
           return;
         }
         final snapshot = result.getOrNull();
-        if (snapshot != null && snapshot.isFinal && request.isSectionBatchOnly) {
-          cache.mergePublish(
-            signature: signature,
-            detailOverview: snapshot.overview,
-            section: section,
-            addedSections: request.completedWhenFinal(),
-          );
-          AppLogger.debug(
-            'Overview section prefetch warmed',
-            context: <String, Object?>{
-              'operation': 'prefetchOverviewSections',
-              'section': section.name,
-            },
-          );
+        if (snapshot != null && snapshot.isFinal) {
+          if (request.isSectionBatchOnly || request.runMainBatch) {
+            cache.mergePublish(
+              signature: signature,
+              detailOverview: snapshot.overview,
+              section: section,
+              addedSections: request.completedWhenFinal(),
+            );
+            _notifyListenersIfAlive();
+            AppLogger.debug(
+              'Overview section prefetch warmed',
+              context: <String, Object?>{
+                'operation': 'prefetchOverviewSections',
+                'section': section.name,
+              },
+            );
+          }
         }
       }
     }

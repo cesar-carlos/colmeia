@@ -10,10 +10,9 @@ import 'package:colmeia/features/overview/domain/overview_chart_card_descriptor.
 import 'package:colmeia/features/overview/presentation/controllers/overview_chart_detail_controller.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_controller.dart';
 import 'package:colmeia/features/overview/presentation/pages/overview_chart_detail_page.dart';
+import 'package:colmeia/features/overview/presentation/pages/overview_chart_not_found_page.dart';
 import 'package:colmeia/features/overview/presentation/pages/overview_home_page.dart';
-import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
-import 'package:colmeia/shared/widgets/navigation/app_shell_under_construction_page.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -84,11 +83,8 @@ List<RouteBase> buildOverviewRoutes() {
       path: AppRoute.dashboardChart.path,
       builder: (context, state) {
         final chartId = state.pathParameters['chartId'];
-        final l10n = AppLocalizations.of(context);
         if (chartId == null || overviewChartCardById(chartId) == null) {
-          return AppShellUnderConstructionPage(
-            sectionTitle: l10n.shellNavDashboardLabel,
-          );
+          return const OverviewChartNotFoundPage();
         }
         final initialFilter = state.extra is DashboardFilter
             ? state.extra! as DashboardFilter

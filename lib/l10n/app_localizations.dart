@@ -1576,6 +1576,54 @@ abstract class AppLocalizations {
   /// **'Open chart in fullscreen'**
   String get chartOpenFullscreenTooltip;
 
+  /// Tooltip and semantics label for the chart share action button.
+  ///
+  /// In en, this message translates to:
+  /// **'Share chart'**
+  String get chartShareTooltip;
+
+  /// SnackBar shown when chart PDF export or platform share fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not share chart. Try again.'**
+  String get chartShareFailed;
+
+  /// PDF table column header for chart share exports.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get chartSharePdfColumnDate;
+
+  /// PDF table column header for weekday in chart share exports.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekday'**
+  String get chartSharePdfColumnWeekday;
+
+  /// PDF table column header for agent/category in chart share exports.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent'**
+  String get chartSharePdfColumnAgent;
+
+  /// PDF table column header for revenue in chart share exports.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue'**
+  String get chartSharePdfColumnRevenue;
+
+  /// PDF table column header for cost in chart share exports.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost'**
+  String get chartSharePdfColumnCost;
+
+  /// PDF table column header for profit in chart share exports.
+  ///
+  /// In en, this message translates to:
+  /// **'Profit'**
+  String get chartSharePdfColumnProfit;
+
   /// Tooltip for the close action in the fullscreen chart scaffold.
   ///
   /// In en, this message translates to:
@@ -4467,6 +4515,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View affected agents'**
   String get overviewChartViewAgentFailureDetails;
+
+  /// No description provided for @overviewChartNavLoadingSemanticsSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'loading'**
+  String get overviewChartNavLoadingSemanticsSuffix;
+
+  /// No description provided for @overviewChartNotFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chart not found'**
+  String get overviewChartNotFoundTitle;
+
+  /// No description provided for @overviewChartNotFoundMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This chart is not available. Return to the overview to choose another.'**
+  String get overviewChartNotFoundMessage;
+
+  /// No description provided for @overviewChartNotFoundBackAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to overview'**
+  String get overviewChartNotFoundBackAction;
 
   /// No description provided for @formsDemoDatePickersFormTitle.
   ///

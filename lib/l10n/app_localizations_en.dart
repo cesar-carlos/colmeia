@@ -912,6 +912,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chartOpenFullscreenTooltip => 'Open chart in fullscreen';
 
   @override
+  String get chartShareTooltip => 'Share chart';
+
+  @override
+  String get chartShareFailed => 'Could not share chart. Try again.';
+
+  @override
+  String get chartSharePdfColumnDate => 'Date';
+
+  @override
+  String get chartSharePdfColumnWeekday => 'Weekday';
+
+  @override
+  String get chartSharePdfColumnAgent => 'Agent';
+
+  @override
+  String get chartSharePdfColumnRevenue => 'Revenue';
+
+  @override
+  String get chartSharePdfColumnCost => 'Cost';
+
+  @override
+  String get chartSharePdfColumnProfit => 'Profit';
+
+  @override
   String get chartCloseFullscreenTooltip => 'Close fullscreen chart';
 
   @override
@@ -2727,6 +2751,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overviewChartViewAgentFailureDetails => 'View affected agents';
+
+  @override
+  String get overviewChartNavLoadingSemanticsSuffix => 'loading';
+
+  @override
+  String get overviewChartNotFoundTitle => 'Chart not found';
+
+  @override
+  String get overviewChartNotFoundMessage =>
+      'This chart is not available. Return to the overview to choose another.';
+
+  @override
+  String get overviewChartNotFoundBackAction => 'Back to overview';
 
   @override
   String get formsDemoDatePickersFormTitle => 'Date pickers in Form';
