@@ -113,7 +113,7 @@ void main() {
 
   group('OverviewRepositoryImpl', () {
     test(
-      'batch load resolves targets once and emits final snapshot with merged batch',
+      'batch load resolves targets once and emits phased snapshots with merge flag',
       () async {
         dotenv.loadFromString(
           envString:
@@ -178,8 +178,11 @@ void main() {
             )
             .toList();
 
-        check(snapshots.length).equals(1);
-        final finalSnapshot = snapshots.single.getOrThrow();
+        check(snapshots.length).equals(2);
+        final summarySnapshot = snapshots.first.getOrThrow();
+        check(summarySnapshot.isFinal).isFalse();
+        check(summarySnapshot.completedSections.length).equals(4);
+        final finalSnapshot = snapshots.last.getOrThrow();
         check(finalSnapshot.isFinal).isTrue();
         check(finalSnapshot.pendingSections).isEmpty();
         check(finalSnapshot.completedSections.length).equals(10);
@@ -193,14 +196,15 @@ void main() {
         final capturedRequests = verify(
           () => batchAgentQueriesRepository.executeSqlBatch(captureAny()),
         ).captured.cast<AgentSqlExecuteBatchRequest>().toList(growable: false);
-        check(capturedRequests.length).equals(1);
+        check(capturedRequests.length).equals(2);
         check(capturedRequests[0].agentId).equals('agent-1');
         check(capturedRequests[0].clientToken).equals('token-1');
-        check(capturedRequests[0].commands.length).equals(8);
+        check(capturedRequests[0].commands.length).equals(2);
+        check(capturedRequests[1].commands.length).equals(6);
         check(capturedRequests[0].useRelay).isTrue();
         check(
           capturedRequests[0].options?.maxParallelReadOnlyBatchItems,
-        ).equals(2);
+        ).equals(4);
       },
     );
 

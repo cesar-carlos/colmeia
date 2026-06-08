@@ -152,6 +152,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
       mergeSqlBatchesPerTarget:
           policy == OverviewLoadPolicy.forceRefresh ||
           AppEnvironment.agentSqlOverviewMergeSqlBatchesPerTarget,
+      phasedBatchPerTarget: true,
     );
   }
 
@@ -163,6 +164,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     OverviewLoadLabels? rowLabels,
     AgentQueriesCancelScope? cancelScope,
     bool mergeSqlBatchesPerTarget = false,
+    bool phasedBatchPerTarget = false,
   }) async* {
     final resolvedRowLabels = rowLabels ?? OverviewLoadLabels.englishFallback;
     final period = _buildPeriod(filter);
@@ -203,6 +205,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
         cancelScope: cancelScope,
         cachePolicy: cachePolicy,
         mergeSqlBatchesPerTarget: mergeSqlBatchesPerTarget,
+        phasedBatchPerTarget: phasedBatchPerTarget,
       )) {
         final loaded = loadResult.getOrNull();
         if (loaded == null) {

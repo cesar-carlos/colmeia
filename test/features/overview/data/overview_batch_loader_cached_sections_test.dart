@@ -379,7 +379,7 @@ void main() {
   );
 
   test(
-    'mergeSqlBatchesPerTarget uses one batch and cached use cases on defaultLoad',
+    'mergeSqlBatchesPerTarget omits cached sections and loads them via use cases',
     () async {
       when(() => agentQueriesRepository.executeSqlBatch(any())).thenAnswer((
         invocation,
@@ -409,19 +409,25 @@ void main() {
       ).captured.cast<AgentSqlExecuteBatchRequest>();
       expect(batchRequests.length, 1);
       expect(batchRequests.single.commands.length, 3);
-      final sqlBodies = batchRequests.single.commands
+      final mergedSqlBodies = batchRequests.single.commands
           .map((command) => command.sql)
           .join('\n');
-      expect(sqlBodies.contains(ResumoTotalDiarioVendasSql.query), isFalse);
-      expect(sqlBodies.contains(ResumoParcelasMensalSql.query()), isFalse);
-      expect(sqlBodies.contains(ResumoParcelasDiaSemanaSql.query()), isFalse);
       expect(
-        sqlBodies.contains(ResumoProdutoVendaLucratividadeSql.query),
+        mergedSqlBodies.contains(ResumoParcelasDiaSemanaUsuarioSql.query()),
+        isTrue,
+      );
+      expect(mergedSqlBodies.contains(ResumoTotalDiarioVendasSql.query), isFalse);
+      expect(
+        mergedSqlBodies.contains(ResumoParcelasMensalSql.query()),
         isFalse,
       );
       expect(
-        sqlBodies.contains(ResumoParcelasDiaSemanaUsuarioSql.query()),
-        isTrue,
+        mergedSqlBodies.contains(ResumoParcelasDiaSemanaSql.query()),
+        isFalse,
+      );
+      expect(
+        mergedSqlBodies.contains(ResumoProdutoVendaLucratividadeSql.query),
+        isFalse,
       );
       verify(() => loadDaily.call(
             userId: 'user-1',
@@ -475,6 +481,78 @@ void main() {
             cancelScope: any(named: 'cancelScope'),
             cachePolicy: any(named: 'cachePolicy'),
           )).called(1);
+    },
+  );
+
+  test(
+    'phasedBatchPerTarget with merge yields main batch before section batch',
+    () async {
+      when(() => agentQueriesRepository.executeSqlBatch(any())).thenAnswer((
+        invocation,
+      ) async {
+        final request =
+            invocation.positionalArguments.single as AgentSqlExecuteBatchRequest;
+        if (request.commands.length == 2) {
+          return Success<AgentSqlBatchExecutionResult, AppFailure>(
+            _batchResult(
+              commandCount: 2,
+              rowsByIndex: <int, List<Map<String, dynamic>>>{
+                0: <Map<String, dynamic>>[_mainRow()],
+                1: <Map<String, dynamic>>[_userRankingRow()],
+              },
+            ),
+          );
+        }
+        return Success<AgentSqlBatchExecutionResult, AppFailure>(
+          _batchResult(commandCount: request.commands.length),
+        );
+      });
+
+      final loader = loaderWithCachedSections();
+      final periodStart = DateTime(2026, 4);
+      final periodEnd = DateTime(2026, 4, 15);
+      final snapshots = await loader
+          .loadProgressively(
+            userId: 'user-1',
+            filter: const DashboardFilter(),
+            periodStart: periodStart,
+            periodEnd: periodEnd,
+            last12Range: (
+              dataVendaInicio: DateTime(2025, 4),
+              dataVendaFim: periodEnd,
+            ),
+            mensalFilter: ResumoParcelasMensalFilter(
+              dataVendaInicio: DateTime(2025, 4),
+              dataVendaFim: periodEnd,
+            ),
+            weekdayFilter: ResumoParcelasDiaSemanaFilter(
+              dataVendaInicio: periodStart,
+              dataVendaFim: periodEnd,
+            ),
+            dailyTotalFilter: ResumoTotalDiarioVendasFilter(
+              dataVendaInicio: periodStart,
+              dataVendaFim: periodEnd,
+            ),
+            executionStrategy: AgentQueryExecutionStrategy.mergeAll,
+            mergeSqlBatchesPerTarget: true,
+            phasedBatchPerTarget: true,
+          )
+          .toList();
+
+      expect(snapshots.length, 2);
+      expect(snapshots.first.getOrThrow().isFinal, isFalse);
+      expect(snapshots.last.getOrThrow().isFinal, isTrue);
+
+      final batchRequests = verify(
+        () => agentQueriesRepository.executeSqlBatch(captureAny()),
+      ).captured.cast<AgentSqlExecuteBatchRequest>();
+      expect(batchRequests.length, 2);
+      expect(batchRequests.first.commands.length, 2);
+      expect(batchRequests.last.commands.length, 1);
+      expect(
+        batchRequests.last.commands.single.sql,
+        ResumoParcelasDiaSemanaUsuarioSql.query(),
+      );
     },
   );
 

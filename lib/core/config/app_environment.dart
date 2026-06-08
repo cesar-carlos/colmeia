@@ -133,12 +133,13 @@ abstract final class AppEnvironment {
   static const int defaultAgentSqlCacheTtlMs = 3000;
   static const int defaultAgentSqlParseIsolateRowThreshold = 2000;
   static const int defaultAgentSqlCatalogCacheTtlMs = 30000;
-  static const int defaultAgentQueryMergeAllConcurrency = 2;
+  static const int defaultAgentQueryMergeAllConcurrency = 4;
+  static const int defaultOverviewTargetWaveConcurrency = 64;
   static const int defaultAgentQueryFactsBucketLoadConcurrency = 1;
   static const int defaultAgentQueryFactsPrefetchDelayMs = 2000;
   static const int defaultAgentQueryTargetResolutionCacheTtlMs = 30000;
-  static const int defaultAgentSqlOverviewBatchMaxParallelReadOnlyItems = 2;
-  static const bool defaultAgentSqlOverviewMergeSqlBatchesPerTarget = false;
+  static const int defaultAgentSqlOverviewBatchMaxParallelReadOnlyItems = 4;
+  static const bool defaultAgentSqlOverviewMergeSqlBatchesPerTarget = true;
   static const bool defaultAgentQueryFactsBucketUseExecuteBatch = true;
   static const int defaultAgentSqlRelayStreamingMaxConcurrentPerAgent = 4;
   static const int defaultAgentSqlBridgeTimeoutMs = 120000;
@@ -178,12 +179,12 @@ abstract final class AppEnvironment {
   /// Parallel mergeAll wave size for across-agent orchestration.
   ///
   /// Tuning guide:
-  /// - Default `2` reduces burst load on hub rate windows during multi-agent
-  ///   overview and sales map loads.
-  /// - Raise toward `4`–`8` only on stable networks with few agents and headroom
-  ///   under [agentSqlRestMaxInflightPerAgent] / socket inflight gates.
-  /// - Overview batch loader uses [overviewTargetWaveConcurrency] when set;
-  ///   sales live map uses [salesLiveMapMergeWaveSize] when set.
+  /// - Default `4` for generic mergeAll surfaces (reports, cadastro, etc.).
+  /// - Overview batch loader uses [overviewTargetWaveConcurrency] (default 64),
+  ///   independent of this knob.
+  /// - Sales live map uses [salesLiveMapMergeWaveSize] when set.
+  /// - Hub `-32013` is the JSON-RPC rate-limit family (concurrency, rate window,
+  ///   token policy); respect `retry_after_ms` when present.
   static int get agentQueryMergeAllConcurrency =>
       AppEnvironmentResolution.resolveInt(
         fromDefine: const String.fromEnvironment(
@@ -193,20 +194,21 @@ abstract final class AppEnvironment {
         fallback: defaultAgentQueryMergeAllConcurrency,
       ).clamp(1, 64);
 
-  /// Across-agent wave size for overview SQL batch loads. Falls back to
-  /// [agentQueryMergeAllConcurrency] when unset (`0`).
+  /// Across-agent wave size for overview SQL batch loads. Defaults to
+  /// [defaultOverviewTargetWaveConcurrency] (all agents in one wave when
+  /// N <= 64). Explicit `0` mirrors [agentQueryMergeAllConcurrency].
   static int get overviewTargetWaveConcurrency {
     final configured = AppEnvironmentResolution.resolveInt(
       fromDefine: const String.fromEnvironment(
         EnvKeys.overviewTargetWaveConcurrency,
       ),
       fromDotenv: _dotenvMaybe(EnvKeys.overviewTargetWaveConcurrency),
-      fallback: 0,
+      fallback: defaultOverviewTargetWaveConcurrency,
     );
-    if (configured > 0) {
-      return configured.clamp(1, 64);
+    if (configured == 0) {
+      return agentQueryMergeAllConcurrency;
     }
-    return agentQueryMergeAllConcurrency;
+    return configured.clamp(1, 64);
   }
 
   /// Parallel closed-bucket loads inside cached agent-query repositories.

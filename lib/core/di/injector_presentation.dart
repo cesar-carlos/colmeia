@@ -1,6 +1,7 @@
 import 'package:colmeia/core/di/injector_agent_queries.dart';
 import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
+import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_target_warm_up_coordinator.dart';
 import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_registry.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/discover_agent_rpc_methods_use_case.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/load_client_token_policy_use_case.dart';
@@ -34,6 +35,7 @@ import 'package:colmeia/features/client_agents/application/usecases/update_clien
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agent_detail_controller.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_controller.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_owner_controller.dart';
+import 'package:colmeia/features/overview/application/overview_shell_cache.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_controller.dart';
 import 'package:colmeia/features/user_context/application/usecases/clear_active_store_use_case.dart';
@@ -52,6 +54,9 @@ void registerInjectorPresentation(GetIt getIt) {
         loadCurrentUserContextUseCase: getIt<LoadCurrentUserContextUseCase>(),
         persistActiveStoreUseCase: getIt<PersistActiveStoreUseCase>(),
         clearActiveStoreUseCase: getIt<ClearActiveStoreUseCase>(),
+        overviewShellCache: getIt<OverviewShellCache>(),
+        agentQueryTargetWarmUpCoordinator:
+            getIt<AgentQueryTargetWarmUpCoordinator>(),
       ),
     )
     ..registerFactory<OverviewController>(
@@ -60,6 +65,7 @@ void registerInjectorPresentation(GetIt getIt) {
         // App singleton — OverviewController must not dispose it on route exit.
         retryAfterGate: getIt<RetryAfterGate>(),
         agentRpcCapabilitiesRegistry: getIt<AgentRpcCapabilitiesRegistry>(),
+        shellCache: getIt<OverviewShellCache>(),
         relayCancelScopeBinder: (scope) =>
             wireAgentQueriesCancelScopeHandlers(getIt, scope),
       ),

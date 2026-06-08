@@ -15,6 +15,7 @@ import 'package:colmeia/core/socket/socket_command_dispatcher.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_executor.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
+import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_target_warm_up_coordinator.dart';
 import 'package:colmeia/features/agent_queries/application/sync/agent_query_facts_prefetch_coordinator.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_page_use_case.dart';
@@ -866,6 +867,11 @@ void _registerAcrossAgentQueryRepositories(GetIt getIt) {
         clientTokenReader: getIt<AgentClientTokenReader>(),
         resolutionCache: getIt<AgentQueryTargetResolutionCache>(),
         policy: getIt<AgentSqlExecutionEligibilityPolicy>(),
+      ),
+    )
+    ..registerLazySingleton<AgentQueryTargetWarmUpCoordinator>(
+      () => AgentQueryTargetWarmUpCoordinator(
+        targetResolver: getIt<AgentQueryTargetResolver>(),
       ),
     )
     ..registerLazySingleton<AgentQueryTargetResolutionInvalidator>(

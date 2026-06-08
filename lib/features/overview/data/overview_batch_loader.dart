@@ -119,6 +119,7 @@ class OverviewBatchLoader {
     AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
     AgentQueryTargetResolution? preResolvedResolution,
     bool mergeSqlBatchesPerTarget = false,
+    bool phasedBatchPerTarget = false,
   }) async {
     AppResult<OverviewBatchLoadResult>? finalResult;
     await for (final result in loadProgressively(
@@ -135,6 +136,7 @@ class OverviewBatchLoader {
       cachePolicy: cachePolicy,
       preResolvedResolution: preResolvedResolution,
       mergeSqlBatchesPerTarget: mergeSqlBatchesPerTarget,
+      phasedBatchPerTarget: phasedBatchPerTarget,
     )) {
       final loaded = result.getOrNull();
       if (loaded == null) {
@@ -165,6 +167,7 @@ class OverviewBatchLoader {
     AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
     AgentQueryTargetResolution? preResolvedResolution,
     bool mergeSqlBatchesPerTarget = false,
+    bool phasedBatchPerTarget = false,
   }) async* {
     late final AgentQueryTargetResolution resolution;
     if (preResolvedResolution != null) {
@@ -214,11 +217,35 @@ class OverviewBatchLoader {
           monthlyFilter: mensalFilter,
           cachePolicy: cachePolicy,
         );
-    final omitCachedSectionsFromSqlBatch = useColdCacheMergedBatch
-        ? const OverviewCachedSectionSqlOmission()
-        : _cachedSectionSqlOmissionFor(cachePolicy: cachePolicy);
     final factsPersistedAgentIds = <String>{};
-    if (useColdCacheMergedBatch || mergeSqlBatchesPerTarget) {
+    final omitCachedSectionsFromSqlBatch = _cachedSectionSqlOmissionFor(
+      cachePolicy: cachePolicy,
+    );
+    final useCachedSectionUseCases = _shouldLoadCachedSectionsViaUseCases(
+      loadsCachedSectionsViaUseCases: loadsCachedSectionsViaUseCases,
+      omitCachedSectionsFromSqlBatch: omitCachedSectionsFromSqlBatch,
+    );
+    if (useColdCacheMergedBatch) {
+      yield* _loadProgressivelySingleBatchPerTarget(
+        userId: userId,
+        resolution: resolution,
+        plan: plan,
+        executionStrategy: executionStrategy,
+        periodStart: periodStart,
+        periodEnd: periodEnd,
+        last12Range: last12Range,
+        mensalFilter: mensalFilter,
+        weekdayFilter: weekdayFilter,
+        dailyTotalFilter: dailyTotalFilter,
+        includeLucratividadeMensal: includeLucratividadeMensal,
+        skipCachedSectionUseCases: true,
+        cancelScope: cancelScope,
+        cachePolicy: cachePolicy,
+        factsPersistedAgentIds: factsPersistedAgentIds,
+      );
+      return;
+    }
+    if (mergeSqlBatchesPerTarget && !phasedBatchPerTarget) {
       yield* _loadProgressivelySingleBatchPerTarget(
         userId: userId,
         resolution: resolution,
@@ -232,7 +259,7 @@ class OverviewBatchLoader {
         dailyTotalFilter: dailyTotalFilter,
         includeLucratividadeMensal: includeLucratividadeMensal,
         omitCachedSectionsFromSqlBatch: omitCachedSectionsFromSqlBatch,
-        skipCachedSectionUseCases: useColdCacheMergedBatch,
+        skipCachedSectionUseCases: !useCachedSectionUseCases,
         cancelScope: cancelScope,
         cachePolicy: cachePolicy,
         factsPersistedAgentIds: factsPersistedAgentIds,
@@ -364,6 +391,18 @@ class OverviewBatchLoader {
       weekday: _usesCachedWeekdaySection,
       lucratividade: _usesCachedLucratividadeSection,
     );
+  }
+
+  bool _shouldLoadCachedSectionsViaUseCases({
+    required bool loadsCachedSectionsViaUseCases,
+    required OverviewCachedSectionSqlOmission omitCachedSectionsFromSqlBatch,
+  }) {
+    if (!loadsCachedSectionsViaUseCases) {
+      return false;
+    }
+    return omitCachedSectionsFromSqlBatch.dailyMonthly ||
+        omitCachedSectionsFromSqlBatch.weekday ||
+        omitCachedSectionsFromSqlBatch.lucratividade;
   }
 
   Stream<AppResult<OverviewBatchLoadResult>> _loadProgressivelySingleBatchPerTarget({

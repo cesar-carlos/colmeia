@@ -9,6 +9,7 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/domain/cache/agent_query_facts_store.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
+import 'package:colmeia/features/overview/application/overview_shell_cache.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/data/overview_batch_facts_persister.dart';
 import 'package:colmeia/features/overview/data/overview_batch_loader.dart';
@@ -25,6 +26,7 @@ void registerInjectorOverview(GetIt getIt) {
   }
 
   getIt
+    ..registerLazySingleton<OverviewShellCache>(OverviewShellCache.new)
     ..registerLazySingleton<OverviewBatchLoader>(
       () => OverviewBatchLoader(
         targetResolver: getIt<AgentQueryTargetResolver>(),

@@ -14,7 +14,9 @@ import 'package:colmeia/features/agent_meta/domain/repositories/agent_meta_repos
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
+import 'package:colmeia/features/overview/application/overview_shell_cache.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
+import 'package:colmeia/features/overview/domain/overview_load_signature.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
@@ -672,6 +674,69 @@ void main() {
         ).deepEquals(<String>['Alpha', 'Bravo']);
       },
     );
+
+    test('publishes successful loads to shell cache', () async {
+      final shellCache = OverviewShellCache();
+      final repository = _QueuedOverviewRepository(
+        <Future<AppResult<Overview>>>[
+          Future<AppResult<Overview>>.value(
+            Success<Overview, AppFailure>(_overview('Pix')),
+          ),
+        ],
+      );
+      final controller = OverviewController(
+        LoadOverviewUseCase(repository),
+        shellCache: shellCache,
+      );
+
+      await controller.loadOverview(userId: 'demo-user');
+
+      final signature = overviewLoadSignature(
+        userId: 'demo-user',
+        filter: controller.activeFilter,
+      );
+      check(shellCache.read(signature)?.overview.paymentMethods.single.code)
+          .equals('Pix');
+    });
+
+    test('refreshOverview invalidates shell cache before force refresh', () async {
+      final shellCache = OverviewShellCache();
+      final refreshCompleter = Completer<AppResult<Overview>>();
+      final repository = _QueuedOverviewRepository(
+        <Future<AppResult<Overview>>>[
+          Future<AppResult<Overview>>.value(
+            Success<Overview, AppFailure>(_overview('Pix')),
+          ),
+          refreshCompleter.future,
+        ],
+      );
+      final controller = OverviewController(
+        LoadOverviewUseCase(repository),
+        shellCache: shellCache,
+      );
+
+      await controller.loadOverview(userId: 'demo-user');
+      final signature = overviewLoadSignature(
+        userId: 'demo-user',
+        filter: controller.activeFilter,
+      );
+      check(shellCache.read(signature)).isNotNull();
+
+      final refreshFuture = controller.refreshOverview(userId: 'demo-user');
+      await Future<void>.delayed(Duration.zero);
+
+      check(shellCache.read(signature)).isNull();
+
+      refreshCompleter.complete(
+        Success<Overview, AppFailure>(_overview('Pix')),
+      );
+      await refreshFuture;
+
+      check(shellCache.read(signature)).isNotNull();
+      check(repository.requestedPolicies.last).equals(
+        OverviewLoadPolicy.forceRefresh,
+      );
+    });
 
     test(
       'clears isLoadingInitial after summary progressive snapshot before isFinal',

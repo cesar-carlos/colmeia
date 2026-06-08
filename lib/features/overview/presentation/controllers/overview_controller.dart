@@ -8,11 +8,13 @@ import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_r
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_diagnostic.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after.dart';
+import 'package:colmeia/features/overview/application/overview_shell_cache.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_policy.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
+import 'package:colmeia/features/overview/domain/overview_load_signature.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_load_session.dart';
 import 'package:colmeia/features/overview/presentation/overview_agent_alert_names_projection.dart';
 import 'package:colmeia/features/overview/presentation/overview_available_agents_assembler.dart';
@@ -33,9 +35,11 @@ class OverviewController extends ChangeNotifier {
     RetryAfterGate? retryAfterGate,
     AgentRpcCapabilitiesRegistry? agentRpcCapabilitiesRegistry,
     AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder,
+    OverviewShellCache? shellCache,
   })  : _retryAfterGate = retryAfterGate ?? RetryAfterGate(),
         _ownsRetryAfterGate = retryAfterGate == null,
         _agentRpcCapabilitiesRegistry = agentRpcCapabilitiesRegistry,
+        _shellCache = shellCache,
         _session = OverviewLoadSession(
           relayCancelScopeBinder: relayCancelScopeBinder,
         ) {
@@ -65,6 +69,9 @@ class OverviewController extends ChangeNotifier {
   /// network call. Failures are swallowed by the registry — discovery
   /// is best-effort.
   final AgentRpcCapabilitiesRegistry? _agentRpcCapabilitiesRegistry;
+
+  /// Shell-scoped snapshot for instant dashboard re-entry with the same filters.
+  final OverviewShellCache? _shellCache;
 
   /// Encapsulates the per-load mutable state (generation, requested/
   /// loaded signatures, SQL cancel scope) so the controller methods read
@@ -97,24 +104,18 @@ class OverviewController extends ChangeNotifier {
       OverviewAgentAlertNamesProjection();
 
   /// Normalized display names for missing-token alerts (trim, sort, dedupe).
-  List<String> get missingTokenAgentNamesNormalized {
-    _alertNamesProjection.update(_overview);
-    return _alertNamesProjection.missingClientToken;
-  }
+  List<String> get missingTokenAgentNamesNormalized =>
+      _alertNamesProjection.missingClientToken;
 
   /// Normalized display names for partial query failure alerts.
-  List<String> get partialQueryFailureAgentNamesNormalized {
-    _alertNamesProjection.update(_overview);
-    return _alertNamesProjection.partialQueryFailure;
-  }
+  List<String> get partialQueryFailureAgentNamesNormalized =>
+      _alertNamesProjection.partialQueryFailure;
 
   /// Normalized display names for the "agentes offline" alert (agents
   /// that have a stored client_token but were skipped because the hub
   /// reported them disconnected at dispatch time).
-  List<String> get skippedDueToHubPresenceAgentNamesNormalized {
-    _alertNamesProjection.update(_overview);
-    return _alertNamesProjection.skippedDueToHubPresence;
-  }
+  List<String> get skippedDueToHubPresenceAgentNamesNormalized =>
+      _alertNamesProjection.skippedDueToHubPresence;
 
   @override
   void dispose() {
@@ -132,6 +133,11 @@ class OverviewController extends ChangeNotifier {
       return;
     }
     notifyListeners();
+  }
+
+  void _setOverview(Overview? overview) {
+    _overview = overview;
+    _alertNamesProjection.update(overview);
   }
 
   bool _isOverviewLoadStale(int generation) => _session.isStale(generation);
@@ -171,6 +177,7 @@ class OverviewController extends ChangeNotifier {
     if (isOnRetryCooldown) {
       return;
     }
+    _shellCache?.invalidate();
     _activeFilter = filter.normalizedForHomeDashboardReferenceRange();
     _session.resetRequested();
     await _loadOverview(
@@ -198,18 +205,32 @@ class OverviewController extends ChangeNotifier {
     if (_session.requestedSignature == signature) {
       return;
     }
+    final restoredFromShellCache = _tryRestoreFromShellCache(
+      userId: userId,
+      signature: signature,
+    );
     _session.requestedSignature = signature;
+    final resolvedRowLabels = rowLabels ?? OverviewLoadLabels.englishFallback;
+    final resolvedFailureMessageBuilder =
+        failureMessageBuilder ?? _defaultFailureMessageBuilder;
     SchedulerBinding.instance.addPostFrameCallback((_) {
       if (!_session.isRequestStillCurrent(signature)) {
         return;
       }
       unawaited(
-        loadOverview(
-          userId: userId,
-          loadingMode: loadingMode,
-          rowLabels: rowLabels,
-          failureMessageBuilder: failureMessageBuilder,
-        ),
+        restoredFromShellCache
+            ? _revalidateOverviewInBackground(
+                userId: userId,
+                loadingMode: loadingMode,
+                rowLabels: resolvedRowLabels,
+                failureMessageBuilder: resolvedFailureMessageBuilder,
+              )
+            : loadOverview(
+                userId: userId,
+                loadingMode: loadingMode,
+                rowLabels: rowLabels,
+                failureMessageBuilder: failureMessageBuilder,
+              ),
       );
     });
   }
@@ -247,6 +268,7 @@ class OverviewController extends ChangeNotifier {
       // the same quota.
       return;
     }
+    _shellCache?.invalidate();
     final signature = _signatureFor(userId: userId);
     final keepContentVisible =
         _session.isReloadingSameSignature(signature) && _overview != null;
@@ -399,7 +421,7 @@ class OverviewController extends ChangeNotifier {
     } else {
       _isRefreshing = false;
       _isLoadingInitial = true;
-      _overview = null;
+      _setOverview(null);
       _session.clearLoaded();
       _completedOverviewSections = const <OverviewProgressiveSection>{};
     }
@@ -433,7 +455,7 @@ class OverviewController extends ChangeNotifier {
     required OverviewLoadPolicy policy,
   }) {
     _armRetryAfterFromPartialFailures(overview);
-    _overview = overview;
+    _setOverview(overview);
     _completedOverviewSections = Set<OverviewProgressiveSection>.of(
       OverviewProgressiveSection.values,
     );
@@ -441,6 +463,7 @@ class OverviewController extends ChangeNotifier {
     _errorMessage = null;
     _errorDiagnosticBody = null;
     _loadFailure = null;
+    _publishShellCache(signature);
     AppLogger.info(
       'Overview loaded in controller',
       context: <String, Object?>{
@@ -464,7 +487,7 @@ class OverviewController extends ChangeNotifier {
     required OverviewFailureMessageBuilder failureMessageBuilder,
   }) {
     if (!keepContentVisible) {
-      _overview = null;
+      _setOverview(null);
       _session.clearLoaded();
       _completedOverviewSections = const <OverviewProgressiveSection>{};
     }
@@ -516,7 +539,7 @@ class OverviewController extends ChangeNotifier {
 
       final snapshot = result.getOrNull();
       if (snapshot != null) {
-        _overview = snapshot.overview;
+        _setOverview(snapshot.overview);
         _completedOverviewSections = snapshot.completedSections;
         _armRetryAfterFromPartialFailures(snapshot.overview);
         _errorMessage = null;
@@ -529,6 +552,7 @@ class OverviewController extends ChangeNotifier {
         }
         if (snapshot.isFinal) {
           _session.loadedSignature = signature;
+          _publishShellCache(signature);
           AppLogger.info(
             'Overview loaded progressively in controller',
             context: <String, Object?>{
@@ -583,16 +607,77 @@ class OverviewController extends ChangeNotifier {
   }
 
   String _signatureFor({required String userId}) {
-    final ids = _activeFilter.selectedAgentIds;
-    final agentPart = ids == null
-        ? '*'
-        : (List<String>.from(ids)..sort()).join(',');
-    final rr = _activeFilter.referenceRange;
-    final refPart = rr == null
-        ? ''
-        : '|r:${rr.startInclusive.year}-${rr.startInclusive.month}-${rr.startInclusive.day}'
-              ':${rr.endInclusive.year}-${rr.endInclusive.month}-${rr.endInclusive.day}';
-    return '$userId|$agentPart|${_activeFilter.yearMonth ?? 'default'}$refPart';
+    return overviewLoadSignature(userId: userId, filter: _activeFilter);
+  }
+
+  bool _tryRestoreFromShellCache({
+    required String userId,
+    required String signature,
+  }) {
+    if (hasContent) {
+      return false;
+    }
+    final entry = _shellCache?.read(signature);
+    if (entry == null) {
+      return false;
+    }
+    _activeFilter = entry.activeFilter;
+    _setOverview(entry.overview);
+    _availableAgents = entry.availableAgents;
+    _completedOverviewSections = Set<OverviewProgressiveSection>.of(
+      entry.completedSections,
+    );
+    _session.loadedSignature = signature;
+    _isLoadingInitial = false;
+    _isRefreshing = false;
+    _errorMessage = null;
+    _errorDiagnosticBody = null;
+    _loadFailure = null;
+    AppLogger.debug(
+      'Overview restored from shell cache',
+      context: <String, Object?>{
+        'operation': 'restoreOverviewShellCache',
+        'userId': userId,
+        'signature': signature,
+      },
+    );
+    _notifyListenersIfAlive();
+    return true;
+  }
+
+  Future<void> _revalidateOverviewInBackground({
+    required String userId,
+    required OverviewLoadingMode loadingMode,
+    required OverviewLoadLabels rowLabels,
+    required OverviewFailureMessageBuilder failureMessageBuilder,
+  }) async {
+    if (isOnRetryCooldown) {
+      return;
+    }
+    final keepContentVisible = _overview != null;
+    await _loadOverview(
+      userId: userId,
+      policy: OverviewLoadPolicy.defaultLoad,
+      keepContentVisible: keepContentVisible,
+      loadingMode: loadingMode,
+      rowLabels: rowLabels,
+      failureMessageBuilder: failureMessageBuilder,
+    );
+  }
+
+  void _publishShellCache(String signature) {
+    final cache = _shellCache;
+    final overview = _overview;
+    if (cache == null || overview == null) {
+      return;
+    }
+    cache.publish(
+      signature: signature,
+      overview: overview,
+      activeFilter: _activeFilter,
+      availableAgents: _availableAgents,
+      completedSections: _completedOverviewSections,
+    );
   }
 
   /// Rebuilds [_availableAgents] from the overview (per-agent rankings and
@@ -630,6 +715,9 @@ class OverviewController extends ChangeNotifier {
     }
     _availableAgents = assembled;
     _scheduleAgentRpcCapabilityPrefetch();
+    if (_session.loadedSignature != null) {
+      _publishShellCache(_session.loadedSignature!);
+    }
     return true;
   }
 

@@ -356,13 +356,11 @@ class _OverviewHomeIntro extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Single Provider Selector that watches both controllers and emits a
-    // tiny immutable slice with the only two values this widget consumes.
-    final userContext = context.watch<CurrentUserContextController>();
-    return Selector<OverviewController, _IntroSlice>(
-      selector: (_, c) => _IntroSlice(
+    return Selector2<CurrentUserContextController, OverviewController,
+        _IntroSlice>(
+      selector: (_, userContext, overviewController) => _IntroSlice(
         fullName: userContext.userScope.name,
-        period: _PeriodTagSlice.fromController(c),
+        period: _PeriodTagSlice.fromController(overviewController),
       ),
       builder: (context, slice, _) {
         final greetingName = _greetingFirstName(slice.fullName, l10n);

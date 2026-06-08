@@ -213,10 +213,7 @@ void main() {
             );
 
             result.fold(
-              (_) => _expectOverviewMergedBatchSql(
-                countingRepository,
-                omitCachedSectionSql: true,
-              ),
+              (_) => _expectOverviewMergedBatchSql(countingRepository),
               _expectOverviewRepositoryE2eFailure,
             );
           },

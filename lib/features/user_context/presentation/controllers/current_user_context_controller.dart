@@ -5,7 +5,9 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/value_objects/store_id.dart';
+import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_target_warm_up_coordinator.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:colmeia/features/overview/application/overview_shell_cache.dart';
 import 'package:colmeia/features/user_context/application/usecases/clear_active_store_use_case.dart';
 import 'package:colmeia/features/user_context/application/usecases/load_current_user_context_use_case.dart';
 import 'package:colmeia/features/user_context/application/usecases/persist_active_store_use_case.dart';
@@ -25,6 +27,8 @@ class CurrentUserContextController extends ChangeNotifier {
     LoadCurrentUserContextUseCase? loadCurrentUserContextUseCase,
     PersistActiveStoreUseCase? persistActiveStoreUseCase,
     ClearActiveStoreUseCase? clearActiveStoreUseCase,
+    OverviewShellCache? overviewShellCache,
+    AgentQueryTargetWarmUpCoordinator? agentQueryTargetWarmUpCoordinator,
     CurrentUserScope? userScope,
     String? activeStoreId,
   }) : assert(
@@ -39,6 +43,8 @@ class CurrentUserContextController extends ChangeNotifier {
        _loadCurrentUserContextUseCase = loadCurrentUserContextUseCase,
        _persistActiveStoreUseCase = persistActiveStoreUseCase,
        _clearActiveStoreUseCase = clearActiveStoreUseCase,
+       _overviewShellCache = overviewShellCache,
+       _agentQueryTargetWarmUpCoordinator = agentQueryTargetWarmUpCoordinator,
        _userScope = userScope ?? _placeholderUserScope,
        _activeStoreId =
            activeStoreId ?? UserContextPlaceholders.loadingStoreId {
@@ -113,6 +119,8 @@ class CurrentUserContextController extends ChangeNotifier {
   final LoadCurrentUserContextUseCase? _loadCurrentUserContextUseCase;
   final PersistActiveStoreUseCase? _persistActiveStoreUseCase;
   final ClearActiveStoreUseCase? _clearActiveStoreUseCase;
+  final OverviewShellCache? _overviewShellCache;
+  final AgentQueryTargetWarmUpCoordinator? _agentQueryTargetWarmUpCoordinator;
 
   CurrentUserScope _userScope;
   late List<AppRoute> _availableShellRoutes;
@@ -281,6 +289,8 @@ class CurrentUserContextController extends ChangeNotifier {
       if (previousUserId != null) {
         await clearActiveStoreUseCase(userId: previousUserId);
       }
+      _overviewShellCache?.invalidate();
+      _agentQueryTargetWarmUpCoordinator?.invalidate();
       return;
     }
 
@@ -315,6 +325,9 @@ class CurrentUserContextController extends ChangeNotifier {
         _activeStoreId = snapshot.activeStoreId;
         _syncedUserId = session.userId;
         _errorMessage = null;
+        _agentQueryTargetWarmUpCoordinator?.scheduleWarmUp(
+          userId: session.userId,
+        );
       },
       (failure) {
         _syncedUserId = session.userId;
