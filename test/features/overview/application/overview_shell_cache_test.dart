@@ -4,8 +4,8 @@ import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
 import 'package:colmeia/features/overview/domain/overview_load_signature.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -38,15 +38,15 @@ void main() {
         userId: 'user',
         filter: DashboardFilter.initial(),
       );
-      cache.publish(
-        signature: signature,
-        overview: _overview(),
-        activeFilter: DashboardFilter.initial(),
-        availableAgents: const <DashboardAgentOption>[],
-        completedSections: OverviewProgressiveSection.values.toSet(),
-      );
-
-      cache.invalidate();
+      cache
+        ..publish(
+          signature: signature,
+          overview: _overview(),
+          activeFilter: DashboardFilter.initial(),
+          availableAgents: const <DashboardAgentOption>[],
+          completedSections: OverviewProgressiveSection.values.toSet(),
+        )
+        ..invalidate();
 
       check(cache.read(signature)).isNull();
     });

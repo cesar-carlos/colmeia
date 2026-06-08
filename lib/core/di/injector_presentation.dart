@@ -1,11 +1,11 @@
 import 'package:colmeia/core/di/injector_agent_queries.dart';
 import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
-import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_target_warm_up_coordinator.dart';
 import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_registry.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/discover_agent_rpc_methods_use_case.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/load_client_token_policy_use_case.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/refresh_agent_profile_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_target_warm_up_coordinator.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/application/client_agent_token_draft_store.dart';
 import 'package:colmeia/features/client_agents/application/services/agent_presence_poller.dart';

@@ -1,6 +1,4 @@
-import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
-import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_target_warm_up_coordinator.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
@@ -33,8 +31,9 @@ void main() {
       ),
     );
 
-    coordinator.scheduleWarmUp(userId: 'user-1');
-    coordinator.scheduleWarmUp(userId: 'user-1');
+    coordinator
+      ..scheduleWarmUp(userId: 'user-1')
+      ..scheduleWarmUp(userId: 'user-1');
     await Future<void>.delayed(Duration.zero);
 
     verify(() => resolver.resolve(userId: 'user-1')).called(1);
@@ -55,8 +54,9 @@ void main() {
 
     coordinator.scheduleWarmUp(userId: 'user-1');
     await Future<void>.delayed(Duration.zero);
-    coordinator.invalidate();
-    coordinator.scheduleWarmUp(userId: 'user-1');
+    coordinator
+      ..invalidate()
+      ..scheduleWarmUp(userId: 'user-1');
     await Future<void>.delayed(Duration.zero);
 
     verify(() => resolver.resolve(userId: 'user-1')).called(2);

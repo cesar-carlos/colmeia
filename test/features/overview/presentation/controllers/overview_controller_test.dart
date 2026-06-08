@@ -16,7 +16,6 @@ import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_af
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/overview/application/overview_shell_cache.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
-import 'package:colmeia/features/overview/domain/overview_load_signature.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
@@ -25,6 +24,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
+import 'package:colmeia/features/overview/domain/overview_load_signature.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -109,34 +109,37 @@ void main() {
       },
     );
 
-    test('applyFilter reloads with defaultLoad for cache read-through', () async {
-      final repository = _QueuedOverviewRepository(
-        <Future<AppResult<Overview>>>[
-          Future<AppResult<Overview>>.value(
-            Success<Overview, AppFailure>(_overview('Pix')),
-          ),
-          Future<AppResult<Overview>>.value(
-            Success<Overview, AppFailure>(_overview('Pix')),
-          ),
-        ],
-      );
-      final controller = OverviewController(
-        LoadOverviewUseCase(repository),
-      );
+    test(
+      'applyFilter reloads with defaultLoad for cache read-through',
+      () async {
+        final repository = _QueuedOverviewRepository(
+          <Future<AppResult<Overview>>>[
+            Future<AppResult<Overview>>.value(
+              Success<Overview, AppFailure>(_overview('Pix')),
+            ),
+            Future<AppResult<Overview>>.value(
+              Success<Overview, AppFailure>(_overview('Pix')),
+            ),
+          ],
+        );
+        final controller = OverviewController(
+          LoadOverviewUseCase(repository),
+        );
 
-      await controller.loadOverview(userId: 'demo-user');
-      await controller.applyFilter(
-        userId: 'demo-user',
-        filter: const DashboardFilter(
-          selectedAgentIds: <String>{'agent-2'},
-        ),
-      );
+        await controller.loadOverview(userId: 'demo-user');
+        await controller.applyFilter(
+          userId: 'demo-user',
+          filter: const DashboardFilter(
+            selectedAgentIds: <String>{'agent-2'},
+          ),
+        );
 
-      check(repository.requestedPolicies).deepEquals(<OverviewLoadPolicy>[
-        OverviewLoadPolicy.defaultLoad,
-        OverviewLoadPolicy.defaultLoad,
-      ]);
-    });
+        check(repository.requestedPolicies).deepEquals(<OverviewLoadPolicy>[
+          OverviewLoadPolicy.defaultLoad,
+          OverviewLoadPolicy.defaultLoad,
+        ]);
+      },
+    );
 
     test(
       'applyFilter clears stale overview and uses initial loading state',
@@ -178,7 +181,9 @@ void main() {
 
         check(controller.isLoadingInitial).isFalse();
         check(controller.overview).isNotNull();
-        check(controller.overview!.paymentMethods.single.code).equals('Credito');
+        check(
+          controller.overview!.paymentMethods.single.code,
+        ).equals('Credito');
       },
     );
 
@@ -330,8 +335,9 @@ void main() {
 
         check(controller.errorMessage).isNotNull();
         check(controller.isOnRetryCooldown).isTrue();
-        check(controller.retryAfterGate.remaining)
-            .equals(kAgentQueryReplayDetectedCooldown);
+        check(
+          controller.retryAfterGate.remaining,
+        ).equals(kAgentQueryReplayDetectedCooldown);
 
         await controller.refreshOverview(userId: 'demo-user');
         await controller.retryOverview(userId: 'demo-user');
@@ -350,26 +356,29 @@ void main() {
             Future<AppResult<Overview>>.value(
               Success<Overview, AppFailure>(
                 _overview('Pix').copyWith(
-                  partialQueryFailureDetails: const <OverviewAgentQueryFailureDetail>[
-                    OverviewAgentQueryFailureDetail(
-                      agentId: 'agent-1',
-                      displayName: 'Agent 1',
-                      source: OverviewAgentQueryFailureSource.dailyTrend,
-                      failure: RpcFailure(
-                        message: 'Replay detected',
-                        userMessage: 'Duplicate request',
-                        rpcCode: -32014,
-                        retryable: false,
-                        reason: 'replay_detected',
-                      ),
-                    ),
-                  ],
+                  partialQueryFailureDetails:
+                      const <OverviewAgentQueryFailureDetail>[
+                        OverviewAgentQueryFailureDetail(
+                          agentId: 'agent-1',
+                          displayName: 'Agent 1',
+                          source: OverviewAgentQueryFailureSource.dailyTrend,
+                          failure: RpcFailure(
+                            message: 'Replay detected',
+                            userMessage: 'Duplicate request',
+                            rpcCode: -32014,
+                            retryable: false,
+                            reason: 'replay_detected',
+                          ),
+                        ),
+                      ],
                 ),
               ),
             ),
           ],
         );
-        final gate = RetryAfterGate(tickInterval: const Duration(milliseconds: 5));
+        final gate = RetryAfterGate(
+          tickInterval: const Duration(milliseconds: 5),
+        );
         final controller = OverviewController(
           LoadOverviewUseCase(repository),
           retryAfterGate: gate,
@@ -695,48 +704,52 @@ void main() {
         userId: 'demo-user',
         filter: controller.activeFilter,
       );
-      check(shellCache.read(signature)?.overview.paymentMethods.single.code)
-          .equals('Pix');
+      check(
+        shellCache.read(signature)?.overview.paymentMethods.single.code,
+      ).equals('Pix');
     });
 
-    test('refreshOverview invalidates shell cache before force refresh', () async {
-      final shellCache = OverviewShellCache();
-      final refreshCompleter = Completer<AppResult<Overview>>();
-      final repository = _QueuedOverviewRepository(
-        <Future<AppResult<Overview>>>[
-          Future<AppResult<Overview>>.value(
-            Success<Overview, AppFailure>(_overview('Pix')),
-          ),
-          refreshCompleter.future,
-        ],
-      );
-      final controller = OverviewController(
-        LoadOverviewUseCase(repository),
-        shellCache: shellCache,
-      );
+    test(
+      'refreshOverview invalidates shell cache before force refresh',
+      () async {
+        final shellCache = OverviewShellCache();
+        final refreshCompleter = Completer<AppResult<Overview>>();
+        final repository = _QueuedOverviewRepository(
+          <Future<AppResult<Overview>>>[
+            Future<AppResult<Overview>>.value(
+              Success<Overview, AppFailure>(_overview('Pix')),
+            ),
+            refreshCompleter.future,
+          ],
+        );
+        final controller = OverviewController(
+          LoadOverviewUseCase(repository),
+          shellCache: shellCache,
+        );
 
-      await controller.loadOverview(userId: 'demo-user');
-      final signature = overviewLoadSignature(
-        userId: 'demo-user',
-        filter: controller.activeFilter,
-      );
-      check(shellCache.read(signature)).isNotNull();
+        await controller.loadOverview(userId: 'demo-user');
+        final signature = overviewLoadSignature(
+          userId: 'demo-user',
+          filter: controller.activeFilter,
+        );
+        check(shellCache.read(signature)).isNotNull();
 
-      final refreshFuture = controller.refreshOverview(userId: 'demo-user');
-      await Future<void>.delayed(Duration.zero);
+        final refreshFuture = controller.refreshOverview(userId: 'demo-user');
+        await Future<void>.delayed(Duration.zero);
 
-      check(shellCache.read(signature)).isNull();
+        check(shellCache.read(signature)).isNull();
 
-      refreshCompleter.complete(
-        Success<Overview, AppFailure>(_overview('Pix')),
-      );
-      await refreshFuture;
+        refreshCompleter.complete(
+          Success<Overview, AppFailure>(_overview('Pix')),
+        );
+        await refreshFuture;
 
-      check(shellCache.read(signature)).isNotNull();
-      check(repository.requestedPolicies.last).equals(
-        OverviewLoadPolicy.forceRefresh,
-      );
-    });
+        check(shellCache.read(signature)).isNotNull();
+        check(repository.requestedPolicies.last).equals(
+          OverviewLoadPolicy.forceRefresh,
+        );
+      },
+    );
 
     test(
       'clears isLoadingInitial after summary progressive snapshot before isFinal',
