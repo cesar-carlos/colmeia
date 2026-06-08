@@ -1486,7 +1486,10 @@ void main() {
       check(result.locationDiagnostics.resolvedByStateUfCount).equals(0);
       check(result.locationDiagnostics.unresolvedBranchCount).equals(1);
       check(geocoder.lookups.map((input) => input.type).toList()).deepEquals(
-        <AppLocationLookupType>[AppLocationLookupType.cityUf],
+        <AppLocationLookupType>[
+          AppLocationLookupType.cityUf,
+          AppLocationLookupType.cityUf,
+        ],
       );
     },
   );
