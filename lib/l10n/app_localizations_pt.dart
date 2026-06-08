@@ -1084,6 +1084,9 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get mapCenterViewportTooltip => 'Centralizar mapa';
+
+  @override
   String get brazilStoreSalesMapMetricGroupLabel => 'Métrica';
 
   @override
@@ -3290,6 +3293,11 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String salesLiveMapPartialRowCapReached(int count) {
     return '$count agente(s) atingiram o limite de linhas da consulta; o mapa pode estar incompleto.';
+  }
+
+  @override
+  String salesLiveMapPaginationStalledWarning(int count) {
+    return '$count agente(s) tiveram paginacao do catalogo travada; algumas filiais podem estar faltando.';
   }
 
   @override
@@ -5575,6 +5583,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   }
 
   @override
+  String get mapCenterViewportTooltip => 'Centralizar mapa';
+
+  @override
   String get brazilStoreSalesMapMetricGroupLabel => 'Métrica';
 
   @override
@@ -7758,6 +7769,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String salesLiveMapPartialRowCapReached(int count) {
     return '$count agente(s) atingiram o limite de linhas da consulta; o mapa pode estar incompleto.';
+  }
+
+  @override
+  String salesLiveMapPaginationStalledWarning(int count) {
+    return '$count agente(s) tiveram paginacao do catalogo travada; algumas filiais podem estar faltando.';
   }
 
   @override

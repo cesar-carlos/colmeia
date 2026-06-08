@@ -223,7 +223,8 @@ class _SyncfusionRegionMapChartState<T>
   bool get _showResetViewportButton =>
       _isZoomPanEnabled &&
       RegionMapViewportSyncPolicy.shouldShowResetViewportButton(
-        hasPreferredViewport: widget.preferredViewport != null,
+        hasPreferredViewport:
+            widget.preferredViewport != null || widget.resetViewport != null,
         userHasManualViewport: _viewportState.userHasManualViewport,
       );
 
@@ -542,11 +543,32 @@ class _SyncfusionRegionMapChartState<T>
                                                   ),
                                               child: builtChild,
                                             );
+                                      final visualSize = effectiveStyle.size;
+                                      const minTapSize = 48.0;
+                                      final isMobilePlatform = !kIsWeb &&
+                                          (defaultTargetPlatform ==
+                                                  TargetPlatform.android ||
+                                              defaultTargetPlatform ==
+                                                  TargetPlatform.iOS);
+                                      final markerSize = isMobilePlatform
+                                          ? math.max(minTapSize, visualSize)
+                                          : visualSize;
+                                      final markerChild =
+                                          isMobilePlatform &&
+                                              markerSize > visualSize
+                                          ? SizedBox(
+                                              width: markerSize,
+                                              height: markerSize,
+                                              child: Center(
+                                                child: tapWrappedChild,
+                                              ),
+                                            )
+                                          : tapWrappedChild;
                                       return MapMarker(
                                         latitude: point.latitude,
                                         longitude: point.longitude,
-                                        size: Size.square(effectiveStyle.size),
-                                        child: tapWrappedChild,
+                                        size: Size.square(markerSize),
+                                        child: markerChild,
                                       );
                                     },
                               markerTooltipBuilder:
@@ -798,11 +820,7 @@ class _SyncfusionRegionMapChartState<T>
   }
 
   bool _shouldIgnoreGestureViewportFeedback() {
-    if (_viewportState.suppressProgrammaticViewportEvents) {
-      return true;
-    }
-    return defaultTargetPlatform == TargetPlatform.windows &&
-        widget.preferredViewport == null;
+    return _viewportState.suppressProgrammaticViewportEvents;
   }
 
   MapZoomPanBehavior _buildZoomPanBehavior() {
@@ -1451,12 +1469,14 @@ class _MapResetViewportButton extends StatelessWidget {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
     final colors = theme.appColors;
+    final l10n = AppLocalizations.of(context);
+    final tooltipLabel = l10n.mapCenterViewportTooltip;
 
     return Tooltip(
-      message: 'Centralizar mapa',
+      message: tooltipLabel,
       child: Semantics(
         button: true,
-        label: 'Centralizar mapa',
+        label: tooltipLabel,
         child: Material(
           color: colors.surface.withValues(alpha: 0.92),
           elevation: 2,
@@ -1464,12 +1484,15 @@ class _MapResetViewportButton extends StatelessWidget {
           child: InkWell(
             borderRadius: BorderRadius.circular(tokens.formFieldRadius),
             onTap: onPressed,
-            child: Padding(
-              padding: EdgeInsets.all(tokens.gapSm),
-              child: Icon(
-                Icons.my_location_rounded,
-                size: 18,
-                color: colors.onSurfaceVariant,
+            child: SizedBox(
+              width: 48,
+              height: 48,
+              child: Center(
+                child: Icon(
+                  Icons.my_location_rounded,
+                  size: 18,
+                  color: colors.onSurfaceVariant,
+                ),
               ),
             ),
           ),

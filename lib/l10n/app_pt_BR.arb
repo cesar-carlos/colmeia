@@ -459,6 +459,7 @@
       "label": {"type": "String"}
     }
   },
+  "mapCenterViewportTooltip": "Centralizar mapa",
   "brazilStoreSalesMapMetricGroupLabel": "Métrica",
   "brazilStoreSalesMapRegionGroupLabel": "Região",
   "brazilStoreSalesMapLoadingMessage": "Carregando mapa do Brasil…",
@@ -1356,6 +1357,12 @@
   },
   "salesLiveMapPartialRowCapReached": "{count} agente(s) atingiram o limite de linhas da consulta; o mapa pode estar incompleto.",
   "@salesLiveMapPartialRowCapReached": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "salesLiveMapPaginationStalledWarning": "{count} agente(s) tiveram paginacao do catalogo travada; algumas filiais podem estar faltando.",
+  "@salesLiveMapPaginationStalledWarning": {
     "placeholders": {
       "count": {"type": "int"}
     }

@@ -741,6 +741,8 @@ class LoadSalesLiveMapUseCase {
       salesDataPending: salesDataPending,
       failedCatalogAgentCount: failedCatalogAgentCount,
       failedSalesAgentCount: failedSalesAgentCount,
+      paginationStalledAgentCount:
+          catalogResult?.paginationStalledAgentIds.length ?? 0,
       refreshedAt: refreshedAt,
     );
 
@@ -797,6 +799,8 @@ class LoadSalesLiveMapUseCase {
       salesDataPending: salesDataPending,
       failedCatalogAgentCount: failedCatalogAgentCount,
       failedSalesAgentCount: failedSalesAgentCount,
+      paginationStalledAgentCount:
+          catalogResult?.paginationStalledAgentIds.length ?? 0,
       refreshedAt: refreshedAt,
       hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
     );
@@ -852,6 +856,7 @@ class LoadSalesLiveMapUseCase {
     required bool salesDataPending,
     required int failedCatalogAgentCount,
     required int failedSalesAgentCount,
+    required int paginationStalledAgentCount,
     required DateTime refreshedAt,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
   }) {
@@ -895,6 +900,7 @@ class LoadSalesLiveMapUseCase {
         rowCapReachedAgentCount: salesReport == null
             ? 0
             : _branchAggregator.rowCapReachedAgentCount(salesReport),
+        paginationStalledAgentCount: paginationStalledAgentCount,
         salesAgentCount: agentDiagnostics.salesAgentCount,
         catalogBranchCount: visibleAggregates.length,
         salesBranchCount: salesBranchCount,

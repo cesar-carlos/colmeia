@@ -1840,6 +1840,12 @@ abstract class AppLocalizations {
   /// **'Focus on {label}'**
   String regionMapFocusScopeSemanticLabel(String label);
 
+  /// No description provided for @mapCenterViewportTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Center map'**
+  String get mapCenterViewportTooltip;
+
   /// No description provided for @brazilStoreSalesMapMetricGroupLabel.
   ///
   /// In en, this message translates to:
@@ -5344,6 +5350,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} agent(s) reached the query row limit; the map may be incomplete.'**
   String salesLiveMapPartialRowCapReached(int count);
+
+  /// No description provided for @salesLiveMapPaginationStalledWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} agent(s) had catalog pagination stall; some branches may be missing.'**
+  String salesLiveMapPaginationStalledWarning(int count);
 
   /// No description provided for @salesLiveMapPartialMissingCoordinates.
   ///

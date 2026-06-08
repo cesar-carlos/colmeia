@@ -972,6 +972,73 @@ void main() {
   );
 
   testWidgets(
+    'keeps page scroll locked while a second finger is still down on the inline map',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await _pumpPage(
+        tester,
+        authController: authController,
+        mediaSize: const Size(390, 844),
+      );
+      await _pumpInitialLoad(tester);
+
+      final pageScrollFinder = find.ancestor(
+        of: find.byType(SalesLiveMapIntroSection),
+        matching: find.byType(SingleChildScrollView),
+      );
+      expect(pageScrollFinder, findsOneWidget);
+
+      final guardFinder = find.byKey(
+        const ValueKey<String>('sales-live-map-inline-scroll-guard'),
+      );
+      expect(guardFinder, findsOneWidget);
+
+      await tester.ensureVisible(guardFinder);
+      await tester.pump();
+      final guardCenter = tester.getCenter(guardFinder);
+
+      final gesture1 = await tester.startGesture(guardCenter);
+      await tester.pump();
+
+      final lockedScrollView = tester.widget<SingleChildScrollView>(
+        pageScrollFinder,
+      );
+      expect(lockedScrollView.physics, isA<NeverScrollableScrollPhysics>());
+
+      final gesture2 = await tester.startGesture(
+        guardCenter + const Offset(10, 10),
+      );
+      await tester.pump();
+
+      await gesture1.up();
+      await tester.pump();
+
+      final stillLockedScrollView = tester.widget<SingleChildScrollView>(
+        pageScrollFinder,
+      );
+      expect(
+        stillLockedScrollView.physics,
+        isA<NeverScrollableScrollPhysics>(),
+        reason: 'scroll must stay locked while second finger is down',
+      );
+
+      await gesture2.up();
+      await tester.pump();
+
+      final unlockedScrollView = tester.widget<SingleChildScrollView>(
+        pageScrollFinder,
+      );
+      expect(
+        unlockedScrollView.physics,
+        isA<AlwaysScrollableScrollPhysics>(),
+        reason: 'scroll must unlock after all fingers are released',
+      );
+    },
+  );
+
+  testWidgets(
     'changing the map metric does not call loadProgressive again',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(800, 1400));

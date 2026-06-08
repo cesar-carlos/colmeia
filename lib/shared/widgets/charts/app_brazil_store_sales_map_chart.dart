@@ -509,6 +509,7 @@ class _AppBrazilStoreSalesMapChartState
       ValueNotifier<BrazilMapMarkerSelection>(const BrazilMapMarkerSelection());
   String? _previewedStoreId;
   String? _activeRegionKey;
+  bool _selectedDetailIsClusterOrMunicipality = false;
   bool _desktopBranchSidebarCollapsed = false;
   bool _compactBranchSheetLayout = false;
   AppBrazilStoreSalesMapDiagnostics? _lastEmittedDiagnostics;
@@ -723,6 +724,12 @@ class _AppBrazilStoreSalesMapChartState
         _desktopBranchSidebarCollapsed = false;
       }
       _invalidateResolvedSnapshotVisual();
+    }
+
+    if (oldWidget.style.markerAggregation != widget.style.markerAggregation) {
+      _userHasManualMapViewport = false;
+      _cachedPreferredViewportBinding = null;
+      _cachedPreferredViewport = null;
     }
 
     if (!identical(oldWidget.points, widget.points)) {
@@ -1575,6 +1582,8 @@ class _AppBrazilStoreSalesMapChartState
     final point = payload.primaryPoint;
     final focusSelectedStore =
         !payload.isCluster && !payload.isMunicipalityAggregate;
+    _selectedDetailIsClusterOrMunicipality =
+        payload.isCluster || payload.isMunicipalityAggregate;
     _selectPoint(point, focusStore: focusSelectedStore);
     if (_shouldUseCompactBranchSheet) {
       unawaited(
@@ -1740,6 +1749,7 @@ class _AppBrazilStoreSalesMapChartState
   void _clearSelectedMarkerDetail() {
     _cancelPendingPreviewClear();
     _viewportController.reset();
+    _selectedDetailIsClusterOrMunicipality = false;
     setState(() {
       _selection.clearStoreSelection(
         controlledSelectedStoreId: widget.selectedStoreId,
@@ -1782,6 +1792,13 @@ class _AppBrazilStoreSalesMapChartState
       setState(() {
         _userHasManualMapViewport = true;
       });
+    }
+
+    if (event.source == AppMapViewportChangeSource.user &&
+        widget.style.showStoreDetail &&
+        _selectedStoreId != null &&
+        !_selectedDetailIsClusterOrMunicipality) {
+      _clearSelectedMarkerDetail();
     }
 
     if (!widget.style.enableProximityCluster) {

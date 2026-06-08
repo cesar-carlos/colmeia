@@ -1061,6 +1061,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get mapCenterViewportTooltip => 'Center map';
+
+  @override
   String get brazilStoreSalesMapMetricGroupLabel => 'Metric';
 
   @override
@@ -3242,6 +3245,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String salesLiveMapPartialRowCapReached(int count) {
     return '$count agent(s) reached the query row limit; the map may be incomplete.';
+  }
+
+  @override
+  String salesLiveMapPaginationStalledWarning(int count) {
+    return '$count agent(s) had catalog pagination stall; some branches may be missing.';
   }
 
   @override

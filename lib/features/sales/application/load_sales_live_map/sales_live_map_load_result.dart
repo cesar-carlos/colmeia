@@ -33,6 +33,7 @@ class SalesLiveMapLoadResult {
     required this.skippedOfflineAgentCount,
     required this.rowCapReachedAgentCount,
     required this.refreshedAt,
+    this.paginationStalledAgentCount = 0,
     this.salesAgentCount = 0,
     this.catalogBranchCount = 0,
     this.salesBranchCount = 0,
@@ -73,6 +74,7 @@ class SalesLiveMapLoadResult {
   final int missingClientTokenAgentCount;
   final int skippedOfflineAgentCount;
   final int rowCapReachedAgentCount;
+  final int paginationStalledAgentCount;
   final int salesAgentCount;
   final int catalogBranchCount;
   final int salesBranchCount;
@@ -109,6 +111,7 @@ class SalesLiveMapLoadResult {
       missingClientTokenAgentCount > 0 ||
       skippedOfflineAgentCount > 0 ||
       rowCapReachedAgentCount > 0 ||
+      paginationStalledAgentCount > 0 ||
       failedCatalogAgentCount > 0 ||
       failedSalesAgentCount > 0 ||
       noSalesAgentOptions.isNotEmpty ||
@@ -121,6 +124,7 @@ class SalesLiveMapLoadResult {
     'missingClientTokenAgentCount': missingClientTokenAgentCount > 0,
     'skippedOfflineAgentCount': skippedOfflineAgentCount > 0,
     'rowCapReachedAgentCount': rowCapReachedAgentCount > 0,
+    'paginationStalledAgentCount': paginationStalledAgentCount > 0,
     'failedCatalogAgentCount': failedCatalogAgentCount > 0,
     'failedSalesAgentCount': failedSalesAgentCount > 0,
     'noSalesAgentOptions': noSalesAgentOptions.isNotEmpty,

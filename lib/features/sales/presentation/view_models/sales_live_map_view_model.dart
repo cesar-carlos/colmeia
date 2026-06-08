@@ -240,6 +240,10 @@ class SalesLiveMapViewModel {
         l10n.salesLiveMapPartialRowCapReached(
           result.rowCapReachedAgentCount,
         ),
+      if (result.paginationStalledAgentCount > 0)
+        l10n.salesLiveMapPaginationStalledWarning(
+          result.paginationStalledAgentCount,
+        ),
       if (result.mappedBranchCount < result.totalBranchCount)
         l10n.salesLiveMapPartialMissingCoordinates(
           result.totalBranchCount - result.mappedBranchCount,

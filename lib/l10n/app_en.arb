@@ -534,6 +534,7 @@
       "label": {"type": "String"}
     }
   },
+  "mapCenterViewportTooltip": "Center map",
   "brazilStoreSalesMapMetricGroupLabel": "Metric",
   "brazilStoreSalesMapRegionGroupLabel": "Region",
   "brazilStoreSalesMapLoadingMessage": "Loading Brazil map…",
@@ -1620,6 +1621,12 @@
   },
   "salesLiveMapPartialRowCapReached": "{count} agent(s) reached the query row limit; the map may be incomplete.",
   "@salesLiveMapPartialRowCapReached": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "salesLiveMapPaginationStalledWarning": "{count} agent(s) had catalog pagination stall; some branches may be missing.",
+  "@salesLiveMapPaginationStalledWarning": {
     "placeholders": {
       "count": {"type": "int"}
     }

@@ -204,28 +204,52 @@ class _SalesLiveMapChartPanelState extends State<SalesLiveMapChartPanel> {
   }
 }
 
-class _SalesLiveMapInlineParentScrollGuard extends StatelessWidget {
+class _SalesLiveMapInlineParentScrollGuard extends StatefulWidget {
   const _SalesLiveMapInlineParentScrollGuard({required this.child});
 
   final Widget child;
 
   @override
+  State<_SalesLiveMapInlineParentScrollGuard> createState() =>
+      _SalesLiveMapInlineParentScrollGuardState();
+}
+
+class _SalesLiveMapInlineParentScrollGuardState
+    extends State<_SalesLiveMapInlineParentScrollGuard> {
+  int _pointerDownCount = 0;
+
+  @override
   Widget build(BuildContext context) {
     if (!AppBreakpoints.isMobile(context)) {
-      return child;
+      return widget.child;
     }
 
     return Listener(
       key: const ValueKey<String>('sales-live-map-inline-scroll-guard'),
       behavior: HitTestBehavior.translucent,
-      onPointerDown: (_) => _dispatch(context, lockParentScroll: true),
-      onPointerUp: (_) => _dispatch(context, lockParentScroll: false),
-      onPointerCancel: (_) => _dispatch(context, lockParentScroll: false),
-      child: child,
+      onPointerDown: (_) {
+        _pointerDownCount++;
+        if (_pointerDownCount == 1) {
+          _dispatch(lockParentScroll: true);
+        }
+      },
+      onPointerUp: (_) => _releasePointer(),
+      onPointerCancel: (_) => _releasePointer(),
+      child: widget.child,
     );
   }
 
-  void _dispatch(BuildContext context, {required bool lockParentScroll}) {
+  void _releasePointer() {
+    if (_pointerDownCount <= 0) {
+      return;
+    }
+    _pointerDownCount--;
+    if (_pointerDownCount == 0) {
+      _dispatch(lockParentScroll: false);
+    }
+  }
+
+  void _dispatch({required bool lockParentScroll}) {
     SalesLiveMapParentScrollLockNotification(
       lockParentScroll: lockParentScroll,
     ).dispatch(context);
