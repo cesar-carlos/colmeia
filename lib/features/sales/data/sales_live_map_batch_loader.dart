@@ -165,8 +165,8 @@ class SalesLiveMapBatchLoader {
       }
     }
     return finalResult ??
-        Failure<SalesLiveMapBatchLoadResult, AppFailure>(
-          const UnknownFailure(
+        const Failure<SalesLiveMapBatchLoadResult, AppFailure>(
+          UnknownFailure(
             message: 'Sales live map batch load produced no data',
             userMessage: 'Unable to load the sales live map.',
           ),

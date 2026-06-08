@@ -1632,6 +1632,7 @@
   },
   "salesCardProdutoTendênciaTitle": "Tendência de vendas",
   "salesCardProdutoTendênciaMediaMovelTitle": "Tendência de vendas (média móvel)",
+  "salesProdutoTendenciaMediaMovelShareRowLimitExceeded": "Não é possível exportar mais de {maxRows} registros. O resultado atual tem {totalCount} registros.",
   "salesMonthlyPnlPageSubtitle": "Venda, lucro e custo da mercadoria por mês na filial selecionada. A janela termina no mes de referência.",
   "salesMonthlyPnlFilterAnchorMonth": "Mes de referência",
   "salesMonthlyPnlChartTitle": "Resultado mensal",

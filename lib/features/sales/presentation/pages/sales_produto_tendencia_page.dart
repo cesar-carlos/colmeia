@@ -27,6 +27,7 @@ import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_agent_auto_refresh_mixin.dart';
+import 'package:colmeia/features/sales/presentation/share/sales_produto_tendencia_share.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_trend_date_preset.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
@@ -44,8 +45,6 @@ import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
-import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
-import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:colmeia/shared/widgets/metrics/app_metric_stat_card.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:colmeia/shared/widgets/pagination/app_table_pagination_footer.dart';
@@ -512,6 +511,20 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     );
     final fullscreenShareKey = GlobalKey();
     final shareTitle = l10n.salesProdutoTendenciaSummaryByClassificacaoTitle;
+    final shareMetadata = buildSalesProdutoTendenciaClassificacaoShareMetadata(
+      l10n: l10n,
+      summaryRows: _summaryRows,
+      buckets: buckets
+          .map(
+            (bucket) => SalesProdutoTendenciaClassBucket(
+              classificacao: bucket.classificacao,
+              count: bucket.count,
+              impacto: bucket.impacto,
+            ),
+          )
+          .toList(growable: false),
+      tokens: context.appTokens,
+    );
     unawaited(
       context.pushChartFullscreen<void>(
         extra: AppChartFullscreenRouteExtra(
@@ -521,7 +534,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
           headerTrailing: buildChartFullscreenShareTrailing(
             context: context,
             shareKey: fullscreenShareKey,
-            subject: shareTitle,
+            metadata: shareMetadata,
           ),
           chartBuilder: (fullscreenContext) {
             final ft = fullscreenContext.appTokens;
@@ -533,7 +546,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
                   return AppComparisonBarChart<_TrendClassBucket>(
                   items: buckets,
                   labelBuilder: (b) =>
-                      _classificacaoLabel(fl10n, b.classificacao),
+                      salesProdutoTendenciaClassificacaoLabel(fl10n, b.classificacao),
                   valueBuilder: (b) => b.count,
                   plotFloorAccessibilityNotice:
                       fl10n.chartComparisonPlotFloorNotice,
@@ -550,7 +563,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
                         bucket.count,
                       ),
                   tooltipLabelBuilder: (bucket, _) =>
-                      '${_classificacaoLabel(fl10n, bucket.classificacao)} • '
+                      '${salesProdutoTendenciaClassificacaoLabel(fl10n, bucket.classificacao)} • '
                       '${bucket.count} • '
                       '${NumberFormat.decimalPattern(fl10n.localeName).format(bucket.impacto.round())}',
                   );
@@ -600,6 +613,19 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     required bool useAbsolutePercentForLosers,
   }) {
     final fullscreenShareKey = GlobalKey();
+    final l10n = AppLocalizations.of(context);
+    final tokens = context.appTokens;
+    final shareMetadata = useAbsolutePercentForLosers
+        ? buildSalesProdutoTendenciaTopLosersShareMetadata(
+            l10n: l10n,
+            rows: items,
+            tokens: tokens,
+          )
+        : buildSalesProdutoTendenciaTopGainersShareMetadata(
+            l10n: l10n,
+            rows: items,
+            tokens: tokens,
+          );
     unawaited(
       context.pushChartFullscreen<void>(
         extra: AppChartFullscreenRouteExtra(
@@ -609,7 +635,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
           headerTrailing: buildChartFullscreenShareTrailing(
             context: context,
             shareKey: fullscreenShareKey,
-            subject: title,
+            metadata: shareMetadata,
           ),
           chartBuilder: (fullscreenContext) {
             final ft = fullscreenContext.appTokens;
@@ -807,18 +833,6 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
         '${AppBrFormatters.shortDateFormat.format(range.end)}';
   }
 
-  String _classificacaoLabel(AppLocalizations l10n, String? value) {
-    final raw = value?.trim().toUpperCase();
-    return switch (raw) {
-      'PAROU DE VENDER' => l10n.salesProdutoTendenciaClassificacaoStopped,
-      'NOVO PRODUTO' => l10n.salesProdutoTendenciaClassificacaoNew,
-      'CRESCENDO' => l10n.salesProdutoTendenciaClassificacaoGrowing,
-      'CAINDO' => l10n.salesProdutoTendenciaClassificacaoFalling,
-      'ESTAVEL' => l10n.salesProdutoTendenciaClassificacaoStable,
-      _ => l10n.salesProdutoTendenciaFilterAllOption,
-    };
-  }
-
   String _periodDescriptorLabel(AppLocalizations l10n, DateTimeRange range) {
     return salesTrendRangeDescriptorLabel(l10n, range);
   }
@@ -832,7 +846,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     if (_classificacao != null) {
       labels.add(
         '${l10n.salesProdutoTendenciaFilterClassification}: '
-        '${_classificacaoLabel(l10n, _classificacao)}',
+        '${salesProdutoTendenciaClassificacaoLabel(l10n, _classificacao)}',
       );
     }
     if (_codGrupoProduto != null) {
@@ -984,30 +998,19 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
                   l10n,
                   _periodoAnterior,
                 ),
-                classLabelBuilder: (value) => _classificacaoLabel(l10n, value),
+                classLabelBuilder: (value) => salesProdutoTendenciaClassificacaoLabel(l10n, value),
                 onOpenClassificacaoFullscreen: _openClassificacaoFullscreen,
                 classificacaoShareKey: _classificacaoShareKey,
                 onShareClassificacao: _loading
                     ? null
                     : () => context.shareChartFromRequest(
-                        ChartShareMetadata(
-                          title: l10n
-                              .salesProdutoTendenciaSummaryByClassificacaoTitle,
-                          tableData: ChartShareTableData(
-                            headers: <String>[
-                              l10n.chartSharePdfColumnLabel,
-                              l10n.chartSharePdfColumnSalesCount,
-                              l10n.chartSharePdfColumnAmount,
-                            ],
-                            rows: <List<String>>[
-                              for (final row in _summaryRows)
-                                <String>[
-                                  _classificacaoLabel(l10n, row.classificacao),
-                                  row.quantidadeProdutos.toString(),
-                                  AppBrFormatters.currency(row.impactoLiquido),
-                                ],
-                            ],
+                        buildSalesProdutoTendenciaClassificacaoShareMetadata(
+                          l10n: l10n,
+                          summaryRows: _summaryRows,
+                          buckets: salesProdutoTendenciaBucketsFromSummary(
+                            _summaryRows,
                           ),
+                          tokens: tokens,
                         ).toShareRequest(_classificacaoShareKey),
                       ),
               ),
@@ -1023,45 +1026,19 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
                 onShareGainers: _loading
                     ? null
                     : () => context.shareChartFromRequest(
-                        ChartShareMetadata(
-                          title: l10n.salesProdutoTendenciaTopGainersTitle,
-                          tableData: ChartShareTableData(
-                            headers: <String>[
-                              l10n.chartSharePdfColumnName,
-                              l10n.chartSharePdfColumnValue,
-                            ],
-                            rows: <List<String>>[
-                              for (final row in _trendTopGainersRows(_rows))
-                                <String>[
-                                  row.nomeProduto,
-                                  NumberFormat.decimalPattern(
-                                    l10n.localeName,
-                                  ).format(row.diferenca),
-                                ],
-                            ],
-                          ),
+                        buildSalesProdutoTendenciaTopGainersShareMetadata(
+                          l10n: l10n,
+                          rows: _trendTopGainersRows(_rows),
+                          tokens: tokens,
                         ).toShareRequest(_gainersShareKey),
                       ),
                 onShareLosers: _loading
                     ? null
                     : () => context.shareChartFromRequest(
-                        ChartShareMetadata(
-                          title: l10n.salesProdutoTendenciaTopLosersTitle,
-                          tableData: ChartShareTableData(
-                            headers: <String>[
-                              l10n.chartSharePdfColumnName,
-                              l10n.chartSharePdfColumnValue,
-                            ],
-                            rows: <List<String>>[
-                              for (final row in _trendTopLosersRows(_rows))
-                                <String>[
-                                  row.nomeProduto,
-                                  NumberFormat.decimalPattern(
-                                    l10n.localeName,
-                                  ).format(row.diferenca),
-                                ],
-                            ],
-                          ),
+                        buildSalesProdutoTendenciaTopLosersShareMetadata(
+                          l10n: l10n,
+                          rows: _trendTopLosersRows(_rows),
+                          tokens: tokens,
                         ).toShareRequest(_losersShareKey),
                       ),
               ),
@@ -1074,7 +1051,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
                 pageSize: _pageSize,
                 onPageSelected: _onPageSelected,
                 onPageSizeChanged: _onPageSizeChanged,
-                classLabelBuilder: (value) => _classificacaoLabel(l10n, value),
+                classLabelBuilder: (value) => salesProdutoTendenciaClassificacaoLabel(l10n, value),
               ),
             ],
           ],

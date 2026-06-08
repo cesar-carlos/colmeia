@@ -115,6 +115,61 @@ void main() {
   );
 
   test(
+    'full pass retries branches left unresolved by the SQL municipality preview',
+    () async {
+      final refreshedAt = DateTime(2026, 6, 8, 12);
+      final aggregate = SalesLiveMapBranchAggregate.fromCadastro(
+        participant: AgentQueryExecutionParticipant<CadastroFilialRow>(
+          agentId: 'agent-a',
+          displayName: 'Agente agent-a',
+          rows: const <CadastroFilialRow>[],
+          elapsedMs: 0,
+          sourceRowCount: 0,
+        ),
+        row: const CadastroFilialRow(
+          codEmpresa: 1,
+          codFilial: 1,
+          nomeFilial: 'CASA DO MEL VILHENA',
+          cep: '76980000',
+        ),
+      );
+
+      final sqlOutcome = await geolocator.resolveSqlMunicipalityPoints(
+        <SalesLiveMapBranchAggregate>[aggregate],
+        refreshedAt: refreshedAt,
+      );
+      expect(sqlOutcome.points, isEmpty);
+      expect(sqlOutcome.unresolvedAndCachedCount, 1);
+
+      pointResolver.resolved[aggregate.id] = SalesLiveMapResolvedPoint(
+        point: SalesLiveMapPoint(
+          id: aggregate.id,
+          name: aggregate.name,
+          uf: 'RO',
+          latitude: -12.74,
+          longitude: -60.15,
+          salesAmount: 0,
+          salesCount: 0,
+          locationResolution: SalesLiveMapLocationResolution.cep,
+        ),
+      );
+
+      final fullOutcome = await geolocator.resolveBranchPoints(
+        <SalesLiveMapBranchAggregate>[aggregate],
+        refreshedAt: refreshedAt,
+      );
+
+      expect(fullOutcome.points, hasLength(1));
+      expect(
+        fullOutcome.points.single.locationResolution,
+        SalesLiveMapLocationResolution.cep,
+      );
+      expect(pointResolver.sqlMunicipalityResolveCalls, 1);
+      expect(pointResolver.resolveCalls, 1);
+    },
+  );
+
+  test(
     'caches unresolved (negative) entries so subsequent runs short-circuit',
     () async {
       final refreshedAt = DateTime(2026, 5, 27, 12);

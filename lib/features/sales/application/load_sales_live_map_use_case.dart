@@ -598,25 +598,26 @@ class LoadSalesLiveMapUseCase {
     if (salesStopwatch?.isRunning ?? false) {
       salesStopwatch!.stop();
     }
-    _diagnosticsLogger.trace(
-      'Sales live map SQL reports loaded',
-      <String, Object?>{
-        'reloadReason': reason.name,
-        'catalogScopeKind': catalogScope.kind.name,
-        'catalogSource':
-            (cachedCatalog?.source ?? SalesLiveMapCatalogSource.remote).name,
-        'resolveDurationMs': resolveSw?.elapsedMilliseconds,
-        'salesDurationMs': salesStopwatch?.elapsedMilliseconds,
-        'catalogDurationMs': catalogStopwatch?.elapsedMilliseconds ?? 0,
-        'selectedAgentCount': selectedAgentIds?.length ?? 0,
-        'selectedBranchCount': queryFilter.selectedBranches.length,
-        'salesReportElapsedMs': salesReport.totalElapsedMs,
-        'catalogReportElapsedMs': catalogPage.report.totalElapsedMs,
-        'salesLoadSuccess': true,
-        'catalogLoadSuccess': true,
-      },
-    );
-    _diagnosticsLogger.logParticipantMetrics(salesReport);
+    _diagnosticsLogger
+      ..trace(
+        'Sales live map SQL reports loaded',
+        <String, Object?>{
+          'reloadReason': reason.name,
+          'catalogScopeKind': catalogScope.kind.name,
+          'catalogSource':
+              (cachedCatalog?.source ?? SalesLiveMapCatalogSource.remote).name,
+          'resolveDurationMs': resolveSw?.elapsedMilliseconds,
+          'salesDurationMs': salesStopwatch?.elapsedMilliseconds,
+          'catalogDurationMs': catalogStopwatch?.elapsedMilliseconds ?? 0,
+          'selectedAgentCount': selectedAgentIds?.length ?? 0,
+          'selectedBranchCount': queryFilter.selectedBranches.length,
+          'salesReportElapsedMs': salesReport.totalElapsedMs,
+          'catalogReportElapsedMs': catalogPage.report.totalElapsedMs,
+          'salesLoadSuccess': true,
+          'catalogLoadSuccess': true,
+        },
+      )
+      ..logParticipantMetrics(salesReport);
 
     mapped ??= _SalesLiveMapMappedResult(
       result: _cancelledResult(refreshedAt: now),

@@ -1,4 +1,5 @@
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card_models.dart';
+import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
 
 /// Tabular chart values included in a shared PDF export.
 class ChartShareTableData {
@@ -88,6 +89,25 @@ class ChartShareTableData {
                   secondaryList[index],
                 ]
               : <String>[rowList[index].label, rowList[index].value],
+      ],
+    );
+  }
+
+  static ChartShareTableData fromReportColumns<T>({
+    required List<AppReportColumn<T>> columns,
+    required List<T> rows,
+  }) {
+    if (columns.isEmpty) {
+      return const ChartShareTableData(headers: <String>[], rows: <List<String>>[]);
+    }
+    return ChartShareTableData(
+      headers: columns.map((column) => column.label).toList(growable: false),
+      rows: <List<String>>[
+        for (final row in rows)
+          <String>[
+            for (final column in columns)
+              column.formatValue(column.valueGetter(row)),
+          ],
       ],
     );
   }

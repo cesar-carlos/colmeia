@@ -161,4 +161,5 @@ class SalesLiveMapBranchLocationCache {
       _entries.remove(_entries.keys.first);
     }
   }
+
 }

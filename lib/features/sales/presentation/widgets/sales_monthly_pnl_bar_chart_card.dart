@@ -10,6 +10,7 @@ import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.d
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_bar_chart_preferences.dart';
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_point_percent_metric.dart';
 import 'package:colmeia/features/sales/presentation/sales_monthly_pnl_chart_keys.dart';
+import 'package:colmeia/features/sales/presentation/share/sales_monthly_pnl_share.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
@@ -19,8 +20,6 @@ import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_dashboard_comparison_bar_chart_preset.dart';
 import 'package:colmeia/shared/widgets/charts/app_grouped_column_chart.dart';
-import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
-import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
@@ -179,8 +178,6 @@ class _SalesMonthlyPnlBarChartCardState
 
     final summary = _semanticsSummary(l10n, widget.points);
 
-    final shareTitle = l10n.salesMonthlyPnlBarChartTitle;
-
     return Semantics(
       container: true,
       label: l10n.salesMonthlyPnlBarChartSemantics,
@@ -210,26 +207,16 @@ class _SalesMonthlyPnlBarChartCardState
         onShare: widget.isLoading
             ? null
             : () => context.shareChartFromRequest(
-                ChartShareMetadata(
-                  title: shareTitle,
-                  subtitle: l10n.salesMonthlyPnlBarChartSubtitle,
-                  tableData: ChartShareTableData(
-                    headers: <String>[
-                      l10n.chartSharePdfColumnMonth,
-                      l10n.chartSharePdfColumnRevenue,
-                      l10n.chartSharePdfColumnCost,
-                      l10n.chartSharePdfColumnProfit,
-                    ],
-                    rows: <List<String>>[
-                      for (final point in widget.points)
-                        <String>[
-                          point.anoMes,
-                          AppBrFormatters.currency(point.venda),
-                          AppBrFormatters.currency(point.custoMercadoria),
-                          AppBrFormatters.currency(point.lucro),
-                        ],
-                    ],
-                  ),
+                buildSalesMonthlyPnlBarChartShareMetadata(
+                  l10n: l10n,
+                  points: widget.points,
+                  session: _session,
+                  tokens: tokens,
+                  chartTheme: chartTheme,
+                  localeTag: localeTag,
+                  primaryMoney: primaryMoney,
+                  gridLineColor: gridLineColor,
+                  percentRatioFormat: percentRatioFormat,
                 ).toShareRequest(_shareKey),
               ),
         valuesAllZero: () => _valuesAllZero(widget.points),
@@ -684,8 +671,38 @@ Future<void> pushSalesMonthlyPnlBarChartFullscreen({
   String? filterSummary,
 }) {
   final pageL10n = AppLocalizations.of(context);
+  final theme = Theme.of(context);
+  final tokens = theme.appTokens;
+  final chartTheme = AppChartTheme.fromContext(
+    context,
+    preset: AppChartPreset.standard,
+  );
+  final localeTag = Localizations.localeOf(context).toLanguageTag();
+  final primaryMoney = NumberFormat.currency(
+    locale: localeTag,
+    symbol: r'R$',
+    decimalDigits: 0,
+  );
+  final gridLineColor = theme.colorScheme.outlineVariant.withValues(
+    alpha: 0.35,
+  );
+  final percentRatioFormat = NumberFormat.decimalPercentPattern(
+    locale: localeTag,
+    decimalDigits: 1,
+  );
   final fullscreenShareKey = GlobalKey();
   final shareTitle = pageL10n.salesMonthlyPnlBarChartTitle;
+  final shareMetadata = buildSalesMonthlyPnlBarChartShareMetadata(
+    l10n: pageL10n,
+    points: points,
+    session: initialSession,
+    tokens: tokens,
+    chartTheme: chartTheme,
+    localeTag: localeTag,
+    primaryMoney: primaryMoney,
+    gridLineColor: gridLineColor,
+    percentRatioFormat: percentRatioFormat,
+  );
   return context.pushChartFullscreen<void>(
     extra: AppChartFullscreenRouteExtra(
       title: shareTitle,
@@ -695,7 +712,7 @@ Future<void> pushSalesMonthlyPnlBarChartFullscreen({
       headerTrailing: buildChartFullscreenShareTrailing(
         context: context,
         shareKey: fullscreenShareKey,
-        subject: shareTitle,
+        metadata: shareMetadata,
       ),
       chartBuilder: (fullscreenContext) {
         final l10nFs = AppLocalizations.of(fullscreenContext);

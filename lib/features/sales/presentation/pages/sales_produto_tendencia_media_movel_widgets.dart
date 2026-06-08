@@ -224,18 +224,22 @@ class SalesProdutoTendenciaMediaMovelCountChartSection extends StatelessWidget {
   const SalesProdutoTendenciaMediaMovelCountChartSection({
     required this.l10n,
     required this.buckets,
+    this.shareKey,
+    this.onShare,
     super.key,
   });
 
   final AppLocalizations l10n;
   final List<SalesProdutoTendenciaMediaMovelClassBucket> buckets;
+  final Key? shareKey;
+  final VoidCallback? onShare;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.appTokens;
     final locale = Localizations.localeOf(context).toLanguageTag();
 
-    return AppComparisonBarChart<SalesProdutoTendenciaMediaMovelClassBucket>(
+    final chart = AppComparisonBarChart<SalesProdutoTendenciaMediaMovelClassBucket>(
       title: l10n.salesProdutoTendenciaMediaMovelSummaryByClassificacaoTitle,
       subtitle:
           l10n.salesProdutoTendenciaMediaMovelSummaryByClassificacaoSubtitle,
@@ -245,6 +249,8 @@ class SalesProdutoTendenciaMediaMovelCountChartSection extends StatelessWidget {
         bucket.classificacao,
       ),
       valueBuilder: (bucket) => bucket.count,
+      onShare: onShare,
+      shareProgressKey: shareKey,
       dataLabelBuilder: (bucket, value) => '${bucket.count}',
       tooltipLabelBuilder: (bucket, value) =>
           '${produtoTendenciaMediaMovelClassificacaoLabel(l10n, bucket.classificacao)}: '
@@ -258,6 +264,10 @@ class SalesProdutoTendenciaMediaMovelCountChartSection extends StatelessWidget {
         child: Text(l10n.salesProdutoTendenciaMediaMovelNoData),
       ),
     );
+    if (shareKey == null) {
+      return chart;
+    }
+    return RepaintBoundary(key: shareKey, child: chart);
   }
 }
 
@@ -266,18 +276,22 @@ class SalesProdutoTendenciaMediaMovelImpactChartSection
   const SalesProdutoTendenciaMediaMovelImpactChartSection({
     required this.l10n,
     required this.buckets,
+    this.shareKey,
+    this.onShare,
     super.key,
   });
 
   final AppLocalizations l10n;
   final List<SalesProdutoTendenciaMediaMovelClassBucket> buckets;
+  final Key? shareKey;
+  final VoidCallback? onShare;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.appTokens;
     final locale = Localizations.localeOf(context).toLanguageTag();
 
-    return AppComparisonBarChart<SalesProdutoTendenciaMediaMovelClassBucket>(
+    final chart = AppComparisonBarChart<SalesProdutoTendenciaMediaMovelClassBucket>(
       title: l10n.salesProdutoTendenciaMediaMovelSummaryByImpactTitle,
       subtitle: l10n.salesProdutoTendenciaMediaMovelSummaryByImpactSubtitle,
       items: buckets,
@@ -286,6 +300,8 @@ class SalesProdutoTendenciaMediaMovelImpactChartSection
         bucket.classificacao,
       ),
       valueBuilder: (bucket) => bucket.impacto,
+      onShare: onShare,
+      shareProgressKey: shareKey,
       dataLabelBuilder: (bucket, value) =>
           NumberFormat.decimalPattern('pt_BR').format(bucket.impacto),
       tooltipLabelBuilder: (bucket, value) =>
@@ -301,6 +317,10 @@ class SalesProdutoTendenciaMediaMovelImpactChartSection
         child: Text(l10n.salesProdutoTendenciaMediaMovelNoData),
       ),
     );
+    if (shareKey == null) {
+      return chart;
+    }
+    return RepaintBoundary(key: shareKey, child: chart);
   }
 }
 
@@ -319,6 +339,7 @@ class SalesProdutoTendenciaMediaMovelDetailsSection extends StatelessWidget {
     required this.onNext,
     required this.onPrevious,
     required this.onPageSizeChanged,
+    this.headerTrailing,
     super.key,
   });
 
@@ -335,6 +356,7 @@ class SalesProdutoTendenciaMediaMovelDetailsSection extends StatelessWidget {
   final VoidCallback? onNext;
   final VoidCallback? onPrevious;
   final ValueChanged<int> onPageSizeChanged;
+  final Widget? headerTrailing;
 
   @override
   Widget build(BuildContext context) {
@@ -347,6 +369,7 @@ class SalesProdutoTendenciaMediaMovelDetailsSection extends StatelessWidget {
         SalesProdutoTendenciaMediaMovelSectionHeader(
           title: l10n.salesProdutoTendenciaMediaMovelDetailsTitle,
           subtitle: l10n.salesProdutoTendenciaMediaMovelDetailsSubtitle,
+          trailing: headerTrailing,
         ),
         SizedBox(height: tokens.gapMd),
         AppSectionCard(
@@ -528,17 +551,19 @@ class SalesProdutoTendenciaMediaMovelSectionHeader extends StatelessWidget {
   const SalesProdutoTendenciaMediaMovelSectionHeader({
     required this.title,
     required this.subtitle,
+    this.trailing,
     super.key,
   });
 
   final String title;
   final String subtitle;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.appTokens;
-    return Column(
+    final headerText = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
@@ -554,6 +579,17 @@ class SalesProdutoTendenciaMediaMovelSectionHeader extends StatelessWidget {
             color: theme.appColors.onSurfaceVariant,
           ),
         ),
+      ],
+    );
+    final trailingWidget = trailing;
+    if (trailingWidget == null) {
+      return headerText;
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Expanded(child: headerText),
+        trailingWidget,
       ],
     );
   }

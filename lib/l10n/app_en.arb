@@ -2057,6 +2057,17 @@
   "salesProdutoTendenciaMediaMovelDetailsSubtitle": "Paginated detail with product, averages, group, and trend classification.",
   "salesProdutoTendenciaMediaMovelDetailsHorizontalScrollCaption": "Swipe sideways to see all columns.",
   "salesProdutoTendenciaMediaMovelDetailsEntityLabel": "rows",
+  "salesProdutoTendenciaMediaMovelShareRowLimitExceeded": "Cannot export more than {maxRows} rows. The current result has {totalCount} rows.",
+  "@salesProdutoTendenciaMediaMovelShareRowLimitExceeded": {
+    "placeholders": {
+      "maxRows": {
+        "type": "int"
+      },
+      "totalCount": {
+        "type": "int"
+      }
+    }
+  },
   "salesProdutoTendenciaMediaMovelDetailsSortedBy": "Sorted by: {sortLabel}",
   "@salesProdutoTendenciaMediaMovelDetailsSortedBy": {
     "placeholders": {

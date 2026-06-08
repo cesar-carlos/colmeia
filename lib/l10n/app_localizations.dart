@@ -6874,6 +6874,15 @@ abstract class AppLocalizations {
   /// **'rows'**
   String get salesProdutoTendenciaMediaMovelDetailsEntityLabel;
 
+  /// No description provided for @salesProdutoTendenciaMediaMovelShareRowLimitExceeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot export more than {maxRows} rows. The current result has {totalCount} rows.'**
+  String salesProdutoTendenciaMediaMovelShareRowLimitExceeded(
+    int maxRows,
+    int totalCount,
+  );
+
   /// No description provided for @salesProdutoTendenciaMediaMovelDetailsSortedBy.
   ///
   /// In en, this message translates to:

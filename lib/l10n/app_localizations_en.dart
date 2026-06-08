@@ -4199,6 +4199,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesProdutoTendenciaMediaMovelDetailsEntityLabel => 'rows';
 
   @override
+  String salesProdutoTendenciaMediaMovelShareRowLimitExceeded(
+    int maxRows,
+    int totalCount,
+  ) {
+    return 'Cannot export more than $maxRows rows. The current result has $totalCount rows.';
+  }
+
+  @override
   String salesProdutoTendenciaMediaMovelDetailsSortedBy(String sortLabel) {
     return 'Sorted by: $sortLabel';
   }

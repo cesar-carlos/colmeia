@@ -23,6 +23,7 @@ import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.da
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_agent_auto_refresh_mixin.dart';
 import 'package:colmeia/features/sales/presentation/sales_monthly_pnl_chart_keys.dart';
+import 'package:colmeia/features/sales/presentation/share/sales_monthly_pnl_share.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_anchor_month_support.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_anchor_month_filters_context.dart';
@@ -41,8 +42,6 @@ import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
-import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
-import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
@@ -483,7 +482,10 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
           headerTrailing: buildChartFullscreenShareTrailing(
             context: context,
             shareKey: fullscreenShareKey,
-            subject: shareTitle,
+            metadata: buildSalesMonthlyPnlLineChartShareMetadata(
+              l10n: pageL10n,
+              points: pointsSnapshot,
+            ),
           ),
           chartBuilder: (fullscreenContext) {
             final l10n = AppLocalizations.of(fullscreenContext);
@@ -875,24 +877,9 @@ class _SalesMonthlyPnlLineChartState extends State<_SalesMonthlyPnlLineChart> {
             onShare: isLoading
                 ? null
                 : () => context.shareChartFromRequest(
-                    ChartShareMetadata(
-                      title: shareTitle,
-                      subtitle: l10n.salesMonthlyPnlChartSubtitle,
-                      tableData: ChartShareTableData(
-                        headers: <String>[
-                          l10n.chartSharePdfColumnMonth,
-                          l10n.chartSharePdfColumnRevenue,
-                          l10n.chartSharePdfColumnProfit,
-                        ],
-                        rows: <List<String>>[
-                          for (final point in points)
-                            <String>[
-                              point.anoMes,
-                              AppBrFormatters.currency(point.venda),
-                              AppBrFormatters.currency(point.lucro),
-                            ],
-                        ],
-                      ),
+                    buildSalesMonthlyPnlLineChartShareMetadata(
+                      l10n: l10n,
+                      points: points,
                     ).toShareRequest(_shareKey),
                   ),
             shareProgressKey: _shareKey,

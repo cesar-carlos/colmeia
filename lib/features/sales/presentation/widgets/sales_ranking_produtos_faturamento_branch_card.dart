@@ -1,12 +1,13 @@
 import 'dart:async';
 
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
+import 'package:colmeia/app/router/chart_share_icon_button.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/ranking_produtos_faturamento_row.dart';
+import 'package:colmeia/features/sales/presentation/share/sales_ranking_produtos_faturamento_share.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_ranking_produtos_faturamento_branch_metrics.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_ranking_produtos_faturamento_details_table.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_ranking_produtos_faturamento_grid_columns.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_ranking_produtos_faturamento_grid_style.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_ranking_produtos_faturamento_pie_section.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -15,9 +16,9 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_header_trailing.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/metrics/app_compact_kpi_stat.dart';
-import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
-import 'package:colmeia/shared/widgets/reports/app_report_export_handler.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -49,6 +50,7 @@ class SalesRankingProdutosFaturamentoBranchCard extends StatefulWidget {
 
 class _SalesRankingProdutosFaturamentoBranchCardState
     extends State<SalesRankingProdutosFaturamentoBranchCard> {
+  final GlobalKey _shareKey = GlobalKey();
   late List<RankingProdutosFaturamentoRow> _displayRows;
   List<AppReportSortDescriptor> _currentSorts =
       const <AppReportSortDescriptor>[];
@@ -86,9 +88,6 @@ class _SalesRankingProdutosFaturamentoBranchCardState
         widget.codFilial,
       );
 
-  List<AppReportColumn<RankingProdutosFaturamentoRow>> get _columns =>
-      rankingProdutosFaturamentoGridColumns(widget.l10n);
-
   double? _tableMaxHeight({double? heightOverride}) {
     final rowCount = _displayRows.isEmpty ? 3 : _displayRows.length;
     const headerHeight = kSalesRankingFaturamentoGridHeaderRowHeight;
@@ -106,26 +105,14 @@ class _SalesRankingProdutosFaturamentoBranchCardState
     });
   }
 
-  Future<void> _exportCsv() async {
-    try {
-      await AppReportExportHandler.export<RankingProdutosFaturamentoRow>(
-        request: const AppReportExportRequest(
-          format: AppReportExportFormat.csv,
-        ),
-        columns: _columns,
-        rows: _displayRows,
-        title: _branchTitle,
-        context: context,
+  ChartShareMetadata get _shareMetadata =>
+      buildSalesRankingProdutosFaturamentoShareMetadata(
+        l10n: widget.l10n,
+        branchTitle: _branchTitle,
+        metricSubtitle: widget.metricSubtitle,
+        displayRows: _displayRows,
+        chartRows: widget.rows,
       );
-    } on Exception {
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Falha ao exportar.')),
-      );
-    }
-  }
 
   void _openFullscreen() {
     final rowsSnapshot = List<RankingProdutosFaturamentoRow>.from(_displayRows);
@@ -135,18 +122,34 @@ class _SalesRankingProdutosFaturamentoBranchCardState
     final metricSubtitle = widget.metricSubtitle;
 
     final rowsForChart = List<RankingProdutosFaturamentoRow>.from(widget.rows);
+    final shareMetadata = buildSalesRankingProdutosFaturamentoShareMetadata(
+      l10n: l10n,
+      branchTitle: branchTitle,
+      metricSubtitle: metricSubtitle,
+      displayRows: rowsSnapshot,
+      chartRows: rowsForChart,
+    );
+    final fullscreenShareKey = GlobalKey();
 
     unawaited(
       context.pushChartFullscreen<void>(
         extra: AppChartFullscreenRouteExtra(
           title: branchTitle,
           subtitle: metricSubtitle,
+          headerTrailing: buildChartFullscreenShareTrailing(
+            context: context,
+            shareKey: fullscreenShareKey,
+            metadata: shareMetadata,
+          ),
           chartBuilder: (fullscreenContext) {
-            return _SalesRankingProdutosFaturamentoFullscreenBody(
-              l10n: l10n,
-              rows: rowsForChart,
-              displayRows: rowsSnapshot,
-              initialSorts: sortsSnapshot,
+            return RepaintBoundary(
+              key: fullscreenShareKey,
+              child: _SalesRankingProdutosFaturamentoFullscreenBody(
+                l10n: l10n,
+                rows: rowsForChart,
+                displayRows: rowsSnapshot,
+                initialSorts: sortsSnapshot,
+              ),
             );
           },
         ),
@@ -202,15 +205,17 @@ class _SalesRankingProdutosFaturamentoBranchCardState
             ],
           ),
         ),
-        IconButton(
-          onPressed: widget.rows.isEmpty ? null : _openFullscreen,
-          tooltip: widget.l10n.salesRankingProdutosFaturamentoFullscreenTooltip,
-          icon: const Icon(Icons.open_in_full),
-        ),
-        IconButton(
-          onPressed: widget.rows.isEmpty ? null : _exportCsv,
-          tooltip: widget.l10n.salesRankingProdutosFaturamentoExportTooltip,
-          icon: const Icon(Icons.download_outlined),
+        AppChartHeaderTrailing(
+          onOpenFullscreen: widget.rows.isEmpty ? null : _openFullscreen,
+          openFullscreenTooltip:
+              widget.l10n.salesRankingProdutosFaturamentoFullscreenTooltip,
+          onShare: widget.rows.isEmpty || widget.isLoading
+              ? null
+              : () => context.shareChartFromRequest(
+                  _shareMetadata.toShareRequest(_shareKey),
+                ),
+          shareProgressKey: _shareKey,
+          shareEnabled: !widget.isLoading,
         ),
       ],
     );
@@ -272,31 +277,34 @@ class _SalesRankingProdutosFaturamentoBranchCardState
       builder: (context, constraints) {
         final useDesktopLayout = constraints.maxWidth >= AppBreakpoints.desktop;
 
-        return AppSectionCard(
-          child: useDesktopLayout
-              ? Row(
-                  key: const Key('sales-ranking-branch-desktop-layout'),
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Expanded(
-                      flex: 5,
-                      child: _buildChartColumn(context),
-                    ),
-                    SizedBox(width: tokens.sectionSpacing),
-                    Expanded(
-                      flex: 6,
-                      child: _buildGrid(context, heightOverride: 520),
-                    ),
-                  ],
-                )
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    _buildChartColumn(context),
-                    SizedBox(height: tokens.contentSpacing),
-                    _buildGrid(context),
-                  ],
-                ),
+        return RepaintBoundary(
+          key: _shareKey,
+          child: AppSectionCard(
+            child: useDesktopLayout
+                ? Row(
+                    key: const Key('sales-ranking-branch-desktop-layout'),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(
+                        flex: 5,
+                        child: _buildChartColumn(context),
+                      ),
+                      SizedBox(width: tokens.sectionSpacing),
+                      Expanded(
+                        flex: 6,
+                        child: _buildGrid(context, heightOverride: 520),
+                      ),
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      _buildChartColumn(context),
+                      SizedBox(height: tokens.contentSpacing),
+                      _buildGrid(context),
+                    ],
+                  ),
+          ),
         );
       },
     );

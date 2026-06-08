@@ -1,6 +1,7 @@
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_header_trailing.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/horizontal_progress_chart_math.dart';
 import 'package:flutter/material.dart';
@@ -112,6 +113,14 @@ class AppHorizontalProgressChart<T> extends StatelessWidget {
     this.onItemTap,
     this.onItemTapEvent,
     this.barAnimationDuration,
+    this.onShare,
+    this.shareProgressKey,
+    this.shareEnabled = true,
+    this.openShareTooltip,
+    this.openShareSemanticLabel,
+    this.onOpenFullscreen,
+    this.openFullscreenTooltip,
+    this.openFullscreenSemanticLabel,
   });
 
   final List<T> items;
@@ -138,6 +147,14 @@ class AppHorizontalProgressChart<T> extends StatelessWidget {
   final void Function(T item)? onItemTap;
   final ValueChanged<AppChartItemTapEvent<T>>? onItemTapEvent;
   final Duration? barAnimationDuration;
+  final VoidCallback? onShare;
+  final Object? shareProgressKey;
+  final bool shareEnabled;
+  final String? openShareTooltip;
+  final String? openShareSemanticLabel;
+  final VoidCallback? onOpenFullscreen;
+  final String? openFullscreenTooltip;
+  final String? openFullscreenSemanticLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -168,6 +185,7 @@ class AppHorizontalProgressChart<T> extends StatelessWidget {
           fontWeight: FontWeight.w800,
           color: valueColor,
         );
+    final headerTrailing = _resolveHeaderTrailing(context);
 
     Widget body;
     if (isLoading) {
@@ -185,6 +203,7 @@ class AppHorizontalProgressChart<T> extends StatelessWidget {
         resolvedTitleStyle: resolvedTitleStyle,
         titleTextAlign: style.titleTextAlign,
         titleBottomSpacing: titleBottomSpacing,
+        headerTrailing: headerTrailing,
       );
     } else if (items.isEmpty) {
       body = Column(
@@ -196,6 +215,7 @@ class AppHorizontalProgressChart<T> extends StatelessWidget {
             titleStyle: resolvedTitleStyle,
             titleTextAlign: style.titleTextAlign,
             bottomSpacing: titleBottomSpacing,
+            headerTrailing: headerTrailing,
           ),
           emptyPlaceholder ?? const SizedBox.shrink(),
         ],
@@ -276,6 +296,7 @@ class AppHorizontalProgressChart<T> extends StatelessWidget {
             titleStyle: resolvedTitleStyle,
             titleTextAlign: style.titleTextAlign,
             bottomSpacing: titleBottomSpacing,
+            headerTrailing: headerTrailing,
           ),
           ...rows,
         ],
@@ -292,6 +313,23 @@ class AppHorizontalProgressChart<T> extends StatelessWidget {
       child: body,
     );
   }
+
+  Widget? _resolveHeaderTrailing(BuildContext context) {
+    if (onShare == null && onOpenFullscreen == null) {
+      return null;
+    }
+    final l10n = AppLocalizations.of(context);
+    return AppChartHeaderTrailing(
+      onShare: onShare,
+      shareProgressKey: shareProgressKey,
+      shareEnabled: shareEnabled && !isLoading,
+      openShareTooltip: openShareTooltip ?? l10n.chartShareTooltip,
+      openShareSemanticLabel: openShareSemanticLabel ?? l10n.chartShareTooltip,
+      onOpenFullscreen: onOpenFullscreen,
+      openFullscreenTooltip: openFullscreenTooltip,
+      openFullscreenSemanticLabel: openFullscreenSemanticLabel,
+    );
+  }
 }
 
 class _ProgressChartHeader extends StatelessWidget {
@@ -301,6 +339,7 @@ class _ProgressChartHeader extends StatelessWidget {
     required this.titleStyle,
     required this.titleTextAlign,
     required this.bottomSpacing,
+    this.headerTrailing,
   });
 
   final Widget? titleWidget;
@@ -308,29 +347,49 @@ class _ProgressChartHeader extends StatelessWidget {
   final TextStyle? titleStyle;
   final TextAlign? titleTextAlign;
   final double bottomSpacing;
+  final Widget? headerTrailing;
 
   @override
   Widget build(BuildContext context) {
+    final trailing = headerTrailing;
     final custom = titleWidget;
     if (custom != null) {
       return Padding(
         padding: EdgeInsets.only(bottom: bottomSpacing),
-        child: custom,
+        child: trailing == null
+            ? custom
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(child: custom),
+                  trailing,
+                ],
+              ),
       );
     }
 
     final resolvedTitle = title?.trim();
     if (resolvedTitle == null || resolvedTitle.isEmpty) {
-      return const SizedBox.shrink();
+      return trailing ?? const SizedBox.shrink();
     }
+
+    final titleText = Text(
+      resolvedTitle,
+      style: titleStyle,
+      textAlign: titleTextAlign,
+    );
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomSpacing),
-      child: Text(
-        resolvedTitle,
-        style: titleStyle,
-        textAlign: titleTextAlign,
-      ),
+      child: trailing == null
+          ? titleText
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Expanded(child: titleText),
+                trailing,
+              ],
+            ),
     );
   }
 }
@@ -350,6 +409,7 @@ class _LoadingRows extends StatelessWidget {
     required this.resolvedTitleStyle,
     required this.titleTextAlign,
     required this.titleBottomSpacing,
+    this.headerTrailing,
   });
 
   final int rowCount;
@@ -365,6 +425,7 @@ class _LoadingRows extends StatelessWidget {
   final TextStyle? resolvedTitleStyle;
   final TextAlign? titleTextAlign;
   final double titleBottomSpacing;
+  final Widget? headerTrailing;
 
   @override
   Widget build(BuildContext context) {
@@ -429,6 +490,7 @@ class _LoadingRows extends StatelessWidget {
           titleStyle: resolvedTitleStyle,
           titleTextAlign: titleTextAlign,
           bottomSpacing: titleBottomSpacing,
+          headerTrailing: headerTrailing,
         ),
         ...rows,
       ],

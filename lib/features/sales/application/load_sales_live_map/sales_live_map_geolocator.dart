@@ -213,13 +213,15 @@ class SalesLiveMapGeolocator {
         final resolvedPoint = resolvedById[item.aggregate.id];
         if (resolvedPoint == null) {
           unresolvedAndCachedCount += 1;
-          _locationCache.write(
-            item.aggregate,
-            SalesLiveMapCachedBranchLocation.unresolved(
-              sourceSignature: item.aggregate.locationSourceSignature,
-              cachedAt: refreshedAt,
-            ),
-          );
+          if (!sqlMunicipalityOnly) {
+            _locationCache.write(
+              item.aggregate,
+              SalesLiveMapCachedBranchLocation.unresolved(
+                sourceSignature: item.aggregate.locationSourceSignature,
+                cachedAt: refreshedAt,
+              ),
+            );
+          }
           _diagnosticsLogger.logBranchGeolocation(item.aggregate, null);
           continue;
         }

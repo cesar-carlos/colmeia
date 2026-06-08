@@ -20,6 +20,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
+import 'package:colmeia/features/sales/application/load_media_movel_rows_for_share_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
@@ -54,6 +55,9 @@ class _MockLoadTrendScreenUseCase extends Mock
 class _MockLoadGrupoProdutoOptionsUseCase extends Mock
     implements LoadGrupoProdutoOptionsUseCase {}
 
+class _MockLoadMediaMovelRowsForShareUseCase extends Mock
+    implements LoadMediaMovelRowsForShareUseCase {}
+
 class _MockLoadMarcaProdutoOptionsUseCase extends Mock
     implements LoadMarcaProdutoOptionsUseCase {}
 
@@ -63,6 +67,7 @@ late AgentClientTokenReader _pumpTokenReader;
 late LoadProdutoVendidoTendenciaDeVendaMediaMovelScreenUseCase
 _pumpLoadTrendScreenUseCase;
 late LoadGrupoProdutoOptionsUseCase _pumpLoadGrupoOptionsUseCase;
+late LoadMediaMovelRowsForShareUseCase _pumpLoadRowsForShareUseCase;
 
 void main() {
   late _MockAuthController authController;
@@ -71,6 +76,7 @@ void main() {
   late _MockLoadAvailableAgentsForSales loadAvailableAgentsForSales;
   late _MockLoadTrendScreenUseCase loadTrendScreenUseCase;
   late _MockLoadGrupoProdutoOptionsUseCase loadGrupoOptionsUseCase;
+  late _MockLoadMediaMovelRowsForShareUseCase loadRowsForShareUseCase;
   late _MockLoadMarcaProdutoOptionsUseCase loadMarcaOptionsUseCase;
 
   setUpAll(() {
@@ -92,12 +98,14 @@ void main() {
     loadAvailableAgentsForSales = _MockLoadAvailableAgentsForSales();
     loadTrendScreenUseCase = _MockLoadTrendScreenUseCase();
     loadGrupoOptionsUseCase = _MockLoadGrupoProdutoOptionsUseCase();
+    loadRowsForShareUseCase = _MockLoadMediaMovelRowsForShareUseCase();
     loadMarcaOptionsUseCase = _MockLoadMarcaProdutoOptionsUseCase();
     _pumpSalesPreferences = salesPreferences;
     _pumpLoadAvailableAgentsForSales = loadAvailableAgentsForSales;
     _pumpTokenReader = tokenReader;
     _pumpLoadTrendScreenUseCase = loadTrendScreenUseCase;
     _pumpLoadGrupoOptionsUseCase = loadGrupoOptionsUseCase;
+    _pumpLoadRowsForShareUseCase = loadRowsForShareUseCase;
 
     when(() => authController.session).thenReturn(
       AuthSession(
@@ -234,6 +242,9 @@ void main() {
       )
       ..registerSingleton<LoadMarcaProdutoOptionsUseCase>(
         loadMarcaOptionsUseCase,
+      )
+      ..registerSingleton<LoadMediaMovelRowsForShareUseCase>(
+        loadRowsForShareUseCase,
       );
   });
 
@@ -659,6 +670,7 @@ Future<void> _pumpPage(
                 ResolveSalesAgentClientTokenUseCase(_pumpTokenReader),
             loadTrendScreenUseCase: _pumpLoadTrendScreenUseCase,
             loadGrupoProdutoOptionsUseCase: _pumpLoadGrupoOptionsUseCase,
+            loadRowsForShareUseCase: _pumpLoadRowsForShareUseCase,
           ),
         ),
       ),

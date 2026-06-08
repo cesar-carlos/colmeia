@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
@@ -18,12 +19,14 @@ import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_
 import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after_host.dart';
 import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:colmeia/features/sales/application/load_media_movel_rows_for_share_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_agent_auto_refresh_mixin.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_produto_tendencia_media_movel_widgets.dart';
+import 'package:colmeia/features/sales/presentation/share/sales_produto_tendencia_media_movel_share.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
@@ -33,6 +36,8 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/agent_query_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_header_trailing.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_guard.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -44,6 +49,7 @@ class SalesProdutoTendenciaMediaMovelPage extends StatefulWidget {
     required this.resolveSalesAgentClientTokenUseCase,
     required this.loadTrendScreenUseCase,
     required this.loadGrupoProdutoOptionsUseCase,
+    required this.loadRowsForShareUseCase,
     this.relayCancelScopeBinder,
     super.key,
   });
@@ -54,6 +60,7 @@ class SalesProdutoTendenciaMediaMovelPage extends StatefulWidget {
   final LoadProdutoVendidoTendenciaDeVendaMediaMovelScreenUseCase
   loadTrendScreenUseCase;
   final LoadGrupoProdutoOptionsUseCase loadGrupoProdutoOptionsUseCase;
+  final LoadMediaMovelRowsForShareUseCase loadRowsForShareUseCase;
   final AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder;
 
   @override
@@ -77,6 +84,10 @@ class _SalesProdutoTendenciaMediaMovelPageState
   late final LoadProdutoVendidoTendenciaDeVendaMediaMovelScreenUseCase
   _loadTrendScreen;
   late final LoadGrupoProdutoOptionsUseCase _loadGrupoOptions;
+  late final LoadMediaMovelRowsForShareUseCase _loadRowsForShare;
+  final GlobalKey _countShareKey = GlobalKey();
+  final GlobalKey _impactShareKey = GlobalKey();
+  final GlobalKey _detailsShareKey = GlobalKey();
 
   String? _selectedAgentId;
   List<DashboardAgentOption> _availableAgents = <DashboardAgentOption>[];
@@ -119,6 +130,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
     _loadAgentsUseCase = widget.loadSalesAvailableAgentsUseCase;
     _loadTrendScreen = widget.loadTrendScreenUseCase;
     _loadGrupoOptions = widget.loadGrupoProdutoOptionsUseCase;
+    _loadRowsForShare = widget.loadRowsForShareUseCase;
     _selectedAgentId = _sessionService.selectedAgentId;
 
     final restored = _sessionService.restoreCardFilters(_cardId);
@@ -512,6 +524,117 @@ class _SalesProdutoTendenciaMediaMovelPageState
     await _reload();
   }
 
+  ProdutoVendidoTendenciaDeVendaMediaMovelFilter _shareDetailFilter() {
+    return ProdutoVendidoTendenciaDeVendaMediaMovelFilter(
+      quantidadeDias: _quantidadeDias,
+      searchTerm: _searchTerm,
+      classificacao: _classificacao,
+      codGrupoProduto: _codGrupoProduto,
+      sortBy: _sortBy,
+      pageSize: _pageSize,
+    );
+  }
+
+  String _detailsShareFilterSummary(AppLocalizations l10n) {
+    final parts = <String>[
+      l10n.salesProdutoTendenciaMediaMovelFilterQuantidadeDiasValue(
+        _quantidadeDias,
+      ),
+      l10n.salesProdutoTendenciaMediaMovelDetailsSortedBy(
+        produtoTendenciaMediaMovelSortLabel(l10n, _sortBy),
+      ),
+      '${_pageResult.totalCount} ${l10n.salesProdutoTendenciaMediaMovelDetailsEntityLabel}',
+    ];
+    if (_searchTerm.trim().isNotEmpty) {
+      parts.add(_searchTerm.trim());
+    }
+    if (_classificacao != null) {
+      parts.add(
+        produtoTendenciaMediaMovelClassificacaoLabel(l10n, _classificacao!),
+      );
+    }
+    if (_codGrupoProduto != null) {
+      final grupo = _grupoOptions
+          .cast<GrupoProdutoOption?>()
+          .firstWhere(
+            (option) => option?.codGrupoProduto == _codGrupoProduto,
+            orElse: () => null,
+          );
+      if (grupo != null) {
+        parts.add(grupo.nomeGrupoProduto);
+      }
+    }
+    return parts.join(' · ');
+  }
+
+  Future<void> _shareDetailsTable() async {
+    if (_loading || _pageResult.totalCount <= 0) {
+      return;
+    }
+    if (!ChartShareGuard.tryAcquire(_detailsShareKey)) {
+      return;
+    }
+
+    final l10n = AppLocalizations.of(context);
+    try {
+      final auth = context.read<AuthController>();
+      final userId = auth.session?.userId;
+      final agentId = _selectedAgentId?.trim();
+      if (userId == null || agentId == null || agentId.isEmpty) {
+        return;
+      }
+
+      final clientToken = await _resolveClientToken(
+        userId: userId,
+        agentId: agentId,
+      );
+      if (!mounted || clientToken == null) {
+        return;
+      }
+
+      final result = await _loadRowsForShare(
+        userId: userId,
+        agentId: agentId,
+        filter: _shareDetailFilter(),
+        totalCount: _pageResult.totalCount,
+        clientToken: clientToken,
+        cancelScope: _sqlCancelScope,
+      );
+      if (!mounted) {
+        return;
+      }
+
+      result.fold(
+        (rows) {
+          ChartShareGuard.release(_detailsShareKey);
+          context.shareChartFromRequest(
+            buildSalesProdutoTendenciaMediaMovelDetailsShareMetadata(
+              l10n: l10n,
+              rows: rows,
+              filterSummary: _detailsShareFilterSummary(l10n),
+            ).toShareRequest(_detailsShareKey),
+          );
+        },
+        (failure) {
+          ChartShareGuard.release(_detailsShareKey);
+          final message =
+              failure is ValidationFailure &&
+                  failure.message == 'share_export_row_limit_exceeded'
+              ? l10n.salesProdutoTendenciaMediaMovelShareRowLimitExceeded(
+                  LoadMediaMovelRowsForShareUseCase.maxExportRowCount,
+                  _pageResult.totalCount,
+                )
+              : _failureMessage(failure, l10n);
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
+        },
+      );
+    } finally {
+      ChartShareGuard.release(_detailsShareKey);
+    }
+  }
+
   int get _activeFilterCount {
     var count = 0;
     if (_searchTerm.trim().isNotEmpty) {
@@ -720,11 +843,31 @@ class _SalesProdutoTendenciaMediaMovelPageState
                       SalesProdutoTendenciaMediaMovelCountChartSection(
                         l10n: l10n,
                         buckets: summary.buckets,
+                        shareKey: _countShareKey,
+                        onShare: _loading || summary.buckets.isEmpty
+                            ? null
+                            : () => context.shareChartFromRequest(
+                                buildSalesProdutoTendenciaMediaMovelCountShareMetadata(
+                                  l10n: l10n,
+                                  buckets: summary.buckets,
+                                  tokens: tokens,
+                                ).toShareRequest(_countShareKey),
+                              ),
                       ),
                       SizedBox(height: tokens.sectionSpacing),
                       SalesProdutoTendenciaMediaMovelImpactChartSection(
                         l10n: l10n,
                         buckets: summary.buckets,
+                        shareKey: _impactShareKey,
+                        onShare: _loading || summary.buckets.isEmpty
+                            ? null
+                            : () => context.shareChartFromRequest(
+                                buildSalesProdutoTendenciaMediaMovelImpactShareMetadata(
+                                  l10n: l10n,
+                                  buckets: summary.buckets,
+                                  tokens: tokens,
+                                ).toShareRequest(_impactShareKey),
+                              ),
                       ),
                     ],
                     SizedBox(height: tokens.sectionSpacing),
@@ -738,6 +881,13 @@ class _SalesProdutoTendenciaMediaMovelPageState
                       rangeStart: rangeStart,
                       rangeEnd: rangeEnd,
                       sortBy: _sortBy,
+                      headerTrailing: AppChartHeaderTrailing(
+                        shareProgressKey: _detailsShareKey,
+                        shareEnabled: !_loading && _pageResult.totalCount > 0,
+                        onShare: _loading || _pageResult.totalCount <= 0
+                            ? null
+                            : () => unawaited(_shareDetailsTable()),
+                      ),
                       onPageSelected: (page) {
                         unawaited(_goToPage(page));
                       },

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
@@ -20,6 +21,7 @@ import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_agent_auto_refresh_mixin.dart';
+import 'package:colmeia/features/sales/presentation/share/sales_produto_rank_lucro_share.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
@@ -91,6 +93,7 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
 
   int _sqlLoadGeneration = 0;
   AgentQueriesCancelScope? _sqlCancelScope;
+  final GlobalKey _shareKey = GlobalKey();
 
   DateTimeRange _fullMonthInclusiveRange(DateTime anchor) => DateTimeRange(
     start: DateTime(anchor.year, anchor.month),
@@ -483,9 +486,11 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
               onRetry: () => unawaited(_reload()),
             )
           else
-            AppSectionCard(
-              child:
-                  AppHorizontalProgressChart<ProdutoVendidoProdutoRankLucroRow>(
+            RepaintBoundary(
+              key: _shareKey,
+              child: AppSectionCard(
+                child:
+                    AppHorizontalProgressChart<ProdutoVendidoProdutoRankLucroRow>(
                     titleWidget: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
@@ -531,6 +536,19 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
                     showDividers: true,
                     style: chartStyles,
                     wrapInCard: false,
+                    shareProgressKey: _shareKey,
+                    onShare: _loading || _rows.isEmpty
+                        ? null
+                        : () => context.shareChartFromRequest(
+                            buildSalesProdutoRankLucroShareMetadata(
+                              l10n: l10n,
+                              rows: _rows,
+                              sortBy: _sortByEnum(sortKey),
+                              periodSubtitle: periodSubtitle,
+                              branchName: selectedBranchName,
+                              metricLabel: metricLabel,
+                            ).toShareRequest(_shareKey),
+                          ),
                     emptyPlaceholder: Center(
                       child: Text(
                         l10n.chartComparisonEmptyDefault,
@@ -541,6 +559,7 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
                       ),
                     ),
                   ),
+              ),
             ),
         ],
       ),

@@ -1,5 +1,6 @@
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card_models.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
+import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -37,6 +38,37 @@ void main() {
     expect(table.rows.first, <String>['1', 'Agent A', '12', r'R$ 100']);
   });
 
+  test('fromReportColumns maps column labels and formatted values', () {
+    final table = ChartShareTableData.fromReportColumns<_Row>(
+      columns: <AppReportColumn<_Row>>[
+        AppReportColumn<_Row>(
+          key: 'name',
+          label: 'Name',
+          valueGetter: (row) => row.name,
+        ),
+        AppReportColumn<_Row>(
+          key: 'amount',
+          label: 'Amount',
+          valueGetter: (row) => row.amount,
+          formatter: (value) => 'R\$ ${(value! as num).toStringAsFixed(2)}',
+        ),
+      ],
+      rows: const <_Row>[_Row(name: 'Coffee', amount: 12.5)],
+    );
+
+    expect(table.headers, <String>['Name', 'Amount']);
+    expect(table.rows.single, <String>['Coffee', r'R$ 12.50']);
+  });
+
+  test('fromReportColumns returns empty table when columns are empty', () {
+    final table = ChartShareTableData.fromReportColumns<_Row>(
+      columns: const <AppReportColumn<_Row>>[],
+      rows: const <_Row>[_Row(name: 'Coffee', amount: 12.5)],
+    );
+
+    expect(table.isEmpty, isTrue);
+  });
+
   test('fromLabelValueRows supports secondary column', () {
     final table = ChartShareTableData.fromLabelValueRows(
       labelHeader: 'Month',
@@ -51,4 +83,11 @@ void main() {
     expect(table.headers, <String>['Month', 'Sales', 'Amount']);
     expect(table.rows.single, <String>['2026/01', '10', r'R$ 100']);
   });
+}
+
+class _Row {
+  const _Row({required this.name, required this.amount});
+
+  final String name;
+  final double amount;
 }

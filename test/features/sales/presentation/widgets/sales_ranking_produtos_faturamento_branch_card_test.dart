@@ -64,5 +64,25 @@ void main() {
       find.byKey(const Key('sales-ranking-branch-desktop-layout')),
       findsOneWidget,
     );
+    expect(find.byTooltip('Compartilhar gráfico'), findsOneWidget);
+    expect(find.byIcon(Icons.download_outlined), findsNothing);
+  });
+
+  testWidgets('disables share when rows are empty', (tester) async {
+    await tester.pumpWidget(
+      LocalizedTestApp(
+        child: SalesRankingProdutosFaturamentoBranchCard(
+          l10n: lookupAppLocalizations(const Locale('pt', 'BR')),
+          codEmpresa: 1,
+          codFilial: 1,
+          rows: const <RankingProdutosFaturamentoRow>[],
+          metricSubtitle: 'Top 5 • Faturamento',
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Compartilhar gráfico'), findsNothing);
   });
 }

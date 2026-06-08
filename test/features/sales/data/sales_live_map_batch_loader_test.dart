@@ -240,7 +240,7 @@ void main() {
             .listen(
               (result) {
                 result.fold(
-                  (success) => emissions.add(success),
+                  emissions.add,
                   (_) {},
                 );
               },
@@ -309,7 +309,7 @@ void main() {
         targetWaveConcurrency: waveConcurrency,
       )) {
         result.fold(
-          (success) => emissions.add(success),
+          emissions.add,
           (_) {},
         );
       }
