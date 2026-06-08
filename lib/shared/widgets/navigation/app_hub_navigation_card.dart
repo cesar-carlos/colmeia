@@ -37,7 +37,8 @@ class AppHubNavigationCard extends StatelessWidget {
     final iconCircleSize = compact ? 28.0 : 48.0;
     final iconSize = compact ? 16.0 : 24.0;
     final iconLabelGap = compact ? tokens.gapXs : tokens.gapMd;
-    final resolvedLabelStyle = labelStyle ??
+    final resolvedLabelStyle =
+        labelStyle ??
         (compact
             ? typography.caption.copyWith(
                 fontWeight: FontWeight.w600,
@@ -70,58 +71,68 @@ class AppHubNavigationCard extends StatelessWidget {
               onTap: onTap,
               borderRadius: BorderRadius.circular(tokens.cardRadius),
               child: ExcludeSemantics(
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: <Widget>[
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: compact ? tokens.gapXs : tokens.gapSm,
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: <Widget>[
-                          DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: colors.primary.withValues(alpha: 0.12),
-                              shape: BoxShape.circle,
-                            ),
-                            child: SizedBox(
-                              width: iconCircleSize,
-                              height: iconCircleSize,
-                              child: Center(
-                                child: Icon(
-                                  icon,
-                                  size: iconSize,
-                                  color: colors.primary,
+                child: SizedBox.expand(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    clipBehavior: Clip.none,
+                    children: <Widget>[
+                      Positioned.fill(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: compact ? tokens.gapXs : tokens.gapSm,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              Center(
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: colors.primary.withValues(
+                                      alpha: 0.12,
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: SizedBox(
+                                    width: iconCircleSize,
+                                    height: iconCircleSize,
+                                    child: Center(
+                                      child: Icon(
+                                        icon,
+                                        size: iconSize,
+                                        color: colors.primary,
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
-                          SizedBox(height: iconLabelGap),
-                          Text(
-                            label,
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: resolvedLabelStyle,
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (showReadyBadge)
-                      Positioned(
-                        top: compact ? 2 : tokens.gapXs,
-                        right: compact ? 2 : tokens.gapXs,
-                        child: Semantics(
-                          label: label,
-                          child: Icon(
-                            Icons.check_circle_outline,
-                            size: compact ? 12 : 14,
-                            color: colors.primary,
+                              SizedBox(height: iconLabelGap),
+                              Text(
+                                label,
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: resolvedLabelStyle,
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                  ],
+                      if (showReadyBadge)
+                        Positioned(
+                          top: compact ? 2 : tokens.gapXs,
+                          right: compact ? 2 : tokens.gapXs,
+                          child: Semantics(
+                            label: label,
+                            child: Icon(
+                              Icons.check_circle_outline,
+                              size: compact ? 12 : 14,
+                              color: colors.primary,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),

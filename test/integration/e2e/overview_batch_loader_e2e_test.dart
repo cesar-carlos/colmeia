@@ -146,7 +146,7 @@ void main() {
               expect(countingRepository.batchCallCount, 2);
               expect(
                 countingRepository.batchRequests.last.commands.length,
-                6,
+                5,
               );
               for (final row in target.mainRows) {
                 expect(row.codEmpresa, greaterThan(0));
