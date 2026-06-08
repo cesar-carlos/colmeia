@@ -44,12 +44,20 @@ final class SalesLiveMapBatchLoadResult {
     required this.catalogPage,
     required this.salesReport,
     required this.totalElapsedMs,
+    this.isFinal = true,
+    this.salesLoadingComplete = true,
   });
 
   final CadastroFilialAcrossAgentsPageResult catalogPage;
   final AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow>
   salesReport;
   final int totalElapsedMs;
+
+  /// When false, more catalog pagination or target waves may still be in flight.
+  final bool isFinal;
+
+  /// When false, merged batch first pages are still loading per target wave.
+  final bool salesLoadingComplete;
 }
 
 final class _SalesLiveMapBatchTargetResult {
@@ -141,9 +149,42 @@ class SalesLiveMapBatchLoader {
     int? bridgeTimeoutMs,
     int? targetWaveConcurrency,
   }) async {
+    AppResult<SalesLiveMapBatchLoadResult>? finalResult;
+    await for (final result in loadProgressively(
+      userId: userId,
+      catalogFilter: catalogFilter,
+      salesFilter: salesFilter,
+      preResolvedResolution: preResolvedResolution,
+      cancelScope: cancelScope,
+      bridgeTimeoutMs: bridgeTimeoutMs,
+      targetWaveConcurrency: targetWaveConcurrency,
+    )) {
+      finalResult = result;
+      if (result.isError()) {
+        return result;
+      }
+    }
+    return finalResult ??
+        Failure<SalesLiveMapBatchLoadResult, AppFailure>(
+          const UnknownFailure(
+            message: 'Sales live map batch load produced no data',
+            userMessage: 'Unable to load the sales live map.',
+          ),
+        );
+  }
+
+  Stream<AppResult<SalesLiveMapBatchLoadResult>> loadProgressively({
+    required String userId,
+    required CadastroFilialFilter catalogFilter,
+    required ResumoTotalVendasMunicipioFilialPeriodoFilter salesFilter,
+    required AgentQueryTargetResolution preResolvedResolution,
+    AgentQueriesCancelScope? cancelScope,
+    int? bridgeTimeoutMs,
+    int? targetWaveConcurrency,
+  }) async* {
     final catalogValidation = catalogFilter.validationError();
     if (catalogValidation != null) {
-      return Failure<SalesLiveMapBatchLoadResult, AppFailure>(
+      yield Failure<SalesLiveMapBatchLoadResult, AppFailure>(
         ValidationFailure(
           message: catalogValidation,
           context: const <String, Object?>{
@@ -151,10 +192,11 @@ class SalesLiveMapBatchLoader {
           },
         ),
       );
+      return;
     }
     final salesValidation = salesFilter.validationError();
     if (salesValidation != null) {
-      return Failure<SalesLiveMapBatchLoadResult, AppFailure>(
+      yield Failure<SalesLiveMapBatchLoadResult, AppFailure>(
         ValidationFailure(
           message: salesValidation,
           context: const <String, Object?>{
@@ -162,6 +204,7 @@ class SalesLiveMapBatchLoader {
           },
         ),
       );
+      return;
     }
 
     final planResult = _planBuilder.build(
@@ -174,51 +217,138 @@ class SalesLiveMapBatchLoader {
     );
     final plan = planResult.getOrNull();
     if (plan == null) {
-      return Failure<SalesLiveMapBatchLoadResult, AppFailure>(
+      yield Failure<SalesLiveMapBatchLoadResult, AppFailure>(
         planResult.exceptionOrNull()!,
       );
+      return;
     }
 
     final started = DateTime.now();
     final targets = plan.plannedTargets.toList();
     final waveCap = targetWaveConcurrency ?? _targetWaveConcurrency;
-    final targetResults = await _targetWaveRunner.run(
-      targets: targets,
-      waveConcurrencyCap: waveCap,
-      task: (target) => _loadMergedBatchForTarget(
-        userId: userId,
-        target: target,
-        plan: plan,
-        catalogFilter: catalogFilter,
-        salesFilter: salesFilter,
-        resolution: preResolvedResolution,
-        cancelScope: cancelScope,
-      ),
-    );
+    final waveSize = waveCap >= targets.length
+        ? targets.length
+        : math.max(1, waveCap);
+    final firstBatchResults = <_SalesLiveMapBatchTargetResult>[];
+
+    for (var start = 0; start < targets.length; start += waveSize) {
+      final end = math.min(start + waveSize, targets.length);
+      final waveResults = await Future.wait(
+        List<Future<_SalesLiveMapBatchTargetResult>>.generate(
+          end - start,
+          (offset) => _loadFirstBatchForTarget(
+            userId: userId,
+            target: targets[start + offset],
+            plan: plan,
+            catalogFilter: catalogFilter,
+            salesFilter: salesFilter,
+            resolution: preResolvedResolution,
+            cancelScope: cancelScope,
+          ),
+        ),
+      );
+      firstBatchResults.addAll(waveResults);
+      final elapsedMs = DateTime.now().difference(started).inMilliseconds;
+      yield Success<SalesLiveMapBatchLoadResult, AppFailure>(
+        _buildBatchLoadResult(
+          plan: plan,
+          targetResults: firstBatchResults,
+          totalElapsedMs: elapsedMs,
+          isFinal: false,
+          salesLoadingComplete: end >= targets.length,
+        ),
+      );
+    }
+
+    final paginationTargets = firstBatchResults
+        .where(_needsCatalogPagination)
+        .toList(growable: false);
+    var targetResults = firstBatchResults;
+    if (paginationTargets.isNotEmpty) {
+      final paginatedResults = await _targetWaveRunner.run(
+        targets: paginationTargets.map((result) => result.target).toList(),
+        waveConcurrencyCap: waveCap,
+        task: (target) {
+          final firstBatch = paginationTargets.firstWhere(
+            (result) => result.target.agentId == target.agentId,
+          );
+          return _paginateCatalogForTarget(
+            firstBatch: firstBatch,
+            userId: userId,
+            target: target,
+            plan: plan,
+            catalogFilter: catalogFilter,
+            resolution: preResolvedResolution,
+            cancelScope: cancelScope,
+          );
+        },
+      );
+      targetResults = _mergePaginatedResults(
+        firstBatchResults: firstBatchResults,
+        paginatedResults: paginatedResults,
+      );
+    }
+
     final totalElapsedMs = DateTime.now().difference(started).inMilliseconds;
-    final paginationStalledAgentIds = targetResults
-        .where((result) => result.paginationStalled)
-        .map((result) => result.target.agentId)
-        .toSet();
-    final catalogPage = CadastroFilialAcrossAgentsPageResult.fromReport(
-      _buildCatalogReport(plan: plan, targetResults: targetResults),
-      paginationStalledAgentIds: paginationStalledAgentIds,
-    );
-    final salesReport = _buildSalesReport(
-      plan: plan,
-      targetResults: targetResults,
-      totalElapsedMs: totalElapsedMs,
-    );
-    return Success<SalesLiveMapBatchLoadResult, AppFailure>(
-      SalesLiveMapBatchLoadResult(
-        catalogPage: catalogPage,
-        salesReport: salesReport,
+    yield Success<SalesLiveMapBatchLoadResult, AppFailure>(
+      _buildBatchLoadResult(
+        plan: plan,
+        targetResults: targetResults,
         totalElapsedMs: totalElapsedMs,
+        isFinal: true,
+        salesLoadingComplete: true,
       ),
     );
   }
 
-  Future<_SalesLiveMapBatchTargetResult> _loadMergedBatchForTarget({
+  SalesLiveMapBatchLoadResult _buildBatchLoadResult({
+    required AgentQueryPlan plan,
+    required List<_SalesLiveMapBatchTargetResult> targetResults,
+    required int totalElapsedMs,
+    required bool isFinal,
+    required bool salesLoadingComplete,
+  }) {
+    final paginationStalledAgentIds = targetResults
+        .where((result) => result.paginationStalled)
+        .map((result) => result.target.agentId)
+        .toSet();
+    return SalesLiveMapBatchLoadResult(
+      catalogPage: CadastroFilialAcrossAgentsPageResult.fromReport(
+        _buildCatalogReport(plan: plan, targetResults: targetResults),
+        paginationStalledAgentIds: paginationStalledAgentIds,
+      ),
+      salesReport: _buildSalesReport(
+        plan: plan,
+        targetResults: targetResults,
+        totalElapsedMs: totalElapsedMs,
+      ),
+      totalElapsedMs: totalElapsedMs,
+      isFinal: isFinal,
+      salesLoadingComplete: salesLoadingComplete,
+    );
+  }
+
+  static bool _needsCatalogPagination(_SalesLiveMapBatchTargetResult result) {
+    return result.catalogFailure == null &&
+        result.catalogRows.isNotEmpty &&
+        result.catalogRows.length < result.catalogSourceRowCount;
+  }
+
+  List<_SalesLiveMapBatchTargetResult> _mergePaginatedResults({
+    required List<_SalesLiveMapBatchTargetResult> firstBatchResults,
+    required List<_SalesLiveMapBatchTargetResult> paginatedResults,
+  }) {
+    final paginatedByAgentId = <String, _SalesLiveMapBatchTargetResult>{
+      for (final result in paginatedResults) result.target.agentId: result,
+    };
+    return firstBatchResults
+        .map(
+          (result) => paginatedByAgentId[result.target.agentId] ?? result,
+        )
+        .toList(growable: false);
+  }
+
+  Future<_SalesLiveMapBatchTargetResult> _loadFirstBatchForTarget({
     required String userId,
     required AgentQueryTarget target,
     required AgentQueryPlan plan,
@@ -285,28 +415,6 @@ class SalesLiveMapBatchLoader {
       );
     }
 
-    final catalogRows = List<CadastroFilialRow>.from(mapped.catalogRows);
-    var catalogSourceRowCount = mapped.catalogSourceRowCount;
-    var paginationStalled = false;
-    if (mapped.catalogFailure == null && catalogRows.isNotEmpty) {
-      final pagination = await _loadRemainingCatalogPages(
-        userId: userId,
-        target: target,
-        plan: plan,
-        catalogFilter: catalogFilter,
-        resolution: resolution,
-        cancelScope: cancelScope,
-        initialRows: catalogRows,
-        reportedTotalCount: catalogSourceRowCount,
-        startPage: 2,
-      );
-      catalogRows
-        ..clear()
-        ..addAll(pagination.rows);
-      catalogSourceRowCount = pagination.sourceRowCount;
-      paginationStalled = pagination.paginationStalled;
-    }
-
     agentQueriesWarnIfSqlRowsAtCap(
       operation: 'loadSalesLiveMapBatch',
       agentId: target.agentId,
@@ -318,12 +426,46 @@ class SalesLiveMapBatchLoader {
     return _SalesLiveMapBatchTargetResult(
       target: target,
       elapsedMs: DateTime.now().difference(started).inMilliseconds,
-      catalogRows: catalogRows,
-      catalogSourceRowCount: catalogSourceRowCount,
+      catalogRows: mapped.catalogRows,
+      catalogSourceRowCount: mapped.catalogSourceRowCount,
       salesRows: mapped.salesRows,
       catalogFailure: mapped.catalogFailure,
       salesFailure: mapped.salesFailure,
-      paginationStalled: paginationStalled,
+    );
+  }
+
+  Future<_SalesLiveMapBatchTargetResult> _paginateCatalogForTarget({
+    required _SalesLiveMapBatchTargetResult firstBatch,
+    required String userId,
+    required AgentQueryTarget target,
+    required AgentQueryPlan plan,
+    required CadastroFilialFilter catalogFilter,
+    required AgentQueryTargetResolution resolution,
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
+    if (!_needsCatalogPagination(firstBatch)) {
+      return firstBatch;
+    }
+    final pagination = await _loadRemainingCatalogPages(
+      userId: userId,
+      target: target,
+      plan: plan,
+      catalogFilter: catalogFilter,
+      resolution: resolution,
+      cancelScope: cancelScope,
+      initialRows: firstBatch.catalogRows,
+      reportedTotalCount: firstBatch.catalogSourceRowCount,
+      startPage: 2,
+    );
+    return _SalesLiveMapBatchTargetResult(
+      target: target,
+      elapsedMs: firstBatch.elapsedMs,
+      catalogRows: pagination.rows,
+      catalogSourceRowCount: pagination.sourceRowCount,
+      salesRows: firstBatch.salesRows,
+      catalogFailure: firstBatch.catalogFailure,
+      salesFailure: firstBatch.salesFailure,
+      paginationStalled: pagination.paginationStalled,
     );
   }
 

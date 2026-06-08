@@ -867,7 +867,7 @@ class _AppBrazilStoreSalesMapChartState
           return _wrapRegionMapForTouchGestures(
             RepaintBoundary(
               child: AppRegionMapChart<AppBrazilStoreSalesStateBucket>(
-            mapDefinition: AppBrazilMapStaticData.brazilUfMapDefinition,
+            mapDefinition: AppBrazilMapStaticData.resolveBrazilUfMapDefinition(),
             items: snapshot.buckets,
             metrics: _buildMetrics(l10n),
             selectedMetricKey: _selectedMetric.key,

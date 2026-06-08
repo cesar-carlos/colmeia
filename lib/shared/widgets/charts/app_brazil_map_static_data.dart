@@ -16,6 +16,19 @@ abstract final class AppBrazilMapStaticData {
     regionLevel: AppMapRegionLevel.state,
   );
 
+  /// Prefer in-memory GeoJSON when [precacheBrazilUfGeoJsonAsset] has run.
+  static AppMapDefinition resolveBrazilUfMapDefinition() {
+    final bytes = _brazilUfGeoJsonBytes;
+    if (bytes != null) {
+      return AppMapDefinition.memory(
+        sourceBytes: bytes,
+        shapeDataField: 'UF',
+        regionLevel: AppMapRegionLevel.state,
+      );
+    }
+    return brazilUfMapDefinition;
+  }
+
   static Uint8List? _brazilUfGeoJsonBytes;
 
   /// Raw GeoJSON bytes for [brazilUfGeoJsonAssetPath] after [precacheBrazilUfGeoJsonAsset].

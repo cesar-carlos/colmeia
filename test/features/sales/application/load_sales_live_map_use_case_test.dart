@@ -3,12 +3,17 @@ import 'dart:convert';
 
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/cache/app_cache_store.dart';
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_periodo_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
@@ -26,6 +31,7 @@ import 'package:colmeia/features/sales/application/sales_live_map_catalog_scope.
 import 'package:colmeia/features/sales/application/sales_live_map_internal_labels.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_refresh_metrics.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
+import 'package:colmeia/features/sales/data/sales_live_map_batch_loader.dart';
 import 'package:colmeia/features/sales/data/sales_live_map_catalog_disk_cache.dart';
 import 'package:colmeia/features/sales/data/sales_live_map_point_resolver_adapter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
@@ -52,6 +58,9 @@ class _MockAgentQueryTargetResolver extends Mock
 
 class _MockSalesLiveMapCatalogDiskCache extends Mock
     implements SalesLiveMapCatalogDiskCache {}
+
+class _MockAgentQueriesRepository extends Mock
+    implements AgentQueriesRepository {}
 
 AgentQueryTargetResolution _wideTestAgentResolution() {
   return AgentQueryTargetResolution(
@@ -106,6 +115,14 @@ void main() {
       ),
     );
     registerFallbackValue(SalesLiveMapCatalogScope.fullAgent());
+    registerFallbackValue(
+      const AgentSqlExecuteBatchRequest(
+        agentId: 'agent-fallback',
+        commands: <AgentSqlExecuteBatchCommand>[
+          AgentSqlExecuteBatchCommand(sql: 'SELECT 1'),
+        ],
+      ),
+    );
   });
 
   setUp(() {
@@ -437,6 +454,11 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       check(await iterator.moveNext()).isTrue();
       var partial = iterator.current;
+      if (partial.points.isEmpty && partial.branchOptions.isNotEmpty) {
+        check(partial.salesDataPending).isTrue();
+        check(await iterator.moveNext()).isTrue();
+        partial = iterator.current;
+      }
       if (partial.points.isEmpty) {
         check(await iterator.moveNext()).isTrue();
         partial = iterator.current;
@@ -530,6 +552,16 @@ void main() {
         ),
       );
       await Future<void>.delayed(Duration.zero);
+
+      final pendingShell = emissions
+          .where(
+            (result) =>
+                result.salesDataPending &&
+                result.points.isEmpty &&
+                result.branchOptions.isNotEmpty,
+          )
+          .toList(growable: false);
+      check(pendingShell).isNotEmpty();
 
       final pendingWithPoints = emissions
           .where(
@@ -639,6 +671,149 @@ void main() {
       check(finalResult.salesDataPending).isFalse();
       check(finalResult.points.single.salesAmount).equals(180);
       check(finalResult.points.single.salesDataLoading).isFalse();
+    },
+  );
+
+  test(
+    'loadProgressive com merged batch emite vendas antes da paginacao do catalogo',
+    () async {
+      if (!AppEnvironment.agentSqlSalesLiveMapMergeSqlBatchesPerTarget) {
+        return;
+      }
+
+      final agentQueriesRepository = _MockAgentQueriesRepository();
+      final target = _target('agent-a');
+      final paginationGate = Completer<void>();
+      var paginationCompleted = false;
+      when(
+        () => targetResolver.resolve(
+          userId: any(named: 'userId'),
+          selectedAgentIds: any(named: 'selectedAgentIds'),
+        ),
+      ).thenAnswer(
+        (_) async => Success<AgentQueryTargetResolution, AppFailure>(
+          AgentQueryTargetResolution(
+            consideredApprovedTargets: <AgentQueryTarget>[target],
+            missingClientTokenTargets: const <AgentQueryTarget>[],
+            consideredApprovedAgentCount: 1,
+            selectedAgentIds: <String>{target.agentId},
+            hubPresenceOnlineAgentIdsSnapshot: <String>{target.agentId},
+          ),
+        ),
+      );
+      when(
+        () => agentQueriesRepository.executeSqlBatch(any()),
+      ).thenAnswer((invocation) async {
+        final request =
+            invocation.positionalArguments.first
+                as AgentSqlExecuteBatchRequest;
+        if (request.commands.length == salesLiveMapBatchCommandCount) {
+          return Success<AgentSqlBatchExecutionResult, AppFailure>(
+            _mergedBatchSqlResult(
+              agentId: request.agentId,
+              totalVenda: 220,
+              catalogTotalCount: 2,
+            ),
+          );
+        }
+        await paginationGate.future;
+        paginationCompleted = true;
+        return Success<AgentSqlBatchExecutionResult, AppFailure>(
+          AgentSqlBatchExecutionResult(
+            totalCommands: 1,
+            successfulCommands: 1,
+            failedCommands: 0,
+            items: <AgentSqlBatchExecutionItem>[
+              AgentSqlBatchExecutionItem(
+                index: 0,
+                ok: true,
+                rows: <Map<String, dynamic>>[
+                  <String, dynamic>{
+                    'TotalCount': 2,
+                    'CodEmpresa': 1,
+                    'CodFilial': 2,
+                    'NomeFilial': 'Loja agent-a filial 2',
+                    'NomeFantasia': 'Loja agent-a filial 2',
+                    'CEP': '78550000',
+                    'NomeMunicipio': 'SINOP',
+                    'CodigoIBGE': 5107909,
+                    'UFMunicipio': 'MT',
+                  },
+                ],
+                rowCount: 1,
+              ),
+            ],
+          ),
+        );
+      });
+
+      final locationResolver = AppLocationResolver(
+        cache: AppLocationGeocodeCache(_MemoryCacheStore()),
+        geocoders: <AppLocationGeocoder>[geocoder],
+        now: () => now,
+      );
+      final mergedBatchUseCase = LoadSalesLiveMapUseCase(
+        targetResolver,
+        catalogDiskCache,
+        loadAcrossAgents,
+        loadCadastroAcrossAgents,
+        SalesLiveMapPointResolverAdapter(
+          delegate: AppBrazilStoreSalesPointResolver(
+            locationResolver: locationResolver,
+          ),
+        ),
+        refreshMetrics: refreshMetrics,
+        batchLoader: SalesLiveMapBatchLoader(
+          planBuilder: const AgentQueryPlanBuilder(),
+          agentQueriesRepository: agentQueriesRepository,
+        ),
+        now: () => now,
+      );
+
+      final emissions = <SalesLiveMapLoadResult>[];
+      final loadDone = Completer<void>();
+      final subscription = mergedBatchUseCase
+          .loadProgressive(
+            userId: userId,
+            filter: const SalesLiveMapFilter(),
+          )
+          .listen(
+            emissions.add,
+            onDone: loadDone.complete,
+          );
+      addTearDown(subscription.cancel);
+
+      while (!emissions.any(
+        (result) => !result.salesDataPending && result.totalRevenue > 0,
+      )) {
+        await Future<void>.delayed(const Duration(milliseconds: 1));
+      }
+      final salesReady = emissions.lastWhere(
+        (result) => !result.salesDataPending && result.totalRevenue > 0,
+      );
+      check(salesReady.totalRevenue).equals(220);
+      check(paginationCompleted).isFalse();
+
+      paginationGate.complete();
+      await loadDone.future;
+
+      check(paginationCompleted).isTrue();
+      check(emissions.last.totalBranchCount).equals(2);
+      verifyNever(
+        () => loadAcrossAgents(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          selectedAgentIds: any(named: 'selectedAgentIds'),
+          strategy: any(named: 'strategy'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          raceMaxSources: any(named: 'raceMaxSources'),
+          preResolvedResolution: any(named: 'preResolvedResolution'),
+          cancelScope: any(named: 'cancelScope'),
+          orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
+          dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
+          mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
+        ),
+      );
     },
   );
 
@@ -2778,6 +2953,59 @@ AgentQueryTarget _target(String agentId, {String? clientToken = 'token'}) {
     displayName: 'Agente $agentId',
     connectionStatus: AgentConnectionStatus.online,
     clientToken: clientToken,
+    hubConnectedFromApprovedCatalogRow: true,
+  );
+}
+
+AgentSqlBatchExecutionResult _mergedBatchSqlResult({
+  required String agentId,
+  required double totalVenda,
+  int catalogTotalCount = 1,
+}) {
+  return AgentSqlBatchExecutionResult(
+    totalCommands: salesLiveMapBatchCommandCount,
+    successfulCommands: salesLiveMapBatchCommandCount,
+    failedCommands: 0,
+    items: <AgentSqlBatchExecutionItem>[
+      AgentSqlBatchExecutionItem(
+        index: 0,
+        ok: true,
+        rows: <Map<String, dynamic>>[
+          <String, dynamic>{
+            'TotalCount': catalogTotalCount,
+            'CodEmpresa': 1,
+            'CodFilial': 1,
+            'NomeFilial': 'Loja $agentId',
+            'NomeFantasia': 'Loja $agentId',
+            'CEP': '78550000',
+            'NomeMunicipio': 'SINOP',
+            'CodigoIBGE': 5107909,
+            'UFMunicipio': 'MT',
+          },
+        ],
+        rowCount: 1,
+      ),
+      AgentSqlBatchExecutionItem(
+        index: 1,
+        ok: true,
+        rows: <Map<String, dynamic>>[
+          <String, dynamic>{
+            'CodEmpresa': 1,
+            'CodFilial': 1,
+            'NomeFilial': 'Loja $agentId',
+            'NomeFantasiaFilial': 'Loja $agentId',
+            'CEPFilial': '78550000',
+            'CodMunicipioFilial': 1,
+            'NomeMunicipioFilial': 'SINOP',
+            'UFMunicipioFilial': 'MT',
+            'CodigoIBGEMunicipioFilial': 5107909,
+            'QtdVendas': 1,
+            'TotalVenda': totalVenda,
+          },
+        ],
+        rowCount: 1,
+      ),
+    ],
   );
 }
 

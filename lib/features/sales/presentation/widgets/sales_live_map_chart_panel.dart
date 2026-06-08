@@ -173,6 +173,7 @@ class _SalesLiveMapChartPanelState extends State<SalesLiveMapChartPanel> {
         child: _SalesLiveMapInlineParentScrollGuard(
           child: _SalesLiveMapChartRefreshOverlay(
             isRefreshing: widget.isRefreshing,
+            hasExistingPoints: widget.points.isNotEmpty,
             child: chart,
           ),
         ),
@@ -192,6 +193,7 @@ class _SalesLiveMapChartPanelState extends State<SalesLiveMapChartPanel> {
           final maxHeight = cardConstraints.maxHeight;
           final chartChild = _SalesLiveMapChartRefreshOverlay(
             isRefreshing: widget.isRefreshing,
+            hasExistingPoints: widget.points.isNotEmpty,
             child: chart,
           );
           if (maxHeight.isFinite && maxHeight < double.infinity) {
@@ -259,15 +261,17 @@ class _SalesLiveMapInlineParentScrollGuardState
 class _SalesLiveMapChartRefreshOverlay extends StatelessWidget {
   const _SalesLiveMapChartRefreshOverlay({
     required this.isRefreshing,
+    required this.hasExistingPoints,
     required this.child,
   });
 
   final bool isRefreshing;
+  final bool hasExistingPoints;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    if (!isRefreshing) {
+    if (!isRefreshing || hasExistingPoints) {
       return child;
     }
 
@@ -275,16 +279,14 @@ class _SalesLiveMapChartRefreshOverlay extends StatelessWidget {
     return Stack(
       children: <Widget>[
         child,
-        Positioned.fill(
-          child: IgnorePointer(
-            child: ColoredBox(
-              color: colorScheme.surface.withValues(alpha: 0.45),
-              child: Center(
-                child: CircularProgressIndicator(
-                  color: colorScheme.primary,
-                ),
-              ),
-            ),
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: LinearProgressIndicator(
+            backgroundColor: Colors.transparent,
+            color: colorScheme.primary.withValues(alpha: 0.6),
+            minHeight: 2,
           ),
         ),
       ],

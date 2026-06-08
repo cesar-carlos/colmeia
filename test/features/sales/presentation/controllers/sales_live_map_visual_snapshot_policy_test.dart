@@ -70,6 +70,47 @@ void main() {
       expect(identical(next, previous), isTrue);
     });
 
+    test(
+      'resolveNextVisualResult promotes pending snapshot with branchOptions',
+      () {
+        final pending = SalesLiveMapLoadResult(
+          points: const <SalesLiveMapPoint>[],
+          branchOptions: const <SalesLiveMapBranchOption>[
+            SalesLiveMapBranchOption(
+              id: 'branch-1',
+              agentId: 'agent-1',
+              agentName: 'Agent',
+              codEmpresa: 1,
+              codFilial: 1,
+              registrationName: 'Branch',
+              city: 'Cuiaba',
+              uf: 'MT',
+            ),
+          ],
+          totalRevenue: 0,
+          totalSalesCount: 0,
+          totalBranchCount: 1,
+          mappedBranchCount: 0,
+          mappedMunicipalityCount: 0,
+          queriedAgentCount: 1,
+          plannedAgentCount: 1,
+          failedAgentCount: 0,
+          missingClientTokenAgentCount: 0,
+          skippedOfflineAgentCount: 0,
+          rowCapReachedAgentCount: 0,
+          salesDataPending: true,
+          refreshedAt: refreshedAt,
+        );
+
+        final next = SalesLiveMapVisualSnapshotPolicy.resolveNextVisualResult(
+          incomingResult: pending,
+          previousVisualResult: null,
+        );
+
+        expect(identical(next, pending), isTrue);
+      },
+    );
+
     test('resolveNextVisualResult does not promote empty pending snapshot', () {
       final pending = SalesLiveMapLoadResult(
         points: const <SalesLiveMapPoint>[],

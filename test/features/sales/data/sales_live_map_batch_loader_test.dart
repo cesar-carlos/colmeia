@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
@@ -182,6 +184,147 @@ void main() {
         () => agentQueriesRepository.executeSqlBatch(any()),
       ).called(targets.length);
     });
+
+    test(
+      'loadProgressively exposes sales before catalog pagination completes',
+      () async {
+        final target = _agentTarget('agent-1', token: 'token-1');
+        final paginationGate = Completer<void>();
+        var paginationCompleted = false;
+        when(
+          () => agentQueriesRepository.executeSqlBatch(any()),
+        ).thenAnswer((invocation) async {
+          final request =
+              invocation.positionalArguments.first
+                  as AgentSqlExecuteBatchRequest;
+          if (request.commands.length == salesLiveMapBatchCommandCount) {
+            return Success<AgentSqlBatchExecutionResult, AppFailure>(
+              _batchResult(
+                commandCount: salesLiveMapBatchCommandCount,
+                rowsByIndex: <int, List<Map<String, dynamic>>>{
+                  0: <Map<String, dynamic>>[
+                    _catalogRow(totalCount: 2),
+                  ],
+                  1: <Map<String, dynamic>>[_salesRow()],
+                },
+              ),
+            );
+          }
+          await paginationGate.future;
+          paginationCompleted = true;
+          return Success<AgentSqlBatchExecutionResult, AppFailure>(
+            _batchResult(
+              commandCount: 1,
+              rowsByIndex: <int, List<Map<String, dynamic>>>{
+                0: <Map<String, dynamic>>[
+                  _catalogRow(
+                    totalCount: 2,
+                    codFilial: 2,
+                    nomeFilial: 'Filial 2',
+                  ),
+                ],
+              },
+            ),
+          );
+        });
+
+        final emissions = <SalesLiveMapBatchLoadResult>[];
+        final loadDone = Completer<void>();
+        final subscription = loader
+            .loadProgressively(
+              userId: 'user-1',
+              catalogFilter: _catalogFilter(),
+              salesFilter: _salesFilter(),
+              preResolvedResolution: _resolution(target),
+            )
+            .listen(
+              (result) {
+                result.fold(
+                  (success) => emissions.add(success),
+                  (_) {},
+                );
+              },
+              onDone: loadDone.complete,
+            );
+        addTearDown(subscription.cancel);
+
+        while (emissions.isEmpty) {
+          await Future<void>.delayed(const Duration(milliseconds: 1));
+        }
+        final partial = emissions.first;
+        check(partial.isFinal).isFalse();
+        check(partial.salesLoadingComplete).isTrue();
+        check(partial.salesReport.participants.single.rows).isNotEmpty();
+        check(paginationCompleted).isFalse();
+
+        paginationGate.complete();
+        await loadDone.future;
+
+        check(emissions.last.isFinal).isTrue();
+        check(paginationCompleted).isTrue();
+        check(
+          emissions.last.catalogPage.report.participants.single.rows.length,
+        ).equals(2);
+      },
+    );
+
+    test('loadProgressively emits once per completed target wave', () async {
+      const waveConcurrency = 2;
+      final waveLoader = SalesLiveMapBatchLoader(
+        planBuilder: const AgentQueryPlanBuilder(),
+        agentQueriesRepository: agentQueriesRepository,
+        targetWaveConcurrency: waveConcurrency,
+      );
+      final targets = List<AgentQueryTarget>.generate(
+        5,
+        (index) => _agentTarget('agent-${index + 1}', token: 'token'),
+      );
+      when(
+        () => agentQueriesRepository.executeSqlBatch(any()),
+      ).thenAnswer(
+        (_) async => Success<AgentSqlBatchExecutionResult, AppFailure>(
+          _batchResult(
+            commandCount: salesLiveMapBatchCommandCount,
+            rowsByIndex: <int, List<Map<String, dynamic>>>{
+              0: <Map<String, dynamic>>[_catalogRow()],
+              1: <Map<String, dynamic>>[_salesRow()],
+            },
+          ),
+        ),
+      );
+
+      final emissions = <SalesLiveMapBatchLoadResult>[];
+      await for (final result in waveLoader.loadProgressively(
+        userId: 'user-1',
+        catalogFilter: _catalogFilter(),
+        salesFilter: _salesFilter(),
+        preResolvedResolution: AgentQueryTargetResolution(
+          consideredApprovedTargets: targets,
+          missingClientTokenTargets: const <AgentQueryTarget>[],
+          consideredApprovedAgentCount: targets.length,
+          selectedAgentIds: <String>{
+            for (var i = 0; i < targets.length; i++) 'agent-${i + 1}',
+          },
+        ),
+        targetWaveConcurrency: waveConcurrency,
+      )) {
+        result.fold(
+          (success) => emissions.add(success),
+          (_) {},
+        );
+      }
+
+      check(emissions.length).equals(4);
+      check(emissions.take(3).every((batch) => !batch.isFinal)).isTrue();
+      check(emissions[0].salesLoadingComplete).isFalse();
+      check(emissions[1].salesLoadingComplete).isFalse();
+      check(emissions[2].salesLoadingComplete).isTrue();
+      check(emissions[0].salesReport.participants.length).equals(2);
+      check(emissions[1].salesReport.participants.length).equals(4);
+      check(emissions[2].salesReport.participants.length).equals(5);
+      check(emissions.last.isFinal).isTrue();
+      check(emissions.last.salesLoadingComplete).isTrue();
+    });
   });
 }
 
@@ -223,12 +366,16 @@ ResumoTotalVendasMunicipioFilialPeriodoFilter _salesFilter() {
   );
 }
 
-Map<String, dynamic> _catalogRow() {
+Map<String, dynamic> _catalogRow({
+  int totalCount = 1,
+  int codFilial = 1,
+  String nomeFilial = 'Filial',
+}) {
   return <String, dynamic>{
-    'TotalCount': 1,
+    'TotalCount': totalCount,
     'CodEmpresa': 1,
-    'CodFilial': 1,
-    'NomeFilial': 'Filial',
+    'CodFilial': codFilial,
+    'NomeFilial': nomeFilial,
     'NomeFantasia': 'Fantasia',
     'CEP': '78005123',
     'NomeMunicipio': 'Cuiaba',

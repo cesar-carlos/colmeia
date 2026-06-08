@@ -19,6 +19,7 @@ import 'package:colmeia/core/socket/relay/relay_conversation_pre_warmer.dart';
 import 'package:colmeia/core/update/windows_auto_update_controller.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_map_static_data.dart';
 import 'package:colmeia/shared/widgets/charts/chart_pdf_exporter.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
@@ -77,6 +78,21 @@ Future<void> bootstrap() async {
 
   await runAppWithOptionalSentry(() async {
     await setupDependencies();
+    unawaited(
+      AppBrazilMapStaticData.precacheBrazilUfGeoJsonAsset().catchError(
+        (Object error, StackTrace st) {
+          AppLogger.warning(
+            'Brazil UF GeoJSON precache failed',
+            context: const <String, Object?>{
+              'operation': 'AppBrazilMapStaticData.precacheBrazilUfGeoJsonAsset',
+            },
+            error: error,
+            stackTrace: st,
+          );
+          return false;
+        },
+      ),
+    );
     unawaited(
       ChartPdfExporter.warmFonts().catchError((Object error, StackTrace st) {
         AppLogger.warning(

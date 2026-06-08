@@ -8,6 +8,7 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_cadastr
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_periodo_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_across_agents_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_filter.dart'
     show CadastroFilialBranchRef;
@@ -259,6 +260,26 @@ class LoadSalesLiveMapUseCase {
       return;
     }
 
+    if (useMergedSqlBatchPerTarget && cachedCatalogPage == null) {
+      yield* _loadProgressiveMergedBatch(
+        userId: userId,
+        filter: filter,
+        reason: reason,
+        now: now,
+        catalogScope: catalogScope,
+        queryFilter: queryFilter,
+        selectedAgentIds: selectedAgentIds,
+        resolution: resolution,
+        cancelToken: cancelToken,
+        mergeWaveSize: mergeWaveSize,
+        resolveSw: resolveSw,
+        totalStopwatch: totalStopwatch,
+        cachedCatalog: cachedCatalog,
+        loadedViaMergedSqlBatch: loadedViaMergedSqlBatch,
+      );
+      return;
+    }
+
     final salesStopwatch = _diagnosticsLogger.startTraceStopwatch();
     final catalogStopwatch = cachedCatalogPage == null
         ? _diagnosticsLogger.startTraceStopwatch()
@@ -271,57 +292,7 @@ class LoadSalesLiveMapUseCase {
       >
     >
     salesFuture;
-    if (useMergedSqlBatchPerTarget && cachedCatalogPage == null) {
-      final batchLoader = _batchLoader;
-      final batchFuture = _trackStopwatch(
-        batchLoader.load(
-          userId: userId,
-          catalogFilter: catalogScope.toCatalogFilter(),
-          salesFilter: queryFilter,
-          preResolvedResolution: resolution,
-          cancelScope: cancelToken?.sqlCancelScope,
-          bridgeTimeoutMs: bridgeTimeoutMs,
-          targetWaveConcurrency: mergeWaveSize,
-        ),
-        catalogStopwatch,
-      );
-      catalogFuture = batchFuture.then((result) {
-        final batch = result.getOrNull();
-        if (batch == null) {
-          return Failure<CadastroFilialAcrossAgentsPageResult, AppFailure>(
-            result.exceptionOrNull()!,
-          );
-        }
-        final page = batch.catalogPage;
-        _persistCatalogPage(
-          userId: userId,
-          scope: catalogScope,
-          now: now,
-          page: page,
-        );
-        return Success<CadastroFilialAcrossAgentsPageResult, AppFailure>(page);
-      });
-      salesFuture = _trackStopwatch(
-        batchFuture.then((result) {
-          final batch = result.getOrNull();
-          if (batch == null) {
-            return Failure<
-              AgentQueryExecutionReport<
-                ResumoTotalVendasMunicipioFilialPeriodoRow
-              >,
-              AppFailure
-            >(result.exceptionOrNull()!);
-          }
-          return Success<
-            AgentQueryExecutionReport<
-              ResumoTotalVendasMunicipioFilialPeriodoRow
-            >,
-            AppFailure
-          >(batch.salesReport);
-        }),
-        salesStopwatch,
-      );
-    } else {
+    {
       salesFuture = _trackStopwatch(
         _loadResumoTotalVendasMunicipioFilialPeriodoAcrossAgents(
           userId: userId,
@@ -525,6 +496,173 @@ class LoadSalesLiveMapUseCase {
     );
   }
 
+  Stream<SalesLiveMapLoadResult> _loadProgressiveMergedBatch({
+    required String userId,
+    required SalesLiveMapFilter filter,
+    required SalesLiveMapReloadReason reason,
+    required DateTime now,
+    required SalesLiveMapCatalogScope catalogScope,
+    required ResumoTotalVendasMunicipioFilialPeriodoFilter queryFilter,
+    required Set<String>? selectedAgentIds,
+    required AgentQueryTargetResolution resolution,
+    required SalesLiveMapLoadCancelToken? cancelToken,
+    required int mergeWaveSize,
+    required Stopwatch? resolveSw,
+    required Stopwatch? totalStopwatch,
+    required SalesLiveMapCatalogLookupResult? cachedCatalog,
+    required bool loadedViaMergedSqlBatch,
+  }) async* {
+    yield SalesLiveMapResultBuilder.pendingBase(refreshedAt: now);
+
+    final salesStopwatch = _diagnosticsLogger.startTraceStopwatch();
+    final catalogStopwatch = _diagnosticsLogger.startTraceStopwatch();
+    final batchLoader = _batchLoader!;
+    SalesLiveMapBatchLoadResult? finalBatch;
+    _SalesLiveMapMappedResult? mapped;
+
+    await for (final batchResult in batchLoader.loadProgressively(
+      userId: userId,
+      catalogFilter: catalogScope.toCatalogFilter(),
+      salesFilter: queryFilter,
+      preResolvedResolution: resolution,
+      cancelScope: cancelToken?.sqlCancelScope,
+      bridgeTimeoutMs: bridgeTimeoutMs,
+      targetWaveConcurrency: mergeWaveSize,
+    )) {
+      final batch = batchResult.getOrNull();
+      if (batch == null) {
+        if (finalBatch == null) {
+          yield SalesLiveMapResultBuilder.failed(
+            batchResult.exceptionOrNull()!,
+            refreshedAt: now,
+          );
+        }
+        return;
+      }
+
+      if (cancelToken?.isCancelled ?? false) {
+        yield _cancelledResult(refreshedAt: now);
+        return;
+      }
+
+      final salesReport = batch.salesReport.participants.isNotEmpty
+          ? batch.salesReport
+          : null;
+      await for (final emission in _mapReportEmissions(
+        salesReport,
+        catalogResult: batch.catalogPage,
+        filter: filter,
+        refreshedAt: now,
+        cancelToken: cancelToken,
+        salesDataPending: !batch.salesLoadingComplete,
+        allowPartialGeoReuse: batch.isFinal,
+        hubPresenceOnlineAgentIdsSnapshot:
+            resolution.hubPresenceOnlineAgentIdsSnapshot,
+      )) {
+        mapped = emission;
+        if (emission.result.cancelled) {
+          yield emission.result;
+          return;
+        }
+        yield emission.result;
+      }
+
+      if (batch.isFinal) {
+        finalBatch = batch;
+        _persistCatalogPage(
+          userId: userId,
+          scope: catalogScope,
+          now: now,
+          page: batch.catalogPage,
+        );
+      }
+    }
+
+    final batch = finalBatch;
+    if (batch == null) {
+      yield SalesLiveMapResultBuilder.failed(
+        const UnknownFailure(
+          message: 'Sales live map merged batch load produced no data',
+          userMessage: 'Unable to load the sales live map.',
+        ),
+        refreshedAt: now,
+      );
+      return;
+    }
+
+    final catalogPage = batch.catalogPage;
+    final salesReport = batch.salesReport;
+    if (catalogStopwatch?.isRunning ?? false) {
+      catalogStopwatch!.stop();
+    }
+    if (salesStopwatch?.isRunning ?? false) {
+      salesStopwatch!.stop();
+    }
+    _diagnosticsLogger.trace(
+      'Sales live map SQL reports loaded',
+      <String, Object?>{
+        'reloadReason': reason.name,
+        'catalogScopeKind': catalogScope.kind.name,
+        'catalogSource':
+            (cachedCatalog?.source ?? SalesLiveMapCatalogSource.remote).name,
+        'resolveDurationMs': resolveSw?.elapsedMilliseconds,
+        'salesDurationMs': salesStopwatch?.elapsedMilliseconds,
+        'catalogDurationMs': catalogStopwatch?.elapsedMilliseconds ?? 0,
+        'selectedAgentCount': selectedAgentIds?.length ?? 0,
+        'selectedBranchCount': queryFilter.selectedBranches.length,
+        'salesReportElapsedMs': salesReport.totalElapsedMs,
+        'catalogReportElapsedMs': catalogPage.report.totalElapsedMs,
+        'salesLoadSuccess': true,
+        'catalogLoadSuccess': true,
+      },
+    );
+    _diagnosticsLogger.logParticipantMetrics(salesReport);
+
+    mapped ??= _SalesLiveMapMappedResult(
+      result: _cancelledResult(refreshedAt: now),
+    );
+    if (mapped.result.cancelled) {
+      return;
+    }
+    final metricEvent = SalesLiveMapRefreshMetricEvent(
+      recordedAt: now,
+      reloadReason: reason,
+      catalogScopeKind: catalogScope.kind,
+      catalogSource: cachedCatalog?.source ?? SalesLiveMapCatalogSource.remote,
+      selectedAgentCount: selectedAgentIds?.length ?? 0,
+      selectedBranchCount: queryFilter.selectedBranches.length,
+      resolveDurationMs: resolveSw?.elapsedMilliseconds ?? 0,
+      catalogDurationMs: catalogStopwatch?.elapsedMilliseconds ?? 0,
+      salesDurationMs: salesStopwatch?.elapsedMilliseconds ?? 0,
+      mapDurationMs: mapped.mapDurationMs,
+      geoDurationMs: mapped.geoDurationMs,
+      plannedAgentCount: mapped.result.plannedAgentCount,
+      queriedAgentCount: mapped.result.queriedAgentCount,
+      rowCapReachedAgentCount: mapped.result.rowCapReachedAgentCount,
+      paginationStalledAgentIds: catalogPage.paginationStalledAgentIds,
+      partialFailure: mapped.result.hasPartialIssue,
+      loadFailed: mapped.result.loadFailed,
+      mergeWaveSize: mergeWaveSize,
+      catalogSalesBatchMerged: loadedViaMergedSqlBatch,
+      partialIssueBreakdown: mapped.result.hasPartialIssue
+          ? mapped.result.partialIssueActiveKeys
+          : null,
+    );
+    _metricsRecorder.record(metricEvent);
+    _diagnosticsLogger.trace(
+      'Sales live map load completed',
+      <String, Object?>{
+        'elapsedMs': totalStopwatch?.elapsedMilliseconds,
+        ...metricEvent.toLogContext(),
+        'pointCount': mapped.result.points.length,
+        'branchOptionCount': mapped.result.branchOptions.length,
+        'totalBranchCount': mapped.result.totalBranchCount,
+        'plannedAgentCount': mapped.result.plannedAgentCount,
+        'queriedAgentCount': mapped.result.queriedAgentCount,
+      },
+    );
+  }
+
   void _persistCatalogPage({
     required String userId,
     required SalesLiveMapCatalogScope scope,
@@ -697,6 +835,37 @@ class LoadSalesLiveMapUseCase {
         result: _cancelledResult(refreshedAt: refreshedAt),
       );
       return;
+    }
+
+    if (branchOptions.isNotEmpty) {
+      yield _mappedResultFromGeolocation(
+        geolocation: const SalesLiveMapGeolocationResult(),
+        mapStopwatch: mapStopwatch,
+        geoDurationMs: 0,
+        branchOptions: branchOptions,
+        visibleAggregates: visibleAggregates,
+        baseReport: baseReport,
+        salesReport: salesReport,
+        agentDiagnostics: agentDiagnostics,
+        failedAgentCount: failedAgentCount,
+        salesBranchCount: salesBranchCount,
+        salesPendingBranchCount: salesPendingBranchCount,
+        salesUnavailableBranchCount: salesUnavailableBranchCount,
+        noSalesBranchCount: noSalesBranchCount,
+        zeroedBranchCount: zeroedBranchCount,
+        salesDataPending: salesDataPending,
+        failedCatalogAgentCount: failedCatalogAgentCount,
+        failedSalesAgentCount: failedSalesAgentCount,
+        paginationStalledAgentCount:
+            catalogResult?.paginationStalledAgentIds.length ?? 0,
+        refreshedAt: refreshedAt,
+      );
+      if (cancelToken?.isCancelled ?? false) {
+        yield _SalesLiveMapMappedResult(
+          result: _cancelledResult(refreshedAt: refreshedAt),
+        );
+        return;
+      }
     }
 
     var geoDurationMs = 0;
