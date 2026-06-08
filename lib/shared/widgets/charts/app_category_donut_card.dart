@@ -7,6 +7,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card_models.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_header_trailing.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
@@ -175,6 +176,12 @@ class AppCategoryDonutCard extends StatefulWidget {
     this.centerSecondaryLabel,
     this.titleAccentColor,
     this.titleTrailing,
+    this.onShare,
+    this.openShareTooltip,
+    this.openShareSemanticLabel,
+    this.onOpenFullscreen,
+    this.openFullscreenTooltip,
+    this.openFullscreenSemanticLabel,
     this.preset = AppChartPreset.standard,
     this.style = const AppCategoryDonutCardStyle(),
     this.selectedIndex,
@@ -219,6 +226,12 @@ class AppCategoryDonutCard extends StatefulWidget {
   /// Vertical bar beside the title; when null, no accent is drawn.
   final Color? titleAccentColor;
   final Widget? titleTrailing;
+  final VoidCallback? onShare;
+  final String? openShareTooltip;
+  final String? openShareSemanticLabel;
+  final VoidCallback? onOpenFullscreen;
+  final String? openFullscreenTooltip;
+  final String? openFullscreenSemanticLabel;
 
   final AppChartPreset preset;
   final AppCategoryDonutCardStyle style;
@@ -360,6 +373,12 @@ class _AppCategoryDonutCardState extends State<AppCategoryDonutCard> {
             subtitle: widget.subtitle,
             accentColor: widget.titleAccentColor,
             titleTrailing: widget.titleTrailing,
+            onShare: widget.onShare,
+            openShareTooltip: widget.openShareTooltip,
+            openShareSemanticLabel: widget.openShareSemanticLabel,
+            onOpenFullscreen: widget.onOpenFullscreen,
+            openFullscreenTooltip: widget.openFullscreenTooltip,
+            openFullscreenSemanticLabel: widget.openFullscreenSemanticLabel,
             style: widget.style,
           )
         : null;
@@ -577,12 +596,24 @@ class _CategoryDonutCardHeader extends StatelessWidget {
     this.subtitle,
     this.accentColor,
     this.titleTrailing,
+    this.onShare,
+    this.openShareTooltip,
+    this.openShareSemanticLabel,
+    this.onOpenFullscreen,
+    this.openFullscreenTooltip,
+    this.openFullscreenSemanticLabel,
   });
 
   final String title;
   final String? subtitle;
   final Color? accentColor;
   final Widget? titleTrailing;
+  final VoidCallback? onShare;
+  final String? openShareTooltip;
+  final String? openShareSemanticLabel;
+  final VoidCallback? onOpenFullscreen;
+  final String? openFullscreenTooltip;
+  final String? openFullscreenSemanticLabel;
   final AppCategoryDonutCardStyle style;
 
   @override
@@ -633,26 +664,29 @@ class _CategoryDonutCardHeader extends StatelessWidget {
           )
         : null;
 
-    final trailing = titleTrailing;
-    final textRow = Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        ?leading,
-        Expanded(child: titleBlock),
-      ],
-    );
-
-    if (trailing == null) {
-      return textRow;
-    }
+    final trailing = (titleTrailing == null &&
+            onShare == null &&
+            onOpenFullscreen == null)
+        ? null
+        : AppChartHeaderTrailing(
+            titleTrailing: titleTrailing,
+            onShare: onShare,
+            openShareTooltip: openShareTooltip,
+            openShareSemanticLabel: openShareSemanticLabel,
+            onOpenFullscreen: onOpenFullscreen,
+            openFullscreenTooltip: openFullscreenTooltip,
+            openFullscreenSemanticLabel: openFullscreenSemanticLabel,
+          );
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         ?leading,
         Expanded(child: titleBlock),
-        SizedBox(width: tokens.gapSm),
-        trailing,
+        if (trailing != null) ...<Widget>[
+          SizedBox(width: tokens.gapSm),
+          trailing,
+        ],
       ],
     );
   }

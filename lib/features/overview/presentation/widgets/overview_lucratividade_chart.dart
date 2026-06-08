@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
+import 'package:colmeia/app/router/app_chart_share_actions.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
@@ -11,6 +12,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart'
     show formatComparisonBarXAxisLabelWrapped;
+import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -99,6 +101,8 @@ class OverviewLucratividadeChart extends StatefulWidget {
 
 class _OverviewLucratividadeChartState
     extends State<OverviewLucratividadeChart> {
+  final GlobalKey _shareKey = GlobalKey();
+
   _LucratividadeDisplay _display = _LucratividadeDisplay.profitRevenue;
 
   /// Default among percent KPIs: gross margin on sales.
@@ -392,19 +396,28 @@ class _OverviewLucratividadeChartState
         sortedPoints,
         growable: false,
       );
+      final fullscreenShareKey = GlobalKey();
+      final shareTitle = l10n.overviewLucratividadeTitle;
       unawaited(
         context.pushChartFullscreen<void>(
           extra: AppChartFullscreenRouteExtra(
-            title: l10n.overviewLucratividadeTitle,
+            title: shareTitle,
             subtitle: l10n.overviewLucratividadeSubtitle,
-            chartSemanticsLabel: l10n.overviewLucratividadeTitle,
+            chartSemanticsLabel: shareTitle,
+            headerTrailing: buildChartFullscreenShareTrailing(
+              context: context,
+              shareKey: fullscreenShareKey,
+              subject: shareTitle,
+            ),
             chartBuilder: (fullscreenContext) {
               final fullscreenTokens = Theme.of(
                 fullscreenContext,
               ).extension<AppThemeTokens>()!;
               var fullscreenDisplay = _display;
               var fullscreenPercentMetric = _percentMetric;
-              return StatefulBuilder(
+              return RepaintBoundary(
+                key: fullscreenShareKey,
+                child: StatefulBuilder(
                 builder: (context, setFullscreenState) {
                   final fsPercent =
                       fullscreenDisplay == _LucratividadeDisplay.percentMetrics;
@@ -594,6 +607,7 @@ class _OverviewLucratividadeChartState
                     },
                   );
                 },
+              ),
               );
             },
           ),
@@ -610,6 +624,7 @@ class _OverviewLucratividadeChartState
         : l10n.overviewLucratividadeRevenueSeriesLabel;
 
     return RepaintBoundary(
+      key: _shareKey,
       child: AppComboChart<ResumoProdutoVendaLucratividadeRow>(
         key: ValueKey<Object>(
           Object.hash(
@@ -619,6 +634,32 @@ class _OverviewLucratividadeChartState
           ),
         ),
         title: l10n.overviewLucratividadeTitle,
+        onShare: () => unawaited(
+          shareChartCapture(
+            context,
+            _shareKey,
+            subject: l10n.overviewLucratividadeTitle,
+            title: l10n.overviewLucratividadeTitle,
+            subtitle: l10n.overviewLucratividadeSubtitle,
+            tableData: ChartShareTableData(
+              headers: <String>[
+                l10n.chartSharePdfColumnAgent,
+                l10n.chartSharePdfColumnRevenue,
+                l10n.chartSharePdfColumnCost,
+                l10n.chartSharePdfColumnProfit,
+              ],
+              rows: <List<String>>[
+                for (final row in sortedPoints)
+                  <String>[
+                    row.filialLabel,
+                    AppBrFormatters.currency(row.valorTotalItem),
+                    AppBrFormatters.currency(row.custoReposicao),
+                    AppBrFormatters.currency(row.lucro),
+                  ],
+              ],
+            ),
+          ),
+        ),
         onOpenFullscreen: openFullscreen,
         subtitle: l10n.overviewLucratividadeSubtitle,
         belowSubtitle: belowSubtitle,

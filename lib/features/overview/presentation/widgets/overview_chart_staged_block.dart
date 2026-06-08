@@ -1,5 +1,5 @@
-import 'package:colmeia/shared/widgets/charts/app_chart_fade_in.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_fade_in.dart';
 import 'package:flutter/material.dart';
 
 enum OverviewChartStageVisualState {

@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:colmeia/app/router/app_chart_share_actions.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart';
 import 'package:colmeia/features/sales/presentation/mappers/sales_live_map_chart_mapper.dart';
@@ -52,6 +55,8 @@ class SalesLiveMapChartPanel extends StatefulWidget {
 }
 
 class _SalesLiveMapChartPanelState extends State<SalesLiveMapChartPanel> {
+  final GlobalKey _shareKey = GlobalKey();
+
   int? _cachedMapPayloadDigest;
   SalesLiveMapMetric? _cachedMetric;
   SalesLiveMapVisualSpec? _cachedVisualSpec;
@@ -104,6 +109,7 @@ class _SalesLiveMapChartPanelState extends State<SalesLiveMapChartPanel> {
     final l10n = AppLocalizations.of(context);
     final chartPoints = _resolveChartPoints(l10n);
     final chartStyle = _resolveChartStyle();
+    final shareTitle = widget.title;
     final chart = AppBrazilStoreSalesMapChart(
       title: widget.showHeader ? widget.title : null,
       subtitle: widget.showHeader ? widget.subtitle : null,
@@ -116,6 +122,11 @@ class _SalesLiveMapChartPanelState extends State<SalesLiveMapChartPanel> {
       onMetricChanged: (metric) => widget.onMetricChanged(
         SalesLiveMapChartMapper.fromChartMetric(metric),
       ),
+      onShare: widget.showHeader && shareTitle != null
+          ? () => unawaited(
+              shareChartCapture(context, _shareKey, subject: shareTitle),
+            )
+          : null,
       onOpenFullscreen: widget.showHeader ? widget.onOpenFullscreen : null,
       showDesktopBranchSidebar: widget.showSidebar,
       presentationMode: switch (widget.mode) {
@@ -127,7 +138,7 @@ class _SalesLiveMapChartPanelState extends State<SalesLiveMapChartPanel> {
     );
 
     if (widget.mode == SalesLiveMapChartPanelMode.inline) {
-      return chart;
+      return RepaintBoundary(key: _shareKey, child: chart);
     }
 
     final tokens = context.appTokens;

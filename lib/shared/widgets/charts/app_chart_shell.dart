@@ -1,7 +1,7 @@
-import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_header_trailing.dart';
 import 'package:flutter/material.dart';
 
 class AppChartShell extends StatelessWidget {
@@ -12,6 +12,9 @@ class AppChartShell extends StatelessWidget {
     this.titleWidget,
     this.subtitle,
     this.titleTrailing,
+    this.onShare,
+    this.openShareTooltip,
+    this.openShareSemanticLabel,
     this.onOpenFullscreen,
     this.openFullscreenTooltip,
     this.openFullscreenSemanticLabel,
@@ -35,6 +38,15 @@ class AppChartShell extends StatelessWidget {
 
   /// e.g. link action aligned with the title block.
   final Widget? titleTrailing;
+
+  /// Optional callback that shows a share action in the chart header.
+  final VoidCallback? onShare;
+
+  /// Optional tooltip for the share action button.
+  final String? openShareTooltip;
+
+  /// Optional semantics label for the share action button.
+  final String? openShareSemanticLabel;
 
   /// Optional callback that shows an "expand to fullscreen" action in header.
   ///
@@ -70,47 +82,43 @@ class AppChartShell extends StatelessWidget {
           tokens.gapMd,
         );
 
+    final hasTitle = titleWidget != null || title.isNotEmpty;
+    final headerText = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        if (hasTitle)
+          titleWidget ??
+              Text(
+                title,
+                style: typography.sectionHeaderH2.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+        if (subtitle != null) ...<Widget>[
+          SizedBox(height: tokens.gapXs),
+          Text(subtitle!, style: typography.body),
+        ],
+      ],
+    );
+
+    final trailing = _resolveTrailing();
+    final header = trailing == null
+        ? headerText
+        : Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(child: headerText),
+              SizedBox(width: tokens.gapSm),
+              trailing,
+            ],
+          );
+
     return AppSectionCard(
       padding: resolvedCardPadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Builder(
-            builder: (context) {
-              final hasTitle = titleWidget != null || title.isNotEmpty;
-              final headerText = Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  if (hasTitle)
-                    titleWidget ??
-                        Text(
-                          title,
-                          style: typography.sectionHeaderH2.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                  if (subtitle != null) ...<Widget>[
-                    SizedBox(height: tokens.gapXs),
-                    Text(subtitle!, style: typography.body),
-                  ],
-                ],
-              );
-
-              final trailing = _resolveTrailing(context, tokens);
-              if (trailing == null) {
-                return headerText;
-              }
-
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Expanded(child: headerText),
-                  SizedBox(width: tokens.gapSm),
-                  trailing,
-                ],
-              );
-            },
-          ),
+          header,
           SizedBox(height: tokens.contentSpacing),
           ...switch (belowSubtitle) {
             null => const <Widget>[],
@@ -125,43 +133,21 @@ class AppChartShell extends StatelessWidget {
     );
   }
 
-  Widget? _resolveTrailing(BuildContext context, AppThemeTokens tokens) {
-    final onExpand = onOpenFullscreen;
-    if (onExpand == null) {
-      return titleTrailing;
+  Widget? _resolveTrailing() {
+    if (titleTrailing == null &&
+        onShare == null &&
+        onOpenFullscreen == null) {
+      return null;
     }
 
-    final l10n = AppLocalizations.of(context);
-    final tooltip = openFullscreenTooltip ?? l10n.chartOpenFullscreenTooltip;
-    final semanticsLabel =
-        openFullscreenSemanticLabel ?? l10n.chartOpenFullscreenTooltip;
-
-    Widget expandAction = IconButton(
-      onPressed: onExpand,
-      tooltip: tooltip,
-      icon: const Icon(Icons.open_in_full),
-    );
-    final trimmedSemanticsLabel = semanticsLabel.trim();
-    if (trimmedSemanticsLabel.isNotEmpty) {
-      expandAction = Semantics(
-        button: true,
-        label: trimmedSemanticsLabel,
-        child: expandAction,
-      );
-    }
-
-    final trailing = titleTrailing;
-    if (trailing == null) {
-      return expandAction;
-    }
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        trailing,
-        SizedBox(width: tokens.gapXs),
-        expandAction,
-      ],
+    return AppChartHeaderTrailing(
+      titleTrailing: titleTrailing,
+      onShare: onShare,
+      openShareTooltip: openShareTooltip,
+      openShareSemanticLabel: openShareSemanticLabel,
+      onOpenFullscreen: onOpenFullscreen,
+      openFullscreenTooltip: openFullscreenTooltip,
+      openFullscreenSemanticLabel: openFullscreenSemanticLabel,
     );
   }
 }

@@ -1,7 +1,61 @@
+import 'dart:io' show File, Platform;
 import 'dart:typed_data';
 
+import 'package:colmeia/shared/utils/sanitize_report_file_name.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart' show ShareParams, SharePlus, XFile;
+
+export 'package:colmeia/shared/utils/sanitize_report_file_name.dart'
+    show sanitizeReportFileName;
+
+bool _shareRequiresTempFilePath() {
+  return !kIsWeb &&
+      (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
+}
+
+/// Creates an [XFile] suitable for desktop share sheets (path-backed on Windows).
+Future<XFile> createShareableXFile({
+  required Uint8List bytes,
+  required String fileName,
+  required String mimeType,
+}) async {
+  if (_shareRequiresTempFilePath()) {
+    final directory = await getTemporaryDirectory();
+    final filePath = p.join(directory.path, fileName);
+    final file = File(filePath);
+    await file.writeAsBytes(bytes, flush: true);
+    return XFile(filePath, mimeType: mimeType, name: fileName);
+  }
+
+  return XFile.fromData(
+    bytes,
+    name: fileName,
+    mimeType: mimeType,
+  );
+}
+
+/// Shares arbitrary file [bytes] using the platform share sheet.
+Future<void> shareExportBytes({
+  required Uint8List bytes,
+  required String fileName,
+  required String mimeType,
+  String? subject,
+}) async {
+  final xFile = await createShareableXFile(
+    bytes: bytes,
+    fileName: fileName,
+    mimeType: mimeType,
+  );
+  await SharePlus.instance.share(
+    ShareParams(
+      files: <XFile>[xFile],
+      subject: subject,
+    ),
+  );
+}
 
 /// Shares exported report [bytes] as a file using the platform share sheet.
 Future<void> shareReportExportBytes({
@@ -11,21 +65,10 @@ Future<void> shareReportExportBytes({
 }) async {
   final fileName =
       '${sanitizeReportFileName(title ?? 'relatorio')}.${format.fileExtension}';
-  await SharePlus.instance.share(
-    ShareParams(
-      files: <XFile>[
-        XFile.fromData(
-          bytes,
-          name: fileName,
-          mimeType: format.mimeType,
-        ),
-      ],
-      subject: title ?? 'Relatório',
-    ),
+  await shareExportBytes(
+    bytes: bytes,
+    fileName: fileName,
+    mimeType: format.mimeType,
+    subject: title ?? 'Relatório',
   );
-}
-
-/// Strips characters that are unsafe for file names and replaces spaces.
-String sanitizeReportFileName(String name) {
-  return name.replaceAll(RegExp(r'[^\w\s-]'), '').replaceAll(' ', '_');
 }

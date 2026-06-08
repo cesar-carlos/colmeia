@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
+import 'package:colmeia/app/router/app_chart_share_actions.dart';
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
@@ -154,6 +155,10 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
       const <ProdutoVendidoTendenciaDeVendaRow>[];
   List<ProdutoVendidoTendenciaDeVendaSummaryRow> _summaryRows =
       const <ProdutoVendidoTendenciaDeVendaSummaryRow>[];
+
+  final GlobalKey _classificacaoShareKey = GlobalKey();
+  final GlobalKey _gainersShareKey = GlobalKey();
+  final GlobalKey _losersShareKey = GlobalKey();
 
   DateTimeRange _fullMonthInclusiveRange(DateTime anchor) =>
       salesTrendFullMonthInclusiveRange(anchor);
@@ -503,19 +508,27 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
       _buildSummary(_summaryRows).buckets,
       growable: false,
     );
+    final fullscreenShareKey = GlobalKey();
+    final shareTitle = l10n.salesProdutoTendenciaSummaryByClassificacaoTitle;
     unawaited(
       context.pushChartFullscreen<void>(
         extra: AppChartFullscreenRouteExtra(
-          title: l10n.salesProdutoTendenciaSummaryByClassificacaoTitle,
+          title: shareTitle,
           subtitle: l10n.salesProdutoTendenciaSummaryByClassificacaoSubtitle,
-          chartSemanticsLabel:
-              l10n.salesProdutoTendenciaSummaryByClassificacaoTitle,
+          chartSemanticsLabel: shareTitle,
+          headerTrailing: buildChartFullscreenShareTrailing(
+            context: context,
+            shareKey: fullscreenShareKey,
+            subject: shareTitle,
+          ),
           chartBuilder: (fullscreenContext) {
             final ft = fullscreenContext.appTokens;
             final fl10n = AppLocalizations.of(fullscreenContext);
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                return AppComparisonBarChart<_TrendClassBucket>(
+            return RepaintBoundary(
+              key: fullscreenShareKey,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return AppComparisonBarChart<_TrendClassBucket>(
                   items: buckets,
                   labelBuilder: (b) =>
                       _classificacaoLabel(fl10n, b.classificacao),
@@ -538,8 +551,9 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
                       '${_classificacaoLabel(fl10n, bucket.classificacao)} • '
                       '${bucket.count} • '
                       '${NumberFormat.decimalPattern(fl10n.localeName).format(bucket.impacto.round())}',
-                );
-              },
+                  );
+                },
+              ),
             );
           },
         ),
@@ -583,19 +597,27 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     required List<ProdutoVendidoTendenciaDeVendaRow> items,
     required bool useAbsolutePercentForLosers,
   }) {
+    final fullscreenShareKey = GlobalKey();
     unawaited(
       context.pushChartFullscreen<void>(
         extra: AppChartFullscreenRouteExtra(
           title: title,
           subtitle: subtitle,
           chartSemanticsLabel: title,
+          headerTrailing: buildChartFullscreenShareTrailing(
+            context: context,
+            shareKey: fullscreenShareKey,
+            subject: title,
+          ),
           chartBuilder: (fullscreenContext) {
             final ft = fullscreenContext.appTokens;
             final fl10n = AppLocalizations.of(fullscreenContext);
             final axisFormat = NumberFormat.decimalPattern(fl10n.localeName);
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                return AppComparisonBarChart<ProdutoVendidoTendenciaDeVendaRow>(
+            return RepaintBoundary(
+              key: fullscreenShareKey,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return AppComparisonBarChart<ProdutoVendidoTendenciaDeVendaRow>(
                   items: items,
                   labelBuilder: (row) => row.nomeProduto,
                   valueBuilder: (row) => useAbsolutePercentForLosers
@@ -618,8 +640,9 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
                       '${row.nomeProduto} • '
                       '${row.percentualTendencia.toStringAsFixed(2)}% • '
                       '${NumberFormat.decimalPattern(fl10n.localeName).format(row.diferenca.round())}',
-                );
-              },
+                  );
+                },
+              ),
             );
           },
         ),
@@ -961,6 +984,14 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
                 ),
                 classLabelBuilder: (value) => _classificacaoLabel(l10n, value),
                 onOpenClassificacaoFullscreen: _openClassificacaoFullscreen,
+                classificacaoShareKey: _classificacaoShareKey,
+                onShareClassificacao: () => unawaited(
+                  shareChartCapture(
+                    context,
+                    _classificacaoShareKey,
+                    subject: l10n.salesProdutoTendenciaSummaryByClassificacaoTitle,
+                  ),
+                ),
               ),
               SizedBox(height: tokens.sectionSpacing),
               _TrendTopMoversSection(
@@ -969,6 +1000,22 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
                 loading: _loading,
                 onOpenGainersFullscreen: _openGainersFullscreen,
                 onOpenLosersFullscreen: _openLosersFullscreen,
+                gainersShareKey: _gainersShareKey,
+                losersShareKey: _losersShareKey,
+                onShareGainers: () => unawaited(
+                  shareChartCapture(
+                    context,
+                    _gainersShareKey,
+                    subject: l10n.salesProdutoTendenciaTopGainersTitle,
+                  ),
+                ),
+                onShareLosers: () => unawaited(
+                  shareChartCapture(
+                    context,
+                    _losersShareKey,
+                    subject: l10n.salesProdutoTendenciaTopLosersTitle,
+                  ),
+                ),
               ),
               SizedBox(height: tokens.sectionSpacing),
               _TrendDetailsSection(
@@ -1000,6 +1047,8 @@ class _TrendSummarySection extends StatelessWidget {
     required this.periodoAnteriorDescriptor,
     required this.classLabelBuilder,
     required this.onOpenClassificacaoFullscreen,
+    required this.classificacaoShareKey,
+    required this.onShareClassificacao,
   });
 
   final AppLocalizations l10n;
@@ -1011,6 +1060,8 @@ class _TrendSummarySection extends StatelessWidget {
   final String periodoAnteriorDescriptor;
   final String Function(String value) classLabelBuilder;
   final VoidCallback onOpenClassificacaoFullscreen;
+  final GlobalKey classificacaoShareKey;
+  final VoidCallback onShareClassificacao;
 
   @override
   Widget build(BuildContext context) {
@@ -1106,14 +1157,18 @@ class _TrendSummarySection extends StatelessWidget {
               colors: colors,
             ),
             SizedBox(height: tokens.contentSpacing),
-            AppComparisonBarChart<_TrendClassBucket>(
-              title: l10n.salesProdutoTendenciaSummaryByClassificacaoTitle,
-              subtitle:
-                  l10n.salesProdutoTendenciaSummaryByClassificacaoSubtitle,
-              items: summary.buckets,
-              labelBuilder: (bucket) => classLabelBuilder(bucket.classificacao),
-              valueBuilder: (bucket) => bucket.count,
-              onOpenFullscreen: onOpenClassificacaoFullscreen,
+            RepaintBoundary(
+              key: classificacaoShareKey,
+              child: AppComparisonBarChart<_TrendClassBucket>(
+                title: l10n.salesProdutoTendenciaSummaryByClassificacaoTitle,
+                subtitle:
+                    l10n.salesProdutoTendenciaSummaryByClassificacaoSubtitle,
+                items: summary.buckets,
+                labelBuilder: (bucket) =>
+                    classLabelBuilder(bucket.classificacao),
+                valueBuilder: (bucket) => bucket.count,
+                onShare: onShareClassificacao,
+                onOpenFullscreen: onOpenClassificacaoFullscreen,
               openFullscreenTooltip: l10n.chartOpenFullscreenTooltip,
               openFullscreenSemanticLabel: l10n.chartOpenFullscreenTooltip,
               plotFloorAccessibilityNotice: l10n.chartComparisonPlotFloorNotice,
@@ -1132,6 +1187,7 @@ class _TrendSummarySection extends StatelessWidget {
                   '${classLabelBuilder(bucket.classificacao)} • '
                   '${bucket.count} • '
                   '${NumberFormat.decimalPattern(l10n.localeName).format(bucket.impacto.round())}',
+              ),
             ),
           ],
         ],
@@ -1253,6 +1309,10 @@ class _TrendTopMoversSection extends StatelessWidget {
     required this.loading,
     required this.onOpenGainersFullscreen,
     required this.onOpenLosersFullscreen,
+    required this.gainersShareKey,
+    required this.losersShareKey,
+    required this.onShareGainers,
+    required this.onShareLosers,
   });
 
   final AppLocalizations l10n;
@@ -1260,6 +1320,10 @@ class _TrendTopMoversSection extends StatelessWidget {
   final bool loading;
   final VoidCallback onOpenGainersFullscreen;
   final VoidCallback onOpenLosersFullscreen;
+  final GlobalKey gainersShareKey;
+  final GlobalKey losersShareKey;
+  final VoidCallback onShareGainers;
+  final VoidCallback onShareLosers;
 
   @override
   Widget build(BuildContext context) {
@@ -1407,13 +1471,15 @@ class _TrendTopMoversSection extends StatelessWidget {
                 final chartAxisFormat = NumberFormat.decimalPattern(
                   l10n.localeName,
                 );
-                final gainersChart =
-                    AppComparisonBarChart<ProdutoVendidoTendenciaDeVendaRow>(
-                      title: l10n.salesProdutoTendenciaTopGainersTitle,
-                      items: topGainers,
-                      labelBuilder: (row) => row.nomeProduto,
-                      valueBuilder: (row) => row.percentualTendencia,
-                      onOpenFullscreen: onOpenGainersFullscreen,
+                final gainersChart = RepaintBoundary(
+                  key: gainersShareKey,
+                  child: AppComparisonBarChart<ProdutoVendidoTendenciaDeVendaRow>(
+                    title: l10n.salesProdutoTendenciaTopGainersTitle,
+                    items: topGainers,
+                    labelBuilder: (row) => row.nomeProduto,
+                    valueBuilder: (row) => row.percentualTendencia,
+                    onShare: onShareGainers,
+                    onOpenFullscreen: onOpenGainersFullscreen,
                       openFullscreenTooltip: l10n.chartOpenFullscreenTooltip,
                       openFullscreenSemanticLabel:
                           l10n.chartOpenFullscreenTooltip,
@@ -1433,14 +1499,17 @@ class _TrendTopMoversSection extends StatelessWidget {
                           '${row.nomeProduto} • '
                           '${row.percentualTendencia.toStringAsFixed(2)}% • '
                           '${NumberFormat.decimalPattern(l10n.localeName).format(row.diferenca.round())}',
-                    );
-                final losersChart =
-                    AppComparisonBarChart<ProdutoVendidoTendenciaDeVendaRow>(
-                      title: l10n.salesProdutoTendenciaTopLosersTitle,
-                      items: topLosers,
-                      labelBuilder: (row) => row.nomeProduto,
-                      valueBuilder: (row) => row.percentualTendencia.abs(),
-                      onOpenFullscreen: onOpenLosersFullscreen,
+                  ),
+                );
+                final losersChart = RepaintBoundary(
+                  key: losersShareKey,
+                  child: AppComparisonBarChart<ProdutoVendidoTendenciaDeVendaRow>(
+                    title: l10n.salesProdutoTendenciaTopLosersTitle,
+                    items: topLosers,
+                    labelBuilder: (row) => row.nomeProduto,
+                    valueBuilder: (row) => row.percentualTendencia.abs(),
+                    onShare: onShareLosers,
+                    onOpenFullscreen: onOpenLosersFullscreen,
                       openFullscreenTooltip: l10n.chartOpenFullscreenTooltip,
                       openFullscreenSemanticLabel:
                           l10n.chartOpenFullscreenTooltip,
@@ -1460,7 +1529,8 @@ class _TrendTopMoversSection extends StatelessWidget {
                           '${row.nomeProduto} • '
                           '${row.percentualTendencia.toStringAsFixed(2)}% • '
                           '${NumberFormat.decimalPattern(l10n.localeName).format(row.diferenca.round())}',
-                    );
+                  ),
+                );
                 if (isWide) {
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,

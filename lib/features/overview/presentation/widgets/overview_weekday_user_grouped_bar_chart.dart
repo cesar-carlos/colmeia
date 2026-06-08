@@ -35,6 +35,9 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
     required this.extremeSpreadAccessibilityNotice,
     required this.tokens,
     super.key,
+    this.onShare,
+    this.openShareTooltip,
+    this.openShareSemanticLabel,
     this.onOpenFullscreen,
     this.useChartShell = true,
     this.chartHeightOverride,
@@ -50,6 +53,9 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
   final String plotFloorAccessibilityNotice;
   final String extremeSpreadAccessibilityNotice;
   final AppThemeTokens tokens;
+  final VoidCallback? onShare;
+  final String? openShareTooltip;
+  final String? openShareSemanticLabel;
   final VoidCallback? onOpenFullscreen;
   final bool useChartShell;
   final double? chartHeightOverride;
@@ -420,6 +426,9 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
       subtitle: subtitle,
       belowSubtitle: belowSubtitle,
       titleTrailing: floorTrailing,
+      onShare: onShare,
+      openShareTooltip: openShareTooltip,
+      openShareSemanticLabel: openShareSemanticLabel,
       onOpenFullscreen: onOpenFullscreen,
       child: shellChild,
     );

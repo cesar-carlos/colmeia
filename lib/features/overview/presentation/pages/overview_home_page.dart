@@ -14,8 +14,8 @@ import 'package:colmeia/features/overview/presentation/localization/overview_fai
 import 'package:colmeia/features/overview/presentation/localization/overview_load_labels_l10n.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_auto_loader.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_chart_nav_grid.dart';
-import 'package:colmeia/features/overview/presentation/widgets/overview_filter_period_chip.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_filter_bar.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_filter_period_chip.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_home_alerts_section.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_home_charts_below_kpis.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_kpi_bar.dart';

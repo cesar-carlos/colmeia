@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
+import 'package:colmeia/app/router/app_chart_share_actions.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_chart_failure_placeholder_content.dart';
@@ -57,6 +58,8 @@ class SalesMonthlyPnlBarChartCard extends StatefulWidget {
 
 class _SalesMonthlyPnlBarChartCardState
     extends State<SalesMonthlyPnlBarChartCard> {
+  final GlobalKey _shareKey = GlobalKey();
+
   late SalesMonthlyPnlBarChartPreferences _session;
 
   @override
@@ -174,11 +177,15 @@ class _SalesMonthlyPnlBarChartCardState
 
     final summary = _semanticsSummary(l10n, widget.points);
 
+    final shareTitle = l10n.salesMonthlyPnlBarChartTitle;
+
     return Semantics(
       container: true,
       label: l10n.salesMonthlyPnlBarChartSemantics,
       value: summary.isEmpty ? null : summary,
-      child: _SalesMonthlyPnlBarChartBody(
+      child: RepaintBoundary(
+        key: _shareKey,
+        child: _SalesMonthlyPnlBarChartBody(
         l10n: l10n,
         points: widget.points,
         loadFailed: widget.loadFailed,
@@ -198,9 +205,13 @@ class _SalesMonthlyPnlBarChartCardState
         gridLineColor: gridLineColor,
         percentRatioFormat: percentRatioFormat,
         openFullscreen: widget.onOpenFullscreen ?? openBarFullscreen,
+        onShare: () => unawaited(
+          shareChartCapture(context, _shareKey, subject: shareTitle),
+        ),
         valuesAllZero: () => _valuesAllZero(widget.points),
         percentAllZero: () => _percentAllZero(widget.points, percentMetric),
         useChartShell: true,
+      ),
       ),
     );
   }
@@ -241,6 +252,7 @@ class _SalesMonthlyPnlBarChartBody extends StatelessWidget {
     this.gridLineColor,
     this.percentRatioFormat,
     this.openFullscreen,
+    this.onShare,
     this.valuesAllZero,
     this.percentAllZero,
   });
@@ -265,6 +277,7 @@ class _SalesMonthlyPnlBarChartBody extends StatelessWidget {
   final Color? gridLineColor;
   final NumberFormat? percentRatioFormat;
   final VoidCallback? openFullscreen;
+  final VoidCallback? onShare;
   final bool Function()? valuesAllZero;
   final bool Function()? percentAllZero;
 
@@ -507,6 +520,7 @@ class _SalesMonthlyPnlBarChartBody extends StatelessWidget {
               style: theme.appTypography.sectionHeaderH2,
             ),
             subtitle: l10n.salesMonthlyPnlBarChartSubtitle,
+            onShare: onShare,
             onOpenFullscreen: openFullscreen,
             belowSubtitle: onSessionChanged == null ? null : belowSubtitle,
             child: chartBody,
@@ -646,24 +660,33 @@ Future<void> pushSalesMonthlyPnlBarChartFullscreen({
   String? filterSummary,
 }) {
   final pageL10n = AppLocalizations.of(context);
+  final fullscreenShareKey = GlobalKey();
+  final shareTitle = pageL10n.salesMonthlyPnlBarChartTitle;
   return context.pushChartFullscreen<void>(
     extra: AppChartFullscreenRouteExtra(
-      title: pageL10n.salesMonthlyPnlBarChartTitle,
+      title: shareTitle,
       subtitle: pageL10n.salesMonthlyPnlBarChartSubtitle,
       filterSummary: filterSummary,
       chartSemanticsLabel: pageL10n.salesMonthlyPnlBarChartSemantics,
+      headerTrailing: buildChartFullscreenShareTrailing(
+        context: context,
+        shareKey: fullscreenShareKey,
+        subject: shareTitle,
+      ),
       chartBuilder: (fullscreenContext) {
         final l10nFs = AppLocalizations.of(fullscreenContext);
         final tokensFs = fullscreenContext.appTokens;
         final sessionHolder = <SalesMonthlyPnlBarChartPreferences>[
           initialSession,
         ];
-        return StatefulBuilder(
-          builder: (context, setFs) {
-            final fsSession = sessionHolder[0];
-            final isPct =
-                fsSession.displayMode == SalesMonthlyPnlBarDisplayMode.percent;
-            return Column(
+        return RepaintBoundary(
+          key: fullscreenShareKey,
+          child: StatefulBuilder(
+            builder: (context, setFs) {
+              final fsSession = sessionHolder[0];
+              final isPct =
+                  fsSession.displayMode == SalesMonthlyPnlBarDisplayMode.percent;
+              return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 salesMonthlyPnlBarDisplayModeSegmented(
@@ -720,8 +743,9 @@ Future<void> pushSalesMonthlyPnlBarChartFullscreen({
                   ),
                 ),
               ],
-            );
-          },
+              );
+            },
+          ),
         );
       },
     ),

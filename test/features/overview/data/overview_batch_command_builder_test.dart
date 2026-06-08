@@ -57,7 +57,6 @@ void main() {
         periodStart: periodStart,
         periodEnd: periodEnd,
         includePaymentResumo: false,
-        includeUserRanking: true,
       );
 
       check(batch.commands.length).equals(1);
@@ -70,7 +69,6 @@ void main() {
       final batch = builder.buildMainCommands(
         periodStart: periodStart,
         periodEnd: periodEnd,
-        includePaymentResumo: true,
         includeUserRanking: false,
       );
 

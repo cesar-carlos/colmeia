@@ -404,6 +404,9 @@ class AppComparisonBarChart<T> extends StatelessWidget {
     this.titleWidget,
     this.subtitle,
     this.titleTrailing,
+    this.onShare,
+    this.openShareTooltip,
+    this.openShareSemanticLabel,
     this.onOpenFullscreen,
     this.openFullscreenTooltip,
     this.openFullscreenSemanticLabel,
@@ -469,6 +472,15 @@ class AppComparisonBarChart<T> extends StatelessWidget {
 
   /// Widget aligned to the trailing edge of the header row.
   final Widget? titleTrailing;
+
+  /// Optional callback that enables sharing the chart from the chart header.
+  final VoidCallback? onShare;
+
+  /// Optional tooltip for the share action button.
+  final String? openShareTooltip;
+
+  /// Optional semantics label for the share action button.
+  final String? openShareSemanticLabel;
 
   /// Optional callback that enables fullscreen expansion from the chart header.
   final VoidCallback? onOpenFullscreen;
@@ -671,6 +683,9 @@ class AppComparisonBarChart<T> extends StatelessWidget {
       titleWidget: titleWidget,
       subtitle: subtitle,
       titleTrailing: mergedTitleTrailing,
+      onShare: onShare,
+      openShareTooltip: openShareTooltip,
+      openShareSemanticLabel: openShareSemanticLabel,
       onOpenFullscreen: onOpenFullscreen,
       openFullscreenTooltip: openFullscreenTooltip,
       openFullscreenSemanticLabel: openFullscreenSemanticLabel,

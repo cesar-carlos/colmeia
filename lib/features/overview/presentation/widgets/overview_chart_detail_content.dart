@@ -76,6 +76,8 @@ class _OverviewChartDetailContentState extends State<OverviewChartDetailContent>
         loadFailureMessage: overview.dailySalesTrendLoadFailureMessage,
         onRequestFullscreen: (context, request) =>
             context.pushChartFullscreenFromRequest(request),
+        onRequestShare: (context, request) =>
+            context.shareChartFromRequest(request),
       ),
       OverviewProgressiveSection.paymentMix => OverviewPaymentMixCard(
         l10n: l10n,

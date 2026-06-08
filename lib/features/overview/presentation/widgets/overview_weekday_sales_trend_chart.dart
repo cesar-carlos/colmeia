@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
+import 'package:colmeia/app/router/app_chart_share_actions.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
@@ -8,9 +9,11 @@ import 'package:colmeia/features/overview/domain/overview_weekday_display_order.
 import 'package:colmeia/features/overview/presentation/widgets/overview_chart_load_failure_helpers.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/charts/daily_sales_weekday_labels.dart';
+import 'package:colmeia/shared/charts/metric_toggle_comparison_bar_fullscreen_body.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_dashboard_comparison_bar_chart_preset.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -45,10 +48,23 @@ enum _OverviewWeekdayMetric {
 
 class _OverviewWeekdaySalesTrendChartState
     extends State<OverviewWeekdaySalesTrendChart> {
+  final GlobalKey _shareKey = GlobalKey();
+
   _OverviewWeekdayMetric _metric = _OverviewWeekdayMetric.salesCount;
 
   /// Bars for the selected metric only; zero values are omitted from the plot.
   /// Order: Monday → Sunday on the axis ([kOverviewApiWeekdayDisplayOrder]).
+  List<OverviewWeekdaySalesTrendPoint> _weekdayTableRows() {
+    final rows = List<OverviewWeekdaySalesTrendPoint>.of(widget.points)
+      ..sort(
+        (a, b) => compareOverviewApiWeekdayDisplayOrder(
+          a.weekdayNumber,
+          b.weekdayNumber,
+        ),
+      );
+    return rows;
+  }
+
   List<OverviewWeekdaySalesTrendPoint> _chartPointsNonZero() {
     List<OverviewWeekdaySalesTrendPoint> filtered;
     if (_metric == _OverviewWeekdayMetric.salesCount) {
@@ -132,136 +148,109 @@ class _OverviewWeekdaySalesTrendChartState
     );
     final chartPoints = _chartPointsNonZero();
     final showEmptyPlaceholder = widget.points.isEmpty || chartPoints.isEmpty;
+    final shareTitle = isSalesCount
+        ? l10n.overviewWeekdaySalesTitle
+        : l10n.overviewWeekdayRevenueTitle;
+
     void openFullscreen() {
       final chartPointsSnapshot = List<OverviewWeekdaySalesTrendPoint>.of(
         chartPoints,
         growable: false,
       );
       final isSalesCountSnapshot = isSalesCount;
+      final fullscreenShareKey = GlobalKey();
       unawaited(
         context.pushChartFullscreen<void>(
           extra: AppChartFullscreenRouteExtra(
-            title: isSalesCountSnapshot
-                ? l10n.overviewWeekdaySalesTitle
-                : l10n.overviewWeekdayRevenueTitle,
+            title: shareTitle,
             subtitle: l10n.overviewWeekdaySalesSubtitle,
             chartSemanticsLabel: isSalesCountSnapshot
                 ? l10n.overviewWeekdaySalesChartSemantics
                 : l10n.overviewWeekdayRevenueChartSemantics,
+            headerTrailing: buildChartFullscreenShareTrailing(
+              context: context,
+              shareKey: fullscreenShareKey,
+              subject: shareTitle,
+            ),
             chartBuilder: (fullscreenContext) {
               final fullscreenTokens = Theme.of(
                 fullscreenContext,
               ).extension<AppThemeTokens>()!;
               var fullscreenMetric = _metric;
-              return StatefulBuilder(
-                builder: (context, setFullscreenState) {
-                  final fullscreenIsSalesCount =
-                      fullscreenMetric == _OverviewWeekdayMetric.salesCount;
-                  return LayoutBuilder(
-                    builder: (context, constraints) {
-                      final availableChartHeight =
-                          (constraints.maxHeight -
-                                  fullscreenTokens.contentSpacing -
-                                  48)
-                              .clamp(220.0, constraints.maxHeight);
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
+              return RepaintBoundary(
+                key: fullscreenShareKey,
+                child: StatefulBuilder(
+                  builder: (context, setFullscreenState) {
+                    final fullscreenIsSalesCount =
+                        fullscreenMetric == _OverviewWeekdayMetric.salesCount;
+                    return buildMetricToggleComparisonBarFullscreenBody(
+                      tokens: fullscreenTokens,
+                      metricToggle:
                           AppSegmentedControl<_OverviewWeekdayMetric>(
-                            options:
-                                <
-                                  AppSegmentedControlOption<
-                                    _OverviewWeekdayMetric
-                                  >
-                                >[
-                                  AppSegmentedControlOption<
-                                    _OverviewWeekdayMetric
-                                  >(
-                                    value: _OverviewWeekdayMetric.salesCount,
-                                    label: l10n
-                                        .overviewWeekdayMetricSalesCountLabel,
-                                  ),
-                                  AppSegmentedControlOption<
-                                    _OverviewWeekdayMetric
-                                  >(
-                                    value: _OverviewWeekdayMetric.salesAmount,
-                                    label: l10n
-                                        .overviewWeekdayMetricSalesAmountLabel,
-                                  ),
-                                ],
-                            value: fullscreenMetric,
-                            onChanged: (value) => setFullscreenState(
-                              () => fullscreenMetric = value,
-                            ),
+                        options: <
+                            AppSegmentedControlOption<_OverviewWeekdayMetric>>[
+                          AppSegmentedControlOption<_OverviewWeekdayMetric>(
+                            value: _OverviewWeekdayMetric.salesCount,
+                            label: l10n.overviewWeekdayMetricSalesCountLabel,
                           ),
-                          SizedBox(height: fullscreenTokens.contentSpacing),
-                          SizedBox(
-                            height: availableChartHeight,
-                            child:
-                                AppComparisonBarChart<
-                                  OverviewWeekdaySalesTrendPoint
-                                >(
-                                  items: chartPointsSnapshot,
-                                  plotFloorAccessibilityNotice:
-                                      l10n.chartComparisonPlotFloorNotice,
-                                  extremeSpreadAccessibilityNotice: l10n
-                                      .chartComparisonExtremeValueSpreadNotice,
-                                  labelBuilder: (point) =>
-                                      dailySalesWeekdayLabel(
-                                        point.weekdayNumber,
-                                        l10n,
-                                      ),
-                                  valueBuilder: (point) =>
-                                      fullscreenIsSalesCount
-                                      ? point.salesCount
-                                      : point.salesAmount,
-                                  tooltipLabelBuilder: (point, value) =>
-                                      l10n.overviewWeekdaySalesTooltip(
-                                        dailySalesWeekdayLabel(
-                                          point.weekdayNumber,
-                                          l10n,
-                                        ),
-                                        salesCountFormat.format(
-                                          point.salesCount,
-                                        ),
-                                        AppBrFormatters.currency(
-                                          point.salesAmount,
-                                        ),
-                                      ),
-                                  dataLabelBuilder: (_, value) =>
-                                      fullscreenIsSalesCount
-                                      ? compactSalesCountFormat.format(value)
-                                      : AppBrFormatters.compactCurrency(value),
-                                  style: appDashboardComparisonBarChartStyle(
-                                    tokens: fullscreenTokens,
-                                    kind: AppDashboardComparisonBarChartKind.weekday,
-                                    l10n: l10n,
-                                    weekdayUsesCurrencyAxis:
-                                        !fullscreenIsSalesCount,
-                                    weekdayRevenueDataLabelBackground:
-                                        fullscreenIsSalesCount
-                                        ? null
-                                        : Theme.of(context).colorScheme.surface,
-                                    heightOverride: availableChartHeight,
-                                  ),
-                                  emptyPlaceholder: showEmptyPlaceholder
-                                      ? Center(
-                                          child: Text(
-                                            emptyMessage,
-                                            textAlign: TextAlign.center,
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodyMedium,
-                                          ),
-                                        )
-                                      : null,
-                                ),
+                          AppSegmentedControlOption<_OverviewWeekdayMetric>(
+                            value: _OverviewWeekdayMetric.salesAmount,
+                            label: l10n.overviewWeekdayMetricSalesAmountLabel,
                           ),
                         ],
-                      );
-                    },
-                  );
-                },
+                        value: fullscreenMetric,
+                        onChanged: (value) => setFullscreenState(
+                          () => fullscreenMetric = value,
+                        ),
+                      ),
+                      chartBuilder: (availableChartHeight) =>
+                          AppComparisonBarChart<OverviewWeekdaySalesTrendPoint>(
+                        items: chartPointsSnapshot,
+                        plotFloorAccessibilityNotice:
+                            l10n.chartComparisonPlotFloorNotice,
+                        extremeSpreadAccessibilityNotice:
+                            l10n.chartComparisonExtremeValueSpreadNotice,
+                        labelBuilder: (point) => dailySalesWeekdayLabel(
+                          point.weekdayNumber,
+                          l10n,
+                        ),
+                        valueBuilder: (point) => fullscreenIsSalesCount
+                            ? point.salesCount
+                            : point.salesAmount,
+                        tooltipLabelBuilder: (point, value) =>
+                            l10n.overviewWeekdaySalesTooltip(
+                          dailySalesWeekdayLabel(point.weekdayNumber, l10n),
+                          salesCountFormat.format(point.salesCount),
+                          AppBrFormatters.currency(point.salesAmount),
+                        ),
+                        dataLabelBuilder: (_, value) => fullscreenIsSalesCount
+                            ? compactSalesCountFormat.format(value)
+                            : AppBrFormatters.compactCurrency(value),
+                        style: appDashboardComparisonBarChartStyle(
+                          tokens: fullscreenTokens,
+                          kind: AppDashboardComparisonBarChartKind.weekday,
+                          l10n: l10n,
+                          weekdayUsesCurrencyAxis: !fullscreenIsSalesCount,
+                          weekdayRevenueDataLabelBackground:
+                              fullscreenIsSalesCount
+                              ? null
+                              : Theme.of(context).colorScheme.surface,
+                          heightOverride: availableChartHeight,
+                        ),
+                        emptyPlaceholder: showEmptyPlaceholder
+                            ? Center(
+                                child: Text(
+                                  emptyMessage,
+                                  textAlign: TextAlign.center,
+                                  style:
+                                      Theme.of(context).textTheme.bodyMedium,
+                                ),
+                              )
+                            : null,
+                      ),
+                    );
+                  },
+                ),
               );
             },
           ),
@@ -275,12 +264,36 @@ class _OverviewWeekdaySalesTrendChartState
           : l10n.overviewWeekdayRevenueChartSemantics,
       hint: l10n.overviewWeekdayChartScopeHint,
       value: summary,
-      child: AppComparisonBarChart<OverviewWeekdaySalesTrendPoint>(
-        title: isSalesCount
-            ? l10n.overviewWeekdaySalesTitle
-            : l10n.overviewWeekdayRevenueTitle,
-        subtitle: l10n.overviewWeekdaySalesSubtitle,
-        onOpenFullscreen: openFullscreen,
+      child: RepaintBoundary(
+        key: _shareKey,
+        child: AppComparisonBarChart<OverviewWeekdaySalesTrendPoint>(
+          title: shareTitle,
+          subtitle: l10n.overviewWeekdaySalesSubtitle,
+          onShare: () => unawaited(
+            shareChartCapture(
+              context,
+              _shareKey,
+              subject: shareTitle,
+              title: shareTitle,
+              subtitle: l10n.overviewWeekdaySalesSubtitle,
+              tableData: ChartShareTableData(
+                headers: <String>[
+                  l10n.chartSharePdfColumnWeekday,
+                  l10n.overviewWeekdayMetricSalesCountLabel,
+                  l10n.overviewWeekdayMetricSalesAmountLabel,
+                ],
+                rows: <List<String>>[
+                  for (final point in _weekdayTableRows())
+                    <String>[
+                      dailySalesWeekdayLabel(point.weekdayNumber, l10n),
+                      salesCountFormat.format(point.salesCount),
+                      AppBrFormatters.currency(point.salesAmount),
+                    ],
+                ],
+              ),
+            ),
+          ),
+          onOpenFullscreen: openFullscreen,
         belowSubtitle: AppSegmentedControl<_OverviewWeekdayMetric>(
           options: <AppSegmentedControlOption<_OverviewWeekdayMetric>>[
             AppSegmentedControlOption<_OverviewWeekdayMetric>(
@@ -330,6 +343,7 @@ class _OverviewWeekdaySalesTrendChartState
                     widget.loadFailed ? widget.loadFailure : null,
               )
             : null,
+        ),
       ),
     );
   }

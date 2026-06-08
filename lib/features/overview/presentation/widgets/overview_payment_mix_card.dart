@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
+import 'package:colmeia/app/router/app_chart_share_actions.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -26,6 +27,8 @@ class OverviewPaymentMixCard extends StatefulWidget {
 }
 
 class _OverviewPaymentMixCardState extends State<OverviewPaymentMixCard> {
+  final GlobalKey _shareKey = GlobalKey();
+
   List<OverviewPaymentMethodBreakdown>? _methodsRef;
   String? _localeNameRef;
   List<AppCategoryDonutSegment> _segments = const <AppCategoryDonutSegment>[];
@@ -76,14 +79,23 @@ class _OverviewPaymentMixCardState extends State<OverviewPaymentMixCard> {
         growable: false,
       );
       final centerPrimarySnapshot = _centerPrimary;
+      final fullscreenShareKey = GlobalKey();
+      final shareTitle = l10n.overviewPaymentMixTitle;
       unawaited(
         context.pushChartFullscreen<void>(
           extra: AppChartFullscreenRouteExtra(
-            title: l10n.overviewPaymentMixTitle,
+            title: shareTitle,
             subtitle: l10n.overviewPaymentMixSubtitle,
-            chartSemanticsLabel: l10n.overviewPaymentMixTitle,
+            chartSemanticsLabel: shareTitle,
+            headerTrailing: buildChartFullscreenShareTrailing(
+              context: context,
+              shareKey: fullscreenShareKey,
+              subject: shareTitle,
+            ),
             chartBuilder: (fullscreenContext) {
-              return LayoutBuilder(
+              return RepaintBoundary(
+                key: fullscreenShareKey,
+                child: LayoutBuilder(
                 builder: (context, constraints) {
                   final chartSize = (constraints.biggest.shortestSide * 0.48)
                       .clamp(260.0, 420.0);
@@ -105,6 +117,7 @@ class _OverviewPaymentMixCardState extends State<OverviewPaymentMixCard> {
                         l10n.overviewPaymentMixDonutTotalLabel,
                   );
                 },
+              ),
               );
             },
           ),
@@ -112,20 +125,26 @@ class _OverviewPaymentMixCardState extends State<OverviewPaymentMixCard> {
       );
     }
 
-    return AppCategoryDonutCard(
-      title: l10n.overviewPaymentMixTitle,
-      subtitle: l10n.overviewPaymentMixSubtitle,
-      titleTrailing: IconButton(
-        onPressed: openFullscreen,
-        tooltip: l10n.chartOpenFullscreenTooltip,
-        icon: const Icon(Icons.open_in_full),
+    return RepaintBoundary(
+      key: _shareKey,
+      child: AppCategoryDonutCard(
+        title: l10n.overviewPaymentMixTitle,
+        subtitle: l10n.overviewPaymentMixSubtitle,
+        onOpenFullscreen: openFullscreen,
+        onShare: () => unawaited(
+          shareChartCapture(
+            context,
+            _shareKey,
+            subject: l10n.overviewPaymentMixTitle,
+          ),
+        ),
+        style: const AppCategoryDonutCardStyle(
+          legendMaxHeight: 280,
+        ),
+        segments: _segments,
+        centerPrimaryLabel: _centerPrimary,
+        centerSecondaryLabel: l10n.overviewPaymentMixDonutTotalLabel,
       ),
-      style: const AppCategoryDonutCardStyle(
-        legendMaxHeight: 280,
-      ),
-      segments: _segments,
-      centerPrimaryLabel: _centerPrimary,
-      centerSecondaryLabel: l10n.overviewPaymentMixDonutTotalLabel,
     );
   }
 }

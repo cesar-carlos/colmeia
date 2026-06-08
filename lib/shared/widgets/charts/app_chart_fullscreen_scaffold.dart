@@ -57,12 +57,8 @@ class AppChartFullscreenScaffold extends StatelessWidget {
     final tokens = theme.extension<AppThemeTokens>()!;
     final l10n = AppLocalizations.of(context);
     final resolvedBodyPadding = _mergedBodyPadding(context, tokens);
-    final effectiveBodyPadding = EdgeInsets.fromLTRB(
-      tokens.contentSpacing + resolvedBodyPadding.left,
-      resolvedBodyPadding.top,
-      tokens.contentSpacing + resolvedBodyPadding.right,
-      resolvedBodyPadding.bottom,
-    );
+    final bodyPaddingTop = resolvedBodyPadding.top;
+    final bodyPaddingBottom = resolvedBodyPadding.bottom;
 
     final resolvedTitle = title?.trim();
     final hasTitle = resolvedTitle != null && resolvedTitle.isNotEmpty;
@@ -112,9 +108,9 @@ class AppChartFullscreenScaffold extends StatelessWidget {
             child: Padding(
               padding: EdgeInsets.fromLTRB(
                 horizontalInset + resolvedBodyPadding.left,
-                effectiveBodyPadding.top,
+                bodyPaddingTop,
                 horizontalInset + resolvedBodyPadding.right,
-                effectiveBodyPadding.bottom,
+                bodyPaddingBottom,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,

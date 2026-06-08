@@ -32,17 +32,18 @@ class SalesDailyTotalsChartCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final range = dailySaleDateRange;
-    return RepaintBoundary(
-      child: DailySalesTrendChart(
-        l10n: l10n,
-        points: points,
-        loadFailed: loadFailed,
-        loadFailure: loadFailure,
-        loadFailureMessage: loadFailureMessage,
-        isLoading: isLoading,
-        useSalesDailyTotalsLabels: true,
-        onRequestFullscreen: (context, request) =>
-            context.pushChartFullscreenFromRequest(request),
+    return DailySalesTrendChart(
+      l10n: l10n,
+      points: points,
+      loadFailed: loadFailed,
+      loadFailure: loadFailure,
+      loadFailureMessage: loadFailureMessage,
+      isLoading: isLoading,
+      useSalesDailyTotalsLabels: true,
+      onRequestFullscreen: (context, request) =>
+          context.pushChartFullscreenFromRequest(request),
+      onRequestShare: (context, request) =>
+          context.shareChartFromRequest(request),
         salesSubtitleOverride: range != null
             ? salesDailyTotalsEffectiveSubtitle(
                 l10n,
@@ -55,7 +56,6 @@ class SalesDailyTotalsChartCard extends StatelessWidget {
                 dailySaleDateRange: range,
               )
             : null,
-      ),
     );
   }
 }

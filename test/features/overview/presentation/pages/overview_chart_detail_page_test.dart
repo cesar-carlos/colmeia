@@ -1,10 +1,8 @@
 import 'package:colmeia/app/theme/app_theme.dart';
-import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/overview/application/overview_shell_cache.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_sections_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
@@ -15,13 +13,11 @@ import 'package:colmeia/features/overview/presentation/controllers/overview_char
 import 'package:colmeia/features/overview/presentation/pages/overview_chart_detail_page.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_chart_detail_loading_block.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:provider/provider.dart';
-import 'package:result_dart/result_dart.dart';
 
 class _MockAuthController extends Mock implements AuthController {}
 

@@ -6,12 +6,12 @@ import 'package:colmeia/features/overview/domain/entities/overview_progressive_s
 import 'package:colmeia/features/overview/presentation/overview_sorted_rankings.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_alert_detail_sheet.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_chart_load_failure_helpers.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_chart_staged_block.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_monthly_parcels_combo_chart.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_rankings_section.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_motion_tokens.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:colmeia/features/overview/presentation/widgets/overview_chart_staged_block.dart';
 import 'package:flutter/material.dart';
 
 /// Charts that remain embedded on the overview home (monthly trend + agent ranking).

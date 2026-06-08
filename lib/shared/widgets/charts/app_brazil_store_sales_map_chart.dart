@@ -63,6 +63,9 @@ class AppBrazilStoreSalesMapChart extends StatefulWidget {
     this.onStateTap,
     this.onMetricChanged,
     this.onDiagnosticsChanged,
+    this.onShare,
+    this.openShareTooltip,
+    this.openShareSemanticLabel,
     this.onOpenFullscreen,
     this.showDesktopBranchSidebar = false,
     this.presentationMode = AppBrazilStoreSalesMapPresentationMode.standard,
@@ -96,6 +99,9 @@ class AppBrazilStoreSalesMapChart extends StatefulWidget {
   onStateTap;
   final ValueChanged<AppBrazilStoreSalesMapMetric>? onMetricChanged;
   final ValueChanged<AppBrazilStoreSalesMapDiagnostics>? onDiagnosticsChanged;
+  final VoidCallback? onShare;
+  final String? openShareTooltip;
+  final String? openShareSemanticLabel;
   final VoidCallback? onOpenFullscreen;
   final bool showDesktopBranchSidebar;
   final AppBrazilStoreSalesMapPresentationMode presentationMode;
@@ -959,6 +965,9 @@ class _AppBrazilStoreSalesMapChartState
           subtitle: widget.subtitle,
           titleTrailing: widget.titleTrailing,
           belowSubtitle: widget.belowSubtitle,
+          onShare: widget.onShare,
+          openShareTooltip: widget.openShareTooltip,
+          openShareSemanticLabel: widget.openShareSemanticLabel,
           onOpenFullscreen: widget.onOpenFullscreen,
           cardPadding: _usesCleanFullscreenChrome
               ? EdgeInsets.fromLTRB(

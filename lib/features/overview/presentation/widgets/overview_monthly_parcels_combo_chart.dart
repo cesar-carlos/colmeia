@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
+import 'package:colmeia/app/router/app_chart_share_actions.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
@@ -114,6 +115,8 @@ enum _OverviewMonthlyParcelDisplay {
 
 class _OverviewMonthlyParcelsComboChartState
     extends State<OverviewMonthlyParcelsComboChart> {
+  final GlobalKey _shareKey = GlobalKey();
+
   _OverviewMonthlyParcelDisplay _display =
       _OverviewMonthlyParcelDisplay.bySalesCount;
 
@@ -320,28 +323,38 @@ class _OverviewMonthlyParcelsComboChartState
               l10n.overviewMonthlyParcelsChartSemanticsValueView)
         : (copy?.semanticsWhenSalesPrimary ??
               l10n.overviewMonthlyParcelsChartSemantics);
+    final shareTitle = copy?.chartTitle ?? l10n.overviewMonthlyParcelsTitle;
+
     void openFullscreen() {
       final pointsSnapshot = List<OverviewMonthlyParcelPoint>.of(
         widget.points,
         growable: false,
       );
       final copySnapshot = copy;
+      final fullscreenShareKey = GlobalKey();
       unawaited(
         context.pushChartFullscreen<void>(
           extra: AppChartFullscreenRouteExtra(
-            title: copySnapshot?.chartTitle ?? l10n.overviewMonthlyParcelsTitle,
+            title: shareTitle,
             subtitle: valuePrimary
                 ? (copySnapshot?.subtitleWhenValuePrimary ??
                       l10n.overviewMonthlyParcelsSubtitleValueView)
                 : (copySnapshot?.subtitleWhenSalesPrimary ??
                       l10n.overviewMonthlyParcelsSubtitle),
             chartSemanticsLabel: semanticsLabel,
+            headerTrailing: buildChartFullscreenShareTrailing(
+              context: context,
+              shareKey: fullscreenShareKey,
+              subject: shareTitle,
+            ),
             chartBuilder: (fullscreenContext) {
               final fullscreenTokens = Theme.of(
                 fullscreenContext,
               ).extension<AppThemeTokens>()!;
               var fullscreenDisplay = _display;
-              return StatefulBuilder(
+              return RepaintBoundary(
+                key: fullscreenShareKey,
+                child: StatefulBuilder(
                 builder: (context, setFullscreenState) {
                   final fullscreenValuePrimary =
                       fullscreenDisplay ==
@@ -444,6 +457,7 @@ class _OverviewMonthlyParcelsComboChartState
                     },
                   );
                 },
+              ),
               );
             },
           ),
@@ -454,13 +468,17 @@ class _OverviewMonthlyParcelsComboChartState
     return Semantics(
       label: semanticsLabel,
       child: RepaintBoundary(
+        key: _shareKey,
         // Stable key: re-mounting the SfCartesianChart on every new payload is
         // expensive (Syncfusion rebuilds painters). Pegging the key to the
         // list identity lets the engine update points in place when the parent
         // caches the list (mirrors the donut card fix).
         child: AppComboChart<OverviewMonthlyParcelPoint>(
           key: ValueKey<int>(identityHashCode(widget.points)),
-          title: copy?.chartTitle ?? l10n.overviewMonthlyParcelsTitle,
+          title: shareTitle,
+          onShare: () => unawaited(
+            shareChartCapture(context, _shareKey, subject: shareTitle),
+          ),
           onOpenFullscreen: openFullscreen,
           subtitle: valuePrimary
               ? (copy?.subtitleWhenValuePrimary ??

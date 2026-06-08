@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:colmeia/app/router/app_chart_share_actions.dart';
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_route_data.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_scaffold.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -65,14 +67,46 @@ extension AppChartFullscreenNavigation on BuildContext {
   /// Maps an app-agnostic [AppChartFullscreenRequest] emitted by a shared chart
   /// to the fullscreen route, so shared widgets stay decoupled from `app/`.
   void pushChartFullscreenFromRequest(AppChartFullscreenRequest request) {
+    final shareKey = request.shareCaptureKey;
+    final shareSubject = request.shareSubject;
+    final headerTrailingBuilder = request.headerTrailingBuilder;
+    Widget? headerTrailing;
+    if (headerTrailingBuilder != null && shareKey != null) {
+      headerTrailing = headerTrailingBuilder(this, shareKey);
+    } else if (shareKey != null && shareSubject != null) {
+      headerTrailing = buildChartFullscreenShareTrailing(
+        context: this,
+        shareKey: shareKey,
+        subject: shareSubject,
+      );
+    }
+
     unawaited(
       pushChartFullscreen<void>(
         extra: AppChartFullscreenRouteExtra(
           title: request.title,
           subtitle: request.subtitle,
+          filterSummary: request.filterSummary,
           chartSemanticsLabel: request.semanticsLabel,
           chartBuilder: request.chartBuilder,
+          headerTrailing: headerTrailing,
         ),
+      ),
+    );
+  }
+
+  /// Maps an app-agnostic [AppChartShareRequest] emitted by a shared chart to
+  /// the platform share sheet, so shared widgets stay decoupled from `app/`.
+  void shareChartFromRequest(AppChartShareRequest request) {
+    unawaited(
+      shareChartCapture(
+        this,
+        request.captureKey,
+        subject: request.subject,
+        title: request.title ?? request.subject,
+        subtitle: request.subtitle,
+        filterSummary: request.filterSummary,
+        tableData: request.tableData,
       ),
     );
   }

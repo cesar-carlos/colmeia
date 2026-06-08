@@ -16,7 +16,6 @@ final class OverviewSectionRequest {
     return switch (section) {
       OverviewProgressiveSection.paymentMix => const OverviewSectionRequest(
         runMainBatch: true,
-        mainBatchIncludePaymentResumo: true,
         mainBatchIncludeUserRanking: false,
         sectionBatchSections: <OverviewProgressiveSection>{},
       ),
@@ -24,7 +23,6 @@ final class OverviewSectionRequest {
       OverviewProgressiveSection.agentRanking => const OverviewSectionRequest(
         runMainBatch: true,
         mainBatchIncludePaymentResumo: false,
-        mainBatchIncludeUserRanking: true,
         sectionBatchSections: <OverviewProgressiveSection>{},
       ),
       OverviewProgressiveSection.summary => const OverviewSectionRequest(
@@ -50,7 +48,6 @@ final class OverviewSectionRequest {
   static const OverviewSectionRequest home = OverviewSectionRequest(
     runMainBatch: true,
     mainBatchIncludePaymentResumo: false,
-    mainBatchIncludeUserRanking: true,
     sectionBatchSections: <OverviewProgressiveSection>{
       OverviewProgressiveSection.monthlyParcels,
     },
@@ -94,8 +91,9 @@ final class OverviewSectionRequest {
       sections.add(OverviewProgressiveSection.paymentMix);
     }
     if (mainBatchIncludeUserRanking) {
-      sections.add(OverviewProgressiveSection.agentRanking);
-      sections.add(OverviewProgressiveSection.userRanking);
+      sections
+        ..add(OverviewProgressiveSection.agentRanking)
+        ..add(OverviewProgressiveSection.userRanking);
     }
     return sections;
   }

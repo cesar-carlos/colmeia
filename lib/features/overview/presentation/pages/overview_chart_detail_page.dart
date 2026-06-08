@@ -17,11 +17,11 @@ import 'package:colmeia/features/overview/presentation/widgets/overview_chart_de
 import 'package:colmeia/features/overview/presentation/widgets/overview_filter_period_chip.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart'
     show AppInlineErrorPanel, AppInlinePanelTone;
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
-import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
+import 'package:colmeia/app/router/app_chart_share_actions.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
@@ -84,6 +85,8 @@ class OverviewLucratividadeMensalChart extends StatefulWidget {
 
 class _OverviewLucratividadeMensalChartState
     extends State<OverviewLucratividadeMensalChart> {
+  final GlobalKey _shareKey = GlobalKey();
+
   _LucratividadeDisplay _display = _LucratividadeDisplay.profitRevenue;
   LucratividadePercentMetric _percentMetric =
       LucratividadePercentMetric.grossMargin;
@@ -287,24 +290,34 @@ class _OverviewLucratividadeMensalChartState
       );
     }
 
+    final shareTitle = l10n.overviewLucratividadeMensalTitle;
+
     void openFullscreen() {
       final snapshot = List<ResumoProdutoVendaLucratividadeMensalRow>.of(
         widget.points,
         growable: false,
       );
+      final fullscreenShareKey = GlobalKey();
       unawaited(
         context.pushChartFullscreen<void>(
           extra: AppChartFullscreenRouteExtra(
-            title: l10n.overviewLucratividadeMensalTitle,
+            title: shareTitle,
             subtitle: l10n.overviewLucratividadeMensalSubtitle,
-            chartSemanticsLabel: l10n.overviewLucratividadeMensalTitle,
+            chartSemanticsLabel: shareTitle,
+            headerTrailing: buildChartFullscreenShareTrailing(
+              context: context,
+              shareKey: fullscreenShareKey,
+              subject: shareTitle,
+            ),
             chartBuilder: (fullscreenContext) {
               final fullscreenTokens = Theme.of(
                 fullscreenContext,
               ).extension<AppThemeTokens>()!;
               var fullscreenDisplay = _display;
               var fullscreenPercentMetric = _percentMetric;
-              return StatefulBuilder(
+              return RepaintBoundary(
+                key: fullscreenShareKey,
+                child: StatefulBuilder(
                 builder: (context, setFullscreenState) {
                   final fsPercent =
                       fullscreenDisplay == _LucratividadeDisplay.percentMetrics;
@@ -498,6 +511,7 @@ class _OverviewLucratividadeMensalChartState
                     },
                   );
                 },
+              ),
               );
             },
           ),
@@ -565,6 +579,7 @@ class _OverviewLucratividadeMensalChartState
     );
 
     return RepaintBoundary(
+      key: _shareKey,
       child: AppComboChart<ResumoProdutoVendaLucratividadeMensalRow>(
         key: ValueKey<Object>(
           Object.hash(
@@ -573,8 +588,11 @@ class _OverviewLucratividadeMensalChartState
             _percentMetric,
           ),
         ),
-        title: l10n.overviewLucratividadeMensalTitle,
+        title: shareTitle,
         subtitle: l10n.overviewLucratividadeMensalSubtitle,
+        onShare: () => unawaited(
+          shareChartCapture(context, _shareKey, subject: shareTitle),
+        ),
         onOpenFullscreen: openFullscreen,
         belowSubtitle: belowSubtitle,
         items: sortedPoints,

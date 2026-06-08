@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
+import 'package:colmeia/app/router/app_chart_share_actions.dart';
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
@@ -468,18 +469,27 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
     final loadFailedSnapshot = _chartLoadFailed;
     final loadFailureMessageSnapshot = _chartLoadFailureMessage;
     final pageL10n = AppLocalizations.of(context);
+    final fullscreenShareKey = GlobalKey();
+    final shareTitle = pageL10n.salesMonthlyPnlChartTitle;
     unawaited(
       context.pushChartFullscreen<void>(
         extra: AppChartFullscreenRouteExtra(
-          title: pageL10n.salesMonthlyPnlChartTitle,
+          title: shareTitle,
           subtitle: pageL10n.salesMonthlyPnlChartSubtitle,
           filterSummary: _monthlyPnlFullscreenFilterSummary(pageL10n),
           chartSemanticsLabel: pageL10n.salesMonthlyPnlChartSemantics,
+          headerTrailing: buildChartFullscreenShareTrailing(
+            context: context,
+            shareKey: fullscreenShareKey,
+            subject: shareTitle,
+          ),
           chartBuilder: (fullscreenContext) {
             final l10n = AppLocalizations.of(fullscreenContext);
-            return LayoutBuilder(
-              builder: (context, constraints) {
-                return _SalesMonthlyPnlLineChart(
+            return RepaintBoundary(
+              key: fullscreenShareKey,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return _SalesMonthlyPnlLineChart(
                   l10n: l10n,
                   points: pointsSnapshot,
                   loadFailed: loadFailedSnapshot,
@@ -487,8 +497,9 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
                   isLoading: isLoadingSnapshot,
                   useChartShell: false,
                   chartHeightOverride: constraints.maxHeight,
-                );
-              },
+                  );
+                },
+              ),
             );
           },
         ),
@@ -632,7 +643,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
   }
 }
 
-class _SalesMonthlyPnlLineChart extends StatelessWidget {
+class _SalesMonthlyPnlLineChart extends StatefulWidget {
   const _SalesMonthlyPnlLineChart({
     required this.l10n,
     required this.points,
@@ -656,8 +667,16 @@ class _SalesMonthlyPnlLineChart extends StatelessWidget {
   final double? chartHeightOverride;
 
   @override
+  State<_SalesMonthlyPnlLineChart> createState() =>
+      _SalesMonthlyPnlLineChartState();
+}
+
+class _SalesMonthlyPnlLineChartState extends State<_SalesMonthlyPnlLineChart> {
+  final GlobalKey _shareKey = GlobalKey();
+
+  @override
   Widget build(BuildContext context) {
-    final l10n = this.l10n;
+    final l10n = widget.l10n;
     final theme = Theme.of(context);
     final tokens = theme.appTokens;
     final colors = theme.appColors;
@@ -669,6 +688,15 @@ class _SalesMonthlyPnlLineChart extends StatelessWidget {
     final yAxisFormat = AppBrFormatters.compactCurrencyFormatForLocale(
       localeTag,
     );
+    final loadFailed = widget.loadFailed;
+    final loadFailure = widget.loadFailure;
+    final loadFailureMessage = widget.loadFailureMessage;
+    final isLoading = widget.isLoading;
+    final points = widget.points;
+    final onOpenFullscreen = widget.onOpenFullscreen;
+    final useChartShell = widget.useChartShell;
+    final chartHeightOverride = widget.chartHeightOverride;
+
     final emptyMessage = loadFailed
         ? (loadFailureMessage ?? l10n.salesMonthlyPnlLoadFailed)
         : l10n.salesMonthlyPnlEmpty;
@@ -837,10 +865,14 @@ class _SalesMonthlyPnlLineChart extends StatelessWidget {
             },
           );
 
+    final shareTitle = l10n.salesMonthlyPnlChartTitle;
     final chartSurface = useChartShell
         ? AppChartShell(
-            title: l10n.salesMonthlyPnlChartTitle,
+            title: shareTitle,
             subtitle: l10n.salesMonthlyPnlChartSubtitle,
+            onShare: () => unawaited(
+              shareChartCapture(context, _shareKey, subject: shareTitle),
+            ),
             onOpenFullscreen: onOpenFullscreen,
             child: chartBody,
           )
@@ -848,7 +880,10 @@ class _SalesMonthlyPnlLineChart extends StatelessWidget {
 
     return Semantics(
       label: semanticsLabel,
-      child: chartSurface,
+      child: RepaintBoundary(
+        key: _shareKey,
+        child: chartSurface,
+      ),
     );
   }
 }

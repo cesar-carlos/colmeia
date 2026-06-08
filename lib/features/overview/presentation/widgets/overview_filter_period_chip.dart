@@ -3,7 +3,6 @@ import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 @immutable

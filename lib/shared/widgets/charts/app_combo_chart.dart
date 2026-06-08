@@ -240,6 +240,9 @@ class AppComboChart<T> extends StatelessWidget {
     this.title,
     this.subtitle,
     this.titleTrailing,
+    this.onShare,
+    this.openShareTooltip,
+    this.openShareSemanticLabel,
     this.onOpenFullscreen,
     this.openFullscreenTooltip,
     this.openFullscreenSemanticLabel,
@@ -293,6 +296,9 @@ class AppComboChart<T> extends StatelessWidget {
   final String? title;
   final String? subtitle;
   final Widget? titleTrailing;
+  final VoidCallback? onShare;
+  final String? openShareTooltip;
+  final String? openShareSemanticLabel;
   final VoidCallback? onOpenFullscreen;
   final String? openFullscreenTooltip;
   final String? openFullscreenSemanticLabel;
@@ -375,6 +381,9 @@ class AppComboChart<T> extends StatelessWidget {
       title: title!,
       subtitle: subtitle,
       titleTrailing: titleTrailing,
+      onShare: onShare,
+      openShareTooltip: openShareTooltip,
+      openShareSemanticLabel: openShareSemanticLabel,
       onOpenFullscreen: onOpenFullscreen,
       openFullscreenTooltip: openFullscreenTooltip,
       openFullscreenSemanticLabel: openFullscreenSemanticLabel,

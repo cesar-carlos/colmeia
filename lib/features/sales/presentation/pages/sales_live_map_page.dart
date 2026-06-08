@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:colmeia/app/refresh/app_auto_refresh_support.dart';
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
+import 'package:colmeia/app/router/app_chart_share_actions.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
@@ -264,17 +265,26 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
       return;
     }
     final l10n = AppLocalizations.of(context);
+    final fullscreenShareKey = GlobalKey();
+    final shareTitle = l10n.salesLiveMapChartTitle;
     _setLiveMapFullscreenOpen(true);
 
     Future<void>? pushFuture;
     try {
       pushFuture = context.pushChartFullscreen<void>(
         extra: AppChartFullscreenRouteExtra(
-          chartSemanticsLabel: l10n.salesLiveMapChartTitle,
+          chartSemanticsLabel: shareTitle,
           headerBuilder: (_) =>
               SalesLiveMapFullscreenHeader(controller: _controller),
-          chartBuilder: (_) =>
-              SalesLiveMapFullscreenChart(controller: _controller),
+          headerTrailing: buildChartFullscreenShareTrailing(
+            context: context,
+            shareKey: fullscreenShareKey,
+            subject: shareTitle,
+          ),
+          chartBuilder: (_) => RepaintBoundary(
+            key: fullscreenShareKey,
+            child: SalesLiveMapFullscreenChart(controller: _controller),
+          ),
         ),
       );
     } on Object {
