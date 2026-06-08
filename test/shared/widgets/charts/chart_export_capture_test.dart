@@ -1,6 +1,4 @@
-import 'dart:typed_data';
-
-import 'package:colmeia/shared/widgets/charts/app_chart_capture_helper.dart';
+﻿import 'package:colmeia/shared/widgets/charts/app_chart_capture_helper.dart';
 import 'package:colmeia/shared/widgets/charts/chart_export_capture.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -63,12 +61,12 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    late Uint8List? pngBytes;
+    late ChartPngCapture? capture;
     await tester.runAsync(() async {
-      pngBytes = await captureFuture;
+      capture = await captureFuture;
     });
 
-    expect(pngBytes, isNotNull);
-    expect(pngBytes, isNotEmpty);
+    expect(capture, isNotNull);
+    expect(capture!.bytes, isNotEmpty);
   });
 }

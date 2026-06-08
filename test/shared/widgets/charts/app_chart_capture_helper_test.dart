@@ -194,6 +194,48 @@ void main() {
     expect(guardHeldDuringShare, isFalse);
   });
 
+  testWidgets('table-only share succeeds when dedicated export capture fails', (
+    tester,
+  ) async {
+    final key = GlobalKey();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(key: key, width: 10, height: 10),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final hostContext = tester.element(find.byType(Scaffold));
+    late ChartShareResult result;
+    await tester.runAsync(() async {
+      result = await captureAndShareChart(
+        key,
+        title: 'Branch ranking',
+        tableData: const ChartShareTableData(
+          headers: <String>['Product', 'Sales'],
+          rows: <List<String>>[
+            <String>['Coffee', '10'],
+          ],
+        ),
+        chartExportBuilder: (_) => const SizedBox.shrink(),
+        exportCaptureContext: hostContext,
+        shareBytes: ({
+          required bytes,
+          required fileName,
+          required mimeType,
+          subject,
+        }) async {
+          return const ShareResult('test', ShareResultStatus.success);
+        },
+      );
+    });
+
+    expect(result, isA<ChartShareSuccess>());
+  });
+
   testWidgets(
     'returns invalidRenderObject when key is not a repaint boundary',
     (

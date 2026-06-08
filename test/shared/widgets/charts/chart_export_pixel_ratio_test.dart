@@ -43,4 +43,26 @@ void main() {
     );
     expect(ratio, lessThanOrEqualTo(kDefaultChartCaptureMaxPixelRatio));
   });
+
+  test('resolveChartExportPixelRatio caps square charts by embed height', () {
+    const chartSize = 320.0;
+    final ratio = resolveChartExportPixelRatio(
+      logicalWidth: chartSize,
+      logicalHeight: chartSize,
+      devicePixelRatio: 3,
+    );
+
+    expect(
+      ratio,
+      closeTo(kChartPdfEmbedMaxHeight / chartSize, 0.01),
+    );
+    expect(
+      chartCaptureFitsPdfEmbedBounds(
+        logicalWidth: chartSize,
+        logicalHeight: chartSize,
+        pixelRatio: ratio,
+      ),
+      isTrue,
+    );
+  });
 }

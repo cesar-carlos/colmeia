@@ -72,17 +72,24 @@ class _RankingFaturamentoPieExport extends StatelessWidget {
     final total = branchRevenueTotal(rows);
     final percentFormat = NumberFormat('#,##0.0', 'pt_BR');
 
-    return AppCategoryDonutCard(
-      title: l10n.salesRankingProdutosFaturamentoChartTitle,
-      showHeader: false,
-      wrapInSectionCard: false,
-      segments: segments,
-      centerPrimaryLabel:
-          total > 0 ? AppBrFormatters.compactCurrency(total) : null,
-      centerSecondaryLabel: rows.isEmpty
-          ? null
-          : '${percentFormat.format(branchPercentSum(rows))}%',
-      style: _pieStyle,
+    return ColoredBox(
+      color: Theme.of(context).colorScheme.surface,
+      child: SizedBox(
+        width: _pieStyle.chartSize,
+        height: _pieStyle.chartSize,
+        child: AppCategoryDonutCard(
+          title: l10n.salesRankingProdutosFaturamentoChartTitle,
+          showHeader: false,
+          wrapInSectionCard: false,
+          segments: segments,
+          centerPrimaryLabel:
+              total > 0 ? AppBrFormatters.compactCurrency(total) : null,
+          centerSecondaryLabel: rows.isEmpty
+              ? null
+              : '${percentFormat.format(branchPercentSum(rows))}%',
+          style: _pieStyle,
+        ),
+      ),
     );
   }
 }

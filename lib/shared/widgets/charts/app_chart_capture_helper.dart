@@ -37,10 +37,12 @@ Future<ChartShareResult> captureAndShareChart(
 
   Uint8List pdfBytes;
   final resolvedTitle = title ?? subject ?? 'chart';
+  final fontsFuture = ChartPdfExporter.warmFonts();
   try {
     Uint8List? pngBytes;
-    final exportOverlay = chartExportBuilder != null &&
-            exportCaptureContext != null
+    var skipPngDownscale = false;
+    final usesDedicatedExport = chartExportBuilder != null;
+    final exportOverlay = usesDedicatedExport && exportCaptureContext != null
         ? Overlay.maybeOf(exportCaptureContext, rootOverlay: true)
         : null;
     final screenDevicePixelRatio = exportCaptureContext == null
@@ -48,27 +50,35 @@ Future<ChartShareResult> captureAndShareChart(
             ? null
             : MediaQuery.devicePixelRatioOf(key.currentContext!)
         : MediaQuery.devicePixelRatioOf(exportCaptureContext);
-    if (chartExportBuilder != null && exportOverlay != null) {
-      pngBytes = await captureChartFromExportBuilder(
+    if (usesDedicatedExport && exportOverlay != null) {
+      final capture = await captureChartFromExportBuilder(
         overlay: exportOverlay,
         chartExportBuilder: chartExportBuilder,
         devicePixelRatio: screenDevicePixelRatio,
         pixelRatio: pixelRatio,
       );
+      pngBytes = capture?.bytes;
+      skipPngDownscale = capture?.fitsPdfEmbedBounds ?? false;
     }
 
-    final boundaryContext = key.currentContext;
-    final renderObject = boundaryContext?.findRenderObject();
-    pngBytes ??= renderObject is RenderRepaintBoundary
-        ? await _captureChartPngBytesFromBoundary(
-            renderObject,
-            devicePixelRatio: screenDevicePixelRatio,
-            pixelRatio: pixelRatio,
-          )
-        : null;
+    if (pngBytes == null && !usesDedicatedExport) {
+      final boundaryContext = key.currentContext;
+      final renderObject = boundaryContext?.findRenderObject();
+      if (renderObject is RenderRepaintBoundary) {
+        final capture = await _captureChartPngBytesFromBoundary(
+          renderObject,
+          devicePixelRatio: screenDevicePixelRatio,
+          pixelRatio: pixelRatio,
+        );
+        pngBytes = capture?.bytes;
+        skipPngDownscale = capture?.fitsPdfEmbedBounds ?? false;
+      }
+    }
 
     final hasTable = tableData != null && !tableData.isEmpty;
     if (pngBytes == null && !hasTable) {
+      final boundaryContext = key.currentContext;
+      final renderObject = boundaryContext?.findRenderObject();
       if (boundaryContext == null) {
         return const ChartShareFailure(
           ChartShareFailureReason.missingBoundary,
@@ -84,10 +94,11 @@ Future<ChartShareResult> captureAndShareChart(
       );
     }
 
-    if (pngBytes != null) {
+    if (pngBytes != null && !skipPngDownscale) {
       pngBytes = await downscalePngForPdfEmbed(pngBytes);
     }
 
+    await fontsFuture;
     try {
       pdfBytes = await ChartPdfExporter.build(
         title: resolvedTitle,
@@ -136,9 +147,11 @@ Future<ChartShareResult> captureAndShareChart(
   return const ChartShareSuccess();
 }
 
+typedef ChartPngCapture = ({Uint8List bytes, bool fitsPdfEmbedBounds});
+
 /// Renders [chartExportBuilder] offscreen, captures PNG bytes, then removes it.
 @visibleForTesting
-Future<Uint8List?> captureChartFromExportBuilder({
+Future<ChartPngCapture?> captureChartFromExportBuilder({
   required OverlayState overlay,
   required WidgetBuilder chartExportBuilder,
   double? devicePixelRatio,
@@ -167,41 +180,16 @@ Future<Uint8List?> captureChartFromExportBuilder({
 
   overlay.insert(entry);
   try {
-    await _requestEndOfFrame();
-
-    final renderObject = captureKey.currentContext?.findRenderObject();
-    if (renderObject is! RenderRepaintBoundary) {
+    final renderObject = await _waitForExportCaptureBoundary(captureKey);
+    if (renderObject == null) {
       return null;
     }
 
-    if (renderObject.debugNeedsPaint) {
-      await _requestEndOfFrame();
-    }
-
-    if (!await waitForBoundaryReady(renderObject)) {
-      return null;
-    }
-
-    final logicalWidth = renderObject.size.width;
-    final resolvedPixelRatio = resolveChartExportPixelRatio(
-      logicalWidth: logicalWidth,
-      pixelRatio: pixelRatio,
+    return _rasterizeBoundaryToPng(
+      renderObject,
       devicePixelRatio: resolvedDevicePixelRatio,
+      pixelRatio: pixelRatio,
     );
-
-    ui.Image? image;
-    try {
-      image = await renderObject.toImage(pixelRatio: resolvedPixelRatio);
-      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (byteData == null) {
-        return null;
-      }
-      return byteData.buffer.asUint8List();
-    } on Object {
-      return null;
-    } finally {
-      image?.dispose();
-    }
   } finally {
     entry.remove();
   }
@@ -218,17 +206,39 @@ Future<Uint8List?> captureChartPngBytes(
   if (renderObject is! RenderRepaintBoundary || boundaryContext == null) {
     return null;
   }
-  return _captureChartPngBytesFromBoundary(
+  final capture = await _captureChartPngBytesFromBoundary(
     renderObject,
     devicePixelRatio: MediaQuery.devicePixelRatioOf(boundaryContext),
     pixelRatio: pixelRatio,
   );
+  return capture?.bytes;
+}
+
+Future<RenderRepaintBoundary?> _waitForExportCaptureBoundary(
+  GlobalKey captureKey, {
+  int maxAttempts = 10,
+}) async {
+  for (var attempt = 0; attempt < maxAttempts; attempt++) {
+    final renderObject = captureKey.currentContext?.findRenderObject();
+    if (renderObject is RenderRepaintBoundary &&
+        renderObject.size.width > 0 &&
+        renderObject.size.height > 0) {
+      if (await waitForBoundaryReady(renderObject, settlingFrames: 1)) {
+        return renderObject;
+      }
+      return null;
+    }
+    await _requestEndOfFrame();
+  }
+  return null;
 }
 
 @visibleForTesting
-Future<bool> waitForBoundaryReady(RenderRepaintBoundary boundary) async {
+Future<bool> waitForBoundaryReady(
+  RenderRepaintBoundary boundary, {
+  int settlingFrames = 2,
+}) async {
   const maxAttempts = 10;
-  const settlingFrames = 2;
 
   var waitedForPaint = false;
   for (var attempt = 0; attempt < maxAttempts; attempt++) {
@@ -267,19 +277,40 @@ Future<void> _requestEndOfFrame() async {
   }
 }
 
-Future<Uint8List?> _captureChartPngBytesFromBoundary(
+Future<ChartPngCapture?> _captureChartPngBytesFromBoundary(
+  RenderRepaintBoundary boundary, {
+  double? devicePixelRatio,
+  double? pixelRatio,
+  int settlingFrames = 2,
+}) async {
+  if (!await waitForBoundaryReady(boundary, settlingFrames: settlingFrames)) {
+    return null;
+  }
+
+  return _rasterizeBoundaryToPng(
+    boundary,
+    devicePixelRatio: devicePixelRatio,
+    pixelRatio: pixelRatio,
+  );
+}
+
+Future<ChartPngCapture?> _rasterizeBoundaryToPng(
   RenderRepaintBoundary boundary, {
   double? devicePixelRatio,
   double? pixelRatio,
 }) async {
-  if (!await waitForBoundaryReady(boundary)) {
-    return null;
-  }
-
+  final logicalWidth = boundary.size.width;
+  final logicalHeight = boundary.size.height;
   final resolvedPixelRatio = resolveChartExportPixelRatio(
-    logicalWidth: boundary.size.width,
+    logicalWidth: logicalWidth,
+    logicalHeight: logicalHeight,
     pixelRatio: pixelRatio,
     devicePixelRatio: devicePixelRatio,
+  );
+  final fitsPdfEmbedBounds = chartCaptureFitsPdfEmbedBounds(
+    logicalWidth: logicalWidth,
+    logicalHeight: logicalHeight,
+    pixelRatio: resolvedPixelRatio,
   );
 
   ui.Image? image;
@@ -289,7 +320,10 @@ Future<Uint8List?> _captureChartPngBytesFromBoundary(
     if (byteData == null) {
       return null;
     }
-    return byteData.buffer.asUint8List();
+    return (
+      bytes: byteData.buffer.asUint8List(),
+      fitsPdfEmbedBounds: fitsPdfEmbedBounds,
+    );
   } on Object {
     return null;
   } finally {
