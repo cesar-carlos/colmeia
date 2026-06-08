@@ -268,6 +268,49 @@ void main() {
       },
     );
 
+    test(
+      'marks pagination stalled when a follow-up catalog page fails',
+      () async {
+        final target = _agentTarget('agent-1', token: 'token-1');
+        when(
+          () => agentQueriesRepository.executeSqlBatch(any()),
+        ).thenAnswer((invocation) async {
+          final request =
+              invocation.positionalArguments.first
+                  as AgentSqlExecuteBatchRequest;
+          if (request.commands.length == salesLiveMapBatchCommandCount) {
+            return Success<AgentSqlBatchExecutionResult, AppFailure>(
+              _batchResult(
+                commandCount: salesLiveMapBatchCommandCount,
+                rowsByIndex: <int, List<Map<String, dynamic>>>{
+                  0: <Map<String, dynamic>>[
+                    _catalogRow(totalCount: 2),
+                  ],
+                  1: <Map<String, dynamic>>[_salesRow()],
+                },
+              ),
+            );
+          }
+          return const Failure<AgentSqlBatchExecutionResult, AppFailure>(
+            NetworkFailure(message: 'pagination page failed'),
+          );
+        });
+
+        final result = await loader.load(
+          userId: 'user-1',
+          catalogFilter: _catalogFilter(),
+          salesFilter: _salesFilter(),
+          preResolvedResolution: _resolution(target),
+        );
+
+        check(result.isSuccess()).isTrue();
+        final loaded = result.getOrThrow();
+        check(loaded.catalogPage.paginationStalledAgentIds.contains('agent-1'))
+            .isTrue();
+        check(loaded.catalogPage.report.participants.single.rows.length).equals(1);
+      },
+    );
+
     test('loadProgressively emits once per completed target wave', () async {
       const waveConcurrency = 2;
       final waveLoader = SalesLiveMapBatchLoader(

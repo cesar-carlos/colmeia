@@ -23,6 +23,7 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_filte
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_filters_sheet.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_fullscreen_chart.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_intro_section.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_retry_cooldown_snackbar.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:flutter/material.dart';
@@ -236,26 +237,11 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
       return;
     }
     if (outcome == SalesLiveMapFilterMutationOutcome.blockedByCooldown) {
-      _showRetryCooldownSnackbar();
+      showSalesLiveMapRetryCooldownSnackbar(
+        context,
+        _controller.retryAfterGate,
+      );
     }
-  }
-
-  void _showRetryCooldownSnackbar() {
-    final remainingSeconds = _controller.retryAfterGate.remaining?.inSeconds;
-    if (remainingSeconds == null || remainingSeconds <= 0) {
-      return;
-    }
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    if (messenger == null) {
-      return;
-    }
-    final l10n = AppLocalizations.of(context);
-    messenger.showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        content: Text(l10n.appInlineErrorRetryCountdown(remainingSeconds)),
-      ),
-    );
   }
 
   void _openLiveMapFullscreen() {

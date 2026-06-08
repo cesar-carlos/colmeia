@@ -31,6 +31,10 @@ abstract final class AppBrazilMapStaticData {
 
   static Uint8List? _brazilUfGeoJsonBytes;
 
+  /// Bumps when in-memory GeoJSON becomes available so mounted maps can
+  /// switch from asset-backed to memory-backed shape data.
+  static final ValueNotifier<int> brazilUfGeoJsonReadiness = ValueNotifier(0);
+
   /// Raw GeoJSON bytes for [brazilUfGeoJsonAssetPath] after [precacheBrazilUfGeoJsonAsset].
   static Uint8List? get brazilUfGeoJsonBytesOrNull => _brazilUfGeoJsonBytes;
 
@@ -51,12 +55,14 @@ abstract final class AppBrazilMapStaticData {
     _brazilUfGeoJsonBytes = Uint8List.fromList(
       data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
     );
+    brazilUfGeoJsonReadiness.value += 1;
     return true;
   }
 
   @visibleForTesting
   static void resetBrazilUfGeoJsonMemoryCacheForTests() {
     _brazilUfGeoJsonBytes = null;
+    brazilUfGeoJsonReadiness.value = 0;
   }
 
   static const AppMapViewport brazilViewport = AppMapViewport(

@@ -59,17 +59,20 @@ void main() {
     },
   );
 
-  test('returns an empty result when there are no aggregates to resolve', () async {
-    final outcome = await geolocator.resolveBranchPoints(
-      const <SalesLiveMapBranchAggregate>[],
-      refreshedAt: DateTime(2026, 5, 27),
-    );
-    expect(outcome.points, isEmpty);
-    expect(outcome.cacheHitCount, 0);
-    expect(outcome.cacheMissCount, 0);
-    expect(outcome.cancelled, isFalse);
-    expect(pointResolver.resolveCalls, 0);
-  });
+  test(
+    'returns an empty result when there are no aggregates to resolve',
+    () async {
+      final outcome = await geolocator.resolveBranchPoints(
+        const <SalesLiveMapBranchAggregate>[],
+        refreshedAt: DateTime(2026, 5, 27),
+      );
+      expect(outcome.points, isEmpty);
+      expect(outcome.cacheHitCount, 0);
+      expect(outcome.cacheMissCount, 0);
+      expect(outcome.cancelled, isFalse);
+      expect(pointResolver.resolveCalls, 0);
+    },
+  );
 
   test(
     'resolves uncached aggregates via the point resolver and caches the '
@@ -119,10 +122,10 @@ void main() {
     () async {
       final refreshedAt = DateTime(2026, 6, 8, 12);
       final aggregate = SalesLiveMapBranchAggregate.fromCadastro(
-        participant: AgentQueryExecutionParticipant<CadastroFilialRow>(
+        participant: const AgentQueryExecutionParticipant<CadastroFilialRow>(
           agentId: 'agent-a',
           displayName: 'Agente agent-a',
-          rows: const <CadastroFilialRow>[],
+          rows: <CadastroFilialRow>[],
           elapsedMs: 0,
           sourceRowCount: 0,
         ),
@@ -293,7 +296,7 @@ SalesLiveMapBranchAggregate _aggregate({required String id}) {
     participant: AgentQueryExecutionParticipant<CadastroFilialRow>(
       agentId: agentId,
       displayName: 'Agente $agentId',
-      rows: const <CadastroFilialRow>[],
+      rows: <CadastroFilialRow>[],
       elapsedMs: 0,
       sourceRowCount: 0,
     ),

@@ -56,10 +56,11 @@ class SalesLiveMapBodySection extends StatelessWidget {
               slice: slice,
               onRetryReload: onRetryReload,
             ),
-            if (slice.state.hasVisualResult ||
-                SalesLiveMapViewModel.shouldShowChartFailurePlaceholder(
-                  slice.state,
-                )) ...<Widget>[
+            if (!slice.state.sessionExpired &&
+                (slice.state.hasVisualResult ||
+                    SalesLiveMapViewModel.shouldShowChartFailurePlaceholder(
+                      slice.state,
+                    ))) ...<Widget>[
               SizedBox(height: tokens.sectionSpacing),
               Offstage(
                 offstage: hideInlineChart,
@@ -92,6 +93,7 @@ class _SalesLiveMapBodyStatusContent extends StatelessWidget {
     final controller = context.read<SalesLiveMapController>();
     final state = slice.state;
     final result = state.result;
+    final kpiResult = SalesLiveMapViewModel.attentionPanelResult(state) ?? result;
     final attentionResult = SalesLiveMapViewModel.attentionPanelResult(state);
     final viewModel = SalesLiveMapViewModel.fromState(state, l10n);
     final retryCountdown = slice.retryCountdownLabel(l10n);
@@ -104,11 +106,11 @@ class _SalesLiveMapBodyStatusContent extends StatelessWidget {
             l10n: l10n,
             onSignIn: () => context.goTo(AppRoute.login),
           ),
-        if (result != null && !state.sessionExpired)
+        if (kpiResult != null && !state.sessionExpired)
           AppSkeleton(
-            enabled: result.salesDataPending,
+            enabled: kpiResult.salesDataPending,
             child: SalesLiveMapKpiGrid(
-              model: SalesLiveMapKpiGridModel.fromLoadResult(result),
+              model: SalesLiveMapKpiGridModel.fromLoadResult(kpiResult),
             ),
           ),
         if (attentionResult != null &&
@@ -226,6 +228,8 @@ class _SalesLiveMapBodyStatusSlice {
   bool operator ==(Object other) {
     return other is _SalesLiveMapBodyStatusSlice &&
         identical(other.state.result, state.result) &&
+        other.state.hasVisualResult == state.hasVisualResult &&
+        identical(other.state.visualResult, state.visualResult) &&
         other.state.isLoading == state.isLoading &&
         other.state.sessionExpired == state.sessionExpired &&
         other.state.canReload == state.canReload &&
@@ -238,6 +242,8 @@ class _SalesLiveMapBodyStatusSlice {
   @override
   int get hashCode => Object.hash(
     identityHashCode(state.result),
+    state.hasVisualResult,
+    identityHashCode(state.visualResult),
     state.isLoading,
     state.sessionExpired,
     state.canReload,

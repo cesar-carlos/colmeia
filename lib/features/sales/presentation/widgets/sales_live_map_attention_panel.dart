@@ -5,6 +5,7 @@ import 'package:colmeia/features/sales/presentation/view_models/sales_live_map_v
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/utils/app_branch_display_name.dart';
+import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:flutter/material.dart';
@@ -93,9 +94,9 @@ class _SalesLiveMapAttentionActions extends StatelessWidget {
       runSpacing: tokens.gapSm,
       children: <Widget>[
         if (onRetry != null)
-          FilledButton(
+          AppPrimaryButton(
+            label: l10n.salesLiveMapRetryAction,
             onPressed: onRetry,
-            child: Text(l10n.salesLiveMapRetryAction),
           ),
         if (onConfigureToken != null)
           AppSecondaryButton(

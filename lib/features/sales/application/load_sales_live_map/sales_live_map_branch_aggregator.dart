@@ -6,6 +6,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_r
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_branch_aggregate.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_branch_keys.dart';
+import 'package:colmeia/features/sales/application/sales_live_map_internal_labels.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_policies.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 
@@ -205,7 +206,14 @@ class SalesLiveMapBranchAggregator {
     if (salesReport != null) {
       failed.addAll(salesReport.failedAgentIds);
     } else if (salesFailure != null) {
-      return plannedTargets;
+      if (catalogReport == null) {
+        return plannedTargets;
+      }
+      failed.addAll(
+        catalogReport.participants
+            .where((participant) => participant.isSuccess)
+            .map((participant) => participant.agentId),
+      );
     }
     return failed.length;
   }
@@ -231,7 +239,7 @@ class SalesLiveMapBranchAggregator {
     if (userMessage != null && userMessage.isNotEmpty) {
       return userMessage;
     }
-    return 'Vendas indisponiveis';
+    return SalesLiveMapInternalLabels.salesUnavailableFallback;
   }
 
   String _branchKey(String agentId, int codEmpresa, int codFilial) {

@@ -114,6 +114,61 @@ void main() {
     ).thenAnswer((_) => _streamResult(_loadedResult()));
   });
 
+  testWidgets('hides the inline map when the session expires', (
+    tester,
+  ) async {
+    final controller = SalesLiveMapController(
+      sessionService: SalesSessionService(salesPreferences),
+      loadSalesAvailableAgentsUseCase: loadAvailableAgentsForSales,
+      loadSalesLiveMapUseCase: loadLiveMap,
+    );
+    addTearDown(controller.dispose);
+
+    Future<void> pumpWithSession(AuthSession? session) {
+      when(() => authController.session).thenReturn(session);
+      return tester.pumpWidget(
+        Provider<AuthController>.value(
+          value: authController,
+          child: MaterialApp(
+            theme: AppTheme.light(),
+            locale: const Locale('en'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: MediaQuery(
+              data: const MediaQueryData(size: Size(800, 600)),
+              child: Scaffold(
+                body: ChangeNotifierProvider<SalesLiveMapController>.value(
+                  value: controller,
+                  child: const SalesLiveMapPage(),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    await pumpWithSession(
+      AuthSession(
+        userId: 'user-1',
+        email: EmailAddress('user@example.com'),
+        accessToken: 'access-token',
+        refreshToken: 'refresh-token',
+        expiresAt: DateTime(2099),
+      ),
+    );
+    await _pumpInitialLoad(tester);
+    expect(find.byType(AppBrazilStoreSalesMapChart), findsOneWidget);
+
+    await controller.bindUser(null);
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Session expired'), findsOneWidget);
+    expect(find.byType(AppBrazilStoreSalesMapChart), findsNothing);
+    expect(controller.state.sessionExpired, isTrue);
+  });
+
   testWidgets(
     'loads the live map once and stays idle while auto-refresh is off',
     (

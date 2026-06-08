@@ -72,7 +72,8 @@ class SalesLiveMapViewModel {
   final String loadErrorMessage;
   final String fullscreenFilterSummary;
 
-  /// Load result for the attention panel, aligned with [visualResult] geo
+  /// Load result for the attention panel, aligned with
+  /// [SalesLiveMapPresentationState.visualResult] geo
   /// fields when a late progressive emission would regress mapped coordinates.
   static SalesLiveMapLoadResult? attentionPanelResult(
     SalesLiveMapPresentationState state,

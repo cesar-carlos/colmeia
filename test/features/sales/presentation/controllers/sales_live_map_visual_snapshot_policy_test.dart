@@ -179,7 +179,6 @@ void main() {
           missingClientTokenAgentCount: 0,
           skippedOfflineAgentCount: 0,
           rowCapReachedAgentCount: 0,
-          salesDataPending: false,
           refreshedAt: refreshedAt,
         );
 
@@ -211,7 +210,6 @@ void main() {
           missingClientTokenAgentCount: 0,
           skippedOfflineAgentCount: 0,
           rowCapReachedAgentCount: 0,
-          salesDataPending: false,
           refreshedAt: refreshedAt,
         );
 
@@ -281,7 +279,8 @@ void main() {
       const failure = NetworkFailure(
         message: 'timeout',
         context: <String, Object?>{
-          AgentSqlRpcFailureUiKey.field: AgentSqlRpcFailureUiKey.transportTimeout,
+          AgentSqlRpcFailureUiKey.field:
+              AgentSqlRpcFailureUiKey.transportTimeout,
         },
       );
 
@@ -290,5 +289,47 @@ void main() {
         isTrue,
       );
     });
+
+    test(
+      'resolveNextOperationalResult preserves geo on transport timeout failure',
+      () {
+        final geo = loadedResult();
+        final failed = SalesLiveMapLoadResult(
+          points: const <SalesLiveMapPoint>[],
+          branchOptions: const <SalesLiveMapBranchOption>[],
+          totalRevenue: 0,
+          totalSalesCount: 0,
+          totalBranchCount: 0,
+          mappedBranchCount: 0,
+          mappedMunicipalityCount: 0,
+          queriedAgentCount: 1,
+          plannedAgentCount: 1,
+          failedAgentCount: 0,
+          missingClientTokenAgentCount: 0,
+          skippedOfflineAgentCount: 0,
+          rowCapReachedAgentCount: 0,
+          loadFailed: true,
+          loadFailure: const NetworkFailure(
+            message: 'timeout',
+            context: <String, Object?>{
+              AgentSqlRpcFailureUiKey.field:
+                  AgentSqlRpcFailureUiKey.transportTimeout,
+            },
+          ),
+          refreshedAt: refreshedAt,
+        );
+
+        final resolved =
+            SalesLiveMapVisualSnapshotPolicy.resolveNextOperationalResult(
+              incomingResult: failed,
+              previousResult: geo,
+              nextVisualResult: geo,
+            );
+
+        expect(resolved.mappedBranchCount, geo.mappedBranchCount);
+        expect(resolved.points, geo.points);
+        expect(resolved.loadFailed, isTrue);
+      },
+    );
   });
 }

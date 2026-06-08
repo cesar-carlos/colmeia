@@ -528,6 +528,13 @@ class SalesLiveMapBatchLoader {
       );
       final execution = result.getOrNull();
       if (execution == null) {
+        paginationStalled = true;
+        _logPaginationPageFailure(
+          agentId: agentId,
+          filter: catalogFilter,
+          page: page,
+          failure: result.exceptionOrNull(),
+        );
         break;
       }
       final pageResult = _mapCatalogExecution(
@@ -535,6 +542,13 @@ class SalesLiveMapBatchLoader {
         catalogIndex: batch.indexes.catalog,
       );
       if (pageResult.failure != null) {
+        paginationStalled = true;
+        _logPaginationPageFailure(
+          agentId: agentId,
+          filter: catalogFilter,
+          page: page,
+          failure: pageResult.failure,
+        );
         break;
       }
       var newRowCount = 0;
@@ -800,6 +814,25 @@ class SalesLiveMapBatchLoader {
                 ),
           )
           .toList(growable: false),
+    );
+  }
+
+  void _logPaginationPageFailure({
+    required String agentId,
+    required CadastroFilialFilter filter,
+    required int page,
+    required AppFailure? failure,
+  }) {
+    AppLogger.warning(
+      'Sales live map catalog batch pagination page failed',
+      context: <String, Object?>{
+        'operation': 'loadSalesLiveMapBatch',
+        'agentId': agentId.trim(),
+        'filterScopeSignature': filter.filterScopeSignature,
+        'page': page,
+        'failureType': failure?.runtimeType.toString(),
+        'failureMessage': failure?.message,
+      },
     );
   }
 

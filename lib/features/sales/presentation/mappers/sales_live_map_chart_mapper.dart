@@ -46,7 +46,10 @@ abstract final class SalesLiveMapChartMapper {
       agentName: point.agentName,
       salesDataLoading: point.salesDataLoading,
       salesDataUnavailable: point.salesDataUnavailable,
-      salesDataStatusLabel: point.salesDataStatusLabel,
+      salesDataStatusLabel: SalesLiveMapL10n.displaySalesDataStatusLabel(
+        l10n,
+        point.salesDataStatusLabel,
+      ),
       locationResolution: switch (point.locationResolution) {
         SalesLiveMapLocationResolution.providedGeoPoint =>
           AppBrazilStoreSalesLocationResolution.providedGeoPoint,

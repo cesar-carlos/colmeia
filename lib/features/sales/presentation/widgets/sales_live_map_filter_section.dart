@@ -4,6 +4,7 @@ import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_c
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
 import 'package:colmeia/features/sales/presentation/view_models/sales_live_map_view_model.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_retry_cooldown_snackbar.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:flutter/material.dart';
@@ -115,7 +116,10 @@ class SalesLiveMapFilterSection extends StatelessWidget {
       return;
     }
     if (outcome == SalesLiveMapFilterMutationOutcome.blockedByCooldown) {
-      _showRetryCooldownSnackbar(context, controller);
+      showSalesLiveMapRetryCooldownSnackbar(
+        context,
+        controller.retryAfterGate,
+      );
     }
   }
 
@@ -128,29 +132,11 @@ class SalesLiveMapFilterSection extends StatelessWidget {
       return;
     }
     if (outcome == SalesLiveMapFilterMutationOutcome.blockedByCooldown) {
-      _showRetryCooldownSnackbar(context, controller);
+      showSalesLiveMapRetryCooldownSnackbar(
+        context,
+        controller.retryAfterGate,
+      );
     }
-  }
-
-  void _showRetryCooldownSnackbar(
-    BuildContext context,
-    SalesLiveMapController controller,
-  ) {
-    final remainingSeconds = controller.retryAfterGate.remaining?.inSeconds;
-    if (remainingSeconds == null || remainingSeconds <= 0) {
-      return;
-    }
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    if (messenger == null) {
-      return;
-    }
-    final l10n = AppLocalizations.of(context);
-    messenger.showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        content: Text(l10n.appInlineErrorRetryCountdown(remainingSeconds)),
-      ),
-    );
   }
 }
 

@@ -615,9 +615,6 @@ class _AppBrazilStoreSalesMapChartState
   static const Duration _desktopViewportClusterDebounceDuration = Duration(
     milliseconds: 120,
   );
-  static const Duration _windowsViewportClusterDebounceDuration = Duration(
-    milliseconds: 500,
-  );
   static const Duration _desktopBranchPreviewClearDelay = Duration(
     milliseconds: 200,
   );
@@ -654,12 +651,25 @@ class _AppBrazilStoreSalesMapChartState
     _handleViewportChanged(filtered);
   }
 
+  void _handleBrazilUfGeoJsonReadinessChanged() {
+    if (!mounted) {
+      return;
+    }
+    setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
     _selectedMetric = widget.initialMetric;
     _chrome = _BrazilMapChrome.fromWidget(widget);
     _publishMarkerSelection();
+    AppBrazilMapStaticData.brazilUfGeoJsonReadiness.addListener(
+      _handleBrazilUfGeoJsonReadinessChanged,
+    );
+    if (AppBrazilMapStaticData.brazilUfGeoJsonBytesOrNull == null) {
+      unawaited(AppBrazilMapStaticData.precacheBrazilUfGeoJsonAsset());
+    }
     if (widget.selectedStoreId != null && widget.style.autoFocusSelectedStore) {
       _selection.adoptControlledSelectionOnInit();
       _zoom.clusteringZoomLevel = widget.style.selectedStoreZoomLevel;
@@ -765,6 +775,9 @@ class _AppBrazilStoreSalesMapChartState
 
   @override
   void dispose() {
+    AppBrazilMapStaticData.brazilUfGeoJsonReadiness.removeListener(
+      _handleBrazilUfGeoJsonReadinessChanged,
+    );
     _cancelPendingViewportClusterSampling();
     _cancelPendingPreviewClear();
     _markerSelection.dispose();
@@ -1825,18 +1838,10 @@ class _AppBrazilStoreSalesMapChartState
       return;
     }
 
-    final rawZoom = event.viewport.zoomLevel;
-    final nextZoomLevel =
-        defaultTargetPlatform == TargetPlatform.windows && kReleaseMode
-        ? (rawZoom * 4).round() / 4.0
-        : rawZoom;
-
-    final debounceDuration =
-        defaultTargetPlatform == TargetPlatform.windows && kReleaseMode
-        ? _windowsViewportClusterDebounceDuration
-        : (_shouldDebounceTouchViewportClustering
-              ? _touchViewportClusterDebounceDuration
-              : _desktopViewportClusterDebounceDuration);
+    final nextZoomLevel = event.viewport.zoomLevel;
+    final debounceDuration = _shouldDebounceTouchViewportClustering
+        ? _touchViewportClusterDebounceDuration
+        : _desktopViewportClusterDebounceDuration;
 
     _pendingViewportClusterZoomLevel = nextZoomLevel;
     if (_viewportClusterGestureActive) {

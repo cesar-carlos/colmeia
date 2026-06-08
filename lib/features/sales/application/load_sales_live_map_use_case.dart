@@ -860,6 +860,7 @@ class LoadSalesLiveMapUseCase {
         paginationStalledAgentCount:
             catalogResult?.paginationStalledAgentIds.length ?? 0,
         refreshedAt: refreshedAt,
+        hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
       );
       if (cancelToken?.isCancelled ?? false) {
         yield _SalesLiveMapMappedResult(
@@ -914,6 +915,7 @@ class LoadSalesLiveMapUseCase {
       paginationStalledAgentCount:
           catalogResult?.paginationStalledAgentIds.length ?? 0,
       refreshedAt: refreshedAt,
+      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
     );
 
     final fullGeolocationStopwatch = _diagnosticsLogger.startTraceStopwatch();

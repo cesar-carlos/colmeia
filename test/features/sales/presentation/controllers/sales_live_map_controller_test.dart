@@ -340,6 +340,56 @@ void main() {
   );
 
   test(
+    'reload without force cancels the previous in-flight SQL token',
+    () async {
+      await controller.bindUser('user-1');
+
+      final firstStream = StreamController<SalesLiveMapLoadResult>();
+      final secondStream = StreamController<SalesLiveMapLoadResult>();
+      addTearDown(firstStream.close);
+      addTearDown(secondStream.close);
+
+      var progressiveCallCount = 0;
+      final capturedTokens = <SalesLiveMapLoadCancelToken>[];
+      when(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      ).thenAnswer((invocation) {
+        progressiveCallCount += 1;
+        capturedTokens.add(
+          invocation.namedArguments[#cancelToken]
+              as SalesLiveMapLoadCancelToken,
+        );
+        if (progressiveCallCount == 1) {
+          return firstStream.stream;
+        }
+        return secondStream.stream;
+      });
+
+      final firstReload = controller.reload();
+      await Future<void>.delayed(Duration.zero);
+      final secondReload = controller.reload();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(capturedTokens, hasLength(2));
+      expect(capturedTokens.first.isCancelled, isTrue);
+
+      await firstStream.close();
+      secondStream.add(_resultForRevenue(42));
+      await secondStream.close();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(controller.state.result?.totalRevenue, 42);
+      expect((await firstReload).isSuperseded, isTrue);
+      expect((await secondReload).isCompleted, isTrue);
+    },
+  );
+
+  test(
     'reload(force: true) cancels the previous generation and keeps the latest result',
     () async {
       await controller.bindUser('user-1');

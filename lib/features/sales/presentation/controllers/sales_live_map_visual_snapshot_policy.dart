@@ -43,6 +43,15 @@ abstract final class SalesLiveMapVisualSnapshotPolicy {
     required SalesLiveMapLoadResult? previousResult,
     required SalesLiveMapLoadResult? nextVisualResult,
   }) {
+    if (isTransportTimeoutFailure(incomingResult.loadFailure)) {
+      final geoSource = nextVisualResult ?? previousResult;
+      if (geoSource != null && geoSource.mappedBranchCount > 0) {
+        return withPreservedGeoFields(
+          operational: incomingResult,
+          geo: geoSource,
+        );
+      }
+    }
     final geoSource = _geoPreservationSource(
       incoming: incomingResult,
       previous: previousResult,

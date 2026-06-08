@@ -157,9 +157,6 @@ class SalesLiveMapController extends ChangeNotifier {
     if (isOnRetryCooldown) {
       return SalesLiveMapReloadOutcome.blockedByCooldown(_state.result);
     }
-    if (force) {
-      _activeLoadCancelToken?.cancel();
-    }
     return _performReload(reason: reason);
   }
 
@@ -308,6 +305,7 @@ class SalesLiveMapController extends ChangeNotifier {
   }) async {
     final userId = _boundUserId;
     final generation = ++_loadGeneration;
+    _activeLoadCancelToken?.cancel();
     final cancelToken = SalesLiveMapLoadCancelToken();
     _relayCancelScopeBinder?.call(cancelToken.sqlCancelScope);
     final preserveVisualSnapshot =

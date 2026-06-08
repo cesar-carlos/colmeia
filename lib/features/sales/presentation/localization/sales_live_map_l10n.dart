@@ -25,6 +25,19 @@ abstract final class SalesLiveMapL10n {
     return city;
   }
 
+  static String? displaySalesDataStatusLabel(
+    AppLocalizations l10n,
+    String? label,
+  ) {
+    if (label == null) {
+      return null;
+    }
+    if (label == SalesLiveMapInternalLabels.salesUnavailableFallback) {
+      return l10n.brazilStoreSalesMapSalesUnavailableFallback;
+    }
+    return label;
+  }
+
   static String formatUnmappedBranchLabel(
     AppLocalizations l10n,
     SalesLiveMapBranchOption branch,
