@@ -135,6 +135,18 @@ class OverviewController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Defers [notifyListeners] until after the current frame so callers
+  /// invoked from widget mount/build (e.g. [scheduleOverviewLoadIfNeeded])
+  /// do not trigger Provider rebuilds mid-build.
+  void _notifyListenersIfAliveAfterFrame() {
+    if (_disposed) {
+      return;
+    }
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _notifyListenersIfAlive();
+    });
+  }
+
   void _setOverview(Overview? overview) {
     _overview = overview;
     _alertNamesProjection.update(overview);
@@ -641,7 +653,7 @@ class OverviewController extends ChangeNotifier {
         'signature': signature,
       },
     );
-    _notifyListenersIfAlive();
+    _notifyListenersIfAliveAfterFrame();
     return true;
   }
 

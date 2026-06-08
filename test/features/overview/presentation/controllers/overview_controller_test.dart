@@ -27,6 +27,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.
 import 'package:colmeia/features/overview/domain/overview_load_signature.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_controller.dart';
+import 'package:flutter/scheduler.dart' show SchedulerBinding;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:result_dart/result_dart.dart';
 
@@ -681,6 +682,56 @@ void main() {
         check(
           controller.skippedDueToHubPresenceAgentNamesNormalized,
         ).deepEquals(<String>['Alpha', 'Bravo']);
+      },
+    );
+
+    test(
+      'scheduleOverviewLoadIfNeeded restores shell cache without '
+      'synchronous notifyListeners',
+      () async {
+        TestWidgetsFlutterBinding.ensureInitialized();
+        final shellCache = OverviewShellCache();
+        final repository = _QueuedOverviewRepository(
+          <Future<AppResult<Overview>>>[
+            Future<AppResult<Overview>>.value(
+              Success<Overview, AppFailure>(_overview('Pix')),
+            ),
+            Future<AppResult<Overview>>.value(
+              Success<Overview, AppFailure>(_overview('Pix')),
+            ),
+          ],
+        );
+        final seedController = OverviewController(
+          LoadOverviewUseCase(repository),
+          shellCache: shellCache,
+        );
+
+        await seedController.loadOverview(userId: 'demo-user');
+        seedController.dispose();
+
+        final controller = OverviewController(
+          LoadOverviewUseCase(repository),
+          shellCache: shellCache,
+        );
+        var notifyCount = 0;
+        controller
+          ..addListener(() => notifyCount++)
+          ..scheduleOverviewLoadIfNeeded(userId: 'demo-user');
+
+        check(controller.hasContent).isTrue();
+        check(
+          controller.overview!.paymentMethods.single.code,
+        ).equals('Pix');
+        check(notifyCount).equals(0);
+
+        SchedulerBinding.instance
+          ..handleBeginFrame(Duration.zero)
+          ..handleDrawFrame();
+
+        check(notifyCount).isGreaterThan(0);
+        await Future<void>.delayed(Duration.zero);
+        check(repository.requestedPolicies.length).equals(2);
+        controller.dispose();
       },
     );
 
