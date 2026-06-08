@@ -1,4 +1,5 @@
 import 'package:checks/checks.dart';
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/data/cache/strategies/resumo_total_diario_vendas_cache_strategy.dart';
@@ -92,7 +93,7 @@ void main() {
         check(request.commands.length).equals(3);
         check(
           request.options?.maxParallelReadOnlyBatchItems,
-        ).equals(2);
+        ).equals(AppEnvironment.agentSqlOverviewBatchMaxParallelReadOnlyItems);
         return Success<AgentSqlBatchExecutionResult, AppFailure>(
           AgentSqlBatchExecutionResult(
             totalCommands: request.commands.length,
