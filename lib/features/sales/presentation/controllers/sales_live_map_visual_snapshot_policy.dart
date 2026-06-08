@@ -23,10 +23,98 @@ abstract final class SalesLiveMapVisualSnapshotPolicy {
     required SalesLiveMapLoadResult incomingResult,
     required SalesLiveMapLoadResult? previousVisualResult,
   }) {
-    if (_shouldUseAsSnapshot(incomingResult)) {
+    if (_shouldUseAsSnapshot(
+      incomingResult,
+      previousVisualResult: previousVisualResult,
+    )) {
       return incomingResult;
     }
     return previousVisualResult;
+  }
+
+  /// Merges [incomingResult] with geo fields from the best established
+  /// snapshot when a progressive/catalog-shell emission would regress mapped
+  /// coordinates while the visible map still carries resolved points.
+  ///
+  /// The controller stores this as `result` so attention-panel partial issues
+  /// stay aligned with `visualResult.points`.
+  static SalesLiveMapLoadResult resolveNextOperationalResult({
+    required SalesLiveMapLoadResult incomingResult,
+    required SalesLiveMapLoadResult? previousResult,
+    required SalesLiveMapLoadResult? nextVisualResult,
+  }) {
+    final geoSource = _geoPreservationSource(
+      incoming: incomingResult,
+      previous: previousResult,
+      visual: nextVisualResult,
+    );
+    if (geoSource == null) {
+      return incomingResult;
+    }
+    return withPreservedGeoFields(
+      operational: incomingResult,
+      geo: geoSource,
+    );
+  }
+
+  /// True when [incoming] would drop mapped coordinates that [preservedVisual]
+  /// already exposes on screen. Used to ignore late catalog-shell emissions
+  /// during auto-refresh while a preserved visual snapshot is active.
+  static bool isRegressiveGeoEmission({
+    required SalesLiveMapLoadResult incoming,
+    required SalesLiveMapLoadResult preservedVisual,
+  }) {
+    return regressesMappedGeo(incoming, preservedVisual);
+  }
+
+  /// Copies geo-related fields from [geo] onto [operational] while keeping
+  /// sales/catalog counters and agent diagnostics from [operational].
+  static SalesLiveMapLoadResult withPreservedGeoFields({
+    required SalesLiveMapLoadResult operational,
+    required SalesLiveMapLoadResult geo,
+  }) {
+    return SalesLiveMapLoadResult(
+      points: geo.points,
+      branchOptions: operational.branchOptions,
+      unmappedBranchOptions: geo.unmappedBranchOptions,
+      totalRevenue: operational.totalRevenue,
+      totalSalesCount: operational.totalSalesCount,
+      totalBranchCount: operational.totalBranchCount,
+      mappedBranchCount: geo.mappedBranchCount,
+      mappedMunicipalityCount: geo.mappedMunicipalityCount,
+      queriedAgentCount: operational.queriedAgentCount,
+      plannedAgentCount: operational.plannedAgentCount,
+      failedAgentCount: operational.failedAgentCount,
+      missingClientTokenAgentCount: operational.missingClientTokenAgentCount,
+      skippedOfflineAgentCount: operational.skippedOfflineAgentCount,
+      rowCapReachedAgentCount: operational.rowCapReachedAgentCount,
+      refreshedAt: operational.refreshedAt,
+      paginationStalledAgentCount: operational.paginationStalledAgentCount,
+      salesAgentCount: operational.salesAgentCount,
+      catalogBranchCount: operational.catalogBranchCount,
+      salesBranchCount: operational.salesBranchCount,
+      zeroedBranchCount: operational.zeroedBranchCount,
+      noSalesBranchCount: operational.noSalesBranchCount,
+      salesUnavailableBranchCount: operational.salesUnavailableBranchCount,
+      salesDataPending: operational.salesDataPending,
+      salesPendingBranchCount: operational.salesPendingBranchCount,
+      failedCatalogAgentCount: operational.failedCatalogAgentCount,
+      failedSalesAgentCount: operational.failedSalesAgentCount,
+      noSalesAgentOptions: operational.noSalesAgentOptions,
+      failedAgentOptions: operational.failedAgentOptions,
+      missingClientTokenAgentOptions: operational.missingClientTokenAgentOptions,
+      skippedOfflineAgentOptions: operational.skippedOfflineAgentOptions,
+      locationDiagnostics: geo.locationDiagnostics,
+      loadFailed: operational.loadFailed,
+      loadFailureReason: operational.loadFailureReason,
+      loadFailure: operational.loadFailure,
+      loadFailureMessage: operational.loadFailureMessage,
+      cancelled: operational.cancelled,
+      partialGeoReuseCount: geo.partialGeoReuseCount,
+      hubPresenceOnlineAgentIdsSnapshot:
+          operational.hubPresenceOnlineAgentIdsSnapshot,
+      agentQueryFailures: operational.agentQueryFailures,
+    );
   }
 
   /// Stable digest of the map payload (points list) inside [visualResult].
@@ -67,6 +155,9 @@ abstract final class SalesLiveMapVisualSnapshotPolicy {
     if (previous.loadFailed != next.loadFailed) {
       return true;
     }
+    if (previous.hasPartialIssue != next.hasPartialIssue) {
+      return true;
+    }
     if (previous.refreshedAt != next.refreshedAt) {
       return true;
     }
@@ -83,13 +174,50 @@ abstract final class SalesLiveMapVisualSnapshotPolicy {
         AgentSqlRpcFailureUiKey.transportTimeout;
   }
 
-  static bool _shouldUseAsSnapshot(SalesLiveMapLoadResult result) {
+  static bool _shouldUseAsSnapshot(
+    SalesLiveMapLoadResult result, {
+    SalesLiveMapLoadResult? previousVisualResult,
+  }) {
     if (result.loadFailed) {
       return false;
     }
     if (!result.salesDataPending) {
+      if (regressesMappedGeo(result, previousVisualResult)) {
+        return false;
+      }
       return true;
     }
+    if (regressesMappedGeo(result, previousVisualResult)) {
+      return false;
+    }
     return result.points.isNotEmpty || result.branchOptions.isNotEmpty;
+  }
+
+  static bool regressesMappedGeo(
+    SalesLiveMapLoadResult incoming,
+    SalesLiveMapLoadResult? established,
+  ) {
+    if (established == null || established.mappedBranchCount <= 0) {
+      return false;
+    }
+    return incoming.mappedBranchCount < established.mappedBranchCount ||
+        (incoming.points.isEmpty && established.points.isNotEmpty);
+  }
+
+  static SalesLiveMapLoadResult? _geoPreservationSource({
+    required SalesLiveMapLoadResult incoming,
+    required SalesLiveMapLoadResult? previous,
+    required SalesLiveMapLoadResult? visual,
+  }) {
+    if (!regressesMappedGeo(incoming, visual ?? previous)) {
+      return null;
+    }
+    if (visual != null && visual.mappedBranchCount > 0) {
+      return visual;
+    }
+    if (previous != null && previous.mappedBranchCount > 0) {
+      return previous;
+    }
+    return null;
   }
 }

@@ -368,6 +368,15 @@ class SalesLiveMapController extends ChangeNotifier {
         _setState(_state.copyWith(isLoading: false));
         return SalesLiveMapReloadOutcome.cancelled(result);
       }
+      final establishedVisualSnapshot =
+          _state.visualResult ?? preservedVisualResult;
+      if (establishedVisualSnapshot != null &&
+          SalesLiveMapVisualSnapshotPolicy.isRegressiveGeoEmission(
+            incoming: result,
+            preservedVisual: establishedVisualSnapshot,
+          )) {
+        continue;
+      }
       if (preservedVisualResult != null && result.salesDataPending) {
         continue;
       }
@@ -378,31 +387,37 @@ class SalesLiveMapController extends ChangeNotifier {
             incomingResult: result,
             previousVisualResult: _state.visualResult,
           );
+      final nextResult =
+          SalesLiveMapVisualSnapshotPolicy.resolveNextOperationalResult(
+            incomingResult: result,
+            previousResult: previousResult,
+            nextVisualResult: nextVisualResult,
+          );
       final nextMapPayloadDigest = SalesLiveMapVisualSnapshotPolicy
           .payloadDigestFor(nextVisualResult);
       if (previousResult != null &&
           !SalesLiveMapVisualSnapshotPolicy.hasObservableDelta(
             previous: previousResult,
-            next: result,
+            next: nextResult,
             previousVisualResult: _state.visualResult,
             nextVisualResult: nextVisualResult,
             previousDigest: _state.mapPayloadDigest,
             nextDigest: nextMapPayloadDigest,
           )) {
-        if (_state.isLoading != result.salesDataPending) {
-          _setState(_state.copyWith(isLoading: result.salesDataPending));
+        if (_state.isLoading != nextResult.salesDataPending) {
+          _setState(_state.copyWith(isLoading: nextResult.salesDataPending));
         }
         continue;
       }
 
-      _armRetryAfterFromLoadResult(result);
-      final nextAvailableAgents = _rehydrateAvailableAgents(result);
+      _armRetryAfterFromLoadResult(nextResult);
+      final nextAvailableAgents = _rehydrateAvailableAgents(nextResult);
       _setState(
         _state.copyWith(
-          result: result,
+          result: nextResult,
           visualResult: nextVisualResult,
           mapPayloadDigest: nextMapPayloadDigest,
-          isLoading: result.salesDataPending,
+          isLoading: nextResult.salesDataPending,
           sessionExpired: false,
           availableAgents: nextAvailableAgents ?? _state.availableAgents,
         ),

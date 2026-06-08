@@ -3,6 +3,7 @@ import 'package:colmeia/core/refresh/auto_refresh_ui_state.dart';
 import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
+import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_visual_snapshot_policy.dart';
 import 'package:colmeia/features/sales/presentation/models/sales_live_map_visual_spec.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -70,6 +71,29 @@ class SalesLiveMapViewModel {
   final String mapSubtitle;
   final String loadErrorMessage;
   final String fullscreenFilterSummary;
+
+  /// Load result for the attention panel, aligned with [visualResult] geo
+  /// fields when a late progressive emission would regress mapped coordinates.
+  static SalesLiveMapLoadResult? attentionPanelResult(
+    SalesLiveMapPresentationState state,
+  ) {
+    final operational = state.result;
+    final visual = state.visualResult;
+    if (operational == null) {
+      return null;
+    }
+    if (visual == null ||
+        !SalesLiveMapVisualSnapshotPolicy.regressesMappedGeo(
+          operational,
+          visual,
+        )) {
+      return operational;
+    }
+    return SalesLiveMapVisualSnapshotPolicy.withPreservedGeoFields(
+      operational: operational,
+      geo: visual,
+    );
+  }
 
   /// Resolves the auto-refresh pause reason from the current presentation
   /// state. Returns `null` when scheduling can proceed normally.

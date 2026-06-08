@@ -24,13 +24,15 @@ class SalesLiveMapBodySection extends StatelessWidget {
   const SalesLiveMapBodySection({
     required this.onRetryReload,
     required this.onOpenFullscreen,
-    required this.showInlineChart,
+    required this.hideInlineChart,
+    required this.inlineChartRemountKey,
     super.key,
   });
 
   final VoidCallback onRetryReload;
   final VoidCallback onOpenFullscreen;
-  final bool showInlineChart;
+  final bool hideInlineChart;
+  final int inlineChartRemountKey;
 
   @override
   Widget build(BuildContext context) {
@@ -54,14 +56,17 @@ class SalesLiveMapBodySection extends StatelessWidget {
               slice: slice,
               onRetryReload: onRetryReload,
             ),
-            if (showInlineChart &&
-                (slice.state.hasVisualResult ||
-                    SalesLiveMapViewModel.shouldShowChartFailurePlaceholder(
-                      slice.state,
-                    ))) ...<Widget>[
+            if (slice.state.hasVisualResult ||
+                SalesLiveMapViewModel.shouldShowChartFailurePlaceholder(
+                  slice.state,
+                )) ...<Widget>[
               SizedBox(height: tokens.sectionSpacing),
-              SalesLiveMapInlineChartSection(
-                onOpenFullscreen: onOpenFullscreen,
+              Offstage(
+                offstage: hideInlineChart,
+                child: SalesLiveMapInlineChartSection(
+                  key: ValueKey<int>(inlineChartRemountKey),
+                  onOpenFullscreen: onOpenFullscreen,
+                ),
               ),
             ],
           ],
@@ -87,6 +92,7 @@ class _SalesLiveMapBodyStatusContent extends StatelessWidget {
     final controller = context.read<SalesLiveMapController>();
     final state = slice.state;
     final result = state.result;
+    final attentionResult = SalesLiveMapViewModel.attentionPanelResult(state);
     final viewModel = SalesLiveMapViewModel.fromState(state, l10n);
     final retryCountdown = slice.retryCountdownLabel(l10n);
 
@@ -105,14 +111,14 @@ class _SalesLiveMapBodyStatusContent extends StatelessWidget {
               model: SalesLiveMapKpiGridModel.fromLoadResult(result),
             ),
           ),
-        if (result != null &&
+        if (attentionResult != null &&
             !state.sessionExpired &&
-            !result.salesDataPending &&
-            result.hasPartialIssue)
+            !attentionResult.salesDataPending &&
+            attentionResult.hasPartialIssue)
           Padding(
             padding: EdgeInsets.only(top: tokens.gapMd),
             child: SalesLiveMapAttentionPanel(
-              result: result,
+              result: attentionResult,
               canRetry: slice.canReload,
               onRetry: onRetryReload,
               onConfigureToken: () => context.goTo(AppRoute.agents),
@@ -144,7 +150,7 @@ class _SalesLiveMapBodyStatusContent extends StatelessWidget {
             child: SalesLiveMapEmptyNotice(
               result: result,
               hasSelectedBranches: state.hasSelectedBranchFilter,
-              hasPartialIssue: result.hasPartialIssue,
+              hasPartialIssue: attentionResult?.hasPartialIssue ?? false,
               onClearSelectedBranches: slice.canReload
                   ? () => unawaited(controller.clearSelectedBranches())
                   : null,

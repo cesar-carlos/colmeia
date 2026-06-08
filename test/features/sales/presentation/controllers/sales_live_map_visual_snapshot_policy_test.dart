@@ -138,6 +138,145 @@ void main() {
       expect(next, isNull);
     });
 
+    test(
+      'resolveNextVisualResult keeps previous snapshot on regressive shell',
+      () {
+        final previous = loadedResult();
+        final shell = SalesLiveMapLoadResult(
+          points: const <SalesLiveMapPoint>[],
+          branchOptions: const <SalesLiveMapBranchOption>[
+            SalesLiveMapBranchOption(
+              id: 'branch-1',
+              agentId: 'agent-1',
+              agentName: 'Agent',
+              codEmpresa: 1,
+              codFilial: 1,
+              registrationName: 'Branch',
+              city: 'Cuiaba',
+              uf: 'MT',
+            ),
+          ],
+          unmappedBranchOptions: const <SalesLiveMapBranchOption>[
+            SalesLiveMapBranchOption(
+              id: 'branch-1',
+              agentId: 'agent-1',
+              agentName: 'Agent',
+              codEmpresa: 1,
+              codFilial: 1,
+              registrationName: 'Branch',
+              city: 'Cuiaba',
+              uf: 'MT',
+            ),
+          ],
+          totalRevenue: 0,
+          totalSalesCount: 0,
+          totalBranchCount: 1,
+          mappedBranchCount: 0,
+          mappedMunicipalityCount: 0,
+          queriedAgentCount: 1,
+          plannedAgentCount: 1,
+          failedAgentCount: 0,
+          missingClientTokenAgentCount: 0,
+          skippedOfflineAgentCount: 0,
+          rowCapReachedAgentCount: 0,
+          salesDataPending: false,
+          refreshedAt: refreshedAt,
+        );
+
+        final next = SalesLiveMapVisualSnapshotPolicy.resolveNextVisualResult(
+          incomingResult: shell,
+          previousVisualResult: previous,
+        );
+
+        expect(identical(next, previous), isTrue);
+      },
+    );
+
+    test(
+      'resolveNextOperationalResult preserves geo fields on regressive shell',
+      () {
+        final established = loadedResult();
+        final shell = SalesLiveMapLoadResult(
+          points: const <SalesLiveMapPoint>[],
+          branchOptions: established.branchOptions,
+          unmappedBranchOptions: established.branchOptions,
+          totalRevenue: 99,
+          totalSalesCount: 9,
+          totalBranchCount: 1,
+          mappedBranchCount: 0,
+          mappedMunicipalityCount: 0,
+          queriedAgentCount: 1,
+          plannedAgentCount: 1,
+          failedAgentCount: 0,
+          missingClientTokenAgentCount: 0,
+          skippedOfflineAgentCount: 0,
+          rowCapReachedAgentCount: 0,
+          salesDataPending: false,
+          refreshedAt: refreshedAt,
+        );
+
+        final next =
+            SalesLiveMapVisualSnapshotPolicy.resolveNextOperationalResult(
+              incomingResult: shell,
+              previousResult: established,
+              nextVisualResult: established,
+            );
+
+        expect(next.totalRevenue, 99);
+        expect(next.mappedBranchCount, established.mappedBranchCount);
+        expect(next.unmappedBranchOptions, isEmpty);
+        expect(next.points, established.points);
+      },
+    );
+
+    test('hasObservableDelta detects partial-issue changes', () {
+      final previous = loadedResult();
+      final next = SalesLiveMapLoadResult(
+        points: previous.points,
+        branchOptions: previous.branchOptions,
+        unmappedBranchOptions: const <SalesLiveMapBranchOption>[
+          SalesLiveMapBranchOption(
+            id: 'branch-2',
+            agentId: 'agent-1',
+            agentName: 'Agent',
+            codEmpresa: 1,
+            codFilial: 2,
+            registrationName: 'Branch 2',
+            city: 'Cuiaba',
+            uf: 'MT',
+          ),
+        ],
+        totalRevenue: previous.totalRevenue,
+        totalSalesCount: previous.totalSalesCount,
+        totalBranchCount: 2,
+        mappedBranchCount: 1,
+        mappedMunicipalityCount: 1,
+        queriedAgentCount: 1,
+        plannedAgentCount: 1,
+        failedAgentCount: 0,
+        missingClientTokenAgentCount: 0,
+        skippedOfflineAgentCount: 0,
+        rowCapReachedAgentCount: 0,
+        refreshedAt: refreshedAt,
+      );
+
+      expect(
+        SalesLiveMapVisualSnapshotPolicy.hasObservableDelta(
+          previous: previous,
+          next: next,
+          previousVisualResult: previous,
+          nextVisualResult: previous,
+          previousDigest: SalesLiveMapVisualSnapshotPolicy.payloadDigestFor(
+            previous,
+          ),
+          nextDigest: SalesLiveMapVisualSnapshotPolicy.payloadDigestFor(
+            previous,
+          ),
+        ),
+        isTrue,
+      );
+    });
+
     test('isTransportTimeoutFailure reads uiKey from failure context', () {
       const failure = NetworkFailure(
         message: 'timeout',

@@ -397,6 +397,39 @@ void main() {
   );
 
   test(
+    'ignores late catalog-shell emissions after a mapped refresh snapshot',
+    () async {
+      await controller.bindUser('user-1');
+
+      final stream = StreamController<SalesLiveMapLoadResult>();
+      addTearDown(stream.close);
+      when(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      ).thenAnswer((_) => stream.stream);
+
+      final reloadFuture = controller.reload();
+      await Future<void>.delayed(Duration.zero);
+
+      stream
+        ..add(_mappedTwentySevenPointResult())
+        ..add(_catalogShellTwentySevenUnmapped(salesDataPending: true))
+        ..add(_catalogShellTwentySevenUnmapped(salesDataPending: false));
+      await stream.close();
+      await reloadFuture;
+
+      expect(controller.state.visualResult?.mappedBranchCount, 27);
+      expect(controller.state.result?.mappedBranchCount, 27);
+      expect(controller.state.result?.unmappedBranchOptions, isEmpty);
+      expect(controller.state.result?.hasPartialIssue, isFalse);
+    },
+  );
+
+  test(
     'keeps the last visual snapshot while a manual refresh is pending',
     () async {
       await controller.bindUser('user-1');
@@ -1003,6 +1036,91 @@ void main() {
       expect(gate.remaining, kAgentQueryReplayDetectedCooldown);
       gate.dispose();
     },
+  );
+}
+
+SalesLiveMapLoadResult _mappedTwentySevenPointResult() {
+  final branchOptions = List<SalesLiveMapBranchOption>.generate(
+    27,
+    (index) => SalesLiveMapBranchOption(
+      id: 'branch-$index',
+      agentId: 'agent-1',
+      agentName: 'Agent One',
+      codEmpresa: 1,
+      codFilial: index + 1,
+      registrationName: 'Branch $index',
+      city: 'Cuiaba',
+      uf: 'MT',
+    ),
+    growable: false,
+  );
+  final points = List<SalesLiveMapPoint>.generate(
+    27,
+    (index) => SalesLiveMapPoint(
+      id: 'branch-$index',
+      name: 'Branch $index',
+      uf: 'MT',
+      latitude: -15.60 - (index * 0.01),
+      longitude: -56.10 - (index * 0.01),
+      salesAmount: 100,
+      salesCount: 1,
+      city: 'Cuiaba',
+    ),
+    growable: false,
+  );
+  return SalesLiveMapLoadResult(
+    points: points,
+    branchOptions: branchOptions,
+    totalRevenue: 2700,
+    totalSalesCount: 27,
+    totalBranchCount: 27,
+    mappedBranchCount: 27,
+    mappedMunicipalityCount: 1,
+    queriedAgentCount: 1,
+    plannedAgentCount: 1,
+    failedAgentCount: 0,
+    missingClientTokenAgentCount: 0,
+    skippedOfflineAgentCount: 0,
+    rowCapReachedAgentCount: 0,
+    salesAgentCount: 1,
+    refreshedAt: DateTime(2026, 5, 9, 12),
+  );
+}
+
+SalesLiveMapLoadResult _catalogShellTwentySevenUnmapped({
+  required bool salesDataPending,
+}) {
+  final branchOptions = List<SalesLiveMapBranchOption>.generate(
+    27,
+    (index) => SalesLiveMapBranchOption(
+      id: 'branch-$index',
+      agentId: 'agent-1',
+      agentName: 'Agent One',
+      codEmpresa: 1,
+      codFilial: index + 1,
+      registrationName: 'Branch $index',
+      city: 'Cuiaba',
+      uf: 'MT',
+    ),
+    growable: false,
+  );
+  return SalesLiveMapLoadResult(
+    points: const <SalesLiveMapPoint>[],
+    branchOptions: branchOptions,
+    unmappedBranchOptions: branchOptions,
+    totalRevenue: 0,
+    totalSalesCount: 0,
+    totalBranchCount: 27,
+    mappedBranchCount: 0,
+    mappedMunicipalityCount: 0,
+    queriedAgentCount: 1,
+    plannedAgentCount: 1,
+    failedAgentCount: 0,
+    missingClientTokenAgentCount: 0,
+    skippedOfflineAgentCount: 0,
+    rowCapReachedAgentCount: 0,
+    salesDataPending: salesDataPending,
+    refreshedAt: DateTime(2026, 5, 9, 13),
   );
 }
 

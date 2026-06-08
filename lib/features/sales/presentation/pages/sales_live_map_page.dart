@@ -67,6 +67,7 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
   final SalesLiveMapSessionCoordinator _coordinator =
       SalesLiveMapSessionCoordinator();
   bool _lockPageScrollForInlineMap = false;
+  int _inlineChartRemountKey = 0;
 
   @override
   void initState() {
@@ -311,10 +312,15 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
     if (_coordinator.liveMapFullscreenOpen == isOpen) {
       return;
     }
+    final wasOpen = _coordinator.liveMapFullscreenOpen;
     _coordinator.liveMapFullscreenOpen = isOpen;
     if (!mounted) {
       return;
     }
+    if (wasOpen && !isOpen) {
+      _inlineChartRemountKey += 1;
+    }
+    setState(() {});
     refreshAutoRefreshScheduling();
   }
 
@@ -375,7 +381,8 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
             SalesLiveMapBodySection(
               onRetryReload: () => unawaited(_reload()),
               onOpenFullscreen: _openLiveMapFullscreen,
-              showInlineChart: !_coordinator.liveMapFullscreenOpen,
+              hideInlineChart: _coordinator.liveMapFullscreenOpen,
+              inlineChartRemountKey: _inlineChartRemountKey,
             ),
           ],
         ),

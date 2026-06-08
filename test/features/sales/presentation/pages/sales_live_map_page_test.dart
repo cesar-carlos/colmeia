@@ -606,7 +606,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final fullscreenChart = tester.widget<AppBrazilStoreSalesMapChart>(
-        find.byType(AppBrazilStoreSalesMapChart),
+        find.byType(AppBrazilStoreSalesMapChart).last,
       );
       expect(find.byType(AppBrazilStoreSalesMapChart), findsOneWidget);
       expect(fullscreenChart.showDesktopBranchSidebar, isTrue);
@@ -672,7 +672,7 @@ void main() {
       await tester.pumpAndSettle();
 
       var fullscreenChart = tester.widget<AppBrazilStoreSalesMapChart>(
-        find.byType(AppBrazilStoreSalesMapChart),
+        find.byType(AppBrazilStoreSalesMapChart).last,
       );
       expect(find.byType(AppBrazilStoreSalesMapChart), findsOneWidget);
       expect(fullscreenChart.points, hasLength(1));
@@ -685,12 +685,53 @@ void main() {
       await tester.pumpAndSettle();
 
       fullscreenChart = tester.widget<AppBrazilStoreSalesMapChart>(
-        find.byType(AppBrazilStoreSalesMapChart),
+        find.byType(AppBrazilStoreSalesMapChart).last,
       );
       expect(find.byType(AppBrazilStoreSalesMapChart), findsOneWidget);
       expect(fullscreenChart.points, hasLength(2));
       expect(router.canPop(), isTrue);
       expect(router.state.matchedLocation, AppRoute.chartFullscreen.path);
+    },
+  );
+
+  testWidgets(
+    'restores the inline map after closing fullscreen without reloading',
+    (tester) async {
+      await _setDesktopSurface(tester);
+      final router = await _pumpPageWithRouter(
+        tester,
+        authController: authController,
+      );
+      await _pumpInitialLoad(tester);
+      clearInteractions(loadLiveMap);
+
+      final fullscreenFinder = find.byIcon(Icons.open_in_full);
+      await tester.ensureVisible(fullscreenFinder);
+      await tester.pump();
+      await tester.tap(fullscreenFinder);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppBrazilStoreSalesMapChart), findsOneWidget);
+
+      router.pop();
+      await tester.pumpAndSettle();
+
+      final inlineChart = tester.widget<AppBrazilStoreSalesMapChart>(
+        find.byType(AppBrazilStoreSalesMapChart),
+      );
+      expect(inlineChart.points, isNotEmpty);
+      expect(
+        inlineChart.presentationMode,
+        AppBrazilStoreSalesMapPresentationMode.inlineOperational,
+      );
+      verifyNever(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      );
     },
   );
 
@@ -754,6 +795,88 @@ void main() {
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
         ),
+      );
+    },
+  );
+
+  testWidgets(
+    'hides unmapped attention after mapped geo resolves despite late catalog shell',
+    (tester) async {
+      await _setDesktopSurface(tester);
+      when(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      ).thenAnswer(
+        (_) async* {
+          yield _catalogShellTwentySevenUnmapped(salesDataPending: true);
+          yield _mappedTwentySevenPointResult();
+          yield _catalogShellTwentySevenUnmapped(salesDataPending: false);
+        },
+      );
+
+      await _pumpPage(tester, authController: authController);
+      await _pumpInitialLoad(tester);
+
+      expect(find.text('Partial tracking'), findsNothing);
+      expect(
+        find.textContaining('without resolved coordinates'),
+        findsNothing,
+      );
+
+      final inlineChart = tester.widget<AppBrazilStoreSalesMapChart>(
+        find.byType(AppBrazilStoreSalesMapChart),
+      );
+      expect(inlineChart.points, hasLength(27));
+    },
+  );
+
+  testWidgets(
+    'remounts inline map with markers after closing fullscreen on progressive load',
+    (tester) async {
+      await _setDesktopSurface(tester);
+      when(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      ).thenAnswer(
+        (_) async* {
+          yield _catalogShellTwentySevenUnmapped(salesDataPending: true);
+          yield _mappedTwentySevenPointResult();
+        },
+      );
+
+      final router = await _pumpPageWithRouter(
+        tester,
+        authController: authController,
+      );
+      await _pumpInitialLoad(tester);
+
+      final fullscreenFinder = find.byIcon(Icons.open_in_full);
+      await tester.ensureVisible(fullscreenFinder);
+      await tester.pump();
+      await tester.tap(fullscreenFinder);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppBrazilStoreSalesMapChart), findsOneWidget);
+
+      router.pop();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppBrazilStoreSalesMapChart), findsOneWidget);
+      final inlineChart = tester.widget<AppBrazilStoreSalesMapChart>(
+        find.byType(AppBrazilStoreSalesMapChart),
+      );
+      expect(inlineChart.points, hasLength(27));
+      expect(
+        inlineChart.presentationMode,
+        AppBrazilStoreSalesMapPresentationMode.inlineOperational,
       );
     },
   );
@@ -1460,6 +1583,91 @@ Future<void> _pumpInitialLoad(WidgetTester tester) async {
 
 Stream<SalesLiveMapLoadResult> _streamResult(SalesLiveMapLoadResult result) {
   return Stream<SalesLiveMapLoadResult>.value(result);
+}
+
+SalesLiveMapLoadResult _mappedTwentySevenPointResult() {
+  final branchOptions = List<SalesLiveMapBranchOption>.generate(
+    27,
+    (index) => SalesLiveMapBranchOption(
+      id: 'branch-$index',
+      agentId: 'agent-1',
+      agentName: 'Agent One',
+      codEmpresa: 1,
+      codFilial: index + 1,
+      registrationName: 'Branch $index',
+      city: 'Cuiaba',
+      uf: 'MT',
+    ),
+    growable: false,
+  );
+  final points = List<SalesLiveMapPoint>.generate(
+    27,
+    (index) => SalesLiveMapPoint(
+      id: 'branch-$index',
+      name: 'Branch $index',
+      uf: 'MT',
+      latitude: -15.60 - (index * 0.01),
+      longitude: -56.10 - (index * 0.01),
+      salesAmount: 100,
+      salesCount: 1,
+      city: 'Cuiaba',
+    ),
+    growable: false,
+  );
+  return SalesLiveMapLoadResult(
+    points: points,
+    branchOptions: branchOptions,
+    totalRevenue: 2700,
+    totalSalesCount: 27,
+    totalBranchCount: 27,
+    mappedBranchCount: 27,
+    mappedMunicipalityCount: 1,
+    queriedAgentCount: 1,
+    plannedAgentCount: 1,
+    failedAgentCount: 0,
+    missingClientTokenAgentCount: 0,
+    skippedOfflineAgentCount: 0,
+    rowCapReachedAgentCount: 0,
+    salesAgentCount: 1,
+    refreshedAt: DateTime(2026, 5, 9, 12),
+  );
+}
+
+SalesLiveMapLoadResult _catalogShellTwentySevenUnmapped({
+  required bool salesDataPending,
+}) {
+  final branchOptions = List<SalesLiveMapBranchOption>.generate(
+    27,
+    (index) => SalesLiveMapBranchOption(
+      id: 'branch-$index',
+      agentId: 'agent-1',
+      agentName: 'Agent One',
+      codEmpresa: 1,
+      codFilial: index + 1,
+      registrationName: 'Branch $index',
+      city: 'Cuiaba',
+      uf: 'MT',
+    ),
+    growable: false,
+  );
+  return SalesLiveMapLoadResult(
+    points: const <SalesLiveMapPoint>[],
+    branchOptions: branchOptions,
+    unmappedBranchOptions: branchOptions,
+    totalRevenue: 0,
+    totalSalesCount: 0,
+    totalBranchCount: 27,
+    mappedBranchCount: 0,
+    mappedMunicipalityCount: 0,
+    queriedAgentCount: 1,
+    plannedAgentCount: 1,
+    failedAgentCount: 0,
+    missingClientTokenAgentCount: 0,
+    skippedOfflineAgentCount: 0,
+    rowCapReachedAgentCount: 0,
+    salesDataPending: salesDataPending,
+    refreshedAt: DateTime(2026, 5, 9, 13),
+  );
 }
 
 Stream<SalesLiveMapLoadResult> _streamFromFuture(
