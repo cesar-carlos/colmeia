@@ -10,6 +10,7 @@ import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_ta
 import 'package:colmeia/features/agent_queries/domain/cache/agent_query_facts_store.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/overview/application/overview_shell_cache.dart';
+import 'package:colmeia/features/overview/application/usecases/load_overview_sections_use_case.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/data/overview_batch_facts_persister.dart';
 import 'package:colmeia/features/overview/data/overview_batch_loader.dart';
@@ -55,5 +56,8 @@ void registerInjectorOverview(GetIt getIt) {
     )
     ..registerLazySingleton<LoadOverviewUseCase>(
       () => LoadOverviewUseCase(getIt<OverviewRepository>()),
+    )
+    ..registerLazySingleton<LoadOverviewSectionsUseCase>(
+      () => LoadOverviewSectionsUseCase(getIt<OverviewRepository>()),
     );
 }

@@ -4,6 +4,7 @@ import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_policy.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_section_request.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 
 export 'package:colmeia/features/overview/domain/entities/overview_load_policy.dart'
@@ -18,6 +19,7 @@ abstract interface class OverviewRepository {
     DashboardFilter filter = const DashboardFilter(),
     OverviewLoadLabels? rowLabels,
     AgentQueriesCancelScope? cancelScope,
+    OverviewSectionRequest sectionRequest = OverviewSectionRequest.full,
   });
 
   Stream<AppResult<OverviewProgressiveSnapshot>> loadOverviewProgressively({
@@ -26,5 +28,6 @@ abstract interface class OverviewRepository {
     DashboardFilter filter = const DashboardFilter(),
     OverviewLoadLabels? rowLabels,
     AgentQueriesCancelScope? cancelScope,
+    OverviewSectionRequest sectionRequest = OverviewSectionRequest.full,
   });
 }

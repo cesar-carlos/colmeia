@@ -6,6 +6,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking
 import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_user_sales_trend_point.dart';
@@ -368,5 +369,91 @@ class Overview {
           hubPresenceOnlineAgentIdsSnapshot ??
           this.hubPresenceOnlineAgentIdsSnapshot,
     );
+  }
+
+  /// Merges [detail] fields for [section] into this overview (shell cache).
+  Overview mergeSection(Overview detail, OverviewProgressiveSection section) {
+    return switch (section) {
+      OverviewProgressiveSection.dailySales => copyWith(
+        dailySalesTrend: detail.dailySalesTrend,
+        dailySalesTrendLoadFailed: detail.dailySalesTrendLoadFailed,
+        dailySalesTrendLoadFailure: detail.dailySalesTrendLoadFailure,
+        dailySalesTrendLoadFailureMessage:
+            detail.dailySalesTrendLoadFailureMessage,
+      ),
+      OverviewProgressiveSection.monthlyParcels => copyWith(
+        monthlyParcelTrend: detail.monthlyParcelTrend,
+        monthlyParcelTrendLoadFailed: detail.monthlyParcelTrendLoadFailed,
+        monthlyParcelTrendLoadFailure: detail.monthlyParcelTrendLoadFailure,
+        monthlyParcelTrendLoadFailureMessage:
+            detail.monthlyParcelTrendLoadFailureMessage,
+      ),
+      OverviewProgressiveSection.weekdaySales => copyWith(
+        weekdaySalesTrend: detail.weekdaySalesTrend,
+        weekdaySalesTrendLoadFailed: detail.weekdaySalesTrendLoadFailed,
+        weekdaySalesTrendLoadFailure: detail.weekdaySalesTrendLoadFailure,
+        weekdaySalesTrendLoadFailureMessage:
+            detail.weekdaySalesTrendLoadFailureMessage,
+        partialQueryFailureDetails: detail.partialQueryFailureDetails,
+      ),
+      OverviewProgressiveSection.weekdayUserSales => copyWith(
+        weekdayUserSalesTrend: detail.weekdayUserSalesTrend,
+        weekdayUserSalesTrendLoadFailed: detail.weekdayUserSalesTrendLoadFailed,
+        weekdayUserSalesTrendLoadFailure: detail.weekdayUserSalesTrendLoadFailure,
+        weekdayUserSalesTrendLoadFailureMessage:
+            detail.weekdayUserSalesTrendLoadFailureMessage,
+        partialQueryFailureDetails: detail.partialQueryFailureDetails,
+      ),
+      OverviewProgressiveSection.lucratividadePeriod => copyWith(
+        lucratividadeTrend: detail.lucratividadeTrend,
+        lucratividadeTrendLoadFailed: detail.lucratividadeTrendLoadFailed,
+        lucratividadeTrendLoadFailure: detail.lucratividadeTrendLoadFailure,
+        lucratividadeTrendLoadFailureMessage:
+            detail.lucratividadeTrendLoadFailureMessage,
+        lucratividadePartialFailureAgentNames:
+            detail.lucratividadePartialFailureAgentNames,
+        partialQueryFailureDetails: detail.partialQueryFailureDetails,
+      ),
+      OverviewProgressiveSection.lucratividadeMensal => copyWith(
+        lucratividadeMensalTrend: detail.lucratividadeMensalTrend,
+        lucratividadeMensalTrendLoadFailed:
+            detail.lucratividadeMensalTrendLoadFailed,
+        lucratividadeMensalTrendLoadFailure:
+            detail.lucratividadeMensalTrendLoadFailure,
+        lucratividadeMensalTrendLoadFailureMessage:
+            detail.lucratividadeMensalTrendLoadFailureMessage,
+      ),
+      OverviewProgressiveSection.paymentMix => copyWith(
+        paymentMethods: detail.paymentMethods,
+        kpis: detail.kpis,
+      ),
+      OverviewProgressiveSection.userRanking => copyWith(
+        userRankings: detail.userRankings,
+      ),
+      OverviewProgressiveSection.agentRanking => copyWith(
+        agentRankings: detail.agentRankings,
+      ),
+      OverviewProgressiveSection.summary => copyWith(
+        kpis: detail.kpis,
+        paymentMethods: detail.paymentMethods,
+        agentRankings: detail.agentRankings,
+        userRankings: detail.userRankings,
+        approvedAgentCount: detail.approvedAgentCount,
+        agentIdsExcludedFromQueryFailure:
+            detail.agentIdsExcludedFromQueryFailure,
+        agentNamesExcludedFromQueryFailure:
+            detail.agentNamesExcludedFromQueryFailure,
+        agentIdsMissingClientToken: detail.agentIdsMissingClientToken,
+        agentNamesMissingClientToken: detail.agentNamesMissingClientToken,
+        agentIdsSkippedDueToHubPresence:
+            detail.agentIdsSkippedDueToHubPresence,
+        agentNamesSkippedDueToHubPresence:
+            detail.agentNamesSkippedDueToHubPresence,
+        mainResumoHadPlannedTargets: detail.mainResumoHadPlannedTargets,
+        partialQueryFailureDetails: detail.partialQueryFailureDetails,
+        hubPresenceOnlineAgentIdsSnapshot:
+            detail.hubPresenceOnlineAgentIdsSnapshot,
+      ),
+    };
   }
 }

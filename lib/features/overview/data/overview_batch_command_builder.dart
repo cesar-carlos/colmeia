@@ -14,6 +14,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_m
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_periodo_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_filter.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
 
 final class OverviewCachedSectionSqlOmission {
   const OverviewCachedSectionSqlOmission({
@@ -34,8 +35,8 @@ final class OverviewBatchCommandIndexes {
     required this.monthly,
     required this.weekday,
     required this.daily,
-    required this.weekdayUser,
     required this.lucratividade,
+    this.weekdayUser,
     this.lucratividadeMensal,
   });
 
@@ -44,8 +45,8 @@ final class OverviewBatchCommandIndexes {
   final int? monthly;
   final int? weekday;
   final int? daily;
-  final int weekdayUser;
   final int? lucratividade;
+  final int? weekdayUser;
   final int? lucratividadeMensal;
 }
 
@@ -61,9 +62,9 @@ final class OverviewMainBatchCommandIndexes {
 
 final class OverviewSectionBatchCommandIndexes {
   const OverviewSectionBatchCommandIndexes({
-    required this.weekday,
-    required this.weekdayUser,
-    required this.lucratividade,
+    this.weekday,
+    this.weekdayUser,
+    this.lucratividade,
     this.monthly,
     this.daily,
     this.lucratividadeMensal,
@@ -72,7 +73,7 @@ final class OverviewSectionBatchCommandIndexes {
   final int? monthly;
   final int? weekday;
   final int? daily;
-  final int weekdayUser;
+  final int? weekdayUser;
   final int? lucratividade;
   final int? lucratividadeMensal;
 }
@@ -158,8 +159,10 @@ final class OverviewBatchCommandBuilder {
     required bool includeLucratividadeMensal,
     OverviewCachedSectionSqlOmission omitCachedSectionsFromSqlBatch =
         const OverviewCachedSectionSqlOmission(),
+    Set<OverviewProgressiveSection>? includedSectionBatchSections,
+    bool includeMainBatch = true,
   }) {
-    const mainOffset = mainBatchCommandCount;
+    final mainOffset = includeMainBatch ? mainBatchCommandCount : 0;
     final full = buildCommands(
       periodStart: dailyTotalFilter.dataVendaInicio,
       periodEnd: dailyTotalFilter.dataVendaFim,
@@ -169,6 +172,8 @@ final class OverviewBatchCommandBuilder {
       dailyTotalFilter: dailyTotalFilter,
       includeLucratividadeMensal: includeLucratividadeMensal,
       omitCachedSectionsFromSqlBatch: omitCachedSectionsFromSqlBatch,
+      includedSectionBatchSections: includedSectionBatchSections,
+      includeMainBatch: includeMainBatch,
     );
     final commands = full.commands.skip(mainOffset).toList(growable: false);
     for (var i = 0; i < commands.length; i++) {
@@ -195,6 +200,8 @@ final class OverviewBatchCommandBuilder {
     required bool includeLucratividadeMensal,
     OverviewCachedSectionSqlOmission omitCachedSectionsFromSqlBatch =
         const OverviewCachedSectionSqlOmission(),
+    Set<OverviewProgressiveSection>? includedSectionBatchSections,
+    bool includeMainBatch = true,
   }) {
     final commands = <AgentSqlExecuteBatchCommand>[];
 
@@ -210,26 +217,40 @@ final class OverviewBatchCommandBuilder {
       return index;
     }
 
-    final main = add(
-      ResumoParcelaFormaPagamentoSqlV2.query,
-      _parcelPeriodSqlParamsFromPeriodo(
-        ResumoParcelaFormaPagamentoFilter(
-          dataVendaInicio: periodStart,
-          dataVendaFim: periodEnd,
+    final int main;
+    final int userRanking;
+    if (includeMainBatch) {
+      main = add(
+        ResumoParcelaFormaPagamentoSqlV2.query,
+        _parcelPeriodSqlParamsFromPeriodo(
+          ResumoParcelaFormaPagamentoFilter(
+            dataVendaInicio: periodStart,
+            dataVendaFim: periodEnd,
+          ),
         ),
-      ),
-    );
-    final userRanking = add(
-      ResumoParcelaPorUsuarioSql.query,
-      _parcelPeriodSqlParamsFromPeriodo(
-        ResumoParcelaFormaPagamentoFilter(
-          dataVendaInicio: periodStart,
-          dataVendaFim: periodEnd,
+      );
+      userRanking = add(
+        ResumoParcelaPorUsuarioSql.query,
+        _parcelPeriodSqlParamsFromPeriodo(
+          ResumoParcelaFormaPagamentoFilter(
+            dataVendaInicio: periodStart,
+            dataVendaFim: periodEnd,
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      main = 0;
+      userRanking = 0;
+    }
+
+    bool includesSection(OverviewProgressiveSection section) {
+      return includedSectionBatchSections == null ||
+          includedSectionBatchSections.contains(section);
+    }
+
     final int? monthly;
-    if (!omitCachedSectionsFromSqlBatch.dailyMonthly) {
+    if (includesSection(OverviewProgressiveSection.monthlyParcels) &&
+        !omitCachedSectionsFromSqlBatch.dailyMonthly) {
       monthly = add(
         ResumoParcelasMensalSql.query(
           codEmpresa: mensalFilter.codEmpresa,
@@ -242,7 +263,8 @@ final class OverviewBatchCommandBuilder {
       monthly = null;
     }
     final int? weekday;
-    if (!omitCachedSectionsFromSqlBatch.weekday) {
+    if (includesSection(OverviewProgressiveSection.weekdaySales) &&
+        !omitCachedSectionsFromSqlBatch.weekday) {
       weekday = add(
         ResumoParcelasDiaSemanaSql.query(
           codEmpresa: weekdayFilter.codEmpresa,
@@ -255,7 +277,8 @@ final class OverviewBatchCommandBuilder {
       weekday = null;
     }
     final int? daily;
-    if (!omitCachedSectionsFromSqlBatch.dailyMonthly) {
+    if (includesSection(OverviewProgressiveSection.dailySales) &&
+        !omitCachedSectionsFromSqlBatch.dailyMonthly) {
       daily = add(
         ResumoTotalDiarioVendasSql.query,
         _produtoVendidoPeriodParams(dailyTotalFilter),
@@ -263,14 +286,19 @@ final class OverviewBatchCommandBuilder {
     } else {
       daily = null;
     }
-    final weekdayUser = add(
-      ResumoParcelasDiaSemanaUsuarioSql.query(
-        codEmpresa: weekdayFilter.codEmpresa,
-        codFilial: weekdayFilter.codFilial,
-        codVendedor: weekdayFilter.codVendedor,
-      ),
-      _parcelPeriodSqlParamsFromWeekday(weekdayFilter),
-    );
+    final int? weekdayUser;
+    if (includesSection(OverviewProgressiveSection.weekdayUserSales)) {
+      weekdayUser = add(
+        ResumoParcelasDiaSemanaUsuarioSql.query(
+          codEmpresa: weekdayFilter.codEmpresa,
+          codFilial: weekdayFilter.codFilial,
+          codVendedor: weekdayFilter.codVendedor,
+        ),
+        _parcelPeriodSqlParamsFromWeekday(weekdayFilter),
+      );
+    } else {
+      weekdayUser = null;
+    }
     final lucratividadePeriodFilter = ResumoProdutoVendaLucratividadeFilter(
       dataVendaInicio: periodStart,
       dataVendaFim: periodEnd,
@@ -280,7 +308,8 @@ final class OverviewBatchCommandBuilder {
       dataVendaFim: last12Range.dataVendaFim,
     );
     final int? lucratividade;
-    if (!omitCachedSectionsFromSqlBatch.lucratividade) {
+    if (includesSection(OverviewProgressiveSection.lucratividadePeriod) &&
+        !omitCachedSectionsFromSqlBatch.lucratividade) {
       lucratividade = add(
         ResumoProdutoVendaLucratividadeSql.query,
         _lucratividadeParams(lucratividadePeriodFilter),
@@ -288,12 +317,16 @@ final class OverviewBatchCommandBuilder {
     } else {
       lucratividade = null;
     }
-    final lucratividadeMensal = includeLucratividadeMensal
-        ? add(
-            ResumoProdutoVendaLucratividadeMensalSql.query,
-            _lucratividadeParams(lucratividadeMensalFilter),
-          )
-        : null;
+    final int? lucratividadeMensal;
+    if (includeLucratividadeMensal &&
+        includesSection(OverviewProgressiveSection.lucratividadeMensal)) {
+      lucratividadeMensal = add(
+        ResumoProdutoVendaLucratividadeMensalSql.query,
+        _lucratividadeParams(lucratividadeMensalFilter),
+      );
+    } else {
+      lucratividadeMensal = null;
+    }
 
     return OverviewBatchCommands(
       commands: commands,
@@ -320,7 +353,9 @@ final class OverviewBatchCommandBuilder {
       monthly: subtract(full.monthly),
       weekday: subtract(full.weekday),
       daily: subtract(full.daily),
-      weekdayUser: full.weekdayUser - mainOffset,
+      weekdayUser: full.weekdayUser == null
+          ? null
+          : full.weekdayUser! - mainOffset,
       lucratividade: subtract(full.lucratividade),
       lucratividadeMensal: subtract(full.lucratividadeMensal),
     );

@@ -156,6 +156,7 @@ class CurrentUserContextController extends ChangeNotifier {
         return false;
       case AppRoute.dashboard:
       case AppRoute.dashboardStore:
+      case AppRoute.dashboardChart:
         return hasAnyDashboardAccess();
       case AppRoute.login:
       case AppRoute.register:

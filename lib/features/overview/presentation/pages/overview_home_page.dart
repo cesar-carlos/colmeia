@@ -14,6 +14,7 @@ import 'package:colmeia/features/overview/presentation/controllers/overview_cont
 import 'package:colmeia/features/overview/presentation/localization/overview_failure_l10n.dart';
 import 'package:colmeia/features/overview/presentation/localization/overview_load_labels_l10n.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_auto_loader.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_chart_nav_grid.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_filter_bar.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_home_alerts_section.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_home_charts_below_kpis.dart';
@@ -319,6 +320,8 @@ class _OverviewMetricsSection extends StatelessWidget {
                   kpis: displayOverview.kpis,
                 ),
               ),
+              SizedBox(height: tokens.sectionSpacing),
+              const OverviewChartNavGrid(),
               SizedBox(height: tokens.sectionSpacing),
               OverviewHomeChartsBelowKpis(
                 tokens: tokens,

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
@@ -15,21 +16,24 @@ import 'package:colmeia/features/overview/domain/entities/overview_monthly_parce
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_section_request.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_controller.dart';
 import 'package:colmeia/features/overview/presentation/pages/overview_home_page.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_chart_nav_grid.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_home_charts_below_kpis.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_monthly_parcels_combo_chart.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_weekday_sales_trend_chart.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
-import 'package:colmeia/shared/widgets/charts/daily_sales_trend_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:provider/provider.dart';
 import 'package:result_dart/result_dart.dart';
@@ -56,6 +60,7 @@ void main() {
     registerFallbackValue(OverviewLoadPolicy.defaultLoad);
     registerFallbackValue(const DashboardFilter());
     registerFallbackValue(OverviewLoadLabels.englishFallback);
+    registerFallbackValue(OverviewSectionRequest.full);
   });
 
   setUp(() {
@@ -94,6 +99,7 @@ void main() {
         filter: any(named: 'filter'),
         rowLabels: any(named: 'rowLabels'),
         cancelScope: any(named: 'cancelScope'),
+        sectionRequest: any(named: 'sectionRequest'),
       ),
     ).thenAnswer((_) async => Success<Overview, AppFailure>(_overview()));
     when(
@@ -103,6 +109,7 @@ void main() {
         filter: any(named: 'filter'),
         rowLabels: any(named: 'rowLabels'),
         cancelScope: any(named: 'cancelScope'),
+        sectionRequest: any(named: 'sectionRequest'),
       ),
     ).thenAnswer(
       (_) => Stream<AppResult<OverviewProgressiveSnapshot>>.value(
@@ -113,7 +120,7 @@ void main() {
     );
   });
 
-  testWidgets('renders weekday card in the home page after monthly chart', (
+  testWidgets('renders chart nav grid and embedded monthly chart on home', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -147,28 +154,12 @@ void main() {
     }
     await tester.pump(const Duration(seconds: 2));
 
-    expect(find.byType(OverviewWeekdaySalesTrendChart), findsOneWidget);
-    expect(find.text('Sales by weekday'), findsOneWidget);
+    expect(find.byType(OverviewChartNavGrid), findsOneWidget);
+    expect(find.text('Daily sales'), findsOneWidget);
+    expect(find.text('Mix by payment method'), findsOneWidget);
     expect(find.text('Last 12 months'), findsOneWidget);
-
-    final dailyTitleTopLeft = tester.getTopLeft(find.text('Daily sales'));
-    final monthlyTitleTopLeft = tester.getTopLeft(find.text('Last 12 months'));
-    final paymentMixTitleTopLeft = tester.getTopLeft(
-      find.text('Mix by payment method').first,
-    );
-    expect(monthlyTitleTopLeft.dy, greaterThan(dailyTitleTopLeft.dy));
-    expect(monthlyTitleTopLeft.dy, lessThan(paymentMixTitleTopLeft.dy));
-
-    final weekdayTitleTopLeft = tester.getTopLeft(
-      find.text('Sales by weekday'),
-    );
-    expect(weekdayTitleTopLeft.dy, greaterThan(monthlyTitleTopLeft.dy));
-
-    final weekdayChart = tester.widget<OverviewWeekdaySalesTrendChart>(
-      find.byType(OverviewWeekdaySalesTrendChart),
-    );
-    expect(weekdayChart.points, hasLength(7));
-    expect(weekdayChart.points.first.weekdayNumber, 1);
+    expect(find.byType(OverviewMonthlyParcelsComboChart), findsOneWidget);
+    expect(find.byType(OverviewWeekdaySalesTrendChart), findsNothing);
 
     await tester.pump(const Duration(seconds: 2));
   });
@@ -250,11 +241,12 @@ void main() {
         filter: any(named: 'filter'),
         rowLabels: any(named: 'rowLabels'),
         cancelScope: any(named: 'cancelScope'),
+        sectionRequest: any(named: 'sectionRequest'),
       ),
     );
   });
 
-  testWidgets('keeps weekday card in the skeleton path while loading', (
+  testWidgets('keeps monthly chart in the skeleton path while loading', (
     tester,
   ) async {
     final completer = Completer<AppResult<Overview>>();
@@ -265,6 +257,7 @@ void main() {
         filter: any(named: 'filter'),
         rowLabels: any(named: 'rowLabels'),
         cancelScope: any(named: 'cancelScope'),
+        sectionRequest: any(named: 'sectionRequest'),
       ),
     ).thenAnswer((_) async* {
       yield Success<OverviewProgressiveSnapshot, AppFailure>(
@@ -296,11 +289,11 @@ void main() {
     await tester.pump();
 
     expect(find.byType(AppSkeleton), findsWidgets);
-    expect(find.byType(OverviewWeekdaySalesTrendChart), findsOneWidget);
-    final weekdayChart = tester.widget<OverviewWeekdaySalesTrendChart>(
-      find.byType(OverviewWeekdaySalesTrendChart),
+    expect(find.byType(OverviewMonthlyParcelsComboChart), findsOneWidget);
+    final monthlyChart = tester.widget<OverviewMonthlyParcelsComboChart>(
+      find.byType(OverviewMonthlyParcelsComboChart),
     );
-    expect(weekdayChart.points, isEmpty);
+    expect(monthlyChart.points, isEmpty);
 
     completer.complete(Success<Overview, AppFailure>(_overview()));
     await tester.pump();
@@ -309,13 +302,13 @@ void main() {
       await tester.pump();
     }
 
-    expect(find.text('Sales by weekday'), findsOneWidget);
+    expect(find.text('Last 12 months'), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 2));
   });
 
   testWidgets(
-    'progressive below-kpis UI mounts only ready daily sales section',
+    'progressive below-kpis UI mounts only ready monthly parcels section',
     (
       tester,
     ) async {
@@ -335,7 +328,7 @@ void main() {
                     showSkeleton: false,
                     displayOverview: _overview(),
                     completedSections: const <OverviewProgressiveSection>{
-                      OverviewProgressiveSection.dailySales,
+                      OverviewProgressiveSection.monthlyParcels,
                     },
                   ),
                 );
@@ -347,14 +340,66 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(DailySalesTrendChart), findsOneWidget);
-      expect(find.text('Daily sales'), findsOneWidget);
-      expect(find.byType(OverviewWeekdaySalesTrendChart), findsNothing);
-      expect(find.text('Last 12 months'), findsNothing);
+      expect(find.byType(OverviewMonthlyParcelsComboChart), findsOneWidget);
+      expect(find.text('Last 12 months'), findsOneWidget);
+      expect(find.text('Ranking by branch'), findsNothing);
 
       await tester.pump(const Duration(seconds: 2));
     },
   );
+
+  testWidgets('passes active dashboard filter as navigation extra', (
+    tester,
+  ) async {
+    Object? capturedExtra;
+    final activeFilter = DashboardFilter.initial().copyWith(
+      selectedAgentIds: <String>{'agent-nav'},
+    );
+    unawaited(
+      overviewController.applyFilter(
+        userId: 'user-1',
+        filter: activeFilter,
+        failureMessageBuilder: (failure) => failure.message,
+      ),
+    );
+
+    final router = GoRouter(
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/',
+          builder: (context, state) => ChangeNotifierProvider<OverviewController>.value(
+            value: overviewController,
+            child: const Scaffold(body: OverviewChartNavGrid()),
+          ),
+        ),
+        GoRoute(
+          name: AppRoute.dashboardChart.name,
+          path: AppRoute.dashboardChart.path,
+          builder: (context, state) {
+            capturedExtra = state.extra;
+            return const SizedBox.shrink();
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      MaterialApp.router(
+        theme: AppTheme.light(),
+        locale: const Locale('en'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        routerConfig: router,
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('Daily sales'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(capturedExtra, equals(activeFilter));
+  });
 }
 
 OverviewProgressiveSnapshot _snapshot(Overview overview) {

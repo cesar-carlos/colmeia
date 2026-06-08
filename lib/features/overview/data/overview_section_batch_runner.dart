@@ -17,6 +17,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_e
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_usuario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
@@ -297,17 +298,25 @@ final class OverviewSectionBatchRunner {
         maxRows: AgentQueriesBoundedResultMaxRows.resumoTotalDiarioVendas,
       );
     }
-    final weekdayUser = OverviewSqlBatchItemRowsMapper.mapRowsForIndex(
-      byIndex,
-      indexes.weekdayUser,
-      (row) => ResumoParcelasDiaSemanaUsuarioRowModel.fromMap(row).toEntity(),
-    );
-    _warnIfReachedMaxRows(
-      target: target,
-      section: 'weekdayUser',
-      rowCount: weekdayUser.rows.length,
-      maxRows: AgentQueriesBoundedResultMaxRows.resumoParcelasDiaSemanaUsuario,
-    );
+    final weekdayUser = indexes.weekdayUser == null
+        ? const OverviewSqlBatchItemRowsResult<ResumoParcelasDiaSemanaUsuarioRow>(
+            rows: <ResumoParcelasDiaSemanaUsuarioRow>[],
+          )
+        : OverviewSqlBatchItemRowsMapper.mapRowsForIndex(
+            byIndex,
+            indexes.weekdayUser!,
+            (row) =>
+                ResumoParcelasDiaSemanaUsuarioRowModel.fromMap(row).toEntity(),
+          );
+    if (indexes.weekdayUser != null) {
+      _warnIfReachedMaxRows(
+        target: target,
+        section: 'weekdayUser',
+        rowCount: weekdayUser.rows.length,
+        maxRows:
+            AgentQueriesBoundedResultMaxRows.resumoParcelasDiaSemanaUsuario,
+      );
+    }
     final lucratividade = indexes.lucratividade == null
         ? const OverviewSqlBatchItemRowsResult<
             ResumoProdutoVendaLucratividadeRow

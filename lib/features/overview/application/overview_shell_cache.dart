@@ -26,6 +26,8 @@ class OverviewShellCacheEntry {
 class OverviewShellCache {
   OverviewShellCacheEntry? _entry;
 
+  OverviewShellCacheEntry? get latestEntry => _entry;
+
   OverviewShellCacheEntry? read(String signature) {
     final entry = _entry;
     if (entry != null && entry.signature == signature) {
@@ -47,6 +49,29 @@ class OverviewShellCache {
       activeFilter: activeFilter,
       availableAgents: List<DashboardAgentOption>.unmodifiable(availableAgents),
       completedSections: Set<OverviewProgressiveSection>.of(completedSections),
+    );
+  }
+
+  /// Merges a section-only detail load into the existing entry for [signature].
+  void mergePublish({
+    required String signature,
+    required Overview detailOverview,
+    required OverviewProgressiveSection section,
+    required Set<OverviewProgressiveSection> addedSections,
+  }) {
+    final existing = read(signature);
+    if (existing == null) {
+      return;
+    }
+    _entry = OverviewShellCacheEntry(
+      signature: existing.signature,
+      overview: existing.overview.mergeSection(detailOverview, section),
+      activeFilter: existing.activeFilter,
+      availableAgents: existing.availableAgents,
+      completedSections: <OverviewProgressiveSection>{
+        ...existing.completedSections,
+        ...addedSections,
+      },
     );
   }
 

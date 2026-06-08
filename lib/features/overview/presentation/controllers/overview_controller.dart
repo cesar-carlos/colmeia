@@ -14,6 +14,7 @@ import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_policy.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_section_request.dart';
 import 'package:colmeia/features/overview/domain/overview_load_signature.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_load_session.dart';
 import 'package:colmeia/features/overview/presentation/overview_agent_alert_names_projection.dart';
@@ -355,6 +356,7 @@ class OverviewController extends ChangeNotifier {
       filter: _activeFilter,
       rowLabels: rowLabels,
       cancelScope: ctx.sqlCancelScope,
+      sectionRequest: OverviewSectionRequest.home,
     );
     if (_isOverviewLoadStale(ctx.generation)) {
       return;
@@ -468,9 +470,8 @@ class OverviewController extends ChangeNotifier {
   }) {
     _armRetryAfterFromPartialFailures(overview);
     _setOverview(overview);
-    _completedOverviewSections = Set<OverviewProgressiveSection>.of(
-      OverviewProgressiveSection.values,
-    );
+    _completedOverviewSections =
+        OverviewSectionRequest.home.completedWhenFinal();
     _session.loadedSignature = signature;
     _errorMessage = null;
     _errorDiagnosticBody = null;
@@ -544,6 +545,7 @@ class OverviewController extends ChangeNotifier {
       filter: _activeFilter,
       rowLabels: rowLabels,
       cancelScope: sqlCancelScope,
+      sectionRequest: OverviewSectionRequest.home,
     )) {
       if (_isOverviewLoadStale(generation)) {
         return;

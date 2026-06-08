@@ -39,6 +39,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_load_labels.d
 import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_resumo_row.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_section_request.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_user_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/overview_agent_query_failure_mapper.dart';
@@ -94,14 +95,6 @@ class OverviewRepositoryImpl implements OverviewRepository {
         OverviewProgressiveSection.lucratividadeMensal,
       };
 
-  static const Set<OverviewProgressiveSection> _summaryProgressiveSections =
-      <OverviewProgressiveSection>{
-        OverviewProgressiveSection.summary,
-        OverviewProgressiveSection.paymentMix,
-        OverviewProgressiveSection.agentRanking,
-        OverviewProgressiveSection.userRanking,
-      };
-
   @override
   Future<AppResult<Overview>> loadOverview({
     required String userId,
@@ -109,6 +102,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     DashboardFilter filter = const DashboardFilter(),
     OverviewLoadLabels? rowLabels,
     AgentQueriesCancelScope? cancelScope,
+    OverviewSectionRequest sectionRequest = OverviewSectionRequest.full,
   }) async {
     AppResult<Overview>? lastResult;
     await for (final result in _loadOverviewProgressivelyBatch(
@@ -118,6 +112,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
       rowLabels: rowLabels,
       cancelScope: cancelScope,
       mergeSqlBatchesPerTarget: true,
+      sectionRequest: sectionRequest,
     )) {
       final snapshot = result.getOrNull();
       if (snapshot != null) {
@@ -142,6 +137,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     DashboardFilter filter = const DashboardFilter(),
     OverviewLoadLabels? rowLabels,
     AgentQueriesCancelScope? cancelScope,
+    OverviewSectionRequest sectionRequest = OverviewSectionRequest.full,
   }) async* {
     yield* _loadOverviewProgressivelyBatch(
       userId: userId,
@@ -153,6 +149,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
           policy == OverviewLoadPolicy.forceRefresh ||
           AppEnvironment.agentSqlOverviewMergeSqlBatchesPerTarget,
       phasedBatchPerTarget: true,
+      sectionRequest: sectionRequest,
     );
   }
 
@@ -165,6 +162,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
     AgentQueriesCancelScope? cancelScope,
     bool mergeSqlBatchesPerTarget = false,
     bool phasedBatchPerTarget = false,
+    OverviewSectionRequest sectionRequest = OverviewSectionRequest.full,
   }) async* {
     final resolvedRowLabels = rowLabels ?? OverviewLoadLabels.englishFallback;
     final period = _buildPeriod(filter);
@@ -206,6 +204,7 @@ class OverviewRepositoryImpl implements OverviewRepository {
         cachePolicy: cachePolicy,
         mergeSqlBatchesPerTarget: mergeSqlBatchesPerTarget,
         phasedBatchPerTarget: phasedBatchPerTarget,
+        sectionRequest: sectionRequest,
       )) {
         final loaded = loadResult.getOrNull();
         if (loaded == null) {
@@ -415,8 +414,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
           _snapshotFor(
             overview: overview,
             completedSections: loaded.isFinal
-                ? _allProgressiveSections
-                : _summaryProgressiveSections,
+                ? sectionRequest.completedWhenFinal()
+                : sectionRequest.completedAfterMainBatch(),
             isFinal: loaded.isFinal,
           ),
         );
@@ -698,9 +697,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
     required Set<OverviewProgressiveSection> completedSections,
     required bool isFinal,
   }) {
-    final completed = isFinal
-        ? _allProgressiveSections
-        : Set<OverviewProgressiveSection>.unmodifiable(completedSections);
+    final completed =
+        Set<OverviewProgressiveSection>.unmodifiable(completedSections);
     return OverviewProgressiveSnapshot(
       overview: overview,
       completedSections: completed,

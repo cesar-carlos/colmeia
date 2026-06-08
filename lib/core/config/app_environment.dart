@@ -182,7 +182,8 @@ abstract final class AppEnvironment {
   /// - Default `4` for generic mergeAll surfaces (reports, cadastro, etc.).
   /// - Overview batch loader uses [overviewTargetWaveConcurrency] (default 64),
   ///   independent of this knob.
-  /// - Sales live map uses [salesLiveMapMergeWaveSize] when set.
+  /// - Sales live map uses [salesLiveMapMergeWaveSize] (default 64, same as
+  ///   overview).
   /// - Hub `-32013` is the JSON-RPC rate-limit family (concurrency, rate window,
   ///   token policy); respect `retry_after_ms` when present.
   static int get agentQueryMergeAllConcurrency =>
@@ -259,20 +260,21 @@ abstract final class AppEnvironment {
     return agentSqlBridgeMediumTimeoutMs;
   }
 
-  /// Wave size for sales live map mergeAll; falls back to per-agent inflight cap.
+  /// Across-agent wave size for sales live map SQL loads. Defaults to
+  /// [defaultOverviewTargetWaveConcurrency] (all online agents in one wave when
+  /// N <= 64). Explicit `0` mirrors [agentQueryMergeAllConcurrency].
   static int get salesLiveMapMergeWaveSize {
     final configured = AppEnvironmentResolution.resolveInt(
       fromDefine: const String.fromEnvironment(
         EnvKeys.salesLiveMapMergeWaveSize,
       ),
       fromDotenv: _dotenvMaybe(EnvKeys.salesLiveMapMergeWaveSize),
-      fallback: 0,
+      fallback: defaultOverviewTargetWaveConcurrency,
     );
-    if (configured > 0) {
-      return configured.clamp(1, 64);
+    if (configured == 0) {
+      return agentQueryMergeAllConcurrency;
     }
-    final inflight = socketMaxInflightPerAgent;
-    return inflight > 0 ? inflight : defaultAgentQueryMergeAllConcurrency;
+    return configured.clamp(1, 64);
   }
 
   static int get agentSqlOverviewBatchMaxParallelReadOnlyItems =>

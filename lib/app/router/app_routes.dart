@@ -34,6 +34,10 @@ enum AppRoute {
     path: '/dashboard',
     title: 'Visao geral',
   ),
+  dashboardChart(
+    path: '/dashboard/chart/:chartId',
+    title: 'Visao geral',
+  ),
   sales(
     path: '/sales',
     title: 'Vendas',
@@ -94,6 +98,7 @@ enum AppRoute {
   AppRoute? get shellRootRoute {
     switch (this) {
       case AppRoute.dashboardStore:
+      case AppRoute.dashboardChart:
         return AppRoute.dashboard;
       case AppRoute.salesCard:
         return AppRoute.sales;
@@ -135,6 +140,7 @@ enum AppRoute {
         return Icons.help_outline_rounded;
       case AppRoute.dashboard:
       case AppRoute.dashboardStore:
+      case AppRoute.dashboardChart:
         return Icons.space_dashboard_rounded;
       case AppRoute.sales:
       case AppRoute.salesCard:
@@ -166,6 +172,7 @@ enum AppRoute {
         return Icons.help_outline_outlined;
       case AppRoute.dashboard:
       case AppRoute.dashboardStore:
+      case AppRoute.dashboardChart:
         return Icons.space_dashboard_outlined;
       case AppRoute.sales:
       case AppRoute.salesCard:
@@ -240,6 +247,7 @@ enum AppRoute {
     switch (this) {
       case AppRoute.dashboard:
       case AppRoute.dashboardStore:
+      case AppRoute.dashboardChart:
         return UserPermission.viewDashboard;
       case AppRoute.sales:
       case AppRoute.salesCard:

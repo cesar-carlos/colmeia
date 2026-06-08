@@ -23,6 +23,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_load_labels.d
 import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_section_request.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
 import 'package:colmeia/features/overview/domain/overview_load_signature.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
@@ -855,6 +856,7 @@ class _GatedProgressiveOverviewRepository implements OverviewRepository {
     DashboardFilter filter = const DashboardFilter(),
     OverviewLoadLabels? rowLabels,
     AgentQueriesCancelScope? cancelScope,
+    OverviewSectionRequest sectionRequest = OverviewSectionRequest.full,
   }) {
     throw UnsupportedError('use loadOverviewProgressively');
   }
@@ -866,6 +868,7 @@ class _GatedProgressiveOverviewRepository implements OverviewRepository {
     DashboardFilter filter = const DashboardFilter(),
     OverviewLoadLabels? rowLabels,
     AgentQueriesCancelScope? cancelScope,
+    OverviewSectionRequest sectionRequest = OverviewSectionRequest.full,
   }) async* {
     final overview = _overview('Pix');
     final allSections = OverviewProgressiveSection.values.toSet();
@@ -903,6 +906,7 @@ class _PendingOverviewRepository implements OverviewRepository {
     DashboardFilter filter = const DashboardFilter(),
     OverviewLoadLabels? rowLabels,
     AgentQueriesCancelScope? cancelScope,
+    OverviewSectionRequest sectionRequest = OverviewSectionRequest.full,
   }) {
     return _resultFuture;
   }
@@ -914,6 +918,7 @@ class _PendingOverviewRepository implements OverviewRepository {
     DashboardFilter filter = const DashboardFilter(),
     OverviewLoadLabels? rowLabels,
     AgentQueriesCancelScope? cancelScope,
+    OverviewSectionRequest sectionRequest = OverviewSectionRequest.full,
   }) async* {
     yield _asSnapshot(
       await loadOverview(
@@ -922,6 +927,7 @@ class _PendingOverviewRepository implements OverviewRepository {
         filter: filter,
         rowLabels: rowLabels,
         cancelScope: cancelScope,
+        sectionRequest: sectionRequest,
       ),
     );
   }
@@ -941,6 +947,7 @@ class _QueuedOverviewRepository implements OverviewRepository {
     DashboardFilter filter = const DashboardFilter(),
     OverviewLoadLabels? rowLabels,
     AgentQueriesCancelScope? cancelScope,
+    OverviewSectionRequest sectionRequest = OverviewSectionRequest.full,
   }) {
     requestedPolicies.add(policy);
     return _results[_index++];
@@ -953,6 +960,7 @@ class _QueuedOverviewRepository implements OverviewRepository {
     DashboardFilter filter = const DashboardFilter(),
     OverviewLoadLabels? rowLabels,
     AgentQueriesCancelScope? cancelScope,
+    OverviewSectionRequest sectionRequest = OverviewSectionRequest.full,
   }) async* {
     yield _asSnapshot(
       await loadOverview(
@@ -961,6 +969,7 @@ class _QueuedOverviewRepository implements OverviewRepository {
         filter: filter,
         rowLabels: rowLabels,
         cancelScope: cancelScope,
+        sectionRequest: sectionRequest,
       ),
     );
   }

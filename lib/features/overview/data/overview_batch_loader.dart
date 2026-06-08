@@ -34,6 +34,7 @@ import 'package:colmeia/features/overview/data/overview_cached_facts_warmth_chec
 import 'package:colmeia/features/overview/data/overview_cached_section_loader.dart';
 import 'package:colmeia/features/overview/data/overview_main_batch_runner.dart';
 import 'package:colmeia/features/overview/data/overview_section_batch_runner.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_section_request.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:result_dart/result_dart.dart';
 
@@ -168,6 +169,7 @@ class OverviewBatchLoader {
     AgentQueryTargetResolution? preResolvedResolution,
     bool mergeSqlBatchesPerTarget = false,
     bool phasedBatchPerTarget = false,
+    OverviewSectionRequest sectionRequest = OverviewSectionRequest.full,
   }) async* {
     late final AgentQueryTargetResolution resolution;
     if (preResolvedResolution != null) {
@@ -263,37 +265,149 @@ class OverviewBatchLoader {
         cancelScope: cancelScope,
         cachePolicy: cachePolicy,
         factsPersistedAgentIds: factsPersistedAgentIds,
+        sectionRequest: sectionRequest,
       );
       return;
     }
-    final mainBatch = _commandBuilder.buildMainCommands(
+
+    yield* _loadPhasedBatchPerTarget(
+      userId: userId,
+      resolution: resolution,
+      plan: plan,
+      executionStrategy: executionStrategy,
       periodStart: periodStart,
       periodEnd: periodEnd,
-    );
-    final sectionBatch = _commandBuilder.buildSectionCommands(
       last12Range: last12Range,
       mensalFilter: mensalFilter,
       weekdayFilter: weekdayFilter,
       dailyTotalFilter: dailyTotalFilter,
       includeLucratividadeMensal: includeLucratividadeMensal,
       omitCachedSectionsFromSqlBatch: omitCachedSectionsFromSqlBatch,
+      cancelScope: cancelScope,
+      cachePolicy: cachePolicy,
+      factsPersistedAgentIds: factsPersistedAgentIds,
+      sectionRequest: sectionRequest,
     );
+  }
+
+  Stream<AppResult<OverviewBatchLoadResult>> _loadPhasedBatchPerTarget({
+    required String userId,
+    required AgentQueryTargetResolution resolution,
+    required AgentQueryPlan plan,
+    required AgentQueryExecutionStrategy executionStrategy,
+    required DateTime periodStart,
+    required DateTime periodEnd,
+    required ({DateTime dataVendaInicio, DateTime dataVendaFim}) last12Range,
+    required ResumoParcelasMensalFilter mensalFilter,
+    required ResumoParcelasDiaSemanaFilter weekdayFilter,
+    required ResumoTotalDiarioVendasFilter dailyTotalFilter,
+    required bool includeLucratividadeMensal,
+    required OverviewCachedSectionSqlOmission omitCachedSectionsFromSqlBatch,
+    required OverviewSectionRequest sectionRequest,
+    AgentQueriesCancelScope? cancelScope,
+    AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
+    Set<String>? factsPersistedAgentIds,
+  }) async* {
     final started = DateTime.now();
     final targets = plan.plannedTargets.toList();
-    final mainResults = await _targetWaveRunner.run(
-      targets: targets,
-      waveConcurrencyCap: _targetWaveConcurrency,
-      task: (target) => _mainBatchRunner.loadForTarget(
-        userId: userId,
-        target: target,
-        planBridgeTimeoutMs: plan.bridgeTimeoutMs,
-        batch: mainBatch,
-        hubPresenceOnlineAgentIdsSnapshot:
-            resolution.hubPresenceOnlineAgentIdsSnapshot,
-        cancelScope: cancelScope,
-        cachePolicy: cachePolicy,
-      ),
-    );
+    final sectionBatch = sectionRequest.sectionBatchSections.isEmpty
+        ? null
+        : _commandBuilder.buildSectionCommands(
+            last12Range: last12Range,
+            mensalFilter: mensalFilter,
+            weekdayFilter: weekdayFilter,
+            dailyTotalFilter: dailyTotalFilter,
+            includeLucratividadeMensal: includeLucratividadeMensal,
+            omitCachedSectionsFromSqlBatch: omitCachedSectionsFromSqlBatch,
+            includedSectionBatchSections:
+                sectionRequest.sectionBatchSections,
+            includeMainBatch: false,
+          );
+
+    if (sectionRequest.isSectionBatchOnly) {
+      if (sectionBatch == null || targets.isEmpty) {
+        yield Success<OverviewBatchLoadResult, AppFailure>(
+          OverviewBatchLoadResult(
+            resolution: resolution,
+            plan: plan,
+            strategy: executionStrategy,
+            targetResults: const <OverviewBatchTargetResult>[],
+            mainResumoReport: _buildMainResumoReport(
+              strategy: executionStrategy,
+              plan: plan,
+              targetResults: const <OverviewBatchTargetResult>[],
+              totalElapsedMs: 0,
+            ),
+            totalElapsedMs: 0,
+          ),
+        );
+        return;
+      }
+
+      final sectionResults = await _targetWaveRunner.run(
+        targets: targets,
+        waveConcurrencyCap: _targetWaveConcurrency,
+        task: (target) => _sectionBatchRunner.loadForTarget(
+          userId: userId,
+          target: target,
+          planBridgeTimeoutMs: plan.bridgeTimeoutMs,
+          batch: sectionBatch,
+          mensalFilter: mensalFilter,
+          weekdayFilter: weekdayFilter,
+          dailyTotalFilter: dailyTotalFilter,
+          includeLucratividadeMensal: includeLucratividadeMensal,
+          hubPresenceOnlineAgentIdsSnapshot:
+              resolution.hubPresenceOnlineAgentIdsSnapshot,
+          cancelScope: cancelScope,
+          cachePolicy: cachePolicy,
+          factsPersistedAgentIds: factsPersistedAgentIds,
+        ),
+      );
+      final totalElapsedMs = DateTime.now().difference(started).inMilliseconds;
+      yield Success<OverviewBatchLoadResult, AppFailure>(
+        OverviewBatchLoadResult(
+          resolution: resolution,
+          plan: plan,
+          strategy: executionStrategy,
+          targetResults: sectionResults,
+          mainResumoReport: _buildMainResumoReport(
+            strategy: executionStrategy,
+            plan: plan,
+            targetResults: sectionResults,
+            totalElapsedMs: totalElapsedMs,
+          ),
+          totalElapsedMs: totalElapsedMs,
+          factsPersistedAgentIds: Set<String>.unmodifiable(
+            factsPersistedAgentIds ?? const <String>{},
+          ),
+        ),
+      );
+      return;
+    }
+
+    final mainBatch = sectionRequest.runMainBatch
+        ? _commandBuilder.buildMainCommands(
+            periodStart: periodStart,
+            periodEnd: periodEnd,
+          )
+        : null;
+
+    final mainResults = mainBatch == null
+        ? const <OverviewBatchTargetResult>[]
+        : await _targetWaveRunner.run(
+            targets: targets,
+            waveConcurrencyCap: _targetWaveConcurrency,
+            task: (target) => _mainBatchRunner.loadForTarget(
+              userId: userId,
+              target: target,
+              planBridgeTimeoutMs: plan.bridgeTimeoutMs,
+              batch: mainBatch,
+              hubPresenceOnlineAgentIdsSnapshot:
+                  resolution.hubPresenceOnlineAgentIdsSnapshot,
+              cancelScope: cancelScope,
+              cachePolicy: cachePolicy,
+            ),
+          );
     final mainElapsedMs = DateTime.now().difference(started).inMilliseconds;
     final mainReport = _buildMainResumoReport(
       strategy: executionStrategy,
@@ -304,29 +418,35 @@ class OverviewBatchLoader {
     final hasRunnableMainSuccess = mainResults.any(
       (result) => result.mainFailure == null,
     );
-    final shouldLoadSections =
-        plan.plannedTargets.isNotEmpty && hasRunnableMainSuccess;
+    final shouldLoadSections = sectionBatch != null &&
+        (sectionRequest.runMainBatch
+            ? plan.plannedTargets.isNotEmpty && hasRunnableMainSuccess
+            : targets.isNotEmpty);
 
-    yield Success<OverviewBatchLoadResult, AppFailure>(
-      OverviewBatchLoadResult(
-        resolution: resolution,
-        plan: plan,
-        strategy: executionStrategy,
-        targetResults: mainResults,
-        mainResumoReport: mainReport,
-        totalElapsedMs: mainElapsedMs,
-        isFinal: !shouldLoadSections,
-      ),
-    );
+    if (sectionRequest.runMainBatch) {
+      yield Success<OverviewBatchLoadResult, AppFailure>(
+        OverviewBatchLoadResult(
+          resolution: resolution,
+          plan: plan,
+          strategy: executionStrategy,
+          targetResults: mainResults,
+          mainResumoReport: mainReport,
+          totalElapsedMs: mainElapsedMs,
+          isFinal: !shouldLoadSections,
+        ),
+      );
+    }
 
     if (!shouldLoadSections) {
       return;
     }
 
-    final sectionTargets = mainResults
-        .where((result) => result.mainFailure == null)
-        .map((result) => result.target)
-        .toList(growable: false);
+    final sectionTargets = sectionRequest.runMainBatch
+        ? mainResults
+              .where((result) => result.mainFailure == null)
+              .map((result) => result.target)
+              .toList(growable: false)
+        : targets;
     final sectionResults = await _targetWaveRunner.run(
       targets: sectionTargets,
       waveConcurrencyCap: _targetWaveConcurrency,
@@ -346,10 +466,12 @@ class OverviewBatchLoader {
         factsPersistedAgentIds: factsPersistedAgentIds,
       ),
     );
-    final combinedResults = _combineMainAndSectionResults(
-      mainResults: mainResults,
-      sectionResults: sectionResults,
-    );
+    final combinedResults = sectionRequest.runMainBatch
+        ? _combineMainAndSectionResults(
+            mainResults: mainResults,
+            sectionResults: sectionResults,
+          )
+        : sectionResults;
     final totalElapsedMs = DateTime.now().difference(started).inMilliseconds;
     final report = _buildMainResumoReport(
       strategy: executionStrategy,
@@ -367,7 +489,7 @@ class OverviewBatchLoader {
         mainResumoReport: report,
         totalElapsedMs: totalElapsedMs,
         factsPersistedAgentIds: Set<String>.unmodifiable(
-          factsPersistedAgentIds,
+          factsPersistedAgentIds ?? const <String>{},
         ),
       ),
     );
@@ -423,6 +545,7 @@ class OverviewBatchLoader {
     AgentQueriesCancelScope? cancelScope,
     AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
     Set<String>? factsPersistedAgentIds,
+    OverviewSectionRequest sectionRequest = OverviewSectionRequest.full,
   }) async* {
     final batch = _commandBuilder.buildCommands(
       periodStart: periodStart,
@@ -433,6 +556,10 @@ class OverviewBatchLoader {
       dailyTotalFilter: dailyTotalFilter,
       includeLucratividadeMensal: includeLucratividadeMensal,
       omitCachedSectionsFromSqlBatch: omitCachedSectionsFromSqlBatch,
+      includedSectionBatchSections: sectionRequest.sectionBatchSections.isEmpty
+          ? null
+          : sectionRequest.sectionBatchSections,
+      includeMainBatch: sectionRequest.runMainBatch,
     );
     final started = DateTime.now();
     final targets = plan.plannedTargets.toList();

@@ -11,6 +11,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_d
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_filter.dart';
 import 'package:colmeia/features/overview/data/overview_batch_command_builder.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_section_request.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -112,6 +113,31 @@ void main() {
       check(batch.indexes.daily).isNull();
       check(batch.indexes.lucratividade).isNull();
       check(batch.indexes.weekdayUser).equals(2);
+    });
+
+    test('buildSectionCommands for home scope includes only monthly parcels', () {
+      final batch = builder.buildSectionCommands(
+        last12Range: last12Range,
+        mensalFilter: mensalFilter,
+        weekdayFilter: weekdayFilter,
+        dailyTotalFilter: dailyTotalFilter,
+        includeLucratividadeMensal: false,
+        includedSectionBatchSections:
+            OverviewSectionRequest.home.sectionBatchSections,
+        includeMainBatch: false,
+      );
+
+      check(batch.commands.length).equals(1);
+      check(
+        batch.commands.single.sql.contains(
+          ResumoParcelasMensalSql.query().split('\n').first,
+        ),
+      ).isTrue();
+      check(batch.indexes.monthly).equals(0);
+      check(batch.indexes.daily).isNull();
+      check(batch.indexes.weekday).isNull();
+      check(batch.indexes.weekdayUser).isNull();
+      check(batch.indexes.lucratividade).isNull();
     });
 
     test('buildSectionCommands skips main commands and reindexes execution order', () {

@@ -6,9 +6,9 @@ import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/features/sales/domain/sales_card_descriptor.dart';
 import 'package:colmeia/features/sales/presentation/localization/sales_card_descriptor_l10n.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_hub_card.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/navigation/app_hub_navigation_card.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 
@@ -74,7 +74,7 @@ class SalesHubPage extends StatelessWidget {
                         }
                         return SizedBox(
                           width: width,
-                          child: SalesHubCard(
+                          child: AppHubNavigationCard(
                             icon: card.icon,
                             label: card.resolvedTitle(l10n),
                             onTap: () {
