@@ -12,12 +12,14 @@ class AppHubNavigationCard extends StatelessWidget {
     required this.onTap,
     super.key,
     this.aspectRatio = 1.15,
+    this.compact = false,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback? onTap;
   final double aspectRatio;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -26,9 +28,31 @@ class AppHubNavigationCard extends StatelessWidget {
     final colors = theme.appColors;
     final typography = theme.appTypography;
 
+    final iconCircleSize = compact ? 28.0 : 48.0;
+    final iconSize = compact ? 16.0 : 24.0;
+    final iconLabelGap = compact ? tokens.gapXs : tokens.gapMd;
+    final labelStyle = compact
+        ? typography.caption.copyWith(
+            fontWeight: FontWeight.w600,
+            color: colors.onSurface,
+            height: 1.15,
+          )
+        : typography.body.copyWith(
+            fontWeight: FontWeight.w600,
+            color: colors.onSurface,
+            height: 1.2,
+          );
+    final cardPadding = compact
+        ? EdgeInsets.symmetric(
+            horizontal: tokens.gapXs,
+            vertical: tokens.gapSm,
+          )
+        : null;
+
     return AspectRatio(
       aspectRatio: aspectRatio,
       child: AppSectionCard(
+        padding: cardPadding,
         child: Material(
           type: MaterialType.transparency,
           child: Semantics(
@@ -40,7 +64,9 @@ class AppHubNavigationCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(tokens.cardRadius),
               child: ExcludeSemantics(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: tokens.gapSm),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: compact ? tokens.gapXs : tokens.gapSm,
+                  ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: <Widget>[
@@ -50,28 +76,24 @@ class AppHubNavigationCard extends StatelessWidget {
                           shape: BoxShape.circle,
                         ),
                         child: SizedBox(
-                          width: 48,
-                          height: 48,
+                          width: iconCircleSize,
+                          height: iconCircleSize,
                           child: Center(
                             child: Icon(
                               icon,
-                              size: 24,
+                              size: iconSize,
                               color: colors.primary,
                             ),
                           ),
                         ),
                       ),
-                      SizedBox(height: tokens.gapMd),
+                      SizedBox(height: iconLabelGap),
                       Text(
                         label,
                         textAlign: TextAlign.center,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: typography.body.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: colors.onSurface,
-                          height: 1.2,
-                        ),
+                        style: labelStyle,
                       ),
                     ],
                   ),

@@ -12,11 +12,11 @@ import 'package:colmeia/features/overview/presentation/localization/overview_cha
 import 'package:colmeia/features/overview/presentation/localization/overview_failure_l10n.dart';
 import 'package:colmeia/features/overview/presentation/localization/overview_load_labels_l10n.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_chart_detail_content.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_chart_detail_loading_block.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart'
     show AppInlineErrorPanel, AppInlinePanelTone;
-import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -118,11 +118,10 @@ class _OverviewChartDetailPageState extends State<OverviewChartDetailPage> {
                     message: slice.errorMessage!,
                     onRetry: () => unawaited(_retry()),
                   )
-                else if (slice.isLoading && !slice.hasContent)
-                  AppSkeleton(
-                    enabled: true,
-                    loadingSemanticsLabel: title,
-                    child: SizedBox(height: tokens.chartStandardHeight),
+                else if (_shouldShowChartLoading(slice))
+                  OverviewChartDetailLoadingBlock(
+                    l10n: l10n,
+                    section: slice.section!,
                   )
                 else if (slice.overview != null && slice.section != null)
                   OverviewChartDetailContent(
@@ -142,6 +141,13 @@ class _OverviewChartDetailPageState extends State<OverviewChartDetailPage> {
       },
     );
   }
+}
+
+bool _shouldShowChartLoading(_ChartDetailSlice slice) {
+  if (slice.errorMessage != null || slice.section == null) {
+    return false;
+  }
+  return slice.isLoading || slice.overview == null;
 }
 
 @immutable

@@ -1,9 +1,7 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
-import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/features/overview/domain/overview_chart_card_descriptor.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_controller.dart';
 import 'package:colmeia/features/overview/presentation/localization/overview_chart_card_descriptor_l10n.dart';
@@ -13,6 +11,9 @@ import 'package:colmeia/shared/widgets/navigation/app_hub_navigation_card.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+const double _kOverviewNavCardWidth = 92;
+const double _kOverviewNavCardHeight = 88;
+
 /// Compact navigation grid for lazy-loaded overview chart detail pages.
 class OverviewChartNavGrid extends StatelessWidget {
   const OverviewChartNavGrid({super.key});
@@ -21,45 +22,34 @@ class OverviewChartNavGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tokens = context.appTokens;
+    final gap = tokens.gapSm;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth >= AppBreakpoints.mobile;
-        final cols = math.max(
-          1,
-          math.min(isWide ? 3 : 2, allOverviewChartCards.length),
+    return Wrap(
+      spacing: gap,
+      runSpacing: gap,
+      children: allOverviewChartCards.map((card) {
+        return SizedBox(
+          width: _kOverviewNavCardWidth,
+          height: _kOverviewNavCardHeight,
+          child: AppHubNavigationCard(
+            compact: true,
+            icon: card.icon,
+            label: card.resolvedTitle(l10n),
+            aspectRatio: _kOverviewNavCardWidth / _kOverviewNavCardHeight,
+            onTap: () {
+              final activeFilter =
+                  context.read<OverviewController>().activeFilter;
+              unawaited(
+                context.pushTo(
+                  AppRoute.dashboardChart,
+                  pathParameters: <String, String>{'chartId': card.id},
+                  extra: activeFilter,
+                ),
+              );
+            },
+          ),
         );
-        final gap = tokens.gapMd;
-
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children: allOverviewChartCards.map((card) {
-            final width =
-                ((constraints.maxWidth - (gap * (cols - 1))) / cols)
-                    .floorToDouble();
-            return SizedBox(
-              width: width,
-              child: AppHubNavigationCard(
-                icon: card.icon,
-                label: card.resolvedTitle(l10n),
-                aspectRatio: 1.35,
-                onTap: () {
-                  final activeFilter =
-                      context.read<OverviewController>().activeFilter;
-                  unawaited(
-                    context.pushTo(
-                      AppRoute.dashboardChart,
-                      pathParameters: <String, String>{'chartId': card.id},
-                      extra: activeFilter,
-                    ),
-                  );
-                },
-              ),
-            );
-          }).toList(growable: false),
-        );
-      },
+      }).toList(growable: false),
     );
   }
 }

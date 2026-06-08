@@ -23,11 +23,13 @@ class OverviewChartDetailContent extends StatefulWidget {
     required this.section,
     required this.overview,
     super.key,
+    this.animateEntrance = true,
   });
 
   final AppLocalizations l10n;
   final OverviewProgressiveSection section;
   final Overview overview;
+  final bool animateEntrance;
 
   @override
   State<OverviewChartDetailContent> createState() =>
@@ -127,6 +129,9 @@ class _OverviewChartDetailContentState extends State<OverviewChartDetailContent>
       _ => const SizedBox.shrink(),
     };
 
+    if (!widget.animateEntrance) {
+      return chart;
+    }
     return AppChartFadeIn(child: chart);
   }
 }

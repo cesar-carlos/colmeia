@@ -9,6 +9,7 @@ import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_diagnostic.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after.dart';
 import 'package:colmeia/features/overview/application/overview_shell_cache.dart';
+import 'package:colmeia/features/overview/application/usecases/load_overview_sections_use_case.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
@@ -33,11 +34,13 @@ typedef OverviewFailureMessageBuilder = String Function(AppFailure failure);
 class OverviewController extends ChangeNotifier {
   OverviewController(
     this._loadOverviewUseCase, {
+    LoadOverviewSectionsUseCase? loadSectionsUseCase,
     RetryAfterGate? retryAfterGate,
     AgentRpcCapabilitiesRegistry? agentRpcCapabilitiesRegistry,
     AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder,
     OverviewShellCache? shellCache,
-  })  : _retryAfterGate = retryAfterGate ?? RetryAfterGate(),
+  })  : _loadSectionsUseCase = loadSectionsUseCase,
+        _retryAfterGate = retryAfterGate ?? RetryAfterGate(),
         _ownsRetryAfterGate = retryAfterGate == null,
         _agentRpcCapabilitiesRegistry = agentRpcCapabilitiesRegistry,
         _shellCache = shellCache,
@@ -50,7 +53,18 @@ class OverviewController extends ChangeNotifier {
     _retryAfterGate.addListener(_notifyListenersIfAlive);
   }
 
+  // Lazy sections not loaded by OverviewSectionRequest.home, ordered by
+  // likelihood of being opened first so the most useful data warms earliest.
+  static const List<OverviewProgressiveSection> _prefetchSections =
+      <OverviewProgressiveSection>[
+    OverviewProgressiveSection.dailySales,
+    OverviewProgressiveSection.weekdaySales,
+    OverviewProgressiveSection.weekdayUserSales,
+    OverviewProgressiveSection.lucratividadePeriod,
+  ];
+
   final LoadOverviewUseCase _loadOverviewUseCase;
+  final LoadOverviewSectionsUseCase? _loadSectionsUseCase;
 
   /// Cool-down gate fed by `Retry-After` hints surfaced by the bridge
   /// (HTTP header, JSON-RPC `error.data.retry_after_ms`). The overview
@@ -394,6 +408,15 @@ class OverviewController extends ChangeNotifier {
         await _updateAvailableAgents(overview, userId, ctx.generation)) {
       _notifyListenersIfAlive();
     }
+
+    if (overview != null && !_isOverviewLoadStale(ctx.generation)) {
+      _scheduleSectionPrefetch(
+        userId: userId,
+        signature: ctx.signature,
+        generation: ctx.generation,
+        rowLabels: rowLabels,
+      );
+    }
   }
 
   /// Normalizes the filter, opens a fresh [OverviewLoadSession] entry,
@@ -584,6 +607,12 @@ class OverviewController extends ChangeNotifier {
           )) {
             _notifyListenersIfAlive();
           }
+          _scheduleSectionPrefetch(
+            userId: userId,
+            signature: signature,
+            generation: generation,
+            rowLabels: rowLabels,
+          );
           return;
         }
         _notifyListenersIfAlive();
@@ -692,6 +721,93 @@ class OverviewController extends ChangeNotifier {
       availableAgents: _availableAgents,
       completedSections: _completedOverviewSections,
     );
+  }
+
+  /// Fires background prefetch for the 4 section-only chart cards that are
+  /// not included in [OverviewSectionRequest.home].  Each section is fetched
+  /// serially so the bridge is never flooded, and each step checks the shell
+  /// cache before issuing SQL (avoids redundant work after the user opens a
+  /// card manually before prefetch reaches it).  Failures are swallowed —
+  /// the controller state is never mutated; only the shell cache is warmed.
+  void _scheduleSectionPrefetch({
+    required String userId,
+    required String signature,
+    required int generation,
+    required OverviewLoadLabels rowLabels,
+  }) {
+    final useCase = _loadSectionsUseCase;
+    final cache = _shellCache;
+    if (useCase == null || cache == null) {
+      return;
+    }
+    unawaited(
+      _prefetchSectionsInBackground(
+        useCase: useCase,
+        cache: cache,
+        userId: userId,
+        signature: signature,
+        generation: generation,
+        rowLabels: rowLabels,
+      ),
+    );
+  }
+
+  Future<void> _prefetchSectionsInBackground({
+    required LoadOverviewSectionsUseCase useCase,
+    required OverviewShellCache cache,
+    required String userId,
+    required String signature,
+    required int generation,
+    required OverviewLoadLabels rowLabels,
+  }) async {
+    AppLogger.debug(
+      'Overview section prefetch started',
+      context: <String, Object?>{
+        'operation': 'prefetchOverviewSections',
+        'userId': userId,
+        'sections': _prefetchSections.map((s) => s.name).toList(),
+      },
+    );
+    for (final section in _prefetchSections) {
+      if (_isOverviewLoadStale(generation) || _disposed) {
+        return;
+      }
+      final entry = cache.read(signature);
+      if (entry == null) {
+        return;
+      }
+      if (entry.completedSections.contains(section)) {
+        continue;
+      }
+
+      final request = OverviewSectionRequest.forChartSection(section);
+      await for (final result in useCase.progressively(
+        userId: userId,
+        sectionRequest: request,
+        filter: _activeFilter,
+        rowLabels: rowLabels,
+      )) {
+        if (_isOverviewLoadStale(generation) || _disposed) {
+          return;
+        }
+        final snapshot = result.getOrNull();
+        if (snapshot != null && snapshot.isFinal && request.isSectionBatchOnly) {
+          cache.mergePublish(
+            signature: signature,
+            detailOverview: snapshot.overview,
+            section: section,
+            addedSections: request.completedWhenFinal(),
+          );
+          AppLogger.debug(
+            'Overview section prefetch warmed',
+            context: <String, Object?>{
+              'operation': 'prefetchOverviewSections',
+              'section': section.name,
+            },
+          );
+        }
+      }
+    }
   }
 
   /// Rebuilds [_availableAgents] from the overview (per-agent rankings and

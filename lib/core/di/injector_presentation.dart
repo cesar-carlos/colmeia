@@ -36,6 +36,7 @@ import 'package:colmeia/features/client_agents/presentation/controllers/client_a
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_controller.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_owner_controller.dart';
 import 'package:colmeia/features/overview/application/overview_shell_cache.dart';
+import 'package:colmeia/features/overview/application/usecases/load_overview_sections_use_case.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_controller.dart';
 import 'package:colmeia/features/user_context/application/usecases/clear_active_store_use_case.dart';
@@ -62,6 +63,7 @@ void registerInjectorPresentation(GetIt getIt) {
     ..registerFactory<OverviewController>(
       () => OverviewController(
         getIt<LoadOverviewUseCase>(),
+        loadSectionsUseCase: getIt<LoadOverviewSectionsUseCase>(),
         // App singleton — OverviewController must not dispose it on route exit.
         retryAfterGate: getIt<RetryAfterGate>(),
         agentRpcCapabilitiesRegistry: getIt<AgentRpcCapabilitiesRegistry>(),
