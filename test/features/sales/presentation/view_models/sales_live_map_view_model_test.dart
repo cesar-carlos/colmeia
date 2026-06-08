@@ -49,6 +49,46 @@ void main() {
   );
 
   test(
+    'shouldShowEmptyNotice is true when totalSalesCount is zero with partial issue',
+    () {
+      final state = SalesLiveMapPresentationState(
+        result: _resultWithBranches(
+          branchOptions: const <SalesLiveMapBranchOption>[
+            SalesLiveMapBranchOption(
+              id: 'b1',
+              agentId: 'a1',
+              agentName: 'One',
+              codEmpresa: 1,
+              codFilial: 1,
+              registrationName: 'Filial 1',
+              city: 'City',
+              uf: 'SP',
+            ),
+          ],
+          totalBranchCount: 1,
+          failedAgentCount: 1,
+        ),
+        isLoading: false,
+      );
+
+      expect(SalesLiveMapViewModel.shouldShowEmptyNotice(state), isTrue);
+    },
+  );
+
+  test('shouldShowEmptyNotice is false when load failed', () {
+    final state = SalesLiveMapPresentationState(
+      result: _resultWithBranches(
+        branchOptions: const <SalesLiveMapBranchOption>[],
+        totalBranchCount: 0,
+        loadFailed: true,
+      ),
+      isLoading: false,
+    );
+
+    expect(SalesLiveMapViewModel.shouldShowEmptyNotice(state), isFalse);
+  });
+
+  test(
     'resolveAutoRefreshPauseReason pauses while retry cooldown is active',
     () {
       const state = SalesLiveMapPresentationState(
@@ -76,6 +116,8 @@ void main() {
 SalesLiveMapLoadResult _resultWithBranches({
   required List<SalesLiveMapBranchOption> branchOptions,
   required int totalBranchCount,
+  int failedAgentCount = 0,
+  bool loadFailed = false,
 }) {
   return SalesLiveMapLoadResult(
     points: const [],
@@ -87,10 +129,11 @@ SalesLiveMapLoadResult _resultWithBranches({
     mappedMunicipalityCount: 0,
     queriedAgentCount: 5,
     plannedAgentCount: 27,
-    failedAgentCount: 0,
+    failedAgentCount: failedAgentCount,
     missingClientTokenAgentCount: 0,
     skippedOfflineAgentCount: 0,
     rowCapReachedAgentCount: 0,
+    loadFailed: loadFailed,
     refreshedAt: DateTime(2026, 5, 27),
   );
 }

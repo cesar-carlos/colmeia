@@ -140,6 +140,10 @@ abstract final class AppEnvironment {
   static const int defaultAgentQueryTargetResolutionCacheTtlMs = 30000;
   static const int defaultAgentSqlOverviewBatchMaxParallelReadOnlyItems = 4;
   static const bool defaultAgentSqlOverviewMergeSqlBatchesPerTarget = true;
+  static const bool defaultAgentSqlSalesLiveMapMergeSqlBatchesPerTarget = true;
+  static const int defaultSalesLiveMapPrimaryCompanyCode = 1;
+  static const int defaultSalesLiveMapPrimaryBranchCode = 1;
+  static const int defaultSalesLiveMapGeolocationMaxConcurrency = 8;
   static const bool defaultAgentQueryFactsBucketUseExecuteBatch = true;
   static const int defaultAgentSqlRelayStreamingMaxConcurrentPerAgent = 4;
   static const int defaultAgentSqlBridgeTimeoutMs = 120000;
@@ -322,8 +326,35 @@ abstract final class AppEnvironment {
         fromDotenv: _dotenvMaybe(
           EnvKeys.agentSqlSalesLiveMapMergeSqlBatchesPerTarget,
         ),
-        fallback: false,
+        fallback: defaultAgentSqlSalesLiveMapMergeSqlBatchesPerTarget,
       );
+
+  static int get salesLiveMapPrimaryCompanyCode =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.salesLiveMapPrimaryCompanyCode,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.salesLiveMapPrimaryCompanyCode),
+        fallback: defaultSalesLiveMapPrimaryCompanyCode,
+      )._atLeastOrFallback(1, defaultSalesLiveMapPrimaryCompanyCode);
+
+  static int get salesLiveMapPrimaryBranchCode =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.salesLiveMapPrimaryBranchCode,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.salesLiveMapPrimaryBranchCode),
+        fallback: defaultSalesLiveMapPrimaryBranchCode,
+      )._atLeastOrFallback(1, defaultSalesLiveMapPrimaryBranchCode);
+
+  static int get salesLiveMapGeolocationMaxConcurrency =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.salesLiveMapGeolocationMaxConcurrency,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.salesLiveMapGeolocationMaxConcurrency),
+        fallback: defaultSalesLiveMapGeolocationMaxConcurrency,
+      )._atLeastOrFallback(1, defaultSalesLiveMapGeolocationMaxConcurrency);
 
   static int get agentSqlRelayStreamingMaxConcurrentPerAgent =>
       AppEnvironmentResolution.resolveInt(

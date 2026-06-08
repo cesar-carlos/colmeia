@@ -1,9 +1,11 @@
+import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/presentation/localization/sales_live_map_l10n.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_filters_sheet_scaffold.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/maps/app_location_lookup_normalizer.dart';
 import 'package:colmeia/shared/utils/app_branch_display_model.dart';
 import 'package:colmeia/shared/utils/app_branch_display_name.dart';
@@ -21,6 +23,7 @@ class SalesLiveMapFiltersBranchSection extends StatelessWidget {
   const SalesLiveMapFiltersBranchSection({
     required this.l10n,
     required this.tokens,
+    required this.availableAgents,
     required this.branches,
     required this.selectedBranchIds,
     required this.hasSelectedBranch,
@@ -33,6 +36,7 @@ class SalesLiveMapFiltersBranchSection extends StatelessWidget {
 
   final AppLocalizations l10n;
   final AppThemeTokens tokens;
+  final List<DashboardAgentOption> availableAgents;
   final List<SalesLiveMapBranchOption> branches;
   final Set<SalesLiveMapBranchRef> selectedBranchIds;
   final bool hasSelectedBranch;
@@ -57,6 +61,7 @@ class SalesLiveMapFiltersBranchSection extends StatelessWidget {
         SizedBox(height: tokens.gapSm),
         _BranchSelectionPanel(
           l10n: l10n,
+          availableAgents: availableAgents,
           branches: branches,
           selectedBranchIds: selectedBranchIds,
           onChanged: onToggleBranch,
@@ -78,6 +83,7 @@ class SalesLiveMapFiltersBranchSection extends StatelessWidget {
 class _BranchSelectionPanel extends StatefulWidget {
   const _BranchSelectionPanel({
     required this.l10n,
+    required this.availableAgents,
     required this.branches,
     required this.selectedBranchIds,
     required this.onChanged,
@@ -86,6 +92,7 @@ class _BranchSelectionPanel extends StatefulWidget {
   });
 
   final AppLocalizations l10n;
+  final List<DashboardAgentOption> availableAgents;
   final List<SalesLiveMapBranchOption> branches;
   final Set<SalesLiveMapBranchRef> selectedBranchIds;
   final void Function({
@@ -123,6 +130,10 @@ class _BranchSelectionPanelState extends State<_BranchSelectionPanel> {
     _searchController.dispose();
     super.dispose();
   }
+
+  Map<String, DashboardAgentOption> get _agentsById => {
+    for (final agent in widget.availableAgents) agent.agentId: agent,
+  };
 
   static List<_PreparedBranch> _prepareBranches(
     List<SalesLiveMapBranchOption> branches,
@@ -212,25 +223,20 @@ class _BranchSelectionPanelState extends State<_BranchSelectionPanel> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   for (final prepared in filteredBranches)
-                    CheckboxListTile(
+                    _BranchCheckboxTile(
                       key: ValueKey<SalesLiveMapBranchRef>(
                         prepared.branch.branchRef,
                       ),
-                      dense: true,
-                      contentPadding: EdgeInsets.zero,
-                      value: widget.selectedBranchIds.contains(
+                      l10n: widget.l10n,
+                      prepared: prepared,
+                      agent: _agentsById[prepared.branch.agentId],
+                      checked: widget.selectedBranchIds.contains(
                         prepared.branch.branchRef,
                       ),
                       onChanged: (checked) => widget.onChanged(
                         branch: prepared.branch,
                         checked: checked,
                       ),
-                      title: Text(
-                        prepared.primaryName,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: _BranchSelectionSubtitle(prepared: prepared),
                     ),
                 ],
               );
@@ -335,4 +341,97 @@ class _BranchSelectionSubtitle extends StatelessWidget {
       ],
     );
   }
+}
+
+class _BranchCheckboxTile extends StatelessWidget {
+  const _BranchCheckboxTile({
+    required this.l10n,
+    required this.prepared,
+    required this.agent,
+    required this.checked,
+    required this.onChanged,
+    super.key,
+  });
+
+  final AppLocalizations l10n;
+  final _PreparedBranch prepared;
+  final DashboardAgentOption? agent;
+  final bool checked;
+  final ValueChanged<bool?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final agentOption = agent;
+    final isOffline =
+        agentOption?.connectionStatus == AgentConnectionStatus.offline;
+    final missingToken = agentOption?.missingLocalClientToken ?? false;
+    final canSelect = !isOffline;
+    final titleColor = _branchAgentNameColor(
+      agentOption?.connectionStatus ?? AgentConnectionStatus.unknown,
+      colorScheme,
+    );
+    final title = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        if (isOffline) ...<Widget>[
+          Icon(Icons.cloud_off_outlined, size: 18, color: colorScheme.error),
+          SizedBox(width: theme.appTokens.gapXs),
+        ],
+        if (missingToken) ...<Widget>[
+          Icon(
+            Icons.vpn_key_off_outlined,
+            size: 18,
+            color: colorScheme.tertiary,
+          ),
+          SizedBox(width: theme.appTokens.gapXs),
+        ],
+        Expanded(
+          child: Text(
+            prepared.primaryName,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: titleColor,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+    final tooltipLines = <String>[
+      if (isOffline) l10n.agentConnectionOffline,
+      if (missingToken)
+        l10n.overviewHomeBranchFilterMissingClientTokenRowSubtitle,
+    ];
+
+    return CheckboxListTile(
+      dense: true,
+      contentPadding: EdgeInsets.zero,
+      value: checked,
+      onChanged: canSelect ? onChanged : null,
+      title: tooltipLines.isEmpty
+          ? title
+          : Tooltip(message: tooltipLines.join('\n'), child: title),
+      subtitle: _BranchSelectionSubtitle(prepared: prepared),
+      secondary: isOffline
+          ? Icon(Icons.cloud_off_outlined, color: colorScheme.error)
+          : missingToken
+          ? Icon(Icons.vpn_key_off_outlined, color: colorScheme.tertiary)
+          : null,
+    );
+  }
+}
+
+Color _branchAgentNameColor(
+  AgentConnectionStatus status,
+  ColorScheme scheme,
+) {
+  return switch (status) {
+    AgentConnectionStatus.offline => scheme.error,
+    AgentConnectionStatus.online ||
+    AgentConnectionStatus.unknown =>
+      scheme.onSurface,
+  };
 }

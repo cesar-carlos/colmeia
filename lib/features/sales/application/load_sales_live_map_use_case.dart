@@ -82,10 +82,10 @@ class LoadSalesLiveMapUseCase {
            );
 
   static int get bridgeTimeoutMs => SalesLiveMapPolicies.bridgeTimeoutMs;
-  static const int geolocationMaxConcurrency =
+  static int get geolocationMaxConcurrency =>
       SalesLiveMapPolicies.geolocationMaxConcurrency;
-  static const int primaryCompanyCode = SalesLiveMapPolicies.primaryCompanyCode;
-  static const int primaryBranchCode = SalesLiveMapPolicies.primaryBranchCode;
+  static int get primaryCompanyCode => SalesLiveMapPolicies.primaryCompanyCode;
+  static int get primaryBranchCode => SalesLiveMapPolicies.primaryBranchCode;
 
   final AgentQueryTargetResolver _targetResolver;
   final SalesLiveMapCatalogCache _catalogDiskCache;
@@ -906,6 +906,18 @@ class LoadSalesLiveMapUseCase {
         failedCatalogAgentCount: failedCatalogAgentCount,
         failedSalesAgentCount: failedSalesAgentCount,
         noSalesAgentOptions: agentDiagnostics.noSalesAgentOptions,
+        failedAgentOptions: SalesLiveMapResultBuilder.failedAgentOptionsFromReports(
+          baseReport: baseReport,
+          salesReport: salesReport,
+        ),
+        missingClientTokenAgentOptions:
+            SalesLiveMapResultBuilder.agentOptionsFromTargets(
+              baseReport.missingClientTokenTargets,
+            ),
+        skippedOfflineAgentOptions:
+            SalesLiveMapResultBuilder.agentOptionsFromTargets(
+              baseReport.skippedDueToHubPresenceTargets,
+            ),
         locationDiagnostics: locationDiagnostics,
         loadFailed: loadFailed,
         loadFailureReason: loadFailed

@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:colmeia/app/router/app_navigation.dart';
+import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_diagnostic.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
@@ -11,6 +13,7 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_inlin
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_kpi_grid.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/agent_query_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
@@ -90,7 +93,12 @@ class _SalesLiveMapBodyStatusContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        if (result != null)
+        if (state.sessionExpired)
+          _SalesLiveMapSessionExpiredPanel(
+            l10n: l10n,
+            onSignIn: () => context.goTo(AppRoute.login),
+          ),
+        if (result != null && !state.sessionExpired)
           AppSkeleton(
             enabled: result.salesDataPending,
             child: SalesLiveMapKpiGrid(
@@ -98,13 +106,19 @@ class _SalesLiveMapBodyStatusContent extends StatelessWidget {
             ),
           ),
         if (result != null &&
+            !state.sessionExpired &&
             !result.salesDataPending &&
             result.hasPartialIssue)
           Padding(
             padding: EdgeInsets.only(top: tokens.gapMd),
-            child: SalesLiveMapAttentionPanel(result: result),
+            child: SalesLiveMapAttentionPanel(
+              result: result,
+              canRetry: slice.canReload,
+              onRetry: onRetryReload,
+              onConfigureToken: () => context.goTo(AppRoute.agents),
+            ),
           ),
-        if (result?.loadFailed ?? false)
+        if (!state.sessionExpired && (result?.loadFailed ?? false))
           Padding(
             padding: EdgeInsets.only(top: tokens.gapMd),
             child: result!.loadFailure != null
@@ -124,12 +138,13 @@ class _SalesLiveMapBodyStatusContent extends StatelessWidget {
                     onRetry: slice.canReload ? onRetryReload : null,
                   ),
           ),
-        if (state.shouldShowEmptyNotice && result != null)
+        if (state.shouldShowEmptyNotice && result != null && !state.sessionExpired)
           Padding(
             padding: EdgeInsets.only(top: tokens.gapMd),
             child: SalesLiveMapEmptyNotice(
               result: result,
               hasSelectedBranches: state.hasSelectedBranchFilter,
+              hasPartialIssue: result.hasPartialIssue,
               onClearSelectedBranches: slice.canReload
                   ? () => unawaited(controller.clearSelectedBranches())
                   : null,
@@ -137,6 +152,32 @@ class _SalesLiveMapBodyStatusContent extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _SalesLiveMapSessionExpiredPanel extends StatelessWidget {
+  const _SalesLiveMapSessionExpiredPanel({
+    required this.l10n,
+    required this.onSignIn,
+  });
+
+  final AppLocalizations l10n;
+  final VoidCallback onSignIn;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppInlineErrorPanel(
+      title: l10n.salesLiveMapSessionExpiredTitle,
+      message: l10n.salesLiveMapSessionExpiredMessage,
+      actions: Align(
+        alignment: Alignment.centerLeft,
+        child: AppPrimaryButton(
+          label: l10n.salesLiveMapSessionExpiredAction,
+          icon: const Icon(Icons.login_rounded),
+          onPressed: onSignIn,
+        ),
+      ),
     );
   }
 }

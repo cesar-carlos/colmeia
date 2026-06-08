@@ -206,7 +206,7 @@ AgentQueryTargetResolution _resolution(AgentQueryTarget target) {
 }
 
 CadastroFilialFilter _catalogFilter() {
-  return const CadastroFilialFilter(
+  return CadastroFilialFilter(
     codEmpresa: SalesLiveMapPolicies.primaryCompanyCode,
     codFilial: SalesLiveMapPolicies.primaryBranchCode,
     pageSize: CadastroFilialFilter.maxPageSize,

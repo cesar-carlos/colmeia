@@ -173,12 +173,17 @@ class SalesLiveMapViewModel {
     final currentResult = state.result;
     if (currentResult == null ||
         currentResult.salesDataPending ||
-        currentResult.loadFailed ||
-        currentResult.hasPartialIssue) {
+        currentResult.loadFailed) {
       return false;
     }
     return currentResult.totalSalesCount == 0 ||
         currentResult.totalBranchCount == 0;
+  }
+
+  static bool shouldShowConfigureTokenAction(SalesLiveMapLoadResult result) {
+    return result.missingClientTokenAgentCount > 0 ||
+        result.loadFailureReason ==
+            SalesLiveMapLoadFailureReason.missingClientTokenSetup;
   }
 
   /// Effective detail level after applying the auto-downgrade policy: when

@@ -82,6 +82,20 @@ abstract final class EnvKeys {
   static const String salesLiveMapBridgeTimeoutMs =
       'SALES_LIVE_MAP_BRIDGE_TIMEOUT_MS';
 
+  /// Primary branch `cod_empresa` used when filtering catalog rows for the
+  /// live map. Default `1` (Se7e schema assumption).
+  static const String salesLiveMapPrimaryCompanyCode =
+      'SALES_LIVE_MAP_PRIMARY_COMPANY_CODE';
+
+  /// Primary branch `cod_filial` paired with [salesLiveMapPrimaryCompanyCode].
+  /// Default `1`.
+  static const String salesLiveMapPrimaryBranchCode =
+      'SALES_LIVE_MAP_PRIMARY_BRANCH_CODE';
+
+  /// Max concurrent geolocation lookups during sales live map load.
+  static const String salesLiveMapGeolocationMaxConcurrency =
+      'SALES_LIVE_MAP_GEOLOCATION_MAX_CONCURRENCY';
+
   /// Optional bridge hint for overview read-only `sql.executeBatch`
   /// parallelism. Positive integer; default 2. The agent keeps the final safety cap.
   static const String agentSqlOverviewBatchMaxParallelReadOnlyItems =
@@ -93,7 +107,7 @@ abstract final class EnvKeys {
       'AGENT_SQL_OVERVIEW_MERGE_SQL_BATCHES_PER_TARGET';
 
   /// When true, sales live map loads merge catalog + sales SQL into one
-  /// `sql.executeBatch` per agent (not yet implemented — env reserved).
+  /// `sql.executeBatch` per agent instead of separate batches.
   static const String agentSqlSalesLiveMapMergeSqlBatchesPerTarget =
       'AGENT_SQL_SALES_LIVE_MAP_MERGE_SQL_BATCHES_PER_TARGET';
 

@@ -36,6 +36,12 @@ abstract final class RegionMapViewportSyncPolicy {
     return isZoomPanEnabled;
   }
 
+  /// Pinch/pan hooks from Syncfusion always represent user intent, even on the
+  /// first gesture before manual viewport state is recorded.
+  static AppMapViewportChangeSource changeSourceForUserPinchOrPan() {
+    return AppMapViewportChangeSource.user;
+  }
+
   static bool zoomPanBehaviorDriftsFromViewportState({
     required double behaviorZoomLevel,
     required double? behaviorCenterLatitude,

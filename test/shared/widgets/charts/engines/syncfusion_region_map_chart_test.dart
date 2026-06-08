@@ -5,6 +5,7 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_region_map_chart.dart';
+import 'package:colmeia/shared/widgets/charts/region_map_viewport_sync_policy.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -500,6 +501,16 @@ void main() {
       debugDefaultTargetPlatformOverride = null;
     }
   });
+
+  test(
+    'pinch and pan hooks use user viewport source before manual flag is set',
+    () {
+      expect(
+        RegionMapViewportSyncPolicy.changeSourceForUserPinchOrPan(),
+        AppMapViewportChangeSource.user,
+      );
+    },
+  );
 
   testWidgets('does not install mouse wheel listener on mobile', (
     tester,

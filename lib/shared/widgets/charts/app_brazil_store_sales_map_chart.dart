@@ -518,6 +518,8 @@ class _AppBrazilStoreSalesMapChartState
   int? _cachedPointsDigest;
   Timer? _viewportClusterDebounceTimer;
   double? _pendingViewportClusterZoomLevel;
+  int _mapPointerDownCount = 0;
+  bool _viewportClusterGestureActive = false;
   Timer? _previewClearTimer;
   AppMapViewport? _cachedPreferredViewport;
   bool _userHasManualMapViewport = false;
@@ -527,7 +529,61 @@ class _AppBrazilStoreSalesMapChartState
     _viewportClusterDebounceTimer?.cancel();
     _viewportClusterDebounceTimer = null;
     _pendingViewportClusterZoomLevel = null;
+    _mapPointerDownCount = 0;
+    _viewportClusterGestureActive = false;
   }
+
+  void _handleMapPointerDown() {
+    if (!_shouldDeferViewportClusteringDuringGesture) {
+      return;
+    }
+    _mapPointerDownCount++;
+    if (_mapPointerDownCount == 1) {
+      _viewportClusterGestureActive = true;
+      _viewportClusterDebounceTimer?.cancel();
+    }
+  }
+
+  void _handleMapPointerUp() {
+    if (!_shouldDeferViewportClusteringDuringGesture) {
+      return;
+    }
+    if (_mapPointerDownCount <= 0) {
+      return;
+    }
+    _mapPointerDownCount--;
+    if (_mapPointerDownCount > 0) {
+      return;
+    }
+    _viewportClusterGestureActive = false;
+    _flushPendingViewportClusterZoomLevel();
+  }
+
+  void _flushPendingViewportClusterZoomLevel() {
+    final pendingZoomLevel = _pendingViewportClusterZoomLevel;
+    if (pendingZoomLevel == null) {
+      return;
+    }
+    _pendingViewportClusterZoomLevel = null;
+    _applyViewportClusterZoomLevel(pendingZoomLevel);
+  }
+
+  Widget _wrapRegionMapForTouchGestures(Widget regionMap) {
+    if (!_shouldDeferViewportClusteringDuringGesture) {
+      return regionMap;
+    }
+
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => _handleMapPointerDown(),
+      onPointerUp: (_) => _handleMapPointerUp(),
+      onPointerCancel: (_) => _handleMapPointerUp(),
+      child: regionMap,
+    );
+  }
+
+  bool get _shouldDeferViewportClusteringDuringGesture =>
+      _shouldDebounceTouchViewportClustering;
 
   void _cancelPendingPreviewClear() {
     _previewClearTimer?.cancel();
@@ -801,8 +857,9 @@ class _AppBrazilStoreSalesMapChartState
               )
             : mapAreaHeight;
         Widget buildRegionMap(double height) {
-          return RepaintBoundary(
-            child: AppRegionMapChart<AppBrazilStoreSalesStateBucket>(
+          return _wrapRegionMapForTouchGestures(
+            RepaintBoundary(
+              child: AppRegionMapChart<AppBrazilStoreSalesStateBucket>(
             mapDefinition: AppBrazilMapStaticData.brazilUfMapDefinition,
             items: snapshot.buckets,
             metrics: _buildMetrics(l10n),
@@ -883,6 +940,7 @@ class _AppBrazilStoreSalesMapChartState
                   !_usesCleanFullscreenChrome && !usesCompactMapChrome,
             ),
             isRefreshing: widget.isRefreshing,
+              ),
             ),
           );
         }
@@ -1719,8 +1777,11 @@ class _AppBrazilStoreSalesMapChartState
   }
 
   void _handleViewportChanged(AppMapViewportChangedEvent event) {
-    if (event.source == AppMapViewportChangeSource.user) {
-      _userHasManualMapViewport = true;
+    if (event.source == AppMapViewportChangeSource.user &&
+        !_userHasManualMapViewport) {
+      setState(() {
+        _userHasManualMapViewport = true;
+      });
     }
 
     if (!widget.style.enableProximityCluster) {
@@ -1761,6 +1822,10 @@ class _AppBrazilStoreSalesMapChartState
               : _desktopViewportClusterDebounceDuration);
 
     _pendingViewportClusterZoomLevel = nextZoomLevel;
+    if (_viewportClusterGestureActive) {
+      _viewportClusterDebounceTimer?.cancel();
+      return;
+    }
     _viewportClusterDebounceTimer?.cancel();
     _viewportClusterDebounceTimer = Timer(
       debounceDuration,

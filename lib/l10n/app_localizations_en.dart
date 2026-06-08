@@ -918,6 +918,61 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chartShareFailed => 'Could not share chart. Try again.';
 
   @override
+  String get chartShareFailedMissingBoundary =>
+      'Chart is not ready to share yet. Try again.';
+
+  @override
+  String get chartShareFailedInvalidRenderObject =>
+      'Chart could not be captured for sharing.';
+
+  @override
+  String get chartShareFailedImageEncoding =>
+      'Could not encode the chart image.';
+
+  @override
+  String get chartShareFailedPdfGeneration =>
+      'Could not generate the chart PDF.';
+
+  @override
+  String get chartShareFailedInProgress =>
+      'A share is already in progress for this chart.';
+
+  @override
+  String chartSharePdfPageNumber(int page, int pages) {
+    return 'Page $page of $pages';
+  }
+
+  @override
+  String get chartSharePdfColumnLabel => 'Label';
+
+  @override
+  String get chartSharePdfColumnValue => 'Value';
+
+  @override
+  String get chartSharePdfColumnPercent => 'Share';
+
+  @override
+  String get chartSharePdfColumnRank => 'Rank';
+
+  @override
+  String get chartSharePdfColumnName => 'Name';
+
+  @override
+  String get chartSharePdfColumnAmount => 'Amount';
+
+  @override
+  String get chartSharePdfColumnSalesCount => 'Sales';
+
+  @override
+  String get chartSharePdfColumnMonth => 'Month';
+
+  @override
+  String get chartSharePdfColumnStore => 'Store';
+
+  @override
+  String get chartSharePdfColumnUser => 'User';
+
+  @override
   String get chartSharePdfColumnDate => 'Date';
 
   @override
@@ -3017,8 +3072,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Brazil map with sales by branch and filter-based refresh.';
 
   @override
+  String get salesLiveMapSessionExpiredTitle => 'Session expired';
+
+  @override
   String get salesLiveMapSessionExpiredMessage =>
-      'Session expired. Sign in again to query.';
+      'Sign in again to continue monitoring sales.';
+
+  @override
+  String get salesLiveMapSessionExpiredAction => 'Sign in again';
 
   @override
   String get salesLiveMapAgentsLabel => 'Branches';
@@ -3123,6 +3184,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'The query ran, but did not find sales for the current filters.';
 
   @override
+  String get salesLiveMapEmptyNoSalesWithPartialMessage =>
+      'No sales in the period for the current filters. Some branches may be unavailable — see the partial monitoring notice above.';
+
+  @override
   String get salesLiveMapEmptySelectionTitle => 'Selection has no result';
 
   @override
@@ -3201,6 +3266,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesLiveMapNoSalesAgentsTitle => 'Branches without sales';
+
+  @override
+  String get salesLiveMapFailedAgentsTitle => 'Branches that failed the query';
+
+  @override
+  String get salesLiveMapMissingTokenAgentsTitle =>
+      'Branches without a local token';
+
+  @override
+  String get salesLiveMapOfflineAgentsTitle => 'Branches offline on the hub';
+
+  @override
+  String get salesLiveMapConfigureTokenAction => 'Configure token';
+
+  @override
+  String get salesLiveMapRetryAction => 'Try again';
 
   @override
   String get salesLiveMapTechnicalDiagnosticsTitle => 'Technical diagnostics';

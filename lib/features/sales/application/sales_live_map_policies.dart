@@ -13,21 +13,18 @@ abstract final class SalesLiveMapPolicies {
   /// [AppEnvironment.agentSqlBridgeMediumTimeoutMs] when
   /// `SALES_LIVE_MAP_BRIDGE_TIMEOUT_MS` is unset.
   static int get bridgeTimeoutMs => AppEnvironment.salesLiveMapBridgeTimeoutMs;
-  static const int geolocationMaxConcurrency = 6;
 
-  /// Default `(cod_empresa, cod_filial)` of the "primary" branch used by the
-  /// live map aggregator to filter out non-primary rows.
-  ///
-  /// **Assumption**: every Colmeia tenant we ship to today follows the
-  /// Se7e default schema where `cod_empresa = 1` and `cod_filial = 1`
-  /// identifies the primary branch each agent reports for. If a future
-  /// tenant uses different codes the live map will silently show no rows
-  /// from that tenant. When that becomes a real case, plumb these values
-  /// through `AppEnvironment` (or per-agent metadata returned by the
-  /// resolver) and inject them into `SalesLiveMapBranchAggregator` instead
-  /// of consuming the static constants directly.
-  static const int primaryCompanyCode = 1;
-  static const int primaryBranchCode = 1;
+  /// Concurrent geolocation lookups during map load. Override via
+  /// `SALES_LIVE_MAP_GEOLOCATION_MAX_CONCURRENCY` (default 8).
+  static int get geolocationMaxConcurrency =>
+      AppEnvironment.salesLiveMapGeolocationMaxConcurrency;
+
+  /// `(cod_empresa, cod_filial)` of the "primary" branch used by the live map
+  /// aggregator. Defaults to `1/1`; override via `AppEnvironment`.
+  static int get primaryCompanyCode =>
+      AppEnvironment.salesLiveMapPrimaryCompanyCode;
+
+  static int get primaryBranchCode => AppEnvironment.salesLiveMapPrimaryBranchCode;
 
   static const int branchLocationCacheMaxEntries = 5000;
   static const int branchCatalogCacheMaxEntries = 200;

@@ -940,6 +940,61 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível compartilhar o gráfico. Tente novamente.';
 
   @override
+  String get chartShareFailedMissingBoundary =>
+      'O gráfico ainda não está pronto para compartilhar. Tente novamente.';
+
+  @override
+  String get chartShareFailedInvalidRenderObject =>
+      'Não foi possível capturar o gráfico para compartilhar.';
+
+  @override
+  String get chartShareFailedImageEncoding =>
+      'Não foi possível codificar a imagem do gráfico.';
+
+  @override
+  String get chartShareFailedPdfGeneration =>
+      'Não foi possível gerar o PDF do gráfico.';
+
+  @override
+  String get chartShareFailedInProgress =>
+      'Já existe um compartilhamento em andamento para este gráfico.';
+
+  @override
+  String chartSharePdfPageNumber(int page, int pages) {
+    return 'Página $page de $pages';
+  }
+
+  @override
+  String get chartSharePdfColumnLabel => 'Rótulo';
+
+  @override
+  String get chartSharePdfColumnValue => 'Valor';
+
+  @override
+  String get chartSharePdfColumnPercent => 'Participação';
+
+  @override
+  String get chartSharePdfColumnRank => 'Posição';
+
+  @override
+  String get chartSharePdfColumnName => 'Nome';
+
+  @override
+  String get chartSharePdfColumnAmount => 'Valor';
+
+  @override
+  String get chartSharePdfColumnSalesCount => 'Vendas';
+
+  @override
+  String get chartSharePdfColumnMonth => 'Mês';
+
+  @override
+  String get chartSharePdfColumnStore => 'Loja';
+
+  @override
+  String get chartSharePdfColumnUser => 'Usuário';
+
+  @override
   String get chartSharePdfColumnDate => 'Data';
 
   @override
@@ -3064,8 +3119,14 @@ class AppLocalizationsPt extends AppLocalizations {
       'Mapa do Brasil com vendas por filial e atualização por filtros.';
 
   @override
+  String get salesLiveMapSessionExpiredTitle => 'Sessão expirada';
+
+  @override
   String get salesLiveMapSessionExpiredMessage =>
-      'Sessao expirada. Entre novamente para consultar.';
+      'Faça login novamente para continuar consultando o acompanhamento de vendas.';
+
+  @override
+  String get salesLiveMapSessionExpiredAction => 'Entrar novamente';
 
   @override
   String get salesLiveMapAgentsLabel => 'Filiais';
@@ -3171,6 +3232,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'A consulta foi executada, mas não encontrou vendas para os filtros atuais.';
 
   @override
+  String get salesLiveMapEmptyNoSalesWithPartialMessage =>
+      'Não há vendas no período para os filtros atuais. Algumas filiais podem estar indisponíveis — veja o aviso de acompanhamento parcial acima.';
+
+  @override
   String get salesLiveMapEmptySelectionTitle => 'Seleção sem resultado';
 
   @override
@@ -3249,6 +3314,21 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesLiveMapNoSalesAgentsTitle => 'Filiais sem vendas';
+
+  @override
+  String get salesLiveMapFailedAgentsTitle => 'Filiais com falha na consulta';
+
+  @override
+  String get salesLiveMapMissingTokenAgentsTitle => 'Filiais sem token local';
+
+  @override
+  String get salesLiveMapOfflineAgentsTitle => 'Filiais offline no hub';
+
+  @override
+  String get salesLiveMapConfigureTokenAction => 'Configurar token';
+
+  @override
+  String get salesLiveMapRetryAction => 'Tentar novamente';
 
   @override
   String get salesLiveMapTechnicalDiagnosticsTitle => 'Diagnostico tecnico';
@@ -5349,6 +5429,61 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get chartShareFailed =>
       'Não foi possível compartilhar o gráfico. Tente novamente.';
+
+  @override
+  String get chartShareFailedMissingBoundary =>
+      'O gráfico ainda não está pronto para compartilhar. Tente novamente.';
+
+  @override
+  String get chartShareFailedInvalidRenderObject =>
+      'Não foi possível capturar o gráfico para compartilhar.';
+
+  @override
+  String get chartShareFailedImageEncoding =>
+      'Não foi possível codificar a imagem do gráfico.';
+
+  @override
+  String get chartShareFailedPdfGeneration =>
+      'Não foi possível gerar o PDF do gráfico.';
+
+  @override
+  String get chartShareFailedInProgress =>
+      'Já existe um compartilhamento em andamento para este gráfico.';
+
+  @override
+  String chartSharePdfPageNumber(int page, int pages) {
+    return 'Página $page de $pages';
+  }
+
+  @override
+  String get chartSharePdfColumnLabel => 'Rótulo';
+
+  @override
+  String get chartSharePdfColumnValue => 'Valor';
+
+  @override
+  String get chartSharePdfColumnPercent => 'Participação';
+
+  @override
+  String get chartSharePdfColumnRank => 'Posição';
+
+  @override
+  String get chartSharePdfColumnName => 'Nome';
+
+  @override
+  String get chartSharePdfColumnAmount => 'Valor';
+
+  @override
+  String get chartSharePdfColumnSalesCount => 'Vendas';
+
+  @override
+  String get chartSharePdfColumnMonth => 'Mês';
+
+  @override
+  String get chartSharePdfColumnStore => 'Loja';
+
+  @override
+  String get chartSharePdfColumnUser => 'Usuário';
 
   @override
   String get chartSharePdfColumnDate => 'Data';
@@ -7452,8 +7587,14 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Mapa do Brasil com vendas por filial e atualização por filtros.';
 
   @override
+  String get salesLiveMapSessionExpiredTitle => 'Sessão expirada';
+
+  @override
   String get salesLiveMapSessionExpiredMessage =>
-      'Sessao expirada. Entre novamente para consultar.';
+      'Faça login novamente para continuar consultando o acompanhamento de vendas.';
+
+  @override
+  String get salesLiveMapSessionExpiredAction => 'Entrar novamente';
 
   @override
   String get salesLiveMapAgentsLabel => 'Filiais';
@@ -7559,6 +7700,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'A consulta foi executada, mas não encontrou vendas para os filtros atuais.';
 
   @override
+  String get salesLiveMapEmptyNoSalesWithPartialMessage =>
+      'Não há vendas no período para os filtros atuais. Algumas filiais podem estar indisponíveis — veja o aviso de acompanhamento parcial acima.';
+
+  @override
   String get salesLiveMapEmptySelectionTitle => 'Seleção sem resultado';
 
   @override
@@ -7637,6 +7782,21 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesLiveMapNoSalesAgentsTitle => 'Filiais sem vendas';
+
+  @override
+  String get salesLiveMapFailedAgentsTitle => 'Filiais com falha na consulta';
+
+  @override
+  String get salesLiveMapMissingTokenAgentsTitle => 'Filiais sem token local';
+
+  @override
+  String get salesLiveMapOfflineAgentsTitle => 'Filiais offline no hub';
+
+  @override
+  String get salesLiveMapConfigureTokenAction => 'Configurar token';
+
+  @override
+  String get salesLiveMapRetryAction => 'Tentar novamente';
 
   @override
   String get salesLiveMapTechnicalDiagnosticsTitle => 'Diagnostico tecnico';

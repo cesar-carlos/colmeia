@@ -1588,6 +1588,102 @@ abstract class AppLocalizations {
   /// **'Could not share chart. Try again.'**
   String get chartShareFailed;
 
+  /// SnackBar when chart share capture key has no render context.
+  ///
+  /// In en, this message translates to:
+  /// **'Chart is not ready to share yet. Try again.'**
+  String get chartShareFailedMissingBoundary;
+
+  /// SnackBar when chart share capture key is not a repaint boundary.
+  ///
+  /// In en, this message translates to:
+  /// **'Chart could not be captured for sharing.'**
+  String get chartShareFailedInvalidRenderObject;
+
+  /// SnackBar when chart PNG encoding fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not encode the chart image.'**
+  String get chartShareFailedImageEncoding;
+
+  /// SnackBar when chart PDF generation fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not generate the chart PDF.'**
+  String get chartShareFailedPdfGeneration;
+
+  /// SnackBar when the user taps share while a share is in flight for the same chart.
+  ///
+  /// In en, this message translates to:
+  /// **'A share is already in progress for this chart.'**
+  String get chartShareFailedInProgress;
+
+  /// Footer page number label in chart share PDF exports.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {page} of {pages}'**
+  String chartSharePdfPageNumber(int page, int pages);
+
+  /// PDF table column header for segment or category labels.
+  ///
+  /// In en, this message translates to:
+  /// **'Label'**
+  String get chartSharePdfColumnLabel;
+
+  /// PDF table column header for numeric values in chart share exports.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get chartSharePdfColumnValue;
+
+  /// PDF table column header for percentage share in chart share exports.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get chartSharePdfColumnPercent;
+
+  /// PDF table column header for ranking position in chart share exports.
+  ///
+  /// In en, this message translates to:
+  /// **'Rank'**
+  String get chartSharePdfColumnRank;
+
+  /// PDF table column header for entity name in chart share exports.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get chartSharePdfColumnName;
+
+  /// PDF table column header for monetary amount in chart share exports.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get chartSharePdfColumnAmount;
+
+  /// PDF table column header for sales count in chart share exports.
+  ///
+  /// In en, this message translates to:
+  /// **'Sales'**
+  String get chartSharePdfColumnSalesCount;
+
+  /// PDF table column header for month bucket in chart share exports.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get chartSharePdfColumnMonth;
+
+  /// PDF table column header for store name in chart share exports.
+  ///
+  /// In en, this message translates to:
+  /// **'Store'**
+  String get chartSharePdfColumnStore;
+
+  /// PDF table column header for user name in chart share exports.
+  ///
+  /// In en, this message translates to:
+  /// **'User'**
+  String get chartSharePdfColumnUser;
+
   /// PDF table column header for chart share exports.
   ///
   /// In en, this message translates to:
@@ -4972,11 +5068,23 @@ abstract class AppLocalizations {
   /// **'Brazil map with sales by branch and filter-based refresh.'**
   String get salesLiveMapSubtitle;
 
+  /// No description provided for @salesLiveMapSessionExpiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Session expired'**
+  String get salesLiveMapSessionExpiredTitle;
+
   /// No description provided for @salesLiveMapSessionExpiredMessage.
   ///
   /// In en, this message translates to:
-  /// **'Session expired. Sign in again to query.'**
+  /// **'Sign in again to continue monitoring sales.'**
   String get salesLiveMapSessionExpiredMessage;
+
+  /// No description provided for @salesLiveMapSessionExpiredAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in again'**
+  String get salesLiveMapSessionExpiredAction;
 
   /// No description provided for @salesLiveMapAgentsLabel.
   ///
@@ -5156,6 +5264,12 @@ abstract class AppLocalizations {
   /// **'The query ran, but did not find sales for the current filters.'**
   String get salesLiveMapEmptyNoSalesMessage;
 
+  /// No description provided for @salesLiveMapEmptyNoSalesWithPartialMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No sales in the period for the current filters. Some branches may be unavailable — see the partial monitoring notice above.'**
+  String get salesLiveMapEmptyNoSalesWithPartialMessage;
+
   /// No description provided for @salesLiveMapEmptySelectionTitle.
   ///
   /// In en, this message translates to:
@@ -5260,6 +5374,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Branches without sales'**
   String get salesLiveMapNoSalesAgentsTitle;
+
+  /// No description provided for @salesLiveMapFailedAgentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Branches that failed the query'**
+  String get salesLiveMapFailedAgentsTitle;
+
+  /// No description provided for @salesLiveMapMissingTokenAgentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Branches without a local token'**
+  String get salesLiveMapMissingTokenAgentsTitle;
+
+  /// No description provided for @salesLiveMapOfflineAgentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Branches offline on the hub'**
+  String get salesLiveMapOfflineAgentsTitle;
+
+  /// No description provided for @salesLiveMapConfigureTokenAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure token'**
+  String get salesLiveMapConfigureTokenAction;
+
+  /// No description provided for @salesLiveMapRetryAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get salesLiveMapRetryAction;
 
   /// No description provided for @salesLiveMapTechnicalDiagnosticsTitle.
   ///

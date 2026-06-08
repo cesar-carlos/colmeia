@@ -44,6 +44,9 @@ class SalesLiveMapLoadResult {
     this.failedCatalogAgentCount = 0,
     this.failedSalesAgentCount = 0,
     this.noSalesAgentOptions = const <SalesLiveMapAgentOption>[],
+    this.failedAgentOptions = const <SalesLiveMapAgentOption>[],
+    this.missingClientTokenAgentOptions = const <SalesLiveMapAgentOption>[],
+    this.skippedOfflineAgentOptions = const <SalesLiveMapAgentOption>[],
     this.unmappedBranchOptions = const <SalesLiveMapBranchOption>[],
     this.locationDiagnostics = const SalesLiveMapLocationDiagnostics(),
     this.loadFailed = false,
@@ -81,6 +84,9 @@ class SalesLiveMapLoadResult {
   final int failedCatalogAgentCount;
   final int failedSalesAgentCount;
   final List<SalesLiveMapAgentOption> noSalesAgentOptions;
+  final List<SalesLiveMapAgentOption> failedAgentOptions;
+  final List<SalesLiveMapAgentOption> missingClientTokenAgentOptions;
+  final List<SalesLiveMapAgentOption> skippedOfflineAgentOptions;
   final SalesLiveMapLocationDiagnostics locationDiagnostics;
   final bool loadFailed;
   final SalesLiveMapLoadFailureReason? loadFailureReason;

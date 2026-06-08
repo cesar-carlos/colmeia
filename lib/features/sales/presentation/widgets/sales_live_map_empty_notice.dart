@@ -9,12 +9,14 @@ class SalesLiveMapEmptyNotice extends StatelessWidget {
     required this.result,
     required this.hasSelectedBranches,
     required this.l10n,
+    this.hasPartialIssue = false,
     this.onClearSelectedBranches,
     super.key,
   });
 
   final SalesLiveMapLoadResult result;
   final bool hasSelectedBranches;
+  final bool hasPartialIssue;
   final VoidCallback? onClearSelectedBranches;
   final AppLocalizations l10n;
 
@@ -24,14 +26,17 @@ class SalesLiveMapEmptyNotice extends StatelessWidget {
         hasSelectedBranches &&
         result.totalBranchCount == 0 &&
         result.totalSalesCount == 0;
+    final message = selectedWithoutRows
+        ? l10n.salesLiveMapEmptySelectionMessage
+        : hasPartialIssue
+        ? l10n.salesLiveMapEmptyNoSalesWithPartialMessage
+        : l10n.salesLiveMapEmptyNoSalesMessage;
     return AppInlineErrorPanel(
       tone: AppInlinePanelTone.informational,
       title: selectedWithoutRows
           ? l10n.salesLiveMapEmptySelectionTitle
           : l10n.salesLiveMapEmptyNoSalesTitle,
-      message: selectedWithoutRows
-          ? l10n.salesLiveMapEmptySelectionMessage
-          : l10n.salesLiveMapEmptyNoSalesMessage,
+      message: message,
       actions: selectedWithoutRows
           ? Align(
               alignment: Alignment.centerLeft,

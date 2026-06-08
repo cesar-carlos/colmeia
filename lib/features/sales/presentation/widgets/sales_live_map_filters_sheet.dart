@@ -244,6 +244,7 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
             SalesLiveMapFiltersBranchSection(
               l10n: widget.l10n,
               tokens: tokens,
+              availableAgents: widget.availableAgents,
               branches: widget.availableBranches,
               selectedBranchIds: Set<SalesLiveMapBranchRef>.unmodifiable(
                 _selectedBranchIds,

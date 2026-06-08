@@ -19,6 +19,8 @@ import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.da
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_live_map_page.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_chart_panel.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_intro_section.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
@@ -919,6 +921,55 @@ void main() {
     expect(find.textContaining('salesUnavailableBranchCount:'), findsNothing);
     expect(find.textContaining('geo.ibgeMunicipalityCode:'), findsNothing);
   });
+
+  testWidgets(
+    'locks page scroll while the inline map is touched on mobile',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await _pumpPage(
+        tester,
+        authController: authController,
+        mediaSize: const Size(390, 844),
+      );
+      await _pumpInitialLoad(tester);
+
+      final pageScrollFinder = find.ancestor(
+        of: find.byType(SalesLiveMapIntroSection),
+        matching: find.byType(SingleChildScrollView),
+      );
+      expect(pageScrollFinder, findsOneWidget);
+
+      final scrollView = tester.widget<SingleChildScrollView>(pageScrollFinder);
+      expect(scrollView.physics, isA<AlwaysScrollableScrollPhysics>());
+
+      expect(
+        find.byKey(const ValueKey<String>('sales-live-map-inline-scroll-guard')),
+        findsOneWidget,
+      );
+
+      const SalesLiveMapParentScrollLockNotification(
+        lockParentScroll: true,
+      ).dispatch(tester.element(find.byType(SalesLiveMapIntroSection)));
+      await tester.pump();
+
+      final lockedScrollView = tester.widget<SingleChildScrollView>(
+        pageScrollFinder,
+      );
+      expect(lockedScrollView.physics, isA<NeverScrollableScrollPhysics>());
+
+      const SalesLiveMapParentScrollLockNotification(
+        lockParentScroll: false,
+      ).dispatch(tester.element(find.byType(SalesLiveMapIntroSection)));
+      await tester.pump();
+
+      final unlockedScrollView = tester.widget<SingleChildScrollView>(
+        pageScrollFinder,
+      );
+      expect(unlockedScrollView.physics, isA<AlwaysScrollableScrollPhysics>());
+    },
+  );
 
   testWidgets(
     'changing the map metric does not call loadProgressive again',

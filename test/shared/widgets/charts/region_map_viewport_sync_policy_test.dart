@@ -41,6 +41,13 @@ void main() {
       );
     });
 
+    test('changeSourceForUserPinchOrPan always reports user intent', () {
+      expect(
+        RegionMapViewportSyncPolicy.changeSourceForUserPinchOrPan(),
+        AppMapViewportChangeSource.user,
+      );
+    });
+
     test(
       'allowsPointerWheelZoom stays enabled when preferred viewport is suppressed',
       () {

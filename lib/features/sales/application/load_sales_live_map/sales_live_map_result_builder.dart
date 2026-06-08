@@ -1,4 +1,6 @@
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_branch_aggregate.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_load_result.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
@@ -101,6 +103,52 @@ abstract final class SalesLiveMapResultBuilder {
         .where((aggregate) => !mappedBranchIds.contains(aggregate.id))
         .map((aggregate) => aggregate.toBranchOption())
         .toList(growable: false);
+  }
+
+  static List<SalesLiveMapAgentOption> agentOptionsFromTargets(
+    Iterable<AgentQueryTarget> targets,
+  ) {
+    return targets
+        .map(
+          (target) => SalesLiveMapAgentOption(
+            id: target.agentId,
+            name: target.displayName,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  static List<SalesLiveMapAgentOption> failedAgentOptionsFromReports({
+    required AgentQueryExecutionReport<dynamic> baseReport,
+    AgentQueryExecutionReport<dynamic>? salesReport,
+  }) {
+    final seenAgentIds = <String>{};
+    final options = <SalesLiveMapAgentOption>[];
+
+    void collectFrom(AgentQueryExecutionReport<dynamic> report) {
+      for (final participant in report.participants) {
+        if (participant.failure == null) {
+          continue;
+        }
+        if (!seenAgentIds.add(participant.agentId)) {
+          continue;
+        }
+        options.add(
+          SalesLiveMapAgentOption(
+            id: participant.agentId,
+            name: participant.displayName,
+          ),
+        );
+      }
+    }
+
+    collectFrom(baseReport);
+    if (salesReport != null) {
+      collectFrom(salesReport);
+    }
+
+    options.sort((a, b) => a.name.compareTo(b.name));
+    return List<SalesLiveMapAgentOption>.unmodifiable(options);
   }
 
   /// Distinct municipality count among [points]. Uses IBGE code when

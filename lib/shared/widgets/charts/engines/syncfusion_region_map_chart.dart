@@ -653,7 +653,8 @@ class _SyncfusionRegionMapChartState<T>
                                   ),
                                 );
                                 _emitViewportChanged(
-                                  source: _viewportChangeSourceForGesture(),
+                                  source: RegionMapViewportSyncPolicy
+                                      .changeSourceForUserPinchOrPan(),
                                   bounds: details.newVisibleBounds,
                                 );
                                 return true;
@@ -669,7 +670,8 @@ class _SyncfusionRegionMapChartState<T>
                                   ),
                                 );
                                 _emitViewportChanged(
-                                  source: _viewportChangeSourceForGesture(),
+                                  source: RegionMapViewportSyncPolicy
+                                      .changeSourceForUserPinchOrPan(),
                                   bounds: details.newVisibleBounds,
                                 );
                                 return true;
@@ -872,12 +874,6 @@ class _SyncfusionRegionMapChartState<T>
     _lastAppliedPreferredViewport = viewport;
     _lockPreferredViewportReapply = true;
     _releaseProgrammaticViewportSuppressionAfterFrame();
-  }
-
-  AppMapViewportChangeSource _viewportChangeSourceForGesture() {
-    return _viewportState.userHasManualViewport
-        ? AppMapViewportChangeSource.user
-        : AppMapViewportChangeSource.programmatic;
   }
 
   bool _preferredViewportMatches(

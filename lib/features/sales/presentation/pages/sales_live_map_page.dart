@@ -2,8 +2,9 @@ import 'dart:async';
 
 import 'package:colmeia/app/refresh/app_auto_refresh_support.dart';
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
-import 'package:colmeia/app/router/app_chart_share_actions.dart';
 import 'package:colmeia/app/router/app_routes.dart';
+import 'package:colmeia/app/router/chart_share_icon_button.dart';
+import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_persistence.dart';
@@ -17,6 +18,7 @@ import 'package:colmeia/features/sales/presentation/coordinators/sales_live_map_
 import 'package:colmeia/features/sales/presentation/view_models/sales_live_map_view_model.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_auto_refresh_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_body_section.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_chart_panel.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_filter_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_filters_sheet.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_fullscreen_chart.dart';
@@ -64,6 +66,7 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
   late final SalesLiveMapAutoRefreshObserver _autoRefreshObserver;
   final SalesLiveMapSessionCoordinator _coordinator =
       SalesLiveMapSessionCoordinator();
+  bool _lockPageScrollForInlineMap = false;
 
   @override
   void initState() {
@@ -334,31 +337,48 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
   Widget build(BuildContext context) {
     final tokens = context.appTokens;
 
-    return SingleChildScrollView(
-      padding: context.pageScrollPadding(
-        tokens,
-        horizontalAdjustment:
-            AppPageSpacingPresets.dashboardHorizontalAdjustment,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          const SalesLiveMapIntroSection(),
-          SizedBox(height: tokens.sectionSpacing),
-          SalesLiveMapFilterSection(onOpenFilters: _openFiltersSheet),
-          SizedBox(height: tokens.gapMd),
-          SalesLiveMapAutoRefreshSection(
-            onOptionChanged: setAutoRefreshOption,
-            onRefreshNow: () => unawaited(_reload()),
-            stateListenable: autoRefreshStateListenable,
-          ),
-          SizedBox(height: tokens.sectionSpacing),
-          SalesLiveMapBodySection(
-            onRetryReload: () => unawaited(_reload()),
-            onOpenFullscreen: _openLiveMapFullscreen,
-            showInlineChart: !_coordinator.liveMapFullscreenOpen,
-          ),
-        ],
+    final lockPageScroll =
+        _lockPageScrollForInlineMap && AppBreakpoints.isMobile(context);
+
+    return NotificationListener<SalesLiveMapParentScrollLockNotification>(
+      onNotification: (notification) {
+        if (_lockPageScrollForInlineMap == notification.lockParentScroll) {
+          return true;
+        }
+        setState(() {
+          _lockPageScrollForInlineMap = notification.lockParentScroll;
+        });
+        return true;
+      },
+      child: SingleChildScrollView(
+        physics: lockPageScroll
+            ? const NeverScrollableScrollPhysics()
+            : const AlwaysScrollableScrollPhysics(),
+        padding: context.pageScrollPadding(
+          tokens,
+          horizontalAdjustment:
+              AppPageSpacingPresets.dashboardHorizontalAdjustment,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            const SalesLiveMapIntroSection(),
+            SizedBox(height: tokens.sectionSpacing),
+            SalesLiveMapFilterSection(onOpenFilters: _openFiltersSheet),
+            SizedBox(height: tokens.gapMd),
+            SalesLiveMapAutoRefreshSection(
+              onOptionChanged: setAutoRefreshOption,
+              onRefreshNow: () => unawaited(_reload()),
+              stateListenable: autoRefreshStateListenable,
+            ),
+            SizedBox(height: tokens.sectionSpacing),
+            SalesLiveMapBodySection(
+              onRetryReload: () => unawaited(_reload()),
+              onOpenFullscreen: _openLiveMapFullscreen,
+              showInlineChart: !_coordinator.liveMapFullscreenOpen,
+            ),
+          ],
+        ),
       ),
     );
   }
