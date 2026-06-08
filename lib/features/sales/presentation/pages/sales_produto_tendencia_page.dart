@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
-import 'package:colmeia/app/router/app_chart_share_actions.dart';
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
+import 'package:colmeia/app/router/chart_share_icon_button.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
@@ -44,6 +44,8 @@ import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:colmeia/shared/widgets/metrics/app_metric_stat_card.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:colmeia/shared/widgets/pagination/app_table_pagination_footer.dart';
@@ -985,13 +987,29 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
                 classLabelBuilder: (value) => _classificacaoLabel(l10n, value),
                 onOpenClassificacaoFullscreen: _openClassificacaoFullscreen,
                 classificacaoShareKey: _classificacaoShareKey,
-                onShareClassificacao: () => unawaited(
-                  shareChartCapture(
-                    context,
-                    _classificacaoShareKey,
-                    subject: l10n.salesProdutoTendenciaSummaryByClassificacaoTitle,
-                  ),
-                ),
+                onShareClassificacao: _loading
+                    ? null
+                    : () => context.shareChartFromRequest(
+                        ChartShareMetadata(
+                          title: l10n
+                              .salesProdutoTendenciaSummaryByClassificacaoTitle,
+                          tableData: ChartShareTableData(
+                            headers: <String>[
+                              l10n.chartSharePdfColumnLabel,
+                              l10n.chartSharePdfColumnSalesCount,
+                              l10n.chartSharePdfColumnAmount,
+                            ],
+                            rows: <List<String>>[
+                              for (final row in _summaryRows)
+                                <String>[
+                                  _classificacaoLabel(l10n, row.classificacao),
+                                  row.quantidadeProdutos.toString(),
+                                  AppBrFormatters.currency(row.impactoLiquido),
+                                ],
+                            ],
+                          ),
+                        ).toShareRequest(_classificacaoShareKey),
+                      ),
               ),
               SizedBox(height: tokens.sectionSpacing),
               _TrendTopMoversSection(
@@ -1002,20 +1020,50 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
                 onOpenLosersFullscreen: _openLosersFullscreen,
                 gainersShareKey: _gainersShareKey,
                 losersShareKey: _losersShareKey,
-                onShareGainers: () => unawaited(
-                  shareChartCapture(
-                    context,
-                    _gainersShareKey,
-                    subject: l10n.salesProdutoTendenciaTopGainersTitle,
-                  ),
-                ),
-                onShareLosers: () => unawaited(
-                  shareChartCapture(
-                    context,
-                    _losersShareKey,
-                    subject: l10n.salesProdutoTendenciaTopLosersTitle,
-                  ),
-                ),
+                onShareGainers: _loading
+                    ? null
+                    : () => context.shareChartFromRequest(
+                        ChartShareMetadata(
+                          title: l10n.salesProdutoTendenciaTopGainersTitle,
+                          tableData: ChartShareTableData(
+                            headers: <String>[
+                              l10n.chartSharePdfColumnName,
+                              l10n.chartSharePdfColumnValue,
+                            ],
+                            rows: <List<String>>[
+                              for (final row in _trendTopGainersRows(_rows))
+                                <String>[
+                                  row.nomeProduto,
+                                  NumberFormat.decimalPattern(
+                                    l10n.localeName,
+                                  ).format(row.diferenca),
+                                ],
+                            ],
+                          ),
+                        ).toShareRequest(_gainersShareKey),
+                      ),
+                onShareLosers: _loading
+                    ? null
+                    : () => context.shareChartFromRequest(
+                        ChartShareMetadata(
+                          title: l10n.salesProdutoTendenciaTopLosersTitle,
+                          tableData: ChartShareTableData(
+                            headers: <String>[
+                              l10n.chartSharePdfColumnName,
+                              l10n.chartSharePdfColumnValue,
+                            ],
+                            rows: <List<String>>[
+                              for (final row in _trendTopLosersRows(_rows))
+                                <String>[
+                                  row.nomeProduto,
+                                  NumberFormat.decimalPattern(
+                                    l10n.localeName,
+                                  ).format(row.diferenca),
+                                ],
+                            ],
+                          ),
+                        ).toShareRequest(_losersShareKey),
+                      ),
               ),
               SizedBox(height: tokens.sectionSpacing),
               _TrendDetailsSection(
@@ -1061,7 +1109,7 @@ class _TrendSummarySection extends StatelessWidget {
   final String Function(String value) classLabelBuilder;
   final VoidCallback onOpenClassificacaoFullscreen;
   final GlobalKey classificacaoShareKey;
-  final VoidCallback onShareClassificacao;
+  final VoidCallback? onShareClassificacao;
 
   @override
   Widget build(BuildContext context) {
@@ -1322,8 +1370,8 @@ class _TrendTopMoversSection extends StatelessWidget {
   final VoidCallback onOpenLosersFullscreen;
   final GlobalKey gainersShareKey;
   final GlobalKey losersShareKey;
-  final VoidCallback onShareGainers;
-  final VoidCallback onShareLosers;
+  final VoidCallback? onShareGainers;
+  final VoidCallback? onShareLosers;
 
   @override
   Widget build(BuildContext context) {

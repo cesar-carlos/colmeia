@@ -356,6 +356,124 @@ class AppComparisonBarChartStyle {
   /// Optional extra sentence appended to the coordinator [Semantics] label for
   /// the chart body (after plot-floor / extreme-spread notices when present).
   final String? chartSemanticsCoordinatorNotice;
+
+  /// Landscape fullscreen display: fit every category in the viewport width.
+  AppComparisonBarChartStyle forLandscapeFullscreen({double? height}) {
+    return AppComparisonBarChartStyle(
+      barColor: barColor,
+      barBorderRadius: barBorderRadius,
+      height: height ?? this.height,
+      barWidth: barWidth,
+      spacing: spacing,
+      barGap: barGap,
+      borderColor: borderColor,
+      borderWidth: borderWidth,
+      plotAreaBackgroundColor: plotAreaBackgroundColor,
+      chartPadding: chartPadding,
+      animationDuration: animationDuration,
+      yAxisFormat: yAxisFormat,
+      showXAxis: showXAxis,
+      showYAxis: showYAxis,
+      xLabelRotation: xLabelRotation,
+      axisLabelTextStyle: axisLabelTextStyle,
+      minY: minY,
+      maxY: maxY,
+      interval: interval,
+      yAxisRangePadding: yAxisRangePadding,
+      yAxisTitle: yAxisTitle,
+      xAxisTitle: xAxisTitle,
+      showTooltip: showTooltip,
+      showYGridLines: showYGridLines,
+      showDataLabels: showDataLabels,
+      dataLabelTextStyle: dataLabelTextStyle,
+      dataLabelAlignment: dataLabelAlignment,
+      dataLabelOffset: dataLabelOffset,
+      autoRotateXLabels: autoRotateXLabels,
+      xLabelMaxChars: xLabelMaxChars,
+      wrapXAxisLabelsInTwoLines: wrapXAxisLabelsInTwoLines,
+      wrapXAxisCharsPerLine: wrapXAxisCharsPerLine,
+      wrapXAxisMaxLines: wrapXAxisMaxLines,
+      loadingLabel: loadingLabel,
+      loadingPlaceholderVariant: loadingPlaceholderVariant,
+      emptyMessage: emptyMessage,
+      enableAutoScroll: false,
+      minBarWidth: minBarWidth,
+      showScrollFade: false,
+      horizontalScrollSemanticsHint: horizontalScrollSemanticsHint,
+      tooltipLabelMaxChars: tooltipLabelMaxChars,
+      stickyPrimaryYAxisWhileScrolling: false,
+      stickyPrimaryYAxisWidth: stickyPrimaryYAxisWidth,
+      minPlottedValueShareOfMax: minPlottedValueShareOfMax,
+      strictLinearBarHeights: strictLinearBarHeights,
+      categoryAutoScrollingMode: categoryAutoScrollingMode,
+      categoryViewportFootnote: categoryViewportFootnote,
+      categoryViewportPanSemanticsLabel: categoryViewportPanSemanticsLabel,
+      reserveOuterDataLabelTopMargin: reserveOuterDataLabelTopMargin,
+      outerDataLabelTopReserve: outerDataLabelTopReserve,
+      dataLabelBackgroundColor: dataLabelBackgroundColor,
+      tapHighlightDimmedOpacity: tapHighlightDimmedOpacity,
+      chartSemanticsCoordinatorNotice: chartSemanticsCoordinatorNotice,
+    );
+  }
+
+  /// Style for offscreen PDF export: full width, no scroll, no animation.
+  AppComparisonBarChartStyle forPdfExport() {
+    return AppComparisonBarChartStyle(
+      barColor: barColor,
+      barBorderRadius: barBorderRadius,
+      height: height,
+      barWidth: barWidth,
+      spacing: spacing,
+      barGap: barGap,
+      borderColor: borderColor,
+      borderWidth: borderWidth,
+      plotAreaBackgroundColor: plotAreaBackgroundColor,
+      chartPadding: chartPadding,
+      animationDuration: Duration.zero,
+      yAxisFormat: yAxisFormat,
+      showXAxis: showXAxis,
+      showYAxis: showYAxis,
+      xLabelRotation: xLabelRotation,
+      axisLabelTextStyle: axisLabelTextStyle,
+      minY: minY,
+      maxY: maxY,
+      interval: interval,
+      yAxisRangePadding: yAxisRangePadding,
+      yAxisTitle: yAxisTitle,
+      xAxisTitle: xAxisTitle,
+      showTooltip: showTooltip,
+      showYGridLines: showYGridLines,
+      showDataLabels: showDataLabels,
+      dataLabelTextStyle: dataLabelTextStyle,
+      dataLabelAlignment: dataLabelAlignment,
+      dataLabelOffset: dataLabelOffset,
+      autoRotateXLabels: autoRotateXLabels,
+      xLabelMaxChars: xLabelMaxChars,
+      wrapXAxisLabelsInTwoLines: wrapXAxisLabelsInTwoLines,
+      wrapXAxisCharsPerLine: wrapXAxisCharsPerLine,
+      wrapXAxisMaxLines: wrapXAxisMaxLines,
+      loadingLabel: loadingLabel,
+      loadingPlaceholderVariant: loadingPlaceholderVariant,
+      emptyMessage: emptyMessage,
+      enableAutoScroll: false,
+      minBarWidth: minBarWidth,
+      showScrollFade: false,
+      horizontalScrollSemanticsHint: horizontalScrollSemanticsHint,
+      tooltipLabelMaxChars: tooltipLabelMaxChars,
+      stickyPrimaryYAxisWhileScrolling: false,
+      stickyPrimaryYAxisWidth: stickyPrimaryYAxisWidth,
+      minPlottedValueShareOfMax: minPlottedValueShareOfMax,
+      strictLinearBarHeights: strictLinearBarHeights,
+      categoryAutoScrollingMode: categoryAutoScrollingMode,
+      categoryViewportFootnote: categoryViewportFootnote,
+      categoryViewportPanSemanticsLabel: categoryViewportPanSemanticsLabel,
+      reserveOuterDataLabelTopMargin: reserveOuterDataLabelTopMargin,
+      outerDataLabelTopReserve: outerDataLabelTopReserve,
+      dataLabelBackgroundColor: dataLabelBackgroundColor,
+      tapHighlightDimmedOpacity: tapHighlightDimmedOpacity,
+      chartSemanticsCoordinatorNotice: chartSemanticsCoordinatorNotice,
+    );
+  }
 }
 
 /// Structured payload emitted when the user taps a bar.
@@ -405,6 +523,8 @@ class AppComparisonBarChart<T> extends StatelessWidget {
     this.subtitle,
     this.titleTrailing,
     this.onShare,
+    this.shareProgressKey,
+    this.shareEnabled = true,
     this.openShareTooltip,
     this.openShareSemanticLabel,
     this.onOpenFullscreen,
@@ -475,6 +595,12 @@ class AppComparisonBarChart<T> extends StatelessWidget {
 
   /// Optional callback that enables sharing the chart from the chart header.
   final VoidCallback? onShare;
+
+  /// When set with [onShare], reflects in-progress state on the share button.
+  final Object? shareProgressKey;
+
+  /// When false, the share action is disabled (e.g. while chart data loads).
+  final bool shareEnabled;
 
   /// Optional tooltip for the share action button.
   final String? openShareTooltip;
@@ -684,6 +810,8 @@ class AppComparisonBarChart<T> extends StatelessWidget {
       subtitle: subtitle,
       titleTrailing: mergedTitleTrailing,
       onShare: onShare,
+      shareProgressKey: shareProgressKey,
+      shareEnabled: shareEnabled && !isLoading,
       openShareTooltip: openShareTooltip,
       openShareSemanticLabel: openShareSemanticLabel,
       onOpenFullscreen: onOpenFullscreen,

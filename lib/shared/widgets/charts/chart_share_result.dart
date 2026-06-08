@@ -23,4 +23,5 @@ enum ChartShareFailureReason {
   pdfGenerationFailed,
   shareInProgress,
   sharePlatformFailed,
+  shareCancelled,
 }

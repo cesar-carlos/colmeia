@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
-import 'package:colmeia/app/router/app_chart_share_actions.dart';
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
+import 'package:colmeia/app/router/chart_share_icon_button.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
@@ -41,6 +41,8 @@ import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
@@ -870,9 +872,30 @@ class _SalesMonthlyPnlLineChartState extends State<_SalesMonthlyPnlLineChart> {
         ? AppChartShell(
             title: shareTitle,
             subtitle: l10n.salesMonthlyPnlChartSubtitle,
-            onShare: () => unawaited(
-              shareChartCapture(context, _shareKey, subject: shareTitle),
-            ),
+            onShare: isLoading
+                ? null
+                : () => context.shareChartFromRequest(
+                    ChartShareMetadata(
+                      title: shareTitle,
+                      subtitle: l10n.salesMonthlyPnlChartSubtitle,
+                      tableData: ChartShareTableData(
+                        headers: <String>[
+                          l10n.chartSharePdfColumnMonth,
+                          l10n.chartSharePdfColumnRevenue,
+                          l10n.chartSharePdfColumnProfit,
+                        ],
+                        rows: <List<String>>[
+                          for (final point in points)
+                            <String>[
+                              point.anoMes,
+                              AppBrFormatters.currency(point.venda),
+                              AppBrFormatters.currency(point.lucro),
+                            ],
+                        ],
+                      ),
+                    ).toShareRequest(_shareKey),
+                  ),
+            shareProgressKey: _shareKey,
             onOpenFullscreen: onOpenFullscreen,
             child: chartBody,
           )

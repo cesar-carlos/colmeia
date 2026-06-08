@@ -34,10 +34,14 @@ class AppChartFullscreenScaffold extends StatelessWidget {
   EdgeInsets _mergedBodyPadding(BuildContext context, AppThemeTokens tokens) {
     final mq = MediaQuery.maybeOf(context);
     final height = mq?.size.height ?? 0;
+    final isLandscape = mq?.orientation == Orientation.landscape;
     final tightViewport = height.isFinite && height > 0 && height < 560;
+    final compactBody = tightViewport || isLandscape;
     final defaults = EdgeInsets.only(
-      top: tightViewport ? tokens.gapXs : tokens.gapSm,
-      bottom: tightViewport ? tokens.gapSm : tokens.gapMd,
+      top: compactBody ? tokens.gapXs : tokens.gapSm,
+      bottom: compactBody
+          ? (isLandscape ? tokens.gapXs : tokens.gapSm)
+          : tokens.gapMd,
     );
     if (bodyPadding == null) {
       return defaults;
@@ -56,6 +60,8 @@ class AppChartFullscreenScaffold extends StatelessWidget {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
     final l10n = AppLocalizations.of(context);
+    final mq = MediaQuery.of(context);
+    final isLandscape = mq.orientation == Orientation.landscape;
     final resolvedBodyPadding = _mergedBodyPadding(context, tokens);
     final bodyPaddingTop = resolvedBodyPadding.top;
     final bodyPaddingBottom = resolvedBodyPadding.bottom;
@@ -122,7 +128,9 @@ class AppChartFullscreenScaffold extends StatelessWidget {
                           subtitle: resolvedSubtitle,
                           filterSummary: resolvedFilterSummary,
                         ),
-                    SizedBox(height: tokens.contentSpacing),
+                    SizedBox(
+                      height: isLandscape ? tokens.gapXs : tokens.contentSpacing,
+                    ),
                   ],
                   Expanded(child: child),
                 ],
@@ -152,6 +160,8 @@ class AppChartFullscreenHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
     final typography = theme.appTypography;
+    final isLandscape =
+        MediaQuery.orientationOf(context) == Orientation.landscape;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -163,20 +173,24 @@ class AppChartFullscreenHeader extends StatelessWidget {
             resolvedTitle,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: typography.sectionHeaderH2.copyWith(
+            style: (isLandscape
+                    ? (theme.textTheme.titleMedium ?? typography.sectionHeaderH2)
+                    : typography.sectionHeaderH2)
+                .copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
-        if (subtitle case final resolvedSubtitle?
-            when resolvedSubtitle.trim().isNotEmpty) ...<Widget>[
-          SizedBox(height: tokens.gapXs),
-          Text(
-            resolvedSubtitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: typography.body,
-          ),
-        ],
+        if (!isLandscape)
+          if (subtitle case final resolvedSubtitle?
+              when resolvedSubtitle.trim().isNotEmpty) ...<Widget>[
+            SizedBox(height: tokens.gapXs),
+            Text(
+              resolvedSubtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: typography.body,
+            ),
+          ],
         if (filterSummary case final resolvedFilterSummary?
             when resolvedFilterSummary.trim().isNotEmpty) ...<Widget>[
           SizedBox(height: tokens.gapSm),

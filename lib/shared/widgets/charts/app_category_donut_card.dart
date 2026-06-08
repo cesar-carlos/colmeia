@@ -177,6 +177,8 @@ class AppCategoryDonutCard extends StatefulWidget {
     this.titleAccentColor,
     this.titleTrailing,
     this.onShare,
+    this.shareProgressKey,
+    this.shareEnabled = true,
     this.openShareTooltip,
     this.openShareSemanticLabel,
     this.onOpenFullscreen,
@@ -227,6 +229,8 @@ class AppCategoryDonutCard extends StatefulWidget {
   final Color? titleAccentColor;
   final Widget? titleTrailing;
   final VoidCallback? onShare;
+  final Object? shareProgressKey;
+  final bool shareEnabled;
   final String? openShareTooltip;
   final String? openShareSemanticLabel;
   final VoidCallback? onOpenFullscreen;
@@ -374,6 +378,8 @@ class _AppCategoryDonutCardState extends State<AppCategoryDonutCard> {
             accentColor: widget.titleAccentColor,
             titleTrailing: widget.titleTrailing,
             onShare: widget.onShare,
+            shareProgressKey: widget.shareProgressKey,
+            shareEnabled: widget.shareEnabled && !widget.isLoading,
             openShareTooltip: widget.openShareTooltip,
             openShareSemanticLabel: widget.openShareSemanticLabel,
             onOpenFullscreen: widget.onOpenFullscreen,
@@ -597,6 +603,8 @@ class _CategoryDonutCardHeader extends StatelessWidget {
     this.accentColor,
     this.titleTrailing,
     this.onShare,
+    this.shareProgressKey,
+    this.shareEnabled = true,
     this.openShareTooltip,
     this.openShareSemanticLabel,
     this.onOpenFullscreen,
@@ -609,6 +617,8 @@ class _CategoryDonutCardHeader extends StatelessWidget {
   final Color? accentColor;
   final Widget? titleTrailing;
   final VoidCallback? onShare;
+  final Object? shareProgressKey;
+  final bool shareEnabled;
   final String? openShareTooltip;
   final String? openShareSemanticLabel;
   final VoidCallback? onOpenFullscreen;
@@ -671,6 +681,8 @@ class _CategoryDonutCardHeader extends StatelessWidget {
         : AppChartHeaderTrailing(
             titleTrailing: titleTrailing,
             onShare: onShare,
+            shareProgressKey: shareProgressKey,
+            shareEnabled: shareEnabled,
             openShareTooltip: openShareTooltip,
             openShareSemanticLabel: openShareSemanticLabel,
             onOpenFullscreen: onOpenFullscreen,

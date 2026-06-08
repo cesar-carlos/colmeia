@@ -1,7 +1,3 @@
-import 'dart:async';
-
-import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
-import 'package:colmeia/app/router/app_chart_share_actions.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_user_sales_trend_point.dart';
@@ -11,7 +7,11 @@ import 'package:colmeia/features/overview/presentation/widgets/weekday_user_grou
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/charts/daily_sales_weekday_labels.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -24,6 +24,8 @@ class OverviewWeekdayUserSalesTrendChart extends StatefulWidget {
     this.loadFailure,
     this.loadFailureMessage,
     this.onViewAgentFailureDetails,
+    this.onRequestFullscreen,
+    this.onRequestShare,
     super.key,
   });
 
@@ -33,6 +35,8 @@ class OverviewWeekdayUserSalesTrendChart extends StatefulWidget {
   final AppFailure? loadFailure;
   final String? loadFailureMessage;
   final VoidCallback? onViewAgentFailureDetails;
+  final AppChartFullscreenRequestCallback? onRequestFullscreen;
+  final AppChartShareRequestCallback? onRequestShare;
 
   @override
   State<OverviewWeekdayUserSalesTrendChart> createState() =>
@@ -166,30 +170,52 @@ class _OverviewWeekdayUserSalesTrendChartState
       }),
     );
 
+    final metadata = ChartShareMetadata(
+      title: chartTitle,
+      subtitle: l10n.overviewWeekdayUserSalesSubtitle,
+      tableData: ChartShareTableData(
+        headers: <String>[
+          l10n.chartSharePdfColumnWeekday,
+          l10n.chartSharePdfColumnUser,
+          l10n.overviewWeekdayMetricSalesCountLabel,
+          l10n.overviewWeekdayMetricSalesAmountLabel,
+        ],
+        rows: <List<String>>[
+          for (final point in widget.points)
+            <String>[
+              dailySalesWeekdayLabel(point.weekdayNumber, l10n),
+              point.userName,
+              salesCountFormat.format(point.salesCount),
+              AppBrFormatters.currency(point.salesAmount),
+            ],
+        ],
+      ),
+    );
+
     void openShare() {
-      unawaited(
-        shareChartCapture(context, _shareKey, subject: chartTitle),
-      );
+      final emit = widget.onRequestShare;
+      if (emit == null) {
+        return;
+      }
+      emit(context, metadata.toShareRequest(_shareKey));
     }
 
     void openFullscreen() {
+      final emit = widget.onRequestFullscreen;
+      if (emit == null) {
+        return;
+      }
       final chartPointsSnapshot = List<OverviewWeekdayUserSalesTrendPoint>.of(
         chartPoints,
         growable: false,
       );
       final fullscreenShareKey = GlobalKey();
-      unawaited(
-        context.pushChartFullscreen<void>(
-          extra: AppChartFullscreenRouteExtra(
-            title: chartTitle,
-            subtitle: l10n.overviewWeekdayUserSalesSubtitle,
-            chartSemanticsLabel: chartSemantics,
-            headerTrailing: buildChartFullscreenShareTrailing(
-              context: context,
-              shareKey: fullscreenShareKey,
-              subject: chartTitle,
-            ),
-            chartBuilder: (fullscreenContext) {
+      emit(
+        context,
+        metadata.toFullscreenRequest(
+          semanticsLabel: chartSemantics,
+          shareCaptureKey: fullscreenShareKey,
+          chartBuilder: (fullscreenContext) {
               final fullscreenTokens = Theme.of(
                 fullscreenContext,
               ).extension<AppThemeTokens>()!;
@@ -270,8 +296,7 @@ class _OverviewWeekdayUserSalesTrendChartState
                   },
                 ),
               );
-            },
-          ),
+          },
         ),
       );
     }
@@ -280,8 +305,10 @@ class _OverviewWeekdayUserSalesTrendChartState
         ? AppChartShell(
             title: chartTitle,
             subtitle: l10n.overviewWeekdayUserSalesSubtitle,
-            onShare: openShare,
-            onOpenFullscreen: openFullscreen,
+            onShare: widget.onRequestShare == null ? null : openShare,
+            shareProgressKey: _shareKey,
+            onOpenFullscreen:
+                widget.onRequestFullscreen == null ? null : openFullscreen,
             belowSubtitle: segmented,
             child: overviewChartEmptyPlaceholder(
               emptyMessage: emptyMessage,
@@ -306,8 +333,9 @@ class _OverviewWeekdayUserSalesTrendChartState
             extremeSpreadAccessibilityNotice:
                 l10n.chartComparisonExtremeValueSpreadNotice,
             tokens: tokens,
-            onShare: openShare,
-            onOpenFullscreen: openFullscreen,
+            onShare: widget.onRequestShare == null ? null : openShare,
+            onOpenFullscreen:
+                widget.onRequestFullscreen == null ? null : openFullscreen,
           );
 
     return Semantics(

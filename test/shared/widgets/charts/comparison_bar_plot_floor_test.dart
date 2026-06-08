@@ -3,6 +3,17 @@ import 'package:colmeia/shared/widgets/charts/comparison_bar_plot_floor.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  group('comboNumericAxisMaximum', () {
+    test('uses series max only with modest headroom', () {
+      expect(
+        comboNumericAxisMaximum(<num>[12000, 35000, 28000]),
+        50000,
+      );
+      expect(comboNumericAxisMaximum(<num>[35000]), 50000);
+      expect(comboNumericAxisMaximum(const <num>[]), isNull);
+    });
+  });
+
   group('comparisonBarAxisSpreadNiceCeil', () {
     test('rounds up to 1-2-5-10 style steps', () {
       expect(comparisonBarAxisSpreadNiceCeil(32500), 50000);

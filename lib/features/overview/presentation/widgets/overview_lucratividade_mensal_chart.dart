@@ -1,15 +1,18 @@
-import 'dart:async';
-
-import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
-import 'package:colmeia/app/router/app_chart_share_actions.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/presentation/widgets/dashboard_lucratividade_percent_metrics.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_chart_load_failure_helpers.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/charts/metric_toggle_comparison_bar_fullscreen_body.dart'
+    show buildSegmentedControlFullscreenBody, isLandscapeChartViewport;
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
+import 'package:colmeia/shared/widgets/charts/chart_export_capture.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -67,6 +70,8 @@ class OverviewLucratividadeMensalChart extends StatefulWidget {
     this.loadFailure,
     this.loadFailureMessage,
     this.onViewAgentFailureDetails,
+    this.onRequestFullscreen,
+    this.onRequestShare,
     super.key,
   });
 
@@ -77,6 +82,8 @@ class OverviewLucratividadeMensalChart extends StatefulWidget {
   final bool isSingleAgentSelected;
   final String? loadFailureMessage;
   final VoidCallback? onViewAgentFailureDetails;
+  final AppChartFullscreenRequestCallback? onRequestFullscreen;
+  final AppChartShareRequestCallback? onRequestShare;
 
   @override
   State<OverviewLucratividadeMensalChart> createState() =>
@@ -291,25 +298,80 @@ class _OverviewLucratividadeMensalChartState
     }
 
     final shareTitle = l10n.overviewLucratividadeMensalTitle;
+    final inlineStyle = buildStyle(
+      tokens,
+      fsPercent: isPercent,
+      fsMarkupAxis: useMarkupAxis,
+      tooltipBodyResolver: tooltipResolver,
+    );
+    final shareMetadata = ChartShareMetadata(
+      title: shareTitle,
+      subtitle: l10n.overviewLucratividadeMensalSubtitle,
+      tableData: ChartShareTableData(
+        headers: <String>[
+          l10n.chartSharePdfColumnMonth,
+          l10n.chartSharePdfColumnRevenue,
+          l10n.chartSharePdfColumnCost,
+          l10n.chartSharePdfColumnProfit,
+        ],
+        rows: <List<String>>[
+          for (final row in sortedPoints)
+            <String>[
+              row.anoMes,
+              AppBrFormatters.currency(row.valorTotalItem),
+              AppBrFormatters.currency(row.custoReposicao),
+              AppBrFormatters.currency(row.lucro),
+            ],
+        ],
+      ),
+      chartExportBuilder: sortedPoints.isEmpty
+          ? null
+          : (exportContext) {
+              final exportStyle = inlineStyle.forPdfExport();
+              final exportBarLabel = isPercent
+                  ? lucratividadePercentBarSeriesLabel(l10n, _percentMetric)
+                  : isCost
+                  ? l10n.overviewLucratividadeMensalCostSeriesLabel
+                  : isProfit
+                  ? l10n.overviewLucratividadeMensalProfitSeriesLabel
+                  : l10n.overviewLucratividadeMensalRevenueSeriesLabel;
+              return wrapCartesianChartForPdfExport(
+                context: exportContext,
+                itemCount: sortedPoints.length,
+                minSlotWidth: exportStyle.minCategorySlotWidth,
+                height: exportStyle.height,
+                chart: AppComboChart<ResumoProdutoVendaLucratividadeMensalRow>(
+                  items: sortedPoints,
+                  xLabelBuilder: _xLabel,
+                  barValueBuilder: barFn,
+                  barSeriesLabel: exportBarLabel,
+                  lineValueBuilder: lineFn,
+                  lineSeriesLabel: isPercent || isCost || isProfit
+                      ? l10n.overviewLucratividadeMensalRevenueSeriesLabel
+                      : l10n.overviewLucratividadeMensalCostSeriesLabel,
+                  barDataLabelBuilder: labelFn,
+                  style: exportStyle,
+                ),
+              );
+            },
+    );
 
     void openFullscreen() {
+      final emit = widget.onRequestFullscreen;
+      if (emit == null) {
+        return;
+      }
       final snapshot = List<ResumoProdutoVendaLucratividadeMensalRow>.of(
-        widget.points,
+        sortedPoints,
         growable: false,
       );
       final fullscreenShareKey = GlobalKey();
-      unawaited(
-        context.pushChartFullscreen<void>(
-          extra: AppChartFullscreenRouteExtra(
-            title: shareTitle,
-            subtitle: l10n.overviewLucratividadeMensalSubtitle,
-            chartSemanticsLabel: shareTitle,
-            headerTrailing: buildChartFullscreenShareTrailing(
-              context: context,
-              shareKey: fullscreenShareKey,
-              subject: shareTitle,
-            ),
-            chartBuilder: (fullscreenContext) {
+      emit(
+        context,
+        shareMetadata.toFullscreenRequest(
+          semanticsLabel: shareTitle,
+          shareCaptureKey: fullscreenShareKey,
+          chartBuilder: (fullscreenContext) {
               final fullscreenTokens = Theme.of(
                 fullscreenContext,
               ).extension<AppThemeTokens>()!;
@@ -445,78 +507,74 @@ class _OverviewLucratividadeMensalChartState
                     ],
                   );
 
-                  return LayoutBuilder(
-                    builder: (context, constraints) {
-                      final availableChartHeight =
-                          (constraints.maxHeight -
-                                  fullscreenTokens.contentSpacing * 2 -
-                                  48)
-                              .clamp(220.0, constraints.maxHeight);
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          fsBelow,
-                          SizedBox(height: fullscreenTokens.contentSpacing),
-                          SizedBox(
-                            height: availableChartHeight,
-                            child:
-                                AppComboChart<
-                                  ResumoProdutoVendaLucratividadeMensalRow
-                                >(
-                                  key: ValueKey<Object>(
-                                    Object.hash(
-                                      snapshot.length,
-                                      fullscreenDisplay,
-                                      fullscreenPercentMetric,
-                                    ),
-                                  ),
-                                  items: snapshot,
-                                  xLabelBuilder: _xLabel,
-                                  barValueBuilder: fsBarFn,
-                                  barSeriesLabel: fsBarLabel,
-                                  lineValueBuilder: fsLineFn,
-                                  lineSeriesLabel:
-                                      fsPercent ||
-                                          fullscreenDisplay ==
-                                              _LucratividadeDisplay
-                                                  .costRevenue ||
-                                          fullscreenDisplay ==
-                                              _LucratividadeDisplay
-                                                  .profitRevenue
-                                      ? l10n.overviewLucratividadeMensalRevenueSeriesLabel
-                                      : l10n.overviewLucratividadeMensalCostSeriesLabel,
-                                  barDataLabelBuilder: fsLabelFn,
-                                  style: buildStyle(
-                                    fullscreenTokens,
-                                    fsPercent: fsPercent,
-                                    fsMarkupAxis: fsMarkupAxis,
-                                    heightOverride: availableChartHeight,
-                                    tooltipBodyResolver: fsTooltipResolver,
-                                  ),
-                                  emptyPlaceholder: snapshot.isEmpty
-                                      ? Center(
-                                          child: Text(
-                                            emptyMessage,
-                                            textAlign: TextAlign.center,
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodyMedium,
-                                          ),
-                                        )
-                                      : null,
-                                ),
+                  return buildSegmentedControlFullscreenBody(
+                    tokens: fullscreenTokens,
+                    control: fsBelow,
+                    chartBuilder: (availableChartHeight) =>
+                        AppComboChart<ResumoProdutoVendaLucratividadeMensalRow>(
+                          key: ValueKey<Object>(
+                            Object.hash(
+                              snapshot.length,
+                              fullscreenDisplay,
+                              fullscreenPercentMetric,
+                            ),
                           ),
-                        ],
-                      );
-                    },
+                          items: snapshot,
+                          xLabelBuilder: _xLabel,
+                          barValueBuilder: fsBarFn,
+                          barSeriesLabel: fsBarLabel,
+                          lineValueBuilder: fsLineFn,
+                          lineSeriesLabel:
+                              fsPercent ||
+                                  fullscreenDisplay ==
+                                      _LucratividadeDisplay.costRevenue ||
+                                  fullscreenDisplay ==
+                                      _LucratividadeDisplay.profitRevenue
+                              ? l10n.overviewLucratividadeMensalRevenueSeriesLabel
+                              : l10n.overviewLucratividadeMensalCostSeriesLabel,
+                          barDataLabelBuilder: fsLabelFn,
+                          style: () {
+                            final built = buildStyle(
+                              fullscreenTokens,
+                              fsPercent: fsPercent,
+                              fsMarkupAxis: fsMarkupAxis,
+                              heightOverride: availableChartHeight,
+                              tooltipBodyResolver: fsTooltipResolver,
+                            );
+                            if (isLandscapeChartViewport(context)) {
+                              return built.forLandscapeFullscreen(
+                                height: availableChartHeight,
+                              );
+                            }
+                            return built;
+                          }(),
+                          emptyPlaceholder: snapshot.isEmpty
+                              ? Center(
+                                  child: Text(
+                                    emptyMessage,
+                                    textAlign: TextAlign.center,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium,
+                                  ),
+                                )
+                              : null,
+                        ),
                   );
                 },
               ),
               );
-            },
-          ),
+          },
         ),
       );
+    }
+
+    void openShare() {
+      final emit = widget.onRequestShare;
+      if (emit == null) {
+        return;
+      }
+      emit(context, shareMetadata.toShareRequest(_shareKey));
     }
 
     final barSeriesLabel = isPercent
@@ -590,10 +648,10 @@ class _OverviewLucratividadeMensalChartState
         ),
         title: shareTitle,
         subtitle: l10n.overviewLucratividadeMensalSubtitle,
-        onShare: () => unawaited(
-          shareChartCapture(context, _shareKey, subject: shareTitle),
-        ),
-        onOpenFullscreen: openFullscreen,
+        onShare: widget.onRequestShare == null ? null : openShare,
+        shareProgressKey: _shareKey,
+        onOpenFullscreen:
+            widget.onRequestFullscreen == null ? null : openFullscreen,
         belowSubtitle: belowSubtitle,
         items: sortedPoints,
         xLabelBuilder: _xLabel,
@@ -604,12 +662,7 @@ class _OverviewLucratividadeMensalChartState
             ? l10n.overviewLucratividadeMensalRevenueSeriesLabel
             : l10n.overviewLucratividadeMensalCostSeriesLabel,
         barDataLabelBuilder: labelFn,
-        style: buildStyle(
-          tokens,
-          fsPercent: isPercent,
-          fsMarkupAxis: useMarkupAxis,
-          tooltipBodyResolver: tooltipResolver,
-        ),
+        style: inlineStyle,
         emptyPlaceholder: widget.points.isEmpty
             ? DefaultTextStyle.merge(
                 style: Theme.of(context).textTheme.bodyMedium,

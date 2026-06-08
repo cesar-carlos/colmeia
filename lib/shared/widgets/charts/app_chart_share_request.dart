@@ -14,6 +14,7 @@ class AppChartShareRequest {
     this.subtitle,
     this.filterSummary,
     this.tableData,
+    this.chartExportBuilder,
   });
 
   final GlobalKey captureKey;
@@ -22,6 +23,7 @@ class AppChartShareRequest {
   final String? subtitle;
   final String? filterSummary;
   final ChartShareTableData? tableData;
+  final WidgetBuilder? chartExportBuilder;
 }
 
 /// Callback emitted by a shared chart to request sharing its rendered output.

@@ -1,6 +1,7 @@
 import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_header_trailing.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_guard.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -44,6 +45,31 @@ void main() {
 
     expect(find.byType(IconButton), findsNothing);
     expect(find.byType(SizedBox), findsOneWidget);
+  });
+
+  testWidgets('shows progress indicator when share is in progress', (
+    tester,
+  ) async {
+    const progressKey = Object();
+    ChartShareGuard.tryAcquire(progressKey);
+    addTearDown(() => ChartShareGuard.release(progressKey));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: AppChartHeaderTrailing(
+            shareProgressKey: progressKey,
+            onShare: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.byType(IconButton), findsOneWidget);
   });
 
   testWidgets('includes custom titleTrailing before share action', (

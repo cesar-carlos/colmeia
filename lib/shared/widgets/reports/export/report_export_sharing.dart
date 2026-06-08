@@ -6,7 +6,8 @@ import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart' show ShareParams, SharePlus, XFile;
+import 'package:share_plus/share_plus.dart'
+    show ShareParams, SharePlus, ShareResult, XFile;
 
 export 'package:colmeia/shared/utils/sanitize_report_file_name.dart'
     show sanitizeReportFileName;
@@ -38,7 +39,7 @@ Future<XFile> createShareableXFile({
 }
 
 /// Shares arbitrary file [bytes] using the platform share sheet.
-Future<void> shareExportBytes({
+Future<ShareResult> shareExportBytes({
   required Uint8List bytes,
   required String fileName,
   required String mimeType,
@@ -49,7 +50,7 @@ Future<void> shareExportBytes({
     fileName: fileName,
     mimeType: mimeType,
   );
-  await SharePlus.instance.share(
+  return SharePlus.instance.share(
     ShareParams(
       files: <XFile>[xFile],
       subject: subject,

@@ -51,6 +51,25 @@ double comparisonBarDenominatorForPlotFloor(double maxPositive) {
   return comparisonBarAxisSpreadNiceCeil(maxPositive * 1.32);
 }
 
+/// Upper bound for a numeric Y-axis from series values only (bars vs line).
+double? comboNumericAxisMaximum(
+  Iterable<num> values, {
+  bool includeOuterLabelHeadroom = false,
+}) {
+  var maxPositive = 0.0;
+  for (final value in values) {
+    final v = value.toDouble();
+    if (v > maxPositive) {
+      maxPositive = v;
+    }
+  }
+  if (maxPositive <= 0 || !maxPositive.isFinite) {
+    return null;
+  }
+  final factor = includeOuterLabelHeadroom ? 1.12 : 1.05;
+  return comparisonBarAxisSpreadNiceCeil(maxPositive * factor);
+}
+
 double comparisonBarAxisSpreadNiceCeil(double v) {
   if (v <= 0 || !v.isFinite) {
     return 0;

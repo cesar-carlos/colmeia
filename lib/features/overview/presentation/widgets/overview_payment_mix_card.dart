@@ -1,12 +1,12 @@
-import 'dart:async';
-
-import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
-import 'package:colmeia/app/router/app_chart_share_actions.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_payment_method_breakdown.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card.dart';
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card_models.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:flutter/material.dart';
 
 /// Payment mix donut for the overview home. Caches derived segments and total
@@ -16,11 +16,15 @@ class OverviewPaymentMixCard extends StatefulWidget {
   const OverviewPaymentMixCard({
     required this.l10n,
     required this.methods,
+    this.onRequestFullscreen,
+    this.onRequestShare,
     super.key,
   });
 
   final AppLocalizations l10n;
   final List<OverviewPaymentMethodBreakdown> methods;
+  final AppChartFullscreenRequestCallback? onRequestFullscreen;
+  final AppChartShareRequestCallback? onRequestShare;
 
   @override
   State<OverviewPaymentMixCard> createState() => _OverviewPaymentMixCardState();
@@ -58,6 +62,19 @@ class _OverviewPaymentMixCardState extends State<OverviewPaymentMixCard> {
     _centerPrimary = total > 0 ? AppBrFormatters.compactCurrency(total) : null;
   }
 
+  ChartShareMetadata _shareMetadata(AppLocalizations l10n) {
+    return ChartShareMetadata(
+      title: l10n.overviewPaymentMixTitle,
+      subtitle: l10n.overviewPaymentMixSubtitle,
+      tableData: ChartShareTableData.fromDonutSegments(
+        segments: _segments,
+        labelHeader: l10n.chartSharePdfColumnLabel,
+        valueHeader: l10n.chartSharePdfColumnAmount,
+        percentHeader: l10n.chartSharePdfColumnPercent,
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -73,29 +90,30 @@ class _OverviewPaymentMixCardState extends State<OverviewPaymentMixCard> {
   @override
   Widget build(BuildContext context) {
     final l10n = widget.l10n;
+    final metadata = _shareMetadata(l10n);
+    final onRequestFullscreen = widget.onRequestFullscreen;
+    final onRequestShare = widget.onRequestShare;
+
     void openFullscreen() {
+      final emit = onRequestFullscreen;
+      if (emit == null) {
+        return;
+      }
       final segmentsSnapshot = List<AppCategoryDonutSegment>.of(
         _segments,
         growable: false,
       );
       final centerPrimarySnapshot = _centerPrimary;
       final fullscreenShareKey = GlobalKey();
-      final shareTitle = l10n.overviewPaymentMixTitle;
-      unawaited(
-        context.pushChartFullscreen<void>(
-          extra: AppChartFullscreenRouteExtra(
-            title: shareTitle,
-            subtitle: l10n.overviewPaymentMixSubtitle,
-            chartSemanticsLabel: shareTitle,
-            headerTrailing: buildChartFullscreenShareTrailing(
-              context: context,
-              shareKey: fullscreenShareKey,
-              subject: shareTitle,
-            ),
-            chartBuilder: (fullscreenContext) {
-              return RepaintBoundary(
-                key: fullscreenShareKey,
-                child: LayoutBuilder(
+      emit(
+        context,
+        metadata.toFullscreenRequest(
+          shareCaptureKey: fullscreenShareKey,
+          semanticsLabel: metadata.title,
+          chartBuilder: (fullscreenContext) {
+            return RepaintBoundary(
+              key: fullscreenShareKey,
+              child: LayoutBuilder(
                 builder: (context, constraints) {
                   final chartSize = (constraints.biggest.shortestSide * 0.48)
                       .clamp(260.0, 420.0);
@@ -118,11 +136,18 @@ class _OverviewPaymentMixCardState extends State<OverviewPaymentMixCard> {
                   );
                 },
               ),
-              );
-            },
-          ),
+            );
+          },
         ),
       );
+    }
+
+    void openShare() {
+      final emit = onRequestShare;
+      if (emit == null) {
+        return;
+      }
+      emit(context, metadata.toShareRequest(_shareKey));
     }
 
     return RepaintBoundary(
@@ -130,14 +155,9 @@ class _OverviewPaymentMixCardState extends State<OverviewPaymentMixCard> {
       child: AppCategoryDonutCard(
         title: l10n.overviewPaymentMixTitle,
         subtitle: l10n.overviewPaymentMixSubtitle,
-        onOpenFullscreen: openFullscreen,
-        onShare: () => unawaited(
-          shareChartCapture(
-            context,
-            _shareKey,
-            subject: l10n.overviewPaymentMixTitle,
-          ),
-        ),
+        onOpenFullscreen: onRequestFullscreen == null ? null : openFullscreen,
+        onShare: onRequestShare == null ? null : openShare,
+        shareProgressKey: _shareKey,
         style: const AppCategoryDonutCardStyle(
           legendMaxHeight: 280,
         ),

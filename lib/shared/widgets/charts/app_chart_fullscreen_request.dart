@@ -1,3 +1,5 @@
+import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:flutter/material.dart';
 
 /// App-agnostic description of a chart that wants to be presented full screen.
@@ -14,6 +16,8 @@ class AppChartFullscreenRequest {
     this.title,
     this.subtitle,
     this.filterSummary,
+    this.tableData,
+    this.shareMetadata,
     this.semanticsLabel,
     this.shareCaptureKey,
     this.shareSubject,
@@ -24,6 +28,8 @@ class AppChartFullscreenRequest {
   final String? title;
   final String? subtitle;
   final String? filterSummary;
+  final ChartShareTableData? tableData;
+  final ChartShareMetadata? shareMetadata;
   final String? semanticsLabel;
 
   /// When set with [shareSubject], enables share from the fullscreen scaffold.
@@ -35,6 +41,20 @@ class AppChartFullscreenRequest {
   /// When [shareCaptureKey] is provided, the app layer also injects a share
   /// action unless this builder fully replaces that behavior.
   final AppChartFullscreenHeaderTrailingBuilder? headerTrailingBuilder;
+
+  ChartShareMetadata resolveShareMetadata() {
+    final metadata = shareMetadata;
+    if (metadata != null) {
+      return metadata;
+    }
+    return ChartShareMetadata(
+      title: shareSubject ?? title ?? 'chart',
+      subtitle: subtitle,
+      filterSummary: filterSummary,
+      tableData: tableData,
+      subject: shareSubject,
+    );
+  }
 }
 
 /// Callback emitted by a shared chart to request a fullscreen presentation.

@@ -80,6 +80,13 @@ class SyncfusionComboChart<T> extends StatelessWidget {
       (index) => barValueBuilder(items[index]),
       growable: false,
     );
+    final rawLineValues = style.showLineSeries
+        ? List<num>.generate(
+            items.length,
+            (index) => lineValueBuilder(items[index]),
+            growable: false,
+          )
+        : const <num>[];
     final rawBarPoints = List<AppChartPoint>.generate(
       items.length,
       (index) => AppChartPoint(
@@ -130,8 +137,21 @@ class SyncfusionComboChart<T> extends StatelessWidget {
       final primaryGridW = primaryYAxisGrid && style.showYGridLines ? 1.0 : 0.0;
       final barLabelsVisible =
           style.showDataLabels && layout != _ComboLayout.yAxisStrip;
+      final outerBarLabelHeadroom = comparisonBarChartNeedsOuterDataLabelHeadroom(
+        showDataLabels: barLabelsVisible,
+        dataLabelAlignment: style.barDataLabelAlignment,
+      );
+      final leftAxisMaximum = comboNumericAxisMaximum(
+        rawBarValues,
+        includeOuterLabelHeadroom: outerBarLabelHeadroom,
+      );
+      final rightAxisMaximum = showLine
+          ? comboNumericAxisMaximum(rawLineValues)
+          : null;
       final colorScheme = Theme.of(chartContext).colorScheme;
       final tokens = Theme.of(chartContext).extension<AppThemeTokens>()!;
+      final legendPadding = style.compactLayout ? tokens.gapXs : tokens.gapSm;
+      final legendItemPadding = style.compactLayout ? tokens.gapSm : tokens.gapMd;
       final useAnnotationBarLabels =
           barLabelsVisible &&
           (style.barDataLabelAlignment == ChartDataLabelAlignment.outer ||
@@ -187,8 +207,8 @@ class SyncfusionComboChart<T> extends StatelessWidget {
           position: LegendPosition.bottom,
           textStyle: style.legendTextStyle,
           overflowMode: LegendItemOverflowMode.wrap,
-          padding: tokens.gapSm,
-          itemPadding: tokens.gapMd,
+          padding: legendPadding,
+          itemPadding: legendItemPadding,
         ),
         // Do not set [CategoryAxis.arrangeByIndex] to true with bar + line on
         // the same categories: Syncfusion concatenates labels per index
@@ -207,15 +227,14 @@ class SyncfusionComboChart<T> extends StatelessWidget {
         primaryYAxis: NumericAxis(
           name: 'leftAxis',
           isVisible: showPrimaryYAxisLabels,
-          rangePadding:
-              comparisonBarChartNeedsOuterDataLabelHeadroom(
-                showDataLabels: barLabelsVisible,
-                dataLabelAlignment: style.barDataLabelAlignment,
-              )
+          rangePadding: leftAxisMaximum != null
+              ? ChartRangePadding.none
+              : outerBarLabelHeadroom
               ? ChartRangePadding.additionalEnd
               : ChartRangePadding.auto,
           axisLine: const AxisLine(width: 0),
           minimum: hasNegativeBars ? null : 0,
+          maximum: leftAxisMaximum,
           majorGridLines: MajorGridLines(
             color: gridLineColor,
             width: primaryGridW,
@@ -236,7 +255,12 @@ class SyncfusionComboChart<T> extends StatelessWidget {
                   isVisible:
                       layout != _ComboLayout.yAxisStrip && style.showRightYAxis,
                   opposedPosition: true,
+                  rangePadding: rightAxisMaximum != null
+                      ? ChartRangePadding.none
+                      : ChartRangePadding.auto,
                   axisLine: const AxisLine(width: 0),
+                  minimum: rawLineValues.every((value) => value >= 0) ? 0 : null,
+                  maximum: rightAxisMaximum,
                   majorGridLines: const MajorGridLines(width: 0),
                   labelStyle: style.axisLabelTextStyle,
                   numberFormat: style.rightAxisFormat,
@@ -430,16 +454,11 @@ class SyncfusionComboChart<T> extends StatelessWidget {
 
           if (!plot.needsScroll) {
             final slotWidth = layoutWidth / n;
-            return buildCartesian(
-              context,
-              layout: _ComboLayout.full,
-              slotWidth: slotWidth,
-              showLegendInChart: true,
-              enableTooltip: true,
-              showPrimaryYAxisLabels: true,
-              showXAxisLabels: true,
-              primaryYAxisGrid: true,
-              enableCategoryViewportPan: false,
+            return sizedCombo(
+              layoutWidth,
+              slotWidth,
+              resolvedHeight,
+              categoryViewportPan: false,
             );
           }
 

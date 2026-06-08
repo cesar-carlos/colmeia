@@ -37,6 +37,9 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    expect(find.text('Could not share chart. Try again.'), findsOneWidget);
+    expect(
+      find.text('Chart is not ready to share yet. Try again.'),
+      findsOneWidget,
+    );
   });
 }

@@ -62,6 +62,7 @@ class AppComboChartStyle {
     this.tooltipBodyResolver,
     this.minPlottedBarValueShareOfMax = 0.03,
     this.strictLinearBarHeights = false,
+    this.compactLayout = false,
   });
 
   final double? height;
@@ -182,6 +183,102 @@ class AppComboChartStyle {
   /// Disables any readability floor configured through
   /// [minPlottedBarValueShareOfMax].
   final bool strictLinearBarHeights;
+
+  /// Tighter legend padding and chart chrome for landscape fullscreen routes.
+  final bool compactLayout;
+
+  /// Landscape fullscreen display: fit every category in the viewport width,
+  /// without horizontal scroll or scroll-track chrome.
+  AppComboChartStyle forLandscapeFullscreen({double? height}) {
+    return AppComboChartStyle(
+      height: height ?? this.height,
+      barWidth: barWidth,
+      barSpacing: barSpacing,
+      lineWidth: lineWidth,
+      chartPadding: chartPadding,
+      animationDuration: animationDuration,
+      leftAxisFormat: leftAxisFormat,
+      rightAxisFormat: rightAxisFormat,
+      showTooltip: showTooltip,
+      showYGridLines: showYGridLines,
+      showXAxis: showXAxis,
+      showRightYAxis: showRightYAxis,
+      showLineSeries: showLineSeries,
+      showLegend: showLegend,
+      showMarkers: showMarkers,
+      axisLabelTextStyle: axisLabelTextStyle,
+      legendTextStyle: legendTextStyle,
+      barColor: barColor,
+      lineColor: lineColor,
+      barBorderRadius: barBorderRadius,
+      showDataLabels: showDataLabels,
+      dataLabelTextStyle: dataLabelTextStyle,
+      barDataLabelAlignment: barDataLabelAlignment,
+      barDataLabelOffset: barDataLabelOffset,
+      enableAutoScroll: false,
+      minCategorySlotWidth: minCategorySlotWidth,
+      showScrollFade: false,
+      horizontalScrollSemanticsHint: horizontalScrollSemanticsHint,
+      stickyPrimaryYAxisWhileScrolling: false,
+      stickyPrimaryYAxisWidth: stickyPrimaryYAxisWidth,
+      loadingLabel: loadingLabel,
+      emptyMessage: emptyMessage,
+      categoryAutoScrollingMode: categoryAutoScrollingMode,
+      categoryViewportFootnote: categoryViewportFootnote,
+      categoryViewportPanSemanticsLabel: categoryViewportPanSemanticsLabel,
+      categoryLabelIntersectAction: categoryLabelIntersectAction,
+      tooltipBodyResolver: tooltipBodyResolver,
+      minPlottedBarValueShareOfMax: minPlottedBarValueShareOfMax,
+      strictLinearBarHeights: strictLinearBarHeights,
+      compactLayout: true,
+    );
+  }
+
+  /// Style for offscreen PDF export: full width, no scroll, no animation.
+  AppComboChartStyle forPdfExport() {
+    return AppComboChartStyle(
+      height: height,
+      barWidth: barWidth,
+      barSpacing: barSpacing,
+      lineWidth: lineWidth,
+      chartPadding: chartPadding,
+      animationDuration: Duration.zero,
+      leftAxisFormat: leftAxisFormat,
+      rightAxisFormat: rightAxisFormat,
+      showTooltip: showTooltip,
+      showYGridLines: showYGridLines,
+      showXAxis: showXAxis,
+      showRightYAxis: showRightYAxis,
+      showLineSeries: showLineSeries,
+      showLegend: showLegend,
+      showMarkers: showMarkers,
+      axisLabelTextStyle: axisLabelTextStyle,
+      legendTextStyle: legendTextStyle,
+      barColor: barColor,
+      lineColor: lineColor,
+      barBorderRadius: barBorderRadius,
+      showDataLabels: showDataLabels,
+      dataLabelTextStyle: dataLabelTextStyle,
+      barDataLabelAlignment: barDataLabelAlignment,
+      barDataLabelOffset: barDataLabelOffset,
+      enableAutoScroll: false,
+      minCategorySlotWidth: minCategorySlotWidth,
+      showScrollFade: false,
+      horizontalScrollSemanticsHint: horizontalScrollSemanticsHint,
+      stickyPrimaryYAxisWhileScrolling: false,
+      stickyPrimaryYAxisWidth: stickyPrimaryYAxisWidth,
+      loadingLabel: loadingLabel,
+      emptyMessage: emptyMessage,
+      categoryAutoScrollingMode: categoryAutoScrollingMode,
+      categoryViewportFootnote: categoryViewportFootnote,
+      categoryViewportPanSemanticsLabel: categoryViewportPanSemanticsLabel,
+      categoryLabelIntersectAction: categoryLabelIntersectAction,
+      tooltipBodyResolver: tooltipBodyResolver,
+      minPlottedBarValueShareOfMax: minPlottedBarValueShareOfMax,
+      strictLinearBarHeights: strictLinearBarHeights,
+      compactLayout: compactLayout,
+    );
+  }
 }
 
 enum AppComboChartSeriesType {
@@ -241,6 +338,8 @@ class AppComboChart<T> extends StatelessWidget {
     this.subtitle,
     this.titleTrailing,
     this.onShare,
+    this.shareProgressKey,
+    this.shareEnabled = true,
     this.openShareTooltip,
     this.openShareSemanticLabel,
     this.onOpenFullscreen,
@@ -297,6 +396,8 @@ class AppComboChart<T> extends StatelessWidget {
   final String? subtitle;
   final Widget? titleTrailing;
   final VoidCallback? onShare;
+  final Object? shareProgressKey;
+  final bool shareEnabled;
   final String? openShareTooltip;
   final String? openShareSemanticLabel;
   final VoidCallback? onOpenFullscreen;
@@ -382,6 +483,8 @@ class AppComboChart<T> extends StatelessWidget {
       subtitle: subtitle,
       titleTrailing: titleTrailing,
       onShare: onShare,
+      shareProgressKey: shareProgressKey,
+      shareEnabled: shareEnabled && !isLoading,
       openShareTooltip: openShareTooltip,
       openShareSemanticLabel: openShareSemanticLabel,
       onOpenFullscreen: onOpenFullscreen,

@@ -1,7 +1,3 @@
-import 'dart:async';
-
-import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
-import 'package:colmeia/app/router/app_chart_share_actions.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
@@ -9,10 +5,15 @@ import 'package:colmeia/features/overview/domain/overview_weekday_display_order.
 import 'package:colmeia/features/overview/presentation/widgets/overview_chart_load_failure_helpers.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/charts/daily_sales_weekday_labels.dart';
-import 'package:colmeia/shared/charts/metric_toggle_comparison_bar_fullscreen_body.dart';
+import 'package:colmeia/shared/charts/metric_toggle_comparison_bar_fullscreen_body.dart'
+    show buildMetricToggleComparisonBarFullscreenBody, isLandscapeChartViewport;
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_dashboard_comparison_bar_chart_preset.dart';
+import 'package:colmeia/shared/widgets/charts/chart_export_capture.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
@@ -26,6 +27,8 @@ class OverviewWeekdaySalesTrendChart extends StatefulWidget {
     this.loadFailure,
     this.loadFailureMessage,
     this.onViewAgentFailureDetails,
+    this.onRequestFullscreen,
+    this.onRequestShare,
     super.key,
   });
 
@@ -35,6 +38,8 @@ class OverviewWeekdaySalesTrendChart extends StatefulWidget {
   final AppFailure? loadFailure;
   final String? loadFailureMessage;
   final VoidCallback? onViewAgentFailureDetails;
+  final AppChartFullscreenRequestCallback? onRequestFullscreen;
+  final AppChartShareRequestCallback? onRequestShare;
 
   @override
   State<OverviewWeekdaySalesTrendChart> createState() =>
@@ -151,28 +156,97 @@ class _OverviewWeekdaySalesTrendChartState
     final shareTitle = isSalesCount
         ? l10n.overviewWeekdaySalesTitle
         : l10n.overviewWeekdayRevenueTitle;
+    final onRequestFullscreen = widget.onRequestFullscreen;
+    final onRequestShare = widget.onRequestShare;
+
+    ChartShareMetadata shareMetadata({required bool isSalesCountMetric}) {
+      final inlineStyle = appDashboardComparisonBarChartStyle(
+        tokens: tokens,
+        kind: AppDashboardComparisonBarChartKind.weekday,
+        l10n: l10n,
+        weekdayUsesCurrencyAxis: !isSalesCountMetric,
+        weekdayRevenueDataLabelBackground: isSalesCountMetric
+            ? null
+            : Theme.of(context).colorScheme.surface,
+      );
+      return ChartShareMetadata(
+        title: isSalesCountMetric
+            ? l10n.overviewWeekdaySalesTitle
+            : l10n.overviewWeekdayRevenueTitle,
+        subtitle: l10n.overviewWeekdaySalesSubtitle,
+        tableData: ChartShareTableData(
+          headers: <String>[
+            l10n.chartSharePdfColumnWeekday,
+            l10n.overviewWeekdayMetricSalesCountLabel,
+            l10n.overviewWeekdayMetricSalesAmountLabel,
+          ],
+          rows: <List<String>>[
+            for (final point in _weekdayTableRows())
+              <String>[
+                dailySalesWeekdayLabel(point.weekdayNumber, l10n),
+                salesCountFormat.format(point.salesCount),
+                AppBrFormatters.currency(point.salesAmount),
+              ],
+          ],
+        ),
+        chartExportBuilder: chartPoints.isEmpty
+            ? null
+            : (exportContext) {
+                final exportStyle = inlineStyle.forPdfExport();
+                return wrapCartesianChartForPdfExport(
+                  context: exportContext,
+                  itemCount: chartPoints.length,
+                  minSlotWidth: comparisonBarMinSlotWidth(
+                    minBarWidth: exportStyle.minBarWidth,
+                  ),
+                  height: exportStyle.height,
+                  chart: AppComparisonBarChart<OverviewWeekdaySalesTrendPoint>(
+                    items: chartPoints,
+                    plotFloorAccessibilityNotice:
+                        l10n.chartComparisonPlotFloorNotice,
+                    extremeSpreadAccessibilityNotice:
+                        l10n.chartComparisonExtremeValueSpreadNotice,
+                    labelBuilder: (point) =>
+                        dailySalesWeekdayLabel(point.weekdayNumber, l10n),
+                    valueBuilder: (point) => isSalesCountMetric
+                        ? point.salesCount
+                        : point.salesAmount,
+                    tooltipLabelBuilder: (point, value) =>
+                        l10n.overviewWeekdaySalesTooltip(
+                      dailySalesWeekdayLabel(point.weekdayNumber, l10n),
+                      salesCountFormat.format(point.salesCount),
+                      AppBrFormatters.currency(point.salesAmount),
+                    ),
+                    dataLabelBuilder: (_, value) => isSalesCountMetric
+                        ? compactSalesCountFormat.format(value)
+                        : AppBrFormatters.compactCurrency(value),
+                    style: exportStyle,
+                  ),
+                );
+              },
+      );
+    }
 
     void openFullscreen() {
+      final emit = onRequestFullscreen;
+      if (emit == null) {
+        return;
+      }
       final chartPointsSnapshot = List<OverviewWeekdaySalesTrendPoint>.of(
         chartPoints,
         growable: false,
       );
       final isSalesCountSnapshot = isSalesCount;
       final fullscreenShareKey = GlobalKey();
-      unawaited(
-        context.pushChartFullscreen<void>(
-          extra: AppChartFullscreenRouteExtra(
-            title: shareTitle,
-            subtitle: l10n.overviewWeekdaySalesSubtitle,
-            chartSemanticsLabel: isSalesCountSnapshot
-                ? l10n.overviewWeekdaySalesChartSemantics
-                : l10n.overviewWeekdayRevenueChartSemantics,
-            headerTrailing: buildChartFullscreenShareTrailing(
-              context: context,
-              shareKey: fullscreenShareKey,
-              subject: shareTitle,
-            ),
-            chartBuilder: (fullscreenContext) {
+      final metadata = shareMetadata(isSalesCountMetric: isSalesCountSnapshot);
+      emit(
+        context,
+        metadata.toFullscreenRequest(
+          semanticsLabel: isSalesCountSnapshot
+              ? l10n.overviewWeekdaySalesChartSemantics
+              : l10n.overviewWeekdayRevenueChartSemantics,
+          shareCaptureKey: fullscreenShareKey,
+          chartBuilder: (fullscreenContext) {
               final fullscreenTokens = Theme.of(
                 fullscreenContext,
               ).extension<AppThemeTokens>()!;
@@ -226,17 +300,25 @@ class _OverviewWeekdaySalesTrendChartState
                         dataLabelBuilder: (_, value) => fullscreenIsSalesCount
                             ? compactSalesCountFormat.format(value)
                             : AppBrFormatters.compactCurrency(value),
-                        style: appDashboardComparisonBarChartStyle(
-                          tokens: fullscreenTokens,
-                          kind: AppDashboardComparisonBarChartKind.weekday,
-                          l10n: l10n,
-                          weekdayUsesCurrencyAxis: !fullscreenIsSalesCount,
-                          weekdayRevenueDataLabelBackground:
-                              fullscreenIsSalesCount
-                              ? null
-                              : Theme.of(context).colorScheme.surface,
-                          heightOverride: availableChartHeight,
-                        ),
+                        style: () {
+                          final built = appDashboardComparisonBarChartStyle(
+                            tokens: fullscreenTokens,
+                            kind: AppDashboardComparisonBarChartKind.weekday,
+                            l10n: l10n,
+                            weekdayUsesCurrencyAxis: !fullscreenIsSalesCount,
+                            weekdayRevenueDataLabelBackground:
+                                fullscreenIsSalesCount
+                                ? null
+                                : Theme.of(context).colorScheme.surface,
+                            heightOverride: availableChartHeight,
+                          );
+                          if (isLandscapeChartViewport(context)) {
+                            return built.forLandscapeFullscreen(
+                              height: availableChartHeight,
+                            );
+                          }
+                          return built;
+                        }(),
                         emptyPlaceholder: showEmptyPlaceholder
                             ? Center(
                                 child: Text(
@@ -252,9 +334,19 @@ class _OverviewWeekdaySalesTrendChartState
                   },
                 ),
               );
-            },
-          ),
+          },
         ),
+      );
+    }
+
+    void openShare() {
+      final emit = onRequestShare;
+      if (emit == null) {
+        return;
+      }
+      emit(
+        context,
+        shareMetadata(isSalesCountMetric: isSalesCount).toShareRequest(_shareKey),
       );
     }
 
@@ -269,31 +361,9 @@ class _OverviewWeekdaySalesTrendChartState
         child: AppComparisonBarChart<OverviewWeekdaySalesTrendPoint>(
           title: shareTitle,
           subtitle: l10n.overviewWeekdaySalesSubtitle,
-          onShare: () => unawaited(
-            shareChartCapture(
-              context,
-              _shareKey,
-              subject: shareTitle,
-              title: shareTitle,
-              subtitle: l10n.overviewWeekdaySalesSubtitle,
-              tableData: ChartShareTableData(
-                headers: <String>[
-                  l10n.chartSharePdfColumnWeekday,
-                  l10n.overviewWeekdayMetricSalesCountLabel,
-                  l10n.overviewWeekdayMetricSalesAmountLabel,
-                ],
-                rows: <List<String>>[
-                  for (final point in _weekdayTableRows())
-                    <String>[
-                      dailySalesWeekdayLabel(point.weekdayNumber, l10n),
-                      salesCountFormat.format(point.salesCount),
-                      AppBrFormatters.currency(point.salesAmount),
-                    ],
-                ],
-              ),
-            ),
-          ),
-          onOpenFullscreen: openFullscreen,
+          onShare: onRequestShare == null ? null : openShare,
+          shareProgressKey: _shareKey,
+          onOpenFullscreen: onRequestFullscreen == null ? null : openFullscreen,
         belowSubtitle: AppSegmentedControl<_OverviewWeekdayMetric>(
           options: <AppSegmentedControlOption<_OverviewWeekdayMetric>>[
             AppSegmentedControlOption<_OverviewWeekdayMetric>(

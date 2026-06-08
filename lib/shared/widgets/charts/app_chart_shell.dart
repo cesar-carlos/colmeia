@@ -13,6 +13,8 @@ class AppChartShell extends StatelessWidget {
     this.subtitle,
     this.titleTrailing,
     this.onShare,
+    this.shareProgressKey,
+    this.shareEnabled = true,
     this.openShareTooltip,
     this.openShareSemanticLabel,
     this.onOpenFullscreen,
@@ -41,6 +43,12 @@ class AppChartShell extends StatelessWidget {
 
   /// Optional callback that shows a share action in the chart header.
   final VoidCallback? onShare;
+
+  /// When set with [onShare], reflects in-progress state on the share button.
+  final Object? shareProgressKey;
+
+  /// When false, the share action is disabled (e.g. while chart data loads).
+  final bool shareEnabled;
 
   /// Optional tooltip for the share action button.
   final String? openShareTooltip;
@@ -143,6 +151,8 @@ class AppChartShell extends StatelessWidget {
     return AppChartHeaderTrailing(
       titleTrailing: titleTrailing,
       onShare: onShare,
+      shareProgressKey: shareProgressKey,
+      shareEnabled: shareEnabled,
       openShareTooltip: openShareTooltip,
       openShareSemanticLabel: openShareSemanticLabel,
       onOpenFullscreen: onOpenFullscreen,

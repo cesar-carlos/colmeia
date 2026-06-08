@@ -1,14 +1,15 @@
-import 'dart:async';
-
-import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
-import 'package:colmeia/app/router/app_chart_share_actions.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_dashboard_comparison_bar_chart_preset.dart';
+import 'package:colmeia/shared/widgets/charts/chart_export_capture.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:flutter/material.dart';
 
 String _overviewUserRankingTooltip(
@@ -35,11 +36,15 @@ class OverviewAgentRankingCard extends StatefulWidget {
   const OverviewAgentRankingCard({
     required this.l10n,
     required this.agentRankings,
+    this.onRequestFullscreen,
+    this.onRequestShare,
     super.key,
   });
 
   final AppLocalizations l10n;
   final List<OverviewAgentRanking> agentRankings;
+  final AppChartFullscreenRequestCallback? onRequestFullscreen;
+  final AppChartShareRequestCallback? onRequestShare;
 
   @override
   State<OverviewAgentRankingCard> createState() =>
@@ -56,25 +61,76 @@ class _OverviewAgentRankingCardState extends State<OverviewAgentRankingCard> {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final showEmpty = agentRankings.isEmpty;
     final shareTitle = l10n.dashboardAgentRankingTitle;
+    final inlineStyle = appDashboardComparisonBarChartStyle(
+      tokens: tokens,
+      kind: AppDashboardComparisonBarChartKind.ranking,
+      l10n: l10n,
+    );
+    final metadata = ChartShareMetadata(
+      title: shareTitle,
+      subtitle: l10n.dashboardAgentRankingSubtitle,
+      tableData: ChartShareTableData.fromRanking(
+        rankHeader: l10n.chartSharePdfColumnRank,
+        nameHeader: l10n.chartSharePdfColumnName,
+        amountHeader: l10n.chartSharePdfColumnAmount,
+        salesCountHeader: l10n.chartSharePdfColumnSalesCount,
+        salesCounts: <String>[
+          for (final ranking in agentRankings)
+            ranking.totalSalesCount.toString(),
+        ],
+        items: <({String name, String amount})>[
+          for (final ranking in agentRankings)
+            (
+              name: ranking.displayName,
+              amount: AppBrFormatters.currency(ranking.totalAmount),
+            ),
+        ],
+      ),
+      chartExportBuilder: agentRankings.isEmpty
+          ? null
+          : (exportContext) {
+              final exportStyle = inlineStyle.forPdfExport();
+              return wrapCartesianChartForPdfExport(
+                context: exportContext,
+                itemCount: agentRankings.length,
+                minSlotWidth: comparisonBarMinSlotWidth(
+                  minBarWidth: exportStyle.minBarWidth,
+                ),
+                height: exportStyle.height,
+                chart: AppComparisonBarChart<OverviewAgentRanking>(
+                  items: agentRankings,
+                  plotFloorAccessibilityNotice:
+                      l10n.chartComparisonPlotFloorNotice,
+                  extremeSpreadAccessibilityNotice:
+                      l10n.chartComparisonExtremeValueSpreadNotice,
+                  labelBuilder: (a) => a.displayName,
+                  valueBuilder: (a) => a.totalAmount,
+                  tooltipLabelBuilder: (a, v) =>
+                      '${a.displayName}: ${AppBrFormatters.currency(v)}',
+                  dataLabelBuilder: (a, v) =>
+                      AppBrFormatters.compactCurrency(v),
+                  style: exportStyle,
+                ),
+              );
+            },
+    );
 
     void openFullscreen() {
+      final emit = widget.onRequestFullscreen;
+      if (emit == null) {
+        return;
+      }
       final rankingsSnapshot = List<OverviewAgentRanking>.of(
         agentRankings,
         growable: false,
       );
       final fullscreenShareKey = GlobalKey();
-      unawaited(
-        context.pushChartFullscreen<void>(
-          extra: AppChartFullscreenRouteExtra(
-            title: shareTitle,
-            subtitle: l10n.dashboardAgentRankingSubtitle,
-            chartSemanticsLabel: shareTitle,
-            headerTrailing: buildChartFullscreenShareTrailing(
-              context: context,
-              shareKey: fullscreenShareKey,
-              subject: shareTitle,
-            ),
-            chartBuilder: (fullscreenContext) {
+      emit(
+        context,
+        metadata.toFullscreenRequest(
+          shareCaptureKey: fullscreenShareKey,
+          semanticsLabel: shareTitle,
+          chartBuilder: (fullscreenContext) {
               final fullscreenTokens = Theme.of(
                 fullscreenContext,
               ).extension<AppThemeTokens>()!;
@@ -113,10 +169,17 @@ class _OverviewAgentRankingCardState extends State<OverviewAgentRankingCard> {
                   },
                 ),
               );
-            },
-          ),
+          },
         ),
       );
+    }
+
+    void openShare() {
+      final emit = widget.onRequestShare;
+      if (emit == null) {
+        return;
+      }
+      emit(context, metadata.toShareRequest(_shareKey));
     }
 
     return RepaintBoundary(
@@ -124,10 +187,10 @@ class _OverviewAgentRankingCardState extends State<OverviewAgentRankingCard> {
       child: AppComparisonBarChart<OverviewAgentRanking>(
         title: shareTitle,
         subtitle: l10n.dashboardAgentRankingSubtitle,
-        onShare: () => unawaited(
-          shareChartCapture(context, _shareKey, subject: shareTitle),
-        ),
-        onOpenFullscreen: openFullscreen,
+        onShare: widget.onRequestShare == null ? null : openShare,
+        shareProgressKey: _shareKey,
+        onOpenFullscreen:
+            widget.onRequestFullscreen == null ? null : openFullscreen,
         items: agentRankings,
         plotFloorAccessibilityNotice: l10n.chartComparisonPlotFloorNotice,
         extremeSpreadAccessibilityNotice:
@@ -137,11 +200,7 @@ class _OverviewAgentRankingCardState extends State<OverviewAgentRankingCard> {
         tooltipLabelBuilder: (a, v) =>
             '${a.displayName}: ${AppBrFormatters.currency(v)}',
         dataLabelBuilder: (a, v) => AppBrFormatters.compactCurrency(v),
-        style: appDashboardComparisonBarChartStyle(
-          tokens: tokens,
-          kind: AppDashboardComparisonBarChartKind.ranking,
-          l10n: l10n,
-        ),
+        style: inlineStyle,
         emptyPlaceholder: showEmpty
             ? Padding(
                 padding: EdgeInsets.symmetric(vertical: tokens.contentSpacing),
@@ -163,11 +222,15 @@ class OverviewUserRankingCard extends StatefulWidget {
   const OverviewUserRankingCard({
     required this.l10n,
     required this.userRankings,
+    this.onRequestFullscreen,
+    this.onRequestShare,
     super.key,
   });
 
   final AppLocalizations l10n;
   final List<OverviewUserRanking> userRankings;
+  final AppChartFullscreenRequestCallback? onRequestFullscreen;
+  final AppChartShareRequestCallback? onRequestShare;
 
   @override
   State<OverviewUserRankingCard> createState() =>
@@ -191,25 +254,71 @@ class _OverviewUserRankingCardState extends State<OverviewUserRankingCard> {
     );
     final showEmpty = userRankings.isEmpty;
     final shareTitle = l10n.dashboardUserRankingTitle;
+    final metadata = ChartShareMetadata(
+      title: shareTitle,
+      subtitle: l10n.dashboardUserRankingSubtitle,
+      tableData: ChartShareTableData.fromRanking(
+        rankHeader: l10n.chartSharePdfColumnRank,
+        nameHeader: l10n.chartSharePdfColumnUser,
+        amountHeader: l10n.chartSharePdfColumnAmount,
+        salesCountHeader: l10n.chartSharePdfColumnSalesCount,
+        salesCounts: <String>[
+          for (final ranking in userRankings)
+            ranking.totalSalesCount.toString(),
+        ],
+        items: <({String name, String amount})>[
+          for (final ranking in userRankings)
+            (
+              name: ranking.userName,
+              amount: AppBrFormatters.currency(ranking.totalAmount),
+            ),
+        ],
+      ),
+      chartExportBuilder: userRankings.isEmpty
+          ? null
+          : (exportContext) {
+              final exportStyle = rankingChartStyle.forPdfExport();
+              return wrapCartesianChartForPdfExport(
+                context: exportContext,
+                itemCount: userRankings.length,
+                minSlotWidth: comparisonBarMinSlotWidth(
+                  minBarWidth: exportStyle.minBarWidth,
+                ),
+                height: exportStyle.height,
+                chart: AppComparisonBarChart<OverviewUserRanking>(
+                  items: userRankings,
+                  plotFloorAccessibilityNotice:
+                      l10n.chartComparisonPlotFloorNotice,
+                  extremeSpreadAccessibilityNotice:
+                      l10n.chartComparisonExtremeValueSpreadNotice,
+                  labelBuilder: (u) => u.userName,
+                  valueBuilder: (u) => u.totalAmount,
+                  tooltipLabelBuilder: (u, v) =>
+                      _overviewUserRankingTooltip(l10n, u, v),
+                  dataLabelBuilder: (u, v) =>
+                      _overviewUserRankingDataLabel(l10n, u, v),
+                  style: exportStyle,
+                ),
+              );
+            },
+    );
 
     void openFullscreen() {
+      final emit = widget.onRequestFullscreen;
+      if (emit == null) {
+        return;
+      }
       final rankingsSnapshot = List<OverviewUserRanking>.of(
         userRankings,
         growable: false,
       );
       final fullscreenShareKey = GlobalKey();
-      unawaited(
-        context.pushChartFullscreen<void>(
-          extra: AppChartFullscreenRouteExtra(
-            title: shareTitle,
-            subtitle: l10n.dashboardUserRankingSubtitle,
-            chartSemanticsLabel: shareTitle,
-            headerTrailing: buildChartFullscreenShareTrailing(
-              context: context,
-              shareKey: fullscreenShareKey,
-              subject: shareTitle,
-            ),
-            chartBuilder: (fullscreenContext) {
+      emit(
+        context,
+        metadata.toFullscreenRequest(
+          shareCaptureKey: fullscreenShareKey,
+          semanticsLabel: shareTitle,
+          chartBuilder: (fullscreenContext) {
               final fullscreenTokens = Theme.of(
                 fullscreenContext,
               ).extension<AppThemeTokens>()!;
@@ -251,10 +360,17 @@ class _OverviewUserRankingCardState extends State<OverviewUserRankingCard> {
                   },
                 ),
               );
-            },
-          ),
+          },
         ),
       );
+    }
+
+    void openShare() {
+      final emit = widget.onRequestShare;
+      if (emit == null) {
+        return;
+      }
+      emit(context, metadata.toShareRequest(_shareKey));
     }
 
     return RepaintBoundary(
@@ -262,10 +378,10 @@ class _OverviewUserRankingCardState extends State<OverviewUserRankingCard> {
       child: AppComparisonBarChart<OverviewUserRanking>(
         title: shareTitle,
         subtitle: l10n.dashboardUserRankingSubtitle,
-        onShare: () => unawaited(
-          shareChartCapture(context, _shareKey, subject: shareTitle),
-        ),
-        onOpenFullscreen: openFullscreen,
+        onShare: widget.onRequestShare == null ? null : openShare,
+        shareProgressKey: _shareKey,
+        onOpenFullscreen:
+            widget.onRequestFullscreen == null ? null : openFullscreen,
         items: userRankings,
         plotFloorAccessibilityNotice: l10n.chartComparisonPlotFloorNotice,
         extremeSpreadAccessibilityNotice:

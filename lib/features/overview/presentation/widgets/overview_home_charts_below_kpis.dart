@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
@@ -79,6 +80,10 @@ class _OverviewHomeChartsBelowKpisState extends State<OverviewHomeChartsBelowKpi
             loadFailed: overview.monthlyParcelTrendLoadFailed,
             loadFailure: overview.monthlyParcelTrendLoadFailure,
             loadFailureMessage: overview.monthlyParcelTrendLoadFailureMessage,
+            onRequestFullscreen: (context, request) =>
+                context.pushChartFullscreenFromRequest(request),
+            onRequestShare: (context, request) =>
+                context.shareChartFromRequest(request),
             onViewAgentFailureDetails:
                 overviewHasPartialFailuresForSource(
                   overview,
@@ -105,6 +110,10 @@ class _OverviewHomeChartsBelowKpisState extends State<OverviewHomeChartsBelowKpi
           child: OverviewAgentRankingCard(
             l10n: l10n,
             agentRankings: agentRankings,
+            onRequestFullscreen: (context, request) =>
+                context.pushChartFullscreenFromRequest(request),
+            onRequestShare: (context, request) =>
+                context.shareChartFromRequest(request),
           ),
         ),
       ],

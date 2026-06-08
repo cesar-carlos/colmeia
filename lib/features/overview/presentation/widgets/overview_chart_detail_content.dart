@@ -82,6 +82,10 @@ class _OverviewChartDetailContentState extends State<OverviewChartDetailContent>
       OverviewProgressiveSection.paymentMix => OverviewPaymentMixCard(
         l10n: l10n,
         methods: overview.paymentMethods,
+        onRequestFullscreen: (context, request) =>
+            context.pushChartFullscreenFromRequest(request),
+        onRequestShare: (context, request) =>
+            context.shareChartFromRequest(request),
       ),
       OverviewProgressiveSection.weekdaySales => OverviewWeekdaySalesTrendChart(
         l10n: l10n,
@@ -91,6 +95,10 @@ class _OverviewChartDetailContentState extends State<OverviewChartDetailContent>
         loadFailureMessage: overview.weekdaySalesTrendLoadFailureMessage,
         onViewAgentFailureDetails:
             partialDetailsLink(OverviewAgentQueryFailureSource.weekdayTrend),
+        onRequestFullscreen: (context, request) =>
+            context.pushChartFullscreenFromRequest(request),
+        onRequestShare: (context, request) =>
+            context.shareChartFromRequest(request),
       ),
       OverviewProgressiveSection.weekdayUserSales =>
         OverviewWeekdayUserSalesTrendChart(
@@ -102,10 +110,18 @@ class _OverviewChartDetailContentState extends State<OverviewChartDetailContent>
           onViewAgentFailureDetails: partialDetailsLink(
             OverviewAgentQueryFailureSource.weekdayUserTrend,
           ),
+          onRequestFullscreen: (context, request) =>
+              context.pushChartFullscreenFromRequest(request),
+          onRequestShare: (context, request) =>
+              context.shareChartFromRequest(request),
         ),
       OverviewProgressiveSection.userRanking => OverviewUserRankingCard(
         l10n: l10n,
         userRankings: _rankingsCache.resolve(overview).users,
+        onRequestFullscreen: (context, request) =>
+            context.pushChartFullscreenFromRequest(request),
+        onRequestShare: (context, request) =>
+            context.shareChartFromRequest(request),
       ),
       OverviewProgressiveSection.lucratividadePeriod =>
         OverviewLucratividadeChart(
@@ -127,6 +143,10 @@ class _OverviewChartDetailContentState extends State<OverviewChartDetailContent>
                   ),
                 )
               : null,
+          onRequestFullscreen: (context, request) =>
+              context.pushChartFullscreenFromRequest(request),
+          onRequestShare: (context, request) =>
+              context.shareChartFromRequest(request),
         ),
       _ => const SizedBox.shrink(),
     };

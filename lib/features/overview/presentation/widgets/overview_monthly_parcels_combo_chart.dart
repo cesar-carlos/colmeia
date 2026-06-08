@@ -1,16 +1,19 @@
-import 'dart:async';
-
-import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
-import 'package:colmeia/app/router/app_chart_share_actions.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_chart_load_failure_helpers.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/charts/metric_toggle_comparison_bar_fullscreen_body.dart'
+    show buildSegmentedControlFullscreenBody, isLandscapeChartViewport;
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart'
     show formatComparisonBarXAxisLabelWrapped;
+import 'package:colmeia/shared/widgets/charts/chart_export_capture.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
@@ -78,6 +81,8 @@ class OverviewMonthlyParcelsComboChart extends StatefulWidget {
     this.onViewAgentFailureDetails,
     this.chartStrings,
     this.isLoading = false,
+    this.onRequestFullscreen,
+    this.onRequestShare,
     super.key,
   });
 
@@ -99,6 +104,8 @@ class OverviewMonthlyParcelsComboChart extends StatefulWidget {
   /// true, the chart shows this instead of the generic l10n "load failed"
   /// label so the user gets actionable context (BUG #4).
   final String? loadFailureMessage;
+  final AppChartFullscreenRequestCallback? onRequestFullscreen;
+  final AppChartShareRequestCallback? onRequestShare;
 
   @override
   State<OverviewMonthlyParcelsComboChart> createState() =>
@@ -324,30 +331,84 @@ class _OverviewMonthlyParcelsComboChartState
         : (copy?.semanticsWhenSalesPrimary ??
               l10n.overviewMonthlyParcelsChartSemantics);
     final shareTitle = copy?.chartTitle ?? l10n.overviewMonthlyParcelsTitle;
+    final shareSubtitle = valuePrimary
+        ? (copy?.subtitleWhenValuePrimary ??
+              l10n.overviewMonthlyParcelsSubtitleValueView)
+        : (copy?.subtitleWhenSalesPrimary ??
+              l10n.overviewMonthlyParcelsSubtitle);
+    final metadata = ChartShareMetadata(
+      title: shareTitle,
+      subtitle: shareSubtitle,
+      tableData: ChartShareTableData(
+        headers: <String>[
+          l10n.chartSharePdfColumnMonth,
+          copy?.seriesSalesLabel ?? l10n.overviewMonthlyParcelsSalesSeriesLabel,
+          copy?.seriesParcelAmountLabel ??
+              l10n.overviewMonthlyParcelsAmountSeriesLabel,
+        ],
+        rows: <List<String>>[
+          for (final point in widget.points)
+            <String>[
+              point.anoMes,
+              _decimalFormat.format(point.qtdVendas),
+              AppBrFormatters.currency(point.valorParcela),
+            ],
+        ],
+      ),
+      chartExportBuilder: widget.points.isEmpty
+          ? null
+          : (exportContext) {
+              final exportStyle = activeStyle.forPdfExport();
+              return wrapCartesianChartForPdfExport(
+                context: exportContext,
+                itemCount: widget.points.length,
+                minSlotWidth: exportStyle.minCategorySlotWidth,
+                height: exportStyle.height,
+                chart: AppComboChart<OverviewMonthlyParcelPoint>(
+                  items: widget.points,
+                  xLabelBuilder: _monthlyXLabel,
+                  barValueBuilder: valuePrimary
+                      ? _monthlyBarByValue
+                      : _monthlyBarBySales,
+                  barSeriesLabel: valuePrimary
+                      ? (copy?.seriesParcelAmountLabel ??
+                            l10n.overviewMonthlyParcelsAmountSeriesLabel)
+                      : (copy?.seriesSalesLabel ??
+                            l10n.overviewMonthlyParcelsSalesSeriesLabel),
+                  lineValueBuilder: valuePrimary
+                      ? _monthlyLineByValue
+                      : _monthlyLineBySales,
+                  lineSeriesLabel: valuePrimary
+                      ? (copy?.seriesSalesLabel ??
+                            l10n.overviewMonthlyParcelsSalesSeriesLabel)
+                      : (copy?.seriesParcelAmountLabel ??
+                            l10n.overviewMonthlyParcelsAmountSeriesLabel),
+                  barDataLabelBuilder: valuePrimary
+                      ? _barDataLabelCurrency
+                      : _barDataLabelDecimal,
+                  style: exportStyle,
+                ),
+              );
+            },
+    );
 
     void openFullscreen() {
+      final emit = widget.onRequestFullscreen;
+      if (emit == null) {
+        return;
+      }
       final pointsSnapshot = List<OverviewMonthlyParcelPoint>.of(
         widget.points,
         growable: false,
       );
       final copySnapshot = copy;
       final fullscreenShareKey = GlobalKey();
-      unawaited(
-        context.pushChartFullscreen<void>(
-          extra: AppChartFullscreenRouteExtra(
-            title: shareTitle,
-            subtitle: valuePrimary
-                ? (copySnapshot?.subtitleWhenValuePrimary ??
-                      l10n.overviewMonthlyParcelsSubtitleValueView)
-                : (copySnapshot?.subtitleWhenSalesPrimary ??
-                      l10n.overviewMonthlyParcelsSubtitle),
-            chartSemanticsLabel: semanticsLabel,
-            headerTrailing: buildChartFullscreenShareTrailing(
-              context: context,
-              shareKey: fullscreenShareKey,
-              subject: shareTitle,
-            ),
-            chartBuilder: (fullscreenContext) {
+      emit(
+        context,
+        metadata.toFullscreenRequest(
+          semanticsLabel: semanticsLabel,
+          shareCaptureKey: fullscreenShareKey,
+          chartBuilder: (fullscreenContext) {
               final fullscreenTokens = Theme.of(
                 fullscreenContext,
               ).extension<AppThemeTokens>()!;
@@ -359,17 +420,9 @@ class _OverviewMonthlyParcelsComboChartState
                   final fullscreenValuePrimary =
                       fullscreenDisplay ==
                       _OverviewMonthlyParcelDisplay.byParcelValue;
-                  return LayoutBuilder(
-                    builder: (context, constraints) {
-                      final availableChartHeight =
-                          (constraints.maxHeight -
-                                  fullscreenTokens.contentSpacing -
-                                  48)
-                              .clamp(220.0, constraints.maxHeight);
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          AppSegmentedControl<_OverviewMonthlyParcelDisplay>(
+                  return buildSegmentedControlFullscreenBody(
+                    tokens: fullscreenTokens,
+                    control: AppSegmentedControl<_OverviewMonthlyParcelDisplay>(
                             options:
                                 <
                                   AppSegmentedControlOption<
@@ -396,13 +449,11 @@ class _OverviewMonthlyParcelsComboChartState
                                   ),
                                 ],
                             value: fullscreenDisplay,
-                            onChanged: (v) =>
-                                setFullscreenState(() => fullscreenDisplay = v),
-                          ),
-                          SizedBox(height: fullscreenTokens.contentSpacing),
-                          SizedBox(
-                            height: availableChartHeight,
-                            child: AppComboChart<OverviewMonthlyParcelPoint>(
+                      onChanged: (v) =>
+                          setFullscreenState(() => fullscreenDisplay = v),
+                    ),
+                    chartBuilder: (availableChartHeight) =>
+                        AppComboChart<OverviewMonthlyParcelPoint>(
                               key: ValueKey<int>(
                                 identityHashCode(pointsSnapshot),
                               ),
@@ -427,17 +478,25 @@ class _OverviewMonthlyParcelsComboChartState
                               barDataLabelBuilder: fullscreenValuePrimary
                                   ? _barDataLabelCurrency
                                   : _barDataLabelDecimal,
-                              style: _buildComboStyle(
-                                tokens: fullscreenTokens,
-                                l10n: l10n,
-                                leftAxis: fullscreenValuePrimary
-                                    ? _compactCurrencyFormat
-                                    : _decimalFormat,
-                                rightAxis: fullscreenValuePrimary
-                                    ? _decimalFormat
-                                    : _compactCurrencyFormat,
-                                heightOverride: availableChartHeight,
-                              ),
+                              style: () {
+                                final built = _buildComboStyle(
+                                  tokens: fullscreenTokens,
+                                  l10n: l10n,
+                                  leftAxis: fullscreenValuePrimary
+                                      ? _compactCurrencyFormat
+                                      : _decimalFormat,
+                                  rightAxis: fullscreenValuePrimary
+                                      ? _decimalFormat
+                                      : _compactCurrencyFormat,
+                                  heightOverride: availableChartHeight,
+                                );
+                                if (isLandscapeChartViewport(context)) {
+                                  return built.forLandscapeFullscreen(
+                                    height: availableChartHeight,
+                                  );
+                                }
+                                return built;
+                              }(),
                               isLoading: widget.isLoading,
                               emptyPlaceholder: pointsSnapshot.isEmpty
                                   ? Center(
@@ -450,19 +509,22 @@ class _OverviewMonthlyParcelsComboChartState
                                       ),
                                     )
                                   : null,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
+                        ),
                   );
                 },
               ),
               );
-            },
-          ),
+          },
         ),
       );
+    }
+
+    void openShare() {
+      final emit = widget.onRequestShare;
+      if (emit == null || widget.isLoading) {
+        return;
+      }
+      emit(context, metadata.toShareRequest(_shareKey));
     }
 
     return Semantics(
@@ -476,15 +538,14 @@ class _OverviewMonthlyParcelsComboChartState
         child: AppComboChart<OverviewMonthlyParcelPoint>(
           key: ValueKey<int>(identityHashCode(widget.points)),
           title: shareTitle,
-          onShare: () => unawaited(
-            shareChartCapture(context, _shareKey, subject: shareTitle),
-          ),
-          onOpenFullscreen: openFullscreen,
-          subtitle: valuePrimary
-              ? (copy?.subtitleWhenValuePrimary ??
-                    l10n.overviewMonthlyParcelsSubtitleValueView)
-              : (copy?.subtitleWhenSalesPrimary ??
-                    l10n.overviewMonthlyParcelsSubtitle),
+          onShare: widget.onRequestShare == null || widget.isLoading
+              ? null
+              : openShare,
+          shareProgressKey: _shareKey,
+          shareEnabled: !widget.isLoading,
+          onOpenFullscreen:
+              widget.onRequestFullscreen == null ? null : openFullscreen,
+          subtitle: shareSubtitle,
           belowSubtitle: AppSegmentedControl<_OverviewMonthlyParcelDisplay>(
             options: <AppSegmentedControlOption<_OverviewMonthlyParcelDisplay>>[
               AppSegmentedControlOption<_OverviewMonthlyParcelDisplay>(
