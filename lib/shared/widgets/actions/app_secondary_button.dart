@@ -107,6 +107,7 @@ class AppSecondaryButton extends StatelessWidget {
     final gapSm = tokens?.gapSm ?? 8;
     final content = isLoading
         ? buildAppActionButtonProgressIndicator(
+            context: context,
             color: indicatorColor,
             size: loadingSize,
             strokeWidth: loadingStroke,
@@ -177,6 +178,7 @@ class AppSecondaryButton extends StatelessWidget {
     final gapSm = tokens?.gapSm ?? 8;
     final content = isLoading
         ? buildAppActionButtonProgressIndicator(
+            context: context,
             color: indicatorColor,
             size: loadingSize,
             strokeWidth: loadingStroke,

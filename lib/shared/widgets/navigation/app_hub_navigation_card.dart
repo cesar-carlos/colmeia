@@ -190,15 +190,22 @@ class AppHubNavigationCard extends StatelessWidget {
     );
 
     final cardContent = Column(
-      mainAxisSize: density == AppHubNavigationCardDensity.chartNav
-          ? MainAxisSize.min
-          : MainAxisSize.max,
+      mainAxisSize:
+          _usesFixedGridTile ? MainAxisSize.max : MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         Center(child: iconBadge),
         SizedBox(height: iconLabelGap),
-        labelWidget,
+        if (_usesFixedGridTile)
+          Flexible(
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: labelWidget,
+            ),
+          )
+        else
+          labelWidget,
       ],
     );
 

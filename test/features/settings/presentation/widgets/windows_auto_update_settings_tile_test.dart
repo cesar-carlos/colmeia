@@ -27,11 +27,12 @@ void main() {
     ) async {
       final controller = WindowsAutoUpdateController(
         autoUpdaterClient: _FakeAutoUpdaterClient(),
-        appcastProbeClient: _immediateProbe,
+        appcastProbeClient: _idleProbe,
         feedUrlResolver: () => '',
         preferencesStore: preferencesStore,
         supportsNativeUpdates: () => true,
       );
+      addTearDown(controller.dispose);
       await controller.initialize();
 
       await tester.pumpWidget(
@@ -75,15 +76,18 @@ void main() {
     ) async {
       final controller = WindowsAutoUpdateController(
         autoUpdaterClient: _FakeAutoUpdaterClient(),
-        appcastProbeClient: _immediateProbe,
+        appcastProbeClient: _checkingProbe,
         feedUrlResolver: () => 'https://example.com/appcast.xml',
         preferencesStore: preferencesStore,
         supportsNativeUpdates: () => true,
       );
-      await controller.initialize();
-      await Future<void>.delayed(Duration.zero);
+      addTearDown(controller.dispose);
 
-      expect(controller.state.isChecking, isTrue);
+      await controller.initialize();
+      await _waitForState(
+        controller,
+        (state) => state.isChecking,
+      );
 
       await tester.pumpWidget(
         _TestApp(
@@ -99,7 +103,11 @@ void main() {
         find.text(WindowsAutoUpdateMessages.checkingButtonLabel),
         findsOneWidget,
       );
-      expect(find.byType(CircularProgressIndicator), findsWidgets);
+      expect(
+        find.text(WindowsAutoUpdateMessages.checkingHeadline),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.sync_rounded), findsWidgets);
     });
 
     testWidgets('should show failed state with error styling', (
@@ -107,13 +115,23 @@ void main() {
     ) async {
       final controller = WindowsAutoUpdateController(
         autoUpdaterClient: _FakeAutoUpdaterClient(),
-        appcastProbeClient: _immediateProbe,
+        appcastProbeClient: _idleProbe,
         feedUrlResolver: () => 'https://example.com/appcast.xml',
         preferencesStore: preferencesStore,
         supportsNativeUpdates: () => true,
       );
+      addTearDown(controller.dispose);
       await controller.initialize();
+      await _waitForState(
+        controller,
+        (state) => state.status == WindowsAutoUpdateStatus.feedWithoutReleases,
+      );
+
       controller.onUpdaterError(UpdaterError('network error'));
+      await _waitForState(
+        controller,
+        (state) => state.status == WindowsAutoUpdateStatus.failed,
+      );
 
       await tester.pumpWidget(
         _TestApp(
@@ -142,7 +160,25 @@ void main() {
   });
 }
 
-Future<AppcastProbeResult> _immediateProbe({required String feedUrl}) async {
+Future<void> _waitForState(
+  WindowsAutoUpdateController controller,
+  bool Function(WindowsAutoUpdateState state) predicate,
+) async {
+  for (var attempt = 0; attempt < 20; attempt++) {
+    if (predicate(controller.state)) {
+      return;
+    }
+    await Future<void>.delayed(Duration.zero);
+  }
+
+  fail('Timed out waiting for controller state.');
+}
+
+Future<AppcastProbeResult> _idleProbe({required String feedUrl}) async {
+  return const AppcastProbeResult.success(hasReleases: false);
+}
+
+Future<AppcastProbeResult> _checkingProbe({required String feedUrl}) async {
   return const AppcastProbeResult.success();
 }
 

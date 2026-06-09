@@ -99,6 +99,7 @@ class AppFlatButton extends StatelessWidget {
 
     final content = isLoading
         ? buildAppActionButtonProgressIndicator(
+            context: context,
             color: indicatorColor,
             size: loadingSize,
             strokeWidth: loadingStroke,

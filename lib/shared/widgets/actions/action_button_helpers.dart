@@ -4,14 +4,19 @@ import 'package:flutter/material.dart';
 
 /// Shared [CircularProgressIndicator] sizing for action buttons (loading).
 Widget buildAppActionButtonProgressIndicator({
+  required BuildContext context,
   required Color color,
   required double size,
   required double strokeWidth,
 }) {
+  final disableAnimations =
+      MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+
   return SizedBox(
     width: size,
     height: size,
     child: CircularProgressIndicator(
+      value: disableAnimations ? 1 : null,
       strokeWidth: strokeWidth,
       color: color,
     ),

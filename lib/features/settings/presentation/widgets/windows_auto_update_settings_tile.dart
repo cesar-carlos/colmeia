@@ -169,6 +169,12 @@ class _AutoUpdateStatusIndicator extends StatelessWidget {
     final cs = theme.colorScheme;
 
     if (state.isChecking) {
+      final disableAnimations =
+          MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+      if (disableAnimations) {
+        return Icon(Icons.sync_rounded, size: 20, color: cs.primary);
+      }
+
       return SizedBox(
         width: 20,
         height: 20,

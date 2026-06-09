@@ -111,6 +111,7 @@ class AppPrimaryButton extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           buildAppActionButtonProgressIndicator(
+            context: context,
             color: indicatorColor,
             size: loadingSize,
             strokeWidth: loadingStroke,
@@ -121,6 +122,7 @@ class AppPrimaryButton extends StatelessWidget {
       );
     } else if (isLoading) {
       content = buildAppActionButtonProgressIndicator(
+        context: context,
         color: indicatorColor,
         size: loadingSize,
         strokeWidth: loadingStroke,
