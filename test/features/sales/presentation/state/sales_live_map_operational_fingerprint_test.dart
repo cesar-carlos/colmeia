@@ -21,7 +21,7 @@ void main() {
 
     test('detects failedAgentCount changes', () {
       final baseline = SalesLiveMapOperationalFingerprint.from(
-        _result(failedAgentCount: 0),
+        _result(),
       );
       final updated = SalesLiveMapOperationalFingerprint.from(
         _result(failedAgentCount: 2),
@@ -72,6 +72,6 @@ SalesLiveMapLoadResult _result({
     missingClientTokenAgentCount: 0,
     skippedOfflineAgentCount: 0,
     rowCapReachedAgentCount: 0,
-    refreshedAt: DateTime.utc(2026, 1, 1),
+    refreshedAt: DateTime.utc(2026),
   );
 }

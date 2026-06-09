@@ -182,9 +182,16 @@ class AppHubNavigationCard extends StatelessWidget {
         ? sectionCard
         : AspectRatio(aspectRatio: aspectRatio, child: sectionCard);
 
+    final resolvedCard = onTap == null
+        ? Opacity(
+            opacity: 0.45,
+            child: card,
+          )
+        : card;
+
     if (_usesFixedGridTile) {
-      return Tooltip(message: label, child: card);
+      return Tooltip(message: label, child: resolvedCard);
     }
-    return card;
+    return resolvedCard;
   }
 }

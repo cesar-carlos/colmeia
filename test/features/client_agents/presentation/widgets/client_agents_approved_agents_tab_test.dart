@@ -33,6 +33,7 @@ void main() {
             buildAgent(agentOne, 'One'),
             buildAgent(agentTwo, 'Two'),
           ],
+          totalCount: 2,
           errorMessage: null,
           onQueueRemoveAccess: (ids) async {
             removedIds.add(ids);
@@ -60,5 +61,49 @@ void main() {
     expect(removedIds, hasLength(1));
     expect(removedIds.single, hasLength(2));
     expect(find.text(l10n.clientAgentsApprovedBulkSelect), findsOneWidget);
+  });
+
+  testWidgets('paginates approved agents with shared table footer', (
+    tester,
+  ) async {
+    final l10n = lookupAppLocalizations(const Locale('pt', 'BR'));
+    final agents = List<ClientAgent>.generate(
+      12,
+      (index) => buildAgent(
+        'aaaaaaaa-aaaa-aaaa-8aaa-${index.toString().padLeft(12, '0')}',
+        '$index',
+      ),
+    );
+
+    await tester.pumpWidget(
+      LocalizedTestApp(
+        child: ListView(
+          children: <Widget>[
+            ClientAgentsApprovedAgentsTab(
+              agents: agents,
+              totalCount: agents.length,
+              errorMessage: null,
+              onQueueRemoveAccess: (_) async {},
+              onRetry: () {},
+              isMutating: false,
+              requestAccessTabLabel: l10n.clientAgentsTabRequestAccess,
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Agent 0'), findsOneWidget);
+    expect(find.text('Agent 11'), findsNothing);
+    expect(
+      find.text(l10n.salesProdutoTendenciaFilterPageSize),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining(l10n.clientAgentsApprovedPaginationEntityLabel),
+      findsOneWidget,
+    );
+    expect(find.text('2'), findsOneWidget);
   });
 }

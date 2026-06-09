@@ -1,42 +1,21 @@
 import 'dart:async';
 
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
-import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/maps/app_location_lookup_normalizer.dart';
-import 'package:colmeia/shared/utils/app_branch_display_model.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
-import 'package:colmeia/shared/widgets/app_tag_chip.dart';
-import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.dart';
-import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_overlay_chrome.dart';
-import 'package:colmeia/shared/widgets/charts/app_map_models.dart';
-import 'package:colmeia/shared/widgets/charts/brazil_map_chart_visual_snapshot.dart';
-import 'package:colmeia/shared/widgets/charts/brazil_map_layout_constants.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_snapshot.dart';
-import 'package:colmeia/shared/widgets/charts/brazil_map_store_sales_display_helpers.dart';
-import 'package:colmeia/shared/widgets/forms/app_choice_chip.dart';
-import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
+import 'package:colmeia/shared/widgets/charts/brazil_map_layout_constants.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class BrazilMapChartDesktopBranchSidebarOverlay extends StatelessWidget {
-  const BrazilMapChartDesktopBranchSidebarOverlay({
-    required this.width,
-    required this.maxHeight,
-    required this.topInset,
-    required this.horizontalInset,
-    required this.entries,
-    required this.allowCollapse,
-    required this.onToggleCollapsed,
-    required this.onSelectBranch,
-    required this.onPreviewBranchStart,
-    required this.onPreviewBranchEnd,
+  const BrazilMapChartDesktopBranchSidebarOverlay({required this.width, required this.maxHeight, required this.topInset, required this.horizontalInset, required this.entries, required this.allowCollapse, required this.onToggleCollapsed, required this.onSelectBranch, required this.onPreviewBranchStart, required this.onPreviewBranchEnd, super.key,
     this.selectedStoreId,
   });
 
@@ -77,10 +56,7 @@ class BrazilMapChartDesktopBranchSidebarOverlay extends StatelessWidget {
 
 class BrazilMapChartDesktopBranchSidebarCollapsedOverlay
     extends StatelessWidget {
-  const BrazilMapChartDesktopBranchSidebarCollapsedOverlay({
-    required this.topInset,
-    required this.horizontalInset,
-    required this.onExpand,
+  const BrazilMapChartDesktopBranchSidebarCollapsedOverlay({required this.topInset, required this.horizontalInset, required this.onExpand, super.key,
   });
 
   final double topInset;
@@ -137,15 +113,7 @@ class BrazilMapChartDesktopBranchSidebarCollapsedOverlay
 }
 
 class BrazilMapChartDesktopBranchSidebar extends StatefulWidget {
-  const BrazilMapChartDesktopBranchSidebar({
-    required this.width,
-    required this.maxHeight,
-    required this.entries,
-    required this.allowCollapse,
-    required this.onToggleCollapsed,
-    required this.onSelectBranch,
-    required this.onPreviewBranchStart,
-    required this.onPreviewBranchEnd,
+  const BrazilMapChartDesktopBranchSidebar({required this.width, required this.maxHeight, required this.entries, required this.allowCollapse, required this.onToggleCollapsed, required this.onSelectBranch, required this.onPreviewBranchStart, required this.onPreviewBranchEnd, super.key,
     this.selectedStoreId,
   });
 
@@ -635,9 +603,7 @@ class BrazilMapChartDesktopBranchSidebarFilterResult {
 }
 
 class BrazilMapChartDesktopBranchSidebarEmptyState extends StatelessWidget {
-  const BrazilMapChartDesktopBranchSidebarEmptyState({
-    required this.title,
-    required this.message,
+  const BrazilMapChartDesktopBranchSidebarEmptyState({required this.title, required this.message, super.key,
   });
 
   final String title;
@@ -684,16 +650,7 @@ class BrazilMapChartDesktopBranchSidebarEmptyState extends StatelessWidget {
 }
 
 class BrazilMapChartDesktopBranchSidebarItem extends StatelessWidget {
-  const BrazilMapChartDesktopBranchSidebarItem({
-    required this.rank,
-    required this.entry,
-    required this.focusNode,
-    required this.isFocused,
-    required this.isSelected,
-    required this.onFocus,
-    required this.onTap,
-    required this.onPreviewStart,
-    required this.onPreviewEnd,
+  const BrazilMapChartDesktopBranchSidebarItem({required this.rank, required this.entry, required this.focusNode, required this.isFocused, required this.isSelected, required this.onFocus, required this.onTap, required this.onPreviewStart, required this.onPreviewEnd, super.key,
   });
 
   final int rank;
@@ -920,10 +877,7 @@ class BrazilMapChartDesktopBranchSidebarItem extends StatelessWidget {
 }
 
 class BrazilMapChartDesktopBranchSidebarStatusRow extends StatelessWidget {
-  const BrazilMapChartDesktopBranchSidebarStatusRow({
-    required this.icon,
-    required this.label,
-    required this.color,
+  const BrazilMapChartDesktopBranchSidebarStatusRow({required this.icon, required this.label, required this.color, super.key,
   });
 
   final IconData icon;

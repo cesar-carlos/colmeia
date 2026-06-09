@@ -1,10 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_row.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_filtered_empty_state.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
@@ -24,6 +24,9 @@ class SalesProdutoTendenciaDetailsSection extends StatelessWidget {
     required this.onPageSizeChanged,
     required this.classLabelBuilder,
     super.key,
+    this.hasActiveDetailFilters = false,
+    this.onClearFilters,
+    this.onOpenFilters,
   });
 
   final AppLocalizations l10n;
@@ -35,6 +38,9 @@ class SalesProdutoTendenciaDetailsSection extends StatelessWidget {
   final ValueChanged<int> onPageSelected;
   final ValueChanged<int> onPageSizeChanged;
   final String Function(String value) classLabelBuilder;
+  final bool hasActiveDetailFilters;
+  final VoidCallback? onClearFilters;
+  final VoidCallback? onOpenFilters;
 
   @override
   Widget build(BuildContext context) {
@@ -99,66 +105,74 @@ class SalesProdutoTendenciaDetailsSection extends StatelessWidget {
               ),
             )
           else if (rows.isEmpty)
-            AppInlineErrorPanel(
-              tone: AppInlinePanelTone.informational,
-              variant: AppInlineErrorPanelVariant.plain,
+            SalesProdutoTendenciaFilteredEmptyState(
+              l10n: l10n,
               message: l10n.salesProdutoTendenciaNoData,
+              hasActiveDetailFilters: hasActiveDetailFilters,
+              onClearFilters: onClearFilters,
+              onOpenFilters: onOpenFilters,
             )
           else ...<Widget>[
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final minTable =
-                    SalesProdutoTendenciaDetailsTableLayout.minScrollContentWidth(
-                      tokens,
-                    );
-                final outer = constraints.maxWidth;
-                final contentWidth = outer.isFinite && outer > 0
-                    ? math.max(outer, minTable)
-                    : minTable;
-                return ChartHorizontalScrollShell(
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    child: SizedBox(
-                      width: contentWidth,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          SalesProdutoTendenciaDetailsTableHeader(l10n: l10n),
-                          Divider(
-                            height: tokens.gapMd * 2,
-                            color: theme.colorScheme.outlineVariant.withValues(
-                              alpha: 0.5,
-                            ),
-                          ),
-                          ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: rows.length,
-                            separatorBuilder: (_, _) => Divider(
+            AppSkeleton(
+              enabled: loading,
+              loadingSemanticsLabel:
+                  l10n.salesProdutoTendenciaLoadingTrendSemantics,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final minTable =
+                      SalesProdutoTendenciaDetailsTableLayout.minScrollContentWidth(
+                        tokens,
+                      );
+                  final outer = constraints.maxWidth;
+                  final contentWidth = outer.isFinite && outer > 0
+                      ? math.max(outer, minTable)
+                      : minTable;
+                  return ChartHorizontalScrollShell(
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: SizedBox(
+                        width: contentWidth,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            SalesProdutoTendenciaDetailsTableHeader(l10n: l10n),
+                            Divider(
                               height: tokens.gapMd * 2,
                               color: theme.colorScheme.outlineVariant
-                                  .withValues(alpha: 0.35),
+                                  .withValues(
+                                alpha: 0.5,
+                              ),
                             ),
-                            itemBuilder: (context, index) {
-                              final row = rows[index];
-                              return SalesProdutoTendenciaDetailsRow(
-                                row: row,
-                                l10n: l10n,
-                                classLabel: classLabelBuilder(
-                                  row.classificacao,
-                                ),
-                              );
-                            },
-                          ),
-                        ],
+                            ListView.separated(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: rows.length,
+                              separatorBuilder: (_, _) => Divider(
+                                height: tokens.gapMd * 2,
+                                color: theme.colorScheme.outlineVariant
+                                    .withValues(alpha: 0.35),
+                              ),
+                              itemBuilder: (context, index) {
+                                final row = rows[index];
+                                return SalesProdutoTendenciaDetailsRow(
+                                  row: row,
+                                  l10n: l10n,
+                                  classLabel: classLabelBuilder(
+                                    row.classificacao,
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  semanticsHint:
-                      l10n.salesProdutoTendenciaDetailsHorizontalScrollCaption,
-                );
-              },
+                    semanticsHint:
+                        l10n.salesProdutoTendenciaDetailsHorizontalScrollCaption,
+                  );
+                },
+              ),
             ),
             SizedBox(height: tokens.contentSpacing),
             AppTablePaginationFooter(

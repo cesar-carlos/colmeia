@@ -222,15 +222,7 @@ class SalesProdutoTendenciaMediaMovelController
     if (page > totalPages) {
       return;
     }
-    _setState(
-      _state.copyWith(
-        page: page,
-        pageResult: ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
-          items: const <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[],
-          totalCount: _state.pageResult.totalCount,
-        ),
-      ),
-    );
+    _setState(_state.copyWith(page: page));
     await reloadDetailsOnly();
   }
 

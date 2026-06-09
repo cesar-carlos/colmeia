@@ -140,89 +140,106 @@ class ClientAgentsApprovalPollingCoordinator {
     }
 
     _isPollingApprovals = true;
-    final requestsRefreshResult = await _loadAccessRequestsUseCase(
-      userId: userId,
-      query: _pollingQuery,
-    );
-    _host.setAccessRequestsError(
-      _consumeResult(
-        result: requestsRefreshResult,
-        onSuccess: _host.replaceAccessRequests,
-        operation: 'pollRefreshClientAgentAccessRequests',
-      ),
-    );
-
-    final approvedNow = <String, ClientAgent>{};
-    final deniedNow = <String>{};
-    final timedOutNow = <String>{};
-
-    final idsToCheck = _trackedApprovalAgentIds.toList(growable: false);
-    for (var i = 0; i < idsToCheck.length; i += _probeConcurrency) {
-      final upper = min(i + _probeConcurrency, idsToCheck.length);
-      final chunk = idsToCheck.sublist(i, upper);
-      final chunkResults = await Future.wait(
-        chunk.map(
-          (agentId) => _evaluateTrackedAgentForPoll(
-            userId: userId,
-            agentId: agentId,
-          ),
+    try {
+      final requestsRefreshResult = await _loadAccessRequestsUseCase(
+        userId: userId,
+        query: _pollingQuery,
+      );
+      if (_host.isDisposed) {
+        return;
+      }
+      _host.setAccessRequestsError(
+        _consumeResult(
+          result: requestsRefreshResult,
+          onSuccess: _host.replaceAccessRequests,
+          operation: 'pollRefreshClientAgentAccessRequests',
         ),
       );
-      for (final r in chunkResults) {
-        if (r.timedOut) {
-          timedOutNow.add(r.agentId);
-        } else if (r.approved != null) {
-          approvedNow[r.agentId] = r.approved!;
-        } else if (r.denied) {
-          deniedNow.add(r.agentId);
+
+      final approvedNow = <String, ClientAgent>{};
+      final deniedNow = <String>{};
+      final timedOutNow = <String>{};
+
+      final idsToCheck = _trackedApprovalAgentIds.toList(growable: false);
+      for (var i = 0; i < idsToCheck.length; i += _probeConcurrency) {
+        final upper = min(i + _probeConcurrency, idsToCheck.length);
+        final chunk = idsToCheck.sublist(i, upper);
+        final chunkResults = await Future.wait(
+          chunk.map(
+            (agentId) => _evaluateTrackedAgentForPoll(
+              userId: userId,
+              agentId: agentId,
+            ),
+          ),
+        );
+        if (_host.isDisposed) {
+          return;
+        }
+        for (final r in chunkResults) {
+          if (r.timedOut) {
+            timedOutNow.add(r.agentId);
+          } else if (r.approved != null) {
+            approvedNow[r.agentId] = r.approved!;
+          } else if (r.denied) {
+            deniedNow.add(r.agentId);
+          }
         }
       }
-    }
 
-    _trackedApprovalAgentIds
-      ..removeAll(approvedNow.keys)
-      ..removeAll(deniedNow)
-      ..removeAll(timedOutNow);
-    <String>{
-      ...approvedNow.keys,
-      ...deniedNow,
-      ...timedOutNow,
-    }.forEach(_approvalPollingStartedAtByAgentId.remove);
+      _trackedApprovalAgentIds
+        ..removeAll(approvedNow.keys)
+        ..removeAll(deniedNow)
+        ..removeAll(timedOutNow);
+      <String>{
+        ...approvedNow.keys,
+        ...deniedNow,
+        ...timedOutNow,
+      }.forEach(_approvalPollingStartedAtByAgentId.remove);
 
-    if (approvedNow.isNotEmpty) {
-      await _refreshApprovedAgentsSnapshot(userId: userId);
-      _host.upsertApprovedAgentsInMemory(
-        approvedNow.values.toList(growable: false),
-      );
-      _host.invalidateTargetResolution(userId: userId);
-      _host.scheduleLocalTokenServerFlush(
-        userId: userId,
-        agentIds: approvedNow.keys,
-      );
-    }
+      if (approvedNow.isNotEmpty) {
+        await _refreshApprovedAgentsSnapshot(userId: userId);
+        if (_host.isDisposed) {
+          return;
+        }
+        _host.upsertApprovedAgentsInMemory(
+          approvedNow.values.toList(growable: false),
+        );
+        _host.invalidateTargetResolution(userId: userId);
+        _host.scheduleLocalTokenServerFlush(
+          userId: userId,
+          agentIds: approvedNow.keys,
+        );
+      }
 
-    if (approvedNow.isNotEmpty ||
-        deniedNow.isNotEmpty ||
-        timedOutNow.isNotEmpty) {
-      _host.setActionFeedback(
-        message:
-            ClientAgentsPresentationMessage.clientAgentsApprovalPollingProgress(
-              approvedCount: approvedNow.length,
-              deniedCount: deniedNow.length,
-              timedOutCount: timedOutNow.length,
-              remainingCount: _trackedApprovalAgentIds.length,
-            ),
-        kind: approvedNow.isNotEmpty && deniedNow.isEmpty && timedOutNow.isEmpty
-            ? ClientAgentsActionFeedbackKind.success
-            : ClientAgentsActionFeedbackKind.info,
-      );
-    }
+      if (approvedNow.isNotEmpty ||
+          deniedNow.isNotEmpty ||
+          timedOutNow.isNotEmpty) {
+        _host.setActionFeedback(
+          message:
+              ClientAgentsPresentationMessage.clientAgentsApprovalPollingProgress(
+                approvedCount: approvedNow.length,
+                deniedCount: deniedNow.length,
+                timedOutCount: timedOutNow.length,
+                remainingCount: _trackedApprovalAgentIds.length,
+              ),
+          kind:
+              approvedNow.isNotEmpty &&
+                  deniedNow.isEmpty &&
+                  timedOutNow.isEmpty
+              ? ClientAgentsActionFeedbackKind.success
+              : ClientAgentsActionFeedbackKind.info,
+        );
+      }
 
-    if (_trackedApprovalAgentIds.isEmpty) {
-      stopPolling();
+      if (_trackedApprovalAgentIds.isEmpty) {
+        stopPolling();
+      }
+      if (!_host.isDisposed) {
+        _host.notifyApprovalPollingChanged();
+      }
+    } finally {
+      _isPollingApprovals = false;
     }
-    _isPollingApprovals = false;
-    _host.notifyApprovalPollingChanged();
   }
 
   Future<
@@ -321,6 +338,9 @@ class ClientAgentsApprovalPollingCoordinator {
       userId: userId,
       query: _pollingQuery,
     );
+    if (_host.isDisposed) {
+      return;
+    }
     _host.setApprovedAgentsError(
       _consumeResult(
         result: approvedResult,

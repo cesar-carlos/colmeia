@@ -2489,6 +2489,51 @@ abstract class AppLocalizations {
   /// **'No trade name'**
   String get clientAgentsNoTradeName;
 
+  /// No description provided for @clientAgentsApprovedColName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get clientAgentsApprovedColName;
+
+  /// No description provided for @clientAgentsApprovedColTradeName.
+  ///
+  /// In en, this message translates to:
+  /// **'Trade name'**
+  String get clientAgentsApprovedColTradeName;
+
+  /// No description provided for @clientAgentsApprovedColActions.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get clientAgentsApprovedColActions;
+
+  /// No description provided for @clientAgentsApprovedPaginationEntityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'agents'**
+  String get clientAgentsApprovedPaginationEntityLabel;
+
+  /// No description provided for @clientAgentsApprovedTableHorizontalScroll.
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe horizontally to see all table columns.'**
+  String get clientAgentsApprovedTableHorizontalScroll;
+
+  /// No description provided for @clientAgentsApprovedStaleCacheChip.
+  ///
+  /// In en, this message translates to:
+  /// **'Stale cache'**
+  String get clientAgentsApprovedStaleCacheChip;
+
+  /// No description provided for @clientAgentsApprovedListTruncated.
+  ///
+  /// In en, this message translates to:
+  /// **'Only {loadedCount} of {totalCount} agents were loaded. Some entries may be missing.'**
+  String clientAgentsApprovedListTruncated(
+    String loadedCount,
+    String totalCount,
+  );
+
   /// No description provided for @agentCatalogInactive.
   ///
   /// In en, this message translates to:
@@ -6738,6 +6783,24 @@ abstract class AppLocalizations {
   /// **'Loading sales trend…'**
   String get salesProdutoTendenciaLoadingTrendSemantics;
 
+  /// No description provided for @salesProdutoTendenciaChartsSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Charts'**
+  String get salesProdutoTendenciaChartsSectionTitle;
+
+  /// No description provided for @salesProdutoTendenciaChartNavUnavailableSemanticsSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'unavailable'**
+  String get salesProdutoTendenciaChartNavUnavailableSemanticsSuffix;
+
+  /// No description provided for @salesProdutoTendenciaEmptyAdjustPeriodAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust period'**
+  String get salesProdutoTendenciaEmptyAdjustPeriodAction;
+
   /// No description provided for @salesProdutoTendenciaDetailsEntityLabel.
   ///
   /// In en, this message translates to:
@@ -7024,6 +7087,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Results may contain more rows. Use pagination to load next pages (current size: {pageSize}).'**
   String salesProdutoTendenciaMediaMovelDetailsNotice(String pageSize);
+
+  /// No description provided for @salesProdutoTendenciaMediaMovelChartNavLoadingSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading moving-average charts…'**
+  String get salesProdutoTendenciaMediaMovelChartNavLoadingSemantics;
 
   /// No description provided for @salesProdutoTendenciaMediaMovelNoData.
   ///

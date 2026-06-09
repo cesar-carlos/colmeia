@@ -1,33 +1,21 @@
-import 'dart:async';
 
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
-import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:colmeia/shared/maps/app_location_lookup_normalizer.dart';
-import 'package:colmeia/shared/utils/app_branch_display_model.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.dart';
-import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_overlay_chrome.dart';
-import 'package:colmeia/shared/widgets/charts/app_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_chart_visual_snapshot.dart';
-import 'package:colmeia/shared/widgets/charts/brazil_map_layout_constants.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_store_sales_display_helpers.dart';
-import 'package:colmeia/shared/widgets/forms/app_choice_chip.dart';
-import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
-import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class BrazilMapChartSelectedStateDetail extends StatelessWidget {
-  const BrazilMapChartSelectedStateDetail({
-    required this.bucket,
-    required this.metric,
+  const BrazilMapChartSelectedStateDetail({required this.bucket, required this.metric, super.key,
   });
 
   final AppBrazilStoreSalesStateBucket bucket;
@@ -76,9 +64,7 @@ class BrazilMapChartSelectedStateDetail extends StatelessWidget {
 }
 
 class BrazilMapChartSelectedMunicipalityDetail extends StatelessWidget {
-  const BrazilMapChartSelectedMunicipalityDetail({
-    required this.group,
-    required this.metric,
+  const BrazilMapChartSelectedMunicipalityDetail({required this.group, required this.metric, super.key,
     this.selectedStoreId,
     this.onSelectBranch,
     this.selectBranchLabelBuilder,
@@ -113,9 +99,7 @@ class BrazilMapChartSelectedMunicipalityDetail extends StatelessWidget {
 }
 
 class BrazilMapChartSelectedStoreDetail extends StatelessWidget {
-  const BrazilMapChartSelectedStoreDetail({
-    required this.point,
-    required this.metric,
+  const BrazilMapChartSelectedStoreDetail({required this.point, required this.metric, super.key,
   });
 
   final AppBrazilStoreSalesPoint point;
@@ -139,9 +123,7 @@ class BrazilMapChartSelectedStoreDetail extends StatelessWidget {
 }
 
 class BrazilMapChartSelectedMarkerGroupDetailCard extends StatelessWidget {
-  const BrazilMapChartSelectedMarkerGroupDetailCard({
-    required this.group,
-    required this.metric,
+  const BrazilMapChartSelectedMarkerGroupDetailCard({required this.group, required this.metric, super.key,
     this.initialStoreId,
     this.onClose,
     this.onDismiss,
@@ -181,9 +163,7 @@ class BrazilMapChartSelectedMarkerGroupDetailCard extends StatelessWidget {
 }
 
 class BrazilMapChartSelectedMarkerStoreDetailCard extends StatelessWidget {
-  const BrazilMapChartSelectedMarkerStoreDetailCard({
-    required this.point,
-    required this.metric,
+  const BrazilMapChartSelectedMarkerStoreDetailCard({required this.point, required this.metric, super.key,
     this.showTechnicalLocationDetails = true,
   });
 
@@ -202,9 +182,7 @@ class BrazilMapChartSelectedMarkerStoreDetailCard extends StatelessWidget {
 }
 
 class BrazilMapChartSelectedMarkerBranchCarouselCard extends StatefulWidget {
-  const BrazilMapChartSelectedMarkerBranchCarouselCard({
-    required this.group,
-    required this.metric,
+  const BrazilMapChartSelectedMarkerBranchCarouselCard({required this.group, required this.metric, super.key,
     this.initialStoreId,
     this.onClose,
     this.onDismiss,
@@ -370,9 +348,7 @@ class BrazilMapChartSelectedMarkerBranchCarouselCardState
 }
 
 class BrazilMapChartSelectedMarkerBranchDetailSurface extends StatelessWidget {
-  const BrazilMapChartSelectedMarkerBranchDetailSurface({
-    required this.point,
-    required this.metric,
+  const BrazilMapChartSelectedMarkerBranchDetailSurface({required this.point, required this.metric, super.key,
     this.onClose,
     this.showTechnicalLocationDetails = true,
     this.branchPositionLabel,
@@ -607,12 +583,7 @@ class BrazilMapChartSelectedMarkerBranchDetailSurface extends StatelessWidget {
 }
 
 class BrazilMapChartBranchCarouselNavigation extends StatelessWidget {
-  const BrazilMapChartBranchCarouselNavigation({
-    required this.currentIndex,
-    required this.points,
-    required this.onPrevious,
-    required this.onNext,
-    required this.onSelectIndex,
+  const BrazilMapChartBranchCarouselNavigation({required this.currentIndex, required this.points, required this.onPrevious, required this.onNext, required this.onSelectIndex, super.key,
   });
 
   final int currentIndex;
@@ -695,9 +666,7 @@ class BrazilMapChartBranchCarouselNavigation extends StatelessWidget {
 }
 
 class BrazilMapChartBranchAggregateSummary extends StatelessWidget {
-  const BrazilMapChartBranchAggregateSummary({
-    required this.group,
-    required this.metric,
+  const BrazilMapChartBranchAggregateSummary({required this.group, required this.metric, super.key,
   });
 
   final AppBrazilStoreSalesMarkerGroup group;
@@ -772,12 +741,7 @@ class BrazilMapChartBranchAggregateSummary extends StatelessWidget {
 }
 
 class BrazilMapChartSelectedMarkerDetailSurface extends StatelessWidget {
-  const BrazilMapChartSelectedMarkerDetailSurface({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.metric,
-    required this.child,
+  const BrazilMapChartSelectedMarkerDetailSurface({required this.title, required this.subtitle, required this.icon, required this.metric, required this.child, super.key,
   });
 
   final String title;

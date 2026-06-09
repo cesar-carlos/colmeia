@@ -1537,6 +1537,33 @@ class AppLocalizationsPt extends AppLocalizations {
   String get clientAgentsNoTradeName => 'Sem nome fantasia';
 
   @override
+  String get clientAgentsApprovedColName => 'Nome';
+
+  @override
+  String get clientAgentsApprovedColTradeName => 'Nome fantasia';
+
+  @override
+  String get clientAgentsApprovedColActions => 'Ações';
+
+  @override
+  String get clientAgentsApprovedPaginationEntityLabel => 'agentes';
+
+  @override
+  String get clientAgentsApprovedTableHorizontalScroll =>
+      'Deslize horizontalmente para ver todas as colunas da tabela.';
+
+  @override
+  String get clientAgentsApprovedStaleCacheChip => 'Cache desatualizado';
+
+  @override
+  String clientAgentsApprovedListTruncated(
+    String loadedCount,
+    String totalCount,
+  ) {
+    return 'Apenas $loadedCount de $totalCount agentes foram carregados. Alguns registros podem estar ausentes.';
+  }
+
+  @override
   String get agentCatalogInactive => 'inativo';
 
   @override
@@ -4159,6 +4186,16 @@ class AppLocalizationsPt extends AppLocalizations {
       'Carregando tendência de vendas…';
 
   @override
+  String get salesProdutoTendenciaChartsSectionTitle => 'Gráficos';
+
+  @override
+  String get salesProdutoTendenciaChartNavUnavailableSemanticsSuffix =>
+      'indisponível';
+
+  @override
+  String get salesProdutoTendenciaEmptyAdjustPeriodAction => 'Ajustar período';
+
+  @override
   String get salesProdutoTendenciaDetailsEntityLabel => 'linhas';
 
   @override
@@ -4358,6 +4395,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String salesProdutoTendenciaMediaMovelDetailsNotice(String pageSize) {
     return 'Pode haver mais linhas no resultado. Use a páginação para carregar as próximas páginas (tamanho atual: $pageSize).';
   }
+
+  @override
+  String get salesProdutoTendenciaMediaMovelChartNavLoadingSemantics =>
+      'Carregando gráficos de média móvel…';
 
   @override
   String get salesProdutoTendenciaMediaMovelNoData =>
@@ -6164,6 +6205,33 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get clientAgentsNoTradeName => 'Sem nome fantasia';
 
   @override
+  String get clientAgentsApprovedColName => 'Nome';
+
+  @override
+  String get clientAgentsApprovedColTradeName => 'Nome fantasia';
+
+  @override
+  String get clientAgentsApprovedColActions => 'Ações';
+
+  @override
+  String get clientAgentsApprovedPaginationEntityLabel => 'agentes';
+
+  @override
+  String get clientAgentsApprovedTableHorizontalScroll =>
+      'Deslize horizontalmente para ver todas as colunas da tabela.';
+
+  @override
+  String get clientAgentsApprovedStaleCacheChip => 'Cache desatualizado';
+
+  @override
+  String clientAgentsApprovedListTruncated(
+    String loadedCount,
+    String totalCount,
+  ) {
+    return 'Apenas $loadedCount de $totalCount agentes foram carregados. Alguns registros podem estar ausentes.';
+  }
+
+  @override
   String get agentCatalogInactive => 'inativo';
 
   @override
@@ -8786,6 +8854,16 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Carregando tendência de vendas…';
 
   @override
+  String get salesProdutoTendenciaChartsSectionTitle => 'Gráficos';
+
+  @override
+  String get salesProdutoTendenciaChartNavUnavailableSemanticsSuffix =>
+      'indisponível';
+
+  @override
+  String get salesProdutoTendenciaEmptyAdjustPeriodAction => 'Ajustar período';
+
+  @override
   String get salesProdutoTendenciaDetailsEntityLabel => 'linhas';
 
   @override
@@ -8985,6 +9063,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String salesProdutoTendenciaMediaMovelDetailsNotice(String pageSize) {
     return 'Pode haver mais linhas no resultado. Use a páginação para carregar as próximas páginas (tamanho atual: $pageSize).';
   }
+
+  @override
+  String get salesProdutoTendenciaMediaMovelChartNavLoadingSemantics =>
+      'Carregando gráficos de média móvel…';
 
   @override
   String get salesProdutoTendenciaMediaMovelNoData =>

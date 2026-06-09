@@ -241,7 +241,7 @@ void registerInjectorClientAgents(GetIt getIt) {
       ..registerLazySingleton<ClientApprovedAgentsRelayPreWarmLoader>(
         () => ClientApprovedAgentsRelayPreWarmLoader(
           sessionAccessor: getIt<AuthSessionAccessor>(),
-          approvedAgentsRepository: getIt<ClientAgentsRepository>(),
+          loadApprovedAgentsUseCase: getIt<LoadClientApprovedAgentsUseCase>(),
         ),
       )
       ..registerLazySingleton<RelayConversationPreWarmer>(

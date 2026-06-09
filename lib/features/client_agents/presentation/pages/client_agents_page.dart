@@ -249,6 +249,7 @@ class _ClientAgentsPageState extends State<ClientAgentsPage> with RouteAware {
             isRefreshing:
                 controller.isRefreshing || ownerController.isRefreshing,
             isSyncing: controller.isSyncing,
+            isMutating: controller.isMutating,
             isSyncOnCooldown: controller.isSyncOnCooldown,
             syncRetryAfterSeconds: controller.syncRetryAfter?.inSeconds ?? 0,
             onRefresh: () {
@@ -361,12 +362,16 @@ class _ClientAgentsPageState extends State<ClientAgentsPage> with RouteAware {
         label: l10n.clientAgentsTabMyAgents,
         child: ClientAgentsApprovedAgentsTab(
           agents: filteredApprovedAgents,
+          totalCount: approvedSnapshot?.total ?? filteredApprovedAgents.length,
           errorMessage: _localizeMessage(controller.approvedAgentsError, l10n),
           onQueueRemoveAccess: (agentIds) async {
             await controller.removeAccess(agentIds: agentIds);
           },
           onRetry: () => unawaited(controller.refreshAll()),
           isMutating: controller.isMutating,
+          pendingRemoveAgentIds: controller.pendingRemoveAgentIds,
+          isResultTruncated: controller.approvedAgentsResultTruncated,
+          loadedCount: approvedSnapshot?.items.length,
           hasActiveFilters:
               clientAgentsApprovedActiveFilterCount(
                 l10n,
@@ -738,6 +743,7 @@ class _PageHeader extends StatelessWidget {
     required this.isLoading,
     required this.isRefreshing,
     required this.isSyncing,
+    required this.isMutating,
     required this.isSyncOnCooldown,
     required this.syncRetryAfterSeconds,
     required this.onRefresh,
@@ -750,6 +756,7 @@ class _PageHeader extends StatelessWidget {
   final bool isLoading;
   final bool isRefreshing;
   final bool isSyncing;
+  final bool isMutating;
   final bool isSyncOnCooldown;
   final int syncRetryAfterSeconds;
   final VoidCallback onRefresh;
@@ -782,7 +789,9 @@ class _PageHeader extends StatelessWidget {
                     )
                   : l10n.clientAgentsSubmitRequests,
               icon: const Icon(Icons.sync_rounded),
-              onPressed: isSyncing || isSyncOnCooldown ? null : onSyncPending,
+              onPressed: isSyncing || isMutating || isSyncOnCooldown
+                  ? null
+                  : onSyncPending,
               isLoading: isSyncing,
             ),
         ],

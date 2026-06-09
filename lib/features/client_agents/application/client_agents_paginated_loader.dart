@@ -46,6 +46,8 @@ Future<AppResult<PaginatedResult<T>>> loadAllClientAgentsPages<T>({
         pagesFetched++;
       }
 
+      final isResultTruncated = mergedItems.length < first.total;
+
       return Success<PaginatedResult<T>, AppFailure>(
         PaginatedResult<T>(
           items: mergedItems,
@@ -54,6 +56,7 @@ Future<AppResult<PaginatedResult<T>>> loadAllClientAgentsPages<T>({
           page: query.page,
           pageSize: query.pageSize,
           isStaleCache: first.isStaleCache,
+          isResultTruncated: isResultTruncated,
         ),
       );
     },

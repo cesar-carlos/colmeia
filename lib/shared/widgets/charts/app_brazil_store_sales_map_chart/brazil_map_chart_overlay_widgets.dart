@@ -1,43 +1,26 @@
-import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart/brazil_map_chart_auxiliary_widgets.dart';
-import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart/brazil_map_chart_detail_widgets.dart';
-
 import 'dart:async';
 
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
-import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:colmeia/shared/maps/app_location_lookup_normalizer.dart';
-import 'package:colmeia/shared/utils/app_branch_display_model.dart';
-import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart/brazil_map_chart_detail_widgets.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_overlay_chrome.dart';
-import 'package:colmeia/shared/widgets/charts/app_map_models.dart';
+import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_chart_visual_snapshot.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_layout_constants.dart';
-import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_store_sales_display_helpers.dart';
 import 'package:colmeia/shared/widgets/forms/app_choice_chip.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
-import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 class BrazilMapChartFloatingMapControlsOverlay extends StatelessWidget {
-  const BrazilMapChartFloatingMapControlsOverlay({
-    required this.topInset,
-    required this.leftInset,
-    required this.selectedMetricKey,
-    required this.onMetricChanged,
-    required this.scopeOptions,
-    required this.activeScopeKey,
-    required this.scopeRootLabel,
-    required this.onScopeChanged,
+  const BrazilMapChartFloatingMapControlsOverlay({required this.topInset, required this.leftInset, required this.selectedMetricKey, required this.onMetricChanged, required this.scopeOptions, required this.activeScopeKey, required this.scopeRootLabel, required this.onScopeChanged, super.key,
     this.metrics,
   });
 
@@ -182,7 +165,7 @@ class BrazilMapChartFloatingMapControlsOverlay extends StatelessWidget {
 }
 
 class BrazilMapChartFloatingControlSurface extends StatelessWidget {
-  const BrazilMapChartFloatingControlSurface({required this.child});
+  const BrazilMapChartFloatingControlSurface({required this.child, super.key});
 
   final Widget child;
 
@@ -330,13 +313,7 @@ class BrazilMapChartSelectedMarkerDetailAnchorState
 }
 
 class BrazilMapChartSelectedMarkerDetailFollower extends StatelessWidget {
-  const BrazilMapChartSelectedMarkerDetailFollower({
-    required this.link,
-    required this.group,
-    required this.selectedStoreId,
-    required this.metric,
-    required this.onClose,
-    required this.markerGlobalDx,
+  const BrazilMapChartSelectedMarkerDetailFollower({required this.link, required this.group, required this.selectedStoreId, required this.metric, required this.onClose, required this.markerGlobalDx, super.key,
     this.onClearSelection,
     this.onSelectBranch,
     this.selectBranchLabel,
@@ -551,14 +528,7 @@ class BrazilMapChartHoverMarkerDetailAnchorState
 }
 
 class BrazilMapChartHoverMarkerDetailFollower extends StatelessWidget {
-  const BrazilMapChartHoverMarkerDetailFollower({
-    required this.link,
-    required this.group,
-    required this.metric,
-    required this.initialStoreId,
-    required this.onEnter,
-    required this.onExit,
-    required this.markerGlobalDx,
+  const BrazilMapChartHoverMarkerDetailFollower({required this.link, required this.group, required this.metric, required this.initialStoreId, required this.onEnter, required this.onExit, required this.markerGlobalDx, super.key,
     this.onDismiss,
   });
 
@@ -613,7 +583,7 @@ class BrazilMapChartHoverMarkerDetailFollower extends StatelessWidget {
 }
 
 class BrazilMapChartMarkerDetailSemanticsBoundary extends StatelessWidget {
-  const BrazilMapChartMarkerDetailSemanticsBoundary({required this.child});
+  const BrazilMapChartMarkerDetailSemanticsBoundary({required this.child, super.key});
 
   final Widget child;
 
@@ -637,11 +607,7 @@ class BrazilMapChartMarkerDetailSemanticsBoundary extends StatelessWidget {
 }
 
 class BrazilMapChartStateBubbleMarker extends StatelessWidget {
-  const BrazilMapChartStateBubbleMarker({
-    required this.bucket,
-    required this.metric,
-    required this.style,
-    required this.semanticLabel,
+  const BrazilMapChartStateBubbleMarker({required this.bucket, required this.metric, required this.style, required this.semanticLabel, super.key,
   });
 
   final AppBrazilStoreSalesStateBucket bucket;
@@ -693,9 +659,7 @@ class BrazilMapChartStateBubbleMarker extends StatelessWidget {
 }
 
 class BrazilMapChartStateBubbleTooltipCard extends StatelessWidget {
-  const BrazilMapChartStateBubbleTooltipCard({
-    required this.bucket,
-    required this.metric,
+  const BrazilMapChartStateBubbleTooltipCard({required this.bucket, required this.metric, super.key,
   });
 
   final AppBrazilStoreSalesStateBucket bucket;
@@ -742,7 +706,7 @@ class BrazilMapChartStateBubbleTooltipCard extends StatelessWidget {
 }
 
 class BrazilMapChartPlainMapTooltipCard extends StatelessWidget {
-  const BrazilMapChartPlainMapTooltipCard({required this.text});
+  const BrazilMapChartPlainMapTooltipCard({required this.text, super.key});
 
   final String text;
 

@@ -17,11 +17,11 @@ import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_chart_chrome.dart';
-import 'package:colmeia/shared/widgets/charts/brazil_map_layout_constants.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_chart_visual_snapshot.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_compact_branch_sheet_layout.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_desktop_sidebar_layout.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_layout_calculator.dart';
+import 'package:colmeia/shared/widgets/charts/brazil_map_layout_constants.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_marker_selection_controller.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_selection_policy.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_snapshot_controller.dart';
@@ -37,9 +37,9 @@ export 'app_brazil_store_sales_map_chart/brazil_map_chart_overlay_widgets.dart'
         AppBrazilStoreSalesBranchHoverDetailAnchor,
         AppBrazilStoreSalesSelectedMarkerDetailAnchor;
 
-part 'app_brazil_store_sales_map_chart_scaffold.dart';
 part 'app_brazil_store_sales_map_chart/brazil_map_marker_presenter.dart';
 part 'app_brazil_store_sales_map_chart/brazil_map_point_interaction_handler.dart';
+part 'app_brazil_store_sales_map_chart_scaffold.dart';
 
 class AppBrazilStoreSalesMapChart extends StatefulWidget {
   const AppBrazilStoreSalesMapChart({

@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/app/router/app_navigation.dart';
@@ -176,6 +176,41 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     _showFiltersAppliedSnackBar();
   }
 
+  bool _hasActiveDetailFilters(SalesProdutoTendenciaPresentationState state) {
+    return state.searchTerm.trim().isNotEmpty ||
+        state.classificacao != null ||
+        state.codGrupoProduto != null ||
+        state.codMarca != null;
+  }
+
+  Future<void> _clearDetailFilters() async {
+    final state = _controller.state;
+    await _controller.applyFilters(<String, Object?>{
+      'agentId': state.selectedAgentId,
+      'periodoAtual': state.periodoAtual,
+      'periodoAnterior': state.periodoAnterior,
+      'searchTerm': '',
+      'classificacao': null,
+      'codGrupoProduto': null,
+      'codMarca': null,
+      'grupoProdutoLabel': null,
+      'marcaProdutoLabel': null,
+      'pageSize': state.pageSize,
+    });
+  }
+
+  bool _isChartReady(
+    SalesProdutoTendenciaPresentationState state,
+    SalesProdutoTendenciaChartId chartId,
+  ) {
+    return switch (chartId) {
+      SalesProdutoTendenciaChartId.classificacao =>
+        state.summaryRows.isNotEmpty,
+      SalesProdutoTendenciaChartId.topGainers => state.topGainers.isNotEmpty,
+      SalesProdutoTendenciaChartId.topLosers => state.topLosers.isNotEmpty,
+    };
+  }
+
   SalesProdutoDimensionLoaderFactory _grupoProdutoLoaderFactory(
     String userId,
   ) {
@@ -314,8 +349,8 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
                           bucket.count,
                         ),
                     tooltipLabelBuilder: (bucket, _) =>
-                        '${salesProdutoTendenciaClassificacaoLabel(fl10n, bucket.classificacao)} • '
-                        '${bucket.count} • '
+                        '${salesProdutoTendenciaClassificacaoLabel(fl10n, bucket.classificacao)} � '
+                        '${bucket.count} � '
                         '${NumberFormat.decimalPattern(fl10n.localeName).format(bucket.impacto.round())}',
                   );
                 },
@@ -430,8 +465,8 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
                     dataLabelBuilder: (row, _) =>
                         '${row.percentualTendencia.toStringAsFixed(1)}%',
                     tooltipLabelBuilder: (row, _) =>
-                        '${row.nomeProduto} • '
-                        '${row.percentualTendencia.toStringAsFixed(2)}% • '
+                        '${row.nomeProduto} � '
+                        '${row.percentualTendencia.toStringAsFixed(2)}% � '
                         '${NumberFormat.decimalPattern(fl10n.localeName).format(row.diferenca.round())}',
                   );
                 },
@@ -444,7 +479,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
   }
 
   String _dateRangeLabel(DateTimeRange range) {
-    return '${AppBrFormatters.shortDateFormat.format(range.start)} – '
+    return '${AppBrFormatters.shortDateFormat.format(range.start)} � '
         '${AppBrFormatters.shortDateFormat.format(range.end)}';
   }
 
@@ -499,16 +534,15 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
       onRefresh: () async {
         await _reload();
       },
-      child: SingleChildScrollView(
+      child: ListView(
+        scrollCacheExtent: const ScrollCacheExtent.pixels(5000),
         physics: const AlwaysScrollableScrollPhysics(),
         padding: context.pageScrollPadding(
           tokens,
           horizontalAdjustment:
               AppPageSpacingPresets.dashboardHorizontalAdjustment,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
+        children: <Widget>[
             AppShellPageIntro(
               sectionLabel: l10n.shellNavSalesLabel,
               onSectionLabelTap: () => context.goTo(AppRoute.sales),
@@ -602,14 +636,16 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
                   l10n,
                   state.periodoAnterior,
                 ),
+                hasActiveDetailFilters: _hasActiveDetailFilters(state),
+                onClearFilters: () => unawaited(_clearDetailFilters()),
+                onOpenFilters: () => unawaited(_openFiltersSheet()),
               ),
               SizedBox(height: tokens.sectionSpacing),
               SalesProdutoTendenciaChartNavGrid(
                 l10n: l10n,
-                loading: state.loading && state.summaryRows.isEmpty,
-                enabled: state.summaryRows.isNotEmpty ||
-                    state.topGainers.isNotEmpty ||
-                    state.topLosers.isNotEmpty,
+                loading: state.loading,
+                sectionTitle: l10n.salesProdutoTendenciaChartsSectionTitle,
+                isChartReady: (chartId) => _isChartReady(state, chartId),
                 onChartSelected: (chartId) =>
                     _onChartSelected(state, chartId),
               ),
@@ -627,10 +663,12 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
                     unawaited(_controller.changePageSize(size)),
                 classLabelBuilder: (value) =>
                     salesProdutoTendenciaClassificacaoLabel(l10n, value),
+                hasActiveDetailFilters: _hasActiveDetailFilters(state),
+                onClearFilters: () => unawaited(_clearDetailFilters()),
+                onOpenFilters: () => unawaited(_openFiltersSheet()),
               ),
             ],
-          ],
-        ),
+        ],
       ),
     );
   }

@@ -48,8 +48,8 @@ const double _kCompactPageSizeDropdownWidth = 72;
 
 class AppTablePaginationFooterStyle {
   const AppTablePaginationFooterStyle({
-    this.iconButtonSize = 32,
-    this.pageNumberMinSize = 32,
+    this.iconButtonSize = 44,
+    this.pageNumberMinSize = 44,
     this.cornerRadius = 10,
     this.showTopBorder = true,
   });

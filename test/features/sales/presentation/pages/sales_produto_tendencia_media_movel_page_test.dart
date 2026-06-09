@@ -500,7 +500,7 @@ void main() {
 
     expect(
       find.text('No moving-average trend data for the selected filters.'),
-      findsOneWidget,
+      findsWidgets,
     );
   });
 

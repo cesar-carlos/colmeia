@@ -197,12 +197,7 @@ class SalesProdutoTendenciaController extends SalesTrendControllerBase {
     if (page > totalPages) {
       return;
     }
-    _setState(
-      _state.copyWith(
-        page: page,
-        rows: const <ProdutoVendidoTendenciaDeVendaRow>[],
-      ),
-    );
+    _setState(_state.copyWith(page: page));
     await reloadDetailsOnly();
   }
 

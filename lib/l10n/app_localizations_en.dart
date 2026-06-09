@@ -1506,6 +1506,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clientAgentsNoTradeName => 'No trade name';
 
   @override
+  String get clientAgentsApprovedColName => 'Name';
+
+  @override
+  String get clientAgentsApprovedColTradeName => 'Trade name';
+
+  @override
+  String get clientAgentsApprovedColActions => 'Actions';
+
+  @override
+  String get clientAgentsApprovedPaginationEntityLabel => 'agents';
+
+  @override
+  String get clientAgentsApprovedTableHorizontalScroll =>
+      'Swipe horizontally to see all table columns.';
+
+  @override
+  String get clientAgentsApprovedStaleCacheChip => 'Stale cache';
+
+  @override
+  String clientAgentsApprovedListTruncated(
+    String loadedCount,
+    String totalCount,
+  ) {
+    return 'Only $loadedCount of $totalCount agents were loaded. Some entries may be missing.';
+  }
+
+  @override
   String get agentCatalogInactive => 'inactive';
 
   @override
@@ -4101,6 +4128,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Loading sales trend…';
 
   @override
+  String get salesProdutoTendenciaChartsSectionTitle => 'Charts';
+
+  @override
+  String get salesProdutoTendenciaChartNavUnavailableSemanticsSuffix =>
+      'unavailable';
+
+  @override
+  String get salesProdutoTendenciaEmptyAdjustPeriodAction => 'Adjust period';
+
+  @override
   String get salesProdutoTendenciaDetailsEntityLabel => 'rows';
 
   @override
@@ -4300,6 +4337,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String salesProdutoTendenciaMediaMovelDetailsNotice(String pageSize) {
     return 'Results may contain more rows. Use pagination to load next pages (current size: $pageSize).';
   }
+
+  @override
+  String get salesProdutoTendenciaMediaMovelChartNavLoadingSemantics =>
+      'Loading moving-average charts…';
 
   @override
   String get salesProdutoTendenciaMediaMovelNoData =>

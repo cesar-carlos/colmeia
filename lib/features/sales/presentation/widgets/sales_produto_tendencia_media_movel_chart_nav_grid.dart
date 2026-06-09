@@ -1,4 +1,5 @@
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/navigation/app_hub_navigation_card.dart';
 import 'package:colmeia/shared/widgets/navigation/app_hub_navigation_card_density.dart';
@@ -22,18 +23,27 @@ class SalesProdutoTendenciaMediaMovelChartNavGrid extends StatelessWidget {
   const SalesProdutoTendenciaMediaMovelChartNavGrid({
     required this.l10n,
     required this.onChartSelected,
+    required this.isChartReady,
     super.key,
     this.loading = false,
-    this.enabled = true,
+    this.sectionTitle,
   });
 
   final AppLocalizations l10n;
   final ValueChanged<SalesProdutoTendenciaMediaMovelChartId> onChartSelected;
+  final bool Function(SalesProdutoTendenciaMediaMovelChartId chartId)
+  isChartReady;
   final bool loading;
-  final bool enabled;
+  final String? sectionTitle;
+
+  bool get _anyChartReady =>
+      _allSalesProdutoTendenciaMediaMovelCharts.any(isChartReady);
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.appTokens;
+    final showInitialSkeleton = loading && !_anyChartReady;
+
     final grid = AppHubNavigationGrid(
       density: AppHubNavigationCardDensity.chartNav,
       itemCount: _allSalesProdutoTendenciaMediaMovelCharts.length,
@@ -41,30 +51,71 @@ class SalesProdutoTendenciaMediaMovelChartNavGrid extends StatelessWidget {
         final chartId = _allSalesProdutoTendenciaMediaMovelCharts[index];
         final title = _chartTitle(l10n, chartId);
         final icon = _chartIcon(chartId);
-        final canTap = enabled && !loading;
+        final ready = isChartReady(chartId);
+        final canTap = ready;
+        final semanticsLabel = _semanticsLabel(
+          l10n: l10n,
+          title: title,
+          ready: ready,
+          loading: loading,
+        );
 
         return AppHubNavigationCard(
           density: AppHubNavigationCardDensity.chartNav,
           icon: icon,
           label: title,
           labelStyle: layout.narrowLabelStyle,
-          semanticsLabel: title,
+          showReadyBadge: ready,
+          semanticsLabel: semanticsLabel,
           aspectRatio: layout.aspectRatio,
           onTap: canTap ? () => onChartSelected(chartId) : null,
         );
       },
     );
 
-    if (!loading) {
-      return grid;
+    final resolvedGrid = showInitialSkeleton
+        ? AppSkeleton(
+            enabled: true,
+            loadingSemanticsLabel:
+                l10n.salesProdutoTendenciaMediaMovelChartNavLoadingSemantics,
+            child: grid,
+          )
+        : grid;
+
+    final title = sectionTitle;
+    if (title == null || title.trim().isEmpty) {
+      return resolvedGrid;
     }
 
-    return AppSkeleton(
-      enabled: true,
-      loadingSemanticsLabel: l10n.chartLoadingGeneric,
-      child: grid,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        SizedBox(height: tokens.gapMd),
+        resolvedGrid,
+      ],
     );
   }
+}
+
+String _semanticsLabel({
+  required AppLocalizations l10n,
+  required String title,
+  required bool ready,
+  required bool loading,
+}) {
+  if (ready) {
+    return title;
+  }
+  if (loading) {
+    return '$title, ${l10n.overviewChartNavLoadingSemanticsSuffix}';
+  }
+  return '$title, ${l10n.salesProdutoTendenciaChartNavUnavailableSemanticsSuffix}';
 }
 
 String _chartTitle(

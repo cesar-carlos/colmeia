@@ -1,5 +1,4 @@
 import 'package:checks/checks.dart';
-import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/client_agents/data/datasources/client_agents_local_datasource.dart';
 import 'package:colmeia/features/client_agents/data/datasources/client_agents_remote_datasource.dart';
 import 'package:colmeia/features/client_agents/data/models/client_request_access_response_dto.dart';

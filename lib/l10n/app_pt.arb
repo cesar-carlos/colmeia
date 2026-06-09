@@ -732,6 +732,19 @@
   "clientAgentsLoadApprovedErrorTitle": "Não foi possível carregar seus agentes",
   "clientAgentsEmptyApproved": "Nenhum agente aprovado no momento. Solicite acesso na aba \"{tabLabel}\".",
   "clientAgentsNoTradeName": "Sem nome fantasia",
+  "clientAgentsApprovedColName": "Nome",
+  "clientAgentsApprovedColTradeName": "Nome fantasia",
+  "clientAgentsApprovedColActions": "Ações",
+  "clientAgentsApprovedPaginationEntityLabel": "agentes",
+  "clientAgentsApprovedTableHorizontalScroll": "Deslize horizontalmente para ver todas as colunas da tabela.",
+  "clientAgentsApprovedStaleCacheChip": "Cache desatualizado",
+  "clientAgentsApprovedListTruncated": "Apenas {loadedCount} de {totalCount} agentes foram carregados. Alguns registros podem estar ausentes.",
+  "@clientAgentsApprovedListTruncated": {
+    "placeholders": {
+      "loadedCount": {"type": "String"},
+      "totalCount": {"type": "String"}
+    }
+  },
   "agentCatalogInactive": "inativo",
   "agentCatalogActive": "ativo",
   "agentConnectionOnline": "online",
@@ -1791,6 +1804,9 @@
   "salesProdutoTendenciaDetailsHorizontalScrollCaption": "Deslize para o lado para ver todas as colunas.",
   "salesProdutoTendenciaFiltersAppliedSnackbar": "Filtros aplicados. Atualizando dados.",
   "salesProdutoTendenciaLoadingTrendSemantics": "Carregando tendência de vendas…",
+  "salesProdutoTendenciaChartsSectionTitle": "Gráficos",
+  "salesProdutoTendenciaChartNavUnavailableSemanticsSuffix": "indisponível",
+  "salesProdutoTendenciaEmptyAdjustPeriodAction": "Ajustar período",
   "salesProdutoTendenciaDetailsEntityLabel": "linhas",
   "salesProdutoTendenciaNoData": "Sem dados de tendência para os filtros selecionados.",
   "salesProdutoTendenciaKpiGrowing": "Produtos crescendo",
@@ -1897,6 +1913,7 @@
       }
     }
   },
+  "salesProdutoTendenciaMediaMovelChartNavLoadingSemantics": "Carregando gráficos de média móvel…",
   "salesProdutoTendenciaMediaMovelNoData": "Sem dados de tendência por média móvel para os filtros selecionados.",
   "salesProdutoTendenciaMediaMovelKpiGrowing": "Produtos crescendo",
   "salesProdutoTendenciaMediaMovelKpiFalling": "Produtos caindo",

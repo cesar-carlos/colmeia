@@ -1413,4 +1413,59 @@ void main() {
       expect(_actionFeedbackText(controller), contains('removed'));
     },
   );
+
+  test('refreshAll waits for in-flight mutations before reloading', () async {
+    await controller.initialize();
+
+    final removeCompleter = Completer<void>();
+    when(
+      () => queueRemoveAccessUseCase(
+        userId: any(named: 'userId'),
+        agentIds: any(named: 'agentIds'),
+      ),
+    ).thenAnswer((_) async {
+      await removeCompleter.future;
+      return const Success<Unit, AppFailure>(unit);
+    });
+
+    var refreshStartedDuringMutation = false;
+    when(
+      () => loadApprovedAgentsUseCase(
+        userId: any(named: 'userId'),
+        query: any(named: 'query'),
+        refresh: any(named: 'refresh'),
+      ),
+    ).thenAnswer((_) async {
+      if (controller.isMutating) {
+        refreshStartedDuringMutation = true;
+      }
+      return Success<PaginatedResult<ClientAgent>, AppFailure>(
+        approvedAgentsResult,
+      );
+    });
+
+    final removeFuture = controller.removeAccess(
+      agentIds: <String>{'11111111-1111-1111-8111-111111111111'},
+    );
+    await Future<void>.delayed(Duration.zero);
+    expect(controller.isMutating, isTrue);
+
+    final refreshFuture = controller.refreshAll();
+    await Future<void>.delayed(Duration.zero);
+    expect(refreshStartedDuringMutation, isFalse);
+
+    removeCompleter.complete();
+    await removeFuture;
+    await refreshFuture;
+
+    expect(refreshStartedDuringMutation, isFalse);
+    verify(
+      () => loadApprovedAgentsUseCase(
+        userId: session.userId,
+        query: any(named: 'query'),
+        refresh: any(named: 'refresh'),
+      ),
+    ).called(greaterThan(1));
+  });
+
 }

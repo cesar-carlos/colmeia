@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:math' show min;
-
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/errors/retry_after_gate.dart';
@@ -23,7 +21,6 @@ import 'package:colmeia/features/client_agents/application/usecases/read_pending
 import 'package:colmeia/features/client_agents/application/usecases/retry_client_access_request_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/save_client_agent_token_use_case.dart';
 import 'package:colmeia/features/client_agents/application/usecases/sync_pending_client_agent_actions_use_case.dart';
-import 'package:colmeia/features/client_agents/domain/entities/agent_access_request_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_token_constraints.dart';
@@ -32,6 +29,7 @@ import 'package:colmeia/features/client_agents/domain/entities/paginated_query.d
 import 'package:colmeia/features/client_agents/domain/entities/paginated_result.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
 import 'package:colmeia/features/client_agents/domain/entities/sync_pending_agent_actions_result.dart';
+import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_access_mutation_coordinator.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_approval_polling_coordinator.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_presence_coordinator.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/request_access_submission_snapshot.dart';
@@ -47,7 +45,8 @@ export 'package:colmeia/features/client_agents/presentation/controllers/request_
 class ClientAgentsController extends ChangeNotifier
     implements
         ClientAgentsPresenceHost,
-        ClientAgentsApprovalPollingHost {
+        ClientAgentsApprovalPollingHost,
+        ClientAgentsAccessMutationHost {
   ClientAgentsController({
     required AuthController authController,
     required ClientAgentTokenDraftStore clientTokenDraftStore,
@@ -77,9 +76,6 @@ class ClientAgentsController extends ChangeNotifier
        _loadApprovedAgentsUseCase = loadApprovedAgentsUseCase,
        _loadAccessRequestsUseCase = loadAccessRequestsUseCase,
        _loadClientAgentDetailUseCase = loadClientAgentDetailUseCase,
-       _queueRequestAccessUseCase = queueRequestAccessUseCase,
-       _queueRemoveAccessUseCase = queueRemoveAccessUseCase,
-       _probeClientApprovedAgentUseCase = probeClientApprovedAgentUseCase,
        _discardQueuedClientAgentRequestAccessUseCase =
            discardQueuedClientAgentRequestAccessUseCase,
        _readPendingActionsUseCase = readPendingActionsUseCase,
@@ -108,6 +104,16 @@ class ClientAgentsController extends ChangeNotifier
       loadClientAccessStatusUseCase: loadClientAccessStatusUseCase,
       loadApprovedAgentsUseCase: loadApprovedAgentsUseCase,
     );
+    _accessMutation = ClientAgentsAccessMutationCoordinator(
+      host: this,
+      loadApprovedAgentsUseCase: loadApprovedAgentsUseCase,
+      queueRequestAccessUseCase: queueRequestAccessUseCase,
+      queueRemoveAccessUseCase: queueRemoveAccessUseCase,
+      probeClientApprovedAgentUseCase: probeClientApprovedAgentUseCase,
+      discardQueuedClientAgentRequestAccessUseCase:
+          discardQueuedClientAgentRequestAccessUseCase,
+      readPendingActionsUseCase: readPendingActionsUseCase,
+    );
     // Re-broadcast gate ticks so consumer widgets that already listen to
     // the controller refresh the countdown label without subscribing to
     // each gate individually.
@@ -115,16 +121,11 @@ class ClientAgentsController extends ChangeNotifier
     _requestAccessRetryAfterGate.addListener(_notifyListenersIfAlive);
   }
 
-  static const int _approvedAgentsProbeConcurrency = 4;
-
   final AuthController _authController;
   final ClientAgentTokenDraftStore _clientTokenDraftStore;
   final LoadClientApprovedAgentsUseCase _loadApprovedAgentsUseCase;
   final LoadClientAccessRequestsUseCase _loadAccessRequestsUseCase;
   final LoadClientAgentDetailUseCase _loadClientAgentDetailUseCase;
-  final QueueClientAgentRequestAccessUseCase _queueRequestAccessUseCase;
-  final QueueClientAgentRemoveAccessUseCase _queueRemoveAccessUseCase;
-  final ProbeClientApprovedAgentUseCase _probeClientApprovedAgentUseCase;
   final DiscardQueuedClientAgentRequestAccessUseCase
   _discardQueuedClientAgentRequestAccessUseCase;
   final ReadPendingClientAgentActionsUseCase _readPendingActionsUseCase;
@@ -139,6 +140,7 @@ class ClientAgentsController extends ChangeNotifier
   /// is a no-op when the build does not opt into the socket transport.
   late final ClientAgentsPresenceCoordinator _presence;
   late final ClientAgentsApprovalPollingCoordinator _approvalPolling;
+  late final ClientAgentsAccessMutationCoordinator _accessMutation;
 
   /// Cooldown for `syncPending`. Armed every time the underlying use
   /// case fails with a `Retry-After` hint; the UI uses
@@ -173,13 +175,22 @@ class ClientAgentsController extends ChangeNotifier
   int _refreshAllToken = 0;
   Future<void> _pendingMutationTail = Future.value();
 
-  Future<T> _runPendingMutationSerialized<T>(Future<T> Function() action) {
+  Future<T> _runPendingMutationSerialized<T>(
+    Future<T> Function() action, {
+    bool resetBusyFlags = true,
+  }) {
     final completer = Completer<T>();
     _pendingMutationTail = _pendingMutationTail.then((_) async {
       try {
         completer.complete(await action());
       } on Object catch (error, stackTrace) {
         completer.completeError(error, stackTrace);
+      } finally {
+        if (resetBusyFlags && !_isDisposed) {
+          _isMutating = false;
+          _isSyncingPending = false;
+          _notifyListenersIfAlive();
+        }
       }
     });
     return completer.future;
@@ -201,9 +212,22 @@ class ClientAgentsController extends ChangeNotifier
   ClientAgentsPresentationMessage? get pendingActionsError =>
       _pendingActionsError;
   PaginatedResult<ClientAgent>? get approvedAgents => _approvedAgents;
+  bool get approvedAgentsResultTruncated =>
+      _approvedAgents?.isResultTruncated ?? false;
   PaginatedResult<ClientAgentAccessRequest>? get accessRequests =>
       _accessRequests;
   List<PendingAgentAction> get pendingActions => _pendingActions;
+
+  Set<String> get pendingRemoveAgentIds {
+    return _pendingActions
+        .where(
+          (action) =>
+              action.type == PendingAgentActionType.removeAccess &&
+              action.state != PendingAgentActionState.synced,
+        )
+        .map((action) => action.agentId)
+        .toSet();
+  }
 
   /// Time left in the `Retry-After` cooldown for the sync action, or
   /// `null` when the action is allowed.
@@ -230,6 +254,13 @@ class ClientAgentsController extends ChangeNotifier
   }
 
   Future<void> refreshAll() async {
+    if (isBusy) {
+      await _runPendingMutationSerialized(
+        () => _refreshAll(keepContentVisible: hasContent),
+        resetBusyFlags: false,
+      );
+      return;
+    }
     await _refreshAll(keepContentVisible: hasContent);
   }
 
@@ -285,17 +316,17 @@ class ClientAgentsController extends ChangeNotifier
         return;
       }
 
-      _approvedAgentsError = _consumeResult(
+      _approvedAgentsError = consumeResult(
         result: approvedResult,
         onSuccess: (value) => _approvedAgents = value,
         operation: 'loadApprovedClientAgents',
       );
-      _accessRequestsError = _consumeResult(
+      _accessRequestsError = consumeResult(
         result: requestsResult,
         onSuccess: (value) => _accessRequests = value,
         operation: 'loadClientAgentAccessRequests',
       );
-      _pendingActionsError = _consumeResult(
+      _pendingActionsError = consumeResult(
         result: pendingResult,
         onSuccess: (value) => _pendingActions = value,
         operation: 'readPendingClientAgentActions',
@@ -703,240 +734,15 @@ class ClientAgentsController extends ChangeNotifier
       if (_isDisposed) {
         return false;
       }
-      // Preflight uses network truth (`GET /client/me/agents/{id}`). Transport
-      // errors fall back to the normal queue path; 401/403 abort with an auth
-      // message instead of enqueueing blindly.
       _isMutating = true;
-      _actionError = null;
-      _clearActionFeedback();
       _notifyListenersIfAlive();
-
-      final ids = agentIds.toList(growable: false);
-      final relinkedById = <String, ClientAgent>{};
-      final idsForClassification = <String>{};
-      var probeFailureFallbackCount = 0;
-      var authAborted = false;
-
-      for (var i = 0; i < ids.length; i += _approvedAgentsProbeConcurrency) {
-        final upper = min(i + _approvedAgentsProbeConcurrency, ids.length);
-        final chunk = ids.sublist(i, upper);
-        final chunkOutcomes = await Future.wait(
-          chunk.map((agentId) async {
-            final probeResult = await _probeClientApprovedAgentUseCase(
-              userId: userId,
-              agentId: agentId,
-            );
-            return (agentId, probeResult);
-          }),
-        );
-
-        for (final record in chunkOutcomes) {
-          record.$2.fold(
-            (outcome) {
-              final agent = outcome.agent;
-              if (outcome.isLinked && agent != null) {
-                relinkedById[agent.agentId] = agent;
-              } else {
-                idsForClassification.add(record.$1);
-              }
-            },
-            (failure) {
-              final authMessage = _probeAuthBlockingUserMessage(failure);
-              if (authMessage != null) {
-                _actionError = authMessage;
-                authAborted = true;
-                return;
-              }
-              probeFailureFallbackCount++;
-              idsForClassification.add(record.$1);
-            },
-          );
-          if (authAborted) {
-            break;
-          }
-        }
-        if (authAborted) {
-          break;
-        }
-      }
-
-      if (_actionError != null) {
-        _isMutating = false;
-        _notifyListenersIfAlive();
-        await _reloadPendingAfterEnqueue(userId: userId);
-        return false;
-      }
-
-      final relinkedAgents = relinkedById.values.toList(growable: false);
-      var pendingCleanupOk = true;
-      if (relinkedAgents.isNotEmpty) {
-        pendingCleanupOk = await _discardRelinkedPendingWithRetry(
-          userId: userId,
-          agentIds: relinkedById.keys.toSet(),
-        );
-        await _reloadApprovedAgentsCacheAfterRelink(
-          userId: userId,
-          fallbackAgents: relinkedAgents,
-        );
-        _invalidateTargetResolution(userId: userId);
-        _scheduleLocalTokenServerFlushForApprovedAgents(
-          userId: userId,
-          preferredAgentIds: relinkedById.keys,
-        );
-      }
-
-      AppLogger.info(
-        'Client agents request access preflight completed',
-        context: <String, Object?>{
-          'relinkedCount': relinkedById.length,
-          'classificationCount': idsForClassification.length,
-          'probeFailureFallbackCount': probeFailureFallbackCount,
-          'pendingCleanupOk': pendingCleanupOk,
-        },
-      );
-
-      final classification = _classifyRequestAgentIds(idsForClassification);
-      if (classification.allowed.isEmpty) {
-        _isMutating = false;
-        if (relinkedAgents.isEmpty) {
-          _actionError = _buildBlockedRequestMessage(classification);
-        } else {
-          _setActionFeedback(
-            message:
-                ClientAgentsPresentationMessage.clientAgentsRequestRelinkOnly(
-                  relinkedCount: relinkedAgents.length,
-                  pendingCleanupOk: pendingCleanupOk,
-                ),
-            kind: ClientAgentsActionFeedbackKind.success,
-          );
-          if (onResolved != null) {
-            await onResolved(
-              RequestAccessSubmissionSnapshot(
-                relinkedAgentIds: relinkedById.keys.toSet(),
-                queuedAgentIds: const <String>{},
-              ),
-            );
-          }
-        }
-        _notifyListenersIfAlive();
-        await _reloadPendingAfterEnqueue(userId: userId);
-        return _actionError == null;
-      }
-
-      final queueResult = await _queueRequestAccessUseCase(
-        userId: userId,
-        agentIds: classification.allowed,
-      );
-      _actionError = _consumeResult(
-        result: queueResult,
-        operation: 'queueClientAgentRequestAccess',
-      );
-      _maybeArmRequestAccessRetryGateFromResult(queueResult);
-      if (_actionError == null) {
-        if (relinkedAgents.isEmpty) {
-          _setActionFeedback(
-            message: _buildQueuedRequestMessage(classification),
-            kind: ClientAgentsActionFeedbackKind.info,
-          );
-        } else {
-          _setActionFeedback(
-            message:
-                ClientAgentsPresentationMessage.clientAgentsRequestRelinkAndQueued(
-                  relinkedCount: relinkedAgents.length,
-                  queuedCount: classification.allowed.length,
-                  ignoredCount:
-                      classification.approved.length +
-                      classification.remotePending.length +
-                      classification.localPending.length,
-                  pendingCleanupOk: pendingCleanupOk,
-                ),
-            kind: ClientAgentsActionFeedbackKind.info,
-          );
-        }
-        if (onResolved != null) {
-          await onResolved(
-            RequestAccessSubmissionSnapshot(
-              relinkedAgentIds: relinkedById.keys.toSet(),
-              queuedAgentIds: classification.allowed,
-            ),
-          );
-        }
-      }
-      await _reloadPendingAfterEnqueue(userId: userId);
-      return _actionError == null;
-    });
-  }
-
-  ClientAgentsPresentationMessage? _probeAuthBlockingUserMessage(
-    AppFailure failure,
-  ) {
-    if (failure is SessionFailure) {
-      return ClientAgentsPresentationMessage.clientAgentsSessionUnavailableRequest();
-    }
-    if (failure is AuthorizationFailure) {
-      if (isBlockedAccountFailure(failure)) {
-        return ClientAgentsPresentationMessage.failure(failure);
-      }
-      return ClientAgentsPresentationMessage.clientAgentsSessionUnavailableRequest();
-    }
-    return null;
-  }
-
-  Future<bool> _discardRelinkedPendingWithRetry({
-    required String userId,
-    required Set<String> agentIds,
-  }) async {
-    for (var attempt = 0; attempt < 2; attempt++) {
-      final discardResult = await _discardQueuedClientAgentRequestAccessUseCase(
+      return _accessMutation.requestAccess(
         userId: userId,
         agentIds: agentIds,
+        onResolved: onResolved,
+        onQueueResult: _maybeArmRequestAccessRetryGateFromResult,
       );
-      if (discardResult.isSuccess()) {
-        return true;
-      }
-      discardResult.fold((_) {}, (failure) {
-        AppLogger.warning(
-          'discardQueuedClientAgentRequestAccess failed',
-          context: <String, Object?>{
-            'operation': 'discardQueuedClientAgentRequestAccess',
-            'attempt': attempt + 1,
-          },
-          error: failure.cause ?? failure,
-          stackTrace: failure.stackTrace,
-        );
-      });
-    }
-    return false;
-  }
-
-  Future<void> _reloadApprovedAgentsCacheAfterRelink({
-    required String userId,
-    required List<ClientAgent> fallbackAgents,
-  }) async {
-    const query = PaginatedQuery(pageSize: kClientAgentsListPageSize);
-    final result = await _loadApprovedAgentsUseCase(
-      userId: userId,
-      query: query,
-      refresh: true,
-    );
-    result.fold(
-      (value) {
-        _approvedAgents = value;
-        _upsertApprovedAgentsInMemory(fallbackAgents);
-      },
-      (failure) {
-        AppLogger.warning(
-          'Approved agents refresh after relink failed; merged local list',
-          context: <String, Object?>{
-            'operation': 'reloadApprovedAgentsAfterRelink',
-            'technicalMessage': failure.message,
-          },
-          error: failure.cause ?? failure,
-          stackTrace: failure.stackTrace,
-        );
-        _upsertApprovedAgentsInMemory(fallbackAgents);
-      },
-    );
+    });
   }
 
   Future<void> removeAccess({
@@ -958,33 +764,8 @@ class ClientAgentsController extends ChangeNotifier
         return;
       }
       _isMutating = true;
-      _actionError = null;
-      _clearActionFeedback();
       _notifyListenersIfAlive();
-
-      final classification = _classifyRemoveAgentIds(agentIds);
-      if (classification.allowed.isEmpty) {
-        _isMutating = false;
-        _actionError = _buildBlockedRemoveMessage(classification);
-        _notifyListenersIfAlive();
-        return;
-      }
-
-      final queueResult = await _queueRemoveAccessUseCase(
-        userId: userId,
-        agentIds: classification.allowed,
-      );
-      _actionError = _consumeResult(
-        result: queueResult,
-        operation: 'queueClientAgentRemoveAccess',
-      );
-      if (_actionError == null) {
-        _setActionFeedback(
-          message: _buildQueuedRemoveMessage(classification),
-          kind: ClientAgentsActionFeedbackKind.info,
-        );
-      }
-      await _reloadPendingAfterEnqueue(userId: userId);
+      await _accessMutation.removeAccess(userId: userId, agentIds: agentIds);
     });
   }
 
@@ -1018,7 +799,7 @@ class ClientAgentsController extends ChangeNotifier
         userId: userId,
         requestId: requestId,
       );
-      _actionError = _consumeResult(
+      _actionError = consumeResult(
         result: retryResult,
         operation: 'retryClientAccessRequest',
       );
@@ -1028,6 +809,7 @@ class ClientAgentsController extends ChangeNotifier
           message: ClientAgentsPresentationMessage.clientAgentsRetrySuccess(),
           kind: ClientAgentsActionFeedbackKind.info,
         );
+        _isMutating = false;
         _approvalPolling.startPolling(
           userId: userId,
           agentIds: <String>{request.agentId},
@@ -1081,7 +863,7 @@ class ClientAgentsController extends ChangeNotifier
         userId: userId,
         agentIds: <String>{agentId},
       );
-      _actionError = _consumeResult(
+      _actionError = consumeResult(
         result: discardResult,
         operation: 'discardQueuedClientAgentRequestAccess',
       );
@@ -1201,7 +983,7 @@ class ClientAgentsController extends ChangeNotifier
         (value) => value.requestAccessDebouncedAgentIds,
         (_) => const <String>{},
       );
-      _actionError = _consumeResult(
+      _actionError = consumeResult(
         result: syncResult,
         operation: 'syncPendingClientAgentActions',
       );
@@ -1246,6 +1028,8 @@ class ClientAgentsController extends ChangeNotifier
             ),
           );
         }
+        _isSyncingPending = false;
+        _isMutating = false;
         _approvalPolling.startPolling(
           userId: userId,
           agentIds: requestAccessPollAgentIds,
@@ -1253,20 +1037,6 @@ class ClientAgentsController extends ChangeNotifier
         _notifyListenersIfAlive();
       }
     });
-  }
-
-  Future<void> _reloadPendingAfterEnqueue({
-    required String userId,
-  }) async {
-    final pendingResult = await _readPendingActionsUseCase(userId: userId);
-    _pendingActionsError = _consumeResult(
-      result: pendingResult,
-      onSuccess: (value) => _pendingActions = value,
-      operation: 'readPendingClientAgentActions',
-    );
-    _isMutating = false;
-    _notifyListenersIfAlive();
-    _scheduleAutoSyncIfNeeded();
   }
 
   Future<void> _refreshAfterMutation({
@@ -1295,29 +1065,28 @@ class ClientAgentsController extends ChangeNotifier
       return;
     }
 
-    _approvedAgentsError = _consumeResult(
+    _approvedAgentsError = consumeResult(
       result: approvedResult,
       onSuccess: (value) => _approvedAgents = value,
       operation: 'loadApprovedClientAgents',
     );
-    _accessRequestsError = _consumeResult(
+    _accessRequestsError = consumeResult(
       result: requestsResult,
       onSuccess: (value) => _accessRequests = value,
       operation: 'loadClientAgentAccessRequests',
     );
-    _pendingActionsError = _consumeResult(
+    _pendingActionsError = consumeResult(
       result: pendingResult,
       onSuccess: (value) => _pendingActions = value,
       operation: 'readPendingClientAgentActions',
     );
 
-    _isSyncingPending = false;
-    _isMutating = false;
     _scheduleLocalTokenServerFlushForApprovedAgents(userId: userId);
     _notifyListenersIfAlive();
   }
 
-  ClientAgentsPresentationMessage? _consumeResult<T extends Object>({
+  @override
+  ClientAgentsPresentationMessage? consumeResult<T extends Object>({
     required AppResult<T> result,
     required String operation,
     ValueChanged<T>? onSuccess,
@@ -1350,6 +1119,7 @@ class ClientAgentsController extends ChangeNotifier
     _notifyListenersIfAlive();
   }
 
+  @override
   void clearActionFeedback() {
     if (_actionNotice == null) {
       return;
@@ -1474,135 +1244,9 @@ class ClientAgentsController extends ChangeNotifier
     );
   }
 
-  ({
-    Set<String> allowed,
-    Set<String> approved,
-    Set<String> remotePending,
-    Set<String> localPending,
-  })
-  _classifyRequestAgentIds(
-    Set<String> agentIds,
-  ) {
-    final approved = _approvedAgentIds().intersection(agentIds);
-    final remotePending = _remotePendingRequestIds().intersection(agentIds);
-    final localPending = _localPendingRequestIds().intersection(agentIds);
-    final blocked = <String>{...approved, ...remotePending, ...localPending};
-    final allowed = agentIds.difference(blocked);
-    return (
-      allowed: allowed,
-      approved: approved,
-      remotePending: remotePending,
-      localPending: localPending,
-    );
-  }
-
-  ({Set<String> allowed, Set<String> notApproved, Set<String> localPending})
-  _classifyRemoveAgentIds(
-    Set<String> agentIds,
-  ) {
-    final approved = _approvedAgentIds();
-    final localPending = _localPendingRemoveIds().intersection(agentIds);
-    final notApproved = agentIds.difference(approved);
-    final blocked = <String>{...notApproved, ...localPending};
-    final allowed = agentIds.difference(blocked);
-    return (
-      allowed: allowed,
-      notApproved: notApproved,
-      localPending: localPending,
-    );
-  }
-
   Set<String> _approvedAgentIds() {
     return _approvedAgents?.items.map((agent) => agent.agentId).toSet() ??
         const <String>{};
-  }
-
-  Set<String> _remotePendingRequestIds() {
-    return _accessRequests?.items
-            .where(
-              (request) => request.status == AgentAccessRequestStatus.pending,
-            )
-            .map((request) => request.agentId)
-            .toSet() ??
-        const <String>{};
-  }
-
-  Set<String> _localPendingRequestIds() {
-    return _pendingActions
-        .where(
-          (action) =>
-              action.type == PendingAgentActionType.requestAccess &&
-              action.state != PendingAgentActionState.synced,
-        )
-        .map((action) => action.agentId)
-        .toSet();
-  }
-
-  Set<String> _localPendingRemoveIds() {
-    return _pendingActions
-        .where(
-          (action) =>
-              action.type == PendingAgentActionType.removeAccess &&
-              action.state != PendingAgentActionState.synced,
-        )
-        .map((action) => action.agentId)
-        .toSet();
-  }
-
-  ClientAgentsPresentationMessage _buildBlockedRequestMessage(
-    ({
-      Set<String> allowed,
-      Set<String> approved,
-      Set<String> remotePending,
-      Set<String> localPending,
-    })
-    classification,
-  ) {
-    return ClientAgentsPresentationMessage.clientAgentsRequestBlocked(
-      approved: classification.approved,
-      remotePending: classification.remotePending,
-      localPending: classification.localPending,
-    );
-  }
-
-  ClientAgentsPresentationMessage _buildQueuedRequestMessage(
-    ({
-      Set<String> allowed,
-      Set<String> approved,
-      Set<String> remotePending,
-      Set<String> localPending,
-    })
-    classification,
-  ) {
-    return ClientAgentsPresentationMessage.clientAgentsRequestQueued(
-      queuedCount: classification.allowed.length,
-      ignoredCount:
-          classification.approved.length +
-          classification.remotePending.length +
-          classification.localPending.length,
-    );
-  }
-
-  ClientAgentsPresentationMessage _buildBlockedRemoveMessage(
-    ({Set<String> allowed, Set<String> notApproved, Set<String> localPending})
-    classification,
-  ) {
-    return ClientAgentsPresentationMessage.clientAgentsRemoveBlocked(
-      notApproved: classification.notApproved,
-      localPending: classification.localPending,
-    );
-  }
-
-  ClientAgentsPresentationMessage _buildQueuedRemoveMessage(
-    ({Set<String> allowed, Set<String> notApproved, Set<String> localPending})
-    classification,
-  ) {
-    return ClientAgentsPresentationMessage.clientAgentsRemoveQueued(
-      queuedCount: classification.allowed.length,
-      ignoredCount:
-          classification.notApproved.length +
-          classification.localPending.length,
-    );
   }
 
   void _invalidateTargetResolution({required String userId}) {
@@ -1655,6 +1299,32 @@ class ClientAgentsController extends ChangeNotifier
   @override
   void notifyPresenceChanged() {
     _notifyListenersIfAlive();
+  }
+
+  // ----- Access mutation host (delegated to the coordinator) -----
+
+  @override
+  List<PendingAgentAction> get pendingActionsSnapshot => _pendingActions;
+
+  @override
+  void setActionError(ClientAgentsPresentationMessage? error) {
+    _actionError = error;
+  }
+
+  @override
+  void replacePendingActions(List<PendingAgentAction> actions) {
+    _pendingActions = actions;
+  }
+
+  @override
+  void setPendingActionsError(ClientAgentsPresentationMessage? error) {
+    _pendingActionsError = error;
+  }
+
+  @override
+  void notifyMutationChanged() {
+    _notifyListenersIfAlive();
+    _scheduleAutoSyncIfNeeded();
   }
 
   // ----- Approval polling host (delegated to the coordinator) -----

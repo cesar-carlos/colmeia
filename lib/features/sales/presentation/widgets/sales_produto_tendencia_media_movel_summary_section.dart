@@ -1,12 +1,13 @@
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_summary_row.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_filtered_empty_state.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_kpi_card.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_classificacao_labels.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_section_header.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_trend_comparison_bar_chart_style.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/metrics/app_metric_stat_card.dart';
@@ -82,97 +83,126 @@ class SalesProdutoTendenciaMediaMovelClassBucket {
   final double impacto;
 }
 
-class SalesProdutoTendenciaMediaMovelLoadingSection extends StatelessWidget {
-  const SalesProdutoTendenciaMediaMovelLoadingSection({
-    required this.title,
-    required this.subtitle,
-    super.key,
-  });
-
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.appTokens;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        SalesProdutoTendenciaMediaMovelSectionHeader(
-          title: title,
-          subtitle: subtitle,
-        ),
-        SizedBox(height: tokens.gapMd),
-        const AppSkeleton(
-          enabled: true,
-          child: SizedBox(
-            height: 120,
-            width: double.infinity,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class SalesProdutoTendenciaMediaMovelSummarySection extends StatelessWidget {
   const SalesProdutoTendenciaMediaMovelSummarySection({
     required this.l10n,
     required this.summary,
+    required this.loading,
+    required this.hasSummaryRows,
     super.key,
+    this.hasActiveDetailFilters = false,
+    this.onClearFilters,
+    this.onOpenFilters,
   });
 
   final AppLocalizations l10n;
   final SalesProdutoTendenciaMediaMovelSummary summary;
+  final bool loading;
+  final bool hasSummaryRows;
+  final bool hasActiveDetailFilters;
+  final VoidCallback? onClearFilters;
+  final VoidCallback? onOpenFilters;
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.appTokens;
     final colors = context.appColors;
     final numberFormat = NumberFormat.decimalPattern(l10n.localeName);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+
+    return AppSectionCardWithHeading(
+      title: l10n.salesProdutoTendenciaMediaMovelSummaryTitle,
+      subtitle: l10n.salesProdutoTendenciaMediaMovelSummarySubtitle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (loading && !hasSummaryRows)
+            AppSkeleton(
+              enabled: true,
+              loadingSemanticsLabel:
+                  l10n.salesProdutoTendenciaMediaMovelChartNavLoadingSemantics,
+              child: _MediaMovelSummaryKpiStrip(
+                l10n: l10n,
+                summary: buildSalesProdutoTendenciaMediaMovelSummary(
+                  const <ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>[],
+                ),
+                colors: colors,
+                numberFormat: numberFormat,
+              ),
+            )
+          else if (!hasSummaryRows)
+            SalesProdutoTendenciaFilteredEmptyState(
+              l10n: l10n,
+              message: l10n.salesProdutoTendenciaMediaMovelNoData,
+              hasActiveDetailFilters: hasActiveDetailFilters,
+              onClearFilters: onClearFilters,
+              onOpenFilters: onOpenFilters,
+            )
+          else
+            AppSkeleton(
+              enabled: loading,
+              loadingSemanticsLabel:
+                  l10n.salesProdutoTendenciaMediaMovelChartNavLoadingSemantics,
+              child: _MediaMovelSummaryKpiStrip(
+                l10n: l10n,
+                summary: summary,
+                colors: colors,
+                numberFormat: numberFormat,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MediaMovelSummaryKpiStrip extends StatelessWidget {
+  const _MediaMovelSummaryKpiStrip({
+    required this.l10n,
+    required this.summary,
+    required this.colors,
+    required this.numberFormat,
+  });
+
+  final AppLocalizations l10n;
+  final SalesProdutoTendenciaMediaMovelSummary summary;
+  final AppColors colors;
+  final NumberFormat numberFormat;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppResponsiveMetricStatGrid(
+      extraWideColumns: 5,
       children: <Widget>[
-        SalesProdutoTendenciaMediaMovelSectionHeader(
-          title: l10n.salesProdutoTendenciaMediaMovelSummaryTitle,
-          subtitle: l10n.salesProdutoTendenciaMediaMovelSummarySubtitle,
+        SalesProdutoTendenciaKpiCard(
+          icon: Icons.trending_up_rounded,
+          label: l10n.salesProdutoTendenciaMediaMovelKpiGrowing,
+          value: numberFormat.format(summary.countGrowing),
+          iconForeground: colors.tertiary,
+          emphasis: AppMetricStatCardEmphasis.hero,
         ),
-        SizedBox(height: tokens.gapMd),
-        AppResponsiveMetricStatGrid(
-          children: <Widget>[
-            SalesProdutoTendenciaKpiCard(
-              icon: Icons.trending_up_rounded,
-              label: l10n.salesProdutoTendenciaMediaMovelKpiGrowing,
-              value: numberFormat.format(summary.countGrowing),
-              iconForeground: colors.tertiary,
-              emphasis: AppMetricStatCardEmphasis.hero,
-            ),
-            SalesProdutoTendenciaKpiCard(
-              icon: Icons.trending_down_rounded,
-              label: l10n.salesProdutoTendenciaMediaMovelKpiFalling,
-              value: numberFormat.format(summary.countFalling),
-              iconForeground: colors.error,
-            ),
-            SalesProdutoTendenciaKpiCard(
-              icon: Icons.new_releases_outlined,
-              label: l10n.salesProdutoTendenciaMediaMovelKpiNewProducts,
-              value: numberFormat.format(summary.countNew),
-              iconForeground: colors.primary,
-            ),
-            SalesProdutoTendenciaKpiCard(
-              icon: Icons.pause_circle_outline_rounded,
-              label: l10n.salesProdutoTendenciaMediaMovelKpiStopped,
-              value: numberFormat.format(summary.countStopped),
-              iconForeground: colors.onSurfaceVariant,
-            ),
-            SalesProdutoTendenciaKpiCard(
-              icon: Icons.balance_rounded,
-              label: l10n.salesProdutoTendenciaMediaMovelKpiNetImpact,
-              value: numberFormat.format(summary.netImpact),
-              iconForeground:
-                  summary.netImpact >= 0 ? colors.tertiary : colors.error,
-            ),
-          ],
+        SalesProdutoTendenciaKpiCard(
+          icon: Icons.trending_down_rounded,
+          label: l10n.salesProdutoTendenciaMediaMovelKpiFalling,
+          value: numberFormat.format(summary.countFalling),
+          iconForeground: colors.error,
+        ),
+        SalesProdutoTendenciaKpiCard(
+          icon: Icons.new_releases_outlined,
+          label: l10n.salesProdutoTendenciaMediaMovelKpiNewProducts,
+          value: numberFormat.format(summary.countNew),
+          iconForeground: colors.primary,
+        ),
+        SalesProdutoTendenciaKpiCard(
+          icon: Icons.pause_circle_outline_rounded,
+          label: l10n.salesProdutoTendenciaMediaMovelKpiStopped,
+          value: numberFormat.format(summary.countStopped),
+          iconForeground: colors.onSurfaceVariant,
+        ),
+        SalesProdutoTendenciaKpiCard(
+          icon: Icons.balance_rounded,
+          label: l10n.salesProdutoTendenciaMediaMovelKpiNetImpact,
+          value: numberFormat.format(summary.netImpact),
+          iconForeground:
+              summary.netImpact >= 0 ? colors.tertiary : colors.error,
         ),
       ],
     );

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_row.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_filtered_empty_state.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_classificacao_labels.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_section_header.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -31,6 +32,9 @@ class SalesProdutoTendenciaMediaMovelDetailsSection extends StatelessWidget {
     this.loading = false,
     this.headerTrailing,
     super.key,
+    this.hasActiveDetailFilters = false,
+    this.onClearFilters,
+    this.onOpenFilters,
   });
 
   final AppLocalizations l10n;
@@ -48,6 +52,9 @@ class SalesProdutoTendenciaMediaMovelDetailsSection extends StatelessWidget {
   final VoidCallback? onPrevious;
   final ValueChanged<int> onPageSizeChanged;
   final Widget? headerTrailing;
+  final bool hasActiveDetailFilters;
+  final VoidCallback? onClearFilters;
+  final VoidCallback? onOpenFilters;
 
   @override
   Widget build(BuildContext context) {
@@ -107,9 +114,19 @@ class SalesProdutoTendenciaMediaMovelDetailsSection extends StatelessWidget {
                   ),
                 )
               else if (rows.isEmpty)
-                Text(l10n.salesProdutoTendenciaMediaMovelNoData)
+                SalesProdutoTendenciaFilteredEmptyState(
+                  l10n: l10n,
+                  message: l10n.salesProdutoTendenciaMediaMovelNoData,
+                  hasActiveDetailFilters: hasActiveDetailFilters,
+                  onClearFilters: onClearFilters,
+                  onOpenFilters: onOpenFilters,
+                )
               else
-                LayoutBuilder(
+                AppSkeleton(
+                  enabled: loading,
+                  loadingSemanticsLabel:
+                      l10n.salesProdutoTendenciaMediaMovelChartNavLoadingSemantics,
+                  child: LayoutBuilder(
                   builder: (context, constraints) {
                     final minTableWidth =
                         _SalesProdutoTendenciaMediaMovelDetailsTableLayout.minScrollContentWidth(
@@ -236,6 +253,7 @@ class SalesProdutoTendenciaMediaMovelDetailsSection extends StatelessWidget {
                       ],
                     );
                   },
+                ),
                 ),
               if (rows.isNotEmpty) ...<Widget>[
                 SizedBox(height: tokens.gapMd),

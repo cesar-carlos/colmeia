@@ -17,19 +17,30 @@ class LoadClientApprovedAgentsUseCase {
     String? status,
     bool includeOnlineStatus = true,
     bool refresh = false,
+    bool loadAllPages = true,
   }) {
-    return loadAllClientAgentsPages<ClientAgent>(
-      query: query,
-      search: search,
-      status: status,
-      loadPage: (pageQuery) => _repository.loadApprovedAgents(
+    Future<AppResult<PaginatedResult<ClientAgent>>> loadPage(
+      PaginatedQuery pageQuery,
+    ) {
+      return _repository.loadApprovedAgents(
         userId: userId,
         query: pageQuery,
         search: search,
         status: status,
         includeOnlineStatus: includeOnlineStatus,
         refresh: refresh && pageQuery.page == query.page,
-      ),
+      );
+    }
+
+    if (!loadAllPages || search != null || status != null) {
+      return loadPage(query);
+    }
+
+    return loadAllClientAgentsPages<ClientAgent>(
+      query: query,
+      search: search,
+      status: status,
+      loadPage: loadPage,
     );
   }
 }

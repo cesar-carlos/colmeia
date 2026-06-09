@@ -24,6 +24,7 @@ import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_k
 import 'package:colmeia/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:colmeia/features/auth/data/models/auth_session_model.dart';
 import 'package:colmeia/features/client_agents/application/client_approved_agents_relay_pre_warm_loader.dart';
+import 'package:colmeia/features/client_agents/application/usecases/load_client_approved_agents_use_case.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:dio/dio.dart';
@@ -184,7 +185,7 @@ void _e2eRegisterRelayConversationPreWarmerIfAvailable() {
   }
   final loader = ClientApprovedAgentsRelayPreWarmLoader(
     sessionAccessor: getIt<AuthSessionAccessor>(),
-    approvedAgentsRepository: getIt<ClientAgentsRepository>(),
+    loadApprovedAgentsUseCase: getIt<LoadClientApprovedAgentsUseCase>(),
   );
   getIt.registerSingleton<RelayConversationPreWarmer>(
     RelayConversationPreWarmer(

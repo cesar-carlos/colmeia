@@ -1,40 +1,18 @@
 import 'dart:async';
 
-import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:colmeia/shared/maps/app_location_lookup_normalizer.dart';
-import 'package:colmeia/shared/utils/app_branch_display_model.dart';
-import 'package:colmeia/shared/widgets/app_section_card.dart';
-import 'package:colmeia/shared/widgets/app_tag_chip.dart';
-import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.dart';
-import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
-import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_overlay_chrome.dart';
 import 'package:colmeia/shared/widgets/charts/app_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_chart_visual_snapshot.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_layout_constants.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_store_sales_display_helpers.dart';
-import 'package:colmeia/shared/widgets/forms/app_choice_chip.dart';
-import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
-import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 class BrazilMapChartMarkerScaleLegend extends StatelessWidget {
-  const BrazilMapChartMarkerScaleLegend({
-    required this.sizeLegendLabel,
-    required this.metric,
-    required this.minValue,
-    required this.maxValue,
-    required this.minSize,
-    required this.maxSize,
-    required this.color,
-    required this.strokeColor,
-    required this.visual,
+  const BrazilMapChartMarkerScaleLegend({required this.sizeLegendLabel, required this.metric, required this.minValue, required this.maxValue, required this.minSize, required this.maxSize, required this.color, required this.strokeColor, required this.visual, super.key,
   });
 
   final String sizeLegendLabel;
@@ -71,16 +49,7 @@ class BrazilMapChartMarkerScaleLegend extends StatelessWidget {
 }
 
 class BrazilMapChartMarkerScaleLegendMenuButton extends StatelessWidget {
-  const BrazilMapChartMarkerScaleLegendMenuButton({
-    required this.sizeLegendLabel,
-    required this.metric,
-    required this.minValue,
-    required this.maxValue,
-    required this.minSize,
-    required this.maxSize,
-    required this.color,
-    required this.strokeColor,
-    required this.visual,
+  const BrazilMapChartMarkerScaleLegendMenuButton({required this.sizeLegendLabel, required this.metric, required this.minValue, required this.maxValue, required this.minSize, required this.maxSize, required this.color, required this.strokeColor, required this.visual, super.key,
   });
 
   final String sizeLegendLabel;
@@ -161,16 +130,7 @@ class BrazilMapChartMarkerScaleLegendMenuButton extends StatelessWidget {
 }
 
 class BrazilMapChartMarkerScaleLegendContent extends StatelessWidget {
-  const BrazilMapChartMarkerScaleLegendContent({
-    required this.sizeLegendLabel,
-    required this.metric,
-    required this.minValue,
-    required this.maxValue,
-    required this.minSize,
-    required this.maxSize,
-    required this.color,
-    required this.strokeColor,
-    required this.visual,
+  const BrazilMapChartMarkerScaleLegendContent({required this.sizeLegendLabel, required this.metric, required this.minValue, required this.maxValue, required this.minSize, required this.maxSize, required this.color, required this.strokeColor, required this.visual, super.key,
   });
 
   final String sizeLegendLabel;
@@ -234,7 +194,7 @@ class BrazilMapChartMarkerScaleLegendContent extends StatelessWidget {
 }
 
 class BrazilMapChartAuxiliarySurface extends StatelessWidget {
-  const BrazilMapChartAuxiliarySurface({required this.child});
+  const BrazilMapChartAuxiliarySurface({required this.child, super.key});
 
   final Widget child;
 
@@ -261,7 +221,7 @@ class BrazilMapChartAuxiliarySurface extends StatelessWidget {
 }
 
 class BrazilMapChartDataQualityNotice extends StatelessWidget {
-  const BrazilMapChartDataQualityNotice({required this.diagnostics});
+  const BrazilMapChartDataQualityNotice({required this.diagnostics, super.key});
 
   final AppBrazilStoreSalesMapDiagnostics diagnostics;
 
@@ -322,12 +282,7 @@ class BrazilMapChartDataQualityNotice extends StatelessWidget {
 }
 
 class BrazilMapChartMarkerScaleLegendItem extends StatelessWidget {
-  const BrazilMapChartMarkerScaleLegendItem({
-    required this.label,
-    required this.size,
-    required this.color,
-    required this.strokeColor,
-    required this.visual,
+  const BrazilMapChartMarkerScaleLegendItem({required this.label, required this.size, required this.color, required this.strokeColor, required this.visual, super.key,
   });
 
   final String label;

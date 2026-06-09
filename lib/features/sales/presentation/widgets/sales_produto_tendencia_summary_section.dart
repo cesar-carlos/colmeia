@@ -1,14 +1,15 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_produto_tendencia_share.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_filtered_empty_state.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_kpi_card.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
+import 'package:colmeia/shared/widgets/metrics/app_metric_stat_card.dart';
 import 'package:colmeia/shared/widgets/metrics/app_responsive_metric_stat_grid.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -23,6 +24,9 @@ class SalesProdutoTendenciaSummarySection extends StatelessWidget {
     required this.periodoAtualDescriptor,
     required this.periodoAnteriorDescriptor,
     super.key,
+    this.hasActiveDetailFilters = false,
+    this.onClearFilters,
+    this.onOpenFilters,
   });
 
   final AppLocalizations l10n;
@@ -32,6 +36,9 @@ class SalesProdutoTendenciaSummarySection extends StatelessWidget {
   final DateTimeRange periodoAnterior;
   final String periodoAtualDescriptor;
   final String periodoAnteriorDescriptor;
+  final bool hasActiveDetailFilters;
+  final VoidCallback? onClearFilters;
+  final VoidCallback? onOpenFilters;
 
   @override
   Widget build(BuildContext context) {
@@ -82,16 +89,23 @@ class SalesProdutoTendenciaSummarySection extends StatelessWidget {
               ),
             )
           else if (summaryRows.isEmpty)
-            AppInlineErrorPanel(
-              tone: AppInlinePanelTone.informational,
-              variant: AppInlineErrorPanelVariant.plain,
+            SalesProdutoTendenciaFilteredEmptyState(
+              l10n: l10n,
               message: l10n.salesProdutoTendenciaNoData,
+              hasActiveDetailFilters: hasActiveDetailFilters,
+              onClearFilters: onClearFilters,
+              onOpenFilters: onOpenFilters,
             )
           else
-            _TrendSummaryKpiStrip(
-              l10n: l10n,
-              summary: summary,
-              colors: colors,
+            AppSkeleton(
+              enabled: loading,
+              loadingSemanticsLabel:
+                  l10n.salesProdutoTendenciaLoadingTrendSemantics,
+              child: _TrendSummaryKpiStrip(
+                l10n: l10n,
+                summary: summary,
+                colors: colors,
+              ),
             ),
         ],
       ),
@@ -115,12 +129,14 @@ class _TrendSummaryKpiStrip extends StatelessWidget {
     final locale = l10n.localeName;
     final nf = NumberFormat.decimalPattern(locale);
     return AppResponsiveMetricStatGrid(
+      extraWideColumns: 6,
       children: <Widget>[
         SalesProdutoTendenciaKpiCard(
           icon: Icons.trending_up_rounded,
           label: l10n.salesProdutoTendenciaKpiGrowing,
           value: nf.format(summary.countGrowing),
           iconForeground: colors.tertiary,
+          emphasis: AppMetricStatCardEmphasis.hero,
         ),
         SalesProdutoTendenciaKpiCard(
           icon: Icons.trending_down_rounded,

@@ -177,6 +177,39 @@ class _SalesProdutoTendenciaMediaMovelPageState
     _showFiltersAppliedSnackBar();
   }
 
+  Future<void> _clearDetailFilters() async {
+    final state = _controller.state;
+    await _controller.applyFilters(<String, Object?>{
+      'agentId': state.selectedAgentId,
+      'quantidadeDias': state.quantidadeDias,
+      'searchTerm': '',
+      'classificacao': null,
+      'codGrupoProduto': null,
+      'codMarca': null,
+      'grupoProdutoLabel': null,
+      'marcaProdutoLabel': null,
+      'sortBy': ProdutoVendidoTendenciaDeVendaMediaMovelSortBy
+          .tendenciaPercentualDesc,
+      'pageSize':
+          ProdutoVendidoTendenciaDeVendaMediaMovelFilter.defaultPageSize,
+    });
+  }
+
+  bool _isChartReady(
+    SalesProdutoTendenciaMediaMovelPresentationState state,
+    SalesProdutoTendenciaMediaMovelChartId chartId,
+  ) {
+    if (state.summaryRows.isEmpty) {
+      return false;
+    }
+    return switch (chartId) {
+      SalesProdutoTendenciaMediaMovelChartId.countByClassificacao =>
+        state.summaryRows.isNotEmpty,
+      SalesProdutoTendenciaMediaMovelChartId.impactByClassificacao =>
+        state.summaryRows.isNotEmpty,
+    };
+  }
+
   SalesProdutoDimensionLoaderFactory _grupoProdutoLoaderFactory(
     String userId,
   ) {
@@ -581,9 +614,8 @@ class _SalesProdutoTendenciaMediaMovelPageState
           orElse: () => null,
         );
     final summary = buildSalesProdutoTendenciaMediaMovelSummary(state.summaryRows);
-    final hasRows = state.pageResult.items.isNotEmpty;
     final hasSummary = state.summaryRows.isNotEmpty;
-    final hasAnyData = hasRows || state.summaryRows.isNotEmpty;
+    final hasActiveDetailFilters = _activeFilterCount(state) > 0;
     final totalPages = state.pageResult.totalCount == 0
         ? 0
         : (state.pageResult.totalCount / state.pageSize).ceil();
@@ -597,16 +629,15 @@ class _SalesProdutoTendenciaMediaMovelPageState
 
     return RefreshIndicator(
       onRefresh: _reload,
-      child: SingleChildScrollView(
+      child: ListView(
+        scrollCacheExtent: const ScrollCacheExtent.pixels(5000),
         physics: const AlwaysScrollableScrollPhysics(),
         padding: context.pageScrollPadding(
           tokens,
           horizontalAdjustment:
               AppPageSpacingPresets.dashboardHorizontalAdjustment,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
+        children: <Widget>[
             AppShellPageIntro(
               sectionLabel: l10n.shellNavSalesLabel,
               onSectionLabelTap: () => context.goTo(AppRoute.sales),
@@ -715,52 +746,28 @@ class _SalesProdutoTendenciaMediaMovelPageState
                       onRetry: _reload,
                     ),
                   ] else ...<Widget>[
-                    if (state.loading && !hasAnyData) ...<Widget>[
-                      SizedBox(height: tokens.sectionSpacing),
-                      SalesProdutoTendenciaMediaMovelLoadingSection(
-                        title: l10n.salesProdutoTendenciaMediaMovelSummaryTitle,
-                        subtitle:
-                            l10n.salesProdutoTendenciaMediaMovelSummarySubtitle,
+                    SizedBox(height: tokens.sectionSpacing),
+                    SalesProdutoTendenciaMediaMovelSummarySection(
+                      l10n: l10n,
+                      summary: summary,
+                      loading: state.loading,
+                      hasSummaryRows: hasSummary,
+                      hasActiveDetailFilters: hasActiveDetailFilters,
+                      onClearFilters: () => unawaited(_clearDetailFilters()),
+                      onOpenFilters: _openFilters,
+                    ),
+                    SizedBox(height: tokens.sectionSpacing),
+                    SalesProdutoTendenciaMediaMovelChartNavGrid(
+                      l10n: l10n,
+                      loading: state.loading,
+                      sectionTitle: l10n.salesProdutoTendenciaChartsSectionTitle,
+                      isChartReady: (chartId) => _isChartReady(state, chartId),
+                      onChartSelected: (chartId) => _onChartSelected(
+                        state,
+                        chartId,
+                        summary.buckets,
                       ),
-                      SizedBox(height: tokens.sectionSpacing),
-                      SalesProdutoTendenciaMediaMovelChartNavGrid(
-                        l10n: l10n,
-                        loading: true,
-                        enabled: false,
-                        onChartSelected: (_) {},
-                      ),
-                      SizedBox(height: tokens.sectionSpacing),
-                      SalesProdutoTendenciaMediaMovelLoadingSection(
-                        title: l10n.salesProdutoTendenciaMediaMovelDetailsTitle,
-                        subtitle:
-                            l10n.salesProdutoTendenciaMediaMovelDetailsSubtitle,
-                      ),
-                    ] else if (!hasAnyData) ...<Widget>[
-                      SizedBox(height: tokens.sectionSpacing),
-                      AppInlineErrorPanel(
-                        tone: AppInlinePanelTone.informational,
-                        title: l10n.salesProdutoTendenciaMediaMovelSummaryTitle,
-                        message: l10n.salesProdutoTendenciaMediaMovelNoData,
-                      ),
-                    ] else ...<Widget>[
-                    if (hasSummary) ...<Widget>[
-                      SizedBox(height: tokens.sectionSpacing),
-                      SalesProdutoTendenciaMediaMovelSummarySection(
-                        l10n: l10n,
-                        summary: summary,
-                      ),
-                      SizedBox(height: tokens.sectionSpacing),
-                      SalesProdutoTendenciaMediaMovelChartNavGrid(
-                        l10n: l10n,
-                        loading: state.loading && summary.buckets.isEmpty,
-                        enabled: summary.buckets.isNotEmpty,
-                        onChartSelected: (chartId) => _onChartSelected(
-                          state,
-                          chartId,
-                          summary.buckets,
-                        ),
-                      ),
-                    ],
+                    ),
                     SizedBox(height: tokens.sectionSpacing),
                     SalesProdutoTendenciaMediaMovelDetailsSection(
                       l10n: l10n,
@@ -773,10 +780,15 @@ class _SalesProdutoTendenciaMediaMovelPageState
                       rangeStart: rangeStart,
                       rangeEnd: rangeEnd,
                       sortBy: state.sortBy,
+                      hasActiveDetailFilters: hasActiveDetailFilters,
+                      onClearFilters: () => unawaited(_clearDetailFilters()),
+                      onOpenFilters: _openFilters,
                       headerTrailing: AppChartHeaderTrailing(
                         shareProgressKey: _detailsShareKey,
-                        shareEnabled: !state.loading && state.pageResult.totalCount > 0,
-                        onShare: state.loading || state.pageResult.totalCount <= 0
+                        shareEnabled:
+                            !state.loading && state.pageResult.totalCount > 0,
+                        onShare:
+                            state.loading || state.pageResult.totalCount <= 0
                             ? null
                             : () => unawaited(_shareDetailsTable()),
                       ),
@@ -784,19 +796,19 @@ class _SalesProdutoTendenciaMediaMovelPageState
                         unawaited(_controller.selectPage(page));
                       },
                       onNext: state.page < totalPages
-                          ? () => unawaited(_controller.selectPage(state.page + 1))
+                          ? () =>
+                                unawaited(_controller.selectPage(state.page + 1))
                           : null,
                       onPrevious: state.page > 1
-                          ? () => unawaited(_controller.selectPage(state.page - 1))
+                          ? () =>
+                                unawaited(_controller.selectPage(state.page - 1))
                           : null,
                       onPageSizeChanged: (value) {
                         unawaited(_controller.changePageSize(value));
                       },
                     ),
-                    ],
                   ],
-          ],
-        ),
+        ],
       ),
     );
   }

@@ -810,6 +810,19 @@
     }
   },
   "clientAgentsNoTradeName": "No trade name",
+  "clientAgentsApprovedColName": "Name",
+  "clientAgentsApprovedColTradeName": "Trade name",
+  "clientAgentsApprovedColActions": "Actions",
+  "clientAgentsApprovedPaginationEntityLabel": "agents",
+  "clientAgentsApprovedTableHorizontalScroll": "Swipe horizontally to see all table columns.",
+  "clientAgentsApprovedStaleCacheChip": "Stale cache",
+  "clientAgentsApprovedListTruncated": "Only {loadedCount} of {totalCount} agents were loaded. Some entries may be missing.",
+  "@clientAgentsApprovedListTruncated": {
+    "placeholders": {
+      "loadedCount": {"type": "String"},
+      "totalCount": {"type": "String"}
+    }
+  },
   "agentCatalogInactive": "inactive",
   "agentCatalogActive": "active",
   "agentConnectionOnline": "online",
@@ -2037,6 +2050,9 @@
   "salesProdutoTendenciaDetailsHorizontalScrollCaption": "Swipe sideways to see all columns.",
   "salesProdutoTendenciaFiltersAppliedSnackbar": "Filters applied. Refreshing data.",
   "salesProdutoTendenciaLoadingTrendSemantics": "Loading sales trend…",
+  "salesProdutoTendenciaChartsSectionTitle": "Charts",
+  "salesProdutoTendenciaChartNavUnavailableSemanticsSuffix": "unavailable",
+  "salesProdutoTendenciaEmptyAdjustPeriodAction": "Adjust period",
   "salesProdutoTendenciaDetailsEntityLabel": "rows",
   "salesProdutoTendenciaNoData": "No trend data for the selected filters.",
   "salesProdutoTendenciaKpiGrowing": "Growing products",
@@ -2143,6 +2159,7 @@
       }
     }
   },
+  "salesProdutoTendenciaMediaMovelChartNavLoadingSemantics": "Loading moving-average charts…",
   "salesProdutoTendenciaMediaMovelNoData": "No moving-average trend data for the selected filters.",
   "salesProdutoTendenciaMediaMovelKpiGrowing": "Growing products",
   "salesProdutoTendenciaMediaMovelKpiFalling": "Falling products",

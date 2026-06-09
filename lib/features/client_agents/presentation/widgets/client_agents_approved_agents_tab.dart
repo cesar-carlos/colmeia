@@ -1,10 +1,10 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
-import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
-import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_shared_widgets.dart';
+import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_approved_agents_table.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_flat_button.dart';
@@ -12,10 +12,12 @@ import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class ClientAgentsApprovedAgentsTab extends StatefulWidget {
   const ClientAgentsApprovedAgentsTab({
     required this.agents,
+    required this.totalCount,
     required this.errorMessage,
     required this.onQueueRemoveAccess,
     required this.onRetry,
@@ -23,15 +25,22 @@ class ClientAgentsApprovedAgentsTab extends StatefulWidget {
     required this.requestAccessTabLabel,
     super.key,
     this.hasActiveFilters = false,
+    this.pendingRemoveAgentIds = const <String>{},
+    this.isResultTruncated = false,
+    this.loadedCount,
   });
 
   final List<ClientAgent> agents;
+  final int totalCount;
   final String? errorMessage;
   final Future<void> Function(Set<String> agentIds) onQueueRemoveAccess;
   final VoidCallback onRetry;
   final bool isMutating;
   final bool hasActiveFilters;
   final String requestAccessTabLabel;
+  final Set<String> pendingRemoveAgentIds;
+  final bool isResultTruncated;
+  final int? loadedCount;
 
   @override
   State<ClientAgentsApprovedAgentsTab> createState() =>
@@ -42,6 +51,8 @@ class _ClientAgentsApprovedAgentsTabState
     extends State<ClientAgentsApprovedAgentsTab> {
   bool _selecting = false;
   final Set<String> _selected = <String>{};
+  int _currentPage = 1;
+  int _pageSize = kClientAgentsApprovedTablePageSizeOptions.first;
 
   @override
   void didUpdateWidget(ClientAgentsApprovedAgentsTab oldWidget) {
@@ -50,6 +61,12 @@ class _ClientAgentsApprovedAgentsTabState
       _selected.removeWhere(
         (id) => !widget.agents.any((a) => a.agentId == id),
       );
+      final totalPages = widget.totalCount == 0
+          ? 0
+          : (widget.totalCount / _pageSize).ceil();
+      if (totalPages > 0 && _currentPage > totalPages) {
+        _currentPage = totalPages;
+      }
     }
   }
 
@@ -58,6 +75,18 @@ class _ClientAgentsApprovedAgentsTabState
       _selecting = false;
       _selected.clear();
     });
+  }
+
+  List<ClientAgent> get _pageAgents {
+    if (widget.agents.isEmpty) {
+      return const <ClientAgent>[];
+    }
+    final start = (_currentPage - 1) * _pageSize;
+    if (start >= widget.agents.length) {
+      return const <ClientAgent>[];
+    }
+    final end = math.min(start + _pageSize, widget.agents.length);
+    return widget.agents.sublist(start, end);
   }
 
   Future<void> _confirmBulkRemove() async {
@@ -98,6 +127,9 @@ class _ClientAgentsApprovedAgentsTabState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final theme = Theme.of(context);
+    final rowNumber = NumberFormat.decimalPattern(l10n.localeName);
+
     if (widget.errorMessage case final String message) {
       return AppInlineErrorPanel(
         title: l10n.clientAgentsLoadApprovedErrorTitle,
@@ -118,6 +150,18 @@ class _ClientAgentsApprovedAgentsTabState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
+        if (widget.isResultTruncated) ...<Widget>[
+          Text(
+            l10n.clientAgentsApprovedListTruncated(
+              rowNumber.format(widget.loadedCount ?? widget.agents.length),
+              rowNumber.format(widget.totalCount),
+            ),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.error,
+            ),
+          ),
+          SizedBox(height: tokens.gapMd),
+        ],
         Wrap(
           spacing: tokens.gapSm,
           runSpacing: tokens.gapSm,
@@ -145,7 +189,7 @@ class _ClientAgentsApprovedAgentsTabState
                         _selected
                           ..clear()
                           ..addAll(
-                            widget.agents.map((a) => a.agentId),
+                            _pageAgents.map((a) => a.agentId),
                           );
                       }),
               ),
@@ -167,83 +211,43 @@ class _ClientAgentsApprovedAgentsTabState
           ],
         ),
         SizedBox(height: tokens.gapMd),
-        ...widget.agents.map(
-          (agent) {
-            final selected = _selected.contains(agent.agentId);
-            return ClientAgentsAgentTile(
-              leading: _selecting
-                  ? Checkbox(
-                      value: selected,
-                      onChanged: widget.isMutating
-                          ? null
-                          : (value) {
-                              setState(() {
-                                if (value ?? false) {
-                                  _selected.add(agent.agentId);
-                                } else {
-                                  _selected.remove(agent.agentId);
-                                }
-                              });
-                            },
-                    )
-                  : null,
-              title: agent.name,
-              subtitle:
-                  '${agent.tradeName ?? l10n.clientAgentsNoTradeName} - '
-                  '${_catalogStatusLabel(l10n, agent)} - '
-                  '${_connectionLabel(l10n, agent)}',
-              onTap: _selecting
-                  ? () {
-                      if (widget.isMutating) {
-                        return;
-                      }
-                      setState(() {
-                        if (selected) {
-                          _selected.remove(agent.agentId);
-                        } else {
-                          _selected.add(agent.agentId);
-                        }
-                      });
-                    }
-                  : () {
-                      context.goTo(
-                        AppRoute.agentsDetail,
-                        pathParameters: <String, String>{
-                          'agentId': agent.agentId,
-                        },
-                      );
-                    },
-              trailing: _selecting
-                  ? null
-                  : AppSecondaryButton(
-                      label: l10n.clientAgentsRemoveAccess,
-                      onPressed: widget.isMutating
-                          ? null
-                          : () => unawaited(
-                              widget.onQueueRemoveAccess(
-                                <String>{agent.agentId},
-                              ),
-                            ),
-                    ),
+        ClientAgentsApprovedAgentsTable(
+          l10n: l10n,
+          agents: _pageAgents,
+          totalCount: widget.agents.length,
+          currentPage: _currentPage,
+          pageSize: _pageSize,
+          onPageSelected: (page) => setState(() => _currentPage = page),
+          onPageSizeChanged: (size) => setState(() {
+            _pageSize = size;
+            _currentPage = 1;
+          }),
+          selecting: _selecting,
+          selectedAgentIds: _selected,
+          pendingRemoveAgentIds: widget.pendingRemoveAgentIds,
+          isMutating: widget.isMutating,
+          onAgentTap: (agent) {
+            context.goTo(
+              AppRoute.agentsDetail,
+              pathParameters: <String, String>{'agentId': agent.agentId},
+            );
+          },
+          onAgentSelectionChanged: (agent, {required selected}) {
+            setState(() {
+              if (selected) {
+                _selected.add(agent.agentId);
+              } else {
+                _selected.remove(agent.agentId);
+              }
+            });
+          },
+          onRemoveAccess: (agent) {
+            unawaited(
+              widget.onQueueRemoveAccess(<String>{agent.agentId}),
             );
           },
         ),
       ],
     );
-  }
-
-  String _catalogStatusLabel(AppLocalizations l10n, ClientAgent agent) {
-    return switch (agent.catalogStatus.name) {
-      'inactive' => l10n.agentCatalogInactive,
-      _ => l10n.agentCatalogActive,
-    };
-  }
-
-  String _connectionLabel(AppLocalizations l10n, ClientAgent agent) {
-    return switch (agent.connectionStatus) {
-      AgentConnectionStatus.online => l10n.agentConnectionOnline,
-      AgentConnectionStatus.offline => l10n.agentConnectionOffline,
-      AgentConnectionStatus.unknown => l10n.agentConnectionUnknown,
-    };
   }
 }
