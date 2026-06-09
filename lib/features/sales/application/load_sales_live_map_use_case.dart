@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_periodo_across_agents_use_case.dart';
-import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_resolver.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_batch_load_orchestrator.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_branch_aggregator.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_branch_location_cache.dart';
@@ -21,13 +21,13 @@ import 'package:colmeia/features/sales/application/load_sales_live_map/sales_liv
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_refresh_metrics_recorder.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_report_mapper.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_result_builder.dart';
+import 'package:colmeia/features/sales/application/ports/sales_live_map_batch_loader.dart';
 import 'package:colmeia/features/sales/application/ports/sales_live_map_catalog_cache.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_catalog_scope.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_point_factory.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_policies.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_refresh_metrics.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
-import 'package:colmeia/features/sales/data/sales_live_map_batch_loader.dart';
 import 'package:colmeia/features/sales/domain/contracts/sales_live_map_point_resolver.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 

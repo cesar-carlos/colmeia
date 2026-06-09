@@ -7,6 +7,7 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_ranking_produt
 import 'package:colmeia/features/sales/presentation/widgets/sales_ranking_produtos_faturamento_rank_badge.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
+import 'package:colmeia/shared/design_system/app_data_grid_density.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:flutter/material.dart';
@@ -82,7 +83,10 @@ class SalesRankingProdutosFaturamentoDetailsTable extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         header,
-        Divider(height: tokens.gapMd * 2, color: headerDividerColor),
+        Divider(
+          height: appDataGridRowDividerHeight(tokens),
+          color: headerDividerColor,
+        ),
         scrollableBody,
       ],
     );
@@ -125,7 +129,11 @@ class _RankingFaturamentoLoadingPlaceholder extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          if (i < 4) Divider(height: tokens.gapMd * 2, color: dividerColor),
+          if (i < 4)
+            Divider(
+              height: appDataGridRowDividerHeight(tokens),
+              color: dividerColor,
+            ),
         ],
       ],
     );
@@ -164,7 +172,7 @@ class _RankingFaturamentoScrollableBodyState
   Widget build(BuildContext context) {
     final tokens = Theme.of(context).appTokens;
     final divider = Divider(
-      height: tokens.gapMd * 2,
+      height: appDataGridRowDividerHeight(tokens),
       color: widget.dividerColor,
     );
 

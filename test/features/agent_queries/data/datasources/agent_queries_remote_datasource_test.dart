@@ -4,6 +4,7 @@ import 'package:colmeia/features/agent_queries/domain/agent_sql_http_receive_tim
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -13,6 +14,10 @@ class _MockDio extends Mock implements Dio {}
 void main() {
   late _MockDio dio;
   late ApiAgentQueriesRemoteDataSource dataSource;
+
+  setUpAll(() {
+    registerFallbackValue(CancelToken());
+  });
 
   setUp(() {
     dio = _MockDio();
@@ -205,6 +210,94 @@ void main() {
       final params = command['params']! as Map<String, Object?>;
 
       check(params.containsKey('params')).isFalse();
+    },
+  );
+
+  test(
+    'cancelScope cancellation aborts in-flight REST postSqlExecute',
+    () async {
+      final cancelScope = AgentQueriesCancelScope();
+
+      when(
+        () => dio.post<Map<String, dynamic>>(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      ).thenAnswer((invocation) async {
+        final token =
+            invocation.namedArguments[#cancelToken] as CancelToken?;
+        if (token != null) {
+          await token.whenCancel;
+          throw DioException(
+            requestOptions: RequestOptions(path: '/agents/commands'),
+            type: DioExceptionType.cancel,
+            message: 'postSqlExecute aborted: AgentQueriesCancelScope cancelled',
+          );
+        }
+        return Response<Map<String, dynamic>>(
+          requestOptions: RequestOptions(path: '/agents/commands'),
+          data: const <String, dynamic>{},
+        );
+      });
+
+      const request = AgentSqlExecuteRequest(
+        agentId: 'agent-1',
+        sql: 'SELECT 1',
+      );
+
+      final future = dataSource.postSqlExecute(
+        request,
+        cancelScope: cancelScope,
+      );
+
+      await Future<void>.delayed(Duration.zero);
+
+      cancelScope.cancelAll();
+
+      await expectLater(
+        future,
+        throwsA(
+          isA<DioException>().having(
+            (error) => error.type,
+            'type',
+            DioExceptionType.cancel,
+          ),
+        ),
+      );
+    },
+  );
+
+  test(
+    'postSqlExecute fails fast when cancelScope is already cancelled',
+    () async {
+      final cancelScope = AgentQueriesCancelScope()..cancelAll();
+
+      const request = AgentSqlExecuteRequest(
+        agentId: 'agent-1',
+        sql: 'SELECT 1',
+      );
+
+      await expectLater(
+        dataSource.postSqlExecute(request, cancelScope: cancelScope),
+        throwsA(
+          isA<DioException>().having(
+            (error) => error.type,
+            'type',
+            DioExceptionType.cancel,
+          ),
+        ),
+      );
+
+      verifyNever(
+        () => dio.post<Map<String, dynamic>>(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      );
     },
   );
 }

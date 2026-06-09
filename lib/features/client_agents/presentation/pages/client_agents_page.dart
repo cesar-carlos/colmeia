@@ -51,6 +51,7 @@ class ClientAgentsPage extends StatefulWidget {
 
 class _ClientAgentsPageState extends State<ClientAgentsPage> with RouteAware {
   static const int _approvedAgentsTabIndex = 0;
+  static const int _requestAccessTabIndex = 1;
   static const int _requestsTabIndex = 2;
   static const int _ownerClientsTabIndex = 4;
   static const int _maxTabIndex = _ownerClientsTabIndex;
@@ -369,6 +370,7 @@ class _ClientAgentsPageState extends State<ClientAgentsPage> with RouteAware {
           },
           onRetry: () => unawaited(controller.refreshAll()),
           isMutating: controller.isMutating,
+          isLoading: controller.isLoadingInitial,
           pendingRemoveAgentIds: controller.pendingRemoveAgentIds,
           isResultTruncated: controller.approvedAgentsResultTruncated,
           loadedCount: approvedSnapshot?.items.length,
@@ -415,6 +417,7 @@ class _ClientAgentsPageState extends State<ClientAgentsPage> with RouteAware {
           ),
           onRetry: () => unawaited(controller.refreshAll()),
           isMutating: controller.isMutating,
+          isLoading: controller.isLoadingInitial,
           onRetryAccessRequest: (request) =>
               controller.retryAccessRequest(request: request),
           onDiscardQueuedRequestAccess: (action) =>
@@ -425,6 +428,20 @@ class _ClientAgentsPageState extends State<ClientAgentsPage> with RouteAware {
                 _pageSession.requestsFilters,
               ) >
               0,
+          onClearFilters: () {
+            setState(() {
+              _pageSession = _pageSession.copyWith(
+                requestsFilters: const <String, Object?>{},
+              );
+            });
+            unawaited(
+              _pageSessionService.persistRequestsFilters(
+                const <String, Object?>{},
+              ),
+            );
+          },
+          onNavigateToRequestAccess: () =>
+              _onTabChanged(_requestAccessTabIndex),
         ),
       ),
       if (canManageOwnerAccess)

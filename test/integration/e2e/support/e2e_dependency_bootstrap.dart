@@ -126,6 +126,9 @@ Future<void> _e2eSetupDependenciesBody() async {
     ..registerSingleton<ClientAgentsRepository>(
       E2eStubClientAgentsRepository(),
     )
+    ..registerLazySingleton<LoadClientApprovedAgentsUseCase>(
+      () => LoadClientApprovedAgentsUseCase(getIt<ClientAgentsRepository>()),
+    )
     ..registerSingleton<AgentClientTokenReader>(
       E2eStubAgentClientTokenReader(),
     );

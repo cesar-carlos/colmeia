@@ -7,7 +7,6 @@ import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart'
     show AppFailure, SessionFailure;
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
-import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
@@ -17,6 +16,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_d
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/overview/data/overview_batch_loader.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';

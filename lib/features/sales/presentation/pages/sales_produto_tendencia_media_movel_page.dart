@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/app/router/app_navigation.dart';
@@ -14,7 +13,6 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_produto
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_screen_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
-import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_support_context.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after_host.dart';
 import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
@@ -28,26 +26,22 @@ import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_ag
 import 'package:colmeia/features/sales/presentation/controllers/sales_produto_tendencia_media_movel_controller.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_produto_tendencia_media_movel_share.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_produto_tendencia_media_movel_presentation_state.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_auto_refresh_section.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_body_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_chart_nav_grid.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_classificacao_labels.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_details_section.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_filter_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_filters_sheet.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_summary_section.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_single_agent_picker_control.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_trend_comparison_bar_chart_style.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
-import 'package:colmeia/shared/widgets/agent_query_error_panel.dart';
-import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
-import 'package:colmeia/shared/widgets/app_tag_chip.dart';
-import 'package:colmeia/shared/widgets/charts/app_chart_header_trailing.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_guard.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -123,10 +117,14 @@ class _SalesProdutoTendenciaMediaMovelPageState
   }
 
   void _handleControllerChanged() {
-    if (mounted) {
-      setState(() {});
+    if (!mounted) {
+      return;
     }
+    refreshAutoRefreshScheduling();
   }
+
+  @override
+  bool get rebuildOnAutoRefreshStateChange => false;
 
   Future<void> _reload() => reloadWithAutoRefresh();
 
@@ -193,21 +191,6 @@ class _SalesProdutoTendenciaMediaMovelPageState
       'pageSize':
           ProdutoVendidoTendenciaDeVendaMediaMovelFilter.defaultPageSize,
     });
-  }
-
-  bool _isChartReady(
-    SalesProdutoTendenciaMediaMovelPresentationState state,
-    SalesProdutoTendenciaMediaMovelChartId chartId,
-  ) {
-    if (state.summaryRows.isEmpty) {
-      return false;
-    }
-    return switch (chartId) {
-      SalesProdutoTendenciaMediaMovelChartId.countByClassificacao =>
-        state.summaryRows.isNotEmpty,
-      SalesProdutoTendenciaMediaMovelChartId.impactByClassificacao =>
-        state.summaryRows.isNotEmpty,
-    };
   }
 
   SalesProdutoDimensionLoaderFactory _grupoProdutoLoaderFactory(
@@ -325,7 +308,10 @@ class _SalesProdutoTendenciaMediaMovelPageState
     }
     if (state.classificacao != null) {
       parts.add(
-        produtoTendenciaMediaMovelClassificacaoLabel(l10n, state.classificacao!),
+        produtoTendenciaMediaMovelClassificacaoLabel(
+          l10n,
+          state.classificacao!,
+        ),
       );
     }
     if (state.codGrupoProduto != null && state.grupoProdutoLabel != null) {
@@ -359,17 +345,18 @@ class _SalesProdutoTendenciaMediaMovelPageState
     final fullscreenShareKey = GlobalKey();
     final shareTitle =
         l10n.salesProdutoTendenciaMediaMovelSummaryByClassificacaoTitle;
-    final shareMetadata = buildSalesProdutoTendenciaMediaMovelCountShareMetadata(
-      l10n: l10n,
-      buckets: buckets,
-      tokens: tokens,
-    );
+    final shareMetadata =
+        buildSalesProdutoTendenciaMediaMovelCountShareMetadata(
+          l10n: l10n,
+          buckets: buckets,
+          tokens: tokens,
+        );
     unawaited(
       context.pushChartFullscreen<void>(
         extra: AppChartFullscreenRouteExtra(
           title: shareTitle,
-          subtitle:
-              l10n.salesProdutoTendenciaMediaMovelSummaryByClassificacaoSubtitle,
+          subtitle: l10n
+              .salesProdutoTendenciaMediaMovelSummaryByClassificacaoSubtitle,
           chartSemanticsLabel: shareTitle,
           headerTrailing: buildChartFullscreenShareTrailing(
             context: context,
@@ -379,20 +366,22 @@ class _SalesProdutoTendenciaMediaMovelPageState
           chartBuilder: (fullscreenContext) {
             final ft = fullscreenContext.appTokens;
             final fl10n = AppLocalizations.of(fullscreenContext);
-            final locale =
-                Localizations.localeOf(fullscreenContext).toLanguageTag();
+            final locale = Localizations.localeOf(
+              fullscreenContext,
+            ).toLanguageTag();
             return RepaintBoundary(
               key: fullscreenShareKey,
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   return AppComparisonBarChart<
-                      SalesProdutoTendenciaMediaMovelClassBucket>(
+                    SalesProdutoTendenciaMediaMovelClassBucket
+                  >(
                     items: buckets,
                     labelBuilder: (bucket) =>
                         produtoTendenciaMediaMovelClassificacaoLabel(
-                      fl10n,
-                      bucket.classificacao,
-                    ),
+                          fl10n,
+                          bucket.classificacao,
+                        ),
                     valueBuilder: (bucket) => bucket.count,
                     plotFloorAccessibilityNotice:
                         fl10n.chartComparisonPlotFloorNotice,
@@ -428,10 +417,10 @@ class _SalesProdutoTendenciaMediaMovelPageState
     final shareTitle = l10n.salesProdutoTendenciaMediaMovelSummaryByImpactTitle;
     final shareMetadata =
         buildSalesProdutoTendenciaMediaMovelImpactShareMetadata(
-      l10n: l10n,
-      buckets: buckets,
-      tokens: tokens,
-    );
+          l10n: l10n,
+          buckets: buckets,
+          tokens: tokens,
+        );
     unawaited(
       context.pushChartFullscreen<void>(
         extra: AppChartFullscreenRouteExtra(
@@ -446,21 +435,23 @@ class _SalesProdutoTendenciaMediaMovelPageState
           chartBuilder: (fullscreenContext) {
             final ft = fullscreenContext.appTokens;
             final fl10n = AppLocalizations.of(fullscreenContext);
-            final locale =
-                Localizations.localeOf(fullscreenContext).toLanguageTag();
+            final locale = Localizations.localeOf(
+              fullscreenContext,
+            ).toLanguageTag();
             final decimalFormat = NumberFormat.decimalPattern(fl10n.localeName);
             return RepaintBoundary(
               key: fullscreenShareKey,
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   return AppComparisonBarChart<
-                      SalesProdutoTendenciaMediaMovelClassBucket>(
+                    SalesProdutoTendenciaMediaMovelClassBucket
+                  >(
                     items: buckets,
                     labelBuilder: (bucket) =>
                         produtoTendenciaMediaMovelClassificacaoLabel(
-                      fl10n,
-                      bucket.classificacao,
-                    ),
+                          fl10n,
+                          bucket.classificacao,
+                        ),
                     valueBuilder: (bucket) => bucket.impacto,
                     plotFloorAccessibilityNotice:
                         fl10n.chartComparisonPlotFloorNotice,
@@ -557,258 +548,57 @@ class _SalesProdutoTendenciaMediaMovelPageState
     }
   }
 
-  List<String> _activeFilterChipLabels(
-    AppLocalizations l10n,
-    SalesProdutoTendenciaMediaMovelPresentationState state,
-  ) {
-    final labels = <String>[];
-    final trimmedSearch = state.searchTerm.trim();
-    if (trimmedSearch.isNotEmpty) {
-      labels.add('${l10n.salesProdutoTendenciaFilterSearch}: $trimmedSearch');
-    }
-    if (state.classificacao != null) {
-      labels.add(
-        '${l10n.salesProdutoTendenciaFilterClassification}: '
-        '${produtoTendenciaMediaMovelClassificacaoLabel(l10n, state.classificacao!)}',
-      );
-    }
-    if (state.codGrupoProduto != null) {
-      final grupoLabel =
-          state.grupoProdutoLabel ?? '#${state.codGrupoProduto}';
-      labels.add('${l10n.salesProdutoTendenciaFilterGroup}: $grupoLabel');
-    }
-    if (state.codMarca != null) {
-      final marcaLabel = state.marcaProdutoLabel ?? '#${state.codMarca}';
-      labels.add('${l10n.salesProdutoTendenciaFilterBrand}: $marcaLabel');
-    }
-    return labels;
-  }
-
-  int _activeFilterCount(
-    SalesProdutoTendenciaMediaMovelPresentationState state,
-  ) {
-    var count = _activeFilterChipLabels(AppLocalizations.of(context), state)
-        .length;
-    if (state.sortBy !=
-        ProdutoVendidoTendenciaDeVendaMediaMovelSortBy
-            .tendenciaPercentualDesc) {
-      count++;
-    }
-    if (state.pageSize !=
-        ProdutoVendidoTendenciaDeVendaMediaMovelFilter.defaultPageSize) {
-      count++;
-    }
-    return count;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final state = _controller.state;
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final tokens = theme.appTokens;
-    final selectedBranch = state.availableAgents
-        .cast<DashboardAgentOption?>()
-        .firstWhere(
-          (agent) => agent?.agentId == state.selectedAgentId,
-          orElse: () => null,
-        );
-    final summary = buildSalesProdutoTendenciaMediaMovelSummary(state.summaryRows);
-    final hasSummary = state.summaryRows.isNotEmpty;
-    final hasActiveDetailFilters = _activeFilterCount(state) > 0;
-    final totalPages = state.pageResult.totalCount == 0
-        ? 0
-        : (state.pageResult.totalCount / state.pageSize).ceil();
-    final rangeStart = state.pageResult.totalCount == 0
-        ? 0
-        : ((state.page - 1) * state.pageSize) + 1;
-    final rangeEnd = state.pageResult.totalCount == 0
-        ? 0
-        : math.min(state.page * state.pageSize, state.pageResult.totalCount);
-    final activeFilterChipLabels = _activeFilterChipLabels(l10n, state);
+    final tokens = context.appTokens;
 
-    return RefreshIndicator(
-      onRefresh: _reload,
-      child: ListView(
-        cacheExtent: 5000,
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: context.pageScrollPadding(
-          tokens,
-          horizontalAdjustment:
-              AppPageSpacingPresets.dashboardHorizontalAdjustment,
-        ),
-        children: <Widget>[
+    return ChangeNotifierProvider<SalesProdutoTendenciaMediaMovelController>.value(
+      value: _controller,
+      child: RefreshIndicator(
+        onRefresh: _reload,
+        child: ListView(
+          scrollCacheExtent: const ScrollCacheExtent.pixels(5000),
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: context.pageScrollPadding(
+            tokens,
+            horizontalAdjustment:
+                AppPageSpacingPresets.dashboardHorizontalAdjustment,
+          ),
+          children: <Widget>[
             AppShellPageIntro(
               sectionLabel: l10n.shellNavSalesLabel,
               onSectionLabelTap: () => context.goTo(AppRoute.sales),
               title: l10n.salesCardProdutoTendenciaMediaMovelTitle,
               subtitle: l10n.salesProdutoTendenciaMediaMovelPageSubtitle,
             ),
-                  SizedBox(height: tokens.sectionSpacing),
-                  // Branch is inline here (not only in the filters sheet) so users
-                  // can switch agents without opening filters; period trend keeps
-                  // branch selection inside the sheet only.
-                  SalesBranchPickerControl(
-                    l10n: l10n,
-                    availableBranches: state.availableAgents,
-                    selectedBranchId: state.selectedAgentId,
-                    onSelectionChanged: (agentId) {
-                      unawaited(_controller.changeAgent(agentId));
-                    },
-                  ),
-                  SizedBox(height: tokens.gapMd),
-                  SalesCardFilterTrigger(
-                    enabled: !state.loading,
-                    summaryItems: <SalesCardFilterSummaryItem>[
-                      SalesCardFilterSummaryItem(
-                        label: l10n.salesBranchFilterLabel,
-                        value:
-                            selectedBranch?.name ??
-                            l10n.salesBranchRequiredMessage,
-                      ),
-                      SalesCardFilterSummaryItem(
-                        label: l10n
-                            .salesProdutoTendenciaMediaMovelFilterQuantidadeDias,
-                        value: l10n
-                            .salesProdutoTendenciaMediaMovelFilterQuantidadeDiasValue(
-                              state.quantidadeDias,
-                            ),
-                      ),
-                      SalesCardFilterSummaryItem(
-                        label: l10n.salesProdutoTendenciaMediaMovelFilterSortBy,
-                        value: produtoTendenciaMediaMovelSortLabel(
-                          l10n,
-                          state.sortBy,
-                        ),
-                      ),
-                      SalesCardFilterSummaryItem(
-                        label: l10n.reportFiltersTitle,
-                        value: l10n
-                            .salesProdutoTendenciaMediaMovelActiveFiltersSummary(
-                              _activeFilterCount(state),
-                            ),
-                      ),
-                    ],
-                    onTap: _openFilters,
-                    buttonSemanticsLabel: l10n.reportFiltersTitleWithContext(
-                      l10n.salesCardProdutoTendenciaMediaMovelTitle,
-                    ),
-                  ),
-                  if (activeFilterChipLabels.isNotEmpty) ...<Widget>[
-                    SizedBox(height: tokens.gapMd),
-                    Wrap(
-                      spacing: tokens.gapSm,
-                      runSpacing: tokens.gapSm,
-                      children: activeFilterChipLabels
-                          .map((label) => AppTagChip(label: label))
-                          .toList(growable: false),
-                    ),
-                  ],
-                  SizedBox(height: tokens.gapMd),
-                  SalesAutoRefreshActionsRow(
-                    value: autoRefreshOption,
-                    onChanged: setAutoRefreshOption,
-                    onRefreshNow: () => unawaited(_reload()),
-                    enabled: canScheduleAutoRefresh,
-                    lastUpdatedAt: autoRefreshLastUpdatedAt,
-                    isPaused: autoRefreshIsPaused,
-                    pauseReason: autoRefreshPauseReason,
-                    l10n: l10n,
-                  ),
-                  if (state.selectedAgentId == null ||
-                      state.selectedAgentId!.trim().isEmpty) ...<Widget>[
-                    SizedBox(height: tokens.sectionSpacing),
-                    AppInlineErrorPanel(
-                      tone: AppInlinePanelTone.informational,
-                      title: l10n.salesBranchRequiredTitle,
-                      message:
-                          l10n.salesProdutoTendenciaMediaMovelSelectAgentHint,
-                    ),
-                  ] else if (state.loadFailure != null) ...<Widget>[
-                    SizedBox(height: tokens.sectionSpacing),
-                    AgentQueryErrorPanel.fromFailure(
-                      state.loadFailure!,
-                      l10n,
-                      onRetry: _reload,
-                      retryCountdownLabel: agentQueryRetryCountdownLabel(l10n),
-                      supportContext: AgentQueryFailureSupportContext.environment(
-                        extra: <String, String>{
-                          'agentId': ?state.selectedAgentId,
-                          'screen': 'sales_produto_tendencia_media_movel',
-                        },
-                      ),
-                    ),
-                  ] else if (state.authenticationFailed) ...<Widget>[
-                    SizedBox(height: tokens.sectionSpacing),
-                    AppInlineErrorPanel(
-                      title: l10n.salesProdutoTendenciaMediaMovelDetailsTitle,
-                      message: l10n.agentSqlErrorAuthenticationFailed,
-                      onRetry: _reload,
-                    ),
-                  ] else ...<Widget>[
-                    SizedBox(height: tokens.sectionSpacing),
-                    SalesProdutoTendenciaMediaMovelSummarySection(
-                      l10n: l10n,
-                      summary: summary,
-                      loading: state.loading,
-                      hasSummaryRows: hasSummary,
-                      hasActiveDetailFilters: hasActiveDetailFilters,
-                      onClearFilters: () => unawaited(_clearDetailFilters()),
-                      onOpenFilters: _openFilters,
-                    ),
-                    SizedBox(height: tokens.sectionSpacing),
-                    SalesProdutoTendenciaMediaMovelChartNavGrid(
-                      l10n: l10n,
-                      loading: state.loading,
-                      sectionTitle: l10n.salesProdutoTendenciaChartsSectionTitle,
-                      isChartReady: (chartId) => _isChartReady(state, chartId),
-                      onChartSelected: (chartId) => _onChartSelected(
-                        state,
-                        chartId,
-                        summary.buckets,
-                      ),
-                    ),
-                    SizedBox(height: tokens.sectionSpacing),
-                    SalesProdutoTendenciaMediaMovelDetailsSection(
-                      l10n: l10n,
-                      loading: state.loading,
-                      rows: state.pageResult.items,
-                      totalCount: state.pageResult.totalCount,
-                      pageSize: state.pageSize,
-                      currentPage: state.page,
-                      totalPages: totalPages,
-                      rangeStart: rangeStart,
-                      rangeEnd: rangeEnd,
-                      sortBy: state.sortBy,
-                      hasActiveDetailFilters: hasActiveDetailFilters,
-                      onClearFilters: () => unawaited(_clearDetailFilters()),
-                      onOpenFilters: _openFilters,
-                      headerTrailing: AppChartHeaderTrailing(
-                        shareProgressKey: _detailsShareKey,
-                        shareEnabled:
-                            !state.loading && state.pageResult.totalCount > 0,
-                        onShare:
-                            state.loading || state.pageResult.totalCount <= 0
-                            ? null
-                            : () => unawaited(_shareDetailsTable()),
-                      ),
-                      onPageSelected: (page) {
-                        unawaited(_controller.selectPage(page));
-                      },
-                      onNext: state.page < totalPages
-                          ? () =>
-                                unawaited(_controller.selectPage(state.page + 1))
-                          : null,
-                      onPrevious: state.page > 1
-                          ? () =>
-                                unawaited(_controller.selectPage(state.page - 1))
-                          : null,
-                      onPageSizeChanged: (value) {
-                        unawaited(_controller.changePageSize(value));
-                      },
-                    ),
-                  ],
-        ],
+            SizedBox(height: tokens.sectionSpacing),
+            SalesProdutoTendenciaMediaMovelFilterSection(
+              onOpenFilters: () => unawaited(_openFilters()),
+            ),
+            SizedBox(height: tokens.gapMd),
+            SalesProdutoTendenciaMediaMovelAutoRefreshSection(
+              onOptionChanged: setAutoRefreshOption,
+              onRefreshNow: () => unawaited(_reload()),
+              stateListenable: autoRefreshStateListenable,
+            ),
+            SizedBox(height: tokens.sectionSpacing),
+            ListenableBuilder(
+              listenable: agentQueryRetryAfterGate,
+              builder: (context, _) {
+                return SalesProdutoTendenciaMediaMovelBodySection(
+                  onRetryReload: () => unawaited(_reload()),
+                  onClearDetailFilters: () => unawaited(_clearDetailFilters()),
+                  onOpenFilters: () => unawaited(_openFilters()),
+                  onChartSelected: _onChartSelected,
+                  retryCountdownLabel: agentQueryRetryCountdownLabel(l10n),
+                  detailsShareKey: _detailsShareKey,
+                  onShareDetails: () => unawaited(_shareDetailsTable()),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

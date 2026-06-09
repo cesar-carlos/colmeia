@@ -2,10 +2,10 @@ import 'package:colmeia/features/sales/application/load_sales_live_map/sales_liv
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_load_result.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_mapped_result.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_result_builder.dart';
+import 'package:colmeia/features/sales/application/ports/sales_live_map_batch_loader.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_catalog_scope.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_refresh_metrics.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
-import 'package:colmeia/features/sales/data/sales_live_map_batch_loader.dart';
 
 /// Progressive emission rules shared by the parallel and merged-batch load
 /// paths: cancellation handling, completion metrics and load-mode flags.

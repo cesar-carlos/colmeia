@@ -30,6 +30,7 @@ class AgentQueriesCancelScope {
   bool _cancelled = false;
   final Set<String> _pendingRelayClientRequestIds = <String>{};
   final Set<String> _pendingSocketRpcIds = <String>{};
+  final Set<void Function()> _pendingRestCancellations = <void Function()>{};
   final Set<String> _pendingStreamingKeys = <String>{};
   final List<AgentStreamingSqlCancelTarget> _streamingCancelTargets =
       <AgentStreamingSqlCancelTarget>[];
@@ -66,6 +67,18 @@ class AgentQueriesCancelScope {
     _pendingSocketRpcIds.remove(rpcId);
   }
 
+  /// Fail-fast pending REST bridge POSTs (Dio HTTP cancellation).
+  void trackRestPending(void Function() cancelRequest) {
+    if (_cancelled) {
+      return;
+    }
+    _pendingRestCancellations.add(cancelRequest);
+  }
+
+  void untrackRestPending(void Function() cancelRequest) {
+    _pendingRestCancellations.remove(cancelRequest);
+  }
+
   /// Registers a hub stream id once known (first relay chunk).
   void trackStreamingSql(AgentStreamingSqlCancelTarget target) {
     if (_cancelled) {
@@ -87,8 +100,13 @@ class AgentQueriesCancelScope {
       growable: false,
     );
     final socketIds = List<String>.of(_pendingSocketRpcIds, growable: false);
+    final restCancellations = List<void Function()>.of(
+      _pendingRestCancellations,
+      growable: false,
+    );
     _pendingRelayClientRequestIds.clear();
     _pendingSocketRpcIds.clear();
+    _pendingRestCancellations.clear();
     final streams = List<AgentStreamingSqlCancelTarget>.of(
       _streamingCancelTargets,
       growable: false,
@@ -97,6 +115,9 @@ class AgentQueriesCancelScope {
     _pendingStreamingKeys.clear();
     relayCancelHandler?.call(relayIds);
     socketRpcCancelHandler?.call(socketIds);
+    for (final cancelRequest in restCancellations) {
+      cancelRequest();
+    }
     streamingSqlCancelHandler?.call(streams);
   }
 

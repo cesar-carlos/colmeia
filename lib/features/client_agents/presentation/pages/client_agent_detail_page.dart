@@ -7,12 +7,12 @@ import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/features/agent_meta/domain/entities/client_token_policy.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_catalog_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
-import 'package:colmeia/features/client_agents/domain/entities/agent_profile_address.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agent_detail_controller.dart';
 import 'package:colmeia/features/client_agents/presentation/localization/client_agents_presentation_message_l10n.dart';
 import 'package:colmeia/features/client_agents/presentation/models/client_agents_presentation_message.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agent_profile_edit_card.dart';
+import 'package:colmeia/features/client_agents/presentation/widgets/client_agent_unsaved_changes_dialog.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -25,6 +25,7 @@ import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
+import 'package:colmeia/shared/widgets/navigation/app_tab_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -43,6 +44,8 @@ const double _kPolicyLineIconSize = 18;
 const double _kCopyIconSize = 20;
 const double _kCopyTouchTargetSize = 40;
 const Duration _kRefreshScrollDuration = Duration(milliseconds: 250);
+const int _kDetailTabProfile = 0;
+const int _kDetailTabConnection = 2;
 
 class ClientAgentDetailPage extends StatefulWidget {
   const ClientAgentDetailPage({
@@ -72,12 +75,46 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage> {
   final FocusNode _tokenInputFocusNode = FocusNode(
     debugLabel: 'AgentClientTokenInput',
   );
+  late final ValueNotifier<int> _detailTabIndex;
+  bool _profileFormDirty = false;
+  bool _tokenFieldDirty = false;
+  int _profileDiscardRevision = 0;
+  int _tokenDiscardRevision = 0;
 
   @override
   void initState() {
     super.initState();
     _controller = widget.controller;
+    _detailTabIndex = ValueNotifier<int>(_kDetailTabProfile);
     _controller.addListener(_consumeControllerNotices);
+  }
+
+  Future<bool> _guardDetailTabChange(int fromIndex, int toIndex) async {
+    if (fromIndex == toIndex) {
+      return true;
+    }
+    final l10n = AppLocalizations.of(context);
+    final leavingProfile = fromIndex == _kDetailTabProfile && _profileFormDirty;
+    final leavingConnection =
+        fromIndex == _kDetailTabConnection && _tokenFieldDirty;
+    if (!leavingProfile && !leavingConnection) {
+      return true;
+    }
+    final discard = await confirmDiscardClientAgentUnsavedChanges(context, l10n);
+    if (!discard || !mounted) {
+      return false;
+    }
+    setState(() {
+      if (leavingProfile) {
+        _profileFormDirty = false;
+        _profileDiscardRevision++;
+      }
+      if (leavingConnection) {
+        _tokenFieldDirty = false;
+        _tokenDiscardRevision++;
+      }
+    });
+    return true;
   }
 
   @override
@@ -92,6 +129,7 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage> {
   @override
   void dispose() {
     _controller.removeListener(_consumeControllerNotices);
+    _detailTabIndex.dispose();
     _tokenInputFocusNode.dispose();
     _controller.dispose();
     super.dispose();
@@ -130,8 +168,13 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage> {
   /// (e.g. card not visible because the user already cleared the
   /// token elsewhere in the meantime).
   Future<void> _focusTokenInput() async {
+    _detailTabIndex.value = _kDetailTabConnection;
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) {
+      return;
+    }
     final ctx = _tokenCardAnchorKey.currentContext;
-    if (ctx != null) {
+    if (ctx != null && ctx.mounted) {
       await Scrollable.ensureVisible(
         ctx,
         duration: _kRefreshScrollDuration,
@@ -165,10 +208,10 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage> {
             _refreshFromAgentError,
             l10n,
           );
-          final initialLoading =
+          final initialTabSkeletons =
               controller.isLoading && agent == null && !controller.isRefreshing;
           final blockingError = loadErrorMessage != null && agent == null;
-          final showRefreshFooter = !initialLoading;
+          final showRefreshFooter = !initialTabSkeletons;
 
           return RefreshIndicator(
             onRefresh: () async {
@@ -256,9 +299,7 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage> {
                       : null,
                 ),
                 SizedBox(height: tokens.sectionSpacing),
-                if (initialLoading)
-                  _ClientAgentDetailLoadingSkeleton(tokens: tokens)
-                else if (blockingError)
+                if (blockingError)
                   AppInlineErrorPanel(
                     title: l10n.clientAgentDetailLoadErrorTitle,
                     message: loadErrorMessage,
@@ -277,51 +318,62 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage> {
                     ),
                     SizedBox(height: tokens.gapMd),
                   ],
-                  if (agent != null) ...<Widget>[
-                    ClientAgentProfileEditCard(
-                      agent: agent,
-                      controller: controller,
-                      l10n: l10n,
-                      tokens: tokens,
-                    ),
-                    SizedBox(height: tokens.gapMd),
-                    _IdentityCard(agent: agent, l10n: l10n),
-                    SizedBox(height: tokens.gapMd),
-                    _ContactCard(agent: agent, l10n: l10n),
-                    if (_hasAddress(agent)) ...<Widget>[
-                      SizedBox(height: tokens.gapMd),
-                      _AddressCard(address: agent.address!, l10n: l10n),
-                    ],
-                    if (agent.notes != null ||
-                        agent.observation != null) ...<Widget>[
-                      SizedBox(height: tokens.gapMd),
-                      _NotesCard(agent: agent, l10n: l10n),
-                    ],
-                    SizedBox(height: tokens.gapMd),
-                    _RecordCard(agent: agent, l10n: l10n),
-                    SizedBox(height: tokens.gapMd),
-                    KeyedSubtree(
-                      key: _tokenCardAnchorKey,
-                      child: _AgentClientTokenCard(
-                        agentId: agent.agentId,
-                        controller: _controller,
-                        l10n: l10n,
-                        tokens: tokens,
-                        inputFocusNode: _tokenInputFocusNode,
+                  AppTabView(
+                    tabIndexListenable: _detailTabIndex,
+                    onTabChangeGuard: agent == null
+                        ? null
+                        : _guardDetailTabChange,
+                    items: <AppTabViewItem>[
+                      AppTabViewItem(
+                        label: l10n.clientAgentDetailTabProfile,
+                        child: initialTabSkeletons
+                            ? _ClientAgentDetailTabSkeleton(tokens: tokens)
+                            : ClientAgentProfileEditCard(
+                                agent: agent!,
+                                controller: controller,
+                                l10n: l10n,
+                                tokens: tokens,
+                                discardRevision: _profileDiscardRevision,
+                                onDirtyChanged: (dirty) {
+                                  if (_profileFormDirty != dirty && mounted) {
+                                    setState(() => _profileFormDirty = dirty);
+                                  }
+                                },
+                              ),
                       ),
-                    ),
-                    if (controller.clientTokenStatus ==
-                        ClientAgentTokenStatus.configured) ...<Widget>[
-                      SizedBox(height: tokens.gapMd),
-                      _ClientTokenPolicyCard(
-                        agentId: agent.agentId,
-                        controller: _controller,
-                        l10n: l10n,
-                        tokens: tokens,
-                        onRequestNewToken: () => unawaited(_focusTokenInput()),
+                      AppTabViewItem(
+                        label: l10n.clientAgentDetailTabDetails,
+                        child: initialTabSkeletons
+                            ? _ClientAgentDetailTabSkeleton(tokens: tokens)
+                            : _ClientAgentDetailInfoTab(
+                                agent: agent!,
+                                l10n: l10n,
+                                tokens: tokens,
+                              ),
+                      ),
+                      AppTabViewItem(
+                        label: l10n.clientAgentDetailTabConnection,
+                        child: initialTabSkeletons
+                            ? _ClientAgentDetailTabSkeleton(tokens: tokens)
+                            : _ClientAgentDetailConnectionTab(
+                                agentId: agent!.agentId,
+                                controller: controller,
+                                l10n: l10n,
+                                tokens: tokens,
+                                tokenCardAnchorKey: _tokenCardAnchorKey,
+                                inputFocusNode: _tokenInputFocusNode,
+                                onRequestNewToken: () =>
+                                    unawaited(_focusTokenInput()),
+                                tokenDiscardRevision: _tokenDiscardRevision,
+                                onTokenDirtyChanged: (dirty) {
+                                  if (_tokenFieldDirty != dirty && mounted) {
+                                    setState(() => _tokenFieldDirty = dirty);
+                                  }
+                                },
+                              ),
                       ),
                     ],
-                  ],
+                  ),
                 ],
               ],
             ),
@@ -329,16 +381,6 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage> {
         },
       ),
     );
-  }
-
-  bool _hasAddress(ClientAgent agent) {
-    final a = agent.address;
-    if (a == null) return false;
-    return (a.street?.isNotEmpty ?? false) ||
-        (a.district?.isNotEmpty ?? false) ||
-        (a.postalCode?.isNotEmpty ?? false) ||
-        (a.city?.isNotEmpty ?? false) ||
-        (a.state?.isNotEmpty ?? false);
   }
 
   String? _localizeMessage(
@@ -359,6 +401,8 @@ class _AgentClientTokenCard extends StatefulWidget {
     required this.l10n,
     required this.tokens,
     this.inputFocusNode,
+    this.onDirtyChanged,
+    this.discardRevision = 0,
   });
 
   final String agentId;
@@ -369,6 +413,8 @@ class _AgentClientTokenCard extends StatefulWidget {
   /// Optional focus node owned by the page so the policy card can ask
   /// us to focus the input when the user reacts to a token revocation.
   final FocusNode? inputFocusNode;
+  final ValueChanged<bool>? onDirtyChanged;
+  final int discardRevision;
 
   @override
   State<_AgentClientTokenCard> createState() => _AgentClientTokenCardState();
@@ -387,14 +433,31 @@ class _AgentClientTokenCardState extends State<_AgentClientTokenCard> {
   void initState() {
     super.initState();
     _tokenController = TextEditingController();
+    _tokenController.addListener(_notifyTokenDirty);
     widget.controller.addListener(_syncTokenFieldFromController);
     _syncTokenFieldFromController();
   }
 
   @override
+  void didUpdateWidget(covariant _AgentClientTokenCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.discardRevision != oldWidget.discardRevision) {
+      _forceApplyNextRevision = true;
+      _syncTokenFieldFromController();
+    }
+  }
+
+  void _notifyTokenDirty() {
+    final dirty = _tokenController.text != _lastAppliedTokenText;
+    widget.onDirtyChanged?.call(dirty);
+  }
+
+  @override
   void dispose() {
     widget.controller.removeListener(_syncTokenFieldFromController);
-    _tokenController.dispose();
+    _tokenController
+      ..removeListener(_notifyTokenDirty)
+      ..dispose();
     super.dispose();
   }
 
@@ -436,6 +499,7 @@ class _AgentClientTokenCardState extends State<_AgentClientTokenCard> {
     }
     _lastAppliedTokenText = text;
     _forceApplyNextRevision = false;
+    _notifyTokenDirty();
   }
 
   @override
@@ -1004,8 +1068,8 @@ class _ClientTokenPolicyChips extends StatelessWidget {
   }
 }
 
-class _ClientAgentDetailLoadingSkeleton extends StatelessWidget {
-  const _ClientAgentDetailLoadingSkeleton({required this.tokens});
+class _ClientAgentDetailTabSkeleton extends StatelessWidget {
+  const _ClientAgentDetailTabSkeleton({required this.tokens});
 
   final AppThemeTokens tokens;
 
@@ -1013,22 +1077,184 @@ class _ClientAgentDetailLoadingSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppSkeleton(
       enabled: true,
+      child: AppSectionCardWithHeading(
+        title: ' ',
+        child: SizedBox(height: tokens.contentSpacing * 4),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tab bodies
+// ---------------------------------------------------------------------------
+
+class _ClientAgentDetailInfoTab extends StatelessWidget {
+  const _ClientAgentDetailInfoTab({
+    required this.agent,
+    required this.l10n,
+    required this.tokens,
+  });
+
+  final ClientAgent agent;
+  final AppLocalizations l10n;
+  final AppThemeTokens tokens;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        _MetadataCard(agent: agent, l10n: l10n),
+        SizedBox(height: tokens.gapMd),
+        _RecordCard(agent: agent, l10n: l10n),
+      ],
+    );
+  }
+}
+
+class _ClientAgentDetailConnectionTab extends StatelessWidget {
+  const _ClientAgentDetailConnectionTab({
+    required this.agentId,
+    required this.controller,
+    required this.l10n,
+    required this.tokens,
+    required this.tokenCardAnchorKey,
+    required this.inputFocusNode,
+    required this.onRequestNewToken,
+    this.onTokenDirtyChanged,
+    this.tokenDiscardRevision = 0,
+  });
+
+  final String agentId;
+  final ClientAgentDetailController controller;
+  final AppLocalizations l10n;
+  final AppThemeTokens tokens;
+  final GlobalKey tokenCardAnchorKey;
+  final FocusNode inputFocusNode;
+  final VoidCallback onRequestNewToken;
+  final ValueChanged<bool>? onTokenDirtyChanged;
+  final int tokenDiscardRevision;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = controller.clientTokenStatus;
+    final showTokenSkeleton =
+        controller.isLoadingClientToken &&
+        status == ClientAgentTokenStatus.unknown;
+    final showMissingTokenBanner = status == ClientAgentTokenStatus.missing;
+    final policyRevoked = controller.clientTokenPolicy?.revoked ?? false;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        if (showMissingTokenBanner || policyRevoked)
+          Padding(
+            padding: EdgeInsets.only(bottom: tokens.gapMd),
+            child: _ConnectionTokenEmptyState(
+              l10n: l10n,
+              tokens: tokens,
+              revoked: policyRevoked,
+              onConfigureToken: onRequestNewToken,
+            ),
+          ),
+        if (showTokenSkeleton)
+          AppSkeleton(
+            enabled: true,
+            child: AppSectionCardWithHeading(
+              title: ' ',
+              child: SizedBox(height: tokens.contentSpacing * 3),
+            ),
+          )
+        else
+          KeyedSubtree(
+            key: tokenCardAnchorKey,
+            child: _AgentClientTokenCard(
+              agentId: agentId,
+              controller: controller,
+              l10n: l10n,
+              tokens: tokens,
+              inputFocusNode: inputFocusNode,
+              onDirtyChanged: onTokenDirtyChanged,
+              discardRevision: tokenDiscardRevision,
+            ),
+          ),
+        if (status == ClientAgentTokenStatus.configured) ...<Widget>[
+          SizedBox(height: tokens.gapMd),
+          if (controller.isLoadingClientTokenPolicy)
+            AppSkeleton(
+              enabled: true,
+              child: AppSectionCardWithHeading(
+                title: ' ',
+                child: SizedBox(height: tokens.contentSpacing * 2),
+              ),
+            )
+          else
+            _ClientTokenPolicyCard(
+              agentId: agentId,
+              controller: controller,
+              l10n: l10n,
+              tokens: tokens,
+              onRequestNewToken: onRequestNewToken,
+            ),
+        ],
+      ],
+    );
+  }
+}
+
+class _ConnectionTokenEmptyState extends StatelessWidget {
+  const _ConnectionTokenEmptyState({
+    required this.l10n,
+    required this.tokens,
+    required this.revoked,
+    required this.onConfigureToken,
+  });
+
+  final AppLocalizations l10n;
+  final AppThemeTokens tokens;
+  final bool revoked;
+  final VoidCallback onConfigureToken;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final title = revoked
+        ? l10n.clientAgentDetailConnectionTokenRevokedTitle
+        : l10n.clientAgentDetailConnectionTokenMissingTitle;
+    final message = revoked
+        ? l10n.clientAgentDetailConnectionTokenRevokedMessage
+        : l10n.clientAgentDetailConnectionTokenMissingMessage;
+
+    return AppSectionCardWithHeading(
+      title: title,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          AppSectionCardWithHeading(
-            title: ' ',
-            child: SizedBox(height: tokens.contentSpacing * 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Icon(
+                revoked ? Icons.block_rounded : Icons.vpn_key_off_rounded,
+                color: revoked ? colors.error : colors.onSurfaceVariant,
+              ),
+              SizedBox(width: tokens.gapSm),
+              Expanded(
+                child: Text(
+                  message,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
           ),
           SizedBox(height: tokens.gapMd),
-          AppSectionCardWithHeading(
-            title: ' ',
-            child: SizedBox(height: tokens.contentSpacing * 2),
-          ),
-          SizedBox(height: tokens.gapMd),
-          AppSectionCardWithHeading(
-            title: ' ',
-            child: SizedBox(height: tokens.contentSpacing * 2),
+          AppSecondaryButton(
+            label: l10n.clientAgentDetailConnectionTokenConfigureAction,
+            icon: const Icon(Icons.edit_rounded),
+            onPressed: onConfigureToken,
           ),
         ],
       ),
@@ -1040,35 +1266,28 @@ class _ClientAgentDetailLoadingSkeleton extends StatelessWidget {
 // Cards
 // ---------------------------------------------------------------------------
 
-class _IdentityCard extends StatelessWidget {
-  const _IdentityCard({required this.agent, required this.l10n});
+class _MetadataCard extends StatelessWidget {
+  const _MetadataCard({required this.agent, required this.l10n});
 
   final ClientAgent agent;
   final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
-    final na = l10n.clientAgentValueNotAvailable;
-    final tradeDisplay = _nonEmptyOr(agent.tradeName, na);
     final statusLabel = _catalogStatusLabel(l10n, agent.catalogStatus);
     final connectionLabel = _connectionLabel(l10n, agent.connectionStatus);
-    final documentTypeLabel = _nonEmptyTrim(agent.documentType);
+    final documentTypeLabel = _trimmedOrNull(agent.documentType);
     return AppSectionCardWithHeading(
-      title: agent.name,
+      title: l10n.clientAgentDetailSectionMetadata,
+      subtitle: l10n.clientAgentDetailSectionMetadataSubtitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          _AgentDetailRow(
-            label: l10n.clientAgentFieldTradeName,
-            value: tradeDisplay,
-            clipboardText: tradeDisplay == na ? null : tradeDisplay,
-          ),
           _AgentDetailRow(
             label: l10n.clientAgentFieldId,
             value: agent.agentId,
             clipboardText: agent.agentId,
           ),
-          ..._documentIdentityRows(agent, l10n, na),
           if (documentTypeLabel != null)
             _AgentDetailRow(
               label: l10n.clientAgentFieldDocumentType,
@@ -1090,55 +1309,6 @@ class _IdentityCard extends StatelessWidget {
     );
   }
 
-  String _nonEmptyOr(String? value, String fallback) {
-    final trimmed = value?.trim();
-    if (trimmed == null || trimmed.isEmpty) {
-      return fallback;
-    }
-    return trimmed;
-  }
-
-  String? _nonEmptyTrim(String? value) {
-    final trimmed = value?.trim();
-    if (trimmed == null || trimmed.isEmpty) {
-      return null;
-    }
-    return trimmed;
-  }
-
-  /// Document and CNPJ/CPF from API; one row when both match.
-  List<Widget> _documentIdentityRows(
-    ClientAgent agent,
-    AppLocalizations l10n,
-    String na,
-  ) {
-    final doc = agent.document?.trim();
-    final cnpj = agent.cnpjCpf?.trim();
-    final hasDoc = doc != null && doc.isNotEmpty;
-    final hasCnpj = cnpj != null && cnpj.isNotEmpty;
-    if (hasDoc && hasCnpj && doc == cnpj) {
-      return <Widget>[
-        _AgentDetailRow(
-          label: l10n.clientAgentFieldDocument,
-          value: doc,
-          clipboardText: doc,
-        ),
-      ];
-    }
-    return <Widget>[
-      _AgentDetailRow(
-        label: l10n.clientAgentFieldDocument,
-        value: hasDoc ? doc : na,
-        clipboardText: hasDoc ? doc : null,
-      ),
-      _AgentDetailRow(
-        label: l10n.clientAgentFieldCnpjCpf,
-        value: hasCnpj ? cnpj : na,
-        clipboardText: hasCnpj ? cnpj : null,
-      ),
-    ];
-  }
-
   String _catalogStatusLabel(AppLocalizations l10n, AgentCatalogStatus status) {
     return switch (status) {
       AgentCatalogStatus.inactive => l10n.agentCatalogInactive,
@@ -1152,136 +1322,6 @@ class _IdentityCard extends StatelessWidget {
       AgentConnectionStatus.offline => l10n.agentConnectionOffline,
       AgentConnectionStatus.unknown => l10n.agentConnectionUnknown,
     };
-  }
-}
-
-class _ContactCard extends StatelessWidget {
-  const _ContactCard({required this.agent, required this.l10n});
-
-  final ClientAgent agent;
-  final AppLocalizations l10n;
-
-  @override
-  Widget build(BuildContext context) {
-    final na = l10n.clientAgentValueNotAvailable;
-    final email = _trimmedOrNull(agent.email);
-    final phone = _trimmedOrNull(agent.phone);
-    final mobile = _trimmedOrNull(agent.mobile);
-    return AppSectionCardWithHeading(
-      title: l10n.clientAgentDetailSectionContact,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          _AgentDetailRow(
-            label: l10n.clientAgentFieldEmail,
-            value: email ?? na,
-            clipboardText: email,
-          ),
-          _AgentDetailRow(
-            label: l10n.clientAgentFieldPhone,
-            value: phone ?? na,
-            clipboardText: phone,
-          ),
-          _AgentDetailRow(
-            label: l10n.clientAgentFieldMobile,
-            value: mobile ?? na,
-            clipboardText: mobile,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AddressCard extends StatelessWidget {
-  const _AddressCard({required this.address, required this.l10n});
-
-  final AgentProfileAddress address;
-  final AppLocalizations l10n;
-
-  @override
-  Widget build(BuildContext context) {
-    final na = l10n.clientAgentValueNotAvailable;
-    final streetLine = _streetLine(address);
-    final district = _trimmedOrNull(address.district);
-    final postalCode = _trimmedOrNull(address.postalCode);
-    final city = _trimmedOrNull(address.city);
-    final state = _trimmedOrNull(address.state);
-    return AppSectionCardWithHeading(
-      title: l10n.clientAgentDetailSectionAddress,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          if (streetLine.isNotEmpty)
-            _AgentDetailRow(
-              label: l10n.clientAgentFieldStreet,
-              value: streetLine,
-              clipboardText: streetLine,
-            ),
-          _AgentDetailRow(
-            label: l10n.clientAgentFieldDistrict,
-            value: district ?? na,
-            clipboardText: district,
-          ),
-          _AgentDetailRow(
-            label: l10n.clientAgentFieldPostalCode,
-            value: postalCode ?? na,
-            clipboardText: postalCode,
-          ),
-          _AgentDetailRow(
-            label: l10n.clientAgentFieldCity,
-            value: city ?? na,
-            clipboardText: city,
-          ),
-          _AgentDetailRow(
-            label: l10n.clientAgentFieldState,
-            value: state ?? na,
-            clipboardText: state,
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _streetLine(AgentProfileAddress a) {
-    final street = a.street?.trim() ?? '';
-    final number = a.number?.trim() ?? '';
-    if (street.isEmpty) return number;
-    if (number.isEmpty) return street;
-    return '$street, $number';
-  }
-}
-
-class _NotesCard extends StatelessWidget {
-  const _NotesCard({required this.agent, required this.l10n});
-
-  final ClientAgent agent;
-  final AppLocalizations l10n;
-
-  @override
-  Widget build(BuildContext context) {
-    final notes = agent.notes;
-    final observation = agent.observation;
-    return AppSectionCardWithHeading(
-      title: l10n.clientAgentDetailSectionNotes,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          if (notes != null && notes.isNotEmpty)
-            _AgentDetailRow(
-              label: l10n.clientAgentFieldNotes,
-              value: notes,
-              clipboardText: notes,
-            ),
-          if (observation != null && observation.isNotEmpty)
-            _AgentDetailRow(
-              label: l10n.clientAgentFieldObservation,
-              value: observation,
-              clipboardText: observation,
-            ),
-        ],
-      ),
-    );
   }
 }
 

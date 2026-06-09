@@ -5,11 +5,14 @@ import 'package:colmeia/features/client_agents/domain/entities/agent_access_requ
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_approved_agents_table.dart';
+import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_data_grid_widgets.dart';
+import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_requests_empty_state.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_requests_table.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_shared_widgets.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
+import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:flutter/material.dart';
 
 class ClientAgentsRequestsTab extends StatefulWidget {
@@ -22,6 +25,9 @@ class ClientAgentsRequestsTab extends StatefulWidget {
     required this.isMutating,
     super.key,
     this.hasActiveFilters = false,
+    this.isLoading = false,
+    this.onClearFilters,
+    this.onNavigateToRequestAccess,
     this.onRetryAccessRequest,
     this.onDiscardQueuedRequestAccess,
   });
@@ -33,6 +39,9 @@ class ClientAgentsRequestsTab extends StatefulWidget {
   final VoidCallback onRetry;
   final bool isMutating;
   final bool hasActiveFilters;
+  final bool isLoading;
+  final VoidCallback? onClearFilters;
+  final VoidCallback? onNavigateToRequestAccess;
   final Future<void> Function(ClientAgentAccessRequest request)?
   onRetryAccessRequest;
   final Future<void> Function(PendingAgentAction action)?
@@ -46,15 +55,16 @@ class ClientAgentsRequestsTab extends StatefulWidget {
 class _ClientAgentsRequestsTabState extends State<ClientAgentsRequestsTab> {
   int _currentPage = 1;
   int _pageSize = kClientAgentsApprovedTablePageSizeOptions.first;
+  AppReportSortDescriptor? _sort;
 
   @override
   void didUpdateWidget(ClientAgentsRequestsTab oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.requests != widget.requests ||
         oldWidget.pendingActions != widget.pendingActions) {
-      final totalPages = _allRows.isEmpty
+      final totalPages = _sortedRows.isEmpty
           ? 0
-          : (_allRows.length / _pageSize).ceil();
+          : (_sortedRows.length / _pageSize).ceil();
       if (totalPages > 0 && _currentPage > totalPages) {
         _currentPage = totalPages;
       }
@@ -69,8 +79,11 @@ class _ClientAgentsRequestsTabState extends State<ClientAgentsRequestsTab> {
     ];
   }
 
+  List<ClientAgentsRequestTableRowData> get _sortedRows =>
+      _sortRows(_allRows, _sort);
+
   List<ClientAgentsRequestTableRowData> get _pageRows {
-    final rows = _allRows;
+    final rows = _sortedRows;
     if (rows.isEmpty) {
       return const <ClientAgentsRequestTableRowData>[];
     }
@@ -80,6 +93,13 @@ class _ClientAgentsRequestsTabState extends State<ClientAgentsRequestsTab> {
     }
     final end = math.min(start + _pageSize, rows.length);
     return rows.sublist(start, end);
+  }
+
+  void _onSortChanged(AppReportSortDescriptor? sort) {
+    setState(() {
+      _sort = sort;
+      _currentPage = 1;
+    });
   }
 
   @override
@@ -105,6 +125,13 @@ class _ClientAgentsRequestsTabState extends State<ClientAgentsRequestsTab> {
       ],
     ];
 
+    if (widget.isLoading &&
+        widget.requests.isEmpty &&
+        widget.pendingActions.isEmpty &&
+        children.isEmpty) {
+      return const ClientAgentsTableLoadingSkeleton();
+    }
+
     if (widget.requests.isEmpty && widget.pendingActions.isEmpty) {
       if (children.isNotEmpty) {
         return Column(
@@ -112,10 +139,14 @@ class _ClientAgentsRequestsTabState extends State<ClientAgentsRequestsTab> {
           children: children,
         );
       }
-      return Text(
-        widget.hasActiveFilters
+      return ClientAgentsRequestsEmptyState(
+        l10n: l10n,
+        message: widget.hasActiveFilters
             ? l10n.clientAgentsEmptyFilteredRequests
             : l10n.clientAgentsNoRequestsYet,
+        hasActiveFilters: widget.hasActiveFilters,
+        onClearFilters: widget.onClearFilters,
+        onNavigateToRequestAccess: widget.onNavigateToRequestAccess,
       );
     }
 
@@ -126,10 +157,12 @@ class _ClientAgentsRequestsTabState extends State<ClientAgentsRequestsTab> {
       ClientAgentsRequestsTable(
         l10n: l10n,
         rows: _pageRows,
-        totalCount: _allRows.length,
+        totalCount: _sortedRows.length,
         currentPage: _currentPage,
         pageSize: _pageSize,
         isMutating: widget.isMutating,
+        currentSort: _sort,
+        onSortChanged: _onSortChanged,
         onPageSelected: (page) => setState(() => _currentPage = page),
         onPageSizeChanged: (size) => setState(() {
           _pageSize = size;
@@ -158,6 +191,7 @@ class _ClientAgentsRequestsTabState extends State<ClientAgentsRequestsTab> {
       description: '${_pendingActionDescription(l10n, action)}$errorSuffix',
       statusLabel: _pendingActionChipLabel(l10n, action),
       statusKind: _pendingActionChipKind(action),
+      statusSortRank: _pendingActionStatusSortRank(action),
       date: action.createdAt,
       showDiscard: canDiscard,
       onDiscard: canDiscard
@@ -178,12 +212,75 @@ class _ClientAgentsRequestsTabState extends State<ClientAgentsRequestsTab> {
       description: _requestStatusDescription(l10n, request.status),
       statusLabel: _requestStatusLabel(l10n, request.status),
       statusKind: _requestStatusChipKind(request.status),
+      statusSortRank: _requestStatusSortRank(request.status),
       date: request.requestedAt ?? request.reviewedAt,
       showRetry: canRetry,
       onRetry: canRetry
           ? () => unawaited(widget.onRetryAccessRequest!(request))
           : null,
     );
+  }
+
+  static List<ClientAgentsRequestTableRowData> _sortRows(
+    List<ClientAgentsRequestTableRowData> rows,
+    AppReportSortDescriptor? sort,
+  ) {
+    if (sort == null) {
+      return rows;
+    }
+    final sorted = List<ClientAgentsRequestTableRowData>.of(rows);
+    final direction = sort.direction == AppReportSortDirection.ascending ? 1 : -1;
+    sorted.sort((a, b) {
+      final comparison = switch (sort.columnKey) {
+        ClientAgentsRequestsSortColumns.name =>
+          a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+        ClientAgentsRequestsSortColumns.status =>
+          a.statusSortRank.compareTo(b.statusSortRank),
+        ClientAgentsRequestsSortColumns.date => _compareDates(a.date, b.date),
+        _ => 0,
+      };
+      if (comparison != 0) {
+        return comparison * direction;
+      }
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
+    return sorted;
+  }
+
+  static int _compareDates(DateTime? left, DateTime? right) {
+    if (left == null && right == null) {
+      return 0;
+    }
+    if (left == null) {
+      return 1;
+    }
+    if (right == null) {
+      return -1;
+    }
+    return left.compareTo(right);
+  }
+
+  static int _requestStatusSortRank(AgentAccessRequestStatus status) {
+    return switch (status) {
+      AgentAccessRequestStatus.pending => 0,
+      AgentAccessRequestStatus.approved => 1,
+      AgentAccessRequestStatus.rejected => 2,
+      AgentAccessRequestStatus.expired => 3,
+      AgentAccessRequestStatus.unknown => 4,
+    };
+  }
+
+  static int _pendingActionStatusSortRank(PendingAgentAction action) {
+    final typeOffset = action.type == PendingAgentActionType.requestAccess
+        ? 0
+        : 10;
+    final stateRank = switch (action.state) {
+      PendingAgentActionState.queued => 0,
+      PendingAgentActionState.syncing => 1,
+      PendingAgentActionState.failed => 2,
+      PendingAgentActionState.synced => 3,
+    };
+    return 100 + typeOffset + stateRank;
   }
 
   String _requestStatusLabel(

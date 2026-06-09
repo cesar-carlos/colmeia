@@ -4,7 +4,6 @@ import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/app/router/chart_share_icon_button.dart';
-import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
@@ -13,7 +12,6 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_produto
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_row.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
-import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_support_context.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after_host.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
@@ -25,23 +23,19 @@ import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_ag
 import 'package:colmeia/features/sales/presentation/controllers/sales_produto_tendencia_controller.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_produto_tendencia_share.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_produto_tendencia_presentation_state.dart';
-import 'package:colmeia/features/sales/presentation/utils/sales_trend_date_preset.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_auto_refresh_section.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_body_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_chart_nav_grid.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_details_section.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_filter_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_filters_sheet.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_summary_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_trend_comparison_bar_chart_style.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
-import 'package:colmeia/shared/widgets/agent_query_error_panel.dart';
-import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
-import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -108,10 +102,14 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
   }
 
   void _handleControllerChanged() {
-    if (mounted) {
-      setState(() {});
+    if (!mounted) {
+      return;
     }
+    refreshAutoRefreshScheduling();
   }
+
+  @override
+  bool get rebuildOnAutoRefreshStateChange => false;
 
   Future<void> _reload() => reloadWithAutoRefresh();
 
@@ -176,13 +174,6 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     _showFiltersAppliedSnackBar();
   }
 
-  bool _hasActiveDetailFilters(SalesProdutoTendenciaPresentationState state) {
-    return state.searchTerm.trim().isNotEmpty ||
-        state.classificacao != null ||
-        state.codGrupoProduto != null ||
-        state.codMarca != null;
-  }
-
   Future<void> _clearDetailFilters() async {
     final state = _controller.state;
     await _controller.applyFilters(<String, Object?>{
@@ -197,18 +188,6 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
       'marcaProdutoLabel': null,
       'pageSize': state.pageSize,
     });
-  }
-
-  bool _isChartReady(
-    SalesProdutoTendenciaPresentationState state,
-    SalesProdutoTendenciaChartId chartId,
-  ) {
-    return switch (chartId) {
-      SalesProdutoTendenciaChartId.classificacao =>
-        state.summaryRows.isNotEmpty,
-      SalesProdutoTendenciaChartId.topGainers => state.topGainers.isNotEmpty,
-      SalesProdutoTendenciaChartId.topLosers => state.topLosers.isNotEmpty,
-    };
   }
 
   SalesProdutoDimensionLoaderFactory _grupoProdutoLoaderFactory(
@@ -287,7 +266,9 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     );
   }
 
-  void _openClassificacaoFullscreen(SalesProdutoTendenciaPresentationState state) {
+  void _openClassificacaoFullscreen(
+    SalesProdutoTendenciaPresentationState state,
+  ) {
     final l10n = AppLocalizations.of(context);
     final buckets = List<SalesProdutoTendenciaClassBucket>.of(
       buildSalesProdutoTendenciaSummary(state.summaryRows).buckets,
@@ -327,12 +308,15 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
               key: fullscreenShareKey,
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  return AppComparisonBarChart<SalesProdutoTendenciaClassBucket>(
+                  return AppComparisonBarChart<
+                    SalesProdutoTendenciaClassBucket
+                  >(
                     items: buckets,
-                    labelBuilder: (b) => salesProdutoTendenciaClassificacaoLabel(
-                      fl10n,
-                      b.classificacao,
-                    ),
+                    labelBuilder: (b) =>
+                        salesProdutoTendenciaClassificacaoLabel(
+                          fl10n,
+                          b.classificacao,
+                        ),
                     valueBuilder: (b) => b.count,
                     plotFloorAccessibilityNotice:
                         fl10n.chartComparisonPlotFloorNotice,
@@ -341,7 +325,9 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
                     style: salesTrendHomeLikeComparisonBarChartStyle(
                       tokens: ft,
                       l10n: fl10n,
-                      yAxisFormat: NumberFormat.decimalPattern(fl10n.localeName),
+                      yAxisFormat: NumberFormat.decimalPattern(
+                        fl10n.localeName,
+                      ),
                       heightOverride: constraints.maxHeight,
                     ),
                     dataLabelBuilder: (bucket, _) =>
@@ -445,7 +431,9 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
               key: fullscreenShareKey,
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  return AppComparisonBarChart<ProdutoVendidoTendenciaDeVendaRow>(
+                  return AppComparisonBarChart<
+                    ProdutoVendidoTendenciaDeVendaRow
+                  >(
                     items: items,
                     labelBuilder: (row) => row.nomeProduto,
                     valueBuilder: (row) => useAbsolutePercentForLosers
@@ -478,71 +466,26 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     );
   }
 
-  String _dateRangeLabel(DateTimeRange range) {
-    return '${AppBrFormatters.shortDateFormat.format(range.start)} · '
-        '${AppBrFormatters.shortDateFormat.format(range.end)}';
-  }
-
-  String _periodDescriptorLabel(AppLocalizations l10n, DateTimeRange range) {
-    return salesTrendRangeDescriptorLabel(l10n, range);
-  }
-
-  List<String> _activeFilterChipLabels(
-    AppLocalizations l10n,
-    SalesProdutoTendenciaPresentationState state,
-  ) {
-    final labels = <String>[];
-    final trimmedSearch = state.searchTerm.trim();
-    if (trimmedSearch.isNotEmpty) {
-      labels.add('${l10n.salesProdutoTendenciaFilterSearch}: $trimmedSearch');
-    }
-    if (state.classificacao != null) {
-      labels.add(
-        '${l10n.salesProdutoTendenciaFilterClassification}: '
-        '${salesProdutoTendenciaClassificacaoLabel(l10n, state.classificacao)}',
-      );
-    }
-    if (state.codGrupoProduto != null) {
-      final grupoLabel =
-          state.grupoProdutoLabel ?? '#${state.codGrupoProduto}';
-      labels.add('${l10n.salesProdutoTendenciaFilterGroup}: $grupoLabel');
-    }
-    if (state.codMarca != null) {
-      final marcaLabel = state.marcaProdutoLabel ?? '#${state.codMarca}';
-      labels.add('${l10n.salesProdutoTendenciaFilterBrand}: $marcaLabel');
-    }
-    return labels;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final state = _controller.state;
     final l10n = AppLocalizations.of(context);
     final tokens = context.appTokens;
-    final selectedBranch = state.availableAgents
-        .cast<DashboardAgentOption?>()
-        .firstWhere(
-          (agent) => agent?.agentId == state.selectedAgentId,
-          orElse: () => null,
-        );
-    final selectedBranchName =
-        selectedBranch?.name ?? l10n.salesBranchPickerEmpty;
-    final activeFilterChipLabels = _activeFilterChipLabels(l10n, state);
-    final activeDetailFilterCount = activeFilterChipLabels.length;
 
-    return RefreshIndicator(
-      onRefresh: () async {
-        await _reload();
-      },
-      child: ListView(
-        cacheExtent: 5000,
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: context.pageScrollPadding(
-          tokens,
-          horizontalAdjustment:
-              AppPageSpacingPresets.dashboardHorizontalAdjustment,
-        ),
-        children: <Widget>[
+    return ChangeNotifierProvider<SalesProdutoTendenciaController>.value(
+      value: _controller,
+      child: RefreshIndicator(
+        onRefresh: () async {
+          await _reload();
+        },
+        child: ListView(
+          scrollCacheExtent: const ScrollCacheExtent.pixels(5000),
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: context.pageScrollPadding(
+            tokens,
+            horizontalAdjustment:
+                AppPageSpacingPresets.dashboardHorizontalAdjustment,
+          ),
+          children: <Widget>[
             AppShellPageIntro(
               sectionLabel: l10n.shellNavSalesLabel,
               onSectionLabelTap: () => context.goTo(AppRoute.sales),
@@ -550,125 +493,30 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
               subtitle: l10n.salesProdutoTendenciaPageSubtitle,
             ),
             SizedBox(height: tokens.sectionSpacing),
-            SalesCardFilterTrigger(
-              onTap: () => unawaited(_openFiltersSheet()),
-              buttonSemanticsLabel: l10n.reportFiltersButton,
-              summaryItems: <SalesCardFilterSummaryItem>[
-                SalesCardFilterSummaryItem(
-                  label: l10n.salesBranchFilterLabel,
-                  value: selectedBranchName,
-                ),
-                SalesCardFilterSummaryItem(
-                  label: l10n.salesProdutoTendenciaFilterCurrentPeriod,
-                  value: _dateRangeLabel(state.periodoAtual),
-                ),
-                SalesCardFilterSummaryItem(
-                  label: l10n.salesProdutoTendenciaFilterPreviousPeriod,
-                  value: _dateRangeLabel(state.periodoAnterior),
-                ),
-                SalesCardFilterSummaryItem(
-                  label: l10n.reportFiltersTitle,
-                  value: l10n.salesProdutoTendenciaActiveFiltersSummary(
-                    activeDetailFilterCount,
-                  ),
-                ),
-              ],
-              enabled: !state.loading,
+            SalesProdutoTendenciaFilterSection(
+              onOpenFilters: () => unawaited(_openFiltersSheet()),
             ),
             SizedBox(height: tokens.gapMd),
-            SalesAutoRefreshActionsRow(
-              value: autoRefreshOption,
-              onChanged: setAutoRefreshOption,
+            SalesProdutoTendenciaAutoRefreshSection(
+              onOptionChanged: setAutoRefreshOption,
               onRefreshNow: () => unawaited(_reload()),
-              enabled: canScheduleAutoRefresh,
-              lastUpdatedAt: autoRefreshLastUpdatedAt,
-              isPaused: autoRefreshIsPaused,
-              pauseReason: autoRefreshPauseReason,
-              l10n: l10n,
+              stateListenable: autoRefreshStateListenable,
             ),
-            if (activeFilterChipLabels.isNotEmpty) ...<Widget>[
-              SizedBox(height: tokens.gapMd),
-              Wrap(
-                spacing: tokens.gapSm,
-                runSpacing: tokens.gapSm,
-                children: activeFilterChipLabels
-                    .map((label) => AppTagChip(label: label))
-                    .toList(growable: false),
-              ),
-            ],
             SizedBox(height: tokens.sectionSpacing),
-            if (state.selectedAgentId == null) ...<Widget>[
-              AppInlineErrorPanel(
-                tone: AppInlinePanelTone.informational,
-                title: l10n.salesBranchRequiredTitle,
-                message: l10n.salesBranchRequiredMessage,
-              ),
-            ] else if (state.loadFailure != null) ...<Widget>[
-              AgentQueryErrorPanel.fromFailure(
-                state.loadFailure!,
-                l10n,
-                onRetry: () => unawaited(_reload()),
-                retryCountdownLabel: agentQueryRetryCountdownLabel(l10n),
-                supportContext: AgentQueryFailureSupportContext.environment(
-                  extra: <String, String>{
-                    'agentId': ?state.selectedAgentId,
-                    'screen': 'sales_produto_tendencia',
-                  },
-                ),
-              ),
-            ] else if (state.authenticationFailed) ...<Widget>[
-              AppInlineErrorPanel(
-                message: l10n.agentSqlErrorAuthenticationFailed,
-                onRetry: () => unawaited(_reload()),
-              ),
-            ] else ...<Widget>[
-              SalesProdutoTendenciaSummarySection(
-                l10n: l10n,
-                summaryRows: state.summaryRows,
-                loading: state.loading,
-                periodoAtual: state.periodoAtual,
-                periodoAnterior: state.periodoAnterior,
-                periodoAtualDescriptor: _periodDescriptorLabel(
-                  l10n,
-                  state.periodoAtual,
-                ),
-                periodoAnteriorDescriptor: _periodDescriptorLabel(
-                  l10n,
-                  state.periodoAnterior,
-                ),
-                hasActiveDetailFilters: _hasActiveDetailFilters(state),
-                onClearFilters: () => unawaited(_clearDetailFilters()),
-                onOpenFilters: () => unawaited(_openFiltersSheet()),
-              ),
-              SizedBox(height: tokens.sectionSpacing),
-              SalesProdutoTendenciaChartNavGrid(
-                l10n: l10n,
-                loading: state.loading,
-                sectionTitle: l10n.salesProdutoTendenciaChartsSectionTitle,
-                isChartReady: (chartId) => _isChartReady(state, chartId),
-                onChartSelected: (chartId) =>
-                    _onChartSelected(state, chartId),
-              ),
-              SizedBox(height: tokens.sectionSpacing),
-              SalesProdutoTendenciaDetailsSection(
-                l10n: l10n,
-                rows: state.rows,
-                totalCount: state.totalCount,
-                loading: state.loading,
-                currentPage: state.page,
-                pageSize: state.pageSize,
-                onPageSelected: (page) =>
-                    unawaited(_controller.selectPage(page)),
-                onPageSizeChanged: (size) =>
-                    unawaited(_controller.changePageSize(size)),
-                classLabelBuilder: (value) =>
-                    salesProdutoTendenciaClassificacaoLabel(l10n, value),
-                hasActiveDetailFilters: _hasActiveDetailFilters(state),
-                onClearFilters: () => unawaited(_clearDetailFilters()),
-                onOpenFilters: () => unawaited(_openFiltersSheet()),
-              ),
-            ],
-        ],
+            ListenableBuilder(
+              listenable: agentQueryRetryAfterGate,
+              builder: (context, _) {
+                return SalesProdutoTendenciaBodySection(
+                  onRetryReload: () => unawaited(_reload()),
+                  onClearDetailFilters: () => unawaited(_clearDetailFilters()),
+                  onOpenFilters: () => unawaited(_openFiltersSheet()),
+                  onChartSelected: _onChartSelected,
+                  retryCountdownLabel: agentQueryRetryCountdownLabel(l10n),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

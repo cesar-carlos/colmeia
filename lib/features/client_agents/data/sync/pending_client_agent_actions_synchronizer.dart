@@ -30,8 +30,8 @@ class PendingClientAgentActionsSynchronizer {
   PendingClientAgentActionsSynchronizer({
     required ClientAgentsRemoteDataSource remoteDataSource,
     required ClientAgentsLocalDataSource localDataSource,
-  })  : _remote = remoteDataSource,
-        _local = localDataSource;
+  }) : _remote = remoteDataSource,
+       _local = localDataSource;
 
   final ClientAgentsRemoteDataSource _remote;
   final ClientAgentsLocalDataSource _local;
@@ -294,8 +294,9 @@ class PendingClientAgentActionsSynchronizer {
             agentId: action.agentId,
           );
         } else {
-          outcome.recordRemoveAccessFailure(action.agentId);
-          outcome.recordBatchFailure(failure);
+          outcome
+            ..recordRemoveAccessFailure(action.agentId)
+            ..recordBatchFailure(failure);
           view.update(
             action.id,
             (a) => a.copyWith(

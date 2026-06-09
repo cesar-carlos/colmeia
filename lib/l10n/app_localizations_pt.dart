@@ -1631,6 +1631,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String get clientAgentsApprovedBulkClearSelection => 'Limpar seleção';
 
   @override
+  String clientAgentsApprovedBulkSelectionModeHint(int count) {
+    return '$count selecionado(s) para remoção';
+  }
+
+  @override
+  String get clientAgentsApprovedBulkSelectColumnHint =>
+      'Selecionar agentes para remoção em lote';
+
+  @override
   String get clientAgentsRequestAccessIntro1 =>
       'Use uma ou mais linhas para solicitar acesso. Cada linha precisa de um UUID de agente; informe o client token quando o agente exigir para execução SQL.';
 
@@ -1701,6 +1710,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clientAgentsNoRequestsYet => 'Sem solicitações no momento.';
+
+  @override
+  String get clientAgentsEmptyRequestsAction => 'Solicitar acesso';
 
   @override
   String get clientAgentsRequestStatusPending => 'Pendente';
@@ -2243,6 +2255,24 @@ class AppLocalizationsPt extends AppLocalizations {
   String get clientAgentDetailSectionEditProfile => 'Perfil no catálogo';
 
   @override
+  String get clientAgentDetailTabProfile => 'Perfil';
+
+  @override
+  String get clientAgentDetailTabDetails => 'Detalhes';
+
+  @override
+  String get clientAgentDetailTabConnection => 'Conexão';
+
+  @override
+  String get clientAgentDetailTabEditIdentification => 'Identificação';
+
+  @override
+  String get clientAgentDetailTabEditAddress => 'Endereço';
+
+  @override
+  String get clientAgentDetailTabEditNotes => 'Anotações';
+
+  @override
   String get clientAgentDetailSaveProfile => 'Salvar perfil';
 
   @override
@@ -2260,6 +2290,46 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get clientAgentDetailProfileNameRequired =>
       'Informe o nome / razão social.';
+
+  @override
+  String get clientAgentDetailUnsavedChangesTitle =>
+      'Descartar alterações não salvas?';
+
+  @override
+  String get clientAgentDetailUnsavedChangesMessage =>
+      'Há edições não salvas nesta tela. Sair sem salvar?';
+
+  @override
+  String get clientAgentDetailUnsavedChangesStay => 'Permanecer';
+
+  @override
+  String get clientAgentDetailUnsavedChangesDiscard => 'Descartar';
+
+  @override
+  String get clientAgentDetailSectionMetadata => 'Metadados';
+
+  @override
+  String get clientAgentDetailSectionMetadataSubtitle =>
+      'Status no catálogo, conexão e identificadores do registro.';
+
+  @override
+  String get clientAgentDetailConnectionTokenMissingTitle =>
+      'Token não configurado';
+
+  @override
+  String get clientAgentDetailConnectionTokenMissingMessage =>
+      'Nenhum client token está configurado no servidor para este agente. Adicione um para habilitar execução SQL.';
+
+  @override
+  String get clientAgentDetailConnectionTokenRevokedTitle => 'Token revogado';
+
+  @override
+  String get clientAgentDetailConnectionTokenRevokedMessage =>
+      'O client token deste agente foi revogado. Configure um novo token antes de executar SQL via bridge.';
+
+  @override
+  String get clientAgentDetailConnectionTokenConfigureAction =>
+      'Configurar token';
 
   @override
   String get clientAgentFieldLegalName => 'Nome / razão social';
@@ -4205,6 +4275,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesProdutoTendenciaChartsSectionTitle => 'Gráficos';
 
   @override
+  String get salesProdutoTendenciaChartNavClassificacaoLabel =>
+      'Por classificação';
+
+  @override
   String get salesProdutoTendenciaChartNavUnavailableSemanticsSuffix =>
       'indisponível';
 
@@ -4375,6 +4449,14 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get salesProdutoTendenciaMediaMovelSummaryByImpactTitle =>
       'Impacto por classificação';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelChartNavClassificacaoLabel =>
+      'Por classificação';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelChartNavImpactLabel =>
+      'Por impacto';
 
   @override
   String get salesProdutoTendenciaMediaMovelSummaryByImpactSubtitle =>
@@ -6315,6 +6397,15 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get clientAgentsApprovedBulkClearSelection => 'Limpar seleção';
 
   @override
+  String clientAgentsApprovedBulkSelectionModeHint(int count) {
+    return '$count selecionado(s) para remoção';
+  }
+
+  @override
+  String get clientAgentsApprovedBulkSelectColumnHint =>
+      'Selecionar agentes para remoção em lote';
+
+  @override
   String get clientAgentsRequestAccessIntro1 =>
       'Use uma ou mais linhas para solicitar acesso. Cada linha precisa de um UUID de agente; informe o client token quando o agente exigir para execução SQL.';
 
@@ -6385,6 +6476,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentsNoRequestsYet => 'Sem solicitações no momento.';
+
+  @override
+  String get clientAgentsEmptyRequestsAction => 'Solicitar acesso';
 
   @override
   String get clientAgentsRequestStatusPending => 'Pendente';
@@ -6927,6 +7021,24 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get clientAgentDetailSectionEditProfile => 'Perfil no catálogo';
 
   @override
+  String get clientAgentDetailTabProfile => 'Perfil';
+
+  @override
+  String get clientAgentDetailTabDetails => 'Detalhes';
+
+  @override
+  String get clientAgentDetailTabConnection => 'Conexão';
+
+  @override
+  String get clientAgentDetailTabEditIdentification => 'Identificação';
+
+  @override
+  String get clientAgentDetailTabEditAddress => 'Endereço';
+
+  @override
+  String get clientAgentDetailTabEditNotes => 'Anotações';
+
+  @override
   String get clientAgentDetailSaveProfile => 'Salvar perfil';
 
   @override
@@ -6944,6 +7056,46 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get clientAgentDetailProfileNameRequired =>
       'Informe o nome / razão social.';
+
+  @override
+  String get clientAgentDetailUnsavedChangesTitle =>
+      'Descartar alterações não salvas?';
+
+  @override
+  String get clientAgentDetailUnsavedChangesMessage =>
+      'Há edições não salvas nesta tela. Sair sem salvar?';
+
+  @override
+  String get clientAgentDetailUnsavedChangesStay => 'Permanecer';
+
+  @override
+  String get clientAgentDetailUnsavedChangesDiscard => 'Descartar';
+
+  @override
+  String get clientAgentDetailSectionMetadata => 'Metadados';
+
+  @override
+  String get clientAgentDetailSectionMetadataSubtitle =>
+      'Status no catálogo, conexão e identificadores do registro.';
+
+  @override
+  String get clientAgentDetailConnectionTokenMissingTitle =>
+      'Token não configurado';
+
+  @override
+  String get clientAgentDetailConnectionTokenMissingMessage =>
+      'Nenhum client token está configurado no servidor para este agente. Adicione um para habilitar execução SQL.';
+
+  @override
+  String get clientAgentDetailConnectionTokenRevokedTitle => 'Token revogado';
+
+  @override
+  String get clientAgentDetailConnectionTokenRevokedMessage =>
+      'O client token deste agente foi revogado. Configure um novo token antes de executar SQL via bridge.';
+
+  @override
+  String get clientAgentDetailConnectionTokenConfigureAction =>
+      'Configurar token';
 
   @override
   String get clientAgentFieldLegalName => 'Nome / razão social';
@@ -8889,6 +9041,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesProdutoTendenciaChartsSectionTitle => 'Gráficos';
 
   @override
+  String get salesProdutoTendenciaChartNavClassificacaoLabel =>
+      'Por classificação';
+
+  @override
   String get salesProdutoTendenciaChartNavUnavailableSemanticsSuffix =>
       'indisponível';
 
@@ -9059,6 +9215,14 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get salesProdutoTendenciaMediaMovelSummaryByImpactTitle =>
       'Impacto por classificação';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelChartNavClassificacaoLabel =>
+      'Por classificação';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelChartNavImpactLabel =>
+      'Por impacto';
 
   @override
   String get salesProdutoTendenciaMediaMovelSummaryByImpactSubtitle =>

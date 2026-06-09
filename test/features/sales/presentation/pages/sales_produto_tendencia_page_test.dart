@@ -518,7 +518,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Executive summary'), findsOneWidget);
-      expect(find.text('Products by classification'), findsOneWidget);
+      expect(find.text('By classification'), findsOneWidget);
       expect(find.text('Top 5 gainers'), findsOneWidget);
       expect(find.text('Detailed rows'), findsOneWidget);
       expect(find.text('Product A'), findsWidgets);
@@ -576,7 +576,7 @@ void main() {
     await _pumpTrendPage(tester, authController: authController);
     await tester.pumpAndSettle();
 
-    expect(find.text('Products by classification'), findsOneWidget);
+    expect(find.text('By classification'), findsOneWidget);
     expect(find.text('Top 5 gainers'), findsOneWidget);
     expect(find.text('Top 5 losers'), findsOneWidget);
   });

@@ -146,19 +146,18 @@ void main() {
         ),
       );
 
-      final coordinator = ClientAgentsApprovalPollingCoordinator(
-        host: host,
-        loadAccessRequestsUseCase: loadAccessRequestsUseCase,
-        loadClientAgentDetailUseCase: loadClientAgentDetailUseCase,
-        loadClientAccessStatusUseCase: loadClientAccessStatusUseCase,
-        loadApprovedAgentsUseCase: loadApprovedAgentsUseCase,
-        pollingInterval: const Duration(hours: 1),
-      );
-
-      coordinator.startPolling(
-        userId: host.userId,
-        agentIds: <String>{'agent-1'},
-      );
+      final coordinator =
+          ClientAgentsApprovalPollingCoordinator(
+            host: host,
+            loadAccessRequestsUseCase: loadAccessRequestsUseCase,
+            loadClientAgentDetailUseCase: loadClientAgentDetailUseCase,
+            loadClientAccessStatusUseCase: loadClientAccessStatusUseCase,
+            loadApprovedAgentsUseCase: loadApprovedAgentsUseCase,
+            pollingInterval: const Duration(hours: 1),
+          )..startPolling(
+            userId: host.userId,
+            agentIds: <String>{'agent-1'},
+          );
 
       await Future<void>.delayed(Duration.zero);
       host.disposed = true;

@@ -113,5 +113,33 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(l10n.clientAgentsNoRequestsYet), findsOneWidget);
+    expect(find.text(l10n.clientAgentsEmptyRequestsAction), findsNothing);
+  });
+
+  testWidgets('shows request-access CTA in empty state without filters', (
+    tester,
+  ) async {
+    final l10n = lookupAppLocalizations(const Locale('pt', 'BR'));
+    var navigated = false;
+
+    await tester.pumpWidget(
+      LocalizedTestApp(
+        child: ClientAgentsRequestsTab(
+          requests: const [],
+          pendingActions: const [],
+          errorMessage: null,
+          pendingErrorMessage: null,
+          onRetry: () {},
+          isMutating: false,
+          onNavigateToRequestAccess: () => navigated = true,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text(l10n.clientAgentsEmptyRequestsAction), findsOneWidget);
+    await tester.tap(find.text(l10n.clientAgentsEmptyRequestsAction));
+    await tester.pumpAndSettle();
+    expect(navigated, isTrue);
   });
 }

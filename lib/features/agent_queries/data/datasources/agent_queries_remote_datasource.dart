@@ -58,89 +58,120 @@ class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
     }
   }
 
+  DioException _restRequestCancelled(String operation) {
+    return DioException(
+      requestOptions: RequestOptions(path: AgentCommandsApiRoutes.commands),
+      type: DioExceptionType.cancel,
+      message: '$operation skipped: AgentQueriesCancelScope already cancelled',
+    );
+  }
+
+  Future<Map<String, dynamic>> _postBridgeCommand({
+    required Map<String, Object?> body,
+    required int? bridgeTimeoutMs,
+    required String operation,
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
+    if (cancelScope?.isCancelled ?? false) {
+      throw _restRequestCancelled(operation);
+    }
+
+    CancelToken? cancelToken;
+    void Function()? untrackRest;
+    if (cancelScope != null) {
+      cancelToken = CancelToken();
+      void cancelRequest() {
+        if (!cancelToken!.isCancelled) {
+          cancelToken.cancel(
+            '$operation aborted: AgentQueriesCancelScope cancelled',
+          );
+        }
+      }
+
+      untrackRest = cancelRequest;
+      cancelScope.trackRestPending(cancelRequest);
+    }
+
+    try {
+      final receiveTimeout = agentSqlHttpReceiveTimeout(
+        bridgeTimeoutMs: bridgeTimeoutMs,
+      );
+      final response = await _dio.post<Map<String, dynamic>>(
+        AgentCommandsApiRoutes.commands,
+        data: body,
+        options: Options(
+          receiveTimeout: receiveTimeout,
+          sendTimeout: receiveTimeout,
+        ),
+        cancelToken: cancelToken,
+      );
+
+      final payload = response.data;
+      if (payload == null) {
+        AppLogger.warning(
+          operation == 'postSqlExecuteBatch'
+              ? 'Agent SQL batch bridge returned null JSON body'
+              : 'Agent SQL bridge returned null JSON body',
+          context: <String, Object?>{
+            'operation': operation,
+            'path': AgentCommandsApiRoutes.commands,
+            'statusCode': response.statusCode,
+          },
+        );
+      } else if (payload.isEmpty && operation == 'postSqlExecute') {
+        AppLogger.debug(
+          'Agent SQL bridge returned empty JSON object',
+          context: <String, Object?>{
+            'operation': operation,
+            'path': AgentCommandsApiRoutes.commands,
+            'statusCode': response.statusCode,
+          },
+        );
+      }
+
+      _maybeRecordServerTimings(payload);
+      return payload ?? const <String, dynamic>{};
+    } finally {
+      if (untrackRest != null) {
+        cancelScope?.untrackRestPending(untrackRest);
+      }
+    }
+  }
+
   @override
   Future<Map<String, dynamic>> postSqlExecute(
     AgentSqlExecuteRequest request, {
     AgentQueriesCancelScope? cancelScope,
-  }) async {
+  }) {
     final rpcId = _uuid.v4();
     final body = _withServerTimingsFlag(
       _bodyMapper.build(request: request, rpcId: rpcId),
     );
 
-    final receiveTimeout = agentSqlHttpReceiveTimeout(
+    return _postBridgeCommand(
+      body: body,
       bridgeTimeoutMs: request.bridgeTimeoutMs,
+      operation: 'postSqlExecute',
+      cancelScope: cancelScope,
     );
-    final response = await _dio.post<Map<String, dynamic>>(
-      AgentCommandsApiRoutes.commands,
-      data: body,
-      options: Options(
-        receiveTimeout: receiveTimeout,
-        sendTimeout: receiveTimeout,
-      ),
-    );
-
-    final payload = response.data;
-    if (payload == null) {
-      AppLogger.warning(
-        'Agent SQL bridge returned null JSON body',
-        context: <String, Object?>{
-          'operation': 'postSqlExecute',
-          'path': AgentCommandsApiRoutes.commands,
-          'statusCode': response.statusCode,
-        },
-      );
-    } else if (payload.isEmpty) {
-      AppLogger.debug(
-        'Agent SQL bridge returned empty JSON object',
-        context: <String, Object?>{
-          'operation': 'postSqlExecute',
-          'path': AgentCommandsApiRoutes.commands,
-          'statusCode': response.statusCode,
-        },
-      );
-    }
-
-    _maybeRecordServerTimings(payload);
-    return payload ?? const <String, dynamic>{};
   }
 
   @override
   Future<Map<String, dynamic>> postSqlExecuteBatch(
     AgentSqlExecuteBatchRequest request, {
     AgentQueriesCancelScope? cancelScope,
-  }) async {
+  }) {
     final rpcId = _uuid.v4();
     final body = _withServerTimingsFlag(
       _batchBodyMapper.build(request: request, rpcId: rpcId),
     );
 
-    final receiveTimeout = agentSqlHttpReceiveTimeout(
+    return _postBridgeCommand(
+      body: body,
       bridgeTimeoutMs: request.bridgeTimeoutMs,
+      operation: 'postSqlExecuteBatch',
+      cancelScope: cancelScope,
     );
-    final response = await _dio.post<Map<String, dynamic>>(
-      AgentCommandsApiRoutes.commands,
-      data: body,
-      options: Options(
-        receiveTimeout: receiveTimeout,
-        sendTimeout: receiveTimeout,
-      ),
-    );
-
-    final payload = response.data;
-    if (payload == null) {
-      AppLogger.warning(
-        'Agent SQL batch bridge returned null JSON body',
-        context: <String, Object?>{
-          'operation': 'postSqlExecuteBatch',
-          'path': AgentCommandsApiRoutes.commands,
-          'statusCode': response.statusCode,
-        },
-      );
-    }
-
-    _maybeRecordServerTimings(payload);
-    return payload ?? const <String, dynamic>{};
   }
 }
 

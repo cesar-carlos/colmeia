@@ -1599,6 +1599,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clientAgentsApprovedBulkClearSelection => 'Clear selection';
 
   @override
+  String clientAgentsApprovedBulkSelectionModeHint(int count) {
+    return '$count selected for removal';
+  }
+
+  @override
+  String get clientAgentsApprovedBulkSelectColumnHint =>
+      'Select agents for bulk removal';
+
+  @override
   String get clientAgentsRequestAccessIntro1 =>
       'Use one or more rows to request access. Each row needs an agent UUID; add the client token when that agent requires it for SQL execution.';
 
@@ -1668,6 +1677,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clientAgentsNoRequestsYet => 'No requests at the moment.';
+
+  @override
+  String get clientAgentsEmptyRequestsAction => 'Request access';
 
   @override
   String get clientAgentsRequestStatusPending => 'Pending';
@@ -2206,6 +2218,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clientAgentDetailSectionEditProfile => 'Catalog profile';
 
   @override
+  String get clientAgentDetailTabProfile => 'Profile';
+
+  @override
+  String get clientAgentDetailTabDetails => 'Details';
+
+  @override
+  String get clientAgentDetailTabConnection => 'Connection';
+
+  @override
+  String get clientAgentDetailTabEditIdentification => 'Identification';
+
+  @override
+  String get clientAgentDetailTabEditAddress => 'Address';
+
+  @override
+  String get clientAgentDetailTabEditNotes => 'Notes';
+
+  @override
   String get clientAgentDetailSaveProfile => 'Save profile';
 
   @override
@@ -2221,6 +2251,45 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clientAgentDetailProfileNameRequired => 'Legal name is required.';
+
+  @override
+  String get clientAgentDetailUnsavedChangesTitle => 'Discard unsaved changes?';
+
+  @override
+  String get clientAgentDetailUnsavedChangesMessage =>
+      'You have unsaved edits on this screen. Leave without saving?';
+
+  @override
+  String get clientAgentDetailUnsavedChangesStay => 'Stay';
+
+  @override
+  String get clientAgentDetailUnsavedChangesDiscard => 'Discard';
+
+  @override
+  String get clientAgentDetailSectionMetadata => 'Metadata';
+
+  @override
+  String get clientAgentDetailSectionMetadataSubtitle =>
+      'Catalog status, connection and record identifiers.';
+
+  @override
+  String get clientAgentDetailConnectionTokenMissingTitle =>
+      'Token not configured';
+
+  @override
+  String get clientAgentDetailConnectionTokenMissingMessage =>
+      'No client token is configured on the server for this agent. Add one to enable SQL execution.';
+
+  @override
+  String get clientAgentDetailConnectionTokenRevokedTitle => 'Token revoked';
+
+  @override
+  String get clientAgentDetailConnectionTokenRevokedMessage =>
+      'This agent\'s client token was revoked. Configure a new token before running SQL through the bridge.';
+
+  @override
+  String get clientAgentDetailConnectionTokenConfigureAction =>
+      'Configure token';
 
   @override
   String get clientAgentFieldLegalName => 'Legal name';
@@ -4147,6 +4216,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesProdutoTendenciaChartsSectionTitle => 'Charts';
 
   @override
+  String get salesProdutoTendenciaChartNavClassificacaoLabel =>
+      'By classification';
+
+  @override
   String get salesProdutoTendenciaChartNavUnavailableSemanticsSuffix =>
       'unavailable';
 
@@ -4317,6 +4390,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get salesProdutoTendenciaMediaMovelSummaryByImpactTitle =>
       'Impact by classification';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelChartNavClassificacaoLabel =>
+      'By classification';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelChartNavImpactLabel => 'By impact';
 
   @override
   String get salesProdutoTendenciaMediaMovelSummaryByImpactSubtitle =>

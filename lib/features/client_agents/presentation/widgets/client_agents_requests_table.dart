@@ -2,12 +2,14 @@ import 'dart:math' as math;
 
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_approved_agents_table.dart';
+import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_data_grid_widgets.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_shared_widgets.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_data_grid_density.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
-import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
+import 'package:colmeia/shared/widgets/app_compact_data_grid_scroll_table.dart';
 import 'package:colmeia/shared/widgets/pagination/app_table_pagination_footer.dart';
+import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -17,6 +19,7 @@ class ClientAgentsRequestTableRowData {
     required this.description,
     required this.statusLabel,
     required this.statusKind,
+    required this.statusSortRank,
     this.date,
     this.showRetry = false,
     this.showDiscard = false,
@@ -28,6 +31,7 @@ class ClientAgentsRequestTableRowData {
   final String description;
   final String statusLabel;
   final ClientAgentsStatusChipKind statusKind;
+  final int statusSortRank;
   final DateTime? date;
   final bool showRetry;
   final bool showDiscard;
@@ -40,7 +44,7 @@ abstract final class ClientAgentsRequestsTableLayout {
   static double _description(AppThemeTokens t) => math.max(200, t.gapMd * 16);
   static double _status(AppThemeTokens t) => math.max(120, t.gapMd * 10);
   static double _date(AppThemeTokens t) => math.max(120, t.gapMd * 10);
-  static double _actions(AppThemeTokens t) => math.max(148, t.gapMd * 12);
+  static double _actions(AppThemeTokens t) => math.max(88, t.gapMd * 7);
 
   static double minWidth({required AppThemeTokens tokens}) {
     return _name(tokens) +
@@ -64,6 +68,8 @@ class ClientAgentsRequestsTable extends StatelessWidget {
     required this.onPageSelected,
     required this.onPageSizeChanged,
     required this.isMutating,
+    required this.currentSort,
+    required this.onSortChanged,
     super.key,
   });
 
@@ -75,6 +81,8 @@ class ClientAgentsRequestsTable extends StatelessWidget {
   final ValueChanged<int> onPageSelected;
   final ValueChanged<int> onPageSizeChanged;
   final bool isMutating;
+  final AppReportSortDescriptor? currentSort;
+  final ValueChanged<AppReportSortDescriptor?> onSortChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -93,52 +101,30 @@ class ClientAgentsRequestsTable extends StatelessWidget {
         if (rows.isNotEmpty) ...<Widget>[
           LayoutBuilder(
             builder: (context, constraints) {
-              final minTable = ClientAgentsRequestsTableLayout.minScrollContentWidth(
-                tokens: tokens,
-              );
+              final minTable =
+                  ClientAgentsRequestsTableLayout.minScrollContentWidth(
+                    tokens: tokens,
+                  );
               final outer = constraints.maxWidth;
               final contentWidth = outer.isFinite && outer > 0
                   ? math.max(outer, minTable)
                   : minTable;
-              return ChartHorizontalScrollShell(
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  child: SizedBox(
-                    width: contentWidth,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        ClientAgentsRequestsTableHeader(l10n: l10n),
-                        Divider(
-                          height: tokens.gapMd * 2,
-                          color: theme.colorScheme.outlineVariant.withValues(
-                            alpha: 0.5,
-                          ),
-                        ),
-                        ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: rows.length,
-                          separatorBuilder: (_, _) => Divider(
-                            height: tokens.gapMd * 2,
-                            color: theme.colorScheme.outlineVariant.withValues(
-                              alpha: 0.35,
-                            ),
-                          ),
-                          itemBuilder: (context, index) {
-                            return ClientAgentsRequestsTableRow(
-                              row: rows[index],
-                              l10n: l10n,
-                              isMutating: isMutating,
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+              return AppCompactDataGridScrollTable(
+                contentWidth: contentWidth,
+                itemCount: rows.length,
                 semanticsHint: l10n.clientAgentsRequestsTableHorizontalScroll,
+                header: ClientAgentsRequestsTableHeader(
+                  l10n: l10n,
+                  currentSort: currentSort,
+                  onSortChanged: onSortChanged,
+                ),
+                itemBuilder: (context, index) {
+                  return ClientAgentsRequestsTableRow(
+                    row: rows[index],
+                    l10n: l10n,
+                    isMutating: isMutating,
+                  );
+                },
               );
             },
           ),
@@ -180,38 +166,75 @@ class ClientAgentsRequestsTable extends StatelessWidget {
 }
 
 class ClientAgentsRequestsTableHeader extends StatelessWidget {
-  const ClientAgentsRequestsTableHeader({required this.l10n, super.key});
+  const ClientAgentsRequestsTableHeader({
+    required this.l10n,
+    required this.currentSort,
+    required this.onSortChanged,
+    super.key,
+  });
 
   final AppLocalizations l10n;
+  final AppReportSortDescriptor? currentSort;
+  final ValueChanged<AppReportSortDescriptor?> onSortChanged;
+
+  void _toggleSort(String columnKey) {
+    if (currentSort?.columnKey != columnKey) {
+      onSortChanged(
+        AppReportSortDescriptor(
+          columnKey: columnKey,
+          direction: AppReportSortDirection.descending,
+        ),
+      );
+      return;
+    }
+    if (currentSort!.direction == AppReportSortDirection.descending) {
+      onSortChanged(
+        AppReportSortDescriptor(
+          columnKey: columnKey,
+          direction: AppReportSortDirection.ascending,
+        ),
+      );
+      return;
+    }
+    onSortChanged(null);
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
-    final style = theme.textTheme.labelMedium?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w700,
-    );
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: tokens.gapSm),
+    final style = appDataGridHeaderLabelStyle(theme: theme);
+    return ClientAgentsDataGridHeaderShell(
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          SizedBox(
+          ClientAgentsDataGridSortableHeaderCell(
+            label: l10n.clientAgentsApprovedColName,
+            style: style,
+            columnKey: ClientAgentsRequestsSortColumns.name,
+            currentSort: currentSort,
             width: ClientAgentsRequestsTableLayout._name(tokens),
-            child: Text(l10n.clientAgentsApprovedColName, style: style),
+            onPressed: () => _toggleSort(ClientAgentsRequestsSortColumns.name),
           ),
           SizedBox(
             width: ClientAgentsRequestsTableLayout._description(tokens),
             child: Text(l10n.clientAgentsRequestsColDescription, style: style),
           ),
-          SizedBox(
+          ClientAgentsDataGridSortableHeaderCell(
+            label: l10n.clientAgentsRequestsColStatus,
+            style: style,
+            columnKey: ClientAgentsRequestsSortColumns.status,
+            currentSort: currentSort,
             width: ClientAgentsRequestsTableLayout._status(tokens),
-            child: Text(l10n.clientAgentsRequestsColStatus, style: style),
+            onPressed: () =>
+                _toggleSort(ClientAgentsRequestsSortColumns.status),
           ),
-          SizedBox(
+          ClientAgentsDataGridSortableHeaderCell(
+            label: l10n.clientAgentsRequestsColDate,
+            style: style,
+            columnKey: ClientAgentsRequestsSortColumns.date,
+            currentSort: currentSort,
             width: ClientAgentsRequestsTableLayout._date(tokens),
-            child: Text(l10n.clientAgentsRequestsColDate, style: style),
+            onPressed: () => _toggleSort(ClientAgentsRequestsSortColumns.date),
           ),
           SizedBox(
             width: ClientAgentsRequestsTableLayout._actions(tokens),
@@ -245,11 +268,10 @@ class ClientAgentsRequestsTableRow extends StatelessWidget {
         : AppBrFormatters.shortDateTimeFormat.format(row.date!);
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: tokens.gapSm),
+      padding: appDataGridRowPadding(tokens),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 48),
+        constraints: const BoxConstraints(minHeight: kAppCompactDataRowHeight),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             SizedBox(
               width: ClientAgentsRequestsTableLayout._name(tokens),
@@ -284,18 +306,19 @@ class ClientAgentsRequestsTableRow extends StatelessWidget {
             ),
             SizedBox(
               width: ClientAgentsRequestsTableLayout._actions(tokens),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   if (row.showRetry && row.onRetry != null)
-                    AppSecondaryButton(
-                      label: l10n.clientAgentsRetryRequestAction,
-                      icon: const Icon(Icons.refresh_rounded),
+                    ClientAgentsDataGridActionIconButton(
+                      tooltip: l10n.clientAgentsRetryRequestAction,
+                      icon: Icons.refresh_rounded,
                       onPressed: isMutating ? null : row.onRetry,
                     ),
                   if (row.showDiscard && row.onDiscard != null)
-                    AppSecondaryButton(
-                      label: l10n.clientAgentsDiscardQueuedRequestAction,
+                    ClientAgentsDataGridActionIconButton(
+                      tooltip: l10n.clientAgentsDiscardQueuedRequestAction,
+                      icon: Icons.delete_outline_rounded,
                       onPressed: isMutating ? null : row.onDiscard,
                     ),
                 ],

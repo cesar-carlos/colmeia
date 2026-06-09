@@ -6,11 +6,13 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tenden
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_classificacao_labels.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_section_header.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_data_grid_density.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/app_compact_data_grid_scroll_table.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
-import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
 import 'package:colmeia/shared/widgets/pagination/app_table_pagination_footer.dart';
+import 'package:colmeia/shared/widgets/pagination/app_table_pagination_notice.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -86,31 +88,12 @@ class SalesProdutoTendenciaMediaMovelDetailsSection extends StatelessWidget {
                   enabled: true,
                   loadingSemanticsLabel:
                       l10n.salesProdutoTendenciaLoadingTrendSemantics,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      for (var i = 0; i < 5; i++) ...<Widget>[
-                        Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: tokens.gapSm,
-                            vertical: tokens.gapSm,
-                          ),
-                          child: const Text(
-                            '—',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (i < 4)
-                          Divider(
-                            height: tokens.gapMd * 2,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .outlineVariant
-                                .withValues(alpha: 0.35),
-                          ),
-                      ],
-                    ],
+                  child: appDataGridSkeletonColumn(
+                    tokens: tokens,
+                    dividerColor: Theme.of(context)
+                        .colorScheme
+                        .outlineVariant
+                        .withValues(alpha: 0.35),
                   ),
                 )
               else if (rows.isEmpty)
@@ -145,110 +128,34 @@ class SalesProdutoTendenciaMediaMovelDetailsSection extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: <Widget>[
                         if (hasHorizontalOverflow) ...<Widget>[
-                          Text(scrollHint),
-                          SizedBox(height: tokens.gapMd),
-                        ],
-                        ChartHorizontalScrollShell(
-                          ConstrainedBox(
-                            constraints: BoxConstraints(
-                              minWidth: resolvedWidth,
-                            ),
-                            child: DataTable(
-                              columns: <DataColumn>[
-                                DataColumn(
-                                  label: Text(
-                                    l10n.salesProdutoTendenciaMediaMovelColProduct,
-                                  ),
-                                ),
-                                DataColumn(
-                                  label: Text(
-                                    l10n.salesProdutoTendenciaMediaMovelColClassificacao,
-                                  ),
-                                ),
-                                DataColumn(
-                                  label: Text(
-                                    l10n.salesProdutoTendenciaMediaMovelColGrupo,
-                                  ),
-                                ),
-                                DataColumn(
-                                  numeric: true,
-                                  label: Text(
-                                    l10n.salesProdutoTendenciaMediaMovelColMediaAtual,
-                                  ),
-                                ),
-                                DataColumn(
-                                  numeric: true,
-                                  label: Text(
-                                    l10n.salesProdutoTendenciaMediaMovelColMediaAnterior,
-                                  ),
-                                ),
-                                DataColumn(
-                                  numeric: true,
-                                  label: Text(
-                                    l10n.salesProdutoTendenciaMediaMovelColDiferenca,
-                                  ),
-                                ),
-                                DataColumn(
-                                  numeric: true,
-                                  label: Text(
-                                    l10n.salesProdutoTendenciaMediaMovelColPercentual,
-                                  ),
-                                ),
-                              ],
-                              rows: rows
-                                  .map(
-                                    (row) => DataRow(
-                                      cells: <DataCell>[
-                                        DataCell(Text(row.nomeProduto)),
-                                        DataCell(
-                                          Text(
-                                            produtoTendenciaMediaMovelClassificacaoLabel(
-                                              l10n,
-                                              row.classificacao,
-                                            ),
-                                          ),
-                                        ),
-                                        DataCell(
-                                          Text(row.nomeGrupoProduto ?? '-'),
-                                        ),
-                                        DataCell(
-                                          Text(
-                                            decimalFormat.format(
-                                              row.mediaAtual,
-                                            ),
-                                          ),
-                                        ),
-                                        DataCell(
-                                          Text(
-                                            decimalFormat.format(
-                                              row.mediaAnterior,
-                                            ),
-                                          ),
-                                        ),
-                                        DataCell(
-                                          Text(
-                                            decimalFormat.format(
-                                              row.diferenca,
-                                            ),
-                                          ),
-                                        ),
-                                        DataCell(
-                                          Text(
-                                            '${decimalFormat.format(row.tendenciaPercentual)}%',
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                  .toList(growable: false),
+                          Text(
+                            scrollHint,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                             ),
                           ),
-                          bottomTrackSlot:
-                              kChartHorizontalScrollBottomTrackSlot,
-                          semanticsHint: hasHorizontalOverflow
-                              ? scrollHint
-                              : null,
-                          showFade: hasHorizontalOverflow,
+                          SizedBox(height: tokens.gapXs),
+                        ],
+                        AppCompactDataGridScrollTable(
+                          contentWidth: resolvedWidth,
+                          itemCount: rows.length,
+                          semanticsHint:
+                              hasHorizontalOverflow ? scrollHint : null,
+                          showHorizontalFade: hasHorizontalOverflow,
+                          header:
+                              SalesProdutoTendenciaMediaMovelDetailsTableHeader(
+                            l10n: l10n,
+                          ),
+                          itemBuilder: (context, index) {
+                            return SalesProdutoTendenciaMediaMovelDetailsRow(
+                              row: rows[index],
+                              l10n: l10n,
+                              decimalFormat: decimalFormat,
+                            );
+                          },
                         ),
                       ],
                     );
@@ -256,9 +163,9 @@ class SalesProdutoTendenciaMediaMovelDetailsSection extends StatelessWidget {
                 ),
                 ),
               if (rows.isNotEmpty) ...<Widget>[
-                SizedBox(height: tokens.gapMd),
-                Text(
-                  l10n.salesProdutoTendenciaMediaMovelDetailsNotice(
+                AppTablePaginationNotice(
+                  totalPages: totalPages,
+                  message: l10n.salesProdutoTendenciaMediaMovelDetailsNotice(
                     '$pageSize',
                   ),
                 ),
@@ -294,14 +201,242 @@ class _SalesProdutoTendenciaMediaMovelDetailsTableLayout {
   static const double _classification = 180;
   static const double _group = 180;
   static const double _numeric = 132;
-  static const double _horizontalMargins = 96;
+
+  static double product(AppThemeTokens tokens) => _product;
+  static double classification(AppThemeTokens tokens) => _classification;
+  static double group(AppThemeTokens tokens) => _group;
+  static double numeric(AppThemeTokens tokens) => _numeric;
 
   static double minScrollContentWidth(AppThemeTokens tokens) {
     return _product +
         _classification +
         _group +
         (_numeric * 4) +
-        _horizontalMargins +
-        (tokens.gapMd * 2);
+        (tokens.gapSm * 2);
+  }
+}
+
+class SalesProdutoTendenciaMediaMovelDetailsTableHeader extends StatelessWidget {
+  const SalesProdutoTendenciaMediaMovelDetailsTableHeader({
+    required this.l10n,
+    super.key,
+  });
+
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.appTokens;
+    final scheme = theme.colorScheme;
+    final labelStyle = appDataGridHeaderLabelStyle(theme: theme);
+    final endLabelStyle = appDataGridHeaderLabelStyle(
+      theme: theme,
+      textAlign: TextAlign.end,
+    );
+    return DecoratedBox(
+      decoration: appDataGridHeaderDecoration(scheme),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: kAppCompactHeaderRowHeight),
+        child: Padding(
+          padding: appDataGridRowPadding(tokens),
+          child: Row(
+            children: <Widget>[
+              SizedBox(
+                width: _SalesProdutoTendenciaMediaMovelDetailsTableLayout.product(
+                  tokens,
+                ),
+                child: Text(
+                  l10n.salesProdutoTendenciaMediaMovelColProduct,
+                  style: labelStyle,
+                ),
+              ),
+              SizedBox(
+                width:
+                    _SalesProdutoTendenciaMediaMovelDetailsTableLayout.classification(
+                  tokens,
+                ),
+                child: Text(
+                  l10n.salesProdutoTendenciaMediaMovelColClassificacao,
+                  style: labelStyle,
+                ),
+              ),
+              SizedBox(
+                width: _SalesProdutoTendenciaMediaMovelDetailsTableLayout.group(
+                  tokens,
+                ),
+                child: Text(
+                  l10n.salesProdutoTendenciaMediaMovelColGrupo,
+                  style: labelStyle,
+                ),
+              ),
+              SizedBox(
+                width: _SalesProdutoTendenciaMediaMovelDetailsTableLayout.numeric(
+                  tokens,
+                ),
+                child: Text(
+                  l10n.salesProdutoTendenciaMediaMovelColMediaAtual,
+                  style: endLabelStyle,
+                  textAlign: TextAlign.end,
+                ),
+              ),
+              SizedBox(
+                width: _SalesProdutoTendenciaMediaMovelDetailsTableLayout.numeric(
+                  tokens,
+                ),
+                child: Text(
+                  l10n.salesProdutoTendenciaMediaMovelColMediaAnterior,
+                  style: endLabelStyle,
+                  textAlign: TextAlign.end,
+                ),
+              ),
+              SizedBox(
+                width: _SalesProdutoTendenciaMediaMovelDetailsTableLayout.numeric(
+                  tokens,
+                ),
+                child: Text(
+                  l10n.salesProdutoTendenciaMediaMovelColDiferenca,
+                  style: endLabelStyle,
+                  textAlign: TextAlign.end,
+                ),
+              ),
+              SizedBox(
+                width: _SalesProdutoTendenciaMediaMovelDetailsTableLayout.numeric(
+                  tokens,
+                ),
+                child: Text(
+                  l10n.salesProdutoTendenciaMediaMovelColPercentual,
+                  style: endLabelStyle,
+                  textAlign: TextAlign.end,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class SalesProdutoTendenciaMediaMovelDetailsRow extends StatelessWidget {
+  const SalesProdutoTendenciaMediaMovelDetailsRow({
+    required this.row,
+    required this.l10n,
+    required this.decimalFormat,
+    super.key,
+  });
+
+  final ProdutoVendidoTendenciaDeVendaMediaMovelRow row;
+  final AppLocalizations l10n;
+  final NumberFormat decimalFormat;
+
+  static const List<FontFeature> _tabularFigures = <FontFeature>[
+    FontFeature.tabularFigures(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final tokens = theme.appTokens;
+    final numericStyle = theme.textTheme.bodyMedium?.copyWith(
+      fontFeatures: _tabularFigures,
+    );
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: kAppCompactDataRowHeight),
+      child: Padding(
+        padding: appDataGridRowPadding(tokens),
+        child: Row(
+          children: <Widget>[
+            SizedBox(
+              width: _SalesProdutoTendenciaMediaMovelDetailsTableLayout.product(
+                tokens,
+              ),
+              child: Text(
+                row.nomeProduto,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            SizedBox(
+              width:
+                  _SalesProdutoTendenciaMediaMovelDetailsTableLayout.classification(
+                tokens,
+              ),
+              child: Text(
+                produtoTendenciaMediaMovelClassificacaoLabel(
+                  l10n,
+                  row.classificacao,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
+            SizedBox(
+              width: _SalesProdutoTendenciaMediaMovelDetailsTableLayout.group(
+                tokens,
+              ),
+              child: Text(
+                row.nomeGrupoProduto ?? '-',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            SizedBox(
+              width: _SalesProdutoTendenciaMediaMovelDetailsTableLayout.numeric(
+                tokens,
+              ),
+              child: Text(
+                decimalFormat.format(row.mediaAtual),
+                textAlign: TextAlign.end,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: numericStyle,
+              ),
+            ),
+            SizedBox(
+              width: _SalesProdutoTendenciaMediaMovelDetailsTableLayout.numeric(
+                tokens,
+              ),
+              child: Text(
+                decimalFormat.format(row.mediaAnterior),
+                textAlign: TextAlign.end,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: numericStyle,
+              ),
+            ),
+            SizedBox(
+              width: _SalesProdutoTendenciaMediaMovelDetailsTableLayout.numeric(
+                tokens,
+              ),
+              child: Text(
+                decimalFormat.format(row.diferenca),
+                textAlign: TextAlign.end,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: numericStyle,
+              ),
+            ),
+            SizedBox(
+              width: _SalesProdutoTendenciaMediaMovelDetailsTableLayout.numeric(
+                tokens,
+              ),
+              child: Text(
+                '${decimalFormat.format(row.tendenciaPercentual)}%',
+                textAlign: TextAlign.end,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontFeatures: _tabularFigures,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

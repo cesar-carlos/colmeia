@@ -2654,6 +2654,18 @@ abstract class AppLocalizations {
   /// **'Clear selection'**
   String get clientAgentsApprovedBulkClearSelection;
 
+  /// No description provided for @clientAgentsApprovedBulkSelectionModeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected for removal'**
+  String clientAgentsApprovedBulkSelectionModeHint(int count);
+
+  /// No description provided for @clientAgentsApprovedBulkSelectColumnHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select agents for bulk removal'**
+  String get clientAgentsApprovedBulkSelectColumnHint;
+
   /// No description provided for @clientAgentsRequestAccessIntro1.
   ///
   /// In en, this message translates to:
@@ -2767,6 +2779,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No requests at the moment.'**
   String get clientAgentsNoRequestsYet;
+
+  /// No description provided for @clientAgentsEmptyRequestsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Request access'**
+  String get clientAgentsEmptyRequestsAction;
 
   /// No description provided for @clientAgentsRequestStatusPending.
   ///
@@ -3605,6 +3623,42 @@ abstract class AppLocalizations {
   /// **'Catalog profile'**
   String get clientAgentDetailSectionEditProfile;
 
+  /// No description provided for @clientAgentDetailTabProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get clientAgentDetailTabProfile;
+
+  /// No description provided for @clientAgentDetailTabDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get clientAgentDetailTabDetails;
+
+  /// No description provided for @clientAgentDetailTabConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection'**
+  String get clientAgentDetailTabConnection;
+
+  /// No description provided for @clientAgentDetailTabEditIdentification.
+  ///
+  /// In en, this message translates to:
+  /// **'Identification'**
+  String get clientAgentDetailTabEditIdentification;
+
+  /// No description provided for @clientAgentDetailTabEditAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get clientAgentDetailTabEditAddress;
+
+  /// No description provided for @clientAgentDetailTabEditNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get clientAgentDetailTabEditNotes;
+
   /// No description provided for @clientAgentDetailSaveProfile.
   ///
   /// In en, this message translates to:
@@ -3634,6 +3688,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Legal name is required.'**
   String get clientAgentDetailProfileNameRequired;
+
+  /// No description provided for @clientAgentDetailUnsavedChangesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard unsaved changes?'**
+  String get clientAgentDetailUnsavedChangesTitle;
+
+  /// No description provided for @clientAgentDetailUnsavedChangesMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You have unsaved edits on this screen. Leave without saving?'**
+  String get clientAgentDetailUnsavedChangesMessage;
+
+  /// No description provided for @clientAgentDetailUnsavedChangesStay.
+  ///
+  /// In en, this message translates to:
+  /// **'Stay'**
+  String get clientAgentDetailUnsavedChangesStay;
+
+  /// No description provided for @clientAgentDetailUnsavedChangesDiscard.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard'**
+  String get clientAgentDetailUnsavedChangesDiscard;
+
+  /// No description provided for @clientAgentDetailSectionMetadata.
+  ///
+  /// In en, this message translates to:
+  /// **'Metadata'**
+  String get clientAgentDetailSectionMetadata;
+
+  /// No description provided for @clientAgentDetailSectionMetadataSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog status, connection and record identifiers.'**
+  String get clientAgentDetailSectionMetadataSubtitle;
+
+  /// No description provided for @clientAgentDetailConnectionTokenMissingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Token not configured'**
+  String get clientAgentDetailConnectionTokenMissingTitle;
+
+  /// No description provided for @clientAgentDetailConnectionTokenMissingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'No client token is configured on the server for this agent. Add one to enable SQL execution.'**
+  String get clientAgentDetailConnectionTokenMissingMessage;
+
+  /// No description provided for @clientAgentDetailConnectionTokenRevokedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Token revoked'**
+  String get clientAgentDetailConnectionTokenRevokedTitle;
+
+  /// No description provided for @clientAgentDetailConnectionTokenRevokedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This agent\'s client token was revoked. Configure a new token before running SQL through the bridge.'**
+  String get clientAgentDetailConnectionTokenRevokedMessage;
+
+  /// No description provided for @clientAgentDetailConnectionTokenConfigureAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure token'**
+  String get clientAgentDetailConnectionTokenConfigureAction;
 
   /// No description provided for @clientAgentFieldLegalName.
   ///
@@ -6819,6 +6939,12 @@ abstract class AppLocalizations {
   /// **'Charts'**
   String get salesProdutoTendenciaChartsSectionTitle;
 
+  /// No description provided for @salesProdutoTendenciaChartNavClassificacaoLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'By classification'**
+  String get salesProdutoTendenciaChartNavClassificacaoLabel;
+
   /// No description provided for @salesProdutoTendenciaChartNavUnavailableSemanticsSuffix.
   ///
   /// In en, this message translates to:
@@ -7066,6 +7192,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Impact by classification'**
   String get salesProdutoTendenciaMediaMovelSummaryByImpactTitle;
+
+  /// No description provided for @salesProdutoTendenciaMediaMovelChartNavClassificacaoLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'By classification'**
+  String get salesProdutoTendenciaMediaMovelChartNavClassificacaoLabel;
+
+  /// No description provided for @salesProdutoTendenciaMediaMovelChartNavImpactLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'By impact'**
+  String get salesProdutoTendenciaMediaMovelChartNavImpactLabel;
 
   /// No description provided for @salesProdutoTendenciaMediaMovelSummaryByImpactSubtitle.
   ///

@@ -175,13 +175,6 @@ void main() {
         agentId: any(named: 'agentId'),
         filter: any(named: 'filter'),
         clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
-        ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
         cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer(
@@ -209,14 +202,16 @@ void main() {
         clientToken: any(named: 'clientToken'),
       ),
     ).thenAnswer(
-      (_) async => const Success<
-          ProdutoVendidoTendenciaDeVendaMediaMovelPageResult,
-          AppFailure>(
-        ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
-          items: <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[],
-          totalCount: 0,
-        ),
-      ),
+      (_) async =>
+          const Success<
+            ProdutoVendidoTendenciaDeVendaMediaMovelPageResult,
+            AppFailure
+          >(
+            ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
+              items: <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[],
+              totalCount: 0,
+            ),
+          ),
     );
 
     when(
@@ -268,7 +263,9 @@ void main() {
       >(
         loadTrendScreenUseCase,
       )
-      ..registerSingleton<LoadProdutoVendidoTendenciaDeVendaMediaMovelPageUseCase>(
+      ..registerSingleton<
+        LoadProdutoVendidoTendenciaDeVendaMediaMovelPageUseCase
+      >(
         loadTrendPageUseCase,
       )
       ..registerSingleton<LoadGrupoProdutoOptionsUseCase>(
@@ -317,13 +314,6 @@ void main() {
         agentId: any(named: 'agentId'),
         filter: any(named: 'filter'),
         clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
-        ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
         cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer((_) => screenCompleter.future);
@@ -331,6 +321,8 @@ void main() {
     await _pumpPage(tester, authController: authController);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
+
+    await _scrollTrendBodyIntoView(tester);
 
     expect(find.byType(AppSkeleton), findsNWidgets(3));
     expect(find.text('Executive summary'), findsOneWidget);
@@ -362,13 +354,6 @@ void main() {
         agentId: any(named: 'agentId'),
         filter: any(named: 'filter'),
         clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
-        ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
         cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer(
@@ -387,6 +372,8 @@ void main() {
     await _pumpPage(tester, authController: authController);
     await tester.pumpAndSettle();
 
+    await _scrollTrendBodyIntoView(tester);
+
     expect(find.text('Test detail error'), findsOneWidget);
   });
 
@@ -399,13 +386,6 @@ void main() {
         agentId: any(named: 'agentId'),
         filter: any(named: 'filter'),
         clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
-        ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
         cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer(
@@ -424,6 +404,8 @@ void main() {
     await _pumpPage(tester, authController: authController);
     await tester.pumpAndSettle();
 
+    await _scrollTrendBodyIntoView(tester);
+
     expect(find.text('Summary error'), findsOneWidget);
     expect(find.text('Executive summary'), findsNothing);
     expect(find.text('Product A'), findsNothing);
@@ -436,13 +418,6 @@ void main() {
         agentId: any(named: 'agentId'),
         filter: any(named: 'filter'),
         clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
-        ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
         cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer(
@@ -485,8 +460,10 @@ void main() {
     await _pumpPage(tester, authController: authController);
     await tester.pumpAndSettle();
 
+    await _scrollTrendBodyIntoView(tester);
+
     expect(find.text('Executive summary'), findsOneWidget);
-    expect(find.text('Products by classification'), findsOneWidget);
+    expect(find.text('By classification'), findsOneWidget);
     expect(find.text('Detailed rows'), findsOneWidget);
     expect(find.text('Product A'), findsWidgets);
     expect(find.text('Product B'), findsWidgets);
@@ -497,6 +474,8 @@ void main() {
   ) async {
     await _pumpPage(tester, authController: authController);
     await tester.pumpAndSettle();
+
+    await _scrollTrendBodyIntoView(tester);
 
     expect(
       find.text('No moving-average trend data for the selected filters.'),
@@ -539,13 +518,6 @@ void main() {
         agentId: any(named: 'agentId'),
         filter: captureAny(named: 'filter'),
         clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
-        ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
         cancelScope: any(named: 'cancelScope'),
       ),
     ).captured;
@@ -589,13 +561,6 @@ void main() {
         agentId: any(named: 'agentId'),
         filter: any(named: 'filter'),
         clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
-        ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
         cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer(
@@ -667,13 +632,6 @@ void main() {
         agentId: any(named: 'agentId'),
         filter: any(named: 'filter'),
         clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
-        ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
         cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer(
@@ -708,13 +666,6 @@ void main() {
         filter: any(named: 'filter'),
         totalCount: any(named: 'totalCount'),
         clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
-        ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
         cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer(
@@ -732,6 +683,8 @@ void main() {
 
     await _pumpPage(tester, authController: authController);
     await tester.pumpAndSettle();
+
+    await _scrollTrendBodyIntoView(tester);
 
     final shareButtons = find.byTooltip('Share chart');
     expect(shareButtons, findsWidgets);
@@ -779,13 +732,6 @@ void main() {
         agentId: any(named: 'agentId'),
         filter: any(named: 'filter'),
         clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
-        ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
         cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer(
@@ -819,6 +765,8 @@ void main() {
       locale: const Locale('pt', 'BR'),
     );
     await tester.pumpAndSettle();
+
+    await _scrollTrendBodyIntoView(tester);
 
     expect(find.text('Resumo executivo'), findsOneWidget);
     expect(find.text('Produtos crescendo'), findsOneWidget);
@@ -855,6 +803,15 @@ void main() {
   });
 }
 
+Future<void> _scrollTrendBodyIntoView(WidgetTester tester) async {
+  final scrollable = find.byType(Scrollable);
+  if (scrollable.evaluate().isEmpty) {
+    return;
+  }
+  await tester.drag(scrollable.first, const Offset(0, -1400));
+  await tester.pump();
+}
+
 Future<void> _pumpPage(
   WidgetTester tester, {
   required AuthController authController,
@@ -876,10 +833,8 @@ Future<void> _pumpPage(
                 ResolveSalesAgentClientTokenUseCase(_pumpTokenReader),
             loadTrendScreenUseCase: _pumpLoadTrendScreenUseCase,
             loadTrendPageUseCase: _pumpLoadTrendPageUseCase,
-            loadGrupoProdutoOptionsUseCase:
-                _pumpLoadGrupoProdutoOptionsUseCase,
-            loadMarcaProdutoOptionsUseCase:
-                _pumpLoadMarcaProdutoOptionsUseCase,
+            loadGrupoProdutoOptionsUseCase: _pumpLoadGrupoProdutoOptionsUseCase,
+            loadMarcaProdutoOptionsUseCase: _pumpLoadMarcaProdutoOptionsUseCase,
             loadRowsForShareUseCase: _pumpLoadRowsForShareUseCase,
           ),
         ),

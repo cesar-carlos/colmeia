@@ -161,6 +161,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_dia
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_text_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_vendedor_option.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_sql_execution_eligibility_port.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/cadastro_filial_across_agents_repository.dart';
@@ -891,13 +892,16 @@ void _registerAcrossAgentQueryRepositories(GetIt getIt) {
     ..registerLazySingleton<AgentQueryTargetResolutionCache>(
       InMemoryAgentQueryTargetResolutionCache.new,
     )
-    ..registerLazySingleton<AgentQueryTargetResolver>(
-      () => AgentQueryTargetResolver(
+    ..registerLazySingleton<AgentQueryTargetResolverImpl>(
+      () => AgentQueryTargetResolverImpl(
         clientAgentsRepository: getIt(),
         clientTokenReader: getIt<AgentClientTokenReader>(),
         resolutionCache: getIt<AgentQueryTargetResolutionCache>(),
         policy: getIt<AgentSqlExecutionEligibilityPolicy>(),
       ),
+    )
+    ..registerLazySingleton<AgentQueryTargetResolver>(
+      () => getIt<AgentQueryTargetResolverImpl>(),
     )
     ..registerLazySingleton<AgentQueryTargetWarmUpCoordinator>(
       () => AgentQueryTargetWarmUpCoordinator(
@@ -905,7 +909,7 @@ void _registerAcrossAgentQueryRepositories(GetIt getIt) {
       ),
     )
     ..registerLazySingleton<AgentQueryTargetResolutionInvalidator>(
-      () => getIt<AgentQueryTargetResolver>(),
+      () => getIt<AgentQueryTargetResolverImpl>(),
     )
     ..registerLazySingleton<AgentQueryPlanBuilder>(
       () => AgentQueryPlanBuilder(

@@ -63,7 +63,8 @@ class SalesProdutoTendenciaMediaMovelChartNavGrid extends StatelessWidget {
         return AppHubNavigationCard(
           density: AppHubNavigationCardDensity.chartNav,
           icon: icon,
-          label: title,
+          label: _chartNavLabel(l10n, chartId),
+          tooltipMessage: title,
           labelStyle: layout.narrowLabelStyle,
           showReadyBadge: ready,
           semanticsLabel: semanticsLabel,
@@ -96,7 +97,7 @@ class SalesProdutoTendenciaMediaMovelChartNavGrid extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        SizedBox(height: tokens.gapMd),
+        SizedBox(height: tokens.gapSm),
         resolvedGrid,
       ],
     );
@@ -127,6 +128,18 @@ String _chartTitle(
       l10n.salesProdutoTendenciaMediaMovelSummaryByClassificacaoTitle,
     SalesProdutoTendenciaMediaMovelChartId.impactByClassificacao =>
       l10n.salesProdutoTendenciaMediaMovelSummaryByImpactTitle,
+  };
+}
+
+String _chartNavLabel(
+  AppLocalizations l10n,
+  SalesProdutoTendenciaMediaMovelChartId chartId,
+) {
+  return switch (chartId) {
+    SalesProdutoTendenciaMediaMovelChartId.countByClassificacao =>
+      l10n.salesProdutoTendenciaMediaMovelChartNavClassificacaoLabel,
+    SalesProdutoTendenciaMediaMovelChartId.impactByClassificacao =>
+      l10n.salesProdutoTendenciaMediaMovelChartNavImpactLabel,
   };
 }
 

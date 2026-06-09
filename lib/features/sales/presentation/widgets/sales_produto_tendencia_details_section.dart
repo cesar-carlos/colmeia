@@ -4,11 +4,13 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_filtered_empty_state.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
+import 'package:colmeia/shared/design_system/app_data_grid_density.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/app_compact_data_grid_scroll_table.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
-import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
 import 'package:colmeia/shared/widgets/pagination/app_table_pagination_footer.dart';
+import 'package:colmeia/shared/widgets/pagination/app_table_pagination_notice.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -78,30 +80,11 @@ class SalesProdutoTendenciaDetailsSection extends StatelessWidget {
               enabled: true,
               loadingSemanticsLabel:
                   l10n.salesProdutoTendenciaLoadingTrendSemantics,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  for (var i = 0; i < 5; i++) ...<Widget>[
-                    Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: tokens.gapSm,
-                        vertical: tokens.gapSm,
-                      ),
-                      child: const Text(
-                        '—',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (i < 4)
-                      Divider(
-                        height: tokens.gapMd * 2,
-                        color: theme.colorScheme.outlineVariant.withValues(
-                          alpha: 0.35,
-                        ),
-                      ),
-                  ],
-                ],
+              child: appDataGridSkeletonColumn(
+                tokens: tokens,
+                dividerColor: theme.colorScheme.outlineVariant.withValues(
+                  alpha: 0.35,
+                ),
               ),
             )
           else if (rows.isEmpty)
@@ -127,49 +110,20 @@ class SalesProdutoTendenciaDetailsSection extends StatelessWidget {
                   final contentWidth = outer.isFinite && outer > 0
                       ? math.max(outer, minTable)
                       : minTable;
-                  return ChartHorizontalScrollShell(
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      child: SizedBox(
-                        width: contentWidth,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: <Widget>[
-                            SalesProdutoTendenciaDetailsTableHeader(l10n: l10n),
-                            Divider(
-                              height: tokens.gapMd * 2,
-                              color: theme.colorScheme.outlineVariant
-                                  .withValues(
-                                alpha: 0.5,
-                              ),
-                            ),
-                            ListView.separated(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              itemCount: rows.length,
-                              separatorBuilder: (_, _) => Divider(
-                                height: tokens.gapMd * 2,
-                                color: theme.colorScheme.outlineVariant
-                                    .withValues(alpha: 0.35),
-                              ),
-                              itemBuilder: (context, index) {
-                                final row = rows[index];
-                                return SalesProdutoTendenciaDetailsRow(
-                                  row: row,
-                                  l10n: l10n,
-                                  classLabel: classLabelBuilder(
-                                    row.classificacao,
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  return AppCompactDataGridScrollTable(
+                    contentWidth: contentWidth,
+                    itemCount: rows.length,
                     semanticsHint:
                         l10n.salesProdutoTendenciaDetailsHorizontalScrollCaption,
+                    header: SalesProdutoTendenciaDetailsTableHeader(l10n: l10n),
+                    itemBuilder: (context, index) {
+                      final row = rows[index];
+                      return SalesProdutoTendenciaDetailsRow(
+                        row: row,
+                        l10n: l10n,
+                        classLabel: classLabelBuilder(row.classificacao),
+                      );
+                    },
                   );
                 },
               ),
@@ -194,13 +148,10 @@ class SalesProdutoTendenciaDetailsSection extends StatelessWidget {
                   : null,
               onPageSelected: onPageSelected,
             ),
-            SizedBox(height: tokens.gapSm),
-            Text(
-              l10n.salesProdutoTendenciaDetailsNotice(
+            AppTablePaginationNotice(
+              totalPages: totalPages,
+              message: l10n.salesProdutoTendenciaDetailsNotice(
                 rowNumber.format(pageSize),
-              ),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -236,49 +187,64 @@ class SalesProdutoTendenciaDetailsTableHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.appTokens;
-    final style = theme.textTheme.labelMedium?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w700,
+    final scheme = theme.colorScheme;
+    final labelStyle = appDataGridHeaderLabelStyle(theme: theme);
+    final endLabelStyle = appDataGridHeaderLabelStyle(
+      theme: theme,
+      textAlign: TextAlign.end,
     );
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: tokens.gapSm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          SizedBox(
-            width: SalesProdutoTendenciaDetailsTableLayout._product(tokens),
-            child: Text(l10n.salesProdutoTendenciaColProduct, style: style),
+    return DecoratedBox(
+      decoration: appDataGridHeaderDecoration(scheme),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: kAppCompactHeaderRowHeight),
+        child: Padding(
+          padding: appDataGridRowPadding(tokens),
+          child: Row(
+            children: <Widget>[
+              SizedBox(
+                width: SalesProdutoTendenciaDetailsTableLayout._product(tokens),
+                child: Text(
+                  l10n.salesProdutoTendenciaColProduct,
+                  style: labelStyle,
+                ),
+              ),
+              SizedBox(
+                width: SalesProdutoTendenciaDetailsTableLayout._classificacao(
+                  tokens,
+                ),
+                child: Text(
+                  l10n.salesProdutoTendenciaColClassificacao,
+                  style: labelStyle,
+                ),
+              ),
+              SizedBox(
+                width: SalesProdutoTendenciaDetailsTableLayout._grupo(tokens),
+                child: Text(
+                  l10n.salesProdutoTendenciaColGrupo,
+                  style: labelStyle,
+                ),
+              ),
+              SizedBox(
+                width: SalesProdutoTendenciaDetailsTableLayout._delta(tokens),
+                child: Text(
+                  l10n.salesProdutoTendenciaColDiferenca,
+                  style: endLabelStyle,
+                  textAlign: TextAlign.end,
+                ),
+              ),
+              SizedBox(
+                width: SalesProdutoTendenciaDetailsTableLayout._percentual(
+                  tokens,
+                ),
+                child: Text(
+                  l10n.salesProdutoTendenciaColPercentual,
+                  style: endLabelStyle,
+                  textAlign: TextAlign.end,
+                ),
+              ),
+            ],
           ),
-          SizedBox(
-            width: SalesProdutoTendenciaDetailsTableLayout._classificacao(
-              tokens,
-            ),
-            child: Text(
-              l10n.salesProdutoTendenciaColClassificacao,
-              style: style,
-            ),
-          ),
-          SizedBox(
-            width: SalesProdutoTendenciaDetailsTableLayout._grupo(tokens),
-            child: Text(l10n.salesProdutoTendenciaColGrupo, style: style),
-          ),
-          SizedBox(
-            width: SalesProdutoTendenciaDetailsTableLayout._delta(tokens),
-            child: Text(
-              l10n.salesProdutoTendenciaColDiferenca,
-              style: style,
-              textAlign: TextAlign.end,
-            ),
-          ),
-          SizedBox(
-            width: SalesProdutoTendenciaDetailsTableLayout._percentual(tokens),
-            child: Text(
-              l10n.salesProdutoTendenciaColPercentual,
-              style: style,
-              textAlign: TextAlign.end,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -305,9 +271,9 @@ class SalesProdutoTendenciaDetailsRow extends StatelessWidget {
     const tabularFigures = <FontFeature>[FontFeature.tabularFigures()];
 
     return ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: 48),
+      constraints: const BoxConstraints(minHeight: kAppCompactDataRowHeight),
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: tokens.gapSm),
+        padding: appDataGridRowPadding(tokens),
         child: Row(
           children: <Widget>[
             SizedBox(

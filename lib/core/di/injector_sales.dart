@@ -4,7 +4,7 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_cadastr
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_produto_venda_lucratividade_mensal_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_diario_vendas_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_periodo_across_agents_use_case.dart';
-import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_tendencia_de_venda_media_movel_repository.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
@@ -14,13 +14,14 @@ import 'package:colmeia/features/sales/application/load_sales_live_map/sales_liv
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_in_memory_catalog_cache.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
+import 'package:colmeia/features/sales/application/ports/sales_live_map_batch_loader.dart';
 import 'package:colmeia/features/sales/application/ports/sales_live_map_catalog_cache.dart';
 import 'package:colmeia/features/sales/application/ports/sales_preferences_port.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_policies.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_refresh_metrics.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
-import 'package:colmeia/features/sales/data/sales_live_map_batch_loader.dart';
+import 'package:colmeia/features/sales/data/sales_live_map_batch_loader_impl.dart';
 import 'package:colmeia/features/sales/data/sales_live_map_catalog_disk_cache.dart';
 import 'package:colmeia/features/sales/data/sales_live_map_point_resolver_adapter.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
@@ -101,7 +102,7 @@ void registerInjectorSales(GetIt getIt) {
       ),
     )
     ..registerLazySingleton<SalesLiveMapBatchLoader>(
-      () => SalesLiveMapBatchLoader(
+      () => SalesLiveMapBatchLoaderImpl(
         planBuilder: const AgentQueryPlanBuilder(),
         agentQueriesRepository: getIt<AgentQueriesRepository>(),
       ),

@@ -10,7 +10,6 @@ import 'package:colmeia/features/agent_queries/application/orchestration/agent_q
 import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_periodo_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
-import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_strategy.dart';
@@ -24,6 +23,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_f
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
@@ -31,7 +31,7 @@ import 'package:colmeia/features/sales/application/sales_live_map_catalog_scope.
 import 'package:colmeia/features/sales/application/sales_live_map_internal_labels.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_refresh_metrics.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
-import 'package:colmeia/features/sales/data/sales_live_map_batch_loader.dart';
+import 'package:colmeia/features/sales/data/sales_live_map_batch_loader_impl.dart';
 import 'package:colmeia/features/sales/data/sales_live_map_catalog_disk_cache.dart';
 import 'package:colmeia/features/sales/data/sales_live_map_point_resolver_adapter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref.dart';
@@ -763,7 +763,7 @@ void main() {
           ),
         ),
         refreshMetrics: refreshMetrics,
-        batchLoader: SalesLiveMapBatchLoader(
+        batchLoader: SalesLiveMapBatchLoaderImpl(
           planBuilder: const AgentQueryPlanBuilder(),
           agentQueriesRepository: agentQueriesRepository,
         ),

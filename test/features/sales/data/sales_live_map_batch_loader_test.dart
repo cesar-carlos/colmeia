@@ -12,7 +12,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vend
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_policies.dart';
-import 'package:colmeia/features/sales/data/sales_live_map_batch_loader.dart';
+import 'package:colmeia/features/sales/data/sales_live_map_batch_loader_impl.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:result_dart/result_dart.dart';
@@ -22,7 +22,7 @@ class _MockAgentQueriesRepository extends Mock
 
 void main() {
   late _MockAgentQueriesRepository agentQueriesRepository;
-  late SalesLiveMapBatchLoader loader;
+  late SalesLiveMapBatchLoaderImpl loader;
 
   setUpAll(() {
     registerFallbackValue(
@@ -37,7 +37,7 @@ void main() {
 
   setUp(() {
     agentQueriesRepository = _MockAgentQueriesRepository();
-    loader = SalesLiveMapBatchLoader(
+    loader = SalesLiveMapBatchLoaderImpl(
       planBuilder: const AgentQueryPlanBuilder(),
       agentQueriesRepository: agentQueriesRepository,
     );
@@ -89,10 +89,10 @@ void main() {
         check(request.requestingUserId).equals('user-1');
         check(request.commands.length).equals(salesLiveMapBatchCommandCount);
         check(request.bridgeTimeoutMs).equals(
-          SalesLiveMapBatchLoader.batchBridgeTimeoutMs,
+          SalesLiveMapBatchLoadConfig.bridgeTimeoutMs,
         );
         check(request.options?.maxRows).equals(
-          SalesLiveMapBatchLoader.batchMaxRows,
+          SalesLiveMapBatchLoadConfig.batchMaxRows,
         );
         check(request.options?.maxParallelReadOnlyBatchItems).isNotNull();
         check(request.commands.first.sql).contains('Filial');
@@ -132,7 +132,7 @@ void main() {
 
     test('limits concurrent executeSqlBatch calls per wave', () async {
       const waveConcurrency = 2;
-      final waveLoader = SalesLiveMapBatchLoader(
+      final waveLoader = SalesLiveMapBatchLoaderImpl(
         planBuilder: const AgentQueryPlanBuilder(),
         agentQueriesRepository: agentQueriesRepository,
         targetWaveConcurrency: waveConcurrency,
@@ -313,7 +313,7 @@ void main() {
 
     test('loadProgressively emits once per completed target wave', () async {
       const waveConcurrency = 2;
-      final waveLoader = SalesLiveMapBatchLoader(
+      final waveLoader = SalesLiveMapBatchLoaderImpl(
         planBuilder: const AgentQueryPlanBuilder(),
         agentQueriesRepository: agentQueriesRepository,
         targetWaveConcurrency: waveConcurrency,

@@ -201,14 +201,15 @@ class ClientAgentsApprovalPollingCoordinator {
         if (_host.isDisposed) {
           return;
         }
-        _host.upsertApprovedAgentsInMemory(
-          approvedNow.values.toList(growable: false),
-        );
-        _host.invalidateTargetResolution(userId: userId);
-        _host.scheduleLocalTokenServerFlush(
-          userId: userId,
-          agentIds: approvedNow.keys,
-        );
+        _host
+          ..upsertApprovedAgentsInMemory(
+            approvedNow.values.toList(growable: false),
+          )
+          ..invalidateTargetResolution(userId: userId)
+          ..scheduleLocalTokenServerFlush(
+            userId: userId,
+            agentIds: approvedNow.keys,
+          );
       }
 
       if (approvedNow.isNotEmpty ||
@@ -223,9 +224,7 @@ class ClientAgentsApprovalPollingCoordinator {
                 remainingCount: _trackedApprovalAgentIds.length,
               ),
           kind:
-              approvedNow.isNotEmpty &&
-                  deniedNow.isEmpty &&
-                  timedOutNow.isEmpty
+              approvedNow.isNotEmpty && deniedNow.isEmpty && timedOutNow.isEmpty
               ? ClientAgentsActionFeedbackKind.success
               : ClientAgentsActionFeedbackKind.info,
         );

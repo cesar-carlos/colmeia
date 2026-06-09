@@ -63,7 +63,8 @@ class SalesProdutoTendenciaChartNavGrid extends StatelessWidget {
         return AppHubNavigationCard(
           density: AppHubNavigationCardDensity.chartNav,
           icon: icon,
-          label: title,
+          label: _chartNavLabel(l10n, chartId),
+          tooltipMessage: title,
           labelStyle: layout.narrowLabelStyle,
           showReadyBadge: ready,
           semanticsLabel: semanticsLabel,
@@ -95,7 +96,7 @@ class SalesProdutoTendenciaChartNavGrid extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        SizedBox(height: tokens.gapMd),
+        SizedBox(height: tokens.gapSm),
         resolvedGrid,
       ],
     );
@@ -121,6 +122,20 @@ String _chartTitle(AppLocalizations l10n, SalesProdutoTendenciaChartId chartId) 
   return switch (chartId) {
     SalesProdutoTendenciaChartId.classificacao =>
       l10n.salesProdutoTendenciaSummaryByClassificacaoTitle,
+    SalesProdutoTendenciaChartId.topGainers =>
+      l10n.salesProdutoTendenciaTopGainersTitle,
+    SalesProdutoTendenciaChartId.topLosers =>
+      l10n.salesProdutoTendenciaTopLosersTitle,
+  };
+}
+
+String _chartNavLabel(
+  AppLocalizations l10n,
+  SalesProdutoTendenciaChartId chartId,
+) {
+  return switch (chartId) {
+    SalesProdutoTendenciaChartId.classificacao =>
+      l10n.salesProdutoTendenciaChartNavClassificacaoLabel,
     SalesProdutoTendenciaChartId.topGainers =>
       l10n.salesProdutoTendenciaTopGainersTitle,
     SalesProdutoTendenciaChartId.topLosers =>

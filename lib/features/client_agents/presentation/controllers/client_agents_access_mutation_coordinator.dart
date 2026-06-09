@@ -108,8 +108,9 @@ class ClientAgentsAccessMutationCoordinator {
       return false;
     }
 
-    _host.setActionError(null);
-    _host.clearActionFeedback();
+    _host
+      ..setActionError(null)
+      ..clearActionFeedback();
 
     final ids = agentIds.toList(growable: false);
     final relinkedById = <String, ClientAgent>{};
@@ -187,11 +188,12 @@ class ClientAgentsAccessMutationCoordinator {
       if (_host.isDisposed) {
         return false;
       }
-      _host.invalidateTargetResolution(userId: userId);
-      _host.scheduleLocalTokenServerFlush(
-        userId: userId,
-        agentIds: relinkedById.keys,
-      );
+      _host
+        ..invalidateTargetResolution(userId: userId)
+        ..scheduleLocalTokenServerFlush(
+          userId: userId,
+          agentIds: relinkedById.keys,
+        );
     }
 
     AppLogger.info(
@@ -210,10 +212,11 @@ class ClientAgentsAccessMutationCoordinator {
         _host.setActionError(_buildBlockedRequestMessage(classification));
       } else {
         _host.setActionFeedback(
-          message: ClientAgentsPresentationMessage.clientAgentsRequestRelinkOnly(
-            relinkedCount: relinkedAgents.length,
-            pendingCleanupOk: pendingCleanupOk,
-          ),
+          message:
+              ClientAgentsPresentationMessage.clientAgentsRequestRelinkOnly(
+                relinkedCount: relinkedAgents.length,
+                pendingCleanupOk: pendingCleanupOk,
+              ),
           kind: ClientAgentsActionFeedbackKind.success,
         );
         if (onResolved != null) {
@@ -284,13 +287,15 @@ class ClientAgentsAccessMutationCoordinator {
       return;
     }
 
-    _host.setActionError(null);
-    _host.clearActionFeedback();
+    _host
+      ..setActionError(null)
+      ..clearActionFeedback();
 
     final classification = _classifyRemoveAgentIds(agentIds);
     if (classification.allowed.isEmpty) {
-      _host.setActionError(_buildBlockedRemoveMessage(classification));
-      _host.notifyMutationChanged();
+      _host
+        ..setActionError(_buildBlockedRemoveMessage(classification))
+        ..notifyMutationChanged();
       return;
     }
 
@@ -376,8 +381,9 @@ class ClientAgentsAccessMutationCoordinator {
     }
     result.fold(
       (value) {
-        _host.replaceApprovedAgents(value);
-        _host.upsertApprovedAgentsInMemory(fallbackAgents);
+        _host
+          ..replaceApprovedAgents(value)
+          ..upsertApprovedAgentsInMemory(fallbackAgents);
       },
       (failure) {
         AppLogger.warning(
@@ -401,14 +407,15 @@ class ClientAgentsAccessMutationCoordinator {
     if (_host.isDisposed) {
       return;
     }
-    _host.setPendingActionsError(
-      _host.consumeResult(
-        result: pendingResult,
-        onSuccess: _host.replacePendingActions,
-        operation: 'readPendingClientAgentActions',
-      ),
-    );
-    _host.notifyMutationChanged();
+    _host
+      ..setPendingActionsError(
+        _host.consumeResult(
+          result: pendingResult,
+          onSuccess: _host.replacePendingActions,
+          operation: 'readPendingClientAgentActions',
+        ),
+      )
+      ..notifyMutationChanged();
   }
 
   ({

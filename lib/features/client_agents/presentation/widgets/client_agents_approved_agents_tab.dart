@@ -5,11 +5,11 @@ import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_approved_agents_table.dart';
+import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_bulk_selection_bar.dart';
+import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_data_grid_widgets.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_flat_button.dart';
-import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
-import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -25,6 +25,7 @@ class ClientAgentsApprovedAgentsTab extends StatefulWidget {
     required this.requestAccessTabLabel,
     super.key,
     this.hasActiveFilters = false,
+    this.isLoading = false,
     this.pendingRemoveAgentIds = const <String>{},
     this.isResultTruncated = false,
     this.loadedCount,
@@ -37,6 +38,7 @@ class ClientAgentsApprovedAgentsTab extends StatefulWidget {
   final VoidCallback onRetry;
   final bool isMutating;
   final bool hasActiveFilters;
+  final bool isLoading;
   final String requestAccessTabLabel;
   final Set<String> pendingRemoveAgentIds;
   final bool isResultTruncated;
@@ -139,6 +141,10 @@ class _ClientAgentsApprovedAgentsTabState
       );
     }
 
+    if (widget.isLoading && widget.agents.isEmpty) {
+      return const ClientAgentsTableLoadingSkeleton();
+    }
+
     if (widget.agents.isEmpty) {
       return Text(
         widget.hasActiveFilters
@@ -147,26 +153,23 @@ class _ClientAgentsApprovedAgentsTabState
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Stack(
       children: <Widget>[
-        if (widget.isResultTruncated) ...<Widget>[
-          Text(
-            l10n.clientAgentsApprovedListTruncated(
-              rowNumber.format(widget.loadedCount ?? widget.agents.length),
-              rowNumber.format(widget.totalCount),
-            ),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.error,
-            ),
-          ),
-          SizedBox(height: tokens.gapMd),
-        ],
-        Wrap(
-          spacing: tokens.gapSm,
-          runSpacing: tokens.gapSm,
-          crossAxisAlignment: WrapCrossAlignment.center,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
+            if (widget.isResultTruncated) ...<Widget>[
+              Text(
+                l10n.clientAgentsApprovedListTruncated(
+                  rowNumber.format(widget.loadedCount ?? widget.agents.length),
+                  rowNumber.format(widget.totalCount),
+                ),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+              SizedBox(height: tokens.gapMd),
+            ],
             if (!_selecting)
               AppFlatButton(
                 label: l10n.clientAgentsApprovedBulkSelect,
@@ -174,79 +177,66 @@ class _ClientAgentsApprovedAgentsTabState
                 onPressed: widget.isMutating
                     ? null
                     : () => setState(() => _selecting = true),
-              )
-            else ...<Widget>[
-              AppSecondaryButton(
-                label: l10n.clientAgentsApprovedBulkCancel,
-                onPressed: widget.isMutating ? null : _exitSelection,
               ),
-              AppFlatButton(
-                label: l10n.clientAgentsApprovedBulkSelectAll,
-                fillWidth: false,
-                onPressed: widget.isMutating
-                    ? null
-                    : () => setState(() {
-                        _selected
-                          ..clear()
-                          ..addAll(
-                            _pageAgents.map((a) => a.agentId),
-                          );
-                      }),
-              ),
-              AppFlatButton(
-                label: l10n.clientAgentsApprovedBulkClearSelection,
-                fillWidth: false,
-                onPressed: widget.isMutating || _selected.isEmpty
-                    ? null
-                    : () => setState(_selected.clear),
-              ),
-              if (_selected.isNotEmpty)
-                AppPrimaryButton(
-                  label: l10n.clientAgentsApprovedBulkRemove(_selected.length),
-                  onPressed: widget.isMutating
-                      ? null
-                      : () => unawaited(_confirmBulkRemove()),
-                ),
-            ],
+            SizedBox(height: tokens.gapMd),
+            ClientAgentsApprovedAgentsTable(
+              l10n: l10n,
+              agents: _pageAgents,
+              totalCount: widget.agents.length,
+              currentPage: _currentPage,
+              pageSize: _pageSize,
+              onPageSelected: (page) => setState(() => _currentPage = page),
+              onPageSizeChanged: (size) => setState(() {
+                _pageSize = size;
+                _currentPage = 1;
+              }),
+              selecting: _selecting,
+              selectedAgentIds: _selected,
+              pendingRemoveAgentIds: widget.pendingRemoveAgentIds,
+              isMutating: widget.isMutating,
+              onAgentTap: (agent) {
+                context.goTo(
+                  AppRoute.agentsDetail,
+                  pathParameters: <String, String>{'agentId': agent.agentId},
+                );
+              },
+              onAgentSelectionChanged: (agent, {required selected}) {
+                setState(() {
+                  if (selected) {
+                    _selected.add(agent.agentId);
+                  } else {
+                    _selected.remove(agent.agentId);
+                  }
+                });
+              },
+              onRemoveAccess: (agent) {
+                unawaited(
+                  widget.onQueueRemoveAccess(<String>{agent.agentId}),
+                );
+              },
+            ),
+            if (_selecting) SizedBox(height: tokens.sectionSpacing * 2),
           ],
         ),
-        SizedBox(height: tokens.gapMd),
-        ClientAgentsApprovedAgentsTable(
-          l10n: l10n,
-          agents: _pageAgents,
-          totalCount: widget.agents.length,
-          currentPage: _currentPage,
-          pageSize: _pageSize,
-          onPageSelected: (page) => setState(() => _currentPage = page),
-          onPageSizeChanged: (size) => setState(() {
-            _pageSize = size;
-            _currentPage = 1;
-          }),
-          selecting: _selecting,
-          selectedAgentIds: _selected,
-          pendingRemoveAgentIds: widget.pendingRemoveAgentIds,
-          isMutating: widget.isMutating,
-          onAgentTap: (agent) {
-            context.goTo(
-              AppRoute.agentsDetail,
-              pathParameters: <String, String>{'agentId': agent.agentId},
-            );
-          },
-          onAgentSelectionChanged: (agent, {required selected}) {
-            setState(() {
-              if (selected) {
-                _selected.add(agent.agentId);
-              } else {
-                _selected.remove(agent.agentId);
-              }
-            });
-          },
-          onRemoveAccess: (agent) {
-            unawaited(
-              widget.onQueueRemoveAccess(<String>{agent.agentId}),
-            );
-          },
-        ),
+        if (_selecting)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: ClientAgentsBulkSelectionBar(
+              l10n: l10n,
+              selectedCount: _selected.length,
+              isMutating: widget.isMutating,
+              onCancel: _exitSelection,
+              onSelectAll: () => setState(() {
+                _selected
+                  ..clear()
+                  ..addAll(_pageAgents.map((a) => a.agentId));
+              }),
+              onClearSelection: () => setState(_selected.clear),
+              onRemoveSelected: () => unawaited(_confirmBulkRemove()),
+            ),
+          ),
       ],
     );
   }

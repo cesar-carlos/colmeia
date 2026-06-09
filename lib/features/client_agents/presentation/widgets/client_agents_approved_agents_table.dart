@@ -3,11 +3,12 @@ import 'dart:math' as math;
 import 'package:colmeia/features/client_agents/domain/entities/agent_catalog_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
+import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_data_grid_widgets.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_shared_widgets.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_data_grid_density.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
-import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
+import 'package:colmeia/shared/widgets/app_compact_data_grid_scroll_table.dart';
 import 'package:colmeia/shared/widgets/pagination/app_table_pagination_footer.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -24,14 +25,15 @@ abstract final class ClientAgentsApprovedAgentsTableLayout {
   static double _tradeName(AppThemeTokens t) => math.max(140, t.gapMd * 12);
   static double _catalog(AppThemeTokens t) => math.max(96, t.gapMd * 8);
   static double _connection(AppThemeTokens t) => math.max(120, t.gapMd * 10);
-  static double _actions(AppThemeTokens t) => math.max(148, t.gapMd * 12);
+  static double _actions(AppThemeTokens t) => math.max(88, t.gapMd * 7);
   static double _select(AppThemeTokens t) => math.max(40, t.gapMd * 4);
 
   static double minWidth({
     required AppThemeTokens tokens,
     required bool showSelectionColumn,
   }) {
-    var width = _name(tokens) +
+    var width =
+        _name(tokens) +
         _tradeName(tokens) +
         _catalog(tokens) +
         _connection(tokens) +
@@ -111,68 +113,36 @@ class ClientAgentsApprovedAgentsTable extends StatelessWidget {
               final contentWidth = outer.isFinite && outer > 0
                   ? math.max(outer, minTable)
                   : minTable;
-              return ChartHorizontalScrollShell(
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  child: SizedBox(
-                    width: contentWidth,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        ClientAgentsApprovedAgentsTableHeader(
-                          l10n: l10n,
-                          showSelectionColumn: selecting,
-                        ),
-                        Divider(
-                          height: tokens.gapMd * 2,
-                          color: theme.colorScheme.outlineVariant.withValues(
-                            alpha: 0.5,
-                          ),
-                        ),
-                        ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: agents.length,
-                          separatorBuilder: (_, _) => Divider(
-                            height: tokens.gapMd * 2,
-                            color: theme.colorScheme.outlineVariant.withValues(
-                              alpha: 0.35,
-                            ),
-                          ),
-                          itemBuilder: (context, index) {
-                            final agent = agents[index];
-                            return ClientAgentsApprovedAgentsTableRow(
-                              agent: agent,
-                              l10n: l10n,
-                              selecting: selecting,
-                              selected: selectedAgentIds.contains(agent.agentId),
-                              pendingRemove: pendingRemoveAgentIds.contains(
-                                agent.agentId,
-                              ),
-                              isMutating: isMutating,
-                              onTap: selecting
-                                  ? () => onAgentSelectionChanged(
-                                      agent,
-                                      selected: !selectedAgentIds.contains(
-                                        agent.agentId,
-                                      ),
-                                    )
-                                  : () => onAgentTap(agent),
-                              onSelectionChanged: (selected) =>
-                                  onAgentSelectionChanged(
-                                    agent,
-                                    selected: selected,
-                                  ),
-                              onRemoveAccess: () => onRemoveAccess(agent),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+              return AppCompactDataGridScrollTable(
+                contentWidth: contentWidth,
+                itemCount: agents.length,
                 semanticsHint: l10n.clientAgentsApprovedTableHorizontalScroll,
+                header: ClientAgentsApprovedAgentsTableHeader(
+                  l10n: l10n,
+                  showSelectionColumn: selecting,
+                ),
+                itemBuilder: (context, index) {
+                  final agent = agents[index];
+                  return ClientAgentsApprovedAgentsTableRow(
+                    agent: agent,
+                    l10n: l10n,
+                    selecting: selecting,
+                    selected: selectedAgentIds.contains(agent.agentId),
+                    pendingRemove: pendingRemoveAgentIds.contains(
+                      agent.agentId,
+                    ),
+                    isMutating: isMutating,
+                    onTap: selecting
+                        ? () => onAgentSelectionChanged(
+                            agent,
+                            selected: !selectedAgentIds.contains(agent.agentId),
+                          )
+                        : () => onAgentTap(agent),
+                    onSelectionChanged: (selected) =>
+                        onAgentSelectionChanged(agent, selected: selected),
+                    onRemoveAccess: () => onRemoveAccess(agent),
+                  );
+                },
               );
             },
           ),
@@ -227,18 +197,21 @@ class ClientAgentsApprovedAgentsTableHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
-    final style = theme.textTheme.labelMedium?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w700,
-    );
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: tokens.gapSm),
+    final style = appDataGridHeaderLabelStyle(theme: theme);
+    return ClientAgentsDataGridHeaderShell(
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           if (showSelectionColumn)
             SizedBox(
               width: ClientAgentsApprovedAgentsTableLayout._select(tokens),
+              child: Tooltip(
+                message: l10n.clientAgentsApprovedBulkSelectColumnHint,
+                child: Icon(
+                  Icons.check_box_outlined,
+                  size: 18,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
             ),
           SizedBox(
             width: ClientAgentsApprovedAgentsTableLayout._name(tokens),
@@ -304,21 +277,28 @@ class ClientAgentsApprovedAgentsTableRow extends StatelessWidget {
       AgentConnectionStatus.unknown => l10n.agentConnectionUnknown,
     };
 
-    final row = Padding(
-      padding: EdgeInsets.symmetric(horizontal: tokens.gapSm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          if (selecting)
-            SizedBox(
-              width: ClientAgentsApprovedAgentsTableLayout._select(tokens),
-              child: Checkbox(
-                value: selected,
-                onChanged: isMutating
-                    ? null
-                    : (value) => onSelectionChanged(value ?? false),
+    final rowBackground = selecting && selected
+        ? theme.colorScheme.primaryContainer.withValues(alpha: 0.35)
+        : Colors.transparent;
+
+    final row = DecoratedBox(
+      decoration: BoxDecoration(color: rowBackground),
+      child: Padding(
+        padding: appDataGridRowPadding(tokens),
+        child: Row(
+          children: <Widget>[
+            if (selecting)
+              SizedBox(
+                width: ClientAgentsApprovedAgentsTableLayout._select(tokens),
+                child: Checkbox(
+                  value: selected,
+                  visualDensity: VisualDensity.standard,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  onChanged: isMutating
+                      ? null
+                      : (value) => onSelectionChanged(value ?? false),
+                ),
               ),
-            ),
           SizedBox(
             width: ClientAgentsApprovedAgentsTableLayout._name(tokens),
             child: Text(
@@ -351,7 +331,8 @@ class ClientAgentsApprovedAgentsTableRow extends StatelessWidget {
               kind: switch (agent.connectionStatus) {
                 AgentConnectionStatus.online =>
                   ClientAgentsStatusChipKind.success,
-                AgentConnectionStatus.offline => ClientAgentsStatusChipKind.error,
+                AgentConnectionStatus.offline =>
+                  ClientAgentsStatusChipKind.error,
                 AgentConnectionStatus.unknown =>
                   ClientAgentsStatusChipKind.neutral,
               },
@@ -359,22 +340,27 @@ class ClientAgentsApprovedAgentsTableRow extends StatelessWidget {
           ),
           SizedBox(
             width: ClientAgentsApprovedAgentsTableLayout._actions(tokens),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 if (pendingRemove)
-                  ClientAgentsStatusChip(
-                    label: l10n.clientAgentsPendingChipRemove,
-                    kind: ClientAgentsStatusChipKind.info,
+                  Flexible(
+                    child: ClientAgentsStatusChip(
+                      label: l10n.clientAgentsPendingChipRemove,
+                      kind: ClientAgentsStatusChipKind.info,
+                    ),
                   ),
                 if (agent.isStaleCache)
-                  ClientAgentsStatusChip(
-                    label: l10n.clientAgentsApprovedStaleCacheChip,
-                    kind: ClientAgentsStatusChipKind.neutral,
+                  Flexible(
+                    child: ClientAgentsStatusChip(
+                      label: l10n.clientAgentsApprovedStaleCacheChip,
+                      kind: ClientAgentsStatusChipKind.neutral,
+                    ),
                   ),
                 if (!selecting)
-                  AppSecondaryButton(
-                    label: l10n.clientAgentsRemoveAccess,
+                  ClientAgentsDataGridActionIconButton(
+                    tooltip: l10n.clientAgentsRemoveAccess,
+                    icon: Icons.link_off_rounded,
                     onPressed: isMutating || pendingRemove
                         ? null
                         : onRemoveAccess,
@@ -382,7 +368,8 @@ class ClientAgentsApprovedAgentsTableRow extends StatelessWidget {
               ],
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
 
@@ -391,7 +378,9 @@ class ClientAgentsApprovedAgentsTableRow extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
+          constraints: const BoxConstraints(
+            minHeight: kAppCompactDataRowHeight,
+          ),
           child: row,
         ),
       ),

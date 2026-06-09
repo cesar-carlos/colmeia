@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:colmeia/core/logging/app_logger.dart';
-import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_resolver.dart';
 
 /// Fire-and-forget pre-resolution of approved agents + tokens after login.
 ///

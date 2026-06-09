@@ -22,7 +22,7 @@ class _MockAgentClientTokenReader extends Mock
 void main() {
   late _MockClientAgentsRepository agentsRepository;
   late _MockAgentClientTokenReader tokenStore;
-  late AgentQueryTargetResolver resolver;
+  late AgentQueryTargetResolverImpl resolver;
   late InMemoryAgentQueryTargetResolutionCache resolutionCache;
 
   setUpAll(() {
@@ -34,7 +34,7 @@ void main() {
     agentsRepository = _MockClientAgentsRepository();
     tokenStore = _MockAgentClientTokenReader();
     resolutionCache = InMemoryAgentQueryTargetResolutionCache();
-    resolver = AgentQueryTargetResolver(
+    resolver = AgentQueryTargetResolverImpl(
       clientAgentsRepository: agentsRepository,
       clientTokenReader: tokenStore,
       resolutionCache: resolutionCache,
@@ -202,7 +202,7 @@ void main() {
     () async {
       var current = DateTime.utc(2026, 5, 14, 10);
       final cache = InMemoryAgentQueryTargetResolutionCache(now: () => current);
-      resolver = AgentQueryTargetResolver(
+      resolver = AgentQueryTargetResolverImpl(
         clientAgentsRepository: agentsRepository,
         clientTokenReader: tokenStore,
         resolutionCache: cache,
@@ -275,7 +275,7 @@ void main() {
   test('invalidate clears cached resolution for the user', () async {
     var current = DateTime.utc(2026, 5, 14, 10);
     final cache = InMemoryAgentQueryTargetResolutionCache(now: () => current);
-    resolver = AgentQueryTargetResolver(
+    resolver = AgentQueryTargetResolverImpl(
       clientAgentsRepository: agentsRepository,
       clientTokenReader: tokenStore,
       resolutionCache: cache,

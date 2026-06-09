@@ -5,11 +5,11 @@ library;
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
-import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_catalog_scope.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_policies.dart';
-import 'package:colmeia/features/sales/data/sales_live_map_batch_loader.dart';
+import 'package:colmeia/features/sales/data/sales_live_map_batch_loader_impl.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:flutter_test/flutter_test.dart' hide group;
 import 'package:test_api/scaffolding.dart' show group;
@@ -52,7 +52,7 @@ void main() {
           final countingRepository = E2eCountingAgentQueriesRepository(
             getIt<AgentQueriesRepository>(),
           );
-          final loader = SalesLiveMapBatchLoader(
+          final loader = SalesLiveMapBatchLoaderImpl(
             planBuilder: const AgentQueryPlanBuilder(),
             agentQueriesRepository: countingRepository,
             targetWaveConcurrency: 1,

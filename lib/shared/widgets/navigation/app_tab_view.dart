@@ -14,6 +14,9 @@ class AppTabViewItem {
   final String? semanticLabel;
 }
 
+/// Invoked before switching tabs. Return `false` to keep the current tab.
+typedef AppTabChangeGuard = Future<bool> Function(int fromIndex, int toIndex);
+
 /// Compact horizontal tab navigation with inline content switching.
 class AppTabView extends StatefulWidget {
   const AppTabView({
@@ -21,13 +24,23 @@ class AppTabView extends StatefulWidget {
     super.key,
     this.initialIndex = 0,
     this.onChanged,
+    this.onTabChangeGuard,
     this.contentPadding,
+    this.tabIndexListenable,
   }) : assert(items.length > 0, 'AppTabView requires at least one item.');
 
   final List<AppTabViewItem> items;
   final int initialIndex;
   final ValueChanged<int>? onChanged;
+
+  /// When set, invoked before the selected tab changes. Return `false` to
+  /// block the switch (e.g. unsaved form edits).
+  final AppTabChangeGuard? onTabChangeGuard;
   final EdgeInsetsGeometry? contentPadding;
+
+  /// When set, tab selection is driven by this notifier. User taps still
+  /// update the notifier so parents can switch tabs programmatically.
+  final ValueNotifier<int>? tabIndexListenable;
 
   @override
   State<AppTabView> createState() => _AppTabViewState();
@@ -35,20 +48,40 @@ class AppTabView extends StatefulWidget {
 
 class _AppTabViewState extends State<AppTabView> {
   late final ValueNotifier<int> _selectedIndex;
+  late final bool _ownsSelectedIndex;
 
   @override
   void initState() {
     super.initState();
-    _selectedIndex = ValueNotifier<int>(_clampIndex(widget.initialIndex));
+    final external = widget.tabIndexListenable;
+    if (external != null) {
+      _ownsSelectedIndex = false;
+      _selectedIndex = external
+        ..addListener(_onSelectedIndexChanged)
+        ..value = _clampIndex(external.value);
+    } else {
+      _selectedIndex = ValueNotifier<int>(_clampIndex(widget.initialIndex));
+      _ownsSelectedIndex = true;
+    }
   }
 
   @override
   void didUpdateWidget(covariant AppTabView oldWidget) {
     super.didUpdateWidget(oldWidget);
 
+    if (oldWidget.tabIndexListenable != widget.tabIndexListenable) {
+      throw StateError(
+        'AppTabView.tabIndexListenable must not change after mount.',
+      );
+    }
+
     final nextIndex = _clampIndex(_selectedIndex.value);
     if (_selectedIndex.value != nextIndex) {
       _selectedIndex.value = nextIndex;
+      return;
+    }
+
+    if (!_ownsSelectedIndex) {
       return;
     }
 
@@ -59,17 +92,35 @@ class _AppTabViewState extends State<AppTabView> {
 
   @override
   void dispose() {
-    _selectedIndex.dispose();
+    if (_ownsSelectedIndex) {
+      _selectedIndex.dispose();
+    } else {
+      _selectedIndex.removeListener(_onSelectedIndexChanged);
+    }
     super.dispose();
+  }
+
+  void _onSelectedIndexChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   int _clampIndex(int index) {
     return index.clamp(0, widget.items.length - 1);
   }
 
-  void _handleTabChange(int index) {
+  Future<void> _handleTabChange(int index) async {
     if (_selectedIndex.value == index) {
       return;
+    }
+
+    final guard = widget.onTabChangeGuard;
+    if (guard != null) {
+      final allowed = await guard(_selectedIndex.value, index);
+      if (!allowed || !mounted) {
+        return;
+      }
     }
 
     _selectedIndex.value = index;

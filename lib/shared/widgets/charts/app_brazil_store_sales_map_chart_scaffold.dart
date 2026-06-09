@@ -236,7 +236,7 @@ class _BrazilMapChartScaffold extends StatelessWidget {
                   diagnostics: snapshot.diagnostics,
                 )
               : null,
-          markerLegend: BrazilMapChartScaffoldMarkerLegend(
+          markerLegend: _BrazilMapChartScaffoldMarkerLegend(
             state: state,
             chart: chart,
             snapshot: snapshot,
@@ -284,8 +284,8 @@ class _BrazilMapChartScaffold extends StatelessWidget {
   }
 }
 
-class BrazilMapChartScaffoldMarkerLegend {
-  const BrazilMapChartScaffoldMarkerLegend({
+class _BrazilMapChartScaffoldMarkerLegend {
+  const _BrazilMapChartScaffoldMarkerLegend({
     required this.state,
     required this.chart,
     required this.snapshot,

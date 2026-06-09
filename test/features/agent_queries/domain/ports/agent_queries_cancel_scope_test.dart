@@ -2,11 +2,12 @@ import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('cancelAll invokes relay, socket, and streaming handlers separately', () {
+  test('cancelAll invokes relay, socket, rest, and streaming handlers', () {
     final scope = AgentQueriesCancelScope(traceId: 'trace-1');
     final relayIds = <String>[];
     final socketIds = <String>[];
     final streams = <AgentStreamingSqlCancelTarget>[];
+    var restCancelled = false;
 
     scope
       ..relayCancelHandler = relayIds.addAll
@@ -14,6 +15,7 @@ void main() {
       ..streamingSqlCancelHandler = streams.addAll
       ..trackRelayPending('relay-req-1')
       ..trackSocketPending('socket-rpc-1')
+      ..trackRestPending(() => restCancelled = true)
       ..trackStreamingSql(
         const AgentStreamingSqlCancelTarget(
           agentId: 'a1',
@@ -25,6 +27,7 @@ void main() {
     expect(scope.isCancelled, isTrue);
     expect(relayIds, ['relay-req-1']);
     expect(socketIds, ['socket-rpc-1']);
+    expect(restCancelled, isTrue);
     expect(streams, hasLength(1));
     expect(streams.first.streamId, 's1');
   });

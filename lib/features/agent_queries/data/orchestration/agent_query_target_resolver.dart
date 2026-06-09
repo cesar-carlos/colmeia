@@ -4,6 +4,7 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_eligibility_policy.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_resolver.dart';
 import 'package:colmeia/features/client_agents/domain/client_agent_display_name.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
@@ -16,9 +17,9 @@ import 'package:colmeia/shared/ports/agent_query_target_resolution_cache.dart';
 import 'package:colmeia/shared/ports/agent_query_target_resolution_invalidator.dart';
 import 'package:result_dart/result_dart.dart';
 
-class AgentQueryTargetResolver
-    implements AgentQueryTargetResolutionInvalidator {
-  AgentQueryTargetResolver({
+class AgentQueryTargetResolverImpl
+    implements AgentQueryTargetResolver, AgentQueryTargetResolutionInvalidator {
+  AgentQueryTargetResolverImpl({
     required ClientAgentsRepository clientAgentsRepository,
     required AgentClientTokenReader clientTokenReader,
     required AgentQueryTargetResolutionCache resolutionCache,
@@ -37,6 +38,7 @@ class AgentQueryTargetResolver
   static const int _maxApprovedAgentsPaginationPages = 400;
   static const String _paginationSignatureSeparator = '\u001f';
 
+  @override
   Future<AppResult<AgentQueryTargetResolution>> resolve({
     required String userId,
     Set<String>? selectedAgentIds,
