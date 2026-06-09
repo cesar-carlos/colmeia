@@ -4178,7 +4178,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesProdutoTendenciaSummaryByClassificacaoSubtitle =>
-      'Distribution of products across the full filtered result.';
+      'Same counts as the summary above, grouped by sales trend.';
+
+  @override
+  String get salesProdutoTendenciaSummaryByClassificacaoDrillDownHint =>
+      'Tap a bar to filter the detail grid below.';
+
+  @override
+  String get salesProdutoTendenciaClassificacaoDescGrowing =>
+      'sales rose more than 20% vs previous period';
+
+  @override
+  String get salesProdutoTendenciaClassificacaoDescFalling =>
+      'sales fell more than 20% vs previous period';
+
+  @override
+  String get salesProdutoTendenciaClassificacaoDescNew =>
+      'sold in current period, not in previous';
+
+  @override
+  String get salesProdutoTendenciaClassificacaoDescStopped =>
+      'sold in previous period, stopped in current';
+
+  @override
+  String get salesProdutoTendenciaClassificacaoDescStable =>
+      'change between −20% and +20%';
 
   @override
   String get salesProdutoTendenciaTopMoversTitle => 'Top movers';
@@ -4188,10 +4212,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Highest growth and decline in the selected period.';
 
   @override
-  String get salesProdutoTendenciaTopGainersTitle => 'Top 5 gainers';
+  String get salesProdutoTendenciaTopGainersTitle => 'Top 15 gainers';
 
   @override
-  String get salesProdutoTendenciaTopLosersTitle => 'Top 5 losers';
+  String get salesProdutoTendenciaTopLosersTitle => 'Top 15 losers';
 
   @override
   String get salesProdutoTendenciaDetailsTitle => 'Detailed rows';

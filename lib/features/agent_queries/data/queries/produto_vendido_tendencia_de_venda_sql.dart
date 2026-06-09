@@ -37,7 +37,7 @@
 // Pagination bounds are inlined as validated integer literals to keep the query
 // under bridge named-bind limits.
 abstract final class ProdutoVendidoTendenciaDeVendaSql {
-  static const int topMoversLimit = 5;
+  static const int topMoversLimit = 15;
 
   static String filteredUniverseCtes({
     String? searchTerm,

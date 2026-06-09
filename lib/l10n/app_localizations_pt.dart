@@ -4237,7 +4237,31 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesProdutoTendenciaSummaryByClassificacaoSubtitle =>
-      'Distribuição dos produtos em todo o resultado filtrado.';
+      'Mesmas quantidades do resumo acima, agrupadas por tendência de venda.';
+
+  @override
+  String get salesProdutoTendenciaSummaryByClassificacaoDrillDownHint =>
+      'Toque em uma barra para filtrar a grade de detalhes abaixo.';
+
+  @override
+  String get salesProdutoTendenciaClassificacaoDescGrowing =>
+      'vendas subiram mais de 20% vs período anterior';
+
+  @override
+  String get salesProdutoTendenciaClassificacaoDescFalling =>
+      'vendas caíram mais de 20% vs período anterior';
+
+  @override
+  String get salesProdutoTendenciaClassificacaoDescNew =>
+      'vendeu no atual, não vendeu no anterior';
+
+  @override
+  String get salesProdutoTendenciaClassificacaoDescStopped =>
+      'vendeu no anterior, parou no atual';
+
+  @override
+  String get salesProdutoTendenciaClassificacaoDescStable =>
+      'variação entre −20% e +20%';
 
   @override
   String get salesProdutoTendenciaTopMoversTitle => 'Principais movimentações';
@@ -4247,10 +4271,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Maiores altas e quedas no período selecionado.';
 
   @override
-  String get salesProdutoTendenciaTopGainersTitle => 'Top 5 altas';
+  String get salesProdutoTendenciaTopGainersTitle => 'Top 15 altas';
 
   @override
-  String get salesProdutoTendenciaTopLosersTitle => 'Top 5 quedas';
+  String get salesProdutoTendenciaTopLosersTitle => 'Top 15 quedas';
 
   @override
   String get salesProdutoTendenciaDetailsTitle => 'Detalhes';
@@ -9003,7 +9027,31 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesProdutoTendenciaSummaryByClassificacaoSubtitle =>
-      'Distribuição dos produtos em todo o resultado filtrado.';
+      'Mesmas quantidades do resumo acima, agrupadas por tendência de venda.';
+
+  @override
+  String get salesProdutoTendenciaSummaryByClassificacaoDrillDownHint =>
+      'Toque em uma barra para filtrar a grade de detalhes abaixo.';
+
+  @override
+  String get salesProdutoTendenciaClassificacaoDescGrowing =>
+      'vendas subiram mais de 20% vs período anterior';
+
+  @override
+  String get salesProdutoTendenciaClassificacaoDescFalling =>
+      'vendas caíram mais de 20% vs período anterior';
+
+  @override
+  String get salesProdutoTendenciaClassificacaoDescNew =>
+      'vendeu no atual, não vendeu no anterior';
+
+  @override
+  String get salesProdutoTendenciaClassificacaoDescStopped =>
+      'vendeu no anterior, parou no atual';
+
+  @override
+  String get salesProdutoTendenciaClassificacaoDescStable =>
+      'variação entre −20% e +20%';
 
   @override
   String get salesProdutoTendenciaTopMoversTitle => 'Principais movimentações';
@@ -9013,10 +9061,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Maiores altas e quedas no período selecionado.';
 
   @override
-  String get salesProdutoTendenciaTopGainersTitle => 'Top 5 altas';
+  String get salesProdutoTendenciaTopGainersTitle => 'Top 15 altas';
 
   @override
-  String get salesProdutoTendenciaTopLosersTitle => 'Top 5 quedas';
+  String get salesProdutoTendenciaTopLosersTitle => 'Top 15 quedas';
 
   @override
   String get salesProdutoTendenciaDetailsTitle => 'Detalhes';

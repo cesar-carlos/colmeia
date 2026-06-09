@@ -22,9 +22,11 @@ class SalesProdutoTendenciaBodySection extends StatelessWidget {
     required this.onOpenFilters,
     required this.onChartSelected,
     required this.retryCountdownLabel,
+    this.detailsSectionKey,
     super.key,
   });
 
+  final GlobalKey? detailsSectionKey;
   final VoidCallback onRetryReload;
   final VoidCallback onClearDetailFilters;
   final VoidCallback onOpenFilters;
@@ -107,6 +109,7 @@ class SalesProdutoTendenciaBodySection extends StatelessWidget {
             ),
             SizedBox(height: tokens.sectionSpacing),
             SalesProdutoTendenciaDetailsSection(
+              key: detailsSectionKey,
               l10n: l10n,
               rows: state.rows,
               totalCount: state.totalCount,

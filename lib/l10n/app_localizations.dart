@@ -6876,8 +6876,44 @@ abstract class AppLocalizations {
   /// No description provided for @salesProdutoTendenciaSummaryByClassificacaoSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Distribution of products across the full filtered result.'**
+  /// **'Same counts as the summary above, grouped by sales trend.'**
   String get salesProdutoTendenciaSummaryByClassificacaoSubtitle;
+
+  /// No description provided for @salesProdutoTendenciaSummaryByClassificacaoDrillDownHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a bar to filter the detail grid below.'**
+  String get salesProdutoTendenciaSummaryByClassificacaoDrillDownHint;
+
+  /// No description provided for @salesProdutoTendenciaClassificacaoDescGrowing.
+  ///
+  /// In en, this message translates to:
+  /// **'sales rose more than 20% vs previous period'**
+  String get salesProdutoTendenciaClassificacaoDescGrowing;
+
+  /// No description provided for @salesProdutoTendenciaClassificacaoDescFalling.
+  ///
+  /// In en, this message translates to:
+  /// **'sales fell more than 20% vs previous period'**
+  String get salesProdutoTendenciaClassificacaoDescFalling;
+
+  /// No description provided for @salesProdutoTendenciaClassificacaoDescNew.
+  ///
+  /// In en, this message translates to:
+  /// **'sold in current period, not in previous'**
+  String get salesProdutoTendenciaClassificacaoDescNew;
+
+  /// No description provided for @salesProdutoTendenciaClassificacaoDescStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'sold in previous period, stopped in current'**
+  String get salesProdutoTendenciaClassificacaoDescStopped;
+
+  /// No description provided for @salesProdutoTendenciaClassificacaoDescStable.
+  ///
+  /// In en, this message translates to:
+  /// **'change between −20% and +20%'**
+  String get salesProdutoTendenciaClassificacaoDescStable;
 
   /// No description provided for @salesProdutoTendenciaTopMoversTitle.
   ///
@@ -6894,13 +6930,13 @@ abstract class AppLocalizations {
   /// No description provided for @salesProdutoTendenciaTopGainersTitle.
   ///
   /// In en, this message translates to:
-  /// **'Top 5 gainers'**
+  /// **'Top 15 gainers'**
   String get salesProdutoTendenciaTopGainersTitle;
 
   /// No description provided for @salesProdutoTendenciaTopLosersTitle.
   ///
   /// In en, this message translates to:
-  /// **'Top 5 losers'**
+  /// **'Top 15 losers'**
   String get salesProdutoTendenciaTopLosersTitle;
 
   /// No description provided for @salesProdutoTendenciaDetailsTitle.

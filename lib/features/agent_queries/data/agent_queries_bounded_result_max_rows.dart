@@ -100,6 +100,6 @@ abstract final class AgentQueriesBoundedResultMaxRows {
   /// Summary grouped by trend classification (`CRESCENDO`, `CAINDO`, etc.).
   static const int produtoVendidoTendenciaDeVendaSummary = 32;
 
-  /// Top gainers/losers (`TOP 5` each) for explicit-period trend screens.
-  static const int produtoVendidoTendenciaDeVendaTopMovers = 10;
+  /// Top gainers/losers (`TOP 15` each) for explicit-period trend screens.
+  static const int produtoVendidoTendenciaDeVendaTopMovers = 15;
 }

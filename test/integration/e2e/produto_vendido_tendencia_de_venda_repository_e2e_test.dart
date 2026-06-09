@@ -5,6 +5,7 @@ import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart' show SessionFailure;
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_use_case.dart';
+import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_tendencia_de_venda_sql.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
@@ -350,6 +351,18 @@ void main() {
               checkSummaryInvariants(data.summaryRows);
               checkTrendRowsInvariants(data.topGainers);
               checkTrendRowsInvariants(data.topLosers);
+              expect(
+                data.topGainers.length,
+                lessThanOrEqualTo(
+                  ProdutoVendidoTendenciaDeVendaSql.topMoversLimit,
+                ),
+              );
+              expect(
+                data.topLosers.length,
+                lessThanOrEqualTo(
+                  ProdutoVendidoTendenciaDeVendaSql.topMoversLimit,
+                ),
+              );
               for (final row in data.topGainers) {
                 expect(row.percentualTendencia, greaterThan(0));
               }

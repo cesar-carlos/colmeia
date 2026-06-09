@@ -2088,11 +2088,29 @@
   "salesProdutoTendenciaSummaryTitle": "Executive summary",
   "salesProdutoTendenciaSummarySubtitle": "Overview of product movement by trend classification.",
   "salesProdutoTendenciaSummaryByClassificacaoTitle": "Products by classification",
-  "salesProdutoTendenciaSummaryByClassificacaoSubtitle": "Distribution of products across the full filtered result.",
+  "salesProdutoTendenciaSummaryByClassificacaoSubtitle": "Same counts as the summary above, grouped by sales trend.",
+  "salesProdutoTendenciaSummaryByClassificacaoDrillDownHint": "Tap a bar to filter the detail grid below.",
+  "salesProdutoTendenciaSummaryClassificacaoLegend": "Growing: +20% vs prior · Falling: −20% · New: sold now, not before · Stopped: sold before, not now · Stable: within ±20%",
+  "salesProdutoTendenciaKpiFilterSemantics": "Filter details by {classification}",
+  "@salesProdutoTendenciaKpiFilterSemantics": {
+    "placeholders": {
+      "classification": {
+        "type": "String"
+      }
+    }
+  },
+  "salesProdutoTendenciaRemoveClassificacaoFilterSemantics": "Remove classification filter",
+  "salesProdutoTendenciaClassificacaoDescGrowing": "sales rose more than 20% vs previous period",
+  "salesProdutoTendenciaClassificacaoDescFalling": "sales fell more than 20% vs previous period",
+  "salesProdutoTendenciaClassificacaoDescNew": "sold in current period, not in previous",
+  "salesProdutoTendenciaClassificacaoDescStopped": "sold in previous period, stopped in current",
+  "salesProdutoTendenciaClassificacaoDescStable": "change between −20% and +20%",
   "salesProdutoTendenciaTopMoversTitle": "Top movers",
   "salesProdutoTendenciaTopMoversSubtitle": "Highest growth and decline in the selected period.",
-  "salesProdutoTendenciaTopGainersTitle": "Top 5 gainers",
-  "salesProdutoTendenciaTopLosersTitle": "Top 5 losers",
+  "salesProdutoTendenciaTopGainersTitle": "Top 15 gainers",
+  "salesProdutoTendenciaTopGainersSubtitle": "Largest quantity increases in the selected period.",
+  "salesProdutoTendenciaTopLosersTitle": "Top 15 losers",
+  "salesProdutoTendenciaTopLosersSubtitle": "Largest quantity decreases in the selected period.",
   "salesProdutoTendenciaDetailsTitle": "Detailed rows",
   "salesProdutoTendenciaDetailsSubtitle": "Paginated detail with product, classification, and group.",
   "salesProdutoTendenciaDetailsHorizontalScrollCaption": "Swipe sideways to see all columns.",
@@ -2113,8 +2131,21 @@
   "salesProdutoTendenciaColProduct": "Product",
   "salesProdutoTendenciaColClassificacao": "Classification",
   "salesProdutoTendenciaColGrupo": "Group",
+  "salesProdutoTendenciaColQtdAnterior": "Previous qty.",
+  "salesProdutoTendenciaColQtdAtual": "Current qty.",
   "salesProdutoTendenciaColDiferenca": "Delta",
   "salesProdutoTendenciaColPercentual": "Trend %",
+  "salesProdutoTendenciaDetailsPeriodComparisonCaption": "Quantities compare previous ({previous}) vs current ({current}) period.",
+  "@salesProdutoTendenciaDetailsPeriodComparisonCaption": {
+    "placeholders": {
+      "previous": {
+        "type": "String"
+      },
+      "current": {
+        "type": "String"
+      }
+    }
+  },
   "salesProdutoTendenciaClassificacaoStopped": "Stopped selling",
   "salesProdutoTendenciaClassificacaoNew": "New product",
   "salesProdutoTendenciaClassificacaoGrowing": "Growing",
@@ -2175,6 +2206,22 @@
   "salesProdutoTendenciaMediaMovelSummaryUnavailableMessage": "The summary could not be loaded, so the page is showing an estimate based on the current rows.",
   "salesProdutoTendenciaMediaMovelSummaryByClassificacaoTitle": "Products by classification",
   "salesProdutoTendenciaMediaMovelSummaryByClassificacaoSubtitle": "Distribution of products across the full filtered result.",
+  "salesProdutoTendenciaMediaMovelSummaryByClassificacaoDrillDownHint": "Tap a bar to filter the detail grid below.",
+  "salesProdutoTendenciaMediaMovelSummaryClassificacaoLegend": "Growing: +20% vs prior avg. · Falling: −20% · New: sold now, not before · Stopped: sold before, not now · Stable: within ±20%",
+  "salesProdutoTendenciaMediaMovelClassificacaoDescGrowing": "moving average rose more than 20% vs previous window",
+  "salesProdutoTendenciaMediaMovelClassificacaoDescFalling": "moving average fell more than 20% vs previous window",
+  "salesProdutoTendenciaMediaMovelClassificacaoDescNew": "sold in current window, not in previous",
+  "salesProdutoTendenciaMediaMovelClassificacaoDescStopped": "sold in previous window, stopped in current",
+  "salesProdutoTendenciaMediaMovelClassificacaoDescStable": "change between −20% and +20%",
+  "salesProdutoTendenciaMediaMovelKpiFilterSemantics": "Filter details by {classification}",
+  "@salesProdutoTendenciaMediaMovelKpiFilterSemantics": {
+    "placeholders": {
+      "classification": {
+        "type": "String"
+      }
+    }
+  },
+  "salesProdutoTendenciaMediaMovelRemoveClassificacaoFilterSemantics": "Remove classification filter",
   "salesProdutoTendenciaMediaMovelSummaryByImpactTitle": "Impact by classification",
   "salesProdutoTendenciaMediaMovelChartNavClassificacaoLabel": "By classification",
   "salesProdutoTendenciaMediaMovelChartNavImpactLabel": "By impact",

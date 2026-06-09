@@ -734,6 +734,9 @@ class _ClientTokenPolicyCardState extends State<_ClientTokenPolicyCard> {
     if (c.isLoadingClientTokenPolicy) {
       return;
     }
+    if (c.clientTokenPolicyError != null) {
+      return;
+    }
     if (c.clientTokenPolicy != null || c.clientTokenPolicyUnsupported) {
       return;
     }
@@ -1181,22 +1184,13 @@ class _ClientAgentDetailConnectionTab extends StatelessWidget {
           ),
         if (status == ClientAgentTokenStatus.configured) ...<Widget>[
           SizedBox(height: tokens.gapMd),
-          if (controller.isLoadingClientTokenPolicy)
-            AppSkeleton(
-              enabled: true,
-              child: AppSectionCardWithHeading(
-                title: ' ',
-                child: SizedBox(height: tokens.contentSpacing * 2),
-              ),
-            )
-          else
-            _ClientTokenPolicyCard(
-              agentId: agentId,
-              controller: controller,
-              l10n: l10n,
-              tokens: tokens,
-              onRequestNewToken: onRequestNewToken,
-            ),
+          _ClientTokenPolicyCard(
+            agentId: agentId,
+            controller: controller,
+            l10n: l10n,
+            tokens: tokens,
+            onRequestNewToken: onRequestNewToken,
+          ),
         ],
       ],
     );

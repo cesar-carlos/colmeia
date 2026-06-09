@@ -8,6 +8,7 @@ import 'package:colmeia/features/agent_meta/application/usecases/load_client_tok
 import 'package:colmeia/features/agent_meta/application/usecases/refresh_agent_profile_use_case.dart';
 import 'package:colmeia/features/agent_meta/domain/entities/agent_profile_snapshot.dart';
 import 'package:colmeia/features/agent_meta/domain/entities/agent_rpc_descriptor.dart';
+import 'package:colmeia/features/agent_meta/domain/entities/client_token_policy.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/application/usecases/get_client_agent_token_use_case.dart';
@@ -60,7 +61,10 @@ class _MockDiscoverAgentRpcMethodsUseCase extends Mock
 class _MockPersistClientAgentProfileSnapshotUseCase extends Mock
     implements PersistClientAgentProfileSnapshotUseCase {}
 
-ClientAgent _agent(String agentId) {
+ClientAgent _agent(
+  String agentId, {
+  bool? hasServerClientToken,
+}) {
   return ClientAgent(
     agentId: agentId,
     name: 'Agent $agentId',
@@ -68,6 +72,7 @@ ClientAgent _agent(String agentId) {
     connectionStatus: AgentConnectionStatus.online,
     createdAt: DateTime.utc(2026, 4, 4),
     updatedAt: DateTime.utc(2026, 4, 4),
+    hasServerClientToken: hasServerClientToken,
   );
 }
 
@@ -213,6 +218,127 @@ void main() {
 
       expect(find.text('local-typing'), findsOneWidget);
       expect(find.text('server-token'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'switching to the connection tab does not loop policy loads',
+    (tester) async {
+      final authController = _MockAuthController();
+      final loadDetail = _MockLoadClientAgentDetailUseCase();
+      final getToken = _MockGetClientAgentTokenUseCase();
+      final discover = _MockDiscoverAgentRpcMethodsUseCase();
+      final loadPolicy = _MockLoadClientTokenPolicyUseCase();
+      final persistSnapshot = _MockPersistClientAgentProfileSnapshotUseCase();
+      final policyCompleter =
+          Completer<AppResult<ClientTokenPolicySnapshot>>();
+      const agentId = '11111111-1111-1111-8111-111111111111';
+
+      when(
+        () => authController.session,
+      ).thenReturn(
+        AuthSession(
+          userId: 'client-1',
+          email: EmailAddress('client@example.com'),
+          accessToken: 'token',
+          refreshToken: 'refresh',
+          expiresAt: DateTime(2099),
+          accountStatus: ClientAccountStatus.active,
+        ),
+      );
+      when(
+        () => loadDetail(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+        ),
+      ).thenAnswer(
+        (_) async => Success<ClientAgent, AppFailure>(
+          _agent(agentId, hasServerClientToken: true),
+        ),
+      );
+      when(
+        () => getToken(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+        ),
+      ).thenAnswer(
+        (_) async => const Success<ClientAgentTokenSnapshot, AppFailure>(
+          ClientAgentTokenSnapshot(token: 'stored-token'),
+        ),
+      );
+      when(() => discover(agentId: any(named: 'agentId'))).thenAnswer(
+        (_) async => const Success<AgentRpcDescriptor, AppFailure>(
+          AgentRpcDescriptor(methods: <String>{'client_token.getPolicy'}),
+        ),
+      );
+      when(
+        () => loadPolicy(
+          agentId: any(named: 'agentId'),
+          clientToken: any(named: 'clientToken'),
+        ),
+      ).thenAnswer((_) => policyCompleter.future);
+      when(
+        () => persistSnapshot(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+          snapshot: any(named: 'snapshot'),
+        ),
+      ).thenAnswer((_) async => const Success<Unit, AppFailure>(unit));
+
+      final controller = ClientAgentDetailController(
+        authController: authController,
+        loadClientAgentDetailUseCase: loadDetail,
+        updateClientAgentProfileUseCase: _MockUpdateClientAgentProfileUseCase(),
+        getClientAgentTokenUseCase: getToken,
+        saveClientAgentTokenUseCase: _MockSaveClientAgentTokenUseCase(),
+        removeClientAgentTokenUseCase: _MockRemoveClientAgentTokenUseCase(),
+        persistClientAgentProfileSnapshotUseCase: persistSnapshot,
+        refreshAgentProfileUseCase: _MockRefreshAgentProfileUseCase(),
+        loadClientTokenPolicyUseCase: loadPolicy,
+        discoverAgentRpcMethodsUseCase: discover,
+      );
+
+      await tester.pumpWidget(
+        LocalizedTestApp(
+          child: ClientAgentDetailPage(agentId: agentId, controller: controller),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.text(AppLocalizationsPt().clientAgentDetailTabConnection),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      policyCompleter.complete(
+        const Success<ClientTokenPolicySnapshot, AppFailure>(
+          ClientTokenPolicySnapshot(
+            supported: true,
+            policy: ClientTokenPolicy(
+              tokenIdentifier: 'tok',
+              allTables: true,
+              allViews: true,
+              allPermissions: true,
+              tableRules: <String>[],
+              viewRules: <String>[],
+              permissionRules: <String>[],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      verify(
+        () => loadPolicy(
+          agentId: agentId,
+          clientToken: 'stored-token',
+        ),
+      ).called(1);
+      expect(
+        find.text(AppLocalizationsPt().clientAgentDetailPolicyFullAccess),
+        findsOneWidget,
+      );
     },
   );
 

@@ -3,7 +3,7 @@ import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_tend
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('top gainers query limits to five positive movers', () {
+  test('top gainers query limits to fifteen positive movers', () {
     final sql = ProdutoVendidoTendenciaDeVendaSql.topGainersQuery();
 
     check(sql).contains('SELECT TOP ${ProdutoVendidoTendenciaDeVendaSql.topMoversLimit}');
@@ -14,7 +14,7 @@ void main() {
     check(sql).contains(':origem');
   });
 
-  test('top losers query limits to five negative movers', () {
+  test('top losers query limits to fifteen negative movers', () {
     final sql = ProdutoVendidoTendenciaDeVendaSql.topLosersQuery();
 
     check(sql).contains('SELECT TOP ${ProdutoVendidoTendenciaDeVendaSql.topMoversLimit}');

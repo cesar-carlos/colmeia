@@ -11,6 +11,8 @@ class AppTagChip extends StatelessWidget {
     this.foregroundColor,
     this.backgroundColor,
     this.borderColor,
+    this.onRemove,
+    this.removeSemanticsLabel,
   });
 
   final String label;
@@ -18,6 +20,8 @@ class AppTagChip extends StatelessWidget {
   final Color? foregroundColor;
   final Color? backgroundColor;
   final Color? borderColor;
+  final VoidCallback? onRemove;
+  final String? removeSemanticsLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +53,25 @@ class AppTagChip extends StatelessWidget {
               ),
             ),
           ),
+          if (onRemove != null) ...<Widget>[
+            SizedBox(width: tokens.gapXs),
+            Semantics(
+              button: true,
+              label: removeSemanticsLabel ?? 'Remove $label',
+              child: InkWell(
+                onTap: onRemove,
+                borderRadius: BorderRadius.circular(999),
+                child: Padding(
+                  padding: const EdgeInsets.all(2),
+                  child: Icon(
+                    Icons.close_rounded,
+                    size: 14,
+                    color: resolvedForeground,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

@@ -519,7 +519,7 @@ void main() {
 
       expect(find.text('Executive summary'), findsOneWidget);
       expect(find.text('By classification'), findsOneWidget);
-      expect(find.text('Top 5 gainers'), findsOneWidget);
+      expect(find.text('Top 15 gainers'), findsOneWidget);
       expect(find.text('Detailed rows'), findsOneWidget);
       expect(find.text('Product A'), findsWidgets);
       expect(find.text('Product B'), findsWidgets);
@@ -577,8 +577,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('By classification'), findsOneWidget);
-    expect(find.text('Top 5 gainers'), findsOneWidget);
-    expect(find.text('Top 5 losers'), findsOneWidget);
+    expect(find.text('Top 15 gainers'), findsOneWidget);
+    expect(find.text('Top 15 losers'), findsOneWidget);
   });
 
   test(

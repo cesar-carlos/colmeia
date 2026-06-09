@@ -121,12 +121,25 @@ class AppHubNavigationCard extends StatelessWidget {
       AppHubNavigationCardDensity.chartNav => 1.0,
     };
     final readyBadgeOnIcon = _readyBadgeOnIcon;
+    final cardBorderRadius = switch (density) {
+      AppHubNavigationCardDensity.chartNav =>
+        BorderRadius.circular(tokens.formFieldRadius),
+      _ => null,
+    };
+    final inkWellBorderRadius =
+        cardBorderRadius ?? BorderRadius.circular(tokens.cardRadius);
 
     final iconCircle = DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.primary.withValues(alpha: 0.12),
-        shape: BoxShape.circle,
-      ),
+      decoration: switch (density) {
+        AppHubNavigationCardDensity.chartNav => BoxDecoration(
+            color: colors.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+          ),
+        _ => BoxDecoration(
+            color: colors.primary.withValues(alpha: 0.12),
+            shape: BoxShape.circle,
+          ),
+      },
       child: SizedBox(
         width: iconCircleSize,
         height: iconCircleSize,
@@ -222,6 +235,7 @@ class AppHubNavigationCard extends StatelessWidget {
 
     final sectionCard = AppSectionCard(
       padding: cardPadding,
+      borderRadius: cardBorderRadius,
       child: Material(
         type: MaterialType.transparency,
         child: Semantics(
@@ -231,7 +245,7 @@ class AppHubNavigationCard extends StatelessWidget {
           enabled: onTap != null,
           child: InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(tokens.cardRadius),
+            borderRadius: inkWellBorderRadius,
             child: ExcludeSemantics(
               child: switch (density) {
                 AppHubNavigationCardDensity.standard => cardBody,

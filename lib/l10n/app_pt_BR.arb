@@ -1842,11 +1842,29 @@
   "salesProdutoTendenciaSummaryTitle": "Resumo executivo",
   "salesProdutoTendenciaSummarySubtitle": "Visão geral da movimentação por classificação de tendência.",
   "salesProdutoTendenciaSummaryByClassificacaoTitle": "Produtos por classificação",
-  "salesProdutoTendenciaSummaryByClassificacaoSubtitle": "Distribuição dos produtos em todo o resultado filtrado.",
+  "salesProdutoTendenciaSummaryByClassificacaoSubtitle": "Mesmas quantidades do resumo acima, agrupadas por tendência de venda.",
+  "salesProdutoTendenciaSummaryByClassificacaoDrillDownHint": "Toque em uma barra para filtrar a grade de detalhes abaixo.",
+  "salesProdutoTendenciaSummaryClassificacaoLegend": "Crescendo: +20% vs anterior · Caindo: −20% · Novo: vendeu agora, não antes · Parou: vendeu antes, não agora · Estável: entre ±20%",
+  "salesProdutoTendenciaKpiFilterSemantics": "Filtrar detalhes por {classification}",
+  "@salesProdutoTendenciaKpiFilterSemantics": {
+    "placeholders": {
+      "classification": {
+        "type": "String"
+      }
+    }
+  },
+  "salesProdutoTendenciaRemoveClassificacaoFilterSemantics": "Remover filtro de classificação",
+  "salesProdutoTendenciaClassificacaoDescGrowing": "vendas subiram mais de 20% vs período anterior",
+  "salesProdutoTendenciaClassificacaoDescFalling": "vendas caíram mais de 20% vs período anterior",
+  "salesProdutoTendenciaClassificacaoDescNew": "vendeu no atual, não vendeu no anterior",
+  "salesProdutoTendenciaClassificacaoDescStopped": "vendeu no anterior, parou no atual",
+  "salesProdutoTendenciaClassificacaoDescStable": "variação entre −20% e +20%",
   "salesProdutoTendenciaTopMoversTitle": "Principais movimentações",
   "salesProdutoTendenciaTopMoversSubtitle": "Maiores altas e quedas no período selecionado.",
-  "salesProdutoTendenciaTopGainersTitle": "Top 5 altas",
-  "salesProdutoTendenciaTopLosersTitle": "Top 5 quedas",
+  "salesProdutoTendenciaTopGainersTitle": "Top 15 altas",
+  "salesProdutoTendenciaTopGainersSubtitle": "Maiores altas em quantidade no período selecionado.",
+  "salesProdutoTendenciaTopLosersTitle": "Top 15 quedas",
+  "salesProdutoTendenciaTopLosersSubtitle": "Maiores quedas em quantidade no período selecionado.",
   "salesProdutoTendenciaDetailsTitle": "Detalhes",
   "salesProdutoTendenciaDetailsSubtitle": "Lista páginada com produto, classificação e grupo.",
   "salesProdutoTendenciaDetailsHorizontalScrollCaption": "Deslize para o lado para ver todas as colunas.",
@@ -1867,8 +1885,21 @@
   "salesProdutoTendenciaColProduct": "Produto",
   "salesProdutoTendenciaColClassificacao": "Classificação",
   "salesProdutoTendenciaColGrupo": "Grupo",
+  "salesProdutoTendenciaColQtdAnterior": "Qtd. anterior",
+  "salesProdutoTendenciaColQtdAtual": "Qtd. atual",
   "salesProdutoTendenciaColDiferenca": "Diferença",
   "salesProdutoTendenciaColPercentual": "Tendência %",
+  "salesProdutoTendenciaDetailsPeriodComparisonCaption": "Quantidades comparam período anterior ({previous}) vs atual ({current}).",
+  "@salesProdutoTendenciaDetailsPeriodComparisonCaption": {
+    "placeholders": {
+      "previous": {
+        "type": "String"
+      },
+      "current": {
+        "type": "String"
+      }
+    }
+  },
   "salesProdutoTendenciaClassificacaoStopped": "Parou de vender",
   "salesProdutoTendenciaClassificacaoNew": "Novo produto",
   "salesProdutoTendenciaClassificacaoGrowing": "Crescendo",
@@ -1929,6 +1960,22 @@
   "salesProdutoTendenciaMediaMovelSummaryUnavailableMessage": "Não foi possível carregar o resumo, então a página está mostrando uma estimativa baseada nas linhas atuais.",
   "salesProdutoTendenciaMediaMovelSummaryByClassificacaoTitle": "Produtos por classificação",
   "salesProdutoTendenciaMediaMovelSummaryByClassificacaoSubtitle": "Distribuição dos produtos em todo o resultado filtrado.",
+  "salesProdutoTendenciaMediaMovelSummaryByClassificacaoDrillDownHint": "Toque em uma barra para filtrar a grade de detalhes abaixo.",
+  "salesProdutoTendenciaMediaMovelSummaryClassificacaoLegend": "Crescendo: +20% vs média anterior · Caindo: −20% · Novo: vendeu agora, não antes · Parou: vendeu antes, não agora · Estável: entre ±20%",
+  "salesProdutoTendenciaMediaMovelClassificacaoDescGrowing": "média móvel subiu mais de 20% vs janela anterior",
+  "salesProdutoTendenciaMediaMovelClassificacaoDescFalling": "média móvel caiu mais de 20% vs janela anterior",
+  "salesProdutoTendenciaMediaMovelClassificacaoDescNew": "vendeu na janela atual, não na anterior",
+  "salesProdutoTendenciaMediaMovelClassificacaoDescStopped": "vendeu na janela anterior, parou na atual",
+  "salesProdutoTendenciaMediaMovelClassificacaoDescStable": "variação entre −20% e +20%",
+  "salesProdutoTendenciaMediaMovelKpiFilterSemantics": "Filtrar detalhes por {classification}",
+  "@salesProdutoTendenciaMediaMovelKpiFilterSemantics": {
+    "placeholders": {
+      "classification": {
+        "type": "String"
+      }
+    }
+  },
+  "salesProdutoTendenciaMediaMovelRemoveClassificacaoFilterSemantics": "Remover filtro de classificação",
   "salesProdutoTendenciaMediaMovelSummaryByImpactTitle": "Impacto por classificação",
   "salesProdutoTendenciaMediaMovelChartNavClassificacaoLabel": "Por classificação",
   "salesProdutoTendenciaMediaMovelChartNavImpactLabel": "Por impacto",

@@ -1,7 +1,8 @@
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_trend_comparison_bar_chart_style.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_classificacao_chart_support.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_export_capture.dart';
@@ -210,24 +211,42 @@ Widget _classificacaoComparisonExport({
   required AppThemeTokens tokens,
   required List<SalesProdutoTendenciaClassBucket> buckets,
 }) {
-  final exportStyle = salesTrendHomeLikeComparisonBarChartStyle(
+  final colors = Theme.of(exportContext).appColors;
+  final exportStyle = salesTrendClassificacaoComparisonBarChartStyle(
     tokens: tokens,
     l10n: l10n,
     yAxisFormat: NumberFormat.decimalPattern(l10n.localeName),
   ).forPdfExport();
+  final orderedBuckets = buckets.isEmpty
+      ? buckets
+      : salesProdutoTendenciaOrderedClassBuckets(
+          buckets
+              .map(
+                (bucket) => ProdutoVendidoTendenciaDeVendaSummaryRow(
+                  classificacao: bucket.classificacao,
+                  quantidadeProdutos: bucket.count,
+                  impactoLiquido: bucket.impacto,
+                ),
+              )
+              .toList(growable: false),
+        );
 
   return wrapCartesianChartForPdfExport(
     context: exportContext,
-    itemCount: buckets.length,
+    itemCount: orderedBuckets.length,
     minSlotWidth: comparisonBarMinSlotWidth(
       minBarWidth: exportStyle.minBarWidth,
     ),
     height: exportStyle.height,
     chart: AppComparisonBarChart<SalesProdutoTendenciaClassBucket>(
-      items: buckets,
+      items: orderedBuckets,
       labelBuilder: (bucket) =>
           salesProdutoTendenciaClassificacaoLabel(l10n, bucket.classificacao),
       valueBuilder: (bucket) => bucket.count,
+      colorBuilder: (bucket) => salesProdutoTendenciaClassificacaoColor(
+        colors,
+        bucket.classificacao,
+      ),
       plotFloorAccessibilityNotice: l10n.chartComparisonPlotFloorNotice,
       extremeSpreadAccessibilityNotice:
           l10n.chartComparisonExtremeValueSpreadNotice,
@@ -249,11 +268,22 @@ Widget _topMoversComparisonExport({
   required List<ProdutoVendidoTendenciaDeVendaRow> items,
   required bool useAbsolutePercentForLosers,
 }) {
-  final exportStyle = salesTrendHomeLikeComparisonBarChartStyle(
-    tokens: tokens,
-    l10n: l10n,
+  final exportStyle = AppComparisonBarChartStyle(
+    animationDuration: const Duration(milliseconds: 350),
+    stickyPrimaryYAxisWhileScrolling: false,
+    enableTapHighlight: true,
     yAxisFormat: NumberFormat.decimalPattern(l10n.localeName),
-    minPlottedValueShareOfMax: 0.03,
+    horizontalScrollSemanticsHint:
+        l10n.overviewComparisonBarHorizontalScrollHint,
+    loadingLabel: l10n.overviewComparisonChartLoading,
+    showDataLabels: true,
+    autoRotateXLabels: false,
+    wrapXAxisLabelsInTwoLines: true,
+    wrapXAxisCharsPerLine: 10,
+    chartPadding: EdgeInsets.only(bottom: tokens.gapSm),
+    dataLabelOffset: Offset(0, tokens.gapSm),
+    tooltipLabelMaxChars: 56,
+    height: tokens.chartStandardHeight + tokens.contentSpacing * 2,
   ).forPdfExport();
 
   return wrapCartesianChartForPdfExport(
