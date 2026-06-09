@@ -40,10 +40,10 @@ class OverviewChartNavGrid extends StatelessWidget {
               density: AppHubNavigationCardDensity.overview,
               icon: card.icon,
               label: title,
+              tooltipMessage: title,
               labelStyle: layout.narrowLabelStyle,
               showReadyBadge: isReady,
               semanticsLabel: semanticsLabel,
-              aspectRatio: layout.aspectRatio,
               onTap: () {
                 final activeFilter =
                     context.read<OverviewController>().activeFilter;

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
@@ -9,6 +8,8 @@ import 'package:colmeia/features/sales/presentation/localization/sales_card_desc
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/navigation/app_hub_navigation_card.dart';
+import 'package:colmeia/shared/widgets/navigation/app_hub_navigation_card_density.dart';
+import 'package:colmeia/shared/widgets/navigation/app_hub_navigation_grid.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 
@@ -44,52 +45,43 @@ class SalesHubPage extends StatelessWidget {
                 SizedBox(height: tokens.sectionSpacing),
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    final isWide = constraints.maxWidth >= 600;
-                    final cols = math.max(
-                      1,
-                      math.min(
-                        isWide ? 4 : 2,
-                        allSalesCards.length,
-                      ),
-                    );
-                    final gap = tokens.gapMd;
+                    final isWide = constraints.maxWidth >=
+                        kAppHubNavigationSalesHubWideBreakpoint;
                     final isSingleCardRow = allSalesCards.length == 1;
                     final singleCardMaxWidth =
                         tokens.chartCompactHeight + tokens.contentSpacing;
 
-                    return Wrap(
-                      alignment: isSingleCardRow
+                    return AppHubNavigationGrid(
+                      density: AppHubNavigationCardDensity.standard,
+                      itemCount: allSalesCards.length,
+                      spacing: tokens.gapMd,
+                      maxColumns: isWide ? 4 : 2,
+                      maxCardWidth:
+                          isSingleCardRow ? singleCardMaxWidth : null,
+                      wrapAlignment: isSingleCardRow
                           ? WrapAlignment.center
                           : WrapAlignment.start,
-                      spacing: gap,
-                      runSpacing: gap,
-                      children: allSalesCards.map((card) {
-                        var width =
-                            ((constraints.maxWidth - (gap * (cols - 1))) / cols)
-                                .floorToDouble();
-                        if (isSingleCardRow) {
-                          width = math
-                              .min(width, singleCardMaxWidth)
-                              .floorToDouble();
-                        }
-                        return SizedBox(
-                          width: width,
-                          child: AppHubNavigationCard(
-                            icon: card.icon,
-                            label: card.resolvedTitle(l10n),
-                            onTap: () {
-                              unawaited(
-                                context.pushTo<void>(
-                                  AppRoute.salesCard,
-                                  pathParameters: <String, String>{
-                                    'cardId': card.id,
-                                  },
-                                ),
-                              );
-                            },
-                          ),
+                      itemBuilder: (context, index, layout) {
+                        final card = allSalesCards[index];
+                        final title = card.resolvedTitle(l10n);
+
+                        return AppHubNavigationCard(
+                          icon: card.icon,
+                          label: title,
+                          tooltipMessage: title,
+                          labelStyle: layout.narrowLabelStyle,
+                          onTap: () {
+                            unawaited(
+                              context.pushTo<void>(
+                                AppRoute.salesCard,
+                                pathParameters: <String, String>{
+                                  'cardId': card.id,
+                                },
+                              ),
+                            );
+                          },
                         );
-                      }).toList(),
+                      },
                     );
                   },
                 ),

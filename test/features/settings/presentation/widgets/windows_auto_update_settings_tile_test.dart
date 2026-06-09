@@ -1,7 +1,7 @@
 import 'package:auto_updater/auto_updater.dart';
 import 'package:colmeia/app/theme/app_theme.dart';
-import 'package:colmeia/core/update/app_auto_update_support.dart';
 import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
+import 'package:colmeia/core/update/app_auto_update_support.dart';
 import 'package:colmeia/core/update/appcast_probe_client.dart';
 import 'package:colmeia/core/update/auto_updater_client.dart';
 import 'package:colmeia/core/update/windows_auto_update_controller.dart';

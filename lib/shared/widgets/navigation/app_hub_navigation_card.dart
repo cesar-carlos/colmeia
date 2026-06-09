@@ -3,8 +3,25 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/navigation/app_hub_navigation_card_density.dart';
+import 'package:colmeia/shared/widgets/navigation/app_hub_navigation_card_metrics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+
+/// Resolves the tooltip body shown on long-press for hub navigation cards.
+String resolveAppHubNavigationTooltipMessage({
+  required String label,
+  String? subtitle,
+  String? tooltipMessage,
+}) {
+  if (tooltipMessage != null) {
+    return tooltipMessage;
+  }
+  final resolvedSubtitle = subtitle;
+  if (resolvedSubtitle == null || resolvedSubtitle.isEmpty) {
+    return label;
+  }
+  return '$label\n$resolvedSubtitle';
+}
 
 /// Tappable card for hub-style navigation grids (icon + short label).
 class AppHubNavigationCard extends StatelessWidget {
@@ -14,7 +31,7 @@ class AppHubNavigationCard extends StatelessWidget {
     required this.onTap,
     super.key,
     this.density = AppHubNavigationCardDensity.standard,
-    this.aspectRatio = 1.15,
+    this.aspectRatio = kAppHubNavigationStandardCardAspectRatio,
     this.labelStyle,
     this.showReadyBadge = false,
     this.semanticsLabel,
@@ -33,9 +50,13 @@ class AppHubNavigationCard extends StatelessWidget {
 
   bool get _usesFixedGridTile => density != AppHubNavigationCardDensity.standard;
 
-  bool get _usesExpandFill => _usesFixedGridTile;
+  String get _resolvedSemanticsLabel => semanticsLabel ?? label;
 
-  String get _resolvedTooltipMessage => tooltipMessage ?? label;
+  String get _resolvedTooltipMessage =>
+      resolveAppHubNavigationTooltipMessage(
+        label: label,
+        tooltipMessage: tooltipMessage,
+      );
 
   TooltipTriggerMode? get _tooltipTriggerMode {
     if (kIsWeb) {
@@ -60,92 +81,34 @@ class AppHubNavigationCard extends StatelessWidget {
     final colors = theme.appColors;
     final typography = theme.appTypography;
 
-    final iconCircleSize = switch (density) {
-      AppHubNavigationCardDensity.standard => 48.0,
-      AppHubNavigationCardDensity.overview => 28.0,
-      AppHubNavigationCardDensity.chartNav => 22.0,
-    };
-    final iconSize = switch (density) {
-      AppHubNavigationCardDensity.standard => 24.0,
-      AppHubNavigationCardDensity.overview => 16.0,
-      AppHubNavigationCardDensity.chartNav => 13.0,
-    };
-    final iconLabelGap = switch (density) {
-      AppHubNavigationCardDensity.standard => tokens.gapMd,
-      AppHubNavigationCardDensity.overview => tokens.gapXs,
-      AppHubNavigationCardDensity.chartNav => 2.0,
-    };
-    final resolvedLabelStyle = labelStyle ??
-        switch (density) {
-          AppHubNavigationCardDensity.standard => typography.body.copyWith(
-              fontWeight: FontWeight.w600,
-              color: colors.onSurface,
-              height: 1.2,
-            ),
-          AppHubNavigationCardDensity.overview => typography.caption.copyWith(
-              fontWeight: FontWeight.w600,
-              color: colors.onSurface,
-              height: 1.15,
-            ),
-          AppHubNavigationCardDensity.chartNav => typography.caption.copyWith(
-              fontWeight: FontWeight.w600,
-              color: colors.onSurface,
-              height: 1.15,
-            ),
-        };
-    final cardPadding = switch (density) {
-      AppHubNavigationCardDensity.standard => null,
-      AppHubNavigationCardDensity.overview => EdgeInsets.symmetric(
-          horizontal: tokens.gapXs,
-          vertical: tokens.gapSm,
-        ),
-      AppHubNavigationCardDensity.chartNav => EdgeInsets.symmetric(
-          horizontal: tokens.gapXs,
-          vertical: 2,
-        ),
-    };
-    final contentHorizontalPadding = switch (density) {
-      AppHubNavigationCardDensity.standard => tokens.gapSm,
-      AppHubNavigationCardDensity.overview => tokens.gapXs,
-      AppHubNavigationCardDensity.chartNav => tokens.gapXs,
-    };
-    final readyBadgeSize = switch (density) {
-      AppHubNavigationCardDensity.standard => 14.0,
-      AppHubNavigationCardDensity.overview => 12.0,
-      AppHubNavigationCardDensity.chartNav => 11.0,
-    };
-    final readyBadgeInset = switch (density) {
-      AppHubNavigationCardDensity.standard => tokens.gapXs,
-      AppHubNavigationCardDensity.overview => 2.0,
-      AppHubNavigationCardDensity.chartNav => 1.0,
-    };
+    final metrics = AppHubNavigationCardMetrics.forDensity(
+      density,
+      tokens: tokens,
+      colors: colors,
+      typography: typography,
+    );
+    final resolvedLabelStyle = labelStyle ?? metrics.labelStyle;
     final readyBadgeOnIcon = _readyBadgeOnIcon;
-    final cardBorderRadius = switch (density) {
-      AppHubNavigationCardDensity.chartNav =>
-        BorderRadius.circular(tokens.formFieldRadius),
-      _ => null,
-    };
     final inkWellBorderRadius =
-        cardBorderRadius ?? BorderRadius.circular(tokens.cardRadius);
+        metrics.cardBorderRadius ?? BorderRadius.circular(tokens.cardRadius);
 
     final iconCircle = DecoratedBox(
-      decoration: switch (density) {
-        AppHubNavigationCardDensity.chartNav => BoxDecoration(
-            color: colors.primary.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(tokens.formFieldRadius),
-          ),
-        _ => BoxDecoration(
-            color: colors.primary.withValues(alpha: 0.12),
-            shape: BoxShape.circle,
-          ),
-      },
+      decoration: metrics.iconUsesRoundedRect
+          ? BoxDecoration(
+              color: colors.primary.withValues(alpha: 0.12),
+              borderRadius: metrics.cardBorderRadius,
+            )
+          : BoxDecoration(
+              color: colors.primary.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
       child: SizedBox(
-        width: iconCircleSize,
-        height: iconCircleSize,
+        width: metrics.iconCircleSize,
+        height: metrics.iconCircleSize,
         child: Center(
           child: Icon(
             icon,
-            size: iconSize,
+            size: metrics.iconSize,
             color: colors.primary,
           ),
         ),
@@ -167,7 +130,7 @@ class AppHubNavigationCard extends StatelessWidget {
                   ),
                   child: Icon(
                     Icons.check_circle,
-                    size: readyBadgeSize,
+                    size: metrics.readyBadgeSize,
                     color: colors.primary,
                   ),
                 ),
@@ -176,63 +139,43 @@ class AppHubNavigationCard extends StatelessWidget {
           )
         : iconCircle;
 
-    final labelMaxLines = switch (density) {
-      AppHubNavigationCardDensity.chartNav => 2,
-      _ => 2,
-    };
-    final labelWidget = Text(
-      label,
-      textAlign: TextAlign.center,
-      maxLines: labelMaxLines,
-      overflow: TextOverflow.ellipsis,
-      style: resolvedLabelStyle,
-    );
-
     final cardContent = Column(
-      mainAxisSize:
-          _usesFixedGridTile ? MainAxisSize.max : MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         Center(child: iconBadge),
-        SizedBox(height: iconLabelGap),
-        if (_usesFixedGridTile)
-          Flexible(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.topCenter,
-              child: labelWidget,
-            ),
-          )
-        else
-          labelWidget,
+        SizedBox(height: metrics.iconLabelGap),
+        Flexible(
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: metrics.labelMaxLines,
+            overflow: TextOverflow.ellipsis,
+            style: resolvedLabelStyle,
+          ),
+        ),
       ],
     );
 
     final paddedContent = Padding(
-      padding: EdgeInsets.symmetric(horizontal: contentHorizontalPadding),
+      padding: EdgeInsets.symmetric(horizontal: metrics.contentHorizontalPadding),
       child: cardContent,
     );
 
     final cardBody = Stack(
-      fit: _usesExpandFill ? StackFit.expand : StackFit.loose,
+      fit: StackFit.expand,
       clipBehavior: Clip.none,
       children: <Widget>[
-        if (_usesExpandFill)
-          Positioned.fill(
-            child: Align(child: paddedContent),
-          )
-        else
-          paddedContent,
+        Center(child: paddedContent),
         if (showReadyBadge && !readyBadgeOnIcon)
           Positioned(
-            top: readyBadgeInset,
-            right: readyBadgeInset,
+            top: metrics.readyBadgeInset,
+            right: metrics.readyBadgeInset,
             child: Semantics(
-              label: label,
+              label: _resolvedSemanticsLabel,
               child: Icon(
                 Icons.check_circle_outline,
-                size: readyBadgeSize,
+                size: metrics.readyBadgeSize,
                 color: colors.primary,
               ),
             ),
@@ -241,27 +184,19 @@ class AppHubNavigationCard extends StatelessWidget {
     );
 
     final sectionCard = AppSectionCard(
-      padding: cardPadding,
-      borderRadius: cardBorderRadius,
+      padding: metrics.cardPadding,
+      borderRadius: metrics.cardBorderRadius,
       child: Material(
         type: MaterialType.transparency,
         child: Semantics(
-          label: semanticsLabel ?? label,
-          tooltip: _resolvedTooltipMessage,
+          label: _resolvedSemanticsLabel,
           button: true,
           enabled: onTap != null,
           child: InkWell(
             onTap: onTap,
             borderRadius: inkWellBorderRadius,
             child: ExcludeSemantics(
-              child: switch (density) {
-                AppHubNavigationCardDensity.standard => cardBody,
-                AppHubNavigationCardDensity.overview =>
-                  SizedBox.expand(child: cardBody),
-                AppHubNavigationCardDensity.chartNav => SizedBox.expand(
-                    child: cardBody,
-                  ),
-              },
+              child: SizedBox.expand(child: cardBody),
             ),
           ),
         ),
@@ -279,15 +214,16 @@ class AppHubNavigationCard extends StatelessWidget {
           )
         : card;
 
-    if (_usesFixedGridTile) {
-      return Tooltip(
-        message: _resolvedTooltipMessage,
-        triggerMode: _tooltipTriggerMode,
-        waitDuration: const Duration(milliseconds: 400),
-        showDuration: const Duration(seconds: 4),
-        child: resolvedCard,
-      );
-    }
-    return resolvedCard;
+    return _wrapWithTooltip(resolvedCard);
+  }
+
+  Widget _wrapWithTooltip(Widget child) {
+    return Tooltip(
+      message: _resolvedTooltipMessage,
+      triggerMode: _tooltipTriggerMode,
+      waitDuration: const Duration(milliseconds: 400),
+      showDuration: const Duration(seconds: 4),
+      child: child,
+    );
   }
 }

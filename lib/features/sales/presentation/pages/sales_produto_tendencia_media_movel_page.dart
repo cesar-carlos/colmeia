@@ -43,7 +43,6 @@ import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_guard.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -620,6 +619,8 @@ class _SalesProdutoTendenciaMediaMovelPageState
       child: RefreshIndicator(
         onRefresh: _reload,
         child: ListView(
+          // CI release workflow uses Flutter 3.41.x; migrate to scrollCacheExtent when upgraded.
+          // ignore: deprecated_member_use
           cacheExtent: 5000,
           physics: const AlwaysScrollableScrollPhysics(),
           padding: context.pageScrollPadding(
