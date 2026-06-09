@@ -815,6 +815,11 @@
   "clientAgentsApprovedColActions": "Actions",
   "clientAgentsApprovedPaginationEntityLabel": "agents",
   "clientAgentsApprovedTableHorizontalScroll": "Swipe horizontally to see all table columns.",
+  "clientAgentsRequestsColDescription": "Status details",
+  "clientAgentsRequestsColStatus": "Status",
+  "clientAgentsRequestsColDate": "Date",
+  "clientAgentsRequestsPaginationEntityLabel": "requests",
+  "clientAgentsRequestsTableHorizontalScroll": "Swipe horizontally to see all table columns.",
   "clientAgentsApprovedStaleCacheChip": "Stale cache",
   "clientAgentsApprovedListTruncated": "Only {loadedCount} of {totalCount} agents were loaded. Some entries may be missing.",
   "@clientAgentsApprovedListTruncated": {

@@ -1553,6 +1553,22 @@ class AppLocalizationsPt extends AppLocalizations {
       'Deslize horizontalmente para ver todas as colunas da tabela.';
 
   @override
+  String get clientAgentsRequestsColDescription => 'Situação';
+
+  @override
+  String get clientAgentsRequestsColStatus => 'Status';
+
+  @override
+  String get clientAgentsRequestsColDate => 'Data';
+
+  @override
+  String get clientAgentsRequestsPaginationEntityLabel => 'solicitações';
+
+  @override
+  String get clientAgentsRequestsTableHorizontalScroll =>
+      'Deslize horizontalmente para ver todas as colunas da tabela.';
+
+  @override
   String get clientAgentsApprovedStaleCacheChip => 'Cache desatualizado';
 
   @override
@@ -6218,6 +6234,22 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get clientAgentsApprovedTableHorizontalScroll =>
+      'Deslize horizontalmente para ver todas as colunas da tabela.';
+
+  @override
+  String get clientAgentsRequestsColDescription => 'Situação';
+
+  @override
+  String get clientAgentsRequestsColStatus => 'Status';
+
+  @override
+  String get clientAgentsRequestsColDate => 'Data';
+
+  @override
+  String get clientAgentsRequestsPaginationEntityLabel => 'solicitações';
+
+  @override
+  String get clientAgentsRequestsTableHorizontalScroll =>
       'Deslize horizontalmente para ver todas as colunas da tabela.';
 
   @override

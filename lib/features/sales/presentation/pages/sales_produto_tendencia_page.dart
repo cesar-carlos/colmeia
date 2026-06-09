@@ -349,8 +349,8 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
                           bucket.count,
                         ),
                     tooltipLabelBuilder: (bucket, _) =>
-                        '${salesProdutoTendenciaClassificacaoLabel(fl10n, bucket.classificacao)} � '
-                        '${bucket.count} � '
+                        '${salesProdutoTendenciaClassificacaoLabel(fl10n, bucket.classificacao)} · '
+                        '${bucket.count} · '
                         '${NumberFormat.decimalPattern(fl10n.localeName).format(bucket.impacto.round())}',
                   );
                 },
@@ -465,8 +465,8 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
                     dataLabelBuilder: (row, _) =>
                         '${row.percentualTendencia.toStringAsFixed(1)}%',
                     tooltipLabelBuilder: (row, _) =>
-                        '${row.nomeProduto} � '
-                        '${row.percentualTendencia.toStringAsFixed(2)}% � '
+                        '${row.nomeProduto} · '
+                        '${row.percentualTendencia.toStringAsFixed(2)}% · '
                         '${NumberFormat.decimalPattern(fl10n.localeName).format(row.diferenca.round())}',
                   );
                 },
@@ -479,7 +479,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
   }
 
   String _dateRangeLabel(DateTimeRange range) {
-    return '${AppBrFormatters.shortDateFormat.format(range.start)} � '
+    return '${AppBrFormatters.shortDateFormat.format(range.start)} · '
         '${AppBrFormatters.shortDateFormat.format(range.end)}';
   }
 
@@ -535,7 +535,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
         await _reload();
       },
       child: ListView(
-        scrollCacheExtent: const ScrollCacheExtent.pixels(5000),
+        cacheExtent: 5000,
         physics: const AlwaysScrollableScrollPhysics(),
         padding: context.pageScrollPadding(
           tokens,

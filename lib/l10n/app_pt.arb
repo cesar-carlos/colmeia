@@ -737,6 +737,11 @@
   "clientAgentsApprovedColActions": "Ações",
   "clientAgentsApprovedPaginationEntityLabel": "agentes",
   "clientAgentsApprovedTableHorizontalScroll": "Deslize horizontalmente para ver todas as colunas da tabela.",
+  "clientAgentsRequestsColDescription": "Situação",
+  "clientAgentsRequestsColStatus": "Status",
+  "clientAgentsRequestsColDate": "Data",
+  "clientAgentsRequestsPaginationEntityLabel": "solicitações",
+  "clientAgentsRequestsTableHorizontalScroll": "Deslize horizontalmente para ver todas as colunas da tabela.",
   "clientAgentsApprovedStaleCacheChip": "Cache desatualizado",
   "clientAgentsApprovedListTruncated": "Apenas {loadedCount} de {totalCount} agentes foram carregados. Alguns registros podem estar ausentes.",
   "@clientAgentsApprovedListTruncated": {

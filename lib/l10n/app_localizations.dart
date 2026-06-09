@@ -2519,6 +2519,36 @@ abstract class AppLocalizations {
   /// **'Swipe horizontally to see all table columns.'**
   String get clientAgentsApprovedTableHorizontalScroll;
 
+  /// No description provided for @clientAgentsRequestsColDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Status details'**
+  String get clientAgentsRequestsColDescription;
+
+  /// No description provided for @clientAgentsRequestsColStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get clientAgentsRequestsColStatus;
+
+  /// No description provided for @clientAgentsRequestsColDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get clientAgentsRequestsColDate;
+
+  /// No description provided for @clientAgentsRequestsPaginationEntityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'requests'**
+  String get clientAgentsRequestsPaginationEntityLabel;
+
+  /// No description provided for @clientAgentsRequestsTableHorizontalScroll.
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe horizontally to see all table columns.'**
+  String get clientAgentsRequestsTableHorizontalScroll;
+
   /// No description provided for @clientAgentsApprovedStaleCacheChip.
   ///
   /// In en, this message translates to:

@@ -1522,6 +1522,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Swipe horizontally to see all table columns.';
 
   @override
+  String get clientAgentsRequestsColDescription => 'Status details';
+
+  @override
+  String get clientAgentsRequestsColStatus => 'Status';
+
+  @override
+  String get clientAgentsRequestsColDate => 'Date';
+
+  @override
+  String get clientAgentsRequestsPaginationEntityLabel => 'requests';
+
+  @override
+  String get clientAgentsRequestsTableHorizontalScroll =>
+      'Swipe horizontally to see all table columns.';
+
+  @override
   String get clientAgentsApprovedStaleCacheChip => 'Stale cache';
 
   @override

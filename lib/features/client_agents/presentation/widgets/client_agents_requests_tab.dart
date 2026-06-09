@@ -1,16 +1,18 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:colmeia/features/client_agents/domain/entities/agent_access_request_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
+import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_approved_agents_table.dart';
+import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_requests_table.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_shared_widgets.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:flutter/material.dart';
 
-class ClientAgentsRequestsTab extends StatelessWidget {
+class ClientAgentsRequestsTab extends StatefulWidget {
   const ClientAgentsRequestsTab({
     required this.requests,
     required this.pendingActions,
@@ -37,29 +39,73 @@ class ClientAgentsRequestsTab extends StatelessWidget {
   onDiscardQueuedRequestAccess;
 
   @override
+  State<ClientAgentsRequestsTab> createState() =>
+      _ClientAgentsRequestsTabState();
+}
+
+class _ClientAgentsRequestsTabState extends State<ClientAgentsRequestsTab> {
+  int _currentPage = 1;
+  int _pageSize = kClientAgentsApprovedTablePageSizeOptions.first;
+
+  @override
+  void didUpdateWidget(ClientAgentsRequestsTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.requests != widget.requests ||
+        oldWidget.pendingActions != widget.pendingActions) {
+      final totalPages = _allRows.isEmpty
+          ? 0
+          : (_allRows.length / _pageSize).ceil();
+      if (totalPages > 0 && _currentPage > totalPages) {
+        _currentPage = totalPages;
+      }
+    }
+  }
+
+  List<ClientAgentsRequestTableRowData> get _allRows {
+    final l10n = AppLocalizations.of(context);
+    return <ClientAgentsRequestTableRowData>[
+      ...widget.pendingActions.map(_pendingActionRow),
+      ...widget.requests.map((request) => _accessRequestRow(l10n, request)),
+    ];
+  }
+
+  List<ClientAgentsRequestTableRowData> get _pageRows {
+    final rows = _allRows;
+    if (rows.isEmpty) {
+      return const <ClientAgentsRequestTableRowData>[];
+    }
+    final start = (_currentPage - 1) * _pageSize;
+    if (start >= rows.length) {
+      return const <ClientAgentsRequestTableRowData>[];
+    }
+    final end = math.min(start + _pageSize, rows.length);
+    return rows.sublist(start, end);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final children = <Widget>[
-      if (errorMessage case final String message) ...<Widget>[
+      if (widget.errorMessage case final String message) ...<Widget>[
         AppInlineErrorPanel(
           title: l10n.clientAgentsLoadRequestsErrorTitle,
           message: message,
-          onRetry: onRetry,
+          onRetry: widget.onRetry,
           retryLabel: l10n.appInlineErrorRetry,
         ),
       ],
-      if (pendingErrorMessage case final String message) ...<Widget>[
+      if (widget.pendingErrorMessage case final String message) ...<Widget>[
         AppInlineErrorPanel(
           title: l10n.clientAgentsLoadPendingErrorTitle,
           message: message,
-          onRetry: onRetry,
+          onRetry: widget.onRetry,
           retryLabel: l10n.appInlineErrorRetry,
         ),
       ],
     ];
 
-    if (requests.isEmpty && pendingActions.isEmpty) {
+    if (widget.requests.isEmpty && widget.pendingActions.isEmpty) {
       if (children.isNotEmpty) {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -67,81 +113,76 @@ class ClientAgentsRequestsTab extends StatelessWidget {
         );
       }
       return Text(
-        hasActiveFilters
+        widget.hasActiveFilters
             ? l10n.clientAgentsEmptyFilteredRequests
             : l10n.clientAgentsNoRequestsYet,
       );
     }
 
-    children
-      ..addAll(
-        pendingActions.map(
-          (action) {
-            final errorSuffix = action.errorMessage == null
-                ? ''
-                : ' (${action.errorMessage})';
-            return ClientAgentsAgentTile(
-              title: l10n.clientAgentsPendingSendTitle(action.agentId),
-              subtitle:
-                  '${_pendingActionDescription(l10n, action)}$errorSuffix',
-              trailing: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  ClientAgentsStatusChip(
-                    label: _pendingActionChipLabel(l10n, action),
-                    kind: _pendingActionChipKind(action),
-                  ),
-                  if (_canDiscardLocalQueuedRequest(action) &&
-                      onDiscardQueuedRequestAccess != null)
-                    Padding(
-                      padding: EdgeInsets.only(top: tokens.gapSm),
-                      child: AppSecondaryButton(
-                        label: l10n.clientAgentsDiscardQueuedRequestAction,
-                        onPressed: isMutating
-                            ? null
-                            : () => unawaited(
-                                onDiscardQueuedRequestAccess!(action),
-                              ),
-                      ),
-                    ),
-                ],
-              ),
-            );
-          },
-        ),
-      )
-      ..addAll(
-        requests.map(
-          (request) => ClientAgentsAgentTile(
-            title: request.agentName,
-            subtitle: _requestStatusDescription(l10n, request.status),
-            trailing: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                ClientAgentsStatusChip(
-                  label: _requestStatusLabel(l10n, request.status),
-                  kind: _requestStatusChipKind(request.status),
-                ),
-                if (_canRetryRequest(request) && onRetryAccessRequest != null)
-                  Padding(
-                    padding: EdgeInsets.only(top: tokens.gapSm),
-                    child: AppSecondaryButton(
-                      label: l10n.clientAgentsRetryRequestAction,
-                      icon: const Icon(Icons.refresh_rounded),
-                      onPressed: isMutating
-                          ? null
-                          : () => unawaited(onRetryAccessRequest!(request)),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      );
+    if (children.isNotEmpty) {
+      children.add(SizedBox(height: tokens.gapMd));
+    }
+    children.add(
+      ClientAgentsRequestsTable(
+        l10n: l10n,
+        rows: _pageRows,
+        totalCount: _allRows.length,
+        currentPage: _currentPage,
+        pageSize: _pageSize,
+        isMutating: widget.isMutating,
+        onPageSelected: (page) => setState(() => _currentPage = page),
+        onPageSizeChanged: (size) => setState(() {
+          _pageSize = size;
+          _currentPage = 1;
+        }),
+      ),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: children,
+    );
+  }
+
+  ClientAgentsRequestTableRowData _pendingActionRow(PendingAgentAction action) {
+    final l10n = AppLocalizations.of(context);
+    final errorSuffix = action.errorMessage == null
+        ? ''
+        : ' (${action.errorMessage})';
+    final canDiscard =
+        _canDiscardLocalQueuedRequest(action) &&
+        widget.onDiscardQueuedRequestAccess != null;
+
+    return ClientAgentsRequestTableRowData(
+      name: l10n.clientAgentsPendingSendTitle(action.agentId),
+      description: '${_pendingActionDescription(l10n, action)}$errorSuffix',
+      statusLabel: _pendingActionChipLabel(l10n, action),
+      statusKind: _pendingActionChipKind(action),
+      date: action.createdAt,
+      showDiscard: canDiscard,
+      onDiscard: canDiscard
+          ? () => unawaited(widget.onDiscardQueuedRequestAccess!(action))
+          : null,
+    );
+  }
+
+  ClientAgentsRequestTableRowData _accessRequestRow(
+    AppLocalizations l10n,
+    ClientAgentAccessRequest request,
+  ) {
+    final canRetry =
+        _canRetryRequest(request) && widget.onRetryAccessRequest != null;
+
+    return ClientAgentsRequestTableRowData(
+      name: request.agentName,
+      description: _requestStatusDescription(l10n, request.status),
+      statusLabel: _requestStatusLabel(l10n, request.status),
+      statusKind: _requestStatusChipKind(request.status),
+      date: request.requestedAt ?? request.reviewedAt,
+      showRetry: canRetry,
+      onRetry: canRetry
+          ? () => unawaited(widget.onRetryAccessRequest!(request))
+          : null,
     );
   }
 

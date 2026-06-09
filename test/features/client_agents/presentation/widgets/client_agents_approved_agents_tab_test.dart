@@ -3,6 +3,7 @@ import 'package:colmeia/features/client_agents/domain/entities/agent_connection_
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_approved_agents_tab.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/widgets/pagination/app_table_pagination_footer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -105,5 +106,58 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('2'), findsOneWidget);
+  });
+
+  testWidgets('page size menu opens as overlay without growing footer', (
+    tester,
+  ) async {
+    final l10n = lookupAppLocalizations(const Locale('pt', 'BR'));
+    final agents = List<ClientAgent>.generate(
+      12,
+      (index) => buildAgent(
+        'bbbbbbbb-bbbb-bbbb-8bbb-${index.toString().padLeft(12, '0')}',
+        '$index',
+      ),
+    );
+
+    await tester.pumpWidget(
+      LocalizedTestApp(
+        child: ListView(
+          children: <Widget>[
+            ClientAgentsApprovedAgentsTab(
+              agents: agents,
+              totalCount: agents.length,
+              errorMessage: null,
+              onQueueRemoveAccess: (_) async {},
+              onRetry: () {},
+              isMutating: false,
+              requestAccessTabLabel: l10n.clientAgentsTabRequestAccess,
+            ),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.byType(MenuAnchor),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    final footerBox = tester.renderObject<RenderBox>(
+      find.byType(AppTablePaginationFooter),
+    );
+    final heightBefore = footerBox.size.height;
+
+    await tester.tap(find.descendant(
+      of: find.byType(MenuAnchor),
+      matching: find.text('10'),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(footerBox.size.height, heightBefore);
+    expect(find.byType(MenuItemButton), findsNWidgets(4));
   });
 }

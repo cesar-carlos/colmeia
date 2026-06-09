@@ -2,8 +2,6 @@ import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
-import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
-import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -43,14 +41,14 @@ List<int?> buildPaginationPageSlots({
   return out;
 }
 
-/// Fixed width for the page-size dropdown (compact numeric labels only).
-const double _kCompactPageSizeDropdownWidth = 72;
+/// Fixed width for the page-size menu trigger (compact numeric labels only).
+const double _kCompactPageSizeMenuWidth = 64;
 
 class AppTablePaginationFooterStyle {
   const AppTablePaginationFooterStyle({
-    this.iconButtonSize = 44,
-    this.pageNumberMinSize = 44,
-    this.cornerRadius = 10,
+    this.iconButtonSize = 36,
+    this.pageNumberMinSize = 32,
+    this.cornerRadius = 8,
     this.showTopBorder = true,
   });
 
@@ -123,7 +121,7 @@ class AppTablePaginationFooter extends StatelessWidget {
       decoration: BoxDecoration(
         border: style.showTopBorder ? Border(top: borderSide) : null,
       ),
-      padding: EdgeInsets.symmetric(vertical: tokens.gapSm),
+      padding: EdgeInsets.symmetric(vertical: tokens.gapXs),
       child: isMobile
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -144,7 +142,7 @@ class AppTablePaginationFooter extends StatelessWidget {
                   totalItems: totalItems,
                   entityLabel: entityLabel,
                 ),
-                SizedBox(height: tokens.gapMd),
+                SizedBox(height: tokens.gapSm),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: _PaginationControls(
@@ -255,8 +253,8 @@ class _SummaryRow extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               Text(itemsPerPageLabel, style: labelStyle),
-              SizedBox(width: tokens.gapSm),
-              _PageSizeDropdown(
+              SizedBox(width: tokens.gapXs),
+              _PageSizeMenu(
                 value: pageSize,
                 options: pageSizeOptions!,
                 onChanged: onPageSizeChanged!,
@@ -303,16 +301,16 @@ class _SummaryRow extends StatelessWidget {
       children: <Widget>[
         if (pageSizeBlock != null) ...<Widget>[
           pageSizeBlock,
-          SizedBox(width: tokens.gapMd),
+          SizedBox(width: tokens.gapSm),
         ],
-        Expanded(child: summary),
+        Flexible(child: summary),
       ],
     );
   }
 }
 
-class _PageSizeDropdown extends StatelessWidget {
-  const _PageSizeDropdown({
+class _PageSizeMenu extends StatelessWidget {
+  const _PageSizeMenu({
     required this.value,
     required this.options,
     required this.onChanged,
@@ -324,20 +322,95 @@ class _PageSizeDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: _kCompactPageSizeDropdownWidth,
-      child: AppDropdownField<int>(
-        value: value,
-        options: options
-            .map((n) => AppDropdownOption<int>(value: n, label: '$n'))
-            .toList(growable: false),
-        density: AppTextFieldDensity.compact,
-        onChanged: (v) {
-          if (v != null) {
-            onChanged(v);
-          }
-        },
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+    final scheme = theme.colorScheme;
+    final typography = theme.appTypography;
+    final borderRadius = BorderRadius.circular(tokens.formFieldRadius + 2);
+    final borderColor = scheme.outlineVariant.withValues(alpha: 0.72);
+    final labelStyle = typography.caption.copyWith(
+      color: scheme.onSurface,
+      fontWeight: FontWeight.w600,
+      height: 1.25,
+    );
+
+    return MenuAnchor(
+      style: const MenuStyle(
+        minimumSize: WidgetStatePropertyAll(
+          Size(_kCompactPageSizeMenuWidth, 0),
+        ),
+        visualDensity: VisualDensity.compact,
       ),
+      alignmentOffset: const Offset(0, 4),
+      menuChildren: options
+          .map(
+            (option) => MenuItemButton(
+              style: ButtonStyle(
+                padding: WidgetStatePropertyAll(
+                  EdgeInsets.symmetric(
+                    horizontal: tokens.gapMd,
+                    vertical: tokens.gapXs,
+                  ),
+                ),
+                visualDensity: VisualDensity.compact,
+              ),
+              onPressed: () => onChanged(option),
+              child: Text(
+                '$option',
+                style: typography.caption.copyWith(
+                  fontWeight: option == value ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ),
+          )
+          .toList(growable: false),
+      builder: (context, controller, child) {
+        return Semantics(
+          button: true,
+          child: Material(
+            color: scheme.surfaceContainerLowest,
+            shape: RoundedRectangleBorder(
+              borderRadius: borderRadius,
+              side: BorderSide(color: borderColor),
+            ),
+            child: InkWell(
+              onTap: () {
+                if (controller.isOpen) {
+                  controller.close();
+                } else {
+                  controller.open();
+                }
+              },
+              borderRadius: borderRadius,
+              child: SizedBox(
+                width: _kCompactPageSizeMenuWidth,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: tokens.gapSm,
+                    vertical: tokens.gapXs,
+                  ),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          '$value',
+                          style: labelStyle,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Icon(
+                        Icons.expand_more_rounded,
+                        size: 18,
+                        color: scheme.outline,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -484,7 +557,7 @@ class _PaginationIconButton extends StatelessWidget {
             }),
             child: Icon(
               icon,
-              size: 20,
+              size: 18,
               color: enabled
                   ? scheme.onSurface
                   : scheme.onSurface.withValues(alpha: 0.38),
