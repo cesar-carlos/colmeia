@@ -2,10 +2,13 @@
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/di/injector_agent_queries.dart';
 import 'package:colmeia/core/errors/retry_after_gate.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_marca_produto_options_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_produto_rank_lucro_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_screen_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_screen_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_ranking_produtos_faturamento_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/sales/application/load_media_movel_rows_for_share_use_case.dart';
@@ -128,8 +131,12 @@ List<RouteBase> buildSalesRoutes() {
                 resolveSalesAgentClientTokenUseCase,
             loadTrendScreenUseCase:
                 getIt<LoadProdutoVendidoTendenciaDeVendaScreenUseCase>(),
-            loadGrupoMarcaProdutoOptionsUseCase:
-                getIt<LoadGrupoMarcaProdutoOptionsUseCase>(),
+            loadTrendPageUseCase:
+                getIt<LoadProdutoVendidoTendenciaDeVendaUseCase>(),
+            loadGrupoProdutoOptionsUseCase:
+                getIt<LoadGrupoProdutoOptionsUseCase>(),
+            loadMarcaProdutoOptionsUseCase:
+                getIt<LoadMarcaProdutoOptionsUseCase>(),
             relayCancelScopeBinder: _wireSalesAgentSqlRelayCancel,
           );
         }
@@ -144,8 +151,12 @@ List<RouteBase> buildSalesRoutes() {
                 getIt<
                   LoadProdutoVendidoTendenciaDeVendaMediaMovelScreenUseCase
                 >(),
-            loadGrupoMarcaProdutoOptionsUseCase:
-                getIt<LoadGrupoMarcaProdutoOptionsUseCase>(),
+            loadTrendPageUseCase:
+                getIt<LoadProdutoVendidoTendenciaDeVendaMediaMovelPageUseCase>(),
+            loadGrupoProdutoOptionsUseCase:
+                getIt<LoadGrupoProdutoOptionsUseCase>(),
+            loadMarcaProdutoOptionsUseCase:
+                getIt<LoadMarcaProdutoOptionsUseCase>(),
             loadRowsForShareUseCase:
                 getIt<LoadMediaMovelRowsForShareUseCase>(),
             relayCancelScopeBinder: _wireSalesAgentSqlRelayCancel,

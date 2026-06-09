@@ -4538,4 +4538,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authPasswordsMismatch => 'Passwords do not match.';
+
+  @override
+  String get appAsyncSearchSelectOptionHint => 'Select an option';
+
+  @override
+  String get appAsyncSearchSearchHint => 'Search...';
+
+  @override
+  String appAsyncSearchMinSearchLengthHint(int minLength) {
+    return 'Type at least $minLength characters to search.';
+  }
+
+  @override
+  String get appAsyncSearchEmptyResults => 'No results found.';
+
+  @override
+  String get appAsyncSearchRetry => 'Try again';
+
+  @override
+  String get salesAsyncSearchClientTokenUnavailable =>
+      'Client token unavailable for this branch.';
 }

@@ -2222,5 +2222,16 @@
     }
   },
   "authConfirmPasswordRequired": "Confirm your password.",
-  "authPasswordsMismatch": "Passwords do not match."
+  "authPasswordsMismatch": "Passwords do not match.",
+  "appAsyncSearchSelectOptionHint": "Select an option",
+  "appAsyncSearchSearchHint": "Search...",
+  "appAsyncSearchMinSearchLengthHint": "Type at least {minLength} characters to search.",
+  "@appAsyncSearchMinSearchLengthHint": {
+    "placeholders": {
+      "minLength": {"type": "int"}
+    }
+  },
+  "appAsyncSearchEmptyResults": "No results found.",
+  "appAsyncSearchRetry": "Try again",
+  "salesAsyncSearchClientTokenUnavailable": "Client token unavailable for this branch."
 }

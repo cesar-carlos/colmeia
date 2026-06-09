@@ -7,6 +7,7 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tenden
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
 import 'package:colmeia/shared/widgets/pagination/app_table_pagination_footer.dart';
 import 'package:flutter/material.dart';
@@ -27,11 +28,13 @@ class SalesProdutoTendenciaMediaMovelDetailsSection extends StatelessWidget {
     required this.onNext,
     required this.onPrevious,
     required this.onPageSizeChanged,
+    this.loading = false,
     this.headerTrailing,
     super.key,
   });
 
   final AppLocalizations l10n;
+  final bool loading;
   final List<ProdutoVendidoTendenciaDeVendaMediaMovelRow> rows;
   final int totalCount;
   final int pageSize;
@@ -71,7 +74,39 @@ class SalesProdutoTendenciaMediaMovelDetailsSection extends StatelessWidget {
                 ),
               ),
               SizedBox(height: tokens.gapXs),
-              if (rows.isEmpty)
+              if (loading && rows.isEmpty)
+                AppSkeleton(
+                  enabled: true,
+                  loadingSemanticsLabel:
+                      l10n.salesProdutoTendenciaLoadingTrendSemantics,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      for (var i = 0; i < 5; i++) ...<Widget>[
+                        Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: tokens.gapSm,
+                            vertical: tokens.gapSm,
+                          ),
+                          child: const Text(
+                            '—',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (i < 4)
+                          Divider(
+                            height: tokens.gapMd * 2,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .outlineVariant
+                                .withValues(alpha: 0.35),
+                          ),
+                      ],
+                    ],
+                  ),
+                )
+              else if (rows.isEmpty)
                 Text(l10n.salesProdutoTendenciaMediaMovelNoData)
               else
                 LayoutBuilder(

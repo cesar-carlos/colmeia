@@ -1,5 +1,6 @@
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/marca_produto_option.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/marca_produto_options_repository.dart';
 
 class LoadMarcaProdutoOptionsUseCase {
@@ -21,6 +22,7 @@ class LoadMarcaProdutoOptionsUseCase {
     int? bridgeTimeoutMs,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
   }) {
     final mergedSearchTerm = _mergedAutocompleteInput(
       searchTerm: searchTerm,
@@ -36,6 +38,7 @@ class LoadMarcaProdutoOptionsUseCase {
       bridgeTimeoutMs: bridgeTimeoutMs,
       hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
       hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
+      cancelScope: cancelScope,
     );
   }
 

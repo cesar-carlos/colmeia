@@ -63,6 +63,14 @@ abstract final class AgentQueriesBoundedResultMaxRows {
   /// Full product-brand catalog (`Marca`) ordered by name.
   static const int marcaProdutoOptions = 2000;
 
+  /// One page of cliente catalog rows plus total-count row.
+  /// Kept aligned with `ClienteOptionsFilter.maxPageSize`.
+  static const int clienteOptionsPage = 501;
+
+  /// One page of fornecedor catalog rows plus total-count row.
+  /// Kept aligned with `FornecedorOptionsFilter.maxPageSize`.
+  static const int fornecedorOptionsPage = 501;
+
   /// Monthly product profitability buckets: `(months in range) × filiais`.
   /// At most ~13 months × many branches; 2 000 is a conservative safety cap.
   static const int resumoProdutoVendaLucratividadeMensal = 2000;
@@ -91,4 +99,7 @@ abstract final class AgentQueriesBoundedResultMaxRows {
 
   /// Summary grouped by trend classification (`CRESCENDO`, `CAINDO`, etc.).
   static const int produtoVendidoTendenciaDeVendaSummary = 32;
+
+  /// Top gainers/losers (`TOP 5` each) for explicit-period trend screens.
+  static const int produtoVendidoTendenciaDeVendaTopMovers = 10;
 }

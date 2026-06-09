@@ -67,6 +67,26 @@ abstract final class ResumoVendasDiariasSuggestionSqlParams {
     return '%$escaped%';
   }
 
+  /// Whether [searchTerm] is non-empty and contains only ASCII digits.
+  static bool isDigitsOnlySearchTerm(String? searchTerm) {
+    if (searchTerm == null) {
+      return false;
+    }
+    final trimmed = searchTerm.trim();
+    if (trimmed.isEmpty) {
+      return false;
+    }
+    return RegExp(r'^\d+$').hasMatch(trimmed);
+  }
+
+  /// `LIKE` pattern for IBGE code lookup when the user typed digits only.
+  static String? buildDigitsOnlySearchPattern(String? searchTerm) {
+    if (!isDigitsOnlySearchTerm(searchTerm)) {
+      return null;
+    }
+    return buildSearchPattern(searchTerm!.trim());
+  }
+
   /// Prefix `LIKE` pattern (`term%`) for large catalogs (e.g. municipio list).
   ///
   /// Favors index seeks on `Nome`-like columns; use [buildSearchPattern] when

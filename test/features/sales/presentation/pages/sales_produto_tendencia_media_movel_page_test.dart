@@ -7,9 +7,10 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_marca_produto_options_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_screen_use_case.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/grupo_marca_produto_options_batch.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/grupo_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/marca_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_filter.dart';
@@ -52,8 +53,14 @@ class _MockLoadAvailableAgentsForSales extends Mock
 class _MockLoadTrendScreenUseCase extends Mock
     implements LoadProdutoVendidoTendenciaDeVendaMediaMovelScreenUseCase {}
 
-class _MockLoadGrupoMarcaProdutoOptionsUseCase extends Mock
-    implements LoadGrupoMarcaProdutoOptionsUseCase {}
+class _MockLoadTrendPageUseCase extends Mock
+    implements LoadProdutoVendidoTendenciaDeVendaMediaMovelPageUseCase {}
+
+class _MockLoadGrupoProdutoOptionsUseCase extends Mock
+    implements LoadGrupoProdutoOptionsUseCase {}
+
+class _MockLoadMarcaProdutoOptionsUseCase extends Mock
+    implements LoadMarcaProdutoOptionsUseCase {}
 
 class _MockLoadMediaMovelRowsForShareUseCase extends Mock
     implements LoadMediaMovelRowsForShareUseCase {}
@@ -63,7 +70,10 @@ late LoadAvailableAgentsForSales _pumpLoadAvailableAgentsForSales;
 late AgentClientTokenReader _pumpTokenReader;
 late LoadProdutoVendidoTendenciaDeVendaMediaMovelScreenUseCase
 _pumpLoadTrendScreenUseCase;
-late LoadGrupoMarcaProdutoOptionsUseCase _pumpLoadGrupoMarcaOptionsUseCase;
+late LoadProdutoVendidoTendenciaDeVendaMediaMovelPageUseCase
+_pumpLoadTrendPageUseCase;
+late LoadGrupoProdutoOptionsUseCase _pumpLoadGrupoProdutoOptionsUseCase;
+late LoadMarcaProdutoOptionsUseCase _pumpLoadMarcaProdutoOptionsUseCase;
 late LoadMediaMovelRowsForShareUseCase _pumpLoadRowsForShareUseCase;
 
 void main() {
@@ -72,7 +82,9 @@ void main() {
   late _MockAgentClientTokenReader tokenReader;
   late _MockLoadAvailableAgentsForSales loadAvailableAgentsForSales;
   late _MockLoadTrendScreenUseCase loadTrendScreenUseCase;
-  late _MockLoadGrupoMarcaProdutoOptionsUseCase loadGrupoMarcaOptionsUseCase;
+  late _MockLoadTrendPageUseCase loadTrendPageUseCase;
+  late _MockLoadGrupoProdutoOptionsUseCase loadGrupoProdutoOptionsUseCase;
+  late _MockLoadMarcaProdutoOptionsUseCase loadMarcaProdutoOptionsUseCase;
   late _MockLoadMediaMovelRowsForShareUseCase loadRowsForShareUseCase;
 
   setUpAll(() {
@@ -93,13 +105,17 @@ void main() {
     tokenReader = _MockAgentClientTokenReader();
     loadAvailableAgentsForSales = _MockLoadAvailableAgentsForSales();
     loadTrendScreenUseCase = _MockLoadTrendScreenUseCase();
-    loadGrupoMarcaOptionsUseCase = _MockLoadGrupoMarcaProdutoOptionsUseCase();
+    loadTrendPageUseCase = _MockLoadTrendPageUseCase();
+    loadGrupoProdutoOptionsUseCase = _MockLoadGrupoProdutoOptionsUseCase();
+    loadMarcaProdutoOptionsUseCase = _MockLoadMarcaProdutoOptionsUseCase();
     loadRowsForShareUseCase = _MockLoadMediaMovelRowsForShareUseCase();
     _pumpSalesPreferences = salesPreferences;
     _pumpLoadAvailableAgentsForSales = loadAvailableAgentsForSales;
     _pumpTokenReader = tokenReader;
     _pumpLoadTrendScreenUseCase = loadTrendScreenUseCase;
-    _pumpLoadGrupoMarcaOptionsUseCase = loadGrupoMarcaOptionsUseCase;
+    _pumpLoadTrendPageUseCase = loadTrendPageUseCase;
+    _pumpLoadGrupoProdutoOptionsUseCase = loadGrupoProdutoOptionsUseCase;
+    _pumpLoadMarcaProdutoOptionsUseCase = loadMarcaProdutoOptionsUseCase;
     _pumpLoadRowsForShareUseCase = loadRowsForShareUseCase;
 
     when(() => authController.session).thenReturn(
@@ -186,20 +202,52 @@ void main() {
     );
 
     when(
-      () => loadGrupoMarcaOptionsUseCase.call(
+      () => loadTrendPageUseCase.call(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        filter: any(named: 'filter'),
+        clientToken: any(named: 'clientToken'),
+      ),
+    ).thenAnswer(
+      (_) async => const Success<
+          ProdutoVendidoTendenciaDeVendaMediaMovelPageResult,
+          AppFailure>(
+        ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
+          items: <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[],
+          totalCount: 0,
+        ),
+      ),
+    );
+
+    when(
+      () => loadGrupoProdutoOptionsUseCase.call(
         userId: any(named: 'userId'),
         agentId: any(named: 'agentId'),
         page: any(named: 'page'),
         pageSize: any(named: 'pageSize'),
+        searchTerm: any(named: 'searchTerm'),
         clientToken: any(named: 'clientToken'),
         cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer(
-      (_) async => const Success<GrupoMarcaProdutoOptionsBatch, AppFailure>(
-        GrupoMarcaProdutoOptionsBatch(
-          grupoOptions: <GrupoProdutoOption>[],
-          marcaOptions: <MarcaProdutoOption>[],
-        ),
+      (_) async => const Success<List<GrupoProdutoOption>, AppFailure>(
+        <GrupoProdutoOption>[],
+      ),
+    );
+
+    when(
+      () => loadMarcaProdutoOptionsUseCase.call(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        page: any(named: 'page'),
+        pageSize: any(named: 'pageSize'),
+        searchTerm: any(named: 'searchTerm'),
+        clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    ).thenAnswer(
+      (_) async => const Success<List<MarcaProdutoOption>, AppFailure>(
+        <MarcaProdutoOption>[],
       ),
     );
 
@@ -220,8 +268,14 @@ void main() {
       >(
         loadTrendScreenUseCase,
       )
-      ..registerSingleton<LoadGrupoMarcaProdutoOptionsUseCase>(
-        loadGrupoMarcaOptionsUseCase,
+      ..registerSingleton<LoadProdutoVendidoTendenciaDeVendaMediaMovelPageUseCase>(
+        loadTrendPageUseCase,
+      )
+      ..registerSingleton<LoadGrupoProdutoOptionsUseCase>(
+        loadGrupoProdutoOptionsUseCase,
+      )
+      ..registerSingleton<LoadMarcaProdutoOptionsUseCase>(
+        loadMarcaProdutoOptionsUseCase,
       )
       ..registerSingleton<LoadMediaMovelRowsForShareUseCase>(
         loadRowsForShareUseCase,
@@ -602,37 +656,6 @@ void main() {
     expect(applyButton.onPressed, isNull);
   });
 
-  testWidgets('shows grupo options load failure in filters sheet', (
-    tester,
-  ) async {
-    when(
-      () => loadGrupoMarcaOptionsUseCase.call(
-        userId: any(named: 'userId'),
-        agentId: any(named: 'agentId'),
-        page: any(named: 'page'),
-        pageSize: any(named: 'pageSize'),
-        clientToken: any(named: 'clientToken'),
-        cancelScope: any(named: 'cancelScope'),
-      ),
-    ).thenAnswer(
-      (_) async => const Failure<GrupoMarcaProdutoOptionsBatch, AppFailure>(
-        UnknownFailure(
-          message: 'grupo_options_failed',
-          userMessage: 'Group options failed',
-        ),
-      ),
-    );
-
-    await _pumpPage(tester, authController: authController);
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byIcon(Icons.filter_list_rounded).last);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Group options failed'), findsOneWidget);
-    expect(find.text('Try again'), findsOneWidget);
-  });
-
   testWidgets('shows snackbar when share export row limit is exceeded', (
     tester,
   ) async {
@@ -852,8 +875,11 @@ Future<void> _pumpPage(
             resolveSalesAgentClientTokenUseCase:
                 ResolveSalesAgentClientTokenUseCase(_pumpTokenReader),
             loadTrendScreenUseCase: _pumpLoadTrendScreenUseCase,
-            loadGrupoMarcaProdutoOptionsUseCase:
-                _pumpLoadGrupoMarcaOptionsUseCase,
+            loadTrendPageUseCase: _pumpLoadTrendPageUseCase,
+            loadGrupoProdutoOptionsUseCase:
+                _pumpLoadGrupoProdutoOptionsUseCase,
+            loadMarcaProdutoOptionsUseCase:
+                _pumpLoadMarcaProdutoOptionsUseCase,
             loadRowsForShareUseCase: _pumpLoadRowsForShareUseCase,
           ),
         ),

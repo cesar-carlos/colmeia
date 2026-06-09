@@ -7,6 +7,22 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_e
 /// Builds an [RpcFailure] from a failed [AgentSqlBatchExecutionItem], preserving
 /// JSON-RPC code/reason/retry hints when the bridge returns a structured error.
 abstract final class AgentSqlBatchItemRpcFailureMapper {
+  /// Returns an [AppFailure] when the batch slot is missing or failed; null when ok.
+  static AppFailure? failureForItemOrNull({
+    required Map<int, AgentSqlBatchExecutionItem> byIndex,
+    required int index,
+    required String operation,
+  }) {
+    final item = byIndex[index];
+    if (item == null) {
+      return missingItem(index: index, operation: operation);
+    }
+    if (!item.ok) {
+      return fromFailedItem(item: item, operation: operation);
+    }
+    return null;
+  }
+
   static RpcFailure missingItem({
     required int index,
     required String operation,

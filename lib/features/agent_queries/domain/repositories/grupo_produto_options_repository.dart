@@ -1,5 +1,6 @@
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/grupo_produto_option.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 
 // Catalog options used by product-related filters in multiple reports.
 // ignore: one_member_abstracts
@@ -19,5 +20,6 @@ abstract interface class GrupoProdutoOptionsRepository {
     int? bridgeTimeoutMs,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
   });
 }

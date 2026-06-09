@@ -1,6 +1,4 @@
 import 'package:colmeia/core/errors/app_failure.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/grupo_produto_option.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/marca_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
@@ -15,10 +13,8 @@ class SalesProdutoTendenciaPresentationState {
     required this.periodoAnterior,
     this.selectedAgentId,
     this.availableAgents = const <DashboardAgentOption>[],
-    this.grupoOptions = const <GrupoProdutoOption>[],
-    this.marcaOptions = const <MarcaProdutoOption>[],
-    this.optionsLoadedForAgentId,
-    this.dimensionOptionsLoadFailure,
+    this.grupoProdutoLabel,
+    this.marcaProdutoLabel,
     this.searchTerm = '',
     this.classificacao,
     this.codGrupoProduto,
@@ -37,10 +33,8 @@ class SalesProdutoTendenciaPresentationState {
 
   final String? selectedAgentId;
   final List<DashboardAgentOption> availableAgents;
-  final List<GrupoProdutoOption> grupoOptions;
-  final List<MarcaProdutoOption> marcaOptions;
-  final String? optionsLoadedForAgentId;
-  final AppFailure? dimensionOptionsLoadFailure;
+  final String? grupoProdutoLabel;
+  final String? marcaProdutoLabel;
   final DateTimeRange periodoAtual;
   final DateTimeRange periodoAnterior;
   final String searchTerm;
@@ -63,10 +57,8 @@ class SalesProdutoTendenciaPresentationState {
   SalesProdutoTendenciaPresentationState copyWith({
     String? selectedAgentId,
     List<DashboardAgentOption>? availableAgents,
-    List<GrupoProdutoOption>? grupoOptions,
-    List<MarcaProdutoOption>? marcaOptions,
-    Object? optionsLoadedForAgentId = _sentinel,
-    Object? dimensionOptionsLoadFailure = _sentinel,
+    Object? grupoProdutoLabel = _sentinel,
+    Object? marcaProdutoLabel = _sentinel,
     DateTimeRange? periodoAtual,
     DateTimeRange? periodoAnterior,
     String? searchTerm,
@@ -87,17 +79,12 @@ class SalesProdutoTendenciaPresentationState {
     return SalesProdutoTendenciaPresentationState(
       selectedAgentId: selectedAgentId ?? this.selectedAgentId,
       availableAgents: availableAgents ?? this.availableAgents,
-      grupoOptions: grupoOptions ?? this.grupoOptions,
-      marcaOptions: marcaOptions ?? this.marcaOptions,
-      optionsLoadedForAgentId: identical(optionsLoadedForAgentId, _sentinel)
-          ? this.optionsLoadedForAgentId
-          : optionsLoadedForAgentId as String?,
-      dimensionOptionsLoadFailure: identical(
-        dimensionOptionsLoadFailure,
-        _sentinel,
-      )
-          ? this.dimensionOptionsLoadFailure
-          : dimensionOptionsLoadFailure as AppFailure?,
+      grupoProdutoLabel: identical(grupoProdutoLabel, _sentinel)
+          ? this.grupoProdutoLabel
+          : grupoProdutoLabel as String?,
+      marcaProdutoLabel: identical(marcaProdutoLabel, _sentinel)
+          ? this.marcaProdutoLabel
+          : marcaProdutoLabel as String?,
       periodoAtual: periodoAtual ?? this.periodoAtual,
       periodoAnterior: periodoAnterior ?? this.periodoAnterior,
       searchTerm: searchTerm ?? this.searchTerm,
@@ -133,10 +120,8 @@ class SalesProdutoTendenciaPresentationState {
     return other is SalesProdutoTendenciaPresentationState &&
         other.selectedAgentId == selectedAgentId &&
         listEquals(other.availableAgents, availableAgents) &&
-        listEquals(other.grupoOptions, grupoOptions) &&
-        listEquals(other.marcaOptions, marcaOptions) &&
-        other.optionsLoadedForAgentId == optionsLoadedForAgentId &&
-        other.dimensionOptionsLoadFailure == dimensionOptionsLoadFailure &&
+        other.grupoProdutoLabel == grupoProdutoLabel &&
+        other.marcaProdutoLabel == marcaProdutoLabel &&
         other.periodoAtual == periodoAtual &&
         other.periodoAnterior == periodoAnterior &&
         other.searchTerm == searchTerm &&
@@ -159,10 +144,8 @@ class SalesProdutoTendenciaPresentationState {
   int get hashCode => Object.hash(
     selectedAgentId,
     Object.hashAll(availableAgents),
-    Object.hashAll(grupoOptions),
-    Object.hashAll(marcaOptions),
-    optionsLoadedForAgentId,
-    dimensionOptionsLoadFailure,
+    grupoProdutoLabel,
+    marcaProdutoLabel,
     periodoAtual,
     periodoAnterior,
     searchTerm,

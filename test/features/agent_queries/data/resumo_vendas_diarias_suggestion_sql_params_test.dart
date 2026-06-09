@@ -82,6 +82,29 @@ void main() {
     });
   });
 
+  group('buildDigitsOnlySearchPattern', () {
+    test('returns null when term is not digits-only', () {
+      check(
+        ResumoVendasDiariasSuggestionSqlParams.buildDigitsOnlySearchPattern(
+          '35503a',
+        ),
+      ).isNull();
+      check(
+        ResumoVendasDiariasSuggestionSqlParams.buildDigitsOnlySearchPattern(
+          null,
+        ),
+      ).isNull();
+    });
+
+    test('wraps digits-only term with percent wildcards', () {
+      check(
+        ResumoVendasDiariasSuggestionSqlParams.buildDigitsOnlySearchPattern(
+          ' 3550308 ',
+        ),
+      ).equals('%3550308%');
+    });
+  });
+
   group('buildPrefixSearchPattern', () {
     test('returns null for null or blank', () {
       check(

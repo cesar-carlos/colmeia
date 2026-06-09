@@ -1,9 +1,5 @@
-import 'package:colmeia/core/errors/app_failure.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/grupo_produto_option.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/marca_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_filter.dart';
-import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_support_context.dart';
-import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_load_error_surface.dart';
+import 'package:colmeia/features/sales/presentation/async_search/sales_produto_dimension_async_search_loaders.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_trend_date_preset.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_filters_sheet_scaffold.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_single_agent_picker_control.dart';
@@ -12,6 +8,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/forms/app_async_search_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_choice_chip.dart';
 import 'package:colmeia/shared/widgets/forms/app_date_picker_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
@@ -39,14 +36,13 @@ class SalesProdutoTendenciaFiltersSheet extends StatefulWidget {
     required this.initialClassificacao,
     required this.initialCodGrupoProduto,
     required this.initialCodMarca,
+    required this.initialGrupoProdutoLabel,
+    required this.initialMarcaProdutoLabel,
     required this.initialPageSize,
-    required this.grupoOptions,
-    required this.marcaOptions,
+    required this.grupoProdutoLoaderFactory,
+    required this.marcaProdutoLoaderFactory,
     required this.onApply,
     super.key,
-    this.dimensionOptionsLoadFailure,
-    this.onRetryDimensionOptions,
-    this.dimensionOptionsRetryCountdownLabel,
   });
 
   final AppLocalizations l10n;
@@ -58,13 +54,12 @@ class SalesProdutoTendenciaFiltersSheet extends StatefulWidget {
   final String? initialClassificacao;
   final int? initialCodGrupoProduto;
   final int? initialCodMarca;
+  final String? initialGrupoProdutoLabel;
+  final String? initialMarcaProdutoLabel;
   final int initialPageSize;
-  final List<GrupoProdutoOption> grupoOptions;
-  final List<MarcaProdutoOption> marcaOptions;
+  final SalesProdutoDimensionLoaderFactory grupoProdutoLoaderFactory;
+  final SalesProdutoDimensionLoaderFactory marcaProdutoLoaderFactory;
   final ValueChanged<Map<String, Object?>> onApply;
-  final AppFailure? dimensionOptionsLoadFailure;
-  final VoidCallback? onRetryDimensionOptions;
-  final String? dimensionOptionsRetryCountdownLabel;
 
   @override
   State<SalesProdutoTendenciaFiltersSheet> createState() =>
@@ -73,6 +68,9 @@ class SalesProdutoTendenciaFiltersSheet extends StatefulWidget {
 
 class _SalesProdutoTendenciaFiltersSheetState
     extends State<SalesProdutoTendenciaFiltersSheet> {
+  late final AppAsyncSearchLoader<int> _grupoProdutoLoader;
+  late final AppAsyncSearchLoader<int> _marcaProdutoLoader;
+
   String? _selectedAgentId;
   DateTimeRange? _periodoAtual;
   DateTimeRange? _periodoAnterior;
@@ -80,6 +78,8 @@ class _SalesProdutoTendenciaFiltersSheetState
   String? _classificacao;
   int? _codGrupoProduto;
   int? _codMarca;
+  String? _grupoProdutoLabel;
+  String? _marcaProdutoLabel;
   late int _pageSize;
 
   SalesTrendDatePreset? get _selectedPreset {
@@ -136,12 +136,20 @@ class _SalesProdutoTendenciaFiltersSheetState
   void initState() {
     super.initState();
     _selectedAgentId = widget.initialSelectedAgentId;
+    _grupoProdutoLoader = widget.grupoProdutoLoaderFactory(
+      () => _selectedAgentId,
+    );
+    _marcaProdutoLoader = widget.marcaProdutoLoaderFactory(
+      () => _selectedAgentId,
+    );
     _periodoAtual = widget.initialPeriodoAtual;
     _periodoAnterior = widget.initialPeriodoAnterior;
     _searchController = TextEditingController(text: widget.initialSearchTerm);
     _classificacao = widget.initialClassificacao;
     _codGrupoProduto = widget.initialCodGrupoProduto;
     _codMarca = widget.initialCodMarca;
+    _grupoProdutoLabel = widget.initialGrupoProdutoLabel;
+    _marcaProdutoLabel = widget.initialMarcaProdutoLabel;
     _pageSize = widget.initialPageSize;
   }
 
@@ -181,6 +189,8 @@ class _SalesProdutoTendenciaFiltersSheetState
       'classificacao': _classificacao,
       'codGrupoProduto': _codGrupoProduto,
       'codMarca': _codMarca,
+      'grupoProdutoLabel': _grupoProdutoLabel,
+      'marcaProdutoLabel': _marcaProdutoLabel,
       'pageSize': _pageSize,
     });
     Navigator.of(context).pop();
@@ -213,6 +223,8 @@ class _SalesProdutoTendenciaFiltersSheetState
       _classificacao = null;
       _codGrupoProduto = null;
       _codMarca = null;
+      _grupoProdutoLabel = null;
+      _marcaProdutoLabel = null;
       _pageSize = ProdutoVendidoTendenciaDeVendaFilter.defaultPageSize;
     });
   }
@@ -272,23 +284,6 @@ class _SalesProdutoTendenciaFiltersSheetState
               AppInlineErrorPanel(
                 tone: AppInlinePanelTone.informational,
                 message: l10n.salesBranchFilterMissingClientTokenBanner,
-              ),
-            ],
-            if (AgentQueryLoadErrorSurface.hasErrorFor(
-              loadFailure: widget.dimensionOptionsLoadFailure,
-            )) ...<Widget>[
-              SizedBox(height: tokens.gapMd),
-              AgentQueryLoadErrorSurface(
-                loadFailure: widget.dimensionOptionsLoadFailure,
-                onRetry: widget.onRetryDimensionOptions,
-                retryCountdownLabel: widget.dimensionOptionsRetryCountdownLabel,
-                variant: AppInlineErrorPanelVariant.plain,
-                supportContext: AgentQueryFailureSupportContext.environment(
-                  extra: <String, String>{
-                    'agentId': ?_selectedAgentId,
-                    'screen': 'sales_produto_tendencia_filters',
-                  },
-                ),
               ),
             ],
             SizedBox(height: tokens.sectionSpacing),
@@ -454,45 +449,43 @@ class _SalesProdutoTendenciaFiltersSheetState
                     },
                   ),
                   SizedBox(height: tokens.contentSpacing),
-                  AppDropdownField<int?>(
+                  AppAsyncSearchField<int>(
                     label: l10n.salesProdutoTendenciaFilterGroup,
+                    hintText: l10n.salesProdutoTendenciaFilterAllOption,
+                    searchHintText: l10n.salesProdutoTendenciaFilterSearchHint,
+                    minSearchLengthHint: l10n.appAsyncSearchMinSearchLengthHint(2),
+                    emptyResultsLabel: l10n.appAsyncSearchEmptyResults,
+                    clearOptionLabel: l10n.salesProdutoTendenciaFilterAllOption,
                     value: _codGrupoProduto,
+                    selectedDisplayLabel: _grupoProdutoLabel,
                     density: AppTextFieldDensity.compact,
-                    options: <AppDropdownOption<int?>>[
-                      AppDropdownOption<int?>(
-                        value: null,
-                        label: l10n.salesProdutoTendenciaFilterAllOption,
-                      ),
-                      ...widget.grupoOptions.map(
-                        (option) => AppDropdownOption<int?>(
-                          value: option.codGrupoProduto,
-                          label: option.nomeGrupoProduto,
-                        ),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      setState(() => _codGrupoProduto = value);
+                    enabled: _selectedAgentId != null,
+                    loader: _grupoProdutoLoader,
+                    onChanged: (value, {label}) {
+                      setState(() {
+                        _codGrupoProduto = value;
+                        _grupoProdutoLabel = value == null ? null : label;
+                      });
                     },
                   ),
                   SizedBox(height: tokens.contentSpacing),
-                  AppDropdownField<int?>(
+                  AppAsyncSearchField<int>(
                     label: l10n.salesProdutoTendenciaFilterBrand,
+                    hintText: l10n.salesProdutoTendenciaFilterAllOption,
+                    searchHintText: l10n.salesProdutoTendenciaFilterSearchHint,
+                    minSearchLengthHint: l10n.appAsyncSearchMinSearchLengthHint(2),
+                    emptyResultsLabel: l10n.appAsyncSearchEmptyResults,
+                    clearOptionLabel: l10n.salesProdutoTendenciaFilterAllOption,
                     value: _codMarca,
+                    selectedDisplayLabel: _marcaProdutoLabel,
                     density: AppTextFieldDensity.compact,
-                    options: <AppDropdownOption<int?>>[
-                      AppDropdownOption<int?>(
-                        value: null,
-                        label: l10n.salesProdutoTendenciaFilterAllOption,
-                      ),
-                      ...widget.marcaOptions.map(
-                        (option) => AppDropdownOption<int?>(
-                          value: option.codMarca,
-                          label: option.nomeMarca,
-                        ),
-                      ),
-                    ],
-                    onChanged: (value) {
-                      setState(() => _codMarca = value);
+                    enabled: _selectedAgentId != null,
+                    loader: _marcaProdutoLoader,
+                    onChanged: (value, {label}) {
+                      setState(() {
+                        _codMarca = value;
+                        _marcaProdutoLabel = value == null ? null : label;
+                      });
                     },
                   ),
                   SizedBox(height: tokens.contentSpacing),

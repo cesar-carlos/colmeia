@@ -7,10 +7,10 @@ import 'package:colmeia/app/router/chart_share_icon_button.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_marca_produto_options_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_screen_use_case.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/grupo_produto_option.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/marca_produto_option.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_row.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_support_context.dart';
@@ -19,6 +19,7 @@ import 'package:colmeia/features/auth/presentation/controllers/auth_controller.d
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
+import 'package:colmeia/features/sales/presentation/async_search/sales_produto_dimension_async_search_loaders.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_agent_auto_refresh_mixin.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_produto_tendencia_controller.dart';
@@ -50,7 +51,9 @@ class SalesProdutoTendenciaPage extends StatefulWidget {
     required this.loadSalesAvailableAgentsUseCase,
     required this.resolveSalesAgentClientTokenUseCase,
     required this.loadTrendScreenUseCase,
-    required this.loadGrupoMarcaProdutoOptionsUseCase,
+    required this.loadTrendPageUseCase,
+    required this.loadGrupoProdutoOptionsUseCase,
+    required this.loadMarcaProdutoOptionsUseCase,
     this.relayCancelScopeBinder,
     super.key,
   });
@@ -59,7 +62,9 @@ class SalesProdutoTendenciaPage extends StatefulWidget {
   final LoadAvailableAgentsForSales loadSalesAvailableAgentsUseCase;
   final ResolveSalesAgentClientTokenUseCase resolveSalesAgentClientTokenUseCase;
   final LoadProdutoVendidoTendenciaDeVendaScreenUseCase loadTrendScreenUseCase;
-  final LoadGrupoMarcaProdutoOptionsUseCase loadGrupoMarcaProdutoOptionsUseCase;
+  final LoadProdutoVendidoTendenciaDeVendaUseCase loadTrendPageUseCase;
+  final LoadGrupoProdutoOptionsUseCase loadGrupoProdutoOptionsUseCase;
+  final LoadMarcaProdutoOptionsUseCase loadMarcaProdutoOptionsUseCase;
   final AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder;
 
   @override
@@ -88,8 +93,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
       resolveSalesAgentClientTokenUseCase:
           widget.resolveSalesAgentClientTokenUseCase,
       loadTrendScreenUseCase: widget.loadTrendScreenUseCase,
-      loadGrupoMarcaProdutoOptionsUseCase:
-          widget.loadGrupoMarcaProdutoOptionsUseCase,
+      loadTrendPageUseCase: widget.loadTrendPageUseCase,
       relayCancelScopeBinder: widget.relayCancelScopeBinder,
     );
     _controller.addListener(_handleControllerChanged);
@@ -139,7 +143,6 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
       return;
     }
     onAgentQueryLoadFailure(outcome.loadFailure);
-    onAgentQueryLoadFailure(outcome.dimensionOptionsFailure);
     if (outcome.isSuccess) {
       markAutoRefreshSuccess();
       return;
@@ -177,11 +180,50 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     _showFiltersAppliedSnackBar();
   }
 
+  SalesProdutoDimensionLoaderFactory _grupoProdutoLoaderFactory(
+    String userId,
+  ) {
+    final clientTokenUnavailableMessage = AppLocalizations.of(
+      context,
+    ).salesAsyncSearchClientTokenUnavailable;
+    return (agentIdProvider) => createSalesGrupoProdutoAsyncSearchLoader(
+      useCase: widget.loadGrupoProdutoOptionsUseCase,
+      userId: userId,
+      agentIdProvider: agentIdProvider,
+      resolveClientToken: (agentId) => _controller.resolveClientToken(
+        userId: userId,
+        agentId: agentId,
+      ),
+      clientTokenUnavailableMessage: clientTokenUnavailableMessage,
+      cancelScope: _controller.sqlCancelScope,
+    );
+  }
+
+  SalesProdutoDimensionLoaderFactory _marcaProdutoLoaderFactory(
+    String userId,
+  ) {
+    final clientTokenUnavailableMessage = AppLocalizations.of(
+      context,
+    ).salesAsyncSearchClientTokenUnavailable;
+    return (agentIdProvider) => createSalesMarcaProdutoAsyncSearchLoader(
+      useCase: widget.loadMarcaProdutoOptionsUseCase,
+      userId: userId,
+      agentIdProvider: agentIdProvider,
+      resolveClientToken: (agentId) => _controller.resolveClientToken(
+        userId: userId,
+        agentId: agentId,
+      ),
+      clientTokenUnavailableMessage: clientTokenUnavailableMessage,
+      cancelScope: _controller.sqlCancelScope,
+    );
+  }
+
   Future<void> _openFiltersSheet() async {
     if (!mounted) {
       return;
     }
     final state = _controller.state;
+    final userId = _controller.boundUserId ?? '';
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -199,27 +241,15 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
           initialClassificacao: state.classificacao,
           initialCodGrupoProduto: state.codGrupoProduto,
           initialCodMarca: state.codMarca,
+          initialGrupoProdutoLabel: state.grupoProdutoLabel,
+          initialMarcaProdutoLabel: state.marcaProdutoLabel,
           initialPageSize: state.pageSize,
-          grupoOptions: state.grupoOptions,
-          marcaOptions: state.marcaOptions,
-          dimensionOptionsLoadFailure: state.dimensionOptionsLoadFailure,
-          onRetryDimensionOptions: state.selectedAgentId == null
-              ? null
-              : () => unawaited(_retryDimensionOptionsLoad()),
-          dimensionOptionsRetryCountdownLabel:
-              agentQueryRetryCountdownLabel(sheetL10n),
+          grupoProdutoLoaderFactory: _grupoProdutoLoaderFactory(userId),
+          marcaProdutoLoaderFactory: _marcaProdutoLoaderFactory(userId),
           onApply: (next) => unawaited(_onFiltersChanged(next)),
         );
       },
     );
-  }
-
-  Future<void> _retryDimensionOptionsLoad() async {
-    final outcome = await _controller.retryDimensionOptionsLoad();
-    if (!mounted || outcome.isSuperseded) {
-      return;
-    }
-    onAgentQueryLoadFailure(outcome.dimensionOptionsFailure);
   }
 
   void _openClassificacaoFullscreen(SalesProdutoTendenciaPresentationState state) {
@@ -425,26 +455,11 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     }
     if (state.codGrupoProduto != null) {
       final grupoLabel =
-          state.grupoOptions
-              .cast<GrupoProdutoOption?>()
-              .firstWhere(
-                (option) => option?.codGrupoProduto == state.codGrupoProduto,
-                orElse: () => null,
-              )
-              ?.nomeGrupoProduto ??
-          '#${state.codGrupoProduto}';
+          state.grupoProdutoLabel ?? '#${state.codGrupoProduto}';
       labels.add('${l10n.salesProdutoTendenciaFilterGroup}: $grupoLabel');
     }
     if (state.codMarca != null) {
-      final marcaLabel =
-          state.marcaOptions
-              .cast<MarcaProdutoOption?>()
-              .firstWhere(
-                (option) => option?.codMarca == state.codMarca,
-                orElse: () => null,
-              )
-              ?.nomeMarca ??
-          '#${state.codMarca}';
+      final marcaLabel = state.marcaProdutoLabel ?? '#${state.codMarca}';
       labels.add('${l10n.salesProdutoTendenciaFilterBrand}: $marcaLabel');
     }
     return labels;

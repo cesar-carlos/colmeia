@@ -7474,6 +7474,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Passwords do not match.'**
   String get authPasswordsMismatch;
+
+  /// No description provided for @appAsyncSearchSelectOptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an option'**
+  String get appAsyncSearchSelectOptionHint;
+
+  /// No description provided for @appAsyncSearchSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search...'**
+  String get appAsyncSearchSearchHint;
+
+  /// No description provided for @appAsyncSearchMinSearchLengthHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type at least {minLength} characters to search.'**
+  String appAsyncSearchMinSearchLengthHint(int minLength);
+
+  /// No description provided for @appAsyncSearchEmptyResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No results found.'**
+  String get appAsyncSearchEmptyResults;
+
+  /// No description provided for @appAsyncSearchRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get appAsyncSearchRetry;
+
+  /// No description provided for @salesAsyncSearchClientTokenUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Client token unavailable for this branch.'**
+  String get salesAsyncSearchClientTokenUnavailable;
 }
 
 class _AppLocalizationsDelegate

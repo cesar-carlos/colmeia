@@ -104,8 +104,7 @@ abstract final class AgentSqlRepositoryExecution {
           context: <String, Object?>{
             'operation': operation,
             'agentId': agentId,
-            if (unexpectedRowsUiKey != null)
-              AgentSqlRpcFailureUiKey.field: unexpectedRowsUiKey,
+            AgentSqlRpcFailureUiKey.field: ?unexpectedRowsUiKey,
           },
         ),
       );

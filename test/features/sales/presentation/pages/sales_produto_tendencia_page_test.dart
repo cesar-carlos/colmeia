@@ -7,9 +7,10 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_marca_produto_options_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_screen_use_case.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/grupo_marca_produto_options_batch.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/grupo_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/marca_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_filter.dart';
@@ -50,15 +51,23 @@ class _MockLoadAvailableAgentsForSales extends Mock
 class _MockLoadProdutoVendidoTendenciaDeVendaScreenUseCase extends Mock
     implements LoadProdutoVendidoTendenciaDeVendaScreenUseCase {}
 
-class _MockLoadGrupoMarcaProdutoOptionsUseCase extends Mock
-    implements LoadGrupoMarcaProdutoOptionsUseCase {}
+class _MockLoadProdutoVendidoTendenciaDeVendaUseCase extends Mock
+    implements LoadProdutoVendidoTendenciaDeVendaUseCase {}
+
+class _MockLoadGrupoProdutoOptionsUseCase extends Mock
+    implements LoadGrupoProdutoOptionsUseCase {}
+
+class _MockLoadMarcaProdutoOptionsUseCase extends Mock
+    implements LoadMarcaProdutoOptionsUseCase {}
 
 late SalesPreferences _pumpSalesPreferences;
 late LoadAvailableAgentsForSales _pumpLoadAvailableAgentsForSales;
 late AgentClientTokenReader _pumpTokenReader;
 late LoadProdutoVendidoTendenciaDeVendaScreenUseCase
 _pumpLoadTrendScreenUseCase;
-late LoadGrupoMarcaProdutoOptionsUseCase _pumpLoadGrupoMarcaOptionsUseCase;
+late LoadProdutoVendidoTendenciaDeVendaUseCase _pumpLoadTrendPageUseCase;
+late LoadGrupoProdutoOptionsUseCase _pumpLoadGrupoProdutoOptionsUseCase;
+late LoadMarcaProdutoOptionsUseCase _pumpLoadMarcaProdutoOptionsUseCase;
 
 void main() {
   late _MockAuthController authController;
@@ -67,7 +76,9 @@ void main() {
   late _MockLoadAvailableAgentsForSales loadAvailableAgentsForSales;
   late _MockLoadProdutoVendidoTendenciaDeVendaScreenUseCase
   loadTrendScreenUseCase;
-  late _MockLoadGrupoMarcaProdutoOptionsUseCase loadGrupoMarcaOptionsUseCase;
+  late _MockLoadProdutoVendidoTendenciaDeVendaUseCase loadTrendPageUseCase;
+  late _MockLoadGrupoProdutoOptionsUseCase loadGrupoProdutoOptionsUseCase;
+  late _MockLoadMarcaProdutoOptionsUseCase loadMarcaProdutoOptionsUseCase;
 
   setUpAll(() {
     Provider.debugCheckInvalidValueType = null;
@@ -93,12 +104,16 @@ void main() {
     loadAvailableAgentsForSales = _MockLoadAvailableAgentsForSales();
     loadTrendScreenUseCase =
         _MockLoadProdutoVendidoTendenciaDeVendaScreenUseCase();
-    loadGrupoMarcaOptionsUseCase = _MockLoadGrupoMarcaProdutoOptionsUseCase();
+    loadTrendPageUseCase = _MockLoadProdutoVendidoTendenciaDeVendaUseCase();
+    loadGrupoProdutoOptionsUseCase = _MockLoadGrupoProdutoOptionsUseCase();
+    loadMarcaProdutoOptionsUseCase = _MockLoadMarcaProdutoOptionsUseCase();
     _pumpSalesPreferences = salesPreferences;
     _pumpLoadAvailableAgentsForSales = loadAvailableAgentsForSales;
     _pumpTokenReader = tokenReader;
     _pumpLoadTrendScreenUseCase = loadTrendScreenUseCase;
-    _pumpLoadGrupoMarcaOptionsUseCase = loadGrupoMarcaOptionsUseCase;
+    _pumpLoadTrendPageUseCase = loadTrendPageUseCase;
+    _pumpLoadGrupoProdutoOptionsUseCase = loadGrupoProdutoOptionsUseCase;
+    _pumpLoadMarcaProdutoOptionsUseCase = loadMarcaProdutoOptionsUseCase;
 
     when(() => authController.session).thenReturn(
       AuthSession(
@@ -174,20 +189,48 @@ void main() {
     );
 
     when(
-      () => loadGrupoMarcaOptionsUseCase.call(
+      () => loadTrendPageUseCase.call(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        filter: any(named: 'filter'),
+        clientToken: any(named: 'clientToken'),
+      ),
+    ).thenAnswer(
+      (_) async =>
+          const Success<List<ProdutoVendidoTendenciaDeVendaRow>, AppFailure>(
+            <ProdutoVendidoTendenciaDeVendaRow>[],
+          ),
+    );
+
+    when(
+      () => loadGrupoProdutoOptionsUseCase.call(
         userId: any(named: 'userId'),
         agentId: any(named: 'agentId'),
         page: any(named: 'page'),
         pageSize: any(named: 'pageSize'),
+        searchTerm: any(named: 'searchTerm'),
         clientToken: any(named: 'clientToken'),
         cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer(
-      (_) async => const Success<GrupoMarcaProdutoOptionsBatch, AppFailure>(
-        GrupoMarcaProdutoOptionsBatch(
-          grupoOptions: <GrupoProdutoOption>[],
-          marcaOptions: <MarcaProdutoOption>[],
-        ),
+      (_) async => const Success<List<GrupoProdutoOption>, AppFailure>(
+        <GrupoProdutoOption>[],
+      ),
+    );
+
+    when(
+      () => loadMarcaProdutoOptionsUseCase.call(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        page: any(named: 'page'),
+        pageSize: any(named: 'pageSize'),
+        searchTerm: any(named: 'searchTerm'),
+        clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    ).thenAnswer(
+      (_) async => const Success<List<MarcaProdutoOption>, AppFailure>(
+        <MarcaProdutoOption>[],
       ),
     );
 
@@ -206,8 +249,14 @@ void main() {
       ..registerSingleton<LoadProdutoVendidoTendenciaDeVendaScreenUseCase>(
         loadTrendScreenUseCase,
       )
-      ..registerSingleton<LoadGrupoMarcaProdutoOptionsUseCase>(
-        loadGrupoMarcaOptionsUseCase,
+      ..registerSingleton<LoadProdutoVendidoTendenciaDeVendaUseCase>(
+        loadTrendPageUseCase,
+      )
+      ..registerSingleton<LoadGrupoProdutoOptionsUseCase>(
+        loadGrupoProdutoOptionsUseCase,
+      )
+      ..registerSingleton<LoadMarcaProdutoOptionsUseCase>(
+        loadMarcaProdutoOptionsUseCase,
       );
   });
 
@@ -610,6 +659,102 @@ void main() {
     expect(find.text('Growing products'), findsNothing);
   });
 
+  testWidgets('supports pagination with totalCount', (tester) async {
+    final capturedDetailFilters = <ProdutoVendidoTendenciaDeVendaFilter>[];
+
+    when(
+      () => loadTrendScreenUseCase.call(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        pageFilter: any(named: 'pageFilter'),
+        summaryFilter: any(named: 'summaryFilter'),
+        clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    ).thenAnswer(
+      (_) async =>
+          Success<ProdutoVendidoTendenciaDeVendaScreenData, AppFailure>(
+            ProdutoVendidoTendenciaDeVendaScreenData(
+              rows: <ProdutoVendidoTendenciaDeVendaRow>[
+                _trendRow(
+                  codProduto: 1,
+                  nomeProduto: 'Product A',
+                  diferenca: 30,
+                  percentualTendencia: 25,
+                  classificacao: 'CRESCENDO',
+                ),
+              ],
+              totalCount: 25,
+              summaryRows: const <ProdutoVendidoTendenciaDeVendaSummaryRow>[
+                ProdutoVendidoTendenciaDeVendaSummaryRow(
+                  classificacao: 'CRESCENDO',
+                  quantidadeProdutos: 25,
+                  impactoLiquido: 80,
+                ),
+              ],
+              topGainers: <ProdutoVendidoTendenciaDeVendaRow>[
+                _trendRow(
+                  codProduto: 1,
+                  nomeProduto: 'Product A',
+                  diferenca: 30,
+                  percentualTendencia: 25,
+                  classificacao: 'CRESCENDO',
+                ),
+              ],
+              topLosers: const <ProdutoVendidoTendenciaDeVendaRow>[],
+            ),
+          ),
+    );
+
+    when(
+      () => loadTrendPageUseCase.call(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        filter: any(named: 'filter'),
+        clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    ).thenAnswer((invocation) async {
+      final filter =
+          invocation.namedArguments[#filter]
+              as ProdutoVendidoTendenciaDeVendaFilter;
+      capturedDetailFilters.add(filter);
+
+      return Success<List<ProdutoVendidoTendenciaDeVendaRow>, AppFailure>(
+        <ProdutoVendidoTendenciaDeVendaRow>[
+          _trendRow(
+            codProduto: filter.page,
+            nomeProduto: filter.page == 1 ? 'Product A' : 'Product B',
+            diferenca: 30,
+            percentualTendencia: 25,
+            classificacao: 'CRESCENDO',
+          ),
+        ],
+      );
+    });
+
+    await _pumpTrendPage(tester, authController: authController);
+    await tester.pumpAndSettle();
+
+    final nextPageButton = find.byIcon(Icons.chevron_right_rounded);
+    await tester.scrollUntilVisible(
+      nextPageButton,
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('25 rows'), findsOneWidget);
+    expect(find.text('Product A'), findsOneWidget);
+    expect(find.text('2'), findsWidgets);
+
+    await tester.tap(nextPageButton);
+    await tester.pumpAndSettle();
+
+    expect(capturedDetailFilters.any((filter) => filter.page == 2), isTrue);
+    expect(find.text('Product B'), findsOneWidget);
+  });
+
   testWidgets('navigates from sales hub card to trend page route', (
     tester,
   ) async {
@@ -659,8 +804,11 @@ Future<void> _pumpTrendPage(
             resolveSalesAgentClientTokenUseCase:
                 ResolveSalesAgentClientTokenUseCase(_pumpTokenReader),
             loadTrendScreenUseCase: _pumpLoadTrendScreenUseCase,
-            loadGrupoMarcaProdutoOptionsUseCase:
-                _pumpLoadGrupoMarcaOptionsUseCase,
+            loadTrendPageUseCase: _pumpLoadTrendPageUseCase,
+            loadGrupoProdutoOptionsUseCase:
+                _pumpLoadGrupoProdutoOptionsUseCase,
+            loadMarcaProdutoOptionsUseCase:
+                _pumpLoadMarcaProdutoOptionsUseCase,
           ),
         ),
       ),

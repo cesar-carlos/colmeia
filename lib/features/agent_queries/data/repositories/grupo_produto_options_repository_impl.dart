@@ -7,6 +7,7 @@ import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repos
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/grupo_produto_option.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/grupo_produto_options_repository.dart';
 
@@ -33,6 +34,7 @@ class GrupoProdutoOptionsRepositoryImpl
     int? bridgeTimeoutMs,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
   }) async {
     if (page < 1) {
       return AgentSqlRepositoryExecution.invalidFilters<
@@ -101,6 +103,7 @@ class GrupoProdutoOptionsRepositoryImpl
       operation: _operation,
       agentId: agentId.trim(),
       unexpectedRowsLogMessage: 'Unexpected row shape for $_operation',
+      cancelScope: cancelScope,
       mapExecution: (executionResult) => executionResult.rows
           .map((row) => GrupoProdutoOptionModel.fromMap(row).toEntity())
           .toList(growable: false),

@@ -4599,6 +4599,27 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get authPasswordsMismatch => 'As senhas não conferem.';
+
+  @override
+  String get appAsyncSearchSelectOptionHint => 'Select an option';
+
+  @override
+  String get appAsyncSearchSearchHint => 'Search...';
+
+  @override
+  String appAsyncSearchMinSearchLengthHint(int minLength) {
+    return 'Type at least $minLength characters to search.';
+  }
+
+  @override
+  String get appAsyncSearchEmptyResults => 'No results found.';
+
+  @override
+  String get appAsyncSearchRetry => 'Try again';
+
+  @override
+  String get salesAsyncSearchClientTokenUnavailable =>
+      'Client token unavailable for this branch.';
 }
 
 /// The translations for Portuguese, as used in Brazil (`pt_BR`).
@@ -9196,4 +9217,25 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get authPasswordsMismatch => 'As senhas não conferem.';
+
+  @override
+  String get appAsyncSearchSelectOptionHint => 'Selecione uma opção';
+
+  @override
+  String get appAsyncSearchSearchHint => 'Buscar...';
+
+  @override
+  String appAsyncSearchMinSearchLengthHint(int minLength) {
+    return 'Digite pelo menos $minLength caracteres para buscar.';
+  }
+
+  @override
+  String get appAsyncSearchEmptyResults => 'Nenhum resultado encontrado.';
+
+  @override
+  String get appAsyncSearchRetry => 'Tentar novamente';
+
+  @override
+  String get salesAsyncSearchClientTokenUnavailable =>
+      'Token do cliente indisponível para esta filial.';
 }

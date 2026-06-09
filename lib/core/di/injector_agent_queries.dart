@@ -19,6 +19,9 @@ import 'package:colmeia/features/agent_queries/application/orchestration/agent_q
 import 'package:colmeia/features/agent_queries/application/sync/agent_query_facts_prefetch_coordinator.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_page_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_cliente_options_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_fornecedor_options_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_marca_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_municipios_page_use_case.dart';
@@ -95,6 +98,9 @@ import 'package:colmeia/features/agent_queries/data/repositories/caching/caching
 import 'package:colmeia/features/agent_queries/data/repositories/caching/caching_resumo_total_vendas_municipio_filial_periodo_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/cadastro_filial_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/cadastro_filial_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/cliente_options_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/fornecedor_options_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/grupo_marca_produto_options_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/grupo_produto_options_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/marca_produto_options_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/metrics_agent_queries_repository.dart';
@@ -160,6 +166,9 @@ import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_sql_execution_eligibility_port.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/cadastro_filial_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/cadastro_filial_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/cliente_options_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/fornecedor_options_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/grupo_marca_produto_options_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/grupo_produto_options_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/marca_produto_options_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/municipio_list_repository.dart';
@@ -513,6 +522,21 @@ void _registerSingleAgentQueryRepositories(GetIt getIt) {
     useCase: () => LoadMunicipiosPageUseCase(getIt<MunicipioListRepository>()),
   );
 
+  _registerSingle<ClienteOptionsRepository, LoadClienteOptionsUseCase>(
+    getIt,
+    repo: () => ClienteOptionsRepositoryImpl(getIt<AgentQueriesRepository>()),
+    useCase: () =>
+        LoadClienteOptionsUseCase(getIt<ClienteOptionsRepository>()),
+  );
+
+  _registerSingle<FornecedorOptionsRepository, LoadFornecedorOptionsUseCase>(
+    getIt,
+    repo: () =>
+        FornecedorOptionsRepositoryImpl(getIt<AgentQueriesRepository>()),
+    useCase: () =>
+        LoadFornecedorOptionsUseCase(getIt<FornecedorOptionsRepository>()),
+  );
+
   _registerSingle<
     GrupoProdutoOptionsRepository,
     LoadGrupoProdutoOptionsUseCase
@@ -534,6 +558,19 @@ void _registerSingleAgentQueryRepositories(GetIt getIt) {
         MarcaProdutoOptionsRepositoryImpl(getIt<AgentQueriesRepository>()),
     useCase: () => LoadMarcaProdutoOptionsUseCase(
       getIt<MarcaProdutoOptionsRepository>(),
+    ),
+  );
+
+  _registerSingle<
+    GrupoMarcaProdutoOptionsRepository,
+    LoadGrupoMarcaProdutoOptionsUseCase
+  >(
+    getIt,
+    repo: () => GrupoMarcaProdutoOptionsRepositoryImpl(
+      getIt<AgentQueriesRepository>(),
+    ),
+    useCase: () => LoadGrupoMarcaProdutoOptionsUseCase(
+      getIt<GrupoMarcaProdutoOptionsRepository>(),
     ),
   );
 

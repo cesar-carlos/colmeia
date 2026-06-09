@@ -1,127 +1,62 @@
 import 'dart:async';
 
-import 'package:colmeia/core/errors/app_failure.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_marca_produto_options_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_screen_use_case.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/grupo_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_summary_row.dart';
-import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
-import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
-import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
+import 'package:colmeia/features/sales/presentation/controllers/sales_trend_controller_base.dart';
+import 'package:colmeia/features/sales/presentation/controllers/sales_trend_reload_outcome.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_produto_tendencia_media_movel_presentation_state.dart';
-import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
-import 'package:flutter/material.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 
-enum SalesProdutoTendenciaMediaMovelReloadOutcomeKind {
-  success,
-  failure,
-  cancelled,
-  superseded,
-}
+export 'package:colmeia/features/sales/presentation/controllers/sales_trend_reload_outcome.dart'
+    show SalesProdutoTendenciaMediaMovelReloadOutcome;
 
-@immutable
-class SalesProdutoTendenciaMediaMovelReloadOutcome {
-  const SalesProdutoTendenciaMediaMovelReloadOutcome._(
-    this.kind, {
-    this.loadFailure,
-    this.dimensionOptionsFailure,
-  });
-
-  const SalesProdutoTendenciaMediaMovelReloadOutcome.success({
-    AppFailure? dimensionOptionsFailure,
-  }) : this._(
-         SalesProdutoTendenciaMediaMovelReloadOutcomeKind.success,
-         dimensionOptionsFailure: dimensionOptionsFailure,
-       );
-
-  const SalesProdutoTendenciaMediaMovelReloadOutcome.failure({
-    AppFailure? loadFailure,
-    AppFailure? dimensionOptionsFailure,
-  }) : this._(
-         SalesProdutoTendenciaMediaMovelReloadOutcomeKind.failure,
-         loadFailure: loadFailure,
-         dimensionOptionsFailure: dimensionOptionsFailure,
-       );
-
-  const SalesProdutoTendenciaMediaMovelReloadOutcome.cancelled()
-    : this._(SalesProdutoTendenciaMediaMovelReloadOutcomeKind.cancelled);
-
-  const SalesProdutoTendenciaMediaMovelReloadOutcome.superseded()
-    : this._(SalesProdutoTendenciaMediaMovelReloadOutcomeKind.superseded);
-
-  final SalesProdutoTendenciaMediaMovelReloadOutcomeKind kind;
-  final AppFailure? loadFailure;
-  final AppFailure? dimensionOptionsFailure;
-
-  bool get isSuccess =>
-      kind == SalesProdutoTendenciaMediaMovelReloadOutcomeKind.success;
-
-  bool get isFailure =>
-      kind == SalesProdutoTendenciaMediaMovelReloadOutcomeKind.failure;
-
-  bool get isCancelled =>
-      kind == SalesProdutoTendenciaMediaMovelReloadOutcomeKind.cancelled;
-
-  bool get isSuperseded =>
-      kind == SalesProdutoTendenciaMediaMovelReloadOutcomeKind.superseded;
-}
-
-class SalesProdutoTendenciaMediaMovelController extends ChangeNotifier {
+class SalesProdutoTendenciaMediaMovelController
+    extends SalesTrendControllerBase {
   SalesProdutoTendenciaMediaMovelController({
-    required SalesSessionService sessionService,
-    required LoadAvailableAgentsForSales loadSalesAvailableAgentsUseCase,
-    required ResolveSalesAgentClientTokenUseCase resolveSalesAgentClientTokenUseCase,
+    required super.sessionService,
+    required super.loadSalesAvailableAgentsUseCase,
+    required super.resolveSalesAgentClientTokenUseCase,
     required LoadProdutoVendidoTendenciaDeVendaMediaMovelScreenUseCase
     loadTrendScreenUseCase,
-    required LoadGrupoMarcaProdutoOptionsUseCase loadGrupoMarcaProdutoOptionsUseCase,
-    AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder,
+    required LoadProdutoVendidoTendenciaDeVendaMediaMovelPageUseCase
+    loadTrendPageUseCase,
+    super.relayCancelScopeBinder,
   }) : _sessionService = sessionService,
-       _loadAgentsUseCase = loadSalesAvailableAgentsUseCase,
-       _resolveClientTokenUseCase = resolveSalesAgentClientTokenUseCase,
        _loadTrendScreen = loadTrendScreenUseCase,
-       _loadGrupoMarcaOptions = loadGrupoMarcaProdutoOptionsUseCase,
-       _relayCancelScopeBinder = relayCancelScopeBinder,
+       _loadTrendPage = loadTrendPageUseCase,
        _state = _restoreInitialState(sessionService) {
-    _selectedAgentId = _state.selectedAgentId;
+    selectedAgentId = _state.selectedAgentId;
   }
 
   static const String cardFilterId =
       SalesAutoRefreshCardIds.produtoTendenciaMediaMovel;
-  static const List<int> pageSizeOptions = <int>[10, 20, 50, 100];
 
   final SalesSessionService _sessionService;
-  final LoadAvailableAgentsForSales _loadAgentsUseCase;
-  final ResolveSalesAgentClientTokenUseCase _resolveClientTokenUseCase;
   final LoadProdutoVendidoTendenciaDeVendaMediaMovelScreenUseCase
   _loadTrendScreen;
-  final LoadGrupoMarcaProdutoOptionsUseCase _loadGrupoMarcaOptions;
-  final AgentQueriesRelayCancelScopeBinder? _relayCancelScopeBinder;
+  final LoadProdutoVendidoTendenciaDeVendaMediaMovelPageUseCase _loadTrendPage;
 
   SalesProdutoTendenciaMediaMovelPresentationState _state;
-  String? _boundUserId;
-  String? _selectedAgentId;
-  int _sqlLoadGeneration = 0;
-  AgentQueriesCancelScope? _sqlCancelScope;
-  String? _cachedClientTokenUserId;
-  String? _cachedClientTokenAgentId;
-  String? _cachedClientToken;
-  bool _disposed = false;
 
   SalesProdutoTendenciaMediaMovelPresentationState get state => _state;
 
-  AgentQueriesCancelScope? get sqlCancelScope => _sqlCancelScope;
+  @override
+  String? get trendSelectedAgentId => _state.selectedAgentId;
 
   static SalesProdutoTendenciaMediaMovelPresentationState _restoreInitialState(
     SalesSessionService sessionService,
   ) {
     final restored = sessionService.restoreCardFilters(cardFilterId);
     final quantidadeDias =
-        _restorePositiveInt(restored['quantidade_dias'])?.clamp(
+        SalesTrendControllerBase.restorePositiveInt(
+          restored['quantidade_dias'],
+        )?.clamp(
           1,
           ProdutoVendidoTendenciaDeVendaMediaMovelFilter.maxQuantidadeDias,
         ) ??
@@ -135,7 +70,16 @@ class SalesProdutoTendenciaMediaMovelController extends ChangeNotifier {
             .contains(restoredClassificacao)
         ? restoredClassificacao
         : null;
-    final codGrupoProduto = _restorePositiveInt(restored['cod_grupo_produto']);
+    final codGrupoProduto = SalesTrendControllerBase.restorePositiveInt(
+      restored['cod_grupo_produto'],
+    );
+    final codMarca = SalesTrendControllerBase.restorePositiveInt(
+      restored['cod_marca'],
+    );
+    final restoredGrupoLabel = (restored['grupo_produto_label'] as String?)
+        ?.trim();
+    final restoredMarcaLabel = (restored['marca_produto_label'] as String?)
+        ?.trim();
 
     final restoredSortByName = (restored['sort_by'] as String?)?.trim();
     final sortBy = ProdutoVendidoTendenciaDeVendaMediaMovelSortBy.values
@@ -145,9 +89,12 @@ class SalesProdutoTendenciaMediaMovelController extends ChangeNotifier {
               .tendenciaPercentualDesc,
         );
 
-    final restoredPageSize = _restorePositiveInt(restored['page_size']);
+    final restoredPageSize = SalesTrendControllerBase.restorePositiveInt(
+      restored['page_size'],
+    );
     final pageSize =
-        restoredPageSize != null && pageSizeOptions.contains(restoredPageSize)
+        restoredPageSize != null &&
+            SalesTrendControllerBase.pageSizeOptions.contains(restoredPageSize)
         ? restoredPageSize
         : ProdutoVendidoTendenciaDeVendaMediaMovelFilter.defaultPageSize;
 
@@ -157,31 +104,36 @@ class SalesProdutoTendenciaMediaMovelController extends ChangeNotifier {
       searchTerm: searchTerm,
       classificacao: classificacao,
       codGrupoProduto: codGrupoProduto,
+      codMarca: codMarca,
+      grupoProdutoLabel:
+          codGrupoProduto != null &&
+              restoredGrupoLabel != null &&
+              restoredGrupoLabel.isNotEmpty
+          ? restoredGrupoLabel
+          : null,
+      marcaProdutoLabel:
+          codMarca != null &&
+              restoredMarcaLabel != null &&
+              restoredMarcaLabel.isNotEmpty
+          ? restoredMarcaLabel
+          : null,
       sortBy: sortBy,
       pageSize: pageSize,
     );
   }
 
-  Future<void> bindUser(String? userId) async {
-    if (_boundUserId == userId) {
-      return;
-    }
-    _boundUserId = userId;
-    if (userId == null) {
-      return;
-    }
-    await _loadAgents(userId);
-  }
-
-  Future<SalesProdutoTendenciaMediaMovelReloadOutcome> reload() =>
-      _performReload();
+  Future<SalesTrendReloadOutcome> reload() => performFullReload();
 
   Future<void> changeAgent(String agentId) async {
-    _selectedAgentId = agentId;
+    selectedAgentId = agentId;
     _setState(
       _state.copyWith(
         selectedAgentId: agentId,
         page: 1,
+        grupoProdutoLabel: null,
+        marcaProdutoLabel: null,
+        codGrupoProduto: null,
+        codMarca: null,
       ),
     );
     await _sessionService.setSelectedAgentId(agentId);
@@ -199,7 +151,14 @@ class SalesProdutoTendenciaMediaMovelController extends ChangeNotifier {
     final nextClassificacao = (next['classificacao'] as String?)
         ?.trim()
         .toUpperCase();
-    final nextGrupo = _restorePositiveInt(next['codGrupoProduto']);
+    final nextGrupo = SalesTrendControllerBase.restorePositiveInt(
+      next['codGrupoProduto'],
+    );
+    final nextMarca = SalesTrendControllerBase.restorePositiveInt(
+      next['codMarca'],
+    );
+    final nextGrupoLabel = (next['grupoProdutoLabel'] as String?)?.trim();
+    final nextMarcaLabel = (next['marcaProdutoLabel'] as String?)?.trim();
     final nextSortByName = next['sortBy'] as String?;
     final nextSortBy = ProdutoVendidoTendenciaDeVendaMediaMovelSortBy.values
         .firstWhere(
@@ -207,12 +166,12 @@ class SalesProdutoTendenciaMediaMovelController extends ChangeNotifier {
           orElse: () => _state.sortBy,
         );
     final nextPageSize =
-        _restorePositiveInt(next['pageSize']) ?? _state.pageSize;
+        SalesTrendControllerBase.restorePositiveInt(next['pageSize']) ??
+        _state.pageSize;
 
-    final optionsLoadedForAgentId = _state.optionsLoadedForAgentId;
-    final agentChanged = optionsLoadedForAgentId != normalizedAgentId;
+    final agentChanged = _state.selectedAgentId != normalizedAgentId;
 
-    _selectedAgentId = normalizedAgentId;
+    selectedAgentId = normalizedAgentId;
     _setState(
       _state.copyWith(
         selectedAgentId: normalizedAgentId,
@@ -224,18 +183,19 @@ class SalesProdutoTendenciaMediaMovelController extends ChangeNotifier {
             ? nextClassificacao
             : null,
         codGrupoProduto: nextGrupo,
+        codMarca: nextMarca,
+        grupoProdutoLabel: agentChanged || nextGrupo == null
+            ? (nextGrupo == null ? null : nextGrupoLabel)
+            : (nextGrupoLabel ?? _state.grupoProdutoLabel),
+        marcaProdutoLabel: agentChanged || nextMarca == null
+            ? (nextMarca == null ? null : nextMarcaLabel)
+            : (nextMarcaLabel ?? _state.marcaProdutoLabel),
         sortBy: nextSortBy,
-        pageSize: pageSizeOptions.contains(nextPageSize)
+        pageSize:
+            SalesTrendControllerBase.pageSizeOptions.contains(nextPageSize)
             ? nextPageSize
             : _state.pageSize,
         page: 1,
-        grupoOptions: agentChanged
-            ? const <GrupoProdutoOption>[]
-            : _state.grupoOptions,
-        dimensionOptionsLoadFailure: agentChanged
-            ? null
-            : _state.dimensionOptionsLoadFailure,
-        optionsLoadedForAgentId: agentChanged ? null : optionsLoadedForAgentId,
       ),
     );
     unawaited(_sessionService.setSelectedAgentId(normalizedAgentId));
@@ -249,7 +209,7 @@ class SalesProdutoTendenciaMediaMovelController extends ChangeNotifier {
     }
     _setState(_state.copyWith(pageSize: size, page: 1));
     unawaited(_persistFilters());
-    await reload();
+    await reloadDetailsOnly();
   }
 
   Future<void> selectPage(int page) async {
@@ -271,101 +231,34 @@ class SalesProdutoTendenciaMediaMovelController extends ChangeNotifier {
         ),
       ),
     );
-    await reload();
+    await reloadDetailsOnly();
   }
+
+  Future<SalesTrendReloadOutcome> reloadDetailsOnly() =>
+      performDetailsOnlyReload();
 
   ProdutoVendidoTendenciaDeVendaMediaMovelFilter shareDetailFilter() {
-    return ProdutoVendidoTendenciaDeVendaMediaMovelFilter(
-      quantidadeDias: _state.quantidadeDias,
-      searchTerm: _state.searchTerm,
-      classificacao: _state.classificacao,
-      codGrupoProduto: _state.codGrupoProduto,
-      sortBy: _state.sortBy,
-      pageSize: _state.pageSize,
-    );
-  }
-
-  Future<String?> resolveClientToken({
-    required String userId,
-    required String agentId,
-  }) => _resolveClientToken(userId: userId, agentId: agentId);
-
-  Future<SalesProdutoTendenciaMediaMovelReloadOutcome>
-  retryDimensionOptionsLoad() async {
-    final userId = _boundUserId;
-    final agentId = _state.selectedAgentId?.trim();
-    if (userId == null || agentId == null || agentId.isEmpty) {
-      return const SalesProdutoTendenciaMediaMovelReloadOutcome.cancelled();
-    }
-    final clientToken = await _resolveClientToken(
-      userId: userId,
-      agentId: agentId,
-    );
-    if (_disposed || clientToken == null) {
-      return const SalesProdutoTendenciaMediaMovelReloadOutcome.cancelled();
-    }
-    final failure = await _loadDimensionOptions(
-      userId: userId,
-      agentId: agentId,
-      clientToken: clientToken,
-      generation: _sqlLoadGeneration,
-      cancelScope: _sqlCancelScope,
-    );
-    if (_disposed) {
-      return const SalesProdutoTendenciaMediaMovelReloadOutcome.superseded();
-    }
-    return failure == null
-        ? const SalesProdutoTendenciaMediaMovelReloadOutcome.success()
-        : SalesProdutoTendenciaMediaMovelReloadOutcome.failure(
-            dimensionOptionsFailure: failure,
-          );
+    return _detailFilter();
   }
 
   @override
-  void dispose() {
-    _disposed = true;
-    _sqlCancelScope?.cancelAll();
-    super.dispose();
-  }
-
-  Future<void> _loadAgents(String userId) async {
-    final agents = await _loadAgentsUseCase(userId);
-    if (_isStaleBoundUser(userId)) {
-      return;
-    }
-
-    final nextSelection = reconcileSelectedSalesAgentId(
-      agents: agents,
-      previousSelectedId: _selectedAgentId,
-    );
-    _selectedAgentId = nextSelection;
+  void applyAvailableAgents({
+    required List<DashboardAgentOption> agents,
+    required String? selectedAgentId,
+  }) {
     _setState(
       _state.copyWith(
         availableAgents: agents,
-        selectedAgentId: nextSelection,
+        selectedAgentId: selectedAgentId,
       ),
     );
-    if (nextSelection != _sessionService.selectedAgentId) {
-      unawaited(_sessionService.setSelectedAgentId(nextSelection));
-    }
-    if (_isStaleBoundUser(userId)) {
-      return;
-    }
-    await reload();
   }
 
-  bool _isStaleBoundUser(String userId) {
-    return _disposed || _boundUserId != userId;
-  }
-
-  Future<SalesProdutoTendenciaMediaMovelReloadOutcome> _performReload() async {
-    final userId = _boundUserId;
+  @override
+  Future<SalesTrendReloadOutcome> performFullReload() async {
+    final userId = boundUserId;
     final agentId = _state.selectedAgentId;
-    final generation = ++_sqlLoadGeneration;
-    _sqlCancelScope?.cancelAll();
-    final sqlScope = AgentQueriesCancelScope();
-    _sqlCancelScope = sqlScope;
-    _relayCancelScopeBinder?.call(sqlScope);
+    final (:generation, :scope) = beginSqlLoad();
 
     _setState(
       _state.copyWith(
@@ -376,8 +269,8 @@ class SalesProdutoTendenciaMediaMovelController extends ChangeNotifier {
     );
 
     if (userId == null || agentId == null || agentId.trim().isEmpty) {
-      if (_disposed || generation != _sqlLoadGeneration) {
-        return const SalesProdutoTendenciaMediaMovelReloadOutcome.superseded();
+      if (isSuperseded(generation)) {
+        return const SalesTrendReloadOutcome.superseded();
       }
       _setState(
         _state.copyWith(
@@ -392,16 +285,16 @@ class SalesProdutoTendenciaMediaMovelController extends ChangeNotifier {
           loadFailure: null,
         ),
       );
-      return const SalesProdutoTendenciaMediaMovelReloadOutcome.cancelled();
+      return const SalesTrendReloadOutcome.cancelled();
     }
 
     final trimmedAgentId = agentId.trim();
-    final clientToken = await _resolveClientToken(
+    final clientToken = await resolveClientToken(
       userId: userId,
       agentId: trimmedAgentId,
     );
-    if (_disposed || generation != _sqlLoadGeneration) {
-      return const SalesProdutoTendenciaMediaMovelReloadOutcome.superseded();
+    if (isSuperseded(generation)) {
+      return const SalesTrendReloadOutcome.superseded();
     }
     if (clientToken == null) {
       _setState(
@@ -417,43 +310,19 @@ class SalesProdutoTendenciaMediaMovelController extends ChangeNotifier {
           loadFailure: null,
         ),
       );
-      return const SalesProdutoTendenciaMediaMovelReloadOutcome.cancelled();
+      return const SalesTrendReloadOutcome.cancelled();
     }
-
-    AppFailure? dimensionOptionsFailure;
-    if (_state.optionsLoadedForAgentId != trimmedAgentId) {
-      dimensionOptionsFailure = await _loadDimensionOptions(
-        userId: userId,
-        agentId: trimmedAgentId,
-        clientToken: clientToken,
-        generation: generation,
-        cancelScope: sqlScope,
-      );
-      if (_disposed || generation != _sqlLoadGeneration) {
-        return const SalesProdutoTendenciaMediaMovelReloadOutcome.superseded();
-      }
-    }
-
-    final filter = ProdutoVendidoTendenciaDeVendaMediaMovelFilter(
-      quantidadeDias: _state.quantidadeDias,
-      searchTerm: _state.searchTerm,
-      classificacao: _state.classificacao,
-      codGrupoProduto: _state.codGrupoProduto,
-      sortBy: _state.sortBy,
-      page: _state.page,
-      pageSize: _state.pageSize,
-    );
 
     final screenResult = await _loadTrendScreen(
       userId: userId,
       agentId: trimmedAgentId,
-      filter: filter,
+      filter: _detailFilter(),
       clientToken: clientToken,
-      cancelScope: sqlScope,
+      cancelScope: scope,
     );
 
-    if (_disposed || generation != _sqlLoadGeneration) {
-      return const SalesProdutoTendenciaMediaMovelReloadOutcome.superseded();
+    if (isSuperseded(generation)) {
+      return const SalesTrendReloadOutcome.superseded();
     }
 
     return screenResult.fold(
@@ -467,17 +336,16 @@ class SalesProdutoTendenciaMediaMovelController extends ChangeNotifier {
             loadFailure: null,
           ),
         );
-        return SalesProdutoTendenciaMediaMovelReloadOutcome.success(
-          dimensionOptionsFailure: dimensionOptionsFailure,
-        );
+        return const SalesTrendReloadOutcome.success();
       },
       (failure) {
         _setState(
           _state.copyWith(
-            pageResult: const ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
-              items: <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[],
-              totalCount: 0,
-            ),
+            pageResult:
+                const ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
+                  items: <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[],
+                  totalCount: 0,
+                ),
             summaryRows:
                 const <ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>[],
             loading: false,
@@ -485,69 +353,100 @@ class SalesProdutoTendenciaMediaMovelController extends ChangeNotifier {
             loadFailure: failure,
           ),
         );
-        return SalesProdutoTendenciaMediaMovelReloadOutcome.failure(
-          loadFailure: failure,
-          dimensionOptionsFailure: dimensionOptionsFailure,
-        );
+        return SalesTrendReloadOutcome.failure(loadFailure: failure);
       },
     );
   }
 
-  Future<String?> _resolveClientToken({
-    required String userId,
-    required String agentId,
-  }) async {
-    if (_cachedClientTokenUserId == userId &&
-        _cachedClientTokenAgentId == agentId) {
-      return _cachedClientToken;
-    }
-    final resolved = await _resolveClientTokenUseCase(
-      userId: userId,
-      agentId: agentId,
-    );
-    if (resolved != null) {
-      _cachedClientTokenUserId = userId;
-      _cachedClientTokenAgentId = agentId;
-      _cachedClientToken = resolved;
-    }
-    return resolved;
-  }
-
-  Future<AppFailure?> _loadDimensionOptions({
-    required String userId,
-    required String agentId,
-    required String clientToken,
-    required int generation,
-    AgentQueriesCancelScope? cancelScope,
-  }) async {
-    final batchResult = await _loadGrupoMarcaOptions(
-      userId: userId,
-      agentId: agentId,
-      pageSize: 200,
-      clientToken: clientToken,
-      cancelScope: cancelScope,
-    );
-    if (_disposed || generation != _sqlLoadGeneration) {
-      return null;
-    }
-
-    AppFailure? optionsFailure;
-    final nextGrupos = batchResult.fold(
-      (batch) => batch.grupoOptions,
-      (failure) {
-        optionsFailure = failure;
-        return const <GrupoProdutoOption>[];
-      },
-    );
+  @override
+  Future<SalesTrendReloadOutcome> performDetailsOnlyReload() async {
+    final userId = boundUserId;
+    final agentId = _state.selectedAgentId;
+    final (:generation, :scope) = beginSqlLoad();
 
     _setState(
       _state.copyWith(
-        grupoOptions: nextGrupos,
-        optionsLoadedForAgentId: agentId,
-        dimensionOptionsLoadFailure: optionsFailure,
+        loading: true,
+        loadFailure: null,
       ),
     );
-    return optionsFailure;
+
+    if (userId == null || agentId == null || agentId.trim().isEmpty) {
+      if (isSuperseded(generation)) {
+        return const SalesTrendReloadOutcome.superseded();
+      }
+      _setState(_state.copyWith(loading: false));
+      return const SalesTrendReloadOutcome.cancelled();
+    }
+
+    final trimmedAgentId = agentId.trim();
+    final clientToken = await resolveClientToken(
+      userId: userId,
+      agentId: trimmedAgentId,
+    );
+    if (isSuperseded(generation)) {
+      return const SalesTrendReloadOutcome.superseded();
+    }
+    if (clientToken == null) {
+      _setState(
+        _state.copyWith(
+          loading: false,
+          authenticationFailed: true,
+        ),
+      );
+      return const SalesTrendReloadOutcome.cancelled();
+    }
+
+    final pageResult = await _loadTrendPage(
+      userId: userId,
+      agentId: trimmedAgentId,
+      filter: _detailFilter(),
+      clientToken: clientToken,
+    );
+
+    if (isSuperseded(generation)) {
+      return const SalesTrendReloadOutcome.superseded();
+    }
+
+    return pageResult.fold(
+      (page) {
+        _setState(
+          _state.copyWith(
+            pageResult: page,
+            loading: false,
+            loadFailure: null,
+          ),
+        );
+        return const SalesTrendReloadOutcome.success();
+      },
+      (failure) {
+        _setState(
+          _state.copyWith(
+            pageResult:
+                const ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
+                  items: <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[],
+                  totalCount: 0,
+                ),
+            loading: false,
+            loadFailure: failure,
+          ),
+        );
+        return SalesTrendReloadOutcome.failure(loadFailure: failure);
+      },
+    );
+  }
+
+  ProdutoVendidoTendenciaDeVendaMediaMovelFilter _detailFilter() {
+    return ProdutoVendidoTendenciaDeVendaMediaMovelFilter(
+      quantidadeDias: _state.quantidadeDias,
+      searchTerm: _state.searchTerm,
+      classificacao: _state.classificacao,
+      codGrupoProduto: _state.codGrupoProduto,
+      codMarca: _state.codMarca,
+      sortBy: _state.sortBy,
+      page: _state.page,
+      pageSize: _state.pageSize,
+    );
   }
 
   Future<void> _persistFilters() {
@@ -556,24 +455,19 @@ class SalesProdutoTendenciaMediaMovelController extends ChangeNotifier {
       'search_term': _state.searchTerm,
       'classificacao': _state.classificacao,
       'cod_grupo_produto': _state.codGrupoProduto,
+      'cod_marca': _state.codMarca,
+      'grupo_produto_label': _state.grupoProdutoLabel,
+      'marca_produto_label': _state.marcaProdutoLabel,
       'sort_by': _state.sortBy.name,
       'page_size': _state.pageSize,
     });
   }
 
   void _setState(SalesProdutoTendenciaMediaMovelPresentationState nextState) {
-    if (_disposed || _state == nextState) {
+    if (isDisposed || _state == nextState) {
       return;
     }
     _state = nextState;
     notifyListeners();
-  }
-
-  static int? _restorePositiveInt(Object? raw) {
-    final value = raw is int ? raw : int.tryParse('$raw');
-    if (value == null || value <= 0) {
-      return null;
-    }
-    return value;
   }
 }

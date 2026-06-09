@@ -1976,5 +1976,16 @@
     }
   },
   "authConfirmPasswordRequired": "Confirme sua senha.",
-  "authPasswordsMismatch": "As senhas não conferem."
+  "authPasswordsMismatch": "As senhas não conferem.",
+  "appAsyncSearchSelectOptionHint": "Selecione uma opção",
+  "appAsyncSearchSearchHint": "Buscar...",
+  "appAsyncSearchMinSearchLengthHint": "Digite pelo menos {minLength} caracteres para buscar.",
+  "@appAsyncSearchMinSearchLengthHint": {
+    "placeholders": {
+      "minLength": {"type": "int"}
+    }
+  },
+  "appAsyncSearchEmptyResults": "Nenhum resultado encontrado.",
+  "appAsyncSearchRetry": "Tentar novamente",
+  "salesAsyncSearchClientTokenUnavailable": "Token do cliente indisponível para esta filial."
 }

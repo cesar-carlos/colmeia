@@ -1,5 +1,4 @@
 import 'package:colmeia/core/errors/app_failure.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/grupo_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_row.dart';
@@ -13,12 +12,12 @@ class SalesProdutoTendenciaMediaMovelPresentationState {
     required this.quantidadeDias,
     this.selectedAgentId,
     this.availableAgents = const <DashboardAgentOption>[],
-    this.grupoOptions = const <GrupoProdutoOption>[],
-    this.optionsLoadedForAgentId,
-    this.dimensionOptionsLoadFailure,
+    this.grupoProdutoLabel,
+    this.marcaProdutoLabel,
     this.searchTerm = '',
     this.classificacao,
     this.codGrupoProduto,
+    this.codMarca,
     this.sortBy =
         ProdutoVendidoTendenciaDeVendaMediaMovelSortBy.tendenciaPercentualDesc,
     this.page = 1,
@@ -38,13 +37,13 @@ class SalesProdutoTendenciaMediaMovelPresentationState {
 
   final String? selectedAgentId;
   final List<DashboardAgentOption> availableAgents;
-  final List<GrupoProdutoOption> grupoOptions;
-  final String? optionsLoadedForAgentId;
-  final AppFailure? dimensionOptionsLoadFailure;
+  final String? grupoProdutoLabel;
+  final String? marcaProdutoLabel;
   final int quantidadeDias;
   final String searchTerm;
   final String? classificacao;
   final int? codGrupoProduto;
+  final int? codMarca;
   final ProdutoVendidoTendenciaDeVendaMediaMovelSortBy sortBy;
   final int page;
   final int pageSize;
@@ -59,13 +58,13 @@ class SalesProdutoTendenciaMediaMovelPresentationState {
   SalesProdutoTendenciaMediaMovelPresentationState copyWith({
     String? selectedAgentId,
     List<DashboardAgentOption>? availableAgents,
-    List<GrupoProdutoOption>? grupoOptions,
-    Object? optionsLoadedForAgentId = _sentinel,
-    Object? dimensionOptionsLoadFailure = _sentinel,
+    Object? grupoProdutoLabel = _sentinel,
+    Object? marcaProdutoLabel = _sentinel,
     int? quantidadeDias,
     String? searchTerm,
     Object? classificacao = _sentinel,
     Object? codGrupoProduto = _sentinel,
+    Object? codMarca = _sentinel,
     ProdutoVendidoTendenciaDeVendaMediaMovelSortBy? sortBy,
     int? page,
     int? pageSize,
@@ -78,16 +77,12 @@ class SalesProdutoTendenciaMediaMovelPresentationState {
     return SalesProdutoTendenciaMediaMovelPresentationState(
       selectedAgentId: selectedAgentId ?? this.selectedAgentId,
       availableAgents: availableAgents ?? this.availableAgents,
-      grupoOptions: grupoOptions ?? this.grupoOptions,
-      optionsLoadedForAgentId: identical(optionsLoadedForAgentId, _sentinel)
-          ? this.optionsLoadedForAgentId
-          : optionsLoadedForAgentId as String?,
-      dimensionOptionsLoadFailure: identical(
-        dimensionOptionsLoadFailure,
-        _sentinel,
-      )
-          ? this.dimensionOptionsLoadFailure
-          : dimensionOptionsLoadFailure as AppFailure?,
+      grupoProdutoLabel: identical(grupoProdutoLabel, _sentinel)
+          ? this.grupoProdutoLabel
+          : grupoProdutoLabel as String?,
+      marcaProdutoLabel: identical(marcaProdutoLabel, _sentinel)
+          ? this.marcaProdutoLabel
+          : marcaProdutoLabel as String?,
       quantidadeDias: quantidadeDias ?? this.quantidadeDias,
       searchTerm: searchTerm ?? this.searchTerm,
       classificacao: identical(classificacao, _sentinel)
@@ -96,6 +91,9 @@ class SalesProdutoTendenciaMediaMovelPresentationState {
       codGrupoProduto: identical(codGrupoProduto, _sentinel)
           ? this.codGrupoProduto
           : codGrupoProduto as int?,
+      codMarca: identical(codMarca, _sentinel)
+          ? this.codMarca
+          : codMarca as int?,
       sortBy: sortBy ?? this.sortBy,
       page: page ?? this.page,
       pageSize: pageSize ?? this.pageSize,
@@ -117,13 +115,13 @@ class SalesProdutoTendenciaMediaMovelPresentationState {
     return other is SalesProdutoTendenciaMediaMovelPresentationState &&
         other.selectedAgentId == selectedAgentId &&
         listEquals(other.availableAgents, availableAgents) &&
-        listEquals(other.grupoOptions, grupoOptions) &&
-        other.optionsLoadedForAgentId == optionsLoadedForAgentId &&
-        other.dimensionOptionsLoadFailure == dimensionOptionsLoadFailure &&
+        other.grupoProdutoLabel == grupoProdutoLabel &&
+        other.marcaProdutoLabel == marcaProdutoLabel &&
         other.quantidadeDias == quantidadeDias &&
         other.searchTerm == searchTerm &&
         other.classificacao == classificacao &&
         other.codGrupoProduto == codGrupoProduto &&
+        other.codMarca == codMarca &&
         other.sortBy == sortBy &&
         other.page == page &&
         other.pageSize == pageSize &&
@@ -138,13 +136,13 @@ class SalesProdutoTendenciaMediaMovelPresentationState {
   int get hashCode => Object.hash(
     selectedAgentId,
     Object.hashAll(availableAgents),
-    Object.hashAll(grupoOptions),
-    optionsLoadedForAgentId,
-    dimensionOptionsLoadFailure,
+    grupoProdutoLabel,
+    marcaProdutoLabel,
     quantidadeDias,
     searchTerm,
     classificacao,
     codGrupoProduto,
+    codMarca,
     sortBy,
     page,
     pageSize,
