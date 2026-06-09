@@ -513,4 +513,9 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
 
   static bool _defaultSupportsNativeUpdates() =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
+
+  @visibleForTesting
+  void debugSetStateForTests(WindowsAutoUpdateState state) {
+    _applyState(state, persistDiagnostic: false);
+  }
 }

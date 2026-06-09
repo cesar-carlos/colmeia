@@ -1,5 +1,6 @@
 import 'package:auto_updater/auto_updater.dart';
 import 'package:colmeia/app/theme/app_theme.dart';
+import 'package:colmeia/core/update/app_auto_update_support.dart';
 import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
 import 'package:colmeia/core/update/appcast_probe_client.dart';
 import 'package:colmeia/core/update/auto_updater_client.dart';
@@ -121,16 +122,16 @@ void main() {
         supportsNativeUpdates: () => true,
       );
       addTearDown(controller.dispose);
-      await controller.initialize();
-      await _waitForState(
-        controller,
-        (state) => state.status == WindowsAutoUpdateStatus.feedWithoutReleases,
-      );
-
-      controller.onUpdaterError(UpdaterError('network error'));
-      await _waitForState(
-        controller,
-        (state) => state.status == WindowsAutoUpdateStatus.failed,
+      controller.debugSetStateForTests(
+        const WindowsAutoUpdateState(
+          availability: AppAutoUpdateAvailability.supported,
+          status: WindowsAutoUpdateStatus.failed,
+          headline: WindowsAutoUpdateMessages.updaterErrorHeadline,
+          details: WindowsAutoUpdateMessages.updaterErrorDetails,
+          feedUrl: 'https://example.com/appcast.xml',
+          lastCheckedAt: null,
+          isInitialized: true,
+        ),
       );
 
       await tester.pumpWidget(

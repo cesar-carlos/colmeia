@@ -259,7 +259,7 @@ class AppHubNavigationCard extends StatelessWidget {
                 AppHubNavigationCardDensity.overview =>
                   SizedBox.expand(child: cardBody),
                 AppHubNavigationCardDensity.chartNav => SizedBox.expand(
-                    child: Center(child: cardBody),
+                    child: cardBody,
                   ),
               },
             ),
