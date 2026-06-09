@@ -2,6 +2,7 @@ import 'package:colmeia/core/refresh/auto_refresh_option.dart';
 import 'package:colmeia/core/refresh/auto_refresh_ui_state.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
+import 'package:colmeia/features/sales/presentation/rules/sales_live_map_presentation_rules.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -90,7 +91,8 @@ class _SalesLiveMapAutoRefreshSlice {
     final onCooldown = retryRemainingSeconds > 0;
     return _SalesLiveMapAutoRefreshSlice(
       canReload: state.canReload && !onCooldown,
-      canScheduleAutoRefresh: state.canScheduleAutoRefresh,
+      canScheduleAutoRefresh:
+          SalesLiveMapPresentationRules.canScheduleAutoRefresh(state),
       showReloadProgress: state.isLoading && state.result != null,
     );
   }

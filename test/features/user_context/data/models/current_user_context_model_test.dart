@@ -21,7 +21,6 @@ void main() {
           UserPermission.viewReturns,
           UserPermission.viewFinance,
           UserPermission.viewPurchases,
-          UserPermission.viewInventory,
         });
       },
     );
@@ -59,7 +58,6 @@ void main() {
         UserPermission.viewReturns,
         UserPermission.viewFinance,
         UserPermission.viewPurchases,
-        UserPermission.viewInventory,
       });
       check(model.dashboardGrants).length.equals(1);
       check(model.allowedStores.single.id).equals('1');

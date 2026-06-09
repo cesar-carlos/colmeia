@@ -1,6 +1,8 @@
 import 'package:colmeia/core/refresh/auto_refresh_option.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
+import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_load_result.dart' show SalesLiveMapLoadResult;
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
+import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_scheduling_slice.dart';
 
 /// Holds the auto-refresh bookkeeping for `SalesLiveMapPage` and exposes
@@ -21,7 +23,14 @@ class SalesLiveMapSessionCoordinator {
   bool wasControllerLoading = false;
   DateTime? controllerReloadQueuedTickThreshold;
   bool liveMapFullscreenOpen = false;
+  int inlineChartRecoveryRequestId = 0;
   SalesLiveMapSchedulingSlice? lastSchedulingSlice;
+
+  /// Bumps a monotonic id consumed by the inline chart when fullscreen closes
+  /// so the map can resync viewport and marker overlay without a widget remount.
+  void requestInlineChartLifecycleRecovery() {
+    inlineChartRecoveryRequestId += 1;
+  }
 
   /// Records that the user requested a manual reload. When [force] is true,
   /// [pendingReloadForceCount] is incremented so the next consumer honours
@@ -67,6 +76,32 @@ class SalesLiveMapSessionCoordinator {
       return nextDueAt;
     }
     return nextDueAt.add(option.duration);
+  }
+
+  /// Maps a controller reload outcome to the auto-refresh bookkeeping result.
+  ///
+  /// A completed reload that still has [SalesLiveMapLoadResult.salesDataPending]
+  /// is treated as cancelled (partial progress), not failure, so the mixin does
+  /// not advance the failure streak while sales are still loading.
+  AutoRefreshReloadResult classifyControllerReloadOutcome(
+    SalesLiveMapReloadOutcome outcome,
+  ) {
+    if (outcome.isBlockedByCooldown ||
+        outcome.isCancelled ||
+        outcome.isSuperseded) {
+      return const AutoRefreshReloadResult.cancelled();
+    }
+    final result = outcome.result;
+    if (result == null ||
+        result.loadFailed ||
+        result.cancelled ||
+        result.refreshedAt == null) {
+      return const AutoRefreshReloadResult.failure();
+    }
+    if (result.salesDataPending) {
+      return const AutoRefreshReloadResult.cancelled();
+    }
+    return AutoRefreshReloadResult.success(result.refreshedAt);
   }
 
   /// Whether the latest controller reload crossed the previously queued tick.

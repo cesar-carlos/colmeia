@@ -67,7 +67,6 @@ final class FakeIdentityBackendStore {
         UserPermission.viewReturns,
         UserPermission.viewFinance,
         UserPermission.viewPurchases,
-        UserPermission.viewInventory,
       };
 
   bool _needsGrantMigration(FakeIdentityUserRecord user) {

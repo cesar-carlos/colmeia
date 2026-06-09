@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_breakpoints.dart';
@@ -41,6 +43,8 @@ class SalesLiveMapChartPanel extends StatefulWidget {
     required this.isRefreshing,
     required this.onMetricChanged,
     super.key,
+    this.lifecycleRecoveryRequestId = 0,
+    this.suspendParentScrollLock = false,
     this.onOpenFullscreen,
     this.showSidebar = false,
     this.showHeader = true,
@@ -56,6 +60,8 @@ class SalesLiveMapChartPanel extends StatefulWidget {
   final SalesLiveMapVisualSpec visualSpec;
   final bool isRefreshing;
   final ValueChanged<SalesLiveMapMetric> onMetricChanged;
+  final int lifecycleRecoveryRequestId;
+  final bool suspendParentScrollLock;
   final VoidCallback? onOpenFullscreen;
   final bool showSidebar;
   final bool showHeader;
@@ -125,6 +131,7 @@ class _SalesLiveMapChartPanelState extends State<SalesLiveMapChartPanel> {
     final chart = AppBrazilStoreSalesMapChart(
       title: widget.showHeader ? widget.title : null,
       subtitle: widget.showHeader ? widget.subtitle : null,
+      lifecycleRecoveryRequestId: widget.lifecycleRecoveryRequestId,
       points: chartPoints,
       initialMetric: SalesLiveMapChartMapper.toChartMetric(widget.metric),
       filterBranchIds: widget.filterBranchIds,
@@ -171,6 +178,7 @@ class _SalesLiveMapChartPanelState extends State<SalesLiveMapChartPanel> {
       return RepaintBoundary(
         key: _shareKey,
         child: _SalesLiveMapInlineParentScrollGuard(
+          suspendLock: widget.suspendParentScrollLock,
           child: _SalesLiveMapChartRefreshOverlay(
             isRefreshing: widget.isRefreshing,
             hasExistingPoints: widget.points.isNotEmpty,
@@ -207,9 +215,13 @@ class _SalesLiveMapChartPanelState extends State<SalesLiveMapChartPanel> {
 }
 
 class _SalesLiveMapInlineParentScrollGuard extends StatefulWidget {
-  const _SalesLiveMapInlineParentScrollGuard({required this.child});
+  const _SalesLiveMapInlineParentScrollGuard({
+    required this.child,
+    this.suspendLock = false,
+  });
 
   final Widget child;
+  final bool suspendLock;
 
   @override
   State<_SalesLiveMapInlineParentScrollGuard> createState() =>
@@ -218,7 +230,24 @@ class _SalesLiveMapInlineParentScrollGuard extends StatefulWidget {
 
 class _SalesLiveMapInlineParentScrollGuardState
     extends State<_SalesLiveMapInlineParentScrollGuard> {
+  static const Duration _lockSafetyTimeout = Duration(seconds: 30);
+
   int _pointerDownCount = 0;
+  Timer? _lockSafetyTimer;
+
+  @override
+  void dispose() {
+    _forceUnlock();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant _SalesLiveMapInlineParentScrollGuard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.suspendLock && !oldWidget.suspendLock) {
+      _forceUnlock();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -230,9 +259,13 @@ class _SalesLiveMapInlineParentScrollGuardState
       key: const ValueKey<String>('sales-live-map-inline-scroll-guard'),
       behavior: HitTestBehavior.translucent,
       onPointerDown: (_) {
+        if (widget.suspendLock) {
+          return;
+        }
         _pointerDownCount++;
         if (_pointerDownCount == 1) {
           _dispatch(lockParentScroll: true);
+          _armSafetyTimeout();
         }
       },
       onPointerUp: (_) => _releasePointer(),
@@ -247,8 +280,28 @@ class _SalesLiveMapInlineParentScrollGuardState
     }
     _pointerDownCount--;
     if (_pointerDownCount == 0) {
+      _cancelSafetyTimeout();
       _dispatch(lockParentScroll: false);
     }
+  }
+
+  void _forceUnlock() {
+    _cancelSafetyTimeout();
+    if (_pointerDownCount <= 0) {
+      return;
+    }
+    _pointerDownCount = 0;
+    _dispatch(lockParentScroll: false);
+  }
+
+  void _armSafetyTimeout() {
+    _lockSafetyTimer?.cancel();
+    _lockSafetyTimer = Timer(_lockSafetyTimeout, _forceUnlock);
+  }
+
+  void _cancelSafetyTimeout() {
+    _lockSafetyTimer?.cancel();
+    _lockSafetyTimer = null;
   }
 
   void _dispatch({required bool lockParentScroll}) {

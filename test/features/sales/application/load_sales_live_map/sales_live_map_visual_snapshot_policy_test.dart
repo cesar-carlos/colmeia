@@ -1,9 +1,9 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_load_result.dart';
+import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_visual_snapshot_policy.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_option.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart';
-import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_visual_snapshot_policy.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -226,6 +226,78 @@ void main() {
         expect(next.points, established.points);
       },
     );
+
+    test('hasObservableDelta detects failedAgentCount changes', () {
+      final previous = loadedResult();
+      final next = SalesLiveMapLoadResult(
+        points: previous.points,
+        branchOptions: previous.branchOptions,
+        totalRevenue: previous.totalRevenue,
+        totalSalesCount: previous.totalSalesCount,
+        totalBranchCount: previous.totalBranchCount,
+        mappedBranchCount: previous.mappedBranchCount,
+        mappedMunicipalityCount: previous.mappedMunicipalityCount,
+        queriedAgentCount: previous.queriedAgentCount,
+        plannedAgentCount: previous.plannedAgentCount,
+        failedAgentCount: 2,
+        missingClientTokenAgentCount: 0,
+        skippedOfflineAgentCount: 0,
+        rowCapReachedAgentCount: 0,
+        refreshedAt: refreshedAt,
+      );
+
+      expect(
+        SalesLiveMapVisualSnapshotPolicy.hasObservableDelta(
+          previous: previous,
+          next: next,
+          previousVisualResult: previous,
+          nextVisualResult: previous,
+          previousDigest: SalesLiveMapVisualSnapshotPolicy.payloadDigestFor(
+            previous,
+          ),
+          nextDigest: SalesLiveMapVisualSnapshotPolicy.payloadDigestFor(
+            previous,
+          ),
+        ),
+        isTrue,
+      );
+    });
+
+    test('hasObservableDelta detects queriedAgentCount changes', () {
+      final previous = loadedResult();
+      final next = SalesLiveMapLoadResult(
+        points: previous.points,
+        branchOptions: previous.branchOptions,
+        totalRevenue: previous.totalRevenue,
+        totalSalesCount: previous.totalSalesCount,
+        totalBranchCount: previous.totalBranchCount,
+        mappedBranchCount: previous.mappedBranchCount,
+        mappedMunicipalityCount: previous.mappedMunicipalityCount,
+        queriedAgentCount: 5,
+        plannedAgentCount: previous.plannedAgentCount,
+        failedAgentCount: previous.failedAgentCount,
+        missingClientTokenAgentCount: 0,
+        skippedOfflineAgentCount: 0,
+        rowCapReachedAgentCount: 0,
+        refreshedAt: refreshedAt,
+      );
+
+      expect(
+        SalesLiveMapVisualSnapshotPolicy.hasObservableDelta(
+          previous: previous,
+          next: next,
+          previousVisualResult: previous,
+          nextVisualResult: previous,
+          previousDigest: SalesLiveMapVisualSnapshotPolicy.payloadDigestFor(
+            previous,
+          ),
+          nextDigest: SalesLiveMapVisualSnapshotPolicy.payloadDigestFor(
+            previous,
+          ),
+        ),
+        isTrue,
+      );
+    });
 
     test('hasObservableDelta detects partial-issue changes', () {
       final previous = loadedResult();

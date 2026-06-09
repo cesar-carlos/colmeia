@@ -98,7 +98,6 @@ class UserAccessScopeModel {
         UserPermission.viewReturns,
         UserPermission.viewFinance,
         UserPermission.viewPurchases,
-        UserPermission.viewInventory,
       });
     }
   }

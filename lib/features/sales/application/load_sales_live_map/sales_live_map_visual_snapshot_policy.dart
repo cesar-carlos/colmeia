@@ -1,16 +1,15 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
-import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
-import 'package:colmeia/features/sales/presentation/mappers/sales_live_map_chart_mapper.dart';
+import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_load_result.dart';
+import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_points_content_digest.dart';
 
-/// Decides which `SalesLiveMapLoadResult` should be used as the visible map
+/// Decides which [SalesLiveMapLoadResult] should be used as the visible map
 /// snapshot when the use case emits a new partial/complete result, and
-/// computes a stable digest over the map payload so the controller can skip
+/// computes a stable digest over the map payload so callers can skip
 /// no-op state emissions.
 ///
-/// Pure helpers — no state. The controller owns lifecycle and `setState`
-/// flow; this policy isolates the rules around snapshot selection and
-/// delta detection.
+/// Pure helpers — no state. Presentation owns lifecycle and UI updates;
+/// this policy isolates snapshot selection and delta detection rules.
 abstract final class SalesLiveMapVisualSnapshotPolicy {
   /// Returns the next visible snapshot:
   ///
@@ -36,7 +35,7 @@ abstract final class SalesLiveMapVisualSnapshotPolicy {
   /// snapshot when a progressive/catalog-shell emission would regress mapped
   /// coordinates while the visible map still carries resolved points.
   ///
-  /// The controller stores this as `result` so attention-panel partial issues
+  /// Callers store this as `result` so attention-panel partial issues
   /// stay aligned with `visualResult.points`.
   static SalesLiveMapLoadResult resolveNextOperationalResult({
     required SalesLiveMapLoadResult incomingResult,
@@ -127,14 +126,13 @@ abstract final class SalesLiveMapVisualSnapshotPolicy {
   }
 
   /// Stable digest of the map payload (points list) inside [visualResult].
-  /// Used by the controller to detect that nothing visible changed and skip
-  /// emitting redundant state updates. Returns `0` when there is no visual
-  /// result yet.
+  /// Used to detect that nothing visible changed and skip redundant emissions.
+  /// Returns `0` when there is no visual result yet.
   static int payloadDigestFor(SalesLiveMapLoadResult? visualResult) {
     if (visualResult == null) {
       return 0;
     }
-    return SalesLiveMapChartMapper.pointsContentDigest(visualResult.points);
+    return salesLiveMapPointsContentDigest(visualResult.points);
   }
 
   /// True when [next] would change something the page actually renders
@@ -142,7 +140,7 @@ abstract final class SalesLiveMapVisualSnapshotPolicy {
   /// visual snapshot identity, and the status flags (`salesDataPending`,
   /// `loadFailed`, `refreshedAt`).
   ///
-  /// Callers use this to skip `setState` when only a stable retry passed
+  /// Callers use this to skip UI updates when only a stable retry passed
   /// through the use case stream without surfacing new data.
   static bool hasObservableDelta({
     required SalesLiveMapLoadResult previous,
@@ -165,6 +163,18 @@ abstract final class SalesLiveMapVisualSnapshotPolicy {
       return true;
     }
     if (previous.hasPartialIssue != next.hasPartialIssue) {
+      return true;
+    }
+    if (previous.failedAgentCount != next.failedAgentCount) {
+      return true;
+    }
+    if (previous.queriedAgentCount != next.queriedAgentCount) {
+      return true;
+    }
+    if (previous.totalRevenue != next.totalRevenue) {
+      return true;
+    }
+    if (previous.totalSalesCount != next.totalSalesCount) {
       return true;
     }
     if (previous.refreshedAt != next.refreshedAt) {

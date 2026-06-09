@@ -274,11 +274,6 @@ GoRouter _buildRouter({
             ],
           ),
           GoRoute(
-            name: AppRoute.inventory.name,
-            path: AppRoute.inventory.path,
-            builder: (context, state) => const Text('inventory-root-page'),
-          ),
-          GoRoute(
             name: AppRoute.agents.name,
             path: AppRoute.agents.path,
             builder: (context, state) => const Text('agents-root-page'),

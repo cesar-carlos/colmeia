@@ -38,7 +38,6 @@ void main() {
       check(AppRoute.fromLocation('/sales-monitoring')).equals(
         AppRoute.salesMonitoring,
       );
-      check(AppRoute.fromLocation('/inventory')).equals(AppRoute.inventory);
     });
 
     test('should keep sales monitoring below dashboard in shell order', () {
@@ -46,7 +45,6 @@ void main() {
         AppRoute.dashboard,
         AppRoute.salesMonitoring,
         AppRoute.sales,
-        AppRoute.inventory,
         AppRoute.agents,
         AppRoute.settings,
       ]);

@@ -85,7 +85,6 @@ class CurrentUserContextController extends ChangeNotifier {
               UserPermission.viewReturns,
               UserPermission.viewFinance,
               UserPermission.viewPurchases,
-              UserPermission.viewInventory,
             },
             dashboardGrants: <DashboardAccessGrant>[
               DashboardAccessGrant(
@@ -172,8 +171,6 @@ class CurrentUserContextController extends ChangeNotifier {
       case AppRoute.salesCard:
       case AppRoute.salesMonitoring:
         return hasPermission(UserPermission.viewSales);
-      case AppRoute.inventory:
-        return hasPermission(UserPermission.viewInventory);
     }
   }
 

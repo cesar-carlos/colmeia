@@ -15,6 +15,7 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dar
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
+import 'package:colmeia/features/sales/presentation/rules/sales_live_map_presentation_rules.dart';
 import 'package:colmeia/l10n/app_localizations_en.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -64,6 +65,7 @@ void main() {
         filter: any(named: 'filter'),
         reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
+        bypassCatalogCache: any(named: 'bypassCatalogCache'),
       ),
     ).thenAnswer((_) => Stream<SalesLiveMapLoadResult>.value(_loadedResult()));
 
@@ -109,6 +111,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: SalesLiveMapReloadReason.initial,
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       ).called(1);
     },
@@ -135,6 +138,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       );
     },
@@ -158,6 +162,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       );
       final persistedFilters = verify(
@@ -191,6 +196,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       );
     },
@@ -223,6 +229,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       );
     },
@@ -261,6 +268,7 @@ void main() {
           filter: captureAny(named: 'filter'),
           reason: captureAny(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       ).captured;
       final capturedFilter = capturedFilters[0] as SalesLiveMapFilter;
@@ -309,6 +317,7 @@ void main() {
         filter: captureAny(named: 'filter'),
         reason: captureAny(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
+        bypassCatalogCache: any(named: 'bypassCatalogCache'),
       ),
     ).captured;
     final capturedFilter = capturedFilters[0] as SalesLiveMapFilter;
@@ -335,7 +344,10 @@ void main() {
 
       await controller.bindUser('user-1');
 
-      expect(controller.state.canScheduleAutoRefresh, isFalse);
+      expect(
+        SalesLiveMapPresentationRules.canScheduleAutoRefresh(controller.state),
+        isFalse,
+      );
     },
   );
 
@@ -357,6 +369,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       ).thenAnswer((invocation) {
         progressiveCallCount += 1;
@@ -407,6 +420,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       ).thenAnswer((invocation) {
         progressiveCallCount += 1;
@@ -446,6 +460,31 @@ void main() {
     },
   );
 
+  test('reload(force: true) requests a catalog-cache bypass', () async {
+    await controller.bindUser('user-1');
+    clearInteractions(loadLiveMap);
+    when(
+      () => loadLiveMap.loadProgressive(
+        userId: any(named: 'userId'),
+        filter: any(named: 'filter'),
+        reason: any(named: 'reason'),
+        cancelToken: any(named: 'cancelToken'),
+        bypassCatalogCache: any(named: 'bypassCatalogCache'),
+      ),
+    ).thenAnswer((_) => Stream<SalesLiveMapLoadResult>.value(_loadedResult()));
+
+    await controller.reload(force: true);
+
+    verify(
+      () => loadLiveMap.loadProgressive(
+        userId: 'user-1',
+        filter: any(named: 'filter'),
+        cancelToken: any(named: 'cancelToken'),
+        bypassCatalogCache: true,
+      ),
+    ).called(1);
+  });
+
   test(
     'ignores late catalog-shell emissions after a mapped refresh snapshot',
     () async {
@@ -459,6 +498,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       ).thenAnswer((_) => stream.stream);
 
@@ -492,6 +532,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       ).thenAnswer((_) => stream.stream);
 
@@ -520,7 +561,7 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(controller.state.isLoading, isTrue);
-      expect(controller.state.result?.salesDataPending, isFalse);
+      expect(controller.state.result?.salesDataPending, isTrue);
       expect(controller.state.visualResult?.totalRevenue, 1200);
       expect(controller.state.hasVisualResult, isTrue);
 
@@ -530,6 +571,63 @@ void main() {
 
       expect((await reloadFuture).isCompleted, isTrue);
       expect(controller.state.visualResult?.totalRevenue, 77);
+    },
+  );
+
+  test(
+    'updates operational KPI fields during soft refresh while preserving map snapshot',
+    () async {
+      await controller.bindUser('user-1');
+
+      final stream = StreamController<SalesLiveMapLoadResult>();
+      addTearDown(stream.close);
+      when(
+        () => loadLiveMap.loadProgressive(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          reason: any(named: 'reason'),
+          cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
+        ),
+      ).thenAnswer((_) => stream.stream);
+
+      final reloadFuture = controller.reload();
+      await Future<void>.delayed(Duration.zero);
+
+      stream.add(
+        SalesLiveMapLoadResult(
+          points: const <SalesLiveMapPoint>[],
+          branchOptions: const <SalesLiveMapBranchOption>[],
+          totalRevenue: 999,
+          totalSalesCount: 99,
+          totalBranchCount: 1,
+          mappedBranchCount: 0,
+          mappedMunicipalityCount: 0,
+          queriedAgentCount: 3,
+          plannedAgentCount: 3,
+          failedAgentCount: 1,
+          missingClientTokenAgentCount: 0,
+          skippedOfflineAgentCount: 0,
+          rowCapReachedAgentCount: 0,
+          salesDataPending: true,
+          refreshedAt: DateTime(2026, 5, 9, 13),
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(controller.state.visualResult?.totalRevenue, 1200);
+      expect(controller.state.result?.totalRevenue, 999);
+      expect(controller.state.result?.queriedAgentCount, 3);
+      expect(controller.state.result?.failedAgentCount, 1);
+      expect(controller.state.result?.salesDataPending, isTrue);
+      expect(controller.state.result?.mappedBranchCount, 1);
+
+      stream.add(_resultForRevenue(77));
+      await stream.close();
+      await reloadFuture;
+
+      expect(controller.state.visualResult?.totalRevenue, 77);
+      expect(controller.state.result?.salesDataPending, isFalse);
     },
   );
 
@@ -544,6 +642,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       ).thenAnswer((_) => stream.stream);
 
@@ -597,6 +696,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       ).thenAnswer((_) => stream.stream);
 
@@ -637,6 +737,7 @@ void main() {
         filter: any(named: 'filter'),
         reason: captureAny(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
+        bypassCatalogCache: any(named: 'bypassCatalogCache'),
       ),
     )..called(1);
     expect(
@@ -796,6 +897,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       ).thenAnswer(
         (_) => Stream<SalesLiveMapLoadResult>.fromIterable(
@@ -903,6 +1005,7 @@ void main() {
         filter: any(named: 'filter'),
         reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
+        bypassCatalogCache: any(named: 'bypassCatalogCache'),
       ),
     );
     gate.dispose();
@@ -956,6 +1059,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       );
       verifyNever(() => salesPreferences.persistSalesLiveMapFilter(any()));
@@ -979,6 +1083,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       ).thenAnswer(
         (_) => Stream<SalesLiveMapLoadResult>.value(
@@ -1041,6 +1146,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       ).thenAnswer(
         (_) => Stream<SalesLiveMapLoadResult>.value(

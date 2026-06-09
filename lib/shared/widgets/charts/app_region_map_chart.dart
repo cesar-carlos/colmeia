@@ -210,6 +210,7 @@ class AppRegionMapChart<T> extends StatefulWidget {
     this.viewportController,
     this.resetViewport,
     this.onResetViewport,
+    this.lifecycleRecoveryRequestId = 0,
   });
 
   final List<T> items;
@@ -280,6 +281,9 @@ class AppRegionMapChart<T> extends StatefulWidget {
 
   /// Clears parent manual-viewport state before the map recenters.
   final VoidCallback? onResetViewport;
+
+  /// Passed through to [SyncfusionRegionMapChart] for Offstage/fullscreen return.
+  final int lifecycleRecoveryRequestId;
 
   @override
   State<AppRegionMapChart<T>> createState() => _AppRegionMapChartState<T>();
@@ -361,6 +365,7 @@ class _AppRegionMapChartState<T> extends State<AppRegionMapChart<T>> {
       viewportController: widget.viewportController,
       resetViewport: widget.resetViewport,
       onResetViewport: widget.onResetViewport,
+      lifecycleRecoveryRequestId: widget.lifecycleRecoveryRequestId,
     );
 
     final drillUpButton = _buildDrillUpButton(l10n);

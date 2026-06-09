@@ -4601,25 +4601,25 @@ class AppLocalizationsPt extends AppLocalizations {
   String get authPasswordsMismatch => 'As senhas não conferem.';
 
   @override
-  String get appAsyncSearchSelectOptionHint => 'Select an option';
+  String get appAsyncSearchSelectOptionHint => 'Selecione uma opção';
 
   @override
-  String get appAsyncSearchSearchHint => 'Search...';
+  String get appAsyncSearchSearchHint => 'Buscar...';
 
   @override
   String appAsyncSearchMinSearchLengthHint(int minLength) {
-    return 'Type at least $minLength characters to search.';
+    return 'Digite pelo menos $minLength caracteres para buscar.';
   }
 
   @override
-  String get appAsyncSearchEmptyResults => 'No results found.';
+  String get appAsyncSearchEmptyResults => 'Nenhum resultado encontrado.';
 
   @override
-  String get appAsyncSearchRetry => 'Try again';
+  String get appAsyncSearchRetry => 'Tentar novamente';
 
   @override
   String get salesAsyncSearchClientTokenUnavailable =>
-      'Client token unavailable for this branch.';
+      'Token do cliente indisponível para esta filial.';
 }
 
 /// The translations for Portuguese, as used in Brazil (`pt_BR`).

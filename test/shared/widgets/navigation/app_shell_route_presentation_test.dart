@@ -32,10 +32,6 @@ void main() {
         appShellRouteLabel(AppRoute.salesMonitoring, l10n),
         l10n.shellNavSalesMonitoringLabel,
       );
-      expect(
-        appShellRouteLabel(AppRoute.inventory, l10n),
-        l10n.shellNavInventoryLabel,
-      );
     });
 
     test('should use enum title for auth routes', () {
@@ -75,10 +71,6 @@ void main() {
       expect(
         appShellRouteSubtitle(AppRoute.salesMonitoring, l10n),
         l10n.shellNavSalesMonitoringSubtitle,
-      );
-      expect(
-        appShellRouteSubtitle(AppRoute.inventory, l10n),
-        l10n.shellNavInventorySubtitle,
       );
     });
 

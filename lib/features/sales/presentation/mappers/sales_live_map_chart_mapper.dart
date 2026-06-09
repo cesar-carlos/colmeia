@@ -1,10 +1,9 @@
+import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_points_content_digest.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart';
 import 'package:colmeia/features/sales/presentation/localization/sales_live_map_l10n.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
-
-const int _kSalesLiveMapPointsDigestSeed = 0xBEE5CAFE;
 
 abstract final class SalesLiveMapChartMapper {
   static AppBrazilStoreSalesMapMetric toChartMetric(
@@ -98,34 +97,6 @@ abstract final class SalesLiveMapChartMapper {
   }
 
   static int pointsContentDigest(Iterable<SalesLiveMapPoint> points) {
-    final pointList = points is List<SalesLiveMapPoint>
-        ? points
-        : points.toList(growable: false);
-    var h = Object.hash(_kSalesLiveMapPointsDigestSeed, pointList.length);
-    for (final point in pointList) {
-      h = Object.hash(
-        h,
-        point.id,
-        point.name,
-        point.fantasyName ?? '',
-        point.branchName ?? '',
-        point.companyCode,
-        point.branchCode,
-        point.agentName ?? '',
-        point.salesAmount,
-        point.salesCount,
-        point.salesDataLoading,
-        point.salesDataUnavailable,
-        point.salesDataStatusLabel ?? '',
-        point.latitude,
-        point.longitude,
-        point.uf,
-        point.city ?? '',
-        point.municipalityCode ?? '',
-        point.locationResolution,
-        point.subtitle ?? '',
-      );
-    }
-    return h;
+    return salesLiveMapPointsContentDigest(points);
   }
 }

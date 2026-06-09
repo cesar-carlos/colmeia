@@ -3,6 +3,7 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dar
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
 import 'package:colmeia/features/sales/presentation/models/sales_live_map_visual_spec.dart';
+import 'package:colmeia/features/sales/presentation/rules/sales_live_map_presentation_rules.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
 import 'package:colmeia/features/sales/presentation/view_models/sales_live_map_view_model.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_chart_panel.dart';
@@ -16,10 +17,14 @@ import 'package:provider/provider.dart';
 class SalesLiveMapInlineChartSection extends StatelessWidget {
   const SalesLiveMapInlineChartSection({
     required this.onOpenFullscreen,
+    required this.recoveryRequestId,
+    this.suspendParentScrollLock = false,
     super.key,
   });
 
   final VoidCallback onOpenFullscreen;
+  final int recoveryRequestId;
+  final bool suspendParentScrollLock;
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +53,8 @@ class SalesLiveMapInlineChartSection extends StatelessWidget {
         return SalesLiveMapChartPanel(
           mode: SalesLiveMapChartPanelMode.inline,
           mapPayloadDigest: slice.mapPayloadDigest,
+          lifecycleRecoveryRequestId: recoveryRequestId,
+          suspendParentScrollLock: suspendParentScrollLock,
           title: l10n.salesLiveMapChartTitle,
           subtitle: viewModel.mapSubtitle,
           points: slice.points,
@@ -86,7 +93,7 @@ class SalesLiveMapMapSlice {
       mapPayloadDigest: state.mapPayloadDigest,
       metric: state.filter.metric,
       filterBranchIds: filterBranchIds,
-      visualSpec: state.visualSpec,
+      visualSpec: SalesLiveMapPresentationRules.visualSpec(state),
       isRefreshing: state.isMapRefreshing,
       showChartFailurePlaceholder:
           SalesLiveMapViewModel.shouldShowChartFailurePlaceholder(state),

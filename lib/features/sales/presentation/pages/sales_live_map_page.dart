@@ -15,6 +15,7 @@ import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refr
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_live_map_auto_refresh_observer.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
 import 'package:colmeia/features/sales/presentation/coordinators/sales_live_map_session_coordinator.dart';
+import 'package:colmeia/features/sales/presentation/rules/sales_live_map_presentation_rules.dart';
 import 'package:colmeia/features/sales/presentation/view_models/sales_live_map_view_model.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_auto_refresh_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_body_section.dart';
@@ -68,7 +69,6 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
   final SalesLiveMapSessionCoordinator _coordinator =
       SalesLiveMapSessionCoordinator();
   bool _lockPageScrollForInlineMap = false;
-  int _inlineChartRemountKey = 0;
 
   @override
   void initState() {
@@ -151,7 +151,8 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
 
   @override
   bool get canScheduleAutoRefresh =>
-      _controller.state.canScheduleAutoRefresh && !_controller.state.isLoading;
+      SalesLiveMapPresentationRules.canScheduleAutoRefresh(_controller.state) &&
+      !_controller.state.isLoading;
 
   @override
   AutoRefreshPauseReason? resolveAutoRefreshPauseReason() =>
@@ -176,29 +177,8 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
       force: pending.force,
       reason: pending.reason,
     );
-    if (outcome.isBlockedByCooldown) {
-      _coordinator.lastAutoRefreshReloadResult =
-          const AutoRefreshReloadResult.cancelled();
-      return;
-    }
-    final result = outcome.result;
-    if (outcome.isCancelled || outcome.isSuperseded) {
-      _coordinator.lastAutoRefreshReloadResult =
-          const AutoRefreshReloadResult.cancelled();
-      return;
-    }
-    if (result == null ||
-        result.loadFailed ||
-        result.cancelled ||
-        result.salesDataPending ||
-        result.refreshedAt == null) {
-      _coordinator.lastAutoRefreshReloadResult =
-          const AutoRefreshReloadResult.failure();
-      return;
-    }
-    _coordinator.lastAutoRefreshReloadResult = AutoRefreshReloadResult.success(
-      result.refreshedAt,
-    );
+    _coordinator.lastAutoRefreshReloadResult =
+        _coordinator.classifyControllerReloadOutcome(outcome);
   }
 
   @override
@@ -303,8 +283,10 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
     if (!mounted) {
       return;
     }
-    if (wasOpen && !isOpen) {
-      _inlineChartRemountKey += 1;
+    if (isOpen) {
+      _lockPageScrollForInlineMap = false;
+    } else if (wasOpen) {
+      _coordinator.requestInlineChartLifecycleRecovery();
     }
     setState(() {});
     refreshAutoRefreshScheduling();
@@ -368,7 +350,8 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
               onRetryReload: () => unawaited(_reload()),
               onOpenFullscreen: _openLiveMapFullscreen,
               hideInlineChart: _coordinator.liveMapFullscreenOpen,
-              inlineChartRemountKey: _inlineChartRemountKey,
+              inlineChartRecoveryRequestId:
+                  _coordinator.inlineChartRecoveryRequestId,
             ),
           ],
         ),

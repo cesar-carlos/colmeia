@@ -1,8 +1,6 @@
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_branch_ref_codec.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
-import 'package:colmeia/features/sales/presentation/models/sales_live_map_visual_spec.dart';
-import 'package:colmeia/features/sales/presentation/view_models/sales_live_map_view_model.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/foundation.dart';
 
@@ -53,9 +51,6 @@ class SalesLiveMapPresentationState {
         filter.metric != defaults.metric;
   }
 
-  bool get canScheduleAutoRefresh =>
-      SalesLiveMapViewModel.canScheduleAutoRefresh(this);
-
   /// Memoized projection of `availableAgents` to the subset of agent ids
   /// that carry a local client token. Recomputed on demand per state
   /// instance and cached via an external `Expando`, so neighbouring slices
@@ -77,14 +72,6 @@ class SalesLiveMapPresentationState {
   bool get hasVisualResult => visualResult != null;
 
   bool get isMapRefreshing => isLoading && hasVisualResult;
-
-  bool get shouldShowEmptyNotice =>
-      SalesLiveMapViewModel.shouldShowEmptyNotice(this);
-
-  SalesLiveMapMapDetail get effectiveDetailLevel =>
-      SalesLiveMapViewModel.effectiveDetailLevel(this);
-
-  SalesLiveMapVisualSpec get visualSpec => SalesLiveMapViewModel.visualSpec(this);
 
   SalesLiveMapPresentationState copyWith({
     SalesLiveMapFilter? filter,

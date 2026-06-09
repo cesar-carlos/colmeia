@@ -2,6 +2,7 @@ import 'package:colmeia/core/refresh/auto_refresh_ui_state.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart';
+import 'package:colmeia/features/sales/presentation/rules/sales_live_map_presentation_rules.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
 import 'package:colmeia/features/sales/presentation/view_models/sales_live_map_view_model.dart';
 import 'package:colmeia/l10n/app_localizations_pt.dart';
@@ -72,7 +73,10 @@ void main() {
         isLoading: false,
       );
 
-      expect(SalesLiveMapViewModel.shouldShowEmptyNotice(state), isTrue);
+      expect(
+        SalesLiveMapPresentationRules.shouldShowEmptyNotice(state),
+        isTrue,
+      );
     },
   );
 
@@ -86,7 +90,10 @@ void main() {
       isLoading: false,
     );
 
-    expect(SalesLiveMapViewModel.shouldShowEmptyNotice(state), isFalse);
+    expect(
+      SalesLiveMapPresentationRules.shouldShowEmptyNotice(state),
+      isFalse,
+    );
   });
 
   test(

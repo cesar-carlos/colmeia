@@ -1,5 +1,6 @@
 import 'package:colmeia/core/refresh/auto_refresh_option.dart';
 import 'package:colmeia/features/sales/presentation/coordinators/sales_live_map_session_coordinator.dart';
+import 'package:colmeia/features/sales/presentation/rules/sales_live_map_presentation_rules.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
 import 'package:colmeia/features/sales/presentation/view_models/sales_live_map_view_model.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_scheduling_slice.dart';
@@ -48,7 +49,8 @@ class SalesLiveMapAutoRefreshObserver {
     if (state.isLoading) {
       coordinator.lastRecordedSuccessfulRefreshAt = null;
     }
-    if (!state.isLoading && !state.canScheduleAutoRefresh) {
+    if (!state.isLoading &&
+        !SalesLiveMapPresentationRules.canScheduleAutoRefresh(state)) {
       coordinator.controllerReloadQueuedTickThreshold = null;
     }
     final schedulingSlice = SalesLiveMapSchedulingSlice.fromState(state);

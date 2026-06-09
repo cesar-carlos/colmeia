@@ -7,6 +7,7 @@ import 'package:colmeia/core/refresh/auto_refresh_state_persistence.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_result_builder.dart';
+import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_visual_snapshot_policy.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
@@ -16,53 +17,19 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dar
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_filter_normalizer.dart';
-import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_visual_snapshot_policy.dart';
+import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_progressive_stream_handler.dart';
+import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_reload_outcome.dart';
 import 'package:colmeia/features/sales/presentation/sales_live_map_available_agents_assembler.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/foundation.dart';
 
-enum SalesLiveMapReloadOutcomeKind {
-  completed,
-  cancelled,
-  superseded,
-  blockedByCooldown,
-}
+export 'sales_live_map_reload_outcome.dart';
 
 enum SalesLiveMapFilterMutationOutcome {
   applied,
   blockedByCooldown,
   unchanged,
-}
-
-@immutable
-class SalesLiveMapReloadOutcome {
-  const SalesLiveMapReloadOutcome._(this.kind, this.result);
-
-  const SalesLiveMapReloadOutcome.completed([SalesLiveMapLoadResult? result])
-    : this._(SalesLiveMapReloadOutcomeKind.completed, result);
-
-  const SalesLiveMapReloadOutcome.cancelled([SalesLiveMapLoadResult? result])
-    : this._(SalesLiveMapReloadOutcomeKind.cancelled, result);
-
-  const SalesLiveMapReloadOutcome.superseded([SalesLiveMapLoadResult? result])
-    : this._(SalesLiveMapReloadOutcomeKind.superseded, result);
-
-  const SalesLiveMapReloadOutcome.blockedByCooldown([
-    SalesLiveMapLoadResult? result,
-  ]) : this._(SalesLiveMapReloadOutcomeKind.blockedByCooldown, result);
-
-  final SalesLiveMapReloadOutcomeKind kind;
-  final SalesLiveMapLoadResult? result;
-
-  bool get isCompleted => kind == SalesLiveMapReloadOutcomeKind.completed;
-
-  bool get isCancelled => kind == SalesLiveMapReloadOutcomeKind.cancelled;
-
-  bool get isSuperseded => kind == SalesLiveMapReloadOutcomeKind.superseded;
-
-  bool get isBlockedByCooldown =>
-      kind == SalesLiveMapReloadOutcomeKind.blockedByCooldown;
 }
 
 class SalesLiveMapController extends ChangeNotifier {
@@ -72,12 +39,16 @@ class SalesLiveMapController extends ChangeNotifier {
     required LoadSalesLiveMapUseCase loadSalesLiveMapUseCase,
     RetryAfterGate? retryAfterGate,
     AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder,
+    SalesLiveMapProgressiveStreamHandler? progressiveStreamHandler,
   }) : _sessionService = sessionService,
        _loadAgentsUseCase = loadSalesAvailableAgentsUseCase,
        _loadLiveMap = loadSalesLiveMapUseCase,
        _retryAfterGate = retryAfterGate ?? RetryAfterGate(),
        _ownsRetryAfterGate = retryAfterGate == null,
-       _relayCancelScopeBinder = relayCancelScopeBinder {
+       _relayCancelScopeBinder = relayCancelScopeBinder,
+       _progressiveStreamHandler =
+           progressiveStreamHandler ??
+           const SalesLiveMapProgressiveStreamHandler() {
     _retryAfterGate.addListener(_notifyListenersIfAlive);
   }
 
@@ -87,6 +58,7 @@ class SalesLiveMapController extends ChangeNotifier {
   final RetryAfterGate _retryAfterGate;
   final bool _ownsRetryAfterGate;
   final AgentQueriesRelayCancelScopeBinder? _relayCancelScopeBinder;
+  final SalesLiveMapProgressiveStreamHandler _progressiveStreamHandler;
 
   SalesLiveMapPresentationState _state = const SalesLiveMapPresentationState();
   String? _boundUserId;
@@ -157,7 +129,7 @@ class SalesLiveMapController extends ChangeNotifier {
     if (isOnRetryCooldown) {
       return SalesLiveMapReloadOutcome.blockedByCooldown(_state.result);
     }
-    return _performReload(reason: reason);
+    return _performReload(reason: reason, bypassCatalogCache: force);
   }
 
   Future<SalesLiveMapFilterMutationOutcome> applyFilter(
@@ -302,6 +274,7 @@ class SalesLiveMapController extends ChangeNotifier {
 
   Future<SalesLiveMapReloadOutcome> _performReload({
     required SalesLiveMapReloadReason reason,
+    bool bypassCatalogCache = false,
   }) async {
     final userId = _boundUserId;
     final generation = ++_loadGeneration;
@@ -348,90 +321,29 @@ class SalesLiveMapController extends ChangeNotifier {
       return SalesLiveMapReloadOutcome.completed(_state.result);
     }
 
-    var emittedAnyResult = false;
-    await for (final result in _loadLiveMap.loadProgressive(
-      userId: userId,
-      filter: _state.filter,
-      reason: reason,
-      cancelToken: cancelToken,
-    )) {
-      if (generation != _loadGeneration) {
-        return SalesLiveMapReloadOutcome.superseded(_state.result);
-      }
-      emittedAnyResult = true;
-      if (result.cancelled) {
-        if (identical(_activeLoadCancelToken, cancelToken)) {
-          _activeLoadCancelToken = null;
-        }
-        _setState(_state.copyWith(isLoading: false));
-        return SalesLiveMapReloadOutcome.cancelled(result);
-      }
-      final establishedVisualSnapshot =
-          _state.visualResult ?? preservedVisualResult;
-      if (establishedVisualSnapshot != null &&
-          SalesLiveMapVisualSnapshotPolicy.isRegressiveGeoEmission(
-            incoming: result,
-            preservedVisual: establishedVisualSnapshot,
-          )) {
-        continue;
-      }
-      if (preservedVisualResult != null && result.salesDataPending) {
-        continue;
-      }
-
-      final previousResult = _state.result;
-      final nextVisualResult =
-          SalesLiveMapVisualSnapshotPolicy.resolveNextVisualResult(
-            incomingResult: result,
-            previousVisualResult: _state.visualResult,
-          );
-      final nextResult =
-          SalesLiveMapVisualSnapshotPolicy.resolveNextOperationalResult(
-            incomingResult: result,
-            previousResult: previousResult,
-            nextVisualResult: nextVisualResult,
-          );
-      final nextMapPayloadDigest = SalesLiveMapVisualSnapshotPolicy
-          .payloadDigestFor(nextVisualResult);
-      if (previousResult != null &&
-          !SalesLiveMapVisualSnapshotPolicy.hasObservableDelta(
-            previous: previousResult,
-            next: nextResult,
-            previousVisualResult: _state.visualResult,
-            nextVisualResult: nextVisualResult,
-            previousDigest: _state.mapPayloadDigest,
-            nextDigest: nextMapPayloadDigest,
-          )) {
-        if (_state.isLoading != nextResult.salesDataPending) {
-          _setState(_state.copyWith(isLoading: nextResult.salesDataPending));
-        }
-        continue;
-      }
-
-      _armRetryAfterFromLoadResult(nextResult);
-      final nextAvailableAgents = _rehydrateAvailableAgents(nextResult);
-      _setState(
-        _state.copyWith(
-          result: nextResult,
-          visualResult: nextVisualResult,
-          mapPayloadDigest: nextMapPayloadDigest,
-          isLoading: nextResult.salesDataPending,
-          sessionExpired: false,
-          availableAgents: nextAvailableAgents ?? _state.availableAgents,
-        ),
-      );
-    }
-
-    if (generation != _loadGeneration) {
-      return SalesLiveMapReloadOutcome.superseded(_state.result);
-    }
-    if (identical(_activeLoadCancelToken, cancelToken)) {
-      _activeLoadCancelToken = null;
-    }
-    if (!emittedAnyResult) {
-      _setState(_state.copyWith(isLoading: false));
-    }
-    return SalesLiveMapReloadOutcome.completed(_state.result);
+    return _progressiveStreamHandler.handle(
+      stream: _loadLiveMap.loadProgressive(
+        userId: userId,
+        filter: _state.filter,
+        reason: reason,
+        cancelToken: cancelToken,
+        bypassCatalogCache: bypassCatalogCache,
+      ),
+      session: SalesLiveMapProgressiveStreamSession(
+        preservedVisualResult: preservedVisualResult,
+        cancelToken: cancelToken,
+        isGenerationStale: () => generation != _loadGeneration,
+        readState: () => _state,
+        applyState: _setState,
+        clearActiveCancelTokenIfMatching: () {
+          if (identical(_activeLoadCancelToken, cancelToken)) {
+            _activeLoadCancelToken = null;
+          }
+        },
+        onLoadResultReceived: _armRetryAfterFromLoadResult,
+        rehydrateAvailableAgents: _rehydrateAvailableAgents,
+      ),
+    );
   }
 
   SalesLiveMapLoadResult _sessionExpiredResult() {

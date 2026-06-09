@@ -54,10 +54,6 @@ enum AppRoute {
     path: '/charts/fullscreen',
     title: 'Grafico',
   ),
-  inventory(
-    path: '/inventory',
-    title: 'Estoque',
-  ),
   agents(
     path: '/agents',
     title: 'Agentes',
@@ -86,7 +82,6 @@ enum AppRoute {
     dashboard,
     salesMonitoring,
     sales,
-    inventory,
     agents,
     settings,
   ];
@@ -108,7 +103,6 @@ enum AppRoute {
         return AppRoute.agents;
       case AppRoute.dashboard:
       case AppRoute.sales:
-      case AppRoute.inventory:
       case AppRoute.agents:
       case AppRoute.settings:
         return this;
@@ -149,8 +143,6 @@ enum AppRoute {
         return Icons.map_rounded;
       case AppRoute.chartFullscreen:
         return Icons.open_in_full_rounded;
-      case AppRoute.inventory:
-        return Icons.inventory_2_rounded;
       case AppRoute.settings:
         return Icons.person_rounded;
       case AppRoute.agents:
@@ -181,8 +173,6 @@ enum AppRoute {
         return Icons.map_outlined;
       case AppRoute.chartFullscreen:
         return Icons.open_in_full_outlined;
-      case AppRoute.inventory:
-        return Icons.inventory_2_outlined;
       case AppRoute.settings:
         return Icons.person_outline_rounded;
       case AppRoute.agents:
@@ -253,8 +243,6 @@ enum AppRoute {
       case AppRoute.salesCard:
       case AppRoute.salesMonitoring:
         return UserPermission.viewSales;
-      case AppRoute.inventory:
-        return UserPermission.viewInventory;
       case AppRoute.unmatched:
       case AppRoute.login:
       case AppRoute.register:

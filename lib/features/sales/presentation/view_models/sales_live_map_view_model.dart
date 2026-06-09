@@ -1,19 +1,14 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/refresh/auto_refresh_ui_state.dart';
 import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
+import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_visual_snapshot_policy.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
-import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_visual_snapshot_policy.dart';
-import 'package:colmeia/features/sales/presentation/models/sales_live_map_visual_spec.dart';
+import 'package:colmeia/features/sales/presentation/rules/sales_live_map_presentation_rules.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_filter_summary.dart';
-
-/// Mapped branch count above which the live map auto-downgrades the user's
-/// chosen `branches` detail level to `municipalities` to keep the map
-/// readable.
-const int kSalesLiveMapAutoMunicipalityDetailPointThreshold = 200;
 
 class SalesLiveMapViewModel {
   SalesLiveMapViewModel._({
@@ -150,23 +145,6 @@ class SalesLiveMapViewModel {
     return result.refreshedAt;
   }
 
-  /// True when at least one of the available agents has a local client token
-  /// and the current selection includes at least one of those agents.
-  ///
-  /// Equivalent to the previous `state.canScheduleAutoRefresh` getter; kept
-  /// here so product rules live in the view model instead of the state.
-  static bool canScheduleAutoRefresh(SalesLiveMapPresentationState state) {
-    final tokenBacked = state.tokenBackedAgentIds;
-    if (tokenBacked.isEmpty) {
-      return false;
-    }
-    final selected = state.filter.selectedAgentIds;
-    if (selected == null) {
-      return true;
-    }
-    return selected.any(tokenBacked.contains);
-  }
-
   /// True when the inline map should render a failure placeholder instead of
   /// an empty Brazil map (initial hard failure with no prior snapshot).
   static bool shouldShowChartFailurePlaceholder(
@@ -192,49 +170,10 @@ class SalesLiveMapViewModel {
     );
   }
 
-  /// True when the current result is loaded successfully but has no rows to
-  /// show — the empty notice should be displayed instead of a chart.
-  static bool shouldShowEmptyNotice(SalesLiveMapPresentationState state) {
-    final currentResult = state.result;
-    if (currentResult == null ||
-        currentResult.salesDataPending ||
-        currentResult.loadFailed) {
-      return false;
-    }
-    return currentResult.totalSalesCount == 0 ||
-        currentResult.totalBranchCount == 0;
-  }
-
   static bool shouldShowConfigureTokenAction(SalesLiveMapLoadResult result) {
     return result.missingClientTokenAgentCount > 0 ||
         result.loadFailureReason ==
             SalesLiveMapLoadFailureReason.missingClientTokenSetup;
-  }
-
-  /// Effective detail level after applying the auto-downgrade policy: when
-  /// the user picked `branches` but the result has too many mapped branches,
-  /// fall back to `municipalities` to keep the map readable.
-  static SalesLiveMapMapDetail effectiveDetailLevel(
-    SalesLiveMapPresentationState state,
-  ) {
-    final currentResult = state.result;
-    if (state.filter.detailLevel == SalesLiveMapMapDetail.branches &&
-        (currentResult?.mappedBranchCount ?? 0) >
-            kSalesLiveMapAutoMunicipalityDetailPointThreshold) {
-      return SalesLiveMapMapDetail.municipalities;
-    }
-    return state.filter.detailLevel;
-  }
-
-  /// Visual spec to render the operational map for the given state, taking
-  /// the auto-downgrade policy into account (see [effectiveDetailLevel]).
-  static SalesLiveMapVisualSpec visualSpec(
-    SalesLiveMapPresentationState state,
-  ) {
-    return SalesLiveMapVisualSpec.operational(
-      detailLevel: effectiveDetailLevel(state),
-      markerVisual: state.filter.markerVisual,
-    );
   }
 
   /// Localized messages displayed inside the attention panel when the live
@@ -392,7 +331,8 @@ class SalesLiveMapViewModel {
       result.mappedBranchCount,
       result.totalBranchCount,
     );
-    if (state.effectiveDetailLevel == SalesLiveMapMapDetail.municipalities &&
+    if (SalesLiveMapPresentationRules.effectiveDetailLevel(state) ==
+            SalesLiveMapMapDetail.municipalities &&
         state.filter.detailLevel == SalesLiveMapMapDetail.branches) {
       return '$baseSubtitle ${l10n.salesLiveMapDetailAutoMunicipalities(kSalesLiveMapAutoMunicipalityDetailPointThreshold)}';
     }

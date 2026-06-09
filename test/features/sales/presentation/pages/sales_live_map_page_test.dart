@@ -20,6 +20,7 @@ import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refr
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_live_map_page.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_chart_panel.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_inline_chart_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_intro_section.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
@@ -110,6 +111,7 @@ void main() {
         filter: any(named: 'filter'),
         reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
+        bypassCatalogCache: any(named: 'bypassCatalogCache'),
       ),
     ).thenAnswer((_) => _streamResult(_loadedResult()));
   });
@@ -183,6 +185,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       ).called(1);
       expect(find.text('Total revenue'), findsOneWidget);
@@ -196,6 +199,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       );
     },
@@ -217,6 +221,7 @@ void main() {
         filter: any(named: 'filter'),
         reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
+        bypassCatalogCache: any(named: 'bypassCatalogCache'),
       ),
     ).called(1);
 
@@ -238,6 +243,7 @@ void main() {
         filter: any(named: 'filter'),
         reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
+        bypassCatalogCache: any(named: 'bypassCatalogCache'),
       ),
     ).called(1);
   });
@@ -329,6 +335,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       ).thenAnswer((_) => controller.stream);
 
@@ -375,6 +382,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       ).thenAnswer((_) => _streamResult(_failedResult()));
 
@@ -431,6 +439,7 @@ void main() {
         filter: any(named: 'filter'),
         reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
+        bypassCatalogCache: any(named: 'bypassCatalogCache'),
       ),
     ).thenAnswer((_) => _streamFromFuture(completer.future));
 
@@ -443,6 +452,7 @@ void main() {
         filter: any(named: 'filter'),
         reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
+        bypassCatalogCache: any(named: 'bypassCatalogCache'),
       ),
     ).called(1);
 
@@ -455,6 +465,7 @@ void main() {
         filter: any(named: 'filter'),
         reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
+        bypassCatalogCache: any(named: 'bypassCatalogCache'),
       ),
     );
 
@@ -480,6 +491,7 @@ void main() {
         filter: any(named: 'filter'),
         reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
+        bypassCatalogCache: any(named: 'bypassCatalogCache'),
       ),
     );
 
@@ -500,6 +512,7 @@ void main() {
         filter: any(named: 'filter'),
         reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
+        bypassCatalogCache: any(named: 'bypassCatalogCache'),
       ),
     ).thenAnswer((_) => controller.stream);
 
@@ -538,6 +551,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       ).thenAnswer((_) => controller.stream);
 
@@ -703,6 +717,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       ).thenAnswer((_) {
         callCount += 1;
@@ -785,6 +800,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       );
     },
@@ -801,6 +817,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       ).thenAnswer((_) {
         callCount += 1;
@@ -849,6 +866,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       );
     },
@@ -864,6 +882,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       ).thenAnswer(
         (_) async* {
@@ -890,7 +909,7 @@ void main() {
   );
 
   testWidgets(
-    'remounts inline map with markers after closing fullscreen on progressive load',
+    'recovers inline map markers after closing fullscreen on progressive load',
     (tester) async {
       await _setDesktopSurface(tester);
       when(
@@ -899,6 +918,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       ).thenAnswer(
         (_) async* {
@@ -912,6 +932,12 @@ void main() {
         authController: authController,
       );
       await _pumpInitialLoad(tester);
+
+      final inlineSectionKeyBeforeFullscreen = tester
+          .widget<SalesLiveMapInlineChartSection>(
+            find.byType(SalesLiveMapInlineChartSection),
+          )
+          .key;
 
       final fullscreenFinder = find.byIcon(Icons.open_in_full);
       await tester.ensureVisible(fullscreenFinder);
@@ -933,6 +959,15 @@ void main() {
         inlineChart.presentationMode,
         AppBrazilStoreSalesMapPresentationMode.inlineOperational,
       );
+      expect(
+        tester
+            .widget<SalesLiveMapInlineChartSection>(
+              find.byType(SalesLiveMapInlineChartSection),
+            )
+            .key,
+        inlineSectionKeyBeforeFullscreen,
+      );
+      expect(inlineSectionKeyBeforeFullscreen, isNot(isA<ValueKey<int>>()));
     },
   );
 
@@ -962,6 +997,7 @@ void main() {
         filter: any(named: 'filter'),
         reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
+        bypassCatalogCache: any(named: 'bypassCatalogCache'),
       ),
     ).called(1);
 
@@ -981,6 +1017,7 @@ void main() {
         filter: any(named: 'filter'),
         reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
+        bypassCatalogCache: any(named: 'bypassCatalogCache'),
       ),
     ).called(1);
     expect(router.canPop(), isTrue);
@@ -996,6 +1033,7 @@ void main() {
         filter: any(named: 'filter'),
         reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
+        bypassCatalogCache: any(named: 'bypassCatalogCache'),
       ),
     ).thenAnswer((_) => _streamResult(_emptyResult()));
 
@@ -1020,6 +1058,7 @@ void main() {
         filter: any(named: 'filter'),
         reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
+        bypassCatalogCache: any(named: 'bypassCatalogCache'),
       ),
     ).thenAnswer((_) => _streamResult(_partialUnmappedResult()));
 
@@ -1046,6 +1085,7 @@ void main() {
         filter: any(named: 'filter'),
         reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
+        bypassCatalogCache: any(named: 'bypassCatalogCache'),
       ),
     ).thenAnswer((_) => _streamResult(_partialNoSalesResult()));
 
@@ -1073,6 +1113,7 @@ void main() {
         filter: any(named: 'filter'),
         reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
+        bypassCatalogCache: any(named: 'bypassCatalogCache'),
       ),
     ).thenAnswer((_) => _streamResult(_partialUnavailableSalesResult()));
 
@@ -1217,6 +1258,49 @@ void main() {
   );
 
   testWidgets(
+    'unlocks page scroll when fullscreen opens while scroll is locked',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      final router = await _pumpPageWithRouter(
+        tester,
+        authController: authController,
+        mediaSize: const Size(390, 844),
+      );
+      await _pumpInitialLoad(tester);
+
+      final pageScrollFinder = find.ancestor(
+        of: find.byType(SalesLiveMapIntroSection),
+        matching: find.byType(SingleChildScrollView),
+      );
+
+      const SalesLiveMapParentScrollLockNotification(
+        lockParentScroll: true,
+      ).dispatch(tester.element(find.byType(SalesLiveMapIntroSection)));
+      await tester.pump();
+      expect(
+        tester.widget<SingleChildScrollView>(pageScrollFinder).physics,
+        isA<NeverScrollableScrollPhysics>(),
+      );
+
+      final fullscreenFinder = find.byIcon(Icons.open_in_full);
+      await tester.ensureVisible(fullscreenFinder);
+      await tester.pump();
+      await tester.tap(fullscreenFinder);
+      await tester.pump();
+
+      router.pop();
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<SingleChildScrollView>(pageScrollFinder).physics,
+        isA<AlwaysScrollableScrollPhysics>(),
+      );
+    },
+  );
+
+  testWidgets(
     'changing the map metric does not call loadProgressive again',
     (tester) async {
       await tester.binding.setSurfaceSize(const Size(800, 1400));
@@ -1247,6 +1331,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       );
     },
@@ -1263,6 +1348,7 @@ void main() {
         filter: any(named: 'filter'),
         reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
+        bypassCatalogCache: any(named: 'bypassCatalogCache'),
       ),
     ).called(1);
 
@@ -1273,6 +1359,7 @@ void main() {
         filter: any(named: 'filter'),
         reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
+        bypassCatalogCache: any(named: 'bypassCatalogCache'),
       ),
     ).thenAnswer((_) => _streamFromFuture(reloadCompleter.future));
 
@@ -1317,6 +1404,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       ).thenAnswer((_) {
         callCount += 1;
@@ -1335,6 +1423,7 @@ void main() {
           filter: captureAny(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       ).captured.cast<SalesLiveMapFilter>().toList();
       expect(capturedFilters.first.selectedBranchIds, isNull);
@@ -1369,6 +1458,7 @@ void main() {
         filter: captureAny(named: 'filter'),
         reason: any(named: 'reason'),
         cancelToken: any(named: 'cancelToken'),
+        bypassCatalogCache: any(named: 'bypassCatalogCache'),
       ),
     ).captured.cast<SalesLiveMapFilter>().toList();
     expect(capturedFilters.first.selectedBranchIds, isNull);
@@ -1445,6 +1535,7 @@ void main() {
           filter: captureAny(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       ).captured.cast<SalesLiveMapFilter>().toList();
       expect(capturedFilters.last.selectedAgentIds, isNull);
@@ -1461,6 +1552,7 @@ void main() {
           filter: any(named: 'filter'),
           reason: any(named: 'reason'),
           cancelToken: any(named: 'cancelToken'),
+          bypassCatalogCache: any(named: 'bypassCatalogCache'),
         ),
       ).thenAnswer((_) => _streamResult(_twoBranchLoadedResult()));
 

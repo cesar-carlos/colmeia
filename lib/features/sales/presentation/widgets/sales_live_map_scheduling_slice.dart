@@ -1,3 +1,4 @@
+import 'package:colmeia/features/sales/presentation/rules/sales_live_map_presentation_rules.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
 import 'package:flutter/foundation.dart';
 
@@ -18,7 +19,8 @@ class SalesLiveMapSchedulingSlice {
   ) {
     return SalesLiveMapSchedulingSlice(
       isLoading: state.isLoading,
-      canScheduleAutoRefresh: state.canScheduleAutoRefresh,
+      canScheduleAutoRefresh:
+          SalesLiveMapPresentationRules.canScheduleAutoRefresh(state),
     );
   }
 

@@ -1,4 +1,4 @@
-import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart.dart';
+import 'package:colmeia/shared/widgets/charts/brazil_map_desktop_sidebar_layout.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

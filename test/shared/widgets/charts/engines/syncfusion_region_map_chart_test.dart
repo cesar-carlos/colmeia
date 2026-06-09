@@ -26,12 +26,19 @@ void main() {
         ),
         findsOneWidget,
       );
+      final l10n = AppLocalizations.of(
+        tester.element(find.byType(SyncfusionRegionMapChart<String>)),
+      );
+      final expectedSemanticsLabel = [
+        l10n.regionMapTerritorialSemanticsLabel,
+        l10n.regionMapSemanticsMetricLabel('Receita'),
+        l10n.regionMapSemanticsRegionCount(1),
+      ].join(' ');
       expect(
         find.byWidgetPredicate(
           (widget) =>
               widget is Semantics &&
-              widget.properties.label ==
-                  'Mapa territorial. Metrica: Receita. 1 regioes.',
+              widget.properties.label == expectedSemanticsLabel,
         ),
         findsOneWidget,
       );
@@ -433,6 +440,37 @@ void main() {
     }
   });
 
+  testWidgets(
+    'remounts SfMaps when marker deferral completes after loading ends',
+    (tester) async {
+      await tester.pumpWidget(
+        const _TestApp(child: _MutableLoadingRegionMapWithMarkers()),
+      );
+
+      expect(find.byType(SfMaps), findsNothing);
+
+      await tester.tap(find.byKey(const ValueKey<String>('finish-loading')));
+      await tester.pump();
+
+      expect(find.byType(SfMaps), findsOneWidget);
+      final deferredKey = tester.widget<SfMaps>(find.byType(SfMaps)).key;
+      final deferredLayer = tester.widget<MapShapeLayer>(
+        find.byType(MapShapeLayer),
+      );
+      expect(deferredLayer.initialMarkersCount, 0);
+
+      await tester.pump();
+      await tester.pump();
+
+      final readyLayer = tester.widget<MapShapeLayer>(
+        find.byType(MapShapeLayer),
+      );
+      expect(readyLayer.initialMarkersCount, greaterThan(0));
+      final readyKey = tester.widget<SfMaps>(find.byType(SfMaps)).key;
+      expect(readyKey, isNot(equals(deferredKey)));
+    },
+  );
+
   testWidgets('reapplies preferred viewport after leaving loading state', (
     tester,
   ) async {
@@ -509,6 +547,66 @@ void main() {
         RegionMapViewportSyncPolicy.changeSourceForUserPinchOrPan(),
         AppMapViewportChangeSource.user,
       );
+    },
+  );
+
+  testWidgets(
+    'does not commit marker overlay ready after points clear during deferral',
+    (tester) async {
+      await tester.pumpWidget(
+        const _TestApp(child: _MutableDeferralMarkerRegionMap()),
+      );
+
+      await tester.tap(find.byKey(const ValueKey<String>('add-marker')));
+      await tester.pump();
+
+      final deferredLayer = tester.widget<MapShapeLayer>(
+        find.byType(MapShapeLayer),
+      );
+      expect(deferredLayer.initialMarkersCount, 0);
+
+      await tester.tap(find.byKey(const ValueKey<String>('clear-marker')));
+      await tester.pump();
+
+      await tester.tap(find.byKey(const ValueKey<String>('add-marker')));
+      await tester.pump();
+
+      await tester.pump();
+      await tester.pump();
+
+      final readyLayer = tester.widget<MapShapeLayer>(
+        find.byType(MapShapeLayer),
+      );
+      expect(readyLayer.initialMarkersCount, greaterThan(0));
+    },
+  );
+
+  testWidgets(
+    'restarts marker deferral when region scope changes during deferral',
+    (tester) async {
+      await tester.pumpWidget(
+        const _TestApp(child: _MutableDeferralRegionScopeMap()),
+      );
+      await tester.pump();
+
+      final initialKey = tester.widget<SfMaps>(find.byType(SfMaps)).key;
+      final deferredLayer = tester.widget<MapShapeLayer>(
+        find.byType(MapShapeLayer),
+      );
+      expect(deferredLayer.initialMarkersCount, 0);
+
+      await tester.tap(find.byKey(const ValueKey<String>('change-region-scope')));
+      await tester.pump();
+
+      await tester.pump();
+      await tester.pump();
+
+      final readyLayer = tester.widget<MapShapeLayer>(
+        find.byType(MapShapeLayer),
+      );
+      expect(readyLayer.initialMarkersCount, greaterThan(0));
+      final readyKey = tester.widget<SfMaps>(find.byType(SfMaps)).key;
+      expect(readyKey, isNot(equals(initialKey)));
     },
   );
 
@@ -899,6 +997,142 @@ class _MutableMetricIdentityMapState extends State<_MutableMetricIdentityMap> {
   }
 }
 
+class _MutableDeferralMarkerRegionMap extends StatefulWidget {
+  const _MutableDeferralMarkerRegionMap();
+
+  @override
+  State<_MutableDeferralMarkerRegionMap> createState() =>
+      _MutableDeferralMarkerRegionMapState();
+}
+
+class _MutableDeferralMarkerRegionMapState
+    extends State<_MutableDeferralMarkerRegionMap> {
+  var _hasMarker = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        ElevatedButton(
+          key: const ValueKey<String>('add-marker'),
+          onPressed: () {
+            setState(() {
+              _hasMarker = true;
+            });
+          },
+          child: const Text('Add marker'),
+        ),
+        ElevatedButton(
+          key: const ValueKey<String>('clear-marker'),
+          onPressed: () {
+            setState(() {
+              _hasMarker = false;
+            });
+          },
+          child: const Text('Clear marker'),
+        ),
+        _TestRegionMap(
+          points: _hasMarker
+              ? const <AppMapPoint>[
+                  AppMapPoint(latitude: -23, longitude: -47),
+                ]
+              : const <AppMapPoint>[],
+        ),
+      ],
+    );
+  }
+}
+
+class _MutableDeferralRegionScopeMap extends StatefulWidget {
+  const _MutableDeferralRegionScopeMap();
+
+  @override
+  State<_MutableDeferralRegionScopeMap> createState() =>
+      _MutableDeferralRegionScopeMapState();
+}
+
+class _MutableDeferralRegionScopeMapState
+    extends State<_MutableDeferralRegionScopeMap> {
+  var _items = const <String>['SP'];
+  final _hasMarker = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        ElevatedButton(
+          key: const ValueKey<String>('change-region-scope'),
+          onPressed: () {
+            setState(() {
+              _items = const <String>['SP', 'RJ'];
+            });
+          },
+          child: const Text('Change region scope'),
+        ),
+        SyncfusionRegionMapChart<String>(
+          items: _items,
+          mapDefinition: AppMapDefinition.memory(
+            sourceBytes: _geoJsonBytesWithStates,
+            shapeDataField: 'UF',
+            regionLevel: AppMapRegionLevel.state,
+          ),
+          metric: AppMapMetric<String>(
+            key: 'revenue',
+            label: 'Receita',
+            valueBuilder: (_) => 1,
+          ),
+          regionKeyBuilder: (item) => item,
+          regionLabelBuilder: (item) => item,
+          currentDrillLevel: AppMapDrillLevel.state,
+          style: const AppRegionMapChartStyle(height: 240),
+          preset: AppChartPreset.standard,
+          points: _hasMarker
+              ? const <AppMapPoint>[
+                  AppMapPoint(latitude: -23, longitude: -47),
+                ]
+              : const <AppMapPoint>[],
+        ),
+      ],
+    );
+  }
+}
+
+class _MutableLoadingRegionMapWithMarkers extends StatefulWidget {
+  const _MutableLoadingRegionMapWithMarkers();
+
+  @override
+  State<_MutableLoadingRegionMapWithMarkers> createState() =>
+      _MutableLoadingRegionMapWithMarkersState();
+}
+
+class _MutableLoadingRegionMapWithMarkersState
+    extends State<_MutableLoadingRegionMapWithMarkers> {
+  var _isLoading = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        ElevatedButton(
+          key: const ValueKey<String>('finish-loading'),
+          onPressed: () {
+            setState(() {
+              _isLoading = false;
+            });
+          },
+          child: const Text('Finish loading'),
+        ),
+        _TestRegionMap(
+          isLoading: _isLoading,
+          points: const <AppMapPoint>[
+            AppMapPoint(latitude: -23, longitude: -47),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
 class _MutableLoadingRegionMap extends StatefulWidget {
   const _MutableLoadingRegionMap({this.onViewportChanged});
 
@@ -997,6 +1231,48 @@ final Uint8List _geoJsonBytes = Uint8List.fromList(
                 <double>[-46, -22],
                 <double>[-48, -22],
                 <double>[-48, -24],
+              ],
+            ],
+          },
+        },
+      ],
+    }),
+  ),
+);
+
+final Uint8List _geoJsonBytesWithStates = Uint8List.fromList(
+  utf8.encode(
+    jsonEncode(<String, Object?>{
+      'type': 'FeatureCollection',
+      'features': <Object?>[
+        <String, Object?>{
+          'type': 'Feature',
+          'properties': <String, String>{'UF': 'SP'},
+          'geometry': <String, Object?>{
+            'type': 'Polygon',
+            'coordinates': <Object?>[
+              <Object?>[
+                <double>[-48, -24],
+                <double>[-46, -24],
+                <double>[-46, -22],
+                <double>[-48, -22],
+                <double>[-48, -24],
+              ],
+            ],
+          },
+        },
+        <String, Object?>{
+          'type': 'Feature',
+          'properties': <String, String>{'UF': 'RJ'},
+          'geometry': <String, Object?>{
+            'type': 'Polygon',
+            'coordinates': <Object?>[
+              <Object?>[
+                <double>[-44, -23],
+                <double>[-42, -23],
+                <double>[-42, -21],
+                <double>[-44, -21],
+                <double>[-44, -23],
               ],
             ],
           },

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:colmeia/shared/widgets/charts/app_brazil_map_static_data.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_points_content_digest.dart';
 
 abstract final class AppBrazilStoreSalesMapData {
   static String normalizeUf(String uf) {
@@ -35,32 +36,9 @@ abstract final class AppBrazilStoreSalesMapData {
   /// Digest of point payloads for map snapshot reuse keys and for coalescing
   /// frequent progressive reload emissions in parents.
   static int pointsContentDigest(List<AppBrazilStoreSalesPoint> points) {
-    var h = Object.hash(0xBEE5CAFE, points.length);
-    for (final p in points) {
-      h = Object.hash(
-        h,
-        p.id,
-        p.name,
-        p.fantasyName ?? '',
-        p.branchName ?? '',
-        p.companyCode,
-        p.branchCode,
-        p.agentName ?? '',
-        p.salesAmount,
-        p.salesCount,
-        p.salesDataLoading,
-        p.salesDataUnavailable,
-        p.salesDataStatusLabel ?? '',
-        p.latitude,
-        p.longitude,
-        p.uf,
-        p.city ?? '',
-        p.municipalityCode ?? '',
-        p.locationResolution,
-        p.subtitle ?? '',
-      );
-    }
-    return h;
+    return brazilStoreSalesMapPointsContentDigest(
+      points.map(BrazilStoreSalesMapPointDigestFields.fromChartPoint),
+    );
   }
 
   /// Content fingerprint for [AppBrazilStoreSalesMarkerGroup]: instances are

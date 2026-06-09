@@ -4,6 +4,7 @@ import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_diagnostic.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
+import 'package:colmeia/features/sales/presentation/rules/sales_live_map_presentation_rules.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
 import 'package:colmeia/features/sales/presentation/view_models/sales_live_map_view_model.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_attention_panel.dart';
@@ -25,14 +26,14 @@ class SalesLiveMapBodySection extends StatelessWidget {
     required this.onRetryReload,
     required this.onOpenFullscreen,
     required this.hideInlineChart,
-    required this.inlineChartRemountKey,
+    required this.inlineChartRecoveryRequestId,
     super.key,
   });
 
   final VoidCallback onRetryReload;
   final VoidCallback onOpenFullscreen;
   final bool hideInlineChart;
-  final int inlineChartRemountKey;
+  final int inlineChartRecoveryRequestId;
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +66,8 @@ class SalesLiveMapBodySection extends StatelessWidget {
               Offstage(
                 offstage: hideInlineChart,
                 child: SalesLiveMapInlineChartSection(
-                  key: ValueKey<int>(inlineChartRemountKey),
+                  recoveryRequestId: inlineChartRecoveryRequestId,
+                  suspendParentScrollLock: hideInlineChart,
                   onOpenFullscreen: onOpenFullscreen,
                 ),
               ),
@@ -146,7 +148,9 @@ class _SalesLiveMapBodyStatusContent extends StatelessWidget {
                     onRetry: slice.canReload ? onRetryReload : null,
                   ),
           ),
-        if (state.shouldShowEmptyNotice && result != null && !state.sessionExpired)
+        if (SalesLiveMapPresentationRules.shouldShowEmptyNotice(state) &&
+            result != null &&
+            !state.sessionExpired)
           Padding(
             padding: EdgeInsets.only(top: tokens.gapMd),
             child: SalesLiveMapEmptyNotice(
