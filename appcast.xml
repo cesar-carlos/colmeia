@@ -1,8 +1,15 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
   <channel>
     <title>Colmeia</title>
     <description>Most recent Windows releases for Colmeia</description>
     <language>pt-BR</language>
+    <item>
+      <title>Version 1.4.1</title>
+      <pubDate>Tue, 09 Jun 2026 19:35:57 GMT</pubDate>
+      <link>https://github.com/cesar-carlos/colmeia/releases/tag/v1.4.1</link>
+      <sparkle:releaseNotesLink>https://github.com/cesar-carlos/colmeia/releases/tag/v1.4.1</sparkle:releaseNotesLink>
+      <enclosure url="https://github.com/cesar-carlos/colmeia/releases/download/v1.4.1/Colmeia-Setup-1.4.1.exe" sparkle:version="1.4.1+19" sparkle:os="windows" length="18493636" type="application/octet-stream" />
+    </item>
   </channel>
 </rss>

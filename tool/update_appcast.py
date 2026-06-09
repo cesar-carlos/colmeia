@@ -157,3 +157,7 @@ def indent_xml(element: ET.Element, level: int = 0) -> None:
             child.tail = indent
     elif level and (not element.tail or not element.tail.strip()):
         element.tail = indent
+
+
+if __name__ == "__main__":
+    main()
