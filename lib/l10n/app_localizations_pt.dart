@@ -981,6 +981,16 @@ class AppLocalizationsPt extends AppLocalizations {
       'Já existe um compartilhamento em andamento para este gráfico.';
 
   @override
+  String chartShareExportRowLimitExceeded(int maxRows, int totalCount) {
+    return 'Não é possível exportar mais de $maxRows registros. O resultado atual tem $totalCount registros.';
+  }
+
+  @override
+  String chartSharePdfTableRowsTruncated(int shownRows, int totalRows) {
+    return 'A tabela do PDF mostra $shownRows de $totalRows registros.';
+  }
+
+  @override
   String chartSharePdfPageNumber(int page, int pages) {
     return 'Página $page de $pages';
   }
@@ -5845,6 +5855,16 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get chartShareFailedInProgress =>
       'Já existe um compartilhamento em andamento para este gráfico.';
+
+  @override
+  String chartShareExportRowLimitExceeded(int maxRows, int totalCount) {
+    return 'Não é possível exportar mais de $maxRows registros. O resultado atual tem $totalCount registros.';
+  }
+
+  @override
+  String chartSharePdfTableRowsTruncated(int shownRows, int totalRows) {
+    return 'A tabela do PDF mostra $shownRows de $totalRows registros.';
+  }
 
   @override
   String chartSharePdfPageNumber(int page, int pages) {

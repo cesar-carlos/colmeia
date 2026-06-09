@@ -2,6 +2,7 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
 import 'package:colmeia/features/agent_queries/presentation/widgets/dashboard_lucratividade_percent_metrics.dart';
+import 'package:colmeia/features/overview/presentation/share/overview_lucratividade_chart_share.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_chart_load_failure_helpers.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/charts/metric_toggle_comparison_bar_fullscreen_body.dart';
@@ -9,24 +10,12 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
-import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart'
-    show formatComparisonBarXAxisLabelWrapped;
-import 'package:colmeia/shared/widgets/charts/chart_export_capture.dart';
-import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
-import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_actions.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_charts/charts.dart' show TooltipArgs;
-
-/// Matches overview home ranking bar chart: multi-line agent names + horizontal scroll.
-String _xLabel(ResumoProdutoVendaLucratividadeRow r) =>
-    formatComparisonBarXAxisLabelWrapped(
-      r.filialLabel,
-      maxCharsPerLine: 11,
-      maxLines: 3,
-    );
 
 num _barByProfit(ResumoProdutoVendaLucratividadeRow r) => r.lucro;
 num _lineByProfit(ResumoProdutoVendaLucratividadeRow r) => r.valorTotalItem;
@@ -397,78 +386,43 @@ class _OverviewLucratividadeChartState
     );
 
     final shareTitle = l10n.overviewLucratividadeTitle;
-    final metadata = ChartShareMetadata(
-      title: shareTitle,
-      subtitle: l10n.overviewLucratividadeSubtitle,
-      tableData: ChartShareTableData(
-        headers: <String>[
-          l10n.chartSharePdfColumnAgent,
-          l10n.chartSharePdfColumnRevenue,
-          l10n.chartSharePdfColumnCost,
-          l10n.chartSharePdfColumnProfit,
-        ],
-        rows: <List<String>>[
-          for (final row in sortedPoints)
-            <String>[
-              row.filialLabel,
-              AppBrFormatters.currency(row.valorTotalItem),
-              AppBrFormatters.currency(row.custoReposicao),
-              AppBrFormatters.currency(row.lucro),
-            ],
-        ],
+    final barSeriesLabel = isPercent
+        ? lucratividadePercentBarSeriesLabel(l10n, _percentMetric)
+        : isCost
+        ? l10n.overviewLucratividadeCostSeriesLabel
+        : isProfit
+        ? l10n.overviewLucratividadeProfitSeriesLabel
+        : l10n.overviewLucratividadeRevenueSeriesLabel;
+    final lineSeriesLabel = isPercent || isCost || isProfit
+        ? l10n.overviewLucratividadeRevenueSeriesLabel
+        : l10n.overviewLucratividadeCostSeriesLabel;
+    final metadata = buildOverviewLucratividadeChartShareMetadata(
+      l10n: l10n,
+      sortedPoints: sortedPoints,
+      exportBaseStyle: style,
+      series: OverviewLucratividadeComboShareSeries(
+        barValueBuilder: barFn,
+        lineValueBuilder: lineFn,
+        barDataLabelBuilder: labelFn,
+        barSeriesLabel: barSeriesLabel,
+        lineSeriesLabel: lineSeriesLabel,
       ),
-      chartExportBuilder: sortedPoints.isEmpty
-          ? null
-          : (exportContext) {
-              final exportStyle = style.forPdfExport();
-              final exportBarLabel = isPercent
-                  ? lucratividadePercentBarSeriesLabel(l10n, _percentMetric)
-                  : isCost
-                  ? l10n.overviewLucratividadeCostSeriesLabel
-                  : isProfit
-                  ? l10n.overviewLucratividadeProfitSeriesLabel
-                  : l10n.overviewLucratividadeRevenueSeriesLabel;
-              return wrapCartesianChartForPdfExport(
-                context: exportContext,
-                itemCount: sortedPoints.length,
-                minSlotWidth: exportStyle.minCategorySlotWidth,
-                height: exportStyle.height,
-                chart: AppComboChart<ResumoProdutoVendaLucratividadeRow>(
-                  items: sortedPoints,
-                  xLabelBuilder: _xLabel,
-                  barValueBuilder: barFn,
-                  barSeriesLabel: exportBarLabel,
-                  lineValueBuilder: lineFn,
-                  lineSeriesLabel: isPercent || isCost || isProfit
-                      ? l10n.overviewLucratividadeRevenueSeriesLabel
-                      : l10n.overviewLucratividadeCostSeriesLabel,
-                  barDataLabelBuilder: labelFn,
-                  style: exportStyle,
-                ),
-              );
-            },
+    );
+    final shareActions = ChartShareActions(
+      context: context,
+      captureKey: _shareKey,
+      metadata: metadata,
+      onRequestShare: widget.onRequestShare,
+      onRequestFullscreen: widget.onRequestFullscreen,
     );
 
-    void openShare() {
-      final emit = widget.onRequestShare;
-      if (emit == null) {
-        return;
-      }
-      emit(context, metadata.toShareRequest(_shareKey));
-    }
-
     void openFullscreen() {
-      final emit = widget.onRequestFullscreen;
-      if (emit == null) {
-        return;
-      }
       final sortedPointsSnapshot = List<ResumoProdutoVendaLucratividadeRow>.of(
         sortedPoints,
         growable: false,
       );
       final fullscreenShareKey = GlobalKey();
-      emit(
-        context,
+      shareActions.openFullscreen(
         metadata.toFullscreenRequest(
           semanticsLabel: shareTitle,
           shareCaptureKey: fullscreenShareKey,
@@ -615,7 +569,7 @@ class _OverviewLucratividadeChartState
                                 ),
                               ),
                               items: sortedPointsSnapshot,
-                              xLabelBuilder: _xLabel,
+                              xLabelBuilder: overviewLucratividadeAgentXLabel,
                               barValueBuilder: fsBarFn,
                               barSeriesLabel: fsBarLabel,
                               lineValueBuilder: fsLineFn,
@@ -663,14 +617,6 @@ class _OverviewLucratividadeChartState
       );
     }
 
-    final barSeriesLabel = isPercent
-        ? lucratividadePercentBarSeriesLabel(l10n, _percentMetric)
-        : isCost
-        ? l10n.overviewLucratividadeCostSeriesLabel
-        : isProfit
-        ? l10n.overviewLucratividadeProfitSeriesLabel
-        : l10n.overviewLucratividadeRevenueSeriesLabel;
-
     return RepaintBoundary(
       key: _shareKey,
       child: AppComboChart<ResumoProdutoVendaLucratividadeRow>(
@@ -682,14 +628,13 @@ class _OverviewLucratividadeChartState
           ),
         ),
         title: shareTitle,
-        onShare: widget.onRequestShare == null ? null : openShare,
+        onShare: shareActions.shareCallback(),
         shareProgressKey: _shareKey,
-        onOpenFullscreen:
-            widget.onRequestFullscreen == null ? null : openFullscreen,
+        onOpenFullscreen: shareActions.fullscreenCallback(openFullscreen),
         subtitle: l10n.overviewLucratividadeSubtitle,
         belowSubtitle: belowSubtitle,
         items: sortedPoints,
-        xLabelBuilder: _xLabel,
+        xLabelBuilder: overviewLucratividadeAgentXLabel,
         barValueBuilder: barFn,
         barSeriesLabel: barSeriesLabel,
         lineValueBuilder: lineFn,

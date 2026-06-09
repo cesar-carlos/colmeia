@@ -4,16 +4,21 @@ import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.d
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_bar_chart_preferences.dart';
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_point_percent_metric.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_dashboard_comparison_bar_chart_preset.dart';
 import 'package:colmeia/shared/widgets/charts/app_grouped_column_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_export_capture.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
 
 ChartShareMetadata buildSalesMonthlyPnlBarChartShareMetadata({
   required AppLocalizations l10n,
@@ -30,9 +35,7 @@ ChartShareMetadata buildSalesMonthlyPnlBarChartShareMetadata({
       session.displayMode == SalesMonthlyPnlBarDisplayMode.percent;
   final metric = session.percentMetric;
 
-  return ChartShareMetadata(
-    title: l10n.salesMonthlyPnlBarChartTitle,
-    subtitle: l10n.salesMonthlyPnlBarChartSubtitle,
+  final tableLimit = applyChartShareTableRowLimit(
     tableData: ChartShareTableData(
       headers: <String>[
         l10n.chartSharePdfColumnMonth,
@@ -50,6 +53,16 @@ ChartShareMetadata buildSalesMonthlyPnlBarChartShareMetadata({
           ],
       ],
     ),
+    truncationNoticeBuilder: (shownRows, totalRows) =>
+        l10n.chartSharePdfTableRowsTruncated(shownRows, totalRows),
+  );
+
+  return ChartShareMetadata(
+    title: l10n.salesMonthlyPnlBarChartTitle,
+    subtitle: l10n.salesMonthlyPnlBarChartSubtitle,
+    filterSummary: tableLimit.truncationNotice,
+    tableData: tableLimit.tableData,
+    pdfOrientation: ChartSharePdfOrientation.landscape,
     chartExportBuilder: points.isEmpty
         ? null
         : (exportContext) => isPercent
@@ -79,9 +92,7 @@ ChartShareMetadata buildSalesMonthlyPnlLineChartShareMetadata({
   required AppLocalizations l10n,
   required List<SalesMonthlyPnlPoint> points,
 }) {
-  return ChartShareMetadata(
-    title: l10n.salesMonthlyPnlChartTitle,
-    subtitle: l10n.salesMonthlyPnlChartSubtitle,
+  final tableLimit = applyChartShareTableRowLimit(
     tableData: ChartShareTableData(
       headers: <String>[
         l10n.chartSharePdfColumnMonth,
@@ -97,6 +108,23 @@ ChartShareMetadata buildSalesMonthlyPnlLineChartShareMetadata({
           ],
       ],
     ),
+    truncationNoticeBuilder: (shownRows, totalRows) =>
+        l10n.chartSharePdfTableRowsTruncated(shownRows, totalRows),
+  );
+
+  return ChartShareMetadata(
+    title: l10n.salesMonthlyPnlChartTitle,
+    subtitle: l10n.salesMonthlyPnlChartSubtitle,
+    filterSummary: tableLimit.truncationNotice,
+    tableData: tableLimit.tableData,
+    pdfOrientation: ChartSharePdfOrientation.landscape,
+    chartExportBuilder: points.isEmpty
+        ? null
+        : (exportContext) => _monthlyPnlLineExport(
+            exportContext: exportContext,
+            l10n: l10n,
+            points: points,
+          ),
   );
 }
 
@@ -196,4 +224,107 @@ String _monthShort(SalesMonthlyPnlPoint point, String locale) {
 
 String _monthLong(SalesMonthlyPnlPoint point, String locale) {
   return DateFormat.yMMM(locale).format(DateTime(point.year, point.month));
+}
+
+const double _kMonthlyPnlLineExportMonthSlotWidth = 72;
+const double _kMonthlyPnlLineExportHorizontalPadding = 24;
+
+Widget _monthlyPnlLineExport({
+  required BuildContext exportContext,
+  required AppLocalizations l10n,
+  required List<SalesMonthlyPnlPoint> points,
+}) {
+  final localeTag = l10n.localeName;
+  final theme = Theme.of(exportContext);
+  final colors = theme.appColors;
+  final chartTheme = AppChartTheme.fromContext(
+    exportContext,
+    preset: AppChartPreset.standard,
+  );
+  final yAxisFormat = AppBrFormatters.compactCurrencyFormatForLocale(localeTag);
+  final gridLineColor = colors.outlineVariant.withValues(alpha: 0.35);
+  final chartHeight = exportContext.appTokens.chartStandardHeight;
+  final exportWidth = cartesianChartExportWidth(
+    itemCount: points.length,
+    minSlotWidth: _kMonthlyPnlLineExportMonthSlotWidth,
+  ) +
+      _kMonthlyPnlLineExportHorizontalPadding;
+
+  return ColoredBox(
+    color: theme.colorScheme.surface,
+    child: SizedBox(
+      width: exportWidth,
+      height: chartHeight,
+      child: SfCartesianChart(
+        margin: EdgeInsets.zero,
+        plotAreaBorderWidth: 0,
+        legend: const Legend(
+          isVisible: true,
+          position: LegendPosition.bottom,
+          overflowMode: LegendItemOverflowMode.wrap,
+        ),
+        primaryXAxis: const CategoryAxis(
+          majorGridLines: MajorGridLines(width: 0),
+        ),
+        primaryYAxis: NumericAxis(
+          numberFormat: yAxisFormat,
+          axisLine: const AxisLine(width: 0),
+          majorGridLines: MajorGridLines(
+            color: gridLineColor,
+            width: 1,
+          ),
+        ),
+        series: <CartesianSeries<SalesMonthlyPnlPoint, String>>[
+          LineSeries<SalesMonthlyPnlPoint, String>(
+            dataSource: points,
+            xValueMapper: (point, _) => _monthShort(point, localeTag),
+            yValueMapper: (point, _) => point.venda,
+            name: l10n.salesMonthlyPnlSeriesSalesLabel,
+            color: chartTheme.primaryColor,
+            width: 3,
+            animationDuration: 0,
+            markerSettings: MarkerSettings(
+              isVisible: true,
+              height: 6,
+              width: 6,
+              color: chartTheme.primaryColor,
+              borderColor: theme.colorScheme.surface,
+            ),
+          ),
+          LineSeries<SalesMonthlyPnlPoint, String>(
+            dataSource: points,
+            xValueMapper: (point, _) => _monthShort(point, localeTag),
+            yValueMapper: (point, _) => point.lucro,
+            name: l10n.salesMonthlyPnlSeriesProfitLabel,
+            color: chartTheme.paletteColor(1),
+            width: 3,
+            animationDuration: 0,
+            markerSettings: MarkerSettings(
+              isVisible: true,
+              height: 6,
+              width: 6,
+              color: chartTheme.paletteColor(1),
+              borderColor: theme.colorScheme.surface,
+            ),
+          ),
+          LineSeries<SalesMonthlyPnlPoint, String>(
+            dataSource: points,
+            xValueMapper: (point, _) => _monthShort(point, localeTag),
+            yValueMapper: (point, _) => point.custoMercadoria,
+            name: l10n.salesMonthlyPnlSeriesCostLabel,
+            color: chartTheme.paletteColor(2),
+            width: 3,
+            animationDuration: 0,
+            markerSettings: MarkerSettings(
+              isVisible: true,
+              height: 6,
+              width: 6,
+              color: chartTheme.paletteColor(2),
+              borderColor: theme.colorScheme.surface,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }

@@ -26,6 +26,8 @@ class SalesProdutoTendenciaBodySection extends StatelessWidget {
     required this.onClearClassificacaoFilter,
     required this.retryCountdownLabel,
     this.detailsSectionKey,
+    this.classificacaoShareKey,
+    this.onShareClassificacao,
     super.key,
   });
 
@@ -40,6 +42,8 @@ class SalesProdutoTendenciaBodySection extends StatelessWidget {
   final ValueChanged<String> onClassificacaoSelected;
   final VoidCallback onClearClassificacaoFilter;
   final String? retryCountdownLabel;
+  final Key? classificacaoShareKey;
+  final VoidCallback? onShareClassificacao;
 
   @override
   Widget build(BuildContext context) {
@@ -106,6 +110,8 @@ class SalesProdutoTendenciaBodySection extends StatelessWidget {
               onOpenFilters: onOpenFilters,
               onClearClassificacaoFilter: onClearClassificacaoFilter,
               onClassificacaoSelected: onClassificacaoSelected,
+              classificacaoShareKey: classificacaoShareKey,
+              onShareClassificacao: onShareClassificacao,
             ),
             SizedBox(height: tokens.sectionSpacing),
             SalesProdutoTendenciaChartNavGrid(

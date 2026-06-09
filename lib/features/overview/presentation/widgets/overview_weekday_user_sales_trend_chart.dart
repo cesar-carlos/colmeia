@@ -1,6 +1,7 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_user_sales_trend_point.dart';
+import 'package:colmeia/features/overview/presentation/share/overview_weekday_user_sales_trend_share.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_chart_load_failure_helpers.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_weekday_user_grouped_bar_chart.dart';
 import 'package:colmeia/features/overview/presentation/widgets/weekday_user_grouped_chart_data.dart';
@@ -10,8 +11,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
-import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
-import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_actions.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -170,48 +170,30 @@ class _OverviewWeekdayUserSalesTrendChartState
       }),
     );
 
-    final metadata = ChartShareMetadata(
+    final metadata = buildOverviewWeekdayUserSalesTrendShareMetadata(
+      l10n: l10n,
+      tokens: tokens,
+      points: widget.points,
+      chartPoints: chartPoints,
+      isSalesCount: isSalesCount,
       title: chartTitle,
-      subtitle: l10n.overviewWeekdayUserSalesSubtitle,
-      tableData: ChartShareTableData(
-        headers: <String>[
-          l10n.chartSharePdfColumnWeekday,
-          l10n.chartSharePdfColumnUser,
-          l10n.overviewWeekdayMetricSalesCountLabel,
-          l10n.overviewWeekdayMetricSalesAmountLabel,
-        ],
-        rows: <List<String>>[
-          for (final point in widget.points)
-            <String>[
-              dailySalesWeekdayLabel(point.weekdayNumber, l10n),
-              point.userName,
-              salesCountFormat.format(point.salesCount),
-              AppBrFormatters.currency(point.salesAmount),
-            ],
-        ],
-      ),
+      salesCountFormat: salesCountFormat,
+    );
+    final shareActions = ChartShareActions(
+      context: context,
+      captureKey: _shareKey,
+      metadata: metadata,
+      onRequestShare: widget.onRequestShare,
+      onRequestFullscreen: widget.onRequestFullscreen,
     );
 
-    void openShare() {
-      final emit = widget.onRequestShare;
-      if (emit == null) {
-        return;
-      }
-      emit(context, metadata.toShareRequest(_shareKey));
-    }
-
     void openFullscreen() {
-      final emit = widget.onRequestFullscreen;
-      if (emit == null) {
-        return;
-      }
       final chartPointsSnapshot = List<OverviewWeekdayUserSalesTrendPoint>.of(
         chartPoints,
         growable: false,
       );
       final fullscreenShareKey = GlobalKey();
-      emit(
-        context,
+      shareActions.openFullscreen(
         metadata.toFullscreenRequest(
           semanticsLabel: chartSemantics,
           shareCaptureKey: fullscreenShareKey,
@@ -305,10 +287,9 @@ class _OverviewWeekdayUserSalesTrendChartState
         ? AppChartShell(
             title: chartTitle,
             subtitle: l10n.overviewWeekdayUserSalesSubtitle,
-            onShare: widget.onRequestShare == null ? null : openShare,
+            onShare: shareActions.shareCallback(),
             shareProgressKey: _shareKey,
-            onOpenFullscreen:
-                widget.onRequestFullscreen == null ? null : openFullscreen,
+            onOpenFullscreen: shareActions.fullscreenCallback(openFullscreen),
             belowSubtitle: segmented,
             child: overviewChartEmptyPlaceholder(
               emptyMessage: emptyMessage,
@@ -333,9 +314,8 @@ class _OverviewWeekdayUserSalesTrendChartState
             extremeSpreadAccessibilityNotice:
                 l10n.chartComparisonExtremeValueSpreadNotice,
             tokens: tokens,
-            onShare: widget.onRequestShare == null ? null : openShare,
-            onOpenFullscreen:
-                widget.onRequestFullscreen == null ? null : openFullscreen,
+            onShare: shareActions.shareCallback(),
+            onOpenFullscreen: shareActions.fullscreenCallback(openFullscreen),
           );
 
     return Semantics(

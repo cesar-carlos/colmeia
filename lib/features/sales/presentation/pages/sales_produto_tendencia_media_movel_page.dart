@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
+import 'package:colmeia/app/router/app_chart_share_actions.dart';
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/app/router/chart_share_icon_button.dart';
@@ -41,6 +42,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_guard.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -545,68 +547,63 @@ class _SalesProdutoTendenciaMediaMovelPageState
     if (state.loading || state.pageResult.totalCount <= 0) {
       return;
     }
-    if (!ChartShareGuard.tryAcquire(_detailsShareKey)) {
+    if (ChartShareGuard.isInProgress(_detailsShareKey)) {
       return;
     }
 
     final l10n = AppLocalizations.of(context);
-    try {
-      final auth = context.read<AuthController>();
-      final userId = auth.session?.userId;
-      final agentId = state.selectedAgentId?.trim();
-      if (userId == null || agentId == null || agentId.isEmpty) {
-        return;
-      }
-
-      final clientToken = await _controller.resolveClientToken(
-        userId: userId,
-        agentId: agentId,
-      );
-      if (!mounted || clientToken == null) {
-        return;
-      }
-
-      final result = await _loadRowsForShare(
-        userId: userId,
-        agentId: agentId,
-        filter: _controller.shareDetailFilter(),
-        totalCount: state.pageResult.totalCount,
-        clientToken: clientToken,
-        cancelScope: _controller.sqlCancelScope,
-      );
-      if (!mounted) {
-        return;
-      }
-
-      result.fold(
-        (rows) {
-          ChartShareGuard.release(_detailsShareKey);
-          context.shareChartFromRequest(
-            buildSalesProdutoTendenciaMediaMovelDetailsShareMetadata(
-              l10n: l10n,
-              rows: rows,
-              filterSummary: _detailsShareFilterSummary(l10n, state),
-            ).toShareRequest(_detailsShareKey),
-          );
-        },
-        (failure) {
-          ChartShareGuard.release(_detailsShareKey);
-          final message =
-              failure is ValidationFailure &&
-                  failure.message == 'share_export_row_limit_exceeded'
-              ? l10n.salesProdutoTendenciaMediaMovelShareRowLimitExceeded(
-                  LoadMediaMovelRowsForShareUseCase.maxExportRowCount,
-                  state.pageResult.totalCount,
-                )
-              : _failureMessage(failure, l10n);
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(message)));
-        },
-      );
-    } finally {
-      ChartShareGuard.release(_detailsShareKey);
+    final auth = context.read<AuthController>();
+    final userId = auth.session?.userId;
+    final agentId = state.selectedAgentId?.trim();
+    if (userId == null || agentId == null || agentId.isEmpty) {
+      return;
     }
+
+    final clientToken = await _controller.resolveClientToken(
+      userId: userId,
+      agentId: agentId,
+    );
+    if (!mounted || clientToken == null) {
+      return;
+    }
+
+    final result = await _loadRowsForShare(
+      userId: userId,
+      agentId: agentId,
+      filter: _controller.shareDetailFilter(),
+      totalCount: state.pageResult.totalCount,
+      clientToken: clientToken,
+      cancelScope: _controller.sqlCancelScope,
+    );
+    if (!mounted) {
+      return;
+    }
+
+    await result.fold(
+      (rows) async {
+        await shareChartCapture(
+          context,
+          buildSalesProdutoTendenciaMediaMovelDetailsShareMetadata(
+            l10n: l10n,
+            rows: rows,
+            filterSummary: _detailsShareFilterSummary(l10n, state),
+          ).toShareRequest(_detailsShareKey),
+        );
+      },
+      (failure) async {
+        final message =
+            failure is ValidationFailure &&
+                failure.message == 'share_export_row_limit_exceeded'
+            ? l10n.chartShareExportRowLimitExceeded(
+                ChartSharePdfLimits.maxTableRows,
+                state.pageResult.totalCount,
+              )
+            : _failureMessage(failure, l10n);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      },
+    );
   }
 
   @override

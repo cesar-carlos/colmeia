@@ -5,6 +5,7 @@ import 'package:colmeia/shared/widgets/charts/chart_export_pixel_ratio.dart';
 import 'package:colmeia/shared/widgets/charts/chart_pdf_exporter.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_bytes_sharer.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_guard.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_result.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:colmeia/shared/widgets/reports/export/report_export_sharing.dart';
@@ -25,6 +26,7 @@ Future<ChartShareResult> captureAndShareChart(
   String? filterSummary,
   ChartShareTableData? tableData,
   WidgetBuilder? chartExportBuilder,
+  ChartSharePdfOrientation pdfOrientation = ChartSharePdfOrientation.portrait,
   BuildContext? exportCaptureContext,
   double? pixelRatio,
   String Function(int page, int pages)? pageNumberLabelBuilder,
@@ -35,9 +37,7 @@ Future<ChartShareResult> captureAndShareChart(
     return const ChartShareFailure(ChartShareFailureReason.shareInProgress);
   }
 
-  Uint8List pdfBytes;
   final resolvedTitle = title ?? subject ?? 'chart';
-  final fontsFuture = ChartPdfExporter.warmFonts();
   try {
     Uint8List? pngBytes;
     var skipPngDownscale = false;
@@ -61,7 +61,7 @@ Future<ChartShareResult> captureAndShareChart(
       skipPngDownscale = capture?.fitsPdfEmbedBounds ?? false;
     }
 
-    if (pngBytes == null && !usesDedicatedExport) {
+    if (pngBytes == null) {
       final boundaryContext = key.currentContext;
       final renderObject = boundaryContext?.findRenderObject();
       if (renderObject is RenderRepaintBoundary) {
@@ -94,11 +94,13 @@ Future<ChartShareResult> captureAndShareChart(
       );
     }
 
+    final fontsFuture = ChartPdfExporter.warmFonts();
     if (pngBytes != null && !skipPngDownscale) {
       pngBytes = await downscalePngForPdfEmbed(pngBytes);
     }
 
     await fontsFuture;
+    late final Uint8List pdfBytes;
     try {
       pdfBytes = await ChartPdfExporter.build(
         title: resolvedTitle,
@@ -106,6 +108,7 @@ Future<ChartShareResult> captureAndShareChart(
         filterSummary: filterSummary,
         tableData: tableData,
         chartImagePngBytes: pngBytes,
+        pdfOrientation: pdfOrientation,
         pageNumberLabelBuilder: pageNumberLabelBuilder,
       );
     } on Object {
@@ -119,32 +122,32 @@ Future<ChartShareResult> captureAndShareChart(
         ChartShareFailureReason.pdfGenerationFailed,
       );
     }
+
+    final fileName = '${sanitizeReportFileName(resolvedTitle)}.pdf';
+    final shareFn = shareBytes ?? shareExportBytes;
+    try {
+      final shareResult = await shareFn(
+        bytes: pdfBytes,
+        fileName: fileName,
+        mimeType: 'application/pdf',
+        subject: subject ?? resolvedTitle,
+        title: resolvedTitle,
+      );
+      if (shareResult.status == ShareResultStatus.dismissed) {
+        return const ChartShareFailure(
+          ChartShareFailureReason.shareCancelled,
+        );
+      }
+    } on Object {
+      return const ChartShareFailure(
+        ChartShareFailureReason.sharePlatformFailed,
+      );
+    }
+
+    return const ChartShareSuccess();
   } finally {
     ChartShareGuard.release(progressKey);
   }
-
-  final fileName = '${sanitizeReportFileName(resolvedTitle)}.pdf';
-
-  final shareFn = shareBytes ?? shareExportBytes;
-  try {
-    final shareResult = await shareFn(
-      bytes: pdfBytes,
-      fileName: fileName,
-      mimeType: 'application/pdf',
-      subject: subject ?? resolvedTitle,
-    );
-    if (shareResult.status == ShareResultStatus.dismissed) {
-      return const ChartShareFailure(
-        ChartShareFailureReason.shareCancelled,
-      );
-    }
-  } on Object {
-    return const ChartShareFailure(
-      ChartShareFailureReason.sharePlatformFailed,
-    );
-  }
-
-  return const ChartShareSuccess();
 }
 
 typedef ChartPngCapture = ({Uint8List bytes, bool fitsPdfEmbedBounds});

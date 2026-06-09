@@ -1660,6 +1660,18 @@ abstract class AppLocalizations {
   /// **'A share is already in progress for this chart.'**
   String get chartShareFailedInProgress;
 
+  /// SnackBar when a chart share export exceeds the supported row limit.
+  ///
+  /// In en, this message translates to:
+  /// **'Cannot export more than {maxRows} rows. The current result has {totalCount} rows.'**
+  String chartShareExportRowLimitExceeded(int maxRows, int totalCount);
+
+  /// Notice appended to chart share PDF when the table is truncated to the row limit.
+  ///
+  /// In en, this message translates to:
+  /// **'PDF table shows {shownRows} of {totalRows} rows.'**
+  String chartSharePdfTableRowsTruncated(int shownRows, int totalRows);
+
   /// Footer page number label in chart share PDF exports.
   ///
   /// In en, this message translates to:

@@ -1,8 +1,9 @@
 import 'dart:math' as math;
 import 'dart:typed_data';
-import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
+import 'package:colmeia/shared/widgets/charts/chart_capture_image_processor_runner_stub.dart'
+    if (dart.library.io) 'package:colmeia/shared/widgets/charts/chart_capture_image_processor_runner_io.dart';
+import 'package:image/image.dart' as img;
 
 /// Target pixel width for chart images embedded in A4 landscape PDFs
 /// (~150–200 DPI of the usable page width).
@@ -15,91 +16,53 @@ const int kChartPdfEmbedMaxHeight = 520;
 /// [kChartPdfEmbedMaxHeight] while preserving aspect ratio.
 ///
 /// Returns the original bytes when already within bounds or when decoding fails.
-Future<Uint8List> downscalePngForPdfEmbed(Uint8List pngBytes) async {
-  final codec = await ui.instantiateImageCodec(pngBytes);
-  try {
-    final frame = await codec.getNextFrame();
-    final image = frame.image;
-    try {
-      if (image.width <= kChartPdfEmbedMaxWidth &&
-          image.height <= kChartPdfEmbedMaxHeight) {
-        return pngBytes;
-      }
-
-      final scale = math.min(
-        kChartPdfEmbedMaxWidth / image.width,
-        kChartPdfEmbedMaxHeight / image.height,
-      );
-      if (scale >= 1) {
-        return pngBytes;
-      }
-
-      final targetWidth = math.max(1, (image.width * scale).round());
-      final targetHeight = math.max(1, (image.height * scale).round());
-
-      final picture = _recordScaledImage(
-        image: image,
-        targetWidth: targetWidth,
-        targetHeight: targetHeight,
-      );
-      final resized = await picture.toImage(targetWidth, targetHeight);
-      picture.dispose();
-      try {
-        final byteData =
-            await resized.toByteData(format: ui.ImageByteFormat.png);
-        if (byteData == null) {
-          return pngBytes;
-        }
-        return byteData.buffer.asUint8List();
-      } finally {
-        resized.dispose();
-      }
-    } finally {
-      image.dispose();
-    }
-  } on Object {
-    return pngBytes;
-  } finally {
-    codec.dispose();
-  }
+Future<Uint8List> downscalePngForPdfEmbed(Uint8List pngBytes) {
+  return runPngDownscaleForPdfEmbed(pngBytes);
 }
 
-ui.Picture _recordScaledImage({
-  required ui.Image image,
-  required int targetWidth,
-  required int targetHeight,
-}) {
-  final recorder = ui.PictureRecorder();
-  Canvas(recorder).drawImageRect(
-    image,
-    Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
-    Rect.fromLTWH(
-      0,
-      0,
-      targetWidth.toDouble(),
-      targetHeight.toDouble(),
-    ),
-    Paint(),
+/// Synchronous downscale entry point for background isolates.
+Uint8List downscalePngForPdfEmbedSync(Uint8List pngBytes) {
+  final decoded = img.decodePng(pngBytes);
+  if (decoded == null) {
+    return pngBytes;
+  }
+
+  if (decoded.width <= kChartPdfEmbedMaxWidth &&
+      decoded.height <= kChartPdfEmbedMaxHeight) {
+    return pngBytes;
+  }
+
+  final scale = math.min(
+    kChartPdfEmbedMaxWidth / decoded.width,
+    kChartPdfEmbedMaxHeight / decoded.height,
   );
-  return recorder.endRecording();
+  if (scale >= 1) {
+    return pngBytes;
+  }
+
+  final targetWidth = math.max(1, (decoded.width * scale).round());
+  final targetHeight = math.max(1, (decoded.height * scale).round());
+
+  try {
+    final resized = img.copyResize(
+      decoded,
+      width: targetWidth,
+      height: targetHeight,
+      interpolation: img.Interpolation.linear,
+    );
+    return Uint8List.fromList(img.encodePng(resized));
+  } on Object {
+    return pngBytes;
+  }
 }
 
 /// Decodes PNG dimensions for tests and diagnostics.
 Future<({int width, int height})?> decodePngDimensions(
   Uint8List pngBytes,
 ) async {
-  final codec = await ui.instantiateImageCodec(pngBytes);
-  try {
-    final frame = await codec.getNextFrame();
-    final image = frame.image;
-    try {
-      return (width: image.width, height: image.height);
-    } finally {
-      image.dispose();
-    }
-  } on Object {
+  final decoded = img.decodePng(pngBytes);
+  if (decoded == null) {
     return null;
-  } finally {
-    codec.dispose();
   }
+  return (width: decoded.width, height: decoded.height);
 }

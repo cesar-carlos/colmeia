@@ -959,6 +959,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'A share is already in progress for this chart.';
 
   @override
+  String chartShareExportRowLimitExceeded(int maxRows, int totalCount) {
+    return 'Cannot export more than $maxRows rows. The current result has $totalCount rows.';
+  }
+
+  @override
+  String chartSharePdfTableRowsTruncated(int shownRows, int totalRows) {
+    return 'PDF table shows $shownRows of $totalRows rows.';
+  }
+
+  @override
   String chartSharePdfPageNumber(int page, int pages) {
     return 'Page $page of $pages';
   }

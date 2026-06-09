@@ -15,7 +15,10 @@ import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refr
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_live_map_auto_refresh_observer.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
 import 'package:colmeia/features/sales/presentation/coordinators/sales_live_map_session_coordinator.dart';
+import 'package:colmeia/features/sales/presentation/mappers/sales_live_map_chart_mapper.dart';
+import 'package:colmeia/features/sales/presentation/mappers/sales_live_map_visual_spec_mapper.dart';
 import 'package:colmeia/features/sales/presentation/rules/sales_live_map_presentation_rules.dart';
+import 'package:colmeia/features/sales/presentation/share/sales_live_map_share.dart';
 import 'package:colmeia/features/sales/presentation/view_models/sales_live_map_view_model.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_auto_refresh_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_body_section.dart';
@@ -23,6 +26,7 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_chart
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_filter_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_filters_sheet.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_fullscreen_chart.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_inline_chart_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_intro_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_retry_cooldown_snackbar.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -235,8 +239,27 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
       return;
     }
     final l10n = AppLocalizations.of(context);
+    final state = _controller.state;
+    final viewModel = SalesLiveMapViewModel.fromState(state, l10n);
+    final mapSlice = SalesLiveMapMapSlice.fromState(state);
+    final chartPoints = SalesLiveMapChartMapper.toChartPoints(
+      mapSlice.points,
+      l10n,
+    );
+    final exportStyle = SalesLiveMapVisualSpecMapper.toChartStyle(
+      mapSlice.visualSpec,
+    );
     final fullscreenShareKey = GlobalKey();
     final shareTitle = l10n.salesLiveMapChartTitle;
+    final shareMetadata = buildSalesLiveMapShareMetadata(
+      l10n: l10n,
+      title: shareTitle,
+      subtitle: viewModel.mapSubtitle,
+      chartPoints: chartPoints,
+      exportMetric: SalesLiveMapChartMapper.toChartMetric(mapSlice.metric),
+      exportStyle: exportStyle,
+      filterBranchIds: mapSlice.filterBranchIds,
+    );
     _setLiveMapFullscreenOpen(true);
 
     Future<void>? pushFuture;
@@ -249,7 +272,7 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
           headerTrailing: buildChartFullscreenShareTrailing(
             context: context,
             shareKey: fullscreenShareKey,
-            subject: shareTitle,
+            metadata: shareMetadata,
           ),
           chartBuilder: (_) => RepaintBoundary(
             key: fullscreenShareKey,
@@ -349,6 +372,8 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
             SalesLiveMapBodySection(
               onRetryReload: () => unawaited(_reload()),
               onOpenFullscreen: _openLiveMapFullscreen,
+              onRequestShare: (context, request) =>
+                  context.shareChartFromRequest(request),
               hideInlineChart: _coordinator.liveMapFullscreenOpen,
               inlineChartRecoveryRequestId:
                   _coordinator.inlineChartRecoveryRequestId,

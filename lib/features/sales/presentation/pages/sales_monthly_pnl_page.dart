@@ -39,9 +39,11 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_actions.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
@@ -611,6 +613,8 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
                     loadFailureMessage: _chartLoadFailureMessage,
                     isLoading: _loading && _selectedAgentId != null,
                     onOpenFullscreen: _openChartFullscreen,
+                    onRequestShare: (context, request) =>
+                        context.shareChartFromRequest(request),
                   ),
                 ),
                 SizedBox(height: tokens.sectionSpacing),
@@ -627,6 +631,8 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
                     persistSession:
                         _sessionService.persistMonthlyPnlBarChartPreferences,
                     onOpenFullscreen: _openBarChartFullscreen,
+                    onRequestShare: (context, request) =>
+                        context.shareChartFromRequest(request),
                   ),
                 ),
                 SizedBox(height: tokens.sectionSpacing),
@@ -638,6 +644,10 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
                   loadFailureMessage: _dailyChartLoadFailureMessage,
                   isLoading: _loading && _selectedAgentId != null,
                   dailySaleDateRange: _dailyTotalsDateRange,
+                  onRequestFullscreen: (context, request) =>
+                      context.pushChartFullscreenFromRequest(request),
+                  onRequestShare: (context, request) =>
+                      context.shareChartFromRequest(request),
                 ),
               ],
             ),
@@ -656,6 +666,7 @@ class _SalesMonthlyPnlLineChart extends StatefulWidget {
     this.loadFailure,
     this.loadFailureMessage,
     this.onOpenFullscreen,
+    this.onRequestShare,
     this.useChartShell = true,
     this.chartHeightOverride,
   });
@@ -667,6 +678,7 @@ class _SalesMonthlyPnlLineChart extends StatefulWidget {
   final AppFailure? loadFailure;
   final String? loadFailureMessage;
   final VoidCallback? onOpenFullscreen;
+  final AppChartShareRequestCallback? onRequestShare;
   final bool useChartShell;
   final double? chartHeightOverride;
 
@@ -870,18 +882,21 @@ class _SalesMonthlyPnlLineChartState extends State<_SalesMonthlyPnlLineChart> {
           );
 
     final shareTitle = l10n.salesMonthlyPnlChartTitle;
+    final shareActions = ChartShareActions(
+      context: context,
+      captureKey: _shareKey,
+      metadata: buildSalesMonthlyPnlLineChartShareMetadata(
+        l10n: l10n,
+        points: points,
+      ),
+      onRequestShare: widget.onRequestShare,
+      shareEnabled: !isLoading,
+    );
     final chartSurface = useChartShell
         ? AppChartShell(
             title: shareTitle,
             subtitle: l10n.salesMonthlyPnlChartSubtitle,
-            onShare: isLoading
-                ? null
-                : () => context.shareChartFromRequest(
-                    buildSalesMonthlyPnlLineChartShareMetadata(
-                      l10n: l10n,
-                      points: points,
-                    ).toShareRequest(_shareKey),
-                  ),
+            onShare: shareActions.shareCallback(),
             shareProgressKey: _shareKey,
             onOpenFullscreen: onOpenFullscreen,
             child: chartBody,

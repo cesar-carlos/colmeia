@@ -31,6 +31,8 @@ class SalesProdutoTendenciaSummarySection extends StatelessWidget {
     this.onOpenFilters,
     this.onClearClassificacaoFilter,
     this.onClassificacaoSelected,
+    this.classificacaoShareKey,
+    this.onShareClassificacao,
   });
 
   final AppLocalizations l10n;
@@ -46,6 +48,8 @@ class SalesProdutoTendenciaSummarySection extends StatelessWidget {
   final VoidCallback? onOpenFilters;
   final VoidCallback? onClearClassificacaoFilter;
   final ValueChanged<String>? onClassificacaoSelected;
+  final Key? classificacaoShareKey;
+  final VoidCallback? onShareClassificacao;
 
   @override
   Widget build(BuildContext context) {
@@ -141,21 +145,28 @@ class SalesProdutoTendenciaSummarySection extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: tokens.contentSpacing),
-                  buildSalesProdutoTendenciaClassificacaoBarChart(
-                    context: context,
-                    l10n: l10n,
-                    buckets: buckets,
-                    countFormat: countFormat,
-                    heightOverride: tokens.chartCompactHeight,
-                    onBucketTap: onClassificacaoSelected == null
-                        ? null
-                        : (bucket) =>
-                            onClassificacaoSelected!(bucket.classificacao),
-                    belowSubtitle: Text(
-                      l10n.salesProdutoTendenciaSummaryByClassificacaoDrillDownHint,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                  RepaintBoundary(
+                    key: classificacaoShareKey,
+                    child: buildSalesProdutoTendenciaClassificacaoBarChart(
+                      context: context,
+                      l10n: l10n,
+                      buckets: buckets,
+                      countFormat: countFormat,
+                      heightOverride: tokens.chartCompactHeight,
+                      onBucketTap: onClassificacaoSelected == null
+                          ? null
+                          : (bucket) =>
+                              onClassificacaoSelected!(bucket.classificacao),
+                      belowSubtitle: Text(
+                        l10n.salesProdutoTendenciaSummaryByClassificacaoDrillDownHint,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
+                      onShare: loading || summaryRows.isEmpty
+                          ? null
+                          : onShareClassificacao,
+                      shareProgressKey: classificacaoShareKey,
                     ),
                   ),
                 ],

@@ -8,4 +8,5 @@ typedef ChartShareBytesSharer = Future<ShareResult> Function({
   required String fileName,
   required String mimeType,
   String? subject,
+  String? title,
 });

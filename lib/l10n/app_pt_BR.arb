@@ -416,6 +416,20 @@
   "chartShareFailedImageEncoding": "Não foi possível codificar a imagem do gráfico.",
   "chartShareFailedPdfGeneration": "Não foi possível gerar o PDF do gráfico.",
   "chartShareFailedInProgress": "Já existe um compartilhamento em andamento para este gráfico.",
+  "chartShareExportRowLimitExceeded": "Não é possível exportar mais de {maxRows} registros. O resultado atual tem {totalCount} registros.",
+  "@chartShareExportRowLimitExceeded": {
+    "placeholders": {
+      "maxRows": {"type": "int"},
+      "totalCount": {"type": "int"}
+    }
+  },
+  "chartSharePdfTableRowsTruncated": "A tabela do PDF mostra {shownRows} de {totalRows} registros.",
+  "@chartSharePdfTableRowsTruncated": {
+    "placeholders": {
+      "shownRows": {"type": "int"},
+      "totalRows": {"type": "int"}
+    }
+  },
   "chartSharePdfPageNumber": "Página {page} de {pages}",
   "chartSharePdfColumnLabel": "Rótulo",
   "chartSharePdfColumnValue": "Valor",

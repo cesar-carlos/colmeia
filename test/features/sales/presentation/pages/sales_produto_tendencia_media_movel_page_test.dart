@@ -697,7 +697,7 @@ void main() {
     final l10n = lookupAppLocalizations(const Locale('en'));
     expect(
       find.text(
-        l10n.salesProdutoTendenciaMediaMovelShareRowLimitExceeded(
+        l10n.chartShareExportRowLimitExceeded(
           LoadMediaMovelRowsForShareUseCase.maxExportRowCount,
           totalCount,
         ),

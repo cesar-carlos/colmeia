@@ -9,6 +9,7 @@ import 'package:colmeia/shared/widgets/charts/app_category_donut_card_models.dar
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -20,13 +21,20 @@ ChartShareMetadata buildSalesRankingProdutosFaturamentoShareMetadata({
   required List<RankingProdutosFaturamentoRow> displayRows,
   required List<RankingProdutosFaturamentoRow> chartRows,
 }) {
-  return ChartShareMetadata(
-    title: branchTitle,
-    subtitle: metricSubtitle,
+  final tableLimit = applyChartShareTableRowLimit(
     tableData: ChartShareTableData.fromReportColumns(
       columns: rankingProdutosFaturamentoGridColumns(l10n),
       rows: displayRows,
     ),
+    truncationNoticeBuilder: (shownRows, totalRows) =>
+        l10n.chartSharePdfTableRowsTruncated(shownRows, totalRows),
+  );
+
+  return ChartShareMetadata(
+    title: branchTitle,
+    subtitle: metricSubtitle,
+    filterSummary: tableLimit.truncationNotice,
+    tableData: tableLimit.tableData,
     chartExportBuilder: chartRows.isEmpty
         ? null
         : (exportContext) => _RankingFaturamentoPieExport(
@@ -63,8 +71,8 @@ class _RankingFaturamentoPieExport extends StatelessWidget {
     outerRadius: '88%',
     doughnutAnimationDurationMs: 0,
     showLegend: false,
-    chartSize: 320,
-    chartMinHeight: 320,
+    chartSize: 300,
+    chartMinHeight: 300,
   );
 
   @override

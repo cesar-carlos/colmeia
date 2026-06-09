@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
@@ -402,6 +403,10 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
               loadFailureMessage: _loadFailureMessage,
               isLoading: _loading && _selectedAgentId != null,
               dailySaleDateRange: _dailyTotalsDateRange,
+              onRequestFullscreen: (context, request) =>
+                  context.pushChartFullscreenFromRequest(request),
+              onRequestShare: (context, request) =>
+                  context.shareChartFromRequest(request),
             ),
         ],
       ),

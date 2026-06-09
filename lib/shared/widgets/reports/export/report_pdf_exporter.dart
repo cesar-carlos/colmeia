@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/widgets/export/pdf_export_font_cache.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:colmeia/shared/widgets/reports/export/report_export_sharing.dart';
@@ -40,8 +41,8 @@ abstract final class ReportPdfExporter {
         ? PdfPageFormat.a4.landscape
         : PdfPageFormat.a4;
 
-    final headerFont = await PdfGoogleFonts.interBold();
-    final bodyFont = await PdfGoogleFonts.interRegular();
+    final headerFont = await PdfExportFontCache.headerFont();
+    final bodyFont = await PdfExportFontCache.bodyFont();
 
     doc.addPage(
       pw.MultiPage(

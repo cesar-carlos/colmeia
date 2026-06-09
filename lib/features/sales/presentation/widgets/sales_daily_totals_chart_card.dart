@@ -1,9 +1,10 @@
-import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_daily_totals_chart_copy.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:colmeia/shared/widgets/charts/daily_sales_trend_chart.dart';
 import 'package:flutter/material.dart';
 
@@ -16,6 +17,8 @@ class SalesDailyTotalsChartCard extends StatelessWidget {
     this.loadFailure,
     this.loadFailureMessage,
     this.dailySaleDateRange,
+    this.onRequestFullscreen,
+    this.onRequestShare,
     super.key,
   });
 
@@ -28,6 +31,8 @@ class SalesDailyTotalsChartCard extends StatelessWidget {
 
   /// When non-null, daily totals were loaded for this inclusive span instead of the anchor month.
   final DashboardDateRange? dailySaleDateRange;
+  final AppChartFullscreenRequestCallback? onRequestFullscreen;
+  final AppChartShareRequestCallback? onRequestShare;
 
   @override
   Widget build(BuildContext context) {
@@ -40,10 +45,8 @@ class SalesDailyTotalsChartCard extends StatelessWidget {
       loadFailureMessage: loadFailureMessage,
       isLoading: isLoading,
       useSalesDailyTotalsLabels: true,
-      onRequestFullscreen: (context, request) =>
-          context.pushChartFullscreenFromRequest(request),
-      onRequestShare: (context, request) =>
-          context.shareChartFromRequest(request),
+      onRequestFullscreen: onRequestFullscreen,
+      onRequestShare: onRequestShare,
         salesSubtitleOverride: range != null
             ? salesDailyTotalsEffectiveSubtitle(
                 l10n,

@@ -1,3 +1,4 @@
+import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:flutter/material.dart';
 
@@ -15,6 +16,7 @@ class AppChartShareRequest {
     this.filterSummary,
     this.tableData,
     this.chartExportBuilder,
+    this.pdfOrientation = ChartSharePdfOrientation.portrait,
   });
 
   final GlobalKey captureKey;
@@ -24,6 +26,7 @@ class AppChartShareRequest {
   final String? filterSummary;
   final ChartShareTableData? tableData;
   final WidgetBuilder? chartExportBuilder;
+  final ChartSharePdfOrientation pdfOrientation;
 }
 
 /// Callback emitted by a shared chart to request sharing its rendered output.

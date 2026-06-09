@@ -36,6 +36,7 @@ import 'package:colmeia/shared/widgets/agent_query_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/charts/app_horizontal_progress_chart.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_actions.dart';
 import 'package:colmeia/shared/widgets/forms/app_date_picker_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
@@ -413,6 +414,22 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
         color: theme.appColors.primary,
       ),
     );
+    final shareActions = ChartShareActions(
+      context: context,
+      captureKey: _shareKey,
+      metadata: buildSalesProdutoRankLucroShareMetadata(
+        l10n: l10n,
+        rows: _rows,
+        sortBy: _sortByEnum(sortKey),
+        periodSubtitle: periodSubtitle,
+        branchName: selectedBranchName,
+        metricLabel: metricLabel,
+        maxValue: maxValue,
+      ),
+      onRequestShare: (context, request) =>
+          context.shareChartFromRequest(request),
+      shareEnabled: !_loading && _rows.isNotEmpty,
+    );
 
     return SingleChildScrollView(
       padding: context.pageScrollPadding(
@@ -537,18 +554,7 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
                     style: chartStyles,
                     wrapInCard: false,
                     shareProgressKey: _shareKey,
-                    onShare: _loading || _rows.isEmpty
-                        ? null
-                        : () => context.shareChartFromRequest(
-                            buildSalesProdutoRankLucroShareMetadata(
-                              l10n: l10n,
-                              rows: _rows,
-                              sortBy: _sortByEnum(sortKey),
-                              periodSubtitle: periodSubtitle,
-                              branchName: selectedBranchName,
-                              metricLabel: metricLabel,
-                            ).toShareRequest(_shareKey),
-                          ),
+                    onShare: shareActions.shareCallback(),
                     emptyPlaceholder: Center(
                       child: Text(
                         l10n.chartComparisonEmptyDefault,

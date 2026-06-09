@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:colmeia/shared/widgets/charts/chart_pdf_page_label.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
@@ -16,6 +17,7 @@ class ChartPdfBuildPayload {
     this.tableRows = const <List<String>>[],
     this.chartImagePngBytes,
     this.pageNumberLabelTemplate,
+    this.pdfOrientation = ChartSharePdfOrientation.portrait,
   });
 
   final String title;
@@ -27,9 +29,8 @@ class ChartPdfBuildPayload {
   final Uint8List? headerFontBytes;
   final Uint8List? bodyFontBytes;
   final String? pageNumberLabelTemplate;
+  final ChartSharePdfOrientation pdfOrientation;
 }
-
-const double _chartImageMaxHeightShare = 0.5;
 
 pw.Font _resolveHeaderFont(Uint8List? bytes) {
   if (bytes == null) {
@@ -48,7 +49,8 @@ pw.Font _resolveBodyFont(Uint8List? bytes) {
 Future<Uint8List> buildChartPdfInIsolate(ChartPdfBuildPayload payload) async {
   final headerFont = _resolveHeaderFont(payload.headerFontBytes);
   final bodyFont = _resolveBodyFont(payload.bodyFontBytes);
-  final pageFormat = PdfPageFormat.a4.landscape;
+  final layout = ChartPdfLayoutMetrics.forOrientation(payload.pdfOrientation);
+  final pageFormat = layout.pageFormat;
   final hasTable =
       payload.tableHeaders.isNotEmpty && payload.tableRows.isNotEmpty;
   final pageLabelTemplate =
@@ -64,6 +66,7 @@ Future<Uint8List> buildChartPdfInIsolate(ChartPdfBuildPayload payload) async {
           filterSummary: payload.filterSummary,
           headerFont: headerFont,
           bodyFont: bodyFont,
+          bottomGap: layout.headerBottomGap,
         ),
         footer: (ctx) => _buildFooter(
           ctx,
@@ -73,19 +76,12 @@ Future<Uint8List> buildChartPdfInIsolate(ChartPdfBuildPayload payload) async {
         build: (ctx) => <pw.Widget>[
           if (payload.chartImagePngBytes != null &&
               payload.chartImagePngBytes!.isNotEmpty) ...<pw.Widget>[
-            pw.Center(
-              child: pw.ConstrainedBox(
-                constraints: pw.BoxConstraints(
-                  maxWidth: pageFormat.availableWidth,
-                  maxHeight:
-                      pageFormat.availableHeight * _chartImageMaxHeightShare,
-                ),
-                child: pw.FittedBox(
-                  child: pw.Image(pw.MemoryImage(payload.chartImagePngBytes!)),
-                ),
-              ),
+            _buildChartImage(
+              bytes: payload.chartImagePngBytes!,
+              pageFormat: pageFormat,
+              maxHeightFraction: layout.imageMaxHeightFraction,
             ),
-            if (hasTable) pw.SizedBox(height: 16),
+            if (hasTable) pw.SizedBox(height: layout.sectionGap),
           ],
           if (hasTable)
             _buildTable(
@@ -93,6 +89,7 @@ Future<Uint8List> buildChartPdfInIsolate(ChartPdfBuildPayload payload) async {
               rows: payload.tableRows,
               headerFont: headerFont,
               bodyFont: bodyFont,
+              pageFormat: pageFormat,
             ),
         ],
       ),
@@ -101,10 +98,27 @@ Future<Uint8List> buildChartPdfInIsolate(ChartPdfBuildPayload payload) async {
   return Uint8List.fromList(await doc.save());
 }
 
+pw.Widget _buildChartImage({
+  required Uint8List bytes,
+  required PdfPageFormat pageFormat,
+  required double maxHeightFraction,
+}) {
+  return pw.Center(
+    child: pw.ConstrainedBox(
+      constraints: pw.BoxConstraints(
+        maxWidth: pageFormat.availableWidth,
+        maxHeight: pageFormat.availableHeight * maxHeightFraction,
+      ),
+      child: pw.Image(pw.MemoryImage(bytes)),
+    ),
+  );
+}
+
 pw.Widget _buildHeader({
   required String title,
   required pw.Font headerFont,
   required pw.Font bodyFont,
+  required double bottomGap,
   String? subtitle,
   String? filterSummary,
 }) {
@@ -115,7 +129,8 @@ pw.Widget _buildHeader({
         title,
         style: pw.TextStyle(font: headerFont, fontSize: 16),
       ),
-      if (subtitle != null)
+      if (subtitle != null) ...<pw.Widget>[
+        pw.SizedBox(height: 2),
         pw.Text(
           subtitle,
           style: pw.TextStyle(
@@ -124,8 +139,9 @@ pw.Widget _buildHeader({
             color: PdfColors.grey700,
           ),
         ),
+      ],
       if (filterSummary != null && filterSummary.isNotEmpty) ...<pw.Widget>[
-        pw.SizedBox(height: 4),
+        pw.SizedBox(height: 6),
         pw.Text(
           filterSummary,
           style: pw.TextStyle(
@@ -135,9 +151,9 @@ pw.Widget _buildHeader({
           ),
         ),
       ],
-      pw.SizedBox(height: 4),
+      pw.SizedBox(height: bottomGap),
       pw.Divider(color: PdfColors.grey300),
-      pw.SizedBox(height: 4),
+      pw.SizedBox(height: bottomGap),
     ],
   );
 }
@@ -180,6 +196,7 @@ pw.Widget _buildTable({
   required List<List<String>> rows,
   required pw.Font headerFont,
   required pw.Font bodyFont,
+  required PdfPageFormat pageFormat,
 }) {
   return pw.TableHelper.fromTextArray(
     headers: headers,
@@ -193,5 +210,10 @@ pw.Widget _buildTable({
       ),
     ),
     cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+    columnWidths: chartPdfTableColumnWidths(
+      headers: headers,
+      rows: rows,
+      availableWidth: pageFormat.availableWidth,
+    ),
   );
 }

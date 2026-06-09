@@ -1,5 +1,6 @@
 import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:flutter/material.dart';
 
@@ -12,6 +13,7 @@ class ChartShareMetadata {
     this.filterSummary,
     this.tableData,
     this.chartExportBuilder,
+    this.pdfOrientation = ChartSharePdfOrientation.portrait,
     String? subject,
   }) : subject = subject ?? title;
 
@@ -19,6 +21,7 @@ class ChartShareMetadata {
   final String? subtitle;
   final String? filterSummary;
   final ChartShareTableData? tableData;
+  final ChartSharePdfOrientation pdfOrientation;
 
   /// When set, builds a full-width chart for PDF capture instead of the
   /// on-screen scroll viewport behind the share capture key.
@@ -34,6 +37,7 @@ class ChartShareMetadata {
       filterSummary: filterSummary,
       tableData: tableData,
       chartExportBuilder: chartExportBuilder,
+      pdfOrientation: pdfOrientation,
     );
   }
 

@@ -5,6 +5,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_row.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_tendencia_de_venda_media_movel_repository.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:result_dart/result_dart.dart';
 
 /// Loads every detail row for PDF share, respecting the repository page cap.
@@ -13,8 +14,7 @@ class LoadMediaMovelRowsForShareUseCase {
 
   final ProdutoVendidoTendenciaDeVendaMediaMovelRepository _repository;
 
-  static const int maxExportRowCount =
-      ProdutoVendidoTendenciaDeVendaMediaMovelFilter.maxPageSize;
+  static const int maxExportRowCount = ChartSharePdfLimits.maxTableRows;
 
   Future<AppResult<List<ProdutoVendidoTendenciaDeVendaMediaMovelRow>>> call({
     required String userId,

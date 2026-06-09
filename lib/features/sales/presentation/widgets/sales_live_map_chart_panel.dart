@@ -1,20 +1,19 @@
 import 'dart:async';
 
-import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
-import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart';
 import 'package:colmeia/features/sales/presentation/mappers/sales_live_map_chart_mapper.dart';
 import 'package:colmeia/features/sales/presentation/mappers/sales_live_map_visual_spec_mapper.dart';
 import 'package:colmeia/features/sales/presentation/models/sales_live_map_visual_spec.dart';
+import 'package:colmeia/features/sales/presentation/share/sales_live_map_share.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
-import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
-import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_actions.dart';
 import 'package:flutter/material.dart';
 
 enum SalesLiveMapChartPanelMode {
@@ -46,6 +45,7 @@ class SalesLiveMapChartPanel extends StatefulWidget {
     this.lifecycleRecoveryRequestId = 0,
     this.suspendParentScrollLock = false,
     this.onOpenFullscreen,
+    this.onRequestShare,
     this.showSidebar = false,
     this.showHeader = true,
     this.title,
@@ -63,6 +63,7 @@ class SalesLiveMapChartPanel extends StatefulWidget {
   final int lifecycleRecoveryRequestId;
   final bool suspendParentScrollLock;
   final VoidCallback? onOpenFullscreen;
+  final AppChartShareRequestCallback? onRequestShare;
   final bool showSidebar;
   final bool showHeader;
   final String? title;
@@ -128,6 +129,23 @@ class _SalesLiveMapChartPanelState extends State<SalesLiveMapChartPanel> {
     final chartPoints = _resolveChartPoints(l10n);
     final chartStyle = _resolveChartStyle();
     final shareTitle = widget.title;
+    final shareActions = shareTitle == null
+        ? null
+        : ChartShareActions(
+            context: context,
+            captureKey: _shareKey,
+            metadata: buildSalesLiveMapShareMetadata(
+              l10n: l10n,
+              title: shareTitle,
+              subtitle: widget.subtitle,
+              chartPoints: chartPoints,
+              exportMetric: SalesLiveMapChartMapper.toChartMetric(widget.metric),
+              exportStyle: chartStyle,
+              filterBranchIds: widget.filterBranchIds,
+            ),
+            onRequestShare: widget.onRequestShare,
+            shareEnabled: widget.showHeader && !widget.isRefreshing,
+          );
     final chart = AppBrazilStoreSalesMapChart(
       title: widget.showHeader ? widget.title : null,
       subtitle: widget.showHeader ? widget.subtitle : null,
@@ -141,29 +159,7 @@ class _SalesLiveMapChartPanelState extends State<SalesLiveMapChartPanel> {
       onMetricChanged: (metric) => widget.onMetricChanged(
         SalesLiveMapChartMapper.fromChartMetric(metric),
       ),
-      onShare: widget.showHeader && shareTitle != null && !widget.isRefreshing
-          ? () => context.shareChartFromRequest(
-              ChartShareMetadata(
-                title: shareTitle,
-                subtitle: widget.subtitle,
-                tableData: ChartShareTableData(
-                  headers: <String>[
-                    l10n.chartSharePdfColumnStore,
-                    l10n.chartSharePdfColumnSalesCount,
-                    l10n.chartSharePdfColumnAmount,
-                  ],
-                  rows: <List<String>>[
-                    for (final point in chartPoints)
-                      <String>[
-                        point.name,
-                        point.salesCount.toString(),
-                        AppBrFormatters.currency(point.salesAmount),
-                      ],
-                  ],
-                ),
-              ).toShareRequest(_shareKey),
-            )
-          : null,
+      onShare: shareActions?.shareCallback(),
       onOpenFullscreen: widget.showHeader ? widget.onOpenFullscreen : null,
       showDesktopBranchSidebar: widget.showSidebar,
       presentationMode: switch (widget.mode) {

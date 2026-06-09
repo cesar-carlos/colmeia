@@ -17,6 +17,8 @@ import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_header_trailing.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_actions.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/metrics/app_compact_kpi_stat.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
@@ -32,6 +34,7 @@ class SalesRankingProdutosFaturamentoBranchCard extends StatefulWidget {
     required this.metricSubtitle,
     this.branchDisplayName,
     this.isLoading = false,
+    this.onRequestShare,
     super.key,
   });
 
@@ -42,6 +45,7 @@ class SalesRankingProdutosFaturamentoBranchCard extends StatefulWidget {
   final String metricSubtitle;
   final String? branchDisplayName;
   final bool isLoading;
+  final AppChartShareRequestCallback? onRequestShare;
 
   @override
   State<SalesRankingProdutosFaturamentoBranchCard> createState() =>
@@ -173,6 +177,13 @@ class _SalesRankingProdutosFaturamentoBranchCardState
   Widget _buildHeader(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.appTokens;
+    final shareActions = ChartShareActions(
+      context: context,
+      captureKey: _shareKey,
+      metadata: _shareMetadata,
+      onRequestShare: widget.onRequestShare,
+      shareEnabled: !widget.isLoading,
+    );
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
@@ -209,11 +220,9 @@ class _SalesRankingProdutosFaturamentoBranchCardState
           onOpenFullscreen: widget.rows.isEmpty ? null : _openFullscreen,
           openFullscreenTooltip:
               widget.l10n.salesRankingProdutosFaturamentoFullscreenTooltip,
-          onShare: widget.rows.isEmpty || widget.isLoading
+          onShare: widget.rows.isEmpty
               ? null
-              : () => context.shareChartFromRequest(
-                  _shareMetadata.toShareRequest(_shareKey),
-                ),
+              : shareActions.shareCallback(),
           shareProgressKey: _shareKey,
           shareEnabled: !widget.isLoading,
         ),

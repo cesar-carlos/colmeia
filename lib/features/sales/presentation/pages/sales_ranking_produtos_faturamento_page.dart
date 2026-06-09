@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
@@ -544,6 +545,8 @@ class _SalesRankingProdutosFaturamentoPageState
                     rows: section.rows,
                     metricSubtitle: metricSubtitle,
                     isLoading: _loading,
+                    onRequestShare: (context, request) =>
+                        context.shareChartFromRequest(request),
                   ),
                 ),
               );

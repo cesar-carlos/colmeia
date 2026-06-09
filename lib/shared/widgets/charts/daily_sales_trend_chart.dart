@@ -13,7 +13,9 @@ import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_dashboard_comparison_bar_chart_preset.dart';
 import 'package:colmeia/shared/widgets/charts/chart_export_capture.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_actions.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
@@ -153,6 +155,8 @@ class _OverviewDailySalesTrendChartState
       return ChartShareMetadata(
         title: shareTitle,
         subtitle: resolvedSubtitle,
+        // Wide daily bar charts read better on landscape PDF pages.
+        pdfOrientation: ChartSharePdfOrientation.landscape,
         tableData: ChartShareTableData(
           headers: <String>[
             l10n.chartSharePdfColumnDate,
@@ -207,11 +211,16 @@ class _OverviewDailySalesTrendChartState
       );
     }
 
+    final shareActions = ChartShareActions(
+      context: context,
+      captureKey: _shareKey,
+      metadata: shareMetadata(isSalesCountMetric: isSalesCount),
+      onRequestShare: onRequestShare,
+      onRequestFullscreen: onRequestFullscreen,
+      shareEnabled: !widget.isLoading,
+    );
+
     void openFullscreen() {
-      final emit = onRequestFullscreen;
-      if (emit == null) {
-        return;
-      }
       final chartPointsSnapshot = List<DailySalesTrendPoint>.of(
         chartPoints,
         growable: false,
@@ -220,8 +229,7 @@ class _OverviewDailySalesTrendChartState
       final isLoadingSnapshot = widget.isLoading;
       final fullscreenShareKey = GlobalKey();
       final metadata = shareMetadata(isSalesCountMetric: isSalesCountSnapshot);
-      emit(
-        context,
+      shareActions.openFullscreen(
         metadata.toFullscreenRequest(
           semanticsLabel: labels.semanticsForMetric(
             isSalesCount: isSalesCountSnapshot,
@@ -308,17 +316,6 @@ class _OverviewDailySalesTrendChartState
       );
     }
 
-    void openShare() {
-      final emit = onRequestShare;
-      if (emit == null || widget.isLoading) {
-        return;
-      }
-      emit(
-        context,
-        shareMetadata(isSalesCountMetric: isSalesCount).toShareRequest(_shareKey),
-      );
-    }
-
     return Semantics(
       label: labels.semanticsForMetric(isSalesCount: isSalesCount),
       hint: resolvedScopeHint,
@@ -327,10 +324,10 @@ class _OverviewDailySalesTrendChartState
         child: AppComparisonBarChart<DailySalesTrendPoint>(
           title: labels.titleForMetric(isSalesCount: isSalesCount),
           subtitle: resolvedSubtitle,
-          onShare: onRequestShare == null || widget.isLoading ? null : openShare,
+          onShare: shareActions.shareCallback(),
           shareProgressKey: _shareKey,
           shareEnabled: !widget.isLoading,
-          onOpenFullscreen: onRequestFullscreen == null ? null : openFullscreen,
+          onOpenFullscreen: shareActions.fullscreenCallback(openFullscreen),
         belowSubtitle: AppSegmentedControl<_OverviewDailyMetric>(
           options: <AppSegmentedControlOption<_OverviewDailyMetric>>[
             AppSegmentedControlOption<_OverviewDailyMetric>(

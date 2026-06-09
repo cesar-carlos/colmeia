@@ -45,18 +45,26 @@ Future<ChartShareResult> shareChartCapture(
   BuildContext context,
   AppChartShareRequest request,
 ) async {
-  final l10n = AppLocalizations.of(context);
-  final result = await captureAndShareChart(
-    request.captureKey,
-    subject: request.subject,
-    title: request.title ?? request.subject,
-    subtitle: request.subtitle,
-    filterSummary: request.filterSummary,
-    tableData: request.tableData,
-    chartExportBuilder: request.chartExportBuilder,
-    exportCaptureContext: context,
-    pageNumberLabelBuilder: l10n.chartSharePdfPageNumber,
-  );
+  late final ChartShareResult result;
+  try {
+    final l10n = AppLocalizations.of(context);
+    result = await captureAndShareChart(
+      request.captureKey,
+      subject: request.subject,
+      title: request.title ?? request.subject,
+      subtitle: request.subtitle,
+      filterSummary: request.filterSummary,
+      tableData: request.tableData,
+      chartExportBuilder: request.chartExportBuilder,
+      pdfOrientation: request.pdfOrientation,
+      exportCaptureContext: context,
+      pageNumberLabelBuilder: l10n.chartSharePdfPageNumber,
+    );
+  } on Object {
+    result = const ChartShareFailure(
+      ChartShareFailureReason.pdfGenerationFailed,
+    );
+  }
   if (!context.mounted) {
     return result;
   }

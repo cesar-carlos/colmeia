@@ -34,6 +34,7 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_actions.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -74,6 +75,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
         AgentQueryRetryAfterHost<SalesProdutoTendenciaPage> {
   late final SalesProdutoTendenciaController _controller;
   final GlobalKey _detailsSectionKey = GlobalKey();
+  final GlobalKey _classificacaoShareKey = GlobalKey();
 
   @override
   void initState() {
@@ -394,6 +396,27 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     );
   }
 
+  void _shareClassificacaoChart() {
+    final state = _controller.state;
+    if (state.loading || state.summaryRows.isEmpty) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    final buckets = salesProdutoTendenciaOrderedClassBuckets(state.summaryRows);
+    ChartShareActions(
+      context: context,
+      captureKey: _classificacaoShareKey,
+      metadata: buildSalesProdutoTendenciaClassificacaoShareMetadata(
+        l10n: l10n,
+        summaryRows: state.summaryRows,
+        buckets: buckets,
+        tokens: context.appTokens,
+      ),
+      onRequestShare: (context, request) =>
+          context.shareChartFromRequest(request),
+    ).openShare();
+  }
+
   void _onChartSelected(
     SalesProdutoTendenciaPresentationState state,
     SalesProdutoTendenciaChartId chartId,
@@ -553,6 +576,8 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
                   onClearClassificacaoFilter: () =>
                       unawaited(_clearClassificacaoFilter()),
                   retryCountdownLabel: agentQueryRetryCountdownLabel(l10n),
+                  classificacaoShareKey: _classificacaoShareKey,
+                  onShareClassificacao: _shareClassificacaoChart,
                 );
               },
             ),

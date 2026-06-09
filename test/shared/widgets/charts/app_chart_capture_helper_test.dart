@@ -144,31 +144,34 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
 
-    result = await captureAndShareChart(
-      key,
-      title: 'Table only',
-      tableData: const ChartShareTableData(
-        headers: <String>['Metric', 'Value'],
-        rows: <List<String>>[
-          <String>['Sales', '10'],
-        ],
-      ),
-      shareBytes: ({
-        required bytes,
-        required fileName,
-        required mimeType,
-        subject,
-      }) async {
-        return const ShareResult('test', ShareResultStatus.success);
-      },
-    );
+    await tester.runAsync(() async {
+      result = await captureAndShareChart(
+        key,
+        title: 'Table only',
+        tableData: const ChartShareTableData(
+          headers: <String>['Metric', 'Value'],
+          rows: <List<String>>[
+            <String>['Sales', '10'],
+          ],
+        ),
+        shareBytes: ({
+          required bytes,
+          required fileName,
+          required mimeType,
+          subject,
+          title,
+        }) async {
+          return const ShareResult('test', ShareResultStatus.success);
+        },
+      );
+    });
 
     expect(result, isA<ChartShareSuccess>());
   });
 
-  testWidgets('releases guard before invoking share', (tester) async {
+  testWidgets('holds guard until share sheet completes', (tester) async {
     final key = GlobalKey();
-    var guardHeldDuringShare = true;
+    var guardHeldDuringShare = false;
 
     await tester.pumpWidget(_chartBoundary(key: key));
     await tester.pumpAndSettle();
@@ -183,6 +186,7 @@ void main() {
           required fileName,
           required mimeType,
           subject,
+          title,
         }) async {
           guardHeldDuringShare = ChartShareGuard.isInProgress(key);
           return const ShareResult('test', ShareResultStatus.success);
@@ -191,7 +195,8 @@ void main() {
     });
 
     expect(result, isA<ChartShareSuccess>());
-    expect(guardHeldDuringShare, isFalse);
+    expect(guardHeldDuringShare, isTrue);
+    expect(ChartShareGuard.isInProgress(key), isFalse);
   });
 
   testWidgets('table-only share succeeds when dedicated export capture fails', (
@@ -227,6 +232,7 @@ void main() {
           required fileName,
           required mimeType,
           subject,
+          title,
         }) async {
           return const ShareResult('test', ShareResultStatus.success);
         },
@@ -235,6 +241,36 @@ void main() {
 
     expect(result, isA<ChartShareSuccess>());
   });
+
+  testWidgets(
+    'falls back to boundary when dedicated export has no overlay context',
+    (tester) async {
+      final key = GlobalKey();
+      late ChartShareResult result;
+
+      await tester.pumpWidget(_chartBoundary(key: key));
+      await tester.pumpAndSettle();
+
+      await tester.runAsync(() async {
+        result = await captureAndShareChart(
+          key,
+          title: 'Boundary fallback',
+          chartExportBuilder: (_) => const SizedBox.shrink(),
+          shareBytes: ({
+            required bytes,
+            required fileName,
+            required mimeType,
+            subject,
+            title,
+          }) async {
+            return const ShareResult('test', ShareResultStatus.success);
+          },
+        );
+      });
+
+      expect(result, isA<ChartShareSuccess>());
+    },
+  );
 
   testWidgets(
     'returns invalidRenderObject when key is not a repaint boundary',

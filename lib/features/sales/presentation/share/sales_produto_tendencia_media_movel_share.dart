@@ -9,6 +9,8 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_export_capture.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -26,6 +28,7 @@ ChartShareMetadata buildSalesProdutoTendenciaMediaMovelCountShareMetadata({
     title: l10n.salesProdutoTendenciaMediaMovelSummaryByClassificacaoTitle,
     subtitle:
         '${l10n.salesProdutoTendenciaMediaMovelSummaryByClassificacaoSubtitle}\n$legend',
+    pdfOrientation: ChartSharePdfOrientation.landscape,
     tableData: ChartShareTableData(
       headers: <String>[
         l10n.chartSharePdfColumnLabel,
@@ -68,6 +71,7 @@ ChartShareMetadata buildSalesProdutoTendenciaMediaMovelImpactShareMetadata({
     title: l10n.salesProdutoTendenciaMediaMovelSummaryByImpactTitle,
     subtitle:
         '${l10n.salesProdutoTendenciaMediaMovelSummaryByImpactSubtitle}\n$legend',
+    pdfOrientation: ChartSharePdfOrientation.landscape,
     tableData: ChartShareTableData(
       headers: <String>[
         l10n.chartSharePdfColumnLabel,
@@ -102,10 +106,7 @@ ChartShareMetadata buildSalesProdutoTendenciaMediaMovelDetailsShareMetadata({
   required String filterSummary,
 }) {
   final decimalFormat = NumberFormat.decimalPattern(l10n.localeName);
-  return ChartShareMetadata(
-    title: l10n.salesProdutoTendenciaMediaMovelDetailsTitle,
-    subtitle: l10n.salesProdutoTendenciaMediaMovelDetailsSubtitle,
-    filterSummary: filterSummary,
+  final tableLimit = applyChartShareTableRowLimit(
     tableData: ChartShareTableData(
       headers: <String>[
         l10n.salesProdutoTendenciaMediaMovelColProduct,
@@ -132,6 +133,18 @@ ChartShareMetadata buildSalesProdutoTendenciaMediaMovelDetailsShareMetadata({
           ],
       ],
     ),
+    truncationNoticeBuilder: (shownRows, totalRows) =>
+        l10n.chartSharePdfTableRowsTruncated(shownRows, totalRows),
+  );
+  return ChartShareMetadata(
+    title: l10n.salesProdutoTendenciaMediaMovelDetailsTitle,
+    subtitle: l10n.salesProdutoTendenciaMediaMovelDetailsSubtitle,
+    pdfOrientation: ChartSharePdfOrientation.landscape,
+    filterSummary: joinChartShareFilterSummary(
+      filterSummary: filterSummary,
+      truncationNotice: tableLimit.truncationNotice,
+    ),
+    tableData: tableLimit.tableData,
   );
 }
 

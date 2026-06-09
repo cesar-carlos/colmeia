@@ -7,6 +7,7 @@ import 'package:colmeia/features/sales/presentation/share/sales_produto_tendenci
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_summary_section.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -40,6 +41,7 @@ void main() {
     );
     expect(metadata.tableData?.rows.single.last, '12');
     expect(metadata.chartExportBuilder, isNotNull);
+    expect(metadata.pdfOrientation, ChartSharePdfOrientation.landscape);
   });
 
   test('media movel details share metadata formats product rows', () {
@@ -68,6 +70,7 @@ void main() {
     expect(metadata.filterSummary, '7 days');
     expect(metadata.tableData?.rows.single.first, 'Coffee');
     expect(metadata.chartExportBuilder, isNull);
+    expect(metadata.pdfOrientation, ChartSharePdfOrientation.landscape);
   });
 
   test('monthly pnl line share metadata includes month values', () {
@@ -89,6 +92,8 @@ void main() {
 
     expect(metadata.title, l10n.salesMonthlyPnlChartTitle);
     expect(metadata.tableData?.rows.single.first, '2026/05');
+    expect(metadata.chartExportBuilder, isNotNull);
+    expect(metadata.pdfOrientation, ChartSharePdfOrientation.landscape);
   });
 
   test('tendencia classificacao share metadata uses summary buckets', () {
@@ -116,5 +121,6 @@ void main() {
       l10n.salesProdutoTendenciaSummaryByClassificacaoTitle,
     );
     expect(metadata.tableData?.rows.single[1], '3');
+    expect(metadata.pdfOrientation, ChartSharePdfOrientation.landscape);
   });
 }

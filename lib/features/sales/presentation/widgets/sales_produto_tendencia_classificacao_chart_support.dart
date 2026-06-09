@@ -227,6 +227,8 @@ Widget buildSalesProdutoTendenciaClassificacaoBarChart({
   void Function(SalesProdutoTendenciaClassBucket bucket)? onBucketTap,
   double? heightOverride,
   Widget? belowSubtitle,
+  VoidCallback? onShare,
+  Key? shareProgressKey,
 }) {
   final tokens = context.appTokens;
   final colors = Theme.of(context).appColors;
@@ -266,5 +268,7 @@ Widget buildSalesProdutoTendenciaClassificacaoBarChart({
         ? null
         : (bucket, _) => onBucketTap(bucket),
     belowSubtitle: belowSubtitle,
+    onShare: onShare,
+    shareProgressKey: shareProgressKey,
   );
 }

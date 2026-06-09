@@ -36,10 +36,30 @@ void main() {
       final file = File(xFile.path);
       expect(file.existsSync(), isTrue);
       expect(file.readAsBytesSync(), bytes);
-      file.deleteSync();
+      expect(file.parent.path, isNot(file.path));
+      file.parent.deleteSync(recursive: true);
       return;
     }
 
     expect(xFile.name, 'chart_test.pdf');
+  });
+
+  test('deleteShareTempFile removes uuid temp directory', () async {
+    if (!(Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+      return;
+    }
+
+    final bytes = Uint8List.fromList(<int>[5, 6, 7]);
+    final xFile = await createShareableXFile(
+      bytes: bytes,
+      fileName: 'cleanup_test.pdf',
+      mimeType: 'application/octet-stream',
+    );
+    final parent = File(xFile.path).parent;
+    expect(parent.existsSync(), isTrue);
+
+    await deleteShareTempFile(xFile.path);
+
+    expect(parent.existsSync(), isFalse);
   });
 }

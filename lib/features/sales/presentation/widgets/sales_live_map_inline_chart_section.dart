@@ -11,6 +11,7 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_chart
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -19,11 +20,13 @@ class SalesLiveMapInlineChartSection extends StatelessWidget {
   const SalesLiveMapInlineChartSection({
     required this.onOpenFullscreen,
     required this.recoveryRequestId,
+    this.onRequestShare,
     this.suspendParentScrollLock = false,
     super.key,
   });
 
   final VoidCallback onOpenFullscreen;
+  final AppChartShareRequestCallback? onRequestShare;
   final int recoveryRequestId;
   final bool suspendParentScrollLock;
 
@@ -65,6 +68,7 @@ class SalesLiveMapInlineChartSection extends StatelessWidget {
           isRefreshing: slice.isRefreshing,
           onMetricChanged: controller.updateMetric,
           onOpenFullscreen: onOpenFullscreen,
+          onRequestShare: onRequestShare,
         );
       },
     );

@@ -43,4 +43,14 @@ void main() {
     final heightRatio = dimensions.height / 1040;
     expect((widthRatio - heightRatio).abs(), lessThan(0.02));
   });
+
+  test('downscalePngForPdfEmbedSync matches async downscale', () async {
+    final original = encodeSolidPng(width: 4000, height: 2000);
+    final asyncResult = await downscalePngForPdfEmbed(original);
+    final syncResult = downscalePngForPdfEmbedSync(original);
+    final asyncDimensions = await decodePngDimensions(asyncResult);
+    final syncDimensions = await decodePngDimensions(syncResult);
+
+    expect(asyncDimensions, syncDimensions);
+  });
 }

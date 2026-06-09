@@ -15,11 +15,13 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_dashboard_comparison_bar_chart_preset.dart';
 import 'package:colmeia/shared/widgets/charts/app_grouped_column_chart.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_actions.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
@@ -39,6 +41,7 @@ class SalesMonthlyPnlBarChartCard extends StatefulWidget {
     this.loadFailure,
     this.loadFailureMessage,
     this.onOpenFullscreen,
+    this.onRequestShare,
   });
 
   final AppLocalizations l10n;
@@ -51,6 +54,7 @@ class SalesMonthlyPnlBarChartCard extends StatefulWidget {
   final AppFailure? loadFailure;
   final String? loadFailureMessage;
   final VoidCallback? onOpenFullscreen;
+  final AppChartShareRequestCallback? onRequestShare;
 
   @override
   State<SalesMonthlyPnlBarChartCard> createState() =>
@@ -177,6 +181,24 @@ class _SalesMonthlyPnlBarChartCardState
     }
 
     final summary = _semanticsSummary(l10n, widget.points);
+    final shareMetadata = buildSalesMonthlyPnlBarChartShareMetadata(
+      l10n: l10n,
+      points: widget.points,
+      session: _session,
+      tokens: tokens,
+      chartTheme: chartTheme,
+      localeTag: localeTag,
+      primaryMoney: primaryMoney,
+      gridLineColor: gridLineColor,
+      percentRatioFormat: percentRatioFormat,
+    );
+    final shareActions = ChartShareActions(
+      context: context,
+      captureKey: _shareKey,
+      metadata: shareMetadata,
+      onRequestShare: widget.onRequestShare,
+      shareEnabled: !widget.isLoading,
+    );
 
     return Semantics(
       container: true,
@@ -204,21 +226,7 @@ class _SalesMonthlyPnlBarChartCardState
         gridLineColor: gridLineColor,
         percentRatioFormat: percentRatioFormat,
         openFullscreen: widget.onOpenFullscreen ?? openBarFullscreen,
-        onShare: widget.isLoading
-            ? null
-            : () => context.shareChartFromRequest(
-                buildSalesMonthlyPnlBarChartShareMetadata(
-                  l10n: l10n,
-                  points: widget.points,
-                  session: _session,
-                  tokens: tokens,
-                  chartTheme: chartTheme,
-                  localeTag: localeTag,
-                  primaryMoney: primaryMoney,
-                  gridLineColor: gridLineColor,
-                  percentRatioFormat: percentRatioFormat,
-                ).toShareRequest(_shareKey),
-              ),
+        onShare: shareActions.shareCallback(),
         valuesAllZero: () => _valuesAllZero(widget.points),
         percentAllZero: () => _percentAllZero(widget.points, percentMetric),
         useChartShell: true,

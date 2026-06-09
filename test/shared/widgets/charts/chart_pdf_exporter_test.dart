@@ -1,4 +1,5 @@
 import 'package:colmeia/shared/widgets/charts/chart_pdf_exporter.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -63,9 +64,9 @@ void main() {
     expect(String.fromCharCodes(bytes.take(4)), '%PDF');
   });
 
-  test('build uses A4 landscape by default for narrow tables', () async {
+  test('build uses portrait orientation by default', () async {
     final bytes = await ChartPdfExporter.build(
-      title: 'Narrow table',
+      title: 'Portrait default',
       tableData: const ChartShareTableData(
         headers: <String>['A', 'B'],
         rows: <List<String>>[
@@ -78,9 +79,10 @@ void main() {
     expect(String.fromCharCodes(bytes.take(4)), '%PDF');
   });
 
-  test('build uses landscape for wide tables', () async {
+  test('build accepts explicit landscape orientation', () async {
     final bytes = await ChartPdfExporter.build(
-      title: 'Wide table',
+      title: 'Landscape chart',
+      pdfOrientation: ChartSharePdfOrientation.landscape,
       tableData: ChartShareTableData(
         headers: List<String>.generate(7, (index) => 'C$index'),
         rows: <List<String>>[
@@ -90,6 +92,6 @@ void main() {
     );
 
     expect(bytes, isNotEmpty);
+    expect(String.fromCharCodes(bytes.take(4)), '%PDF');
   });
-
 }

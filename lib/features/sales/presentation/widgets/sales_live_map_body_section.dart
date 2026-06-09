@@ -19,6 +19,7 @@ import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/agent_query_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -28,11 +29,13 @@ class SalesLiveMapBodySection extends StatelessWidget {
     required this.onOpenFullscreen,
     required this.hideInlineChart,
     required this.inlineChartRecoveryRequestId,
+    this.onRequestShare,
     super.key,
   });
 
   final VoidCallback onRetryReload;
   final VoidCallback onOpenFullscreen;
+  final AppChartShareRequestCallback? onRequestShare;
   final bool hideInlineChart;
   final int inlineChartRecoveryRequestId;
 
@@ -70,6 +73,7 @@ class SalesLiveMapBodySection extends StatelessWidget {
                   recoveryRequestId: inlineChartRecoveryRequestId,
                   suspendParentScrollLock: hideInlineChart,
                   onOpenFullscreen: onOpenFullscreen,
+                  onRequestShare: onRequestShare,
                 ),
               ),
             ],

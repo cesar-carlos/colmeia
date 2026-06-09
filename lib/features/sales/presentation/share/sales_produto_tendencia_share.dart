@@ -7,6 +7,8 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_export_capture.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -113,6 +115,7 @@ ChartShareMetadata buildSalesProdutoTendenciaClassificacaoShareMetadata({
     title: l10n.salesProdutoTendenciaSummaryByClassificacaoTitle,
     subtitle:
         '${l10n.salesProdutoTendenciaSummaryByClassificacaoSubtitle}\n$legend',
+    pdfOrientation: ChartSharePdfOrientation.landscape,
     tableData: ChartShareTableData(
       headers: <String>[
         l10n.chartSharePdfColumnLabel,
@@ -146,9 +149,7 @@ ChartShareMetadata buildSalesProdutoTendenciaTopGainersShareMetadata({
   required List<ProdutoVendidoTendenciaDeVendaRow> rows,
   required AppThemeTokens tokens,
 }) {
-  return ChartShareMetadata(
-    title: l10n.salesProdutoTendenciaTopGainersTitle,
-    subtitle: l10n.salesProdutoTendenciaTopGainersSubtitle,
+  final tableLimit = applyChartShareTableRowLimit(
     tableData: ChartShareTableData(
       headers: <String>[
         l10n.chartSharePdfColumnName,
@@ -162,6 +163,16 @@ ChartShareMetadata buildSalesProdutoTendenciaTopGainersShareMetadata({
           ],
       ],
     ),
+    truncationNoticeBuilder: (shownRows, totalRows) =>
+        l10n.chartSharePdfTableRowsTruncated(shownRows, totalRows),
+  );
+
+  return ChartShareMetadata(
+    title: l10n.salesProdutoTendenciaTopGainersTitle,
+    subtitle: l10n.salesProdutoTendenciaTopGainersSubtitle,
+    filterSummary: tableLimit.truncationNotice,
+    tableData: tableLimit.tableData,
+    pdfOrientation: ChartSharePdfOrientation.landscape,
     chartExportBuilder: rows.isEmpty
         ? null
         : (exportContext) => _topMoversComparisonExport(
@@ -179,9 +190,7 @@ ChartShareMetadata buildSalesProdutoTendenciaTopLosersShareMetadata({
   required List<ProdutoVendidoTendenciaDeVendaRow> rows,
   required AppThemeTokens tokens,
 }) {
-  return ChartShareMetadata(
-    title: l10n.salesProdutoTendenciaTopLosersTitle,
-    subtitle: l10n.salesProdutoTendenciaTopLosersSubtitle,
+  final tableLimit = applyChartShareTableRowLimit(
     tableData: ChartShareTableData(
       headers: <String>[
         l10n.chartSharePdfColumnName,
@@ -195,6 +204,16 @@ ChartShareMetadata buildSalesProdutoTendenciaTopLosersShareMetadata({
           ],
       ],
     ),
+    truncationNoticeBuilder: (shownRows, totalRows) =>
+        l10n.chartSharePdfTableRowsTruncated(shownRows, totalRows),
+  );
+
+  return ChartShareMetadata(
+    title: l10n.salesProdutoTendenciaTopLosersTitle,
+    subtitle: l10n.salesProdutoTendenciaTopLosersSubtitle,
+    filterSummary: tableLimit.truncationNotice,
+    tableData: tableLimit.tableData,
+    pdfOrientation: ChartSharePdfOrientation.landscape,
     chartExportBuilder: rows.isEmpty
         ? null
         : (exportContext) => _topMoversComparisonExport(
@@ -279,9 +298,8 @@ Widget _topMoversComparisonExport({
         l10n.overviewComparisonBarHorizontalScrollHint,
     loadingLabel: l10n.overviewComparisonChartLoading,
     showDataLabels: true,
-    autoRotateXLabels: false,
     wrapXAxisLabelsInTwoLines: true,
-    wrapXAxisCharsPerLine: 10,
+    wrapXAxisCharsPerLine: 18,
     chartPadding: EdgeInsets.only(bottom: tokens.gapSm),
     dataLabelOffset: Offset(0, tokens.gapSm),
     tooltipLabelMaxChars: 56,
