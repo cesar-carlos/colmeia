@@ -1,6 +1,7 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_produto_tendencia_share.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_classificacao_chart_support.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_filtered_empty_state.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_kpi_card.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -24,9 +25,12 @@ class SalesProdutoTendenciaSummarySection extends StatelessWidget {
     required this.periodoAtualDescriptor,
     required this.periodoAnteriorDescriptor,
     super.key,
+    this.activeClassificacao,
     this.hasActiveDetailFilters = false,
     this.onClearFilters,
     this.onOpenFilters,
+    this.onClearClassificacaoFilter,
+    this.onClassificacaoSelected,
   });
 
   final AppLocalizations l10n;
@@ -36,9 +40,12 @@ class SalesProdutoTendenciaSummarySection extends StatelessWidget {
   final DateTimeRange periodoAnterior;
   final String periodoAtualDescriptor;
   final String periodoAnteriorDescriptor;
+  final String? activeClassificacao;
   final bool hasActiveDetailFilters;
   final VoidCallback? onClearFilters;
   final VoidCallback? onOpenFilters;
+  final VoidCallback? onClearClassificacaoFilter;
+  final ValueChanged<String>? onClassificacaoSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +53,11 @@ class SalesProdutoTendenciaSummarySection extends StatelessWidget {
     final tokens = theme.appTokens;
     final colors = theme.appColors;
     final summary = buildSalesProdutoTendenciaSummary(summaryRows);
+    final buckets = salesProdutoTendenciaOrderedClassBuckets(
+      summaryRows,
+      includeZeroCounts: true,
+    );
+    final countFormat = NumberFormat.decimalPattern(l10n.localeName);
 
     return AppSectionCardWithHeading(
       title: l10n.salesProdutoTendenciaSummaryTitle,
@@ -70,6 +82,16 @@ class SalesProdutoTendenciaSummarySection extends StatelessWidget {
                 '${AppBrFormatters.shortDate(periodoAnterior.end)} • '
                 '$periodoAnteriorDescriptor',
           ),
+          if (activeClassificacao != null && onClearClassificacaoFilter != null)
+            AppTagChip(
+              icon: Icons.filter_alt_outlined,
+              label:
+                  '${l10n.salesProdutoTendenciaFilterClassification}: '
+                  '${salesProdutoTendenciaClassificacaoLabel(l10n, activeClassificacao)}',
+              onRemove: onClearClassificacaoFilter,
+              removeSemanticsLabel:
+                  l10n.salesProdutoTendenciaRemoveClassificacaoFilterSemantics,
+            ),
         ],
       ),
       child: Column(
@@ -86,6 +108,7 @@ class SalesProdutoTendenciaSummarySection extends StatelessWidget {
                   const <ProdutoVendidoTendenciaDeVendaSummaryRow>[],
                 ),
                 colors: colors,
+                onClassificacaoSelected: onClassificacaoSelected,
               ),
             )
           else if (summaryRows.isEmpty)
@@ -101,10 +124,41 @@ class SalesProdutoTendenciaSummarySection extends StatelessWidget {
               enabled: loading,
               loadingSemanticsLabel:
                   l10n.salesProdutoTendenciaLoadingTrendSemantics,
-              child: _TrendSummaryKpiStrip(
-                l10n: l10n,
-                summary: summary,
-                colors: colors,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  _TrendSummaryKpiStrip(
+                    l10n: l10n,
+                    summary: summary,
+                    colors: colors,
+                    onClassificacaoSelected: onClassificacaoSelected,
+                  ),
+                  SizedBox(height: tokens.contentSpacing),
+                  Text(
+                    salesProdutoTendenciaClassificacaoOneLineLegend(l10n),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  SizedBox(height: tokens.contentSpacing),
+                  buildSalesProdutoTendenciaClassificacaoBarChart(
+                    context: context,
+                    l10n: l10n,
+                    buckets: buckets,
+                    countFormat: countFormat,
+                    heightOverride: tokens.chartCompactHeight,
+                    onBucketTap: onClassificacaoSelected == null
+                        ? null
+                        : (bucket) =>
+                            onClassificacaoSelected!(bucket.classificacao),
+                    belowSubtitle: Text(
+                      l10n.salesProdutoTendenciaSummaryByClassificacaoDrillDownHint,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
         ],
@@ -118,11 +172,13 @@ class _TrendSummaryKpiStrip extends StatelessWidget {
     required this.l10n,
     required this.summary,
     required this.colors,
+    this.onClassificacaoSelected,
   });
 
   final AppLocalizations l10n;
   final SalesProdutoTendenciaSummary summary;
   final AppColors colors;
+  final ValueChanged<String>? onClassificacaoSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -131,36 +187,41 @@ class _TrendSummaryKpiStrip extends StatelessWidget {
     return AppResponsiveMetricStatGrid(
       extraWideColumns: 6,
       children: <Widget>[
-        SalesProdutoTendenciaKpiCard(
+        _classificacaoKpi(
           icon: Icons.trending_up_rounded,
           label: l10n.salesProdutoTendenciaKpiGrowing,
           value: nf.format(summary.countGrowing),
           iconForeground: colors.tertiary,
+          classificacao: 'CRESCENDO',
           emphasis: AppMetricStatCardEmphasis.hero,
         ),
-        SalesProdutoTendenciaKpiCard(
+        _classificacaoKpi(
           icon: Icons.trending_down_rounded,
           label: l10n.salesProdutoTendenciaKpiFalling,
           value: nf.format(summary.countFalling),
           iconForeground: colors.error,
+          classificacao: 'CAINDO',
         ),
-        SalesProdutoTendenciaKpiCard(
+        _classificacaoKpi(
           icon: Icons.new_releases_outlined,
           label: l10n.salesProdutoTendenciaKpiNewProducts,
           value: nf.format(summary.countNew),
           iconForeground: colors.primary,
+          classificacao: 'NOVO PRODUTO',
         ),
-        SalesProdutoTendenciaKpiCard(
+        _classificacaoKpi(
           icon: Icons.pause_circle_outline_rounded,
           label: l10n.salesProdutoTendenciaKpiStopped,
           value: nf.format(summary.countStopped),
           iconForeground: colors.onSurfaceVariant,
+          classificacao: 'PAROU DE VENDER',
         ),
-        SalesProdutoTendenciaKpiCard(
+        _classificacaoKpi(
           icon: Icons.horizontal_rule_rounded,
           label: l10n.salesProdutoTendenciaKpiStable,
           value: nf.format(summary.countStable),
           iconForeground: colors.onSurfaceVariant,
+          classificacao: 'ESTAVEL',
         ),
         SalesProdutoTendenciaKpiCard(
           icon: Icons.balance_rounded,
@@ -170,6 +231,33 @@ class _TrendSummaryKpiStrip extends StatelessWidget {
               summary.netImpact >= 0 ? colors.tertiary : colors.error,
         ),
       ],
+    );
+  }
+
+  Widget _classificacaoKpi({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color iconForeground,
+    required String classificacao,
+    AppMetricStatCardEmphasis emphasis = AppMetricStatCardEmphasis.standard,
+  }) {
+    final classLabel = salesProdutoTendenciaClassificacaoLabel(
+      l10n,
+      classificacao,
+    );
+    return SalesProdutoTendenciaKpiCard(
+      icon: icon,
+      label: label,
+      value: value,
+      iconForeground: iconForeground,
+      emphasis: emphasis,
+      onTap: onClassificacaoSelected == null
+          ? null
+          : () => onClassificacaoSelected!(classificacao),
+      semanticsLabel: onClassificacaoSelected == null
+          ? null
+          : l10n.salesProdutoTendenciaKpiFilterSemantics(classLabel),
     );
   }
 }

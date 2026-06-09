@@ -4244,6 +4244,19 @@ class AppLocalizationsPt extends AppLocalizations {
       'Toque em uma barra para filtrar a grade de detalhes abaixo.';
 
   @override
+  String get salesProdutoTendenciaSummaryClassificacaoLegend =>
+      'Crescendo: +20% vs anterior · Caindo: −20% · Novo: vendeu agora, não antes · Parou: vendeu antes, não agora · Estável: entre ±20%';
+
+  @override
+  String salesProdutoTendenciaKpiFilterSemantics(String classification) {
+    return 'Filtrar detalhes por $classification';
+  }
+
+  @override
+  String get salesProdutoTendenciaRemoveClassificacaoFilterSemantics =>
+      'Remover filtro de classificação';
+
+  @override
   String get salesProdutoTendenciaClassificacaoDescGrowing =>
       'vendas subiram mais de 20% vs período anterior';
 
@@ -4274,7 +4287,15 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesProdutoTendenciaTopGainersTitle => 'Top 15 altas';
 
   @override
+  String get salesProdutoTendenciaTopGainersSubtitle =>
+      'Maiores altas em quantidade no período selecionado.';
+
+  @override
   String get salesProdutoTendenciaTopLosersTitle => 'Top 15 quedas';
+
+  @override
+  String get salesProdutoTendenciaTopLosersSubtitle =>
+      'Maiores quedas em quantidade no período selecionado.';
 
   @override
   String get salesProdutoTendenciaDetailsTitle => 'Detalhes';
@@ -4344,10 +4365,24 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesProdutoTendenciaColGrupo => 'Grupo';
 
   @override
+  String get salesProdutoTendenciaColQtdAnterior => 'Qtd. anterior';
+
+  @override
+  String get salesProdutoTendenciaColQtdAtual => 'Qtd. atual';
+
+  @override
   String get salesProdutoTendenciaColDiferenca => 'Diferença';
 
   @override
   String get salesProdutoTendenciaColPercentual => 'Tendência %';
+
+  @override
+  String salesProdutoTendenciaDetailsPeriodComparisonCaption(
+    String previous,
+    String current,
+  ) {
+    return 'Quantidades comparam período anterior ($previous) vs atual ($current).';
+  }
 
   @override
   String get salesProdutoTendenciaClassificacaoStopped => 'Parou de vender';
@@ -4469,6 +4504,47 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get salesProdutoTendenciaMediaMovelSummaryByClassificacaoSubtitle =>
       'Distribuição dos produtos em todo o resultado filtrado.';
+
+  @override
+  String
+  get salesProdutoTendenciaMediaMovelSummaryByClassificacaoDrillDownHint =>
+      'Toque em uma barra para filtrar a grade de detalhes abaixo.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSummaryClassificacaoLegend =>
+      'Crescendo: +20% vs média anterior · Caindo: −20% · Novo: vendeu agora, não antes · Parou: vendeu antes, não agora · Estável: entre ±20%';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelClassificacaoDescGrowing =>
+      'média móvel subiu mais de 20% vs janela anterior';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelClassificacaoDescFalling =>
+      'média móvel caiu mais de 20% vs janela anterior';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelClassificacaoDescNew =>
+      'vendeu na janela atual, não na anterior';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelClassificacaoDescStopped =>
+      'vendeu na janela anterior, parou na atual';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelClassificacaoDescStable =>
+      'variação entre −20% e +20%';
+
+  @override
+  String salesProdutoTendenciaMediaMovelKpiFilterSemantics(
+    String classification,
+  ) {
+    return 'Filtrar detalhes por $classification';
+  }
+
+  @override
+  String
+  get salesProdutoTendenciaMediaMovelRemoveClassificacaoFilterSemantics =>
+      'Remover filtro de classificação';
 
   @override
   String get salesProdutoTendenciaMediaMovelSummaryByImpactTitle =>
@@ -9034,6 +9110,19 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Toque em uma barra para filtrar a grade de detalhes abaixo.';
 
   @override
+  String get salesProdutoTendenciaSummaryClassificacaoLegend =>
+      'Crescendo: +20% vs anterior · Caindo: −20% · Novo: vendeu agora, não antes · Parou: vendeu antes, não agora · Estável: entre ±20%';
+
+  @override
+  String salesProdutoTendenciaKpiFilterSemantics(String classification) {
+    return 'Filtrar detalhes por $classification';
+  }
+
+  @override
+  String get salesProdutoTendenciaRemoveClassificacaoFilterSemantics =>
+      'Remover filtro de classificação';
+
+  @override
   String get salesProdutoTendenciaClassificacaoDescGrowing =>
       'vendas subiram mais de 20% vs período anterior';
 
@@ -9064,7 +9153,15 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesProdutoTendenciaTopGainersTitle => 'Top 15 altas';
 
   @override
+  String get salesProdutoTendenciaTopGainersSubtitle =>
+      'Maiores altas em quantidade no período selecionado.';
+
+  @override
   String get salesProdutoTendenciaTopLosersTitle => 'Top 15 quedas';
+
+  @override
+  String get salesProdutoTendenciaTopLosersSubtitle =>
+      'Maiores quedas em quantidade no período selecionado.';
 
   @override
   String get salesProdutoTendenciaDetailsTitle => 'Detalhes';
@@ -9134,10 +9231,24 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesProdutoTendenciaColGrupo => 'Grupo';
 
   @override
+  String get salesProdutoTendenciaColQtdAnterior => 'Qtd. anterior';
+
+  @override
+  String get salesProdutoTendenciaColQtdAtual => 'Qtd. atual';
+
+  @override
   String get salesProdutoTendenciaColDiferenca => 'Diferença';
 
   @override
   String get salesProdutoTendenciaColPercentual => 'Tendência %';
+
+  @override
+  String salesProdutoTendenciaDetailsPeriodComparisonCaption(
+    String previous,
+    String current,
+  ) {
+    return 'Quantidades comparam período anterior ($previous) vs atual ($current).';
+  }
 
   @override
   String get salesProdutoTendenciaClassificacaoStopped => 'Parou de vender';
@@ -9259,6 +9370,47 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get salesProdutoTendenciaMediaMovelSummaryByClassificacaoSubtitle =>
       'Distribuição dos produtos em todo o resultado filtrado.';
+
+  @override
+  String
+  get salesProdutoTendenciaMediaMovelSummaryByClassificacaoDrillDownHint =>
+      'Toque em uma barra para filtrar a grade de detalhes abaixo.';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelSummaryClassificacaoLegend =>
+      'Crescendo: +20% vs média anterior · Caindo: −20% · Novo: vendeu agora, não antes · Parou: vendeu antes, não agora · Estável: entre ±20%';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelClassificacaoDescGrowing =>
+      'média móvel subiu mais de 20% vs janela anterior';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelClassificacaoDescFalling =>
+      'média móvel caiu mais de 20% vs janela anterior';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelClassificacaoDescNew =>
+      'vendeu na janela atual, não na anterior';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelClassificacaoDescStopped =>
+      'vendeu na janela anterior, parou na atual';
+
+  @override
+  String get salesProdutoTendenciaMediaMovelClassificacaoDescStable =>
+      'variação entre −20% e +20%';
+
+  @override
+  String salesProdutoTendenciaMediaMovelKpiFilterSemantics(
+    String classification,
+  ) {
+    return 'Filtrar detalhes por $classification';
+  }
+
+  @override
+  String
+  get salesProdutoTendenciaMediaMovelRemoveClassificacaoFilterSemantics =>
+      'Remover filtro de classificação';
 
   @override
   String get salesProdutoTendenciaMediaMovelSummaryByImpactTitle =>

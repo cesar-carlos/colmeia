@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_support_context.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_produto_tendencia_controller.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_produto_tendencia_share.dart';
@@ -21,6 +22,8 @@ class SalesProdutoTendenciaBodySection extends StatelessWidget {
     required this.onClearDetailFilters,
     required this.onOpenFilters,
     required this.onChartSelected,
+    required this.onClassificacaoSelected,
+    required this.onClearClassificacaoFilter,
     required this.retryCountdownLabel,
     this.detailsSectionKey,
     super.key,
@@ -34,6 +37,8 @@ class SalesProdutoTendenciaBodySection extends StatelessWidget {
     SalesProdutoTendenciaPresentationState state,
     SalesProdutoTendenciaChartId chartId,
   ) onChartSelected;
+  final ValueChanged<String> onClassificacaoSelected;
+  final VoidCallback onClearClassificacaoFilter;
   final String? retryCountdownLabel;
 
   @override
@@ -95,9 +100,12 @@ class SalesProdutoTendenciaBodySection extends StatelessWidget {
                 l10n,
                 state.periodoAnterior,
               ),
+              activeClassificacao: state.classificacao,
               hasActiveDetailFilters: slice.hasActiveDetailFilters,
               onClearFilters: onClearDetailFilters,
               onOpenFilters: onOpenFilters,
+              onClearClassificacaoFilter: onClearClassificacaoFilter,
+              onClassificacaoSelected: onClassificacaoSelected,
             ),
             SizedBox(height: tokens.sectionSpacing),
             SalesProdutoTendenciaChartNavGrid(
@@ -122,6 +130,13 @@ class SalesProdutoTendenciaBodySection extends StatelessWidget {
                   unawaited(controller.changePageSize(size)),
               classLabelBuilder: (value) =>
                   salesProdutoTendenciaClassificacaoLabel(l10n, value),
+              activeClassificacao: state.classificacao,
+              periodoAtualLabel:
+                  '${AppBrFormatters.shortDate(state.periodoAtual.start)} - '
+                  '${AppBrFormatters.shortDate(state.periodoAtual.end)}',
+              periodoAnteriorLabel:
+                  '${AppBrFormatters.shortDate(state.periodoAnterior.start)} - '
+                  '${AppBrFormatters.shortDate(state.periodoAnterior.end)}',
               hasActiveDetailFilters: slice.hasActiveDetailFilters,
               onClearFilters: onClearDetailFilters,
               onOpenFilters: onOpenFilters,
@@ -196,6 +211,7 @@ class _SalesProdutoTendenciaBodySlice {
         other.state.loadFailure == state.loadFailure &&
         other.state.periodoAtual == state.periodoAtual &&
         other.state.periodoAnterior == state.periodoAnterior &&
+        other.state.classificacao == state.classificacao &&
         other.hasActiveDetailFilters == hasActiveDetailFilters &&
         other.summaryFingerprint == summaryFingerprint &&
         other.topMoversFingerprint == topMoversFingerprint &&
@@ -210,6 +226,7 @@ class _SalesProdutoTendenciaBodySlice {
     state.loadFailure,
     state.periodoAtual,
     state.periodoAnterior,
+    state.classificacao,
     hasActiveDetailFilters,
     summaryFingerprint,
     topMoversFingerprint,

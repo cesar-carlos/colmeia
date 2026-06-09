@@ -6885,6 +6885,24 @@ abstract class AppLocalizations {
   /// **'Tap a bar to filter the detail grid below.'**
   String get salesProdutoTendenciaSummaryByClassificacaoDrillDownHint;
 
+  /// No description provided for @salesProdutoTendenciaSummaryClassificacaoLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'Growing: +20% vs prior · Falling: −20% · New: sold now, not before · Stopped: sold before, not now · Stable: within ±20%'**
+  String get salesProdutoTendenciaSummaryClassificacaoLegend;
+
+  /// No description provided for @salesProdutoTendenciaKpiFilterSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter details by {classification}'**
+  String salesProdutoTendenciaKpiFilterSemantics(String classification);
+
+  /// No description provided for @salesProdutoTendenciaRemoveClassificacaoFilterSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove classification filter'**
+  String get salesProdutoTendenciaRemoveClassificacaoFilterSemantics;
+
   /// No description provided for @salesProdutoTendenciaClassificacaoDescGrowing.
   ///
   /// In en, this message translates to:
@@ -6933,11 +6951,23 @@ abstract class AppLocalizations {
   /// **'Top 15 gainers'**
   String get salesProdutoTendenciaTopGainersTitle;
 
+  /// No description provided for @salesProdutoTendenciaTopGainersSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Largest quantity increases in the selected period.'**
+  String get salesProdutoTendenciaTopGainersSubtitle;
+
   /// No description provided for @salesProdutoTendenciaTopLosersTitle.
   ///
   /// In en, this message translates to:
   /// **'Top 15 losers'**
   String get salesProdutoTendenciaTopLosersTitle;
+
+  /// No description provided for @salesProdutoTendenciaTopLosersSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Largest quantity decreases in the selected period.'**
+  String get salesProdutoTendenciaTopLosersSubtitle;
 
   /// No description provided for @salesProdutoTendenciaDetailsTitle.
   ///
@@ -7059,6 +7089,18 @@ abstract class AppLocalizations {
   /// **'Group'**
   String get salesProdutoTendenciaColGrupo;
 
+  /// No description provided for @salesProdutoTendenciaColQtdAnterior.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous qty.'**
+  String get salesProdutoTendenciaColQtdAnterior;
+
+  /// No description provided for @salesProdutoTendenciaColQtdAtual.
+  ///
+  /// In en, this message translates to:
+  /// **'Current qty.'**
+  String get salesProdutoTendenciaColQtdAtual;
+
   /// No description provided for @salesProdutoTendenciaColDiferenca.
   ///
   /// In en, this message translates to:
@@ -7070,6 +7112,15 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Trend %'**
   String get salesProdutoTendenciaColPercentual;
+
+  /// No description provided for @salesProdutoTendenciaDetailsPeriodComparisonCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantities compare previous ({previous}) vs current ({current}) period.'**
+  String salesProdutoTendenciaDetailsPeriodComparisonCaption(
+    String previous,
+    String current,
+  );
 
   /// No description provided for @salesProdutoTendenciaClassificacaoStopped.
   ///
@@ -7222,6 +7273,62 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Distribution of products across the full filtered result.'**
   String get salesProdutoTendenciaMediaMovelSummaryByClassificacaoSubtitle;
+
+  /// No description provided for @salesProdutoTendenciaMediaMovelSummaryByClassificacaoDrillDownHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a bar to filter the detail grid below.'**
+  String get salesProdutoTendenciaMediaMovelSummaryByClassificacaoDrillDownHint;
+
+  /// No description provided for @salesProdutoTendenciaMediaMovelSummaryClassificacaoLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'Growing: +20% vs prior avg. · Falling: −20% · New: sold now, not before · Stopped: sold before, not now · Stable: within ±20%'**
+  String get salesProdutoTendenciaMediaMovelSummaryClassificacaoLegend;
+
+  /// No description provided for @salesProdutoTendenciaMediaMovelClassificacaoDescGrowing.
+  ///
+  /// In en, this message translates to:
+  /// **'moving average rose more than 20% vs previous window'**
+  String get salesProdutoTendenciaMediaMovelClassificacaoDescGrowing;
+
+  /// No description provided for @salesProdutoTendenciaMediaMovelClassificacaoDescFalling.
+  ///
+  /// In en, this message translates to:
+  /// **'moving average fell more than 20% vs previous window'**
+  String get salesProdutoTendenciaMediaMovelClassificacaoDescFalling;
+
+  /// No description provided for @salesProdutoTendenciaMediaMovelClassificacaoDescNew.
+  ///
+  /// In en, this message translates to:
+  /// **'sold in current window, not in previous'**
+  String get salesProdutoTendenciaMediaMovelClassificacaoDescNew;
+
+  /// No description provided for @salesProdutoTendenciaMediaMovelClassificacaoDescStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'sold in previous window, stopped in current'**
+  String get salesProdutoTendenciaMediaMovelClassificacaoDescStopped;
+
+  /// No description provided for @salesProdutoTendenciaMediaMovelClassificacaoDescStable.
+  ///
+  /// In en, this message translates to:
+  /// **'change between −20% and +20%'**
+  String get salesProdutoTendenciaMediaMovelClassificacaoDescStable;
+
+  /// No description provided for @salesProdutoTendenciaMediaMovelKpiFilterSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter details by {classification}'**
+  String salesProdutoTendenciaMediaMovelKpiFilterSemantics(
+    String classification,
+  );
+
+  /// No description provided for @salesProdutoTendenciaMediaMovelRemoveClassificacaoFilterSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove classification filter'**
+  String get salesProdutoTendenciaMediaMovelRemoveClassificacaoFilterSemantics;
 
   /// No description provided for @salesProdutoTendenciaMediaMovelSummaryByImpactTitle.
   ///

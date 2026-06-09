@@ -426,6 +426,7 @@ class _AgentClientTokenCardState extends State<_AgentClientTokenCard> {
   bool _obscureToken = true;
   String _lastAppliedTokenText = '';
   bool _forceApplyNextRevision = false;
+  bool _suppressTokenDirtyNotify = false;
   ClientAgentsPresentationMessage? _ephemeralFeedback;
   ClientAgentsPresentationMessage? _ephemeralError;
 
@@ -448,8 +449,21 @@ class _AgentClientTokenCardState extends State<_AgentClientTokenCard> {
   }
 
   void _notifyTokenDirty() {
-    final dirty = _tokenController.text != _lastAppliedTokenText;
-    widget.onDirtyChanged?.call(dirty);
+    if (_suppressTokenDirtyNotify) {
+      return;
+    }
+    final onDirtyChanged = widget.onDirtyChanged;
+    if (onDirtyChanged == null) {
+      return;
+    }
+    // Controller sync can run from initState while the connection tab is
+    // mounting; defer so the page does not setState during build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      onDirtyChanged(_tokenController.text != _lastAppliedTokenText);
+    });
   }
 
   @override
@@ -492,10 +506,15 @@ class _AgentClientTokenCardState extends State<_AgentClientTokenCard> {
     }
     _lastSyncedRevision = c.clientTokenRevision;
     if (_tokenController.text != text) {
-      _tokenController.value = TextEditingValue(
-        text: text,
-        selection: TextSelection.collapsed(offset: text.length),
-      );
+      _suppressTokenDirtyNotify = true;
+      try {
+        _tokenController.value = TextEditingValue(
+          text: text,
+          selection: TextSelection.collapsed(offset: text.length),
+        );
+      } finally {
+        _suppressTokenDirtyNotify = false;
+      }
     }
     _lastAppliedTokenText = text;
     _forceApplyNextRevision = false;

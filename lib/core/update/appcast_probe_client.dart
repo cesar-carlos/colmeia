@@ -121,15 +121,17 @@ final class DioAppcastProbeClient {
           details:
               'HTTP ${error.response?.statusCode ?? 'desconhecido'} ao consultar o appcast.',
         ),
-        _ => AppcastProbeResult.failure(
+        _ => const AppcastProbeResult.failure(
           failureKind: AppcastProbeFailureKind.network,
-          details: error.message,
+          details:
+              'Nao foi possivel acessar o feed oficial. Verifique sua conexao e tente novamente.',
         ),
       };
-    } on Object catch (error) {
-      return AppcastProbeResult.failure(
+    } on Object catch (_) {
+      return const AppcastProbeResult.failure(
         failureKind: AppcastProbeFailureKind.network,
-        details: error.toString(),
+        details:
+            'Nao foi possivel acessar o feed oficial. Verifique sua conexao e tente novamente.',
       );
     }
   }

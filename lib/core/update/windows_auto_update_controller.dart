@@ -7,6 +7,7 @@ import 'package:colmeia/core/update/app_auto_update_support.dart';
 import 'package:colmeia/core/update/appcast_probe_client.dart';
 import 'package:colmeia/core/update/auto_updater_client.dart';
 import 'package:colmeia/core/update/windows_auto_update_diagnostic.dart';
+import 'package:colmeia/core/update/windows_auto_update_messages.dart';
 import 'package:colmeia/core/update/windows_auto_update_state.dart';
 import 'package:flutter/foundation.dart';
 
@@ -35,12 +36,15 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
   WindowsAutoUpdateState _state = const WindowsAutoUpdateState.initial();
   WindowsAutoUpdateState get state => _state;
 
-  bool _initialized = false;
   bool _listenerRegistered = false;
   bool _checkInFlight = false;
+  Future<void> _persistenceQueue = Future<void>.value();
+  Future<void>? _nativeConfigurationFuture;
+
+  bool get _isInitialized => _state.isInitialized;
 
   Future<void> initialize() async {
-    if (_initialized) {
+    if (_isInitialized) {
       return;
     }
 
@@ -54,18 +58,12 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
     _ensureListenerRegistered();
 
     try {
-      await _autoUpdaterClient.setFeedUrl(_state.feedUrl);
-      await _autoUpdaterClient.setScheduledCheckInterval(
-        scheduledCheckIntervalInSeconds,
-      );
-
-      _initialized = true;
+      await _ensureNativeUpdaterConfigured();
       _applyState(
         _state.copyWith(
           status: WindowsAutoUpdateStatus.idle,
-          headline: 'Atualizacoes automaticas prontas neste build Windows.',
-          details:
-              'O feed oficial foi configurado e o app checara novas releases em background.',
+          headline: WindowsAutoUpdateMessages.initReadyHeadline,
+          details: WindowsAutoUpdateMessages.initReadyDetails,
         ),
       );
 
@@ -81,8 +79,8 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
         stackTrace: stackTrace,
       );
       await _setFailure(
-        headline: 'Nao foi possivel inicializar o auto-update.',
-        details: error.toString(),
+        headline: WindowsAutoUpdateMessages.initFailedHeadline,
+        details: WindowsAutoUpdateMessages.initFailedDetails,
       );
     }
   }
@@ -100,13 +98,39 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
 
     _checkInFlight = true;
     _ensureListenerRegistered();
+
+    if (!_isInitialized) {
+      try {
+        await _ensureNativeUpdaterConfigured();
+      } on Object catch (error, stackTrace) {
+        AppLogger.error(
+          'Windows auto-update partial initialization failed',
+          context: <String, Object?>{
+            'component': 'windows_auto_update_controller',
+            'feedUrl': _state.feedUrl,
+            'inBackground': inBackground,
+          },
+          error: error,
+          stackTrace: stackTrace,
+        );
+        await _setFailure(
+          headline: WindowsAutoUpdateMessages.initFailedHeadline,
+          details: WindowsAutoUpdateMessages.initFailedDetails,
+        );
+      }
+      if (!_isInitialized) {
+        _checkInFlight = false;
+        return;
+      }
+    }
+
     _applyState(
       _state.copyWith(
         status: WindowsAutoUpdateStatus.checking,
-        headline: 'Verificando atualizacoes...',
+        headline: WindowsAutoUpdateMessages.checkingHeadline,
         details: inBackground
-            ? 'Checagem inicial em background em andamento.'
-            : 'Consultando o feed oficial para encontrar uma release mais recente.',
+            ? WindowsAutoUpdateMessages.checkingDetailsBackground
+            : WindowsAutoUpdateMessages.checkingDetailsForeground,
       ),
     );
 
@@ -117,7 +141,8 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
       if (!probeResult.success) {
         await _setFailure(
           headline: _headlineForProbeFailure(probeResult),
-          details: probeResult.details,
+          details: probeResult.details ??
+              WindowsAutoUpdateMessages.genericRetryDetails,
         );
         return;
       }
@@ -142,8 +167,8 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
         stackTrace: stackTrace,
       );
       await _setFailure(
-        headline: 'Nao foi possivel verificar atualizacoes agora.',
-        details: error.toString(),
+        headline: WindowsAutoUpdateMessages.checkFailedHeadline,
+        details: WindowsAutoUpdateMessages.checkFailedDetails,
       );
     } finally {
       _checkInFlight = false;
@@ -163,9 +188,8 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
     _applyState(
       _state.copyWith(
         status: WindowsAutoUpdateStatus.readyToInstall,
-        headline: 'Atualizacao pronta para instalacao.',
-        details:
-            'O Windows concluira o processo quando o aplicativo for encerrado para aplicar a nova versao.',
+        headline: WindowsAutoUpdateMessages.readyToInstallHeadline,
+        details: WindowsAutoUpdateMessages.readyToInstallDetails,
         lastCheckedAt: DateTime.now(),
       ),
     );
@@ -179,18 +203,27 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
     _applyState(
       _state.copyWith(
         status: WindowsAutoUpdateStatus.checking,
-        headline: 'Verificando atualizacoes...',
-        details: 'Consultando o feed oficial configurado para este build.',
+        headline: WindowsAutoUpdateMessages.checkingHeadline,
+        details: WindowsAutoUpdateMessages.checkingDetailsNative,
       ),
     );
   }
 
   @override
   void onUpdaterError(UpdaterError? error) {
+    AppLogger.error(
+      'Windows auto-update native updater error',
+      context: <String, Object?>{
+        'component': 'windows_auto_update_controller',
+        'feedUrl': _state.feedUrl,
+        'updaterMessage': error?.message,
+      },
+      error: error,
+    );
     unawaited(
       _setFailure(
-        headline: 'Nao foi possivel concluir a verificacao de atualizacoes.',
-        details: error?.message,
+        headline: WindowsAutoUpdateMessages.updaterErrorHeadline,
+        details: WindowsAutoUpdateMessages.updaterErrorDetails,
       ),
     );
   }
@@ -200,9 +233,8 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
     _applyState(
       _state.copyWith(
         status: WindowsAutoUpdateStatus.updateAvailable,
-        headline: 'Nova versao encontrada.',
-        details:
-            'O fluxo nativo do Windows/WinSparkle assumiu o download da atualizacao para esta instalacao.',
+        headline: WindowsAutoUpdateMessages.updateAvailableHeadline,
+        details: WindowsAutoUpdateMessages.updateAvailableDetails,
         lastCheckedAt: DateTime.now(),
       ),
     );
@@ -213,9 +245,8 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
     _applyState(
       _state.copyWith(
         status: WindowsAutoUpdateStatus.readyToInstall,
-        headline: 'Atualizacao baixada.',
-        details:
-            'Feche o aplicativo quando o updater solicitar para concluir a substituicao da versao atual.',
+        headline: WindowsAutoUpdateMessages.updateDownloadedHeadline,
+        details: WindowsAutoUpdateMessages.updateDownloadedDetails,
         lastCheckedAt: DateTime.now(),
       ),
     );
@@ -223,12 +254,52 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
 
   @override
   void onUpdaterUpdateNotAvailable(UpdaterError? error) {
+    if (error != null) {
+      AppLogger.error(
+        'Windows auto-update reported not available with error',
+        context: <String, Object?>{
+          'component': 'windows_auto_update_controller',
+          'feedUrl': _state.feedUrl,
+          'updaterMessage': error.message,
+        },
+        error: error,
+      );
+      unawaited(
+        _setFailure(
+          headline: WindowsAutoUpdateMessages.updateNotAvailableErrorHeadline,
+          details: WindowsAutoUpdateMessages.updateNotAvailableErrorDetails,
+        ),
+      );
+      return;
+    }
+
     unawaited(
       _applyUpToDateState(
-        headline: 'Este build ja esta atualizado.',
-        details:
-            'Nenhuma release mais nova foi encontrada no appcast oficial neste momento.',
+        headline: WindowsAutoUpdateMessages.upToDateHeadline,
+        details: WindowsAutoUpdateMessages.upToDateDetails,
       ),
+    );
+  }
+
+  Future<void> _ensureNativeUpdaterConfigured() {
+    if (_isInitialized) {
+      return Future<void>.value();
+    }
+
+    return _nativeConfigurationFuture ??= _configureNativeUpdater().then((_) {
+      if (!_isInitialized) {
+        _applyState(
+          _state.copyWith(isInitialized: true),
+          notify: false,
+        );
+      }
+    });
+  }
+
+  Future<void> _configureNativeUpdater() async {
+    await _autoUpdaterClient.setFeedUrl(_state.feedUrl);
+    await _autoUpdaterClient.setScheduledCheckInterval(
+      scheduledCheckIntervalInSeconds,
     );
   }
 
@@ -255,21 +326,21 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
         _applyState(
           _state.copyWith(
             availability: availability,
-            status: _initialized
+            status: _isInitialized
                 ? _state.status
                 : hasDiagnostic
                 ? _state.status
                 : WindowsAutoUpdateStatus.unavailable,
-            headline: _initialized
+            headline: _isInitialized
                 ? _state.headline
                 : hasDiagnostic
                 ? _state.headline
-                : 'Atualizacoes automaticas disponiveis para este build.',
-            details: _initialized
+                : WindowsAutoUpdateMessages.pendingInitHeadline,
+            details: _isInitialized
                 ? _state.details
                 : hasDiagnostic
                 ? _state.details
-                : 'O app esta pronto para usar o feed oficial assim que a inicializacao terminar.',
+                : WindowsAutoUpdateMessages.pendingInitDetails,
             feedUrl: normalizedFeedUrl,
           ),
           notify: notify,
@@ -279,9 +350,8 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
           WindowsAutoUpdateState(
             availability: availability,
             status: WindowsAutoUpdateStatus.unavailable,
-            headline: 'Atualizacoes automaticas indisponiveis neste build.',
-            details:
-                'Este instalador foi gerado sem o feed oficial de atualizacoes. Instale uma versao publicada pelo GitHub Releases ou gere o instalador com o feed configurado.',
+            headline: WindowsAutoUpdateMessages.feedUrlMissingHeadline,
+            details: WindowsAutoUpdateMessages.feedUrlMissingDetails,
             feedUrl: normalizedFeedUrl,
             lastCheckedAt: null,
           ),
@@ -292,9 +362,8 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
           WindowsAutoUpdateState(
             availability: availability,
             status: WindowsAutoUpdateStatus.unavailable,
-            headline: 'Feed de atualizacao invalido.',
-            details:
-                'Este instalador foi gerado com um feed de atualizacoes invalido. Use uma URL HTTPS com appcast .xml valida.',
+            headline: WindowsAutoUpdateMessages.feedUrlInvalidHeadline,
+            details: WindowsAutoUpdateMessages.feedUrlInvalidDetails,
             feedUrl: normalizedFeedUrl,
             lastCheckedAt: null,
           ),
@@ -324,7 +393,7 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
       _state.copyWith(
         status: WindowsAutoUpdateStatus.failed,
         headline: headline,
-        details: details ?? 'Revise a conectividade e tente novamente.',
+        details: details ?? WindowsAutoUpdateMessages.genericRetryDetails,
         lastCheckedAt: DateTime.now(),
       ),
     );
@@ -334,9 +403,8 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
     await _applyTerminalState(
       _state.copyWith(
         status: WindowsAutoUpdateStatus.feedWithoutReleases,
-        headline: 'Feed sem releases publicadas.',
-        details:
-            'O appcast oficial respondeu, mas ainda nao ha itens de release para o Windows. Publique uma release no feed antes de esperar uma atualizacao.',
+        headline: WindowsAutoUpdateMessages.feedWithoutReleasesHeadline,
+        details: WindowsAutoUpdateMessages.feedWithoutReleasesDetails,
         lastCheckedAt: DateTime.now(),
       ),
     );
@@ -358,7 +426,7 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
 
   Future<void> _applyTerminalState(WindowsAutoUpdateState nextState) async {
     _state = nextState;
-    await _persistDiagnostic(nextState);
+    await _schedulePersist(nextState);
     notifyListeners();
   }
 
@@ -389,6 +457,7 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
       details: diagnostic.details,
       feedUrl: diagnostic.feedUrl,
       lastCheckedAt: diagnostic.lastCheckedAt,
+      isInitialized: _state.isInitialized,
     );
   }
 
@@ -399,14 +468,22 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
   }) {
     _state = nextState;
     if (persistDiagnostic) {
-      unawaited(_persistDiagnostic(nextState));
+      unawaited(_schedulePersist(nextState));
     }
     if (notify) {
       notifyListeners();
     }
   }
 
-  Future<void> _persistDiagnostic(WindowsAutoUpdateState state) async {
+  Future<void> _schedulePersist(WindowsAutoUpdateState state) {
+    final operation = _persistenceQueue.then(
+      (_) => _writeDiagnostic(state),
+    );
+    _persistenceQueue = operation.catchError((_) {});
+    return operation;
+  }
+
+  Future<void> _writeDiagnostic(WindowsAutoUpdateState state) async {
     await _preferencesStore.persistWindowsAutoUpdateDiagnostic(
       WindowsAutoUpdateDiagnostic(
         status: state.status,
@@ -420,16 +497,17 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
 
   String _headlineForProbeFailure(AppcastProbeResult probeResult) {
     return switch (probeResult.failureKind) {
-      AppcastProbeFailureKind.invalidUrl => 'Feed de atualizacao invalido.',
+      AppcastProbeFailureKind.invalidUrl =>
+        WindowsAutoUpdateMessages.probeInvalidUrlHeadline,
       AppcastProbeFailureKind.timeout =>
-        'O feed oficial nao respondeu a tempo.',
+        WindowsAutoUpdateMessages.probeTimeoutHeadline,
       AppcastProbeFailureKind.httpError =>
-        'O feed oficial nao esta acessivel no momento.',
+        WindowsAutoUpdateMessages.probeHttpErrorHeadline,
       AppcastProbeFailureKind.invalidPayload =>
-        'O feed oficial respondeu com conteudo inesperado.',
+        WindowsAutoUpdateMessages.probeInvalidPayloadHeadline,
       AppcastProbeFailureKind.network =>
-        'Nao foi possivel acessar o feed oficial agora.',
-      null => 'Nao foi possivel verificar atualizacoes agora.',
+        WindowsAutoUpdateMessages.probeNetworkHeadline,
+      null => WindowsAutoUpdateMessages.probeGenericHeadline,
     };
   }
 

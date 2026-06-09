@@ -8,6 +8,7 @@ import 'package:colmeia/core/update/appcast_probe_client.dart';
 import 'package:colmeia/core/update/auto_updater_client.dart';
 import 'package:colmeia/core/update/windows_auto_update_controller.dart';
 import 'package:colmeia/core/update/windows_auto_update_diagnostic.dart';
+import 'package:colmeia/core/update/windows_auto_update_messages.dart';
 import 'package:colmeia/core/update/windows_auto_update_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -111,6 +112,85 @@ void main() {
       check(controller.state.status).equals(WindowsAutoUpdateStatus.checking);
     });
 
+    test(
+      'should expose feedUrlInvalid state with check disabled',
+      () async {
+        final controller = WindowsAutoUpdateController(
+          autoUpdaterClient: _FakeAutoUpdaterClient(),
+          appcastProbeClient: _FakeProbeHarness().client,
+          feedUrlResolver: () => 'http://example.com/appcast.xml',
+          preferencesStore: await _createPreferencesStore(),
+          supportsNativeUpdates: () => true,
+        );
+
+        await controller.initialize();
+
+        check(controller.state.availability).equals(
+          AppAutoUpdateAvailability.feedUrlInvalid,
+        );
+        check(controller.state.canCheckForUpdates).isFalse();
+        check(controller.state.headline).equals(
+          WindowsAutoUpdateMessages.feedUrlInvalidHeadline,
+        );
+        check(controller.state.details).equals(
+          WindowsAutoUpdateMessages.feedUrlInvalidDetails,
+        );
+      },
+    );
+
+    test(
+      'should keep check disabled until native updater is configured',
+      () async {
+        final client = _SlowInitAutoUpdaterClient();
+        final probeHarness = _FakeProbeHarness(
+          nextResult: const AppcastProbeResult.success(hasReleases: false),
+        );
+        final controller = WindowsAutoUpdateController(
+          autoUpdaterClient: client,
+          appcastProbeClient: probeHarness.client,
+          feedUrlResolver: () => 'https://example.com/appcast.xml',
+          preferencesStore: await _createPreferencesStore(),
+          supportsNativeUpdates: () => true,
+        );
+
+        final initFuture = controller.initialize();
+        await Future<void>.delayed(Duration.zero);
+
+        check(controller.state.canCheckForUpdates).isFalse();
+
+        client.completeInit();
+        await initFuture;
+        await Future<void>.delayed(Duration.zero);
+
+        check(controller.state.isInitialized).isTrue();
+        check(controller.state.canCheckForUpdates).isTrue();
+      },
+    );
+
+    test(
+      'should handle simultaneous initialize and checkForUpdates',
+      () async {
+        final client = _SlowInitAutoUpdaterClient();
+        final probeHarness = _FakeProbeHarness();
+        final controller = WindowsAutoUpdateController(
+          autoUpdaterClient: client,
+          appcastProbeClient: probeHarness.client,
+          feedUrlResolver: () => 'https://example.com/appcast.xml',
+          preferencesStore: await _createPreferencesStore(),
+          supportsNativeUpdates: () => true,
+        );
+
+        final initFuture = controller.initialize();
+        final checkFuture = controller.checkForUpdates();
+        client.completeInit();
+        await Future.wait(<Future<void>>[initFuture, checkFuture]);
+
+        check(client.feedUrls).isNotEmpty();
+        check(controller.state.isInitialized).isTrue();
+        check(probeHarness.feedUrls).isNotEmpty();
+      },
+    );
+
     test('should expose update available and up-to-date callbacks', () async {
       final client = _FakeAutoUpdaterClient();
       final controller = WindowsAutoUpdateController(
@@ -146,8 +226,35 @@ void main() {
       controller.onUpdaterError(UpdaterError('network error'));
 
       check(controller.state.status).equals(WindowsAutoUpdateStatus.failed);
-      check(controller.state.details).equals('network error');
+      check(controller.state.details).equals(
+        WindowsAutoUpdateMessages.updaterErrorDetails,
+      );
     });
+
+    test(
+      'should expose failed state when update not available reports error',
+      () async {
+        final client = _FakeAutoUpdaterClient();
+        final controller = WindowsAutoUpdateController(
+          autoUpdaterClient: client,
+          appcastProbeClient: _FakeProbeHarness().client,
+          feedUrlResolver: () => 'https://example.com/appcast.xml',
+          preferencesStore: await _createPreferencesStore(),
+          supportsNativeUpdates: () => true,
+        );
+
+        await controller.initialize();
+        controller.onUpdaterUpdateNotAvailable(UpdaterError('signature error'));
+
+        check(controller.state.status).equals(WindowsAutoUpdateStatus.failed);
+        check(controller.state.headline).equals(
+          WindowsAutoUpdateMessages.updateNotAvailableErrorHeadline,
+        );
+        check(controller.state.details).equals(
+          WindowsAutoUpdateMessages.updateNotAvailableErrorDetails,
+        );
+      },
+    );
 
     test('should stop before native check when appcast probe fails', () async {
       final client = _FakeAutoUpdaterClient();
@@ -373,6 +480,46 @@ final class _FakeProbeHarness {
   }
 
   AppcastProbeClient get client => _invoke;
+}
+
+final class _SlowInitAutoUpdaterClient implements AutoUpdaterClient {
+  final List<UpdaterListener> listeners = <UpdaterListener>[];
+  final List<String> feedUrls = <String>[];
+  final List<int> scheduledIntervals = <int>[];
+  final List<bool> checkCalls = <bool>[];
+  final Completer<void> _initGate = Completer<void>();
+
+  @override
+  void addListener(UpdaterListener listener) {
+    listeners.add(listener);
+  }
+
+  @override
+  Future<void> checkForUpdates({required bool inBackground}) async {
+    checkCalls.add(inBackground);
+  }
+
+  @override
+  void removeListener(UpdaterListener listener) {
+    listeners.remove(listener);
+  }
+
+  @override
+  Future<void> setFeedUrl(String feedUrl) async {
+    feedUrls.add(feedUrl);
+    await _initGate.future;
+  }
+
+  @override
+  Future<void> setScheduledCheckInterval(int intervalInSeconds) async {
+    scheduledIntervals.add(intervalInSeconds);
+  }
+
+  void completeInit() {
+    if (!_initGate.isCompleted) {
+      _initGate.complete();
+    }
+  }
 }
 
 final class _SlowProbeHarness {

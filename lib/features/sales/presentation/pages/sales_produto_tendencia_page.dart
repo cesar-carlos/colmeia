@@ -230,6 +230,25 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     });
   }
 
+  Future<void> _clearClassificacaoFilter() async {
+    final state = _controller.state;
+    if (state.classificacao == null) {
+      return;
+    }
+    await _controller.applyFilters(<String, Object?>{
+      'agentId': state.selectedAgentId,
+      'periodoAtual': state.periodoAtual,
+      'periodoAnterior': state.periodoAnterior,
+      'searchTerm': state.searchTerm,
+      'classificacao': null,
+      'codGrupoProduto': state.codGrupoProduto,
+      'codMarca': state.codMarca,
+      'grupoProdutoLabel': state.grupoProdutoLabel,
+      'marcaProdutoLabel': state.marcaProdutoLabel,
+      'pageSize': state.pageSize,
+    });
+  }
+
   SalesProdutoDimensionLoaderFactory _grupoProdutoLoaderFactory(
     String userId,
   ) {
@@ -370,7 +389,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
       title: AppLocalizations.of(context).salesProdutoTendenciaTopGainersTitle,
       subtitle: AppLocalizations.of(
         context,
-      ).salesProdutoTendenciaTopMoversSubtitle,
+      ).salesProdutoTendenciaTopGainersSubtitle,
       items: snap,
       useAbsolutePercentForLosers: false,
     );
@@ -399,7 +418,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
       title: AppLocalizations.of(context).salesProdutoTendenciaTopLosersTitle,
       subtitle: AppLocalizations.of(
         context,
-      ).salesProdutoTendenciaTopMoversSubtitle,
+      ).salesProdutoTendenciaTopLosersSubtitle,
       items: snap,
       useAbsolutePercentForLosers: true,
     );
@@ -508,6 +527,8 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
             SizedBox(height: tokens.sectionSpacing),
             SalesProdutoTendenciaFilterSection(
               onOpenFilters: () => unawaited(_openFiltersSheet()),
+              onClearClassificacaoFilter: () =>
+                  unawaited(_clearClassificacaoFilter()),
             ),
             SizedBox(height: tokens.gapMd),
             SalesProdutoTendenciaAutoRefreshSection(
@@ -525,6 +546,11 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
                   onClearDetailFilters: () => unawaited(_clearDetailFilters()),
                   onOpenFilters: () => unawaited(_openFiltersSheet()),
                   onChartSelected: _onChartSelected,
+                  onClassificacaoSelected: (classificacao) => unawaited(
+                    _applyClassificacaoFromChart(classificacao),
+                  ),
+                  onClearClassificacaoFilter: () =>
+                      unawaited(_clearClassificacaoFilter()),
                   retryCountdownLabel: agentQueryRetryCountdownLabel(l10n),
                 );
               },

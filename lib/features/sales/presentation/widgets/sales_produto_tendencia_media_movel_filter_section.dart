@@ -18,9 +18,11 @@ class SalesProdutoTendenciaMediaMovelFilterSection extends StatelessWidget {
   const SalesProdutoTendenciaMediaMovelFilterSection({
     required this.onOpenFilters,
     super.key,
+    this.onClearClassificacaoFilter,
   });
 
   final VoidCallback onOpenFilters;
+  final VoidCallback? onClearClassificacaoFilter;
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +39,10 @@ class SalesProdutoTendenciaMediaMovelFilterSection extends StatelessWidget {
       builder: (context, slice, _) {
         final controller =
             context.read<SalesProdutoTendenciaMediaMovelController>();
+        final activeFilterChips = slice.buildActiveFilterChips(
+          l10n: l10n,
+          onClearClassificacaoFilter: onClearClassificacaoFilter,
+        );
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -83,13 +89,19 @@ class SalesProdutoTendenciaMediaMovelFilterSection extends StatelessWidget {
                 l10n.salesCardProdutoTendenciaMediaMovelTitle,
               ),
             ),
-            if (slice.activeFilterChipLabels.isNotEmpty) ...<Widget>[
+            if (activeFilterChips.isNotEmpty) ...<Widget>[
               SizedBox(height: tokens.gapMd),
               Wrap(
                 spacing: tokens.gapSm,
                 runSpacing: tokens.gapSm,
-                children: slice.activeFilterChipLabels
-                    .map((label) => AppTagChip(label: label))
+                children: activeFilterChips
+                    .map(
+                      (chip) => AppTagChip(
+                        label: chip.label,
+                        onRemove: chip.onRemove,
+                        removeSemanticsLabel: chip.removeSemanticsLabel,
+                      ),
+                    )
                     .toList(growable: false),
               ),
             ],
@@ -109,7 +121,12 @@ class _SalesProdutoTendenciaMediaMovelFilterSlice {
     required this.quantidadeDias,
     required this.sortBy,
     required this.activeFilterCount,
-    required this.activeFilterChipLabels,
+    required this.searchTerm,
+    required this.classificacao,
+    required this.codGrupoProduto,
+    required this.grupoProdutoLabel,
+    required this.codMarca,
+    required this.marcaProdutoLabel,
     required this.loading,
   });
 
@@ -123,7 +140,6 @@ class _SalesProdutoTendenciaMediaMovelFilterSlice {
           (agent) => agent?.agentId == state.selectedAgentId,
           orElse: () => null,
         );
-    final activeFilterChipLabels = _activeFilterChipLabels(l10n, state);
     return _SalesProdutoTendenciaMediaMovelFilterSlice(
       availableAgents: state.availableAgents,
       selectedAgentId: state.selectedAgentId,
@@ -132,7 +148,12 @@ class _SalesProdutoTendenciaMediaMovelFilterSlice {
       quantidadeDias: state.quantidadeDias,
       sortBy: state.sortBy,
       activeFilterCount: _activeFilterCount(l10n, state),
-      activeFilterChipLabels: activeFilterChipLabels,
+      searchTerm: state.searchTerm.trim(),
+      classificacao: state.classificacao,
+      codGrupoProduto: state.codGrupoProduto,
+      grupoProdutoLabel: state.grupoProdutoLabel,
+      codMarca: state.codMarca,
+      marcaProdutoLabel: state.marcaProdutoLabel,
       loading: state.loading,
     );
   }
@@ -143,40 +164,75 @@ class _SalesProdutoTendenciaMediaMovelFilterSlice {
   final int quantidadeDias;
   final ProdutoVendidoTendenciaDeVendaMediaMovelSortBy sortBy;
   final int activeFilterCount;
-  final List<String> activeFilterChipLabels;
+  final String searchTerm;
+  final String? classificacao;
+  final int? codGrupoProduto;
+  final String? grupoProdutoLabel;
+  final int? codMarca;
+  final String? marcaProdutoLabel;
   final bool loading;
 
-  static List<String> _activeFilterChipLabels(
-    AppLocalizations l10n,
-    SalesProdutoTendenciaMediaMovelPresentationState state,
-  ) {
-    final labels = <String>[];
-    final trimmedSearch = state.searchTerm.trim();
-    if (trimmedSearch.isNotEmpty) {
-      labels.add('${l10n.salesProdutoTendenciaFilterSearch}: $trimmedSearch');
-    }
-    if (state.classificacao != null) {
-      labels.add(
-        '${l10n.salesProdutoTendenciaFilterClassification}: '
-        '${produtoTendenciaMediaMovelClassificacaoLabel(l10n, state.classificacao!)}',
+  List<_SalesProdutoTendenciaMediaMovelFilterChip> buildActiveFilterChips({
+    required AppLocalizations l10n,
+    VoidCallback? onClearClassificacaoFilter,
+  }) {
+    final chips = <_SalesProdutoTendenciaMediaMovelFilterChip>[];
+    if (searchTerm.isNotEmpty) {
+      chips.add(
+        _SalesProdutoTendenciaMediaMovelFilterChip(
+          label: '${l10n.salesProdutoTendenciaFilterSearch}: $searchTerm',
+        ),
       );
     }
-    if (state.codGrupoProduto != null) {
-      final grupoLabel = state.grupoProdutoLabel ?? '#${state.codGrupoProduto}';
-      labels.add('${l10n.salesProdutoTendenciaFilterGroup}: $grupoLabel');
+    final activeClassificacao = classificacao;
+    if (activeClassificacao != null) {
+      chips.add(
+        _SalesProdutoTendenciaMediaMovelFilterChip(
+          label:
+              '${l10n.salesProdutoTendenciaFilterClassification}: '
+              '${produtoTendenciaMediaMovelClassificacaoLabel(l10n, activeClassificacao)}',
+          onRemove: onClearClassificacaoFilter,
+          removeSemanticsLabel: l10n
+              .salesProdutoTendenciaMediaMovelRemoveClassificacaoFilterSemantics,
+        ),
+      );
     }
-    if (state.codMarca != null) {
-      final marcaLabel = state.marcaProdutoLabel ?? '#${state.codMarca}';
-      labels.add('${l10n.salesProdutoTendenciaFilterBrand}: $marcaLabel');
+    if (codGrupoProduto != null) {
+      final grupoLabel = grupoProdutoLabel ?? '#$codGrupoProduto';
+      chips.add(
+        _SalesProdutoTendenciaMediaMovelFilterChip(
+          label: '${l10n.salesProdutoTendenciaFilterGroup}: $grupoLabel',
+        ),
+      );
     }
-    return labels;
+    if (codMarca != null) {
+      final marcaLabel = marcaProdutoLabel ?? '#$codMarca';
+      chips.add(
+        _SalesProdutoTendenciaMediaMovelFilterChip(
+          label: '${l10n.salesProdutoTendenciaFilterBrand}: $marcaLabel',
+        ),
+      );
+    }
+    return chips;
   }
 
   static int _activeFilterCount(
     AppLocalizations l10n,
     SalesProdutoTendenciaMediaMovelPresentationState state,
   ) {
-    var count = _activeFilterChipLabels(l10n, state).length;
+    var count = 0;
+    if (state.searchTerm.trim().isNotEmpty) {
+      count++;
+    }
+    if (state.classificacao != null) {
+      count++;
+    }
+    if (state.codGrupoProduto != null) {
+      count++;
+    }
+    if (state.codMarca != null) {
+      count++;
+    }
     if (state.sortBy !=
         ProdutoVendidoTendenciaDeVendaMediaMovelSortBy
             .tendenciaPercentualDesc) {
@@ -198,7 +254,12 @@ class _SalesProdutoTendenciaMediaMovelFilterSlice {
         other.quantidadeDias == quantidadeDias &&
         other.sortBy == sortBy &&
         other.activeFilterCount == activeFilterCount &&
-        listEquals(other.activeFilterChipLabels, activeFilterChipLabels) &&
+        other.searchTerm == searchTerm &&
+        other.classificacao == classificacao &&
+        other.codGrupoProduto == codGrupoProduto &&
+        other.grupoProdutoLabel == grupoProdutoLabel &&
+        other.codMarca == codMarca &&
+        other.marcaProdutoLabel == marcaProdutoLabel &&
         other.loading == loading;
   }
 
@@ -210,7 +271,35 @@ class _SalesProdutoTendenciaMediaMovelFilterSlice {
     quantidadeDias,
     sortBy,
     activeFilterCount,
-    Object.hashAll(activeFilterChipLabels),
+    searchTerm,
+    classificacao,
+    codGrupoProduto,
+    grupoProdutoLabel,
+    codMarca,
+    marcaProdutoLabel,
     loading,
   );
+}
+
+@immutable
+class _SalesProdutoTendenciaMediaMovelFilterChip {
+  const _SalesProdutoTendenciaMediaMovelFilterChip({
+    required this.label,
+    this.onRemove,
+    this.removeSemanticsLabel,
+  });
+
+  final String label;
+  final VoidCallback? onRemove;
+  final String? removeSemanticsLabel;
+
+  @override
+  bool operator ==(Object other) {
+    return other is _SalesProdutoTendenciaMediaMovelFilterChip &&
+        other.label == label &&
+        other.removeSemanticsLabel == removeSemanticsLabel;
+  }
+
+  @override
+  int get hashCode => Object.hash(label, removeSemanticsLabel);
 }

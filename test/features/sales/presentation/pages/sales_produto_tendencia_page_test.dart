@@ -432,7 +432,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Search term: smart fox'), findsOneWidget);
-    expect(find.text('Classification: Growing'), findsOneWidget);
+    expect(find.text('Classification: Growing'), findsNWidgets(2));
     expect(find.text('2 additional filters'), findsOneWidget);
   });
 

@@ -7,7 +7,6 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -15,9 +14,11 @@ class SalesProdutoTendenciaFilterSection extends StatelessWidget {
   const SalesProdutoTendenciaFilterSection({
     required this.onOpenFilters,
     super.key,
+    this.onClearClassificacaoFilter,
   });
 
   final VoidCallback onOpenFilters;
+  final VoidCallback? onClearClassificacaoFilter;
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +30,10 @@ class SalesProdutoTendenciaFilterSection extends StatelessWidget {
       selector: (_, controller) =>
           _SalesProdutoTendenciaFilterSlice.from(controller.state, l10n),
       builder: (context, slice, _) {
+        final activeFilterChips = slice.buildActiveFilterChips(
+          l10n: l10n,
+          onClearClassificacaoFilter: onClearClassificacaoFilter,
+        );
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
@@ -57,13 +62,19 @@ class SalesProdutoTendenciaFilterSection extends StatelessWidget {
               ],
               enabled: !slice.loading,
             ),
-            if (slice.activeFilterChipLabels.isNotEmpty) ...<Widget>[
+            if (activeFilterChips.isNotEmpty) ...<Widget>[
               SizedBox(height: tokens.gapMd),
               Wrap(
                 spacing: tokens.gapSm,
                 runSpacing: tokens.gapSm,
-                children: slice.activeFilterChipLabels
-                    .map((label) => AppTagChip(label: label))
+                children: activeFilterChips
+                    .map(
+                      (chip) => AppTagChip(
+                        label: chip.label,
+                        onRemove: chip.onRemove,
+                        removeSemanticsLabel: chip.removeSemanticsLabel,
+                      ),
+                    )
                     .toList(growable: false),
               ),
             ],
@@ -81,7 +92,12 @@ class _SalesProdutoTendenciaFilterSlice {
     required this.periodoAtualLabel,
     required this.periodoAnteriorLabel,
     required this.activeDetailFilterCount,
-    required this.activeFilterChipLabels,
+    required this.searchTerm,
+    required this.classificacao,
+    required this.codGrupoProduto,
+    required this.grupoProdutoLabel,
+    required this.codMarca,
+    required this.marcaProdutoLabel,
     required this.loading,
   });
 
@@ -95,13 +111,18 @@ class _SalesProdutoTendenciaFilterSlice {
           (agent) => agent?.agentId == state.selectedAgentId,
           orElse: () => null,
         );
-    final activeFilterChipLabels = _activeFilterChipLabels(l10n, state);
+    final activeDetailFilterCount = _activeFilterCount(state);
     return _SalesProdutoTendenciaFilterSlice(
       selectedBranchName: selectedBranch?.name ?? l10n.salesBranchPickerEmpty,
       periodoAtualLabel: _dateRangeLabel(state.periodoAtual),
       periodoAnteriorLabel: _dateRangeLabel(state.periodoAnterior),
-      activeDetailFilterCount: activeFilterChipLabels.length,
-      activeFilterChipLabels: activeFilterChipLabels,
+      activeDetailFilterCount: activeDetailFilterCount,
+      searchTerm: state.searchTerm.trim(),
+      classificacao: state.classificacao,
+      codGrupoProduto: state.codGrupoProduto,
+      grupoProdutoLabel: state.grupoProdutoLabel,
+      codMarca: state.codMarca,
+      marcaProdutoLabel: state.marcaProdutoLabel,
       loading: state.loading,
     );
   }
@@ -110,38 +131,78 @@ class _SalesProdutoTendenciaFilterSlice {
   final String periodoAtualLabel;
   final String periodoAnteriorLabel;
   final int activeDetailFilterCount;
-  final List<String> activeFilterChipLabels;
+  final String searchTerm;
+  final String? classificacao;
+  final int? codGrupoProduto;
+  final String? grupoProdutoLabel;
+  final int? codMarca;
+  final String? marcaProdutoLabel;
   final bool loading;
+
+  static int _activeFilterCount(SalesProdutoTendenciaPresentationState state) {
+    var count = 0;
+    if (state.searchTerm.trim().isNotEmpty) {
+      count++;
+    }
+    if (state.classificacao != null) {
+      count++;
+    }
+    if (state.codGrupoProduto != null) {
+      count++;
+    }
+    if (state.codMarca != null) {
+      count++;
+    }
+    return count;
+  }
 
   static String _dateRangeLabel(DateTimeRange range) {
     return '${AppBrFormatters.shortDateFormat.format(range.start)} · '
         '${AppBrFormatters.shortDateFormat.format(range.end)}';
   }
 
-  static List<String> _activeFilterChipLabels(
-    AppLocalizations l10n,
-    SalesProdutoTendenciaPresentationState state,
-  ) {
-    final labels = <String>[];
-    final trimmedSearch = state.searchTerm.trim();
-    if (trimmedSearch.isNotEmpty) {
-      labels.add('${l10n.salesProdutoTendenciaFilterSearch}: $trimmedSearch');
-    }
-    if (state.classificacao != null) {
-      labels.add(
-        '${l10n.salesProdutoTendenciaFilterClassification}: '
-        '${salesProdutoTendenciaClassificacaoLabel(l10n, state.classificacao)}',
+  List<_SalesProdutoTendenciaFilterChip> buildActiveFilterChips({
+    required AppLocalizations l10n,
+    VoidCallback? onClearClassificacaoFilter,
+  }) {
+    final chips = <_SalesProdutoTendenciaFilterChip>[];
+    if (searchTerm.isNotEmpty) {
+      chips.add(
+        _SalesProdutoTendenciaFilterChip(
+          label: '${l10n.salesProdutoTendenciaFilterSearch}: $searchTerm',
+        ),
       );
     }
-    if (state.codGrupoProduto != null) {
-      final grupoLabel = state.grupoProdutoLabel ?? '#${state.codGrupoProduto}';
-      labels.add('${l10n.salesProdutoTendenciaFilterGroup}: $grupoLabel');
+    final activeClassificacao = classificacao;
+    if (activeClassificacao != null) {
+      chips.add(
+        _SalesProdutoTendenciaFilterChip(
+          label:
+              '${l10n.salesProdutoTendenciaFilterClassification}: '
+              '${salesProdutoTendenciaClassificacaoLabel(l10n, activeClassificacao)}',
+          onRemove: onClearClassificacaoFilter,
+          removeSemanticsLabel:
+              l10n.salesProdutoTendenciaRemoveClassificacaoFilterSemantics,
+        ),
+      );
     }
-    if (state.codMarca != null) {
-      final marcaLabel = state.marcaProdutoLabel ?? '#${state.codMarca}';
-      labels.add('${l10n.salesProdutoTendenciaFilterBrand}: $marcaLabel');
+    if (codGrupoProduto != null) {
+      final grupoLabel = grupoProdutoLabel ?? '#$codGrupoProduto';
+      chips.add(
+        _SalesProdutoTendenciaFilterChip(
+          label: '${l10n.salesProdutoTendenciaFilterGroup}: $grupoLabel',
+        ),
+      );
     }
-    return labels;
+    if (codMarca != null) {
+      final marcaLabel = marcaProdutoLabel ?? '#$codMarca';
+      chips.add(
+        _SalesProdutoTendenciaFilterChip(
+          label: '${l10n.salesProdutoTendenciaFilterBrand}: $marcaLabel',
+        ),
+      );
+    }
+    return chips;
   }
 
   @override
@@ -151,7 +212,12 @@ class _SalesProdutoTendenciaFilterSlice {
         other.periodoAtualLabel == periodoAtualLabel &&
         other.periodoAnteriorLabel == periodoAnteriorLabel &&
         other.activeDetailFilterCount == activeDetailFilterCount &&
-        listEquals(other.activeFilterChipLabels, activeFilterChipLabels) &&
+        other.searchTerm == searchTerm &&
+        other.classificacao == classificacao &&
+        other.codGrupoProduto == codGrupoProduto &&
+        other.grupoProdutoLabel == grupoProdutoLabel &&
+        other.codMarca == codMarca &&
+        other.marcaProdutoLabel == marcaProdutoLabel &&
         other.loading == loading;
   }
 
@@ -161,7 +227,35 @@ class _SalesProdutoTendenciaFilterSlice {
     periodoAtualLabel,
     periodoAnteriorLabel,
     activeDetailFilterCount,
-    Object.hashAll(activeFilterChipLabels),
+    searchTerm,
+    classificacao,
+    codGrupoProduto,
+    grupoProdutoLabel,
+    codMarca,
+    marcaProdutoLabel,
     loading,
   );
+}
+
+@immutable
+class _SalesProdutoTendenciaFilterChip {
+  const _SalesProdutoTendenciaFilterChip({
+    required this.label,
+    this.onRemove,
+    this.removeSemanticsLabel,
+  });
+
+  final String label;
+  final VoidCallback? onRemove;
+  final String? removeSemanticsLabel;
+
+  @override
+  bool operator ==(Object other) {
+    return other is _SalesProdutoTendenciaFilterChip &&
+        other.label == label &&
+        other.removeSemanticsLabel == removeSemanticsLabel;
+  }
+
+  @override
+  int get hashCode => Object.hash(label, removeSemanticsLabel);
 }

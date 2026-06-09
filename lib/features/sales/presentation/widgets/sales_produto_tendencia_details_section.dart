@@ -3,7 +3,6 @@ import 'dart:math' as math;
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_row.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_filtered_empty_state.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_data_grid_density.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_compact_data_grid_scroll_table.dart';
@@ -26,6 +25,9 @@ class SalesProdutoTendenciaDetailsSection extends StatelessWidget {
     required this.onPageSizeChanged,
     required this.classLabelBuilder,
     super.key,
+    this.activeClassificacao,
+    this.periodoAtualLabel,
+    this.periodoAnteriorLabel,
     this.hasActiveDetailFilters = false,
     this.onClearFilters,
     this.onOpenFilters,
@@ -40,9 +42,14 @@ class SalesProdutoTendenciaDetailsSection extends StatelessWidget {
   final ValueChanged<int> onPageSelected;
   final ValueChanged<int> onPageSizeChanged;
   final String Function(String value) classLabelBuilder;
+  final String? activeClassificacao;
+  final String? periodoAtualLabel;
+  final String? periodoAnteriorLabel;
   final bool hasActiveDetailFilters;
   final VoidCallback? onClearFilters;
   final VoidCallback? onOpenFilters;
+
+  bool get _showPeriodQuantityColumns => activeClassificacao != null;
 
   @override
   Widget build(BuildContext context) {
@@ -65,6 +72,21 @@ class SalesProdutoTendenciaDetailsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
+          if (_showPeriodQuantityColumns &&
+              periodoAnteriorLabel != null &&
+              periodoAtualLabel != null) ...<Widget>[
+            Text(
+              l10n.salesProdutoTendenciaDetailsPeriodComparisonCaption(
+                periodoAnteriorLabel!,
+                periodoAtualLabel!,
+              ),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(height: tokens.gapXs),
+          ],
           if (rows.isNotEmpty) ...<Widget>[
             SizedBox(height: tokens.gapXs),
             Text(
@@ -105,6 +127,7 @@ class SalesProdutoTendenciaDetailsSection extends StatelessWidget {
                   final minTable =
                       SalesProdutoTendenciaDetailsTableLayout.minScrollContentWidth(
                         tokens,
+                        showPeriodQuantityColumns: _showPeriodQuantityColumns,
                       );
                   final outer = constraints.maxWidth;
                   final contentWidth = outer.isFinite && outer > 0
@@ -115,13 +138,17 @@ class SalesProdutoTendenciaDetailsSection extends StatelessWidget {
                     itemCount: rows.length,
                     semanticsHint:
                         l10n.salesProdutoTendenciaDetailsHorizontalScrollCaption,
-                    header: SalesProdutoTendenciaDetailsTableHeader(l10n: l10n),
+                    header: SalesProdutoTendenciaDetailsTableHeader(
+                      l10n: l10n,
+                      showPeriodQuantityColumns: _showPeriodQuantityColumns,
+                    ),
                     itemBuilder: (context, index) {
                       final row = rows[index];
                       return SalesProdutoTendenciaDetailsRow(
                         row: row,
                         l10n: l10n,
                         classLabel: classLabelBuilder(row.classificacao),
+                        showPeriodQuantityColumns: _showPeriodQuantityColumns,
                       );
                     },
                   );
@@ -167,21 +194,40 @@ abstract final class SalesProdutoTendenciaDetailsTableLayout {
   static double _product(AppThemeTokens t) => math.max(220, t.gapMd * 18);
   static double _classificacao(AppThemeTokens t) => math.max(120, t.gapMd * 10);
   static double _grupo(AppThemeTokens t) => math.max(132, t.gapMd * 11);
+  static double _qtd(AppThemeTokens t) => math.max(96, t.gapMd * 8);
   static double _delta(AppThemeTokens t) => math.max(104, t.gapMd * 9);
   static double _percentual(AppThemeTokens t) => math.max(104, t.gapMd * 9);
 
-  static double minWidth(AppThemeTokens t) =>
-      _product(t) + _classificacao(t) + _grupo(t) + _delta(t) + _percentual(t);
+  static double minWidth(
+    AppThemeTokens t, {
+    bool showPeriodQuantityColumns = false,
+  }) {
+    var width = _product(t) + _classificacao(t) + _grupo(t) + _delta(t) +
+        _percentual(t);
+    if (showPeriodQuantityColumns) {
+      width += _qtd(t) * 2;
+    }
+    return width;
+  }
 
   /// Row [Padding] uses [AppThemeTokens.gapSm] on each horizontal side.
-  static double minScrollContentWidth(AppThemeTokens t) =>
-      minWidth(t) + 2 * t.gapSm;
+  static double minScrollContentWidth(
+    AppThemeTokens t, {
+    bool showPeriodQuantityColumns = false,
+  }) =>
+      minWidth(t, showPeriodQuantityColumns: showPeriodQuantityColumns) +
+      2 * t.gapSm;
 }
 
 class SalesProdutoTendenciaDetailsTableHeader extends StatelessWidget {
-  const SalesProdutoTendenciaDetailsTableHeader({required this.l10n, super.key});
+  const SalesProdutoTendenciaDetailsTableHeader({
+    required this.l10n,
+    super.key,
+    this.showPeriodQuantityColumns = false,
+  });
 
   final AppLocalizations l10n;
+  final bool showPeriodQuantityColumns;
 
   @override
   Widget build(BuildContext context) {
@@ -192,6 +238,10 @@ class SalesProdutoTendenciaDetailsTableHeader extends StatelessWidget {
     final endLabelStyle = appDataGridHeaderLabelStyle(
       theme: theme,
       textAlign: TextAlign.end,
+    );
+    final periodHeaderStyle = endLabelStyle.copyWith(
+      fontWeight: FontWeight.w700,
+      color: scheme.primary,
     );
     return DecoratedBox(
       decoration: appDataGridHeaderDecoration(scheme),
@@ -224,6 +274,24 @@ class SalesProdutoTendenciaDetailsTableHeader extends StatelessWidget {
                   style: labelStyle,
                 ),
               ),
+              if (showPeriodQuantityColumns) ...<Widget>[
+                SizedBox(
+                  width: SalesProdutoTendenciaDetailsTableLayout._qtd(tokens),
+                  child: Text(
+                    l10n.salesProdutoTendenciaColQtdAnterior,
+                    style: periodHeaderStyle,
+                    textAlign: TextAlign.end,
+                  ),
+                ),
+                SizedBox(
+                  width: SalesProdutoTendenciaDetailsTableLayout._qtd(tokens),
+                  child: Text(
+                    l10n.salesProdutoTendenciaColQtdAtual,
+                    style: periodHeaderStyle,
+                    textAlign: TextAlign.end,
+                  ),
+                ),
+              ],
               SizedBox(
                 width: SalesProdutoTendenciaDetailsTableLayout._delta(tokens),
                 child: Text(
@@ -256,11 +324,13 @@ class SalesProdutoTendenciaDetailsRow extends StatelessWidget {
     required this.l10n,
     required this.classLabel,
     super.key,
+    this.showPeriodQuantityColumns = false,
   });
 
   final ProdutoVendidoTendenciaDeVendaRow row;
   final AppLocalizations l10n;
   final String classLabel;
+  final bool showPeriodQuantityColumns;
 
   @override
   Widget build(BuildContext context) {
@@ -305,6 +375,34 @@ class SalesProdutoTendenciaDetailsRow extends StatelessWidget {
                 maxLines: 4,
               ),
             ),
+            if (showPeriodQuantityColumns) ...<Widget>[
+              SizedBox(
+                width: SalesProdutoTendenciaDetailsTableLayout._qtd(tokens),
+                child: Text(
+                  numberFmt.format(row.qtdAnterior.round()),
+                  textAlign: TextAlign.end,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontFeatures: tabularFigures,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: SalesProdutoTendenciaDetailsTableLayout._qtd(tokens),
+                child: Text(
+                  numberFmt.format(row.qtdAtual.round()),
+                  textAlign: TextAlign.end,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontFeatures: tabularFigures,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
             SizedBox(
               width: SalesProdutoTendenciaDetailsTableLayout._delta(tokens),
               child: Text(
@@ -329,8 +427,8 @@ class SalesProdutoTendenciaDetailsRow extends StatelessWidget {
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontFeatures: tabularFigures,
                   color: row.percentualTendencia >= 0
-                      ? theme.appColors.tertiary
-                      : theme.appColors.error,
+                      ? theme.colorScheme.tertiary
+                      : theme.colorScheme.error,
                   fontWeight: FontWeight.w700,
                 ),
               ),

@@ -29,12 +29,14 @@ import 'package:colmeia/features/sales/presentation/state/sales_produto_tendenci
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_auto_refresh_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_body_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_chart_nav_grid.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_classificacao_chart_support.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_classificacao_labels.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_filter_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_filters_sheet.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_summary_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_trend_comparison_bar_chart_style.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
@@ -87,6 +89,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
   late final LoadMediaMovelRowsForShareUseCase _loadRowsForShare;
 
   final GlobalKey _detailsShareKey = GlobalKey();
+  final GlobalKey _detailsSectionKey = GlobalKey();
 
   @override
   void initState() {
@@ -190,6 +193,63 @@ class _SalesProdutoTendenciaMediaMovelPageState
           .tendenciaPercentualDesc,
       'pageSize':
           ProdutoVendidoTendenciaDeVendaMediaMovelFilter.defaultPageSize,
+    });
+  }
+
+  Future<void> _clearClassificacaoFilter() async {
+    final state = _controller.state;
+    if (state.classificacao == null) {
+      return;
+    }
+    await _controller.applyFilters(<String, Object?>{
+      'agentId': state.selectedAgentId,
+      'quantidadeDias': state.quantidadeDias,
+      'searchTerm': state.searchTerm,
+      'classificacao': null,
+      'codGrupoProduto': state.codGrupoProduto,
+      'codMarca': state.codMarca,
+      'grupoProdutoLabel': state.grupoProdutoLabel,
+      'marcaProdutoLabel': state.marcaProdutoLabel,
+      'sortBy': state.sortBy.name,
+      'pageSize': state.pageSize,
+    });
+  }
+
+  Future<void> _applyClassificacaoFromChart(String classificacao) async {
+    final state = _controller.state;
+    await _controller.applyFilters(<String, Object?>{
+      'agentId': state.selectedAgentId,
+      'quantidadeDias': state.quantidadeDias,
+      'searchTerm': state.searchTerm,
+      'classificacao': classificacao,
+      'codGrupoProduto': state.codGrupoProduto,
+      'codMarca': state.codMarca,
+      'grupoProdutoLabel': state.grupoProdutoLabel,
+      'marcaProdutoLabel': state.marcaProdutoLabel,
+      'sortBy': state.sortBy.name,
+      'pageSize': state.pageSize,
+    });
+    _showFiltersAppliedSnackBar();
+    _scrollToDetailsSection();
+  }
+
+  void _scrollToDetailsSection() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final targetContext = _detailsSectionKey.currentContext;
+      if (targetContext == null) {
+        return;
+      }
+      unawaited(
+        Scrollable.ensureVisible(
+          targetContext,
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeOutCubic,
+          alignment: 0.05,
+        ),
+      );
     });
   }
 
@@ -364,39 +424,35 @@ class _SalesProdutoTendenciaMediaMovelPageState
             metadata: shareMetadata,
           ),
           chartBuilder: (fullscreenContext) {
-            final ft = fullscreenContext.appTokens;
             final fl10n = AppLocalizations.of(fullscreenContext);
-            final locale = Localizations.localeOf(
-              fullscreenContext,
-            ).toLanguageTag();
             return RepaintBoundary(
               key: fullscreenShareKey,
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  return AppComparisonBarChart<
-                    SalesProdutoTendenciaMediaMovelClassBucket
-                  >(
-                    items: buckets,
-                    labelBuilder: (bucket) =>
-                        produtoTendenciaMediaMovelClassificacaoLabel(
-                          fl10n,
-                          bucket.classificacao,
-                        ),
-                    valueBuilder: (bucket) => bucket.count,
-                    plotFloorAccessibilityNotice:
-                        fl10n.chartComparisonPlotFloorNotice,
-                    extremeSpreadAccessibilityNotice:
-                        fl10n.chartComparisonExtremeValueSpreadNotice,
-                    style: salesTrendHomeLikeComparisonBarChartStyle(
-                      tokens: ft,
-                      l10n: fl10n,
-                      yAxisFormat: NumberFormat.compact(locale: locale),
-                      heightOverride: constraints.maxHeight,
+                  return buildSalesProdutoTendenciaMediaMovelClassificacaoBarChart(
+                    context: fullscreenContext,
+                    l10n: fl10n,
+                    buckets: buckets,
+                    countFormat: NumberFormat.decimalPattern(fl10n.localeName),
+                    heightOverride: constraints.maxHeight,
+                    onBucketTap: (bucket) {
+                      Navigator.of(fullscreenContext).pop();
+                      unawaited(
+                        _applyClassificacaoFromChart(bucket.classificacao),
+                      );
+                    },
+                    belowSubtitle: Text(
+                      fl10n
+                          .salesProdutoTendenciaMediaMovelSummaryByClassificacaoDrillDownHint,
+                      style: Theme.of(fullscreenContext)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(
+                            color: Theme.of(fullscreenContext)
+                                .colorScheme
+                                .onSurfaceVariant,
+                          ),
                     ),
-                    dataLabelBuilder: (bucket, _) => '${bucket.count}',
-                    tooltipLabelBuilder: (bucket, _) =>
-                        '${produtoTendenciaMediaMovelClassificacaoLabel(fl10n, bucket.classificacao)}: '
-                        '${bucket.count}',
                   );
                 },
               ),
@@ -439,6 +495,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
               fullscreenContext,
             ).toLanguageTag();
             final decimalFormat = NumberFormat.decimalPattern(fl10n.localeName);
+            final colors = Theme.of(fullscreenContext).appColors;
             return RepaintBoundary(
               key: fullscreenShareKey,
               child: LayoutBuilder(
@@ -453,6 +510,11 @@ class _SalesProdutoTendenciaMediaMovelPageState
                           bucket.classificacao,
                         ),
                     valueBuilder: (bucket) => bucket.impacto,
+                    colorBuilder: (bucket) =>
+                        salesProdutoTendenciaMediaMovelClassificacaoColor(
+                          colors,
+                          bucket.classificacao,
+                        ),
                     plotFloorAccessibilityNotice:
                         fl10n.chartComparisonPlotFloorNotice,
                     extremeSpreadAccessibilityNotice:
@@ -575,6 +637,8 @@ class _SalesProdutoTendenciaMediaMovelPageState
             SizedBox(height: tokens.sectionSpacing),
             SalesProdutoTendenciaMediaMovelFilterSection(
               onOpenFilters: () => unawaited(_openFilters()),
+              onClearClassificacaoFilter: () =>
+                  unawaited(_clearClassificacaoFilter()),
             ),
             SizedBox(height: tokens.gapMd),
             SalesProdutoTendenciaMediaMovelAutoRefreshSection(
@@ -587,10 +651,16 @@ class _SalesProdutoTendenciaMediaMovelPageState
               listenable: agentQueryRetryAfterGate,
               builder: (context, _) {
                 return SalesProdutoTendenciaMediaMovelBodySection(
+                  detailsSectionKey: _detailsSectionKey,
                   onRetryReload: () => unawaited(_reload()),
                   onClearDetailFilters: () => unawaited(_clearDetailFilters()),
                   onOpenFilters: () => unawaited(_openFilters()),
                   onChartSelected: _onChartSelected,
+                  onClassificacaoSelected: (classificacao) => unawaited(
+                    _applyClassificacaoFromChart(classificacao),
+                  ),
+                  onClearClassificacaoFilter: () =>
+                      unawaited(_clearClassificacaoFilter()),
                   retryCountdownLabel: agentQueryRetryCountdownLabel(l10n),
                   detailsShareKey: _detailsShareKey,
                   onShareDetails: () => unawaited(_shareDetailsTable()),

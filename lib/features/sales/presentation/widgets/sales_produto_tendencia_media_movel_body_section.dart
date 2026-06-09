@@ -22,9 +22,12 @@ class SalesProdutoTendenciaMediaMovelBodySection extends StatelessWidget {
     required this.onClearDetailFilters,
     required this.onOpenFilters,
     required this.onChartSelected,
+    required this.onClassificacaoSelected,
+    required this.onClearClassificacaoFilter,
     required this.retryCountdownLabel,
     required this.detailsShareKey,
     required this.onShareDetails,
+    this.detailsSectionKey,
     super.key,
   });
 
@@ -36,8 +39,11 @@ class SalesProdutoTendenciaMediaMovelBodySection extends StatelessWidget {
     SalesProdutoTendenciaMediaMovelChartId chartId,
     List<SalesProdutoTendenciaMediaMovelClassBucket> buckets,
   ) onChartSelected;
+  final ValueChanged<String> onClassificacaoSelected;
+  final VoidCallback onClearClassificacaoFilter;
   final String? retryCountdownLabel;
   final GlobalKey detailsShareKey;
+  final GlobalKey? detailsSectionKey;
   final VoidCallback onShareDetails;
 
   @override
@@ -91,11 +97,15 @@ class SalesProdutoTendenciaMediaMovelBodySection extends StatelessWidget {
             SalesProdutoTendenciaMediaMovelSummarySection(
               l10n: l10n,
               summary: slice.summary,
+              summaryRows: state.summaryRows,
               loading: state.loading,
               hasSummaryRows: slice.hasSummary,
+              activeClassificacao: state.classificacao,
               hasActiveDetailFilters: slice.hasActiveDetailFilters,
               onClearFilters: onClearDetailFilters,
               onOpenFilters: onOpenFilters,
+              onClearClassificacaoFilter: onClearClassificacaoFilter,
+              onClassificacaoSelected: onClassificacaoSelected,
             ),
             SizedBox(height: tokens.sectionSpacing),
             SalesProdutoTendenciaMediaMovelChartNavGrid(
@@ -111,6 +121,7 @@ class SalesProdutoTendenciaMediaMovelBodySection extends StatelessWidget {
             ),
             SizedBox(height: tokens.sectionSpacing),
             SalesProdutoTendenciaMediaMovelDetailsSection(
+              key: detailsSectionKey,
               l10n: l10n,
               loading: state.loading,
               rows: state.pageResult.items,
@@ -261,6 +272,7 @@ class _SalesProdutoTendenciaMediaMovelBodySlice {
         other.state.authenticationFailed == state.authenticationFailed &&
         other.state.loadFailure == state.loadFailure &&
         other.hasSummary == hasSummary &&
+        other.state.classificacao == state.classificacao &&
         other.hasActiveDetailFilters == hasActiveDetailFilters &&
         other.totalPages == totalPages &&
         other.rangeStart == rangeStart &&
@@ -276,6 +288,7 @@ class _SalesProdutoTendenciaMediaMovelBodySlice {
     state.authenticationFailed,
     state.loadFailure,
     hasSummary,
+    state.classificacao,
     hasActiveDetailFilters,
     totalPages,
     rangeStart,

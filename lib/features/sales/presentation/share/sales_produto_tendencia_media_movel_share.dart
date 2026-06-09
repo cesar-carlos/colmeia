@@ -1,8 +1,10 @@
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_row.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_classificacao_chart_support.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_classificacao_labels.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_summary_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_trend_comparison_bar_chart_style.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_export_capture.dart';
@@ -16,9 +18,14 @@ ChartShareMetadata buildSalesProdutoTendenciaMediaMovelCountShareMetadata({
   required List<SalesProdutoTendenciaMediaMovelClassBucket> buckets,
   required AppThemeTokens tokens,
 }) {
+  final legend = salesProdutoTendenciaMediaMovelClassificacaoPdfLegend(
+    l10n,
+    buckets,
+  );
   return ChartShareMetadata(
     title: l10n.salesProdutoTendenciaMediaMovelSummaryByClassificacaoTitle,
-    subtitle: l10n.salesProdutoTendenciaMediaMovelSummaryByClassificacaoSubtitle,
+    subtitle:
+        '${l10n.salesProdutoTendenciaMediaMovelSummaryByClassificacaoSubtitle}\n$legend',
     tableData: ChartShareTableData(
       headers: <String>[
         l10n.chartSharePdfColumnLabel,
@@ -53,9 +60,14 @@ ChartShareMetadata buildSalesProdutoTendenciaMediaMovelImpactShareMetadata({
   required AppThemeTokens tokens,
 }) {
   final impactFormat = NumberFormat.decimalPattern(l10n.localeName);
+  final legend = salesProdutoTendenciaMediaMovelClassificacaoPdfLegend(
+    l10n,
+    buckets,
+  );
   return ChartShareMetadata(
     title: l10n.salesProdutoTendenciaMediaMovelSummaryByImpactTitle,
-    subtitle: l10n.salesProdutoTendenciaMediaMovelSummaryByImpactSubtitle,
+    subtitle:
+        '${l10n.salesProdutoTendenciaMediaMovelSummaryByImpactSubtitle}\n$legend',
     tableData: ChartShareTableData(
       headers: <String>[
         l10n.chartSharePdfColumnLabel,
@@ -132,6 +144,7 @@ Widget _mediaMovelComparisonExport({
 }) {
   final locale = Localizations.localeOf(exportContext).toLanguageTag();
   final decimalFormat = NumberFormat.decimalPattern(l10n.localeName);
+  final colors = Theme.of(exportContext).appColors;
   final exportStyle = salesTrendHomeLikeComparisonBarChartStyle(
     tokens: tokens,
     l10n: l10n,
@@ -154,6 +167,10 @@ Widget _mediaMovelComparisonExport({
       ),
       valueBuilder: (bucket) =>
           useImpactValues ? bucket.impacto : bucket.count,
+      colorBuilder: (bucket) => salesProdutoTendenciaMediaMovelClassificacaoColor(
+        colors,
+        bucket.classificacao,
+      ),
       plotFloorAccessibilityNotice: l10n.chartComparisonPlotFloorNotice,
       extremeSpreadAccessibilityNotice:
           l10n.chartComparisonExtremeValueSpreadNotice,

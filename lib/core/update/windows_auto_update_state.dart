@@ -19,6 +19,7 @@ class WindowsAutoUpdateState {
     required this.details,
     required this.feedUrl,
     required this.lastCheckedAt,
+    this.isInitialized = false,
   });
 
   const WindowsAutoUpdateState.initial()
@@ -29,6 +30,7 @@ class WindowsAutoUpdateState {
         details: null,
         feedUrl: '',
         lastCheckedAt: null,
+        isInitialized: false,
       );
 
   final AppAutoUpdateAvailability availability;
@@ -37,11 +39,13 @@ class WindowsAutoUpdateState {
   final String? details;
   final String feedUrl;
   final DateTime? lastCheckedAt;
+  final bool isInitialized;
 
   bool get shouldShowInSettings =>
       availability != AppAutoUpdateAvailability.unsupportedPlatform;
 
   bool get canCheckForUpdates =>
+      isInitialized &&
       availability == AppAutoUpdateAvailability.supported &&
       status != WindowsAutoUpdateStatus.checking;
 
@@ -54,6 +58,7 @@ class WindowsAutoUpdateState {
     String? details,
     String? feedUrl,
     DateTime? lastCheckedAt,
+    bool? isInitialized,
     bool clearDetails = false,
     bool keepLastCheckedAt = true,
   }) {
@@ -66,6 +71,7 @@ class WindowsAutoUpdateState {
       lastCheckedAt: keepLastCheckedAt
           ? (lastCheckedAt ?? this.lastCheckedAt)
           : lastCheckedAt,
+      isInitialized: isInitialized ?? this.isInitialized,
     );
   }
 }

@@ -11,6 +11,8 @@ class SalesProdutoTendenciaKpiCard extends StatelessWidget {
     required this.value,
     required this.iconForeground,
     this.emphasis = AppMetricStatCardEmphasis.standard,
+    this.onTap,
+    this.semanticsLabel,
     super.key,
   });
 
@@ -19,6 +21,8 @@ class SalesProdutoTendenciaKpiCard extends StatelessWidget {
   final String value;
   final Color iconForeground;
   final AppMetricStatCardEmphasis emphasis;
+  final VoidCallback? onTap;
+  final String? semanticsLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +33,8 @@ class SalesProdutoTendenciaKpiCard extends StatelessWidget {
 
     return AppMetricStatCard(
       emphasis: emphasis,
+      onTap: onTap,
+      semanticsLabel: semanticsLabel,
       leading: AppMetricStatIconBadge(
         backgroundColor: _iconBadgeBackground(colors, iconForeground),
         child: Icon(icon, size: 22, color: iconForeground),

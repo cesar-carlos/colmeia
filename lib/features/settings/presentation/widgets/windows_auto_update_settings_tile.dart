@@ -1,8 +1,10 @@
 import 'package:colmeia/core/update/windows_auto_update_controller.dart';
+import 'package:colmeia/core/update/windows_auto_update_messages.dart';
 import 'package:colmeia/core/update/windows_auto_update_state.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_flat_button.dart';
+import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:flutter/material.dart';
 
 class WindowsAutoUpdateSettingsTile extends StatelessWidget {
@@ -29,125 +31,107 @@ class WindowsAutoUpdateSettingsTile extends StatelessWidget {
         final typography = theme.appTypography;
         final cs = theme.colorScheme;
         final accentColor = _resolveAccentColor(state, cs);
+        final showFullDetails =
+            state.status == WindowsAutoUpdateStatus.unavailable;
 
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            color: cs.surfaceContainerLow,
-            borderRadius: BorderRadius.circular(tokens.cardRadius),
-            border: Border.all(color: cs.outlineVariant),
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(tokens.contentSpacing),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Row(
+        return AppSectionCardWithHeading(
+          titleWidget: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(tokens.gapMd),
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  Icons.system_update_alt_rounded,
+                  color: accentColor,
+                ),
+              ),
+              SizedBox(width: tokens.gapMd),
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: accentColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(tokens.gapMd),
+                    Text(
+                      WindowsAutoUpdateMessages.settingsTitle,
+                      style: typography.sectionHeaderH2.copyWith(
+                        fontSize: theme.textTheme.titleSmall?.fontSize,
+                        fontWeight: FontWeight.w600,
                       ),
-                      alignment: Alignment.center,
-                      child: Icon(
-                        Icons.system_update_alt_rounded,
+                    ),
+                    SizedBox(height: tokens.gapXs),
+                    Text(
+                      WindowsAutoUpdateMessages.settingsStatusLabel(
+                        state.status,
+                      ),
+                      style: typography.utilityOverline.copyWith(
                         color: accentColor,
                       ),
                     ),
-                    SizedBox(width: tokens.gapMd),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            'Atualizacoes do app',
-                            style: typography.sectionHeaderH2.copyWith(
-                              fontSize: theme.textTheme.titleSmall?.fontSize,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          SizedBox(height: tokens.gapXs),
-                          Text(
-                            _statusLabel(state),
-                            style: typography.utilityOverline.copyWith(
-                              color: accentColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(width: tokens.gapSm),
-                    _AutoUpdateStatusIndicator(state: state),
                   ],
                 ),
-                SizedBox(height: tokens.gapSm),
-                Text(
-                  state.headline,
-                  style: typography.caption.copyWith(
-                    color: cs.onSurface,
-                    fontWeight: FontWeight.w600,
-                  ),
+              ),
+            ],
+          ),
+          headingTrailing: _AutoUpdateStatusIndicator(state: state),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                state.headline,
+                style: typography.caption.copyWith(
+                  color: cs.onSurface,
+                  fontWeight: FontWeight.w600,
                 ),
-                if (state.details case final String details) ...<Widget>[
-                  SizedBox(height: tokens.gapXs),
-                  Text(
-                    details,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: typography.caption.copyWith(
-                      color: cs.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-                if (state.lastCheckedAt
-                    case final DateTime lastCheckedAt) ...<Widget>[
-                  SizedBox(height: tokens.gapXs),
-                  Text(
-                    _lastCheckedLabel(lastCheckedAt, localizations),
-                    style: typography.caption.copyWith(
-                      color: cs.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-                SizedBox(height: tokens.gapMd),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: AppFlatButton(
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: state.isChecking
-                        ? 'Verificando atualizacoes...'
-                        : 'Verificar atualizacoes',
-                    semanticsLabel: 'Verificar atualizacoes',
-                    fillWidth: false,
-                    isLoading: state.isChecking,
-                    onPressed: state.canCheckForUpdates
-                        ? controller.checkForUpdates
-                        : null,
+              ),
+              if (state.details case final String details) ...<Widget>[
+                SizedBox(height: tokens.gapXs),
+                Text(
+                  details,
+                  maxLines: showFullDetails ? null : 3,
+                  overflow: showFullDetails ? null : TextOverflow.ellipsis,
+                  style: typography.caption.copyWith(
+                    color: cs.onSurfaceVariant,
                   ),
                 ),
               ],
-            ),
+              if (state.lastCheckedAt
+                  case final DateTime lastCheckedAt) ...<Widget>[
+                SizedBox(height: tokens.gapXs),
+                Text(
+                  _lastCheckedLabel(lastCheckedAt, localizations),
+                  style: typography.caption.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
+                ),
+              ],
+              SizedBox(height: tokens.gapMd),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: AppFlatButton(
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: state.isChecking
+                      ? WindowsAutoUpdateMessages.checkingButtonLabel
+                      : WindowsAutoUpdateMessages.checkButtonLabel,
+                  semanticsLabel:
+                      WindowsAutoUpdateMessages.checkButtonSemanticsLabel,
+                  fillWidth: false,
+                  isLoading: state.isChecking,
+                  onPressed: state.canCheckForUpdates
+                      ? controller.checkForUpdates
+                      : null,
+                ),
+              ),
+            ],
           ),
         );
       },
     );
   }
-}
-
-String _statusLabel(WindowsAutoUpdateState state) {
-  return switch (state.status) {
-    WindowsAutoUpdateStatus.updateAvailable => 'Nova release disponivel',
-    WindowsAutoUpdateStatus.upToDate => 'Build atualizado',
-    WindowsAutoUpdateStatus.feedWithoutReleases => 'Feed sem releases',
-    WindowsAutoUpdateStatus.readyToInstall => 'Pronto para instalar',
-    WindowsAutoUpdateStatus.failed => 'Verificacao com falha',
-    WindowsAutoUpdateStatus.unavailable => 'Atualizacoes indisponiveis',
-    WindowsAutoUpdateStatus.idle => 'Pronto para verificar',
-    WindowsAutoUpdateStatus.checking => 'Consultando feed oficial',
-  };
 }
 
 Color _resolveAccentColor(WindowsAutoUpdateState state, ColorScheme cs) {
@@ -166,7 +150,10 @@ String _lastCheckedLabel(
     TimeOfDay.fromDateTime(lastCheckedAt),
   );
   final date = localizations.formatShortDate(lastCheckedAt);
-  return 'Ultima checagem em $date, $time.';
+  return WindowsAutoUpdateMessages.lastCheckedLabel(
+    date: date,
+    time: time,
+  );
 }
 
 class _AutoUpdateStatusIndicator extends StatelessWidget {

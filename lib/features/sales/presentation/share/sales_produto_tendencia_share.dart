@@ -108,9 +108,11 @@ ChartShareMetadata buildSalesProdutoTendenciaClassificacaoShareMetadata({
   required List<SalesProdutoTendenciaClassBucket> buckets,
   required AppThemeTokens tokens,
 }) {
+  final legend = salesProdutoTendenciaClassificacaoPdfLegend(l10n, buckets);
   return ChartShareMetadata(
     title: l10n.salesProdutoTendenciaSummaryByClassificacaoTitle,
-    subtitle: l10n.salesProdutoTendenciaSummaryByClassificacaoSubtitle,
+    subtitle:
+        '${l10n.salesProdutoTendenciaSummaryByClassificacaoSubtitle}\n$legend',
     tableData: ChartShareTableData(
       headers: <String>[
         l10n.chartSharePdfColumnLabel,
@@ -146,7 +148,7 @@ ChartShareMetadata buildSalesProdutoTendenciaTopGainersShareMetadata({
 }) {
   return ChartShareMetadata(
     title: l10n.salesProdutoTendenciaTopGainersTitle,
-    subtitle: l10n.salesProdutoTendenciaTopMoversSubtitle,
+    subtitle: l10n.salesProdutoTendenciaTopGainersSubtitle,
     tableData: ChartShareTableData(
       headers: <String>[
         l10n.chartSharePdfColumnName,
@@ -179,7 +181,7 @@ ChartShareMetadata buildSalesProdutoTendenciaTopLosersShareMetadata({
 }) {
   return ChartShareMetadata(
     title: l10n.salesProdutoTendenciaTopLosersTitle,
-    subtitle: l10n.salesProdutoTendenciaTopMoversSubtitle,
+    subtitle: l10n.salesProdutoTendenciaTopLosersSubtitle,
     tableData: ChartShareTableData(
       headers: <String>[
         l10n.chartSharePdfColumnName,
