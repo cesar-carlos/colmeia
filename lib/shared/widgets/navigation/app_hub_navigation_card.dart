@@ -33,8 +33,7 @@ class AppHubNavigationCard extends StatelessWidget {
 
   bool get _usesFixedGridTile => density != AppHubNavigationCardDensity.standard;
 
-  bool get _usesExpandFill =>
-      density == AppHubNavigationCardDensity.overview;
+  bool get _usesExpandFill => _usesFixedGridTile;
 
   String get _resolvedTooltipMessage => tooltipMessage ?? label;
 
@@ -199,7 +198,8 @@ class AppHubNavigationCard extends StatelessWidget {
         SizedBox(height: iconLabelGap),
         if (_usesFixedGridTile)
           Flexible(
-            child: Align(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
               alignment: Alignment.topCenter,
               child: labelWidget,
             ),
