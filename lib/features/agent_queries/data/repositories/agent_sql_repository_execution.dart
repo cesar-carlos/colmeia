@@ -1,6 +1,7 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
@@ -44,6 +45,7 @@ abstract final class AgentSqlRepositoryExecution {
     required T Function(AgentSqlExecutionResult executionResult) mapExecution,
     String? unexpectedRowsLogMessage,
     String unexpectedRowsUserMessage = defaultUnexpectedRowsUserMessage,
+    String? unexpectedRowsUiKey,
     AgentQueriesCancelScope? cancelScope,
   }) async {
     final result = await agentQueriesRepository.executeSql(
@@ -58,6 +60,7 @@ abstract final class AgentSqlRepositoryExecution {
         mapExecution: mapExecution,
         unexpectedRowsLogMessage: unexpectedRowsLogMessage,
         unexpectedRowsUserMessage: unexpectedRowsUserMessage,
+        unexpectedRowsUiKey: unexpectedRowsUiKey,
       ),
       Failure<T, AppFailure>.new,
     );
@@ -70,6 +73,7 @@ abstract final class AgentSqlRepositoryExecution {
     required T Function(AgentSqlExecutionResult executionResult) mapExecution,
     String? unexpectedRowsLogMessage,
     String unexpectedRowsUserMessage = defaultUnexpectedRowsUserMessage,
+    String? unexpectedRowsUiKey,
   }) {
     try {
       return Success<T, AppFailure>(mapExecution(executionResult));
@@ -92,12 +96,16 @@ abstract final class AgentSqlRepositoryExecution {
       return Failure<T, AppFailure>(
         UnknownFailure(
           message: message,
-          userMessage: unexpectedRowsUserMessage,
+          userMessage: unexpectedRowsUiKey == null
+              ? unexpectedRowsUserMessage
+              : null,
           cause: error,
           stackTrace: stackTrace,
           context: <String, Object?>{
             'operation': operation,
             'agentId': agentId,
+            if (unexpectedRowsUiKey != null)
+              AgentSqlRpcFailureUiKey.field: unexpectedRowsUiKey,
           },
         ),
       );

@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_map_static_data.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
@@ -11,10 +12,114 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:syncfusion_flutter_maps/maps.dart';
 
 import '../../../support/widget_test_l10n.dart';
 
 void main() {
+  group('Brazil map marker overlay readiness', () {
+    const storePoint = AppBrazilStoreSalesPoint(
+      id: 'store-1',
+      name: 'Filial Cuiaba',
+      fantasyName: 'Mel Cuiaba',
+      uf: 'MT',
+      city: 'Cuiaba',
+      latitude: -15.60,
+      longitude: -56.10,
+      salesAmount: 4200,
+      salesCount: 42,
+    );
+
+    tearDown(AppBrazilMapStaticData.resetBrazilUfGeoJsonMemoryCacheForTests);
+
+    testWidgets('defers store markers until after the shape layer mounts', (
+      tester,
+    ) async {
+      await AppBrazilMapStaticData.precacheBrazilUfGeoJsonAsset();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          locale: const Locale('pt', 'BR'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(
+            body: Center(
+              child: SizedBox(
+                width: 720,
+                height: 400,
+                child: AppBrazilStoreSalesMapChart(
+                  points: <AppBrazilStoreSalesPoint>[storePoint],
+                  style: _baseStyle,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final deferredLayer = tester.widget<MapShapeLayer>(
+        find.byType(MapShapeLayer),
+      );
+      expect(deferredLayer.initialMarkersCount, 0);
+
+      await tester.pump();
+      await tester.pump();
+
+      final readyLayer = tester.widget<MapShapeLayer>(find.byType(MapShapeLayer));
+      expect(readyLayer.initialMarkersCount, greaterThan(0));
+    });
+
+    testWidgets(
+      'remounts map surface with markers after cold geo precache completes',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.light(),
+            locale: const Locale('pt', 'BR'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: const Scaffold(
+              body: Center(
+                child: SizedBox(
+                  width: 720,
+                  height: 400,
+                  child: AppBrazilStoreSalesMapChart(
+                    points: <AppBrazilStoreSalesPoint>[storePoint],
+                    style: _baseStyle,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        for (var frame = 0; frame < 30 && find.byType(SfMaps).evaluate().isEmpty; frame++) {
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+
+        expect(find.byType(SfMaps), findsOneWidget);
+        final deferredKey = tester.widget<SfMaps>(find.byType(SfMaps)).key;
+        final deferredLayer = tester.widget<MapShapeLayer>(
+          find.byType(MapShapeLayer),
+        );
+        expect(deferredLayer.initialMarkersCount, 0);
+
+        await tester.pump();
+        await tester.pump();
+
+        final readyLayer = tester.widget<MapShapeLayer>(
+          find.byType(MapShapeLayer),
+        );
+        expect(readyLayer.initialMarkersCount, greaterThan(0));
+        final readyKey = tester.widget<SfMaps>(find.byType(SfMaps)).key;
+        expect(readyKey, isNot(equals(deferredKey)));
+      },
+    );
+  });
+
   testWidgets('renders the selected store detail card content', (
     tester,
   ) async {

@@ -14,8 +14,6 @@
   "shellNavFinanceSubtitle": "Cash flow, receivables, and payables",
   "shellNavPurchasesLabel": "Purchases",
   "shellNavPurchasesSubtitle": "Suppliers and purchase orders",
-  "shellNavInventoryLabel": "Inventory",
-  "shellNavInventorySubtitle": "Stock levels and movements",
   "shellPlaceholderUnderConstructionTitle": "Under construction",
   "shellPlaceholderUnderConstructionBody": "This section will be available in a future update.",
   "shellAppBrandName": "Colmeia",
@@ -41,6 +39,15 @@
   "userPermissionViewFinance": "Finance (module access)",
   "userPermissionViewPurchases": "Purchases (module access)",
   "userPermissionViewInventory": "Inventory (module access)",
+  "userRoleClientActive": "Client (active)",
+  "userRoleClientPending": "Client (pending)",
+  "userRoleClientRejected": "Client (rejected)",
+  "userRoleClientBlocked": "Client (blocked)",
+  "userRoleStatusActive": "Active",
+  "userRoleStatusPending": "Pending",
+  "userRoleStatusRejected": "Rejected",
+  "userRoleStatusBlocked": "Blocked",
+  "userRoleStatusUnknown": "Unknown",
   "dashboardPartialAgentQueriesTitle": "Incomplete overview data",
   "dashboardPartialAgentQueriesMessage": "Some approved branches did not return data. Totals may be incomplete.",
   "dashboardMissingClientTokenTitle": "Branches without a saved client token",
@@ -535,6 +542,46 @@
     }
   },
   "mapCenterViewportTooltip": "Center map",
+  "regionMapTerritorialSemanticsLabel": "Territorial map.",
+  "regionMapSemanticsMetricLabel": "Metric: {metricLabel}.",
+  "@regionMapSemanticsMetricLabel": {
+    "placeholders": {
+      "metricLabel": {"type": "String"}
+    }
+  },
+  "regionMapSemanticsRegionCount": "{regionCount} regions.",
+  "@regionMapSemanticsRegionCount": {
+    "placeholders": {
+      "regionCount": {"type": "int"}
+    }
+  },
+  "regionMapSemanticsMarkerCount": "{markerCount} points on the map.",
+  "@regionMapSemanticsMarkerCount": {
+    "placeholders": {
+      "markerCount": {"type": "int"}
+    }
+  },
+  "regionMapSemanticsSelectedRegion": "Selected: {regionLabel}.",
+  "@regionMapSemanticsSelectedRegion": {
+    "placeholders": {
+      "regionLabel": {"type": "String"}
+    }
+  },
+  "regionMapLegendSemanticsLabel": "Map legend, from {minValue} to {maxValue}",
+  "@regionMapLegendSemanticsLabel": {
+    "placeholders": {
+      "minValue": {"type": "String"},
+      "maxValue": {"type": "String"}
+    }
+  },
+  "regionMapLegendWithTitleSemanticsLabel": "Legend: {title}, from {minValue} to {maxValue}",
+  "@regionMapLegendWithTitleSemanticsLabel": {
+    "placeholders": {
+      "title": {"type": "String"},
+      "minValue": {"type": "String"},
+      "maxValue": {"type": "String"}
+    }
+  },
   "brazilStoreSalesMapMetricGroupLabel": "Metric",
   "brazilStoreSalesMapRegionGroupLabel": "Region",
   "brazilStoreSalesMapLoadingMessage": "Loading Brazil map…",
@@ -1398,6 +1445,10 @@
   "agentSqlErrorExecutionNotFound": "The requested execution was not found.",
   "agentSqlErrorExecutionCancelled": "The query was cancelled.",
   "agentSqlErrorGeneric": "The query could not be completed on the agent.",
+  "agentSqlErrorUnexpectedAgentResponse": "The agent response had an unexpected format. Please try again.",
+  "agentSqlErrorQueryLoadFailed": "Could not load this query.",
+  "agentSqlErrorTendenciaSummaryUnexpectedFormat": "The trend summary had an unexpected format. Please try again.",
+  "agentSqlErrorMediaMovelSummaryUnexpectedFormat": "The moving-average summary had an unexpected format. Please try again.",
   "agentSqlFailureTitleRateLimited": "Too many queries",
   "agentSqlFailureTitleReplayDetected": "Duplicate query",
   "agentSqlFailureTitleAuthenticationFailed": "Session expired",
@@ -1969,7 +2020,7 @@
   "salesProdutoTendenciaSummaryTitle": "Executive summary",
   "salesProdutoTendenciaSummarySubtitle": "Overview of product movement by trend classification.",
   "salesProdutoTendenciaSummaryByClassificacaoTitle": "Products by classification",
-  "salesProdutoTendenciaSummaryByClassificacaoSubtitle": "Distribution and impact in the loaded page.",
+  "salesProdutoTendenciaSummaryByClassificacaoSubtitle": "Distribution of products across the full filtered result.",
   "salesProdutoTendenciaTopMoversTitle": "Top movers",
   "salesProdutoTendenciaTopMoversSubtitle": "Highest growth and decline in the selected period.",
   "salesProdutoTendenciaTopGainersTitle": "Top 5 gainers",
@@ -1985,6 +2036,7 @@
   "salesProdutoTendenciaKpiFalling": "Falling products",
   "salesProdutoTendenciaKpiNewProducts": "New products",
   "salesProdutoTendenciaKpiStopped": "Stopped selling",
+  "salesProdutoTendenciaKpiStable": "Stable products",
   "salesProdutoTendenciaKpiNetImpact": "Net impact (qty)",
   "salesProdutoTendenciaColProduct": "Product",
   "salesProdutoTendenciaColClassificacao": "Classification",

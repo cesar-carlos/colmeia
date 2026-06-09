@@ -18,6 +18,7 @@ import 'package:colmeia/features/settings/presentation/routes/settings_routes.da
 import 'package:colmeia/features/settings/presentation/widgets/windows_auto_update_settings_tile.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/features/user_context/presentation/localization/user_permission_l10n.dart';
+import 'package:colmeia/features/user_context/presentation/localization/user_role_label_l10n.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
@@ -648,6 +649,7 @@ class _SettingsPageState extends State<SettingsPage> {
         : scope.corporateEmail;
     final phoneEmpty = scope.phone.trim().isEmpty;
     final phoneDisplay = phoneEmpty ? 'Não informado' : scope.phone;
+    final roleLabelDisplay = userRoleLabelDisplay(l10n, scope.roleLabel);
 
     return ListView(
       padding: context.pageScrollPadding(tokens),
@@ -659,7 +661,7 @@ class _SettingsPageState extends State<SettingsPage> {
             heroBackgroundColor: cs.surfaceContainerLowest,
             title: scope.name,
             description:
-                '${scope.roleLabel}. Consulte os dados da sua conta, segurança '
+                '$roleLabelDisplay. Consulte os dados da sua conta, segurança '
                 'e preferências em um único lugar.',
             footer: Wrap(
               spacing: tokens.gapSm,
@@ -667,7 +669,7 @@ class _SettingsPageState extends State<SettingsPage> {
               children: <Widget>[
                 AppTagChip(
                   icon: Icons.verified_user_outlined,
-                  label: scope.roleLabel,
+                  label: roleLabelDisplay,
                   foregroundColor: cs.primary,
                   backgroundColor: cs.primaryContainer.withValues(
                     alpha: 0.58,
@@ -683,7 +685,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             hero: _SettingsProfileHeroArtwork(
               initials: appShellUserInitials(scope.name),
-              roleLabel: scope.roleLabel,
+              roleLabel: roleLabelDisplay,
               thumbnailUrl: scope.thumbnailUrl,
             ),
           ),

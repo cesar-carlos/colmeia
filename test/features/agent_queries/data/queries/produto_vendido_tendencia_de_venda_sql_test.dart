@@ -72,10 +72,11 @@ void main() {
     },
   );
 
-  test('query applies pagination with row number bounds', () {
-    check(sql).contains('ROW_NUMBER() OVER');
-    check(sql).contains('WHERE RowNum BETWEEN 1 AND 20');
-    check(sql).contains('ORDER BY\n      RowNum ASC');
+  test('query carries total count through left-joined pagination', () {
+    check(sql).contains('Tot AS (');
+    check(sql).contains('SELECT COUNT(*) AS TotalCount FROM Filtrado');
+    check(sql).contains('LEFT JOIN Numbered N ON N.RowNum BETWEEN 1 AND 20');
+    check(sql).contains('ORDER BY COALESCE(N.RowNum, 2147483647)');
   });
 
   test('query keeps default optional filter predicates as tautologies', () {
@@ -88,7 +89,7 @@ void main() {
       startRow: 41,
       endRow: 60,
     );
-    check(custom).contains('WHERE RowNum BETWEEN 41 AND 60');
+    check(custom).contains('LEFT JOIN Numbered N ON N.RowNum BETWEEN 41 AND 60');
     check(custom.contains(':startRow')).isFalse();
     check(custom.contains(':endRow')).isFalse();
   });

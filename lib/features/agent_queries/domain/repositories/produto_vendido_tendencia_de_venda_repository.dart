@@ -5,7 +5,8 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 
-// Single report entry point; batch/cancel can extend later if needed.
+/// Product sales trend report: paged rows, summary, and top movers via
+/// `sql.execute` / `sql.executeBatch`, with optional [AgentQueriesCancelScope].
 abstract interface class ProdutoVendidoTendenciaDeVendaRepository {
   Future<AppResult<List<ProdutoVendidoTendenciaDeVendaRow>>> loadAll({
     required String userId,

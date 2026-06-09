@@ -6,6 +6,8 @@ import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart' show SessionFailure;
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_tendencia_de_venda_repository.dart';
 import 'package:flutter_test/flutter_test.dart' hide group;
 import 'package:test_api/scaffolding.dart' show group;
@@ -141,7 +143,226 @@ void main() {
           );
         },
       );
+
+      test(
+        'loadPageAndSummary page 2 shares totalCount when more than one page exists',
+        () async {
+          final missingKeys = missingE2eRepositoryKeys();
+          if (missingKeys.isNotEmpty) {
+            // E2E skip diagnostics are printed when required env keys are absent.
+            // ignore: avoid_print
+            print(
+              'SKIP produto_vendido_tendencia_de_venda_repository_e2e '
+              '(page 2): missing ${missingKeys.join(', ')}.',
+            );
+            return;
+          }
+
+          final repository = getIt<ProdutoVendidoTendenciaDeVendaRepository>();
+          const smallPageSize = 5;
+          final summaryFilter = ProdutoVendidoTendenciaDeVendaFilter(
+            periodoAtualInicio: DateTime(2026, 3),
+            periodoAtualFim: DateTime(2026, 3, 31),
+            periodoAnteriorInicio: DateTime(2026, 2),
+            periodoAnteriorFim: DateTime(2026, 2, 28),
+          );
+
+          final first = await runE2eAppResult(
+            () => repository.loadPageAndSummary(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              pageFilter: ProdutoVendidoTendenciaDeVendaFilter(
+                periodoAtualInicio: summaryFilter.periodoAtualInicio,
+                periodoAtualFim: summaryFilter.periodoAtualFim,
+                periodoAnteriorInicio: summaryFilter.periodoAnteriorInicio,
+                periodoAnteriorFim: summaryFilter.periodoAnteriorFim,
+                pageSize: smallPageSize,
+              ),
+              summaryFilter: summaryFilter,
+            ),
+          );
+
+          if (first.isError()) {
+            final failure = first.exceptionOrNull()!;
+            expect(failure, isNot(isA<SessionFailure>()));
+            expect(
+              isAcceptableE2eAgentSqlRepositoryFailure(failure),
+              isTrue,
+            );
+            return;
+          }
+
+          final page1 = first.getOrThrow();
+          checkPagedTrendInvariants(
+            page1.rows,
+            page1.totalCount,
+            smallPageSize,
+          );
+          if (page1.totalCount <= smallPageSize) {
+            return;
+          }
+
+          final totalCount = page1.totalCount;
+          final second = await runE2eAppResultWithHubRetry(
+            () => repository.loadPageAndSummary(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              pageFilter: ProdutoVendidoTendenciaDeVendaFilter(
+                periodoAtualInicio: summaryFilter.periodoAtualInicio,
+                periodoAtualFim: summaryFilter.periodoAtualFim,
+                periodoAnteriorInicio: summaryFilter.periodoAnteriorInicio,
+                periodoAnteriorFim: summaryFilter.periodoAnteriorFim,
+                page: 2,
+                pageSize: smallPageSize,
+              ),
+              summaryFilter: summaryFilter,
+            ),
+            actionLabel: 'produto_vendido_tendencia_loadPageAndSummary_page2',
+          );
+
+          second.fold(
+            (page2) {
+              expect(page2.totalCount, totalCount);
+              expect(page2.rows.length, lessThanOrEqualTo(smallPageSize));
+              checkPagedTrendInvariants(
+                page2.rows,
+                page2.totalCount,
+                smallPageSize,
+              );
+
+              if (page1.rows.isNotEmpty && page2.rows.isNotEmpty) {
+                String key(ProdutoVendidoTendenciaDeVendaRow row) =>
+                    '${row.codEmpresa}-${row.codFilial}-${row.codProduto}';
+                final keys1 = page1.rows.map(key).toSet();
+                final overlap = page2.rows
+                    .where((row) => keys1.contains(key(row)))
+                    .toList();
+                expect(
+                  overlap,
+                  isEmpty,
+                  reason:
+                      'Page 2 rows should not repeat (CodEmpresa, CodFilial, '
+                      'CodProduto) keys from page 1',
+                );
+              }
+            },
+            (failure) {
+              expect(failure, isNot(isA<SessionFailure>()));
+              expect(
+                isAcceptableE2eAgentSqlRepositoryFailure(failure),
+                isTrue,
+              );
+            },
+          );
+        },
+      );
+
+      test(
+        'loadPageAndSummary returns page, summary, and top movers in one batch',
+        () async {
+          final missingKeys = missingE2eRepositoryKeys();
+          if (missingKeys.isNotEmpty) {
+            // E2E skip diagnostics are printed when required env keys are absent.
+            // ignore: avoid_print
+            print(
+              'SKIP produto_vendido_tendencia_de_venda_repository_e2e '
+              '(batch): missing ${missingKeys.join(', ')}.',
+            );
+            return;
+          }
+
+          final repository = getIt<ProdutoVendidoTendenciaDeVendaRepository>();
+          final filter = ProdutoVendidoTendenciaDeVendaFilter(
+            periodoAtualInicio: DateTime(2026, 3),
+            periodoAtualFim: DateTime(2026, 3, 31),
+            periodoAnteriorInicio: DateTime(2026, 2),
+            periodoAnteriorFim: DateTime(2026, 2, 28),
+            pageSize: 10,
+          );
+
+          final result = await runE2eAppResultWithHubRetry(
+            () => repository.loadPageAndSummary(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              pageFilter: filter,
+              summaryFilter: filter,
+            ),
+            actionLabel: 'produto_vendido_tendencia_batch',
+          );
+
+          result.fold(
+            (data) {
+              expect(data.totalCount, greaterThanOrEqualTo(0));
+              expect(data.rows.length, lessThanOrEqualTo(filter.pageSize));
+              if (data.totalCount > 0) {
+                expect(data.rows, isNotEmpty);
+              } else {
+                expect(data.rows, isEmpty);
+              }
+              checkTrendRowsInvariants(data.rows);
+              checkSummaryInvariants(data.summaryRows);
+              checkTrendRowsInvariants(data.topGainers);
+              checkTrendRowsInvariants(data.topLosers);
+              for (final row in data.topGainers) {
+                expect(row.percentualTendencia, greaterThan(0));
+              }
+              for (final row in data.topLosers) {
+                expect(row.percentualTendencia, lessThan(0));
+              }
+            },
+            (failure) {
+              expect(failure, isNot(isA<SessionFailure>()));
+              expect(
+                isAcceptableE2eAgentSqlRepositoryFailure(failure),
+                isTrue,
+              );
+            },
+          );
+        },
+      );
     },
     tags: <String>['e2e'],
   );
+}
+
+void checkPagedTrendInvariants(
+  List<ProdutoVendidoTendenciaDeVendaRow> rows,
+  int totalCount,
+  int pageSize,
+) {
+  expect(totalCount, greaterThanOrEqualTo(0));
+  expect(rows.length, lessThanOrEqualTo(pageSize));
+  if (totalCount > 0) {
+    expect(rows, isNotEmpty);
+  } else {
+    expect(rows, isEmpty);
+  }
+  checkTrendRowsInvariants(rows);
+}
+
+void checkTrendRowsInvariants(List<ProdutoVendidoTendenciaDeVendaRow> rows) {
+  for (final row in rows) {
+    expect(row.codEmpresa, greaterThan(0));
+    expect(row.codFilial, greaterThanOrEqualTo(0));
+    expect(row.codProduto, greaterThan(0));
+    expect(row.nomeProduto, isNotEmpty);
+    expect(row.codUnidadeMedida, isNotEmpty);
+    expect(row.qtdAnterior, isNonNegative);
+    expect(row.qtdAtual, isNonNegative);
+    expect(row.percentualTendencia, isNotNaN);
+    expect(row.classificacao, isNotEmpty);
+  }
+}
+
+void checkSummaryInvariants(
+  List<ProdutoVendidoTendenciaDeVendaSummaryRow> rows,
+) {
+  for (final row in rows) {
+    expect(row.classificacao, isNotEmpty);
+    expect(row.quantidadeProdutos, greaterThanOrEqualTo(0));
+    expect(row.impactoLiquido, isNotNaN);
+  }
 }

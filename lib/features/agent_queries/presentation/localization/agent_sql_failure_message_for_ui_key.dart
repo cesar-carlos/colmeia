@@ -31,6 +31,13 @@ String agentSqlFailureMessageForUiKey(String key, AppLocalizations l10n) {
       l10n.agentSqlErrorExecutionNotFound,
     AgentSqlRpcFailureUiKey.executionCancelled =>
       l10n.agentSqlErrorExecutionCancelled,
+    AgentSqlRpcFailureUiKey.unexpectedAgentResponse =>
+      l10n.agentSqlErrorUnexpectedAgentResponse,
+    AgentSqlRpcFailureUiKey.queryLoadFailed => l10n.agentSqlErrorQueryLoadFailed,
+    AgentSqlRpcFailureUiKey.tendenciaSummaryUnexpectedFormat =>
+      l10n.agentSqlErrorTendenciaSummaryUnexpectedFormat,
+    AgentSqlRpcFailureUiKey.mediaMovelSummaryUnexpectedFormat =>
+      l10n.agentSqlErrorMediaMovelSummaryUnexpectedFormat,
     AgentSqlRpcFailureUiKey.generic => l10n.agentSqlErrorGeneric,
     _ => l10n.agentSqlErrorGeneric,
   };

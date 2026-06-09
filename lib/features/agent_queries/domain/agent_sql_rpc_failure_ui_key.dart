@@ -26,4 +26,18 @@ abstract final class AgentSqlRpcFailureUiKey {
   static const String executionNotFound = 'executionNotFound';
   static const String executionCancelled = 'executionCancelled';
   static const String generic = 'generic';
+
+  /// Agent returned rows that could not be parsed into the expected shape.
+  static const String unexpectedAgentResponse = 'unexpectedAgentResponse';
+
+  /// Batch slot missing from sql.executeBatch (partial batch response).
+  static const String queryLoadFailed = 'queryLoadFailed';
+
+  /// Trend summary query returned an unexpected row shape.
+  static const String tendenciaSummaryUnexpectedFormat =
+      'tendenciaSummaryUnexpectedFormat';
+
+  /// Moving-average trend summary returned an unexpected row shape.
+  static const String mediaMovelSummaryUnexpectedFormat =
+      'mediaMovelSummaryUnexpectedFormat';
 }

@@ -1,4 +1,3 @@
-import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_trend_comparison_bar_chart_style.dart';
@@ -38,17 +37,39 @@ String salesProdutoTendenciaClassificacaoLabel(
   };
 }
 
-List<SalesProdutoTendenciaClassBucket> salesProdutoTendenciaBucketsFromSummary(
+class SalesProdutoTendenciaSummary {
+  const SalesProdutoTendenciaSummary({
+    required this.countGrowing,
+    required this.countFalling,
+    required this.countNew,
+    required this.countStopped,
+    required this.countStable,
+    required this.netImpact,
+    required this.buckets,
+  });
+
+  final int countGrowing;
+  final int countFalling;
+  final int countNew;
+  final int countStopped;
+  final int countStable;
+  final double netImpact;
+  final List<SalesProdutoTendenciaClassBucket> buckets;
+}
+
+SalesProdutoTendenciaSummary buildSalesProdutoTendenciaSummary(
   List<ProdutoVendidoTendenciaDeVendaSummaryRow> summaryRows,
 ) {
   final counts = <String, int>{};
   final impacts = <String, double>{};
+  var netImpact = 0.0;
 
   for (final row in summaryRows) {
     final classificacao = row.classificacao.trim().toUpperCase();
     counts[classificacao] =
         (counts[classificacao] ?? 0) + row.quantidadeProdutos;
     impacts[classificacao] = (impacts[classificacao] ?? 0) + row.impactoLiquido;
+    netImpact += row.impactoLiquido;
   }
 
   final buckets =
@@ -63,7 +84,21 @@ List<SalesProdutoTendenciaClassBucket> salesProdutoTendenciaBucketsFromSummary(
           .toList(growable: false)
         ..sort((a, b) => b.count.compareTo(a.count));
 
-  return buckets;
+  return SalesProdutoTendenciaSummary(
+    countGrowing: counts['CRESCENDO'] ?? 0,
+    countFalling: counts['CAINDO'] ?? 0,
+    countNew: counts['NOVO PRODUTO'] ?? 0,
+    countStopped: counts['PAROU DE VENDER'] ?? 0,
+    countStable: counts['ESTAVEL'] ?? 0,
+    netImpact: netImpact,
+    buckets: buckets,
+  );
+}
+
+List<SalesProdutoTendenciaClassBucket> salesProdutoTendenciaBucketsFromSummary(
+  List<ProdutoVendidoTendenciaDeVendaSummaryRow> summaryRows,
+) {
+  return buildSalesProdutoTendenciaSummary(summaryRows).buckets;
 }
 
 ChartShareMetadata buildSalesProdutoTendenciaClassificacaoShareMetadata({
@@ -86,7 +121,9 @@ ChartShareMetadata buildSalesProdutoTendenciaClassificacaoShareMetadata({
           <String>[
             salesProdutoTendenciaClassificacaoLabel(l10n, row.classificacao),
             row.quantidadeProdutos.toString(),
-            AppBrFormatters.currency(row.impactoLiquido),
+            NumberFormat.decimalPattern(l10n.localeName).format(
+              row.impactoLiquido.round(),
+            ),
           ],
       ],
     ),

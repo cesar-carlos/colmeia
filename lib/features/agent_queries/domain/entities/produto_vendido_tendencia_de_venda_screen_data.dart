@@ -4,9 +4,15 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 class ProdutoVendidoTendenciaDeVendaScreenData {
   const ProdutoVendidoTendenciaDeVendaScreenData({
     required this.rows,
+    required this.totalCount,
     required this.summaryRows,
+    required this.topGainers,
+    required this.topLosers,
   });
 
   final List<ProdutoVendidoTendenciaDeVendaRow> rows;
+  final int totalCount;
   final List<ProdutoVendidoTendenciaDeVendaSummaryRow> summaryRows;
+  final List<ProdutoVendidoTendenciaDeVendaRow> topGainers;
+  final List<ProdutoVendidoTendenciaDeVendaRow> topLosers;
 }

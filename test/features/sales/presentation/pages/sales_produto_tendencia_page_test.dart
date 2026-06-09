@@ -7,9 +7,9 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_marca_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_screen_use_case.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/grupo_marca_produto_options_batch.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/grupo_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/marca_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_filter.dart';
@@ -50,19 +50,15 @@ class _MockLoadAvailableAgentsForSales extends Mock
 class _MockLoadProdutoVendidoTendenciaDeVendaScreenUseCase extends Mock
     implements LoadProdutoVendidoTendenciaDeVendaScreenUseCase {}
 
-class _MockLoadGrupoProdutoOptionsUseCase extends Mock
-    implements LoadGrupoProdutoOptionsUseCase {}
-
-class _MockLoadMarcaProdutoOptionsUseCase extends Mock
-    implements LoadMarcaProdutoOptionsUseCase {}
+class _MockLoadGrupoMarcaProdutoOptionsUseCase extends Mock
+    implements LoadGrupoMarcaProdutoOptionsUseCase {}
 
 late SalesPreferences _pumpSalesPreferences;
 late LoadAvailableAgentsForSales _pumpLoadAvailableAgentsForSales;
 late AgentClientTokenReader _pumpTokenReader;
 late LoadProdutoVendidoTendenciaDeVendaScreenUseCase
 _pumpLoadTrendScreenUseCase;
-late LoadGrupoProdutoOptionsUseCase _pumpLoadGrupoOptionsUseCase;
-late LoadMarcaProdutoOptionsUseCase _pumpLoadMarcaOptionsUseCase;
+late LoadGrupoMarcaProdutoOptionsUseCase _pumpLoadGrupoMarcaOptionsUseCase;
 
 void main() {
   late _MockAuthController authController;
@@ -71,8 +67,7 @@ void main() {
   late _MockLoadAvailableAgentsForSales loadAvailableAgentsForSales;
   late _MockLoadProdutoVendidoTendenciaDeVendaScreenUseCase
   loadTrendScreenUseCase;
-  late _MockLoadGrupoProdutoOptionsUseCase loadGrupoOptionsUseCase;
-  late _MockLoadMarcaProdutoOptionsUseCase loadMarcaOptionsUseCase;
+  late _MockLoadGrupoMarcaProdutoOptionsUseCase loadGrupoMarcaOptionsUseCase;
 
   setUpAll(() {
     Provider.debugCheckInvalidValueType = null;
@@ -98,14 +93,12 @@ void main() {
     loadAvailableAgentsForSales = _MockLoadAvailableAgentsForSales();
     loadTrendScreenUseCase =
         _MockLoadProdutoVendidoTendenciaDeVendaScreenUseCase();
-    loadGrupoOptionsUseCase = _MockLoadGrupoProdutoOptionsUseCase();
-    loadMarcaOptionsUseCase = _MockLoadMarcaProdutoOptionsUseCase();
+    loadGrupoMarcaOptionsUseCase = _MockLoadGrupoMarcaProdutoOptionsUseCase();
     _pumpSalesPreferences = salesPreferences;
     _pumpLoadAvailableAgentsForSales = loadAvailableAgentsForSales;
     _pumpTokenReader = tokenReader;
     _pumpLoadTrendScreenUseCase = loadTrendScreenUseCase;
-    _pumpLoadGrupoOptionsUseCase = loadGrupoOptionsUseCase;
-    _pumpLoadMarcaOptionsUseCase = loadMarcaOptionsUseCase;
+    _pumpLoadGrupoMarcaOptionsUseCase = loadGrupoMarcaOptionsUseCase;
 
     when(() => authController.session).thenReturn(
       AuthSession(
@@ -172,38 +165,29 @@ void main() {
           const Success<ProdutoVendidoTendenciaDeVendaScreenData, AppFailure>(
             ProdutoVendidoTendenciaDeVendaScreenData(
               rows: <ProdutoVendidoTendenciaDeVendaRow>[],
+              totalCount: 0,
               summaryRows: <ProdutoVendidoTendenciaDeVendaSummaryRow>[],
+              topGainers: <ProdutoVendidoTendenciaDeVendaRow>[],
+              topLosers: <ProdutoVendidoTendenciaDeVendaRow>[],
             ),
           ),
     );
 
     when(
-      () => loadGrupoOptionsUseCase.call(
+      () => loadGrupoMarcaOptionsUseCase.call(
         userId: any(named: 'userId'),
         agentId: any(named: 'agentId'),
         page: any(named: 'page'),
         pageSize: any(named: 'pageSize'),
-        searchTerm: any(named: 'searchTerm'),
         clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer(
-      (_) async => const Success<List<GrupoProdutoOption>, AppFailure>(
-        <GrupoProdutoOption>[],
-      ),
-    );
-
-    when(
-      () => loadMarcaOptionsUseCase.call(
-        userId: any(named: 'userId'),
-        agentId: any(named: 'agentId'),
-        page: any(named: 'page'),
-        pageSize: any(named: 'pageSize'),
-        searchTerm: any(named: 'searchTerm'),
-        clientToken: any(named: 'clientToken'),
-      ),
-    ).thenAnswer(
-      (_) async => const Success<List<MarcaProdutoOption>, AppFailure>(
-        <MarcaProdutoOption>[],
+      (_) async => const Success<GrupoMarcaProdutoOptionsBatch, AppFailure>(
+        GrupoMarcaProdutoOptionsBatch(
+          grupoOptions: <GrupoProdutoOption>[],
+          marcaOptions: <MarcaProdutoOption>[],
+        ),
       ),
     );
 
@@ -222,11 +206,8 @@ void main() {
       ..registerSingleton<LoadProdutoVendidoTendenciaDeVendaScreenUseCase>(
         loadTrendScreenUseCase,
       )
-      ..registerSingleton<LoadGrupoProdutoOptionsUseCase>(
-        loadGrupoOptionsUseCase,
-      )
-      ..registerSingleton<LoadMarcaProdutoOptionsUseCase>(
-        loadMarcaOptionsUseCase,
+      ..registerSingleton<LoadGrupoMarcaProdutoOptionsUseCase>(
+        loadGrupoMarcaOptionsUseCase,
       );
   });
 
@@ -277,7 +258,10 @@ void main() {
       const Success<ProdutoVendidoTendenciaDeVendaScreenData, AppFailure>(
         ProdutoVendidoTendenciaDeVendaScreenData(
           rows: <ProdutoVendidoTendenciaDeVendaRow>[],
+          totalCount: 0,
           summaryRows: <ProdutoVendidoTendenciaDeVendaSummaryRow>[],
+          topGainers: <ProdutoVendidoTendenciaDeVendaRow>[],
+          topLosers: <ProdutoVendidoTendenciaDeVendaRow>[],
         ),
       ),
     );
@@ -442,6 +426,7 @@ void main() {
                     classificacao: 'CAINDO',
                   ),
                 ],
+                totalCount: 2,
                 summaryRows: const <ProdutoVendidoTendenciaDeVendaSummaryRow>[
                   ProdutoVendidoTendenciaDeVendaSummaryRow(
                     classificacao: 'CRESCENDO',
@@ -452,6 +437,24 @@ void main() {
                     classificacao: 'CAINDO',
                     quantidadeProdutos: 1,
                     impactoLiquido: -12,
+                  ),
+                ],
+                topGainers: <ProdutoVendidoTendenciaDeVendaRow>[
+                  _trendRow(
+                    codProduto: 1,
+                    nomeProduto: 'Product A',
+                    diferenca: 30,
+                    percentualTendencia: 25,
+                    classificacao: 'CRESCENDO',
+                  ),
+                ],
+                topLosers: <ProdutoVendidoTendenciaDeVendaRow>[
+                  _trendRow(
+                    codProduto: 2,
+                    nomeProduto: 'Product B',
+                    diferenca: -12,
+                    percentualTendencia: -10,
+                    classificacao: 'CAINDO',
                   ),
                 ],
               ),
@@ -468,6 +471,144 @@ void main() {
       expect(find.text('Product B'), findsWidgets);
     },
   );
+
+  testWidgets('exposes share actions when trend data is loaded', (
+    tester,
+  ) async {
+    when(
+      () => loadTrendScreenUseCase.call(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        pageFilter: any(named: 'pageFilter'),
+        summaryFilter: any(named: 'summaryFilter'),
+        clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    ).thenAnswer(
+      (_) async =>
+          Success<ProdutoVendidoTendenciaDeVendaScreenData, AppFailure>(
+            ProdutoVendidoTendenciaDeVendaScreenData(
+              rows: <ProdutoVendidoTendenciaDeVendaRow>[
+                _trendRow(
+                  codProduto: 1,
+                  nomeProduto: 'Product A',
+                  diferenca: 30,
+                  percentualTendencia: 25,
+                  classificacao: 'CRESCENDO',
+                ),
+              ],
+              totalCount: 1,
+              summaryRows: const <ProdutoVendidoTendenciaDeVendaSummaryRow>[
+                ProdutoVendidoTendenciaDeVendaSummaryRow(
+                  classificacao: 'CRESCENDO',
+                  quantidadeProdutos: 1,
+                  impactoLiquido: 30,
+                ),
+              ],
+              topGainers: <ProdutoVendidoTendenciaDeVendaRow>[
+                _trendRow(
+                  codProduto: 1,
+                  nomeProduto: 'Product A',
+                  diferenca: 30,
+                  percentualTendencia: 25,
+                  classificacao: 'CRESCENDO',
+                ),
+              ],
+              topLosers: const <ProdutoVendidoTendenciaDeVendaRow>[],
+            ),
+          ),
+    );
+
+    await _pumpTrendPage(tester, authController: authController);
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Share chart'), findsWidgets);
+    expect(find.byIcon(Icons.open_in_full), findsWidgets);
+  });
+
+  test(
+    'opens classificacao fullscreen chart route',
+    () {
+      // Needs GoRouter with chart fullscreen routes; _pumpTrendPage uses
+      // MaterialApp home only, so fullscreen navigation is not testable here.
+    },
+    skip:
+        'Fullscreen navigation requires GoRouter with chart fullscreen routes',
+  );
+
+  testWidgets('renders pt_BR page chrome and filter summary', (tester) async {
+    await _pumpTrendPage(
+      tester,
+      authController: authController,
+      locale: const Locale('pt', 'BR'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tendência de vendas'), findsOneWidget);
+    expect(find.text('Sem filtros adicionais'), findsOneWidget);
+    expect(find.text('Sales trend'), findsNothing);
+    expect(find.text('No additional filters'), findsNothing);
+  });
+
+  testWidgets('renders pt_BR summary KPIs when trend data is loaded', (
+    tester,
+  ) async {
+    when(
+      () => loadTrendScreenUseCase.call(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        pageFilter: any(named: 'pageFilter'),
+        summaryFilter: any(named: 'summaryFilter'),
+        clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    ).thenAnswer(
+      (_) async =>
+          Success<ProdutoVendidoTendenciaDeVendaScreenData, AppFailure>(
+            ProdutoVendidoTendenciaDeVendaScreenData(
+              rows: <ProdutoVendidoTendenciaDeVendaRow>[
+                _trendRow(
+                  codProduto: 1,
+                  nomeProduto: 'Product A',
+                  diferenca: 30,
+                  percentualTendencia: 25,
+                  classificacao: 'CRESCENDO',
+                ),
+              ],
+              totalCount: 1,
+              summaryRows: const <ProdutoVendidoTendenciaDeVendaSummaryRow>[
+                ProdutoVendidoTendenciaDeVendaSummaryRow(
+                  classificacao: 'CRESCENDO',
+                  quantidadeProdutos: 1,
+                  impactoLiquido: 30,
+                ),
+              ],
+              topGainers: <ProdutoVendidoTendenciaDeVendaRow>[
+                _trendRow(
+                  codProduto: 1,
+                  nomeProduto: 'Product A',
+                  diferenca: 30,
+                  percentualTendencia: 25,
+                  classificacao: 'CRESCENDO',
+                ),
+              ],
+              topLosers: const <ProdutoVendidoTendenciaDeVendaRow>[],
+            ),
+          ),
+    );
+
+    await _pumpTrendPage(
+      tester,
+      authController: authController,
+      locale: const Locale('pt', 'BR'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Resumo executivo'), findsOneWidget);
+    expect(find.text('Produtos crescendo'), findsOneWidget);
+    expect(find.text('Executive summary'), findsNothing);
+    expect(find.text('Growing products'), findsNothing);
+  });
 
   testWidgets('navigates from sales hub card to trend page route', (
     tester,
@@ -501,12 +642,14 @@ void main() {
 Future<void> _pumpTrendPage(
   WidgetTester tester, {
   required AuthController authController,
+  Locale? locale,
 }) async {
   await tester.pumpWidget(
     Provider<AuthController>.value(
       value: authController,
       child: MaterialApp(
         theme: AppTheme.light(),
+        locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
@@ -516,8 +659,8 @@ Future<void> _pumpTrendPage(
             resolveSalesAgentClientTokenUseCase:
                 ResolveSalesAgentClientTokenUseCase(_pumpTokenReader),
             loadTrendScreenUseCase: _pumpLoadTrendScreenUseCase,
-            loadGrupoProdutoOptionsUseCase: _pumpLoadGrupoOptionsUseCase,
-            loadMarcaProdutoOptionsUseCase: _pumpLoadMarcaOptionsUseCase,
+            loadGrupoMarcaProdutoOptionsUseCase:
+                _pumpLoadGrupoMarcaOptionsUseCase,
           ),
         ),
       ),

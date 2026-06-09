@@ -1,3 +1,4 @@
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_batch_item_rpc_failure_mapper.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
@@ -35,6 +36,37 @@ void main() {
         failure.context[AgentSqlRpcFailureUiKey.field],
         AgentSqlRpcFailureUiKey.rateLimited,
       );
+    });
+
+    test('failureForItemOrNull returns null for ok items', () {
+      const byIndex = <int, AgentSqlBatchExecutionItem>{
+        0: AgentSqlBatchExecutionItem(
+          index: 0,
+          ok: true,
+          rows: <Map<String, dynamic>>[],
+          rowCount: 0,
+        ),
+      };
+
+      expect(
+        AgentSqlBatchItemRpcFailureMapper.failureForItemOrNull(
+          byIndex: byIndex,
+          index: 0,
+          operation: 'sql.executeBatch',
+        ),
+        isNull,
+      );
+    });
+
+    test('failureForItemOrNull maps missing batch slots', () {
+      final failure = AgentSqlBatchItemRpcFailureMapper.failureForItemOrNull(
+        byIndex: const <int, AgentSqlBatchExecutionItem>{},
+        index: 2,
+        operation: 'loadTrendBatch',
+      );
+
+      expect(failure, isA<RpcFailure>());
+      expect((failure! as RpcFailure).reason, 'missing_batch_item');
     });
 
     test('falls back to batch_item_failed for plain string errors', () {

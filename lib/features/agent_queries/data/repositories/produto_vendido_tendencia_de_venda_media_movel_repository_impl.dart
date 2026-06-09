@@ -4,12 +4,14 @@ import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_sql_row_map_reader.dart';
+import 'package:colmeia/features/agent_queries/data/agent_sql_batch_item_rpc_failure_mapper.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_read_only_batch_options.dart';
 import 'package:colmeia/features/agent_queries/data/models/produto_vendido_tendencia_de_venda_media_movel_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/models/produto_vendido_tendencia_de_venda_media_movel_summary_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_tendencia_de_venda_media_movel_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_tendencia_de_venda_media_movel_summary_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repository_execution.dart';
+import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
@@ -118,6 +120,7 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
       operation: _operation,
       agentId: agentId.trim(),
       unexpectedRowsLogMessage: 'Unexpected row shape for $_operation',
+      unexpectedRowsUiKey: AgentSqlRpcFailureUiKey.unexpectedAgentResponse,
       mapExecution: (executionResult) => _mapPagedExecution(
         executionResult,
         agentId: agentId.trim(),
@@ -190,8 +193,8 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
       operation: _summaryOperation,
       agentId: agentId.trim(),
       unexpectedRowsLogMessage: 'Unexpected row shape for $_summaryOperation',
-      unexpectedRowsUserMessage:
-          'Resumo da media movel veio em formato inesperado. Tente novamente.',
+      unexpectedRowsUiKey:
+          AgentSqlRpcFailureUiKey.mediaMovelSummaryUnexpectedFormat,
       mapExecution: _mapSummaryExecution,
       cancelScope: cancelScope,
     );
@@ -237,6 +240,9 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
         ? sqlMaxRowsCap
         : summaryMaxRows;
 
+    // Each batch command is an independent SQL batch on the agent; shared CTEs
+    // cannot be hoisted across items. Hub parallelism is enabled via
+    // [AgentSqlReadOnlyBatchOptions.dashboard] (max_parallel_read_only_batch_items).
     final request = AgentSqlExecuteBatchRequest(
       agentId: agentId,
       requestingUserId: userId,
@@ -302,83 +308,22 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
     final byIndex = <int, AgentSqlBatchExecutionItem>{
       for (final item in execution.items) item.index: item,
     };
-    final pageItem = byIndex[_batchIndexPage];
-    if (pageItem == null) {
-      return const Failure<
-        ProdutoVendidoTendenciaDeVendaMediaMovelScreenData,
-        AppFailure
-      >(
-        RpcFailure(
-          message: 'sql.executeBatch page item is missing',
-          userMessage: 'Nao foi possivel carregar esta consulta.',
-          rpcCode: null,
-          retryable: false,
-          reason: 'missing_batch_item',
-          context: <String, Object?>{
-            'operation': _batchOperation,
-            'batchItemIndex': _batchIndexPage,
-          },
-        ),
+    for (final index in <int>[_batchIndexPage, _batchIndexSummary]) {
+      final failure = AgentSqlBatchItemRpcFailureMapper.failureForItemOrNull(
+        byIndex: byIndex,
+        index: index,
+        operation: _batchOperation,
       );
-    }
-    if (!pageItem.ok) {
-      return Failure<
-        ProdutoVendidoTendenciaDeVendaMediaMovelScreenData,
-        AppFailure
-      >(
-        RpcFailure(
-          message: pageItem.error ?? 'sql.executeBatch page item failed',
-          userMessage:
-              pageItem.error ?? 'Nao foi possivel carregar esta consulta.',
-          rpcCode: null,
-          retryable: false,
-          reason: 'batch_item_failed',
-          context: <String, Object?>{
-            'operation': _batchOperation,
-            'batchItemIndex': _batchIndexPage,
-          },
-        ),
-      );
+      if (failure != null) {
+        return Failure<
+          ProdutoVendidoTendenciaDeVendaMediaMovelScreenData,
+          AppFailure
+        >(_withBatchItemFailureUiKey(failure));
+      }
     }
 
-    final summaryItem = byIndex[_batchIndexSummary];
-    if (summaryItem == null) {
-      return const Failure<
-        ProdutoVendidoTendenciaDeVendaMediaMovelScreenData,
-        AppFailure
-      >(
-        RpcFailure(
-          message: 'sql.executeBatch summary item is missing',
-          userMessage: 'Nao foi possivel carregar esta consulta.',
-          rpcCode: null,
-          retryable: false,
-          reason: 'missing_batch_item',
-          context: <String, Object?>{
-            'operation': _batchOperation,
-            'batchItemIndex': _batchIndexSummary,
-          },
-        ),
-      );
-    }
-    if (!summaryItem.ok) {
-      return Failure<
-        ProdutoVendidoTendenciaDeVendaMediaMovelScreenData,
-        AppFailure
-      >(
-        RpcFailure(
-          message: summaryItem.error ?? 'sql.executeBatch summary item failed',
-          userMessage:
-              summaryItem.error ?? 'Nao foi possivel carregar esta consulta.',
-          rpcCode: null,
-          retryable: false,
-          reason: 'batch_item_failed',
-          context: <String, Object?>{
-            'operation': _batchOperation,
-            'batchItemIndex': _batchIndexSummary,
-          },
-        ),
-      );
-    }
+    final pageItem = byIndex[_batchIndexPage]!;
+    final summaryItem = byIndex[_batchIndexSummary]!;
 
     try {
       final pageResult = _mapPagedExecution(
@@ -426,17 +371,45 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
       >(
         UnknownFailure(
           message: message,
-          userMessage:
-              'Resposta do agente estava em formato inesperado. Tente novamente.',
           cause: error,
           stackTrace: stackTrace,
           context: <String, Object?>{
             'operation': _batchOperation,
             'agentId': agentId,
+            AgentSqlRpcFailureUiKey.field:
+                AgentSqlRpcFailureUiKey.unexpectedAgentResponse,
           },
         ),
       );
     }
+  }
+
+  static AppFailure _withBatchItemFailureUiKey(AppFailure failure) {
+    if (failure is! RpcFailure || failure.reason != 'missing_batch_item') {
+      return failure;
+    }
+    if (failure.context[AgentSqlRpcFailureUiKey.field] ==
+        AgentSqlRpcFailureUiKey.queryLoadFailed) {
+      return failure;
+    }
+    return RpcFailure(
+      message: failure.message,
+      userMessage: failure.userMessage,
+      rpcCode: failure.rpcCode,
+      retryable: failure.retryable,
+      reason: failure.reason,
+      category: failure.category,
+      technicalMessage: failure.technicalMessage,
+      correlationId: failure.correlationId,
+      timestamp: failure.timestamp,
+      retryAfter: failure.retryAfter,
+      cause: failure.cause,
+      stackTrace: failure.stackTrace,
+      context: <String, Object?>{
+        ...failure.context,
+        AgentSqlRpcFailureUiKey.field: AgentSqlRpcFailureUiKey.queryLoadFailed,
+      },
+    );
   }
 
   ProdutoVendidoTendenciaDeVendaMediaMovelPageResult _mapPagedExecution(

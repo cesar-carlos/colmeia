@@ -1,5 +1,6 @@
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_row.dart';
-import 'package:colmeia/features/sales/presentation/pages/sales_produto_tendencia_media_movel_widgets.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_classificacao_labels.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_summary_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_trend_comparison_bar_chart_style.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -51,7 +52,7 @@ ChartShareMetadata buildSalesProdutoTendenciaMediaMovelImpactShareMetadata({
   required List<SalesProdutoTendenciaMediaMovelClassBucket> buckets,
   required AppThemeTokens tokens,
 }) {
-  final impactFormat = NumberFormat.decimalPattern('pt_BR');
+  final impactFormat = NumberFormat.decimalPattern(l10n.localeName);
   return ChartShareMetadata(
     title: l10n.salesProdutoTendenciaMediaMovelSummaryByImpactTitle,
     subtitle: l10n.salesProdutoTendenciaMediaMovelSummaryByImpactSubtitle,
@@ -88,7 +89,7 @@ ChartShareMetadata buildSalesProdutoTendenciaMediaMovelDetailsShareMetadata({
   required List<ProdutoVendidoTendenciaDeVendaMediaMovelRow> rows,
   required String filterSummary,
 }) {
-  final decimalFormat = NumberFormat.decimalPattern('pt_BR');
+  final decimalFormat = NumberFormat.decimalPattern(l10n.localeName);
   return ChartShareMetadata(
     title: l10n.salesProdutoTendenciaMediaMovelDetailsTitle,
     subtitle: l10n.salesProdutoTendenciaMediaMovelDetailsSubtitle,
@@ -130,6 +131,7 @@ Widget _mediaMovelComparisonExport({
   required bool useImpactValues,
 }) {
   final locale = Localizations.localeOf(exportContext).toLanguageTag();
+  final decimalFormat = NumberFormat.decimalPattern(l10n.localeName);
   final exportStyle = salesTrendHomeLikeComparisonBarChartStyle(
     tokens: tokens,
     l10n: l10n,
@@ -157,11 +159,11 @@ Widget _mediaMovelComparisonExport({
           l10n.chartComparisonExtremeValueSpreadNotice,
       style: exportStyle,
       dataLabelBuilder: (bucket, value) => useImpactValues
-          ? NumberFormat.decimalPattern('pt_BR').format(bucket.impacto)
+          ? decimalFormat.format(bucket.impacto)
           : '${bucket.count}',
       tooltipLabelBuilder: (bucket, value) =>
           '${produtoTendenciaMediaMovelClassificacaoLabel(l10n, bucket.classificacao)}: '
-          '${useImpactValues ? NumberFormat.decimalPattern('pt_BR').format(bucket.impacto) : bucket.count}',
+          '${useImpactValues ? decimalFormat.format(bucket.impacto) : bucket.count}',
     ),
   );
 }

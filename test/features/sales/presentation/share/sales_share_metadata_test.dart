@@ -1,10 +1,10 @@
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.dart';
-import 'package:colmeia/features/sales/presentation/pages/sales_produto_tendencia_media_movel_widgets.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_monthly_pnl_share.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_produto_tendencia_media_movel_share.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_produto_tendencia_share.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_summary_section.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:flutter/material.dart';

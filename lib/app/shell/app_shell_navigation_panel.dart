@@ -6,6 +6,7 @@ import 'package:colmeia/app/shell/app_shell_route_presentation.dart';
 import 'package:colmeia/app/shell/app_shell_user_summary.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
+import 'package:colmeia/features/user_context/presentation/localization/user_role_label_l10n.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -100,7 +101,7 @@ class AppShellNavigationPanel extends StatelessWidget {
           SizedBox(height: tokens.sectionSpacing),
           AppShellNavProfileCard(
             name: userData.name,
-            roleLabel: userData.roleLabel,
+            roleLabel: userRoleLabelDisplay(l10n, userData.roleLabel),
             thumbnailUrl: userData.thumbnailUrl,
             semanticsLabel: l10n.shellOpenProfileSemantics,
             onTap: isSigningOut ? null : () => _handleProfileOpen(context),

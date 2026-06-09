@@ -4,6 +4,7 @@ import 'package:colmeia/app/router/shell_section_navigation.dart';
 import 'package:colmeia/app/shell/app_shell_user_summary.dart';
 import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
+import 'package:colmeia/features/user_context/presentation/localization/user_role_label_l10n.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -123,7 +124,9 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
           child: _ShellUserChip(
             name: userData.name,
             thumbnailUrl: userData.thumbnailUrl,
-            subtitle: showUserDetails ? userData.roleLabel : null,
+            subtitle: showUserDetails
+                ? userRoleLabelDisplay(l10n, userData.roleLabel)
+                : null,
             semanticsLabel: l10n.shellOpenSettingsSemantics,
             onTap: () => context.goTo(AppRoute.settings),
           ),

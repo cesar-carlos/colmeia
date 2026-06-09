@@ -51,12 +51,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shellNavPurchasesSubtitle => 'Suppliers and purchase orders';
 
   @override
-  String get shellNavInventoryLabel => 'Inventory';
-
-  @override
-  String get shellNavInventorySubtitle => 'Stock levels and movements';
-
-  @override
   String get shellPlaceholderUnderConstructionTitle => 'Under construction';
 
   @override
@@ -119,6 +113,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get userPermissionViewInventory => 'Inventory (module access)';
+
+  @override
+  String get userRoleClientActive => 'Client (active)';
+
+  @override
+  String get userRoleClientPending => 'Client (pending)';
+
+  @override
+  String get userRoleClientRejected => 'Client (rejected)';
+
+  @override
+  String get userRoleClientBlocked => 'Client (blocked)';
+
+  @override
+  String get userRoleStatusActive => 'Active';
+
+  @override
+  String get userRoleStatusPending => 'Pending';
+
+  @override
+  String get userRoleStatusRejected => 'Rejected';
+
+  @override
+  String get userRoleStatusBlocked => 'Blocked';
+
+  @override
+  String get userRoleStatusUnknown => 'Unknown';
 
   @override
   String get dashboardPartialAgentQueriesTitle => 'Incomplete overview data';
@@ -1062,6 +1083,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mapCenterViewportTooltip => 'Center map';
+
+  @override
+  String get regionMapTerritorialSemanticsLabel => 'Territorial map.';
+
+  @override
+  String regionMapSemanticsMetricLabel(String metricLabel) {
+    return 'Metric: $metricLabel.';
+  }
+
+  @override
+  String regionMapSemanticsRegionCount(int regionCount) {
+    return '$regionCount regions.';
+  }
+
+  @override
+  String regionMapSemanticsMarkerCount(int markerCount) {
+    return '$markerCount points on the map.';
+  }
+
+  @override
+  String regionMapSemanticsSelectedRegion(String regionLabel) {
+    return 'Selected: $regionLabel.';
+  }
+
+  @override
+  String regionMapLegendSemanticsLabel(String minValue, String maxValue) {
+    return 'Map legend, from $minValue to $maxValue';
+  }
+
+  @override
+  String regionMapLegendWithTitleSemanticsLabel(
+    String title,
+    String minValue,
+    String maxValue,
+  ) {
+    return 'Legend: $title, from $minValue to $maxValue';
+  }
 
   @override
   String get brazilStoreSalesMapMetricGroupLabel => 'Metric';
@@ -2710,6 +2768,21 @@ class AppLocalizationsEn extends AppLocalizations {
       'The query could not be completed on the agent.';
 
   @override
+  String get agentSqlErrorUnexpectedAgentResponse =>
+      'The agent response had an unexpected format. Please try again.';
+
+  @override
+  String get agentSqlErrorQueryLoadFailed => 'Could not load this query.';
+
+  @override
+  String get agentSqlErrorTendenciaSummaryUnexpectedFormat =>
+      'The trend summary had an unexpected format. Please try again.';
+
+  @override
+  String get agentSqlErrorMediaMovelSummaryUnexpectedFormat =>
+      'The moving-average summary had an unexpected format. Please try again.';
+
+  @override
   String get agentSqlFailureTitleRateLimited => 'Too many queries';
 
   @override
@@ -3984,7 +4057,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesProdutoTendenciaSummaryByClassificacaoSubtitle =>
-      'Distribution and impact in the loaded page.';
+      'Distribution of products across the full filtered result.';
 
   @override
   String get salesProdutoTendenciaTopMoversTitle => 'Top movers';
@@ -4036,6 +4109,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesProdutoTendenciaKpiStopped => 'Stopped selling';
+
+  @override
+  String get salesProdutoTendenciaKpiStable => 'Stable products';
 
   @override
   String get salesProdutoTendenciaKpiNetImpact => 'Net impact (qty)';

@@ -31,13 +31,8 @@ class LoadMediaMovelRowsForShareUseCase {
       return const Success(<ProdutoVendidoTendenciaDeVendaMediaMovelRow>[]);
     }
     if (totalCount > maxExportRowCount) {
-      return Failure(
-        ValidationFailure(
-          message: 'share_export_row_limit_exceeded',
-          userMessage:
-              'Cannot export more than $maxExportRowCount rows. '
-              'Current result has $totalCount rows.',
-        ),
+      return const Failure(
+        ValidationFailure(message: 'share_export_row_limit_exceeded'),
       );
     }
 

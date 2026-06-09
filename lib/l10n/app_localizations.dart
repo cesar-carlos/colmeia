@@ -183,18 +183,6 @@ abstract class AppLocalizations {
   /// **'Suppliers and purchase orders'**
   String get shellNavPurchasesSubtitle;
 
-  /// No description provided for @shellNavInventoryLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Inventory'**
-  String get shellNavInventoryLabel;
-
-  /// No description provided for @shellNavInventorySubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Stock levels and movements'**
-  String get shellNavInventorySubtitle;
-
   /// No description provided for @shellPlaceholderUnderConstructionTitle.
   ///
   /// In en, this message translates to:
@@ -314,6 +302,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Inventory (module access)'**
   String get userPermissionViewInventory;
+
+  /// No description provided for @userRoleClientActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Client (active)'**
+  String get userRoleClientActive;
+
+  /// No description provided for @userRoleClientPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Client (pending)'**
+  String get userRoleClientPending;
+
+  /// No description provided for @userRoleClientRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Client (rejected)'**
+  String get userRoleClientRejected;
+
+  /// No description provided for @userRoleClientBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Client (blocked)'**
+  String get userRoleClientBlocked;
+
+  /// No description provided for @userRoleStatusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get userRoleStatusActive;
+
+  /// No description provided for @userRoleStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get userRoleStatusPending;
+
+  /// No description provided for @userRoleStatusRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected'**
+  String get userRoleStatusRejected;
+
+  /// No description provided for @userRoleStatusBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get userRoleStatusBlocked;
+
+  /// No description provided for @userRoleStatusUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get userRoleStatusUnknown;
 
   /// No description provided for @dashboardPartialAgentQueriesTitle.
   ///
@@ -1845,6 +1887,52 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Center map'**
   String get mapCenterViewportTooltip;
+
+  /// No description provided for @regionMapTerritorialSemanticsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Territorial map.'**
+  String get regionMapTerritorialSemanticsLabel;
+
+  /// No description provided for @regionMapSemanticsMetricLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Metric: {metricLabel}.'**
+  String regionMapSemanticsMetricLabel(String metricLabel);
+
+  /// No description provided for @regionMapSemanticsRegionCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{regionCount} regions.'**
+  String regionMapSemanticsRegionCount(int regionCount);
+
+  /// No description provided for @regionMapSemanticsMarkerCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{markerCount} points on the map.'**
+  String regionMapSemanticsMarkerCount(int markerCount);
+
+  /// No description provided for @regionMapSemanticsSelectedRegion.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected: {regionLabel}.'**
+  String regionMapSemanticsSelectedRegion(String regionLabel);
+
+  /// No description provided for @regionMapLegendSemanticsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Map legend, from {minValue} to {maxValue}'**
+  String regionMapLegendSemanticsLabel(String minValue, String maxValue);
+
+  /// No description provided for @regionMapLegendWithTitleSemanticsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Legend: {title}, from {minValue} to {maxValue}'**
+  String regionMapLegendWithTitleSemanticsLabel(
+    String title,
+    String minValue,
+    String maxValue,
+  );
 
   /// No description provided for @brazilStoreSalesMapMetricGroupLabel.
   ///
@@ -4426,6 +4514,30 @@ abstract class AppLocalizations {
   /// **'The query could not be completed on the agent.'**
   String get agentSqlErrorGeneric;
 
+  /// No description provided for @agentSqlErrorUnexpectedAgentResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent response had an unexpected format. Please try again.'**
+  String get agentSqlErrorUnexpectedAgentResponse;
+
+  /// No description provided for @agentSqlErrorQueryLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load this query.'**
+  String get agentSqlErrorQueryLoadFailed;
+
+  /// No description provided for @agentSqlErrorTendenciaSummaryUnexpectedFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'The trend summary had an unexpected format. Please try again.'**
+  String get agentSqlErrorTendenciaSummaryUnexpectedFormat;
+
+  /// No description provided for @agentSqlErrorMediaMovelSummaryUnexpectedFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'The moving-average summary had an unexpected format. Please try again.'**
+  String get agentSqlErrorMediaMovelSummaryUnexpectedFormat;
+
   /// No description provided for @agentSqlFailureTitleRateLimited.
   ///
   /// In en, this message translates to:
@@ -6557,7 +6669,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesProdutoTendenciaSummaryByClassificacaoSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Distribution and impact in the loaded page.'**
+  /// **'Distribution of products across the full filtered result.'**
   String get salesProdutoTendenciaSummaryByClassificacaoSubtitle;
 
   /// No description provided for @salesProdutoTendenciaTopMoversTitle.
@@ -6649,6 +6761,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stopped selling'**
   String get salesProdutoTendenciaKpiStopped;
+
+  /// No description provided for @salesProdutoTendenciaKpiStable.
+  ///
+  /// In en, this message translates to:
+  /// **'Stable products'**
+  String get salesProdutoTendenciaKpiStable;
 
   /// No description provided for @salesProdutoTendenciaKpiNetImpact.
   ///

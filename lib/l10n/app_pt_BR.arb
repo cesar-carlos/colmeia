@@ -14,8 +14,6 @@
   "shellNavFinanceSubtitle": "Fluxo de caixa, contas a receber e a pagar",
   "shellNavPurchasesLabel": "Compras",
   "shellNavPurchasesSubtitle": "Fornecedores e pedidos de compra",
-  "shellNavInventoryLabel": "Estoque",
-  "shellNavInventorySubtitle": "Níveis de estoque e movimentações",
   "shellPlaceholderUnderConstructionTitle": "Em construção",
   "shellPlaceholderUnderConstructionBody": "Esta seção estará disponível em uma atualização futura.",
   "shellAppBrandName": "Colmeia",
@@ -41,6 +39,15 @@
   "userPermissionViewFinance": "Financeiro (acesso ao módulo)",
   "userPermissionViewPurchases": "Compras (acesso ao módulo)",
   "userPermissionViewInventory": "Estoque (acesso ao módulo)",
+  "userRoleClientActive": "Cliente (ativo)",
+  "userRoleClientPending": "Cliente (pendente)",
+  "userRoleClientRejected": "Cliente (rejeitado)",
+  "userRoleClientBlocked": "Cliente (bloqueado)",
+  "userRoleStatusActive": "Ativo",
+  "userRoleStatusPending": "Pendente",
+  "userRoleStatusRejected": "Rejeitado",
+  "userRoleStatusBlocked": "Bloqueado",
+  "userRoleStatusUnknown": "Desconhecido",
   "dashboardPartialAgentQueriesTitle": "Dados da visão geral incompletos",
   "dashboardPartialAgentQueriesMessage": "Algumas filiais aprovadas não retornaram dados. Os totais podem estar incompletos.",
   "dashboardMissingClientTokenTitle": "Filiais sem token de cliente salvo",
@@ -108,6 +115,13 @@
       "agentId": {"type": "String"},
       "sourceLabel": {"type": "String"},
       "userMessage": {"type": "String"}
+    }
+  },
+  "overviewHomeAlertDetailsReferencedBridgeIdNote": "O detalhe técnico menciona o bridge id {referencedId}; esta linha refere-se à filial {branchId}.",
+  "@overviewHomeAlertDetailsReferencedBridgeIdNote": {
+    "placeholders": {
+      "referencedId": {"type": "String"},
+      "branchId": {"type": "String"}
     }
   },
   "dashboardPaymentSummaryTitle": "Resumo por forma de pagamento",
@@ -460,6 +474,46 @@
     }
   },
   "mapCenterViewportTooltip": "Centralizar mapa",
+  "regionMapTerritorialSemanticsLabel": "Mapa territorial.",
+  "regionMapSemanticsMetricLabel": "Métrica: {metricLabel}.",
+  "@regionMapSemanticsMetricLabel": {
+    "placeholders": {
+      "metricLabel": {"type": "String"}
+    }
+  },
+  "regionMapSemanticsRegionCount": "{regionCount} regiões.",
+  "@regionMapSemanticsRegionCount": {
+    "placeholders": {
+      "regionCount": {"type": "int"}
+    }
+  },
+  "regionMapSemanticsMarkerCount": "{markerCount} pontos no mapa.",
+  "@regionMapSemanticsMarkerCount": {
+    "placeholders": {
+      "markerCount": {"type": "int"}
+    }
+  },
+  "regionMapSemanticsSelectedRegion": "Selecionado: {regionLabel}.",
+  "@regionMapSemanticsSelectedRegion": {
+    "placeholders": {
+      "regionLabel": {"type": "String"}
+    }
+  },
+  "regionMapLegendSemanticsLabel": "Legenda do mapa, de {minValue} a {maxValue}",
+  "@regionMapLegendSemanticsLabel": {
+    "placeholders": {
+      "minValue": {"type": "String"},
+      "maxValue": {"type": "String"}
+    }
+  },
+  "regionMapLegendWithTitleSemanticsLabel": "Legenda: {title}, de {minValue} a {maxValue}",
+  "@regionMapLegendWithTitleSemanticsLabel": {
+    "placeholders": {
+      "title": {"type": "String"},
+      "minValue": {"type": "String"},
+      "maxValue": {"type": "String"}
+    }
+  },
   "brazilStoreSalesMapMetricGroupLabel": "Métrica",
   "brazilStoreSalesMapRegionGroupLabel": "Região",
   "brazilStoreSalesMapLoadingMessage": "Carregando mapa do Brasil…",
@@ -715,9 +769,20 @@
   "clientAgentsClientTokenHide": "Ocultar token",
   "clientAgentsAgentIdsLabel": "Agent ID",
   "clientAgentsRequestAccessCta": "Solicitar acesso",
-  "clientAgentsVálidationNeedOneValidId": "Informe pelo menos um agentId válido para continuar.",
-  "clientAgentsVálidationInvalidIds": "Os seguintes agentIds sao inválidos: {ids}.",
-  "clientAgentsVálidationTokenTooLong": "O client token deve ter no maximo {limit} caracteres. Reduza para: {ids}.",
+  "clientAgentsValidationNeedOneValidId": "Informe pelo menos um agentId válido para continuar.",
+  "clientAgentsValidationInvalidIds": "Os seguintes agentIds são inválidos: {ids}.",
+  "@clientAgentsValidationInvalidIds": {
+    "placeholders": {
+      "ids": {"type": "String"}
+    }
+  },
+  "clientAgentsValidationTokenTooLong": "O client token deve ter no máximo {limit} caracteres. Reduza para: {ids}.",
+  "@clientAgentsValidationTokenTooLong": {
+    "placeholders": {
+      "limit": {"type": "int"},
+      "ids": {"type": "String"}
+    }
+  },
   "clientAgentsDuplicatedIdsNote": "IDs duplicados foram ignorados automáticamente: {ids}.",
   "clientAgentsLoadRequestsErrorTitle": "Não foi possível carregar as solicitações",
   "clientAgentsLoadPendingErrorTitle": "Não foi possível carregar os envios pendentes",
@@ -1124,7 +1189,7 @@
       "seconds": {"type": "int"}
     }
   },
-  "agentSqlErrorVálidationFailed": "A consulta informada e inválida.",
+  "agentSqlErrorValidationFailed": "A consulta informada é inválida.",
   "agentSqlErrorExecutionFailed": "Não foi possível executar a consulta.",
   "agentSqlErrorTransactionFailed": "Não foi possível concluir a transação da consulta.",
   "agentSqlErrorConnectionPoolExhausted": "O servidor esta ocupado para processar a consulta agora. Tente novamente em instantes.",
@@ -1135,6 +1200,10 @@
   "agentSqlErrorExecutionNotFound": "A execução solicitada não foi encontrada.",
   "agentSqlErrorExecutionCancelled": "A consulta foi cancelada.",
   "agentSqlErrorGeneric": "Não foi possível concluir a consulta no agente.",
+  "agentSqlErrorUnexpectedAgentResponse": "Resposta do agente estava em formato inesperado. Tente novamente.",
+  "agentSqlErrorQueryLoadFailed": "Não foi possível carregar esta consulta.",
+  "agentSqlErrorTendenciaSummaryUnexpectedFormat": "Resumo de tendência veio em formato inesperado. Tente novamente.",
+  "agentSqlErrorMediaMovelSummaryUnexpectedFormat": "Resumo da média móvel veio em formato inesperado. Tente novamente.",
   "agentSqlFailureTitleRateLimited": "Muitas consultas",
   "agentSqlFailureTitleReplayDetected": "Consulta duplicada",
   "agentSqlFailureTitleAuthenticationFailed": "Sessão expirada",
@@ -1175,8 +1244,8 @@
   "formsDemoDatePickersFormSubtitle": "Form nativo + FormField. Toque em Aplicar no sheet para confirmar; fechar sem aplicar mantem o valor. Remover limpa de forma explicita.",
   "formsDemoFormBuilderSectionTitle": "FormBuilder + dropdowns e datas",
   "formsDemoFormBuilderSectionSubtitle": "Mesmos wrappers dos relatorios: dropdown, multi-select e os mesmos date pickers da seção Form acima (FormBuilderField + AppFormBuilderDate*).",
-  "formsDemoVálidateFormBuilderButton": "Válidar FormBuilder",
-  "formsDemoVálidateFormSubmitButton": "Válidar envio (Form)",
+  "formsDemoValidateFormBuilderButton": "Validar FormBuilder",
+  "formsDemoValidateFormSubmitButton": "Validar envio (Form)",
   "formsDemoFormValidSnackbar": "Formulário válido (demo fake). Ref: {refLabel}. Período: {rangeLabel}.",
   "@formsDemoFormValidSnackbar": {
     "placeholders": {
@@ -1623,8 +1692,8 @@
       "endDate": {"type": "String"}
     }
   },
-  "salesCardProdutoTendênciaTitle": "Tendência de vendas",
-  "salesCardProdutoTendênciaMediaMovelTitle": "Tendência de vendas (média móvel)",
+  "salesCardProdutoTendenciaTitle": "Tendência de vendas",
+  "salesCardProdutoTendenciaMediaMovelTitle": "Tendência de vendas (média móvel)",
   "salesMonthlyPnlPageSubtitle": "Venda, lucro e custo da mercadoria por mês na filial selecionada. A janela termina no mes de referência.",
   "salesMonthlyPnlFilterAnchorMonth": "Mes de referência",
   "salesMonthlyPnlChartTitle": "Resultado mensal",
@@ -1667,170 +1736,182 @@
   "salesProdutoRankLucroFilterSortBy": "Metrica",
   "salesProdutoRankLucroSortQuantity": "Quantidade vendida",
   "salesProdutoRankLucroSortProfit": "Lucro total",
-  "salesProdutoTendênciaPageSubtitle": "Visão executiva da tendência de venda por produto com resumo, destaques e detalhe páginado.",
-  "salesProdutoTendênciaFilterCurrentPeriod": "Período atual",
-  "salesProdutoTendênciaFilterPreviousPeriod": "Período anterior",
-  "salesProdutoTendênciaComparisonCurrentChip": "Atual",
-  "salesProdutoTendênciaComparisonPreviousChip": "Anterior",
-  "salesProdutoTendênciaFilterSearch": "Busca",
-  "salesProdutoTendênciaFilterSearchHint": "Produto, grupo ou marca",
-  "salesProdutoTendênciaFilterClassification": "Classificação",
-  "salesProdutoTendênciaFilterGroup": "Grupo",
-  "salesProdutoTendênciaFilterBrand": "Marca",
-  "salesProdutoTendênciaFilterPageSize": "Linhas por página",
-  "salesProdutoTendênciaFilterAllOption": "Todos",
-  "salesProdutoTendênciaFilterQuickPeriodsTitle": "Períodos sugeridos",
-  "salesProdutoTendênciaFilterQuickPeriodsSubtitle": "Escolha uma janela base e o relatorio alinha a comparação automáticamente.",
-  "salesProdutoTendênciaFilterPresetCurrentMonth": "Mes atual",
-  "salesProdutoTendênciaFilterPresetPreviousMonth": "Mes anterior",
-  "salesProdutoTendênciaFilterPresetLast7Days": "Últimos 7 dias",
-  "salesProdutoTendênciaFilterPresetLast30Days": "Últimos 30 dias",
-  "salesProdutoTendênciaFilterAutoAdjustPreviousAction": "Ajustar período anterior",
-  "salesProdutoTendênciaFilterRuleHelperTitle": "Regra da comparação",
-  "salesProdutoTendênciaFilterRuleHelper": "Compare mês completo com mês completo, ou períodos personalizados com a mesma quantidade de dias.",
-  "salesProdutoTendênciaFilterApplyDisabledTitle": "A comparação precisa de ajuste",
-  "salesProdutoTendênciaFilterApplyDisabledHint": "Atualize os períodos acima para habilitar a aplicação dos filtros.",
-  "salesProdutoTendênciaFilterDurationDays": "{count, plural, one{1 dia} other{{count} dias}}",
-  "@salesProdutoTendênciaFilterDurationDays": {
+  "salesProdutoTendenciaPageSubtitle": "Visão executiva da tendência de venda por produto com resumo, destaques e detalhe páginado.",
+  "salesProdutoTendenciaFilterCurrentPeriod": "Período atual",
+  "salesProdutoTendenciaFilterPreviousPeriod": "Período anterior",
+  "salesProdutoTendenciaComparisonCurrentChip": "Atual",
+  "salesProdutoTendenciaComparisonPreviousChip": "Anterior",
+  "salesProdutoTendenciaFilterSearch": "Busca",
+  "salesProdutoTendenciaFilterSearchHint": "Produto, grupo ou marca",
+  "salesProdutoTendenciaFilterClassification": "Classificação",
+  "salesProdutoTendenciaFilterGroup": "Grupo",
+  "salesProdutoTendenciaFilterBrand": "Marca",
+  "salesProdutoTendenciaFilterPageSize": "Linhas por página",
+  "salesProdutoTendenciaFilterAllOption": "Todos",
+  "salesProdutoTendenciaFilterQuickPeriodsTitle": "Períodos sugeridos",
+  "salesProdutoTendenciaFilterQuickPeriodsSubtitle": "Escolha uma janela base e o relatório alinha a comparação automáticamente.",
+  "salesProdutoTendenciaFilterPresetCurrentMonth": "Mês atual",
+  "salesProdutoTendenciaFilterPresetPreviousMonth": "Mês anterior",
+  "salesProdutoTendenciaFilterPresetLast7Days": "Últimos 7 dias",
+  "salesProdutoTendenciaFilterPresetLast30Days": "Últimos 30 dias",
+  "salesProdutoTendenciaFilterAutoAdjustPreviousAction": "Ajustar período anterior",
+  "salesProdutoTendenciaFilterRuleHelperTitle": "Regra da comparação",
+  "salesProdutoTendenciaFilterRuleHelper": "Compare mês completo com mês completo, ou períodos personalizados com a mesma quantidade de dias.",
+  "salesProdutoTendenciaFilterApplyDisabledTitle": "A comparação precisa de ajuste",
+  "salesProdutoTendenciaFilterApplyDisabledHint": "Atualize os períodos acima para habilitar a aplicação dos filtros.",
+  "salesProdutoTendenciaFilterDurationDays": "{count, plural, one{1 dia} other{{count} dias}}",
+  "@salesProdutoTendenciaFilterDurationDays": {
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
   },
-  "salesProdutoTendênciaFilterRangeKindFullMonth": "Mês completo",
-  "salesProdutoTendênciaFilterRangeKindCustom": "Período personalizado",
-  "salesProdutoTendênciaFilterPeriodsOrderError": "O período anterior precisa terminar antes do inicio do período atual.",
-  "salesProdutoTendênciaFilterPeriodsEquivalentWindowError": "Use janelas equivalentes na comparação: mês completo contra mês completo, ou período personalizado contra período personalizado com a mesma quantidade de dias.",
-  "salesProdutoTendênciaSummaryTitle": "Resumo executivo",
-  "salesProdutoTendênciaSummarySubtitle": "Visão geral da movimentação por classificação de tendência.",
-  "salesProdutoTendênciaSummaryByClassificaçãoTitle": "Produtos por classificação",
-  "salesProdutoTendênciaSummaryByClassificaçãoSubtitle": "Distribuicao e impacto dentro da página carregada.",
-  "salesProdutoTendênciaTopMoversTitle": "Principais movimentações",
-  "salesProdutoTendênciaTopMoversSubtitle": "Maiores altas e quedas no período selecionado.",
-  "salesProdutoTendênciaTopGainersTitle": "Top 5 altas",
-  "salesProdutoTendênciaTopLosersTitle": "Top 5 quedas",
-  "salesProdutoTendênciaDetailsTitle": "Detalhes",
-  "salesProdutoTendênciaDetailsSubtitle": "Lista páginada com produto, classificação e grupo.",
-  "salesProdutoTendênciaDetailsHorizontalScrollCaption": "Deslize para o lado para ver todas as colunas.",
-  "salesProdutoTendênciaFiltersAppliedSnackbar": "Filtros aplicados. Atualizando dados.",
-  "salesProdutoTendênciaLoadingTrendSemantics": "Carregando tendência de vendas…",
-  "salesProdutoTendênciaDetailsEntityLabel": "linhas",
-  "salesProdutoTendênciaNoData": "Sem dados de tendência para os filtros selecionados.",
-  "salesProdutoTendênciaKpiGrowing": "Produtos crescendo",
-  "salesProdutoTendênciaKpiFalling": "Produtos caindo",
-  "salesProdutoTendênciaKpiNewProducts": "Produtos novos",
-  "salesProdutoTendênciaKpiStopped": "Parou de vender",
-  "salesProdutoTendênciaKpiNetImpact": "Impacto líquido (qtd)",
-  "salesProdutoTendênciaColProduct": "Produto",
-  "salesProdutoTendênciaColClassificação": "Classificação",
-  "salesProdutoTendênciaColGrupo": "Grupo",
-  "salesProdutoTendênciaColDiferenca": "Diferenca",
-  "salesProdutoTendênciaColPercentual": "Tendência %",
-  "salesProdutoTendênciaClassificaçãoStopped": "Parou de vender",
-  "salesProdutoTendênciaClassificaçãoNew": "Novo produto",
-  "salesProdutoTendênciaClassificaçãoGrowing": "Crescendo",
-  "salesProdutoTendênciaClassificaçãoFalling": "Caindo",
-  "salesProdutoTendênciaClassificaçãoStable": "Estavel",
-  "salesProdutoTendênciaActiveFiltersSummary": "{count, plural, =0{Sem filtros adicionais} one{1 filtro adicional} other{{count} filtros adicionais}}",
-  "@salesProdutoTendênciaActiveFiltersSummary": {
+  "salesProdutoTendenciaFilterRangeKindFullMonth": "Mês completo",
+  "salesProdutoTendenciaFilterRangeKindCustom": "Período personalizado",
+  "salesProdutoTendenciaFilterPeriodsOrderError": "O período anterior precisa terminar antes do início do período atual.",
+  "salesProdutoTendenciaFilterPeriodsEquivalentWindowError": "Use janelas equivalentes na comparação: mês completo contra mês completo, ou período personalizado contra período personalizado com a mesma quantidade de dias.",
+  "salesProdutoTendenciaSummaryTitle": "Resumo executivo",
+  "salesProdutoTendenciaSummarySubtitle": "Visão geral da movimentação por classificação de tendência.",
+  "salesProdutoTendenciaSummaryByClassificacaoTitle": "Produtos por classificação",
+  "salesProdutoTendenciaSummaryByClassificacaoSubtitle": "Distribuição dos produtos em todo o resultado filtrado.",
+  "salesProdutoTendenciaTopMoversTitle": "Principais movimentações",
+  "salesProdutoTendenciaTopMoversSubtitle": "Maiores altas e quedas no período selecionado.",
+  "salesProdutoTendenciaTopGainersTitle": "Top 5 altas",
+  "salesProdutoTendenciaTopLosersTitle": "Top 5 quedas",
+  "salesProdutoTendenciaDetailsTitle": "Detalhes",
+  "salesProdutoTendenciaDetailsSubtitle": "Lista páginada com produto, classificação e grupo.",
+  "salesProdutoTendenciaDetailsHorizontalScrollCaption": "Deslize para o lado para ver todas as colunas.",
+  "salesProdutoTendenciaFiltersAppliedSnackbar": "Filtros aplicados. Atualizando dados.",
+  "salesProdutoTendenciaLoadingTrendSemantics": "Carregando tendência de vendas…",
+  "salesProdutoTendenciaDetailsEntityLabel": "linhas",
+  "salesProdutoTendenciaNoData": "Sem dados de tendência para os filtros selecionados.",
+  "salesProdutoTendenciaKpiGrowing": "Produtos crescendo",
+  "salesProdutoTendenciaKpiFalling": "Produtos caindo",
+  "salesProdutoTendenciaKpiNewProducts": "Produtos novos",
+  "salesProdutoTendenciaKpiStopped": "Parou de vender",
+  "salesProdutoTendenciaKpiStable": "Produtos estáveis",
+  "salesProdutoTendenciaKpiNetImpact": "Impacto líquido (qtd)",
+  "salesProdutoTendenciaColProduct": "Produto",
+  "salesProdutoTendenciaColClassificacao": "Classificação",
+  "salesProdutoTendenciaColGrupo": "Grupo",
+  "salesProdutoTendenciaColDiferenca": "Diferença",
+  "salesProdutoTendenciaColPercentual": "Tendência %",
+  "salesProdutoTendenciaClassificacaoStopped": "Parou de vender",
+  "salesProdutoTendenciaClassificacaoNew": "Novo produto",
+  "salesProdutoTendenciaClassificacaoGrowing": "Crescendo",
+  "salesProdutoTendenciaClassificacaoFalling": "Caindo",
+  "salesProdutoTendenciaClassificacaoStable": "Estável",
+  "salesProdutoTendenciaActiveFiltersSummary": "{count, plural, =0{Sem filtros adicionais} one{1 filtro adicional} other{{count} filtros adicionais}}",
+  "@salesProdutoTendenciaActiveFiltersSummary": {
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
   },
-  "salesProdutoTendênciaDetailsNotice": "Pode haver mais linhas no resultado. Use a páginação para carregar as próximas páginas (tamanho atual: {pageSize}).",
-  "@salesProdutoTendênciaDetailsNotice": {
+  "salesProdutoTendenciaDetailsNotice": "Pode haver mais linhas no resultado. Use a páginação para carregar as próximas páginas (tamanho atual: {pageSize}).",
+  "@salesProdutoTendenciaDetailsNotice": {
     "placeholders": {
       "pageSize": {
         "type": "String"
       }
     }
   },
-  "salesProdutoTendênciaMediaMovelPageSubtitle": "Painel de média móvel com resumo por classificação e detalhe páginado por produto.",
-  "salesProdutoTendênciaMediaMovelFilterQuantidadeDias": "Janela de dias",
-  "salesProdutoTendênciaMediaMovelFilterQuantidadeDiasHint": "Quantidade de dias usada em cada média móvel",
-  "salesProdutoTendênciaMediaMovelFilterQuantidadeDiasHelper": "Use a mesma janela para comparar a media atual com a anterior.",
-  "salesProdutoTendênciaMediaMovelFilterQuantidadeDiasInvalid": "Informe uma quantidade de dias válida e maior que zero.",
-  "salesProdutoTendênciaMediaMovelFilterQuantidadeDiasPresetsTitle": "Janelas rapidas",
-  "salesProdutoTendênciaMediaMovelFilterQuantidadeDiasTooLarge": "Use no maximo {maxDays} dias.",
-  "@salesProdutoTendênciaMediaMovelFilterQuantidadeDiasTooLarge": {
+  "salesProdutoTendenciaMediaMovelPageSubtitle": "Painel de média móvel com resumo por classificação e detalhe páginado por produto.",
+  "salesProdutoTendenciaMediaMovelFilterQuantidadeDias": "Janela de dias",
+  "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHint": "Quantidade de dias usada em cada média móvel",
+  "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHelper": "Use a mesma janela para comparar a média atual com a anterior.",
+  "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasInvalid": "Informe uma quantidade de dias válida e maior que zero.",
+  "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasPresetsTitle": "Janelas rápidas",
+  "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasTooLarge": "Use no máximo {maxDays} dias.",
+  "@salesProdutoTendenciaMediaMovelFilterQuantidadeDiasTooLarge": {
     "placeholders": {
       "maxDays": {
         "type": "int"
       }
     }
   },
-  "salesProdutoTendênciaMediaMovelFilterQuantidadeDiasValue": "{count, plural, one{1 dia} other{{count} dias}}",
-  "@salesProdutoTendênciaMediaMovelFilterQuantidadeDiasValue": {
+  "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasValue": "{count, plural, one{1 dia} other{{count} dias}}",
+  "@salesProdutoTendenciaMediaMovelFilterQuantidadeDiasValue": {
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
   },
-  "salesProdutoTendênciaMediaMovelActiveFiltersSummary": "{count, plural, =0{Sem filtros adicionais} one{1 filtro adicional} other{{count} filtros adicionais}}",
-  "@salesProdutoTendênciaMediaMovelActiveFiltersSummary": {
+  "salesProdutoTendenciaMediaMovelActiveFiltersSummary": "{count, plural, =0{Sem filtros adicionais} one{1 filtro adicional} other{{count} filtros adicionais}}",
+  "@salesProdutoTendenciaMediaMovelActiveFiltersSummary": {
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
   },
-  "salesProdutoTendênciaMediaMovelFilterSearchHint": "Produto ou grupo",
-  "salesProdutoTendênciaMediaMovelFiltersAppliedSnackbar": "Filtros aplicados. Atualizando a tendência por média móvel.",
-  "salesProdutoTendênciaMediaMovelSelectAgentHint": "Escolha um agente de vendas para carregar a tendência de vendas por média móvel.",
-  "salesProdutoTendênciaMediaMovelSummaryTitle": "Resumo executivo",
-  "salesProdutoTendênciaMediaMovelSummarySubtitle": "Totais por classificação em todo o resultado filtrado.",
-  "salesProdutoTendênciaMediaMovelSummaryUnavailableTitle": "Resumo indisponível",
-  "salesProdutoTendênciaMediaMovelSummaryUnavailableMessage": "Não foi possível carregar o resumo, então a página esta mostrando uma estimativa baseada nas linhas atuais.",
-  "salesProdutoTendênciaMediaMovelSummaryByClassificaçãoTitle": "Produtos por classificação",
-  "salesProdutoTendênciaMediaMovelSummaryByClassificaçãoSubtitle": "Distribuicao dos produtos em todo o resultado filtrado.",
-  "salesProdutoTendênciaMediaMovelSummaryByImpactTitle": "Impacto por classificação",
-  "salesProdutoTendênciaMediaMovelSummaryByImpactSubtitle": "Impacto líquido em quantidade de cada classificação em todo o resultado filtrado.",
-  "salesProdutoTendênciaMediaMovelDetailsTitle": "Detalhes",
-  "salesProdutoTendênciaMediaMovelDetailsSubtitle": "Lista páginada com produto, médias, grupo e classificação de tendência.",
-  "salesProdutoTendênciaMediaMovelDetailsHorizontalScrollCaption": "Deslize para o lado para ver todas as colunas.",
-  "salesProdutoTendênciaMediaMovelDetailsEntityLabel": "linhas",
-  "salesProdutoTendênciaMediaMovelDetailsSortedBy": "Ordenado por: {sortLabel}",
-  "@salesProdutoTendênciaMediaMovelDetailsSortedBy": {
+  "salesProdutoTendenciaMediaMovelFilterSearchHint": "Produto ou grupo",
+  "salesProdutoTendenciaMediaMovelFiltersAppliedSnackbar": "Filtros aplicados. Atualizando a tendência por média móvel.",
+  "salesProdutoTendenciaMediaMovelSelectAgentHint": "Escolha um agente de vendas para carregar a tendência de vendas por média móvel.",
+  "salesProdutoTendenciaMediaMovelSummaryTitle": "Resumo executivo",
+  "salesProdutoTendenciaMediaMovelSummarySubtitle": "Totais por classificação em todo o resultado filtrado.",
+  "salesProdutoTendenciaMediaMovelSummaryUnavailableTitle": "Resumo indisponível",
+  "salesProdutoTendenciaMediaMovelSummaryUnavailableMessage": "Não foi possível carregar o resumo, então a página está mostrando uma estimativa baseada nas linhas atuais.",
+  "salesProdutoTendenciaMediaMovelSummaryByClassificacaoTitle": "Produtos por classificação",
+  "salesProdutoTendenciaMediaMovelSummaryByClassificacaoSubtitle": "Distribuição dos produtos em todo o resultado filtrado.",
+  "salesProdutoTendenciaMediaMovelSummaryByImpactTitle": "Impacto por classificação",
+  "salesProdutoTendenciaMediaMovelSummaryByImpactSubtitle": "Impacto líquido em quantidade de cada classificação em todo o resultado filtrado.",
+  "salesProdutoTendenciaMediaMovelDetailsTitle": "Detalhes",
+  "salesProdutoTendenciaMediaMovelDetailsSubtitle": "Lista páginada com produto, médias, grupo e classificação de tendência.",
+  "salesProdutoTendenciaMediaMovelDetailsHorizontalScrollCaption": "Deslize para o lado para ver todas as colunas.",
+  "salesProdutoTendenciaMediaMovelDetailsEntityLabel": "linhas",
+  "salesProdutoTendenciaMediaMovelShareRowLimitExceeded": "Não é possível exportar mais de {maxRows} registros. O resultado atual tem {totalCount} registros.",
+  "@salesProdutoTendenciaMediaMovelShareRowLimitExceeded": {
+    "placeholders": {
+      "maxRows": {
+        "type": "int"
+      },
+      "totalCount": {
+        "type": "int"
+      }
+    }
+  },
+  "salesProdutoTendenciaMediaMovelDetailsSortedBy": "Ordenado por: {sortLabel}",
+  "@salesProdutoTendenciaMediaMovelDetailsSortedBy": {
     "placeholders": {
       "sortLabel": {
         "type": "String"
       }
     }
   },
-  "salesProdutoTendênciaMediaMovelDetailsNotice": "Pode haver mais linhas no resultado. Use a páginação para carregar as próximas páginas (tamanho atual: {pageSize}).",
-  "@salesProdutoTendênciaMediaMovelDetailsNotice": {
+  "salesProdutoTendenciaMediaMovelDetailsNotice": "Pode haver mais linhas no resultado. Use a páginação para carregar as próximas páginas (tamanho atual: {pageSize}).",
+  "@salesProdutoTendenciaMediaMovelDetailsNotice": {
     "placeholders": {
       "pageSize": {
         "type": "String"
       }
     }
   },
-  "salesProdutoTendênciaMediaMovelNoData": "Sem dados de tendência por média móvel para os filtros selecionados.",
-  "salesProdutoTendênciaMediaMovelKpiGrowing": "Produtos crescendo",
-  "salesProdutoTendênciaMediaMovelKpiFalling": "Produtos caindo",
-  "salesProdutoTendênciaMediaMovelKpiNewProducts": "Produtos novos",
-  "salesProdutoTendênciaMediaMovelKpiStopped": "Parou de vender",
-  "salesProdutoTendênciaMediaMovelKpiNetImpact": "Impacto líquido (qtd)",
-  "salesProdutoTendênciaMediaMovelColProduct": "Produto",
-  "salesProdutoTendênciaMediaMovelColClassificação": "Classificação",
-  "salesProdutoTendênciaMediaMovelColGrupo": "Grupo",
-  "salesProdutoTendênciaMediaMovelColMediaAtual": "Media atual",
-  "salesProdutoTendênciaMediaMovelColMediaAnterior": "Media anterior",
-  "salesProdutoTendênciaMediaMovelColDiferenca": "Diferenca",
-  "salesProdutoTendênciaMediaMovelColPercentual": "Tendência %",
-  "salesProdutoTendênciaMediaMovelFilterSortBy": "Ordenar linhas por",
-  "salesProdutoTendênciaMediaMovelSortTrendPercent": "Percentual de tendência",
-  "salesProdutoTendênciaMediaMovelSortDifference": "Diferenca",
-  "salesProdutoTendênciaMediaMovelSortProductName": "Nome do produto",
-  "salesProdutoTendênciaMediaMovelClassificaçãoStopped": "Parou de vender",
-  "salesProdutoTendênciaMediaMovelClassificaçãoNew": "Novo produto",
-  "salesProdutoTendênciaMediaMovelClassificaçãoGrowing": "Crescendo",
-  "salesProdutoTendênciaMediaMovelClassificaçãoFalling": "Caindo",
-  "salesProdutoTendênciaMediaMovelClassificaçãoStable": "Estavel",
+  "salesProdutoTendenciaMediaMovelNoData": "Sem dados de tendência por média móvel para os filtros selecionados.",
+  "salesProdutoTendenciaMediaMovelKpiGrowing": "Produtos crescendo",
+  "salesProdutoTendenciaMediaMovelKpiFalling": "Produtos caindo",
+  "salesProdutoTendenciaMediaMovelKpiNewProducts": "Produtos novos",
+  "salesProdutoTendenciaMediaMovelKpiStopped": "Parou de vender",
+  "salesProdutoTendenciaMediaMovelKpiNetImpact": "Impacto líquido (qtd)",
+  "salesProdutoTendenciaMediaMovelColProduct": "Produto",
+  "salesProdutoTendenciaMediaMovelColClassificacao": "Classificação",
+  "salesProdutoTendenciaMediaMovelColGrupo": "Grupo",
+  "salesProdutoTendenciaMediaMovelColMediaAtual": "Média atual",
+  "salesProdutoTendenciaMediaMovelColMediaAnterior": "Média anterior",
+  "salesProdutoTendenciaMediaMovelColDiferenca": "Diferença",
+  "salesProdutoTendenciaMediaMovelColPercentual": "Tendência %",
+  "salesProdutoTendenciaMediaMovelFilterSortBy": "Ordenar linhas por",
+  "salesProdutoTendenciaMediaMovelSortTrendPercent": "Percentual de tendência",
+  "salesProdutoTendenciaMediaMovelSortDifference": "Diferença",
+  "salesProdutoTendenciaMediaMovelSortProductName": "Nome do produto",
+  "salesProdutoTendenciaMediaMovelClassificacaoStopped": "Parou de vender",
+  "salesProdutoTendenciaMediaMovelClassificacaoNew": "Novo produto",
+  "salesProdutoTendenciaMediaMovelClassificacaoGrowing": "Crescendo",
+  "salesProdutoTendenciaMediaMovelClassificacaoFalling": "Caindo",
+  "salesProdutoTendenciaMediaMovelClassificacaoStable": "Estável",
   "agentStatusPending": "Pendente",
   "agentStatusRejected": "Rejeitado",
   "agentStatusUnknown": "Desconhecido",

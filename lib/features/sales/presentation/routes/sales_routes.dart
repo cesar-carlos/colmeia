@@ -1,9 +1,8 @@
-import 'package:colmeia/app/router/app_routes.dart';
+﻿import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/di/injector_agent_queries.dart';
 import 'package:colmeia/core/errors/retry_after_gate.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_marca_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_produto_rank_lucro_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_screen_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_screen_use_case.dart';
@@ -129,10 +128,8 @@ List<RouteBase> buildSalesRoutes() {
                 resolveSalesAgentClientTokenUseCase,
             loadTrendScreenUseCase:
                 getIt<LoadProdutoVendidoTendenciaDeVendaScreenUseCase>(),
-            loadGrupoProdutoOptionsUseCase:
-                getIt<LoadGrupoProdutoOptionsUseCase>(),
-            loadMarcaProdutoOptionsUseCase:
-                getIt<LoadMarcaProdutoOptionsUseCase>(),
+            loadGrupoMarcaProdutoOptionsUseCase:
+                getIt<LoadGrupoMarcaProdutoOptionsUseCase>(),
             relayCancelScopeBinder: _wireSalesAgentSqlRelayCancel,
           );
         }
@@ -147,8 +144,8 @@ List<RouteBase> buildSalesRoutes() {
                 getIt<
                   LoadProdutoVendidoTendenciaDeVendaMediaMovelScreenUseCase
                 >(),
-            loadGrupoProdutoOptionsUseCase:
-                getIt<LoadGrupoProdutoOptionsUseCase>(),
+            loadGrupoMarcaProdutoOptionsUseCase:
+                getIt<LoadGrupoMarcaProdutoOptionsUseCase>(),
             loadRowsForShareUseCase:
                 getIt<LoadMediaMovelRowsForShareUseCase>(),
             relayCancelScopeBinder: _wireSalesAgentSqlRelayCancel,

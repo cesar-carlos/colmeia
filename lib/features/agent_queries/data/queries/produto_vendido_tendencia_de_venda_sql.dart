@@ -37,24 +37,13 @@
 // Pagination bounds are inlined as validated integer literals to keep the query
 // under bridge named-bind limits.
 abstract final class ProdutoVendidoTendenciaDeVendaSql {
-  static String pagedQuery({
-    required int startRow,
-    required int endRow,
+  static const int topMoversLimit = 5;
+
+  static String filteredUniverseCtes({
     String? searchTerm,
-    String? classificacao,
     int? codGrupoProduto,
     int? codMarca,
   }) {
-    if (startRow < 1) {
-      throw ArgumentError.value(startRow, 'startRow', 'must be >= 1');
-    }
-    if (endRow < startRow) {
-      throw ArgumentError.value(
-        endRow,
-        'endRow',
-        'must be >= startRow',
-      );
-    }
     final codGrupoProdutoLine = _whereIntEquals(
       columnSql: 'p.CodGrupoProduto',
       value: codGrupoProduto,
@@ -64,7 +53,7 @@ abstract final class ProdutoVendidoTendenciaDeVendaSql {
       value: codMarca,
     );
     final searchTermLine = _whereContainsProductDimensions(searchTerm);
-    final classificacaoLine = _whereOptionalClassificacao(classificacao);
+
     return '''
     WITH Parametros AS (
       SELECT
@@ -201,6 +190,57 @@ $searchTermLine
         END AS Classificacao
       FROM Pivotado
       WHERE (QtdAtual + QtdAnterior) >= 10
+    )''';
+  }
+
+  static String pagedQuery({
+    required int startRow,
+    required int endRow,
+    String? searchTerm,
+    String? classificacao,
+    int? codGrupoProduto,
+    int? codMarca,
+  }) {
+    if (startRow < 1) {
+      throw ArgumentError.value(startRow, 'startRow', 'must be >= 1');
+    }
+    if (endRow < startRow) {
+      throw ArgumentError.value(
+        endRow,
+        'endRow',
+        'must be >= startRow',
+      );
+    }
+    final classificacaoLine = _whereOptionalClassificacao(classificacao);
+    final filteredCtes = filteredUniverseCtes(
+      searchTerm: searchTerm,
+      codGrupoProduto: codGrupoProduto,
+      codMarca: codMarca,
+    );
+
+    return '''
+$filteredCtes,
+    Filtrado AS (
+      SELECT
+        CodEmpresa,
+        CodFilial,
+        CodProduto,
+        NomeProduto,
+        CodUnidadeMedida,
+        CodGrupoProduto,
+        NomeGrupoProduto,
+        CodMarca,
+        NomeMarca,
+        QtdAnterior,
+        QtdAtual,
+        Diferenca,
+        PercentualTendencia,
+        Classificacao
+      FROM Resultado
+$classificacaoLine
+    ),
+    Tot AS (
+      SELECT COUNT(*) AS TotalCount FROM Filtrado
     ),
     Numbered AS (
       SELECT
@@ -224,10 +264,112 @@ $searchTermLine
         Diferenca,
         PercentualTendencia,
         Classificacao
+      FROM Filtrado
+    )
+    SELECT
+      Tot.TotalCount,
+      N.CodEmpresa,
+      N.CodFilial,
+      N.CodProduto,
+      N.NomeProduto,
+      N.CodUnidadeMedida,
+      N.CodGrupoProduto,
+      N.NomeGrupoProduto,
+      N.CodMarca,
+      N.NomeMarca,
+      N.QtdAnterior,
+      N.QtdAtual,
+      N.Diferenca,
+      N.PercentualTendencia,
+      N.Classificacao
+    FROM Tot
+    LEFT JOIN Numbered N ON N.RowNum BETWEEN $startRow AND $endRow
+    ORDER BY COALESCE(N.RowNum, 2147483647)
+  ''';
+  }
+
+  static String topGainersQuery({
+    String? searchTerm,
+    String? classificacao,
+    int? codGrupoProduto,
+    int? codMarca,
+  }) {
+    return _topMoversQuery(
+      searchTerm: searchTerm,
+      classificacao: classificacao,
+      codGrupoProduto: codGrupoProduto,
+      codMarca: codMarca,
+      gainers: true,
+    );
+  }
+
+  static String topLosersQuery({
+    String? searchTerm,
+    String? classificacao,
+    int? codGrupoProduto,
+    int? codMarca,
+  }) {
+    return _topMoversQuery(
+      searchTerm: searchTerm,
+      classificacao: classificacao,
+      codGrupoProduto: codGrupoProduto,
+      codMarca: codMarca,
+      gainers: false,
+    );
+  }
+
+  static String _topMoversQuery({
+    required String? searchTerm,
+    required String? classificacao,
+    required int? codGrupoProduto,
+    required int? codMarca,
+    required bool gainers,
+  }) {
+    final classificacaoLine = _whereOptionalClassificacao(classificacao);
+    final filteredCtes = filteredUniverseCtes(
+      searchTerm: searchTerm,
+      codGrupoProduto: codGrupoProduto,
+      codMarca: codMarca,
+    );
+    // NOVO PRODUTO rows have PercentualTendencia = 0 when QtdAnterior = 0; use
+    // quantity delta so new products with positive sales appear in top gainers.
+    final percentPredicate = gainers ? 'Diferenca > 0' : 'Diferenca < 0';
+    final orderBy = gainers
+        ? '''
+      PercentualTendencia DESC,
+      Diferenca DESC,
+      CodEmpresa ASC,
+      CodFilial ASC,
+      NomeProduto ASC'''
+        : '''
+      PercentualTendencia ASC,
+      Diferenca ASC,
+      CodEmpresa ASC,
+      CodFilial ASC,
+      NomeProduto ASC''';
+
+    return '''
+$filteredCtes,
+    Filtrado AS (
+      SELECT
+        CodEmpresa,
+        CodFilial,
+        CodProduto,
+        NomeProduto,
+        CodUnidadeMedida,
+        CodGrupoProduto,
+        NomeGrupoProduto,
+        CodMarca,
+        NomeMarca,
+        QtdAnterior,
+        QtdAtual,
+        Diferenca,
+        PercentualTendencia,
+        Classificacao
       FROM Resultado
 $classificacaoLine
     )
-    SELECT
+    SELECT TOP $topMoversLimit
       CodEmpresa,
       CodFilial,
       CodProduto,
@@ -242,10 +384,10 @@ $classificacaoLine
       Diferenca,
       PercentualTendencia,
       Classificacao
-    FROM Numbered
-    WHERE RowNum BETWEEN $startRow AND $endRow
+    FROM Filtrado
+    WHERE $percentPredicate
     ORDER BY
-      RowNum ASC
+$orderBy
   ''';
   }
 
