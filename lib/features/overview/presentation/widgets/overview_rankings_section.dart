@@ -47,9 +47,7 @@ class _OverviewAgentRankingCardState extends State<OverviewAgentRankingCard> {
     );
     final metadata = buildOverviewAgentRankingShareMetadata(
       l10n: l10n,
-      tokens: tokens,
       agentRankings: agentRankings,
-      inlineStyle: inlineStyle,
     );
     final shareActions = ChartShareActions(
       context: context,
@@ -187,7 +185,6 @@ class _OverviewUserRankingCardState extends State<OverviewUserRankingCard> {
     final metadata = buildOverviewUserRankingShareMetadata(
       l10n: l10n,
       userRankings: userRankings,
-      rankingChartStyle: rankingChartStyle,
     );
     final shareActions = ChartShareActions(
       context: context,

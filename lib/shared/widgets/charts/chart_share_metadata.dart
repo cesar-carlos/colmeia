@@ -13,6 +13,7 @@ class ChartShareMetadata {
     this.filterSummary,
     this.tableData,
     this.chartExportBuilder,
+    this.includeChartImage,
     this.pdfOrientation = ChartSharePdfOrientation.portrait,
     String? subject,
   }) : subject = subject ?? title;
@@ -23,9 +24,19 @@ class ChartShareMetadata {
   final ChartShareTableData? tableData;
   final ChartSharePdfOrientation pdfOrientation;
 
-  /// When set, builds a full-width chart for PDF capture instead of the
-  /// on-screen scroll viewport behind the share capture key.
+  /// When set, builds a full-width chart for offscreen PDF capture instead of
+  /// the on-screen scroll viewport behind the share capture key.
+  ///
+  /// Leave null to use the table-only fast path when [tableData] is non-empty:
+  /// share capture skips boundary and dedicated export rasterization and
+  /// builds a PDF from the table alone.
   final WidgetBuilder? chartExportBuilder;
+
+  /// When `null` (default), chart image capture follows the current auto rules:
+  /// skip when [tableData] is non-empty and [chartExportBuilder] is null.
+  /// Set to `false` to skip capture even when [chartExportBuilder] is set (table
+  /// export only, faster share). Set to `true` to force capture attempts.
+  final bool? includeChartImage;
   final String subject;
 
   AppChartShareRequest toShareRequest(GlobalKey captureKey) {
@@ -37,6 +48,7 @@ class ChartShareMetadata {
       filterSummary: filterSummary,
       tableData: tableData,
       chartExportBuilder: chartExportBuilder,
+      includeChartImage: includeChartImage,
       pdfOrientation: pdfOrientation,
     );
   }
@@ -59,4 +71,19 @@ class ChartShareMetadata {
       headerTrailingBuilder: headerTrailingBuilder,
     );
   }
+}
+
+/// Resolves whether chart image capture should run for a PDF share request.
+bool resolveChartShareIncludeChartImage({
+  required bool? includeChartImage,
+  required bool hasTable,
+  required bool hasExportBuilder,
+}) {
+  if (includeChartImage == false) {
+    return false;
+  }
+  if (includeChartImage == true) {
+    return true;
+  }
+  return !(hasTable && !hasExportBuilder);
 }

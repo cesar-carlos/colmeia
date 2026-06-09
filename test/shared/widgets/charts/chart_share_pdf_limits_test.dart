@@ -45,6 +45,36 @@ void main() {
     expect(result.truncationNotice, 'shown 2 of 3');
   });
 
+  test(
+    'paginateChartShareTableRows returns single chunk when under page size',
+    () {
+      final rows = List<List<String>>.generate(
+        3,
+        (index) => <String>['$index'],
+        growable: false,
+      );
+
+      final chunks = paginateChartShareTableRows(rows);
+
+      expect(chunks, hasLength(1));
+      expect(chunks.first, rows);
+    },
+  );
+
+  test('paginateChartShareTableRows splits rows across chunks', () {
+    final rows = List<List<String>>.generate(
+      501,
+      (index) => <String>['$index'],
+      growable: false,
+    );
+
+    final chunks = paginateChartShareTableRows(rows);
+
+    expect(chunks, hasLength(2));
+    expect(chunks.first, hasLength(500));
+    expect(chunks.last, hasLength(1));
+  });
+
   test('joinChartShareFilterSummary merges filter and truncation notice', () {
     expect(
       joinChartShareFilterSummary(

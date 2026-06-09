@@ -1624,6 +1624,12 @@ abstract class AppLocalizations {
   /// **'Share chart'**
   String get chartShareTooltip;
 
+  /// SnackBar shown when chart PDF export and share complete successfully.
+  ///
+  /// In en, this message translates to:
+  /// **'Chart shared'**
+  String get chartShareSuccess;
+
   /// SnackBar shown when chart PDF export or platform share fails.
   ///
   /// In en, this message translates to:
@@ -1659,6 +1665,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A share is already in progress for this chart.'**
   String get chartShareFailedInProgress;
+
+  /// SnackBar action to open a generated chart PDF when platform share fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Open PDF'**
+  String get chartShareOpenPdf;
+
+  /// Title for the dialog that asks whether to include the chart image in the PDF.
+  ///
+  /// In en, this message translates to:
+  /// **'Share chart'**
+  String get chartShareIncludeChartImageTitle;
+
+  /// Checkbox label to include the chart image in a table PDF export.
+  ///
+  /// In en, this message translates to:
+  /// **'Include chart image'**
+  String get chartShareIncludeChartImage;
 
   /// SnackBar when a chart share export exceeds the supported row limit.
   ///

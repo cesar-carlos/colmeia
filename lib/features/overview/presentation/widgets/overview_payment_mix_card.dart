@@ -80,7 +80,6 @@ class _OverviewPaymentMixCardState extends State<OverviewPaymentMixCard> {
     final metadata = buildOverviewPaymentMixShareMetadata(
       l10n: l10n,
       segments: _segments,
-      centerPrimary: _centerPrimary,
     );
     final shareActions = ChartShareActions(
       context: context,

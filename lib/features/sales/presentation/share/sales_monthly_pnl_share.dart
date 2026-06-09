@@ -10,7 +10,6 @@ import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_dashboard_comparison_bar_chart_preset.dart';
-import 'package:colmeia/shared/widgets/charts/app_grouped_column_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_export_capture.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
@@ -63,28 +62,17 @@ ChartShareMetadata buildSalesMonthlyPnlBarChartShareMetadata({
     filterSummary: tableLimit.truncationNotice,
     tableData: tableLimit.tableData,
     pdfOrientation: ChartSharePdfOrientation.landscape,
-    chartExportBuilder: points.isEmpty
+    chartExportBuilder: points.isEmpty || !isPercent
         ? null
-        : (exportContext) => isPercent
-            ? _monthlyPnlPercentExport(
-                exportContext: exportContext,
-                l10n: l10n,
-                tokens: tokens,
-                points: points,
-                metric: metric,
-                localeTag: localeTag,
-                percentRatioFormat: percentRatioFormat,
-              )
-            : _monthlyPnlGroupedColumnExport(
-                exportContext: exportContext,
-                l10n: l10n,
-                tokens: tokens,
-                points: points,
-                chartTheme: chartTheme,
-                localeTag: localeTag,
-                primaryMoney: primaryMoney,
-                gridLineColor: gridLineColor,
-              ),
+        : (exportContext) => _monthlyPnlPercentExport(
+            exportContext: exportContext,
+            l10n: l10n,
+            tokens: tokens,
+            points: points,
+            metric: metric,
+            localeTag: localeTag,
+            percentRatioFormat: percentRatioFormat,
+          ),
   );
 }
 
@@ -125,56 +113,6 @@ ChartShareMetadata buildSalesMonthlyPnlLineChartShareMetadata({
             l10n: l10n,
             points: points,
           ),
-  );
-}
-
-Widget _monthlyPnlGroupedColumnExport({
-  required BuildContext exportContext,
-  required AppLocalizations l10n,
-  required AppThemeTokens tokens,
-  required List<SalesMonthlyPnlPoint> points,
-  required AppChartTheme chartTheme,
-  required String localeTag,
-  required NumberFormat primaryMoney,
-  required Color gridLineColor,
-}) {
-  final chartHeight = tokens.chartStandardHeight + tokens.contentSpacing * 2;
-  return wrapCartesianChartForPdfExport(
-    context: exportContext,
-    itemCount: points.length,
-    minSlotWidth: 72,
-    height: chartHeight,
-    chart: AppGroupedColumnChart<SalesMonthlyPnlPoint>(
-      items: points,
-      xLabelBuilder: (point) => _monthShort(point, localeTag),
-      salesValue: (point) => point.venda,
-      profitValue: (point) => point.lucro,
-      costValue: (point) => point.custoMercadoria,
-      salesLabel: l10n.salesMonthlyPnlSeriesSalesLabel,
-      profitLabel: l10n.salesMonthlyPnlSeriesProfitLabel,
-      costLabel: l10n.salesMonthlyPnlSeriesCostLabel,
-      salesColor: chartTheme.primaryColor,
-      profitColor: chartTheme.paletteColor(1),
-      costColor: chartTheme.paletteColor(2),
-      primaryAxisFormat: primaryMoney,
-      secondaryAxisFormat: primaryMoney,
-      height: chartHeight,
-      gridLineColor: gridLineColor,
-      tooltipBuilder: (data, point, series, pointIndex, seriesIndex) {
-        final item = data as SalesMonthlyPnlPoint;
-        final label = switch (seriesIndex) {
-          1 => l10n.salesMonthlyPnlSeriesProfitLabel,
-          2 => l10n.salesMonthlyPnlSeriesCostLabel,
-          _ => l10n.salesMonthlyPnlSeriesSalesLabel,
-        };
-        final value = switch (seriesIndex) {
-          1 => item.lucro,
-          2 => item.custoMercadoria,
-          _ => item.venda,
-        };
-        return Text('$label: ${primaryMoney.format(value)}');
-      },
-    ),
   );
 }
 

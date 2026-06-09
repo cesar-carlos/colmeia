@@ -410,12 +410,16 @@
   "chartComboEmptyDefault": "Sem dados combinados para este recorte.",
   "chartOpenFullscreenTooltip": "Abrir gráfico em tela cheia",
   "chartShareTooltip": "Compartilhar gráfico",
+  "chartShareSuccess": "Gráfico compartilhado",
   "chartShareFailed": "Não foi possível compartilhar o gráfico. Tente novamente.",
   "chartShareFailedMissingBoundary": "O gráfico ainda não está pronto para compartilhar. Tente novamente.",
   "chartShareFailedInvalidRenderObject": "Não foi possível capturar o gráfico para compartilhar.",
   "chartShareFailedImageEncoding": "Não foi possível codificar a imagem do gráfico.",
   "chartShareFailedPdfGeneration": "Não foi possível gerar o PDF do gráfico.",
   "chartShareFailedInProgress": "Já existe um compartilhamento em andamento para este gráfico.",
+  "chartShareOpenPdf": "Abrir PDF",
+  "chartShareIncludeChartImageTitle": "Compartilhar gráfico",
+  "chartShareIncludeChartImage": "Incluir imagem do gráfico",
   "chartShareExportRowLimitExceeded": "Não é possível exportar mais de {maxRows} registros. O resultado atual tem {totalCount} registros.",
   "@chartShareExportRowLimitExceeded": {
     "placeholders": {

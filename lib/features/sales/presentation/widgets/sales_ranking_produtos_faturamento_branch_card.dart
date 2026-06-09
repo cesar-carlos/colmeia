@@ -115,7 +115,6 @@ class _SalesRankingProdutosFaturamentoBranchCardState
         branchTitle: _branchTitle,
         metricSubtitle: widget.metricSubtitle,
         displayRows: _displayRows,
-        chartRows: widget.rows,
       );
 
   void _openFullscreen() {
@@ -131,7 +130,6 @@ class _SalesRankingProdutosFaturamentoBranchCardState
       branchTitle: branchTitle,
       metricSubtitle: metricSubtitle,
       displayRows: rowsSnapshot,
-      chartRows: rowsForChart,
     );
     final fullscreenShareKey = GlobalKey();
 

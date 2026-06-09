@@ -2,7 +2,6 @@ import 'package:colmeia/features/agent_queries/domain/entities/ranking_produtos_
 import 'package:colmeia/features/sales/presentation/widgets/sales_ranking_produtos_faturamento_branch_card.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../support/localized_test_app.dart';
@@ -53,8 +52,8 @@ void main() {
               posicao: 2,
             ),
           ],
-          onRequestShare: (_, __) {},
-          metricSubtitle: 'Top 5 • Faturamento',
+          onRequestShare: (_, _) {},
+          metricSubtitle: 'Top 5 â€¢ Faturamento',
         ),
       ),
     );
@@ -66,7 +65,7 @@ void main() {
       find.byKey(const Key('sales-ranking-branch-desktop-layout')),
       findsOneWidget,
     );
-    expect(find.byTooltip('Compartilhar gráfico'), findsOneWidget);
+    expect(find.byTooltip('Compartilhar grÃ¡fico'), findsOneWidget);
     expect(find.byIcon(Icons.download_outlined), findsNothing);
   });
 
@@ -78,14 +77,14 @@ void main() {
           codEmpresa: 1,
           codFilial: 1,
           rows: const <RankingProdutosFaturamentoRow>[],
-          onRequestShare: (_, __) {},
-          metricSubtitle: 'Top 5 • Faturamento',
+          onRequestShare: (_, _) {},
+          metricSubtitle: 'Top 5 â€¢ Faturamento',
         ),
       ),
     );
 
     await tester.pumpAndSettle();
 
-    expect(find.byTooltip('Compartilhar gráfico'), findsNothing);
+    expect(find.byTooltip('Compartilhar grÃ¡fico'), findsNothing);
   });
 }

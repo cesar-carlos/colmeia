@@ -149,13 +149,9 @@ class _OverviewWeekdaySalesTrendChartState
     ChartShareMetadata shareMetadata({required bool isSalesCountMetric}) {
       return buildOverviewWeekdaySalesTrendShareMetadata(
         l10n: l10n,
-        tokens: tokens,
-        chartPoints: chartPoints,
         tablePoints: overviewWeekdaySalesTrendTableRows(widget.points),
         isSalesCountMetric: isSalesCountMetric,
         salesCountFormat: salesCountFormat,
-        compactSalesCountFormat: compactSalesCountFormat,
-        styleContext: context,
       );
     }
 

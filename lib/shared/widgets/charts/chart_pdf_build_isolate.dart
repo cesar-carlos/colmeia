@@ -1,6 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:colmeia/shared/widgets/charts/chart_pdf_page_label.dart';
+import 'package:colmeia/shared/widgets/charts/chart_pdf_table_alignment.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -84,12 +86,13 @@ Future<Uint8List> buildChartPdfInIsolate(ChartPdfBuildPayload payload) async {
             if (hasTable) pw.SizedBox(height: layout.sectionGap),
           ],
           if (hasTable)
-            _buildTable(
+            ..._buildPaginatedTables(
               headers: payload.tableHeaders,
               rows: payload.tableRows,
               headerFont: headerFont,
               bodyFont: bodyFont,
               pageFormat: pageFormat,
+              sectionGap: layout.sectionGap,
             ),
         ],
       ),
@@ -191,6 +194,33 @@ pw.Widget _buildFooter(
   );
 }
 
+List<pw.Widget> _buildPaginatedTables({
+  required List<String> headers,
+  required List<List<String>> rows,
+  required pw.Font headerFont,
+  required pw.Font bodyFont,
+  required PdfPageFormat pageFormat,
+  required double sectionGap,
+}) {
+  final rowChunks = paginateChartShareTableRows(rows);
+  if (rowChunks.isEmpty) {
+    return const <pw.Widget>[];
+  }
+
+  return <pw.Widget>[
+    for (var index = 0; index < rowChunks.length; index++) ...<pw.Widget>[
+      if (index > 0) pw.SizedBox(height: sectionGap),
+      _buildTable(
+        headers: headers,
+        rows: rowChunks[index],
+        headerFont: headerFont,
+        bodyFont: bodyFont,
+        pageFormat: pageFormat,
+      ),
+    ],
+  ];
+}
+
 pw.Widget _buildTable({
   required List<String> headers,
   required List<List<String>> rows,
@@ -198,18 +228,23 @@ pw.Widget _buildTable({
   required pw.Font bodyFont,
   required PdfPageFormat pageFormat,
 }) {
+  final alignments = resolveChartPdfTableAlignments(
+    headers: headers,
+    rows: rows,
+  );
+  final zebra = chartPdfTableZebraRowDecorations();
+
   return pw.TableHelper.fromTextArray(
     headers: headers,
     data: rows,
     headerStyle: pw.TextStyle(font: headerFont, fontSize: 9),
     cellStyle: pw.TextStyle(font: bodyFont, fontSize: 9),
     headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
-    rowDecoration: const pw.BoxDecoration(
-      border: pw.Border(
-        bottom: pw.BorderSide(color: PdfColors.grey200, width: 0.5),
-      ),
-    ),
+    rowDecoration: zebra.rowDecoration,
+    oddRowDecoration: zebra.oddRowDecoration,
     cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+    cellAlignments: alignments.cellAlignments,
+    headerAlignments: alignments.headerAlignments,
     columnWidths: chartPdfTableColumnWidths(
       headers: headers,
       rows: rows,

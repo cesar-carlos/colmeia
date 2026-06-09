@@ -16,6 +16,8 @@ extension OverviewProgressiveSectionLoadingL10n on OverviewProgressiveSection {
         l10n.overviewLoadingRankingsSemantics,
       OverviewProgressiveSection.lucratividadePeriod =>
         l10n.overviewLoadingLucratividadeSemantics,
+      OverviewProgressiveSection.lucratividadeMensal =>
+        l10n.overviewLoadingLucratividadeMensalSemantics,
       _ => l10n.appLoadingDataSemantics,
     };
   }

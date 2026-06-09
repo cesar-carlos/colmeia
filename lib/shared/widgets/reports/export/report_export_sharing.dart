@@ -7,7 +7,6 @@ import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart'
     show ShareParams, SharePlus, ShareResult, ShareResultStatus, XFile;
 import 'package:uuid/uuid.dart';
@@ -18,12 +17,21 @@ export 'package:colmeia/shared/utils/sanitize_report_file_name.dart'
 const Duration _kShareTempMaxAge = Duration(hours: 24);
 
 bool _shareRequiresTempFilePath() {
-  return !kIsWeb &&
-      (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
+  if (kIsWeb) {
+    return false;
+  }
+  return Platform.isWindows ||
+      Platform.isLinux ||
+      Platform.isMacOS ||
+      Platform.isAndroid ||
+      Platform.isIOS;
 }
 
-bool _sharePdfViaPrintingOnWindows(String mimeType) {
-  return !kIsWeb && Platform.isWindows && mimeType == 'application/pdf';
+/// Windows share UI returns before the user picks a target; keep temp files
+/// until stale sweep so the shell can read them asynchronously.
+@visibleForTesting
+bool deferShareTempFileCleanupUntilStale() {
+  return !kIsWeb && Platform.isWindows;
 }
 
 String _resolvedShareFileName(String fileName) {
@@ -32,6 +40,18 @@ String _resolvedShareFileName(String fileName) {
     return 'export.pdf';
   }
   return baseName;
+}
+
+String _resolvedShareTitle({
+  required String fileName,
+  String? title,
+  String? subject,
+}) {
+  final resolved = title ?? subject;
+  if (resolved != null && resolved.isNotEmpty) {
+    return resolved;
+  }
+  return p.basenameWithoutExtension(fileName);
 }
 
 Future<void> _sweepStaleShareTempDirectories(Directory tempRoot) async {
@@ -101,8 +121,29 @@ Future<XFile> createShareableXFile({
   );
 }
 
+/// Outcome of sharing exported bytes, including a temp file path when present.
+class ShareExportBytesResult {
+  const ShareExportBytesResult({
+    required this.shareResult,
+    this.tempFilePath,
+  });
+
+  final ShareResult shareResult;
+  final String? tempFilePath;
+}
+
+bool _shouldCleanupShareTempFileAfterAttempt(ShareResult result) {
+  if (!_shareRequiresTempFilePath()) {
+    return false;
+  }
+  if (deferShareTempFileCleanupUntilStale()) {
+    return false;
+  }
+  return result.status == ShareResultStatus.success;
+}
+
 /// Shares arbitrary file [bytes] using the platform share sheet.
-Future<ShareResult> shareExportBytes({
+Future<ShareExportBytesResult> shareExportBytes({
   required Uint8List bytes,
   required String fileName,
   required String mimeType,
@@ -110,40 +151,41 @@ Future<ShareResult> shareExportBytes({
   String? title,
 }) async {
   final resolvedFileName = _resolvedShareFileName(fileName);
-  final resolvedTitle = title ?? subject;
-
-  if (_sharePdfViaPrintingOnWindows(mimeType)) {
-    final opened = await Printing.sharePdf(
-      bytes: bytes,
-      filename: resolvedFileName,
-      subject: subject,
-    );
-    if (!opened) {
-      throw StateError('Printing.sharePdf failed to open PDF on Windows');
-    }
-    return const ShareResult(
-      'printing.sharePdf',
-      ShareResultStatus.unavailable,
-    );
-  }
+  final resolvedTitle = _resolvedShareTitle(
+    title: title,
+    subject: subject,
+    fileName: resolvedFileName,
+  );
 
   final xFile = await createShareableXFile(
     bytes: bytes,
     fileName: resolvedFileName,
     mimeType: mimeType,
   );
+  final tempFilePath = _shareRequiresTempFilePath() ? xFile.path : null;
   try {
-    return await SharePlus.instance.share(
+    final shareResult = await SharePlus.instance.share(
       ShareParams(
         files: <XFile>[xFile],
         subject: subject,
         title: resolvedTitle,
       ),
     );
-  } finally {
-    if (_shareRequiresTempFilePath()) {
+    if (_shouldCleanupShareTempFileAfterAttempt(shareResult)) {
       unawaited(deleteShareTempFile(xFile.path));
     }
+    return ShareExportBytesResult(
+      shareResult: shareResult,
+      tempFilePath: tempFilePath,
+    );
+  } on Object {
+    return ShareExportBytesResult(
+      shareResult: const ShareResult(
+        'share_failed',
+        ShareResultStatus.unavailable,
+      ),
+      tempFilePath: tempFilePath,
+    );
   }
 }
 

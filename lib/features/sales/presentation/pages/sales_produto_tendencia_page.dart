@@ -337,7 +337,6 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
       l10n: l10n,
       summaryRows: state.summaryRows,
       buckets: buckets,
-      tokens: context.appTokens,
     );
     unawaited(
       context.pushChartFullscreen<void>(
@@ -410,7 +409,6 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
         l10n: l10n,
         summaryRows: state.summaryRows,
         buckets: buckets,
-        tokens: context.appTokens,
       ),
       onRequestShare: (context, request) =>
           context.shareChartFromRequest(request),

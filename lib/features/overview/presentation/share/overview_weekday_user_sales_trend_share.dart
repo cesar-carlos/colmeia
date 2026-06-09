@@ -134,6 +134,7 @@ ChartShareMetadata buildOverviewWeekdayUserSalesTrendShareMetadata({
                 tokens: exportTokens,
                 useChartShell: false,
                 chartHeightOverride: exportPlotHeight,
+                animationDurationMs: 0,
               ),
             );
           },

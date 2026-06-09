@@ -402,7 +402,6 @@ class _SalesProdutoTendenciaMediaMovelPageState
     List<SalesProdutoTendenciaMediaMovelClassBucket> buckets,
   ) {
     final l10n = AppLocalizations.of(context);
-    final tokens = context.appTokens;
     final fullscreenShareKey = GlobalKey();
     final shareTitle =
         l10n.salesProdutoTendenciaMediaMovelSummaryByClassificacaoTitle;
@@ -410,7 +409,6 @@ class _SalesProdutoTendenciaMediaMovelPageState
         buildSalesProdutoTendenciaMediaMovelCountShareMetadata(
           l10n: l10n,
           buckets: buckets,
-          tokens: tokens,
         );
     unawaited(
       context.pushChartFullscreen<void>(
@@ -469,14 +467,12 @@ class _SalesProdutoTendenciaMediaMovelPageState
     List<SalesProdutoTendenciaMediaMovelClassBucket> buckets,
   ) {
     final l10n = AppLocalizations.of(context);
-    final tokens = context.appTokens;
     final fullscreenShareKey = GlobalKey();
     final shareTitle = l10n.salesProdutoTendenciaMediaMovelSummaryByImpactTitle;
     final shareMetadata =
         buildSalesProdutoTendenciaMediaMovelImpactShareMetadata(
           l10n: l10n,
           buckets: buckets,
-          tokens: tokens,
         );
     unawaited(
       context.pushChartFullscreen<void>(

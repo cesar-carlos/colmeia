@@ -4,10 +4,17 @@ import 'package:colmeia/shared/widgets/charts/app_chart_capture_helper.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_guard.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_result.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
+import 'package:colmeia/shared/widgets/reports/export/report_export_sharing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:share_plus/share_plus.dart';
+
+ShareExportBytesResult _shareSuccess() {
+  return const ShareExportBytesResult(
+    shareResult: ShareResult('test', ShareResultStatus.success),
+  );
+}
 
 Widget _chartBoundary({required GlobalKey key}) {
   return MaterialApp(
@@ -161,7 +168,7 @@ void main() {
           subject,
           title,
         }) async {
-          return const ShareResult('test', ShareResultStatus.success);
+          return _shareSuccess();
         },
       );
     });
@@ -189,7 +196,7 @@ void main() {
           title,
         }) async {
           guardHeldDuringShare = ChartShareGuard.isInProgress(key);
-          return const ShareResult('test', ShareResultStatus.success);
+          return _shareSuccess();
         },
       );
     });
@@ -197,6 +204,55 @@ void main() {
     expect(result, isA<ChartShareSuccess>());
     expect(guardHeldDuringShare, isTrue);
     expect(ChartShareGuard.isInProgress(key), isFalse);
+  });
+
+  testWidgets('skips dedicated export when includeChartImage is false', (
+    tester,
+  ) async {
+    final key = GlobalKey();
+    var exportBuilderInvoked = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(key: key, width: 10, height: 10),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    final hostContext = tester.element(find.byType(Scaffold));
+    late ChartShareResult result;
+    await tester.runAsync(() async {
+      result = await captureAndShareChart(
+        key,
+        title: 'Table with builder',
+        tableData: const ChartShareTableData(
+          headers: <String>['Product', 'Sales'],
+          rows: <List<String>>[
+            <String>['Coffee', '10'],
+          ],
+        ),
+        chartExportBuilder: (_) {
+          exportBuilderInvoked = true;
+          return const SizedBox(width: 100, height: 100);
+        },
+        includeChartImage: false,
+        exportCaptureContext: hostContext,
+        shareBytes: ({
+          required bytes,
+          required fileName,
+          required mimeType,
+          subject,
+          title,
+        }) async {
+          return _shareSuccess();
+        },
+      );
+    });
+
+    expect(result, isA<ChartShareSuccess>());
+    expect(exportBuilderInvoked, isFalse);
   });
 
   testWidgets('table-only share succeeds when dedicated export capture fails', (
@@ -234,7 +290,7 @@ void main() {
           subject,
           title,
         }) async {
-          return const ShareResult('test', ShareResultStatus.success);
+          return _shareSuccess();
         },
       );
     });
@@ -263,7 +319,7 @@ void main() {
             subject,
             title,
           }) async {
-            return const ShareResult('test', ShareResultStatus.success);
+            return _shareSuccess();
           },
         );
       });
@@ -271,6 +327,40 @@ void main() {
       expect(result, isA<ChartShareSuccess>());
     },
   );
+
+  testWidgets('returns sharePlatformFailed with temp path when share unavailable', (
+    tester,
+  ) async {
+    final key = GlobalKey();
+    late ChartShareResult result;
+
+    await tester.pumpWidget(_chartBoundary(key: key));
+    await tester.pumpAndSettle();
+
+    await tester.runAsync(() async {
+      result = await captureAndShareChart(
+        key,
+        title: 'Chart',
+        shareBytes: ({
+          required bytes,
+          required fileName,
+          required mimeType,
+          subject,
+          title,
+        }) async {
+          return const ShareExportBytesResult(
+            shareResult: ShareResult('test', ShareResultStatus.unavailable),
+            tempFilePath: r'C:\temp\chart.pdf',
+          );
+        },
+      );
+    });
+
+    expect(result, isA<ChartShareFailure>());
+    final failure = result as ChartShareFailure;
+    expect(failure.reason, ChartShareFailureReason.sharePlatformFailed);
+    expect(failure.pdfFilePath, r'C:\temp\chart.pdf');
+  });
 
   testWidgets(
     'returns invalidRenderObject when key is not a repaint boundary',

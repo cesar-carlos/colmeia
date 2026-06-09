@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/widgets/charts/chart_pdf_table_alignment.dart';
 import 'package:colmeia/shared/widgets/export/pdf_export_font_cache.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
@@ -221,6 +222,11 @@ abstract final class ReportPdfExporter {
     final data = rows.map<List<String>>((row) {
       return columns.map((c) => c.formatValue(c.valueGetter(row))).toList();
     }).toList();
+    final alignments = resolveChartPdfTableAlignments(
+      headers: headers,
+      rows: data,
+    );
+    final zebra = chartPdfTableZebraRowDecorations();
 
     return pw.TableHelper.fromTextArray(
       headers: headers,
@@ -228,12 +234,11 @@ abstract final class ReportPdfExporter {
       headerStyle: pw.TextStyle(font: headerFont, fontSize: 9),
       cellStyle: pw.TextStyle(font: bodyFont, fontSize: 9),
       headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
-      rowDecoration: const pw.BoxDecoration(
-        border: pw.Border(
-          bottom: pw.BorderSide(color: PdfColors.grey200, width: 0.5),
-        ),
-      ),
+      rowDecoration: zebra.rowDecoration,
+      oddRowDecoration: zebra.oddRowDecoration,
       cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      cellAlignments: alignments.cellAlignments,
+      headerAlignments: alignments.headerAlignments,
       columnWidths: _columnWidths(columns, pageFormat),
     );
   }

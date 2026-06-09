@@ -10,9 +10,15 @@ final class ChartShareSuccess extends ChartShareResult {
 
 /// Sharing failed before or during the platform share sheet.
 final class ChartShareFailure extends ChartShareResult {
-  const ChartShareFailure(this.reason);
+  const ChartShareFailure(
+    this.reason, {
+    this.pdfFilePath,
+  });
 
   final ChartShareFailureReason reason;
+
+  /// Path to a generated PDF temp file when share failed after PDF creation.
+  final String? pdfFilePath;
 }
 
 /// Why chart capture/share could not complete.

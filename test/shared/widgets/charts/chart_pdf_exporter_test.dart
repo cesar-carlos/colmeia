@@ -79,6 +79,25 @@ void main() {
     expect(String.fromCharCodes(bytes.take(4)), '%PDF');
   });
 
+  test('build paginates large tables instead of requiring truncation', () async {
+    final rows = List<List<String>>.generate(
+      501,
+      (index) => <String>['row-$index', '${index * 2}'],
+      growable: false,
+    );
+
+    final bytes = await ChartPdfExporter.build(
+      title: 'Large table',
+      tableData: ChartShareTableData(
+        headers: const <String>['Name', 'Value'],
+        rows: rows,
+      ),
+    );
+
+    expect(bytes, isNotEmpty);
+    expect(String.fromCharCodes(bytes.take(4)), '%PDF');
+  });
+
   test('build accepts explicit landscape orientation', () async {
     final bytes = await ChartPdfExporter.build(
       title: 'Landscape chart',

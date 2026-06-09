@@ -957,6 +957,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get chartShareTooltip => 'Compartilhar gráfico';
 
   @override
+  String get chartShareSuccess => 'Gráfico compartilhado';
+
+  @override
   String get chartShareFailed =>
       'Não foi possível compartilhar o gráfico. Tente novamente.';
 
@@ -979,6 +982,15 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get chartShareFailedInProgress =>
       'Já existe um compartilhamento em andamento para este gráfico.';
+
+  @override
+  String get chartShareOpenPdf => 'Abrir PDF';
+
+  @override
+  String get chartShareIncludeChartImageTitle => 'Compartilhar gráfico';
+
+  @override
+  String get chartShareIncludeChartImage => 'Incluir imagem do gráfico';
 
   @override
   String chartShareExportRowLimitExceeded(int maxRows, int totalCount) {
@@ -5833,6 +5845,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get chartShareTooltip => 'Compartilhar gráfico';
 
   @override
+  String get chartShareSuccess => 'Gráfico compartilhado';
+
+  @override
   String get chartShareFailed =>
       'Não foi possível compartilhar o gráfico. Tente novamente.';
 
@@ -5855,6 +5870,15 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get chartShareFailedInProgress =>
       'Já existe um compartilhamento em andamento para este gráfico.';
+
+  @override
+  String get chartShareOpenPdf => 'Abrir PDF';
+
+  @override
+  String get chartShareIncludeChartImageTitle => 'Compartilhar gráfico';
+
+  @override
+  String get chartShareIncludeChartImage => 'Incluir imagem do gráfico';
 
   @override
   String chartShareExportRowLimitExceeded(int maxRows, int totalCount) {

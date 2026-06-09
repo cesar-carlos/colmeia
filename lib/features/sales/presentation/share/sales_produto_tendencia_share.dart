@@ -2,7 +2,6 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_classificacao_chart_support.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_export_capture.dart';
@@ -108,14 +107,9 @@ ChartShareMetadata buildSalesProdutoTendenciaClassificacaoShareMetadata({
   required AppLocalizations l10n,
   required List<ProdutoVendidoTendenciaDeVendaSummaryRow> summaryRows,
   required List<SalesProdutoTendenciaClassBucket> buckets,
-  required AppThemeTokens tokens,
 }) {
   final legend = salesProdutoTendenciaClassificacaoPdfLegend(l10n, buckets);
-  return ChartShareMetadata(
-    title: l10n.salesProdutoTendenciaSummaryByClassificacaoTitle,
-    subtitle:
-        '${l10n.salesProdutoTendenciaSummaryByClassificacaoSubtitle}\n$legend',
-    pdfOrientation: ChartSharePdfOrientation.landscape,
+  final tableLimit = applyChartShareTableRowLimit(
     tableData: ChartShareTableData(
       headers: <String>[
         l10n.chartSharePdfColumnLabel,
@@ -133,14 +127,17 @@ ChartShareMetadata buildSalesProdutoTendenciaClassificacaoShareMetadata({
           ],
       ],
     ),
-    chartExportBuilder: buckets.isEmpty
-        ? null
-        : (exportContext) => _classificacaoComparisonExport(
-            exportContext: exportContext,
-            l10n: l10n,
-            tokens: tokens,
-            buckets: buckets,
-          ),
+    truncationNoticeBuilder: (shownRows, totalRows) =>
+        l10n.chartSharePdfTableRowsTruncated(shownRows, totalRows),
+  );
+
+  return ChartShareMetadata(
+    title: l10n.salesProdutoTendenciaSummaryByClassificacaoTitle,
+    subtitle:
+        '${l10n.salesProdutoTendenciaSummaryByClassificacaoSubtitle}\n$legend',
+    filterSummary: tableLimit.truncationNotice,
+    pdfOrientation: ChartSharePdfOrientation.landscape,
+    tableData: tableLimit.tableData,
   );
 }
 
@@ -226,62 +223,6 @@ ChartShareMetadata buildSalesProdutoTendenciaTopLosersShareMetadata({
   );
 }
 
-Widget _classificacaoComparisonExport({
-  required BuildContext exportContext,
-  required AppLocalizations l10n,
-  required AppThemeTokens tokens,
-  required List<SalesProdutoTendenciaClassBucket> buckets,
-}) {
-  final colors = Theme.of(exportContext).appColors;
-  final exportStyle = salesTrendClassificacaoComparisonBarChartStyle(
-    tokens: tokens,
-    l10n: l10n,
-    yAxisFormat: NumberFormat.decimalPattern(l10n.localeName),
-  ).forPdfExport();
-  final orderedBuckets = buckets.isEmpty
-      ? buckets
-      : salesProdutoTendenciaOrderedClassBuckets(
-          buckets
-              .map(
-                (bucket) => ProdutoVendidoTendenciaDeVendaSummaryRow(
-                  classificacao: bucket.classificacao,
-                  quantidadeProdutos: bucket.count,
-                  impactoLiquido: bucket.impacto,
-                ),
-              )
-              .toList(growable: false),
-        );
-
-  return wrapCartesianChartForPdfExport(
-    context: exportContext,
-    itemCount: orderedBuckets.length,
-    minSlotWidth: comparisonBarMinSlotWidth(
-      minBarWidth: exportStyle.minBarWidth,
-    ),
-    height: exportStyle.height,
-    chart: AppComparisonBarChart<SalesProdutoTendenciaClassBucket>(
-      items: orderedBuckets,
-      labelBuilder: (bucket) =>
-          salesProdutoTendenciaClassificacaoLabel(l10n, bucket.classificacao),
-      valueBuilder: (bucket) => bucket.count,
-      colorBuilder: (bucket) => salesProdutoTendenciaClassificacaoColor(
-        colors,
-        bucket.classificacao,
-      ),
-      plotFloorAccessibilityNotice: l10n.chartComparisonPlotFloorNotice,
-      extremeSpreadAccessibilityNotice:
-          l10n.chartComparisonExtremeValueSpreadNotice,
-      style: exportStyle,
-      dataLabelBuilder: (bucket, _) =>
-          NumberFormat.decimalPattern(l10n.localeName).format(bucket.count),
-      tooltipLabelBuilder: (bucket, _) =>
-          '${salesProdutoTendenciaClassificacaoLabel(l10n, bucket.classificacao)} • '
-          '${bucket.count} • '
-          '${NumberFormat.decimalPattern(l10n.localeName).format(bucket.impacto.round())}',
-    ),
-  );
-}
-
 Widget _topMoversComparisonExport({
   required BuildContext exportContext,
   required AppLocalizations l10n,
@@ -290,7 +231,6 @@ Widget _topMoversComparisonExport({
   required bool useAbsolutePercentForLosers,
 }) {
   final exportStyle = AppComparisonBarChartStyle(
-    animationDuration: const Duration(milliseconds: 350),
     stickyPrimaryYAxisWhileScrolling: false,
     enableTapHighlight: true,
     yAxisFormat: NumberFormat.decimalPattern(l10n.localeName),

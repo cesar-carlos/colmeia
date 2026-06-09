@@ -42,6 +42,7 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
     this.useChartShell = true,
     this.chartHeightOverride,
     this.expandPlotVertically = false,
+    this.animationDurationMs,
   });
 
   final AppLocalizations l10n;
@@ -64,6 +65,9 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
   /// fills remaining vertical space below the external legend instead of using
   /// a fixed [chartHeightOverride] that would ignore legend / pan-hint height.
   final bool expandPlotVertically;
+
+  /// When null, uses [_kGroupedChartAnimationMs]. Pass `0` for PDF export.
+  final int? animationDurationMs;
 
   static const double _kGroupedChartAnimationMs = 350;
 
@@ -165,7 +169,8 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
           spacing: 0.12,
           borderRadius: BorderRadius.circular(6),
           color: chartTheme.paletteColor(s),
-          animationDuration: _kGroupedChartAnimationMs,
+          animationDuration:
+              animationDurationMs?.toDouble() ?? _kGroupedChartAnimationMs,
         ),
       );
     }

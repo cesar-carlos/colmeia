@@ -156,6 +156,9 @@ class _OverviewChartDetailPageState extends State<OverviewChartDetailPage> {
                     l10n: l10n,
                     section: slice.section!,
                     overview: slice.overview!,
+                    isSingleAgentSelected: _isSingleAgentSelected(
+                      slice.activeFilter,
+                    ),
                   )
                 else if (!slice.isLoading && slice.overview == null)
                   AppInlineErrorPanel(
@@ -169,6 +172,11 @@ class _OverviewChartDetailPageState extends State<OverviewChartDetailPage> {
       },
     );
   }
+}
+
+bool _isSingleAgentSelected(DashboardFilter filter) {
+  final selectedAgentIds = filter.selectedAgentIds;
+  return selectedAgentIds != null && selectedAgentIds.length == 1;
 }
 
 bool _shouldShowChartLoading(_ChartDetailSlice slice) {

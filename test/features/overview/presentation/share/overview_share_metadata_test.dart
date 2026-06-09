@@ -1,3 +1,5 @@
+import 'dart:ui' show Locale;
+
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
@@ -16,9 +18,7 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
-import 'package:colmeia/shared/widgets/charts/app_dashboard_comparison_bar_chart_preset.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 
@@ -31,22 +31,7 @@ void main() {
     tokens = AppThemeTokens.light;
   });
 
-  testWidgets('weekday sales trend share metadata uses landscape export', (
-    tester,
-  ) async {
-    late BuildContext styleContext;
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: ThemeData(extensions: <ThemeExtension<dynamic>>[tokens]),
-        home: Builder(
-          builder: (context) {
-            styleContext = context;
-            return const SizedBox.shrink();
-          },
-        ),
-      ),
-    );
-
+  test('weekday sales trend share metadata is table-only landscape export', () {
     const points = <OverviewWeekdaySalesTrendPoint>[
       OverviewWeekdaySalesTrendPoint(
         weekdayNumber: 2,
@@ -58,18 +43,14 @@ void main() {
 
     final metadata = buildOverviewWeekdaySalesTrendShareMetadata(
       l10n: l10n,
-      tokens: tokens,
-      chartPoints: points,
       tablePoints: points,
       isSalesCountMetric: true,
       salesCountFormat: salesCountFormat,
-      compactSalesCountFormat: salesCountFormat,
-      styleContext: styleContext,
     );
 
     expect(metadata.title, l10n.overviewWeekdaySalesTitle);
     expect(metadata.tableData?.rows.single.first, isNotEmpty);
-    expect(metadata.chartExportBuilder, isNotNull);
+    expect(metadata.chartExportBuilder, isNull);
     expect(metadata.pdfOrientation, ChartSharePdfOrientation.landscape);
   });
 
@@ -100,7 +81,7 @@ void main() {
     expect(metadata.pdfOrientation, ChartSharePdfOrientation.landscape);
   });
 
-  test('agent ranking share metadata uses landscape comparison export', () {
+  test('agent ranking share metadata is table-only landscape export', () {
     const rankings = <OverviewAgentRanking>[
       OverviewAgentRanking(
         agentId: 'a1',
@@ -109,26 +90,19 @@ void main() {
         totalAmount: 5000,
       ),
     ];
-    final inlineStyle = appDashboardComparisonBarChartStyle(
-      tokens: tokens,
-      kind: AppDashboardComparisonBarChartKind.ranking,
-      l10n: l10n,
-    );
 
     final metadata = buildOverviewAgentRankingShareMetadata(
       l10n: l10n,
-      tokens: tokens,
       agentRankings: rankings,
-      inlineStyle: inlineStyle,
     );
 
     expect(metadata.title, l10n.dashboardAgentRankingTitle);
     expect(metadata.tableData?.rows.single[1], 'Store A');
-    expect(metadata.chartExportBuilder, isNotNull);
+    expect(metadata.chartExportBuilder, isNull);
     expect(metadata.pdfOrientation, ChartSharePdfOrientation.landscape);
   });
 
-  test('user ranking share metadata formats average ticket rows', () {
+  test('user ranking share metadata is table-only landscape export', () {
     const rankings = <OverviewUserRanking>[
       OverviewUserRanking(
         userName: 'Bob',
@@ -137,25 +111,19 @@ void main() {
         averageTicket: 240,
       ),
     ];
-    final rankingStyle = appDashboardComparisonBarChartStyle(
-      tokens: tokens,
-      kind: AppDashboardComparisonBarChartKind.ranking,
-      l10n: l10n,
-    );
 
     final metadata = buildOverviewUserRankingShareMetadata(
       l10n: l10n,
       userRankings: rankings,
-      rankingChartStyle: rankingStyle,
     );
 
     expect(metadata.title, l10n.dashboardUserRankingTitle);
     expect(metadata.tableData?.rows.single[1], 'Bob');
-    expect(metadata.chartExportBuilder, isNotNull);
+    expect(metadata.chartExportBuilder, isNull);
     expect(metadata.pdfOrientation, ChartSharePdfOrientation.landscape);
   });
 
-  test('payment mix share metadata includes donut export', () {
+  test('payment mix share metadata is table-only export', () {
     const segments = <AppCategoryDonutSegment>[
       AppCategoryDonutSegment(
         label: 'PIX',
@@ -168,12 +136,11 @@ void main() {
     final metadata = buildOverviewPaymentMixShareMetadata(
       l10n: l10n,
       segments: segments,
-      centerPrimary: r'R$ 1.000',
     );
 
     expect(metadata.title, l10n.overviewPaymentMixTitle);
     expect(metadata.tableData?.rows.single.first, 'PIX');
-    expect(metadata.chartExportBuilder, isNotNull);
+    expect(metadata.chartExportBuilder, isNull);
   });
 
   test('lucratividade chart share metadata includes agent rows', () {

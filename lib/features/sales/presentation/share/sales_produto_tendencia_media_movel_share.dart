@@ -2,33 +2,22 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_classificacao_chart_support.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_classificacao_labels.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_summary_section.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_trend_comparison_bar_chart_style.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:colmeia/shared/design_system/app_colors.dart';
-import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
-import 'package:colmeia/shared/widgets/charts/chart_export_capture.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 ChartShareMetadata buildSalesProdutoTendenciaMediaMovelCountShareMetadata({
   required AppLocalizations l10n,
   required List<SalesProdutoTendenciaMediaMovelClassBucket> buckets,
-  required AppThemeTokens tokens,
 }) {
   final legend = salesProdutoTendenciaMediaMovelClassificacaoPdfLegend(
     l10n,
     buckets,
   );
-  return ChartShareMetadata(
-    title: l10n.salesProdutoTendenciaMediaMovelSummaryByClassificacaoTitle,
-    subtitle:
-        '${l10n.salesProdutoTendenciaMediaMovelSummaryByClassificacaoSubtitle}\n$legend',
-    pdfOrientation: ChartSharePdfOrientation.landscape,
+  final tableLimit = applyChartShareTableRowLimit(
     tableData: ChartShareTableData(
       headers: <String>[
         l10n.chartSharePdfColumnLabel,
@@ -45,33 +34,30 @@ ChartShareMetadata buildSalesProdutoTendenciaMediaMovelCountShareMetadata({
           ],
       ],
     ),
-    chartExportBuilder: buckets.isEmpty
-        ? null
-        : (exportContext) => _mediaMovelComparisonExport(
-            exportContext: exportContext,
-            l10n: l10n,
-            tokens: tokens,
-            buckets: buckets,
-            useImpactValues: false,
-          ),
+    truncationNoticeBuilder: (shownRows, totalRows) =>
+        l10n.chartSharePdfTableRowsTruncated(shownRows, totalRows),
+  );
+
+  return ChartShareMetadata(
+    title: l10n.salesProdutoTendenciaMediaMovelSummaryByClassificacaoTitle,
+    subtitle:
+        '${l10n.salesProdutoTendenciaMediaMovelSummaryByClassificacaoSubtitle}\n$legend',
+    filterSummary: tableLimit.truncationNotice,
+    pdfOrientation: ChartSharePdfOrientation.landscape,
+    tableData: tableLimit.tableData,
   );
 }
 
 ChartShareMetadata buildSalesProdutoTendenciaMediaMovelImpactShareMetadata({
   required AppLocalizations l10n,
   required List<SalesProdutoTendenciaMediaMovelClassBucket> buckets,
-  required AppThemeTokens tokens,
 }) {
   final impactFormat = NumberFormat.decimalPattern(l10n.localeName);
   final legend = salesProdutoTendenciaMediaMovelClassificacaoPdfLegend(
     l10n,
     buckets,
   );
-  return ChartShareMetadata(
-    title: l10n.salesProdutoTendenciaMediaMovelSummaryByImpactTitle,
-    subtitle:
-        '${l10n.salesProdutoTendenciaMediaMovelSummaryByImpactSubtitle}\n$legend',
-    pdfOrientation: ChartSharePdfOrientation.landscape,
+  final tableLimit = applyChartShareTableRowLimit(
     tableData: ChartShareTableData(
       headers: <String>[
         l10n.chartSharePdfColumnLabel,
@@ -88,15 +74,17 @@ ChartShareMetadata buildSalesProdutoTendenciaMediaMovelImpactShareMetadata({
           ],
       ],
     ),
-    chartExportBuilder: buckets.isEmpty
-        ? null
-        : (exportContext) => _mediaMovelComparisonExport(
-            exportContext: exportContext,
-            l10n: l10n,
-            tokens: tokens,
-            buckets: buckets,
-            useImpactValues: true,
-          ),
+    truncationNoticeBuilder: (shownRows, totalRows) =>
+        l10n.chartSharePdfTableRowsTruncated(shownRows, totalRows),
+  );
+
+  return ChartShareMetadata(
+    title: l10n.salesProdutoTendenciaMediaMovelSummaryByImpactTitle,
+    subtitle:
+        '${l10n.salesProdutoTendenciaMediaMovelSummaryByImpactSubtitle}\n$legend',
+    filterSummary: tableLimit.truncationNotice,
+    pdfOrientation: ChartSharePdfOrientation.landscape,
+    tableData: tableLimit.tableData,
   );
 }
 
@@ -145,55 +133,5 @@ ChartShareMetadata buildSalesProdutoTendenciaMediaMovelDetailsShareMetadata({
       truncationNotice: tableLimit.truncationNotice,
     ),
     tableData: tableLimit.tableData,
-  );
-}
-
-Widget _mediaMovelComparisonExport({
-  required BuildContext exportContext,
-  required AppLocalizations l10n,
-  required AppThemeTokens tokens,
-  required List<SalesProdutoTendenciaMediaMovelClassBucket> buckets,
-  required bool useImpactValues,
-}) {
-  final locale = Localizations.localeOf(exportContext).toLanguageTag();
-  final decimalFormat = NumberFormat.decimalPattern(l10n.localeName);
-  final colors = Theme.of(exportContext).appColors;
-  final exportStyle = salesTrendHomeLikeComparisonBarChartStyle(
-    tokens: tokens,
-    l10n: l10n,
-    yAxisFormat: NumberFormat.compact(locale: locale),
-    minPlottedValueShareOfMax: useImpactValues ? 0 : 0.045,
-  ).forPdfExport();
-
-  return wrapCartesianChartForPdfExport(
-    context: exportContext,
-    itemCount: buckets.length,
-    minSlotWidth: comparisonBarMinSlotWidth(
-      minBarWidth: exportStyle.minBarWidth,
-    ),
-    height: exportStyle.height,
-    chart: AppComparisonBarChart<SalesProdutoTendenciaMediaMovelClassBucket>(
-      items: buckets,
-      labelBuilder: (bucket) => produtoTendenciaMediaMovelClassificacaoLabel(
-        l10n,
-        bucket.classificacao,
-      ),
-      valueBuilder: (bucket) =>
-          useImpactValues ? bucket.impacto : bucket.count,
-      colorBuilder: (bucket) => salesProdutoTendenciaMediaMovelClassificacaoColor(
-        colors,
-        bucket.classificacao,
-      ),
-      plotFloorAccessibilityNotice: l10n.chartComparisonPlotFloorNotice,
-      extremeSpreadAccessibilityNotice:
-          l10n.chartComparisonExtremeValueSpreadNotice,
-      style: exportStyle,
-      dataLabelBuilder: (bucket, value) => useImpactValues
-          ? decimalFormat.format(bucket.impacto)
-          : '${bucket.count}',
-      tooltipLabelBuilder: (bucket, value) =>
-          '${produtoTendenciaMediaMovelClassificacaoLabel(l10n, bucket.classificacao)}: '
-          '${useImpactValues ? decimalFormat.format(bucket.impacto) : bucket.count}',
-    ),
   );
 }

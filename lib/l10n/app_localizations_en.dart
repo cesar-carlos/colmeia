@@ -936,6 +936,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chartShareTooltip => 'Share chart';
 
   @override
+  String get chartShareSuccess => 'Chart shared';
+
+  @override
   String get chartShareFailed => 'Could not share chart. Try again.';
 
   @override
@@ -957,6 +960,15 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get chartShareFailedInProgress =>
       'A share is already in progress for this chart.';
+
+  @override
+  String get chartShareOpenPdf => 'Open PDF';
+
+  @override
+  String get chartShareIncludeChartImageTitle => 'Share chart';
+
+  @override
+  String get chartShareIncludeChartImage => 'Include chart image';
 
   @override
   String chartShareExportRowLimitExceeded(int maxRows, int totalCount) {

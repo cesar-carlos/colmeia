@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+
+const Duration _kPdfFontWarmTimeout = Duration(seconds: 15);
 
 /// Shared Inter font cache for chart and report PDF exports.
 abstract final class PdfExportFontCache {
@@ -12,8 +15,14 @@ abstract final class PdfExportFontCache {
   static bool _fontsLoaded = false;
   static Future<void>? _loading;
 
+  /// Whether PDF export fonts are already available without awaiting network I/O.
+  static bool get isWarmed => _fontsLoaded;
+
   /// Preloads Google Fonts used by PDF exports.
   static Future<void> warmFonts() {
+    if (_fontsLoaded) {
+      return Future<void>.value();
+    }
     return _loading ??= _ensureFontsLoaded();
   }
 
@@ -21,12 +30,23 @@ abstract final class PdfExportFontCache {
     if (_fontsLoaded) {
       return;
     }
-    final headerFont = await PdfGoogleFonts.interBold();
-    final bodyFont = await PdfGoogleFonts.interRegular();
-    _headerFont = headerFont;
-    _bodyFont = bodyFont;
-    _headerFontBytes = _optionalFontBytes(headerFont);
-    _bodyFontBytes = _optionalFontBytes(bodyFont);
+    try {
+      final headerFont = await PdfGoogleFonts.interBold().timeout(
+        _kPdfFontWarmTimeout,
+      );
+      final bodyFont = await PdfGoogleFonts.interRegular().timeout(
+        _kPdfFontWarmTimeout,
+      );
+      _headerFont = headerFont;
+      _bodyFont = bodyFont;
+      _headerFontBytes = _optionalFontBytes(headerFont);
+      _bodyFontBytes = _optionalFontBytes(bodyFont);
+    } on Object {
+      _headerFont = pw.Font.helveticaBold();
+      _bodyFont = pw.Font.helvetica();
+      _headerFontBytes = null;
+      _bodyFontBytes = null;
+    }
     _fontsLoaded = true;
   }
 

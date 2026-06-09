@@ -153,7 +153,6 @@ ChartShareMetadata buildSalesProdutoRankLucroShareMetadata({
                   showDividers: true,
                   style: chartStyle,
                   wrapInCard: false,
-                  barAnimationDuration: Duration.zero,
                 ),
               ),
             );

@@ -2,9 +2,6 @@ import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
-import 'package:colmeia/shared/widgets/charts/chart_export_capture.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
@@ -32,9 +29,7 @@ String overviewUserRankingShareDataLabel(
 
 ChartShareMetadata buildOverviewAgentRankingShareMetadata({
   required AppLocalizations l10n,
-  required AppThemeTokens tokens,
   required List<OverviewAgentRanking> agentRankings,
-  required AppComparisonBarChartStyle inlineStyle,
 }) {
   final tableLimit = applyChartShareTableRowLimit(
     tableData: ChartShareTableData.fromRanking(
@@ -62,40 +57,12 @@ ChartShareMetadata buildOverviewAgentRankingShareMetadata({
     filterSummary: tableLimit.truncationNotice,
     tableData: tableLimit.tableData,
     pdfOrientation: ChartSharePdfOrientation.landscape,
-    chartExportBuilder: agentRankings.isEmpty
-        ? null
-        : (exportContext) {
-            final exportStyle = inlineStyle.forPdfExport();
-            return wrapCartesianChartForPdfExport(
-              context: exportContext,
-              itemCount: agentRankings.length,
-              minSlotWidth: comparisonBarMinSlotWidth(
-                minBarWidth: exportStyle.minBarWidth,
-              ),
-              height: exportStyle.height,
-              chart: AppComparisonBarChart<OverviewAgentRanking>(
-                items: agentRankings,
-                plotFloorAccessibilityNotice:
-                    l10n.chartComparisonPlotFloorNotice,
-                extremeSpreadAccessibilityNotice:
-                    l10n.chartComparisonExtremeValueSpreadNotice,
-                labelBuilder: (agent) => agent.displayName,
-                valueBuilder: (agent) => agent.totalAmount,
-                tooltipLabelBuilder: (agent, value) =>
-                    '${agent.displayName}: ${AppBrFormatters.currency(value)}',
-                dataLabelBuilder: (agent, value) =>
-                    AppBrFormatters.compactCurrency(value),
-                style: exportStyle,
-              ),
-            );
-          },
   );
 }
 
 ChartShareMetadata buildOverviewUserRankingShareMetadata({
   required AppLocalizations l10n,
   required List<OverviewUserRanking> userRankings,
-  required AppComparisonBarChartStyle rankingChartStyle,
 }) {
   final tableLimit = applyChartShareTableRowLimit(
     tableData: ChartShareTableData.fromRanking(
@@ -123,32 +90,5 @@ ChartShareMetadata buildOverviewUserRankingShareMetadata({
     filterSummary: tableLimit.truncationNotice,
     tableData: tableLimit.tableData,
     pdfOrientation: ChartSharePdfOrientation.landscape,
-    chartExportBuilder: userRankings.isEmpty
-        ? null
-        : (exportContext) {
-            final exportStyle = rankingChartStyle.forPdfExport();
-            return wrapCartesianChartForPdfExport(
-              context: exportContext,
-              itemCount: userRankings.length,
-              minSlotWidth: comparisonBarMinSlotWidth(
-                minBarWidth: exportStyle.minBarWidth,
-              ),
-              height: exportStyle.height,
-              chart: AppComparisonBarChart<OverviewUserRanking>(
-                items: userRankings,
-                plotFloorAccessibilityNotice:
-                    l10n.chartComparisonPlotFloorNotice,
-                extremeSpreadAccessibilityNotice:
-                    l10n.chartComparisonExtremeValueSpreadNotice,
-                labelBuilder: (user) => user.userName,
-                valueBuilder: (user) => user.totalAmount,
-                tooltipLabelBuilder: (user, value) =>
-                    overviewUserRankingShareTooltip(l10n, user, value),
-                dataLabelBuilder: (user, value) =>
-                    overviewUserRankingShareDataLabel(l10n, user, value),
-                style: exportStyle,
-              ),
-            );
-          },
   );
 }

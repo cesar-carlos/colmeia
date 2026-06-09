@@ -16,6 +16,7 @@ class AppChartShareRequest {
     this.filterSummary,
     this.tableData,
     this.chartExportBuilder,
+    this.includeChartImage,
     this.pdfOrientation = ChartSharePdfOrientation.portrait,
   });
 
@@ -26,7 +27,34 @@ class AppChartShareRequest {
   final String? filterSummary;
   final ChartShareTableData? tableData;
   final WidgetBuilder? chartExportBuilder;
+
+  /// When null, chart image capture uses auto rules (see ChartShareMetadata).
+  final bool? includeChartImage;
   final ChartSharePdfOrientation pdfOrientation;
+
+  AppChartShareRequest copyWith({
+    GlobalKey? captureKey,
+    String? subject,
+    String? title,
+    String? subtitle,
+    String? filterSummary,
+    ChartShareTableData? tableData,
+    WidgetBuilder? chartExportBuilder,
+    bool? includeChartImage,
+    ChartSharePdfOrientation? pdfOrientation,
+  }) {
+    return AppChartShareRequest(
+      captureKey: captureKey ?? this.captureKey,
+      subject: subject ?? this.subject,
+      title: title ?? this.title,
+      subtitle: subtitle ?? this.subtitle,
+      filterSummary: filterSummary ?? this.filterSummary,
+      tableData: tableData ?? this.tableData,
+      chartExportBuilder: chartExportBuilder ?? this.chartExportBuilder,
+      includeChartImage: includeChartImage ?? this.includeChartImage,
+      pdfOrientation: pdfOrientation ?? this.pdfOrientation,
+    );
+  }
 }
 
 /// Callback emitted by a shared chart to request sharing its rendered output.

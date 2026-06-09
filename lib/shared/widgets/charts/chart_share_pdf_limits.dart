@@ -2,7 +2,30 @@ import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 
 /// Shared limits for chart PDF table exports.
 abstract final class ChartSharePdfLimits {
-  static const int maxTableRows = 500;
+  /// Hard safety cap applied before PDF generation to avoid OOM.
+  static const int maxTableRows = 2000;
+
+  /// Target row count per PDF table chunk; larger tables paginate across pages.
+  static const int tableRowsPerPage = 500;
+}
+
+/// Splits [rows] into chunks of at most [rowsPerPage] for PDF pagination.
+List<List<List<String>>> paginateChartShareTableRows(
+  List<List<String>> rows, {
+  int rowsPerPage = ChartSharePdfLimits.tableRowsPerPage,
+}) {
+  if (rows.isEmpty || rowsPerPage <= 0) {
+    return const <List<List<String>>>[];
+  }
+
+  final chunks = <List<List<String>>>[];
+  for (var start = 0; start < rows.length; start += rowsPerPage) {
+    final end = start + rowsPerPage;
+    chunks.add(
+      rows.sublist(start, end > rows.length ? rows.length : end),
+    );
+  }
+  return chunks;
 }
 
 /// Result of applying a row cap to chart share table data.

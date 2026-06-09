@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:colmeia/shared/widgets/charts/chart_capture_image_processor.dart';
@@ -5,6 +6,7 @@ import 'package:colmeia/shared/widgets/charts/chart_export_pixel_ratio.dart';
 import 'package:colmeia/shared/widgets/charts/chart_pdf_exporter.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_bytes_sharer.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_guard.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_result.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
@@ -16,6 +18,10 @@ import 'package:flutter/scheduler.dart';
 import 'package:share_plus/share_plus.dart';
 
 const Duration _kFrameWaitTimeout = Duration(seconds: 1);
+const Duration _kDedicatedExportTimeout = Duration(seconds: 8);
+const Duration _kRasterizeTimeout = Duration(seconds: 20);
+const Duration _kPdfBuildTimeout = Duration(seconds: 30);
+const Duration _kShareSheetTimeout = Duration(seconds: 90);
 
 /// Captures the chart behind [key], builds a PDF, and opens the share sheet.
 Future<ChartShareResult> captureAndShareChart(
@@ -26,6 +32,7 @@ Future<ChartShareResult> captureAndShareChart(
   String? filterSummary,
   ChartShareTableData? tableData,
   WidgetBuilder? chartExportBuilder,
+  bool? includeChartImage,
   ChartSharePdfOrientation pdfOrientation = ChartSharePdfOrientation.portrait,
   BuildContext? exportCaptureContext,
   double? pixelRatio,
@@ -39,29 +46,51 @@ Future<ChartShareResult> captureAndShareChart(
 
   final resolvedTitle = title ?? subject ?? 'chart';
   try {
+    final hasTable = tableData != null && !tableData.isEmpty;
+    final fontsFuture = ChartPdfExporter.warmFonts();
+
     Uint8List? pngBytes;
     var skipPngDownscale = false;
     final usesDedicatedExport = chartExportBuilder != null;
-    final exportOverlay = usesDedicatedExport && exportCaptureContext != null
-        ? Overlay.maybeOf(exportCaptureContext, rootOverlay: true)
+    final shouldCaptureChartImage = resolveChartShareIncludeChartImage(
+      includeChartImage: includeChartImage,
+      hasTable: hasTable,
+      hasExportBuilder: usesDedicatedExport,
+    );
+    final exportOverlay =
+        shouldCaptureChartImage &&
+            usesDedicatedExport &&
+            exportCaptureContext != null
+        ? _resolveExportOverlay(exportCaptureContext)
         : null;
     final screenDevicePixelRatio = exportCaptureContext == null
         ? key.currentContext == null
             ? null
             : MediaQuery.devicePixelRatioOf(key.currentContext!)
         : MediaQuery.devicePixelRatioOf(exportCaptureContext);
-    if (usesDedicatedExport && exportOverlay != null) {
-      final capture = await captureChartFromExportBuilder(
-        overlay: exportOverlay,
-        chartExportBuilder: chartExportBuilder,
-        devicePixelRatio: screenDevicePixelRatio,
-        pixelRatio: pixelRatio,
-      );
+    if (shouldCaptureChartImage &&
+        usesDedicatedExport &&
+        exportOverlay != null) {
+      ChartPngCapture? capture;
+      try {
+        capture = await captureChartFromExportBuilder(
+          overlay: exportOverlay,
+          chartExportBuilder: chartExportBuilder,
+          devicePixelRatio: screenDevicePixelRatio,
+          pixelRatio: pixelRatio,
+        ).timeout(_kDedicatedExportTimeout);
+      } on Object {
+        capture = null;
+      }
       pngBytes = capture?.bytes;
       skipPngDownscale = capture?.fitsPdfEmbedBounds ?? false;
     }
 
-    if (pngBytes == null) {
+    final skipBoundaryCapture =
+        !shouldCaptureChartImage ||
+        (includeChartImage == null && hasTable && !usesDedicatedExport);
+    final skipBoundaryFallback = hasTable && usesDedicatedExport;
+    if (pngBytes == null && !skipBoundaryCapture && !skipBoundaryFallback) {
       final boundaryContext = key.currentContext;
       final renderObject = boundaryContext?.findRenderObject();
       if (renderObject is RenderRepaintBoundary) {
@@ -74,8 +103,6 @@ Future<ChartShareResult> captureAndShareChart(
         skipPngDownscale = capture?.fitsPdfEmbedBounds ?? false;
       }
     }
-
-    final hasTable = tableData != null && !tableData.isEmpty;
     if (pngBytes == null && !hasTable) {
       final boundaryContext = key.currentContext;
       final renderObject = boundaryContext?.findRenderObject();
@@ -94,12 +121,23 @@ Future<ChartShareResult> captureAndShareChart(
       );
     }
 
-    final fontsFuture = ChartPdfExporter.warmFonts();
     if (pngBytes != null && !skipPngDownscale) {
-      pngBytes = await downscalePngForPdfEmbed(pngBytes);
+      try {
+        pngBytes = await downscalePngForPdfEmbed(
+          pngBytes,
+        ).timeout(_kRasterizeTimeout);
+      } on Object {
+        pngBytes = null;
+      }
     }
 
-    await fontsFuture;
+    try {
+      await fontsFuture.timeout(_kPdfBuildTimeout);
+    } on Object {
+      return const ChartShareFailure(
+        ChartShareFailureReason.pdfGenerationFailed,
+      );
+    }
     late final Uint8List pdfBytes;
     try {
       pdfBytes = await ChartPdfExporter.build(
@@ -110,7 +148,7 @@ Future<ChartShareResult> captureAndShareChart(
         chartImagePngBytes: pngBytes,
         pdfOrientation: pdfOrientation,
         pageNumberLabelBuilder: pageNumberLabelBuilder,
-      );
+      ).timeout(_kPdfBuildTimeout);
     } on Object {
       return const ChartShareFailure(
         ChartShareFailureReason.pdfGenerationFailed,
@@ -125,22 +163,23 @@ Future<ChartShareResult> captureAndShareChart(
 
     final fileName = '${sanitizeReportFileName(resolvedTitle)}.pdf';
     final shareFn = shareBytes ?? shareExportBytes;
-    try {
-      final shareResult = await shareFn(
-        bytes: pdfBytes,
-        fileName: fileName,
-        mimeType: 'application/pdf',
-        subject: subject ?? resolvedTitle,
-        title: resolvedTitle,
-      );
-      if (shareResult.status == ShareResultStatus.dismissed) {
-        return const ChartShareFailure(
-          ChartShareFailureReason.shareCancelled,
-        );
-      }
-    } on Object {
+    final shareExportResult = await shareFn(
+      bytes: pdfBytes,
+      fileName: fileName,
+      mimeType: 'application/pdf',
+      subject: subject ?? resolvedTitle,
+      title: resolvedTitle,
+    ).timeout(_kShareSheetTimeout);
+    final shareResult = shareExportResult.shareResult;
+    if (shareResult.status == ShareResultStatus.dismissed) {
       return const ChartShareFailure(
+        ChartShareFailureReason.shareCancelled,
+      );
+    }
+    if (shareResult.status != ShareResultStatus.success) {
+      return ChartShareFailure(
         ChartShareFailureReason.sharePlatformFailed,
+        pdfFilePath: shareExportResult.tempFilePath,
       );
     }
 
@@ -151,6 +190,14 @@ Future<ChartShareResult> captureAndShareChart(
 }
 
 typedef ChartPngCapture = ({Uint8List bytes, bool fitsPdfEmbedBounds});
+
+OverlayState? _resolveExportOverlay(BuildContext context) {
+  final rootOverlay = Overlay.maybeOf(context, rootOverlay: true);
+  if (rootOverlay != null) {
+    return rootOverlay;
+  }
+  return Overlay.maybeOf(context);
+}
 
 /// Renders [chartExportBuilder] offscreen, captures PNG bytes, then removes it.
 @visibleForTesting
@@ -318,8 +365,12 @@ Future<ChartPngCapture?> _rasterizeBoundaryToPng(
 
   ui.Image? image;
   try {
-    image = await boundary.toImage(pixelRatio: resolvedPixelRatio);
-    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    image = await boundary
+        .toImage(pixelRatio: resolvedPixelRatio)
+        .timeout(_kRasterizeTimeout);
+    final byteData = await image
+        .toByteData(format: ui.ImageByteFormat.png)
+        .timeout(_kRasterizeTimeout);
     if (byteData == null) {
       return null;
     }

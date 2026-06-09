@@ -8,6 +8,7 @@ import 'package:colmeia/features/overview/presentation/overview_sorted_rankings.
 import 'package:colmeia/features/overview/presentation/widgets/overview_alert_detail_sheet.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_chart_load_failure_helpers.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_lucratividade_chart.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_lucratividade_mensal_chart.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_payment_mix_card.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_rankings_section.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_weekday_sales_trend_chart.dart';
@@ -24,12 +25,14 @@ class OverviewChartDetailContent extends StatefulWidget {
     required this.overview,
     super.key,
     this.animateEntrance = true,
+    this.isSingleAgentSelected = false,
   });
 
   final AppLocalizations l10n;
   final OverviewProgressiveSection section;
   final Overview overview;
   final bool animateEntrance;
+  final bool isSingleAgentSelected;
 
   @override
   State<OverviewChartDetailContent> createState() =>
@@ -143,6 +146,22 @@ class _OverviewChartDetailContentState extends State<OverviewChartDetailContent>
                   ),
                 )
               : null,
+          onRequestFullscreen: (context, request) =>
+              context.pushChartFullscreenFromRequest(request),
+          onRequestShare: (context, request) =>
+              context.shareChartFromRequest(request),
+        ),
+      OverviewProgressiveSection.lucratividadeMensal =>
+        OverviewLucratividadeMensalChart(
+          l10n: l10n,
+          points: overview.lucratividadeMensalTrend,
+          loadFailed: overview.lucratividadeMensalTrendLoadFailed,
+          loadFailure: overview.lucratividadeMensalTrendLoadFailure,
+          loadFailureMessage: overview.lucratividadeMensalTrendLoadFailureMessage,
+          isSingleAgentSelected: widget.isSingleAgentSelected,
+          onViewAgentFailureDetails: partialDetailsLink(
+            OverviewAgentQueryFailureSource.lucratividadeMensalTrend,
+          ),
           onRequestFullscreen: (context, request) =>
               context.pushChartFullscreenFromRequest(request),
           onRequestShare: (context, request) =>
