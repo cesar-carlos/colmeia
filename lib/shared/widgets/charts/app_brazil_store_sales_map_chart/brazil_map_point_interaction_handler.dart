@@ -180,7 +180,7 @@ class _BrazilMapPointInteractionHandler {
             tokens.gapMd,
             tokens.gapMd,
           ),
-          child: _SelectedMarkerGroupDetailCard(
+          child: BrazilMapChartSelectedMarkerGroupDetailCard(
             group: group,
             metric: _selectedMetric,
             initialStoreId: initialStoreId,

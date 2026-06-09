@@ -116,6 +116,13 @@ void main() {
               as AgentSqlExecuteRequest;
 
       check(captured.sql).equals(ClienteOptionsSql.pagedQuery);
+      check(captured.namedParams.keys.toSet()).deepEquals(<String>{
+        'searchPattern',
+        'searchDigitsPattern',
+        'startRow',
+        'endRow',
+      });
+      check(captured.namedParams['searchDigitsPattern']).isNull();
       check(captured.namedParams['searchPattern']).equals('%acme%');
       check(captured.namedParams['startRow']).equals(11);
       check(captured.namedParams['endRow']).equals(20);

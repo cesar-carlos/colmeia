@@ -1,3 +1,4 @@
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/client_agents/domain/entities/sync_pending_agent_actions_result.dart';
 
 /// Mutable accumulator for `PendingClientAgentActionsSynchronizer`.
@@ -21,6 +22,10 @@ class PendingClientAgentActionsSyncOutcomeBuilder {
   final Set<String> _requestAccessAlreadyApprovedAgentIds = <String>{};
   final Set<String> _requestAccessDebouncedAgentIds = <String>{};
   final Set<String> _requestAccessNewRequestsAgentIds = <String>{};
+  Duration? _retryAfter;
+
+  /// Longest `Retry-After` hint observed from a failed batch in this run.
+  Duration? get retryAfter => _retryAfter;
 
   /// Read-only snapshot of the action IDs to drop from the queue after the
   /// sync run. Useful for cleanup operations that need to filter the
@@ -86,6 +91,22 @@ class PendingClientAgentActionsSyncOutcomeBuilder {
     _failedRemoveAccessAgentIds.add(agentId);
   }
 
+  void recordBatchFailure(AppFailure failure) {
+    if (failure is NetworkFailure) {
+      _mergeRetryAfter(failure.retryAfter);
+    }
+  }
+
+  void _mergeRetryAfter(Duration? candidate) {
+    if (candidate == null || candidate <= Duration.zero) {
+      return;
+    }
+    final current = _retryAfter;
+    if (current == null || candidate > current) {
+      _retryAfter = candidate;
+    }
+  }
+
   /// Snapshots the accumulator into the domain DTO returned by
   /// `ClientAgentsRepository.syncPendingActions`. Subsequent reads of the
   /// builder remain valid: this method does not reset state.
@@ -107,6 +128,7 @@ class PendingClientAgentActionsSyncOutcomeBuilder {
           Set<String>.from(_requestAccessDebouncedAgentIds),
       requestAccessNewRequestsAgentIds:
           Set<String>.from(_requestAccessNewRequestsAgentIds),
+      retryAfter: _retryAfter,
     );
   }
 }

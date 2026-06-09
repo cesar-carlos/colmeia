@@ -22,6 +22,7 @@ enum ClientAgentsPresentationMessageKey {
   clientAgentsSyncCooldown,
   clientAgentsSyncSuccess,
   clientAgentsApprovalPollingProgress,
+  clientAgentsLocalTokenServerFlushFailed,
   clientAgentsOwnerApproveSuccess,
   clientAgentsOwnerRejectSuccess,
   clientAgentsOwnerRevokeSuccess,
@@ -243,6 +244,15 @@ class ClientAgentsPresentationMessage {
         'timedOutCount': timedOutCount,
         'remainingCount': remainingCount,
       },
+    );
+  }
+
+  factory ClientAgentsPresentationMessage.clientAgentsLocalTokenServerFlushFailed({
+    required int failedCount,
+  }) {
+    return ClientAgentsPresentationMessage.key(
+      ClientAgentsPresentationMessageKey.clientAgentsLocalTokenServerFlushFailed,
+      payload: <String, Object?>{'failedCount': failedCount},
     );
   }
 

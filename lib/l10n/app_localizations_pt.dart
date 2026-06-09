@@ -1992,6 +1992,15 @@ class AppLocalizationsPt extends AppLocalizations {
       ' Vamos acompanhar a aprovação automáticamente.';
 
   @override
+  String get clientAgentsLocalTokenServerFlushFailedSingle =>
+      'Não foi possível enviar o client token em cache ao servidor para 1 agente. Ele permanece neste dispositivo e será reenviado automaticamente.';
+
+  @override
+  String clientAgentsLocalTokenServerFlushFailedPlural(int count) {
+    return 'Não foi possível enviar os client tokens em cache ao servidor para $count agentes. Eles permanecem neste dispositivo e serão reenviados automaticamente.';
+  }
+
+  @override
   String get clientAgentsSyncSuccessAlreadyApprovedSingle =>
       ' Um agente já estava aprovado no servidor.';
 
@@ -6608,6 +6617,15 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get clientAgentsSyncSuccessPollingSuffix =>
       ' Vamos acompanhar a aprovação automáticamente.';
+
+  @override
+  String get clientAgentsLocalTokenServerFlushFailedSingle =>
+      'Não foi possível enviar o client token em cache ao servidor para 1 agente. Ele permanece neste dispositivo e será reenviado automaticamente.';
+
+  @override
+  String clientAgentsLocalTokenServerFlushFailedPlural(int count) {
+    return 'Não foi possível enviar os client tokens em cache ao servidor para $count agentes. Eles permanecem neste dispositivo e serão reenviados automaticamente.';
+  }
 
   @override
   String get clientAgentsSyncSuccessAlreadyApprovedSingle =>

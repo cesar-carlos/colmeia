@@ -1,3 +1,4 @@
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/client_agents/data/sync/pending_client_agent_actions_sync_outcome_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -77,6 +78,27 @@ void main() {
       expect(result.failedRemoveAccessAgentIds, {'a-1'});
       expect(result.successfulRemoveAccessAgentIds, isEmpty);
       expect(builder.successfulActionIds, isEmpty);
+    });
+
+    test('recordBatchFailure keeps the longest retryAfter hint', () {
+      final builder = PendingClientAgentActionsSyncOutcomeBuilder()
+        ..recordBatchFailure(
+          const NetworkFailure(
+            message: 'rate limited',
+            userMessage: 'rate limited',
+            retryAfter: Duration(seconds: 5),
+          ),
+        )
+        ..recordBatchFailure(
+          const NetworkFailure(
+            message: 'rate limited harder',
+            userMessage: 'rate limited harder',
+            retryAfter: Duration(seconds: 20),
+          ),
+        );
+
+      expect(builder.retryAfter, const Duration(seconds: 20));
+      expect(builder.build().retryAfter, const Duration(seconds: 20));
     });
 
     test('counts mirror the underlying sets', () {

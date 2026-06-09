@@ -249,6 +249,7 @@ class PendingClientAgentActionsSynchronizer {
               ClientAgentsFailureUiKey.syncPendingAction,
         },
       );
+      outcome.recordBatchFailure(failure);
       for (final action in chunk) {
         outcome.recordRequestAccessFailure(action.agentId);
       }
@@ -294,6 +295,7 @@ class PendingClientAgentActionsSynchronizer {
           );
         } else {
           outcome.recordRemoveAccessFailure(action.agentId);
+          outcome.recordBatchFailure(failure);
           view.update(
             action.id,
             (a) => a.copyWith(

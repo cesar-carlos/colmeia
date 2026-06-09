@@ -85,6 +85,50 @@ void main() {
         },
       );
 
+      test('loadSummary executes the real summary query', () async {
+        final missingKeys = missingE2eRepositoryKeys();
+        if (missingKeys.isNotEmpty) {
+          // Intentional stdout for local troubleshooting when E2E env is missing.
+          // ignore: avoid_print
+          print(
+            'SKIP produto_vendido_tendencia_de_venda_repository_e2e '
+            '(summary): missing ${missingKeys.join(', ')}.',
+          );
+          return;
+        }
+
+        final repository = getIt<ProdutoVendidoTendenciaDeVendaRepository>();
+
+        final result = await runE2eAppResult(
+          () => repository.loadSummary(
+            userId: 'user-1',
+            agentId: AppEnvironment.e2eAgentId,
+            clientToken: AppEnvironment.e2eClientToken,
+            filter: ProdutoVendidoTendenciaDeVendaFilter(
+              periodoAtualInicio: DateTime(2026, 3),
+              periodoAtualFim: DateTime(2026, 3, 31),
+              periodoAnteriorInicio: DateTime(2026, 2),
+              periodoAnteriorFim: DateTime(2026, 2, 28),
+            ),
+          ),
+        );
+
+        result.fold(
+          checkSummaryInvariants,
+          (failure) {
+            expect(
+              failure,
+              isNot(isA<SessionFailure>()),
+              reason: 'Unexpected HTTP 401 after client login.',
+            );
+            expect(
+              isAcceptableE2eAgentSqlRepositoryFailure(failure),
+              isTrue,
+            );
+          },
+        );
+      });
+
       test(
         'use case executes the same trend query (stack path)',
         () async {
@@ -118,8 +162,8 @@ void main() {
           );
 
           result.fold(
-            (rows) {
-              for (final row in rows) {
+            (page) {
+              for (final row in page.items) {
                 expect(row.codProduto, greaterThan(0));
                 expect(row.classificacao, isNotEmpty);
               }

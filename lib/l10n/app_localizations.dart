@@ -3194,6 +3194,18 @@ abstract class AppLocalizations {
   /// **' We will track approval automatically.'**
   String get clientAgentsSyncSuccessPollingSuffix;
 
+  /// No description provided for @clientAgentsLocalTokenServerFlushFailedSingle.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not push the cached client token to the server for 1 agent. It remains on this device and will retry automatically.'**
+  String get clientAgentsLocalTokenServerFlushFailedSingle;
+
+  /// No description provided for @clientAgentsLocalTokenServerFlushFailedPlural.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not push cached client tokens to the server for {count} agents. They remain on this device and will retry automatically.'**
+  String clientAgentsLocalTokenServerFlushFailedPlural(int count);
+
   /// No description provided for @clientAgentsSyncSuccessAlreadyApprovedSingle.
   ///
   /// In en, this message translates to:

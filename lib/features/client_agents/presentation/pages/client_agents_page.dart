@@ -366,7 +366,7 @@ class _ClientAgentsPageState extends State<ClientAgentsPage> with RouteAware {
             await controller.removeAccess(agentIds: agentIds);
           },
           onRetry: () => unawaited(controller.refreshAll()),
-          isMutating: controller.isSyncing,
+          isMutating: controller.isMutating,
           hasActiveFilters:
               clientAgentsApprovedActiveFilterCount(
                 l10n,
@@ -392,7 +392,7 @@ class _ClientAgentsPageState extends State<ClientAgentsPage> with RouteAware {
               ..clearActionFeedback();
           },
           isMutating:
-              controller.isSyncing || controller.isRequestAccessOnCooldown,
+              controller.isMutating || controller.isRequestAccessOnCooldown,
           retryAfterSeconds: controller.isRequestAccessOnCooldown
               ? (controller.requestAccessRetryAfter?.inSeconds ?? 0)
               : null,
@@ -409,7 +409,7 @@ class _ClientAgentsPageState extends State<ClientAgentsPage> with RouteAware {
             l10n,
           ),
           onRetry: () => unawaited(controller.refreshAll()),
-          isMutating: controller.isSyncing,
+          isMutating: controller.isMutating,
           onRetryAccessRequest: (request) =>
               controller.retryAccessRequest(request: request),
           onDiscardQueuedRequestAccess: (action) =>

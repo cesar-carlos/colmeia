@@ -7,6 +7,7 @@ class ClienteOption {
     required this.ufMunicipio,
     this.nomeFantasia,
     this.cnpjCpf,
+    this.email,
     this.codigoIbge,
   });
 
@@ -14,6 +15,7 @@ class ClienteOption {
   final String nomeCliente;
   final String? nomeFantasia;
   final String? cnpjCpf;
+  final String? email;
   final String nomeMunicipio;
   final String ufMunicipio;
   final String? codigoIbge;

@@ -84,6 +84,8 @@ String localizeClientAgentsPresentationMessage(
       _localizeSyncSuccess(message, l10n),
     ClientAgentsPresentationMessageKey.clientAgentsApprovalPollingProgress =>
       _localizeApprovalPollingProgress(message, l10n),
+    ClientAgentsPresentationMessageKey.clientAgentsLocalTokenServerFlushFailed =>
+      _localizeLocalTokenServerFlushFailed(message, l10n),
     ClientAgentsPresentationMessageKey.clientAgentsOwnerApproveSuccess =>
       l10n.clientAgentsOwnerApproveSuccess,
     ClientAgentsPresentationMessageKey.clientAgentsOwnerRejectSuccess =>
@@ -248,6 +250,17 @@ String _localizeSyncSuccess(
   }
 
   return result;
+}
+
+String _localizeLocalTokenServerFlushFailed(
+  ClientAgentsPresentationMessage message,
+  AppLocalizations l10n,
+) {
+  final failedCount = _requiredInt(message, 'failedCount');
+  if (failedCount == 1) {
+    return l10n.clientAgentsLocalTokenServerFlushFailedSingle;
+  }
+  return l10n.clientAgentsLocalTokenServerFlushFailedPlural(failedCount);
 }
 
 String _localizeApprovalPollingProgress(

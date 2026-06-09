@@ -30,7 +30,6 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_produto
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_screen_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_summary_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_screen_use_case.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_summary_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_ranking_produtos_faturamento_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_across_agents_use_case.dart';
@@ -684,17 +683,11 @@ void _registerSingleAgentQueryRepositories(GetIt getIt) {
       getIt<ProdutoVendidoTendenciaDeVendaRepository>(),
     ),
   );
-  getIt
-    ..registerLazySingleton<LoadProdutoVendidoTendenciaDeVendaSummaryUseCase>(
-      () => LoadProdutoVendidoTendenciaDeVendaSummaryUseCase(
-        getIt<ProdutoVendidoTendenciaDeVendaRepository>(),
-      ),
-    )
-    ..registerLazySingleton<LoadProdutoVendidoTendenciaDeVendaScreenUseCase>(
-      () => LoadProdutoVendidoTendenciaDeVendaScreenUseCase(
-        getIt<ProdutoVendidoTendenciaDeVendaRepository>(),
-      ),
-    );
+  getIt.registerLazySingleton<LoadProdutoVendidoTendenciaDeVendaScreenUseCase>(
+    () => LoadProdutoVendidoTendenciaDeVendaScreenUseCase(
+      getIt<ProdutoVendidoTendenciaDeVendaRepository>(),
+    ),
+  );
 
   _registerSingle<
     ResumoParcelaFormaPagamentoRepository,

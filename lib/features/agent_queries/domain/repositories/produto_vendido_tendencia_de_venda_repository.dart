@@ -1,5 +1,6 @@
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_screen_data.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
@@ -8,6 +9,17 @@ import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel
 /// Product sales trend report: paged rows, summary, and top movers via
 /// `sql.execute` / `sql.executeBatch`, with optional [AgentQueriesCancelScope].
 abstract interface class ProdutoVendidoTendenciaDeVendaRepository {
+  Future<AppResult<ProdutoVendidoTendenciaDeVendaPageResult>> loadPage({
+    required String userId,
+    required String agentId,
+    required ProdutoVendidoTendenciaDeVendaFilter filter,
+    String? clientToken,
+    int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
+  });
+
   Future<AppResult<List<ProdutoVendidoTendenciaDeVendaRow>>> loadAll({
     required String userId,
     required String agentId,
@@ -31,7 +43,7 @@ abstract interface class ProdutoVendidoTendenciaDeVendaRepository {
     AgentQueriesCancelScope? cancelScope,
   });
 
-  /// One `sql.executeBatch` for the product trend page (paged rows + summary).
+  /// One `sql.executeBatch` for paged rows, summary, and top movers.
   Future<AppResult<ProdutoVendidoTendenciaDeVendaScreenData>>
   loadPageAndSummary({
     required String userId,

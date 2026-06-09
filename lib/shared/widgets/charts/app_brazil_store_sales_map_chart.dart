@@ -1,54 +1,45 @@
 import 'dart:async';
 
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
-import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:colmeia/shared/maps/app_location_lookup_normalizer.dart';
-import 'package:colmeia/shared/utils/app_branch_display_model.dart';
-import 'package:colmeia/shared/utils/app_branch_display_name.dart';
-import 'package:colmeia/shared/widgets/app_section_card.dart';
-import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_map_static_data.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart/brazil_map_chart_auxiliary_widgets.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart/brazil_map_chart_detail_widgets.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart/brazil_map_chart_overlay_widgets.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart/brazil_map_chart_sidebar_widgets.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
-import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_overlay_chrome.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_snapshot.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_chart_chrome.dart';
+import 'package:colmeia/shared/widgets/charts/brazil_map_layout_constants.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_chart_visual_snapshot.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_compact_branch_sheet_layout.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_desktop_sidebar_layout.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_layout_calculator.dart';
-import 'package:colmeia/shared/widgets/charts/brazil_map_layout_constants.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_marker_selection_controller.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_selection_policy.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_snapshot_controller.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_viewport_coordinator.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_zoom_controller.dart';
 import 'package:colmeia/shared/widgets/charts/region_map_viewport_sync_policy.dart';
-import 'package:colmeia/shared/widgets/forms/app_choice_chip.dart';
-import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
-import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
-part 'app_brazil_store_sales_map_chart_auxiliary.dart';
-part 'app_brazil_store_sales_map_chart_details.dart';
-part 'app_brazil_store_sales_map_chart_overlay.dart';
+export 'app_brazil_store_sales_map_chart/brazil_map_chart_overlay_widgets.dart'
+    show
+        AppBrazilStoreSalesBranchHoverDetailAnchor,
+        AppBrazilStoreSalesSelectedMarkerDetailAnchor;
+
 part 'app_brazil_store_sales_map_chart_scaffold.dart';
-part 'app_brazil_store_sales_map_chart_sidebar.dart';
 part 'app_brazil_store_sales_map_chart/brazil_map_marker_presenter.dart';
 part 'app_brazil_store_sales_map_chart/brazil_map_point_interaction_handler.dart';
-
-String _formatSalesCount(BuildContext context, num value) =>
-    brazilMapChartFormatSalesCount(context, value);
 
 class AppBrazilStoreSalesMapChart extends StatefulWidget {
   const AppBrazilStoreSalesMapChart({
@@ -253,7 +244,10 @@ class _AppBrazilStoreSalesMapChartState
       BrazilMapLayoutCalculator(chrome: _chrome, style: widget.style);
 
   void _publishMarkerSelection() {
-    _markerHighlight.publishWithControlledId(_selection, widget.selectedStoreId);
+    _markerHighlight.publishWithControlledId(
+      _selection,
+      widget.selectedStoreId,
+    );
   }
 
   void _runStateUpdate(VoidCallback update) {
@@ -279,8 +273,8 @@ class _AppBrazilStoreSalesMapChartState
   void _handleRegionMapViewportChanged(AppMapViewportChangedEvent event) {
     final filtered = _viewport.filterViewportChangedEvent(
       event,
-      blocksViewportDrivenClusteringOnWindows:
-          _selection.blocksViewportDrivenClustering(widget.selectedStoreId),
+      blocksViewportDrivenClusteringOnWindows: _selection
+          .blocksViewportDrivenClustering(widget.selectedStoreId),
     );
     if (filtered == null) {
       return;
@@ -324,7 +318,10 @@ class _AppBrazilStoreSalesMapChartState
       useCleanFullscreenChrome: widget.useCleanFullscreenChrome,
       showDesktopBranchSidebar: widget.showDesktopBranchSidebar,
     );
-    _markerHighlight.publishWithControlledId(_selection, widget.selectedStoreId);
+    _markerHighlight.publishWithControlledId(
+      _selection,
+      widget.selectedStoreId,
+    );
     AppBrazilMapStaticData.brazilUfGeoJsonReadiness.addListener(
       _handleBrazilUfGeoJsonReadinessChanged,
     );
@@ -476,12 +473,12 @@ class _AppBrazilStoreSalesMapChartState
     }
 
     final markerSelection = _markerSelection.value;
-    final markerDetail = BrazilMapMarkerSelectionController
-        .resolveMarkerDetailSelection(
-      snapshot,
-      markerSelection,
-      _pointInteraction.pointById,
-    );
+    final markerDetail =
+        BrazilMapMarkerSelectionController.resolveMarkerDetailSelection(
+          snapshot,
+          markerSelection,
+          _pointInteraction.pointById,
+        );
     final layoutSelectionPoint = _suppressMapLayoutShiftOnStoreSelection
         ? null
         : markerDetail.point;
@@ -580,7 +577,7 @@ class _AppBrazilStoreSalesMapChartState
     final overlays = <Widget>[];
     if (_showsFloatingMetricSelector || _showsFloatingScopeSelector) {
       overlays.add(
-        _FloatingMapControlsOverlay(
+        BrazilMapChartFloatingMapControlsOverlay(
           topInset: BrazilMapLayoutConstants.floatingMapControlsTopInset,
           leftInset: BrazilMapLayoutConstants.floatingMapControlsLeftInset,
           metrics: _showsFloatingMetricSelector ? _buildMetrics(l10n) : null,
@@ -605,12 +602,12 @@ class _AppBrazilStoreSalesMapChartState
       if (sidebarMaxHeight > 0) {
         overlays.add(
           _desktopBranchSidebarCollapsed
-              ? _DesktopBranchSidebarCollapsedOverlay(
+              ? BrazilMapChartDesktopBranchSidebarCollapsedOverlay(
                   topInset: sidebarTopInset,
                   horizontalInset: sidebarHorizontalInset,
                   onExpand: _toggleDesktopBranchSidebarCollapsed,
                 )
-              : _DesktopBranchSidebarOverlay(
+              : BrazilMapChartDesktopBranchSidebarOverlay(
                   width: sidebarWidth,
                   maxHeight: sidebarMaxHeight,
                   topInset: sidebarTopInset,
@@ -619,10 +616,14 @@ class _AppBrazilStoreSalesMapChartState
                   selectedStoreId: selectedStoreId,
                   allowCollapse: _usesCleanFullscreenChrome,
                   onToggleCollapsed: _toggleDesktopBranchSidebarCollapsed,
-                  onSelectBranch: (point) => _pointInteraction.handleMarkerBranchAction(
-                    point: point,
-                    index: _pointInteraction.mapPointIndexFor(point, snapshot),
-                  ),
+                  onSelectBranch: (point) =>
+                      _pointInteraction.handleMarkerBranchAction(
+                        point: point,
+                        index: _pointInteraction.mapPointIndexFor(
+                          point,
+                          snapshot,
+                        ),
+                      ),
                   onPreviewBranchStart: _pointInteraction.setPreviewedPoint,
                   onPreviewBranchEnd: _pointInteraction.clearPreviewedPoint,
                 ),
@@ -678,12 +679,13 @@ class _AppBrazilStoreSalesMapChartState
         regionBindingKey: _viewport.regionBindingKey(_activeRegionKey),
         selectedStoreId: _selectedStoreId,
         selectedPoint:
-            snapshot.selectedPoint ?? _pointInteraction.pointById(_selectedStoreId),
-        shouldFocusCameraOnSelectedStore:
-            _selection.shouldFocusCameraOnSelectedStore(
-          controlledSelectedStoreId: widget.selectedStoreId,
-          autoFocusSelectedStore: widget.style.autoFocusSelectedStore,
-        ),
+            snapshot.selectedPoint ??
+            _pointInteraction.pointById(_selectedStoreId),
+        shouldFocusCameraOnSelectedStore: _selection
+            .shouldFocusCameraOnSelectedStore(
+              controlledSelectedStoreId: widget.selectedStoreId,
+              autoFocusSelectedStore: widget.style.autoFocusSelectedStore,
+            ),
         selectedStoreZoomLevel: widget.style.selectedStoreZoomLevel,
         activeRegionKey: _activeRegionKey,
       ),
@@ -705,7 +707,7 @@ class _AppBrazilStoreSalesMapChartState
     AppBrazilStoreSalesStateBucket bucket, {
     bool compact = false,
   }) {
-    return _BrazilMapStateLabelResolver(
+    return BrazilMapChartStateLabelResolver(
       context: context,
       style: widget.style,
     ).labelFor(bucket, compact: compact);
@@ -889,8 +891,11 @@ class _AppBrazilStoreSalesMapChartState
   String _stateTooltipSubtitle(AppBrazilStoreSalesStateBucket bucket) {
     final l10n = AppLocalizations.of(context);
     final revenue = AppBrFormatters.currency(bucket.salesAmount);
-    final salesCount = _formatSalesCount(context, bucket.salesCount);
-    final stores = _formatSalesCount(context, bucket.storeCount);
+    final salesCount = brazilMapChartFormatSalesCount(
+      context,
+      bucket.salesCount,
+    );
+    final stores = brazilMapChartFormatSalesCount(context, bucket.storeCount);
     return l10n.brazilStoreSalesMapStateInlineTooltip(
       bucket.stateName,
       bucket.uf,
@@ -907,171 +912,4 @@ class _AppBrazilStoreSalesMapChartState
   Color _highColor(BuildContext context) {
     return context.appColors.secondary;
   }
-}
-
-String _formatMetricValue(
-  BuildContext context,
-  AppBrazilStoreSalesMapMetric metric,
-  num value,
-) {
-  return switch (metric) {
-    AppBrazilStoreSalesMapMetric.revenue => AppBrFormatters.compactCurrency(
-      value,
-    ),
-    AppBrazilStoreSalesMapMetric.salesCount => _formatSalesCount(
-      context,
-      value,
-    ),
-  };
-}
-
-String _metricShortLabel(
-  AppLocalizations l10n,
-  AppBrazilStoreSalesMapMetric metric,
-) {
-  return switch (metric) {
-    AppBrazilStoreSalesMapMetric.revenue =>
-      l10n.brazilStoreSalesMapMetricRevenueShort,
-    AppBrazilStoreSalesMapMetric.salesCount =>
-      l10n.brazilStoreSalesMapMetricSalesShort,
-  };
-}
-
-String _cityLabelFor(AppBrazilStoreSalesPoint point) {
-  return switch (point.city) {
-    final city? when city.trim().isNotEmpty =>
-      '${city.trim()} / ${AppBrazilStoreSalesMapData.normalizeUf(point.uf)}',
-    _ => AppBrazilStoreSalesMapData.normalizeUf(point.uf),
-  };
-}
-
-Alignment _followerAnchorFor({
-  required double screenWidth,
-  required double maxWidth,
-  required double? markerGlobalDx,
-}) {
-  final markerDx = markerGlobalDx;
-  if (markerDx == null) {
-    return Alignment.bottomCenter;
-  }
-
-  const margin = 16.0;
-  final halfWidth = maxWidth / 2;
-  if (markerDx < halfWidth + margin) {
-    return Alignment.bottomLeft;
-  }
-  if (markerDx > screenWidth - halfWidth - margin) {
-    return Alignment.bottomRight;
-  }
-  return Alignment.bottomCenter;
-}
-
-Offset _followerOffsetFor(Alignment followerAnchor) {
-  if (followerAnchor == Alignment.bottomLeft) {
-    return const Offset(8, -10);
-  }
-  if (followerAnchor == Alignment.bottomRight) {
-    return const Offset(-8, -10);
-  }
-  return const Offset(0, -10);
-}
-
-List<AppBrazilStoreSalesPoint> _orderedBranchPoints(
-  AppBrazilStoreSalesMarkerGroup group, {
-  required String? initialStoreId,
-}) {
-  final selected = <AppBrazilStoreSalesPoint>[];
-  final remaining = <AppBrazilStoreSalesPoint>[];
-
-  for (final point in group.points) {
-    if (initialStoreId != null && point.id == initialStoreId) {
-      selected.add(point);
-    } else {
-      remaining.add(point);
-    }
-  }
-
-  remaining.sort(_compareBranchPoints);
-  return <AppBrazilStoreSalesPoint>[...selected, ...remaining];
-}
-
-int _compareBranchPoints(
-  AppBrazilStoreSalesPoint left,
-  AppBrazilStoreSalesPoint right,
-) {
-  final amount = right.salesAmount.compareTo(left.salesAmount);
-  if (amount != 0) {
-    return amount;
-  }
-
-  final salesCount = right.salesCount.compareTo(left.salesCount);
-  if (salesCount != 0) {
-    return salesCount;
-  }
-
-  return _branchOrdinalName(left).compareTo(_branchOrdinalName(right));
-}
-
-String _branchOrdinalName(AppBrazilStoreSalesPoint point) {
-  return _branchDisplayModel(point).primaryName;
-}
-
-String _branchDisplayNameUi(
-  BuildContext context,
-  AppBrazilStoreSalesPoint point,
-) {
-  return resolveAppBranchDisplayModel(
-    registrationName: point.branchName,
-    fantasyName: point.fantasyName,
-    fallbackName:
-        _trimmedOrNull(point.name) ??
-        AppLocalizations.of(context).brazilStoreSalesMapDefaultBranchName,
-  ).primaryName;
-}
-
-String? _branchNameLabel(AppBrazilStoreSalesPoint point) {
-  return _branchDisplayModel(point).secondaryName;
-}
-
-AppBranchDisplayModel _branchDisplayModel(AppBrazilStoreSalesPoint point) {
-  return resolveAppBranchDisplayModel(
-    registrationName: point.branchName,
-    fantasyName: point.fantasyName,
-    fallbackName: _trimmedOrNull(point.name) ?? point.id,
-  );
-}
-
-String _agentChipLabel(AppLocalizations l10n, String agentName) {
-  return l10n.brazilStoreSalesMapAgentChipWithName(
-    appBranchDisplayName(agentName),
-  );
-}
-
-String? _trimmedOrNull(String? value) {
-  final trimmed = value?.trim();
-  if (trimmed == null || trimmed.isEmpty) {
-    return null;
-  }
-  return trimmed;
-}
-
-String _locationResolutionLabel(
-  AppLocalizations l10n,
-  AppBrazilStoreSalesLocationResolution? resolution,
-) {
-  return switch (resolution) {
-    AppBrazilStoreSalesLocationResolution.providedGeoPoint =>
-      l10n.brazilStoreSalesMapLocationProvidedGeoPoint,
-    AppBrazilStoreSalesLocationResolution.ibgeMunicipalityCode =>
-      l10n.brazilStoreSalesMapLocationIbge,
-    AppBrazilStoreSalesLocationResolution.cep =>
-      l10n.brazilStoreSalesMapLocationCep,
-    AppBrazilStoreSalesLocationResolution.cityUf =>
-      l10n.brazilStoreSalesMapLocationCityUf,
-    AppBrazilStoreSalesLocationResolution.capitalUf =>
-      l10n.brazilStoreSalesMapLocationCapitalUf,
-    AppBrazilStoreSalesLocationResolution.stateUf =>
-      l10n.brazilStoreSalesMapLocationStateUf,
-    null => l10n.brazilStoreSalesMapLocationUnknown,
-  };
 }

@@ -402,6 +402,7 @@ class SalesProdutoTendenciaMediaMovelController
       agentId: trimmedAgentId,
       filter: _detailFilter(),
       clientToken: clientToken,
+      cancelScope: scope,
     );
 
     if (isSuperseded(generation)) {
@@ -422,11 +423,10 @@ class SalesProdutoTendenciaMediaMovelController
       (failure) {
         _setState(
           _state.copyWith(
-            pageResult:
-                const ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
-                  items: <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[],
-                  totalCount: 0,
-                ),
+            pageResult: ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
+              items: const <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[],
+              totalCount: _state.pageResult.totalCount,
+            ),
             loading: false,
             loadFailure: failure,
           ),

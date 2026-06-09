@@ -113,6 +113,7 @@ class ClienteOptionModel {
       nomeCliente: nomeCliente,
       nomeFantasia: nomeFantasia,
       cnpjCpf: cnpjCpf,
+      email: email,
       nomeMunicipio: nomeMunicipio,
       ufMunicipio: ufMunicipio,
       codigoIbge: codigoIbge,

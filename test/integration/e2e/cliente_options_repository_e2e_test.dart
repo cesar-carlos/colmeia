@@ -146,17 +146,24 @@ void main() {
           filtered.fold(
             (page) {
               expect(page.items.length, lessThanOrEqualTo(20));
+              final upperToken = filterToken.toUpperCase();
               for (final row in page.items) {
                 expect(row.codCliente, greaterThan(0));
-                final haystack = <String>[
-                  row.nomeCliente,
-                  row.nomeFantasia ?? '',
-                  row.cnpjCpf ?? '',
-                  row.nomeMunicipio,
-                ].join(' ').toUpperCase();
+                final matchesSearch =
+                    row.nomeCliente.toUpperCase().contains(upperToken) ||
+                    (row.nomeFantasia?.toUpperCase().contains(upperToken) ??
+                        false) ||
+                    (row.cnpjCpf?.toUpperCase().contains(upperToken) ??
+                        false) ||
+                    (row.email?.toUpperCase().contains(upperToken) ?? false) ||
+                    row.nomeMunicipio.toUpperCase().contains(upperToken) ||
+                    (row.codigoIbge?.contains(filterToken) ?? false);
                 expect(
-                  haystack,
-                  contains(filterToken.toUpperCase()),
+                  matchesSearch,
+                  isTrue,
+                  reason:
+                      'Filtered row should match searchTerm on razão social, '
+                      'fantasia, CNPJ, e-mail, município, or código IBGE',
                 );
               }
             },

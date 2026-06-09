@@ -157,13 +157,14 @@ void main() {
                     (row.cnpjCpf?.toUpperCase().contains(upperToken) ??
                         false) ||
                     (row.email?.toUpperCase().contains(upperToken) ?? false) ||
-                    row.nomeMunicipio.toUpperCase().contains(upperToken);
+                    row.nomeMunicipio.toUpperCase().contains(upperToken) ||
+                    (row.codigoIbge?.contains(filterToken) ?? false);
                 expect(
                   matchesSearch,
                   isTrue,
                   reason:
                       'Filtered row should match searchTerm on razão social, '
-                      'fantasia, CNPJ, e-mail, or município',
+                      'fantasia, CNPJ, e-mail, município, or código IBGE',
                 );
               }
             },

@@ -14,6 +14,7 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_produto
 import 'package:colmeia/features/agent_queries/domain/entities/grupo_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/marca_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_screen_data.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
@@ -197,8 +198,11 @@ void main() {
       ),
     ).thenAnswer(
       (_) async =>
-          const Success<List<ProdutoVendidoTendenciaDeVendaRow>, AppFailure>(
-            <ProdutoVendidoTendenciaDeVendaRow>[],
+          const Success<ProdutoVendidoTendenciaDeVendaPageResult, AppFailure>(
+            ProdutoVendidoTendenciaDeVendaPageResult(
+              items: <ProdutoVendidoTendenciaDeVendaRow>[],
+              totalCount: 0,
+            ),
           ),
     );
 
@@ -514,7 +518,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Executive summary'), findsOneWidget);
-      expect(find.text('Top movers'), findsOneWidget);
+      expect(find.text('Products by classification'), findsOneWidget);
+      expect(find.text('Top 5 gainers'), findsOneWidget);
       expect(find.text('Detailed rows'), findsOneWidget);
       expect(find.text('Product A'), findsWidgets);
       expect(find.text('Product B'), findsWidgets);
@@ -571,8 +576,9 @@ void main() {
     await _pumpTrendPage(tester, authController: authController);
     await tester.pumpAndSettle();
 
-    expect(find.byTooltip('Share chart'), findsWidgets);
-    expect(find.byIcon(Icons.open_in_full), findsWidgets);
+    expect(find.text('Products by classification'), findsOneWidget);
+    expect(find.text('Top 5 gainers'), findsOneWidget);
+    expect(find.text('Top 5 losers'), findsOneWidget);
   });
 
   test(
@@ -720,16 +726,19 @@ void main() {
               as ProdutoVendidoTendenciaDeVendaFilter;
       capturedDetailFilters.add(filter);
 
-      return Success<List<ProdutoVendidoTendenciaDeVendaRow>, AppFailure>(
-        <ProdutoVendidoTendenciaDeVendaRow>[
-          _trendRow(
-            codProduto: filter.page,
-            nomeProduto: filter.page == 1 ? 'Product A' : 'Product B',
-            diferenca: 30,
-            percentualTendencia: 25,
-            classificacao: 'CRESCENDO',
-          ),
-        ],
+      return Success<ProdutoVendidoTendenciaDeVendaPageResult, AppFailure>(
+        ProdutoVendidoTendenciaDeVendaPageResult(
+          items: <ProdutoVendidoTendenciaDeVendaRow>[
+            _trendRow(
+              codProduto: filter.page,
+              nomeProduto: filter.page == 1 ? 'Product A' : 'Product B',
+              diferenca: 30,
+              percentualTendencia: 25,
+              classificacao: 'CRESCENDO',
+            ),
+          ],
+          totalCount: 2,
+        ),
       );
     });
 

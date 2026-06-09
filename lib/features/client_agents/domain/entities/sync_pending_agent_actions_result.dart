@@ -8,6 +8,7 @@ class SyncPendingAgentActionsResult {
     this.requestAccessAlreadyApprovedAgentIds = const <String>{},
     this.requestAccessDebouncedAgentIds = const <String>{},
     this.requestAccessNewRequestsAgentIds = const <String>{},
+    this.retryAfter,
   });
 
   final Set<String> successfulRequestAccessAgentIds;
@@ -28,6 +29,11 @@ class SyncPendingAgentActionsResult {
 
   /// Agent ids the server placed in `newRequests` for this POST response.
   final Set<String> requestAccessNewRequestsAgentIds;
+
+  /// When a batch failed with HTTP 429, the longest `Retry-After` hint seen
+  /// during the run so callers can arm a cooldown even when some actions
+  /// succeeded.
+  final Duration? retryAfter;
 
   int get successfulActionCount =>
       successfulRequestAccessAgentIds.length +

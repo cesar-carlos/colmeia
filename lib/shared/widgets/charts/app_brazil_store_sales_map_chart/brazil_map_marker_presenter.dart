@@ -41,7 +41,7 @@ class _BrazilMapMarkerPresenter {
     final payload = point.payload;
     if (payload is AppBrazilStoreSalesStateBubble) {
       final baseStyle = point.style ?? const AppMapMarkerStyle();
-      return _StateBubbleMarker(
+      return BrazilMapChartStateBubbleMarker(
         bucket: payload.bucket,
         metric: _selectedMetric,
         style: resolveStateBubbleMarkerStyle(
@@ -58,7 +58,7 @@ class _BrazilMapMarkerPresenter {
     final style = group == null
         ? baseStyle
         : resolveStoreGroupMarkerStyle(context, baseStyle, group, selection);
-    final marker = _StoreMapMarker(
+    final marker = BrazilMapChartStoreMarker(
       key: ValueKey<String>('brazil-store-sales-map-marker-$index'),
       style: style,
       count: group?.points.length ?? 1,
@@ -68,14 +68,18 @@ class _BrazilMapMarkerPresenter {
     final selectedStoreId = selection.selectedStoreId;
     final previewedStoreId = selection.previewedStoreId;
     final showDetailOverlay =
-        showOverlayMarkerDetail(usesCompactBranchSheet: usesCompactBranchSheet) &&
+        showOverlayMarkerDetail(
+          usesCompactBranchSheet: usesCompactBranchSheet,
+        ) &&
         previewedStoreId == null &&
         group != null &&
         selectedStoreId != null &&
         group.points.any((point) => point.id == selectedStoreId);
     final showPreviewOverlay =
         !showDetailOverlay &&
-        showOverlayMarkerDetail(usesCompactBranchSheet: usesCompactBranchSheet) &&
+        showOverlayMarkerDetail(
+          usesCompactBranchSheet: usesCompactBranchSheet,
+        ) &&
         group != null &&
         previewedStoreId != null &&
         group.points.any((point) => point.id == previewedStoreId);
@@ -112,10 +116,11 @@ class _BrazilMapMarkerPresenter {
         marker: marker,
         onClose: _state._pointInteraction.clearSelectedMarkerDetail,
         onClearSelection: _state._pointInteraction.clearSelectedMarkerDetail,
-        onSelectBranch: (point) => _state._pointInteraction.handleMarkerBranchAction(
-          point: point,
-          index: index,
-        ),
+        onSelectBranch: (point) =>
+            _state._pointInteraction.handleMarkerBranchAction(
+              point: point,
+              index: index,
+            ),
         selectBranchLabelBuilder: (_) => AppLocalizations.of(
           context,
         ).brazilStoreSalesMapShowBranchOnMapAction,
@@ -142,17 +147,17 @@ class _BrazilMapMarkerPresenter {
     final Widget child;
     if (payload is AppBrazilStoreSalesMarkerGroup) {
       child = payload.isCluster || payload.isMunicipalityAggregate
-          ? _SelectedMarkerGroupDetailCard(
+          ? BrazilMapChartSelectedMarkerGroupDetailCard(
               group: payload,
               metric: _selectedMetric,
             )
-          : _SelectedMarkerStoreDetailCard(
+          : BrazilMapChartSelectedMarkerStoreDetailCard(
               point: payload.primaryPoint,
               metric: _selectedMetric,
               showTechnicalLocationDetails: false,
             );
     } else if (payload is AppBrazilStoreSalesStateBubble) {
-      child = _StateBubbleTooltipCard(
+      child = BrazilMapChartStateBubbleTooltipCard(
         bucket: payload.bucket,
         metric: _selectedMetric,
       );
@@ -160,7 +165,7 @@ class _BrazilMapMarkerPresenter {
       final text = point.tooltip ?? point.label;
       child = text == null || text.isEmpty
           ? const SizedBox.shrink()
-          : _PlainMapTooltipCard(text: text);
+          : BrazilMapChartPlainMapTooltipCard(text: text);
     }
 
     return ConstrainedBox(
@@ -175,40 +180,45 @@ class _BrazilMapMarkerPresenter {
     required BrazilMapMarkerSelection selection,
     required bool usesCompactBranchSheet,
   }) {
-    final markerDetail = BrazilMapMarkerSelectionController
-        .resolveMarkerDetailSelection(
-      snapshot,
-      selection,
-      _state._pointInteraction.pointById,
-    );
+    final markerDetail =
+        BrazilMapMarkerSelectionController.resolveMarkerDetailSelection(
+          snapshot,
+          selection,
+          _state._pointInteraction.pointById,
+        );
     final selectedPoint = markerDetail.point;
     final selectedMarkerGroup = markerDetail.group;
     final selectedStateBucket =
         BrazilMapMarkerSelectionController.resolveSelectedStateBucket(
-      snapshot,
-      selection,
-    );
+          snapshot,
+          selection,
+        );
 
-    if (showBelowMapMarkerDetail(usesCompactBranchSheet: usesCompactBranchSheet) &&
+    if (showBelowMapMarkerDetail(
+          usesCompactBranchSheet: usesCompactBranchSheet,
+        ) &&
         selectedMarkerGroup != null &&
         (selectedMarkerGroup.isMunicipalityAggregate ||
             selectedMarkerGroup.isCluster)) {
-      return _SelectedMunicipalityDetail(
+      return BrazilMapChartSelectedMunicipalityDetail(
         group: selectedMarkerGroup,
         metric: _selectedMetric,
         selectedStoreId: selection.selectedStoreId,
-        onSelectBranch: (point) => _state._pointInteraction.handleMarkerBranchAction(
-          point: point,
-          index: _state._pointInteraction.mapPointIndexFor(point, snapshot),
-        ),
+        onSelectBranch: (point) =>
+            _state._pointInteraction.handleMarkerBranchAction(
+              point: point,
+              index: _state._pointInteraction.mapPointIndexFor(point, snapshot),
+            ),
         selectBranchLabelBuilder: (_) => AppLocalizations.of(
           context,
         ).brazilStoreSalesMapShowBranchOnMapAction,
       );
     }
-    if (showBelowMapMarkerDetail(usesCompactBranchSheet: usesCompactBranchSheet) &&
+    if (showBelowMapMarkerDetail(
+          usesCompactBranchSheet: usesCompactBranchSheet,
+        ) &&
         selectedPoint != null) {
-      return _SelectedStoreDetail(
+      return BrazilMapChartSelectedStoreDetail(
         point: selectedPoint,
         metric: _selectedMetric,
       );
@@ -216,7 +226,7 @@ class _BrazilMapMarkerPresenter {
     if (selectedPoint == null &&
         selectedMarkerGroup == null &&
         selectedStateBucket != null) {
-      return _SelectedStateDetail(
+      return BrazilMapChartSelectedStateDetail(
         bucket: selectedStateBucket,
         metric: _selectedMetric,
       );
@@ -295,10 +305,10 @@ class _BrazilMapMarkerPresenter {
 
     if (group.isCluster) {
       return l10n.brazilStoreSalesMapSemanticsClusterStores(
-        _formatSalesCount(context, group.points.length),
+        brazilMapChartFormatSalesCount(context, group.points.length),
         group.cityLabel,
         AppBrFormatters.currency(group.salesAmount),
-        _formatSalesCount(context, group.salesCount),
+        brazilMapChartFormatSalesCount(context, group.salesCount),
         salesStatus,
       );
     }
@@ -308,7 +318,7 @@ class _BrazilMapMarkerPresenter {
       point.name,
       group.cityLabel,
       AppBrFormatters.currency(point.salesAmount),
-      _formatSalesCount(context, point.salesCount),
+      brazilMapChartFormatSalesCount(context, point.salesCount),
       salesStatus,
     );
   }
@@ -321,8 +331,8 @@ class _BrazilMapMarkerPresenter {
     return l10n.brazilStoreSalesMapSemanticsStateAggregate(
       bucket.stateName,
       AppBrFormatters.currency(bucket.salesAmount),
-      _formatSalesCount(context, bucket.salesCount),
-      _formatSalesCount(context, bucket.storeCount),
+      brazilMapChartFormatSalesCount(context, bucket.salesCount),
+      brazilMapChartFormatSalesCount(context, bucket.storeCount),
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
@@ -98,11 +99,10 @@ class SalesProdutoTendenciaDetailsSection extends StatelessWidget {
               ),
             )
           else if (rows.isEmpty)
-            Text(
-              l10n.salesProdutoTendenciaNoData,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+            AppInlineErrorPanel(
+              tone: AppInlinePanelTone.informational,
+              variant: AppInlineErrorPanelVariant.plain,
+              message: l10n.salesProdutoTendenciaNoData,
             )
           else ...<Widget>[
             LayoutBuilder(

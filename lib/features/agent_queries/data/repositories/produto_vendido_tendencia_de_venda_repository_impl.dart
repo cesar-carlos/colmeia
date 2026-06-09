@@ -4,11 +4,11 @@ import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_sql_local_date.dart';
-import 'package:colmeia/features/agent_queries/data/agent_queries_sql_row_map_reader.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_batch_item_rpc_failure_mapper.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_read_only_batch_options.dart';
 import 'package:colmeia/features/agent_queries/data/models/produto_vendido_tendencia_de_venda_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/models/produto_vendido_tendencia_de_venda_summary_row_model.dart';
+import 'package:colmeia/features/agent_queries/data/produto_tendencia_paged_sql_execution_mapper.dart';
 import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_tendencia_de_venda_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_tendencia_de_venda_summary_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repository_execution.dart';
@@ -19,6 +19,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_screen_data.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
@@ -36,7 +37,7 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
   static const int _minSqlTimeoutMs = 5000;
   static const int _maxRowsPageBuffer = 25;
 
-  static const String _operation = 'loadProdutoVendidoTendenciaDeVenda';
+  static const String _operation = 'loadProdutoVendidoTendenciaDeVendaPage';
   static const String _summaryOperation =
       'loadProdutoVendidoTendenciaDeVendaSummary';
   static const String _batchOperation =
@@ -49,7 +50,7 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
   final AgentQueriesRepository _agentQueriesRepository;
 
   @override
-  Future<AppResult<List<ProdutoVendidoTendenciaDeVendaRow>>> loadAll({
+  Future<AppResult<ProdutoVendidoTendenciaDeVendaPageResult>> loadPage({
     required String userId,
     required String agentId,
     required ProdutoVendidoTendenciaDeVendaFilter filter,
@@ -62,7 +63,7 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
     final validationError = filter.validationError();
     if (validationError != null) {
       return AgentSqlRepositoryExecution.invalidFilters<
-        List<ProdutoVendidoTendenciaDeVendaRow>
+        ProdutoVendidoTendenciaDeVendaPageResult
       >(
         message: validationError,
         operation: _operation,
@@ -108,7 +109,7 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
     );
 
     return AgentSqlRepositoryExecution.execute<
-      List<ProdutoVendidoTendenciaDeVendaRow>
+      ProdutoVendidoTendenciaDeVendaPageResult
     >(
       agentQueriesRepository: _agentQueriesRepository,
       request: request,
@@ -120,9 +121,33 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
         executionResult,
         agentId: agentId.trim(),
         sqlMaxRowsCap: sqlMaxRowsCap,
-      ).rows,
+      ),
       cancelScope: cancelScope,
     );
+  }
+
+  @override
+  Future<AppResult<List<ProdutoVendidoTendenciaDeVendaRow>>> loadAll({
+    required String userId,
+    required String agentId,
+    required ProdutoVendidoTendenciaDeVendaFilter filter,
+    String? clientToken,
+    int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
+    final pageResult = await loadPage(
+      userId: userId,
+      agentId: agentId,
+      filter: filter,
+      clientToken: clientToken,
+      bridgeTimeoutMs: bridgeTimeoutMs,
+      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
+      cancelScope: cancelScope,
+    );
+    return pageResult.map((page) => page.items);
   }
 
   @override
@@ -333,22 +358,23 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
     final byIndex = <int, AgentSqlBatchExecutionItem>{
       for (final item in execution.items) item.index: item,
     };
-    for (final index in <int>[
-      _batchIndexPage,
-      _batchIndexSummary,
-      _batchIndexTopGainers,
-      _batchIndexTopLosers,
-    ]) {
-      final failure = AgentSqlBatchItemRpcFailureMapper.failureForItemOrNull(
-        byIndex: byIndex,
-        index: index,
-        operation: _batchOperation,
-      );
-      if (failure != null) {
-        return Failure<ProdutoVendidoTendenciaDeVendaScreenData, AppFailure>(
-          _withBatchItemFailureUiKey(failure),
+    final batchFailure =
+        AgentSqlBatchItemRpcFailureMapper.firstFailureForIndicesOrNull(
+          byIndex: byIndex,
+          indices: <int>[
+            _batchIndexPage,
+            _batchIndexSummary,
+            _batchIndexTopGainers,
+            _batchIndexTopLosers,
+          ],
+          operation: _batchOperation,
         );
-      }
+    if (batchFailure != null) {
+      return Failure<ProdutoVendidoTendenciaDeVendaScreenData, AppFailure>(
+        AgentSqlBatchItemRpcFailureMapper.withQueryLoadFailedUiKey(
+          batchFailure,
+        ),
+      );
     }
 
     final pageItem = byIndex[_batchIndexPage]!;
@@ -365,7 +391,7 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
         agentId: agentId,
         sqlMaxRowsCap: sqlMaxRowsCap,
       );
-      final rows = pageResult.rows;
+      final rows = pageResult.items;
       final summaryRows = _mapSummaryExecution(
         AgentSqlExecutionResult(
           rows: summaryItem.rows,
@@ -451,44 +477,23 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
     };
   }
 
-  _PagedRowsResult _mapPagedExecution(
+  ProdutoVendidoTendenciaDeVendaPageResult _mapPagedExecution(
     AgentSqlExecutionResult executionResult, {
     required String agentId,
     required int sqlMaxRowsCap,
   }) {
-    if (executionResult.rows.isEmpty) {
-      return const _PagedRowsResult(
-        rows: <ProdutoVendidoTendenciaDeVendaRow>[],
-        totalCount: 0,
-      );
-    }
-
-    if (executionResult.rows.length >= sqlMaxRowsCap) {
-      AppLogger.warning(
-        'Agent row count reached max_rows cap (possible truncation)',
-        context: <String, Object?>{
-          'operation': _operation,
-          'agentId': agentId,
-          'rowCount': executionResult.rows.length,
-          'sqlMaxRowsCap': sqlMaxRowsCap,
-        },
-      );
-    }
-
-    final totalCount = AgentQueriesSqlRowMapReader.readRequiredInt(
-      executionResult.rows.first,
-      AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('TotalCount'),
+    final mapped = ProdutoTendenciaPagedSqlExecutionMapper.mapPagedRows(
+      executionResult: executionResult,
+      operation: _operation,
+      agentId: agentId,
+      sqlMaxRowsCap: sqlMaxRowsCap,
+      mapRow: (row) =>
+          ProdutoVendidoTendenciaDeVendaRowModel.fromMap(row).toEntity(),
     );
-
-    final rows = executionResult.rows
-        .where(_rowHasProdutoKey)
-        .map(
-          (row) =>
-              ProdutoVendidoTendenciaDeVendaRowModel.fromMap(row).toEntity(),
-        )
-        .toList(growable: false);
-
-    return _PagedRowsResult(rows: rows, totalCount: totalCount);
+    return ProdutoVendidoTendenciaDeVendaPageResult(
+      items: mapped.items,
+      totalCount: mapped.totalCount,
+    );
   }
 
   List<ProdutoVendidoTendenciaDeVendaRow> _mapExecution(
@@ -520,42 +525,6 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
         .toList(growable: false);
   }
 
-  static bool _rowHasProdutoKey(Map<String, dynamic> row) {
-    final raw = AgentQueriesSqlRowMapReader.lookupFirst(
-      row,
-      AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('CodProduto'),
-    );
-    return raw != null;
-  }
-
-  static AppFailure _withBatchItemFailureUiKey(AppFailure failure) {
-    if (failure is! RpcFailure || failure.reason != 'missing_batch_item') {
-      return failure;
-    }
-    if (failure.context[AgentSqlRpcFailureUiKey.field] ==
-        AgentSqlRpcFailureUiKey.queryLoadFailed) {
-      return failure;
-    }
-    return RpcFailure(
-      message: failure.message,
-      userMessage: failure.userMessage,
-      rpcCode: failure.rpcCode,
-      retryable: failure.retryable,
-      reason: failure.reason,
-      category: failure.category,
-      technicalMessage: failure.technicalMessage,
-      correlationId: failure.correlationId,
-      timestamp: failure.timestamp,
-      retryAfter: failure.retryAfter,
-      cause: failure.cause,
-      stackTrace: failure.stackTrace,
-      context: <String, Object?>{
-        ...failure.context,
-        AgentSqlRpcFailureUiKey.field: AgentSqlRpcFailureUiKey.queryLoadFailed,
-      },
-    );
-  }
-
   List<ProdutoVendidoTendenciaDeVendaSummaryRow> _mapSummaryExecution(
     AgentSqlExecutionResult executionResult,
   ) {
@@ -571,11 +540,4 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
         )
         .toList(growable: false);
   }
-}
-
-class _PagedRowsResult {
-  const _PagedRowsResult({required this.rows, required this.totalCount});
-
-  final List<ProdutoVendidoTendenciaDeVendaRow> rows;
-  final int totalCount;
 }

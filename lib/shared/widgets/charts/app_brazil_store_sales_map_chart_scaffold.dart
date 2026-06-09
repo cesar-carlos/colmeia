@@ -29,10 +29,11 @@ class _BrazilMapChartScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final usesCompactBranchSheet = BrazilMapCompactBranchSheetLayout.shouldUse(
-          showStoreDetail: chart.style.showStoreDetail,
-          maxWidth: constraints.maxWidth,
-        );
+        final usesCompactBranchSheet =
+            BrazilMapCompactBranchSheetLayout.shouldUse(
+              showStoreDetail: chart.style.showStoreDetail,
+              maxWidth: constraints.maxWidth,
+            );
         final l10n = AppLocalizations.of(context);
         final tokens = Theme.of(context).extension<AppThemeTokens>()!;
         final usesCompactMapChrome = constraints.hasBoundedHeight;
@@ -40,7 +41,7 @@ class _BrazilMapChartScaffold extends StatelessWidget {
             usesCompactMapChrome &&
             constraints.maxWidth <
                 BrazilMapLayoutConstants.compactStateLabelsMaxWidth;
-        final stateLabels = _BrazilMapStateLabelResolver(
+        final stateLabels = BrazilMapChartStateLabelResolver(
           context: context,
           style: chart.style,
         );
@@ -48,10 +49,11 @@ class _BrazilMapChartScaffold extends StatelessWidget {
           compact: usesCompactStateLabels,
           maxWidth: constraints.maxWidth,
         );
-        final useCompactMarkerLegend = state._layout.shouldUseCompactMarkerLegend(
-          usesCompactMapChrome: usesCompactMapChrome,
-          maxWidth: constraints.maxWidth,
-        );
+        final useCompactMarkerLegend = state._layout
+            .shouldUseCompactMarkerLegend(
+              usesCompactMapChrome: usesCompactMapChrome,
+              maxWidth: constraints.maxWidth,
+            );
         final sidebarWidth = BrazilMapDesktopSidebarLayout.width(
           constraints.maxWidth,
         );
@@ -79,7 +81,8 @@ class _BrazilMapChartScaffold extends StatelessWidget {
           detailPoint: layoutSelectionPoint,
           detailGroup: layoutSelectionGroup,
           detailStateBucket: layoutSelectionStateBucket,
-          reserveBelowMapSelectionDetail: reserveBelowMapSelectionDetail &&
+          reserveBelowMapSelectionDetail:
+              reserveBelowMapSelectionDetail &&
               !state._suppressMapLayoutShiftOnStoreSelection,
         );
         final mapTileHeight = state._layout.regionMapStyleHeightForMapArea(
@@ -127,7 +130,9 @@ class _BrazilMapChartScaffold extends StatelessWidget {
                 markerStyle: AppMapMarkerStyle(
                   size: chart.style.markerMinSize,
                   color: state._markerPresenter.markerColor(context),
-                  strokeColor: state._markerPresenter.markerStrokeColor(context),
+                  strokeColor: state._markerPresenter.markerStrokeColor(
+                    context,
+                  ),
                 ),
                 markerBuilder: (context, point, index) {
                   return ValueListenableBuilder<BrazilMapMarkerSelection>(
@@ -168,7 +173,8 @@ class _BrazilMapChartScaffold extends StatelessWidget {
                       : null,
                   showLegend: state._effectiveShowLegend,
                   showTooltip:
-                      chart.style.showTooltip && !state._useWindowsSafeMarkerDetails,
+                      chart.style.showTooltip &&
+                      !state._useWindowsSafeMarkerDetails,
                   showShapeTooltip: false,
                   showDataLabels: chart.style.showDataLabels,
                   showMetricSelector:
@@ -190,7 +196,8 @@ class _BrazilMapChartScaffold extends StatelessWidget {
                   scopeGroupLabel: l10n.brazilStoreSalesMapRegionGroupLabel,
                   mapLoadingMessage: l10n.brazilStoreSalesMapLoadingMessage,
                   showGroupLabels:
-                      !state._usesCleanFullscreenChrome && !usesCompactMapChrome,
+                      !state._usesCleanFullscreenChrome &&
+                      !usesCompactMapChrome,
                 ),
                 isRefreshing: chart.isRefreshing,
                 isLoading: state._isBrazilMapShapeSourceLoading,
@@ -199,7 +206,7 @@ class _BrazilMapChartScaffold extends StatelessWidget {
           );
         }
 
-        final mapContent = _BrazilStoreSalesMapContent(
+        final mapContent = BrazilMapChartStoreSalesMapContent(
           key: const ValueKey<String>('brazil-store-sales-map-content'),
           expandMapVertically: usesBoundedVerticalLayout,
           regionMapBuilder: buildRegionMap,
@@ -225,36 +232,17 @@ class _BrazilMapChartScaffold extends StatelessWidget {
           diagnostics:
               state._effectiveShowDataQualityNotice &&
                   snapshot.diagnostics.hasDiscardedPoints
-              ? _MapDataQualityNotice(diagnostics: snapshot.diagnostics)
-              : null,
-          markerLegend:
-              state._effectiveShowMarkerScaleLegend &&
-                  snapshot.hasMarkers &&
-                  useCompactMarkerLegend
-              ? _MarkerScaleLegendMenuButton(
-                  sizeLegendLabel: l10n.brazilStoreSalesMapMarkerSizeLegend,
-                  metric: state._selectedMetric,
-                  minValue: snapshot.minMarkerValue,
-                  maxValue: snapshot.maxMarkerValue,
-                  minSize: chart.style.markerMinSize,
-                  maxSize: chart.style.markerMaxSize,
-                  color: state._markerPresenter.markerColor(context),
-                  strokeColor: state._markerPresenter.markerStrokeColor(context),
-                  visual: chart.style.markerVisual,
-                )
-              : state._effectiveShowMarkerScaleLegend && snapshot.hasMarkers
-              ? _MarkerScaleLegend(
-                  sizeLegendLabel: l10n.brazilStoreSalesMapMarkerSizeLegend,
-                  metric: state._selectedMetric,
-                  minValue: snapshot.minMarkerValue,
-                  maxValue: snapshot.maxMarkerValue,
-                  minSize: chart.style.markerMinSize,
-                  maxSize: chart.style.markerMaxSize,
-                  color: state._markerPresenter.markerColor(context),
-                  strokeColor: state._markerPresenter.markerStrokeColor(context),
-                  visual: chart.style.markerVisual,
+              ? BrazilMapChartDataQualityNotice(
+                  diagnostics: snapshot.diagnostics,
                 )
               : null,
+          markerLegend: BrazilMapChartScaffoldMarkerLegend(
+            state: state,
+            chart: chart,
+            snapshot: snapshot,
+            useCompactMarkerLegend: useCompactMarkerLegend,
+            l10n: l10n,
+          ).build(context),
           detail: ValueListenableBuilder<BrazilMapMarkerSelection>(
             valueListenable: state._markerSelection,
             builder: (context, selection, _) {
@@ -292,6 +280,63 @@ class _BrazilMapChartScaffold extends StatelessWidget {
           child: mapContent,
         );
       },
+    );
+  }
+}
+
+class BrazilMapChartScaffoldMarkerLegend {
+  const BrazilMapChartScaffoldMarkerLegend({
+    required this.state,
+    required this.chart,
+    required this.snapshot,
+    required this.useCompactMarkerLegend,
+    required this.l10n,
+  });
+
+  final _AppBrazilStoreSalesMapChartState state;
+  final AppBrazilStoreSalesMapChart chart;
+  final BrazilMapChartVisualSnapshot snapshot;
+  final bool useCompactMarkerLegend;
+  final AppLocalizations l10n;
+
+  Widget? build(BuildContext context) {
+    if (!state._effectiveShowMarkerScaleLegend || !snapshot.hasMarkers) {
+      return null;
+    }
+    final legendProps = (
+      sizeLegendLabel: l10n.brazilStoreSalesMapMarkerSizeLegend,
+      metric: state._selectedMetric,
+      minValue: snapshot.minMarkerValue,
+      maxValue: snapshot.maxMarkerValue,
+      minSize: chart.style.markerMinSize,
+      maxSize: chart.style.markerMaxSize,
+      color: state._markerPresenter.markerColor(context),
+      strokeColor: state._markerPresenter.markerStrokeColor(context),
+      visual: chart.style.markerVisual,
+    );
+    if (useCompactMarkerLegend) {
+      return BrazilMapChartMarkerScaleLegendMenuButton(
+        sizeLegendLabel: legendProps.sizeLegendLabel,
+        metric: legendProps.metric,
+        minValue: legendProps.minValue,
+        maxValue: legendProps.maxValue,
+        minSize: legendProps.minSize,
+        maxSize: legendProps.maxSize,
+        color: legendProps.color,
+        strokeColor: legendProps.strokeColor,
+        visual: legendProps.visual,
+      );
+    }
+    return BrazilMapChartMarkerScaleLegend(
+      sizeLegendLabel: legendProps.sizeLegendLabel,
+      metric: legendProps.metric,
+      minValue: legendProps.minValue,
+      maxValue: legendProps.maxValue,
+      minSize: legendProps.minSize,
+      maxSize: legendProps.maxSize,
+      color: legendProps.color,
+      strokeColor: legendProps.strokeColor,
+      visual: legendProps.visual,
     );
   }
 }

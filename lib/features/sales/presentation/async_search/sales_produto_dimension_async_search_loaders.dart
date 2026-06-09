@@ -1,6 +1,8 @@
 import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
+import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/forms/app_async_search_field.dart';
 
 typedef SalesAgentIdProvider = String? Function();
@@ -17,6 +19,7 @@ AppAsyncSearchLoader<int> createSalesGrupoProdutoAsyncSearchLoader({
   required SalesAgentIdProvider agentIdProvider,
   required SalesClientTokenResolver resolveClientToken,
   required String clientTokenUnavailableMessage,
+  required AppLocalizations l10n,
   AgentQueriesCancelScope? cancelScope,
 }) {
   return (AppAsyncSearchQuery query) async {
@@ -62,7 +65,9 @@ AppAsyncSearchLoader<int> createSalesGrupoProdutoAsyncSearchLoader({
       (failure) => AppAsyncSearchLoadResult<int>(
         options: const <AppAsyncSearchOption<int>>[],
         hasMore: false,
-        errorMessage: failure.displayMessage,
+        errorMessage:
+            agentQueryFailureUserMessageOrNull(failure, l10n) ??
+            failure.displayMessage,
       ),
     );
   };
@@ -74,6 +79,7 @@ AppAsyncSearchLoader<int> createSalesMarcaProdutoAsyncSearchLoader({
   required SalesAgentIdProvider agentIdProvider,
   required SalesClientTokenResolver resolveClientToken,
   required String clientTokenUnavailableMessage,
+  required AppLocalizations l10n,
   AgentQueriesCancelScope? cancelScope,
 }) {
   return (AppAsyncSearchQuery query) async {
@@ -119,7 +125,9 @@ AppAsyncSearchLoader<int> createSalesMarcaProdutoAsyncSearchLoader({
       (failure) => AppAsyncSearchLoadResult<int>(
         options: const <AppAsyncSearchOption<int>>[],
         hasMore: false,
-        errorMessage: failure.displayMessage,
+        errorMessage:
+            agentQueryFailureUserMessageOrNull(failure, l10n) ??
+            failure.displayMessage,
       ),
     );
   };

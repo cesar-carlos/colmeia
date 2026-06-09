@@ -7,6 +7,54 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_e
 /// Builds an [RpcFailure] from a failed [AgentSqlBatchExecutionItem], preserving
 /// JSON-RPC code/reason/retry hints when the bridge returns a structured error.
 abstract final class AgentSqlBatchItemRpcFailureMapper {
+  /// Returns the first batch-item failure for [indices], or null when all are ok.
+  static AppFailure? firstFailureForIndicesOrNull({
+    required Map<int, AgentSqlBatchExecutionItem> byIndex,
+    required List<int> indices,
+    required String operation,
+  }) {
+    for (final index in indices) {
+      final failure = failureForItemOrNull(
+        byIndex: byIndex,
+        index: index,
+        operation: operation,
+      );
+      if (failure != null) {
+        return failure;
+      }
+    }
+    return null;
+  }
+
+  /// Maps `missing_batch_item` RPC failures to the query-load-failed UI key.
+  static AppFailure withQueryLoadFailedUiKey(AppFailure failure) {
+    if (failure is! RpcFailure || failure.reason != 'missing_batch_item') {
+      return failure;
+    }
+    if (failure.context[AgentSqlRpcFailureUiKey.field] ==
+        AgentSqlRpcFailureUiKey.queryLoadFailed) {
+      return failure;
+    }
+    return RpcFailure(
+      message: failure.message,
+      userMessage: failure.userMessage,
+      rpcCode: failure.rpcCode,
+      retryable: failure.retryable,
+      reason: failure.reason,
+      category: failure.category,
+      technicalMessage: failure.technicalMessage,
+      correlationId: failure.correlationId,
+      timestamp: failure.timestamp,
+      retryAfter: failure.retryAfter,
+      cause: failure.cause,
+      stackTrace: failure.stackTrace,
+      context: <String, Object?>{
+        ...failure.context,
+        AgentSqlRpcFailureUiKey.field: AgentSqlRpcFailureUiKey.queryLoadFailed,
+      },
+    );
+  }
+
   /// Returns an [AppFailure] when the batch slot is missing or failed; null when ok.
   static AppFailure? failureForItemOrNull({
     required Map<int, AgentSqlBatchExecutionItem> byIndex,

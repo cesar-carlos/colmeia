@@ -1,7 +1,32 @@
-part of 'app_brazil_store_sales_map_chart.dart';
+import 'dart:async';
 
-class _DesktopBranchSidebarOverlay extends StatelessWidget {
-  const _DesktopBranchSidebarOverlay({
+import 'package:colmeia/core/formatters/app_br_formatters.dart';
+import 'package:colmeia/core/layout/app_breakpoints.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_colors.dart';
+import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/maps/app_location_lookup_normalizer.dart';
+import 'package:colmeia/shared/utils/app_branch_display_model.dart';
+import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/app_tag_chip.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_localizations.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_overlay_chrome.dart';
+import 'package:colmeia/shared/widgets/charts/app_map_models.dart';
+import 'package:colmeia/shared/widgets/charts/brazil_map_chart_visual_snapshot.dart';
+import 'package:colmeia/shared/widgets/charts/brazil_map_layout_constants.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_snapshot.dart';
+import 'package:colmeia/shared/widgets/charts/brazil_map_store_sales_display_helpers.dart';
+import 'package:colmeia/shared/widgets/forms/app_choice_chip.dart';
+import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
+import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+class BrazilMapChartDesktopBranchSidebarOverlay extends StatelessWidget {
+  const BrazilMapChartDesktopBranchSidebarOverlay({
     required this.width,
     required this.maxHeight,
     required this.topInset,
@@ -34,7 +59,7 @@ class _DesktopBranchSidebarOverlay extends StatelessWidget {
       left: horizontalInset,
       child: KeyedSubtree(
         key: const ValueKey<String>('brazil-store-sales-map-sidebar-floating'),
-        child: _DesktopBranchSidebar(
+        child: BrazilMapChartDesktopBranchSidebar(
           width: width,
           maxHeight: maxHeight,
           entries: entries,
@@ -50,8 +75,9 @@ class _DesktopBranchSidebarOverlay extends StatelessWidget {
   }
 }
 
-class _DesktopBranchSidebarCollapsedOverlay extends StatelessWidget {
-  const _DesktopBranchSidebarCollapsedOverlay({
+class BrazilMapChartDesktopBranchSidebarCollapsedOverlay
+    extends StatelessWidget {
+  const BrazilMapChartDesktopBranchSidebarCollapsedOverlay({
     required this.topInset,
     required this.horizontalInset,
     required this.onExpand,
@@ -110,8 +136,8 @@ class _DesktopBranchSidebarCollapsedOverlay extends StatelessWidget {
   }
 }
 
-class _DesktopBranchSidebar extends StatefulWidget {
-  const _DesktopBranchSidebar({
+class BrazilMapChartDesktopBranchSidebar extends StatefulWidget {
+  const BrazilMapChartDesktopBranchSidebar({
     required this.width,
     required this.maxHeight,
     required this.entries,
@@ -134,10 +160,12 @@ class _DesktopBranchSidebar extends StatefulWidget {
   final String? selectedStoreId;
 
   @override
-  State<_DesktopBranchSidebar> createState() => _DesktopBranchSidebarState();
+  State<BrazilMapChartDesktopBranchSidebar> createState() =>
+      BrazilMapChartDesktopBranchSidebarState();
 }
 
-class _DesktopBranchSidebarState extends State<_DesktopBranchSidebar> {
+class BrazilMapChartDesktopBranchSidebarState
+    extends State<BrazilMapChartDesktopBranchSidebar> {
   static const double _scrollbarContentGutter = 14;
   static const Duration _focusRequestDebounce = Duration(milliseconds: 48);
 
@@ -147,7 +175,7 @@ class _DesktopBranchSidebarState extends State<_DesktopBranchSidebar> {
   int _focusedIndex = 0;
   Timer? _focusRequestDebounceTimer;
   String? _lastQueuedFocusStoreId;
-  _DesktopBranchSidebarFilterResult? _filterResultCache;
+  BrazilMapChartDesktopBranchSidebarFilterResult? _filterResultCache;
   String? _filterResultQueryCache;
   List<AppBrazilStoreSalesVisibleBranchListItem>? _filterResultEntriesCache;
 
@@ -160,7 +188,7 @@ class _DesktopBranchSidebarState extends State<_DesktopBranchSidebar> {
   }
 
   @override
-  void didUpdateWidget(covariant _DesktopBranchSidebar oldWidget) {
+  void didUpdateWidget(covariant BrazilMapChartDesktopBranchSidebar oldWidget) {
     super.didUpdateWidget(oldWidget);
     final selectionChanged =
         oldWidget.selectedStoreId != widget.selectedStoreId;
@@ -209,7 +237,7 @@ class _DesktopBranchSidebarState extends State<_DesktopBranchSidebar> {
     _filterResultEntriesCache = null;
   }
 
-  _DesktopBranchSidebarFilterResult get _filterResult {
+  BrazilMapChartDesktopBranchSidebarFilterResult get _filterResult {
     final searchQuery = _searchQuery;
     final entries = widget.entries;
     final cachedResult = _filterResultCache;
@@ -229,7 +257,7 @@ class _DesktopBranchSidebarState extends State<_DesktopBranchSidebar> {
       0,
       (sum, entry) => sum + entry.salesAmount,
     );
-    final result = _DesktopBranchSidebarFilterResult(
+    final result = BrazilMapChartDesktopBranchSidebarFilterResult(
       entries: filteredEntries,
       totalVisibleRevenue: totalVisibleRevenue,
     );
@@ -376,7 +404,9 @@ class _DesktopBranchSidebarState extends State<_DesktopBranchSidebar> {
         height: widget.maxHeight,
         child: AppSectionCard(
           color: colorScheme.surface.withValues(alpha: 0.94),
-          borderRadius: BorderRadius.circular(BrazilMapLayoutConstants.floatingMapOverlaySurfaceRadius),
+          borderRadius: BorderRadius.circular(
+            BrazilMapLayoutConstants.floatingMapOverlaySurfaceRadius,
+          ),
           borderSide: BorderSide(
             color: appColors.secondary.withValues(alpha: 0.12),
           ),
@@ -388,176 +418,177 @@ class _DesktopBranchSidebarState extends State<_DesktopBranchSidebar> {
           ),
           child: FocusTraversalGroup(
             child: Focus(
-            autofocus: filteredEntries.isNotEmpty,
-            onKeyEvent: _handleKeyEvent,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: KeyedSubtree(
-                        key: const ValueKey<String>(
-                          'brazil-store-sales-map-sidebar',
-                        ),
-                        child: Text(
-                          l10n.brazilStoreSalesMapSidebarTitle,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (widget.allowCollapse)
-                      Tooltip(
-                        message: l10n.brazilStoreSalesMapSidebarCollapseTooltip,
-                        child: InkWell(
+              autofocus: filteredEntries.isNotEmpty,
+              onKeyEvent: _handleKeyEvent,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: KeyedSubtree(
                           key: const ValueKey<String>(
-                            'brazil-store-sales-map-sidebar-collapse',
+                            'brazil-store-sales-map-sidebar',
                           ),
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: widget.onToggleCollapsed,
-                          child: Padding(
-                            padding: EdgeInsets.all(tokens.gapXs * 0.6),
-                            child: Icon(
-                              Icons.chevron_left_rounded,
-                              size: 18,
-                              color: colorScheme.onSurfaceVariant,
+                          child: Text(
+                            l10n.brazilStoreSalesMapSidebarTitle,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ),
                       ),
-                  ],
-                ),
-                SizedBox(height: tokens.gapXs * 0.5),
-                Text(
-                  l10n.brazilStoreSalesMapSidebarCountSummary(
-                    filteredEntries.length,
-                  ),
-                  key: const ValueKey<String>(
-                    'brazil-store-sales-map-sidebar-count-summary',
-                  ),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                SizedBox(height: tokens.gapXs * 0.5),
-                Text(
-                  l10n.brazilStoreSalesMapSidebarRevenueSummary(
-                    AppBrFormatters.currency(totalVisibleRevenue),
-                  ),
-                  key: const ValueKey<String>(
-                    'brazil-store-sales-map-sidebar-revenue-summary',
-                  ),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                IgnorePointer(
-                  child: Opacity(
-                    opacity: 0,
-                    child: SizedBox(
-                      height: 0,
-                      child: Text(
-                        l10n.brazilStoreSalesMapSidebarSummary(
-                          filteredEntries.length,
-                          AppBrFormatters.currency(totalVisibleRevenue),
+                      if (widget.allowCollapse)
+                        Tooltip(
+                          message:
+                              l10n.brazilStoreSalesMapSidebarCollapseTooltip,
+                          child: InkWell(
+                            key: const ValueKey<String>(
+                              'brazil-store-sales-map-sidebar-collapse',
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: widget.onToggleCollapsed,
+                            child: Padding(
+                              padding: EdgeInsets.all(tokens.gapXs * 0.6),
+                              child: Icon(
+                                Icons.chevron_left_rounded,
+                                size: 18,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
                         ),
-                        key: const ValueKey<String>(
-                          'brazil-store-sales-map-sidebar-summary',
+                    ],
+                  ),
+                  SizedBox(height: tokens.gapXs * 0.5),
+                  Text(
+                    l10n.brazilStoreSalesMapSidebarCountSummary(
+                      filteredEntries.length,
+                    ),
+                    key: const ValueKey<String>(
+                      'brazil-store-sales-map-sidebar-count-summary',
+                    ),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  SizedBox(height: tokens.gapXs * 0.5),
+                  Text(
+                    l10n.brazilStoreSalesMapSidebarRevenueSummary(
+                      AppBrFormatters.currency(totalVisibleRevenue),
+                    ),
+                    key: const ValueKey<String>(
+                      'brazil-store-sales-map-sidebar-revenue-summary',
+                    ),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  IgnorePointer(
+                    child: Opacity(
+                      opacity: 0,
+                      child: SizedBox(
+                        height: 0,
+                        child: Text(
+                          l10n.brazilStoreSalesMapSidebarSummary(
+                            filteredEntries.length,
+                            AppBrFormatters.currency(totalVisibleRevenue),
+                          ),
+                          key: const ValueKey<String>(
+                            'brazil-store-sales-map-sidebar-summary',
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                SizedBox(height: tokens.gapXs),
-                AppTextField(
-                  key: const ValueKey<String>(
-                    'brazil-store-sales-map-sidebar-search',
+                  SizedBox(height: tokens.gapXs),
+                  AppTextField(
+                    key: const ValueKey<String>(
+                      'brazil-store-sales-map-sidebar-search',
+                    ),
+                    controller: _searchController,
+                    hintText: l10n.brazilStoreSalesMapSidebarSearchPlaceholder,
+                    prefixIcon: Icons.search_rounded,
+                    density: AppTextFieldDensity.compact,
+                    semanticsLabel:
+                        l10n.brazilStoreSalesMapSidebarSearchSemanticsLabel,
+                    textInputAction: TextInputAction.search,
                   ),
-                  controller: _searchController,
-                  hintText: l10n.brazilStoreSalesMapSidebarSearchPlaceholder,
-                  prefixIcon: Icons.search_rounded,
-                  density: AppTextFieldDensity.compact,
-                  semanticsLabel:
-                      l10n.brazilStoreSalesMapSidebarSearchSemanticsLabel,
-                  textInputAction: TextInputAction.search,
-                ),
-                SizedBox(height: tokens.gapXs),
-                Expanded(
-                  child: filteredEntries.isEmpty
-                      ? _DesktopBranchSidebarEmptyState(
-                          title: emptyStateTitle,
-                          message: emptyStateMessage,
-                        )
-                      : ScrollConfiguration(
-                          behavior: ScrollConfiguration.of(
-                            context,
-                          ).copyWith(scrollbars: false),
-                          child: ScrollbarTheme(
-                            data: ScrollbarTheme.of(context).copyWith(
-                              thumbColor: WidgetStatePropertyAll(
-                                colorScheme.onSurfaceVariant.withValues(
-                                  alpha: 0.34,
+                  SizedBox(height: tokens.gapXs),
+                  Expanded(
+                    child: filteredEntries.isEmpty
+                        ? BrazilMapChartDesktopBranchSidebarEmptyState(
+                            title: emptyStateTitle,
+                            message: emptyStateMessage,
+                          )
+                        : ScrollConfiguration(
+                            behavior: ScrollConfiguration.of(
+                              context,
+                            ).copyWith(scrollbars: false),
+                            child: ScrollbarTheme(
+                              data: ScrollbarTheme.of(context).copyWith(
+                                thumbColor: WidgetStatePropertyAll(
+                                  colorScheme.onSurfaceVariant.withValues(
+                                    alpha: 0.34,
+                                  ),
                                 ),
+                                thickness: const WidgetStatePropertyAll(6),
+                                radius: const Radius.circular(999),
                               ),
-                              thickness: const WidgetStatePropertyAll(6),
-                              radius: const Radius.circular(999),
-                            ),
-                            child: Scrollbar(
-                              controller: _scrollController,
-                              thumbVisibility: false,
-                              trackVisibility: false,
-                              interactive: true,
-                              child: ListView.separated(
-                                key: const ValueKey<String>(
-                                  'brazil-store-sales-map-sidebar-list',
-                                ),
+                              child: Scrollbar(
                                 controller: _scrollController,
-                                padding: EdgeInsets.only(
-                                  right: _scrollbarContentGutter,
-                                  bottom: tokens.gapXs,
+                                thumbVisibility: false,
+                                trackVisibility: false,
+                                interactive: true,
+                                child: ListView.separated(
+                                  key: const ValueKey<String>(
+                                    'brazil-store-sales-map-sidebar-list',
+                                  ),
+                                  controller: _scrollController,
+                                  padding: EdgeInsets.only(
+                                    right: _scrollbarContentGutter,
+                                    bottom: tokens.gapXs,
+                                  ),
+                                  itemCount: filteredEntries.length,
+                                  separatorBuilder: (_, index) =>
+                                      SizedBox(height: tokens.gapXs),
+                                  itemBuilder: (context, index) {
+                                    final entry = filteredEntries[index];
+                                    final isSelected =
+                                        entry.id == widget.selectedStoreId;
+                                    return BrazilMapChartDesktopBranchSidebarItem(
+                                      rank: index + 1,
+                                      entry: entry,
+                                      focusNode: _focusNodes[index],
+                                      isFocused: _focusedIndex == index,
+                                      isSelected: isSelected,
+                                      onFocus: () {
+                                        if (_focusedIndex == index) {
+                                          return;
+                                        }
+                                        setState(() {
+                                          _focusedIndex = index;
+                                        });
+                                      },
+                                      onTap: () =>
+                                          widget.onSelectBranch(entry.point),
+                                      onPreviewStart: () => widget
+                                          .onPreviewBranchStart(entry.point),
+                                      onPreviewEnd: widget.onPreviewBranchEnd,
+                                    );
+                                  },
                                 ),
-                                itemCount: filteredEntries.length,
-                                separatorBuilder: (_, index) =>
-                                    SizedBox(height: tokens.gapXs),
-                                itemBuilder: (context, index) {
-                                  final entry = filteredEntries[index];
-                                  final isSelected =
-                                      entry.id == widget.selectedStoreId;
-                                  return _DesktopBranchSidebarItem(
-                                    rank: index + 1,
-                                    entry: entry,
-                                    focusNode: _focusNodes[index],
-                                    isFocused: _focusedIndex == index,
-                                    isSelected: isSelected,
-                                    onFocus: () {
-                                      if (_focusedIndex == index) {
-                                        return;
-                                      }
-                                      setState(() {
-                                        _focusedIndex = index;
-                                      });
-                                    },
-                                    onTap: () =>
-                                        widget.onSelectBranch(entry.point),
-                                    onPreviewStart: () => widget
-                                        .onPreviewBranchStart(entry.point),
-                                    onPreviewEnd: widget.onPreviewBranchEnd,
-                                  );
-                                },
                               ),
                             ),
                           ),
-                        ),
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
-    ),
     );
   }
 }
@@ -593,8 +624,8 @@ bool _sidebarEntriesEquivalent(
   return true;
 }
 
-class _DesktopBranchSidebarFilterResult {
-  const _DesktopBranchSidebarFilterResult({
+class BrazilMapChartDesktopBranchSidebarFilterResult {
+  const BrazilMapChartDesktopBranchSidebarFilterResult({
     required this.entries,
     required this.totalVisibleRevenue,
   });
@@ -603,8 +634,8 @@ class _DesktopBranchSidebarFilterResult {
   final double totalVisibleRevenue;
 }
 
-class _DesktopBranchSidebarEmptyState extends StatelessWidget {
-  const _DesktopBranchSidebarEmptyState({
+class BrazilMapChartDesktopBranchSidebarEmptyState extends StatelessWidget {
+  const BrazilMapChartDesktopBranchSidebarEmptyState({
     required this.title,
     required this.message,
   });
@@ -652,8 +683,8 @@ class _DesktopBranchSidebarEmptyState extends StatelessWidget {
   }
 }
 
-class _DesktopBranchSidebarItem extends StatelessWidget {
-  const _DesktopBranchSidebarItem({
+class BrazilMapChartDesktopBranchSidebarItem extends StatelessWidget {
+  const BrazilMapChartDesktopBranchSidebarItem({
     required this.rank,
     required this.entry,
     required this.focusNode,
@@ -813,7 +844,7 @@ class _DesktopBranchSidebarItem extends StatelessWidget {
                   SizedBox(height: tokens.gapXs),
                   if (entry.state ==
                       AppBrazilStoreSalesVisibleBranchListItemState.loading)
-                    _DesktopBranchSidebarStatusRow(
+                    BrazilMapChartDesktopBranchSidebarStatusRow(
                       icon: Icons.sync_rounded,
                       label: _statusLabel(context)!,
                       color: highlight,
@@ -830,7 +861,7 @@ class _DesktopBranchSidebarItem extends StatelessWidget {
                     ),
                     if (statusLabel != null) ...[
                       SizedBox(height: tokens.gapXs),
-                      _DesktopBranchSidebarStatusRow(
+                      BrazilMapChartDesktopBranchSidebarStatusRow(
                         icon: _statusIcon,
                         label: statusLabel,
                         color: _statusColor(
@@ -888,8 +919,8 @@ class _DesktopBranchSidebarItem extends StatelessWidget {
   }
 }
 
-class _DesktopBranchSidebarStatusRow extends StatelessWidget {
-  const _DesktopBranchSidebarStatusRow({
+class BrazilMapChartDesktopBranchSidebarStatusRow extends StatelessWidget {
+  const BrazilMapChartDesktopBranchSidebarStatusRow({
     required this.icon,
     required this.label,
     required this.color,

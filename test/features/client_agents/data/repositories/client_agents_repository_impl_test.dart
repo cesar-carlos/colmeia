@@ -154,6 +154,48 @@ void main() {
     },
   );
 
+  test(
+    'should enqueue remove access when opposite request access is queued',
+    () async {
+      var storedActions = <PendingAgentAction>[
+        PendingAgentAction(
+          id: 'requestAccess_agent-1',
+          agentId: 'agent-1',
+          type: PendingAgentActionType.requestAccess,
+          state: PendingAgentActionState.queued,
+          createdAt: now,
+          attemptCount: 0,
+        ),
+      ];
+
+      when(
+        () => local.readPendingActions(userId: any(named: 'userId')),
+      ).thenAnswer((_) async => storedActions);
+      when(
+        () => local.savePendingActions(
+          userId: any(named: 'userId'),
+          actions: any(named: 'actions'),
+        ),
+      ).thenAnswer((invocation) async {
+        storedActions = List<PendingAgentAction>.from(
+          invocation.namedArguments[#actions]! as List<PendingAgentAction>,
+        );
+      });
+
+      final result = await repository.queueRemoveAccess(
+        userId: 'user-1',
+        agentIds: const <String>{'agent-1'},
+      );
+
+      check(result.isSuccess()).isTrue();
+      check(storedActions.length).equals(1);
+      check(storedActions.single.type).equals(
+        PendingAgentActionType.removeAccess,
+      );
+      check(storedActions.single.agentId).equals('agent-1');
+    },
+  );
+
   test('should keep only failed pending action after granular sync', () async {
     var storedActions = <PendingAgentAction>[
       PendingAgentAction(

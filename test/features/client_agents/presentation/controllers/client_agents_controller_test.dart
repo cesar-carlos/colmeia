@@ -1247,6 +1247,41 @@ void main() {
         expect(controller.actionError, isNotNull);
       },
     );
+
+    test(
+      'syncPending arms cooldown when partial success carries retryAfter',
+      () async {
+        when(
+          () => readPendingActionsUseCase(userId: any(named: 'userId')),
+        ).thenAnswer(
+          (_) async => Success<List<PendingAgentAction>, AppFailure>(
+            queuedPendingActions,
+          ),
+        );
+        when(
+          () => syncPendingActionsUseCase(userId: any(named: 'userId')),
+        ).thenAnswer(
+          (_) async => const Success<SyncPendingAgentActionsResult, AppFailure>(
+            SyncPendingAgentActionsResult(
+              successfulRequestAccessAgentIds: <String>{
+                '33333333-3333-3333-8333-333333333333',
+              },
+              failedRequestAccessAgentIds: <String>{
+                '44444444-4444-4444-8444-444444444444',
+              },
+              retryAfter: Duration(seconds: 15),
+            ),
+          ),
+        );
+
+        await controller.initialize();
+        await controller.syncPending();
+
+        expect(controller.isSyncOnCooldown, isTrue);
+        expect(controller.syncRetryAfter, isNotNull);
+        expect(controller.actionNotice, isNotNull);
+      },
+    );
   });
 
   test(

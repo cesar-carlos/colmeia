@@ -172,7 +172,7 @@ void main() {
         cancelScope: any(named: 'cancelScope'),
       ),
     );
-    verify(
+    final capturedCancelScopes = verify(
       () => loadTrendPage.call(
         userId: 'user-1',
         agentId: 'agent-1',
@@ -183,9 +183,11 @@ void main() {
           ),
         ),
         clientToken: 'token',
-        cancelScope: any(named: 'cancelScope'),
+        cancelScope: captureAny(named: 'cancelScope'),
       ),
-    ).called(1);
+    ).captured;
+    expect(capturedCancelScopes, hasLength(1));
+    expect(capturedCancelScopes.single, isNotNull);
 
     expect(controller.state.page, 2);
     expect(controller.state.pageResult.items, pageResult.items);

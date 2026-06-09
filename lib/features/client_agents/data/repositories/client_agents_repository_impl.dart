@@ -1068,9 +1068,6 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
       });
       if (oppositeIndex != -1) {
         updated.removeAt(oppositeIndex);
-        if (type == PendingAgentActionType.removeAccess) {
-          continue;
-        }
       }
 
       updated.add(

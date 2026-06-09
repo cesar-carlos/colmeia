@@ -1,16 +1,16 @@
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_filter.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_tendencia_de_venda_repository.dart';
 
-/// Loads product sales trend rows (`ATUAL` versus `ANTERIOR`) for one agent.
+/// Loads one page of product sales trend rows (`ATUAL` versus `ANTERIOR`).
 class LoadProdutoVendidoTendenciaDeVendaUseCase {
   LoadProdutoVendidoTendenciaDeVendaUseCase(this._repository);
 
   final ProdutoVendidoTendenciaDeVendaRepository _repository;
 
-  Future<AppResult<List<ProdutoVendidoTendenciaDeVendaRow>>> call({
+  Future<AppResult<ProdutoVendidoTendenciaDeVendaPageResult>> call({
     required String userId,
     required String agentId,
     required ProdutoVendidoTendenciaDeVendaFilter filter,
@@ -20,7 +20,7 @@ class LoadProdutoVendidoTendenciaDeVendaUseCase {
     bool? hubConnectedFromApprovedCatalogRow,
     AgentQueriesCancelScope? cancelScope,
   }) {
-    return _repository.loadAll(
+    return _repository.loadPage(
       userId: userId,
       agentId: agentId,
       filter: filter,

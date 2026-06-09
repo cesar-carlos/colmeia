@@ -2,6 +2,7 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_screen_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_screen_data.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
@@ -46,20 +47,23 @@ void main() {
     topLosers: <ProdutoVendidoTendenciaDeVendaRow>[],
   );
 
-  const pageRows = <ProdutoVendidoTendenciaDeVendaRow>[
-    ProdutoVendidoTendenciaDeVendaRow(
-      codEmpresa: 1,
-      codFilial: 1,
-      codProduto: 10,
-      nomeProduto: 'Product A',
-      codUnidadeMedida: 'UN',
-      qtdAnterior: 1,
-      qtdAtual: 2,
-      diferenca: 1,
-      percentualTendencia: 100,
-      classificacao: 'CRESCENDO',
-    ),
-  ];
+  const pageResult = ProdutoVendidoTendenciaDeVendaPageResult(
+    items: <ProdutoVendidoTendenciaDeVendaRow>[
+      ProdutoVendidoTendenciaDeVendaRow(
+        codEmpresa: 1,
+        codFilial: 1,
+        codProduto: 10,
+        nomeProduto: 'Product A',
+        codUnidadeMedida: 'UN',
+        qtdAnterior: 1,
+        qtdAtual: 2,
+        diferenca: 1,
+        percentualTendencia: 100,
+        classificacao: 'CRESCENDO',
+      ),
+    ],
+    totalCount: 42,
+  );
 
   setUpAll(() {
     registerFallbackValue(
@@ -128,8 +132,8 @@ void main() {
       ),
     ).thenAnswer(
       (_) async =>
-          const Success<List<ProdutoVendidoTendenciaDeVendaRow>, AppFailure>(
-            pageRows,
+          const Success<ProdutoVendidoTendenciaDeVendaPageResult, AppFailure>(
+            pageResult,
           ),
     );
 
@@ -172,7 +176,7 @@ void main() {
         cancelScope: any(named: 'cancelScope'),
       ),
     );
-    verify(
+    final capturedCancelScopes = verify(
       () => loadTrendPage.call(
         userId: 'user-1',
         agentId: 'agent-1',
@@ -183,13 +187,15 @@ void main() {
           ),
         ),
         clientToken: 'token',
-        cancelScope: any(named: 'cancelScope'),
+        cancelScope: captureAny(named: 'cancelScope'),
       ),
-    ).called(1);
+    ).captured;
+    expect(capturedCancelScopes, hasLength(1));
+    expect(capturedCancelScopes.single, isNotNull);
 
     expect(controller.state.page, 2);
-    expect(controller.state.rows, pageRows);
-    expect(controller.state.totalCount, screenData.totalCount);
+    expect(controller.state.rows, pageResult.items);
+    expect(controller.state.totalCount, pageResult.totalCount);
   });
 
   test('applyFilters persists grupo and marca display labels', () async {

@@ -1,7 +1,35 @@
-part of 'app_brazil_store_sales_map_chart.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart/brazil_map_chart_auxiliary_widgets.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart/brazil_map_chart_detail_widgets.dart';
 
-class _FloatingMapControlsOverlay extends StatelessWidget {
-  const _FloatingMapControlsOverlay({
+import 'dart:async';
+
+import 'package:colmeia/core/formatters/app_br_formatters.dart';
+import 'package:colmeia/core/layout/app_breakpoints.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_colors.dart';
+import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/maps/app_location_lookup_normalizer.dart';
+import 'package:colmeia/shared/utils/app_branch_display_model.dart';
+import 'package:colmeia/shared/widgets/app_section_card.dart';
+import 'package:colmeia/shared/widgets/app_tag_chip.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_localizations.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_overlay_chrome.dart';
+import 'package:colmeia/shared/widgets/charts/app_map_models.dart';
+import 'package:colmeia/shared/widgets/charts/brazil_map_chart_visual_snapshot.dart';
+import 'package:colmeia/shared/widgets/charts/brazil_map_layout_constants.dart';
+import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
+import 'package:colmeia/shared/widgets/charts/brazil_map_store_sales_display_helpers.dart';
+import 'package:colmeia/shared/widgets/forms/app_choice_chip.dart';
+import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
+import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+class BrazilMapChartFloatingMapControlsOverlay extends StatelessWidget {
+  const BrazilMapChartFloatingMapControlsOverlay({
     required this.topInset,
     required this.leftInset,
     required this.selectedMetricKey,
@@ -31,7 +59,7 @@ class _FloatingMapControlsOverlay extends StatelessWidget {
     final visibleMetrics = metrics;
     if (visibleMetrics != null && visibleMetrics.isNotEmpty) {
       controls.add(
-        _FloatingControlSurface(
+        BrazilMapChartFloatingControlSurface(
           child: KeyedSubtree(
             key: const ValueKey<String>('app-region-map-metric-selector'),
             child: Semantics(
@@ -66,11 +94,13 @@ class _FloatingMapControlsOverlay extends StatelessWidget {
     if (onScopeChanged != null && scopeOptions.isNotEmpty) {
       if (controls.isNotEmpty) {
         controls.add(
-          const SizedBox(height: BrazilMapLayoutConstants.floatingMapOverlayGap),
+          const SizedBox(
+            height: BrazilMapLayoutConstants.floatingMapOverlayGap,
+          ),
         );
       }
       controls.add(
-        _FloatingControlSurface(
+        BrazilMapChartFloatingControlSurface(
           child: KeyedSubtree(
             key: const ValueKey<String>('app-region-map-scope-selector'),
             child: Semantics(
@@ -81,49 +111,49 @@ class _FloatingMapControlsOverlay extends StatelessWidget {
                   spacing: tokens.gapSm,
                   runSpacing: tokens.gapSm,
                   children: <Widget>[
+                    AppChoiceChip(
+                      label: scopeRootLabel,
+                      selected: activeScopeKey == null,
+                      tooltip: l10n.regionMapViewFullScopeTooltip(
+                        scopeRootLabel,
+                      ),
+                      semanticLabel: l10n.regionMapViewFullScopeSemanticLabel(
+                        scopeRootLabel,
+                      ),
+                      onSelected: () {
+                        if (activeScopeKey == null) {
+                          return;
+                        }
+                        onScopeChanged!(
+                          AppMapScopeChangedEvent(
+                            previousScopeKey: activeScopeKey,
+                            currentScopeKey: null,
+                          ),
+                        );
+                      },
+                    ),
+                    for (final option in scopeOptions)
                       AppChoiceChip(
-                        label: scopeRootLabel,
-                        selected: activeScopeKey == null,
-                        tooltip: l10n.regionMapViewFullScopeTooltip(
-                          scopeRootLabel,
+                        label: option.label,
+                        selected: option.key == activeScopeKey,
+                        tooltip: l10n.regionMapFocusScopeTooltip(
+                          option.label,
                         ),
-                        semanticLabel: l10n.regionMapViewFullScopeSemanticLabel(
-                          scopeRootLabel,
+                        semanticLabel: l10n.regionMapFocusScopeSemanticLabel(
+                          option.label,
                         ),
                         onSelected: () {
-                          if (activeScopeKey == null) {
+                          if (option.key == activeScopeKey) {
                             return;
                           }
                           onScopeChanged!(
                             AppMapScopeChangedEvent(
                               previousScopeKey: activeScopeKey,
-                              currentScopeKey: null,
+                              currentScopeKey: option.key,
                             ),
                           );
                         },
                       ),
-                      for (final option in scopeOptions)
-                        AppChoiceChip(
-                          label: option.label,
-                          selected: option.key == activeScopeKey,
-                          tooltip: l10n.regionMapFocusScopeTooltip(
-                            option.label,
-                          ),
-                          semanticLabel: l10n.regionMapFocusScopeSemanticLabel(
-                            option.label,
-                          ),
-                          onSelected: () {
-                            if (option.key == activeScopeKey) {
-                              return;
-                            }
-                            onScopeChanged!(
-                              AppMapScopeChangedEvent(
-                                previousScopeKey: activeScopeKey,
-                                currentScopeKey: option.key,
-                              ),
-                            );
-                          },
-                        ),
                   ],
                 ),
               ),
@@ -151,8 +181,8 @@ class _FloatingMapControlsOverlay extends StatelessWidget {
   }
 }
 
-class _FloatingControlSurface extends StatelessWidget {
-  const _FloatingControlSurface({required this.child});
+class BrazilMapChartFloatingControlSurface extends StatelessWidget {
+  const BrazilMapChartFloatingControlSurface({required this.child});
 
   final Widget child;
 
@@ -203,10 +233,10 @@ class AppBrazilStoreSalesSelectedMarkerDetailAnchor extends StatefulWidget {
 
   @override
   State<AppBrazilStoreSalesSelectedMarkerDetailAnchor> createState() =>
-      _SelectedMarkerDetailAnchorState();
+      BrazilMapChartSelectedMarkerDetailAnchorState();
 }
 
-class _SelectedMarkerDetailAnchorState
+class BrazilMapChartSelectedMarkerDetailAnchorState
     extends State<AppBrazilStoreSalesSelectedMarkerDetailAnchor> {
   final OverlayPortalController _controller = OverlayPortalController();
   final LayerLink _link = LayerLink();
@@ -280,7 +310,7 @@ class _SelectedMarkerDetailAnchorState
       child: OverlayPortal(
         controller: _controller,
         overlayChildBuilder: (context) {
-          return _SelectedMarkerDetailFollower(
+          return BrazilMapChartSelectedMarkerDetailFollower(
             link: _link,
             group: widget.group,
             selectedStoreId: widget.selectedStoreId,
@@ -299,8 +329,8 @@ class _SelectedMarkerDetailAnchorState
   }
 }
 
-class _SelectedMarkerDetailFollower extends StatelessWidget {
-  const _SelectedMarkerDetailFollower({
+class BrazilMapChartSelectedMarkerDetailFollower extends StatelessWidget {
+  const BrazilMapChartSelectedMarkerDetailFollower({
     required this.link,
     required this.group,
     required this.selectedStoreId,
@@ -328,7 +358,7 @@ class _SelectedMarkerDetailFollower extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final maxWidth = (screenWidth - 32).clamp(260.0, 340.0);
-    final followerAnchor = _followerAnchorFor(
+    final followerAnchor = brazilMapFollowerAnchorFor(
       screenWidth: screenWidth,
       maxWidth: maxWidth,
       markerGlobalDx: markerGlobalDx,
@@ -346,13 +376,13 @@ class _SelectedMarkerDetailFollower extends StatelessWidget {
           showWhenUnlinked: false,
           targetAnchor: Alignment.topCenter,
           followerAnchor: followerAnchor,
-          offset: _followerOffsetFor(followerAnchor),
+          offset: brazilMapFollowerOffsetFor(followerAnchor),
           child: UnconstrainedBox(
             alignment: followerAnchor,
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: maxWidth),
-              child: _MapMarkerDetailSemanticsBoundary(
-                child: _SelectedMarkerGroupDetailCard(
+              child: BrazilMapChartMarkerDetailSemanticsBoundary(
+                child: BrazilMapChartSelectedMarkerGroupDetailCard(
                   group: group,
                   metric: metric,
                   initialStoreId: selectedStoreId,
@@ -390,10 +420,10 @@ class AppBrazilStoreSalesBranchHoverDetailAnchor extends StatefulWidget {
 
   @override
   State<AppBrazilStoreSalesBranchHoverDetailAnchor> createState() =>
-      _HoverMarkerDetailAnchorState();
+      BrazilMapChartHoverMarkerDetailAnchorState();
 }
 
-class _HoverMarkerDetailAnchorState
+class BrazilMapChartHoverMarkerDetailAnchorState
     extends State<AppBrazilStoreSalesBranchHoverDetailAnchor> {
   static const Duration _hideDelay = Duration(milliseconds: 140);
 
@@ -483,7 +513,7 @@ class _HoverMarkerDetailAnchorState
       child: OverlayPortal(
         controller: _controller,
         overlayChildBuilder: (context) {
-          return _HoverMarkerDetailFollower(
+          return BrazilMapChartHoverMarkerDetailFollower(
             link: _link,
             group: widget.group,
             metric: widget.metric,
@@ -520,8 +550,8 @@ class _HoverMarkerDetailAnchorState
   }
 }
 
-class _HoverMarkerDetailFollower extends StatelessWidget {
-  const _HoverMarkerDetailFollower({
+class BrazilMapChartHoverMarkerDetailFollower extends StatelessWidget {
+  const BrazilMapChartHoverMarkerDetailFollower({
     required this.link,
     required this.group,
     required this.metric,
@@ -545,7 +575,7 @@ class _HoverMarkerDetailFollower extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final maxWidth = (screenWidth - 32).clamp(280.0, 360.0);
-    final followerAnchor = _followerAnchorFor(
+    final followerAnchor = brazilMapFollowerAnchorFor(
       screenWidth: screenWidth,
       maxWidth: maxWidth,
       markerGlobalDx: markerGlobalDx,
@@ -557,7 +587,7 @@ class _HoverMarkerDetailFollower extends StatelessWidget {
         showWhenUnlinked: false,
         targetAnchor: Alignment.topCenter,
         followerAnchor: followerAnchor,
-        offset: _followerOffsetFor(followerAnchor),
+        offset: brazilMapFollowerOffsetFor(followerAnchor),
         child: UnconstrainedBox(
           alignment: followerAnchor,
           child: MouseRegion(
@@ -565,8 +595,8 @@ class _HoverMarkerDetailFollower extends StatelessWidget {
             onExit: (_) => onExit(),
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: maxWidth),
-              child: _MapMarkerDetailSemanticsBoundary(
-                child: _SelectedMarkerGroupDetailCard(
+              child: BrazilMapChartMarkerDetailSemanticsBoundary(
+                child: BrazilMapChartSelectedMarkerGroupDetailCard(
                   group: group,
                   metric: metric,
                   initialStoreId: initialStoreId,
@@ -582,8 +612,8 @@ class _HoverMarkerDetailFollower extends StatelessWidget {
   }
 }
 
-class _MapMarkerDetailSemanticsBoundary extends StatelessWidget {
-  const _MapMarkerDetailSemanticsBoundary({required this.child});
+class BrazilMapChartMarkerDetailSemanticsBoundary extends StatelessWidget {
+  const BrazilMapChartMarkerDetailSemanticsBoundary({required this.child});
 
   final Widget child;
 
@@ -606,8 +636,8 @@ class _MapMarkerDetailSemanticsBoundary extends StatelessWidget {
   }
 }
 
-class _StateBubbleMarker extends StatelessWidget {
-  const _StateBubbleMarker({
+class BrazilMapChartStateBubbleMarker extends StatelessWidget {
+  const BrazilMapChartStateBubbleMarker({
     required this.bucket,
     required this.metric,
     required this.style,
@@ -627,7 +657,7 @@ class _StateBubbleMarker extends StatelessWidget {
     final dimension = style.size;
     final metricValue = metric.valueForBucket(bucket);
     final label = metric == AppBrazilStoreSalesMapMetric.salesCount
-        ? _formatSalesCount(context, metricValue)
+        ? brazilMapChartFormatSalesCount(context, metricValue)
         : bucket.uf;
 
     return Semantics(
@@ -662,164 +692,8 @@ class _StateBubbleMarker extends StatelessWidget {
   }
 }
 
-class _StoreMapMarker extends StatelessWidget {
-  const _StoreMapMarker({
-    required this.style,
-    required this.count,
-    required this.visual,
-    required this.semanticLabel,
-    super.key,
-  });
-
-  final AppMapMarkerStyle style;
-  final int count;
-  final AppBrazilStoreSalesMarkerVisual visual;
-  final String semanticLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final markerColor = style.color ?? context.appColors.tertiary;
-    final markerStrokeColor =
-        style.strokeColor ?? Theme.of(context).colorScheme.surface;
-    final dimension = style.size;
-    final showCount = count > 1 && dimension >= 22;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Semantics(
-      button: true,
-      label: semanticLabel,
-      child: SizedBox.square(
-        dimension: dimension,
-        child: switch (visual) {
-          AppBrazilStoreSalesMarkerVisual.dot => DecoratedBox(
-            decoration: BoxDecoration(
-              color: markerColor,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: markerStrokeColor,
-                width: style.strokeWidth,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: colorScheme.shadow.withValues(alpha: 0.16),
-                  blurRadius: 5,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: showCount
-                ? Center(
-                    child: Text(
-                      count > 99 ? '99+' : count.toString(),
-                      maxLines: 1,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onTertiary,
-                        fontWeight: FontWeight.w800,
-                        fontSize: dimension >= 28 ? 10 : 8,
-                      ),
-                    ),
-                  )
-                : null,
-          ),
-          AppBrazilStoreSalesMarkerVisual.bubble => DecoratedBox(
-            decoration: BoxDecoration(
-              color: markerColor.withValues(alpha: 0.16),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: markerColor.withValues(alpha: 0.82),
-                width: 2.2,
-              ),
-            ),
-            child: showCount
-                ? Center(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: colorScheme.surface.withValues(alpha: 0.86),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(4),
-                        child: Text(
-                          count > 99 ? '99+' : count.toString(),
-                          maxLines: 1,
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(
-                                color: markerColor,
-                                fontWeight: FontWeight.w800,
-                                fontSize: dimension >= 48 ? 11 : 9,
-                              ),
-                        ),
-                      ),
-                    ),
-                  )
-                : null,
-          ),
-          AppBrazilStoreSalesMarkerVisual.storeIcon => Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: markerColor,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: markerStrokeColor,
-                      width: style.strokeWidth,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colorScheme.shadow.withValues(alpha: 0.18),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.storefront_rounded,
-                    size: (dimension * 0.52).clamp(13, 22).toDouble(),
-                    color: colorScheme.onTertiary,
-                  ),
-                ),
-              ),
-              if (showCount)
-                Positioned(
-                  right: -2,
-                  top: -2,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: colorScheme.surface,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: markerColor,
-                        width: 1.4,
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(
-                        BrazilMapLayoutConstants.tightInternalPadding,
-                      ),
-                      child: Text(
-                        count > 99 ? '99+' : count.toString(),
-                        maxLines: 1,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: markerColor,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 8,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        },
-      ),
-    );
-  }
-}
-
-class _StateBubbleTooltipCard extends StatelessWidget {
-  const _StateBubbleTooltipCard({
+class BrazilMapChartStateBubbleTooltipCard extends StatelessWidget {
+  const BrazilMapChartStateBubbleTooltipCard({
     required this.bucket,
     required this.metric,
   });
@@ -832,7 +706,7 @@ class _StateBubbleTooltipCard extends StatelessWidget {
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final l10n = AppLocalizations.of(context);
 
-    return _SelectedMarkerDetailSurface(
+    return BrazilMapChartSelectedMarkerDetailSurface(
       title: bucket.stateName,
       subtitle: AppBrazilStoreSalesMapLocalizations.regionName(
         l10n,
@@ -851,13 +725,13 @@ class _StateBubbleTooltipCard extends StatelessWidget {
           ),
           AppTagChip(
             label: l10n.brazilStoreSalesMapDetailChipSales(
-              _formatSalesCount(context, bucket.salesCount),
+              brazilMapChartFormatSalesCount(context, bucket.salesCount),
             ),
             icon: Icons.receipt_long_outlined,
           ),
           AppTagChip(
             label: l10n.brazilStoreSalesMapDetailChipBranches(
-              _formatSalesCount(context, bucket.storeCount),
+              brazilMapChartFormatSalesCount(context, bucket.storeCount),
             ),
             icon: Icons.storefront_outlined,
           ),
@@ -867,8 +741,8 @@ class _StateBubbleTooltipCard extends StatelessWidget {
   }
 }
 
-class _PlainMapTooltipCard extends StatelessWidget {
-  const _PlainMapTooltipCard({required this.text});
+class BrazilMapChartPlainMapTooltipCard extends StatelessWidget {
+  const BrazilMapChartPlainMapTooltipCard({required this.text});
 
   final String text;
 

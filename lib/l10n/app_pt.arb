@@ -897,6 +897,13 @@
   "clientAgentsSyncSuccessAutoSuffix": " O envio aconteceu automáticamente.",
   "clientAgentsSyncSuccessManualSuffix": " A tela ja foi atualizada com o status mais recente.",
   "clientAgentsSyncSuccessPollingSuffix": " Vamos acompanhar a aprovação automáticamente.",
+  "clientAgentsLocalTokenServerFlushFailedSingle": "Não foi possível enviar o client token em cache ao servidor para 1 agente. Ele permanece neste dispositivo e será reenviado automaticamente.",
+  "clientAgentsLocalTokenServerFlushFailedPlural": "Não foi possível enviar os client tokens em cache ao servidor para {count} agentes. Eles permanecem neste dispositivo e serão reenviados automaticamente.",
+  "@clientAgentsLocalTokenServerFlushFailedPlural": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "clientAgentsSyncSuccessAlreadyApprovedSingle": " Um agente já estava aprovado no servidor.",
   "clientAgentsSyncSuccessAlreadyApprovedPlural": " {count} agentes já estavam aprovados no servidor.",
   "@clientAgentsSyncSuccessAlreadyApprovedPlural": {

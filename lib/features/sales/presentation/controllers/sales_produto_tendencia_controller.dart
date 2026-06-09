@@ -379,10 +379,11 @@ class SalesProdutoTendenciaController extends SalesTrendControllerBase {
     }
 
     return pageResult.fold(
-      (rows) {
+      (page) {
         _setState(
           _state.copyWith(
-            rows: rows,
+            rows: page.items,
+            totalCount: page.totalCount,
             loading: false,
             loadFailure: null,
           ),

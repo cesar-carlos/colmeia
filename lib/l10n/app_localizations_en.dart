@@ -1957,6 +1957,15 @@ class AppLocalizationsEn extends AppLocalizations {
       ' We will track approval automatically.';
 
   @override
+  String get clientAgentsLocalTokenServerFlushFailedSingle =>
+      'Could not push the cached client token to the server for 1 agent. It remains on this device and will retry automatically.';
+
+  @override
+  String clientAgentsLocalTokenServerFlushFailedPlural(int count) {
+    return 'Could not push cached client tokens to the server for $count agents. They remain on this device and will retry automatically.';
+  }
+
+  @override
   String get clientAgentsSyncSuccessAlreadyApprovedSingle =>
       ' One agent was already approved on the server.';
 

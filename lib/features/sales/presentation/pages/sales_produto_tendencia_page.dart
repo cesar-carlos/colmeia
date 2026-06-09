@@ -28,10 +28,10 @@ import 'package:colmeia/features/sales/presentation/state/sales_produto_tendenci
 import 'package:colmeia/features/sales/presentation/utils/sales_trend_date_preset.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_chart_nav_grid.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_details_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_filters_sheet.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_summary_section.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_top_movers_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_trend_comparison_bar_chart_style.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -79,10 +79,6 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
         SalesCardAutoRefreshBinding<SalesProdutoTendenciaPage>,
         AgentQueryRetryAfterHost<SalesProdutoTendenciaPage> {
   late final SalesProdutoTendenciaController _controller;
-
-  final GlobalKey _classificacaoShareKey = GlobalKey();
-  final GlobalKey _gainersShareKey = GlobalKey();
-  final GlobalKey _losersShareKey = GlobalKey();
 
   @override
   void initState() {
@@ -186,6 +182,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     final clientTokenUnavailableMessage = AppLocalizations.of(
       context,
     ).salesAsyncSearchClientTokenUnavailable;
+    final l10n = AppLocalizations.of(context);
     return (agentIdProvider) => createSalesGrupoProdutoAsyncSearchLoader(
       useCase: widget.loadGrupoProdutoOptionsUseCase,
       userId: userId,
@@ -195,6 +192,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
         agentId: agentId,
       ),
       clientTokenUnavailableMessage: clientTokenUnavailableMessage,
+      l10n: l10n,
       cancelScope: _controller.sqlCancelScope,
     );
   }
@@ -205,6 +203,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     final clientTokenUnavailableMessage = AppLocalizations.of(
       context,
     ).salesAsyncSearchClientTokenUnavailable;
+    final l10n = AppLocalizations.of(context);
     return (agentIdProvider) => createSalesMarcaProdutoAsyncSearchLoader(
       useCase: widget.loadMarcaProdutoOptionsUseCase,
       userId: userId,
@@ -214,6 +213,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
         agentId: agentId,
       ),
       clientTokenUnavailableMessage: clientTokenUnavailableMessage,
+      l10n: l10n,
       cancelScope: _controller.sqlCancelScope,
     );
   }
@@ -340,6 +340,20 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
       items: snap,
       useAbsolutePercentForLosers: false,
     );
+  }
+
+  void _onChartSelected(
+    SalesProdutoTendenciaPresentationState state,
+    SalesProdutoTendenciaChartId chartId,
+  ) {
+    switch (chartId) {
+      case SalesProdutoTendenciaChartId.classificacao:
+        _openClassificacaoFullscreen(state);
+      case SalesProdutoTendenciaChartId.topGainers:
+        _openGainersFullscreen(state);
+      case SalesProdutoTendenciaChartId.topLosers:
+        _openLosersFullscreen(state);
+    }
   }
 
   void _openLosersFullscreen(SalesProdutoTendenciaPresentationState state) {
@@ -588,52 +602,16 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
                   l10n,
                   state.periodoAnterior,
                 ),
-                classLabelBuilder: (value) =>
-                    salesProdutoTendenciaClassificacaoLabel(l10n, value),
-                onOpenClassificacaoFullscreen: () =>
-                    _openClassificacaoFullscreen(state),
-                classificacaoShareKey: _classificacaoShareKey,
-                onShareClassificacao: state.loading
-                    ? null
-                    : () => context.shareChartFromRequest(
-                        buildSalesProdutoTendenciaClassificacaoShareMetadata(
-                          l10n: l10n,
-                          summaryRows: state.summaryRows,
-                          buckets: salesProdutoTendenciaBucketsFromSummary(
-                            state.summaryRows,
-                          ),
-                          tokens: tokens,
-                        ).toShareRequest(_classificacaoShareKey),
-                      ),
               ),
               SizedBox(height: tokens.sectionSpacing),
-              SalesProdutoTendenciaTopMoversSection(
+              SalesProdutoTendenciaChartNavGrid(
                 l10n: l10n,
-                topGainers: state.topGainers,
-                topLosers: state.topLosers,
-                loading: state.loading,
-                onOpenGainersFullscreen: () => _openGainersFullscreen(state),
-                onOpenLosersFullscreen: () => _openLosersFullscreen(state),
-                gainersShareKey: _gainersShareKey,
-                losersShareKey: _losersShareKey,
-                onShareGainers: state.loading
-                    ? null
-                    : () => context.shareChartFromRequest(
-                        buildSalesProdutoTendenciaTopGainersShareMetadata(
-                          l10n: l10n,
-                          rows: state.topGainers,
-                          tokens: tokens,
-                        ).toShareRequest(_gainersShareKey),
-                      ),
-                onShareLosers: state.loading
-                    ? null
-                    : () => context.shareChartFromRequest(
-                        buildSalesProdutoTendenciaTopLosersShareMetadata(
-                          l10n: l10n,
-                          rows: state.topLosers,
-                          tokens: tokens,
-                        ).toShareRequest(_losersShareKey),
-                      ),
+                loading: state.loading && state.summaryRows.isEmpty,
+                enabled: state.summaryRows.isNotEmpty ||
+                    state.topGainers.isNotEmpty ||
+                    state.topLosers.isNotEmpty,
+                onChartSelected: (chartId) =>
+                    _onChartSelected(state, chartId),
               ),
               SizedBox(height: tokens.sectionSpacing),
               SalesProdutoTendenciaDetailsSection(

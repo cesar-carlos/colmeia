@@ -1,4 +1,5 @@
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/features/client_agents/application/client_agents_paginated_loader.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_result.dart';
@@ -15,11 +16,16 @@ class LoadClientAccessRequestsUseCase {
     String? search,
     String? status,
   }) {
-    return _repository.loadAccessRequests(
-      userId: userId,
+    return loadAllClientAgentsPages<ClientAgentAccessRequest>(
       query: query,
       search: search,
       status: status,
+      loadPage: (pageQuery) => _repository.loadAccessRequests(
+        userId: userId,
+        query: pageQuery,
+        search: search,
+        status: status,
+      ),
     );
   }
 }

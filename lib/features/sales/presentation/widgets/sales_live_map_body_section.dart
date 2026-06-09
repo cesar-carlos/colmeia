@@ -5,6 +5,7 @@ import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_diagnostic.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
 import 'package:colmeia/features/sales/presentation/rules/sales_live_map_presentation_rules.dart';
+import 'package:colmeia/features/sales/presentation/state/sales_live_map_operational_fingerprint.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
 import 'package:colmeia/features/sales/presentation/view_models/sales_live_map_view_model.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_attention_panel.dart';
@@ -201,6 +202,8 @@ class _SalesLiveMapBodyStatusSlice {
     required this.showInitialSkeleton,
     required this.canReload,
     required this.retryRemainingSeconds,
+    required this.operational,
+    required this.visualOperational,
   });
 
   factory _SalesLiveMapBodyStatusSlice.from({
@@ -213,6 +216,10 @@ class _SalesLiveMapBodyStatusSlice {
       showInitialSkeleton: !state.hasVisualResult && state.isLoading,
       canReload: state.canReload && !onCooldown,
       retryRemainingSeconds: retryRemainingSeconds,
+      operational: SalesLiveMapOperationalFingerprint.from(state.result),
+      visualOperational: SalesLiveMapOperationalFingerprint.from(
+        state.visualResult,
+      ),
     );
   }
 
@@ -220,6 +227,8 @@ class _SalesLiveMapBodyStatusSlice {
   final bool showInitialSkeleton;
   final bool canReload;
   final int retryRemainingSeconds;
+  final SalesLiveMapOperationalFingerprint operational;
+  final SalesLiveMapOperationalFingerprint visualOperational;
 
   String? retryCountdownLabel(AppLocalizations l10n) {
     if (retryRemainingSeconds <= 0) {
@@ -231,23 +240,21 @@ class _SalesLiveMapBodyStatusSlice {
   @override
   bool operator ==(Object other) {
     return other is _SalesLiveMapBodyStatusSlice &&
-        identical(other.state.result, state.result) &&
         other.state.hasVisualResult == state.hasVisualResult &&
-        identical(other.state.visualResult, state.visualResult) &&
         other.state.isLoading == state.isLoading &&
         other.state.sessionExpired == state.sessionExpired &&
         other.state.canReload == state.canReload &&
         other.state.hasSelectedBranchFilter == state.hasSelectedBranchFilter &&
         other.showInitialSkeleton == showInitialSkeleton &&
         other.canReload == canReload &&
-        other.retryRemainingSeconds == retryRemainingSeconds;
+        other.retryRemainingSeconds == retryRemainingSeconds &&
+        other.operational == operational &&
+        other.visualOperational == visualOperational;
   }
 
   @override
   int get hashCode => Object.hash(
-    identityHashCode(state.result),
     state.hasVisualResult,
-    identityHashCode(state.visualResult),
     state.isLoading,
     state.sessionExpired,
     state.canReload,
@@ -255,5 +262,7 @@ class _SalesLiveMapBodyStatusSlice {
     showInitialSkeleton,
     canReload,
     retryRemainingSeconds,
+    operational,
+    visualOperational,
   );
 }

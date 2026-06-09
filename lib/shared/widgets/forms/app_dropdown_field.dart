@@ -127,8 +127,22 @@ class _AppDropdownFieldState<T> extends State<AppDropdownField<T>> {
         widget.selectedDisplayLabel != null ||
         (widget.value != null && selectedOption == null);
 
+    final isCompact = widget.density == AppTextFieldDensity.compact;
     final borderRadius = BorderRadius.circular(tokens.formFieldRadius + 2);
-    final fieldPadding = _contentPadding(tokens, widget.density);
+    final fieldPadding = isCompact
+        ? EdgeInsets.symmetric(
+            horizontal: tokens.gapMd,
+            vertical: tokens.gapXs,
+          )
+        : _contentPadding(tokens, widget.density);
+    final collapsedLabelStyle = (isCompact ? typography.caption : typography.body)
+        .copyWith(
+          color: hasCollapsedSelection
+              ? colors.onSurface
+              : colors.onSurfaceVariant,
+          fontWeight: hasCollapsedSelection ? FontWeight.w600 : FontWeight.w500,
+          height: isCompact ? 1.25 : null,
+        );
     final borderSide = resolveFormFieldBorderSide(
       colors: colors,
       scheme: scheme,
@@ -187,14 +201,7 @@ class _AppDropdownFieldState<T> extends State<AppDropdownField<T>> {
                               builder: (context, constraints) {
                                 final label = Text(
                                   displayLabel,
-                                  style: typography.body.copyWith(
-                                    color: hasCollapsedSelection
-                                        ? colors.onSurface
-                                        : colors.onSurfaceVariant,
-                                    fontWeight: hasCollapsedSelection
-                                        ? FontWeight.w600
-                                        : FontWeight.w500,
-                                  ),
+                                  style: collapsedLabelStyle,
                                   overflow: TextOverflow.ellipsis,
                                 );
                                 final hasBoundedWidth =
@@ -217,6 +224,7 @@ class _AppDropdownFieldState<T> extends State<AppDropdownField<T>> {
                                       turns: _expanded ? 0.5 : 0,
                                       child: Icon(
                                         Icons.expand_more_rounded,
+                                        size: isCompact ? 20 : 24,
                                         color: colors.outline,
                                       ),
                                     ),

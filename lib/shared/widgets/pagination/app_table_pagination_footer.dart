@@ -44,7 +44,7 @@ List<int?> buildPaginationPageSlots({
 }
 
 /// Fixed width for the page-size dropdown (compact numeric labels only).
-const double _kCompactPageSizeDropdownWidth = 88;
+const double _kCompactPageSizeDropdownWidth = 72;
 
 class AppTablePaginationFooterStyle {
   const AppTablePaginationFooterStyle({
@@ -123,10 +123,7 @@ class AppTablePaginationFooter extends StatelessWidget {
       decoration: BoxDecoration(
         border: style.showTopBorder ? Border(top: borderSide) : null,
       ),
-      padding: EdgeInsets.only(
-        top: tokens.gapMd,
-        bottom: tokens.gapMd,
-      ),
+      padding: EdgeInsets.symmetric(vertical: tokens.gapSm),
       child: isMobile
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,

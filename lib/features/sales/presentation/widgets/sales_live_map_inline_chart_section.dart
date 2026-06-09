@@ -4,6 +4,7 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
 import 'package:colmeia/features/sales/presentation/models/sales_live_map_visual_spec.dart';
 import 'package:colmeia/features/sales/presentation/rules/sales_live_map_presentation_rules.dart';
+import 'package:colmeia/features/sales/presentation/state/sales_live_map_operational_fingerprint.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
 import 'package:colmeia/features/sales/presentation/view_models/sales_live_map_view_model.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_chart_panel.dart';
@@ -81,6 +82,7 @@ class SalesLiveMapMapSlice {
     required this.visualSpec,
     required this.isRefreshing,
     required this.showChartFailurePlaceholder,
+    required this.operational,
   });
 
   factory SalesLiveMapMapSlice.fromState(SalesLiveMapPresentationState state) {
@@ -97,6 +99,7 @@ class SalesLiveMapMapSlice {
       isRefreshing: state.isMapRefreshing,
       showChartFailurePlaceholder:
           SalesLiveMapViewModel.shouldShowChartFailurePlaceholder(state),
+      operational: SalesLiveMapOperationalFingerprint.from(state.result),
     );
   }
 
@@ -108,6 +111,7 @@ class SalesLiveMapMapSlice {
   final SalesLiveMapVisualSpec visualSpec;
   final bool isRefreshing;
   final bool showChartFailurePlaceholder;
+  final SalesLiveMapOperationalFingerprint operational;
 
   @override
   bool operator ==(Object other) {
@@ -117,7 +121,8 @@ class SalesLiveMapMapSlice {
         setEquals(other.filterBranchIds, filterBranchIds) &&
         other.visualSpec == visualSpec &&
         other.isRefreshing == isRefreshing &&
-        other.showChartFailurePlaceholder == showChartFailurePlaceholder;
+        other.showChartFailurePlaceholder == showChartFailurePlaceholder &&
+        other.operational == operational;
   }
 
   @override
@@ -128,5 +133,6 @@ class SalesLiveMapMapSlice {
     visualSpec,
     isRefreshing,
     showChartFailurePlaceholder,
+    operational,
   );
 }

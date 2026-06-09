@@ -1055,6 +1055,13 @@
   "clientAgentsSyncSuccessAutoSuffix": " It was sent automatically.",
   "clientAgentsSyncSuccessManualSuffix": " The screen was refreshed with the latest status.",
   "clientAgentsSyncSuccessPollingSuffix": " We will track approval automatically.",
+  "clientAgentsLocalTokenServerFlushFailedSingle": "Could not push the cached client token to the server for 1 agent. It remains on this device and will retry automatically.",
+  "clientAgentsLocalTokenServerFlushFailedPlural": "Could not push cached client tokens to the server for {count} agents. They remain on this device and will retry automatically.",
+  "@clientAgentsLocalTokenServerFlushFailedPlural": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
   "clientAgentsSyncSuccessAlreadyApprovedSingle": " One agent was already approved on the server.",
   "clientAgentsSyncSuccessAlreadyApprovedPlural": " {count} agents were already approved on the server.",
   "@clientAgentsSyncSuccessAlreadyApprovedPlural": {

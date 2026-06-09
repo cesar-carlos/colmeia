@@ -99,9 +99,11 @@ void main() {
     check(captured.sql).equals(FornecedorOptionsSql.pagedQuery);
     check(captured.namedParams.keys.toSet()).deepEquals(<String>{
       'searchPattern',
+      'searchDigitsPattern',
       'startRow',
       'endRow',
     });
+    check(captured.namedParams['searchDigitsPattern']).isNull();
     check(captured.namedParams['startRow']).equals(11);
     check(captured.namedParams['endRow']).equals(20);
     check(captured.namedParams['searchPattern']).equals(
