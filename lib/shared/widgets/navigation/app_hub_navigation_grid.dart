@@ -74,18 +74,21 @@ class AppHubNavigationGrid extends StatelessWidget {
               (constraints.maxWidth - gap * (maxCols - 1)) / maxCols,
             )
             .floorToDouble();
-        final cardHeight = (cardWidth *
-                resolvedMinCardHeight! /
-                resolvedMinCardWidth)
-            .floorToDouble();
+        final cardHeight = switch (density) {
+          AppHubNavigationCardDensity.chartNav => resolvedMinCardHeight!,
+          _ => (cardWidth *
+                  resolvedMinCardHeight! /
+                  resolvedMinCardWidth)
+              .floorToDouble(),
+        };
         final aspectRatio = cardWidth / cardHeight;
         final narrowLabelStyle = cardWidth <= resolvedMinCardWidth + 4
             ? switch (density) {
                 AppHubNavigationCardDensity.chartNav =>
                   typography.caption.copyWith(
                     fontWeight: FontWeight.w600,
-                    fontSize: 9,
-                    height: 1.1,
+                    fontSize: 11.5,
+                    height: 1.15,
                   ),
                 _ => typography.caption.copyWith(
                     fontWeight: FontWeight.w600,

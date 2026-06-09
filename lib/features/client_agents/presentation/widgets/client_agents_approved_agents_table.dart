@@ -292,7 +292,6 @@ class ClientAgentsApprovedAgentsTableRow extends StatelessWidget {
                 width: ClientAgentsApprovedAgentsTableLayout._select(tokens),
                 child: Checkbox(
                   value: selected,
-                  visualDensity: VisualDensity.standard,
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   onChanged: isMutating
                       ? null
