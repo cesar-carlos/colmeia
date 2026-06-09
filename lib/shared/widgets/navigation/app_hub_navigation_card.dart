@@ -30,6 +30,9 @@ class AppHubNavigationCard extends StatelessWidget {
 
   bool get _usesFixedGridTile => density != AppHubNavigationCardDensity.standard;
 
+  bool get _usesHorizontalCompactLayout =>
+      density == AppHubNavigationCardDensity.chartNav;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -40,17 +43,17 @@ class AppHubNavigationCard extends StatelessWidget {
     final iconCircleSize = switch (density) {
       AppHubNavigationCardDensity.standard => 48.0,
       AppHubNavigationCardDensity.overview => 28.0,
-      AppHubNavigationCardDensity.chartNav => 32.0,
+      AppHubNavigationCardDensity.chartNav => 24.0,
     };
     final iconSize = switch (density) {
       AppHubNavigationCardDensity.standard => 24.0,
       AppHubNavigationCardDensity.overview => 16.0,
-      AppHubNavigationCardDensity.chartNav => 18.0,
+      AppHubNavigationCardDensity.chartNav => 14.0,
     };
     final iconLabelGap = switch (density) {
       AppHubNavigationCardDensity.standard => tokens.gapMd,
       AppHubNavigationCardDensity.overview => tokens.gapXs,
-      AppHubNavigationCardDensity.chartNav => tokens.gapSm,
+      AppHubNavigationCardDensity.chartNav => tokens.gapXs,
     };
     final resolvedLabelStyle = labelStyle ??
         switch (density) {
@@ -67,7 +70,7 @@ class AppHubNavigationCard extends StatelessWidget {
           AppHubNavigationCardDensity.chartNav => typography.caption.copyWith(
               fontWeight: FontWeight.w600,
               color: colors.onSurface,
-              height: 1.2,
+              height: 1.1,
             ),
         };
     final cardPadding = switch (density) {
@@ -78,13 +81,13 @@ class AppHubNavigationCard extends StatelessWidget {
         ),
       AppHubNavigationCardDensity.chartNav => EdgeInsets.symmetric(
           horizontal: tokens.gapSm,
-          vertical: tokens.gapSm,
+          vertical: tokens.gapXs,
         ),
     };
     final contentHorizontalPadding = switch (density) {
       AppHubNavigationCardDensity.standard => tokens.gapSm,
       AppHubNavigationCardDensity.overview => tokens.gapXs,
-      AppHubNavigationCardDensity.chartNav => tokens.gapSm,
+      AppHubNavigationCardDensity.chartNav => tokens.gapXs,
     };
     final readyBadgeSize = switch (density) {
       AppHubNavigationCardDensity.standard => 14.0,
@@ -94,7 +97,7 @@ class AppHubNavigationCard extends StatelessWidget {
     final readyBadgeInset = switch (density) {
       AppHubNavigationCardDensity.standard => tokens.gapXs,
       AppHubNavigationCardDensity.overview => 2.0,
-      AppHubNavigationCardDensity.chartNav => tokens.gapXs,
+      AppHubNavigationCardDensity.chartNav => 2.0,
     };
 
     final iconBadge = DecoratedBox(
@@ -117,11 +120,29 @@ class AppHubNavigationCard extends StatelessWidget {
 
     final labelWidget = Text(
       label,
-      textAlign: TextAlign.center,
+      textAlign: _usesHorizontalCompactLayout ? TextAlign.start : TextAlign.center,
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
       style: resolvedLabelStyle,
     );
+
+    final cardContent = _usesHorizontalCompactLayout
+        ? Row(
+            children: <Widget>[
+              iconBadge,
+              SizedBox(width: iconLabelGap),
+              Expanded(child: labelWidget),
+            ],
+          )
+        : Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Center(child: iconBadge),
+              SizedBox(height: iconLabelGap),
+              labelWidget,
+            ],
+          );
 
     final cardBody = Stack(
       fit: _usesFixedGridTile ? StackFit.expand : StackFit.loose,
@@ -130,15 +151,7 @@ class AppHubNavigationCard extends StatelessWidget {
         Positioned.fill(
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: contentHorizontalPadding),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Center(child: iconBadge),
-                SizedBox(height: iconLabelGap),
-                labelWidget,
-              ],
-            ),
+            child: Align(child: cardContent),
           ),
         ),
         if (showReadyBadge)

@@ -6,7 +6,7 @@ enum AppHubNavigationCardDensity {
   /// Home/overview chart navigation (~90px tiles, icon above label).
   overview,
 
-  /// In-feature chart switcher (sales trend; shorter than overview).
+  /// In-feature chart switcher (sales trend; compact horizontal tiles).
   chartNav,
 }
 
@@ -17,7 +17,7 @@ const double kAppHubNavigationCardMinWidth = 104;
 const double kAppHubNavigationOverviewCardMinHeight = 90;
 
 /// Minimum height for in-feature chart navigation tiles (sales trend).
-const double kAppHubNavigationChartNavCardMinHeight = 76;
+const double kAppHubNavigationChartNavCardMinHeight = 38;
 
 extension AppHubNavigationCardDensityGridMetrics on AppHubNavigationCardDensity {
   double get gridMinCardWidth => kAppHubNavigationCardMinWidth;
