@@ -39,8 +39,7 @@ class PendingClientAgentActionsSyncOutcomeBuilder {
   int get successfulRequestAccessCount =>
       _successfulRequestAccessAgentIds.length;
   int get failedRequestAccessCount => _failedRequestAccessAgentIds.length;
-  int get successfulRemoveAccessCount =>
-      _successfulRemoveAccessAgentIds.length;
+  int get successfulRemoveAccessCount => _successfulRemoveAccessAgentIds.length;
   int get failedRemoveAccessCount => _failedRemoveAccessAgentIds.length;
   int get requestAccessPollCount => _requestAccessPollAgentIds.length;
   int get requestAccessNewRequestsCount =>
@@ -112,22 +111,26 @@ class PendingClientAgentActionsSyncOutcomeBuilder {
   /// builder remain valid: this method does not reset state.
   SyncPendingAgentActionsResult build() {
     return SyncPendingAgentActionsResult(
-      successfulRequestAccessAgentIds:
-          Set<String>.from(_successfulRequestAccessAgentIds),
-      successfulRemoveAccessAgentIds:
-          Set<String>.from(_successfulRemoveAccessAgentIds),
-      failedRequestAccessAgentIds:
-          Set<String>.from(_failedRequestAccessAgentIds),
-      failedRemoveAccessAgentIds:
-          Set<String>.from(_failedRemoveAccessAgentIds),
-      requestAccessPollAgentIds:
-          Set<String>.from(_requestAccessPollAgentIds),
-      requestAccessAlreadyApprovedAgentIds:
-          Set<String>.from(_requestAccessAlreadyApprovedAgentIds),
-      requestAccessDebouncedAgentIds:
-          Set<String>.from(_requestAccessDebouncedAgentIds),
-      requestAccessNewRequestsAgentIds:
-          Set<String>.from(_requestAccessNewRequestsAgentIds),
+      successfulRequestAccessAgentIds: Set<String>.from(
+        _successfulRequestAccessAgentIds,
+      ),
+      successfulRemoveAccessAgentIds: Set<String>.from(
+        _successfulRemoveAccessAgentIds,
+      ),
+      failedRequestAccessAgentIds: Set<String>.from(
+        _failedRequestAccessAgentIds,
+      ),
+      failedRemoveAccessAgentIds: Set<String>.from(_failedRemoveAccessAgentIds),
+      requestAccessPollAgentIds: Set<String>.from(_requestAccessPollAgentIds),
+      requestAccessAlreadyApprovedAgentIds: Set<String>.from(
+        _requestAccessAlreadyApprovedAgentIds,
+      ),
+      requestAccessDebouncedAgentIds: Set<String>.from(
+        _requestAccessDebouncedAgentIds,
+      ),
+      requestAccessNewRequestsAgentIds: Set<String>.from(
+        _requestAccessNewRequestsAgentIds,
+      ),
       retryAfter: _retryAfter,
     );
   }

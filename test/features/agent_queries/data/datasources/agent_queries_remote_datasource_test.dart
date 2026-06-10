@@ -226,14 +226,14 @@ void main() {
           cancelToken: any(named: 'cancelToken'),
         ),
       ).thenAnswer((invocation) async {
-        final token =
-            invocation.namedArguments[#cancelToken] as CancelToken?;
+        final token = invocation.namedArguments[#cancelToken] as CancelToken?;
         if (token != null) {
           await token.whenCancel;
           throw DioException(
             requestOptions: RequestOptions(path: '/agents/commands'),
             type: DioExceptionType.cancel,
-            message: 'postSqlExecute aborted: AgentQueriesCancelScope cancelled',
+            message:
+                'postSqlExecute aborted: AgentQueriesCancelScope cancelled',
           );
         }
         return Response<Map<String, dynamic>>(

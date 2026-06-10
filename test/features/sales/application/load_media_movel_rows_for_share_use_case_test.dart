@@ -166,9 +166,13 @@ void main() {
         cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer(
-      (_) async => const Failure<ProdutoVendidoTendenciaDeVendaMediaMovelPageResult, AppFailure>(
-        ValidationFailure(message: 'load_failed'),
-      ),
+      (_) async =>
+          const Failure<
+            ProdutoVendidoTendenciaDeVendaMediaMovelPageResult,
+            AppFailure
+          >(
+            ValidationFailure(message: 'load_failed'),
+          ),
     );
 
     final result = await useCase(

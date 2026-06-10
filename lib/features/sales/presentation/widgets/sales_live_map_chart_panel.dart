@@ -139,7 +139,9 @@ class _SalesLiveMapChartPanelState extends State<SalesLiveMapChartPanel> {
               title: shareTitle,
               subtitle: widget.subtitle,
               chartPoints: chartPoints,
-              exportMetric: SalesLiveMapChartMapper.toChartMetric(widget.metric),
+              exportMetric: SalesLiveMapChartMapper.toChartMetric(
+                widget.metric,
+              ),
               exportStyle: chartStyle,
               filterBranchIds: widget.filterBranchIds,
             ),
@@ -238,7 +240,9 @@ class _SalesLiveMapInlineParentScrollGuardState
   }
 
   @override
-  void didUpdateWidget(covariant _SalesLiveMapInlineParentScrollGuard oldWidget) {
+  void didUpdateWidget(
+    covariant _SalesLiveMapInlineParentScrollGuard oldWidget,
+  ) {
     super.didUpdateWidget(oldWidget);
     if (widget.suspendLock && !oldWidget.suspendLock) {
       _forceUnlock();

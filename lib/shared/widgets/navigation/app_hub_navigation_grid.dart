@@ -58,10 +58,8 @@ class AppHubNavigationGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.appTokens;
     final typography = Theme.of(context).appTypography;
-    final resolvedMinCardWidth =
-        minCardWidth ?? density.gridMinCardWidth;
-    final resolvedMinCardHeight =
-        minCardHeight ?? density.gridMinCardHeight;
+    final resolvedMinCardWidth = minCardWidth ?? density.gridMinCardWidth;
+    final resolvedMinCardHeight = minCardHeight ?? density.gridMinCardHeight;
     final resolvedStandardAspectRatio =
         standardAspectRatio ?? kAppHubNavigationStandardCardAspectRatio;
 
@@ -80,8 +78,7 @@ class AppHubNavigationGrid extends StatelessWidget {
                 1,
                 math.min(
                   itemCount,
-                  ((constraints.maxWidth + gap) /
-                          (resolvedMinCardWidth + gap))
+                  ((constraints.maxWidth + gap) / (resolvedMinCardWidth + gap))
                       .floor(),
                 ),
               );
@@ -93,38 +90,34 @@ class AppHubNavigationGrid extends StatelessWidget {
             .floorToDouble();
         final resolvedMaxCardWidth = maxCardWidth;
         if (resolvedMaxCardWidth != null) {
-          cardWidth = math
-              .min(cardWidth, resolvedMaxCardWidth)
-              .floorToDouble();
+          cardWidth = math.min(cardWidth, resolvedMaxCardWidth).floorToDouble();
         }
         final cardHeight = switch (density) {
           AppHubNavigationCardDensity.chartNav => resolvedMinCardHeight!,
           AppHubNavigationCardDensity.standard =>
             (cardWidth / resolvedStandardAspectRatio).floorToDouble(),
-          _ => (cardWidth *
-                  resolvedMinCardHeight! /
-                  resolvedMinCardWidth)
-              .floorToDouble(),
+          _ =>
+            (cardWidth * resolvedMinCardHeight! / resolvedMinCardWidth)
+                .floorToDouble(),
         };
         final narrowLabelStyle =
             cardWidth <=
-                    resolvedMinCardWidth +
-                        kAppHubNavigationNarrowLabelWidthThreshold
-                ? switch (density) {
-                    AppHubNavigationCardDensity.chartNav =>
-                      typography.caption.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize: kAppHubNavigationNarrowLabelFontSizeChartNav,
-                        height: 1.15,
-                      ),
-                    _ => typography.caption.copyWith(
-                        fontWeight: FontWeight.w600,
-                        fontSize:
-                            kAppHubNavigationNarrowLabelFontSizeDefault,
-                        height: 1.15,
-                      ),
-                  }
-                : null;
+                resolvedMinCardWidth +
+                    kAppHubNavigationNarrowLabelWidthThreshold
+            ? switch (density) {
+                AppHubNavigationCardDensity.chartNav =>
+                  typography.caption.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: kAppHubNavigationNarrowLabelFontSizeChartNav,
+                    height: 1.15,
+                  ),
+                _ => typography.caption.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: kAppHubNavigationNarrowLabelFontSizeDefault,
+                  height: 1.15,
+                ),
+              }
+            : null;
         final layout = AppHubNavigationGridLayout(
           cardWidth: cardWidth,
           cardHeight: cardHeight,

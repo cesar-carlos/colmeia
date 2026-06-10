@@ -207,30 +207,30 @@ class _SalesMonthlyPnlBarChartCardState
       child: RepaintBoundary(
         key: _shareKey,
         child: _SalesMonthlyPnlBarChartBody(
-        l10n: l10n,
-        points: widget.points,
-        loadFailed: widget.loadFailed,
-        loadFailure: widget.loadFailure,
-        loadFailureMessage: widget.loadFailureMessage,
-        isLoading: widget.isLoading,
-        session: _session,
-        onSessionChanged: _setSession,
-        chartHeightOverride: resolvedHeight,
-        emptyMessage: emptyMessage,
-        summarySemantics: summary,
-        tokens: tokens,
-        theme: theme,
-        chartTheme: chartTheme,
-        localeTag: localeTag,
-        primaryMoney: primaryMoney,
-        gridLineColor: gridLineColor,
-        percentRatioFormat: percentRatioFormat,
-        openFullscreen: widget.onOpenFullscreen ?? openBarFullscreen,
-        onShare: shareActions.shareCallback(),
-        valuesAllZero: () => _valuesAllZero(widget.points),
-        percentAllZero: () => _percentAllZero(widget.points, percentMetric),
-        useChartShell: true,
-      ),
+          l10n: l10n,
+          points: widget.points,
+          loadFailed: widget.loadFailed,
+          loadFailure: widget.loadFailure,
+          loadFailureMessage: widget.loadFailureMessage,
+          isLoading: widget.isLoading,
+          session: _session,
+          onSessionChanged: _setSession,
+          chartHeightOverride: resolvedHeight,
+          emptyMessage: emptyMessage,
+          summarySemantics: summary,
+          tokens: tokens,
+          theme: theme,
+          chartTheme: chartTheme,
+          localeTag: localeTag,
+          primaryMoney: primaryMoney,
+          gridLineColor: gridLineColor,
+          percentRatioFormat: percentRatioFormat,
+          openFullscreen: widget.onOpenFullscreen ?? openBarFullscreen,
+          onShare: shareActions.shareCallback(),
+          valuesAllZero: () => _valuesAllZero(widget.points),
+          percentAllZero: () => _percentAllZero(widget.points, percentMetric),
+          useChartShell: true,
+        ),
       ),
     );
   }
@@ -566,9 +566,9 @@ AppComparisonBarChartStyle _comparisonStyleWithPercent({
   required double animationMs,
   required NumberFormat percentRatioFormat,
 }) {
-    final base = appDashboardComparisonBarChartStyle(
+  final base = appDashboardComparisonBarChartStyle(
     tokens: tokens,
-      kind: AppDashboardComparisonBarChartKind.weekday,
+    kind: AppDashboardComparisonBarChartKind.weekday,
     l10n: l10n,
     heightOverride: chartHeightOverride,
   );
@@ -734,64 +734,65 @@ Future<void> pushSalesMonthlyPnlBarChartFullscreen({
             builder: (context, setFs) {
               final fsSession = sessionHolder[0];
               final isPct =
-                  fsSession.displayMode == SalesMonthlyPnlBarDisplayMode.percent;
+                  fsSession.displayMode ==
+                  SalesMonthlyPnlBarDisplayMode.percent;
               return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                salesMonthlyPnlBarDisplayModeSegmented(
-                  l10n: l10nFs,
-                  value: fsSession.displayMode,
-                  onChanged: (v) => setFs(() {
-                    sessionHolder[0] = sessionHolder[0].copyWith(
-                      displayMode: v,
-                    );
-                  }),
-                ),
-                if (isPct) ...<Widget>[
-                  SizedBox(height: tokensFs.gapSm),
-                  Semantics(
-                    sortKey: const OrdinalSortKey(2),
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  salesMonthlyPnlBarDisplayModeSegmented(
+                    l10n: l10nFs,
+                    value: fsSession.displayMode,
+                    onChanged: (v) => setFs(() {
+                      sessionHolder[0] = sessionHolder[0].copyWith(
+                        displayMode: v,
+                      );
+                    }),
+                  ),
+                  if (isPct) ...<Widget>[
+                    SizedBox(height: tokensFs.gapSm),
+                    Semantics(
+                      sortKey: const OrdinalSortKey(2),
+                      child: LayoutBuilder(
+                        builder: (context, c2) {
+                          final narrow = c2.maxWidth < 380;
+                          return DashboardLucratividadePercentMetricSection(
+                            l10n: l10nFs,
+                            tokens: tokensFs,
+                            metric: fsSession.percentMetric,
+                            useDropdownLayout: narrow,
+                            hasChartData: points.isNotEmpty,
+                            showChronologicalHint: true,
+                            onMetricChanged: (v) => setFs(() {
+                              sessionHolder[0] = sessionHolder[0].copyWith(
+                                percentMetric: v,
+                              );
+                            }),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                  SizedBox(height: tokensFs.contentSpacing),
+                  Expanded(
                     child: LayoutBuilder(
-                      builder: (context, c2) {
-                        final narrow = c2.maxWidth < 380;
-                        return DashboardLucratividadePercentMetricSection(
+                      builder: (context, innerConstraints) {
+                        final chartH = innerConstraints.maxHeight.isFinite
+                            ? innerConstraints.maxHeight
+                            : 220.0;
+                        return _SalesMonthlyPnlBarChartBody(
                           l10n: l10nFs,
-                          tokens: tokensFs,
-                          metric: fsSession.percentMetric,
-                          useDropdownLayout: narrow,
-                          hasChartData: points.isNotEmpty,
-                          showChronologicalHint: true,
-                          onMetricChanged: (v) => setFs(() {
-                            sessionHolder[0] = sessionHolder[0].copyWith(
-                              percentMetric: v,
-                            );
-                          }),
+                          points: points,
+                          loadFailed: loadFailed,
+                          loadFailureMessage: loadFailureMessage,
+                          isLoading: isLoading,
+                          session: sessionHolder[0],
+                          chartHeightOverride: chartH,
+                          useChartShell: false,
                         );
                       },
                     ),
                   ),
                 ],
-                SizedBox(height: tokensFs.contentSpacing),
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, innerConstraints) {
-                      final chartH = innerConstraints.maxHeight.isFinite
-                          ? innerConstraints.maxHeight
-                          : 220.0;
-                      return _SalesMonthlyPnlBarChartBody(
-                        l10n: l10nFs,
-                        points: points,
-                        loadFailed: loadFailed,
-                        loadFailureMessage: loadFailureMessage,
-                        isLoading: isLoading,
-                        session: sessionHolder[0],
-                        chartHeightOverride: chartH,
-                        useChartShell: false,
-                      );
-                    },
-                  ),
-                ),
-              ],
               );
             },
           ),

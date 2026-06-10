@@ -1587,7 +1587,8 @@ void main() {
       () async {
         when(connection.connect).thenThrow(
           const ConsumerSocketNamespaceForbidden(
-            message: 'Consumer socket namespace forbidden: '
+            message:
+                'Consumer socket namespace forbidden: '
                 'role=client namespace=/consumers',
             role: 'client',
             namespace: '/consumers',
@@ -1987,8 +1988,7 @@ void main() {
           items: const <RelayBatchItem>[],
         ),
       ).throws<RelayRequestRejected>(
-        (subject) =>
-            subject.has((e) => e.code, 'code').equals('BATCH_EMPTY'),
+        (subject) => subject.has((e) => e.code, 'code').equals('BATCH_EMPTY'),
       );
     });
 
@@ -2018,44 +2018,46 @@ void main() {
       );
     });
 
-    test('rejects duplicate clientRequestId before reaching the wire',
-        () async {
-      final dispatcher = await dispatcherFor();
-      addTearDown(dispatcher.dispose);
+    test(
+      'rejects duplicate clientRequestId before reaching the wire',
+      () async {
+        final dispatcher = await dispatcherFor();
+        addTearDown(dispatcher.dispose);
 
-      final dupes = <RelayBatchItem>[
-        const RelayBatchItem(
-          clientRequestId: 'rpc-dup',
-          body: <String, Object?>{
-            'command': <String, Object?>{
-              'jsonrpc': '2.0',
-              'method': 'sql.execute',
-              'id': 'rpc-dup',
+        final dupes = <RelayBatchItem>[
+          const RelayBatchItem(
+            clientRequestId: 'rpc-dup',
+            body: <String, Object?>{
+              'command': <String, Object?>{
+                'jsonrpc': '2.0',
+                'method': 'sql.execute',
+                'id': 'rpc-dup',
+              },
             },
-          },
-        ),
-        const RelayBatchItem(
-          clientRequestId: 'rpc-dup',
-          body: <String, Object?>{
-            'command': <String, Object?>{
-              'jsonrpc': '2.0',
-              'method': 'sql.execute',
-              'id': 'rpc-dup',
+          ),
+          const RelayBatchItem(
+            clientRequestId: 'rpc-dup',
+            body: <String, Object?>{
+              'command': <String, Object?>{
+                'jsonrpc': '2.0',
+                'method': 'sql.execute',
+                'id': 'rpc-dup',
+              },
             },
-          },
-        ),
-      ];
+          ),
+        ];
 
-      await check(
-        dispatcher.sendBatch(agentId: 'agent-1', items: dupes),
-      ).throws<RelayRequestRejected>(
-        (subject) =>
-            subject.has((e) => e.code, 'code').equals('BATCH_DUPLICATE_ID'),
-      );
-      // No envelope hit the wire.
-      check(
-        wiring.emits.where((e) => e.event == RelayEventNames.rpcRequestBatch),
-      ).isEmpty();
-    });
+        await check(
+          dispatcher.sendBatch(agentId: 'agent-1', items: dupes),
+        ).throws<RelayRequestRejected>(
+          (subject) =>
+              subject.has((e) => e.code, 'code').equals('BATCH_DUPLICATE_ID'),
+        );
+        // No envelope hit the wire.
+        check(
+          wiring.emits.where((e) => e.event == RelayEventNames.rpcRequestBatch),
+        ).isEmpty();
+      },
+    );
   });
 }

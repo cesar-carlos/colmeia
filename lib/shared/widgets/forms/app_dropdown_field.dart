@@ -1,6 +1,7 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/app_top_aligned_expand_switcher.dart';
 import 'package:colmeia/shared/widgets/forms/app_form_field_message.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:flutter/material.dart';
@@ -135,8 +136,8 @@ class _AppDropdownFieldState<T> extends State<AppDropdownField<T>> {
             vertical: tokens.gapXs,
           )
         : _contentPadding(tokens, widget.density);
-    final collapsedLabelStyle = (isCompact ? typography.caption : typography.body)
-        .copyWith(
+    final collapsedLabelStyle =
+        (isCompact ? typography.caption : typography.body).copyWith(
           color: hasCollapsedSelection
               ? colors.onSurface
               : colors.onSurfaceVariant,
@@ -233,7 +234,7 @@ class _AppDropdownFieldState<T> extends State<AppDropdownField<T>> {
                               },
                             ),
                           ),
-                          _AnimatedDropdownMenu(
+                          AppTopAlignedExpandSwitcher(
                             expanded: _expanded,
                             child: _DropdownMenuContainer(
                               scheme: scheme,
@@ -593,7 +594,7 @@ class _AppMultiSelectSearchFieldState<T>
                         ),
                       ),
                     ),
-                    _AnimatedDropdownMenu(
+                    AppTopAlignedExpandSwitcher(
                       expanded: _expanded,
                       child: _DropdownMenuContainer(
                         scheme: scheme,
@@ -822,41 +823,6 @@ class _DropdownMenuContainer extends StatelessWidget {
         border: Border(top: BorderSide(color: dividerColor)),
       ),
       child: child,
-    );
-  }
-}
-
-class _AnimatedDropdownMenu extends StatelessWidget {
-  const _AnimatedDropdownMenu({
-    required this.expanded,
-    required this.child,
-  });
-
-  final bool expanded;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 180),
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
-      transitionBuilder: (child, animation) {
-        return FadeTransition(
-          opacity: animation,
-          child: SizeTransition(
-            sizeFactor: animation,
-            // `SizeTransition.alignment` exists only on Flutter >= 3.43; the
-            // CI pin (tool/flutter_ci_version.txt) is still 3.41.9, where
-            // vertical-axis alignment is expressed via `axisAlignment` (-1.0
-            // anchors the reveal at the top, matching `Alignment.topLeft`).
-            // ignore: deprecated_member_use
-            axisAlignment: -1,
-            child: child,
-          ),
-        );
-      },
-      child: expanded ? child : const SizedBox.shrink(),
     );
   }
 }

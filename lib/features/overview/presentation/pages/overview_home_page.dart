@@ -78,8 +78,10 @@ class _OverviewHomeSession extends StatelessWidget {
           userContext.errorMessage == null &&
           userContext.hasResolvedData,
       builder: (context, isUserContextReady, _) {
-        return Selector<AppUserExperiencePreferencesController?,
-            OverviewLoadingMode>(
+        return Selector<
+          AppUserExperiencePreferencesController?,
+          OverviewLoadingMode
+        >(
           selector: (_, prefs) =>
               prefs?.overviewLoadingMode ?? OverviewLoadingMode.progressive,
           builder: (context, loadingMode, _) {
@@ -298,9 +300,7 @@ class _OverviewMetricsSection extends StatelessWidget {
       builder: (context, slice, _) {
         final overview = slice.overview;
         final showSkeleton = slice.isLoadingInitial && overview == null;
-        final displayOverview = showSkeleton
-            ? _skeletonOverview
-            : overview;
+        final displayOverview = showSkeleton ? _skeletonOverview : overview;
 
         if (displayOverview == null) {
           return const SizedBox.shrink();
@@ -358,8 +358,11 @@ class _OverviewHomeIntro extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Selector2<CurrentUserContextController, OverviewController,
-        _IntroSlice>(
+    return Selector2<
+      CurrentUserContextController,
+      OverviewController,
+      _IntroSlice
+    >(
       selector: (_, userContext, overviewController) {
         final overview = overviewController.overview;
         final showSkeleton =

@@ -20,9 +20,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:result_dart/result_dart.dart';
 
-class _MockLoadDaily extends Mock implements LoadResumoTotalDiarioVendasUseCase {}
+class _MockLoadDaily extends Mock
+    implements LoadResumoTotalDiarioVendasUseCase {}
 
-class _MockLoadMonthly extends Mock implements LoadResumoParcelasMensalUseCase {}
+class _MockLoadMonthly extends Mock
+    implements LoadResumoParcelasMensalUseCase {}
 
 class _MockLoadWeekday extends Mock
     implements LoadResumoParcelasDiaSemanaUseCase {}
@@ -165,7 +167,10 @@ void main() {
       ),
     ).thenAnswer((_) async {
       callOrder.add('lucratividade');
-      return const Success<List<ResumoProdutoVendaLucratividadeRow>, AppFailure>(
+      return const Success<
+        List<ResumoProdutoVendaLucratividadeRow>,
+        AppFailure
+      >(
         <ResumoProdutoVendaLucratividadeRow>[],
       );
     });

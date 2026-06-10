@@ -8,8 +8,7 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart
 /// Identity-keyed cache for [SalesLiveMapLoadResult.agentIdsByBranchRef].
 /// Lets the index be computed on demand without breaking the existing
 /// `const` constructor and is reclaimed with the owning result.
-final Expando<Map<SalesLiveMapBranchRef, String>>
-_agentIdsByBranchRefExpando =
+final Expando<Map<SalesLiveMapBranchRef, String>> _agentIdsByBranchRefExpando =
     Expando<Map<SalesLiveMapBranchRef, String>>(
       'SalesLiveMapLoadResult.agentIdsByBranchRef',
     );

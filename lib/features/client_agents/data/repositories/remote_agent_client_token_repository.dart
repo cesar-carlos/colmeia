@@ -103,8 +103,7 @@ class RemoteAgentClientTokenRepository implements AgentClientTokenRepository {
       return Failure<ClientAgentTokenSnapshot, AppFailure>(
         NetworkFailure(
           message: 'Client agent token GET failed with no local cache',
-          userMessage:
-              'Nao foi possivel ler o token do agente no servidor.',
+          userMessage: 'Nao foi possivel ler o token do agente no servidor.',
           cause: error,
           stackTrace: stackTrace,
           context: <String, Object?>{

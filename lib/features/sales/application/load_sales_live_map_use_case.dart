@@ -193,7 +193,8 @@ class LoadSalesLiveMapUseCase {
     )) {
       lastResult = result;
     }
-    return lastResult ?? _emitPolicy.cancelledResult(refreshedAt: _resolveNow());
+    return lastResult ??
+        _emitPolicy.cancelledResult(refreshedAt: _resolveNow());
   }
 
   Stream<SalesLiveMapLoadResult> loadProgressive({

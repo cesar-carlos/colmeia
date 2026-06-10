@@ -45,18 +45,20 @@ void main() {
       expect(result.requestAccessDebouncedAgentIds, {'agent-2'});
     });
 
-    test('recordRequestAccessFailure does not promote to the success bucket',
-        () {
-      final builder = PendingClientAgentActionsSyncOutcomeBuilder()
-        ..recordRequestAccessFailure('agent-1')
-        ..recordRequestAccessFailure('agent-1')
-        ..recordRequestAccessFailure('agent-2');
+    test(
+      'recordRequestAccessFailure does not promote to the success bucket',
+      () {
+        final builder = PendingClientAgentActionsSyncOutcomeBuilder()
+          ..recordRequestAccessFailure('agent-1')
+          ..recordRequestAccessFailure('agent-1')
+          ..recordRequestAccessFailure('agent-2');
 
-      final result = builder.build();
-      expect(result.failedRequestAccessAgentIds, {'agent-1', 'agent-2'});
-      expect(result.successfulRequestAccessAgentIds, isEmpty);
-      expect(builder.successfulActionIds, isEmpty);
-    });
+        final result = builder.build();
+        expect(result.failedRequestAccessAgentIds, {'agent-1', 'agent-2'});
+        expect(result.successfulRequestAccessAgentIds, isEmpty);
+        expect(builder.successfulActionIds, isEmpty);
+      },
+    );
 
     test('remove-access success accumulates on the right buckets', () {
       final builder = PendingClientAgentActionsSyncOutcomeBuilder()

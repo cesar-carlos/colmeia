@@ -54,7 +54,9 @@ final class HiveAgentQueryFactsStore implements AgentQueryFactsStore {
         return null;
       }
       AgentQueryFactsStoreMetrics.instance.hits++;
-      return AgentQueryFactsEnvelope.decodePayloadBase64(envelope.payloadBase64);
+      return AgentQueryFactsEnvelope.decodePayloadBase64(
+        envelope.payloadBase64,
+      );
     } on Object catch (error, stackTrace) {
       AgentQueryFactsStoreMetrics.instance.misses++;
       await removeKey(storageKey);

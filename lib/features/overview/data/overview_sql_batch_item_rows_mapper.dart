@@ -34,9 +34,8 @@ abstract final class OverviewSqlBatchItemRowsMapper {
     );
   }
 
-  static OverviewSqlBatchItemRowsResult<Row> mapRowsForOptionalIndex<
-    Row extends Object
-  >(
+  static OverviewSqlBatchItemRowsResult<Row>
+  mapRowsForOptionalIndex<Row extends Object>(
     Map<int, AgentSqlBatchExecutionItem> byIndex,
     int? index,
     Row Function(Map<String, dynamic> row) mapRow,

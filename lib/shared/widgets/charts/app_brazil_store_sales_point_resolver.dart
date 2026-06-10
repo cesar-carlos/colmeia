@@ -156,7 +156,8 @@ class AppBrazilStoreSalesPointResolver {
     return points;
   }
 
-  Future<List<AppBrazilStoreSalesResolvedPoint>> resolveAllSqlMunicipalityWithDetails(
+  Future<List<AppBrazilStoreSalesResolvedPoint>>
+  resolveAllSqlMunicipalityWithDetails(
     Iterable<AppBrazilStoreSalesPointSource> sources, {
     int maxConcurrent = 1,
   }) async {

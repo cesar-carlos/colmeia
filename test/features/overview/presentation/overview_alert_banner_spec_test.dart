@@ -8,13 +8,13 @@ import 'package:flutter_test/flutter_test.dart';
 
 const OverviewPaymentMethodBreakdown _samplePaymentMethod =
     OverviewPaymentMethodBreakdown(
-  code: 'PIX',
-  label: 'Pix',
-  totalSalesCount: 1,
-  totalAmount: 100,
-  averageTicket: 100,
-  sharePercent: 100,
-);
+      code: 'PIX',
+      label: 'Pix',
+      totalSalesCount: 1,
+      totalAmount: 100,
+      averageTicket: 100,
+      sharePercent: 100,
+    );
 
 void main() {
   final l10n = AppLocalizationsEn();
@@ -47,7 +47,9 @@ void main() {
   });
 
   test('returns no specs when overview is clean and there is no error', () {
-    final overview = Overview.empty().copyWith(mainResumoHadPlannedTargets: true);
+    final overview = Overview.empty().copyWith(
+      mainResumoHadPlannedTargets: true,
+    );
     expect(build(overview: overview), isEmpty);
   });
 
@@ -65,7 +67,10 @@ void main() {
 
     expect(specs.single.title, l10n.agentSqlFailureTitleQueryTimeout);
     expect(specs.single.message, l10n.agentSqlErrorQueryTimeout);
-    expect(specs.single.detailsBody, contains(l10n.agentSqlFailureTitleQueryTimeout));
+    expect(
+      specs.single.detailsBody,
+      contains(l10n.agentSqlFailureTitleQueryTimeout),
+    );
   });
 
   test('builds a loadError spec including the diagnostic body in details', () {
@@ -107,8 +112,9 @@ void main() {
     );
 
     expect(specs.map((s) => s.kind), contains(OverviewAlertKind.setupRequired));
-    final spec =
-        specs.firstWhere((s) => s.kind == OverviewAlertKind.setupRequired);
+    final spec = specs.firstWhere(
+      (s) => s.kind == OverviewAlertKind.setupRequired,
+    );
     expect(spec.affectedAgents, isNotNull);
     expect(spec.affectedAgents!.normalizedNames, <String>['Alpha']);
     expect(
@@ -150,41 +156,44 @@ void main() {
       skippedDueToHubPresenceAgentNames: const <String>['Alpha'],
     );
 
-    final spec =
-        specs.firstWhere((s) => s.kind == OverviewAlertKind.agentsOffline);
+    final spec = specs.firstWhere(
+      (s) => s.kind == OverviewAlertKind.agentsOffline,
+    );
     expect(spec.affectedAgents!.normalizedNames, <String>['Alpha']);
     expect(spec.showRetry, isTrue);
     expect(spec.showManage, isTrue);
   });
 
-  test('emits partialAgentQueries when resumo or lucratividade partials exist',
-      () {
-    final resumoOnly = Overview.empty().copyWith(
-      agentIdsExcludedFromQueryFailure: const <String>['a'],
-      agentNamesExcludedFromQueryFailure: const <String>['Alpha'],
-    );
-    final lucratividadeOnly = Overview.empty().copyWith(
-      lucratividadePartialFailureAgentNames: const <String>['Beta'],
-    );
+  test(
+    'emits partialAgentQueries when resumo or lucratividade partials exist',
+    () {
+      final resumoOnly = Overview.empty().copyWith(
+        agentIdsExcludedFromQueryFailure: const <String>['a'],
+        agentNamesExcludedFromQueryFailure: const <String>['Alpha'],
+      );
+      final lucratividadeOnly = Overview.empty().copyWith(
+        lucratividadePartialFailureAgentNames: const <String>['Beta'],
+      );
 
-    final fromResumo = build(
-      overview: resumoOnly,
-      partialFailureAgentNames: const <String>['Alpha'],
-    );
-    final fromLucratividade = build(
-      overview: lucratividadeOnly,
-      partialFailureAgentNames: const <String>['Beta'],
-    );
+      final fromResumo = build(
+        overview: resumoOnly,
+        partialFailureAgentNames: const <String>['Alpha'],
+      );
+      final fromLucratividade = build(
+        overview: lucratividadeOnly,
+        partialFailureAgentNames: const <String>['Beta'],
+      );
 
-    expect(
-      fromResumo.map((s) => s.kind),
-      contains(OverviewAlertKind.partialAgentQueries),
-    );
-    expect(
-      fromLucratividade.map((s) => s.kind),
-      contains(OverviewAlertKind.partialAgentQueries),
-    );
-  });
+      expect(
+        fromResumo.map((s) => s.kind),
+        contains(OverviewAlertKind.partialAgentQueries),
+      );
+      expect(
+        fromLucratividade.map((s) => s.kind),
+        contains(OverviewAlertKind.partialAgentQueries),
+      );
+    },
+  );
 
   test('emits multiAgentAggregation note without actions', () {
     final overview = Overview.empty().copyWith(
@@ -194,8 +203,9 @@ void main() {
       ],
     );
 
-    final spec = build(overview: overview)
-        .firstWhere((s) => s.kind == OverviewAlertKind.multiAgentAggregation);
+    final spec = build(
+      overview: overview,
+    ).firstWhere((s) => s.kind == OverviewAlertKind.multiAgentAggregation);
 
     expect(spec.tone, AppInlinePanelTone.informational);
     expect(spec.showRetry, isFalse);

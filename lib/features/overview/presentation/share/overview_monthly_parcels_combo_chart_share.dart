@@ -44,7 +44,8 @@ ChartShareMetadata buildOverviewMonthlyParcelsComboShareMetadata({
 }) {
   final salesHeader =
       copy?.seriesSalesLabel ?? l10n.overviewMonthlyParcelsSalesSeriesLabel;
-  final amountHeader = copy?.seriesParcelAmountLabel ??
+  final amountHeader =
+      copy?.seriesParcelAmountLabel ??
       l10n.overviewMonthlyParcelsAmountSeriesLabel;
 
   final tableLimit = applyChartShareTableRowLimit(

@@ -146,11 +146,7 @@ class AgentQueryExecutor<Row> {
       null,
     );
 
-    for (
-      var start = 0;
-      start < plan.plannedTargets.length;
-      start += waveSize
-    ) {
+    for (var start = 0; start < plan.plannedTargets.length; start += waveSize) {
       final end = start + waveSize > plan.plannedTargets.length
           ? plan.plannedTargets.length
           : start + waveSize;

@@ -16,7 +16,8 @@ Widget buildChartFullscreenShareTrailing({
   String? subtitle,
   String? filterSummary,
 }) {
-  final resolved = metadata ??
+  final resolved =
+      metadata ??
       ChartShareMetadata(
         title: subject ?? 'chart',
         subtitle: subtitle,
@@ -52,25 +53,29 @@ class _ChartShareIconButtonState extends State<ChartShareIconButton> {
   @override
   void initState() {
     super.initState();
-    ChartShareGuard.listenableFor(widget.captureKey)
-        .addListener(_onShareProgressChanged);
+    ChartShareGuard.listenableFor(
+      widget.captureKey,
+    ).addListener(_onShareProgressChanged);
   }
 
   @override
   void didUpdateWidget(covariant ChartShareIconButton oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.captureKey != widget.captureKey) {
-      ChartShareGuard.listenableFor(oldWidget.captureKey)
-          .removeListener(_onShareProgressChanged);
-      ChartShareGuard.listenableFor(widget.captureKey)
-          .addListener(_onShareProgressChanged);
+      ChartShareGuard.listenableFor(
+        oldWidget.captureKey,
+      ).removeListener(_onShareProgressChanged);
+      ChartShareGuard.listenableFor(
+        widget.captureKey,
+      ).addListener(_onShareProgressChanged);
     }
   }
 
   @override
   void dispose() {
-    ChartShareGuard.listenableFor(widget.captureKey)
-        .removeListener(_onShareProgressChanged);
+    ChartShareGuard.listenableFor(
+      widget.captureKey,
+    ).removeListener(_onShareProgressChanged);
     super.dispose();
   }
 

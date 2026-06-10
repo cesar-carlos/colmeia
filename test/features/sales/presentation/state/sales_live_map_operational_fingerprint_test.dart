@@ -32,24 +32,27 @@ void main() {
   });
 
   group('SalesLiveMapMapSlice', () {
-    test('is not equal when operational fields change but map digest is stable', () {
-      final sharedVisual = _result(totalRevenue: 10, queriedAgentCount: 1);
-      final baselineState = SalesLiveMapPresentationState(
-        result: sharedVisual,
-        visualResult: sharedVisual,
-        mapPayloadDigest: 42,
-        isLoading: false,
-      );
-      final updatedState = baselineState.copyWith(
-        result: _result(totalRevenue: 99, queriedAgentCount: 3),
-      );
+    test(
+      'is not equal when operational fields change but map digest is stable',
+      () {
+        final sharedVisual = _result(totalRevenue: 10, queriedAgentCount: 1);
+        final baselineState = SalesLiveMapPresentationState(
+          result: sharedVisual,
+          visualResult: sharedVisual,
+          mapPayloadDigest: 42,
+          isLoading: false,
+        );
+        final updatedState = baselineState.copyWith(
+          result: _result(totalRevenue: 99, queriedAgentCount: 3),
+        );
 
-      final baselineSlice = SalesLiveMapMapSlice.fromState(baselineState);
-      final updatedSlice = SalesLiveMapMapSlice.fromState(updatedState);
+        final baselineSlice = SalesLiveMapMapSlice.fromState(baselineState);
+        final updatedSlice = SalesLiveMapMapSlice.fromState(updatedState);
 
-      expect(baselineSlice.mapPayloadDigest, updatedSlice.mapPayloadDigest);
-      expect(baselineSlice == updatedSlice, isFalse);
-    });
+        expect(baselineSlice.mapPayloadDigest, updatedSlice.mapPayloadDigest);
+        expect(baselineSlice == updatedSlice, isFalse);
+      },
+    );
   });
 }
 

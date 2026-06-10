@@ -172,7 +172,8 @@ class _RegisterPageBodyState extends State<_RegisterPageBody> {
                               label: l10n.authRegisterAccountEmailLabel,
                               icon: Icons.alternate_email,
                               enabled: !blocked,
-                              emptyMessage: l10n.authRegisterAccountEmailRequired,
+                              emptyMessage:
+                                  l10n.authRegisterAccountEmailRequired,
                               invalidMessage: l10n.authEmailFieldInvalid,
                             ),
                             SizedBox(height: tokens.authLoginGapBetweenFields),

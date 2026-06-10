@@ -22,7 +22,9 @@ void main() {
   late _MockUserContextRemoteDataSource remote;
   late UserContextRepositoryImpl repository;
 
-  CurrentUserContextModel buildContextModel({String activeStoreId = 'store-1'}) {
+  CurrentUserContextModel buildContextModel({
+    String activeStoreId = 'store-1',
+  }) {
     return CurrentUserContextModel(
       profile: const UserProfileModel(
         id: 'client-1',
@@ -79,31 +81,33 @@ void main() {
       check(result.getOrNull()?.activeStoreId).equals('store-2');
     });
 
-    test('should expose clearer message when user context returns 401',
-        () async {
-      when(
-        () => local.readActiveStoreId(any()),
-      ).thenAnswer((_) async => null);
-      when(
-        () => remote.loadUserContext(userId: any(named: 'userId')),
-      ).thenThrow(
-        DioException(
-          requestOptions: RequestOptions(path: '/client-auth/me'),
-          response: Response<void>(
+    test(
+      'should expose clearer message when user context returns 401',
+      () async {
+        when(
+          () => local.readActiveStoreId(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => remote.loadUserContext(userId: any(named: 'userId')),
+        ).thenThrow(
+          DioException(
             requestOptions: RequestOptions(path: '/client-auth/me'),
-            statusCode: 401,
+            response: Response<void>(
+              requestOptions: RequestOptions(path: '/client-auth/me'),
+              statusCode: 401,
+            ),
+            type: DioExceptionType.badResponse,
           ),
-          type: DioExceptionType.badResponse,
-        ),
-      );
+        );
 
-      final result = await repository.loadUserContext(userId: 'client-1');
+        final result = await repository.loadUserContext(userId: 'client-1');
 
-      check(result.isError()).isTrue();
-      check(result.exceptionOrNull()?.displayMessage).equals(
-        'Sua sessao expirou. Entre novamente para carregar seu contexto.',
-      );
-    });
+        check(result.isError()).isTrue();
+        check(result.exceptionOrNull()?.displayMessage).equals(
+          'Sua sessao expirou. Entre novamente para carregar seu contexto.',
+        );
+      },
+    );
 
     test('maps 403 to a tailored authorization message', () async {
       when(
@@ -198,24 +202,26 @@ void main() {
   });
 
   group('persistActiveStoreId', () {
-    test('delegates to the local datasource with the provided values',
-        () async {
-      when(
-        () => local.saveActiveStoreId(
-          userId: any(named: 'userId'),
-          storeId: any(named: 'storeId'),
-        ),
-      ).thenAnswer((_) async {});
+    test(
+      'delegates to the local datasource with the provided values',
+      () async {
+        when(
+          () => local.saveActiveStoreId(
+            userId: any(named: 'userId'),
+            storeId: any(named: 'storeId'),
+          ),
+        ).thenAnswer((_) async {});
 
-      await repository.persistActiveStoreId(
-        userId: 'client-1',
-        storeId: 'store-1',
-      );
+        await repository.persistActiveStoreId(
+          userId: 'client-1',
+          storeId: 'store-1',
+        );
 
-      verify(
-        () => local.saveActiveStoreId(userId: 'client-1', storeId: 'store-1'),
-      ).called(1);
-    });
+        verify(
+          () => local.saveActiveStoreId(userId: 'client-1', storeId: 'store-1'),
+        ).called(1);
+      },
+    );
 
     test('swallows datasource errors and does not rethrow', () async {
       when(
@@ -237,16 +243,18 @@ void main() {
   });
 
   group('clearPersistedActiveStoreId', () {
-    test('delegates to the local datasource with the provided userId',
-        () async {
-      when(
-        () => local.clearActiveStoreId(any()),
-      ).thenAnswer((_) async {});
+    test(
+      'delegates to the local datasource with the provided userId',
+      () async {
+        when(
+          () => local.clearActiveStoreId(any()),
+        ).thenAnswer((_) async {});
 
-      await repository.clearPersistedActiveStoreId(userId: 'client-1');
+        await repository.clearPersistedActiveStoreId(userId: 'client-1');
 
-      verify(() => local.clearActiveStoreId('client-1')).called(1);
-    });
+        verify(() => local.clearActiveStoreId('client-1')).called(1);
+      },
+    );
 
     test('swallows datasource errors and does not rethrow', () async {
       when(

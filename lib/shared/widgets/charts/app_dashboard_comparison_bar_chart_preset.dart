@@ -91,7 +91,11 @@ AppComparisonBarChartStyle appDashboardComparisonBarChartStyle({
         : (isRanking ? rankingValueLabelBackground : null),
     outerDataLabelTopReserve: isRanking ? tokens.gapSm : 0,
     dataLabelTextStyle: isRanking
-        ? const TextStyle(fontSize: 11, height: 1.2, fontWeight: FontWeight.w600)
+        ? const TextStyle(
+            fontSize: 11,
+            height: 1.2,
+            fontWeight: FontWeight.w600,
+          )
         : null,
     tooltipLabelMaxChars: 56,
     minPlottedValueShareOfMax: isRanking

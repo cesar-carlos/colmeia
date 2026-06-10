@@ -1,6 +1,7 @@
 import 'package:colmeia/core/refresh/auto_refresh_option.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
-import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_load_result.dart' show SalesLiveMapLoadResult;
+import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_load_result.dart'
+    show SalesLiveMapLoadResult;
 import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_scheduling_slice.dart';

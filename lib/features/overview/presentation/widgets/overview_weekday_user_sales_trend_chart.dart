@@ -198,27 +198,27 @@ class _OverviewWeekdayUserSalesTrendChartState
           semanticsLabel: chartSemantics,
           shareCaptureKey: fullscreenShareKey,
           chartBuilder: (fullscreenContext) {
-              final fullscreenTokens = Theme.of(
-                fullscreenContext,
-              ).extension<AppThemeTokens>()!;
-              final fullscreenL10n = AppLocalizations.of(fullscreenContext);
-              var fullscreenMetric = _metric;
-              return RepaintBoundary(
-                key: fullscreenShareKey,
-                child: StatefulBuilder(
-                  builder: (context, setFullscreenState) {
-                    final fullscreenIsSalesCount =
-                        fullscreenMetric == _OverviewWeekdayUserMetric.salesCount;
-                    if (showEmptyPlaceholder) {
-                      return Center(
+            final fullscreenTokens = Theme.of(
+              fullscreenContext,
+            ).extension<AppThemeTokens>()!;
+            final fullscreenL10n = AppLocalizations.of(fullscreenContext);
+            var fullscreenMetric = _metric;
+            return RepaintBoundary(
+              key: fullscreenShareKey,
+              child: StatefulBuilder(
+                builder: (context, setFullscreenState) {
+                  final fullscreenIsSalesCount =
+                      fullscreenMetric == _OverviewWeekdayUserMetric.salesCount;
+                  if (showEmptyPlaceholder) {
+                    return Center(
                       child: Text(
                         emptyMessage,
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
-                      );
-                    }
-                    return Column(
+                    );
+                  }
+                  return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
                       AppSegmentedControl<_OverviewWeekdayUserMetric>(
@@ -274,10 +274,10 @@ class _OverviewWeekdayUserSalesTrendChartState
                         ),
                       ),
                     ],
-                    );
-                  },
-                ),
-              );
+                  );
+                },
+              ),
+            );
           },
         ),
       );

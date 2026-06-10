@@ -8,7 +8,8 @@ import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries
 import 'package:result_dart/result_dart.dart';
 
 /// Wraps a delegate and counts bridge SQL calls for E2E cache-path assertions.
-final class E2eCountingAgentQueriesRepository implements AgentQueriesRepository {
+final class E2eCountingAgentQueriesRepository
+    implements AgentQueriesRepository {
   E2eCountingAgentQueriesRepository(this._delegate);
 
   final AgentQueriesRepository _delegate;

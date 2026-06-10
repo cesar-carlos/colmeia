@@ -40,14 +40,14 @@ class OverviewController extends ChangeNotifier {
     AgentRpcCapabilitiesRegistry? agentRpcCapabilitiesRegistry,
     AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder,
     OverviewShellCache? shellCache,
-  })  : _loadSectionsUseCase = loadSectionsUseCase,
-        _retryAfterGate = retryAfterGate ?? RetryAfterGate(),
-        _ownsRetryAfterGate = retryAfterGate == null,
-        _agentRpcCapabilitiesRegistry = agentRpcCapabilitiesRegistry,
-        _shellCache = shellCache,
-        _session = OverviewLoadSession(
-          relayCancelScopeBinder: relayCancelScopeBinder,
-        ) {
+  }) : _loadSectionsUseCase = loadSectionsUseCase,
+       _retryAfterGate = retryAfterGate ?? RetryAfterGate(),
+       _ownsRetryAfterGate = retryAfterGate == null,
+       _agentRpcCapabilitiesRegistry = agentRpcCapabilitiesRegistry,
+       _shellCache = shellCache,
+       _session = OverviewLoadSession(
+         relayCancelScopeBinder: relayCancelScopeBinder,
+       ) {
     // Re-publish gate ticks (countdown updates + window expired) through
     // the controller so the home page's retry button reacts without
     // subscribing to the gate directly.
@@ -58,19 +58,19 @@ class OverviewController extends ChangeNotifier {
   // likelihood of being opened first so the most useful data warms earliest.
   static const List<OverviewProgressiveSection> _prefetchSectionsWide =
       <OverviewProgressiveSection>[
-    OverviewProgressiveSection.paymentMix,
-    OverviewProgressiveSection.userRanking,
-    OverviewProgressiveSection.dailySales,
-    OverviewProgressiveSection.weekdaySales,
-    OverviewProgressiveSection.weekdayUserSales,
-    OverviewProgressiveSection.lucratividadePeriod,
-  ];
+        OverviewProgressiveSection.paymentMix,
+        OverviewProgressiveSection.userRanking,
+        OverviewProgressiveSection.dailySales,
+        OverviewProgressiveSection.weekdaySales,
+        OverviewProgressiveSection.weekdayUserSales,
+        OverviewProgressiveSection.lucratividadePeriod,
+      ];
 
   static const List<OverviewProgressiveSection> _prefetchSectionsNarrow =
       <OverviewProgressiveSection>[
-    OverviewProgressiveSection.dailySales,
-    OverviewProgressiveSection.weekdaySales,
-  ];
+        OverviewProgressiveSection.dailySales,
+        OverviewProgressiveSection.weekdaySales,
+      ];
 
   static const double _narrowPrefetchViewportWidth = 600;
 
@@ -454,7 +454,8 @@ class OverviewController extends ChangeNotifier {
     String signature,
     int generation,
     AgentQueriesCancelScope sqlCancelScope,
-  }) _beginLoad({
+  })
+  _beginLoad({
     required String userId,
     required bool keepContentVisible,
     required OverviewLoadingMode loadingMode,
@@ -522,8 +523,8 @@ class OverviewController extends ChangeNotifier {
   }) {
     _armRetryAfterFromPartialFailures(overview);
     _setOverview(overview);
-    _completedOverviewSections =
-        OverviewSectionRequest.home.completedWhenFinal();
+    _completedOverviewSections = OverviewSectionRequest.home
+        .completedWhenFinal();
     _session.loadedSignature = signature;
     _errorMessage = null;
     _errorDiagnosticBody = null;

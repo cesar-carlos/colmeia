@@ -20,7 +20,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class BrazilMapChartFloatingMapControlsOverlay extends StatelessWidget {
-  const BrazilMapChartFloatingMapControlsOverlay({required this.topInset, required this.leftInset, required this.selectedMetricKey, required this.onMetricChanged, required this.scopeOptions, required this.activeScopeKey, required this.scopeRootLabel, required this.onScopeChanged, super.key,
+  const BrazilMapChartFloatingMapControlsOverlay({
+    required this.topInset,
+    required this.leftInset,
+    required this.selectedMetricKey,
+    required this.onMetricChanged,
+    required this.scopeOptions,
+    required this.activeScopeKey,
+    required this.scopeRootLabel,
+    required this.onScopeChanged,
+    super.key,
     this.metrics,
   });
 
@@ -313,7 +322,14 @@ class BrazilMapChartSelectedMarkerDetailAnchorState
 }
 
 class BrazilMapChartSelectedMarkerDetailFollower extends StatelessWidget {
-  const BrazilMapChartSelectedMarkerDetailFollower({required this.link, required this.group, required this.selectedStoreId, required this.metric, required this.onClose, required this.markerGlobalDx, super.key,
+  const BrazilMapChartSelectedMarkerDetailFollower({
+    required this.link,
+    required this.group,
+    required this.selectedStoreId,
+    required this.metric,
+    required this.onClose,
+    required this.markerGlobalDx,
+    super.key,
     this.onClearSelection,
     this.onSelectBranch,
     this.selectBranchLabel,
@@ -528,7 +544,15 @@ class BrazilMapChartHoverMarkerDetailAnchorState
 }
 
 class BrazilMapChartHoverMarkerDetailFollower extends StatelessWidget {
-  const BrazilMapChartHoverMarkerDetailFollower({required this.link, required this.group, required this.metric, required this.initialStoreId, required this.onEnter, required this.onExit, required this.markerGlobalDx, super.key,
+  const BrazilMapChartHoverMarkerDetailFollower({
+    required this.link,
+    required this.group,
+    required this.metric,
+    required this.initialStoreId,
+    required this.onEnter,
+    required this.onExit,
+    required this.markerGlobalDx,
+    super.key,
     this.onDismiss,
   });
 
@@ -583,7 +607,10 @@ class BrazilMapChartHoverMarkerDetailFollower extends StatelessWidget {
 }
 
 class BrazilMapChartMarkerDetailSemanticsBoundary extends StatelessWidget {
-  const BrazilMapChartMarkerDetailSemanticsBoundary({required this.child, super.key});
+  const BrazilMapChartMarkerDetailSemanticsBoundary({
+    required this.child,
+    super.key,
+  });
 
   final Widget child;
 
@@ -607,7 +634,12 @@ class BrazilMapChartMarkerDetailSemanticsBoundary extends StatelessWidget {
 }
 
 class BrazilMapChartStateBubbleMarker extends StatelessWidget {
-  const BrazilMapChartStateBubbleMarker({required this.bucket, required this.metric, required this.style, required this.semanticLabel, super.key,
+  const BrazilMapChartStateBubbleMarker({
+    required this.bucket,
+    required this.metric,
+    required this.style,
+    required this.semanticLabel,
+    super.key,
   });
 
   final AppBrazilStoreSalesStateBucket bucket;
@@ -659,7 +691,10 @@ class BrazilMapChartStateBubbleMarker extends StatelessWidget {
 }
 
 class BrazilMapChartStateBubbleTooltipCard extends StatelessWidget {
-  const BrazilMapChartStateBubbleTooltipCard({required this.bucket, required this.metric, super.key,
+  const BrazilMapChartStateBubbleTooltipCard({
+    required this.bucket,
+    required this.metric,
+    super.key,
   });
 
   final AppBrazilStoreSalesStateBucket bucket;

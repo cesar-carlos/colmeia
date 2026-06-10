@@ -595,7 +595,9 @@ void main() {
       );
       expect(deferredLayer.initialMarkersCount, 0);
 
-      await tester.tap(find.byKey(const ValueKey<String>('change-region-scope')));
+      await tester.tap(
+        find.byKey(const ValueKey<String>('change-region-scope')),
+      );
       await tester.pump();
 
       await tester.pump();

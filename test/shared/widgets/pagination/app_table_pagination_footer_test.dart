@@ -80,10 +80,12 @@ void main() {
     );
     final heightBefore = footerBox.size.height;
 
-    await tester.tap(find.descendant(
-      of: find.byType(MenuAnchor),
-      matching: find.text('10'),
-    ));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(MenuAnchor),
+        matching: find.text('10'),
+      ),
+    );
     await tester.pumpAndSettle();
 
     final heightAfter = footerBox.size.height;
@@ -129,10 +131,12 @@ void main() {
       ),
     );
 
-    await tester.tap(find.descendant(
-      of: find.byType(MenuAnchor),
-      matching: find.text('10'),
-    ));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(MenuAnchor),
+        matching: find.text('10'),
+      ),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.widgetWithText(MenuItemButton, '20'));

@@ -110,7 +110,8 @@ abstract final class SalesLiveMapVisualSnapshotPolicy {
       failedSalesAgentCount: operational.failedSalesAgentCount,
       noSalesAgentOptions: operational.noSalesAgentOptions,
       failedAgentOptions: operational.failedAgentOptions,
-      missingClientTokenAgentOptions: operational.missingClientTokenAgentOptions,
+      missingClientTokenAgentOptions:
+          operational.missingClientTokenAgentOptions,
       skippedOfflineAgentOptions: operational.skippedOfflineAgentOptions,
       locationDiagnostics: geo.locationDiagnostics,
       loadFailed: operational.loadFailed,

@@ -22,9 +22,11 @@ class _MockOverviewRepository extends Mock implements OverviewRepository {}
 class _MockClientAgentsRepository extends Mock
     implements ClientAgentsRepository {}
 
-class _MockLoadDaily extends Mock implements LoadResumoTotalDiarioVendasUseCase {}
+class _MockLoadDaily extends Mock
+    implements LoadResumoTotalDiarioVendasUseCase {}
 
-class _MockLoadMonthly extends Mock implements LoadResumoParcelasMensalUseCase {}
+class _MockLoadMonthly extends Mock
+    implements LoadResumoParcelasMensalUseCase {}
 
 /// Mirrors production wiring in [registerInjectorOverview] + overview route:
 /// shared [RetryAfterGate] singleton and factory-scoped [OverviewController].

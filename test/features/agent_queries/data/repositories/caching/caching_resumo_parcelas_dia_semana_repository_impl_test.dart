@@ -29,40 +29,43 @@ void main() {
       );
     });
 
-    test('defaultLoad reads closed month bucket from store without delegate', () async {
-      final filter = ResumoParcelasDiaSemanaFilter(
-        dataVendaInicio: DateTime(2026, 4),
-        dataVendaFim: DateTime(2026, 4, 30, 23, 59, 59, 999, 999),
-      );
-      const row = ResumoParcelasDiaSemanaRow(
-        codEmpresa: 1,
-        codFilial: 1,
-        diaSemanaNumero: 1,
-        diaSemana: 'Segunda',
-        qtdVendas: 2,
-        valorParcela: 10,
-      );
-      final storageKey = strategy.storageKey(
-        userId: 'u1',
-        agentId: 'a1',
-        bucketId: '2026-04',
-        rangeFilter: filter,
-      );
-      await cachingRepo.factsStore.writePayload(
-        storageKey: storageKey,
-        payload: strategy.encodePayload([row]),
-        schemaVersion: strategy.schemaVersion,
-      );
+    test(
+      'defaultLoad reads closed month bucket from store without delegate',
+      () async {
+        final filter = ResumoParcelasDiaSemanaFilter(
+          dataVendaInicio: DateTime(2026, 4),
+          dataVendaFim: DateTime(2026, 4, 30, 23, 59, 59, 999, 999),
+        );
+        const row = ResumoParcelasDiaSemanaRow(
+          codEmpresa: 1,
+          codFilial: 1,
+          diaSemanaNumero: 1,
+          diaSemana: 'Segunda',
+          qtdVendas: 2,
+          valorParcela: 10,
+        );
+        final storageKey = strategy.storageKey(
+          userId: 'u1',
+          agentId: 'a1',
+          bucketId: '2026-04',
+          rangeFilter: filter,
+        );
+        await cachingRepo.factsStore.writePayload(
+          storageKey: storageKey,
+          payload: strategy.encodePayload([row]),
+          schemaVersion: strategy.schemaVersion,
+        );
 
-      final result = await cachingRepo.load(
-        userId: 'u1',
-        agentId: 'a1',
-        filter: filter,
-      );
+        final result = await cachingRepo.load(
+          userId: 'u1',
+          agentId: 'a1',
+          filter: filter,
+        );
 
-      expect(result.getOrNull()?.single.qtdVendas, row.qtdVendas);
-      expect(delegate.loadCount, 0);
-    });
+        expect(result.getOrNull()?.single.qtdVendas, row.qtdVendas);
+        expect(delegate.loadCount, 0);
+      },
+    );
   });
 }
 

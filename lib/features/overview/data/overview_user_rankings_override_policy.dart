@@ -34,7 +34,9 @@ List<OverviewUserRanking>? overviewUserRankingsOverrideFromAcrossAgentsResult({
           'userId': userId,
           'queryKey': AgentQueryKey.resumoParcelaPorUsuario.name,
           'paymentRowCount': paymentMergedRows.length,
-          'paymentRowCountV2': overviewPaymentMergedRowCountV2(paymentMergedRows),
+          'paymentRowCountV2': overviewPaymentMergedRowCountV2(
+            paymentMergedRows,
+          ),
         },
       );
       return null;

@@ -12,7 +12,8 @@ import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/core/socket/relay/relay_rpc_outcome.dart';
 import 'package:colmeia/core/socket/socket_command_dispatcher.dart';
-import 'package:colmeia/features/agent_queries/data/repositories/metrics_agent_queries_repository.dart' show MetricsAgentQueriesRepository;
+import 'package:colmeia/features/agent_queries/data/repositories/metrics_agent_queries_repository.dart'
+    show MetricsAgentQueriesRepository;
 import 'package:flutter/foundation.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
@@ -151,8 +152,7 @@ class SocketMetricsListener {
   }) {
     final gate = _concurrencyGate;
     if (gate != null) {
-      _metrics.lastGateSessionPeakSample =
-          gate.sessionPeakMaxAgentInflight;
+      _metrics.lastGateSessionPeakSample = gate.sessionPeakMaxAgentInflight;
       gate.resetSessionConcurrencyPeak();
     }
     final snapshot = _metrics.snapshot();

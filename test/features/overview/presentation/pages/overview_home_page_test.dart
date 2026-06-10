@@ -367,10 +367,11 @@ void main() {
       routes: <RouteBase>[
         GoRoute(
           path: '/',
-          builder: (context, state) => ChangeNotifierProvider<OverviewController>.value(
-            value: overviewController,
-            child: const Scaffold(body: OverviewChartNavGrid()),
-          ),
+          builder: (context, state) =>
+              ChangeNotifierProvider<OverviewController>.value(
+                value: overviewController,
+                child: const Scaffold(body: OverviewChartNavGrid()),
+              ),
         ),
         GoRoute(
           name: AppRoute.dashboardChart.name,

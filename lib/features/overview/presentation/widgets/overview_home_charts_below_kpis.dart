@@ -37,7 +37,8 @@ class OverviewHomeChartsBelowKpis extends StatefulWidget {
       _OverviewHomeChartsBelowKpisState();
 }
 
-class _OverviewHomeChartsBelowKpisState extends State<OverviewHomeChartsBelowKpis> {
+class _OverviewHomeChartsBelowKpisState
+    extends State<OverviewHomeChartsBelowKpis> {
   final OverviewSortedRankingsCache _rankingsCache =
       OverviewSortedRankingsCache();
 

@@ -57,7 +57,9 @@ Future<bool?> showChartShareIncludeImageDialog(BuildContext context) async {
             actions: <Widget>[
               TextButton(
                 onPressed: () => Navigator.of(dialogContext).pop(),
-                child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+                child: Text(
+                  MaterialLocalizations.of(context).cancelButtonLabel,
+                ),
               ),
               FilledButton(
                 onPressed: () =>
@@ -86,7 +88,8 @@ void showChartShareFailureSnackBar(
   }
 
   final pdfFilePath = failure.pdfFilePath;
-  final canOpenPdf = pdfFilePath != null &&
+  final canOpenPdf =
+      pdfFilePath != null &&
       pdfFilePath.isNotEmpty &&
       failure.reason == ChartShareFailureReason.sharePlatformFailed;
 

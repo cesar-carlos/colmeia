@@ -83,7 +83,9 @@ class AgentQueryErrorPanel extends StatelessWidget {
 
     final technicalBody = presentation.detailsBody?.trim();
     final hasTechnical =
-        showTechnicalDetails && technicalBody != null && technicalBody.isNotEmpty;
+        showTechnicalDetails &&
+        technicalBody != null &&
+        technicalBody.isNotEmpty;
 
     final detailsLabel =
         detailsActionLabel ?? l10n.agentSqlFailureActionOpenFullDiagnostic;
@@ -110,9 +112,7 @@ class AgentQueryErrorPanel extends StatelessWidget {
           FilledButton(
             onPressed: retryEnabled ? onRetry : null,
             child: Text(
-              onCooldown
-                  ? retryCountdownLabel!
-                  : l10n.appInlineErrorRetry,
+              onCooldown ? retryCountdownLabel! : l10n.appInlineErrorRetry,
             ),
           ),
           ...secondaryActions,

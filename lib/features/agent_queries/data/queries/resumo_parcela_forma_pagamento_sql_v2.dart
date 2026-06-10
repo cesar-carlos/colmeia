@@ -64,6 +64,7 @@ abstract final class ResumoParcelaFormaPagamentoSqlV2 {
   static const String query =
       _queryHead +
       _queryMiddleSelect +
-      ParcelaProdutoVendidoDetalheSql.selectFromParcelLinesForOverviewAggregate +
+      ParcelaProdutoVendidoDetalheSql
+          .selectFromParcelLinesForOverviewAggregate +
       _queryTail;
 }

@@ -200,25 +200,27 @@ void main() {
       check(secondCallRequest.bridgeTimeoutMs!).isLessOrEqual(5000);
     });
 
-    test('does not accumulate latency history beyond 50 samples per agent',
-        () async {
-      const request = AgentSqlExecuteRequest(
-        agentId: 'agent-1',
-        sql: 'SELECT 1',
-        bridgeTimeoutMs: 30000,
-      );
-      when(() => delegate.executeSql(any())).thenAnswer(
-        (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
-          successResult,
-        ),
-      );
+    test(
+      'does not accumulate latency history beyond 50 samples per agent',
+      () async {
+        const request = AgentSqlExecuteRequest(
+          agentId: 'agent-1',
+          sql: 'SELECT 1',
+          bridgeTimeoutMs: 30000,
+        );
+        when(() => delegate.executeSql(any())).thenAnswer(
+          (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+            successResult,
+          ),
+        );
 
-      for (var i = 0; i < 60; i++) {
-        await repository.executeSql(request);
-      }
+        for (var i = 0; i < 60; i++) {
+          await repository.executeSql(request);
+        }
 
-      check(repository.getAverageLatency('agent-1')).isNotNull();
-    });
+        check(repository.getAverageLatency('agent-1')).isNotNull();
+      },
+    );
 
     test('clear() resets latency history for all agents', () async {
       const request = AgentSqlExecuteRequest(

@@ -32,8 +32,7 @@ void main() {
       expect(dto, isNull);
     });
 
-    test('returns an empty list when every profile is explicitly offline',
-        () {
+    test('returns an empty list when every profile is explicitly offline', () {
       final dto = synthesizeOnlineAgentsDtoFromProfiles(
         profiles: <ClientAgentProfileDto>[
           _profile('a', isHubConnected: false),

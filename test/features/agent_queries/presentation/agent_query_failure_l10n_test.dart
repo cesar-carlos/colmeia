@@ -25,20 +25,23 @@ void main() {
     ).equals(en.agentSqlErrorRateLimitedWithWait(12));
   });
 
-  test('NetworkFailure with RATE_LIMITED transport code uses rate limit copy', () {
-    const failure = NetworkFailure(
-      message: 'too many',
-      userMessage: 'too many',
-      retryAfter: Duration(seconds: 3),
-      context: <String, Object?>{
-        AgentQueriesFailureContext.transportCodeField: 'RATE_LIMITED',
-        AgentSqlRpcFailureUiKey.field: AgentSqlRpcFailureUiKey.rateLimited,
-      },
-    );
-    check(
-      agentQueryFailureUserMessage(failure, en),
-    ).equals(en.agentSqlErrorRateLimitedWithWait(3));
-  });
+  test(
+    'NetworkFailure with RATE_LIMITED transport code uses rate limit copy',
+    () {
+      const failure = NetworkFailure(
+        message: 'too many',
+        userMessage: 'too many',
+        retryAfter: Duration(seconds: 3),
+        context: <String, Object?>{
+          AgentQueriesFailureContext.transportCodeField: 'RATE_LIMITED',
+          AgentSqlRpcFailureUiKey.field: AgentSqlRpcFailureUiKey.rateLimited,
+        },
+      );
+      check(
+        agentQueryFailureUserMessage(failure, en),
+      ).equals(en.agentSqlErrorRateLimitedWithWait(3));
+    },
+  );
 
   test('SessionFailure uses authentication l10n', () {
     const failure = SessionFailure(message: 'expired');
@@ -58,8 +61,7 @@ void main() {
     const failure = NetworkFailure(
       message: 'timeout',
       context: <String, Object?>{
-        AgentSqlRpcFailureUiKey.field:
-            AgentSqlRpcFailureUiKey.transportTimeout,
+        AgentSqlRpcFailureUiKey.field: AgentSqlRpcFailureUiKey.transportTimeout,
       },
     );
     check(
@@ -85,22 +87,25 @@ void main() {
     ).equals(en.agentSqlFailureTitleQueryTimeout);
   });
 
-  test('RpcFailure -32008 without context ui key uses transport timeout copy', () {
-    const failure = RpcFailure(
-      message: 'timeout',
-      userMessage: 'The agent took too long to respond. Please try again.',
-      rpcCode: -32008,
-      retryable: true,
-      reason: 'timeout',
-      category: 'transport',
-    );
-    check(
-      agentQueryFailureUserMessage(failure, en),
-    ).equals(en.agentSqlErrorTransportTimeout);
-    check(
-      agentQueryFailureTitle(failure, en),
-    ).equals(en.agentSqlFailureTitleTransportTimeout);
-  });
+  test(
+    'RpcFailure -32008 without context ui key uses transport timeout copy',
+    () {
+      const failure = RpcFailure(
+        message: 'timeout',
+        userMessage: 'The agent took too long to respond. Please try again.',
+        rpcCode: -32008,
+        retryable: true,
+        reason: 'timeout',
+        category: 'transport',
+      );
+      check(
+        agentQueryFailureUserMessage(failure, en),
+      ).equals(en.agentSqlErrorTransportTimeout);
+      check(
+        agentQueryFailureTitle(failure, en),
+      ).equals(en.agentSqlFailureTitleTransportTimeout);
+    },
+  );
 
   test('cancelled failure returns null from OrNull helper', () {
     const failure = OperationCancelledFailure();

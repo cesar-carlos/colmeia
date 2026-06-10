@@ -9,20 +9,22 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
-    const pathProviderChannel =
-        MethodChannel('plugins.flutter.io/path_provider');
+    const pathProviderChannel = MethodChannel(
+      'plugins.flutter.io/path_provider',
+    );
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(pathProviderChannel, (call) async {
-      if (call.method == 'getTemporaryDirectory') {
-        return Directory.systemTemp.path;
-      }
-      return null;
-    });
+          if (call.method == 'getTemporaryDirectory') {
+            return Directory.systemTemp.path;
+          }
+          return null;
+        });
   });
 
   tearDown(() async {
-    const pathProviderChannel =
-        MethodChannel('plugins.flutter.io/path_provider');
+    const pathProviderChannel = MethodChannel(
+      'plugins.flutter.io/path_provider',
+    );
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(pathProviderChannel, null);
 
@@ -79,12 +81,12 @@ void main() {
     const shareChannel = MethodChannel('dev.fluttercommunity.plus/share');
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(shareChannel, (call) async {
-      if (call.method == 'share') {
-        capturedArgs = call.arguments as Map<dynamic, dynamic>?;
-        return 'dev.fluttercommunity.plus/share/unavailable';
-      }
-      return null;
-    });
+          if (call.method == 'share') {
+            capturedArgs = call.arguments as Map<dynamic, dynamic>?;
+            return 'dev.fluttercommunity.plus/share/unavailable';
+          }
+          return null;
+        });
 
     final bytes = Uint8List.fromList(<int>[0x25, 0x50, 0x44, 0x46]);
     final result = await shareExportBytes(

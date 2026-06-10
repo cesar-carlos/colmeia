@@ -705,8 +705,7 @@ void main() {
         () => agentQueriesRepository.executeSqlBatch(any()),
       ).thenAnswer((invocation) async {
         final request =
-            invocation.positionalArguments.first
-                as AgentSqlExecuteBatchRequest;
+            invocation.positionalArguments.first as AgentSqlExecuteBatchRequest;
         if (request.commands.length == salesLiveMapBatchCommandCount) {
           return Success<AgentSqlBatchExecutionResult, AppFailure>(
             _mergedBatchSqlResult(
@@ -811,7 +810,9 @@ void main() {
           cancelScope: any(named: 'cancelScope'),
           orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
           dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
-          mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
+          mergeAllConcurrencyOverride: any(
+            named: 'mergeAllConcurrencyOverride',
+          ),
         ),
       );
     },
@@ -1070,7 +1071,9 @@ void main() {
           cancelScope: any(named: 'cancelScope'),
           orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
           dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
-          mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
+          mergeAllConcurrencyOverride: any(
+            named: 'mergeAllConcurrencyOverride',
+          ),
         ),
       )..called(1);
       final captured = verification.captured;
@@ -1176,7 +1179,9 @@ void main() {
           cancelScope: any(named: 'cancelScope'),
           orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
           dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
-          mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
+          mergeAllConcurrencyOverride: any(
+            named: 'mergeAllConcurrencyOverride',
+          ),
         ),
       )..called(1);
       final selectedAgentIds = verification.captured.single as Set<String>;
@@ -1270,7 +1275,9 @@ void main() {
           cancelScope: any(named: 'cancelScope'),
           orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
           dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
-          mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
+          mergeAllConcurrencyOverride: any(
+            named: 'mergeAllConcurrencyOverride',
+          ),
         ),
       ).captured;
       final queryFilter =
@@ -1332,7 +1339,9 @@ void main() {
           cancelScope: any(named: 'cancelScope'),
           orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
           dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
-          mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
+          mergeAllConcurrencyOverride: any(
+            named: 'mergeAllConcurrencyOverride',
+          ),
         ),
       ).captured;
       final queryFilter =
@@ -1947,7 +1956,9 @@ void main() {
           cancelScope: any(named: 'cancelScope'),
           orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
           dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
-          mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
+          mergeAllConcurrencyOverride: any(
+            named: 'mergeAllConcurrencyOverride',
+          ),
         ),
       );
       verify(
@@ -1962,7 +1973,9 @@ void main() {
           cancelScope: any(named: 'cancelScope'),
           orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
           dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
-          mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
+          mergeAllConcurrencyOverride: any(
+            named: 'mergeAllConcurrencyOverride',
+          ),
         ),
       ).called(2);
       check(refreshMetrics.latest).isNotNull();
@@ -2059,7 +2072,9 @@ void main() {
           cancelScope: any(named: 'cancelScope'),
           orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
           dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
-          mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
+          mergeAllConcurrencyOverride: any(
+            named: 'mergeAllConcurrencyOverride',
+          ),
         ),
       );
       check(localMetrics.latest).isNotNull();
@@ -2416,7 +2431,9 @@ void main() {
           cancelScope: any(named: 'cancelScope'),
           orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
           dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
-          mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
+          mergeAllConcurrencyOverride: any(
+            named: 'mergeAllConcurrencyOverride',
+          ),
         ),
       ).called(2);
     },
@@ -2478,7 +2495,9 @@ void main() {
           cancelScope: any(named: 'cancelScope'),
           orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
           dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
-          mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
+          mergeAllConcurrencyOverride: any(
+            named: 'mergeAllConcurrencyOverride',
+          ),
         ),
       ).called(1);
       verify(
@@ -2493,7 +2512,9 @@ void main() {
           cancelScope: any(named: 'cancelScope'),
           orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
           dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
-          mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
+          mergeAllConcurrencyOverride: any(
+            named: 'mergeAllConcurrencyOverride',
+          ),
         ),
       ).called(2);
     },
@@ -2512,7 +2533,9 @@ void main() {
           missingClientTokenTargets: <AgentQueryTarget>[
             _target('agent-x', clientToken: null),
           ],
-          skippedDueToHubPresenceTargets: <AgentQueryTarget>[_target('agent-y')],
+          skippedDueToHubPresenceTargets: <AgentQueryTarget>[
+            _target('agent-y'),
+          ],
           participants: <AgentQueryExecutionParticipant<CadastroFilialRow>>[
             _catalogParticipant(
               'agent-a',
@@ -2611,7 +2634,9 @@ void main() {
           cancelScope: any(named: 'cancelScope'),
           orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
           dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
-          mergeAllConcurrencyOverride: any(named: 'mergeAllConcurrencyOverride'),
+          mergeAllConcurrencyOverride: any(
+            named: 'mergeAllConcurrencyOverride',
+          ),
         ),
       ).called(1);
     },

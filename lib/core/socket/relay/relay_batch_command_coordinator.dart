@@ -209,14 +209,10 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
     if (collector.queue.isEmpty) {
       return;
     }
-    final taken = collector.queue
-        .take(_maxBatchSize)
-        .toList(growable: false);
+    final taken = collector.queue.take(_maxBatchSize).toList(growable: false);
     collector.queue.removeRange(0, taken.length);
 
-    final items = taken
-        .map((pending) => pending.item)
-        .toList(growable: false);
+    final items = taken.map((pending) => pending.item).toList(growable: false);
     List<Map<String, dynamic>> responses;
     Object? failure;
     StackTrace? failureStack;

@@ -457,37 +457,37 @@ void _registerAgentQueryTransport(GetIt getIt) {
 void _registerAgentQueriesRepositoryChain(GetIt getIt) {
   getIt
     ..registerLazySingleton<AgentQueriesRepositoryChain>(() {
-    final chain = AgentQueriesRepositoryChainFactory.build(
-      remoteDataSource: getIt<AgentQueriesRemoteDataSource>(),
-      eligibility: getIt<AgentSqlExecutionEligibilityPort>(),
-      maxCacheSize: AppEnvironment.agentSqlCacheMaxSize,
-      cacheTtl: Duration(milliseconds: AppEnvironment.agentSqlCacheTtlMs),
-      catalogCacheTtl: AppEnvironment.agentSqlCatalogCacheTtlMs > 0
-          ? Duration(milliseconds: AppEnvironment.agentSqlCatalogCacheTtlMs)
-          : null,
-      agentSqlRestMaxInflightPerAgent:
-          AppEnvironment.agentSqlRestMaxInflightPerAgent,
-    );
-
-    final cache = chain.cachingRepository;
-    AppLogger.info(
-      'AgentQueriesRepository decorator chain initialized',
-      context: <String, Object?>{
-        'decorators': chain.decorators,
-        'agentSqlCacheMaxSize': AppEnvironment.agentSqlCacheMaxSize,
-        'agentSqlCacheTtlMs': AppEnvironment.agentSqlCacheTtlMs,
-        'agentSqlRestMaxInflightPerAgent':
+      final chain = AgentQueriesRepositoryChainFactory.build(
+        remoteDataSource: getIt<AgentQueriesRemoteDataSource>(),
+        eligibility: getIt<AgentSqlExecutionEligibilityPort>(),
+        maxCacheSize: AppEnvironment.agentSqlCacheMaxSize,
+        cacheTtl: Duration(milliseconds: AppEnvironment.agentSqlCacheTtlMs),
+        catalogCacheTtl: AppEnvironment.agentSqlCatalogCacheTtlMs > 0
+            ? Duration(milliseconds: AppEnvironment.agentSqlCatalogCacheTtlMs)
+            : null,
+        agentSqlRestMaxInflightPerAgent:
             AppEnvironment.agentSqlRestMaxInflightPerAgent,
-        'sqlCacheHits': cache.cacheHits,
-        'sqlCacheMisses': cache.cacheMisses,
-        'sqlBatchCacheHits': cache.batchCacheHits,
-        'sqlBatchCacheMisses': cache.batchCacheMisses,
-        'sqlCacheSize': cache.cacheSize,
-      },
-    );
+      );
 
-    return chain;
-  })
+      final cache = chain.cachingRepository;
+      AppLogger.info(
+        'AgentQueriesRepository decorator chain initialized',
+        context: <String, Object?>{
+          'decorators': chain.decorators,
+          'agentSqlCacheMaxSize': AppEnvironment.agentSqlCacheMaxSize,
+          'agentSqlCacheTtlMs': AppEnvironment.agentSqlCacheTtlMs,
+          'agentSqlRestMaxInflightPerAgent':
+              AppEnvironment.agentSqlRestMaxInflightPerAgent,
+          'sqlCacheHits': cache.cacheHits,
+          'sqlCacheMisses': cache.cacheMisses,
+          'sqlBatchCacheHits': cache.batchCacheHits,
+          'sqlBatchCacheMisses': cache.batchCacheMisses,
+          'sqlCacheSize': cache.cacheSize,
+        },
+      );
+
+      return chain;
+    })
     ..registerLazySingleton<MetricsAgentQueriesRepository>(
       () => getIt<AgentQueriesRepositoryChain>().metricsRepository,
     )
@@ -525,8 +525,7 @@ void _registerSingleAgentQueryRepositories(GetIt getIt) {
   _registerSingle<ClienteOptionsRepository, LoadClienteOptionsUseCase>(
     getIt,
     repo: () => ClienteOptionsRepositoryImpl(getIt<AgentQueriesRepository>()),
-    useCase: () =>
-        LoadClienteOptionsUseCase(getIt<ClienteOptionsRepository>()),
+    useCase: () => LoadClienteOptionsUseCase(getIt<ClienteOptionsRepository>()),
   );
 
   _registerSingle<FornecedorOptionsRepository, LoadFornecedorOptionsUseCase>(
@@ -921,7 +920,9 @@ void _registerAcrossAgentQueryRepositories(GetIt getIt) {
         mergeAllConcurrency: mergeAllConcurrency,
       ),
     )
-    ..registerLazySingleton<AgentQueryExecutor<ResumoParcelaFormaPagamentoRowV2>>(
+    ..registerLazySingleton<
+      AgentQueryExecutor<ResumoParcelaFormaPagamentoRowV2>
+    >(
       () => AgentQueryExecutor<ResumoParcelaFormaPagamentoRowV2>(
         mergeAllConcurrency: mergeAllConcurrency,
       ),
@@ -1009,7 +1010,9 @@ void _registerAcrossAgentQueryRepositories(GetIt getIt) {
         getIt<ResumoParcelaFormaPagamentoAcrossAgentsRepository>(),
       ),
     )
-    ..registerLazySingleton<ResumoParcelaFormaPagamentoAcrossAgentsRepositoryV2>(
+    ..registerLazySingleton<
+      ResumoParcelaFormaPagamentoAcrossAgentsRepositoryV2
+    >(
       () => ResumoParcelaFormaPagamentoAcrossAgentsRepositoryImplV2(
         targetResolver: getIt<AgentQueryTargetResolver>(),
         planBuilder: getIt<AgentQueryPlanBuilder>(),
@@ -1017,7 +1020,9 @@ void _registerAcrossAgentQueryRepositories(GetIt getIt) {
         loadResumo: getIt<LoadResumoParcelaFormaPagamentoUseCaseV2>(),
       ),
     )
-    ..registerLazySingleton<LoadResumoParcelaFormaPagamentoAcrossAgentsUseCaseV2>(
+    ..registerLazySingleton<
+      LoadResumoParcelaFormaPagamentoAcrossAgentsUseCaseV2
+    >(
       () => LoadResumoParcelaFormaPagamentoAcrossAgentsUseCaseV2(
         getIt<ResumoParcelaFormaPagamentoAcrossAgentsRepositoryV2>(),
       ),

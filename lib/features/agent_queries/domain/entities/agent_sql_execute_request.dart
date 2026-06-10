@@ -1,7 +1,9 @@
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
-import 'package:colmeia/features/agent_queries/data/repositories/caching_agent_queries_repository.dart' show CachingAgentQueriesRepository;
+import 'package:colmeia/features/agent_queries/data/repositories/caching_agent_queries_repository.dart'
+    show CachingAgentQueriesRepository;
 import 'package:colmeia/features/agent_queries/domain/entities/agent_outbound_compression.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart' show AgentQueryLoadPolicy;
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart'
+    show AgentQueryLoadPolicy;
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 

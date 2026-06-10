@@ -29,16 +29,18 @@ class SalesProdutoTendenciaMediaMovelFilterSection extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final tokens = context.appTokens;
 
-    return Selector<SalesProdutoTendenciaMediaMovelController,
-        _SalesProdutoTendenciaMediaMovelFilterSlice>(
+    return Selector<
+      SalesProdutoTendenciaMediaMovelController,
+      _SalesProdutoTendenciaMediaMovelFilterSlice
+    >(
       selector: (_, controller) =>
           _SalesProdutoTendenciaMediaMovelFilterSlice.from(
             controller.state,
             l10n,
           ),
       builder: (context, slice, _) {
-        final controller =
-            context.read<SalesProdutoTendenciaMediaMovelController>();
+        final controller = context
+            .read<SalesProdutoTendenciaMediaMovelController>();
         final activeFilterChips = slice.buildActiveFilterChips(
           l10n: l10n,
           onClearClassificacaoFilter: onClearClassificacaoFilter,
@@ -64,7 +66,8 @@ class SalesProdutoTendenciaMediaMovelFilterSection extends StatelessWidget {
                   value: slice.selectedBranchName,
                 ),
                 SalesCardFilterSummaryItem(
-                  label: l10n.salesProdutoTendenciaMediaMovelFilterQuantidadeDias,
+                  label:
+                      l10n.salesProdutoTendenciaMediaMovelFilterQuantidadeDias,
                   value: l10n
                       .salesProdutoTendenciaMediaMovelFilterQuantidadeDiasValue(
                         slice.quantidadeDias,
@@ -79,9 +82,10 @@ class SalesProdutoTendenciaMediaMovelFilterSection extends StatelessWidget {
                 ),
                 SalesCardFilterSummaryItem(
                   label: l10n.reportFiltersTitle,
-                  value: l10n.salesProdutoTendenciaMediaMovelActiveFiltersSummary(
-                    slice.activeFilterCount,
-                  ),
+                  value: l10n
+                      .salesProdutoTendenciaMediaMovelActiveFiltersSummary(
+                        slice.activeFilterCount,
+                      ),
                 ),
               ],
               onTap: onOpenFilters,

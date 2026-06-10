@@ -206,34 +206,39 @@ void main() {
   });
 
   group('batching behaviour', () {
-    test('two concurrent unaries to the same agent flush as one batch',
-        () async {
-      final f1 = coordinator.sendUnary(
-        agentId: 'agent-1',
-        body: _bodyFor(id: 'rpc-a'),
-        clientRequestId: 'rpc-a',
-      );
-      final f2 = coordinator.sendUnary(
-        agentId: 'agent-1',
-        body: _bodyFor(id: 'rpc-b'),
-        clientRequestId: 'rpc-b',
-      );
+    test(
+      'two concurrent unaries to the same agent flush as one batch',
+      () async {
+        final f1 = coordinator.sendUnary(
+          agentId: 'agent-1',
+          body: _bodyFor(id: 'rpc-a'),
+          clientRequestId: 'rpc-a',
+        );
+        final f2 = coordinator.sendUnary(
+          agentId: 'agent-1',
+          body: _bodyFor(id: 'rpc-b'),
+          clientRequestId: 'rpc-b',
+        );
 
-      final results = await Future.wait(<Future<Map<String, dynamic>>>[f1, f2]);
+        final results = await Future.wait(<Future<Map<String, dynamic>>>[
+          f1,
+          f2,
+        ]);
 
-      check(inner.batchCalls.length).equals(1);
-      check(inner.unaryCalls).isEmpty();
-      final batch = inner.batchCalls.single;
-      check(batch.agentId).equals('agent-1');
-      check(batch.items.length).equals(2);
-      check(batch.items.map((i) => i.clientRequestId).toSet())
-          .deepEquals(<String>{'rpc-a', 'rpc-b'});
-      check(results.length).equals(2);
-      check(emissions).deepEquals(<int>[2]);
-    });
+        check(inner.batchCalls.length).equals(1);
+        check(inner.unaryCalls).isEmpty();
+        final batch = inner.batchCalls.single;
+        check(batch.agentId).equals('agent-1');
+        check(batch.items.length).equals(2);
+        check(
+          batch.items.map((i) => i.clientRequestId).toSet(),
+        ).deepEquals(<String>{'rpc-a', 'rpc-b'});
+        check(results.length).equals(2);
+        check(emissions).deepEquals(<int>[2]);
+      },
+    );
 
-    test('unaries to different agents flush as independent batches',
-        () async {
+    test('unaries to different agents flush as independent batches', () async {
       final fa = coordinator.sendUnary(
         agentId: 'agent-A',
         body: _bodyFor(id: 'a'),
@@ -275,23 +280,25 @@ void main() {
       check(inner.batchCalls.single.items.length).equals(4);
     });
 
-    test('beyond maxBatchSize triggers a follow-up batch in the next window',
-        () async {
-      final futures = <Future<Map<String, dynamic>>>[];
-      for (var i = 0; i < 5; i++) {
-        futures.add(
-          coordinator.sendUnary(
-            agentId: 'agent-1',
-            body: _bodyFor(id: 'rpc-$i'),
-            clientRequestId: 'rpc-$i',
-          ),
-        );
-      }
-      await Future.wait(futures);
-      check(inner.batchCalls.length).equals(2);
-      check(inner.batchCalls[0].items.length).equals(4);
-      check(inner.batchCalls[1].items.length).equals(1);
-    });
+    test(
+      'beyond maxBatchSize triggers a follow-up batch in the next window',
+      () async {
+        final futures = <Future<Map<String, dynamic>>>[];
+        for (var i = 0; i < 5; i++) {
+          futures.add(
+            coordinator.sendUnary(
+              agentId: 'agent-1',
+              body: _bodyFor(id: 'rpc-$i'),
+              clientRequestId: 'rpc-$i',
+            ),
+          );
+        }
+        await Future.wait(futures);
+        check(inner.batchCalls.length).equals(2);
+        check(inner.batchCalls[0].items.length).equals(4);
+        check(inner.batchCalls[1].items.length).equals(1);
+      },
+    );
   });
 
   group('automatic bypass', () {
@@ -383,26 +390,28 @@ void main() {
       check(inner.cancelledIds).deepEquals(<String>['rpc-x']);
     });
 
-    test('cancel removes a still-queued pending without emitting a batch',
-        () async {
-      final future = coordinator.sendUnary(
-        agentId: 'agent-1',
-        body: _bodyFor(id: 'rpc-q'),
-        clientRequestId: 'rpc-q',
-      );
-      // Same reasoning as the dispose test: register the error handler
-      // before the synchronous cancel settles the completer.
-      final assertion = expectLater(
-        future,
-        throwsA(isA<RelayRequestCancelled>()),
-      );
+    test(
+      'cancel removes a still-queued pending without emitting a batch',
+      () async {
+        final future = coordinator.sendUnary(
+          agentId: 'agent-1',
+          body: _bodyFor(id: 'rpc-q'),
+          clientRequestId: 'rpc-q',
+        );
+        // Same reasoning as the dispose test: register the error handler
+        // before the synchronous cancel settles the completer.
+        final assertion = expectLater(
+          future,
+          throwsA(isA<RelayRequestCancelled>()),
+        );
 
-      coordinator.cancel('rpc-q');
-      await assertion;
-      // The window flush should NOT emit a batch (nothing left).
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-      check(inner.batchCalls).isEmpty();
-    });
+        coordinator.cancel('rpc-q');
+        await assertion;
+        // The window flush should NOT emit a batch (nothing left).
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        check(inner.batchCalls).isEmpty();
+      },
+    );
   });
 
   group('dispose', () {

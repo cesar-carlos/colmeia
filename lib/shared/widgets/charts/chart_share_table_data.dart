@@ -98,7 +98,10 @@ class ChartShareTableData {
     required List<T> rows,
   }) {
     if (columns.isEmpty) {
-      return const ChartShareTableData(headers: <String>[], rows: <List<String>>[]);
+      return const ChartShareTableData(
+        headers: <String>[],
+        rows: <List<String>>[],
+      );
     }
     return ChartShareTableData(
       headers: columns.map((column) => column.label).toList(growable: false),

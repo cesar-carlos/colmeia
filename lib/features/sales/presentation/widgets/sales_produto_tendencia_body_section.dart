@@ -38,7 +38,8 @@ class SalesProdutoTendenciaBodySection extends StatelessWidget {
   final void Function(
     SalesProdutoTendenciaPresentationState state,
     SalesProdutoTendenciaChartId chartId,
-  ) onChartSelected;
+  )
+  onChartSelected;
   final ValueChanged<String> onClassificacaoSelected;
   final VoidCallback onClearClassificacaoFilter;
   final String? retryCountdownLabel;
@@ -47,8 +48,10 @@ class SalesProdutoTendenciaBodySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<SalesProdutoTendenciaController,
-        _SalesProdutoTendenciaBodySlice>(
+    return Selector<
+      SalesProdutoTendenciaController,
+      _SalesProdutoTendenciaBodySlice
+    >(
       selector: (_, controller) =>
           _SalesProdutoTendenciaBodySlice.from(controller.state),
       builder: (context, slice, _) {
@@ -130,8 +133,7 @@ class SalesProdutoTendenciaBodySection extends StatelessWidget {
               loading: state.loading,
               currentPage: state.page,
               pageSize: state.pageSize,
-              onPageSelected: (page) =>
-                  unawaited(controller.selectPage(page)),
+              onPageSelected: (page) => unawaited(controller.selectPage(page)),
               onPageSizeChanged: (size) =>
                   unawaited(controller.changePageSize(size)),
               classLabelBuilder: (value) =>

@@ -75,9 +75,13 @@ Com Flutter configurado, os comandos mais comuns sao:
 ```bash
 flutter pub get
 flutter analyze
+dart format lib test
 flutter test
 flutter run
 ```
+
+Guias de release por plataforma: `docs/install/release_guide.md` (Windows/Android),
+`docs/install/android_guide.md`, `docs/install/ios_guide.md`.
 
 ## Direcao do produto
 

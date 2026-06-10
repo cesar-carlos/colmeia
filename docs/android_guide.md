@@ -1,6 +1,7 @@
 # Guia Android — Colmeia
 
-Guia prático para build, publicação e manutenção do app **Colmeia** no Android. Valores abaixo refletem o estado atual do repositório (Flutter + Gradle Kotlin DSL).
+Guia prático para build, publicação e manutenção do app **Colmeia** no Android.
+Para iOS/TestFlight, veja [ios_guide.md](install/ios_guide.md). Valores abaixo refletem o estado atual do repositório (Flutter + Gradle Kotlin DSL).
 
 ## Pré-requisitos
 

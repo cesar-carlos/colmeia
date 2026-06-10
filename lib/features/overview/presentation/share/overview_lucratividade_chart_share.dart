@@ -12,12 +12,13 @@ import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-String overviewLucratividadeAgentXLabel(ResumoProdutoVendaLucratividadeRow row) =>
-    formatComparisonBarXAxisLabelWrapped(
-      row.filialLabel,
-      maxCharsPerLine: 11,
-      maxLines: 3,
-    );
+String overviewLucratividadeAgentXLabel(
+  ResumoProdutoVendaLucratividadeRow row,
+) => formatComparisonBarXAxisLabelWrapped(
+  row.filialLabel,
+  maxCharsPerLine: 11,
+  maxLines: 3,
+);
 
 @immutable
 class OverviewLucratividadeComboShareSeries {

@@ -24,39 +24,40 @@ void main() {
       expect(second, first);
     });
 
-    test('invalidatePointsDigestIfSourceChanged recomputes after list mutation', () {
-      final controller = BrazilMapSnapshotController();
-      final points = <AppBrazilStoreSalesPoint>[point];
-      final before = controller.resolvePointsDigest(points);
+    test(
+      'invalidatePointsDigestIfSourceChanged recomputes after list mutation',
+      () {
+        final controller = BrazilMapSnapshotController();
+        final points = <AppBrazilStoreSalesPoint>[point];
+        final before = controller.resolvePointsDigest(points);
 
-      controller.invalidatePointsDigestIfSourceChanged(points);
-      points.add(
-        const AppBrazilStoreSalesPoint(
-          id: 'store-2',
-          name: 'Store 2',
-          uf: 'SP',
-          latitude: -23.5,
-          longitude: -46.6,
-          salesAmount: 50,
-          salesCount: 1,
-        ),
-      );
-      final after = controller.resolvePointsDigest(points);
+        controller.invalidatePointsDigestIfSourceChanged(points);
+        points.add(
+          const AppBrazilStoreSalesPoint(
+            id: 'store-2',
+            name: 'Store 2',
+            uf: 'SP',
+            latitude: -23.5,
+            longitude: -46.6,
+            salesAmount: 50,
+            salesCount: 1,
+          ),
+        );
+        final after = controller.resolvePointsDigest(points);
 
-      expect(after, isNot(equals(before)));
-    });
+        expect(after, isNot(equals(before)));
+      },
+    );
 
     test('invalidateData clears snapshot caches', () {
-      final controller = BrazilMapSnapshotController()
-        ..invalidateData();
+      final controller = BrazilMapSnapshotController()..invalidateData();
 
       expect(controller.snapshotData, isNull);
       expect(controller.snapshot, isNull);
     });
 
     test('invalidateVisual clears only visual snapshot', () {
-      final controller = BrazilMapSnapshotController()
-        ..invalidateVisual();
+      final controller = BrazilMapSnapshotController()..invalidateVisual();
 
       expect(controller.snapshot, isNull);
     });

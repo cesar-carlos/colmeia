@@ -140,8 +140,9 @@ final class DioAppcastProbeClient {
     return switch (result.failureKind) {
       AppcastProbeFailureKind.timeout ||
       AppcastProbeFailureKind.network => true,
-      AppcastProbeFailureKind.httpError =>
-        _isRetryableHttpStatus(result.details),
+      AppcastProbeFailureKind.httpError => _isRetryableHttpStatus(
+        result.details,
+      ),
       _ => false,
     };
   }
@@ -171,6 +172,7 @@ final class DioAppcastProbeClient {
 
   static bool _hasReleaseEntries(String payload) {
     final normalized = payload.toLowerCase();
-    return normalized.contains('<item') && normalized.contains('sparkle:version');
+    return normalized.contains('<item') &&
+        normalized.contains('sparkle:version');
   }
 }

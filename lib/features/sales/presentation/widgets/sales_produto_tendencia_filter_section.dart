@@ -25,8 +25,10 @@ class SalesProdutoTendenciaFilterSection extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final tokens = context.appTokens;
 
-    return Selector<SalesProdutoTendenciaController,
-        _SalesProdutoTendenciaFilterSlice>(
+    return Selector<
+      SalesProdutoTendenciaController,
+      _SalesProdutoTendenciaFilterSlice
+    >(
       selector: (_, controller) =>
           _SalesProdutoTendenciaFilterSlice.from(controller.state, l10n),
       builder: (context, slice, _) {

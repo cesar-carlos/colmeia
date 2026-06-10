@@ -251,7 +251,8 @@ class ClientAgentsPresentationMessage {
     required int failedCount,
   }) {
     return ClientAgentsPresentationMessage.key(
-      ClientAgentsPresentationMessageKey.clientAgentsLocalTokenServerFlushFailed,
+      ClientAgentsPresentationMessageKey
+          .clientAgentsLocalTokenServerFlushFailed,
       payload: <String, Object?>{'failedCount': failedCount},
     );
   }

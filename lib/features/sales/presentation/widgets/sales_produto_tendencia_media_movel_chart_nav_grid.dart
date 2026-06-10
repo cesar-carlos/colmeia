@@ -8,11 +8,11 @@ enum SalesProdutoTendenciaMediaMovelChartId {
 }
 
 const List<SalesProdutoTendenciaMediaMovelChartId>
-    _allSalesProdutoTendenciaMediaMovelCharts =
+_allSalesProdutoTendenciaMediaMovelCharts =
     <SalesProdutoTendenciaMediaMovelChartId>[
-  SalesProdutoTendenciaMediaMovelChartId.countByClassificacao,
-  SalesProdutoTendenciaMediaMovelChartId.impactByClassificacao,
-];
+      SalesProdutoTendenciaMediaMovelChartId.countByClassificacao,
+      SalesProdutoTendenciaMediaMovelChartId.impactByClassificacao,
+    ];
 
 /// Compact navigation grid for moving-average trend chart fullscreen views.
 class SalesProdutoTendenciaMediaMovelChartNavGrid extends StatelessWidget {

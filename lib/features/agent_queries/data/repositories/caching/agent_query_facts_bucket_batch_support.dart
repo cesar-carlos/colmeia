@@ -2,7 +2,10 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 
 /// SQL command building and row mapping for batched closed-bucket loads.
-abstract interface class AgentQueryFactsBucketBatchSupport<Filter, Row extends Object> {
+abstract interface class AgentQueryFactsBucketBatchSupport<
+  Filter,
+  Row extends Object
+> {
   String get operation;
 
   String? validationError(Filter filter);

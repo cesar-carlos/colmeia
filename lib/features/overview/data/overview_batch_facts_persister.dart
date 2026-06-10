@@ -57,7 +57,8 @@ final class OverviewBatchFactsPersister {
       );
       final bucketRows = rows
           .where(
-            (row) => _isSameLocalDay(row.dataVenda, bucketFilter.dataVendaInicio),
+            (row) =>
+                _isSameLocalDay(row.dataVenda, bucketFilter.dataVendaInicio),
           )
           .toList(growable: false);
       if (bucketRows.isEmpty) {

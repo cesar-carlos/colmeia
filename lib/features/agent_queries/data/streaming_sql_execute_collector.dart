@@ -92,8 +92,7 @@ class BridgeShapedSqlExecuteCollector implements StreamingSqlExecuteCollector {
     await for (final chunk in chunks) {
       if (cancelScope?.isCancelled ?? false) {
         throw const RelayRequestCancelled(
-          message:
-              'Relay streaming collect aborted by AgentQueriesCancelScope',
+          message: 'Relay streaming collect aborted by AgentQueriesCancelScope',
         );
       }
       sawItem = true;

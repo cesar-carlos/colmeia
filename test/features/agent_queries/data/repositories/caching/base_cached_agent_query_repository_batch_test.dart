@@ -89,7 +89,8 @@ void main() {
         invocation,
       ) async {
         final request =
-            invocation.positionalArguments.single as AgentSqlExecuteBatchRequest;
+            invocation.positionalArguments.single
+                as AgentSqlExecuteBatchRequest;
         check(request.commands.length).equals(3);
         check(
           request.options?.maxParallelReadOnlyBatchItems,
@@ -108,7 +109,8 @@ void main() {
                   <String, dynamic>{
                     'codEmpresa': 1,
                     'codFilial': 1,
-                    'dataVenda': request.commands[index].namedParams['dataVendaInicio'],
+                    'dataVenda':
+                        request.commands[index].namedParams['dataVendaInicio'],
                     'qtdVendas': index + 1,
                     'valorTotalDiarioVenda': (index + 1).toDouble(),
                   },
@@ -141,101 +143,108 @@ void main() {
     },
   );
 
-  test('useExecuteBatchForBuckets false falls back to delegate per bucket', () async {
-    cachingRepo = CachingResumoTotalDiarioVendasRepositoryImpl(
-      delegate: delegate,
-      factsStore: memoryAgentQueryFactsStore(),
-      agentQueriesRepository: agentQueries,
-      clock: () => clock,
-      useExecuteBatchForBuckets: false,
-    );
-
-    final filter = ResumoTotalDiarioVendasFilter(
-      dataVendaInicio: DateTime(2026, 6),
-      dataVendaFim: DateTime(2026, 6, 3, 23, 59, 59, 999, 999),
-    );
-
-    await cachingRepo.load(
-      userId: 'u1',
-      agentId: 'a1',
-      filter: filter,
-      cachePolicy: AgentQueryLoadPolicy.forceRefresh,
-    );
-
-    verifyNever(() => agentQueries.executeSqlBatch(any()));
-    check(delegate.loadCount).equals(3);
-  });
-
-  test('batch item failure fails load at first failed bucket in plan order', () async {
-    when(() => agentQueries.executeSqlBatch(any())).thenAnswer((
-      invocation,
-    ) async {
-      final request =
-          invocation.positionalArguments.single as AgentSqlExecuteBatchRequest;
-      return Success<AgentSqlBatchExecutionResult, AppFailure>(
-        AgentSqlBatchExecutionResult(
-          totalCommands: request.commands.length,
-          successfulCommands: 1,
-          failedCommands: 1,
-          items: <AgentSqlBatchExecutionItem>[
-            const AgentSqlBatchExecutionItem(
-              index: 0,
-              ok: true,
-              rows: <Map<String, dynamic>>[
-                <String, dynamic>{
-                  'codEmpresa': 1,
-                  'codFilial': 1,
-                  'dataVenda': '2026-06-01',
-                  'qtdVendas': 1,
-                  'valorTotalDiarioVenda': 1.0,
-                },
-              ],
-              rowCount: 1,
-            ),
-            const AgentSqlBatchExecutionItem(
-              index: 1,
-              ok: false,
-              rows: <Map<String, dynamic>>[],
-              rowCount: 0,
-              error: 'bucket-2026-06-02',
-            ),
-            const AgentSqlBatchExecutionItem(
-              index: 2,
-              ok: true,
-              rows: <Map<String, dynamic>>[
-                <String, dynamic>{
-                  'codEmpresa': 1,
-                  'codFilial': 1,
-                  'dataVenda': '2026-06-03',
-                  'qtdVendas': 3,
-                  'valorTotalDiarioVenda': 3.0,
-                },
-              ],
-              rowCount: 1,
-            ),
-          ],
-        ),
+  test(
+    'useExecuteBatchForBuckets false falls back to delegate per bucket',
+    () async {
+      cachingRepo = CachingResumoTotalDiarioVendasRepositoryImpl(
+        delegate: delegate,
+        factsStore: memoryAgentQueryFactsStore(),
+        agentQueriesRepository: agentQueries,
+        clock: () => clock,
+        useExecuteBatchForBuckets: false,
       );
-    });
 
-    final filter = ResumoTotalDiarioVendasFilter(
-      dataVendaInicio: DateTime(2026, 6),
-      dataVendaFim: DateTime(2026, 6, 3, 23, 59, 59, 999, 999),
-    );
+      final filter = ResumoTotalDiarioVendasFilter(
+        dataVendaInicio: DateTime(2026, 6),
+        dataVendaFim: DateTime(2026, 6, 3, 23, 59, 59, 999, 999),
+      );
 
-    final result = await cachingRepo.load(
-      userId: 'u1',
-      agentId: 'a1',
-      filter: filter,
-      cachePolicy: AgentQueryLoadPolicy.forceRefresh,
-    );
+      await cachingRepo.load(
+        userId: 'u1',
+        agentId: 'a1',
+        filter: filter,
+        cachePolicy: AgentQueryLoadPolicy.forceRefresh,
+      );
 
-    check(result.isError()).isTrue();
-    expect(
-      result.exceptionOrNull()?.message,
-      contains('bucket-2026-06-02'),
-    );
-  });
+      verifyNever(() => agentQueries.executeSqlBatch(any()));
+      check(delegate.loadCount).equals(3);
+    },
+  );
+
+  test(
+    'batch item failure fails load at first failed bucket in plan order',
+    () async {
+      when(() => agentQueries.executeSqlBatch(any())).thenAnswer((
+        invocation,
+      ) async {
+        final request =
+            invocation.positionalArguments.single
+                as AgentSqlExecuteBatchRequest;
+        return Success<AgentSqlBatchExecutionResult, AppFailure>(
+          AgentSqlBatchExecutionResult(
+            totalCommands: request.commands.length,
+            successfulCommands: 1,
+            failedCommands: 1,
+            items: <AgentSqlBatchExecutionItem>[
+              const AgentSqlBatchExecutionItem(
+                index: 0,
+                ok: true,
+                rows: <Map<String, dynamic>>[
+                  <String, dynamic>{
+                    'codEmpresa': 1,
+                    'codFilial': 1,
+                    'dataVenda': '2026-06-01',
+                    'qtdVendas': 1,
+                    'valorTotalDiarioVenda': 1.0,
+                  },
+                ],
+                rowCount: 1,
+              ),
+              const AgentSqlBatchExecutionItem(
+                index: 1,
+                ok: false,
+                rows: <Map<String, dynamic>>[],
+                rowCount: 0,
+                error: 'bucket-2026-06-02',
+              ),
+              const AgentSqlBatchExecutionItem(
+                index: 2,
+                ok: true,
+                rows: <Map<String, dynamic>>[
+                  <String, dynamic>{
+                    'codEmpresa': 1,
+                    'codFilial': 1,
+                    'dataVenda': '2026-06-03',
+                    'qtdVendas': 3,
+                    'valorTotalDiarioVenda': 3.0,
+                  },
+                ],
+                rowCount: 1,
+              ),
+            ],
+          ),
+        );
+      });
+
+      final filter = ResumoTotalDiarioVendasFilter(
+        dataVendaInicio: DateTime(2026, 6),
+        dataVendaFim: DateTime(2026, 6, 3, 23, 59, 59, 999, 999),
+      );
+
+      final result = await cachingRepo.load(
+        userId: 'u1',
+        agentId: 'a1',
+        filter: filter,
+        cachePolicy: AgentQueryLoadPolicy.forceRefresh,
+      );
+
+      check(result.isError()).isTrue();
+      expect(
+        result.exceptionOrNull()?.message,
+        contains('bucket-2026-06-02'),
+      );
+    },
+  );
 
   test('persists closed buckets from successful batch items', () async {
     when(() => agentQueries.executeSqlBatch(any())).thenAnswer((
@@ -257,7 +266,8 @@ void main() {
                 <String, dynamic>{
                   'codEmpresa': 1,
                   'codFilial': 1,
-                  'dataVenda': request.commands[index].namedParams['dataVendaInicio'],
+                  'dataVenda':
+                      request.commands[index].namedParams['dataVendaInicio'],
                   'qtdVendas': 7,
                   'valorTotalDiarioVenda': 7.0,
                 },

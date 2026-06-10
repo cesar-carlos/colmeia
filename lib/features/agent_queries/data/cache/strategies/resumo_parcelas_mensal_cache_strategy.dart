@@ -14,7 +14,10 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_m
 
 final class ResumoParcelasMensalCacheStrategy
     implements
-        AgentQueryCacheStrategy<ResumoParcelasMensalFilter, ResumoParcelasMensalRow> {
+        AgentQueryCacheStrategy<
+          ResumoParcelasMensalFilter,
+          ResumoParcelasMensalRow
+        > {
   const ResumoParcelasMensalCacheStrategy();
 
   @override
@@ -41,7 +44,10 @@ final class ResumoParcelasMensalCacheStrategy
       end: filter.dataVendaFim,
     );
     final allIds = months
-        .map((m) => CalendarBucketClosure.monthBucketId(year: m.year, month: m.month))
+        .map(
+          (m) =>
+              CalendarBucketClosure.monthBucketId(year: m.year, month: m.month),
+        )
         .toList();
     final closedIds = <String>[];
     final openIds = <String>[];
@@ -79,8 +85,10 @@ final class ResumoParcelasMensalCacheStrategy
       return rangeFilter;
     }
     final start = DateTime(parsed.year, parsed.month);
-    final end = DateTime(parsed.year, parsed.month + 1)
-        .subtract(const Duration(microseconds: 1));
+    final end = DateTime(
+      parsed.year,
+      parsed.month + 1,
+    ).subtract(const Duration(microseconds: 1));
     return ResumoParcelasMensalFilter(
       dataVendaInicio: start,
       dataVendaFim: end,

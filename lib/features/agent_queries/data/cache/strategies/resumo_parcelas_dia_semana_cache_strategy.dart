@@ -46,7 +46,8 @@ final class ResumoParcelasDiaSemanaCacheStrategy
     );
     final allIds = months
         .map(
-          (m) => CalendarBucketClosure.monthBucketId(year: m.year, month: m.month),
+          (m) =>
+              CalendarBucketClosure.monthBucketId(year: m.year, month: m.month),
         )
         .toList();
     final closedIds = <String>[];
@@ -85,8 +86,10 @@ final class ResumoParcelasDiaSemanaCacheStrategy
       return rangeFilter;
     }
     final start = DateTime(parsed.year, parsed.month);
-    final end = DateTime(parsed.year, parsed.month + 1)
-        .subtract(const Duration(microseconds: 1));
+    final end = DateTime(
+      parsed.year,
+      parsed.month + 1,
+    ).subtract(const Duration(microseconds: 1));
     return ResumoParcelasDiaSemanaFilter(
       dataVendaInicio: start,
       dataVendaFim: end,
@@ -113,7 +116,8 @@ final class ResumoParcelasDiaSemanaCacheStrategy
             codEmpresa: map['codEmpresa'] as int,
             codFilial: map['codFilial'] as int,
             diaSemanaNumero: diaSemanaNumero,
-            diaSemana: map['diaSemana'] as String? ??
+            diaSemana:
+                map['diaSemana'] as String? ??
                 ResumoParcelasDiaSemanaLabels.labelFor(diaSemanaNumero),
             qtdVendas: map['qtdVendas'] as int,
             valorParcela: (map['valorParcela'] as num).toDouble(),

@@ -44,7 +44,10 @@ void main() {
       );
 
       expect(merged.weekdaySalesTrend, detail.weekdaySalesTrend);
-      expect(merged.partialQueryFailureDetails, detail.partialQueryFailureDetails);
+      expect(
+        merged.partialQueryFailureDetails,
+        detail.partialQueryFailureDetails,
+      );
     });
 
     test('weekdayUserSales transfers trend', () {
@@ -53,7 +56,10 @@ void main() {
         OverviewProgressiveSection.weekdayUserSales,
       );
 
-      expect(merged.weekdayUserSalesTrend, _detailOverview().weekdayUserSalesTrend);
+      expect(
+        merged.weekdayUserSalesTrend,
+        _detailOverview().weekdayUserSalesTrend,
+      );
     });
 
     test('lucratividadePeriod transfers trend and partial agent names', () {

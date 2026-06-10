@@ -54,8 +54,9 @@ void main() {
         anchor: anchor,
       );
 
-      check(salesTrendSameRange(range, salesTrendFullMonthInclusiveRange(anchor)))
-          .isTrue();
+      check(
+        salesTrendSameRange(range, salesTrendFullMonthInclusiveRange(anchor)),
+      ).isTrue();
     });
 
     test('previousMonth matches previous month helper', () {
@@ -189,19 +190,23 @@ void main() {
       check(salesTrendCalendarMonthSpan(previous)).equals(3);
     });
 
-    test('maps custom day windows to the same-length range immediately before', () {
-      final current = DateTimeRange(
-        start: DateTime(2026, 3, 10),
-        end: DateTime(2026, 3, 20),
-      );
-      final previous = salesTrendAutoPreviousRange(current);
+    test(
+      'maps custom day windows to the same-length range immediately before',
+      () {
+        final current = DateTimeRange(
+          start: DateTime(2026, 3, 10),
+          end: DateTime(2026, 3, 20),
+        );
+        final previous = salesTrendAutoPreviousRange(current);
 
-      check(salesTrendInclusiveDayCount(previous))
-          .equals(salesTrendInclusiveDayCount(current));
-      check(previous.end).equals(DateTime(2026, 3, 9));
-      check(previous.start).equals(DateTime(2026, 2, 27));
-      check(previous.end.add(const Duration(days: 1))).equals(current.start);
-    });
+        check(
+          salesTrendInclusiveDayCount(previous),
+        ).equals(salesTrendInclusiveDayCount(current));
+        check(previous.end).equals(DateTime(2026, 3, 9));
+        check(previous.start).equals(DateTime(2026, 2, 27));
+        check(previous.end.add(const Duration(days: 1))).equals(current.start);
+      },
+    );
   });
 
   group('preset period equivalence', () {

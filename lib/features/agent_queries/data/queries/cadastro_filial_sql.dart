@@ -17,7 +17,8 @@ abstract final class CadastroFilialSql {
     bool hasSelectedBranches = false,
     int? codEmpresa,
     int? codFilial,
-    CadastroFilialSqlProjection projection = CadastroFilialSqlProjection.registration,
+    CadastroFilialSqlProjection projection =
+        CadastroFilialSqlProjection.registration,
   }) {
     final branchPredicate = _branchPredicate(
       branches: branches,

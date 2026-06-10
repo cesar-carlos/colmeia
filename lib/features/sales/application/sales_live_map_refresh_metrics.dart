@@ -117,9 +117,13 @@ class SalesLiveMapRefreshMetrics {
   List<SalesLiveMapRefreshMetricEvent> getRecentEvents({
     int limit = _kSalesLiveMapRefreshMetricsDefaultLimit,
   }) {
-    return _events.toList(growable: false).reversed.take(limit).toList(
-      growable: false,
-    );
+    return _events
+        .toList(growable: false)
+        .reversed
+        .take(limit)
+        .toList(
+          growable: false,
+        );
   }
 
   SalesLiveMapRefreshMetricEvent? get latest =>

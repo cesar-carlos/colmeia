@@ -66,8 +66,10 @@ class OverviewBatchLoader {
        ),
        _factsWarmthChecker = factsWarmthChecker,
        _targetWaveConcurrency =
-           targetWaveConcurrency ?? AppEnvironment.overviewTargetWaveConcurrency,
-       _transportPolicy = transportPolicy ??
+           targetWaveConcurrency ??
+           AppEnvironment.overviewTargetWaveConcurrency,
+       _transportPolicy =
+           transportPolicy ??
            AgentQueryTransportPolicy(
              mode: AppEnvironment.agentQueryTransportPolicyMode,
            ) {
@@ -206,8 +208,9 @@ class OverviewBatchLoader {
     final selectedNorm = _normalizeSelectedAgentIds(filter.selectedAgentIds);
     final includeLucratividadeMensal =
         selectedNorm != null && selectedNorm.length == 1;
-    final loadsCachedSectionsViaUseCases =
-        _cachedSectionLoader.isConfiguredFor(cachePolicy);
+    final loadsCachedSectionsViaUseCases = _cachedSectionLoader.isConfiguredFor(
+      cachePolicy,
+    );
     final factsWarmthChecker = _factsWarmthChecker;
     final useColdCacheMergedBatch =
         loadsCachedSectionsViaUseCases &&
@@ -319,8 +322,7 @@ class OverviewBatchLoader {
             dailyTotalFilter: dailyTotalFilter,
             includeLucratividadeMensal: includeLucratividadeMensal,
             omitCachedSectionsFromSqlBatch: omitCachedSectionsFromSqlBatch,
-            includedSectionBatchSections:
-                sectionRequest.sectionBatchSections,
+            includedSectionBatchSections: sectionRequest.sectionBatchSections,
             includeMainBatch: false,
           );
 
@@ -420,7 +422,8 @@ class OverviewBatchLoader {
     final hasRunnableMainSuccess = mainResults.any(
       (result) => result.mainFailure == null,
     );
-    final shouldLoadSections = sectionBatch != null &&
+    final shouldLoadSections =
+        sectionBatch != null &&
         (sectionRequest.runMainBatch
             ? plan.plannedTargets.isNotEmpty && hasRunnableMainSuccess
             : targets.isNotEmpty);
@@ -497,7 +500,8 @@ class OverviewBatchLoader {
     );
   }
 
-  bool get _usesCachedDailyMonthlySections => _cachedSectionLoader.usesDailyMonthly;
+  bool get _usesCachedDailyMonthlySections =>
+      _cachedSectionLoader.usesDailyMonthly;
 
   bool get _usesCachedWeekdaySection => _cachedSectionLoader.usesWeekday;
 
@@ -529,7 +533,8 @@ class OverviewBatchLoader {
         omitCachedSectionsFromSqlBatch.lucratividade;
   }
 
-  Stream<AppResult<OverviewBatchLoadResult>> _loadProgressivelySingleBatchPerTarget({
+  Stream<AppResult<OverviewBatchLoadResult>>
+  _loadProgressivelySingleBatchPerTarget({
     required String userId,
     required AgentQueryTargetResolution resolution,
     required AgentQueryPlan plan,
@@ -786,7 +791,9 @@ class OverviewBatchLoader {
       participants: targetResults
           .map(
             (result) =>
-                AgentQueryExecutionParticipant<ResumoParcelaFormaPagamentoRowV2>(
+                AgentQueryExecutionParticipant<
+                  ResumoParcelaFormaPagamentoRowV2
+                >(
                   agentId: result.target.agentId,
                   displayName: result.target.displayName,
                   rows: result.mainRows,
@@ -811,5 +818,4 @@ class OverviewBatchLoader {
           ..sort();
     return ids;
   }
-
 }

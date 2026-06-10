@@ -362,8 +362,7 @@ final class OverviewBatchCommandBuilder {
     OverviewBatchCommandIndexes full, {
     required int mainOffset,
   }) {
-    int? subtract(int? index) =>
-        index == null ? null : index - mainOffset;
+    int? subtract(int? index) => index == null ? null : index - mainOffset;
     return OverviewSectionBatchCommandIndexes(
       monthly: subtract(full.monthly),
       weekday: subtract(full.weekday),

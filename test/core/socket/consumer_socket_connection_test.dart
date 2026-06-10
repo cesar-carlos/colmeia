@@ -334,7 +334,9 @@ void main() {
         final stopwatch = Stopwatch()..start();
         final connectFuture = conn.connect();
         await Future<void>.delayed(Duration.zero);
-        final expectation = check(connectFuture).throws<ConsumerSocketConnectCancelled>();
+        final expectation = check(
+          connectFuture,
+        ).throws<ConsumerSocketConnectCancelled>();
 
         await conn.pause();
         await expectation;
@@ -367,7 +369,9 @@ void main() {
         final stopwatch = Stopwatch()..start();
         final connectFuture = conn.connect();
         await Future<void>.delayed(Duration.zero);
-        final expectation = check(connectFuture).throws<ConsumerSocketReconnectExhausted>();
+        final expectation = check(
+          connectFuture,
+        ).throws<ConsumerSocketReconnectExhausted>();
 
         factory.fire('disconnect', 'transport close');
         await expectation;

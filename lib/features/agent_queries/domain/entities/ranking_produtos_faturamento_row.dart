@@ -34,6 +34,5 @@ class RankingProdutosFaturamentoRow {
   /// Rank position within the branch (`1` = highest [valorVenda]); null for DIVERSOS.
   final int? posicao;
 
-  bool get isDiversos =>
-      codProduto == 0 && nomeProduto == diversosNomeProduto;
+  bool get isDiversos => codProduto == 0 && nomeProduto == diversosNomeProduto;
 }

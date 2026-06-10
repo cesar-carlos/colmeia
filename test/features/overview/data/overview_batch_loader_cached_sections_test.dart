@@ -37,9 +37,11 @@ class _MockTargetResolver extends Mock implements AgentQueryTargetResolver {}
 class _MockAgentQueriesRepository extends Mock
     implements AgentQueriesRepository {}
 
-class _MockLoadDaily extends Mock implements LoadResumoTotalDiarioVendasUseCase {}
+class _MockLoadDaily extends Mock
+    implements LoadResumoTotalDiarioVendasUseCase {}
 
-class _MockLoadMonthly extends Mock implements LoadResumoParcelasMensalUseCase {}
+class _MockLoadMonthly extends Mock
+    implements LoadResumoParcelasMensalUseCase {}
 
 class _MockLoadWeekday extends Mock
     implements LoadResumoParcelasDiaSemanaUseCase {}
@@ -263,55 +265,58 @@ void main() {
     );
   }
 
-  test('section batch includes daily and monthly SQL without cached use cases',
-      () async {
-    when(() => agentQueriesRepository.executeSqlBatch(any())).thenAnswer((
-      invocation,
-    ) async {
-      final request =
-          invocation.positionalArguments.single as AgentSqlExecuteBatchRequest;
-      if (request.commands.length == 2) {
+  test(
+    'section batch includes daily and monthly SQL without cached use cases',
+    () async {
+      when(() => agentQueriesRepository.executeSqlBatch(any())).thenAnswer((
+        invocation,
+      ) async {
+        final request =
+            invocation.positionalArguments.single
+                as AgentSqlExecuteBatchRequest;
+        if (request.commands.length == 2) {
+          return Success<AgentSqlBatchExecutionResult, AppFailure>(
+            _batchResult(
+              commandCount: 2,
+              rowsByIndex: <int, List<Map<String, dynamic>>>{
+                0: <Map<String, dynamic>>[_mainRow()],
+                1: <Map<String, dynamic>>[_userRankingRow()],
+              },
+            ),
+          );
+        }
         return Success<AgentSqlBatchExecutionResult, AppFailure>(
-          _batchResult(
-            commandCount: 2,
-            rowsByIndex: <int, List<Map<String, dynamic>>>{
-              0: <Map<String, dynamic>>[_mainRow()],
-              1: <Map<String, dynamic>>[_userRankingRow()],
-            },
-          ),
+          _batchResult(commandCount: request.commands.length),
         );
-      }
-      return Success<AgentSqlBatchExecutionResult, AppFailure>(
-        _batchResult(commandCount: request.commands.length),
+      });
+
+      final loader = OverviewBatchLoader(
+        targetResolver: targetResolver,
+        planBuilder: const AgentQueryPlanBuilder(),
+        agentQueriesRepository: agentQueriesRepository,
       );
-    });
 
-    final loader = OverviewBatchLoader(
-      targetResolver: targetResolver,
-      planBuilder: const AgentQueryPlanBuilder(),
-      agentQueriesRepository: agentQueriesRepository,
-    );
+      await runDefaultLoad(loader: loader);
 
-    await runDefaultLoad(loader: loader);
-
-    final batchRequests = verify(
-      () => agentQueriesRepository.executeSqlBatch(captureAny()),
-    ).captured.cast<AgentSqlExecuteBatchRequest>();
-    expect(batchRequests.length, greaterThanOrEqualTo(2));
-    final sectionRequest = batchRequests.firstWhere(
-      (request) => request.commands.length >= 5,
-    );
-    final sqlBodies = sectionRequest.commands
-        .map((command) => command.sql)
-        .join('\n');
-    expect(sqlBodies.contains(ResumoTotalDiarioVendasSql.query), isTrue);
-    expect(
-      sqlBodies.contains(
-        ResumoParcelasMensalSql.query(),
-      ),
-      isTrue,
-    );
-  });
+      final batchRequests = verify(
+        () => agentQueriesRepository.executeSqlBatch(captureAny()),
+      ).captured.cast<AgentSqlExecuteBatchRequest>();
+      expect(batchRequests.length, greaterThanOrEqualTo(2));
+      final sectionRequest = batchRequests.firstWhere(
+        (request) => request.commands.length >= 5,
+      );
+      final sqlBodies = sectionRequest.commands
+          .map((command) => command.sql)
+          .join('\n');
+      expect(sqlBodies.contains(ResumoTotalDiarioVendasSql.query), isTrue);
+      expect(
+        sqlBodies.contains(
+          ResumoParcelasMensalSql.query(),
+        ),
+        isTrue,
+      );
+    },
+  );
 
   test(
     'section batch omits cached daily monthly weekday lucratividade SQL',
@@ -320,7 +325,8 @@ void main() {
         invocation,
       ) async {
         final request =
-            invocation.positionalArguments.single as AgentSqlExecuteBatchRequest;
+            invocation.positionalArguments.single
+                as AgentSqlExecuteBatchRequest;
         if (request.commands.length == 2) {
           return Success<AgentSqlBatchExecutionResult, AppFailure>(
             _batchResult(
@@ -349,32 +355,36 @@ void main() {
         sectionRequest.commands.single.sql,
         ResumoParcelasDiaSemanaUsuarioSql.query(),
       );
-      verify(() => loadDaily.call(
-            userId: 'user-1',
-            agentId: 'agent-1',
-            filter: any(named: 'filter'),
-            clientToken: 'token',
-            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-            hubPresenceOnlineAgentIdsSnapshot: any(
-              named: 'hubPresenceOnlineAgentIdsSnapshot',
-            ),
-            hubConnectedFromApprovedCatalogRow: true,
-            cancelScope: any(named: 'cancelScope'),
-            cachePolicy: any(named: 'cachePolicy'),
-          )).called(1);
-      verify(() => loadWeekday.call(
-            userId: 'user-1',
-            agentId: 'agent-1',
-            filter: any(named: 'filter'),
-            clientToken: 'token',
-            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-            hubPresenceOnlineAgentIdsSnapshot: any(
-              named: 'hubPresenceOnlineAgentIdsSnapshot',
-            ),
-            hubConnectedFromApprovedCatalogRow: true,
-            cancelScope: any(named: 'cancelScope'),
-            cachePolicy: any(named: 'cachePolicy'),
-          )).called(1);
+      verify(
+        () => loadDaily.call(
+          userId: 'user-1',
+          agentId: 'agent-1',
+          filter: any(named: 'filter'),
+          clientToken: 'token',
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          hubPresenceOnlineAgentIdsSnapshot: any(
+            named: 'hubPresenceOnlineAgentIdsSnapshot',
+          ),
+          hubConnectedFromApprovedCatalogRow: true,
+          cancelScope: any(named: 'cancelScope'),
+          cachePolicy: any(named: 'cachePolicy'),
+        ),
+      ).called(1);
+      verify(
+        () => loadWeekday.call(
+          userId: 'user-1',
+          agentId: 'agent-1',
+          filter: any(named: 'filter'),
+          clientToken: 'token',
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          hubPresenceOnlineAgentIdsSnapshot: any(
+            named: 'hubPresenceOnlineAgentIdsSnapshot',
+          ),
+          hubConnectedFromApprovedCatalogRow: true,
+          cancelScope: any(named: 'cancelScope'),
+          cachePolicy: any(named: 'cachePolicy'),
+        ),
+      ).called(1);
     },
   );
 
@@ -385,7 +395,8 @@ void main() {
         invocation,
       ) async {
         final request =
-            invocation.positionalArguments.single as AgentSqlExecuteBatchRequest;
+            invocation.positionalArguments.single
+                as AgentSqlExecuteBatchRequest;
         return Success<AgentSqlBatchExecutionResult, AppFailure>(
           _batchResult(
             commandCount: request.commands.length,
@@ -416,7 +427,10 @@ void main() {
         mergedSqlBodies.contains(ResumoParcelasDiaSemanaUsuarioSql.query()),
         isTrue,
       );
-      expect(mergedSqlBodies.contains(ResumoTotalDiarioVendasSql.query), isFalse);
+      expect(
+        mergedSqlBodies.contains(ResumoTotalDiarioVendasSql.query),
+        isFalse,
+      );
       expect(
         mergedSqlBodies.contains(ResumoParcelasMensalSql.query()),
         isFalse,
@@ -429,58 +443,66 @@ void main() {
         mergedSqlBodies.contains(ResumoProdutoVendaLucratividadeSql.query),
         isFalse,
       );
-      verify(() => loadDaily.call(
-            userId: 'user-1',
-            agentId: 'agent-1',
-            filter: any(named: 'filter'),
-            clientToken: 'token',
-            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-            hubPresenceOnlineAgentIdsSnapshot: any(
-              named: 'hubPresenceOnlineAgentIdsSnapshot',
-            ),
-            hubConnectedFromApprovedCatalogRow: true,
-            cancelScope: any(named: 'cancelScope'),
-            cachePolicy: any(named: 'cachePolicy'),
-          )).called(1);
-      verify(() => loadMonthly.call(
-            userId: 'user-1',
-            agentId: 'agent-1',
-            filter: any(named: 'filter'),
-            clientToken: 'token',
-            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-            hubPresenceOnlineAgentIdsSnapshot: any(
-              named: 'hubPresenceOnlineAgentIdsSnapshot',
-            ),
-            hubConnectedFromApprovedCatalogRow: true,
-            cancelScope: any(named: 'cancelScope'),
-            cachePolicy: any(named: 'cachePolicy'),
-          )).called(1);
-      verify(() => loadWeekday.call(
-            userId: 'user-1',
-            agentId: 'agent-1',
-            filter: any(named: 'filter'),
-            clientToken: 'token',
-            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-            hubPresenceOnlineAgentIdsSnapshot: any(
-              named: 'hubPresenceOnlineAgentIdsSnapshot',
-            ),
-            hubConnectedFromApprovedCatalogRow: true,
-            cancelScope: any(named: 'cancelScope'),
-            cachePolicy: any(named: 'cachePolicy'),
-          )).called(1);
-      verify(() => loadLucratividade.call(
-            userId: 'user-1',
-            agentId: 'agent-1',
-            filter: any(named: 'filter'),
-            clientToken: 'token',
-            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-            hubPresenceOnlineAgentIdsSnapshot: any(
-              named: 'hubPresenceOnlineAgentIdsSnapshot',
-            ),
-            hubConnectedFromApprovedCatalogRow: true,
-            cancelScope: any(named: 'cancelScope'),
-            cachePolicy: any(named: 'cachePolicy'),
-          )).called(1);
+      verify(
+        () => loadDaily.call(
+          userId: 'user-1',
+          agentId: 'agent-1',
+          filter: any(named: 'filter'),
+          clientToken: 'token',
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          hubPresenceOnlineAgentIdsSnapshot: any(
+            named: 'hubPresenceOnlineAgentIdsSnapshot',
+          ),
+          hubConnectedFromApprovedCatalogRow: true,
+          cancelScope: any(named: 'cancelScope'),
+          cachePolicy: any(named: 'cachePolicy'),
+        ),
+      ).called(1);
+      verify(
+        () => loadMonthly.call(
+          userId: 'user-1',
+          agentId: 'agent-1',
+          filter: any(named: 'filter'),
+          clientToken: 'token',
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          hubPresenceOnlineAgentIdsSnapshot: any(
+            named: 'hubPresenceOnlineAgentIdsSnapshot',
+          ),
+          hubConnectedFromApprovedCatalogRow: true,
+          cancelScope: any(named: 'cancelScope'),
+          cachePolicy: any(named: 'cachePolicy'),
+        ),
+      ).called(1);
+      verify(
+        () => loadWeekday.call(
+          userId: 'user-1',
+          agentId: 'agent-1',
+          filter: any(named: 'filter'),
+          clientToken: 'token',
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          hubPresenceOnlineAgentIdsSnapshot: any(
+            named: 'hubPresenceOnlineAgentIdsSnapshot',
+          ),
+          hubConnectedFromApprovedCatalogRow: true,
+          cancelScope: any(named: 'cancelScope'),
+          cachePolicy: any(named: 'cachePolicy'),
+        ),
+      ).called(1);
+      verify(
+        () => loadLucratividade.call(
+          userId: 'user-1',
+          agentId: 'agent-1',
+          filter: any(named: 'filter'),
+          clientToken: 'token',
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          hubPresenceOnlineAgentIdsSnapshot: any(
+            named: 'hubPresenceOnlineAgentIdsSnapshot',
+          ),
+          hubConnectedFromApprovedCatalogRow: true,
+          cancelScope: any(named: 'cancelScope'),
+          cachePolicy: any(named: 'cachePolicy'),
+        ),
+      ).called(1);
     },
   );
 
@@ -491,7 +513,8 @@ void main() {
         invocation,
       ) async {
         final request =
-            invocation.positionalArguments.single as AgentSqlExecuteBatchRequest;
+            invocation.positionalArguments.single
+                as AgentSqlExecuteBatchRequest;
         if (request.commands.length == 2) {
           return Success<AgentSqlBatchExecutionResult, AppFailure>(
             _batchResult(
@@ -563,7 +586,8 @@ void main() {
         invocation,
       ) async {
         final request =
-            invocation.positionalArguments.single as AgentSqlExecuteBatchRequest;
+            invocation.positionalArguments.single
+                as AgentSqlExecuteBatchRequest;
         if (request.commands.length == 2) {
           return Success<AgentSqlBatchExecutionResult, AppFailure>(
             _batchResult(
@@ -662,7 +686,10 @@ void main() {
       () => agentQueriesRepository.executeSqlBatch(captureAny()),
     ).captured.cast<AgentSqlExecuteBatchRequest>();
     expect(batchRequests, isNotEmpty);
-    expect(batchRequests.every((request) => request.skipTransportCache), isTrue);
+    expect(
+      batchRequests.every((request) => request.skipTransportCache),
+      isTrue,
+    );
   });
 }
 

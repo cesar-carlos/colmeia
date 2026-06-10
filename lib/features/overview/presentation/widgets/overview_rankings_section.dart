@@ -68,44 +68,44 @@ class _OverviewAgentRankingCardState extends State<OverviewAgentRankingCard> {
           shareCaptureKey: fullscreenShareKey,
           semanticsLabel: shareTitle,
           chartBuilder: (fullscreenContext) {
-              final fullscreenTokens = Theme.of(
-                fullscreenContext,
-              ).extension<AppThemeTokens>()!;
-              return RepaintBoundary(
-                key: fullscreenShareKey,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return AppComparisonBarChart<OverviewAgentRanking>(
-                      items: rankingsSnapshot,
-                      plotFloorAccessibilityNotice:
-                          l10n.chartComparisonPlotFloorNotice,
-                      extremeSpreadAccessibilityNotice:
-                          l10n.chartComparisonExtremeValueSpreadNotice,
-                      labelBuilder: (a) => a.displayName,
-                      valueBuilder: (a) => a.totalAmount,
-                      tooltipLabelBuilder: (a, v) =>
-                          '${a.displayName}: ${AppBrFormatters.currency(v)}',
-                      dataLabelBuilder: (a, v) =>
-                          AppBrFormatters.compactCurrency(v),
-                      style: appDashboardComparisonBarChartStyle(
-                        tokens: fullscreenTokens,
-                        kind: AppDashboardComparisonBarChartKind.ranking,
-                        l10n: l10n,
-                        heightOverride: constraints.maxHeight,
-                      ),
-                      emptyPlaceholder: showEmpty
-                          ? Center(
-                              child: Text(
-                                l10n.overviewAgentRankingEmpty,
-                                textAlign: TextAlign.center,
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-                            )
-                          : null,
-                    );
-                  },
-                ),
-              );
+            final fullscreenTokens = Theme.of(
+              fullscreenContext,
+            ).extension<AppThemeTokens>()!;
+            return RepaintBoundary(
+              key: fullscreenShareKey,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return AppComparisonBarChart<OverviewAgentRanking>(
+                    items: rankingsSnapshot,
+                    plotFloorAccessibilityNotice:
+                        l10n.chartComparisonPlotFloorNotice,
+                    extremeSpreadAccessibilityNotice:
+                        l10n.chartComparisonExtremeValueSpreadNotice,
+                    labelBuilder: (a) => a.displayName,
+                    valueBuilder: (a) => a.totalAmount,
+                    tooltipLabelBuilder: (a, v) =>
+                        '${a.displayName}: ${AppBrFormatters.currency(v)}',
+                    dataLabelBuilder: (a, v) =>
+                        AppBrFormatters.compactCurrency(v),
+                    style: appDashboardComparisonBarChartStyle(
+                      tokens: fullscreenTokens,
+                      kind: AppDashboardComparisonBarChartKind.ranking,
+                      l10n: l10n,
+                      heightOverride: constraints.maxHeight,
+                    ),
+                    emptyPlaceholder: showEmpty
+                        ? Center(
+                            child: Text(
+                              l10n.overviewAgentRankingEmpty,
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          )
+                        : null,
+                  );
+                },
+              ),
+            );
           },
         ),
       );
@@ -205,47 +205,47 @@ class _OverviewUserRankingCardState extends State<OverviewUserRankingCard> {
           shareCaptureKey: fullscreenShareKey,
           semanticsLabel: shareTitle,
           chartBuilder: (fullscreenContext) {
-              final fullscreenTokens = Theme.of(
-                fullscreenContext,
-              ).extension<AppThemeTokens>()!;
-              return RepaintBoundary(
-                key: fullscreenShareKey,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    return AppComparisonBarChart<OverviewUserRanking>(
-                      items: rankingsSnapshot,
-                      plotFloorAccessibilityNotice:
-                          l10n.chartComparisonPlotFloorNotice,
-                      extremeSpreadAccessibilityNotice:
-                          l10n.chartComparisonExtremeValueSpreadNotice,
-                      labelBuilder: (u) => u.userName,
-                      valueBuilder: (u) => u.totalAmount,
-                      tooltipLabelBuilder: (u, v) =>
-                          overviewUserRankingShareTooltip(l10n, u, v),
-                      dataLabelBuilder: (u, v) =>
-                          overviewUserRankingShareDataLabel(l10n, u, v),
-                      style: appDashboardComparisonBarChartStyle(
-                        tokens: fullscreenTokens,
-                        kind: AppDashboardComparisonBarChartKind.ranking,
-                        l10n: l10n,
-                        heightOverride: constraints.maxHeight,
-                        rankingValueLabelBackground: Theme.of(
-                          fullscreenContext,
-                        ).colorScheme.surface,
-                      ),
-                      emptyPlaceholder: showEmpty
-                          ? Center(
-                              child: Text(
-                                l10n.overviewUserRankingEmpty,
-                                textAlign: TextAlign.center,
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-                            )
-                          : null,
-                    );
-                  },
-                ),
-              );
+            final fullscreenTokens = Theme.of(
+              fullscreenContext,
+            ).extension<AppThemeTokens>()!;
+            return RepaintBoundary(
+              key: fullscreenShareKey,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return AppComparisonBarChart<OverviewUserRanking>(
+                    items: rankingsSnapshot,
+                    plotFloorAccessibilityNotice:
+                        l10n.chartComparisonPlotFloorNotice,
+                    extremeSpreadAccessibilityNotice:
+                        l10n.chartComparisonExtremeValueSpreadNotice,
+                    labelBuilder: (u) => u.userName,
+                    valueBuilder: (u) => u.totalAmount,
+                    tooltipLabelBuilder: (u, v) =>
+                        overviewUserRankingShareTooltip(l10n, u, v),
+                    dataLabelBuilder: (u, v) =>
+                        overviewUserRankingShareDataLabel(l10n, u, v),
+                    style: appDashboardComparisonBarChartStyle(
+                      tokens: fullscreenTokens,
+                      kind: AppDashboardComparisonBarChartKind.ranking,
+                      l10n: l10n,
+                      heightOverride: constraints.maxHeight,
+                      rankingValueLabelBackground: Theme.of(
+                        fullscreenContext,
+                      ).colorScheme.surface,
+                    ),
+                    emptyPlaceholder: showEmpty
+                        ? Center(
+                            child: Text(
+                              l10n.overviewUserRankingEmpty,
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          )
+                        : null,
+                  );
+                },
+              ),
+            );
           },
         ),
       );

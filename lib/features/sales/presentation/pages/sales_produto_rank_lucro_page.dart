@@ -507,64 +507,67 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
               key: _shareKey,
               child: AppSectionCard(
                 child:
-                    AppHorizontalProgressChart<ProdutoVendidoProdutoRankLucroRow>(
-                    titleWidget: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          l10n.salesProdutoRankLucroChartTitle,
-                          style: theme.appTypography.sectionHeaderH2.copyWith(
-                            fontWeight: FontWeight.w700,
+                    AppHorizontalProgressChart<
+                      ProdutoVendidoProdutoRankLucroRow
+                    >(
+                      titleWidget: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            l10n.salesProdutoRankLucroChartTitle,
+                            style: theme.appTypography.sectionHeaderH2.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: tokens.gapXs),
-                        Text(
-                          periodSubtitle,
-                          style: theme.appTypography.caption.copyWith(
+                          SizedBox(height: tokens.gapXs),
+                          Text(
+                            periodSubtitle,
+                            style: theme.appTypography.caption.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          SizedBox(height: tokens.gapXs / 2),
+                          Text(
+                            metricSubtitle,
+                            style: theme.appTypography.utilityOverline.copyWith(
+                              color: theme.appColors.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                      items: _rows,
+                      labelBuilder: (r) => r.nomeProduto.trim(),
+                      valueBuilder: (r) =>
+                          _chartValueFor(r, sortKey).toDouble(),
+                      maxValue: maxValue,
+                      isLoading: _loading && _error == null,
+                      rowLeadingBuilder: (context, row) =>
+                          _RankBadge(rank: _rowRankOf(row)),
+                      rowTooltipBuilder: (r, value, _) {
+                        final name = r.nomeProduto.trim();
+                        final text = metricProfit
+                            ? AppBrFormatters.smartCompactCurrency(value)
+                            : axisFormat.format(value);
+                        return '$name • $text';
+                      },
+                      valueLabelBuilder: (r, value, _) => metricProfit
+                          ? AppBrFormatters.smartCompactCurrency(value)
+                          : axisFormat.format(value),
+                      showDividers: true,
+                      style: chartStyles,
+                      wrapInCard: false,
+                      shareProgressKey: _shareKey,
+                      onShare: shareActions.shareCallback(),
+                      emptyPlaceholder: Center(
+                        child: Text(
+                          l10n.chartComparisonEmptyDefault,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyLarge?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ),
-                        SizedBox(height: tokens.gapXs / 2),
-                        Text(
-                          metricSubtitle,
-                          style: theme.appTypography.utilityOverline.copyWith(
-                            color: theme.appColors.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                    items: _rows,
-                    labelBuilder: (r) => r.nomeProduto.trim(),
-                    valueBuilder: (r) => _chartValueFor(r, sortKey).toDouble(),
-                    maxValue: maxValue,
-                    isLoading: _loading && _error == null,
-                    rowLeadingBuilder: (context, row) =>
-                        _RankBadge(rank: _rowRankOf(row)),
-                    rowTooltipBuilder: (r, value, _) {
-                      final name = r.nomeProduto.trim();
-                      final text = metricProfit
-                          ? AppBrFormatters.smartCompactCurrency(value)
-                          : axisFormat.format(value);
-                      return '$name • $text';
-                    },
-                    valueLabelBuilder: (r, value, _) => metricProfit
-                        ? AppBrFormatters.smartCompactCurrency(value)
-                        : axisFormat.format(value),
-                    showDividers: true,
-                    style: chartStyles,
-                    wrapInCard: false,
-                    shareProgressKey: _shareKey,
-                    onShare: shareActions.shareCallback(),
-                    emptyPlaceholder: Center(
-                      child: Text(
-                        l10n.chartComparisonEmptyDefault,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
                       ),
                     ),
-                  ),
               ),
             ),
         ],

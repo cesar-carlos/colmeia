@@ -16,9 +16,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:result_dart/result_dart.dart';
 
-class _MockLoadDaily extends Mock implements LoadResumoTotalDiarioVendasUseCase {}
+class _MockLoadDaily extends Mock
+    implements LoadResumoTotalDiarioVendasUseCase {}
 
-class _MockLoadMonthly extends Mock implements LoadResumoParcelasMensalUseCase {}
+class _MockLoadMonthly extends Mock
+    implements LoadResumoParcelasMensalUseCase {}
 
 void main() {
   late _MockLoadDaily loadDaily;
@@ -95,74 +97,10 @@ void main() {
     );
   });
 
-  test('prefetchForPlannedTargets invokes loaders per target when enabled', () async {
-    when(
-      () => loadDaily.call(
-        userId: any(named: 'userId'),
-        agentId: any(named: 'agentId'),
-        filter: any(named: 'filter'),
-        clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
-        ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
-        cachePolicy: any(named: 'cachePolicy'),
-      ),
-    ).thenAnswer(
-      (_) async => const Success<List<ResumoTotalDiarioVendasRow>, AppFailure>(
-        <ResumoTotalDiarioVendasRow>[],
-      ),
-    );
-    when(
-      () => loadMonthly.call(
-        userId: any(named: 'userId'),
-        agentId: any(named: 'agentId'),
-        filter: any(named: 'filter'),
-        clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
-        ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
-        cachePolicy: any(named: 'cachePolicy'),
-      ),
-    ).thenAnswer(
-      (_) async => const Success<List<ResumoParcelasMensalRow>, AppFailure>(
-        <ResumoParcelasMensalRow>[],
-      ),
-    );
-
-    final coordinator = AgentQueryFactsPrefetchCoordinator(
-      loadDaily: loadDaily,
-      loadMonthly: loadMonthly,
-      retryAfterGate: gate,
-    );
-
-    await coordinator.prefetchForPlannedTargets(
-      userId: 'u1',
-      targets: const [
-        AgentQueryTarget(
-          agentId: 'a1',
-          displayName: 'A1',
-          connectionStatus: AgentConnectionStatus.online,
-        ),
-        AgentQueryTarget(
-          agentId: 'a2',
-          displayName: 'A2',
-          connectionStatus: AgentConnectionStatus.online,
-        ),
-      ],
-      dailyFilter: dailyFilter,
-      monthlyFilter: monthlyFilter,
-    );
-
-    if (!AppEnvironment.agentQueryFactsPrefetchEnabled) {
-      verifyNever(
+  test(
+    'prefetchForPlannedTargets invokes loaders per target when enabled',
+    () async {
+      when(
         () => loadDaily.call(
           userId: any(named: 'userId'),
           agentId: any(named: 'agentId'),
@@ -177,43 +115,111 @@ void main() {
           ),
           cachePolicy: any(named: 'cachePolicy'),
         ),
+      ).thenAnswer(
+        (_) async =>
+            const Success<List<ResumoTotalDiarioVendasRow>, AppFailure>(
+              <ResumoTotalDiarioVendasRow>[],
+            ),
       );
-      return;
-    }
+      when(
+        () => loadMonthly.call(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+          filter: any(named: 'filter'),
+          clientToken: any(named: 'clientToken'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          hubPresenceOnlineAgentIdsSnapshot: any(
+            named: 'hubPresenceOnlineAgentIdsSnapshot',
+          ),
+          hubConnectedFromApprovedCatalogRow: any(
+            named: 'hubConnectedFromApprovedCatalogRow',
+          ),
+          cachePolicy: any(named: 'cachePolicy'),
+        ),
+      ).thenAnswer(
+        (_) async => const Success<List<ResumoParcelasMensalRow>, AppFailure>(
+          <ResumoParcelasMensalRow>[],
+        ),
+      );
 
-    verify(
-      () => loadDaily.call(
+      final coordinator = AgentQueryFactsPrefetchCoordinator(
+        loadDaily: loadDaily,
+        loadMonthly: loadMonthly,
+        retryAfterGate: gate,
+      );
+
+      await coordinator.prefetchForPlannedTargets(
         userId: 'u1',
-        agentId: 'a1',
-        filter: dailyFilter,
-        clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
+        targets: const [
+          AgentQueryTarget(
+            agentId: 'a1',
+            displayName: 'A1',
+            connectionStatus: AgentConnectionStatus.online,
+          ),
+          AgentQueryTarget(
+            agentId: 'a2',
+            displayName: 'A2',
+            connectionStatus: AgentConnectionStatus.online,
+          ),
+        ],
+        dailyFilter: dailyFilter,
+        monthlyFilter: monthlyFilter,
+      );
+
+      if (!AppEnvironment.agentQueryFactsPrefetchEnabled) {
+        verifyNever(
+          () => loadDaily.call(
+            userId: any(named: 'userId'),
+            agentId: any(named: 'agentId'),
+            filter: any(named: 'filter'),
+            clientToken: any(named: 'clientToken'),
+            bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+            hubPresenceOnlineAgentIdsSnapshot: any(
+              named: 'hubPresenceOnlineAgentIdsSnapshot',
+            ),
+            hubConnectedFromApprovedCatalogRow: any(
+              named: 'hubConnectedFromApprovedCatalogRow',
+            ),
+            cachePolicy: any(named: 'cachePolicy'),
+          ),
+        );
+        return;
+      }
+
+      verify(
+        () => loadDaily.call(
+          userId: 'u1',
+          agentId: 'a1',
+          filter: dailyFilter,
+          clientToken: any(named: 'clientToken'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          hubPresenceOnlineAgentIdsSnapshot: any(
+            named: 'hubPresenceOnlineAgentIdsSnapshot',
+          ),
+          hubConnectedFromApprovedCatalogRow: any(
+            named: 'hubConnectedFromApprovedCatalogRow',
+          ),
+          cachePolicy: any(named: 'cachePolicy'),
         ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
+      ).called(1);
+      verify(
+        () => loadDaily.call(
+          userId: 'u1',
+          agentId: 'a2',
+          filter: dailyFilter,
+          clientToken: any(named: 'clientToken'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          hubPresenceOnlineAgentIdsSnapshot: any(
+            named: 'hubPresenceOnlineAgentIdsSnapshot',
+          ),
+          hubConnectedFromApprovedCatalogRow: any(
+            named: 'hubConnectedFromApprovedCatalogRow',
+          ),
+          cachePolicy: any(named: 'cachePolicy'),
         ),
-        cachePolicy: any(named: 'cachePolicy'),
-      ),
-    ).called(1);
-    verify(
-      () => loadDaily.call(
-        userId: 'u1',
-        agentId: 'a2',
-        filter: dailyFilter,
-        clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
-        ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
-        cachePolicy: any(named: 'cachePolicy'),
-      ),
-    ).called(1);
-  });
+      ).called(1);
+    },
+  );
 
   test('prefetchForPlannedTargets skips agents in skipAgentIds', () async {
     when(
@@ -298,44 +304,47 @@ void main() {
     );
   });
 
-  test('prefetchForPlannedTargets aborts when cancel scope is cancelled', () async {
-    final scope = AgentQueriesCancelScope()..cancelAll();
-    final coordinator = AgentQueryFactsPrefetchCoordinator(
-      loadDaily: loadDaily,
-      loadMonthly: loadMonthly,
-      retryAfterGate: gate,
-    );
+  test(
+    'prefetchForPlannedTargets aborts when cancel scope is cancelled',
+    () async {
+      final scope = AgentQueriesCancelScope()..cancelAll();
+      final coordinator = AgentQueryFactsPrefetchCoordinator(
+        loadDaily: loadDaily,
+        loadMonthly: loadMonthly,
+        retryAfterGate: gate,
+      );
 
-    await coordinator.prefetchForPlannedTargets(
-      userId: 'u1',
-      targets: const [
-        AgentQueryTarget(
-          agentId: 'a1',
-          displayName: 'A1',
-          connectionStatus: AgentConnectionStatus.online,
-        ),
-      ],
-      dailyFilter: dailyFilter,
-      monthlyFilter: monthlyFilter,
-      cancelScope: scope,
-    );
+      await coordinator.prefetchForPlannedTargets(
+        userId: 'u1',
+        targets: const [
+          AgentQueryTarget(
+            agentId: 'a1',
+            displayName: 'A1',
+            connectionStatus: AgentConnectionStatus.online,
+          ),
+        ],
+        dailyFilter: dailyFilter,
+        monthlyFilter: monthlyFilter,
+        cancelScope: scope,
+      );
 
-    verifyNever(
-      () => loadDaily.call(
-        userId: any(named: 'userId'),
-        agentId: any(named: 'agentId'),
-        filter: any(named: 'filter'),
-        clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
+      verifyNever(
+        () => loadDaily.call(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+          filter: any(named: 'filter'),
+          clientToken: any(named: 'clientToken'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          hubPresenceOnlineAgentIdsSnapshot: any(
+            named: 'hubPresenceOnlineAgentIdsSnapshot',
+          ),
+          hubConnectedFromApprovedCatalogRow: any(
+            named: 'hubConnectedFromApprovedCatalogRow',
+          ),
+          cancelScope: any(named: 'cancelScope'),
+          cachePolicy: any(named: 'cachePolicy'),
         ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
-        cancelScope: any(named: 'cancelScope'),
-        cachePolicy: any(named: 'cachePolicy'),
-      ),
-    );
-  });
+      );
+    },
+  );
 }

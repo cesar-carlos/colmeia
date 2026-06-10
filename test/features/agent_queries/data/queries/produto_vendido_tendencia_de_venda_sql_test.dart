@@ -89,7 +89,9 @@ void main() {
       startRow: 41,
       endRow: 60,
     );
-    check(custom).contains('LEFT JOIN Numbered N ON N.RowNum BETWEEN 41 AND 60');
+    check(
+      custom,
+    ).contains('LEFT JOIN Numbered N ON N.RowNum BETWEEN 41 AND 60');
     check(custom.contains(':startRow')).isFalse();
     check(custom.contains(':endRow')).isFalse();
   });

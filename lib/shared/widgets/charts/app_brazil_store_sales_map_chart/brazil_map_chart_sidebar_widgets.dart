@@ -15,7 +15,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class BrazilMapChartDesktopBranchSidebarOverlay extends StatelessWidget {
-  const BrazilMapChartDesktopBranchSidebarOverlay({required this.width, required this.maxHeight, required this.topInset, required this.horizontalInset, required this.entries, required this.allowCollapse, required this.onToggleCollapsed, required this.onSelectBranch, required this.onPreviewBranchStart, required this.onPreviewBranchEnd, super.key,
+  const BrazilMapChartDesktopBranchSidebarOverlay({
+    required this.width,
+    required this.maxHeight,
+    required this.topInset,
+    required this.horizontalInset,
+    required this.entries,
+    required this.allowCollapse,
+    required this.onToggleCollapsed,
+    required this.onSelectBranch,
+    required this.onPreviewBranchStart,
+    required this.onPreviewBranchEnd,
+    super.key,
     this.selectedStoreId,
   });
 
@@ -56,7 +67,11 @@ class BrazilMapChartDesktopBranchSidebarOverlay extends StatelessWidget {
 
 class BrazilMapChartDesktopBranchSidebarCollapsedOverlay
     extends StatelessWidget {
-  const BrazilMapChartDesktopBranchSidebarCollapsedOverlay({required this.topInset, required this.horizontalInset, required this.onExpand, super.key,
+  const BrazilMapChartDesktopBranchSidebarCollapsedOverlay({
+    required this.topInset,
+    required this.horizontalInset,
+    required this.onExpand,
+    super.key,
   });
 
   final double topInset;
@@ -113,7 +128,16 @@ class BrazilMapChartDesktopBranchSidebarCollapsedOverlay
 }
 
 class BrazilMapChartDesktopBranchSidebar extends StatefulWidget {
-  const BrazilMapChartDesktopBranchSidebar({required this.width, required this.maxHeight, required this.entries, required this.allowCollapse, required this.onToggleCollapsed, required this.onSelectBranch, required this.onPreviewBranchStart, required this.onPreviewBranchEnd, super.key,
+  const BrazilMapChartDesktopBranchSidebar({
+    required this.width,
+    required this.maxHeight,
+    required this.entries,
+    required this.allowCollapse,
+    required this.onToggleCollapsed,
+    required this.onSelectBranch,
+    required this.onPreviewBranchStart,
+    required this.onPreviewBranchEnd,
+    super.key,
     this.selectedStoreId,
   });
 
@@ -603,7 +627,10 @@ class BrazilMapChartDesktopBranchSidebarFilterResult {
 }
 
 class BrazilMapChartDesktopBranchSidebarEmptyState extends StatelessWidget {
-  const BrazilMapChartDesktopBranchSidebarEmptyState({required this.title, required this.message, super.key,
+  const BrazilMapChartDesktopBranchSidebarEmptyState({
+    required this.title,
+    required this.message,
+    super.key,
   });
 
   final String title;
@@ -650,7 +677,17 @@ class BrazilMapChartDesktopBranchSidebarEmptyState extends StatelessWidget {
 }
 
 class BrazilMapChartDesktopBranchSidebarItem extends StatelessWidget {
-  const BrazilMapChartDesktopBranchSidebarItem({required this.rank, required this.entry, required this.focusNode, required this.isFocused, required this.isSelected, required this.onFocus, required this.onTap, required this.onPreviewStart, required this.onPreviewEnd, super.key,
+  const BrazilMapChartDesktopBranchSidebarItem({
+    required this.rank,
+    required this.entry,
+    required this.focusNode,
+    required this.isFocused,
+    required this.isSelected,
+    required this.onFocus,
+    required this.onTap,
+    required this.onPreviewStart,
+    required this.onPreviewEnd,
+    super.key,
   });
 
   final int rank;
@@ -877,7 +914,11 @@ class BrazilMapChartDesktopBranchSidebarItem extends StatelessWidget {
 }
 
 class BrazilMapChartDesktopBranchSidebarStatusRow extends StatelessWidget {
-  const BrazilMapChartDesktopBranchSidebarStatusRow({required this.icon, required this.label, required this.color, super.key,
+  const BrazilMapChartDesktopBranchSidebarStatusRow({
+    required this.icon,
+    required this.label,
+    required this.color,
+    super.key,
   });
 
   final IconData icon;

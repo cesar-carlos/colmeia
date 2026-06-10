@@ -38,6 +38,7 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tenden
 import 'package:colmeia/features/sales/presentation/widgets/sales_trend_comparison_bar_chart_style.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
+import 'package:colmeia/shared/design_system/app_scroll_tokens.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
@@ -443,13 +444,11 @@ class _SalesProdutoTendenciaMediaMovelPageState
                     belowSubtitle: Text(
                       fl10n
                           .salesProdutoTendenciaMediaMovelSummaryByClassificacaoDrillDownHint,
-                      style: Theme.of(fullscreenContext)
-                          .textTheme
-                          .bodySmall
+                      style: Theme.of(fullscreenContext).textTheme.bodySmall
                           ?.copyWith(
-                            color: Theme.of(fullscreenContext)
-                                .colorScheme
-                                .onSurfaceVariant,
+                            color: Theme.of(
+                              fullscreenContext,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                     ),
                   );
@@ -607,14 +606,14 @@ class _SalesProdutoTendenciaMediaMovelPageState
     final l10n = AppLocalizations.of(context);
     final tokens = context.appTokens;
 
-    return ChangeNotifierProvider<SalesProdutoTendenciaMediaMovelController>.value(
+    return ChangeNotifierProvider<
+      SalesProdutoTendenciaMediaMovelController
+    >.value(
       value: _controller,
       child: RefreshIndicator(
         onRefresh: _reload,
         child: ListView(
-          // CI release workflow uses Flutter 3.41.x; migrate to scrollCacheExtent when upgraded.
-          // ignore: deprecated_member_use
-          cacheExtent: 5000,
+          cacheExtent: AppScrollTokens.chartDashboardListCacheExtent,
           physics: const AlwaysScrollableScrollPhysics(),
           padding: context.pageScrollPadding(
             tokens,

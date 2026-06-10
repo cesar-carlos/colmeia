@@ -85,8 +85,9 @@ void registerInjectorClientAgents(GetIt getIt) {
     // Same concrete instance, exposed through the segregated token-only
     // contract so the token repository depends on the narrow surface (ISP).
     ..registerLazySingleton<ClientAgentTokenRemoteDataSource>(
-      () => getIt<ClientAgentsRemoteDataSource>()
-          as ClientAgentTokenRemoteDataSource,
+      () =>
+          getIt<ClientAgentsRemoteDataSource>()
+              as ClientAgentTokenRemoteDataSource,
     )
     ..registerLazySingleton<ClientAgentsRepository>(
       () => ClientAgentsRepositoryImpl(

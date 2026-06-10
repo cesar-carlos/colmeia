@@ -90,8 +90,9 @@ void main() {
             return Scaffold(
               body: TextButton(
                 onPressed: () async {
-                  includeChartImage =
-                      await showChartShareIncludeImageDialog(context);
+                  includeChartImage = await showChartShareIncludeImageDialog(
+                    context,
+                  );
                 },
                 child: const Text('Open dialog'),
               ),
@@ -105,8 +106,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Include chart image'), findsOneWidget);
-    expect(tester.widget<CheckboxListTile>(find.byType(CheckboxListTile)).value,
-        isFalse);
+    expect(
+      tester.widget<CheckboxListTile>(find.byType(CheckboxListTile)).value,
+      isFalse,
+    );
 
     await tester.tap(find.byType(FilledButton));
     await tester.pumpAndSettle();
@@ -114,41 +117,44 @@ void main() {
     expect(includeChartImage, isFalse);
   });
 
-  testWidgets('shows Open PDF action when share platform fails with temp path', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.light(),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Builder(
-          builder: (context) {
-            return Scaffold(
-              body: TextButton(
-                onPressed: () {
-                  showChartShareFailureSnackBar(
-                    context,
-                    const ChartShareFailure(
-                      ChartShareFailureReason.sharePlatformFailed,
-                      pdfFilePath: r'C:\temp\chart.pdf',
-                    ),
-                  );
-                },
-                child: const Text('Show failure'),
-              ),
-            );
-          },
+  testWidgets(
+    'shows Open PDF action when share platform fails with temp path',
+    (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              return Scaffold(
+                body: TextButton(
+                  onPressed: () {
+                    showChartShareFailureSnackBar(
+                      context,
+                      const ChartShareFailure(
+                        ChartShareFailureReason.sharePlatformFailed,
+                        pdfFilePath: r'C:\temp\chart.pdf',
+                      ),
+                    );
+                  },
+                  child: const Text('Show failure'),
+                ),
+              );
+            },
+          ),
         ),
-      ),
-    );
+      );
 
-    await tester.tap(find.text('Show failure'));
-    await tester.pump();
+      await tester.tap(find.text('Show failure'));
+      await tester.pump();
 
-    expect(find.text('Could not share chart. Try again.'), findsOneWidget);
-    expect(find.text('Open PDF'), findsOneWidget);
-  });
+      expect(find.text('Could not share chart. Try again.'), findsOneWidget);
+      expect(find.text('Open PDF'), findsOneWidget);
+    },
+  );
 }
 
 Widget _noopBuilder(BuildContext context) => const SizedBox.shrink();

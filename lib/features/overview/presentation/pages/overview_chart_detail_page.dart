@@ -87,7 +87,8 @@ class _OverviewChartDetailPageState extends State<OverviewChartDetailPage> {
     final l10n = AppLocalizations.of(context);
     final tokens = context.appTokens;
     final descriptor = overviewChartCardById(widget.chartId);
-    final title = descriptor?.resolvedTitle(l10n) ?? l10n.shellNavDashboardLabel;
+    final title =
+        descriptor?.resolvedTitle(l10n) ?? l10n.shellNavDashboardLabel;
 
     return Selector<OverviewChartDetailController, _ChartDetailSlice>(
       selector: (_, controller) => _ChartDetailSlice(

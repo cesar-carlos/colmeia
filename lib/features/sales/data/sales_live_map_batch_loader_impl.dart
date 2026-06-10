@@ -47,7 +47,8 @@ class SalesLiveMapBatchLoaderImpl implements SalesLiveMapBatchLoader {
              transportPolicy: transportPolicy,
            );
 
-  static int get batchBridgeTimeoutMs => SalesLiveMapBatchLoadConfig.bridgeTimeoutMs;
+  static int get batchBridgeTimeoutMs =>
+      SalesLiveMapBatchLoadConfig.bridgeTimeoutMs;
 
   static int get batchSqlTimeoutMs => SalesLiveMapBatchLoadConfig.sqlTimeoutMs;
 
@@ -301,7 +302,9 @@ class SalesLiveMapBatchLoaderImpl implements SalesLiveMapBatchLoader {
     required List<SalesLiveMapBatchTargetResult> targetResults,
     required int totalElapsedMs,
   }) {
-    return AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow>(
+    return AgentQueryExecutionReport<
+      ResumoTotalVendasMunicipioFilialPeriodoRow
+    >(
       queryKey: AgentQueryKey.resumoTotalVendasMunicipioFilialPeriodo,
       strategy: AgentQueryExecutionStrategy.mergeAll,
       consideredApprovedAgentCount: plan.consideredApprovedAgentCount,

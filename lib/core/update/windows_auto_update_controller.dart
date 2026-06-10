@@ -141,7 +141,8 @@ class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
       if (!probeResult.success) {
         await _setFailure(
           headline: _headlineForProbeFailure(probeResult),
-          details: probeResult.details ??
+          details:
+              probeResult.details ??
               WindowsAutoUpdateMessages.genericRetryDetails,
         );
         return;

@@ -182,10 +182,11 @@ Widget _monthlyPnlLineExport({
   final yAxisFormat = AppBrFormatters.compactCurrencyFormatForLocale(localeTag);
   final gridLineColor = colors.outlineVariant.withValues(alpha: 0.35);
   final chartHeight = exportContext.appTokens.chartStandardHeight;
-  final exportWidth = cartesianChartExportWidth(
-    itemCount: points.length,
-    minSlotWidth: _kMonthlyPnlLineExportMonthSlotWidth,
-  ) +
+  final exportWidth =
+      cartesianChartExportWidth(
+        itemCount: points.length,
+        minSlotWidth: _kMonthlyPnlLineExportMonthSlotWidth,
+      ) +
       _kMonthlyPnlLineExportHorizontalPadding;
 
   return ColoredBox(

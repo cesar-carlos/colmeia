@@ -137,28 +137,26 @@ class GrupoMarcaProdutoOptionsRepositoryImpl
       for (final item in execution.items) item.index: item,
     };
 
-    final grupoMapped = AgentSqlBatchItemRowsMapper.mapRowsForIndex<
-      GrupoProdutoOption
-    >(
-      byIndex,
-      _batchIndexGrupo,
-      (row) => GrupoProdutoOptionModel.fromMap(row).toEntity(),
-      operation: _batchOperation,
-    );
+    final grupoMapped =
+        AgentSqlBatchItemRowsMapper.mapRowsForIndex<GrupoProdutoOption>(
+          byIndex,
+          _batchIndexGrupo,
+          (row) => GrupoProdutoOptionModel.fromMap(row).toEntity(),
+          operation: _batchOperation,
+        );
     if (grupoMapped.failure != null) {
       return Failure<GrupoMarcaProdutoOptionsBatch, AppFailure>(
         grupoMapped.failure!,
       );
     }
 
-    final marcaMapped = AgentSqlBatchItemRowsMapper.mapRowsForIndex<
-      MarcaProdutoOption
-    >(
-      byIndex,
-      _batchIndexMarca,
-      (row) => MarcaProdutoOptionModel.fromMap(row).toEntity(),
-      operation: _batchOperation,
-    );
+    final marcaMapped =
+        AgentSqlBatchItemRowsMapper.mapRowsForIndex<MarcaProdutoOption>(
+          byIndex,
+          _batchIndexMarca,
+          (row) => MarcaProdutoOptionModel.fromMap(row).toEntity(),
+          operation: _batchOperation,
+        );
     if (marcaMapped.failure != null) {
       return Failure<GrupoMarcaProdutoOptionsBatch, AppFailure>(
         marcaMapped.failure!,

@@ -20,25 +20,28 @@ void main() {
       expect(projection.skippedDueToHubPresence, isEmpty);
     });
 
-    test('normalizes missing-token names (trim, dedupe, sort case-insensitive)',
-        () {
-      final overview = Overview.empty().copyWith(
-        agentNamesMissingClientToken: const <String>[
-          '  Bravo  ',
-          'alpha',
-          'Alpha',
-          '   ',
-          'Charlie',
-        ],
-      );
+    test(
+      'normalizes missing-token names (trim, dedupe, sort case-insensitive)',
+      () {
+        final overview = Overview.empty().copyWith(
+          agentNamesMissingClientToken: const <String>[
+            '  Bravo  ',
+            'alpha',
+            'Alpha',
+            '   ',
+            'Charlie',
+          ],
+        );
 
-      final projection = OverviewAgentAlertNamesProjection()..update(overview);
+        final projection = OverviewAgentAlertNamesProjection()
+          ..update(overview);
 
-      expect(
-        projection.missingClientToken,
-        <String>['alpha', 'Bravo', 'Charlie'],
-      );
-    });
+        expect(
+          projection.missingClientToken,
+          <String>['alpha', 'Bravo', 'Charlie'],
+        );
+      },
+    );
 
     test(
       'merges resumo and lucratividade failure names into partialQueryFailure',
@@ -54,8 +57,8 @@ void main() {
           ],
         );
 
-        final projection =
-            OverviewAgentAlertNamesProjection()..update(overview);
+        final projection = OverviewAgentAlertNamesProjection()
+          ..update(overview);
 
         expect(
           projection.partialQueryFailure,
@@ -85,25 +88,27 @@ void main() {
       );
     });
 
-    test('caches the projection until update is called with a new overview',
-        () {
-      final overviewA = Overview.empty().copyWith(
-        agentNamesMissingClientToken: const <String>['A'],
-      );
-      final overviewB = Overview.empty().copyWith(
-        agentNamesMissingClientToken: const <String>['B'],
-      );
-      final projection = OverviewAgentAlertNamesProjection()
-        ..update(overviewA);
-      final firstRead = projection.missingClientToken;
-      final secondRead = projection.missingClientToken;
+    test(
+      'caches the projection until update is called with a new overview',
+      () {
+        final overviewA = Overview.empty().copyWith(
+          agentNamesMissingClientToken: const <String>['A'],
+        );
+        final overviewB = Overview.empty().copyWith(
+          agentNamesMissingClientToken: const <String>['B'],
+        );
+        final projection = OverviewAgentAlertNamesProjection()
+          ..update(overviewA);
+        final firstRead = projection.missingClientToken;
+        final secondRead = projection.missingClientToken;
 
-      projection.update(overviewB);
-      final thirdRead = projection.missingClientToken;
+        projection.update(overviewB);
+        final thirdRead = projection.missingClientToken;
 
-      expect(identical(firstRead, secondRead), isTrue);
-      expect(thirdRead, <String>['B']);
-    });
+        expect(identical(firstRead, secondRead), isTrue);
+        expect(thirdRead, <String>['B']);
+      },
+    );
 
     test('clears cached lists when switching to a null overview', () {
       final overview = Overview.empty().copyWith(

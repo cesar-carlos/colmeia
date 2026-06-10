@@ -57,6 +57,7 @@ abstract final class ResumoParcelaPorUsuarioSql {
   static const String query =
       _queryHead +
       _queryMiddleSelect +
-      ParcelaProdutoVendidoDetalheSql.selectFromParcelLinesForOverviewAggregate +
+      ParcelaProdutoVendidoDetalheSql
+          .selectFromParcelLinesForOverviewAggregate +
       _queryTail;
 }

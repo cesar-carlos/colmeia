@@ -39,7 +39,9 @@ class SalesLiveMapInlineChartSection extends StatelessWidget {
         final l10n = AppLocalizations.of(context);
         final controller = context.read<SalesLiveMapController>();
         final viewModel = SalesLiveMapViewModel.fromState(slice.state, l10n);
-        if (SalesLiveMapViewModel.shouldShowChartFailurePlaceholder(slice.state)) {
+        if (SalesLiveMapViewModel.shouldShowChartFailurePlaceholder(
+          slice.state,
+        )) {
           final result = slice.state.result;
           final tokens = context.appTokens;
           return AppSectionCard(

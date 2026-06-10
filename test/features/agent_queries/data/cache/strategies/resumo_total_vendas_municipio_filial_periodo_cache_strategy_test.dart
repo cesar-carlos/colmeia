@@ -29,18 +29,19 @@ void main() {
       final filter = ResumoTotalVendasMunicipioFilialPeriodoFilter(
         dataVendaInicio: DateTime(2026, 6),
         dataVendaFim: DateTime(2026, 6, 3),
-        selectedBranches: const <ResumoTotalVendasMunicipioFilialPeriodoBranchRef>[
-          ResumoTotalVendasMunicipioFilialPeriodoBranchRef(
-            agentId: 'agent-b',
-            codEmpresa: 1,
-            codFilial: 2,
-          ),
-          ResumoTotalVendasMunicipioFilialPeriodoBranchRef(
-            agentId: 'agent-a',
-            codEmpresa: 1,
-            codFilial: 1,
-          ),
-        ],
+        selectedBranches:
+            const <ResumoTotalVendasMunicipioFilialPeriodoBranchRef>[
+              ResumoTotalVendasMunicipioFilialPeriodoBranchRef(
+                agentId: 'agent-b',
+                codEmpresa: 1,
+                codFilial: 2,
+              ),
+              ResumoTotalVendasMunicipioFilialPeriodoBranchRef(
+                agentId: 'agent-a',
+                codEmpresa: 1,
+                codFilial: 1,
+              ),
+            ],
       );
 
       expect(

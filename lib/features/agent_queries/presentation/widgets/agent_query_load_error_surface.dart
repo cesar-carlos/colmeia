@@ -36,9 +36,9 @@ class AgentQueryLoadErrorSurface extends StatelessWidget {
   final bool showTechnicalDetails;
 
   bool get hasError => hasErrorFor(
-        loadFailure: loadFailure,
-        errorMessage: errorMessage,
-      );
+    loadFailure: loadFailure,
+    errorMessage: errorMessage,
+  );
 
   static bool hasErrorFor({
     AppFailure? loadFailure,

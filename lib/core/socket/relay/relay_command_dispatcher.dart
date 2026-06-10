@@ -1,5 +1,6 @@
 import 'package:colmeia/core/socket/relay/relay_batch_item.dart';
-import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart' show RelayRequestCancelled;
+import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart'
+    show RelayRequestCancelled;
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
 import 'package:colmeia/core/socket/relay/relay_rpc_outcome.dart';
 

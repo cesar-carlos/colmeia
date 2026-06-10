@@ -59,7 +59,9 @@ class ClientAgentsActionFeedbackBanner extends StatelessWidget {
         message: message,
         icon: Icons.schedule_send_rounded,
       ),
-      ClientAgentsActionFeedbackKind.success => _SuccessBanner(message: message),
+      ClientAgentsActionFeedbackKind.success => _SuccessBanner(
+        message: message,
+      ),
     };
   }
 }

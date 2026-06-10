@@ -9,8 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 /// Display order aligned with the executive summary KPI strip.
-const List<String> kSalesProdutoTendenciaClassificacaoDisplayOrder =
-    <String>[
+const List<String> kSalesProdutoTendenciaClassificacaoDisplayOrder = <String>[
   'CRESCENDO',
   'CAINDO',
   'NOVO PRODUTO',
@@ -264,9 +263,7 @@ Widget buildSalesProdutoTendenciaClassificacaoBarChart({
       return '$label · ${countFormat.format(bucket.count)} · '
           '${countFormat.format(bucket.impacto.round())}\n$description';
     },
-    onPointTap: onBucketTap == null
-        ? null
-        : (bucket, _) => onBucketTap(bucket),
+    onPointTap: onBucketTap == null ? null : (bucket, _) => onBucketTap(bucket),
     belowSubtitle: belowSubtitle,
     onShare: onShare,
     shareProgressKey: shareProgressKey,

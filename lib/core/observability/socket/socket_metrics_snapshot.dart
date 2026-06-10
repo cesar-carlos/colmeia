@@ -1,4 +1,5 @@
-import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart' show PerAgentConcurrencyGate;
+import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart'
+    show PerAgentConcurrencyGate;
 
 /// Read-only snapshot of `SocketChannelMetrics`. Useful for diagnostics,
 /// snapshot tests, manual inspection in debug builds, and compact relay
@@ -279,8 +280,7 @@ class SocketMetricsSnapshot {
     if (serverPhaseMsByName.isNotEmpty) {
       final entries = <String, Object?>{
         for (final entry in serverPhaseMsByName.entries)
-          if (entry.value.count > 0)
-            entry.key: _histogramDebugMap(entry.value),
+          if (entry.value.count > 0) entry.key: _histogramDebugMap(entry.value),
       };
       if (entries.isNotEmpty) {
         out['serverPhaseMsByName'] = entries;

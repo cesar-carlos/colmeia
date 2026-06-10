@@ -141,9 +141,9 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
   late final AppReportGroupController _groupController;
 
   bool get _hasLoadError => AgentQueryLoadErrorSurface.hasErrorFor(
-        loadFailure: widget.loadFailure,
-        errorMessage: widget.errorMessage,
-      );
+    loadFailure: widget.loadFailure,
+    errorMessage: widget.errorMessage,
+  );
 
   @override
   void initState() {
@@ -282,7 +282,9 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
           context: context,
           row: row,
           columns: _visibleColumns,
-          title: widget.title ?? AppLocalizations.of(context).reportRowDetailDefaultTitle,
+          title:
+              widget.title ??
+              AppLocalizations.of(context).reportRowDetailDefaultTitle,
         ),
       );
     }
@@ -598,9 +600,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
             isLoading: widget.isLoading,
             cardColor: reportCardColor,
             cardBorder: reportCardBorder,
-            horizontalPadding: isMinimal
-                ? tokens.gapMd
-                : tokens.contentSpacing,
+            horizontalPadding: isMinimal ? tokens.gapMd : tokens.contentSpacing,
             onPageChanged: (page) {
               widget.events.onPageChanged?.call(page);
               _emitQueryChanged(page: page);

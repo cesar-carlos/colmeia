@@ -81,11 +81,14 @@ void main() {
       expect(policy.internalSelectedStateKey, 'SP');
     });
 
-    test('applyStoreSelection with focusStore false keeps camera unfocused', () {
-      policy.applyStoreSelection(storeMt, focusStore: false);
-      expect(policy.focusCameraOnSelectedStore, isFalse);
-      expect(policy.internalSelectedStoreId, storeMt.id);
-    });
+    test(
+      'applyStoreSelection with focusStore false keeps camera unfocused',
+      () {
+        policy.applyStoreSelection(storeMt, focusStore: false);
+        expect(policy.focusCameraOnSelectedStore, isFalse);
+        expect(policy.internalSelectedStoreId, storeMt.id);
+      },
+    );
 
     test(
       'applyStoreSelection without linkRegionHighlight keeps prior UF highlight',
@@ -119,17 +122,20 @@ void main() {
       );
     });
 
-    test('cluster selection blocks viewport clustering without camera focus', () {
-      policy.applyStoreSelection(storeMt, focusStore: false);
-      expect(policy.blocksViewportDrivenClustering(null), isTrue);
-      expect(
-        policy.shouldFocusCameraOnSelectedStore(
-          controlledSelectedStoreId: null,
-          autoFocusSelectedStore: true,
-        ),
-        isFalse,
-      );
-    });
+    test(
+      'cluster selection blocks viewport clustering without camera focus',
+      () {
+        policy.applyStoreSelection(storeMt, focusStore: false);
+        expect(policy.blocksViewportDrivenClustering(null), isTrue);
+        expect(
+          policy.shouldFocusCameraOnSelectedStore(
+            controlledSelectedStoreId: null,
+            autoFocusSelectedStore: true,
+          ),
+          isFalse,
+        );
+      },
+    );
 
     test('shouldSkipRedundantRegionTap when store selected on same UF', () {
       policy

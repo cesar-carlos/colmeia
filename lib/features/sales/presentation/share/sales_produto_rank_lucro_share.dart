@@ -34,8 +34,8 @@ double salesProdutoRankLucroExportHeight({
   final singleRowHeight = verticalPad + labelRowHeight + gapSm + barHeight;
   final betweenRows = showDividers
       ? (style.dividerPadding?.resolve(TextDirection.ltr).vertical ??
-            rowSpacing) +
-          1
+                rowSpacing) +
+            1
       : rowSpacing;
 
   return rowCount * singleRowHeight + (rowCount - 1) * betweenRows;
@@ -131,29 +131,32 @@ ChartShareMetadata buildSalesProdutoRankLucroShareMetadata({
               child: SizedBox(
                 width: _kRankLucroExportWidth,
                 height: exportHeight,
-                child: AppHorizontalProgressChart<ProdutoVendidoProdutoRankLucroRow>(
-                  items: rowsSnapshot,
-                  labelBuilder: (row) => row.nomeProduto.trim(),
-                  valueBuilder: (row) =>
-                      _chartValueForRow(row, sortBy).toDouble(),
-                  maxValue: maxValue,
-                  rowLeadingBuilder: (context, row) => _RankBadge(
-                    rank: rowsSnapshot.indexOf(row) + 1,
-                  ),
-                  rowTooltipBuilder: (row, value, _) {
-                    final name = row.nomeProduto.trim();
-                    final text = metricProfit
-                        ? AppBrFormatters.smartCompactCurrency(value)
-                        : axisFormat.format(value);
-                    return '$name • $text';
-                  },
-                  valueLabelBuilder: (row, value, _) => metricProfit
-                      ? AppBrFormatters.smartCompactCurrency(value)
-                      : axisFormat.format(value),
-                  showDividers: true,
-                  style: chartStyle,
-                  wrapInCard: false,
-                ),
+                child:
+                    AppHorizontalProgressChart<
+                      ProdutoVendidoProdutoRankLucroRow
+                    >(
+                      items: rowsSnapshot,
+                      labelBuilder: (row) => row.nomeProduto.trim(),
+                      valueBuilder: (row) =>
+                          _chartValueForRow(row, sortBy).toDouble(),
+                      maxValue: maxValue,
+                      rowLeadingBuilder: (context, row) => _RankBadge(
+                        rank: rowsSnapshot.indexOf(row) + 1,
+                      ),
+                      rowTooltipBuilder: (row, value, _) {
+                        final name = row.nomeProduto.trim();
+                        final text = metricProfit
+                            ? AppBrFormatters.smartCompactCurrency(value)
+                            : axisFormat.format(value);
+                        return '$name • $text';
+                      },
+                      valueLabelBuilder: (row, value, _) => metricProfit
+                          ? AppBrFormatters.smartCompactCurrency(value)
+                          : axisFormat.format(value),
+                      showDividers: true,
+                      style: chartStyle,
+                      wrapInCard: false,
+                    ),
               ),
             );
           },

@@ -20,6 +20,7 @@ class AppMotionTokens extends ThemeExtension<AppMotionTokens> {
     required this.chartSeriesAnimation,
     required this.dashboardStageDelayBase,
     required this.dashboardStageDelayStep,
+    required this.overlayMenuExpandCollapse,
   });
 
   /// Default tokens used by all themes today. Kept as a single source so the
@@ -31,6 +32,7 @@ class AppMotionTokens extends ThemeExtension<AppMotionTokens> {
     chartSeriesAnimation: Duration(milliseconds: 150),
     dashboardStageDelayBase: Duration.zero,
     dashboardStageDelayStep: Duration(milliseconds: 40),
+    overlayMenuExpandCollapse: Duration(milliseconds: 180),
   );
 
   /// Fade-in duration used by `AppChartFadeIn` and any chart card that opts
@@ -56,6 +58,9 @@ class AppMotionTokens extends ThemeExtension<AppMotionTokens> {
   /// Additive step between successive staged sections in dashboards.
   final Duration dashboardStageDelayStep;
 
+  /// Expand/collapse duration for form overlay menus (async search, dropdown).
+  final Duration overlayMenuExpandCollapse;
+
   /// Stagger helper. `dashboardStageDelay(0)` returns the base, `(1)` adds
   /// one step, and so on. Designed for consumers that iterate over a list
   /// of section descriptors.
@@ -74,6 +79,7 @@ class AppMotionTokens extends ThemeExtension<AppMotionTokens> {
     Duration? chartSeriesAnimation,
     Duration? dashboardStageDelayBase,
     Duration? dashboardStageDelayStep,
+    Duration? overlayMenuExpandCollapse,
   }) {
     return AppMotionTokens(
       chartFadeIn: chartFadeIn ?? this.chartFadeIn,
@@ -85,6 +91,8 @@ class AppMotionTokens extends ThemeExtension<AppMotionTokens> {
           dashboardStageDelayBase ?? this.dashboardStageDelayBase,
       dashboardStageDelayStep:
           dashboardStageDelayStep ?? this.dashboardStageDelayStep,
+      overlayMenuExpandCollapse:
+          overlayMenuExpandCollapse ?? this.overlayMenuExpandCollapse,
     );
   }
 
@@ -95,7 +103,8 @@ class AppMotionTokens extends ThemeExtension<AppMotionTokens> {
     }
     return AppMotionTokens(
       chartFadeIn: _lerpDuration(chartFadeIn, other.chartFadeIn, t),
-      chartFadeInSlideOffsetPx: lerpDouble(
+      chartFadeInSlideOffsetPx:
+          lerpDouble(
             chartFadeInSlideOffsetPx,
             other.chartFadeInSlideOffsetPx,
             t,
@@ -117,6 +126,11 @@ class AppMotionTokens extends ThemeExtension<AppMotionTokens> {
       dashboardStageDelayStep: _lerpDuration(
         dashboardStageDelayStep,
         other.dashboardStageDelayStep,
+        t,
+      ),
+      overlayMenuExpandCollapse: _lerpDuration(
+        overlayMenuExpandCollapse,
+        other.overlayMenuExpandCollapse,
         t,
       ),
     );

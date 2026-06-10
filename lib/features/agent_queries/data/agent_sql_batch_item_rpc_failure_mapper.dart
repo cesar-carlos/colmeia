@@ -188,7 +188,9 @@ abstract final class AgentSqlBatchItemRpcFailureMapper {
     );
   }
 
-  static Duration? _readRetryAfterFromErrorData(Map<String, dynamic>? errorData) {
+  static Duration? _readRetryAfterFromErrorData(
+    Map<String, dynamic>? errorData,
+  ) {
     if (errorData == null || errorData.isEmpty) {
       return null;
     }

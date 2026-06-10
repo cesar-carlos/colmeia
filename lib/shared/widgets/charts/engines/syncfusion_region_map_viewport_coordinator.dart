@@ -40,9 +40,10 @@ class SyncfusionRegionMapViewportCoordinator {
   }
 
   late MapZoomPanBehavior zoomPanBehavior;
-  SyncfusionRegionMapViewportState state = const SyncfusionRegionMapViewportState(
-    zoomLevel: 1,
-  );
+  SyncfusionRegionMapViewportState state =
+      const SyncfusionRegionMapViewportState(
+        zoomLevel: 1,
+      );
   AppMapViewport? lastAppliedPreferredViewport;
   bool lockPreferredViewportReapply = false;
 
@@ -91,7 +92,9 @@ class SyncfusionRegionMapViewportCoordinator {
   SyncfusionRegionMapViewportState clampedViewportState(
     SyncfusionRegionMapViewportState viewportState,
   ) {
-    return viewportState.copyWith(zoomLevel: clampZoomLevel(viewportState.zoomLevel));
+    return viewportState.copyWith(
+      zoomLevel: clampZoomLevel(viewportState.zoomLevel),
+    );
   }
 
   bool shouldIgnoreGestureViewportFeedback() {
@@ -494,7 +497,11 @@ class SyncfusionRegionMapViewportCoordinator {
     });
   }
 
-  void _logViewportGuard(String reason, {bool mounted = true, bool isLoading = false}) {
+  void _logViewportGuard(
+    String reason, {
+    bool mounted = true,
+    bool isLoading = false,
+  }) {
     _logViewportLifecycle(
       'Skipping viewport behavior update',
       context: <String, Object?>{

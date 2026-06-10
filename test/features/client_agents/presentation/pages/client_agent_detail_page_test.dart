@@ -230,8 +230,7 @@ void main() {
       final discover = _MockDiscoverAgentRpcMethodsUseCase();
       final loadPolicy = _MockLoadClientTokenPolicyUseCase();
       final persistSnapshot = _MockPersistClientAgentProfileSnapshotUseCase();
-      final policyCompleter =
-          Completer<AppResult<ClientTokenPolicySnapshot>>();
+      final policyCompleter = Completer<AppResult<ClientTokenPolicySnapshot>>();
       const agentId = '11111111-1111-1111-8111-111111111111';
 
       when(
@@ -300,7 +299,10 @@ void main() {
 
       await tester.pumpWidget(
         LocalizedTestApp(
-          child: ClientAgentDetailPage(agentId: agentId, controller: controller),
+          child: ClientAgentDetailPage(
+            agentId: agentId,
+            controller: controller,
+          ),
         ),
       );
       await tester.pumpAndSettle();

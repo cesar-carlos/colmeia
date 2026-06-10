@@ -34,9 +34,11 @@ class _MockTargetResolver extends Mock implements AgentQueryTargetResolver {}
 class _MockAgentQueriesRepository extends Mock
     implements AgentQueriesRepository {}
 
-class _MockLoadDaily extends Mock implements LoadResumoTotalDiarioVendasUseCase {}
+class _MockLoadDaily extends Mock
+    implements LoadResumoTotalDiarioVendasUseCase {}
 
-class _MockLoadMonthly extends Mock implements LoadResumoParcelasMensalUseCase {}
+class _MockLoadMonthly extends Mock
+    implements LoadResumoParcelasMensalUseCase {}
 
 class _MockLoadWeekday extends Mock
     implements LoadResumoParcelasDiaSemanaUseCase {}
@@ -212,7 +214,8 @@ void main() {
         invocation,
       ) async {
         final request =
-            invocation.positionalArguments.single as AgentSqlExecuteBatchRequest;
+            invocation.positionalArguments.single
+                as AgentSqlExecuteBatchRequest;
         if (request.commands.length == 2) {
           timeline.add('mainBatchStart');
           await Future<void>.delayed(const Duration(milliseconds: 20));
@@ -301,75 +304,79 @@ void main() {
     },
   );
 
-  test('cold cache uses single merged batch without cached use cases', () async {
-    when(
-      () => factsStore.readPayload(
-        storageKey: any(named: 'storageKey'),
-        expectedSchemaVersion: any(named: 'expectedSchemaVersion'),
-      ),
-    ).thenAnswer((_) async => null);
-    when(() => agentQueriesRepository.executeSqlBatch(any())).thenAnswer((
-      invocation,
-    ) async {
-      final request =
-          invocation.positionalArguments.single as AgentSqlExecuteBatchRequest;
-      return Success<AgentSqlBatchExecutionResult, AppFailure>(
-        _batchResult(commandCount: request.commands.length),
+  test(
+    'cold cache uses single merged batch without cached use cases',
+    () async {
+      when(
+        () => factsStore.readPayload(
+          storageKey: any(named: 'storageKey'),
+          expectedSchemaVersion: any(named: 'expectedSchemaVersion'),
+        ),
+      ).thenAnswer((_) async => null);
+      when(() => agentQueriesRepository.executeSqlBatch(any())).thenAnswer((
+        invocation,
+      ) async {
+        final request =
+            invocation.positionalArguments.single
+                as AgentSqlExecuteBatchRequest;
+        return Success<AgentSqlBatchExecutionResult, AppFailure>(
+          _batchResult(commandCount: request.commands.length),
+        );
+      });
+
+      final loader = OverviewBatchLoader(
+        targetResolver: targetResolver,
+        planBuilder: const AgentQueryPlanBuilder(),
+        agentQueriesRepository: agentQueriesRepository,
+        loadDaily: loadDaily,
+        loadMonthly: loadMonthly,
+        factsWarmthChecker: warmthChecker,
       );
-    });
 
-    final loader = OverviewBatchLoader(
-      targetResolver: targetResolver,
-      planBuilder: const AgentQueryPlanBuilder(),
-      agentQueriesRepository: agentQueriesRepository,
-      loadDaily: loadDaily,
-      loadMonthly: loadMonthly,
-      factsWarmthChecker: warmthChecker,
-    );
-
-    await loader.load(
-      userId: 'user-1',
-      filter: const DashboardFilter(),
-      periodStart: DateTime(2026, 4),
-      periodEnd: DateTime(2026, 4, 15),
-      last12Range: (
-        dataVendaInicio: DateTime(2025, 4),
-        dataVendaFim: DateTime(2026, 4, 15),
-      ),
-      mensalFilter: ResumoParcelasMensalFilter(
-        dataVendaInicio: DateTime(2025, 4),
-        dataVendaFim: DateTime(2026, 4, 15),
-      ),
-      weekdayFilter: ResumoParcelasDiaSemanaFilter(
-        dataVendaInicio: DateTime(2026, 4),
-        dataVendaFim: DateTime(2026, 4, 15),
-      ),
-      dailyTotalFilter: ResumoTotalDiarioVendasFilter(
-        dataVendaInicio: DateTime(2026, 4),
-        dataVendaFim: DateTime(2026, 4, 15),
-      ),
-      executionStrategy: AgentQueryExecutionStrategy.mergeAll,
-    );
-
-    verify(() => agentQueriesRepository.executeSqlBatch(any())).called(1);
-    verifyNever(
-      () => loadDaily.call(
-        userId: any(named: 'userId'),
-        agentId: any(named: 'agentId'),
-        filter: any(named: 'filter'),
-        clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
+      await loader.load(
+        userId: 'user-1',
+        filter: const DashboardFilter(),
+        periodStart: DateTime(2026, 4),
+        periodEnd: DateTime(2026, 4, 15),
+        last12Range: (
+          dataVendaInicio: DateTime(2025, 4),
+          dataVendaFim: DateTime(2026, 4, 15),
         ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
+        mensalFilter: ResumoParcelasMensalFilter(
+          dataVendaInicio: DateTime(2025, 4),
+          dataVendaFim: DateTime(2026, 4, 15),
         ),
-        cancelScope: any(named: 'cancelScope'),
-        cachePolicy: any(named: 'cachePolicy'),
-      ),
-    );
-  });
+        weekdayFilter: ResumoParcelasDiaSemanaFilter(
+          dataVendaInicio: DateTime(2026, 4),
+          dataVendaFim: DateTime(2026, 4, 15),
+        ),
+        dailyTotalFilter: ResumoTotalDiarioVendasFilter(
+          dataVendaInicio: DateTime(2026, 4),
+          dataVendaFim: DateTime(2026, 4, 15),
+        ),
+        executionStrategy: AgentQueryExecutionStrategy.mergeAll,
+      );
+
+      verify(() => agentQueriesRepository.executeSqlBatch(any())).called(1);
+      verifyNever(
+        () => loadDaily.call(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+          filter: any(named: 'filter'),
+          clientToken: any(named: 'clientToken'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          hubPresenceOnlineAgentIdsSnapshot: any(
+            named: 'hubPresenceOnlineAgentIdsSnapshot',
+          ),
+          hubConnectedFromApprovedCatalogRow: any(
+            named: 'hubConnectedFromApprovedCatalogRow',
+          ),
+          cancelScope: any(named: 'cancelScope'),
+          cachePolicy: any(named: 'cachePolicy'),
+        ),
+      );
+    },
+  );
 }
 
 AgentSqlBatchExecutionResult _batchResult({

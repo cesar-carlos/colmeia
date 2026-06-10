@@ -181,19 +181,19 @@ class _OverviewAlertDetailSheetScaffold extends StatelessWidget {
                           ),
                           onPressed: () async {
                             final l10n = AppLocalizations.of(context);
-                            final locale =
-                                Localizations.localeOf(context).toString();
+                            final locale = Localizations.localeOf(
+                              context,
+                            ).toString();
                             final clipboardText = formatAgentQueryFailureClipboard(
                               diagnosticBody: bodyText,
                               supportContext:
                                   AgentQueryFailureSupportContext.environment(
-                                localeName: locale,
-                                extra: <String, String>{
-                                  'surface': 'overview_alert_detail_sheet',
-                                  ...AgentQueryFailureSupportMetrics
-                                      .collectOptional(),
-                                },
-                              ),
+                                    localeName: locale,
+                                    extra: <String, String>{
+                                      'surface': 'overview_alert_detail_sheet',
+                                      ...AgentQueryFailureSupportMetrics.collectOptional(),
+                                    },
+                                  ),
                             );
                             await Clipboard.setData(
                               ClipboardData(text: clipboardText),
@@ -209,7 +209,8 @@ class _OverviewAlertDetailSheetScaffold extends StatelessWidget {
                                   l10n.agentSqlFailureTechnicalDetailsCopied,
                                 ),
                                 action: SnackBarAction(
-                                  label: l10n.agentSqlFailureTechnicalDetailsShare,
+                                  label:
+                                      l10n.agentSqlFailureTechnicalDetailsShare,
                                   onPressed: () => unawaited(
                                     SharePlus.instance.share(
                                       ShareParams(text: clipboardText),
@@ -292,14 +293,14 @@ class _OverviewAlertDetailSheetScaffold extends StatelessWidget {
                                     if (referencedBridgeId != null) ...[
                                       SizedBox(height: tokens.gapSm),
                                       Text(
-                                        l10n
-                                            .overviewHomeAlertDetailsReferencedBridgeIdNote(
+                                        l10n.overviewHomeAlertDetailsReferencedBridgeIdNote(
                                           referencedBridgeId,
                                           d.agentId,
                                         ),
                                         style: typography.caption.copyWith(
-                                          color:
-                                              theme.colorScheme.onSurfaceVariant,
+                                          color: theme
+                                              .colorScheme
+                                              .onSurfaceVariant,
                                         ),
                                       ),
                                     ],

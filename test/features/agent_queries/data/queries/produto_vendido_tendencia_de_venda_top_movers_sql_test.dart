@@ -6,7 +6,9 @@ void main() {
   test('top gainers query limits to fifteen positive movers', () {
     final sql = ProdutoVendidoTendenciaDeVendaSql.topGainersQuery();
 
-    check(sql).contains('SELECT TOP ${ProdutoVendidoTendenciaDeVendaSql.topMoversLimit}');
+    check(sql).contains(
+      'SELECT TOP ${ProdutoVendidoTendenciaDeVendaSql.topMoversLimit}',
+    );
     check(sql).contains('WHERE Diferenca > 0');
     check(sql).contains('PercentualTendencia DESC');
     check(sql).contains('Diferenca DESC');
@@ -17,7 +19,9 @@ void main() {
   test('top losers query limits to fifteen negative movers', () {
     final sql = ProdutoVendidoTendenciaDeVendaSql.topLosersQuery();
 
-    check(sql).contains('SELECT TOP ${ProdutoVendidoTendenciaDeVendaSql.topMoversLimit}');
+    check(sql).contains(
+      'SELECT TOP ${ProdutoVendidoTendenciaDeVendaSql.topMoversLimit}',
+    );
     check(sql).contains('WHERE Diferenca < 0');
     check(sql).contains('PercentualTendencia ASC');
     check(sql).contains('Diferenca ASC');

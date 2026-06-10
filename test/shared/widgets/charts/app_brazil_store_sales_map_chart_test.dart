@@ -67,7 +67,9 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      final readyLayer = tester.widget<MapShapeLayer>(find.byType(MapShapeLayer));
+      final readyLayer = tester.widget<MapShapeLayer>(
+        find.byType(MapShapeLayer),
+      );
       expect(readyLayer.initialMarkersCount, greaterThan(0));
     });
 
@@ -96,7 +98,11 @@ void main() {
         );
         await tester.pump();
 
-        for (var frame = 0; frame < 30 && find.byType(SfMaps).evaluate().isEmpty; frame++) {
+        for (
+          var frame = 0;
+          frame < 30 && find.byType(SfMaps).evaluate().isEmpty;
+          frame++
+        ) {
           await tester.pump(const Duration(milliseconds: 50));
         }
 
@@ -1513,8 +1519,7 @@ void main() {
               )
               as AppBrazilStoreSalesMapChartPreviewTestHandle;
       final identityBeforeTap = chartState.snapshotDataIdentityForTesting;
-      final mapPointsBeforeTap =
-          chartState.snapshotMapPointsIdentityForTesting;
+      final mapPointsBeforeTap = chartState.snapshotMapPointsIdentityForTesting;
       final regionMap = tester
           .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
             find.byWidgetPredicate(
@@ -2691,10 +2696,10 @@ void main() {
       final regionMapFinder = find.byWidgetPredicate(
         (widget) => widget is AppRegionMapChart<AppBrazilStoreSalesStateBucket>,
       );
-      final regionMapBefore =
-          tester.widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
-        regionMapFinder.first,
-      );
+      final regionMapBefore = tester
+          .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
+            regionMapFinder.first,
+          );
       final storeOneIndex = regionMapBefore.points.indexWhere((point) {
         final payload = point.payload;
         return payload is AppBrazilStoreSalesMarkerGroup &&

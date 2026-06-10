@@ -71,7 +71,9 @@ class _AgentQueryFailureTechnicalDetailsState
     return _fullDiagnostic;
   }
 
-  AgentQueryFailureSupportContext _resolvedSupportContext(BuildContext context) {
+  AgentQueryFailureSupportContext _resolvedSupportContext(
+    BuildContext context,
+  ) {
     final locale = Localizations.localeOf(context).toString();
     return AgentQueryFailureSupportContext.environment(
       localeName: locale,
@@ -141,10 +143,13 @@ class _AgentQueryFailureTechnicalDetailsState
               color: Colors.transparent,
               child: InkWell(
                 onTap: () => setState(() => _expanded = !_expanded),
-                borderRadius:
-                    BorderRadius.circular(tokens.inlineAlertCornerRadius),
+                borderRadius: BorderRadius.circular(
+                  tokens.inlineAlertCornerRadius,
+                ),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(minHeight: _kMinTouchTargetSize),
+                  constraints: const BoxConstraints(
+                    minHeight: _kMinTouchTargetSize,
+                  ),
                   child: Padding(
                     padding: EdgeInsets.symmetric(vertical: tokens.gapXs),
                     child: Row(
@@ -162,10 +167,8 @@ class _AgentQueryFailureTechnicalDetailsState
                             children: <Widget>[
                               Text(
                                 _expanded
-                                    ? l10n
-                                        .agentSqlFailureActionHideTechnicalDetails
-                                    : l10n
-                                        .agentSqlFailureActionShowTechnicalDetails,
+                                    ? l10n.agentSqlFailureActionHideTechnicalDetails
+                                    : l10n.agentSqlFailureActionShowTechnicalDetails,
                                 style: theme.textTheme.labelLarge?.copyWith(
                                   color: colors.primary,
                                   fontWeight: FontWeight.w600,
@@ -194,8 +197,9 @@ class _AgentQueryFailureTechnicalDetailsState
               DecoratedBox(
                 decoration: BoxDecoration(
                   color: colors.surfaceContainerHighest,
-                  borderRadius:
-                      BorderRadius.circular(tokens.inlineAlertCornerRadius),
+                  borderRadius: BorderRadius.circular(
+                    tokens.inlineAlertCornerRadius,
+                  ),
                   border: Border.all(color: colors.outlineVariant),
                 ),
                 child: Padding(
@@ -215,7 +219,8 @@ class _AgentQueryFailureTechnicalDetailsState
                         runSpacing: tokens.gapSm,
                         children: <Widget>[
                           AppSecondaryButton(
-                            label: l10n.agentSqlFailureTechnicalDetailsCopySummary,
+                            label:
+                                l10n.agentSqlFailureTechnicalDetailsCopySummary,
                             onPressed: () => unawaited(
                               _copy(context, summaryOnly: true),
                             ),

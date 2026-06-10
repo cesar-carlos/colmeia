@@ -253,8 +253,7 @@ void main() {
           metrics: m,
           relayDispatcher: relay,
           concurrencyGate: gate,
-        )
-          ..start();
+        )..start();
         states.add(const ConsumerSocketDisconnected(reason: 'unit_test'));
         await Future<void>.delayed(Duration.zero);
 

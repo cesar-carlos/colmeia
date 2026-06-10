@@ -13,7 +13,11 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diar
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_row.dart';
 
 final class ResumoTotalDiarioVendasCacheStrategy
-    implements AgentQueryCacheStrategy<ResumoTotalDiarioVendasFilter, ResumoTotalDiarioVendasRow> {
+    implements
+        AgentQueryCacheStrategy<
+          ResumoTotalDiarioVendasFilter,
+          ResumoTotalDiarioVendasRow
+        > {
   const ResumoTotalDiarioVendasCacheStrategy();
 
   @override

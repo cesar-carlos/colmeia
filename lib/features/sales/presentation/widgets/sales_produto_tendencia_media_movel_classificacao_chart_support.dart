@@ -11,12 +11,12 @@ import 'package:intl/intl.dart';
 
 const List<String> kSalesProdutoTendenciaMediaMovelClassificacaoDisplayOrder =
     <String>[
-  'CRESCENDO',
-  'CAINDO',
-  'NOVO',
-  'PAROU',
-  'ESTAVEL',
-];
+      'CRESCENDO',
+      'CAINDO',
+      'NOVO',
+      'PAROU',
+      'ESTAVEL',
+    ];
 
 List<SalesProdutoTendenciaMediaMovelClassBucket>
 salesProdutoTendenciaMediaMovelOrderedClassBuckets(
@@ -74,8 +74,7 @@ String salesProdutoTendenciaMediaMovelClassificacaoDescription(
   String classificacao,
 ) {
   return switch (classificacao.trim().toUpperCase()) {
-    'CRESCENDO' =>
-      l10n.salesProdutoTendenciaMediaMovelClassificacaoDescGrowing,
+    'CRESCENDO' => l10n.salesProdutoTendenciaMediaMovelClassificacaoDescGrowing,
     'CAINDO' => l10n.salesProdutoTendenciaMediaMovelClassificacaoDescFalling,
     'NOVO' => l10n.salesProdutoTendenciaMediaMovelClassificacaoDescNew,
     'PAROU' => l10n.salesProdutoTendenciaMediaMovelClassificacaoDescStopped,
@@ -139,16 +138,15 @@ Widget buildSalesProdutoTendenciaMediaMovelClassificacaoBarChart({
         l10n,
         bucket.classificacao,
       );
-      final description = salesProdutoTendenciaMediaMovelClassificacaoDescription(
-        l10n,
-        bucket.classificacao,
-      );
+      final description =
+          salesProdutoTendenciaMediaMovelClassificacaoDescription(
+            l10n,
+            bucket.classificacao,
+          );
       return '$label · ${countFormat.format(bucket.count)} · '
           '${countFormat.format(bucket.impacto.round())}\n$description';
     },
-    onPointTap: onBucketTap == null
-        ? null
-        : (bucket, _) => onBucketTap(bucket),
+    onPointTap: onBucketTap == null ? null : (bucket, _) => onBucketTap(bucket),
     belowSubtitle: belowSubtitle,
   );
 }

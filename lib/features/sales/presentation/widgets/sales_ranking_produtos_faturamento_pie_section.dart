@@ -101,10 +101,12 @@ class SalesRankingProdutosFaturamentoPieSection extends StatelessWidget {
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, chartConstraints) {
-                    final chartHeight = math.max(
-                      160,
-                      chartConstraints.maxHeight,
-                    ).toDouble();
+                    final chartHeight = math
+                        .max(
+                          160,
+                          chartConstraints.maxHeight,
+                        )
+                        .toDouble();
                     return buildChart(chartHeight: chartHeight);
                   },
                 ),

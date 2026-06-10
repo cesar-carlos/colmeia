@@ -55,21 +55,24 @@ void main() {
     },
   );
 
-  test('effectiveDetailLevel downgrades branches when mapped count exceeds threshold', () {
-    final state = SalesLiveMapPresentationState(
-      result: _resultWithBranches(
-        branchOptions: const <SalesLiveMapBranchOption>[],
-        totalBranchCount: 250,
-        mappedBranchCount: 250,
-      ),
-      isLoading: false,
-    );
+  test(
+    'effectiveDetailLevel downgrades branches when mapped count exceeds threshold',
+    () {
+      final state = SalesLiveMapPresentationState(
+        result: _resultWithBranches(
+          branchOptions: const <SalesLiveMapBranchOption>[],
+          totalBranchCount: 250,
+          mappedBranchCount: 250,
+        ),
+        isLoading: false,
+      );
 
-    expect(
-      SalesLiveMapPresentationRules.effectiveDetailLevel(state),
-      SalesLiveMapMapDetail.municipalities,
-    );
-  });
+      expect(
+        SalesLiveMapPresentationRules.effectiveDetailLevel(state),
+        SalesLiveMapMapDetail.municipalities,
+      );
+    },
+  );
 
   test(
     'effectiveDetailLevel uses visualResult counts during map refresh',

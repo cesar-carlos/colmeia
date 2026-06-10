@@ -45,7 +45,8 @@ class AgentQueryFailurePresentation {
     final title = agentQueryFailureTitle(failure, l10n);
     final message = agentQueryFailureUserMessage(failure, l10n);
 
-    final resolvedDetails = detailsBody ??
+    final resolvedDetails =
+        detailsBody ??
         agentQueryFailureTechnicalDetailsBody(
           failure,
           l10n: l10n,
@@ -57,7 +58,8 @@ class AgentQueryFailurePresentation {
       message: message,
       retryAfter: appFailureRetryAfter(failure),
       showRetry: category != AgentQueryFailureCategory.validation,
-      showManageAgents: category == AgentQueryFailureCategory.session ||
+      showManageAgents:
+          category == AgentQueryFailureCategory.session ||
           category == AgentQueryFailureCategory.permission,
       detailsBody: resolvedDetails,
     );
@@ -73,11 +75,10 @@ class AgentQueryFailurePresentation {
   final bool suppressPanel;
 
   AppInlinePanelTone get panelTone => switch (category) {
-        AgentQueryFailureCategory.rateLimit ||
-        AgentQueryFailureCategory.validation =>
-          AppInlinePanelTone.informational,
-        _ => AppInlinePanelTone.error,
-      };
+    AgentQueryFailureCategory.rateLimit ||
+    AgentQueryFailureCategory.validation => AppInlinePanelTone.informational,
+    _ => AppInlinePanelTone.error,
+  };
 
   static AgentQueryFailureCategory _categoryFor(AppFailure failure) {
     if (isAgentQueryRateLimitedFailure(failure)) {
@@ -97,5 +98,4 @@ class AgentQueryFailurePresentation {
     }
     return AgentQueryFailureCategory.unknown;
   }
-
 }

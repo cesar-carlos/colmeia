@@ -7,21 +7,29 @@ void main() {
   test(
     'bridgeTimeoutMs uses sales live map env with medium timeout fallback',
     () {
-      check(SalesLiveMapPolicies.bridgeTimeoutMs)
-          .equals(AppEnvironment.salesLiveMapBridgeTimeoutMs);
-      check(AppEnvironment.salesLiveMapBridgeTimeoutMs)
-          .equals(AppEnvironment.agentSqlBridgeMediumTimeoutMs);
+      check(
+        SalesLiveMapPolicies.bridgeTimeoutMs,
+      ).equals(AppEnvironment.salesLiveMapBridgeTimeoutMs);
+      check(
+        AppEnvironment.salesLiveMapBridgeTimeoutMs,
+      ).equals(AppEnvironment.agentSqlBridgeMediumTimeoutMs);
     },
   );
 
-  test('primary branch codes and geolocation concurrency use AppEnvironment', () {
-    check(SalesLiveMapPolicies.primaryCompanyCode)
-        .equals(AppEnvironment.salesLiveMapPrimaryCompanyCode);
-    check(SalesLiveMapPolicies.primaryBranchCode)
-        .equals(AppEnvironment.salesLiveMapPrimaryBranchCode);
-    check(SalesLiveMapPolicies.geolocationMaxConcurrency)
-        .equals(AppEnvironment.salesLiveMapGeolocationMaxConcurrency);
-  });
+  test(
+    'primary branch codes and geolocation concurrency use AppEnvironment',
+    () {
+      check(
+        SalesLiveMapPolicies.primaryCompanyCode,
+      ).equals(AppEnvironment.salesLiveMapPrimaryCompanyCode);
+      check(
+        SalesLiveMapPolicies.primaryBranchCode,
+      ).equals(AppEnvironment.salesLiveMapPrimaryBranchCode);
+      check(
+        SalesLiveMapPolicies.geolocationMaxConcurrency,
+      ).equals(AppEnvironment.salesLiveMapGeolocationMaxConcurrency);
+    },
+  );
 
   test('merge sql batches per target defaults to true', () {
     check(AppEnvironment.agentSqlSalesLiveMapMergeSqlBatchesPerTarget).isTrue();

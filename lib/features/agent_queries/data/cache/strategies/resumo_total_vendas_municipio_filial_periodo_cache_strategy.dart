@@ -92,7 +92,9 @@ final class ResumoTotalVendasMunicipioFilialPeriodoCacheStrategy
   }
 
   @override
-  List<ResumoTotalVendasMunicipioFilialPeriodoRow> decodePayload(List<int> bytes) {
+  List<ResumoTotalVendasMunicipioFilialPeriodoRow> decodePayload(
+    List<int> bytes,
+  ) {
     final decoded = jsonDecode(utf8.decode(bytes));
     if (decoded is! List<dynamic>) {
       return const <ResumoTotalVendasMunicipioFilialPeriodoRow>[];
@@ -111,14 +113,17 @@ final class ResumoTotalVendasMunicipioFilialPeriodoCacheStrategy
             totalVenda: (map['totalVenda'] as num).toDouble(),
             nomeFantasiaFilial: map['nomeFantasiaFilial'] as String?,
             cepFilial: map['cepFilial'] as String?,
-            codigoIbgeMunicipioFilial: map['codigoIbgeMunicipioFilial'] as String?,
+            codigoIbgeMunicipioFilial:
+                map['codigoIbgeMunicipioFilial'] as String?,
           );
         })
         .toList(growable: false);
   }
 
   @override
-  List<int> encodePayload(List<ResumoTotalVendasMunicipioFilialPeriodoRow> rows) {
+  List<int> encodePayload(
+    List<ResumoTotalVendasMunicipioFilialPeriodoRow> rows,
+  ) {
     final jsonList = rows
         .map(
           (row) => <String, Object?>{

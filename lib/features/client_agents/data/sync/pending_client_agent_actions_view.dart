@@ -9,16 +9,15 @@ import 'package:colmeia/features/client_agents/domain/entities/pending_agent_act
 /// emit the current snapshot via [toList] before persisting it.
 class PendingClientAgentActionsView {
   PendingClientAgentActionsView(Iterable<PendingAgentAction> initial)
-      : _byId = <String, PendingAgentAction>{
-          for (final action in initial) action.id: action,
-        };
+    : _byId = <String, PendingAgentAction>{
+        for (final action in initial) action.id: action,
+      };
 
   final Map<String, PendingAgentAction> _byId;
 
   /// Snapshot of the current state as a fixed-length list, suitable for
   /// passing to `ClientAgentsLocalDataSource.savePendingActions`.
-  List<PendingAgentAction> toList() =>
-      _byId.values.toList(growable: false);
+  List<PendingAgentAction> toList() => _byId.values.toList(growable: false);
 
   PendingAgentAction? operator [](String id) => _byId[id];
 

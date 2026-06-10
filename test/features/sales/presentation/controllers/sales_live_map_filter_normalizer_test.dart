@@ -7,17 +7,20 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('normalizeRestoredFilter', () {
-    test('returns the filter unchanged when there is no persisted selection', () {
-      const filter = SalesLiveMapFilter(
-        periodMode: SalesLiveMapPeriodMode.lastSevenDays,
-      );
+    test(
+      'returns the filter unchanged when there is no persisted selection',
+      () {
+        const filter = SalesLiveMapFilter(
+          periodMode: SalesLiveMapPeriodMode.lastSevenDays,
+        );
 
-      final normalized = SalesLiveMapFilterNormalizer.normalizeRestoredFilter(
-        filter,
-      );
+        final normalized = SalesLiveMapFilterNormalizer.normalizeRestoredFilter(
+          filter,
+        );
 
-      expect(identical(normalized, filter), isTrue);
-    });
+        expect(identical(normalized, filter), isTrue);
+      },
+    );
 
     test(
       'drops orphan agent selection persisted without branches on restore',
@@ -250,7 +253,7 @@ void main() {
               selectedAgentIds: const <String>{'agent-1', 'agent-2', 'agent-x'},
             );
 
-      expect(normalized, <String>{'agent-1'});
+        expect(normalized, <String>{'agent-1'});
       },
     );
 
@@ -267,7 +270,7 @@ void main() {
               selectedAgentIds: const <String>{'agent-x'},
             );
 
-      expect(normalized, <String>{'agent-1'});
+        expect(normalized, <String>{'agent-1'});
       },
     );
 

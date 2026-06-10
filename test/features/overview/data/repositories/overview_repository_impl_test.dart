@@ -89,8 +89,7 @@ void main() {
       () => batchAgentQueriesRepository.executeSqlBatch(any()),
     ).thenAnswer((invocation) async {
       final request =
-          invocation.positionalArguments.single
-              as AgentSqlExecuteBatchRequest;
+          invocation.positionalArguments.single as AgentSqlExecuteBatchRequest;
       return Success<AgentSqlBatchExecutionResult, AppFailure>(
         _batchResult(
           commandCount: request.commands.length,
@@ -116,8 +115,7 @@ void main() {
       'batch load resolves targets once and emits phased snapshots with merge flag',
       () async {
         dotenv.loadFromString(
-          envString:
-              '${EnvKeys.agentSqlOverviewMergeSqlBatchesPerTarget}=true',
+          envString: '${EnvKeys.agentSqlOverviewMergeSqlBatchesPerTarget}=true',
         );
         addTearDown(() {
           dotenv.loadFromString(
@@ -211,7 +209,6 @@ void main() {
     test(
       'batch load emits phased snapshots when merge flag is disabled',
       () async {
-
         const target = AgentQueryTarget(
           agentId: 'agent-1',
           displayName: 'Agent 1',

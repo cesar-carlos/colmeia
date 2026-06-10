@@ -34,99 +34,105 @@ void main() {
     repository = GrupoMarcaProdutoOptionsRepositoryImpl(agentQueriesRepository);
   });
 
-  test('loadGrupoAndMarcaOptions sends batch with grupo and marca SQL', () async {
-    when(
-      () => agentQueriesRepository.executeSqlBatch(any()),
-    ).thenAnswer(
-      (_) async => const Success<AgentSqlBatchExecutionResult, AppFailure>(
-        AgentSqlBatchExecutionResult(
-          items: <AgentSqlBatchExecutionItem>[
-            AgentSqlBatchExecutionItem(
-              index: 0,
-              ok: true,
-              rows: <Map<String, dynamic>>[],
-              rowCount: 0,
-            ),
-            AgentSqlBatchExecutionItem(
-              index: 1,
-              ok: true,
-              rows: <Map<String, dynamic>>[],
-              rowCount: 0,
-            ),
-          ],
-          totalCommands: 2,
-          successfulCommands: 2,
-          failedCommands: 0,
-        ),
-      ),
-    );
-
-    await repository.loadGrupoAndMarcaOptions(
-      userId: 'user-1',
-      agentId: 'agent-1',
-      pageSize: 200,
-    );
-
-    final captured =
-        verify(
-              () => agentQueriesRepository.executeSqlBatch(captureAny()),
-            ).captured.single
-            as AgentSqlExecuteBatchRequest;
-    check(captured.commands).length.equals(2);
-    check(captured.commands[0].sql).equals(GrupoProdutoOptionsSql.pagedQuery);
-    check(captured.commands[1].sql).equals(MarcaProdutoOptionsSql.pagedQuery);
-    check(captured.commands[0].namedParams['startRow']).equals(1);
-    check(captured.commands[0].namedParams['endRow']).equals(200);
-    check(captured.useRelay).isTrue();
-  });
-
-  test('loadGrupoAndMarcaOptions forwards cancelScope to executeSqlBatch', () async {
-    when(
-      () => agentQueriesRepository.executeSqlBatch(
-        any(),
-        cancelScope: any(named: 'cancelScope'),
-      ),
-    ).thenAnswer(
-      (_) async => const Success<AgentSqlBatchExecutionResult, AppFailure>(
-        AgentSqlBatchExecutionResult(
-          items: <AgentSqlBatchExecutionItem>[
-            AgentSqlBatchExecutionItem(
-              index: 0,
-              ok: true,
-              rows: <Map<String, dynamic>>[],
-              rowCount: 0,
-            ),
-            AgentSqlBatchExecutionItem(
-              index: 1,
-              ok: true,
-              rows: <Map<String, dynamic>>[],
-              rowCount: 0,
-            ),
-          ],
-          totalCommands: 2,
-          successfulCommands: 2,
-          failedCommands: 0,
-        ),
-      ),
-    );
-
-    final cancelScope = AgentQueriesCancelScope();
-    await repository.loadGrupoAndMarcaOptions(
-      userId: 'user-1',
-      agentId: 'agent-1',
-      cancelScope: cancelScope,
-    );
-
-    final capturedCancelScope =
-        verify(
-              () => agentQueriesRepository.executeSqlBatch(
-                any(),
-                cancelScope: captureAny(named: 'cancelScope'),
+  test(
+    'loadGrupoAndMarcaOptions sends batch with grupo and marca SQL',
+    () async {
+      when(
+        () => agentQueriesRepository.executeSqlBatch(any()),
+      ).thenAnswer(
+        (_) async => const Success<AgentSqlBatchExecutionResult, AppFailure>(
+          AgentSqlBatchExecutionResult(
+            items: <AgentSqlBatchExecutionItem>[
+              AgentSqlBatchExecutionItem(
+                index: 0,
+                ok: true,
+                rows: <Map<String, dynamic>>[],
+                rowCount: 0,
               ),
-            ).captured.single
-            as AgentQueriesCancelScope;
-    check(identical(capturedCancelScope, cancelScope)).isTrue();
-  });
+              AgentSqlBatchExecutionItem(
+                index: 1,
+                ok: true,
+                rows: <Map<String, dynamic>>[],
+                rowCount: 0,
+              ),
+            ],
+            totalCommands: 2,
+            successfulCommands: 2,
+            failedCommands: 0,
+          ),
+        ),
+      );
+
+      await repository.loadGrupoAndMarcaOptions(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        pageSize: 200,
+      );
+
+      final captured =
+          verify(
+                () => agentQueriesRepository.executeSqlBatch(captureAny()),
+              ).captured.single
+              as AgentSqlExecuteBatchRequest;
+      check(captured.commands).length.equals(2);
+      check(captured.commands[0].sql).equals(GrupoProdutoOptionsSql.pagedQuery);
+      check(captured.commands[1].sql).equals(MarcaProdutoOptionsSql.pagedQuery);
+      check(captured.commands[0].namedParams['startRow']).equals(1);
+      check(captured.commands[0].namedParams['endRow']).equals(200);
+      check(captured.useRelay).isTrue();
+    },
+  );
+
+  test(
+    'loadGrupoAndMarcaOptions forwards cancelScope to executeSqlBatch',
+    () async {
+      when(
+        () => agentQueriesRepository.executeSqlBatch(
+          any(),
+          cancelScope: any(named: 'cancelScope'),
+        ),
+      ).thenAnswer(
+        (_) async => const Success<AgentSqlBatchExecutionResult, AppFailure>(
+          AgentSqlBatchExecutionResult(
+            items: <AgentSqlBatchExecutionItem>[
+              AgentSqlBatchExecutionItem(
+                index: 0,
+                ok: true,
+                rows: <Map<String, dynamic>>[],
+                rowCount: 0,
+              ),
+              AgentSqlBatchExecutionItem(
+                index: 1,
+                ok: true,
+                rows: <Map<String, dynamic>>[],
+                rowCount: 0,
+              ),
+            ],
+            totalCommands: 2,
+            successfulCommands: 2,
+            failedCommands: 0,
+          ),
+        ),
+      );
+
+      final cancelScope = AgentQueriesCancelScope();
+      await repository.loadGrupoAndMarcaOptions(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        cancelScope: cancelScope,
+      );
+
+      final capturedCancelScope =
+          verify(
+                () => agentQueriesRepository.executeSqlBatch(
+                  any(),
+                  cancelScope: captureAny(named: 'cancelScope'),
+                ),
+              ).captured.single
+              as AgentQueriesCancelScope;
+      check(identical(capturedCancelScope, cancelScope)).isTrue();
+    },
+  );
 
   test('returns validation failure when page is invalid', () async {
     final result = await repository.loadGrupoAndMarcaOptions(

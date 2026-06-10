@@ -431,7 +431,6 @@ Color _branchAgentNameColor(
   return switch (status) {
     AgentConnectionStatus.offline => scheme.error,
     AgentConnectionStatus.online ||
-    AgentConnectionStatus.unknown =>
-      scheme.onSurface,
+    AgentConnectionStatus.unknown => scheme.onSurface,
   };
 }

@@ -30,7 +30,9 @@ class BrazilMapMarkerSelectionController {
     String? controlledSelectedStoreId,
   ) {
     notifier.value = BrazilMapMarkerSelection(
-      selectedStoreId: selection.resolveSelectedStoreId(controlledSelectedStoreId),
+      selectedStoreId: selection.resolveSelectedStoreId(
+        controlledSelectedStoreId,
+      ),
       previewedStoreId: previewedStoreId,
       shapeHighlightRegionKey: selection.internalSelectedStateKey,
     );

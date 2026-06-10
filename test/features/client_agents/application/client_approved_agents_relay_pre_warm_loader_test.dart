@@ -76,8 +76,9 @@ void main() {
   test(
     'returns the agent ids on the first page using the configured page size',
     () async {
-      when(() => sessionAccessor.read())
-          .thenAnswer((_) async => _session(userId: 'u1'));
+      when(
+        () => sessionAccessor.read(),
+      ).thenAnswer((_) async => _session(userId: 'u1'));
       when(
         () => loadApprovedAgentsUseCase(
           userId: any(named: 'userId'),
@@ -95,14 +96,16 @@ void main() {
       final ids = await loader.loadApprovedAgentIds();
 
       check(ids).deepEquals(<String>['a', 'b', 'c']);
-      final captured = verify(
-        () => loadApprovedAgentsUseCase(
-          userId: 'u1',
-          query: captureAny(named: 'query'),
-          includeOnlineStatus: false,
-          loadAllPages: false,
-        ),
-      ).captured.single as PaginatedQuery;
+      final captured =
+          verify(
+                () => loadApprovedAgentsUseCase(
+                  userId: 'u1',
+                  query: captureAny(named: 'query'),
+                  includeOnlineStatus: false,
+                  loadAllPages: false,
+                ),
+              ).captured.single
+              as PaginatedQuery;
       check(captured.pageSize).equals(5);
       check(captured.page).equals(1);
     },
@@ -125,8 +128,9 @@ void main() {
   });
 
   test('returns empty when the session userId is blank', () async {
-    when(() => sessionAccessor.read())
-        .thenAnswer((_) async => _session(userId: ''));
+    when(
+      () => sessionAccessor.read(),
+    ).thenAnswer((_) async => _session(userId: ''));
 
     final ids = await build().loadApprovedAgentIds();
 
@@ -142,8 +146,9 @@ void main() {
   });
 
   test('returns empty when the use case fails', () async {
-    when(() => sessionAccessor.read())
-        .thenAnswer((_) async => _session(userId: 'u1'));
+    when(
+      () => sessionAccessor.read(),
+    ).thenAnswer((_) async => _session(userId: 'u1'));
     when(
       () => loadApprovedAgentsUseCase(
         userId: any(named: 'userId'),
@@ -163,8 +168,9 @@ void main() {
   });
 
   test('returns empty when the approved page is empty', () async {
-    when(() => sessionAccessor.read())
-        .thenAnswer((_) async => _session(userId: 'u1'));
+    when(
+      () => sessionAccessor.read(),
+    ).thenAnswer((_) async => _session(userId: 'u1'));
     when(
       () => loadApprovedAgentsUseCase(
         userId: any(named: 'userId'),
@@ -186,8 +192,9 @@ void main() {
   test(
     'requests pre-warm without presence enrichment to skip the online probe',
     () async {
-      when(() => sessionAccessor.read())
-          .thenAnswer((_) async => _session(userId: 'u1'));
+      when(
+        () => sessionAccessor.read(),
+      ).thenAnswer((_) async => _session(userId: 'u1'));
       when(
         () => loadApprovedAgentsUseCase(
           userId: any(named: 'userId'),
@@ -214,27 +221,30 @@ void main() {
     },
   );
 
-  test('returns a non-growable list so callers cannot mutate the result',
-      () async {
-    when(() => sessionAccessor.read())
-        .thenAnswer((_) async => _session(userId: 'u1'));
-    when(
-      () => loadApprovedAgentsUseCase(
-        userId: any(named: 'userId'),
-        query: any(named: 'query'),
-        includeOnlineStatus: any(named: 'includeOnlineStatus'),
-        loadAllPages: any(named: 'loadAllPages'),
-      ),
-    ).thenAnswer(
-      (_) async => Success<PaginatedResult<ClientAgent>, AppFailure>(
-        _page(<ClientAgent>[_agent('a'), _agent('b')]),
-      ),
-    );
+  test(
+    'returns a non-growable list so callers cannot mutate the result',
+    () async {
+      when(
+        () => sessionAccessor.read(),
+      ).thenAnswer((_) async => _session(userId: 'u1'));
+      when(
+        () => loadApprovedAgentsUseCase(
+          userId: any(named: 'userId'),
+          query: any(named: 'query'),
+          includeOnlineStatus: any(named: 'includeOnlineStatus'),
+          loadAllPages: any(named: 'loadAllPages'),
+        ),
+      ).thenAnswer(
+        (_) async => Success<PaginatedResult<ClientAgent>, AppFailure>(
+          _page(<ClientAgent>[_agent('a'), _agent('b')]),
+        ),
+      );
 
-    final ids = await build().loadApprovedAgentIds();
+      final ids = await build().loadApprovedAgentIds();
 
-    check(() => ids.add('c')).throws<UnsupportedError>();
-  });
+      check(() => ids.add('c')).throws<UnsupportedError>();
+    },
+  );
 
   test('defaults the page size to 8', () {
     check(ClientApprovedAgentsRelayPreWarmLoader.defaultPageSize).equals(8);

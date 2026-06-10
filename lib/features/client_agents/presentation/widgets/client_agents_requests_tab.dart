@@ -229,13 +229,17 @@ class _ClientAgentsRequestsTabState extends State<ClientAgentsRequestsTab> {
       return rows;
     }
     final sorted = List<ClientAgentsRequestTableRowData>.of(rows);
-    final direction = sort.direction == AppReportSortDirection.ascending ? 1 : -1;
+    final direction = sort.direction == AppReportSortDirection.ascending
+        ? 1
+        : -1;
     sorted.sort((a, b) {
       final comparison = switch (sort.columnKey) {
-        ClientAgentsRequestsSortColumns.name =>
-          a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-        ClientAgentsRequestsSortColumns.status =>
-          a.statusSortRank.compareTo(b.statusSortRank),
+        ClientAgentsRequestsSortColumns.name => a.name.toLowerCase().compareTo(
+          b.name.toLowerCase(),
+        ),
+        ClientAgentsRequestsSortColumns.status => a.statusSortRank.compareTo(
+          b.statusSortRank,
+        ),
         ClientAgentsRequestsSortColumns.date => _compareDates(a.date, b.date),
         _ => 0,
       };

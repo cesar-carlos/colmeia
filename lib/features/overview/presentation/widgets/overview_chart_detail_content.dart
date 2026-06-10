@@ -39,7 +39,8 @@ class OverviewChartDetailContent extends StatefulWidget {
       _OverviewChartDetailContentState();
 }
 
-class _OverviewChartDetailContentState extends State<OverviewChartDetailContent> {
+class _OverviewChartDetailContentState
+    extends State<OverviewChartDetailContent> {
   final OverviewSortedRankingsCache _rankingsCache =
       OverviewSortedRankingsCache();
 
@@ -96,8 +97,9 @@ class _OverviewChartDetailContentState extends State<OverviewChartDetailContent>
         loadFailed: overview.weekdaySalesTrendLoadFailed,
         loadFailure: overview.weekdaySalesTrendLoadFailure,
         loadFailureMessage: overview.weekdaySalesTrendLoadFailureMessage,
-        onViewAgentFailureDetails:
-            partialDetailsLink(OverviewAgentQueryFailureSource.weekdayTrend),
+        onViewAgentFailureDetails: partialDetailsLink(
+          OverviewAgentQueryFailureSource.weekdayTrend,
+        ),
         onRequestFullscreen: (context, request) =>
             context.pushChartFullscreenFromRequest(request),
         onRequestShare: (context, request) =>
@@ -134,10 +136,11 @@ class _OverviewChartDetailContentState extends State<OverviewChartDetailContent>
           loadFailure: overview.lucratividadeTrendLoadFailure,
           loadFailureMessage: overview.lucratividadeTrendLoadFailureMessage,
           overviewApprovedAgentCount: overview.approvedAgentCount,
-          onViewAgentFailureDetails: overviewHasPartialFailuresForSource(
-            overview,
-            OverviewAgentQueryFailureSource.lucratividadePeriod,
-          )
+          onViewAgentFailureDetails:
+              overviewHasPartialFailuresForSource(
+                overview,
+                OverviewAgentQueryFailureSource.lucratividadePeriod,
+              )
               ? () => unawaited(
                   showOverviewPartialFailureDetailsSheet(
                     context: context,
@@ -157,7 +160,8 @@ class _OverviewChartDetailContentState extends State<OverviewChartDetailContent>
           points: overview.lucratividadeMensalTrend,
           loadFailed: overview.lucratividadeMensalTrendLoadFailed,
           loadFailure: overview.lucratividadeMensalTrendLoadFailure,
-          loadFailureMessage: overview.lucratividadeMensalTrendLoadFailureMessage,
+          loadFailureMessage:
+              overview.lucratividadeMensalTrendLoadFailureMessage,
           isSingleAgentSelected: widget.isSingleAgentSelected,
           onViewAgentFailureDetails: partialDetailsLink(
             OverviewAgentQueryFailureSource.lucratividadeMensalTrend,

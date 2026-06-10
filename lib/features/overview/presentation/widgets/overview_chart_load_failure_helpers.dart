@@ -17,7 +17,8 @@ bool overviewHasPartialFailuresForSource(
 String overviewChartLoadFailureMessage({
   required AppLocalizations l10n,
   required bool loadFailed,
-  required String genericFallback, AppFailure? loadFailure,
+  required String genericFallback,
+  AppFailure? loadFailure,
   String? legacyMessage,
 }) {
   if (!loadFailed) {

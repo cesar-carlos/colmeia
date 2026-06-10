@@ -84,7 +84,8 @@ String localizeClientAgentsPresentationMessage(
       _localizeSyncSuccess(message, l10n),
     ClientAgentsPresentationMessageKey.clientAgentsApprovalPollingProgress =>
       _localizeApprovalPollingProgress(message, l10n),
-    ClientAgentsPresentationMessageKey.clientAgentsLocalTokenServerFlushFailed =>
+    ClientAgentsPresentationMessageKey
+        .clientAgentsLocalTokenServerFlushFailed =>
       _localizeLocalTokenServerFlushFailed(message, l10n),
     ClientAgentsPresentationMessageKey.clientAgentsOwnerApproveSuccess =>
       l10n.clientAgentsOwnerApproveSuccess,

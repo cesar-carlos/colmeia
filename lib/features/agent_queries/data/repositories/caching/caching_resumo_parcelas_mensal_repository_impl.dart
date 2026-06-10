@@ -10,18 +10,21 @@ import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_mensal_repository.dart';
 
 final class CachingResumoParcelasMensalRepositoryImpl
-    extends BaseCachedAgentQueryRepository<
-      ResumoParcelasMensalFilter,
-      ResumoParcelasMensalRow
-    >
+    extends
+        BaseCachedAgentQueryRepository<
+          ResumoParcelasMensalFilter,
+          ResumoParcelasMensalRow
+        >
     implements ResumoParcelasMensalRepository {
   CachingResumoParcelasMensalRepositoryImpl({
     required ResumoParcelasMensalRepository delegate,
     required super.factsStore,
     super.agentQueriesRepository,
-    AgentQueryFactsBucketBatchSupport<ResumoParcelasMensalFilter,
-            ResumoParcelasMensalRow>?
-        bucketBatchSupport,
+    AgentQueryFactsBucketBatchSupport<
+      ResumoParcelasMensalFilter,
+      ResumoParcelasMensalRow
+    >?
+    bucketBatchSupport,
     ResumoParcelasMensalCacheStrategy super.strategy =
         const ResumoParcelasMensalCacheStrategy(),
     super.clock,
@@ -81,5 +84,4 @@ final class CachingResumoParcelasMensalRepositoryImpl
       cancelScope: cancelScope,
     );
   }
-
 }

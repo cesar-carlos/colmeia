@@ -6,13 +6,12 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('BrazilMapChartChrome.resolve', () {
     test('enables inline operational floating controls', () {
-      const style = AppBrazilStoreSalesMapStyle(
-        
-      );
+      const style = AppBrazilStoreSalesMapStyle();
 
       final chrome = BrazilMapChartChrome.resolve(
         style: style,
-        presentationMode: AppBrazilStoreSalesMapPresentationMode.inlineOperational,
+        presentationMode:
+            AppBrazilStoreSalesMapPresentationMode.inlineOperational,
         useCleanFullscreenChrome: false,
         showDesktopBranchSidebar: false,
       );
@@ -28,13 +27,12 @@ void main() {
     });
 
     test('hides legend and branch list in clean fullscreen mode', () {
-      const style = AppBrazilStoreSalesMapStyle(
-        
-      );
+      const style = AppBrazilStoreSalesMapStyle();
 
       final chrome = BrazilMapChartChrome.resolve(
         style: style,
-        presentationMode: AppBrazilStoreSalesMapPresentationMode.cleanFullscreen,
+        presentationMode:
+            AppBrazilStoreSalesMapPresentationMode.cleanFullscreen,
         useCleanFullscreenChrome: false,
         showDesktopBranchSidebar: true,
       );
@@ -68,9 +66,7 @@ void main() {
       debugDefaultTargetPlatformOverride = TargetPlatform.windows;
       addTearDown(() => debugDefaultTargetPlatformOverride = null);
 
-      const style = AppBrazilStoreSalesMapStyle(
-        
-      );
+      const style = AppBrazilStoreSalesMapStyle();
 
       final chrome = BrazilMapChartChrome.resolve(
         style: style,
@@ -83,23 +79,24 @@ void main() {
       expect(chrome.showBelowMapMarkerDetail, isTrue);
     });
 
-    test('keeps overlay detail off below-map path on non-Windows platforms', () {
-      debugDefaultTargetPlatformOverride = TargetPlatform.android;
-      addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    test(
+      'keeps overlay detail off below-map path on non-Windows platforms',
+      () {
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        addTearDown(() => debugDefaultTargetPlatformOverride = null);
 
-      const style = AppBrazilStoreSalesMapStyle(
-        
-      );
+        const style = AppBrazilStoreSalesMapStyle();
 
-      final chrome = BrazilMapChartChrome.resolve(
-        style: style,
-        presentationMode: AppBrazilStoreSalesMapPresentationMode.standard,
-        useCleanFullscreenChrome: false,
-        showDesktopBranchSidebar: false,
-      );
+        final chrome = BrazilMapChartChrome.resolve(
+          style: style,
+          presentationMode: AppBrazilStoreSalesMapPresentationMode.standard,
+          useCleanFullscreenChrome: false,
+          showDesktopBranchSidebar: false,
+        );
 
-      expect(chrome.useWindowsSafeMarkerDetails, isFalse);
-      expect(chrome.showBelowMapMarkerDetail, isFalse);
-    });
+        expect(chrome.useWindowsSafeMarkerDetails, isFalse);
+        expect(chrome.showBelowMapMarkerDetail, isFalse);
+      },
+    );
   });
 }

@@ -19,47 +19,52 @@ void main() {
 
   group('CachingResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl', () {
     late _FakeDelegate delegate;
-    late CachingResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl cachingRepo;
+    late CachingResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl
+    cachingRepo;
 
     setUp(() {
       delegate = _FakeDelegate();
-      cachingRepo = CachingResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl(
-        delegate: delegate,
-        factsStore: memoryAgentQueryFactsStore(),
-        clock: () => clock,
-      );
+      cachingRepo =
+          CachingResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl(
+            delegate: delegate,
+            factsStore: memoryAgentQueryFactsStore(),
+            clock: () => clock,
+          );
     });
 
-    test('defaultLoad reads closed bucket from store without delegate', () async {
-      final filter = ResumoTotalVendasMunicipioFilialPeriodoFilter(
-        dataVendaInicio: DateTime(2026, 6),
-        dataVendaFim: DateTime(2026, 6, 1, 23, 59, 59, 999, 999),
-      );
-      final row = _sampleRow(qtdVendas: 2, totalVenda: 10);
-      final storageKey = strategy.storageKey(
-        userId: 'u1',
-        agentId: 'a1',
-        bucketId: '2026-06-01',
-        rangeFilter: filter,
-      );
-      await cachingRepo.factsStore.writePayload(
-        storageKey: storageKey,
-        payload: strategy.encodePayload([row]),
-        schemaVersion: strategy.schemaVersion,
-      );
+    test(
+      'defaultLoad reads closed bucket from store without delegate',
+      () async {
+        final filter = ResumoTotalVendasMunicipioFilialPeriodoFilter(
+          dataVendaInicio: DateTime(2026, 6),
+          dataVendaFim: DateTime(2026, 6, 1, 23, 59, 59, 999, 999),
+        );
+        final row = _sampleRow(qtdVendas: 2, totalVenda: 10);
+        final storageKey = strategy.storageKey(
+          userId: 'u1',
+          agentId: 'a1',
+          bucketId: '2026-06-01',
+          rangeFilter: filter,
+        );
+        await cachingRepo.factsStore.writePayload(
+          storageKey: storageKey,
+          payload: strategy.encodePayload([row]),
+          schemaVersion: strategy.schemaVersion,
+        );
 
-      final result = await cachingRepo.load(
-        userId: 'u1',
-        agentId: 'a1',
-        filter: filter,
-      );
+        final result = await cachingRepo.load(
+          userId: 'u1',
+          agentId: 'a1',
+          filter: filter,
+        );
 
-      final loaded = result.getOrNull();
-      expect(loaded, isNotNull);
-      expect(loaded!.rows.single.qtdVendas, row.qtdVendas);
-      expect(delegate.loadCount, 0);
-      expect(delegate.lastCancelScope, isNull);
-    });
+        final loaded = result.getOrNull();
+        expect(loaded, isNotNull);
+        expect(loaded!.rows.single.qtdVendas, row.qtdVendas);
+        expect(delegate.loadCount, 0);
+        expect(delegate.lastCancelScope, isNull);
+      },
+    );
 
     test('forceRefresh calls delegate even when store has data', () async {
       final filter = ResumoTotalVendasMunicipioFilialPeriodoFilter(

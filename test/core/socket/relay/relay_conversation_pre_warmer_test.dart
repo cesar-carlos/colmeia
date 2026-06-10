@@ -58,27 +58,29 @@ void main() {
     );
   }
 
-  test('opens one conversation per loaded agent on first connected event',
-      () async {
-    final loadCalls = <int>[];
-    final preWarmer = build(
-      loader: () async {
-        loadCalls.add(1);
-        return <String>['agent-a', 'agent-b', 'agent-c'];
-      },
-    );
+  test(
+    'opens one conversation per loaded agent on first connected event',
+    () async {
+      final loadCalls = <int>[];
+      final preWarmer = build(
+        loader: () async {
+          loadCalls.add(1);
+          return <String>['agent-a', 'agent-b', 'agent-c'];
+        },
+      );
 
-    states.add(_connected());
-    await pumpEventQueue();
+      states.add(_connected());
+      await pumpEventQueue();
 
-    check(loadCalls).length.equals(1);
-    verify(() => manager.obtain('agent-a')).called(1);
-    verify(() => manager.obtain('agent-b')).called(1);
-    verify(() => manager.obtain('agent-c')).called(1);
-    verifyNoMoreInteractions(manager);
+      check(loadCalls).length.equals(1);
+      verify(() => manager.obtain('agent-a')).called(1);
+      verify(() => manager.obtain('agent-b')).called(1);
+      verify(() => manager.obtain('agent-c')).called(1);
+      verifyNoMoreInteractions(manager);
 
-    await preWarmer.dispose();
-  });
+      await preWarmer.dispose();
+    },
+  );
 
   test('caps the sweep at maxAgents', () async {
     final preWarmer = build(
@@ -125,10 +127,12 @@ void main() {
   test(
     'swallows per-agent obtain failures so the sweep completes',
     () async {
-      when(() => manager.obtain('agent-a'))
-          .thenThrow(StateError('not connected'));
-      when(() => manager.obtain('agent-b'))
-          .thenAnswer((_) async => fakeConversation);
+      when(
+        () => manager.obtain('agent-a'),
+      ).thenThrow(StateError('not connected'));
+      when(
+        () => manager.obtain('agent-b'),
+      ).thenAnswer((_) async => fakeConversation);
 
       final preWarmer = build(
         loader: () async => <String>['agent-a', 'agent-b'],

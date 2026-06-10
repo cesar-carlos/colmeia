@@ -42,7 +42,8 @@ class SalesAutoRefreshActionsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return AutoRefreshActionsRow(
       options: options ?? SalesAutoRefreshOptions.values,
-      optionLabelBuilder: (option) => SalesAutoRefreshL10n.intervalLabel(l10n, option),
+      optionLabelBuilder: (option) =>
+          SalesAutoRefreshL10n.intervalLabel(l10n, option),
       value: value,
       onChanged: onChanged,
       onRefreshNow: onRefreshNow,

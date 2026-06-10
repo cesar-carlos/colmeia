@@ -31,7 +31,12 @@ void main() {
       ) {
         final grouped = <int, List<RankingProdutosFaturamentoRow>>{};
         for (final row in rows) {
-          grouped.putIfAbsent(branchKey(row), () => <RankingProdutosFaturamentoRow>[]).add(row);
+          grouped
+              .putIfAbsent(
+                branchKey(row),
+                () => <RankingProdutosFaturamentoRow>[],
+              )
+              .add(row);
         }
         return grouped;
       }
@@ -52,12 +57,14 @@ void main() {
         );
 
         for (final branchRows in branches.values) {
-          final diversosRows =
-              branchRows.where((row) => row.isDiversos).toList();
+          final diversosRows = branchRows
+              .where((row) => row.isDiversos)
+              .toList();
           expect(diversosRows.length, lessThanOrEqualTo(1));
 
-          final rankedRows =
-              branchRows.where((row) => !row.isDiversos).toList();
+          final rankedRows = branchRows
+              .where((row) => !row.isDiversos)
+              .toList();
           for (final row in rankedRows) {
             expect(row.valorVenda, isNonNegative);
             expect(row.percentual, inInclusiveRange(0, 100));
@@ -71,7 +78,10 @@ void main() {
           for (final row in diversosRows) {
             expect(row.valorVenda, greaterThan(0));
             expect(row.codProduto, 0);
-            expect(row.nomeProduto, RankingProdutosFaturamentoRow.diversosNomeProduto);
+            expect(
+              row.nomeProduto,
+              RankingProdutosFaturamentoRow.diversosNomeProduto,
+            );
             expect(row.posicao, isNull);
             expect(row.codEmpresa, isNot(9999));
             expect(row.codFilial, isNot(9999));

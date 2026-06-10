@@ -33,8 +33,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:result_dart/result_dart.dart';
 
 class _MockLoadSalesAcrossAgents extends Mock
-    implements
-        LoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase {}
+    implements LoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase {}
 
 class _MockSalesLiveMapCatalogLookup extends Mock
     implements SalesLiveMapCatalogLookup {}
@@ -94,103 +93,110 @@ void main() {
     );
   });
 
-  test('emits catalog-only mapped results before sales report completes', () async {
-    final catalogCompleter =
-        Completer<AppResult<CadastroFilialAcrossAgentsPageResult>>();
-    final salesCompleter =
-        Completer<
-          AppResult<
-            AgentQueryExecutionReport<
-              ResumoTotalVendasMunicipioFilialPeriodoRow
+  test(
+    'emits catalog-only mapped results before sales report completes',
+    () async {
+      final catalogCompleter =
+          Completer<AppResult<CadastroFilialAcrossAgentsPageResult>>();
+      final salesCompleter =
+          Completer<
+            AppResult<
+              AgentQueryExecutionReport<
+                ResumoTotalVendasMunicipioFilialPeriodoRow
+              >
             >
-          >
-        >();
-    final catalogPending = _mappedResult(totalRevenue: 10, salesDataPending: true);
-    final finalMapped = _mappedResult(totalRevenue: 99);
+          >();
+      final catalogPending = _mappedResult(
+        totalRevenue: 10,
+        salesDataPending: true,
+      );
+      final finalMapped = _mappedResult(totalRevenue: 99);
 
-    when(
-      () => catalogLookup.loadRemote(
-        userId: any(named: 'userId'),
-        scope: any(named: 'scope'),
-        now: any(named: 'now'),
-        preResolvedResolution: any(named: 'preResolvedResolution'),
-        cancelToken: any(named: 'cancelToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        mergeAllConcurrencyOverride: any(
-          named: 'mergeAllConcurrencyOverride',
+      when(
+        () => catalogLookup.loadRemote(
+          userId: any(named: 'userId'),
+          scope: any(named: 'scope'),
+          now: any(named: 'now'),
+          preResolvedResolution: any(named: 'preResolvedResolution'),
+          cancelToken: any(named: 'cancelToken'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          mergeAllConcurrencyOverride: any(
+            named: 'mergeAllConcurrencyOverride',
+          ),
         ),
-      ),
-    ).thenAnswer((_) => catalogCompleter.future);
-    when(
-      () => loadSalesAcrossAgents(
-        userId: any(named: 'userId'),
-        filter: any(named: 'filter'),
-        selectedAgentIds: any(named: 'selectedAgentIds'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        preResolvedResolution: any(named: 'preResolvedResolution'),
-        cancelScope: any(named: 'cancelScope'),
-        orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
-        dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
-        mergeAllConcurrencyOverride: any(
-          named: 'mergeAllConcurrencyOverride',
+      ).thenAnswer((_) => catalogCompleter.future);
+      when(
+        () => loadSalesAcrossAgents(
+          userId: any(named: 'userId'),
+          filter: any(named: 'filter'),
+          selectedAgentIds: any(named: 'selectedAgentIds'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          preResolvedResolution: any(named: 'preResolvedResolution'),
+          cancelScope: any(named: 'cancelScope'),
+          orderTargetsOnlineFirst: any(named: 'orderTargetsOnlineFirst'),
+          dedupeTargetsByAgentId: any(named: 'dedupeTargetsByAgentId'),
+          mergeAllConcurrencyOverride: any(
+            named: 'mergeAllConcurrencyOverride',
+          ),
         ),
-      ),
-    ).thenAnswer((_) => salesCompleter.future);
-    when(
-      () => reportMapper.emitMappedReports(
-        any(),
-        catalogResult: any(named: 'catalogResult'),
-        catalogFailure: any(named: 'catalogFailure'),
-        filter: any(named: 'filter'),
-        refreshedAt: any(named: 'refreshedAt'),
-        cancelToken: any(named: 'cancelToken'),
-        salesDataPending: any(named: 'salesDataPending'),
-        allowPartialGeoReuse: any(named: 'allowPartialGeoReuse'),
-        hubPresenceOnlineAgentIdsSnapshot:
-            any(named: 'hubPresenceOnlineAgentIdsSnapshot'),
-      ),
-    ).thenAnswer((invocation) async* {
-      final pending = invocation.namedArguments[#salesDataPending] as bool?;
-      if (pending ?? false) {
-        yield catalogPending;
-        return;
-      }
-      yield finalMapped;
-    });
+      ).thenAnswer((_) => salesCompleter.future);
+      when(
+        () => reportMapper.emitMappedReports(
+          any(),
+          catalogResult: any(named: 'catalogResult'),
+          catalogFailure: any(named: 'catalogFailure'),
+          filter: any(named: 'filter'),
+          refreshedAt: any(named: 'refreshedAt'),
+          cancelToken: any(named: 'cancelToken'),
+          salesDataPending: any(named: 'salesDataPending'),
+          allowPartialGeoReuse: any(named: 'allowPartialGeoReuse'),
+          hubPresenceOnlineAgentIdsSnapshot: any(
+            named: 'hubPresenceOnlineAgentIdsSnapshot',
+          ),
+        ),
+      ).thenAnswer((invocation) async* {
+        final pending = invocation.namedArguments[#salesDataPending] as bool?;
+        if (pending ?? false) {
+          yield catalogPending;
+          return;
+        }
+        yield finalMapped;
+      });
 
-    final stream = orchestrator.loadProgressive(
-      userId: userId,
-      filter: filter,
-      reason: SalesLiveMapReloadReason.manual,
-      now: now,
-      catalogScope: catalogScope,
-      queryFilter: queryFilter,
-      selectedAgentIds: null,
-      resolution: resolution,
-      cancelToken: null,
-      mergeWaveSize: 2,
-      resolveSw: null,
-      totalStopwatch: null,
-      cachedCatalog: null,
-      cachedCatalogPage: null,
-      loadedViaMergedSqlBatch: false,
-    );
+      final stream = orchestrator.loadProgressive(
+        userId: userId,
+        filter: filter,
+        reason: SalesLiveMapReloadReason.manual,
+        now: now,
+        catalogScope: catalogScope,
+        queryFilter: queryFilter,
+        selectedAgentIds: null,
+        resolution: resolution,
+        cancelToken: null,
+        mergeWaveSize: 2,
+        resolveSw: null,
+        totalStopwatch: null,
+        cachedCatalog: null,
+        cachedCatalogPage: null,
+        loadedViaMergedSqlBatch: false,
+      );
 
-    catalogCompleter.complete(
-      Success<CadastroFilialAcrossAgentsPageResult, AppFailure>(catalogPage),
-    );
-    salesCompleter.complete(
-      Success<
-        AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow>,
-        AppFailure
-      >(_salesReport()),
-    );
+      catalogCompleter.complete(
+        Success<CadastroFilialAcrossAgentsPageResult, AppFailure>(catalogPage),
+      );
+      salesCompleter.complete(
+        Success<
+          AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow>,
+          AppFailure
+        >(_salesReport()),
+      );
 
-    final emissions = await stream.toList();
-    expect(emissions.first.salesDataPending, isTrue);
-    expect(emissions[1].totalRevenue, 10);
-    expect(emissions.last.totalRevenue, 99);
-  });
+      final emissions = await stream.toList();
+      expect(emissions.first.salesDataPending, isTrue);
+      expect(emissions[1].totalRevenue, 10);
+      expect(emissions.last.totalRevenue, 99);
+    },
+  );
 
   test('yields failed result when both catalog and sales fail', () async {
     const failure = NetworkFailure(message: 'down');
@@ -208,9 +214,10 @@ void main() {
         ),
       ),
     ).thenAnswer(
-      (_) async => const Failure<CadastroFilialAcrossAgentsPageResult, AppFailure>(
-        failure,
-      ),
+      (_) async =>
+          const Failure<CadastroFilialAcrossAgentsPageResult, AppFailure>(
+            failure,
+          ),
     );
     when(
       () => loadSalesAcrossAgents(
@@ -293,8 +300,9 @@ void main() {
         refreshedAt: any(named: 'refreshedAt'),
         cancelToken: any(named: 'cancelToken'),
         allowPartialGeoReuse: any(named: 'allowPartialGeoReuse'),
-        hubPresenceOnlineAgentIdsSnapshot:
-            any(named: 'hubPresenceOnlineAgentIdsSnapshot'),
+        hubPresenceOnlineAgentIdsSnapshot: any(
+          named: 'hubPresenceOnlineAgentIdsSnapshot',
+        ),
       ),
     ).thenAnswer((_) async* {
       yield _mappedResult(totalRevenue: 50);
@@ -320,9 +328,16 @@ void main() {
         )
         .toList();
 
-    expect(emissions, isNot(contains(predicate<SalesLiveMapLoadResult>(
-      (result) => result.totalBranchCount == 0 && result.salesDataPending,
-    ))));
+    expect(
+      emissions,
+      isNot(
+        contains(
+          predicate<SalesLiveMapLoadResult>(
+            (result) => result.totalBranchCount == 0 && result.salesDataPending,
+          ),
+        ),
+      ),
+    );
     expect(emissions.last.totalRevenue, 50);
   });
 }
@@ -351,9 +366,12 @@ _salesReport() {
     consideredApprovedAgentCount: 0,
     plannedTargets: <AgentQueryTarget>[],
     missingClientTokenTargets: <AgentQueryTarget>[],
-    participants: <AgentQueryExecutionParticipant<
-      ResumoTotalVendasMunicipioFilialPeriodoRow
-    >>[],
+    participants:
+        <
+          AgentQueryExecutionParticipant<
+            ResumoTotalVendasMunicipioFilialPeriodoRow
+          >
+        >[],
     totalElapsedMs: 1,
   );
 }

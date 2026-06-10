@@ -42,6 +42,9 @@ jobs:
       - name: Analyze
         run: flutter analyze --fatal-warnings --no-fatal-infos
 
+      - name: Format
+        run: dart format --output=none --set-exit-if-changed lib test
+
   test:
     needs: analyze
     runs-on: ubuntu-latest
@@ -99,3 +102,21 @@ jobs:
         run: |
           set -euo pipefail
           flutter build apk --debug
+
+  ios_smoke:
+    needs: analyze
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Flutter
+        uses: ./.github/actions/setup-colmeia-flutter
+        with:
+          flutter-version: ${{ vars.FLUTTER_CI_VERSION }}
+
+      - name: iOS release compile smoke (no codesign)
+        shell: bash
+        run: |
+          set -euo pipefail
+          flutter build ios --release --no-codesign

@@ -79,7 +79,9 @@ void main() {
         expect(controller.previewedStoreId, pointA.id);
         expect(changeCount, 0);
 
-        async.elapse(BrazilMapMarkerSelectionController.desktopPreviewClearDelay);
+        async.elapse(
+          BrazilMapMarkerSelectionController.desktopPreviewClearDelay,
+        );
 
         expect(controller.previewedStoreId, isNull);
         expect(changeCount, 1);
@@ -101,7 +103,9 @@ void main() {
           )
           ..cancelPendingPreviewClear();
 
-        async.elapse(BrazilMapMarkerSelectionController.desktopPreviewClearDelay);
+        async.elapse(
+          BrazilMapMarkerSelectionController.desktopPreviewClearDelay,
+        );
 
         expect(controller.previewedStoreId, pointA.id);
       });
@@ -114,10 +118,11 @@ void main() {
         buckets: const <AppBrazilStoreSalesStateBucket>[mtBucket],
       );
 
-      final bucket = BrazilMapMarkerSelectionController.resolveSelectedStateBucket(
-        snapshot,
-        const BrazilMapMarkerSelection(),
-      );
+      final bucket =
+          BrazilMapMarkerSelectionController.resolveSelectedStateBucket(
+            snapshot,
+            const BrazilMapMarkerSelection(),
+          );
 
       expect(bucket, isNull);
     });
@@ -127,10 +132,11 @@ void main() {
         buckets: const <AppBrazilStoreSalesStateBucket>[mtBucket],
       );
 
-      final bucket = BrazilMapMarkerSelectionController.resolveSelectedStateBucket(
-        snapshot,
-        const BrazilMapMarkerSelection(shapeHighlightRegionKey: 'MT'),
-      );
+      final bucket =
+          BrazilMapMarkerSelectionController.resolveSelectedStateBucket(
+            snapshot,
+            const BrazilMapMarkerSelection(shapeHighlightRegionKey: 'MT'),
+          );
 
       expect(bucket, mtBucket);
     });
@@ -141,10 +147,11 @@ void main() {
         selectedStateKey: 'MT',
       );
 
-      final bucket = BrazilMapMarkerSelectionController.resolveSelectedStateBucket(
-        snapshot,
-        const BrazilMapMarkerSelection(),
-      );
+      final bucket =
+          BrazilMapMarkerSelectionController.resolveSelectedStateBucket(
+            snapshot,
+            const BrazilMapMarkerSelection(),
+          );
 
       expect(bucket, mtBucket);
     });
@@ -154,15 +161,18 @@ void main() {
     test('returns empty selection when selected store id is null', () {
       final snapshot = _visualSnapshot(
         markerGroups: <AppBrazilStoreSalesMarkerGroup>[
-          AppBrazilStoreSalesMarkerGroup(points: <AppBrazilStoreSalesPoint>[pointA]),
+          AppBrazilStoreSalesMarkerGroup(
+            points: <AppBrazilStoreSalesPoint>[pointA],
+          ),
         ],
       );
 
-      final result = BrazilMapMarkerSelectionController.resolveMarkerDetailSelection(
-        snapshot,
-        const BrazilMapMarkerSelection(),
-        (id) => id == pointA.id ? pointA : null,
-      );
+      final result =
+          BrazilMapMarkerSelectionController.resolveMarkerDetailSelection(
+            snapshot,
+            const BrazilMapMarkerSelection(),
+            (id) => id == pointA.id ? pointA : null,
+          );
 
       expect(result.point, isNull);
       expect(result.group, isNull);
@@ -178,11 +188,12 @@ void main() {
         selectedMarkerGroup: group,
       );
 
-      final result = BrazilMapMarkerSelectionController.resolveMarkerDetailSelection(
-        snapshot,
-        const BrazilMapMarkerSelection(selectedStoreId: 'store-a'),
-        (id) => id == pointA.id ? pointA : null,
-      );
+      final result =
+          BrazilMapMarkerSelectionController.resolveMarkerDetailSelection(
+            snapshot,
+            const BrazilMapMarkerSelection(selectedStoreId: 'store-a'),
+            (id) => id == pointA.id ? pointA : null,
+          );
 
       expect(result.point, pointA);
       expect(result.group, group);
@@ -191,11 +202,12 @@ void main() {
     test('synthesizes single-point group when only point is known', () {
       final snapshot = _visualSnapshot();
 
-      final result = BrazilMapMarkerSelectionController.resolveMarkerDetailSelection(
-        snapshot,
-        const BrazilMapMarkerSelection(selectedStoreId: 'store-b'),
-        (id) => id == pointB.id ? pointB : null,
-      );
+      final result =
+          BrazilMapMarkerSelectionController.resolveMarkerDetailSelection(
+            snapshot,
+            const BrazilMapMarkerSelection(selectedStoreId: 'store-b'),
+            (id) => id == pointB.id ? pointB : null,
+          );
 
       expect(result.point, pointB);
       expect(result.group?.points, <AppBrazilStoreSalesPoint>[pointB]);
@@ -204,7 +216,8 @@ void main() {
 }
 
 BrazilMapChartVisualSnapshot _visualSnapshot({
-  List<AppBrazilStoreSalesStateBucket> buckets = const <AppBrazilStoreSalesStateBucket>[],
+  List<AppBrazilStoreSalesStateBucket> buckets =
+      const <AppBrazilStoreSalesStateBucket>[],
   List<AppBrazilStoreSalesMarkerGroup> markerGroups =
       const <AppBrazilStoreSalesMarkerGroup>[],
   AppBrazilStoreSalesPoint? selectedPoint,
@@ -212,10 +225,13 @@ BrazilMapChartVisualSnapshot _visualSnapshot({
   String? selectedStateKey,
   AppBrazilStoreSalesStateBucket? selectedStateBucket,
 }) {
-  final resolvedStateBucket = selectedStateBucket ??
+  final resolvedStateBucket =
+      selectedStateBucket ??
       (selectedStateKey == null
           ? null
-          : buckets.where((bucket) => bucket.uf == selectedStateKey).firstOrNull);
+          : buckets
+                .where((bucket) => bucket.uf == selectedStateKey)
+                .firstOrNull);
   final data = AppBrazilStoreSalesMapSnapshotData(
     metric: AppBrazilStoreSalesMapMetric.revenue,
     selectedStoreId: selectedPoint?.id,

@@ -28,7 +28,8 @@ class ResumoParcelaFormaPagamentoAcrossAgentsRepositoryImplV2
   final AgentQueryExecutor<ResumoParcelaFormaPagamentoRowV2> _executor;
   final LoadResumoParcelaFormaPagamentoUseCaseV2 _loadResumo;
 
-  static const String _operation = 'loadResumoParcelaFormaPagamentoAcrossAgentsV2';
+  static const String _operation =
+      'loadResumoParcelaFormaPagamentoAcrossAgentsV2';
 
   @override
   Future<AppResult<AgentQueryExecutionReport<ResumoParcelaFormaPagamentoRowV2>>>

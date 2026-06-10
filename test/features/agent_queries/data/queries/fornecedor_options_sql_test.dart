@@ -39,6 +39,8 @@ void main() {
     check(sql).contains('UPPER(f.EMail) LIKE UPPER(p.SearchPattern)');
     check(sql).contains('UPPER(m.Nome) LIKE UPPER(p.SearchPattern)');
     check(sql).contains('CAST(:searchDigitsPattern AS VARCHAR(255))');
-    check(sql).contains('CAST(m.CodigoIBGE AS VARCHAR(20)) LIKE p.SearchDigitsPattern');
+    check(
+      sql,
+    ).contains('CAST(m.CodigoIBGE AS VARCHAR(20)) LIKE p.SearchDigitsPattern');
   });
 }

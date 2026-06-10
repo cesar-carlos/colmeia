@@ -86,8 +86,9 @@ void main() {
         reason: 'replay_detected',
       );
 
-      check(shouldArmRetryAfterFromPartialAgentQueryFailure(rateLimited))
-          .isTrue();
+      check(
+        shouldArmRetryAfterFromPartialAgentQueryFailure(rateLimited),
+      ).isTrue();
       check(shouldArmRetryAfterFromPartialAgentQueryFailure(replay)).isTrue();
     });
 
@@ -95,8 +96,7 @@ void main() {
       const failure = NetworkFailure(
         message: 'replay',
         context: <String, Object?>{
-          AgentSqlRpcFailureUiKey.field:
-              AgentSqlRpcFailureUiKey.replayDetected,
+          AgentSqlRpcFailureUiKey.field: AgentSqlRpcFailureUiKey.replayDetected,
         },
       );
 

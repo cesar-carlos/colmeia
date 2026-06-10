@@ -65,7 +65,10 @@ List<double> chartPdfTableColumnFlexWeights({
   );
   for (final row in rows) {
     for (var index = 0; index < columnCount && index < row.length; index++) {
-      maxLengths[index] = math.max(maxLengths[index], row[index].length.toDouble());
+      maxLengths[index] = math.max(
+        maxLengths[index],
+        row[index].length.toDouble(),
+      );
     }
   }
 
@@ -87,7 +90,10 @@ Map<int, pw.TableColumnWidth> chartPdfTableColumnWidths({
     return const <int, pw.TableColumnWidth>{};
   }
 
-  final totalWeight = flexWeights.fold<double>(0, (sum, weight) => sum + weight);
+  final totalWeight = flexWeights.fold<double>(
+    0,
+    (sum, weight) => sum + weight,
+  );
   final result = <int, pw.TableColumnWidth>{};
   for (var index = 0; index < flexWeights.length; index++) {
     final share = flexWeights[index] / totalWeight;

@@ -14,7 +14,8 @@ OverviewPaymentResumoRow overviewPaymentResumoRowFromAgentRow(
   );
 }
 
-OverviewPaymentResumoRow overviewPaymentResumoRowFromResumoParcelaFormaPagamentoRowV2(
+OverviewPaymentResumoRow
+overviewPaymentResumoRowFromResumoParcelaFormaPagamentoRowV2(
   ResumoParcelaFormaPagamentoRowV2 row,
 ) {
   return OverviewPaymentResumoRow(

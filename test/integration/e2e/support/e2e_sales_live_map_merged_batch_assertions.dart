@@ -27,9 +27,11 @@ void expectSalesLiveMapMergedBatchSql(
     isTrue,
   );
 
-  final sqlBodies = mergedBatch.commands.map((command) => command.sql).join(
-    '\n',
-  );
+  final sqlBodies = mergedBatch.commands
+      .map((command) => command.sql)
+      .join(
+        '\n',
+      );
   expect(
     sqlBodies,
     contains(
@@ -82,8 +84,7 @@ void expectSalesLiveMapAgentSqlE2eFailure(AppFailure failure) {
     expect(
       failure,
       isNot(isA<SessionFailure>()),
-      reason:
-          'Unexpected HTTP 401 after client login for sales live map.',
+      reason: 'Unexpected HTTP 401 after client login for sales live map.',
     );
   }
   expect(

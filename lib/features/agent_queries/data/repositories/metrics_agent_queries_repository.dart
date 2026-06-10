@@ -1,7 +1,8 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
-import 'package:colmeia/core/observability/socket/socket_sql_metrics_appendix_port.dart' show SocketSqlMetricsAppendixProvider;
+import 'package:colmeia/core/observability/socket/socket_sql_metrics_appendix_port.dart'
+    show SocketSqlMetricsAppendixProvider;
 import 'package:colmeia/features/agent_queries/data/repositories/caching_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/coalescing_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
@@ -354,8 +355,7 @@ class MetricsAgentQueriesRepository implements AgentQueriesRepository {
       'sqlCacheHitRate': denom == 0 ? null : hits / denom,
       'sqlBatchCacheHits': batchHits,
       'sqlBatchCacheMisses': batchMisses,
-      'sqlBatchCacheHitRate':
-          batchDenom == 0 ? null : batchHits / batchDenom,
+      'sqlBatchCacheHitRate': batchDenom == 0 ? null : batchHits / batchDenom,
       'sqlCacheSize': cache.cacheSize,
       'coalescingRepositoryCoalescedTotal': coalescing.coalescedCount,
     };

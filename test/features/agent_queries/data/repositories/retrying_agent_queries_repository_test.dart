@@ -210,7 +210,8 @@ void main() {
         reason: 'concurrent_handlers_exceeded',
       );
       when(() => delegate.executeSql(any())).thenAnswer(
-        (_) async => const Failure<AgentSqlExecutionResult, AppFailure>(failure),
+        (_) async =>
+            const Failure<AgentSqlExecutionResult, AppFailure>(failure),
       );
 
       final result = await retrying.executeSql(request);
@@ -234,7 +235,8 @@ void main() {
         },
       );
       when(() => delegate.executeSql(any())).thenAnswer(
-        (_) async => const Failure<AgentSqlExecutionResult, AppFailure>(failure),
+        (_) async =>
+            const Failure<AgentSqlExecutionResult, AppFailure>(failure),
       );
 
       final result = await retrying.executeSql(request);

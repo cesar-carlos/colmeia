@@ -45,7 +45,8 @@ class SalesHubPage extends StatelessWidget {
                 SizedBox(height: tokens.sectionSpacing),
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    final isWide = constraints.maxWidth >=
+                    final isWide =
+                        constraints.maxWidth >=
                         kAppHubNavigationSalesHubWideBreakpoint;
                     final isSingleCardRow = allSalesCards.length == 1;
                     final singleCardMaxWidth =
@@ -56,8 +57,7 @@ class SalesHubPage extends StatelessWidget {
                       itemCount: allSalesCards.length,
                       spacing: tokens.gapMd,
                       maxColumns: isWide ? 4 : 2,
-                      maxCardWidth:
-                          isSingleCardRow ? singleCardMaxWidth : null,
+                      maxCardWidth: isSingleCardRow ? singleCardMaxWidth : null,
                       wrapAlignment: isSingleCardRow
                           ? WrapAlignment.center
                           : WrapAlignment.start,

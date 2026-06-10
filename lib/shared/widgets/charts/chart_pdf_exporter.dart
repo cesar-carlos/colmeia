@@ -19,8 +19,7 @@ abstract final class ChartPdfExporter {
     String? filterSummary,
     ChartShareTableData? tableData,
     Uint8List? chartImagePngBytes,
-    ChartSharePdfOrientation pdfOrientation =
-        ChartSharePdfOrientation.portrait,
+    ChartSharePdfOrientation pdfOrientation = ChartSharePdfOrientation.portrait,
     String Function(int page, int pages)? pageNumberLabelBuilder,
   }) async {
     final headerFontBytes = await PdfExportFontCache.headerFontBytes();
@@ -36,8 +35,9 @@ abstract final class ChartPdfExporter {
       chartImagePngBytes: chartImagePngBytes,
       headerFontBytes: headerFontBytes,
       bodyFontBytes: bodyFontBytes,
-      pageNumberLabelTemplate:
-          pageLabelTemplateFromBuilder(pageNumberLabelBuilder),
+      pageNumberLabelTemplate: pageLabelTemplateFromBuilder(
+        pageNumberLabelBuilder,
+      ),
       pdfOrientation: pdfOrientation,
     );
 

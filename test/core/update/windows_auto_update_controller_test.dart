@@ -314,7 +314,9 @@ void main() {
         check(controller.state.headline).equals(
           'Feed sem releases publicadas.',
         );
-        check(controller.state.details!).contains('ainda nao ha itens de release');
+        check(
+          controller.state.details!,
+        ).contains('ainda nao ha itens de release');
         check(controller.state.lastCheckedAt).isNotNull();
       },
     );

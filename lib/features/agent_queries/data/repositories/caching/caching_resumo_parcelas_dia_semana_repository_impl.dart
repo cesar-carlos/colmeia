@@ -12,18 +12,21 @@ import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcel
 import 'package:result_dart/result_dart.dart';
 
 final class CachingResumoParcelasDiaSemanaRepositoryImpl
-    extends BaseCachedAgentQueryRepository<
-      ResumoParcelasDiaSemanaFilter,
-      ResumoParcelasDiaSemanaRow
-    >
+    extends
+        BaseCachedAgentQueryRepository<
+          ResumoParcelasDiaSemanaFilter,
+          ResumoParcelasDiaSemanaRow
+        >
     implements ResumoParcelasDiaSemanaRepository {
   CachingResumoParcelasDiaSemanaRepositoryImpl({
     required ResumoParcelasDiaSemanaRepository delegate,
     required super.factsStore,
     super.agentQueriesRepository,
-    AgentQueryFactsBucketBatchSupport<ResumoParcelasDiaSemanaFilter,
-            ResumoParcelasDiaSemanaRow>?
-        bucketBatchSupport,
+    AgentQueryFactsBucketBatchSupport<
+      ResumoParcelasDiaSemanaFilter,
+      ResumoParcelasDiaSemanaRow
+    >?
+    bucketBatchSupport,
     ResumoParcelasDiaSemanaCacheStrategy super.strategy =
         const ResumoParcelasDiaSemanaCacheStrategy(),
     super.clock,

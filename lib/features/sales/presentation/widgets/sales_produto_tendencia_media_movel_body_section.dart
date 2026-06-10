@@ -38,7 +38,8 @@ class SalesProdutoTendenciaMediaMovelBodySection extends StatelessWidget {
     SalesProdutoTendenciaMediaMovelPresentationState state,
     SalesProdutoTendenciaMediaMovelChartId chartId,
     List<SalesProdutoTendenciaMediaMovelClassBucket> buckets,
-  ) onChartSelected;
+  )
+  onChartSelected;
   final ValueChanged<String> onClassificacaoSelected;
   final VoidCallback onClearClassificacaoFilter;
   final String? retryCountdownLabel;
@@ -48,16 +49,18 @@ class SalesProdutoTendenciaMediaMovelBodySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Selector<SalesProdutoTendenciaMediaMovelController,
-        _SalesProdutoTendenciaMediaMovelBodySlice>(
+    return Selector<
+      SalesProdutoTendenciaMediaMovelController,
+      _SalesProdutoTendenciaMediaMovelBodySlice
+    >(
       selector: (_, controller) =>
           _SalesProdutoTendenciaMediaMovelBodySlice.from(controller.state),
       builder: (context, slice, _) {
         final l10n = AppLocalizations.of(context);
         final tokens = context.appTokens;
         final state = slice.state;
-        final controller =
-            context.read<SalesProdutoTendenciaMediaMovelController>();
+        final controller = context
+            .read<SalesProdutoTendenciaMediaMovelController>();
 
         if (state.selectedAgentId == null ||
             state.selectedAgentId!.trim().isEmpty) {
@@ -137,8 +140,7 @@ class SalesProdutoTendenciaMediaMovelBodySection extends StatelessWidget {
               onOpenFilters: onOpenFilters,
               headerTrailing: AppChartHeaderTrailing(
                 shareProgressKey: detailsShareKey,
-                shareEnabled:
-                    !state.loading && state.pageResult.totalCount > 0,
+                shareEnabled: !state.loading && state.pageResult.totalCount > 0,
                 onShare: state.loading || state.pageResult.totalCount <= 0
                     ? null
                     : onShareDetails,

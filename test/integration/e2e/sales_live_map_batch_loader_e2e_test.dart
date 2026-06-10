@@ -98,8 +98,8 @@ void main() {
               expectSalesLiveMapMergedBatchSql(countingRepository);
               expect(success.catalogPage.report.participants, isNotEmpty);
               expect(success.salesReport.participants, isNotEmpty);
-              final catalogParticipant =
-                  success.catalogPage.report.participants.singleWhere(
+              final catalogParticipant = success.catalogPage.report.participants
+                  .singleWhere(
                     (participant) =>
                         participant.agentId == AppEnvironment.e2eAgentId,
                     orElse: () => success.catalogPage.report.participants.first,

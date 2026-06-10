@@ -146,20 +146,18 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
         plan: plan,
         cachePolicy: cachePolicy,
         clock: clock,
-        prefetchedPayload: prefetchedPayloads[
-          _strategy.storageKey(
-            userId: userId,
-            agentId: agentId,
-            bucketId: bucketId,
-            rangeFilter: filter,
-          )
-        ],
+        prefetchedPayload:
+            prefetchedPayloads[_strategy.storageKey(
+              userId: userId,
+              agentId: agentId,
+              bucketId: bucketId,
+              rangeFilter: filter,
+            )],
         prefetchedNetworkResult: batchedNetworkResults[bucketId],
         clientToken: clientToken,
         bridgeTimeoutMs: bridgeTimeoutMs,
         hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
-        hubConnectedFromApprovedCatalogRow:
-            hubConnectedFromApprovedCatalogRow,
+        hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
         cancelScope: cancelScope,
       ),
     );
@@ -198,7 +196,9 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
           ),
         );
       case AgentQueryCacheInvalidateUser(:final userId):
-        await _factsStore.removeMatching(AgentQueryFactsKeyPrefix.forUser(userId));
+        await _factsStore.removeMatching(
+          AgentQueryFactsKeyPrefix.forUser(userId),
+        );
       case AgentQueryCacheInvalidateAgent(:final userId, :final agentId):
         await _factsStore.removeMatching(
           AgentQueryFactsKeyPrefix.forAgent(userId: userId, agentId: agentId),

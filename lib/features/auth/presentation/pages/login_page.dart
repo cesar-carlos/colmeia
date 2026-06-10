@@ -160,7 +160,9 @@ class _LoginPageBodyState extends State<_LoginPageBody> {
                                   : () => context.goTo(
                                       AppRoute.registrationStatus,
                                     ),
-                              child: Text(l10n.authLoginCheckRegistrationStatus),
+                              child: Text(
+                                l10n.authLoginCheckRegistrationStatus,
+                              ),
                             ),
                           ),
                           Center(

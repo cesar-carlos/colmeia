@@ -100,7 +100,8 @@ class _SalesLiveMapBodyStatusContent extends StatelessWidget {
     final controller = context.read<SalesLiveMapController>();
     final state = slice.state;
     final result = state.result;
-    final kpiResult = SalesLiveMapViewModel.attentionPanelResult(state) ?? result;
+    final kpiResult =
+        SalesLiveMapViewModel.attentionPanelResult(state) ?? result;
     final attentionResult = SalesLiveMapViewModel.attentionPanelResult(state);
     final viewModel = SalesLiveMapViewModel.fromState(state, l10n);
     final retryCountdown = slice.retryCountdownLabel(l10n);

@@ -31,6 +31,7 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tenden
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_filters_sheet.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_trend_comparison_bar_chart_style.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_scroll_tokens.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
@@ -368,7 +369,9 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
                     ),
                     onBucketTap: (bucket) {
                       Navigator.of(fullscreenContext).pop();
-                      unawaited(_applyClassificacaoFromChart(bucket.classificacao));
+                      unawaited(
+                        _applyClassificacaoFromChart(bucket.classificacao),
+                      );
                     },
                   );
                 },
@@ -530,9 +533,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
           await _reload();
         },
         child: ListView(
-          // CI release workflow uses Flutter 3.41.x; migrate to scrollCacheExtent when upgraded.
-          // ignore: deprecated_member_use
-          cacheExtent: 5000,
+          cacheExtent: AppScrollTokens.chartDashboardListCacheExtent,
           physics: const AlwaysScrollableScrollPhysics(),
           padding: context.pageScrollPadding(
             tokens,

@@ -95,130 +95,145 @@ void main() {
     );
   });
 
-  test('yields pending base then mapped emissions and persists final batch', () async {
-    final partialBatch = _batchResult(isFinal: false, salesLoadingComplete: false);
-    final finalBatch = _batchResult(isFinal: true);
-    final partialMapped = _mappedResult(totalRevenue: 10, salesDataPending: true);
-    final finalMapped = _mappedResult(totalRevenue: 99);
+  test(
+    'yields pending base then mapped emissions and persists final batch',
+    () async {
+      final partialBatch = _batchResult(
+        isFinal: false,
+        salesLoadingComplete: false,
+      );
+      final finalBatch = _batchResult(isFinal: true);
+      final partialMapped = _mappedResult(
+        totalRevenue: 10,
+        salesDataPending: true,
+      );
+      final finalMapped = _mappedResult(totalRevenue: 99);
 
-    when(
-      () => batchLoader.loadProgressively(
-        userId: any(named: 'userId'),
-        catalogFilter: any(named: 'catalogFilter'),
-        salesFilter: any(named: 'salesFilter'),
-        preResolvedResolution: any(named: 'preResolvedResolution'),
-        cancelScope: any(named: 'cancelScope'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        targetWaveConcurrency: any(named: 'targetWaveConcurrency'),
-      ),
-    ).thenAnswer(
-      (_) => Stream<AppResult<SalesLiveMapBatchLoadResult>>.fromIterable(
-        <AppResult<SalesLiveMapBatchLoadResult>>[
-          Success<SalesLiveMapBatchLoadResult, AppFailure>(partialBatch),
-          Success<SalesLiveMapBatchLoadResult, AppFailure>(finalBatch),
-        ],
-      ),
-    );
-    when(
-      () => reportMapper.emitMappedReports(
-        any(),
-        catalogResult: any(named: 'catalogResult'),
-        filter: any(named: 'filter'),
-        refreshedAt: any(named: 'refreshedAt'),
-        cancelToken: any(named: 'cancelToken'),
-        salesDataPending: any(named: 'salesDataPending'),
-        allowPartialGeoReuse: any(named: 'allowPartialGeoReuse'),
-        hubPresenceOnlineAgentIdsSnapshot:
-            any(named: 'hubPresenceOnlineAgentIdsSnapshot'),
-      ),
-    ).thenAnswer((invocation) async* {
-      final pending = invocation.namedArguments[#salesDataPending] as bool;
-      final reuse = invocation.namedArguments[#allowPartialGeoReuse] as bool;
-      if (pending && !reuse) {
-        yield partialMapped;
-        return;
-      }
-      yield finalMapped;
-    });
+      when(
+        () => batchLoader.loadProgressively(
+          userId: any(named: 'userId'),
+          catalogFilter: any(named: 'catalogFilter'),
+          salesFilter: any(named: 'salesFilter'),
+          preResolvedResolution: any(named: 'preResolvedResolution'),
+          cancelScope: any(named: 'cancelScope'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          targetWaveConcurrency: any(named: 'targetWaveConcurrency'),
+        ),
+      ).thenAnswer(
+        (_) => Stream<AppResult<SalesLiveMapBatchLoadResult>>.fromIterable(
+          <AppResult<SalesLiveMapBatchLoadResult>>[
+            Success<SalesLiveMapBatchLoadResult, AppFailure>(partialBatch),
+            Success<SalesLiveMapBatchLoadResult, AppFailure>(finalBatch),
+          ],
+        ),
+      );
+      when(
+        () => reportMapper.emitMappedReports(
+          any(),
+          catalogResult: any(named: 'catalogResult'),
+          filter: any(named: 'filter'),
+          refreshedAt: any(named: 'refreshedAt'),
+          cancelToken: any(named: 'cancelToken'),
+          salesDataPending: any(named: 'salesDataPending'),
+          allowPartialGeoReuse: any(named: 'allowPartialGeoReuse'),
+          hubPresenceOnlineAgentIdsSnapshot: any(
+            named: 'hubPresenceOnlineAgentIdsSnapshot',
+          ),
+        ),
+      ).thenAnswer((invocation) async* {
+        final pending = invocation.namedArguments[#salesDataPending] as bool;
+        final reuse = invocation.namedArguments[#allowPartialGeoReuse] as bool;
+        if (pending && !reuse) {
+          yield partialMapped;
+          return;
+        }
+        yield finalMapped;
+      });
 
-    final emissions = await orchestrator
-        .loadProgressive(
+      final emissions = await orchestrator
+          .loadProgressive(
+            userId: userId,
+            filter: filter,
+            reason: SalesLiveMapReloadReason.manual,
+            now: now,
+            catalogScope: catalogScope,
+            queryFilter: queryFilter,
+            selectedAgentIds: null,
+            resolution: resolution,
+            cancelToken: null,
+            mergeWaveSize: 2,
+            resolveSw: null,
+            totalStopwatch: null,
+            cachedCatalog: null,
+            loadedViaMergedSqlBatch: true,
+          )
+          .toList();
+
+      expect(emissions.first.salesDataPending, isTrue);
+      expect(emissions, contains(finalMapped.result));
+      verify(
+        () => catalogPersister.persist(
           userId: userId,
-          filter: filter,
-          reason: SalesLiveMapReloadReason.manual,
+          scope: catalogScope,
           now: now,
-          catalogScope: catalogScope,
-          queryFilter: queryFilter,
-          selectedAgentIds: null,
-          resolution: resolution,
-          cancelToken: null,
-          mergeWaveSize: 2,
-          resolveSw: null,
-          totalStopwatch: null,
-          cachedCatalog: null,
-          loadedViaMergedSqlBatch: true,
-        )
-        .toList();
+          page: finalBatch.catalogPage,
+        ),
+      ).called(1);
+    },
+  );
 
-    expect(emissions.first.salesDataPending, isTrue);
-    expect(emissions, contains(finalMapped.result));
-    verify(
-      () => catalogPersister.persist(
-        userId: userId,
-        scope: catalogScope,
-        now: now,
-        page: finalBatch.catalogPage,
-      ),
-    ).called(1);
-  });
+  test(
+    'yields cancelled result when cancel token is set during batch stream',
+    () async {
+      final cancelToken = SalesLiveMapLoadCancelToken()..cancel();
+      final batch = _batchResult(isFinal: false);
 
-  test('yields cancelled result when cancel token is set during batch stream', () async {
-    final cancelToken = SalesLiveMapLoadCancelToken()..cancel();
-    final batch = _batchResult(isFinal: false);
+      when(
+        () => batchLoader.loadProgressively(
+          userId: any(named: 'userId'),
+          catalogFilter: any(named: 'catalogFilter'),
+          salesFilter: any(named: 'salesFilter'),
+          preResolvedResolution: any(named: 'preResolvedResolution'),
+          cancelScope: any(named: 'cancelScope'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          targetWaveConcurrency: any(named: 'targetWaveConcurrency'),
+        ),
+      ).thenAnswer(
+        (_) => Stream<AppResult<SalesLiveMapBatchLoadResult>>.value(
+          Success<SalesLiveMapBatchLoadResult, AppFailure>(batch),
+        ),
+      );
 
-    when(
-      () => batchLoader.loadProgressively(
-        userId: any(named: 'userId'),
-        catalogFilter: any(named: 'catalogFilter'),
-        salesFilter: any(named: 'salesFilter'),
-        preResolvedResolution: any(named: 'preResolvedResolution'),
-        cancelScope: any(named: 'cancelScope'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        targetWaveConcurrency: any(named: 'targetWaveConcurrency'),
-      ),
-    ).thenAnswer(
-      (_) => Stream<AppResult<SalesLiveMapBatchLoadResult>>.value(
-        Success<SalesLiveMapBatchLoadResult, AppFailure>(batch),
-      ),
-    );
+      final emissions = await orchestrator
+          .loadProgressive(
+            userId: userId,
+            filter: filter,
+            reason: SalesLiveMapReloadReason.autoRefresh,
+            now: now,
+            catalogScope: catalogScope,
+            queryFilter: queryFilter,
+            selectedAgentIds: null,
+            resolution: resolution,
+            cancelToken: cancelToken,
+            mergeWaveSize: 1,
+            resolveSw: null,
+            totalStopwatch: null,
+            cachedCatalog: null,
+            loadedViaMergedSqlBatch: false,
+          )
+          .toList();
 
-    final emissions = await orchestrator
-        .loadProgressive(
-          userId: userId,
-          filter: filter,
-          reason: SalesLiveMapReloadReason.autoRefresh,
-          now: now,
-          catalogScope: catalogScope,
-          queryFilter: queryFilter,
-          selectedAgentIds: null,
-          resolution: resolution,
-          cancelToken: cancelToken,
-          mergeWaveSize: 1,
-          resolveSw: null,
-          totalStopwatch: null,
-          cachedCatalog: null,
-          loadedViaMergedSqlBatch: false,
-        )
-        .toList();
-
-    expect(emissions.last.cancelled, isTrue);
-    verifyNever(() => catalogPersister.persist(
-      userId: any(named: 'userId'),
-      scope: any(named: 'scope'),
-      now: any(named: 'now'),
-      page: any(named: 'page'),
-    ));
-  });
+      expect(emissions.last.cancelled, isTrue);
+      verifyNever(
+        () => catalogPersister.persist(
+          userId: any(named: 'userId'),
+          scope: any(named: 'scope'),
+          now: any(named: 'now'),
+          page: any(named: 'page'),
+        ),
+      );
+    },
+  );
 
   test('yields failed result when first batch emission fails', () async {
     const failure = NetworkFailure(message: 'batch down');
@@ -269,16 +284,19 @@ SalesLiveMapBatchLoadResult _batchResult({
   final catalogPage = _catalogPage();
   const salesReport =
       AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow>(
-    queryKey: AgentQueryKey.resumoTotalVendasMunicipioFilialPeriodo,
-    strategy: AgentQueryExecutionStrategy.mergeAll,
-    consideredApprovedAgentCount: 0,
-    plannedTargets: <AgentQueryTarget>[],
-    missingClientTokenTargets: <AgentQueryTarget>[],
-    participants: <AgentQueryExecutionParticipant<
-      ResumoTotalVendasMunicipioFilialPeriodoRow
-    >>[],
-    totalElapsedMs: 1,
-  );
+        queryKey: AgentQueryKey.resumoTotalVendasMunicipioFilialPeriodo,
+        strategy: AgentQueryExecutionStrategy.mergeAll,
+        consideredApprovedAgentCount: 0,
+        plannedTargets: <AgentQueryTarget>[],
+        missingClientTokenTargets: <AgentQueryTarget>[],
+        participants:
+            <
+              AgentQueryExecutionParticipant<
+                ResumoTotalVendasMunicipioFilialPeriodoRow
+              >
+            >[],
+        totalElapsedMs: 1,
+      );
   return SalesLiveMapBatchLoadResult(
     catalogPage: catalogPage,
     salesReport: salesReport,

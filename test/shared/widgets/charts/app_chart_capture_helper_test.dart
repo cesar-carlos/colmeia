@@ -70,8 +70,8 @@ void main() {
     await tester.pumpWidget(_chartBoundary(key: key));
     await tester.pump();
 
-    final boundary = key.currentContext!.findRenderObject()!
-        as RenderRepaintBoundary;
+    final boundary =
+        key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
 
     late bool ready;
     await tester.runAsync(() async {
@@ -161,15 +161,16 @@ void main() {
             <String>['Sales', '10'],
           ],
         ),
-        shareBytes: ({
-          required bytes,
-          required fileName,
-          required mimeType,
-          subject,
-          title,
-        }) async {
-          return _shareSuccess();
-        },
+        shareBytes:
+            ({
+              required bytes,
+              required fileName,
+              required mimeType,
+              subject,
+              title,
+            }) async {
+              return _shareSuccess();
+            },
       );
     });
 
@@ -188,16 +189,17 @@ void main() {
       result = await captureAndShareChart(
         key,
         title: 'Chart',
-        shareBytes: ({
-          required bytes,
-          required fileName,
-          required mimeType,
-          subject,
-          title,
-        }) async {
-          guardHeldDuringShare = ChartShareGuard.isInProgress(key);
-          return _shareSuccess();
-        },
+        shareBytes:
+            ({
+              required bytes,
+              required fileName,
+              required mimeType,
+              subject,
+              title,
+            }) async {
+              guardHeldDuringShare = ChartShareGuard.isInProgress(key);
+              return _shareSuccess();
+            },
       );
     });
 
@@ -239,15 +241,16 @@ void main() {
         },
         includeChartImage: false,
         exportCaptureContext: hostContext,
-        shareBytes: ({
-          required bytes,
-          required fileName,
-          required mimeType,
-          subject,
-          title,
-        }) async {
-          return _shareSuccess();
-        },
+        shareBytes:
+            ({
+              required bytes,
+              required fileName,
+              required mimeType,
+              subject,
+              title,
+            }) async {
+              return _shareSuccess();
+            },
       );
     });
 
@@ -283,15 +286,16 @@ void main() {
         ),
         chartExportBuilder: (_) => const SizedBox.shrink(),
         exportCaptureContext: hostContext,
-        shareBytes: ({
-          required bytes,
-          required fileName,
-          required mimeType,
-          subject,
-          title,
-        }) async {
-          return _shareSuccess();
-        },
+        shareBytes:
+            ({
+              required bytes,
+              required fileName,
+              required mimeType,
+              subject,
+              title,
+            }) async {
+              return _shareSuccess();
+            },
       );
     });
 
@@ -312,15 +316,16 @@ void main() {
           key,
           title: 'Boundary fallback',
           chartExportBuilder: (_) => const SizedBox.shrink(),
-          shareBytes: ({
-            required bytes,
-            required fileName,
-            required mimeType,
-            subject,
-            title,
-          }) async {
-            return _shareSuccess();
-          },
+          shareBytes:
+              ({
+                required bytes,
+                required fileName,
+                required mimeType,
+                subject,
+                title,
+              }) async {
+                return _shareSuccess();
+              },
         );
       });
 
@@ -328,39 +333,46 @@ void main() {
     },
   );
 
-  testWidgets('returns sharePlatformFailed with temp path when share unavailable', (
-    tester,
-  ) async {
-    final key = GlobalKey();
-    late ChartShareResult result;
+  testWidgets(
+    'returns sharePlatformFailed with temp path when share unavailable',
+    (
+      tester,
+    ) async {
+      final key = GlobalKey();
+      late ChartShareResult result;
 
-    await tester.pumpWidget(_chartBoundary(key: key));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(_chartBoundary(key: key));
+      await tester.pumpAndSettle();
 
-    await tester.runAsync(() async {
-      result = await captureAndShareChart(
-        key,
-        title: 'Chart',
-        shareBytes: ({
-          required bytes,
-          required fileName,
-          required mimeType,
-          subject,
-          title,
-        }) async {
-          return const ShareExportBytesResult(
-            shareResult: ShareResult('test', ShareResultStatus.unavailable),
-            tempFilePath: r'C:\temp\chart.pdf',
-          );
-        },
-      );
-    });
+      await tester.runAsync(() async {
+        result = await captureAndShareChart(
+          key,
+          title: 'Chart',
+          shareBytes:
+              ({
+                required bytes,
+                required fileName,
+                required mimeType,
+                subject,
+                title,
+              }) async {
+                return const ShareExportBytesResult(
+                  shareResult: ShareResult(
+                    'test',
+                    ShareResultStatus.unavailable,
+                  ),
+                  tempFilePath: r'C:\temp\chart.pdf',
+                );
+              },
+        );
+      });
 
-    expect(result, isA<ChartShareFailure>());
-    final failure = result as ChartShareFailure;
-    expect(failure.reason, ChartShareFailureReason.sharePlatformFailed);
-    expect(failure.pdfFilePath, r'C:\temp\chart.pdf');
-  });
+      expect(result, isA<ChartShareFailure>());
+      final failure = result as ChartShareFailure;
+      expect(failure.reason, ChartShareFailureReason.sharePlatformFailed);
+      expect(failure.pdfFilePath, r'C:\temp\chart.pdf');
+    },
+  );
 
   testWidgets(
     'returns invalidRenderObject when key is not a repaint boundary',

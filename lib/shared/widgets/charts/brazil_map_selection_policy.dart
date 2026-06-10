@@ -78,8 +78,7 @@ class BrazilMapSelectionPolicy {
       return false;
     }
 
-    final normalizedRegion =
-        AppBrazilStoreSalesMapData.normalizeUf(regionKey);
+    final normalizedRegion = AppBrazilStoreSalesMapData.normalizeUf(regionKey);
     return internalSelectedStateKey == normalizedRegion;
   }
 
@@ -110,7 +109,9 @@ class BrazilMapSelectionPolicy {
     internalSelectedStoreId = point.id;
     dismissedControlledSelectedStoreId = null;
     if (linkRegionHighlight) {
-      internalSelectedStateKey = AppBrazilStoreSalesMapData.normalizeUf(point.uf);
+      internalSelectedStateKey = AppBrazilStoreSalesMapData.normalizeUf(
+        point.uf,
+      );
     }
     focusCameraOnSelectedStore = focusStore;
   }
@@ -178,7 +179,10 @@ class BrazilMapSelectionPolicy {
     if (point == null) {
       return false;
     }
-    return AppBrazilStoreSalesMapData.pointMatchesRegion(point, activeRegionKey);
+    return AppBrazilStoreSalesMapData.pointMatchesRegion(
+      point,
+      activeRegionKey,
+    );
   }
 
   void clearStoreIfOutsideActiveRegion({

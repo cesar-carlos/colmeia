@@ -29,42 +29,45 @@ void main() {
       );
     });
 
-    test('defaultLoad reads closed day bucket from store without delegate', () async {
-      final filter = ResumoProdutoVendaLucratividadeFilter(
-        dataVendaInicio: DateTime(2026, 4, 8),
-        dataVendaFim: DateTime(2026, 4, 8, 23, 59, 59, 999, 999),
-      );
-      const row = ResumoProdutoVendaLucratividadeRow(
-        codEmpresa: 1,
-        codFilial: 1,
-        qtdVendas: 1,
-        qtdItensVendido: 1,
-        valorTotalCustoMedio: 1,
-        custoReposicao: 1,
-        pontoEquilibrio: 1,
-        valorTotalItem: 10,
-      );
-      final storageKey = strategy.storageKey(
-        userId: 'u1',
-        agentId: 'a1',
-        bucketId: '2026-04-08',
-        rangeFilter: filter,
-      );
-      await cachingRepo.factsStore.writePayload(
-        storageKey: storageKey,
-        payload: strategy.encodePayload([row]),
-        schemaVersion: strategy.schemaVersion,
-      );
+    test(
+      'defaultLoad reads closed day bucket from store without delegate',
+      () async {
+        final filter = ResumoProdutoVendaLucratividadeFilter(
+          dataVendaInicio: DateTime(2026, 4, 8),
+          dataVendaFim: DateTime(2026, 4, 8, 23, 59, 59, 999, 999),
+        );
+        const row = ResumoProdutoVendaLucratividadeRow(
+          codEmpresa: 1,
+          codFilial: 1,
+          qtdVendas: 1,
+          qtdItensVendido: 1,
+          valorTotalCustoMedio: 1,
+          custoReposicao: 1,
+          pontoEquilibrio: 1,
+          valorTotalItem: 10,
+        );
+        final storageKey = strategy.storageKey(
+          userId: 'u1',
+          agentId: 'a1',
+          bucketId: '2026-04-08',
+          rangeFilter: filter,
+        );
+        await cachingRepo.factsStore.writePayload(
+          storageKey: storageKey,
+          payload: strategy.encodePayload([row]),
+          schemaVersion: strategy.schemaVersion,
+        );
 
-      final result = await cachingRepo.loadAll(
-        userId: 'u1',
-        agentId: 'a1',
-        filter: filter,
-      );
+        final result = await cachingRepo.loadAll(
+          userId: 'u1',
+          agentId: 'a1',
+          filter: filter,
+        );
 
-      expect(result.getOrNull()?.single.valorTotalItem, row.valorTotalItem);
-      expect(delegate.loadCount, 0);
-    });
+        expect(result.getOrNull()?.single.valorTotalItem, row.valorTotalItem);
+        expect(delegate.loadCount, 0);
+      },
+    );
   });
 }
 
@@ -84,6 +87,8 @@ final class _FakeDelegate implements ResumoProdutoVendaLucratividadeRepository {
     AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
   }) async {
     loadCount++;
-    return const Success<List<ResumoProdutoVendaLucratividadeRow>, AppFailure>([]);
+    return const Success<List<ResumoProdutoVendaLucratividadeRow>, AppFailure>(
+      [],
+    );
   }
 }

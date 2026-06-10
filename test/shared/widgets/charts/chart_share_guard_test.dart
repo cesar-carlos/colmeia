@@ -23,10 +23,12 @@ void main() {
     var firstNotifications = 0;
     var secondNotifications = 0;
 
-    ChartShareGuard.listenableFor(firstKey)
-        .addListener(() => firstNotifications++);
-    ChartShareGuard.listenableFor(secondKey)
-        .addListener(() => secondNotifications++);
+    ChartShareGuard.listenableFor(
+      firstKey,
+    ).addListener(() => firstNotifications++);
+    ChartShareGuard.listenableFor(
+      secondKey,
+    ).addListener(() => secondNotifications++);
 
     ChartShareGuard.tryAcquire(firstKey);
     ChartShareGuard.release(firstKey);

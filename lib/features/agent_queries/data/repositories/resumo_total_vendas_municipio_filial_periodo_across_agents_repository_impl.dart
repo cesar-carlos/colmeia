@@ -76,20 +76,19 @@ class ResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsRepositoryImpl
             bridgeTimeoutMs,
             hubPresenceOnlineAgentIdsSnapshot,
             hubConnectedFromApprovedCatalogRow,
-          }) =>
-              _loadResumo(
-                userId: userId,
-                agentId: agentId,
-                filter: filter,
-                clientToken: clientToken,
-                bridgeTimeoutMs: bridgeTimeoutMs,
-                hubPresenceOnlineAgentIdsSnapshot:
-                    hubPresenceOnlineAgentIdsSnapshot,
-                hubConnectedFromApprovedCatalogRow:
-                    hubConnectedFromApprovedCatalogRow,
-                cancelScope: cancelScope,
-                cachePolicy: cachePolicy,
-              ),
+          }) => _loadResumo(
+            userId: userId,
+            agentId: agentId,
+            filter: filter,
+            clientToken: clientToken,
+            bridgeTimeoutMs: bridgeTimeoutMs,
+            hubPresenceOnlineAgentIdsSnapshot:
+                hubPresenceOnlineAgentIdsSnapshot,
+            hubConnectedFromApprovedCatalogRow:
+                hubConnectedFromApprovedCatalogRow,
+            cancelScope: cancelScope,
+            cachePolicy: cachePolicy,
+          ),
       selectedAgentIds: selectedAgentIds,
       strategy: strategy,
       bridgeTimeoutMs: bridgeTimeoutMs,

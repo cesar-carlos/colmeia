@@ -422,5 +422,4 @@ class SalesLiveMapController extends ChangeNotifier {
   void _armRetryAfterFromFailure(AppFailure failure) {
     armAgentQueryRetryAfterGate(_retryAfterGate, failure);
   }
-
 }

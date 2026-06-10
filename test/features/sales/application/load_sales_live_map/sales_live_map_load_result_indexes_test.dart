@@ -84,11 +84,13 @@ void main() {
 
       final index = result.agentIdsByBranchRef;
       expect(
-        () => index[const SalesLiveMapBranchRef(
-          agentId: 'agent-x',
-          codEmpresa: 1,
-          codFilial: 1,
-        )] = 'agent-x',
+        () =>
+            index[const SalesLiveMapBranchRef(
+                  agentId: 'agent-x',
+                  codEmpresa: 1,
+                  codFilial: 1,
+                )] =
+                'agent-x',
         throwsUnsupportedError,
       );
     });

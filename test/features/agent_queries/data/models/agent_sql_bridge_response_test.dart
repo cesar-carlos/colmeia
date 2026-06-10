@@ -128,35 +128,38 @@ void main() {
     },
   );
 
-  test('parseSuccessMaybeAsync uses isolate when row threshold is met', () async {
-    final rows = List<Map<String, dynamic>>.generate(
-      2500,
-      (index) => <String, dynamic>{'id': index},
-    );
-    final payload = <String, dynamic>{
-      'response': <String, dynamic>{
-        'success': true,
-        'item': <String, dynamic>{
+  test(
+    'parseSuccessMaybeAsync uses isolate when row threshold is met',
+    () async {
+      final rows = List<Map<String, dynamic>>.generate(
+        2500,
+        (index) => <String, dynamic>{'id': index},
+      );
+      final payload = <String, dynamic>{
+        'response': <String, dynamic>{
           'success': true,
-          'result': <String, dynamic>{
-            'execution_id': 'exec-large',
-            'rows': rows,
-            'row_count': rows.length,
-            'affected_rows': 0,
+          'item': <String, dynamic>{
+            'success': true,
+            'result': <String, dynamic>{
+              'execution_id': 'exec-large',
+              'rows': rows,
+              'row_count': rows.length,
+              'affected_rows': 0,
+            },
           },
         },
-      },
-    };
+      };
 
-    final parsed = await AgentSqlBridgeResponse.parseSuccessMaybeAsync(
-      payload,
-      isolateRowThreshold: 2000,
-    );
+      final parsed = await AgentSqlBridgeResponse.parseSuccessMaybeAsync(
+        payload,
+        isolateRowThreshold: 2000,
+      );
 
-    check(parsed.executionId).equals('exec-large');
-    check(parsed.rowCount).equals(2500);
-    check(parsed.rows.first['id']).equals(0);
-  });
+      check(parsed.executionId).equals('exec-large');
+      check(parsed.rowCount).equals(2500);
+      check(parsed.rows.first['id']).equals(0);
+    },
+  );
 
   test('parseSuccessMaybeAsync stays sync when threshold is zero', () async {
     final payload = <String, dynamic>{

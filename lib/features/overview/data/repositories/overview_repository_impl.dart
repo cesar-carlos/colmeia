@@ -696,8 +696,9 @@ class OverviewRepositoryImpl implements OverviewRepository {
     required Set<OverviewProgressiveSection> completedSections,
     required bool isFinal,
   }) {
-    final completed =
-        Set<OverviewProgressiveSection>.unmodifiable(completedSections);
+    final completed = Set<OverviewProgressiveSection>.unmodifiable(
+      completedSections,
+    );
     return OverviewProgressiveSnapshot(
       overview: overview,
       completedSections: completed,
@@ -918,7 +919,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
         'weekdaySectionFailures': weekdaySectionFailures,
         'weekdayUserSectionFailures': weekdayUserSectionFailures,
         'lucratividadeSectionFailures': lucratividadeSectionFailures,
-        'lucratividadeMensalSectionFailures': lucratividadeMensalSectionFailures,
+        'lucratividadeMensalSectionFailures':
+            lucratividadeMensalSectionFailures,
       },
     );
   }
@@ -1074,7 +1076,6 @@ class OverviewRepositoryImpl implements OverviewRepository {
 
     return _OverviewPeriod(start: start, end: end);
   }
-
 }
 
 class _OverviewPeriod {

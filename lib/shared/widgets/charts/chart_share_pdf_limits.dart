@@ -44,7 +44,8 @@ class ChartShareTableLimitResult {
 /// Truncates [tableData] when it exceeds [maxRows] and builds an optional notice.
 ChartShareTableLimitResult applyChartShareTableRowLimit({
   required ChartShareTableData tableData,
-  required String Function(int shownRows, int totalRows) truncationNoticeBuilder,
+  required String Function(int shownRows, int totalRows)
+  truncationNoticeBuilder,
   int maxRows = ChartSharePdfLimits.maxTableRows,
 }) {
   if (tableData.rows.length <= maxRows) {

@@ -19,7 +19,8 @@ abstract final class AppAutoUpdateSupport {
       return AppAutoUpdateAvailability.feedUrlMissing;
     }
 
-    if (!isXmlFeedUrl(normalizedFeedUrl) || !isHttpsFeedUrl(normalizedFeedUrl)) {
+    if (!isXmlFeedUrl(normalizedFeedUrl) ||
+        !isHttpsFeedUrl(normalizedFeedUrl)) {
       return AppAutoUpdateAvailability.feedUrlInvalid;
     }
 

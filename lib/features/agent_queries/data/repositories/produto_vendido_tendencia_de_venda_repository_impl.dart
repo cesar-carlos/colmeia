@@ -267,8 +267,8 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
     );
     const summaryMaxRows =
         AgentQueriesBoundedResultMaxRows.produtoVendidoTendenciaDeVendaSummary;
-    const topMoversMaxRows =
-        AgentQueriesBoundedResultMaxRows.produtoVendidoTendenciaDeVendaTopMovers;
+    const topMoversMaxRows = AgentQueriesBoundedResultMaxRows
+        .produtoVendidoTendenciaDeVendaTopMovers;
     final batchMaxRows = [
       sqlMaxRowsCap,
       summaryMaxRows,

@@ -270,8 +270,7 @@ class _SalesLiveMapFiltersSheetState extends State<SalesLiveMapFiltersSheet> {
               customRange: _customRange,
               rangePickerFirstDate: rangePickerFirstDate,
               rangePickerLastDate: rangePickerLastDate,
-              onPeriodModeChanged: (mode) =>
-                  setState(() => _periodMode = mode),
+              onPeriodModeChanged: (mode) => setState(() => _periodMode = mode),
               onCustomRangeChanged: (range) => setState(() {
                 _customRange = range;
               }),

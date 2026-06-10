@@ -9,7 +9,12 @@ Future<bool> openLocalFile(String path) async {
   }
   try {
     if (Platform.isWindows) {
-      await Process.run('cmd', <String>['/c', 'start', '', path], runInShell: true);
+      await Process.run('cmd', <String>[
+        '/c',
+        'start',
+        '',
+        path,
+      ], runInShell: true);
     } else if (Platform.isMacOS) {
       await Process.run('open', <String>[path]);
     } else if (Platform.isLinux) {

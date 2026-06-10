@@ -52,8 +52,9 @@ class AgentQueryChartFailurePlaceholderContent extends StatelessWidget {
               child: TextButton(
                 onPressed: onViewAgentFailureDetails,
                 child: Text(
-                  AppLocalizations.of(context)
-                      .agentSqlFailureActionViewAffectedAgents,
+                  AppLocalizations.of(
+                    context,
+                  ).agentSqlFailureActionViewAffectedAgents,
                 ),
               ),
             ),

@@ -87,8 +87,7 @@ extension AppChartFullscreenNavigation on BuildContext {
         extra: AppChartFullscreenRouteExtra(
           title: request.title ?? shareMetadata.title,
           subtitle: request.subtitle ?? shareMetadata.subtitle,
-          filterSummary:
-              request.filterSummary ?? shareMetadata.filterSummary,
+          filterSummary: request.filterSummary ?? shareMetadata.filterSummary,
           chartSemanticsLabel: request.semanticsLabel,
           chartBuilder: request.chartBuilder,
           headerTrailing: headerTrailing,

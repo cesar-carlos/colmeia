@@ -218,9 +218,7 @@ class _SalesRankingProdutosFaturamentoBranchCardState
           onOpenFullscreen: widget.rows.isEmpty ? null : _openFullscreen,
           openFullscreenTooltip:
               widget.l10n.salesRankingProdutosFaturamentoFullscreenTooltip,
-          onShare: widget.rows.isEmpty
-              ? null
-              : shareActions.shareCallback(),
+          onShare: widget.rows.isEmpty ? null : shareActions.shareCallback(),
           shareProgressKey: _shareKey,
           shareEnabled: !widget.isLoading,
         ),

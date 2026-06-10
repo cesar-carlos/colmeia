@@ -1,4 +1,4 @@
-﻿import 'package:colmeia/features/client_agents/domain/entities/agent_catalog_status.dart';
+import 'package:colmeia/features/client_agents/domain/entities/agent_catalog_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_approved_agents_tab.dart';
@@ -151,10 +151,12 @@ void main() {
     );
     final heightBefore = footerBox.size.height;
 
-    await tester.tap(find.descendant(
-      of: find.byType(MenuAnchor),
-      matching: find.text('10'),
-    ));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(MenuAnchor),
+        matching: find.text('10'),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(footerBox.size.height, heightBefore);

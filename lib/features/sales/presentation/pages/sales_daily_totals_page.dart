@@ -73,8 +73,7 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
   String? _cachedClientTokenAgentId;
   String? _cachedClientToken;
 
-  List<DailySalesTrendPoint> _dailyPoints =
-      const <DailySalesTrendPoint>[];
+  List<DailySalesTrendPoint> _dailyPoints = const <DailySalesTrendPoint>[];
   bool _loading = false;
   bool _loadFailed = false;
   AppFailure? _loadFailure;

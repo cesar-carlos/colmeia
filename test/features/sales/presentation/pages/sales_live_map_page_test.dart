@@ -1164,7 +1164,9 @@ void main() {
       expect(scrollView.physics, isA<AlwaysScrollableScrollPhysics>());
 
       expect(
-        find.byKey(const ValueKey<String>('sales-live-map-inline-scroll-guard')),
+        find.byKey(
+          const ValueKey<String>('sales-live-map-inline-scroll-guard'),
+        ),
         findsOneWidget,
       );
 
@@ -1693,8 +1695,7 @@ Future<GoRouter> _pumpPageWithRouter(
           child: ChangeNotifierProvider<SalesLiveMapController>(
             create: (_) => SalesLiveMapController(
               sessionService: SalesSessionService(_pumpSalesPreferences),
-              loadSalesAvailableAgentsUseCase:
-                  _pumpLoadAvailableAgentsForSales,
+              loadSalesAvailableAgentsUseCase: _pumpLoadAvailableAgentsForSales,
               loadSalesLiveMapUseCase: _pumpLoadLiveMap,
             ),
             child: const Scaffold(body: SalesLiveMapPage()),

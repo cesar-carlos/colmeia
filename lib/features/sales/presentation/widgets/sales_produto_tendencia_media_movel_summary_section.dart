@@ -127,8 +127,8 @@ class SalesProdutoTendenciaMediaMovelSummarySection extends StatelessWidget {
     return AppSectionCardWithHeading(
       title: l10n.salesProdutoTendenciaMediaMovelSummaryTitle,
       subtitle: l10n.salesProdutoTendenciaMediaMovelSummarySubtitle,
-      headingBottom: activeClassificacao != null &&
-              onClearClassificacaoFilter != null
+      headingBottom:
+          activeClassificacao != null && onClearClassificacaoFilter != null
           ? Wrap(
               spacing: tokens.gapSm,
               runSpacing: tokens.gapSm,
@@ -205,10 +205,9 @@ class SalesProdutoTendenciaMediaMovelSummarySection extends StatelessWidget {
                     onBucketTap: onClassificacaoSelected == null
                         ? null
                         : (bucket) =>
-                            onClassificacaoSelected!(bucket.classificacao),
+                              onClassificacaoSelected!(bucket.classificacao),
                     belowSubtitle: Text(
-                      l10n
-                          .salesProdutoTendenciaMediaMovelSummaryByClassificacaoDrillDownHint,
+                      l10n.salesProdutoTendenciaMediaMovelSummaryByClassificacaoDrillDownHint,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -276,8 +275,9 @@ class _MediaMovelSummaryKpiStrip extends StatelessWidget {
           icon: Icons.balance_rounded,
           label: l10n.salesProdutoTendenciaMediaMovelKpiNetImpact,
           value: numberFormat.format(summary.netImpact),
-          iconForeground:
-              summary.netImpact >= 0 ? colors.tertiary : colors.error,
+          iconForeground: summary.netImpact >= 0
+              ? colors.tertiary
+              : colors.error,
         ),
       ],
     );
@@ -341,10 +341,11 @@ class SalesProdutoTendenciaMediaMovelCountChartSection extends StatelessWidget {
         bucket.classificacao,
       ),
       valueBuilder: (bucket) => bucket.count,
-      colorBuilder: (bucket) => salesProdutoTendenciaMediaMovelClassificacaoColor(
-        colors,
-        bucket.classificacao,
-      ),
+      colorBuilder: (bucket) =>
+          salesProdutoTendenciaMediaMovelClassificacaoColor(
+            colors,
+            bucket.classificacao,
+          ),
       onShare: onShare,
       shareProgressKey: shareKey,
       dataLabelBuilder: (bucket, value) => '${bucket.count}',
@@ -398,14 +399,14 @@ class SalesProdutoTendenciaMediaMovelImpactChartSection
         bucket.classificacao,
       ),
       valueBuilder: (bucket) => bucket.impacto,
-      colorBuilder: (bucket) => salesProdutoTendenciaMediaMovelClassificacaoColor(
-        colors,
-        bucket.classificacao,
-      ),
+      colorBuilder: (bucket) =>
+          salesProdutoTendenciaMediaMovelClassificacaoColor(
+            colors,
+            bucket.classificacao,
+          ),
       onShare: onShare,
       shareProgressKey: shareKey,
-      dataLabelBuilder: (bucket, value) =>
-          decimalFormat.format(bucket.impacto),
+      dataLabelBuilder: (bucket, value) => decimalFormat.format(bucket.impacto),
       tooltipLabelBuilder: (bucket, value) =>
           '${produtoTendenciaMediaMovelClassificacaoLabel(l10n, bucket.classificacao)}: '
           '${decimalFormat.format(bucket.impacto)}',

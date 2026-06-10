@@ -1,6 +1,7 @@
 # Guia de Release e Versionamento
 
-Fluxo oficial de versionamento e release Windows + Android do Colmeia.
+Fluxo oficial de versionamento e release Windows + Android do Colmeia. Para
+iOS/TestFlight, veja [ios_guide.md](ios_guide.md).
 
 ## Fonte de verdade da versao
 
@@ -211,6 +212,15 @@ python tool/build_android_release.py --aab
 
 Esses comandos exportam os artefatos versionados para `installer/dist/` e
 tambem geram os arquivos `.sha256`.
+
+Se estiver validando iOS localmente (macOS + Xcode), rode tambem:
+
+```bash
+python tool/build_ios_release.py
+```
+
+Isso gera `installer/dist/Colmeia-iOS-X.Y.Z.ipa` e o `.sha256` correspondente.
+O upload para o TestFlight continua manual — veja [ios_guide.md](ios_guide.md).
 
 ### 4. Commitar
 

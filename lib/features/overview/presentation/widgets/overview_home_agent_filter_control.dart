@@ -179,25 +179,24 @@ class OverviewHomeAgentFilterControl extends StatelessWidget {
                         onRefine: () => _openSheet(context),
                       )
                     : showManySummary
-                        ? _ManySelectedSummaryRow(
-                            l10n: l10n,
-                            count: count,
-                            editLabel: l10n.overviewHomeBranchFilterEditAction,
-                            enabled: enabled,
-                            onEdit: () => _openSheet(context),
-                          )
-                        : _InlineChipsRow(
-                            availableAgents: availableAgents,
-                            selectedIds: explicitIds,
-                            enabled: enabled,
-                            onRemove: (id) => _removeOne(context, id),
-                            onAddOrEdit: () => _openSheet(context),
-                            editLabel:
-                                l10n.overviewHomeBranchFilterEditAction,
-                            scheme: scheme,
-                            tokens: tokens,
-                            typography: typography,
-                          ),
+                    ? _ManySelectedSummaryRow(
+                        l10n: l10n,
+                        count: count,
+                        editLabel: l10n.overviewHomeBranchFilterEditAction,
+                        enabled: enabled,
+                        onEdit: () => _openSheet(context),
+                      )
+                    : _InlineChipsRow(
+                        availableAgents: availableAgents,
+                        selectedIds: explicitIds,
+                        enabled: enabled,
+                        onRemove: (id) => _removeOne(context, id),
+                        onAddOrEdit: () => _openSheet(context),
+                        editLabel: l10n.overviewHomeBranchFilterEditAction,
+                        scheme: scheme,
+                        tokens: tokens,
+                        typography: typography,
+                      ),
               ),
             ),
           ),
@@ -214,8 +213,7 @@ Color _overviewAgentNameColor(
   return switch (status) {
     AgentConnectionStatus.offline => scheme.error,
     AgentConnectionStatus.online ||
-    AgentConnectionStatus.unknown =>
-      scheme.onSurface,
+    AgentConnectionStatus.unknown => scheme.onSurface,
   };
 }
 

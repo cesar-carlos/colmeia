@@ -814,10 +814,8 @@ Future<void> _pumpTrendPage(
                 ResolveSalesAgentClientTokenUseCase(_pumpTokenReader),
             loadTrendScreenUseCase: _pumpLoadTrendScreenUseCase,
             loadTrendPageUseCase: _pumpLoadTrendPageUseCase,
-            loadGrupoProdutoOptionsUseCase:
-                _pumpLoadGrupoProdutoOptionsUseCase,
-            loadMarcaProdutoOptionsUseCase:
-                _pumpLoadMarcaProdutoOptionsUseCase,
+            loadGrupoProdutoOptionsUseCase: _pumpLoadGrupoProdutoOptionsUseCase,
+            loadMarcaProdutoOptionsUseCase: _pumpLoadMarcaProdutoOptionsUseCase,
           ),
         ),
       ),

@@ -207,12 +207,14 @@ void main() {
       'marcaProdutoLabel': 'Marca X',
     });
 
-    final captured = verify(
-      () => salesPreferences.persistCardFilters(
-        SalesProdutoTendenciaController.cardFilterId,
-        captureAny(),
-      ),
-    ).captured.last as Map<String, Object?>;
+    final captured =
+        verify(
+              () => salesPreferences.persistCardFilters(
+                SalesProdutoTendenciaController.cardFilterId,
+                captureAny(),
+              ),
+            ).captured.last
+            as Map<String, Object?>;
 
     expect(captured['grupo_produto_label'], 'Bebidas');
     expect(captured['marca_produto_label'], 'Marca X');

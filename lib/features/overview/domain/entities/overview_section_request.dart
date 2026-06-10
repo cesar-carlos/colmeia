@@ -34,11 +34,10 @@ final class OverviewSectionRequest {
       OverviewProgressiveSection.weekdaySales ||
       OverviewProgressiveSection.weekdayUserSales ||
       OverviewProgressiveSection.lucratividadePeriod ||
-      OverviewProgressiveSection.lucratividadeMensal =>
-        OverviewSectionRequest(
-          runMainBatch: false,
-          sectionBatchSections: <OverviewProgressiveSection>{section},
-        ),
+      OverviewProgressiveSection.lucratividadeMensal => OverviewSectionRequest(
+        runMainBatch: false,
+        sectionBatchSections: <OverviewProgressiveSection>{section},
+      ),
     };
   }
 
@@ -105,8 +104,7 @@ final class OverviewSectionRequest {
     };
   }
 
-  bool get isMainBatchOnly =>
-      runMainBatch && sectionBatchSections.isEmpty;
+  bool get isMainBatchOnly => runMainBatch && sectionBatchSections.isEmpty;
 
   bool get isSectionBatchOnly =>
       !runMainBatch && sectionBatchSections.isNotEmpty;

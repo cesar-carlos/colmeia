@@ -158,18 +158,18 @@ void main() {
       coordinator
         ..handleMapPointerDown(deferDuringGesture: true)
         ..handleViewportChanged(
-        event: event,
-        enableProximityCluster: true,
-        blocksViewportDrivenClustering: false,
-        enableZoomPan: true,
-        zoom: zoom,
-        onMarkManualViewport: () {},
-        shouldClearStoreDetailOnUserViewportChange: false,
-        onClearStoreDetail: () {},
-        onApplyClusterZoom: appliedZoomLevels.add,
-        pointCount: 10,
-        activeRegionKey: null,
-      );
+          event: event,
+          enableProximityCluster: true,
+          blocksViewportDrivenClustering: false,
+          enableZoomPan: true,
+          zoom: zoom,
+          onMarkManualViewport: () {},
+          shouldClearStoreDetailOnUserViewportChange: false,
+          onClearStoreDetail: () {},
+          onApplyClusterZoom: appliedZoomLevels.add,
+          pointCount: 10,
+          activeRegionKey: null,
+        );
       expect(appliedZoomLevels, isEmpty);
 
       coordinator.handleMapPointerUp(
@@ -180,18 +180,21 @@ void main() {
       expect(appliedZoomLevels, <double>[3.5]);
     });
 
-    test('cancelPendingViewportClusterSampling clears pending gesture state', () {
-      final coordinator = BrazilMapViewportCoordinator();
-      final appliedZoomLevels = <double>[];
-      coordinator
-        ..handleMapPointerDown(deferDuringGesture: true)
-        ..cancelPendingViewportClusterSampling()
-        ..handleMapPointerUp(
-          deferDuringGesture: true,
-          onApplyClusterZoom: appliedZoomLevels.add,
-        );
+    test(
+      'cancelPendingViewportClusterSampling clears pending gesture state',
+      () {
+        final coordinator = BrazilMapViewportCoordinator();
+        final appliedZoomLevels = <double>[];
+        coordinator
+          ..handleMapPointerDown(deferDuringGesture: true)
+          ..cancelPendingViewportClusterSampling()
+          ..handleMapPointerUp(
+            deferDuringGesture: true,
+            onApplyClusterZoom: appliedZoomLevels.add,
+          );
 
-      expect(appliedZoomLevels, isEmpty);
-    });
+        expect(appliedZoomLevels, isEmpty);
+      },
+    );
   });
 }

@@ -304,9 +304,7 @@ class SalesLiveMapReportMapper {
 
   static List<AppFailure> collectAgentQueryFailures({
     required AgentQueryExecutionReport<dynamic> baseReport,
-    AgentQueryExecutionReport<
-      ResumoTotalVendasMunicipioFilialPeriodoRow
-    >?
+    AgentQueryExecutionReport<ResumoTotalVendasMunicipioFilialPeriodoRow>?
     salesReport,
   }) {
     final failures = <AppFailure>[];
@@ -408,10 +406,11 @@ class SalesLiveMapReportMapper {
         failedCatalogAgentCount: failedCatalogAgentCount,
         failedSalesAgentCount: failedSalesAgentCount,
         noSalesAgentOptions: agentDiagnostics.noSalesAgentOptions,
-        failedAgentOptions: SalesLiveMapResultBuilder.failedAgentOptionsFromReports(
-          baseReport: baseReport,
-          salesReport: salesReport,
-        ),
+        failedAgentOptions:
+            SalesLiveMapResultBuilder.failedAgentOptionsFromReports(
+              baseReport: baseReport,
+              salesReport: salesReport,
+            ),
         missingClientTokenAgentOptions:
             SalesLiveMapResultBuilder.agentOptionsFromTargets(
               baseReport.missingClientTokenTargets,

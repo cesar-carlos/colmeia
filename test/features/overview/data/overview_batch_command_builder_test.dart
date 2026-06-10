@@ -43,12 +43,18 @@ void main() {
         periodEnd: periodEnd,
       );
 
-      check(batch.commands.length).equals(OverviewBatchCommandBuilder.mainBatchCommandCount);
-      check(batch.commands[0].sql).equals(ResumoParcelaFormaPagamentoSqlV2.query);
+      check(
+        batch.commands.length,
+      ).equals(OverviewBatchCommandBuilder.mainBatchCommandCount);
+      check(
+        batch.commands[0].sql,
+      ).equals(ResumoParcelaFormaPagamentoSqlV2.query);
       check(batch.commands[1].sql).equals(ResumoParcelaPorUsuarioSql.query);
       check(batch.indexes.main).equals(0);
       check(batch.indexes.userRanking).equals(1);
-      check(batch.commands[0].namedParams['dataVendaInicio']).equals('2026-04-01');
+      check(
+        batch.commands[0].namedParams['dataVendaInicio'],
+      ).equals('2026-04-01');
       check(batch.commands[0].namedParams['dataVendaFim']).equals('2026-04-30');
     });
 
@@ -73,7 +79,9 @@ void main() {
       );
 
       check(batch.commands.length).equals(1);
-      check(batch.commands.single.sql).equals(ResumoParcelaFormaPagamentoSqlV2.query);
+      check(
+        batch.commands.single.sql,
+      ).equals(ResumoParcelaFormaPagamentoSqlV2.query);
       check(batch.indexes.paymentResumo).equals(0);
       check(batch.indexes.userRanking).isNull();
     });
@@ -91,26 +99,34 @@ void main() {
 
       check(batch.commands.length).equals(8);
       final sqlBodies = batch.commands.map((command) => command.sql).toList();
-      check(sqlBodies.contains(ResumoParcelaFormaPagamentoSqlV2.query)).isTrue();
+      check(
+        sqlBodies.contains(ResumoParcelaFormaPagamentoSqlV2.query),
+      ).isTrue();
       check(sqlBodies.contains(ResumoParcelaPorUsuarioSql.query)).isTrue();
       check(
         sqlBodies.any(
-          (sql) => sql.contains(ResumoParcelasMensalSql.query().split('\n').first),
+          (sql) =>
+              sql.contains(ResumoParcelasMensalSql.query().split('\n').first),
         ),
       ).isTrue();
       check(
         sqlBodies.any(
-          (sql) => sql.contains(ResumoParcelasDiaSemanaSql.query().split('\n').first),
+          (sql) => sql.contains(
+            ResumoParcelasDiaSemanaSql.query().split('\n').first,
+          ),
         ),
       ).isTrue();
       check(sqlBodies.contains(ResumoTotalDiarioVendasSql.query)).isTrue();
       check(
         sqlBodies.any(
-          (sql) =>
-              sql.contains(ResumoParcelasDiaSemanaUsuarioSql.query().split('\n').first),
+          (sql) => sql.contains(
+            ResumoParcelasDiaSemanaUsuarioSql.query().split('\n').first,
+          ),
         ),
       ).isTrue();
-      check(sqlBodies.contains(ResumoProdutoVendaLucratividadeSql.query)).isTrue();
+      check(
+        sqlBodies.contains(ResumoProdutoVendaLucratividadeSql.query),
+      ).isTrue();
       check(
         sqlBodies.contains(ResumoProdutoVendaLucratividadeMensalSql.query),
       ).isTrue();
@@ -141,46 +157,52 @@ void main() {
       check(batch.indexes.weekdayUser).equals(2);
     });
 
-    test('buildSectionCommands for home scope includes only monthly parcels', () {
-      final batch = builder.buildSectionCommands(
-        last12Range: last12Range,
-        mensalFilter: mensalFilter,
-        weekdayFilter: weekdayFilter,
-        dailyTotalFilter: dailyTotalFilter,
-        includeLucratividadeMensal: false,
-        includedSectionBatchSections:
-            OverviewSectionRequest.home.sectionBatchSections,
-        includeMainBatch: false,
-      );
+    test(
+      'buildSectionCommands for home scope includes only monthly parcels',
+      () {
+        final batch = builder.buildSectionCommands(
+          last12Range: last12Range,
+          mensalFilter: mensalFilter,
+          weekdayFilter: weekdayFilter,
+          dailyTotalFilter: dailyTotalFilter,
+          includeLucratividadeMensal: false,
+          includedSectionBatchSections:
+              OverviewSectionRequest.home.sectionBatchSections,
+          includeMainBatch: false,
+        );
 
-      check(batch.commands.length).equals(1);
-      check(
-        batch.commands.single.sql.contains(
-          ResumoParcelasMensalSql.query().split('\n').first,
-        ),
-      ).isTrue();
-      check(batch.indexes.monthly).equals(0);
-      check(batch.indexes.daily).isNull();
-      check(batch.indexes.weekday).isNull();
-      check(batch.indexes.weekdayUser).isNull();
-      check(batch.indexes.lucratividade).isNull();
-    });
+        check(batch.commands.length).equals(1);
+        check(
+          batch.commands.single.sql.contains(
+            ResumoParcelasMensalSql.query().split('\n').first,
+          ),
+        ).isTrue();
+        check(batch.indexes.monthly).equals(0);
+        check(batch.indexes.daily).isNull();
+        check(batch.indexes.weekday).isNull();
+        check(batch.indexes.weekdayUser).isNull();
+        check(batch.indexes.lucratividade).isNull();
+      },
+    );
 
-    test('buildSectionCommands skips main commands and reindexes execution order', () {
-      final batch = builder.buildSectionCommands(
-        last12Range: last12Range,
-        mensalFilter: mensalFilter,
-        weekdayFilter: weekdayFilter,
-        dailyTotalFilter: dailyTotalFilter,
-        includeLucratividadeMensal: true,
-      );
+    test(
+      'buildSectionCommands skips main commands and reindexes execution order',
+      () {
+        final batch = builder.buildSectionCommands(
+          last12Range: last12Range,
+          mensalFilter: mensalFilter,
+          weekdayFilter: weekdayFilter,
+          dailyTotalFilter: dailyTotalFilter,
+          includeLucratividadeMensal: true,
+        );
 
-      check(batch.commands.length).equals(6);
-      check(batch.commands.first.executionOrder).equals(0);
-      check(batch.commands.last.executionOrder).equals(5);
-      check(batch.indexes.monthly).equals(0);
-      check(batch.indexes.weekdayUser).equals(3);
-      check(batch.indexes.lucratividadeMensal).equals(5);
-    });
+        check(batch.commands.length).equals(6);
+        check(batch.commands.first.executionOrder).equals(0);
+        check(batch.commands.last.executionOrder).equals(5);
+        check(batch.indexes.monthly).equals(0);
+        check(batch.indexes.weekdayUser).equals(3);
+        check(batch.indexes.lucratividadeMensal).equals(5);
+      },
+    );
   });
 }

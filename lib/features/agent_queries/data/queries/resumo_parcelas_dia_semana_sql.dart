@@ -93,7 +93,8 @@ __RESUMO_PARCELAS_DIMENSION_WHERE__
       codVendedor: codVendedor,
     );
     return _queryHead +
-        ParcelaProdutoVendidoDetalheSql.selectFromParcelLinesForOverviewAggregate +
+        ParcelaProdutoVendidoDetalheSql
+            .selectFromParcelLinesForOverviewAggregate +
         tail;
   }
 }

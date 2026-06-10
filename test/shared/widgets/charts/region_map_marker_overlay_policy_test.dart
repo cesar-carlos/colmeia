@@ -73,26 +73,30 @@ void main() {
       );
     });
 
-    test('mapSurfaceKeyFingerprint changes when marker mount generation bumps', () {
-      const geometryFingerprint = 42;
+    test(
+      'mapSurfaceKeyFingerprint changes when marker mount generation bumps',
+      () {
+        const geometryFingerprint = 42;
 
-      final initialKey = RegionMapMarkerOverlayPolicy.mapSurfaceKeyFingerprint(
-        geometryFingerprint: geometryFingerprint,
-        markerOverlayMountGeneration: 0,
-      );
-      final readyKey = RegionMapMarkerOverlayPolicy.mapSurfaceKeyFingerprint(
-        geometryFingerprint: geometryFingerprint,
-        markerOverlayMountGeneration: 1,
-      );
-
-      expect(initialKey, isNot(readyKey));
-      expect(
-        RegionMapMarkerOverlayPolicy.mapSurfaceKeyFingerprint(
+        final initialKey =
+            RegionMapMarkerOverlayPolicy.mapSurfaceKeyFingerprint(
+              geometryFingerprint: geometryFingerprint,
+              markerOverlayMountGeneration: 0,
+            );
+        final readyKey = RegionMapMarkerOverlayPolicy.mapSurfaceKeyFingerprint(
           geometryFingerprint: geometryFingerprint,
           markerOverlayMountGeneration: 1,
-        ),
-        readyKey,
-      );
-    });
+        );
+
+        expect(initialKey, isNot(readyKey));
+        expect(
+          RegionMapMarkerOverlayPolicy.mapSurfaceKeyFingerprint(
+            geometryFingerprint: geometryFingerprint,
+            markerOverlayMountGeneration: 1,
+          ),
+          readyKey,
+        );
+      },
+    );
   });
 }

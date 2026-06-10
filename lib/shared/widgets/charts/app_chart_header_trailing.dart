@@ -104,8 +104,10 @@ class _AppChartHeaderTrailingState extends State<AppChartHeaderTrailing> {
       if (widget.onOpenFullscreen != null)
         _ChartHeaderIconAction(
           onPressed: widget.onOpenFullscreen!,
-          tooltip: widget.openFullscreenTooltip ?? l10n.chartOpenFullscreenTooltip,
-          semanticsLabel: widget.openFullscreenSemanticLabel ??
+          tooltip:
+              widget.openFullscreenTooltip ?? l10n.chartOpenFullscreenTooltip,
+          semanticsLabel:
+              widget.openFullscreenSemanticLabel ??
               l10n.chartOpenFullscreenTooltip,
           icon: Icons.open_in_full,
         ),

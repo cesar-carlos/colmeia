@@ -30,9 +30,10 @@ abstract final class AgentLatencyBudget {
         ? 0.0
         : stdDevMs;
     final rawMs = meanMs + safetyFactor * spread;
-    final clampedMs = rawMs
-        .round()
-        .clamp(floor.inMilliseconds, ceiling.inMilliseconds);
+    final clampedMs = rawMs.round().clamp(
+      floor.inMilliseconds,
+      ceiling.inMilliseconds,
+    );
     return Duration(milliseconds: clampedMs);
   }
 

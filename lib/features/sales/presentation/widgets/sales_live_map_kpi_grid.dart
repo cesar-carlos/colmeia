@@ -128,8 +128,7 @@ class SalesLiveMapKpiGrid extends StatelessWidget {
               child: AppMetricStatCard(
                 leading: const Icon(Icons.hub_outlined),
                 label: l10n.salesLiveMapKpiQueriedAgents,
-                value:
-                    '${model.queriedAgentCount}/${model.plannedAgentCount}',
+                value: '${model.queriedAgentCount}/${model.plannedAgentCount}',
               ),
             ),
           ],

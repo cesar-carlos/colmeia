@@ -129,7 +129,9 @@ class AppChartFullscreenScaffold extends StatelessWidget {
                           filterSummary: resolvedFilterSummary,
                         ),
                     SizedBox(
-                      height: isLandscape ? tokens.gapXs : tokens.contentSpacing,
+                      height: isLandscape
+                          ? tokens.gapXs
+                          : tokens.contentSpacing,
                     ),
                   ],
                   Expanded(child: child),
@@ -173,12 +175,14 @@ class AppChartFullscreenHeader extends StatelessWidget {
             resolvedTitle,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: (isLandscape
-                    ? (theme.textTheme.titleMedium ?? typography.sectionHeaderH2)
-                    : typography.sectionHeaderH2)
-                .copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+            style:
+                (isLandscape
+                        ? (theme.textTheme.titleMedium ??
+                              typography.sectionHeaderH2)
+                        : typography.sectionHeaderH2)
+                    .copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
           ),
         if (!isLandscape)
           if (subtitle case final resolvedSubtitle?
@@ -232,7 +236,6 @@ class _AppChartFullscreenFilterChips extends StatelessWidget {
       ),
     );
   }
-
 }
 
 class _AppChartFullscreenFilterChip extends StatelessWidget {

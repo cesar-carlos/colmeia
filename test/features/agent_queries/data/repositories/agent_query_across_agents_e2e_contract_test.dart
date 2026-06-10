@@ -22,19 +22,13 @@ void main() {
         p.basename(file.path): file.readAsStringSync(),
     };
 
-    final repositoryFiles =
-        repositoriesDir
-            .listSync()
-            .whereType<File>()
-            .where(
-              (file) {
-                final name = p.basename(file.path);
-                return name.endsWith('_across_agents_repository_impl.dart') ||
-                    name.endsWith('_across_agents_repository_impl_v2.dart');
-              },
-            )
-            .toList()
-          ..sort((a, b) => a.path.compareTo(b.path));
+    final repositoryFiles = repositoriesDir.listSync().whereType<File>().where(
+      (file) {
+        final name = p.basename(file.path);
+        return name.endsWith('_across_agents_repository_impl.dart') ||
+            name.endsWith('_across_agents_repository_impl_v2.dart');
+      },
+    ).toList()..sort((a, b) => a.path.compareTo(b.path));
 
     final missing = <String>[];
     for (final repositoryFile in repositoryFiles) {

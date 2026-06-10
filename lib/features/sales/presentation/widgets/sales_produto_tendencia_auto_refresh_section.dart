@@ -25,13 +25,17 @@ class SalesProdutoTendenciaAutoRefreshSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final autoRefreshSupported = salesAutoRefreshIsAvailableForViewport(context);
+    final autoRefreshSupported = salesAutoRefreshIsAvailableForViewport(
+      context,
+    );
 
     return ValueListenableBuilder<AutoRefreshUiState>(
       valueListenable: stateListenable,
       builder: (context, refreshState, _) {
-        return Selector<SalesProdutoTendenciaController,
-            _SalesProdutoTendenciaAutoRefreshSlice>(
+        return Selector<
+          SalesProdutoTendenciaController,
+          _SalesProdutoTendenciaAutoRefreshSlice
+        >(
           selector: (_, controller) =>
               _SalesProdutoTendenciaAutoRefreshSlice.from(controller.state),
           builder: (context, slice, _) {

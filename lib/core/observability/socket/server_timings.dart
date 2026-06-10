@@ -76,7 +76,8 @@ class ServerTimings {
 
   /// Snapshot view of every phase, ordered as the hub returned them.
   /// Unmodifiable so consumers cannot mutate a metrics record.
-  Map<String, double> get phasesMs => Map<String, double>.unmodifiable(_phasesMs);
+  Map<String, double> get phasesMs =>
+      Map<String, double>.unmodifiable(_phasesMs);
 
   /// Tolerant accessor for a single phase. Returns `null` on schema
   /// mismatch or unknown key.
@@ -106,7 +107,6 @@ abstract final class ServerTimingPhaseNames {
   static const String agentToHubMs = 'agent_to_hub_ms';
   static const String inboundDecodeMs = 'inbound_decode_ms';
   static const String pendingResolveMs = 'pending_resolve_ms';
-  static const String relayForwardToConsumerMs =
-      'relay_forward_to_consumer_ms';
+  static const String relayForwardToConsumerMs = 'relay_forward_to_consumer_ms';
   static const String responseWriteMs = 'response_write_ms';
 }

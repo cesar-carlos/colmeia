@@ -49,8 +49,7 @@ class OverviewBatchAssembler {
     bool weekdaySalesTrendLoadFailed = false,
     AppFailure? weekdaySalesTrendLoadFailure,
     String? weekdaySalesTrendLoadFailureMessage,
-    List<DailySalesTrendPoint> dailySalesTrend =
-        const <DailySalesTrendPoint>[],
+    List<DailySalesTrendPoint> dailySalesTrend = const <DailySalesTrendPoint>[],
     bool dailySalesTrendLoadFailed = false,
     AppFailure? dailySalesTrendLoadFailure,
     String? dailySalesTrendLoadFailureMessage,
@@ -175,8 +174,7 @@ class OverviewBatchAssembler {
                 }
                 return OverviewAgentRanking(
                   agentId: agentId,
-                  displayName:
-                      agentDisplayNamesById[agentId] ?? agentId.trim(),
+                  displayName: agentDisplayNamesById[agentId] ?? agentId.trim(),
                   totalSalesCount: sales,
                   totalAmount: amount,
                 );

@@ -82,7 +82,8 @@ void main() {
         final useCase = getIt<LoadSalesLiveMapUseCase>();
         final filter = SalesLiveMapFilter(
           periodMode: SalesLiveMapPeriodMode.lastSevenDays,
-          selectedAgentIds: AppEnvironment.agentSqlSalesLiveMapMergeSqlBatchesPerTarget
+          selectedAgentIds:
+              AppEnvironment.agentSqlSalesLiveMapMergeSqlBatchesPerTarget
               ? <String>{AppEnvironment.e2eAgentId}
               : null,
         );
@@ -117,7 +118,10 @@ void main() {
           final metricEvent = getIt<SalesLiveMapRefreshMetrics>().latest;
           expect(metricEvent, isNotNull);
           expect(metricEvent!.catalogSalesBatchMerged, isTrue);
-          expect(metricEvent.mergeWaveSize, AppEnvironment.salesLiveMapMergeWaveSize);
+          expect(
+            metricEvent.mergeWaveSize,
+            AppEnvironment.salesLiveMapMergeWaveSize,
+          );
         } else {
           // E2E skip hint when merge flag is off; stdout is intentional.
           // ignore: avoid_print

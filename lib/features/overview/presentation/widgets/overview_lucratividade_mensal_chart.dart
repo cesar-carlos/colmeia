@@ -342,14 +342,14 @@ class _OverviewLucratividadeMensalChartState
           semanticsLabel: shareTitle,
           shareCaptureKey: fullscreenShareKey,
           chartBuilder: (fullscreenContext) {
-              final fullscreenTokens = Theme.of(
-                fullscreenContext,
-              ).extension<AppThemeTokens>()!;
-              var fullscreenDisplay = _display;
-              var fullscreenPercentMetric = _percentMetric;
-              return RepaintBoundary(
-                key: fullscreenShareKey,
-                child: StatefulBuilder(
+            final fullscreenTokens = Theme.of(
+              fullscreenContext,
+            ).extension<AppThemeTokens>()!;
+            var fullscreenDisplay = _display;
+            var fullscreenPercentMetric = _percentMetric;
+            return RepaintBoundary(
+              key: fullscreenShareKey,
+              child: StatefulBuilder(
                 builder: (context, setFullscreenState) {
                   final fsPercent =
                       fullscreenDisplay == _LucratividadeDisplay.percentMetrics;
@@ -533,7 +533,7 @@ class _OverviewLucratividadeMensalChartState
                   );
                 },
               ),
-              );
+            );
           },
         ),
       );

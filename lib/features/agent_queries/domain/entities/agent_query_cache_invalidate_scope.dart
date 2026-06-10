@@ -1,4 +1,5 @@
-import 'package:colmeia/features/agent_queries/domain/cache/agent_query_cache_control.dart' show AgentQueryCacheControl;
+import 'package:colmeia/features/agent_queries/domain/cache/agent_query_cache_control.dart'
+    show AgentQueryCacheControl;
 import 'package:colmeia/features/agent_queries/domain/cache/agent_query_fact_kind.dart';
 
 /// Target for [AgentQueryCacheControl.invalidateCache].
@@ -6,13 +7,15 @@ sealed class AgentQueryCacheInvalidateScope {
   const AgentQueryCacheInvalidateScope();
 }
 
-final class AgentQueryCacheInvalidateUser extends AgentQueryCacheInvalidateScope {
+final class AgentQueryCacheInvalidateUser
+    extends AgentQueryCacheInvalidateScope {
   const AgentQueryCacheInvalidateUser({required this.userId});
 
   final String userId;
 }
 
-final class AgentQueryCacheInvalidateAgent extends AgentQueryCacheInvalidateScope {
+final class AgentQueryCacheInvalidateAgent
+    extends AgentQueryCacheInvalidateScope {
   const AgentQueryCacheInvalidateAgent({
     required this.userId,
     required this.agentId,

@@ -6,9 +6,8 @@ class RankingProdutosFaturamentoLoadResult {
 
   final List<RankingProdutosFaturamentoRow> rows;
 
-  List<RankingProdutosFaturamentoRow> get rankedProducts => rows
-      .where((row) => !row.isDiversos)
-      .toList(growable: false);
+  List<RankingProdutosFaturamentoRow> get rankedProducts =>
+      rows.where((row) => !row.isDiversos).toList(growable: false);
 
   List<RankingProdutosFaturamentoRow> get diversosRows =>
       rows.where((row) => row.isDiversos).toList(growable: false);

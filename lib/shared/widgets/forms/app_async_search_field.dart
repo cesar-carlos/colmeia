@@ -5,6 +5,7 @@ import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/utils/app_debouncer.dart';
+import 'package:colmeia/shared/widgets/app_top_aligned_expand_switcher.dart';
 import 'package:colmeia/shared/widgets/forms/app_form_field_message.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:flutter/material.dart';
@@ -423,7 +424,7 @@ class _AppAsyncSearchFieldState<T> extends State<AppAsyncSearchField<T>> {
                         ],
                       ),
                     ),
-                    _AnimatedAsyncSearchMenu(
+                    AppTopAlignedExpandSwitcher(
                       expanded: _expanded,
                       child: _AsyncSearchMenuContainer(
                         scheme: scheme,
@@ -710,39 +711,6 @@ class _AsyncSearchMenuContainer extends StatelessWidget {
         border: Border(top: BorderSide(color: dividerColor)),
       ),
       child: child,
-    );
-  }
-}
-
-class _AnimatedAsyncSearchMenu extends StatelessWidget {
-  const _AnimatedAsyncSearchMenu({
-    required this.expanded,
-    required this.child,
-  });
-
-  final bool expanded;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 180),
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
-      transitionBuilder: (child, animation) {
-        return FadeTransition(
-          opacity: animation,
-          child: SizeTransition(
-            sizeFactor: animation,
-            // SizeTransition.axisAlignment is deprecated but still required
-            // for top-aligned expand/collapse until a non-deprecated API exists.
-            // ignore: deprecated_member_use
-            axisAlignment: -1,
-            child: child,
-          ),
-        );
-      },
-      child: expanded ? child : const SizedBox.shrink(),
     );
   }
 }

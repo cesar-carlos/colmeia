@@ -94,7 +94,9 @@ void main() {
 
       final entry = cache.read(signature);
       check(entry).isNotNull();
-      check(entry!.completedSections).contains(OverviewProgressiveSection.dailySales);
+      check(
+        entry!.completedSections,
+      ).contains(OverviewProgressiveSection.dailySales);
       check(entry.overview.dailySalesTrend).deepEquals(detail.dailySalesTrend);
       check(entry.overview.kpis.totalAmount).equals(base.kpis.totalAmount);
     });

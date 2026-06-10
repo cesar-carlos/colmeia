@@ -65,8 +65,8 @@ Future<ChartShareResult> captureAndShareChart(
         : null;
     final screenDevicePixelRatio = exportCaptureContext == null
         ? key.currentContext == null
-            ? null
-            : MediaQuery.devicePixelRatioOf(key.currentContext!)
+              ? null
+              : MediaQuery.devicePixelRatioOf(key.currentContext!)
         : MediaQuery.devicePixelRatioOf(exportCaptureContext);
     if (shouldCaptureChartImage &&
         usesDedicatedExport &&
@@ -225,8 +225,8 @@ Future<ChartPngCapture?> captureChartFromExportBuilder({
     },
   );
 
-  final resolvedDevicePixelRatio = devicePixelRatio ??
-      View.of(overlay.context).devicePixelRatio;
+  final resolvedDevicePixelRatio =
+      devicePixelRatio ?? View.of(overlay.context).devicePixelRatio;
 
   overlay.insert(entry);
   try {

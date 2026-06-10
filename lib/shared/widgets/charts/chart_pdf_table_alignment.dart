@@ -92,7 +92,10 @@ List<bool> resolveChartPdfDateColumns({
 }
 
 /// Per-column cell and header alignments for chart PDF tables.
-({Map<int, pw.Alignment> cellAlignments, Map<int, pw.Alignment> headerAlignments})
+({
+  Map<int, pw.Alignment> cellAlignments,
+  Map<int, pw.Alignment> headerAlignments,
+})
 resolveChartPdfTableAlignments({
   required List<String> headers,
   required List<List<String>> rows,

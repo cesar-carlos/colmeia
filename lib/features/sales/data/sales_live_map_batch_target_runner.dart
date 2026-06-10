@@ -161,11 +161,14 @@ final class SalesLiveMapBatchTargetRunner {
     );
   }
 
-  Future<({
-    List<CadastroFilialRow> rows,
-    int sourceRowCount,
-    bool paginationStalled,
-  })> _loadRemainingCatalogPages({
+  Future<
+    ({
+      List<CadastroFilialRow> rows,
+      int sourceRowCount,
+      bool paginationStalled,
+    })
+  >
+  _loadRemainingCatalogPages({
     required String userId,
     required AgentQueryTarget target,
     required AgentQueryPlan plan,

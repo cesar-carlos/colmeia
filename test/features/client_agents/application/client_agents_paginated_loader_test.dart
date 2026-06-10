@@ -55,37 +55,40 @@ void main() {
       expect(result.getOrNull()?.total, 4);
     });
 
-    test('marks result truncated when page cap is reached before total', () async {
-      const pageSize = 2;
-      const query = PaginatedQuery(pageSize: pageSize);
-      var callCount = 0;
+    test(
+      'marks result truncated when page cap is reached before total',
+      () async {
+        const pageSize = 2;
+        const query = PaginatedQuery(pageSize: pageSize);
+        var callCount = 0;
 
-      final result = await loadAllClientAgentsPages<String>(
-        query: query,
-        loadPage: (pageQuery) async {
-          callCount++;
-          return Success<PaginatedResult<String>, AppFailure>(
-            PaginatedResult<String>(
-              items: List<String>.generate(
-                pageSize,
-                (i) => 'p${pageQuery.page}-$i',
+        final result = await loadAllClientAgentsPages<String>(
+          query: query,
+          loadPage: (pageQuery) async {
+            callCount++;
+            return Success<PaginatedResult<String>, AppFailure>(
+              PaginatedResult<String>(
+                items: List<String>.generate(
+                  pageSize,
+                  (i) => 'p${pageQuery.page}-$i',
+                ),
+                count: pageSize,
+                total: pageSize * kClientAgentsMaxPaginatedPages + 10,
+                page: pageQuery.page,
+                pageSize: pageSize,
               ),
-              count: pageSize,
-              total: pageSize * kClientAgentsMaxPaginatedPages + 10,
-              page: pageQuery.page,
-              pageSize: pageSize,
-            ),
-          );
-        },
-      );
+            );
+          },
+        );
 
-      expect(result.isSuccess(), isTrue);
-      expect(callCount, kClientAgentsMaxPaginatedPages);
-      final page = result.getOrNull()!;
-      expect(page.isResultTruncated, isTrue);
-      expect(page.items.length, pageSize * kClientAgentsMaxPaginatedPages);
-      expect(page.total, greaterThan(page.items.length));
-    });
+        expect(result.isSuccess(), isTrue);
+        expect(callCount, kClientAgentsMaxPaginatedPages);
+        final page = result.getOrNull()!;
+        expect(page.isResultTruncated, isTrue);
+        expect(page.items.length, pageSize * kClientAgentsMaxPaginatedPages);
+        expect(page.total, greaterThan(page.items.length));
+      },
+    );
 
     test('returns first page only when search filter is active', () async {
       var callCount = 0;

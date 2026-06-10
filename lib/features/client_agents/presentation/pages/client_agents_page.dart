@@ -334,8 +334,7 @@ class _ClientAgentsPageState extends State<ClientAgentsPage> with RouteAware {
     required bool canManageOwnerAccess,
   }) {
     final rawRequests =
-        controller.accessRequests?.items ??
-        const <ClientAgentAccessRequest>[];
+        controller.accessRequests?.items ?? const <ClientAgentAccessRequest>[];
     final approvedSnapshot = controller.approvedAgents;
     final requestsForRequestsTab = approvedSnapshot == null
         ? rawRequests
@@ -791,7 +790,9 @@ class _PageHeader extends StatelessWidget {
         runSpacing: tokens.gapSm,
         children: <Widget>[
           if (hasPending)
-            Chip(label: Text(l10n.clientAgentsPendingActionsCount(pendingCount))),
+            Chip(
+              label: Text(l10n.clientAgentsPendingActionsCount(pendingCount)),
+            ),
           AppSecondaryButton(
             label: l10n.clientAgentsRefresh,
             icon: const Icon(Icons.refresh_rounded),

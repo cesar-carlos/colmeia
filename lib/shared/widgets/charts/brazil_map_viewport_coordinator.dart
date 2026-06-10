@@ -262,9 +262,10 @@ class BrazilMapViewportCoordinator {
     }
 
     final nextZoomLevel = event.viewport.zoomLevel;
-    final debounceDuration = shouldDebounceTouchViewportClustering(
-      enableZoomPan: enableZoomPan,
-    )
+    final debounceDuration =
+        shouldDebounceTouchViewportClustering(
+          enableZoomPan: enableZoomPan,
+        )
         ? touchViewportClusterDebounceDuration
         : desktopViewportClusterDebounceDuration;
 

@@ -40,8 +40,9 @@ DateTimeRange salesTrendCurrentRangeForPreset(
     SalesTrendDatePreset.currentMonth => salesTrendFullMonthInclusiveRange(
       today,
     ),
-    SalesTrendDatePreset.previousMonth =>
-      salesTrendPreviousMonthInclusiveRange(today),
+    SalesTrendDatePreset.previousMonth => salesTrendPreviousMonthInclusiveRange(
+      today,
+    ),
     SalesTrendDatePreset.last7Days => DateTimeRange(
       start: today.subtract(const Duration(days: 6)),
       end: today,

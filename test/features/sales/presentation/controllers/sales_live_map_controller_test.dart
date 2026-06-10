@@ -1045,9 +1045,14 @@ void main() {
       final clearBranchesOutcome = await controller.clearSelectedBranches();
       final clearSavedOutcome = await controller.clearSavedFilters();
 
-      expect(clearBranchesOutcome,
-          SalesLiveMapFilterMutationOutcome.blockedByCooldown);
-      expect(clearSavedOutcome, SalesLiveMapFilterMutationOutcome.blockedByCooldown);
+      expect(
+        clearBranchesOutcome,
+        SalesLiveMapFilterMutationOutcome.blockedByCooldown,
+      );
+      expect(
+        clearSavedOutcome,
+        SalesLiveMapFilterMutationOutcome.blockedByCooldown,
+      );
       expect(controller.state.filter, filterBeforeClear);
       expect(
         controller.state.closeFullscreenRequestId,
@@ -1070,7 +1075,9 @@ void main() {
   test(
     'arms RetryAfterGate from rate-limited agent query failure on load',
     () async {
-      final gate = RetryAfterGate(tickInterval: const Duration(milliseconds: 5));
+      final gate = RetryAfterGate(
+        tickInterval: const Duration(milliseconds: 5),
+      );
       controller = SalesLiveMapController(
         sessionService: SalesSessionService(salesPreferences),
         loadSalesAvailableAgentsUseCase: loadAvailableAgentsForSales,
@@ -1133,7 +1140,9 @@ void main() {
   test(
     'arms RetryAfterGate from replay_detected agent query failure on load',
     () async {
-      final gate = RetryAfterGate(tickInterval: const Duration(milliseconds: 5));
+      final gate = RetryAfterGate(
+        tickInterval: const Duration(milliseconds: 5),
+      );
       controller = SalesLiveMapController(
         sessionService: SalesSessionService(salesPreferences),
         loadSalesAvailableAgentsUseCase: loadAvailableAgentsForSales,

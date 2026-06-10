@@ -55,10 +55,12 @@ class _AppCompactDataGridScrollTableState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.appTokens;
-    final rowDividerColor =
-        theme.colorScheme.outlineVariant.withValues(alpha: 0.35);
-    final headerDividerColor =
-        theme.colorScheme.outlineVariant.withValues(alpha: 0.5);
+    final rowDividerColor = theme.colorScheme.outlineVariant.withValues(
+      alpha: 0.35,
+    );
+    final headerDividerColor = theme.colorScheme.outlineVariant.withValues(
+      alpha: 0.5,
+    );
     final rowDivider = Divider(
       height: appDataGridRowDividerHeight(tokens),
       color: rowDividerColor,
@@ -87,8 +89,9 @@ class _AppCompactDataGridScrollTableState
               ),
               child: Scrollbar(
                 controller: _verticalController,
-                thumbVisibility:
-                    chartHorizontalScrollScrollbarThumbVisible(context),
+                thumbVisibility: chartHorizontalScrollScrollbarThumbVisible(
+                  context,
+                ),
                 child: listBody,
               ),
             ),
@@ -152,7 +155,8 @@ class _HorizontalScrollFadeShell extends StatefulWidget {
       _HorizontalScrollFadeShellState();
 }
 
-class _HorizontalScrollFadeShellState extends State<_HorizontalScrollFadeShell> {
+class _HorizontalScrollFadeShellState
+    extends State<_HorizontalScrollFadeShell> {
   bool _showLeftFade = false;
   bool _showRightFade = true;
 

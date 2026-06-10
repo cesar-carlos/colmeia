@@ -1,4 +1,5 @@
-import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart' show RelayCommandDispatcher;
+import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart'
+    show RelayCommandDispatcher;
 
 /// Failures raised by the relay dispatcher. Kept separate from
 /// `SocketDispatchException` because the relay layer carries extra context

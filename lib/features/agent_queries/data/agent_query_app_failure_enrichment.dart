@@ -20,7 +20,8 @@ AppFailure enrichAgentQueryRateLimitContext(AppFailure failure) {
     );
   }
 
-  final transportCode = failure.context[AgentQueriesFailureContext.transportCodeField];
+  final transportCode =
+      failure.context[AgentQueriesFailureContext.transportCodeField];
   if (transportCode is String && isSocketRateLimitedCode(transportCode)) {
     return appFailureWithMergedContext(
       failure,

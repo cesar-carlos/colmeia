@@ -358,7 +358,9 @@ class _PageSizeMenu extends StatelessWidget {
               child: Text(
                 '$option',
                 style: typography.caption.copyWith(
-                  fontWeight: option == value ? FontWeight.w700 : FontWeight.w500,
+                  fontWeight: option == value
+                      ? FontWeight.w700
+                      : FontWeight.w500,
                 ),
               ),
             ),

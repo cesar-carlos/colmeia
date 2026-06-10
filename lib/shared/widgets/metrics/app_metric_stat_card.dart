@@ -226,7 +226,6 @@ class AppMetricStatCard extends StatelessWidget {
     }
     return resolvedCardColor;
   }
-
 }
 
 class _MetricStatClassicLayout extends StatelessWidget {

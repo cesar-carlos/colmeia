@@ -6,39 +6,46 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const resolver = SalesLiveMapCatalogScopeResolver();
 
-  test('returns branchSubset scope when query filter has selected branches', () {
-    final scope = resolver.resolve(
-      queryFilter: ResumoTotalVendasMunicipioFilialPeriodoFilter(
-        dataVendaInicio: DateTime.utc(2026),
-        dataVendaFim: DateTime.utc(2026, 12, 31),
-        selectedBranches: const <ResumoTotalVendasMunicipioFilialPeriodoBranchRef>[
-          ResumoTotalVendasMunicipioFilialPeriodoBranchRef(
-            agentId: 'agent-a',
-            codEmpresa: 1,
-            codFilial: 2,
-          ),
-        ],
-      ),
-      fallbackSelectedAgentIds: const <String>{'agent-b'},
-    );
+  test(
+    'returns branchSubset scope when query filter has selected branches',
+    () {
+      final scope = resolver.resolve(
+        queryFilter: ResumoTotalVendasMunicipioFilialPeriodoFilter(
+          dataVendaInicio: DateTime.utc(2026),
+          dataVendaFim: DateTime.utc(2026, 12, 31),
+          selectedBranches:
+              const <ResumoTotalVendasMunicipioFilialPeriodoBranchRef>[
+                ResumoTotalVendasMunicipioFilialPeriodoBranchRef(
+                  agentId: 'agent-a',
+                  codEmpresa: 1,
+                  codFilial: 2,
+                ),
+              ],
+        ),
+        fallbackSelectedAgentIds: const <String>{'agent-b'},
+      );
 
-    expect(scope.kind, SalesLiveMapCatalogScopeKind.branchSubset);
-    expect(scope.selectedBranches, hasLength(1));
-    expect(scope.selectedBranches.single.agentId, 'agent-a');
-    expect(scope.selectedBranches.single.codEmpresa, 1);
-    expect(scope.selectedBranches.single.codFilial, 2);
-  });
+      expect(scope.kind, SalesLiveMapCatalogScopeKind.branchSubset);
+      expect(scope.selectedBranches, hasLength(1));
+      expect(scope.selectedBranches.single.agentId, 'agent-a');
+      expect(scope.selectedBranches.single.codEmpresa, 1);
+      expect(scope.selectedBranches.single.codFilial, 2);
+    },
+  );
 
-  test('returns fullAgent scope with fallback ids when no branches selected', () {
-    final scope = resolver.resolve(
-      queryFilter: ResumoTotalVendasMunicipioFilialPeriodoFilter(
-        dataVendaInicio: DateTime.utc(2026),
-        dataVendaFim: DateTime.utc(2026, 12, 31),
-      ),
-      fallbackSelectedAgentIds: const <String>{'agent-a', 'agent-b'},
-    );
+  test(
+    'returns fullAgent scope with fallback ids when no branches selected',
+    () {
+      final scope = resolver.resolve(
+        queryFilter: ResumoTotalVendasMunicipioFilialPeriodoFilter(
+          dataVendaInicio: DateTime.utc(2026),
+          dataVendaFim: DateTime.utc(2026, 12, 31),
+        ),
+        fallbackSelectedAgentIds: const <String>{'agent-a', 'agent-b'},
+      );
 
-    expect(scope.kind, SalesLiveMapCatalogScopeKind.fullAgent);
-    expect(scope.agentIds, const <String>{'agent-a', 'agent-b'});
-  });
+      expect(scope.kind, SalesLiveMapCatalogScopeKind.fullAgent);
+      expect(scope.agentIds, const <String>{'agent-a', 'agent-b'});
+    },
+  );
 }

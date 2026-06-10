@@ -12,19 +12,21 @@ import 'package:colmeia/features/agent_queries/domain/repositories/resumo_total_
 import 'package:result_dart/result_dart.dart';
 
 final class CachingResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl
-    extends BaseCachedAgentQueryRepository<
-      ResumoTotalVendasMunicipioFilialPeriodoFilter,
-      ResumoTotalVendasMunicipioFilialPeriodoRow
-    >
+    extends
+        BaseCachedAgentQueryRepository<
+          ResumoTotalVendasMunicipioFilialPeriodoFilter,
+          ResumoTotalVendasMunicipioFilialPeriodoRow
+        >
     implements ResumoTotalVendasMunicipioFilialPeriodoRepository {
   CachingResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl({
     required ResumoTotalVendasMunicipioFilialPeriodoRepository delegate,
     required super.factsStore,
     super.agentQueriesRepository,
     AgentQueryFactsBucketBatchSupport<
-            ResumoTotalVendasMunicipioFilialPeriodoFilter,
-            ResumoTotalVendasMunicipioFilialPeriodoRow>?
-        bucketBatchSupport,
+      ResumoTotalVendasMunicipioFilialPeriodoFilter,
+      ResumoTotalVendasMunicipioFilialPeriodoRow
+    >?
+    bucketBatchSupport,
     ResumoTotalVendasMunicipioFilialPeriodoCacheStrategy super.strategy =
         const ResumoTotalVendasMunicipioFilialPeriodoCacheStrategy(),
     super.clock,

@@ -28,7 +28,9 @@ void main() {
     test('should retry once on transient timeout failures', () async {
       final client = DioAppcastProbeClient(
         dio: Dio()
-          ..httpClientAdapter = _RetryTimeoutAdapter(payload: _emptyAppcastShell),
+          ..httpClientAdapter = _RetryTimeoutAdapter(
+            payload: _emptyAppcastShell,
+          ),
       );
 
       final result = await client.probe(
@@ -123,7 +125,10 @@ const _appcastWithRelease = '''
 
 Dio _dioWithPayload(String payload, {int statusCode = 200}) {
   return Dio()
-    ..httpClientAdapter = _StubAdapter(payload: payload, statusCode: statusCode);
+    ..httpClientAdapter = _StubAdapter(
+      payload: payload,
+      statusCode: statusCode,
+    );
 }
 
 final class _StubAdapter implements HttpClientAdapter {

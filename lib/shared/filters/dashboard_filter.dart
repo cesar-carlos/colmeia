@@ -37,9 +37,9 @@ extension DashboardAgentOptionListX on Iterable<DashboardAgentOption> {
   /// Returns the ids of agents that have a local client token on this device
   /// (i.e. those eligible to receive Agent SQL queries from the current user).
   Set<String> tokenBackedAgentIds() {
-    return where((agent) => !agent.missingLocalClientToken)
-        .map((agent) => agent.agentId)
-        .toSet();
+    return where(
+      (agent) => !agent.missingLocalClientToken,
+    ).map((agent) => agent.agentId).toSet();
   }
 }
 

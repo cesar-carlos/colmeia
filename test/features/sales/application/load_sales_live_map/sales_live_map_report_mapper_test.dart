@@ -39,71 +39,77 @@ void main() {
     );
   });
 
-  test('yields cancelled result when cancel token is set before mapping', () async {
-    final cancelToken = SalesLiveMapLoadCancelToken()..cancel();
-    final emissions = await mapper
-        .emitMappedReports(
-          _salesReport(),
-          filter: filter,
+  test(
+    'yields cancelled result when cancel token is set before mapping',
+    () async {
+      final cancelToken = SalesLiveMapLoadCancelToken()..cancel();
+      final emissions = await mapper
+          .emitMappedReports(
+            _salesReport(),
+            filter: filter,
+            refreshedAt: refreshedAt,
+            catalogResult: _catalogPage(),
+            cancelToken: cancelToken,
+          )
+          .toList();
+
+      expect(emissions, hasLength(1));
+      expect(emissions.single.result.cancelled, isTrue);
+      verifyNever(
+        () => geolocator.resolveSqlMunicipalityPoints(
+          any(),
+          refreshedAt: any(named: 'refreshedAt'),
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      );
+    },
+  );
+
+  test(
+    'emits staged geo waves: shell, sql municipalities, full branch points',
+    () async {
+      final sqlPoint = _point(id: 'agent-a-1-1', latitude: -15.1);
+      final branchPoint = _point(id: 'agent-a-1-1');
+      when(
+        () => geolocator.resolveSqlMunicipalityPoints(
+          any(),
           refreshedAt: refreshedAt,
-          catalogResult: _catalogPage(),
-          cancelToken: cancelToken,
-        )
-        .toList();
-
-    expect(emissions, hasLength(1));
-    expect(emissions.single.result.cancelled, isTrue);
-    verifyNever(
-      () => geolocator.resolveSqlMunicipalityPoints(
-        any(),
-        refreshedAt: any(named: 'refreshedAt'),
-        cancelToken: any(named: 'cancelToken'),
-      ),
-    );
-  });
-
-  test('emits staged geo waves: shell, sql municipalities, full branch points', () async {
-    final sqlPoint = _point(id: 'agent-a-1-1', latitude: -15.1);
-    final branchPoint = _point(id: 'agent-a-1-1');
-    when(
-      () => geolocator.resolveSqlMunicipalityPoints(
-        any(),
-        refreshedAt: refreshedAt,
-        cancelToken: any(named: 'cancelToken'),
-      ),
-    ).thenAnswer(
-      (_) async => SalesLiveMapGeolocationResult(
-        points: <SalesLiveMapPoint>[sqlPoint],
-      ),
-    );
-    when(
-      () => geolocator.resolveBranchPoints(
-        any(),
-        refreshedAt: refreshedAt,
-        cancelToken: any(named: 'cancelToken'),
-        allowPartialGeoReuse: any(named: 'allowPartialGeoReuse'),
-      ),
-    ).thenAnswer(
-      (_) async => SalesLiveMapGeolocationResult(
-        points: <SalesLiveMapPoint>[branchPoint],
-      ),
-    );
-
-    final emissions = await mapper
-        .emitMappedReports(
-          _salesReport(),
-          filter: filter,
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      ).thenAnswer(
+        (_) async => SalesLiveMapGeolocationResult(
+          points: <SalesLiveMapPoint>[sqlPoint],
+        ),
+      );
+      when(
+        () => geolocator.resolveBranchPoints(
+          any(),
           refreshedAt: refreshedAt,
-          catalogResult: _catalogPage(),
-        )
-        .toList();
+          cancelToken: any(named: 'cancelToken'),
+          allowPartialGeoReuse: any(named: 'allowPartialGeoReuse'),
+        ),
+      ).thenAnswer(
+        (_) async => SalesLiveMapGeolocationResult(
+          points: <SalesLiveMapPoint>[branchPoint],
+        ),
+      );
 
-    expect(emissions, hasLength(3));
-    expect(emissions.first.result.points, isEmpty);
-    expect(emissions.first.result.branchOptions, isNotEmpty);
-    expect(emissions[1].result.points, <SalesLiveMapPoint>[sqlPoint]);
-    expect(emissions.last.result.points, <SalesLiveMapPoint>[branchPoint]);
-  });
+      final emissions = await mapper
+          .emitMappedReports(
+            _salesReport(),
+            filter: filter,
+            refreshedAt: refreshedAt,
+            catalogResult: _catalogPage(),
+          )
+          .toList();
+
+      expect(emissions, hasLength(3));
+      expect(emissions.first.result.points, isEmpty);
+      expect(emissions.first.result.branchOptions, isNotEmpty);
+      expect(emissions[1].result.points, <SalesLiveMapPoint>[sqlPoint]);
+      expect(emissions.last.result.points, <SalesLiveMapPoint>[branchPoint]);
+    },
+  );
 
   test('stops after sql geolocation when cancelled mid-stream', () async {
     when(
@@ -137,48 +143,51 @@ void main() {
     );
   });
 
-  test('records partial geo snapshot and reuses points when sales is pending', () async {
-    final branchPoint = _point(id: 'agent-a-1-1');
-    when(
-      () => geolocator.resolveSqlMunicipalityPoints(
-        any(),
-        refreshedAt: refreshedAt,
-        cancelToken: any(named: 'cancelToken'),
-      ),
-    ).thenAnswer((_) async => const SalesLiveMapGeolocationResult());
-    when(
-      () => geolocator.resolveBranchPoints(
-        any(),
-        refreshedAt: refreshedAt,
-        cancelToken: any(named: 'cancelToken'),
-        allowPartialGeoReuse: true,
-      ),
-    ).thenAnswer(
-      (_) async => SalesLiveMapGeolocationResult(
-        points: <SalesLiveMapPoint>[branchPoint],
-        partialGeoReuseCount: 1,
-      ),
-    );
-
-    final emissions = await mapper
-        .emitMappedReports(
-          _salesReport(),
-          filter: filter,
+  test(
+    'records partial geo snapshot and reuses points when sales is pending',
+    () async {
+      final branchPoint = _point(id: 'agent-a-1-1');
+      when(
+        () => geolocator.resolveSqlMunicipalityPoints(
+          any(),
           refreshedAt: refreshedAt,
-          catalogResult: _catalogPage(),
-          salesDataPending: true,
+          cancelToken: any(named: 'cancelToken'),
+        ),
+      ).thenAnswer((_) async => const SalesLiveMapGeolocationResult());
+      when(
+        () => geolocator.resolveBranchPoints(
+          any(),
+          refreshedAt: refreshedAt,
+          cancelToken: any(named: 'cancelToken'),
           allowPartialGeoReuse: true,
-        )
-        .toList();
+        ),
+      ).thenAnswer(
+        (_) async => SalesLiveMapGeolocationResult(
+          points: <SalesLiveMapPoint>[branchPoint],
+          partialGeoReuseCount: 1,
+        ),
+      );
 
-    verify(
-      () => geolocator.recordPartialGeoSnapshot(
-        aggregates: any(named: 'aggregates'),
-        points: any(named: 'points'),
-      ),
-    ).called(1);
-    expect(emissions.last.result.partialGeoReuseCount, 1);
-  });
+      final emissions = await mapper
+          .emitMappedReports(
+            _salesReport(),
+            filter: filter,
+            refreshedAt: refreshedAt,
+            catalogResult: _catalogPage(),
+            salesDataPending: true,
+            allowPartialGeoReuse: true,
+          )
+          .toList();
+
+      verify(
+        () => geolocator.recordPartialGeoSnapshot(
+          aggregates: any(named: 'aggregates'),
+          points: any(named: 'points'),
+        ),
+      ).called(1);
+      expect(emissions.last.result.partialGeoReuseCount, 1);
+    },
+  );
 }
 
 SalesLiveMapPoint _point({
@@ -235,26 +244,29 @@ _salesReport() {
     consideredApprovedAgentCount: 1,
     plannedTargets: _targets(const <String>['agent-a']),
     missingClientTokenTargets: const <AgentQueryTarget>[],
-    participants: <AgentQueryExecutionParticipant<
-      ResumoTotalVendasMunicipioFilialPeriodoRow
-    >>[
-      const AgentQueryExecutionParticipant<
-        ResumoTotalVendasMunicipioFilialPeriodoRow
-      >(
-        agentId: 'agent-a',
-        displayName: 'Agent A',
-        rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
-          ResumoTotalVendasMunicipioFilialPeriodoRow(
-            codEmpresa: 1,
-            codFilial: 1,
-            nomeFilial: 'Filial 1',
-            qtdVendas: 2,
-            totalVenda: 150,
+    participants:
+        <
+          AgentQueryExecutionParticipant<
+            ResumoTotalVendasMunicipioFilialPeriodoRow
+          >
+        >[
+          const AgentQueryExecutionParticipant<
+            ResumoTotalVendasMunicipioFilialPeriodoRow
+          >(
+            agentId: 'agent-a',
+            displayName: 'Agent A',
+            rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+              ResumoTotalVendasMunicipioFilialPeriodoRow(
+                codEmpresa: 1,
+                codFilial: 1,
+                nomeFilial: 'Filial 1',
+                qtdVendas: 2,
+                totalVenda: 150,
+              ),
+            ],
+            elapsedMs: 1,
           ),
         ],
-        elapsedMs: 1,
-      ),
-    ],
     totalElapsedMs: 1,
   );
 }

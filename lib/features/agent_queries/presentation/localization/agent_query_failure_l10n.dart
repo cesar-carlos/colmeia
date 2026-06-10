@@ -91,7 +91,8 @@ String agentQueryFailureUserMessage(AppFailure failure, AppLocalizations l10n) {
 /// Chart / inline surfaces: prefer [loadFailure], then legacy cached string.
 String chartAgentQueryLoadFailureMessage({
   required AppLocalizations l10n,
-  required String genericFallback, AppFailure? loadFailure,
+  required String genericFallback,
+  AppFailure? loadFailure,
   String? legacyMessage,
 }) {
   if (loadFailure != null) {

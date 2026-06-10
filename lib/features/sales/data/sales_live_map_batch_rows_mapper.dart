@@ -28,8 +28,9 @@ abstract final class SalesLiveMapBatchRowsMapper {
     final sales = AgentSqlBatchItemRowsMapper.mapRowsForIndex(
       byIndex,
       indexes.sales,
-      (row) =>
-          ResumoTotalVendasMunicipioFilialPeriodoRowModel.fromMap(row).toEntity(),
+      (row) => ResumoTotalVendasMunicipioFilialPeriodoRowModel.fromMap(
+        row,
+      ).toEntity(),
       operation: _operation,
     );
     return SalesLiveMapBatchTargetResult(
@@ -77,7 +78,9 @@ abstract final class SalesLiveMapBatchRowsMapper {
     );
   }
 
-  static CadastroFilialPageResult mapCatalogPage(List<Map<String, dynamic>> rows) {
+  static CadastroFilialPageResult mapCatalogPage(
+    List<Map<String, dynamic>> rows,
+  ) {
     if (rows.isEmpty) {
       return const CadastroFilialPageResult(
         items: <CadastroFilialRow>[],

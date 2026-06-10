@@ -17,17 +17,17 @@ void main() {
 
   group('parseClientAgentsRequestAccessForm', () {
     test('returns needs-one-valid-id when all rows are empty', () {
-      final result = parseClientAgentsRequestAccessForm(<
-        ClientAgentAccessRequestRowInput
-      >[row(''), row('   ')]);
+      final result = parseClientAgentsRequestAccessForm(
+        <ClientAgentAccessRequestRowInput>[row(''), row('   ')],
+      );
 
       expect(result, isA<ClientAgentsRequestAccessFormNeedsAtLeastOneId>());
     });
 
     test('reports invalid ids when no row holds a valid UUID', () {
-      final result = parseClientAgentsRequestAccessForm(<
-        ClientAgentAccessRequestRowInput
-      >[row('not-a-uuid'), row('also-bad')]);
+      final result = parseClientAgentsRequestAccessForm(
+        <ClientAgentAccessRequestRowInput>[row('not-a-uuid'), row('also-bad')],
+      );
 
       expect(result, isA<ClientAgentsRequestAccessFormHasInvalidIds>());
       final failure = result as ClientAgentsRequestAccessFormHasInvalidIds;
@@ -38,9 +38,9 @@ void main() {
       'reports invalid ids even when a valid id is also present, '
       'so the user fixes the typo before submit',
       () {
-        final result = parseClientAgentsRequestAccessForm(<
-          ClientAgentAccessRequestRowInput
-        >[row(validIdA), row('bad-id')]);
+        final result = parseClientAgentsRequestAccessForm(
+          <ClientAgentAccessRequestRowInput>[row(validIdA), row('bad-id')],
+        );
 
         expect(result, isA<ClientAgentsRequestAccessFormHasInvalidIds>());
         final failure = result as ClientAgentsRequestAccessFormHasInvalidIds;
@@ -50,9 +50,9 @@ void main() {
 
     test('reports tokens too long when only invalid is the token length', () {
       final tooLong = 'a' * (ClientAgentTokenConstraints.maxLength + 1);
-      final result = parseClientAgentsRequestAccessForm(<
-        ClientAgentAccessRequestRowInput
-      >[row(validIdA, tooLong)]);
+      final result = parseClientAgentsRequestAccessForm(
+        <ClientAgentAccessRequestRowInput>[row(validIdA, tooLong)],
+      );
 
       expect(result, isA<ClientAgentsRequestAccessFormHasTokensTooLong>());
       final failure = result as ClientAgentsRequestAccessFormHasTokensTooLong;
@@ -61,9 +61,14 @@ void main() {
     });
 
     test('succeeds with deduped rows preserving first-seen order', () {
-      final result = parseClientAgentsRequestAccessForm(<
-        ClientAgentAccessRequestRowInput
-      >[row(validIdB), row(validIdA), row(validIdB), row(validIdC)]);
+      final result = parseClientAgentsRequestAccessForm(
+        <ClientAgentAccessRequestRowInput>[
+          row(validIdB),
+          row(validIdA),
+          row(validIdB),
+          row(validIdC),
+        ],
+      );
 
       expect(result, isA<ClientAgentsRequestAccessFormParseSuccess>());
       final success = result as ClientAgentsRequestAccessFormParseSuccess;
@@ -78,9 +83,14 @@ void main() {
     test(
       'succeeds with empty rows interleaved without blocking submit',
       () {
-        final result = parseClientAgentsRequestAccessForm(<
-          ClientAgentAccessRequestRowInput
-        >[row(''), row(validIdA), row('  '), row(validIdB)]);
+        final result = parseClientAgentsRequestAccessForm(
+          <ClientAgentAccessRequestRowInput>[
+            row(''),
+            row(validIdA),
+            row('  '),
+            row(validIdB),
+          ],
+        );
 
         expect(result, isA<ClientAgentsRequestAccessFormParseSuccess>());
         final success = result as ClientAgentsRequestAccessFormParseSuccess;
@@ -90,17 +100,17 @@ void main() {
     );
 
     test('trims agent id whitespace before validating', () {
-      final result = parseClientAgentsRequestAccessForm(<
-        ClientAgentAccessRequestRowInput
-      >[row('  $validIdA  ')]);
+      final result = parseClientAgentsRequestAccessForm(
+        <ClientAgentAccessRequestRowInput>[row('  $validIdA  ')],
+      );
 
       expect(result, isA<ClientAgentsRequestAccessFormParseSuccess>());
     });
 
     test('keeps duplicates without invalidating the form', () {
-      final result = parseClientAgentsRequestAccessForm(<
-        ClientAgentAccessRequestRowInput
-      >[row(validIdA), row(validIdA)]);
+      final result = parseClientAgentsRequestAccessForm(
+        <ClientAgentAccessRequestRowInput>[row(validIdA), row(validIdA)],
+      );
 
       expect(result, isA<ClientAgentsRequestAccessFormParseSuccess>());
       final success = result as ClientAgentsRequestAccessFormParseSuccess;

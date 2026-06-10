@@ -71,13 +71,18 @@ void main() {
 
         check(result.isSuccess()).isTrue();
         final batch = result.getOrThrow();
-        check(batch.catalogPage.report.participants.single.rows.length).equals(1);
-        check(batch.catalogPage.report.participants.single.rows.single.nomeFilial)
-            .equals('Filial');
-        check(batch.salesReport.participants.single.rows.single.qtdVendas)
-            .equals(3);
-        check(batch.salesReport.participants.single.rows.single.totalVenda)
-            .equals(150);
+        check(
+          batch.catalogPage.report.participants.single.rows.length,
+        ).equals(1);
+        check(
+          batch.catalogPage.report.participants.single.rows.single.nomeFilial,
+        ).equals('Filial');
+        check(
+          batch.salesReport.participants.single.rows.single.qtdVendas,
+        ).equals(3);
+        check(
+          batch.salesReport.participants.single.rows.single.totalVenda,
+        ).equals(150);
 
         final requests = verify(
           () => agentQueriesRepository.executeSqlBatch(captureAny()),
@@ -305,9 +310,12 @@ void main() {
 
         check(result.isSuccess()).isTrue();
         final loaded = result.getOrThrow();
-        check(loaded.catalogPage.paginationStalledAgentIds.contains('agent-1'))
-            .isTrue();
-        check(loaded.catalogPage.report.participants.single.rows.length).equals(1);
+        check(
+          loaded.catalogPage.paginationStalledAgentIds.contains('agent-1'),
+        ).isTrue();
+        check(
+          loaded.catalogPage.report.participants.single.rows.length,
+        ).equals(1);
       },
     );
 

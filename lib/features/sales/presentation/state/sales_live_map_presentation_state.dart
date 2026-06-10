@@ -7,8 +7,9 @@ import 'package:flutter/foundation.dart';
 /// Identity-keyed cache for `SalesLiveMapPresentationState.tokenBackedAgentIds`.
 /// `Expando` preserves the `const` constructor and weak-references state
 /// instances so cached sets are reclaimed with their owners.
-final Expando<Set<String>> _tokenBackedAgentIdsExpando =
-    Expando<Set<String>>('SalesLiveMapPresentationState.tokenBackedAgentIds');
+final Expando<Set<String>> _tokenBackedAgentIdsExpando = Expando<Set<String>>(
+  'SalesLiveMapPresentationState.tokenBackedAgentIds',
+);
 
 @immutable
 class SalesLiveMapPresentationState {

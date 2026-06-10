@@ -38,17 +38,17 @@ void main() {
     });
 
     test('update applies the mutator only to the matching id', () {
-      final view = PendingClientAgentActionsView([
-        _action('a'),
-        _action('b'),
-      ])
-        ..update(
-          'a',
-          (a) => a.copyWith(
-            state: PendingAgentActionState.syncing,
-            errorMessage: 'updated',
-          ),
-        );
+      final view =
+          PendingClientAgentActionsView([
+            _action('a'),
+            _action('b'),
+          ])..update(
+            'a',
+            (a) => a.copyWith(
+              state: PendingAgentActionState.syncing,
+              errorMessage: 'updated',
+            ),
+          );
 
       expect(view['a']!.state, PendingAgentActionState.syncing);
       expect(view['a']!.errorMessage, 'updated');
@@ -64,15 +64,15 @@ void main() {
     });
 
     test('updateAll mutates every id in the iterable', () {
-      final view = PendingClientAgentActionsView([
-        _action('a'),
-        _action('b'),
-        _action('c'),
-      ])
-        ..updateAll(
-          const <String>['a', 'c'],
-          (a) => a.copyWith(state: PendingAgentActionState.failed),
-        );
+      final view =
+          PendingClientAgentActionsView([
+            _action('a'),
+            _action('b'),
+            _action('c'),
+          ])..updateAll(
+            const <String>['a', 'c'],
+            (a) => a.copyWith(state: PendingAgentActionState.failed),
+          );
 
       expect(view['a']!.state, PendingAgentActionState.failed);
       expect(view['b']!.state, PendingAgentActionState.queued);
@@ -84,8 +84,7 @@ void main() {
         _action('a'),
         _action('b'),
         _action('c'),
-      ])
-        ..removeIds(const <String>['a', 'missing', 'c']);
+      ])..removeIds(const <String>['a', 'missing', 'c']);
 
       expect(view.toList().map((a) => a.id), <String>['b']);
     });

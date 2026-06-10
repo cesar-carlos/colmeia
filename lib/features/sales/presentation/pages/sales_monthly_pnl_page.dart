@@ -151,8 +151,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
   String? _cachedClientToken;
 
   List<SalesMonthlyPnlPoint> _points = const <SalesMonthlyPnlPoint>[];
-  List<DailySalesTrendPoint> _dailyPoints =
-      const <DailySalesTrendPoint>[];
+  List<DailySalesTrendPoint> _dailyPoints = const <DailySalesTrendPoint>[];
   bool _loading = false;
   bool _chartLoadFailed = false;
   AppFailure? _chartLoadFailure;
@@ -291,7 +290,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
         _chartLoadFailureMessage = null;
         _dailyPoints = const <DailySalesTrendPoint>[];
         _dailyChartLoadFailed = false;
-      _dailyChartLoadFailure = null;
+        _dailyChartLoadFailure = null;
         _dailyChartLoadFailureMessage = null;
       });
       return;
@@ -496,13 +495,13 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   return _SalesMonthlyPnlLineChart(
-                  l10n: l10n,
-                  points: pointsSnapshot,
-                  loadFailed: loadFailedSnapshot,
-                  loadFailureMessage: loadFailureMessageSnapshot,
-                  isLoading: isLoadingSnapshot,
-                  useChartShell: false,
-                  chartHeightOverride: constraints.maxHeight,
+                    l10n: l10n,
+                    points: pointsSnapshot,
+                    loadFailed: loadFailedSnapshot,
+                    loadFailureMessage: loadFailureMessageSnapshot,
+                    isLoading: isLoadingSnapshot,
+                    useChartShell: false,
+                    chartHeightOverride: constraints.maxHeight,
                   );
                 },
               ),

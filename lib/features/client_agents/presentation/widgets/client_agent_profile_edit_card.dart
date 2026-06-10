@@ -76,22 +76,23 @@ class _ClientAgentProfileEditCardState
     _notifyDirtyChanged();
   }
 
-  List<TextEditingController> get _allFieldControllers => <TextEditingController>[
-    _name,
-    _tradeName,
-    _cnpjCpf,
-    _phone,
-    _mobile,
-    _email,
-    _street,
-    _number,
-    _district,
-    _postalCode,
-    _city,
-    _state,
-    _notes,
-    _observation,
-  ];
+  List<TextEditingController> get _allFieldControllers =>
+      <TextEditingController>[
+        _name,
+        _tradeName,
+        _cnpjCpf,
+        _phone,
+        _mobile,
+        _email,
+        _street,
+        _number,
+        _district,
+        _postalCode,
+        _city,
+        _state,
+        _notes,
+        _observation,
+      ];
 
   bool get hasUnsavedChanges => _hasUnsavedChangesComparedTo(widget.agent);
 

@@ -156,7 +156,7 @@ class SalesProdutoTendenciaSummarySection extends StatelessWidget {
                       onBucketTap: onClassificacaoSelected == null
                           ? null
                           : (bucket) =>
-                              onClassificacaoSelected!(bucket.classificacao),
+                                onClassificacaoSelected!(bucket.classificacao),
                       belowSubtitle: Text(
                         l10n.salesProdutoTendenciaSummaryByClassificacaoDrillDownHint,
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -238,8 +238,9 @@ class _TrendSummaryKpiStrip extends StatelessWidget {
           icon: Icons.balance_rounded,
           label: l10n.salesProdutoTendenciaKpiNetImpact,
           value: nf.format(summary.netImpact),
-          iconForeground:
-              summary.netImpact >= 0 ? colors.tertiary : colors.error,
+          iconForeground: summary.netImpact >= 0
+              ? colors.tertiary
+              : colors.error,
         ),
       ],
     );

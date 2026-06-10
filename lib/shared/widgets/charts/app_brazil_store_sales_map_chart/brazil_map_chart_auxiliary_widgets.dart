@@ -12,7 +12,17 @@ import 'package:colmeia/shared/widgets/charts/brazil_map_store_sales_display_hel
 import 'package:flutter/material.dart';
 
 class BrazilMapChartMarkerScaleLegend extends StatelessWidget {
-  const BrazilMapChartMarkerScaleLegend({required this.sizeLegendLabel, required this.metric, required this.minValue, required this.maxValue, required this.minSize, required this.maxSize, required this.color, required this.strokeColor, required this.visual, super.key,
+  const BrazilMapChartMarkerScaleLegend({
+    required this.sizeLegendLabel,
+    required this.metric,
+    required this.minValue,
+    required this.maxValue,
+    required this.minSize,
+    required this.maxSize,
+    required this.color,
+    required this.strokeColor,
+    required this.visual,
+    super.key,
   });
 
   final String sizeLegendLabel;
@@ -49,7 +59,17 @@ class BrazilMapChartMarkerScaleLegend extends StatelessWidget {
 }
 
 class BrazilMapChartMarkerScaleLegendMenuButton extends StatelessWidget {
-  const BrazilMapChartMarkerScaleLegendMenuButton({required this.sizeLegendLabel, required this.metric, required this.minValue, required this.maxValue, required this.minSize, required this.maxSize, required this.color, required this.strokeColor, required this.visual, super.key,
+  const BrazilMapChartMarkerScaleLegendMenuButton({
+    required this.sizeLegendLabel,
+    required this.metric,
+    required this.minValue,
+    required this.maxValue,
+    required this.minSize,
+    required this.maxSize,
+    required this.color,
+    required this.strokeColor,
+    required this.visual,
+    super.key,
   });
 
   final String sizeLegendLabel;
@@ -130,7 +150,17 @@ class BrazilMapChartMarkerScaleLegendMenuButton extends StatelessWidget {
 }
 
 class BrazilMapChartMarkerScaleLegendContent extends StatelessWidget {
-  const BrazilMapChartMarkerScaleLegendContent({required this.sizeLegendLabel, required this.metric, required this.minValue, required this.maxValue, required this.minSize, required this.maxSize, required this.color, required this.strokeColor, required this.visual, super.key,
+  const BrazilMapChartMarkerScaleLegendContent({
+    required this.sizeLegendLabel,
+    required this.metric,
+    required this.minValue,
+    required this.maxValue,
+    required this.minSize,
+    required this.maxSize,
+    required this.color,
+    required this.strokeColor,
+    required this.visual,
+    super.key,
   });
 
   final String sizeLegendLabel;
@@ -282,7 +312,13 @@ class BrazilMapChartDataQualityNotice extends StatelessWidget {
 }
 
 class BrazilMapChartMarkerScaleLegendItem extends StatelessWidget {
-  const BrazilMapChartMarkerScaleLegendItem({required this.label, required this.size, required this.color, required this.strokeColor, required this.visual, super.key,
+  const BrazilMapChartMarkerScaleLegendItem({
+    required this.label,
+    required this.size,
+    required this.color,
+    required this.strokeColor,
+    required this.visual,
+    super.key,
   });
 
   final String label;

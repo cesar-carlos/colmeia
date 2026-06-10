@@ -56,12 +56,8 @@ class SalesProdutoTendenciaDetailsSection extends StatelessWidget {
     final theme = Theme.of(context);
     final tokens = theme.appTokens;
     final rowNumber = NumberFormat.decimalPattern(l10n.localeName);
-    final totalPages = totalCount == 0
-        ? 0
-        : (totalCount / pageSize).ceil();
-    final rangeStart = totalCount == 0
-        ? 0
-        : ((currentPage - 1) * pageSize) + 1;
+    final totalPages = totalCount == 0 ? 0 : (totalCount / pageSize).ceil();
+    final rangeStart = totalCount == 0 ? 0 : ((currentPage - 1) * pageSize) + 1;
     final rangeEnd = totalCount == 0
         ? 0
         : math.min(currentPage * pageSize, totalCount);
@@ -136,8 +132,8 @@ class SalesProdutoTendenciaDetailsSection extends StatelessWidget {
                   return AppCompactDataGridScrollTable(
                     contentWidth: contentWidth,
                     itemCount: rows.length,
-                    semanticsHint:
-                        l10n.salesProdutoTendenciaDetailsHorizontalScrollCaption,
+                    semanticsHint: l10n
+                        .salesProdutoTendenciaDetailsHorizontalScrollCaption,
                     header: SalesProdutoTendenciaDetailsTableHeader(
                       l10n: l10n,
                       showPeriodQuantityColumns: _showPeriodQuantityColumns,
@@ -202,7 +198,11 @@ abstract final class SalesProdutoTendenciaDetailsTableLayout {
     AppThemeTokens t, {
     bool showPeriodQuantityColumns = false,
   }) {
-    var width = _product(t) + _classificacao(t) + _grupo(t) + _delta(t) +
+    var width =
+        _product(t) +
+        _classificacao(t) +
+        _grupo(t) +
+        _delta(t) +
         _percentual(t);
     if (showPeriodQuantityColumns) {
       width += _qtd(t) * 2;
@@ -246,7 +246,9 @@ class SalesProdutoTendenciaDetailsTableHeader extends StatelessWidget {
     return DecoratedBox(
       decoration: appDataGridHeaderDecoration(scheme),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: kAppCompactHeaderRowHeight),
+        constraints: const BoxConstraints(
+          minHeight: kAppCompactHeaderRowHeight,
+        ),
         child: Padding(
           padding: appDataGridRowPadding(tokens),
           child: Row(

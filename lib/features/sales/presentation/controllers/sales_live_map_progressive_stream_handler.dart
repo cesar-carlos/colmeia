@@ -77,8 +77,8 @@ class SalesLiveMapProgressiveStreamHandler {
             previousResult: previousResult,
             nextVisualResult: nextVisualResult,
           );
-      final nextMapPayloadDigest = SalesLiveMapVisualSnapshotPolicy
-          .payloadDigestFor(nextVisualResult);
+      final nextMapPayloadDigest =
+          SalesLiveMapVisualSnapshotPolicy.payloadDigestFor(nextVisualResult);
       if (previousResult != null &&
           !SalesLiveMapVisualSnapshotPolicy.hasObservableDelta(
             previous: previousResult,

@@ -67,7 +67,8 @@ final class OverviewSectionBatchRunner {
   bool get _usesCachedDailyMonthlySections =>
       _cachedSectionLoader?.usesDailyMonthly ?? false;
 
-  bool get _usesCachedWeekdaySection => _cachedSectionLoader?.usesWeekday ?? false;
+  bool get _usesCachedWeekdaySection =>
+      _cachedSectionLoader?.usesWeekday ?? false;
 
   bool get _usesCachedLucratividadeSection =>
       _cachedSectionLoader?.usesLucratividade ?? false;
@@ -219,16 +220,19 @@ final class OverviewSectionBatchRunner {
       monthlyRows: cached?.monthlyRows ?? const <ResumoParcelasMensalRow>[],
       weekdayRows: cached?.weekdayRows ?? const <ResumoParcelasDiaSemanaRow>[],
       dailyRows: cached?.dailyRows ?? const <ResumoTotalDiarioVendasRow>[],
-      lucratividadeRows: cached?.lucratividadeRows ??
+      lucratividadeRows:
+          cached?.lucratividadeRows ??
           const <ResumoProdutoVendaLucratividadeRow>[],
       mainFailure: mainFailure,
       monthlyFailure: _usesCachedDailyMonthlySections
           ? cached?.monthlyFailure
           : failure,
-      weekdayFailure:
-          _usesCachedWeekdaySection ? cached?.weekdayFailure : failure,
-      dailyFailure:
-          _usesCachedDailyMonthlySections ? cached?.dailyFailure : failure,
+      weekdayFailure: _usesCachedWeekdaySection
+          ? cached?.weekdayFailure
+          : failure,
+      dailyFailure: _usesCachedDailyMonthlySections
+          ? cached?.dailyFailure
+          : failure,
       weekdayUserFailure: failure,
       lucratividadeFailure: _usesCachedLucratividadeSection
           ? cached?.lucratividadeFailure
@@ -299,7 +303,9 @@ final class OverviewSectionBatchRunner {
       );
     }
     final weekdayUser = indexes.weekdayUser == null
-        ? const OverviewSqlBatchItemRowsResult<ResumoParcelasDiaSemanaUsuarioRow>(
+        ? const OverviewSqlBatchItemRowsResult<
+            ResumoParcelasDiaSemanaUsuarioRow
+          >(
             rows: <ResumoParcelasDiaSemanaUsuarioRow>[],
           )
         : OverviewSqlBatchItemRowsMapper.mapRowsForIndex(

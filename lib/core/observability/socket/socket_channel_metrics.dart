@@ -2,7 +2,8 @@ import 'package:colmeia/core/observability/socket/server_timings.dart';
 import 'package:colmeia/core/observability/socket/socket_metrics_snapshot.dart';
 import 'package:colmeia/core/socket/agent_command_outcome.dart';
 import 'package:colmeia/core/socket/relay/relay_rpc_outcome.dart';
-import 'package:colmeia/features/agent_queries/data/datasources/socket_with_rest_fallback_agent_queries_remote_datasource.dart' show SocketWithRestFallbackAgentQueriesRemoteDataSource;
+import 'package:colmeia/features/agent_queries/data/datasources/socket_with_rest_fallback_agent_queries_remote_datasource.dart'
+    show SocketWithRestFallbackAgentQueriesRemoteDataSource;
 import 'package:flutter/foundation.dart';
 
 /// In-memory metrics service for the consumer Socket channel. Designed to

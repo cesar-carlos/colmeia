@@ -165,19 +165,20 @@ class _SyncfusionRegionMapChartState<T>
       _applyPreferredViewport();
     } else if (!_isPreferredViewportSuppressed &&
         RegionMapViewportSyncPolicy.shouldSyncZoomPanBehaviorOnWidgetUpdate(
-      hasPreferredViewport: widget.preferredViewport != null,
-      userHasManualViewport: _viewportCoordinator.state.userHasManualViewport,
-      lockPreferredViewportReapply:
-          _viewportCoordinator.lockPreferredViewportReapply,
-      behaviorZoomLevel: _viewportCoordinator.zoomPanBehavior.zoomLevel,
-      behaviorCenterLatitude:
-          _viewportCoordinator.zoomPanBehavior.focalLatLng?.latitude,
-      behaviorCenterLongitude:
-          _viewportCoordinator.zoomPanBehavior.focalLatLng?.longitude,
-      stateZoomLevel: _viewportCoordinator.state.zoomLevel,
-      stateCenterLatitude: _viewportCoordinator.state.centerLatitude,
-      stateCenterLongitude: _viewportCoordinator.state.centerLongitude,
-    )) {
+          hasPreferredViewport: widget.preferredViewport != null,
+          userHasManualViewport:
+              _viewportCoordinator.state.userHasManualViewport,
+          lockPreferredViewportReapply:
+              _viewportCoordinator.lockPreferredViewportReapply,
+          behaviorZoomLevel: _viewportCoordinator.zoomPanBehavior.zoomLevel,
+          behaviorCenterLatitude:
+              _viewportCoordinator.zoomPanBehavior.focalLatLng?.latitude,
+          behaviorCenterLongitude:
+              _viewportCoordinator.zoomPanBehavior.focalLatLng?.longitude,
+          stateZoomLevel: _viewportCoordinator.state.zoomLevel,
+          stateCenterLatitude: _viewportCoordinator.state.centerLatitude,
+          stateCenterLongitude: _viewportCoordinator.state.centerLongitude,
+        )) {
       _viewportCoordinator.applyZoomPanBehaviorViewport(
         reason: 'widget_update_sync',
         mounted: mounted,
@@ -199,7 +200,8 @@ class _SyncfusionRegionMapChartState<T>
       minZoomLevel: widget.style.minZoomLevel,
       maxZoomLevel: widget.style.maxZoomLevel,
       isZoomPanEnabled:
-          widget.style.enableZoomPan && widget.preset == AppChartPreset.explorable,
+          widget.style.enableZoomPan &&
+          widget.preset == AppChartPreset.explorable,
       enableDoubleTapZooming:
           widget.style.enableDoubleTapZooming ||
           widget.preset == AppChartPreset.explorable,
@@ -477,7 +479,8 @@ class _SyncfusionRegionMapChartState<T>
                             MapShapeLayer(
                               source: shapeSource,
                               selectedIndex: selectedIndex,
-                              zoomPanBehavior: _viewportCoordinator.isZoomPanEnabled
+                              zoomPanBehavior:
+                                  _viewportCoordinator.isZoomPanEnabled
                                   ? _viewportCoordinator.zoomPanBehavior
                                   : null,
                               showDataLabels: widget.style.showDataLabels,
@@ -541,10 +544,11 @@ class _SyncfusionRegionMapChartState<T>
                                           point.style ?? widget.markerStyle;
                                       final fallbackChild =
                                           SyncfusionRegionMapMarkerShape(
-                                        style: effectiveStyle,
-                                        defaultColor: chartTheme.primaryColor,
-                                        defaultStrokeColor: colors.surface,
-                                      );
+                                            style: effectiveStyle,
+                                            defaultColor:
+                                                chartTheme.primaryColor,
+                                            defaultStrokeColor: colors.surface,
+                                          );
                                       final builtChild =
                                           widget.markerBuilder?.call(
                                             mapBuilderContext,
@@ -568,7 +572,8 @@ class _SyncfusionRegionMapChartState<T>
                                             );
                                       final visualSize = effectiveStyle.size;
                                       const minTapSize = 48.0;
-                                      final isMobilePlatform = !kIsWeb &&
+                                      final isMobilePlatform =
+                                          !kIsWeb &&
                                           (defaultTargetPlatform ==
                                                   TargetPlatform.android ||
                                               defaultTargetPlatform ==
@@ -883,7 +888,9 @@ class _SyncfusionRegionMapChartState<T>
     if (selectedIndex >= 0 && selectedIndex < regionLabels.length) {
       buffer
         ..write(' ')
-        ..write(l10n.regionMapSemanticsSelectedRegion(regionLabels[selectedIndex]));
+        ..write(
+          l10n.regionMapSemanticsSelectedRegion(regionLabels[selectedIndex]),
+        );
     }
 
     return buffer.toString();

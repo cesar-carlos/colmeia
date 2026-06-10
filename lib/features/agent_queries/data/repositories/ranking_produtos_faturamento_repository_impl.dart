@@ -33,8 +33,7 @@ class RankingProdutosFaturamentoRepositoryImpl
   final AgentQueriesRepository _agentQueriesRepository;
 
   static int maxRowsForFilter(RankingProdutosFaturamentoFilter filter) {
-    final requested =
-        (filter.quantidadeProdutos + 1) * maxFilialEstimate;
+    final requested = (filter.quantidadeProdutos + 1) * maxFilialEstimate;
     return math.min(
       requested,
       AgentQueriesBoundedResultMaxRows.rankingProdutosFaturamento,
@@ -118,7 +117,9 @@ class RankingProdutosFaturamentoRepositoryImpl
       skipTransportCache: true,
     );
 
-    return AgentSqlRepositoryExecution.execute<RankingProdutosFaturamentoLoadResult>(
+    return AgentSqlRepositoryExecution.execute<
+      RankingProdutosFaturamentoLoadResult
+    >(
       agentQueriesRepository: _agentQueriesRepository,
       request: request,
       operation: _operation,

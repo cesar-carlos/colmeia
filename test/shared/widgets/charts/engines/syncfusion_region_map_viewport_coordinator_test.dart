@@ -57,10 +57,10 @@ void main() {
       coordinator
         ..state = coordinator.state.copyWith(zoomLevel: 2)
         ..handleWillZoom(
-        newZoomLevel: 3.2,
-        newVisibleBounds: null,
-        onViewportChanged: (event) => captured = event,
-      );
+          newZoomLevel: 3.2,
+          newVisibleBounds: null,
+          onViewportChanged: (event) => captured = event,
+        );
 
       expect(coordinator.state.zoomLevel, 3.2);
       expect(captured?.source, AppMapViewportChangeSource.user);
@@ -101,48 +101,51 @@ void main() {
       coordinator
         ..state = coordinator.state.copyWith(userHasManualViewport: true)
         ..applyPreferredViewport(
-        mounted: true,
-        isLoading: false,
-        isPreferredViewportSuppressed: false,
-        preferredViewport: const AppMapViewport(
-          zoomLevel: 3,
-          centerLatitude: -23,
-          centerLongitude: -46,
-        ),
-        pointCount: 1,
-        itemCount: 1,
-      );
+          mounted: true,
+          isLoading: false,
+          isPreferredViewportSuppressed: false,
+          preferredViewport: const AppMapViewport(
+            zoomLevel: 3,
+            centerLatitude: -23,
+            centerLongitude: -46,
+          ),
+          pointCount: 1,
+          itemCount: 1,
+        );
 
       expect(coordinator.zoomPanBehavior.zoomLevel, 1);
       expect(coordinator.lastAppliedPreferredViewport, isNull);
     });
 
-    test('applyPreferredViewport applies override even with manual viewport', () {
-      coordinator
-        ..state = coordinator.state.copyWith(userHasManualViewport: true)
-        ..applyPreferredViewport(
-        mounted: true,
-        isLoading: false,
-        isPreferredViewportSuppressed: false,
-        preferredViewport: const AppMapViewport(
-          zoomLevel: 3,
-          centerLatitude: -23,
-          centerLongitude: -46,
-        ),
-        pointCount: 1,
-        itemCount: 1,
-        overrideManualViewport: true,
-        viewportOverride: const AppMapViewport(
-          zoomLevel: 4,
-          centerLatitude: -10,
-          centerLongitude: -50,
-        ),
-      );
+    test(
+      'applyPreferredViewport applies override even with manual viewport',
+      () {
+        coordinator
+          ..state = coordinator.state.copyWith(userHasManualViewport: true)
+          ..applyPreferredViewport(
+            mounted: true,
+            isLoading: false,
+            isPreferredViewportSuppressed: false,
+            preferredViewport: const AppMapViewport(
+              zoomLevel: 3,
+              centerLatitude: -23,
+              centerLongitude: -46,
+            ),
+            pointCount: 1,
+            itemCount: 1,
+            overrideManualViewport: true,
+            viewportOverride: const AppMapViewport(
+              zoomLevel: 4,
+              centerLatitude: -10,
+              centerLongitude: -50,
+            ),
+          );
 
-      expect(coordinator.state.zoomLevel, 4);
-      expect(coordinator.zoomPanBehavior.zoomLevel, 4);
-      expect(coordinator.lastAppliedPreferredViewport?.centerLatitude, -10);
-    });
+        expect(coordinator.state.zoomLevel, 4);
+        expect(coordinator.zoomPanBehavior.zoomLevel, 4);
+        expect(coordinator.lastAppliedPreferredViewport?.centerLatitude, -10);
+      },
+    );
 
     test('handlePointerScrollZoom increases zoom on scroll up', () {
       coordinator.state = coordinator.state.copyWith(zoomLevel: 2);

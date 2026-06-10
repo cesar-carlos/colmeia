@@ -60,8 +60,7 @@ String overviewAgentQueryFailureTechnicalSummary(AppFailure failure) {
   }
   var out = buffer.toString();
   if (out.length > _overviewTechnicalSummaryMaxChars) {
-    out =
-        '${out.substring(0, _overviewTechnicalSummaryMaxChars)}…(truncated)';
+    out = '${out.substring(0, _overviewTechnicalSummaryMaxChars)}…(truncated)';
   }
   return out;
 }

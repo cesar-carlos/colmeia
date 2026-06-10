@@ -31,7 +31,9 @@ class BrazilMapSnapshotController {
     _snapshot = null;
   }
 
-  void invalidatePointsDigestIfSourceChanged(List<AppBrazilStoreSalesPoint> points) {
+  void invalidatePointsDigestIfSourceChanged(
+    List<AppBrazilStoreSalesPoint> points,
+  ) {
     if (identical(_cachedPointsDigestSource, points)) {
       _cachedPointsDigest = null;
     } else {

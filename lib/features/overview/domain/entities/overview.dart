@@ -399,7 +399,8 @@ class Overview {
       OverviewProgressiveSection.weekdayUserSales => copyWith(
         weekdayUserSalesTrend: detail.weekdayUserSalesTrend,
         weekdayUserSalesTrendLoadFailed: detail.weekdayUserSalesTrendLoadFailed,
-        weekdayUserSalesTrendLoadFailure: detail.weekdayUserSalesTrendLoadFailure,
+        weekdayUserSalesTrendLoadFailure:
+            detail.weekdayUserSalesTrendLoadFailure,
         weekdayUserSalesTrendLoadFailureMessage:
             detail.weekdayUserSalesTrendLoadFailureMessage,
         partialQueryFailureDetails: detail.partialQueryFailureDetails,
@@ -445,8 +446,7 @@ class Overview {
             detail.agentNamesExcludedFromQueryFailure,
         agentIdsMissingClientToken: detail.agentIdsMissingClientToken,
         agentNamesMissingClientToken: detail.agentNamesMissingClientToken,
-        agentIdsSkippedDueToHubPresence:
-            detail.agentIdsSkippedDueToHubPresence,
+        agentIdsSkippedDueToHubPresence: detail.agentIdsSkippedDueToHubPresence,
         agentNamesSkippedDueToHubPresence:
             detail.agentNamesSkippedDueToHubPresence,
         mainResumoHadPlannedTargets: detail.mainResumoHadPlannedTargets,

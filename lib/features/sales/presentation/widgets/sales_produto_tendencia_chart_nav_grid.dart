@@ -10,10 +10,10 @@ enum SalesProdutoTendenciaChartId {
 
 const List<SalesProdutoTendenciaChartId> _allSalesProdutoTendenciaCharts =
     <SalesProdutoTendenciaChartId>[
-  SalesProdutoTendenciaChartId.classificacao,
-  SalesProdutoTendenciaChartId.topGainers,
-  SalesProdutoTendenciaChartId.topLosers,
-];
+      SalesProdutoTendenciaChartId.classificacao,
+      SalesProdutoTendenciaChartId.topGainers,
+      SalesProdutoTendenciaChartId.topLosers,
+    ];
 
 /// Compact navigation grid for sales trend chart fullscreen views.
 class SalesProdutoTendenciaChartNavGrid extends StatelessWidget {
@@ -61,7 +61,10 @@ SalesTrendChartNavItem<SalesProdutoTendenciaChartId> _toItem(
   );
 }
 
-String _chartTitle(AppLocalizations l10n, SalesProdutoTendenciaChartId chartId) {
+String _chartTitle(
+  AppLocalizations l10n,
+  SalesProdutoTendenciaChartId chartId,
+) {
   return switch (chartId) {
     SalesProdutoTendenciaChartId.classificacao =>
       l10n.salesProdutoTendenciaSummaryByClassificacaoTitle,
@@ -102,7 +105,8 @@ String? _chartSubtitle(
 
 IconData _chartIcon(SalesProdutoTendenciaChartId chartId) {
   return switch (chartId) {
-    SalesProdutoTendenciaChartId.classificacao => Icons.stacked_bar_chart_rounded,
+    SalesProdutoTendenciaChartId.classificacao =>
+      Icons.stacked_bar_chart_rounded,
     SalesProdutoTendenciaChartId.topGainers => Icons.trending_up_rounded,
     SalesProdutoTendenciaChartId.topLosers => Icons.trending_down_rounded,
   };

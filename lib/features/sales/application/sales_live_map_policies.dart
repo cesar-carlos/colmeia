@@ -24,7 +24,8 @@ abstract final class SalesLiveMapPolicies {
   static int get primaryCompanyCode =>
       AppEnvironment.salesLiveMapPrimaryCompanyCode;
 
-  static int get primaryBranchCode => AppEnvironment.salesLiveMapPrimaryBranchCode;
+  static int get primaryBranchCode =>
+      AppEnvironment.salesLiveMapPrimaryBranchCode;
 
   static const int branchLocationCacheMaxEntries = 5000;
   static const int branchCatalogCacheMaxEntries = 200;

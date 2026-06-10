@@ -28,15 +28,17 @@ void main() {
     closeFullscreenCount = 0;
     observer = SalesLiveMapAutoRefreshObserver(
       coordinator: coordinator,
-      readAutoRefreshOption: () => SalesLiveMapAutoRefreshOptions.fifteenMinutes,
+      readAutoRefreshOption: () =>
+          SalesLiveMapAutoRefreshOptions.fifteenMinutes,
       readAutoRefreshNextDueAt: () => nextDueAt,
       readCurrentAutoRefreshTime: () => now,
       readAutoRefreshReloadInProgress: () => false,
       refreshAutoRefreshScheduling: () => schedulingRefreshCount += 1,
-      recordAutoRefreshSuccessfulReload: (refreshedAt, {required scheduleNextCycle}) {
-        recordedReloads.add(refreshedAt);
-        scheduleNextCycleFlags.add(scheduleNextCycle);
-      },
+      recordAutoRefreshSuccessfulReload:
+          (refreshedAt, {required scheduleNextCycle}) {
+            recordedReloads.add(refreshedAt);
+            scheduleNextCycleFlags.add(scheduleNextCycle);
+          },
       onCloseFullscreenRequested: () => closeFullscreenCount += 1,
     );
   });
@@ -53,22 +55,28 @@ void main() {
     );
   });
 
-  test('does not set queued tick threshold when auto-refresh reload is active', () {
-    observer = SalesLiveMapAutoRefreshObserver(
-      coordinator: coordinator,
-      readAutoRefreshOption: () => SalesLiveMapAutoRefreshOptions.fifteenMinutes,
-      readAutoRefreshNextDueAt: () => nextDueAt,
-      readCurrentAutoRefreshTime: () => now,
-      readAutoRefreshReloadInProgress: () => true,
-      refreshAutoRefreshScheduling: () => schedulingRefreshCount += 1,
-      recordAutoRefreshSuccessfulReload: (_, {required scheduleNextCycle}) {},
-      onCloseFullscreenRequested: () {},
-    )..onControllerChanged(
-      const SalesLiveMapPresentationState(),
-    );
+  test(
+    'does not set queued tick threshold when auto-refresh reload is active',
+    () {
+      observer =
+          SalesLiveMapAutoRefreshObserver(
+            coordinator: coordinator,
+            readAutoRefreshOption: () =>
+                SalesLiveMapAutoRefreshOptions.fifteenMinutes,
+            readAutoRefreshNextDueAt: () => nextDueAt,
+            readCurrentAutoRefreshTime: () => now,
+            readAutoRefreshReloadInProgress: () => true,
+            refreshAutoRefreshScheduling: () => schedulingRefreshCount += 1,
+            recordAutoRefreshSuccessfulReload:
+                (_, {required scheduleNextCycle}) {},
+            onCloseFullscreenRequested: () {},
+          )..onControllerChanged(
+            const SalesLiveMapPresentationState(),
+          );
 
-    expect(coordinator.controllerReloadQueuedTickThreshold, isNull);
-  });
+      expect(coordinator.controllerReloadQueuedTickThreshold, isNull);
+    },
+  );
 
   test('clears queued tick threshold when scheduling becomes unavailable', () {
     coordinator.controllerReloadQueuedTickThreshold = now;

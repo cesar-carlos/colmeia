@@ -214,8 +214,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
   }) async {
     try {
       await _connection.connect();
-    }
-    on ConsumerSocketTerminalException catch (e) {
+    } on ConsumerSocketTerminalException catch (e) {
       // Typed terminal failures from the connection layer. The exhaustive
       // switch lets the compiler verify every subtype is mapped — no more
       // fragile message.startsWith() parsing.
@@ -1156,7 +1155,6 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     }
     return _RpcErrorClass.transient;
   }
-
 }
 
 class _PendingMeta {

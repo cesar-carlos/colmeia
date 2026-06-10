@@ -18,7 +18,8 @@ void main() {
     });
 
     test('full projection keeps cliente/municipio/vendedor joins', () {
-      const sql = ParcelaProdutoVendidoDetalheSql.selectFromParcelLinesThroughJoins;
+      const sql =
+          ParcelaProdutoVendidoDetalheSql.selectFromParcelLinesThroughJoins;
 
       expect(sql, contains('INNER JOIN Cliente'));
       expect(sql, contains('INNER JOIN Municipio'));
@@ -28,38 +29,42 @@ void main() {
   });
 
   group('overview resumo consumers', () {
-    test('ResumoParcelaFormaPagamentoSqlV2 uses overview slice and half-open dates',
-        () {
-      const sql = ResumoParcelaFormaPagamentoSqlV2.query;
+    test(
+      'ResumoParcelaFormaPagamentoSqlV2 uses overview slice and half-open dates',
+      () {
+        const sql = ResumoParcelaFormaPagamentoSqlV2.query;
 
-      expect(
-        sql,
-        contains(
-          ParcelaProdutoVendidoDetalheSql
-              .selectFromParcelLinesForOverviewAggregate,
-        ),
-      );
-      expect(sql, contains('DataVenda >= CAST(:dataVendaInicio AS DATE)'));
-      expect(
-        sql,
-        contains('DataVenda < DATEADD(day, 1, CAST(:dataVendaFim AS DATE))'),
-      );
-      expect(sql, isNot(contains('DataVenda BETWEEN')));
-    });
+        expect(
+          sql,
+          contains(
+            ParcelaProdutoVendidoDetalheSql
+                .selectFromParcelLinesForOverviewAggregate,
+          ),
+        );
+        expect(sql, contains('DataVenda >= CAST(:dataVendaInicio AS DATE)'));
+        expect(
+          sql,
+          contains('DataVenda < DATEADD(day, 1, CAST(:dataVendaFim AS DATE))'),
+        );
+        expect(sql, isNot(contains('DataVenda BETWEEN')));
+      },
+    );
 
-    test('ResumoParcelasMensalSql uses overview slice without unused middle columns',
-        () {
-      final sql = ResumoParcelasMensalSql.query();
+    test(
+      'ResumoParcelasMensalSql uses overview slice without unused middle columns',
+      () {
+        final sql = ResumoParcelasMensalSql.query();
 
-      expect(
-        sql,
-        contains(
-          ParcelaProdutoVendidoDetalheSql
-              .selectFromParcelLinesForOverviewAggregate,
-        ),
-      );
-      expect(sql, isNot(contains('NomeMunicipio')));
-      expect(sql, isNot(contains('CodRegiao')));
-    });
+        expect(
+          sql,
+          contains(
+            ParcelaProdutoVendidoDetalheSql
+                .selectFromParcelLinesForOverviewAggregate,
+          ),
+        );
+        expect(sql, isNot(contains('NomeMunicipio')));
+        expect(sql, isNot(contains('CodRegiao')));
+      },
+    );
   });
 }

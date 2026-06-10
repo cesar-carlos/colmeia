@@ -26,11 +26,10 @@ class SalesProdutoTendenciaMediaMovelPresentationState {
     this.loading = false,
     this.authenticationFailed = false,
     this.loadFailure,
-    this.pageResult =
-        const ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
-          items: <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[],
-          totalCount: 0,
-        ),
+    this.pageResult = const ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
+      items: <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[],
+      totalCount: 0,
+    ),
     this.summaryRows =
         const <ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>[],
   });

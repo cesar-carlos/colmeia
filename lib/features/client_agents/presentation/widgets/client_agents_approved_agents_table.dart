@@ -298,75 +298,75 @@ class ClientAgentsApprovedAgentsTableRow extends StatelessWidget {
                       : (value) => onSelectionChanged(value ?? false),
                 ),
               ),
-          SizedBox(
-            width: ClientAgentsApprovedAgentsTableLayout._name(tokens),
-            child: Text(
-              agent.name,
-              softWrap: true,
-              maxLines: 4,
+            SizedBox(
+              width: ClientAgentsApprovedAgentsTableLayout._name(tokens),
+              child: Text(
+                agent.name,
+                softWrap: true,
+                maxLines: 4,
+              ),
             ),
-          ),
-          SizedBox(
-            width: ClientAgentsApprovedAgentsTableLayout._tradeName(tokens),
-            child: Text(
-              agent.tradeName ?? l10n.clientAgentsNoTradeName,
-              softWrap: true,
-              maxLines: 4,
+            SizedBox(
+              width: ClientAgentsApprovedAgentsTableLayout._tradeName(tokens),
+              child: Text(
+                agent.tradeName ?? l10n.clientAgentsNoTradeName,
+                softWrap: true,
+                maxLines: 4,
+              ),
             ),
-          ),
-          SizedBox(
-            width: ClientAgentsApprovedAgentsTableLayout._catalog(tokens),
-            child: ClientAgentsStatusChip(
-              label: catalogLabel,
-              kind: agent.catalogStatus == AgentCatalogStatus.active
-                  ? ClientAgentsStatusChipKind.success
-                  : ClientAgentsStatusChipKind.neutral,
+            SizedBox(
+              width: ClientAgentsApprovedAgentsTableLayout._catalog(tokens),
+              child: ClientAgentsStatusChip(
+                label: catalogLabel,
+                kind: agent.catalogStatus == AgentCatalogStatus.active
+                    ? ClientAgentsStatusChipKind.success
+                    : ClientAgentsStatusChipKind.neutral,
+              ),
             ),
-          ),
-          SizedBox(
-            width: ClientAgentsApprovedAgentsTableLayout._connection(tokens),
-            child: ClientAgentsStatusChip(
-              label: connectionLabel,
-              kind: switch (agent.connectionStatus) {
-                AgentConnectionStatus.online =>
-                  ClientAgentsStatusChipKind.success,
-                AgentConnectionStatus.offline =>
-                  ClientAgentsStatusChipKind.error,
-                AgentConnectionStatus.unknown =>
-                  ClientAgentsStatusChipKind.neutral,
-              },
+            SizedBox(
+              width: ClientAgentsApprovedAgentsTableLayout._connection(tokens),
+              child: ClientAgentsStatusChip(
+                label: connectionLabel,
+                kind: switch (agent.connectionStatus) {
+                  AgentConnectionStatus.online =>
+                    ClientAgentsStatusChipKind.success,
+                  AgentConnectionStatus.offline =>
+                    ClientAgentsStatusChipKind.error,
+                  AgentConnectionStatus.unknown =>
+                    ClientAgentsStatusChipKind.neutral,
+                },
+              ),
             ),
-          ),
-          SizedBox(
-            width: ClientAgentsApprovedAgentsTableLayout._actions(tokens),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                if (pendingRemove)
-                  Flexible(
-                    child: ClientAgentsStatusChip(
-                      label: l10n.clientAgentsPendingChipRemove,
-                      kind: ClientAgentsStatusChipKind.info,
+            SizedBox(
+              width: ClientAgentsApprovedAgentsTableLayout._actions(tokens),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  if (pendingRemove)
+                    Flexible(
+                      child: ClientAgentsStatusChip(
+                        label: l10n.clientAgentsPendingChipRemove,
+                        kind: ClientAgentsStatusChipKind.info,
+                      ),
                     ),
-                  ),
-                if (agent.isStaleCache)
-                  Flexible(
-                    child: ClientAgentsStatusChip(
-                      label: l10n.clientAgentsApprovedStaleCacheChip,
-                      kind: ClientAgentsStatusChipKind.neutral,
+                  if (agent.isStaleCache)
+                    Flexible(
+                      child: ClientAgentsStatusChip(
+                        label: l10n.clientAgentsApprovedStaleCacheChip,
+                        kind: ClientAgentsStatusChipKind.neutral,
+                      ),
                     ),
-                  ),
-                if (!selecting)
-                  ClientAgentsDataGridActionIconButton(
-                    tooltip: l10n.clientAgentsRemoveAccess,
-                    icon: Icons.link_off_rounded,
-                    onPressed: isMutating || pendingRemove
-                        ? null
-                        : onRemoveAccess,
-                  ),
-              ],
+                  if (!selecting)
+                    ClientAgentsDataGridActionIconButton(
+                      tooltip: l10n.clientAgentsRemoveAccess,
+                      icon: Icons.link_off_rounded,
+                      onPressed: isMutating || pendingRemove
+                          ? null
+                          : onRemoveAccess,
+                    ),
+                ],
+              ),
             ),
-          ),
           ],
         ),
       ),

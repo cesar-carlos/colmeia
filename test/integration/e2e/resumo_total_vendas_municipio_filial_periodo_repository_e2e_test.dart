@@ -216,7 +216,8 @@ void main() {
           second.fold(
             (_) {
               expect(
-                counting.executeSqlCallCount + counting.executeSqlBatchCallCount,
+                counting.executeSqlCallCount +
+                    counting.executeSqlBatchCallCount,
                 sqlCallsAfterFirst,
                 reason:
                     'Second load should read closed buckets from the facts '

@@ -204,8 +204,10 @@ void main() {
 
         // Cross-scope metadata is filtered to the narrow agent set so
         // downstream metrics don't inherit the broader counters.
-        expect(filteredReport.plannedTargets.map((target) => target.agentId),
-            <String>['agent-a']);
+        expect(
+          filteredReport.plannedTargets.map((target) => target.agentId),
+          <String>['agent-a'],
+        );
         expect(
           filteredReport.missingClientTokenTargets,
           isEmpty,
@@ -382,23 +384,25 @@ CadastroFilialAcrossAgentsPageResult _pageWithRows({
   final skippedTargets = skippedDueToHubPresenceAgentIds
       .map(_target)
       .toList(growable: false);
-  final participantList = participants.entries.map((entry) {
-    final rows = entry.value
-        .map(
-          (codFilial) => CadastroFilialRow(
-            codEmpresa: 1,
-            codFilial: codFilial,
-            nomeFilial: 'Loja $codFilial',
-          ),
-        )
-        .toList(growable: false);
-    return AgentQueryExecutionParticipant<CadastroFilialRow>(
-      agentId: entry.key,
-      displayName: 'Agente ${entry.key}',
-      rows: rows,
-      elapsedMs: 10,
-    );
-  }).toList(growable: false);
+  final participantList = participants.entries
+      .map((entry) {
+        final rows = entry.value
+            .map(
+              (codFilial) => CadastroFilialRow(
+                codEmpresa: 1,
+                codFilial: codFilial,
+                nomeFilial: 'Loja $codFilial',
+              ),
+            )
+            .toList(growable: false);
+        return AgentQueryExecutionParticipant<CadastroFilialRow>(
+          agentId: entry.key,
+          displayName: 'Agente ${entry.key}',
+          rows: rows,
+          elapsedMs: 10,
+        );
+      })
+      .toList(growable: false);
 
   return CadastroFilialAcrossAgentsPageResult.fromReport(
     AgentQueryExecutionReport<CadastroFilialRow>(

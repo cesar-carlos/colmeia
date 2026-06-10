@@ -119,8 +119,9 @@ void main() {
     'lastAutoRefreshReloadResult defaults to cancelled until set',
     () {
       expect(coordinator.lastAutoRefreshReloadResult.isCancelled, isTrue);
-      coordinator.lastAutoRefreshReloadResult =
-          AutoRefreshReloadResult.success(DateTime(2026, 5, 27, 17, 50));
+      coordinator.lastAutoRefreshReloadResult = AutoRefreshReloadResult.success(
+        DateTime(2026, 5, 27, 17, 50),
+      );
       expect(coordinator.lastAutoRefreshReloadResult.isSuccess, isTrue);
     },
   );

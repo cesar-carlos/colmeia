@@ -19,7 +19,9 @@ void main() {
           body: Center(
             child: SizedBox(
               width: 160,
-              height: density == AppHubNavigationCardDensity.standard ? 148 : 90,
+              height: density == AppHubNavigationCardDensity.standard
+                  ? 148
+                  : 90,
               child: AppHubNavigationCard(
                 icon: Icons.insights,
                 label: label,

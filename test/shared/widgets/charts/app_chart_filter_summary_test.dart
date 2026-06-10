@@ -11,7 +11,8 @@ void main() {
     });
 
     test('splitOnMiddleDot splits on middle dot', () {
-      final summary = 'A: 1${AppChartFilterSummary.spacedMiddleDotSeparator}B: 2';
+      final summary =
+          'A: 1${AppChartFilterSummary.spacedMiddleDotSeparator}B: 2';
       expect(
         AppChartFilterSummary.splitOnMiddleDot(summary),
         <String>['A: 1', 'B: 2'],

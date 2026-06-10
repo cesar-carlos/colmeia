@@ -435,8 +435,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
             onQueuedWaiter: (c) => pending.gateQueueWaitCompleter = c,
           );
           pending
-            ..relayPerAgentSlotRelease =
-                (() => gate.release(pending.agentId))
+            ..relayPerAgentSlotRelease = (() => gate.release(pending.agentId))
             ..gateQueueWaitCompleter = null;
         }
       } on Object catch (e, s) {
@@ -664,8 +663,9 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
         if (raw is! Map) {
           continue;
         }
-        final clientRequestId =
-            raw.cast<String, Object?>()['clientRequestId']?.toString();
+        final clientRequestId = raw
+            .cast<String, Object?>()['clientRequestId']
+            ?.toString();
         if (clientRequestId != null && clientRequestId.isNotEmpty) {
           _failPending(clientRequestId, failure);
         }

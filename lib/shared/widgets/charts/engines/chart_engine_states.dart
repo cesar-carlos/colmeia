@@ -23,7 +23,8 @@ Widget buildChartLoadingState({
   return AppSkeleton(
     enabled: true,
     showDelay: Duration.zero,
-    loadingSemanticsLabel: label ?? AppLocalizations.of(context).chartLoadingGeneric,
+    loadingSemanticsLabel:
+        label ?? AppLocalizations.of(context).chartLoadingGeneric,
     child: SizedBox(
       height: height,
       child: ExcludeSemantics(

@@ -5,8 +5,10 @@ import 'package:result_dart/result_dart.dart';
 /// Outcome of a required-string validator: trimmed value on success,
 /// pre-built `Failure` on error. Lets call sites `switch` on the result
 /// without writing yet another guard clause.
-typedef RequiredStringValidation<T extends Object>
-    = ({String trimmed, AppResult<T>? failure});
+typedef RequiredStringValidation<T extends Object> = ({
+  String trimmed,
+  AppResult<T>? failure,
+});
 
 /// Returns the trimmed value or, if blank, a `Failure` carrying a
 /// [ValidationFailure] with [technicalMessage] (English, for logs) and

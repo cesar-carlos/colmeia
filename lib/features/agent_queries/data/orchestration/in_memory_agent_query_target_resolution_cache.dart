@@ -52,13 +52,15 @@ final class InMemoryAgentQueryTargetResolutionCache
     final selectionScopeKey = AgentQueryTargetSelectionScope.cacheScopeKey(
       selectedAgentIds,
     );
-    _entries[_compositeKey(userId: userId, selectionScopeKey: selectionScopeKey)] =
-        _AgentQueryTargetResolutionCacheEntry(
-          userId: userId,
-          selectionScopeKey: selectionScopeKey,
-          resolution: resolution,
-          resolvedAt: _now(),
-        );
+    _entries[_compositeKey(
+      userId: userId,
+      selectionScopeKey: selectionScopeKey,
+    )] = _AgentQueryTargetResolutionCacheEntry(
+      userId: userId,
+      selectionScopeKey: selectionScopeKey,
+      resolution: resolution,
+      resolvedAt: _now(),
+    );
     _evictOverflowForUser(userId);
   }
 
@@ -70,10 +72,11 @@ final class InMemoryAgentQueryTargetResolutionCache
     final selectionScopeKey = AgentQueryTargetSelectionScope.cacheScopeKey(
       selectedAgentIds,
     );
-    final cached = _entries[_compositeKey(
-      userId: userId,
-      selectionScopeKey: selectionScopeKey,
-    )];
+    final cached =
+        _entries[_compositeKey(
+          userId: userId,
+          selectionScopeKey: selectionScopeKey,
+        )];
     if (cached == null) {
       return null;
     }

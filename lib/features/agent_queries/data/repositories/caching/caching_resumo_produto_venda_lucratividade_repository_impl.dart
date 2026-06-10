@@ -12,18 +12,21 @@ import 'package:colmeia/features/agent_queries/domain/repositories/resumo_produt
 import 'package:result_dart/result_dart.dart';
 
 final class CachingResumoProdutoVendaLucratividadeRepositoryImpl
-    extends BaseCachedAgentQueryRepository<
-      ResumoProdutoVendaLucratividadeFilter,
-      ResumoProdutoVendaLucratividadeRow
-    >
+    extends
+        BaseCachedAgentQueryRepository<
+          ResumoProdutoVendaLucratividadeFilter,
+          ResumoProdutoVendaLucratividadeRow
+        >
     implements ResumoProdutoVendaLucratividadeRepository {
   CachingResumoProdutoVendaLucratividadeRepositoryImpl({
     required ResumoProdutoVendaLucratividadeRepository delegate,
     required super.factsStore,
     super.agentQueriesRepository,
-    AgentQueryFactsBucketBatchSupport<ResumoProdutoVendaLucratividadeFilter,
-            ResumoProdutoVendaLucratividadeRow>?
-        bucketBatchSupport,
+    AgentQueryFactsBucketBatchSupport<
+      ResumoProdutoVendaLucratividadeFilter,
+      ResumoProdutoVendaLucratividadeRow
+    >?
+    bucketBatchSupport,
     ResumoProdutoVendaLucratividadeCacheStrategy super.strategy =
         const ResumoProdutoVendaLucratividadeCacheStrategy(),
     super.clock,

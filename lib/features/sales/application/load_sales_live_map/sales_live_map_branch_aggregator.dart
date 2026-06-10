@@ -258,13 +258,12 @@ class SalesLiveMapBranchAggregator {
   List<SalesLiveMapBranchAggregate> _sortedByRevenueThenName(
     Iterable<SalesLiveMapBranchAggregate> aggregates,
   ) {
-    return aggregates.toList(growable: false)
-      ..sort((left, right) {
-        final amount = right.totalVenda.compareTo(left.totalVenda);
-        if (amount != 0) {
-          return amount;
-        }
-        return left.name.compareTo(right.name);
-      });
+    return aggregates.toList(growable: false)..sort((left, right) {
+      final amount = right.totalVenda.compareTo(left.totalVenda);
+      if (amount != 0) {
+        return amount;
+      }
+      return left.name.compareTo(right.name);
+    });
   }
 }

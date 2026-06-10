@@ -84,7 +84,8 @@ Widget _liveMapPdfExport({
         filterBranchIds: filterBranchIds,
         fixedBranchIds: filterBranchIds,
         style: style.copyWith(height: _kLiveMapPdfExportHeight),
-        presentationMode: AppBrazilStoreSalesMapPresentationMode.cleanFullscreen,
+        presentationMode:
+            AppBrazilStoreSalesMapPresentationMode.cleanFullscreen,
       ),
     ),
   );

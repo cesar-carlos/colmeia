@@ -258,7 +258,10 @@ void main() {
       'should use RateLimit-Reset when Retry-After is absent on 429',
       () {
         final resetEpoch =
-            DateTime.now().toUtc().add(const Duration(seconds: 30)).millisecondsSinceEpoch ~/
+            DateTime.now()
+                .toUtc()
+                .add(const Duration(seconds: 30))
+                .millisecondsSinceEpoch ~/
             1000;
         final failure = mapToAppFailure(
           DioException(
@@ -288,7 +291,10 @@ void main() {
       'prefers Retry-After over RateLimit-Reset when both are present',
       () {
         final resetEpoch =
-            DateTime.now().toUtc().add(const Duration(minutes: 5)).millisecondsSinceEpoch ~/
+            DateTime.now()
+                .toUtc()
+                .add(const Duration(minutes: 5))
+                .millisecondsSinceEpoch ~/
             1000;
         final failure = mapToAppFailure(
           DioException(

@@ -95,8 +95,9 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
     widget.authGate.addListener(_onAuthChanged);
 
     if (_shouldManageSocket) {
-      _connectionStatesSub =
-          widget.connection!.states().listen(_onConnectionStateChanged);
+      _connectionStatesSub = widget.connection!.states().listen(
+        _onConnectionStateChanged,
+      );
     }
 
     // Cold-start / hot-reload race fix: if the auth gate is already

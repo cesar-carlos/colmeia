@@ -45,7 +45,9 @@ class SalesLiveMapAttentionPanel extends StatelessWidget {
       tone: AppInlinePanelTone.informational,
       title: l10n.salesLiveMapPartialTitle,
       message: messages.join('\n'),
-      onRetry: hasDetailLists || hasActions ? null : (canRetry ? onRetry : null),
+      onRetry: hasDetailLists || hasActions
+          ? null
+          : (canRetry ? onRetry : null),
       actions: hasDetailLists || hasActions
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -64,8 +66,9 @@ class SalesLiveMapAttentionPanel extends StatelessWidget {
                   _SalesLiveMapAttentionActions(
                     l10n: l10n,
                     onRetry: canRetry ? onRetry : null,
-                    onConfigureToken:
-                        showConfigureToken ? onConfigureToken : null,
+                    onConfigureToken: showConfigureToken
+                        ? onConfigureToken
+                        : null,
                   ),
                 ],
               ],
@@ -145,8 +148,9 @@ class _SalesLiveMapAttentionDetails extends StatelessWidget {
           SizedBox(height: tokens.gapSm),
         if (missingTokenAgents.isNotEmpty)
           _SalesLiveMapAgentIssueList(
-            title: AppLocalizations.of(context)
-                .salesLiveMapMissingTokenAgentsTitle,
+            title: AppLocalizations.of(
+              context,
+            ).salesLiveMapMissingTokenAgentsTitle,
             agents: missingTokenAgents,
             icon: Icons.vpn_key_off_outlined,
           ),

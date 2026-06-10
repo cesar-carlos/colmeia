@@ -1,4 +1,3 @@
-
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
@@ -15,7 +14,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class BrazilMapChartSelectedStateDetail extends StatelessWidget {
-  const BrazilMapChartSelectedStateDetail({required this.bucket, required this.metric, super.key,
+  const BrazilMapChartSelectedStateDetail({
+    required this.bucket,
+    required this.metric,
+    super.key,
   });
 
   final AppBrazilStoreSalesStateBucket bucket;
@@ -64,7 +66,10 @@ class BrazilMapChartSelectedStateDetail extends StatelessWidget {
 }
 
 class BrazilMapChartSelectedMunicipalityDetail extends StatelessWidget {
-  const BrazilMapChartSelectedMunicipalityDetail({required this.group, required this.metric, super.key,
+  const BrazilMapChartSelectedMunicipalityDetail({
+    required this.group,
+    required this.metric,
+    super.key,
     this.selectedStoreId,
     this.onSelectBranch,
     this.selectBranchLabelBuilder,
@@ -99,7 +104,10 @@ class BrazilMapChartSelectedMunicipalityDetail extends StatelessWidget {
 }
 
 class BrazilMapChartSelectedStoreDetail extends StatelessWidget {
-  const BrazilMapChartSelectedStoreDetail({required this.point, required this.metric, super.key,
+  const BrazilMapChartSelectedStoreDetail({
+    required this.point,
+    required this.metric,
+    super.key,
   });
 
   final AppBrazilStoreSalesPoint point;
@@ -123,7 +131,10 @@ class BrazilMapChartSelectedStoreDetail extends StatelessWidget {
 }
 
 class BrazilMapChartSelectedMarkerGroupDetailCard extends StatelessWidget {
-  const BrazilMapChartSelectedMarkerGroupDetailCard({required this.group, required this.metric, super.key,
+  const BrazilMapChartSelectedMarkerGroupDetailCard({
+    required this.group,
+    required this.metric,
+    super.key,
     this.initialStoreId,
     this.onClose,
     this.onDismiss,
@@ -163,7 +174,10 @@ class BrazilMapChartSelectedMarkerGroupDetailCard extends StatelessWidget {
 }
 
 class BrazilMapChartSelectedMarkerStoreDetailCard extends StatelessWidget {
-  const BrazilMapChartSelectedMarkerStoreDetailCard({required this.point, required this.metric, super.key,
+  const BrazilMapChartSelectedMarkerStoreDetailCard({
+    required this.point,
+    required this.metric,
+    super.key,
     this.showTechnicalLocationDetails = true,
   });
 
@@ -182,7 +196,10 @@ class BrazilMapChartSelectedMarkerStoreDetailCard extends StatelessWidget {
 }
 
 class BrazilMapChartSelectedMarkerBranchCarouselCard extends StatefulWidget {
-  const BrazilMapChartSelectedMarkerBranchCarouselCard({required this.group, required this.metric, super.key,
+  const BrazilMapChartSelectedMarkerBranchCarouselCard({
+    required this.group,
+    required this.metric,
+    super.key,
     this.initialStoreId,
     this.onClose,
     this.onDismiss,
@@ -348,7 +365,10 @@ class BrazilMapChartSelectedMarkerBranchCarouselCardState
 }
 
 class BrazilMapChartSelectedMarkerBranchDetailSurface extends StatelessWidget {
-  const BrazilMapChartSelectedMarkerBranchDetailSurface({required this.point, required this.metric, super.key,
+  const BrazilMapChartSelectedMarkerBranchDetailSurface({
+    required this.point,
+    required this.metric,
+    super.key,
     this.onClose,
     this.showTechnicalLocationDetails = true,
     this.branchPositionLabel,
@@ -583,7 +603,13 @@ class BrazilMapChartSelectedMarkerBranchDetailSurface extends StatelessWidget {
 }
 
 class BrazilMapChartBranchCarouselNavigation extends StatelessWidget {
-  const BrazilMapChartBranchCarouselNavigation({required this.currentIndex, required this.points, required this.onPrevious, required this.onNext, required this.onSelectIndex, super.key,
+  const BrazilMapChartBranchCarouselNavigation({
+    required this.currentIndex,
+    required this.points,
+    required this.onPrevious,
+    required this.onNext,
+    required this.onSelectIndex,
+    super.key,
   });
 
   final int currentIndex;
@@ -666,7 +692,10 @@ class BrazilMapChartBranchCarouselNavigation extends StatelessWidget {
 }
 
 class BrazilMapChartBranchAggregateSummary extends StatelessWidget {
-  const BrazilMapChartBranchAggregateSummary({required this.group, required this.metric, super.key,
+  const BrazilMapChartBranchAggregateSummary({
+    required this.group,
+    required this.metric,
+    super.key,
   });
 
   final AppBrazilStoreSalesMarkerGroup group;
@@ -741,7 +770,13 @@ class BrazilMapChartBranchAggregateSummary extends StatelessWidget {
 }
 
 class BrazilMapChartSelectedMarkerDetailSurface extends StatelessWidget {
-  const BrazilMapChartSelectedMarkerDetailSurface({required this.title, required this.subtitle, required this.icon, required this.metric, required this.child, super.key,
+  const BrazilMapChartSelectedMarkerDetailSurface({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.metric,
+    required this.child,
+    super.key,
   });
 
   final String title;

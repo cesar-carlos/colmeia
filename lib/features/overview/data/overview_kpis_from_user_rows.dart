@@ -68,8 +68,7 @@ overviewKpisAndAgentRankingsFromUserRankingRowsByAgent({
     agentRankings.add(
       OverviewAgentRanking(
         agentId: agentId,
-        displayName:
-            source.agentDisplayNamesById[agentId] ?? agentId.trim(),
+        displayName: source.agentDisplayNamesById[agentId] ?? agentId.trim(),
         totalSalesCount: sales,
         totalAmount: amount,
       ),

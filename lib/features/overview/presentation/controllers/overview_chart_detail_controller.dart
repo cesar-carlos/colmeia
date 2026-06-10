@@ -16,7 +16,8 @@ import 'package:colmeia/features/overview/presentation/controllers/overview_load
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/foundation.dart';
 
-typedef OverviewChartFailureMessageBuilder = String Function(AppFailure failure);
+typedef OverviewChartFailureMessageBuilder =
+    String Function(AppFailure failure);
 
 class OverviewChartDetailController extends ChangeNotifier {
   OverviewChartDetailController({
@@ -70,7 +71,8 @@ class OverviewChartDetailController extends ChangeNotifier {
   DashboardFilter get activeFilter => _activeFilter;
 
   List<DashboardAgentOption> get availableAgents =>
-      _shellCache.latestEntry?.availableAgents ?? const <DashboardAgentOption>[];
+      _shellCache.latestEntry?.availableAgents ??
+      const <DashboardAgentOption>[];
   OverviewChartCardDescriptor? get descriptor => _descriptor;
   bool get isOnRetryCooldown => !_retryAfterGate.isOpen;
 
@@ -129,7 +131,8 @@ class OverviewChartDetailController extends ChangeNotifier {
     _notifyIfAlive();
 
     final resolvedLabels = rowLabels ?? OverviewLoadLabels.englishFallback;
-    final resolvedFailureBuilder = failureMessageBuilder ??
+    final resolvedFailureBuilder =
+        failureMessageBuilder ??
         (failure) => failure.userMessage ?? failure.message;
 
     await for (final result in _loadOverviewSectionsUseCase.progressively(

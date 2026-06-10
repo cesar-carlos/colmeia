@@ -558,7 +558,10 @@ Duration? _parseRateLimitResetHeader(String? raw) {
     }
     // Values >= 1e9 are treated as Unix epoch seconds (common on REST 429).
     if (asInt >= 1000000000) {
-      final resetAt = DateTime.fromMillisecondsSinceEpoch(asInt * 1000, isUtc: true);
+      final resetAt = DateTime.fromMillisecondsSinceEpoch(
+        asInt * 1000,
+        isUtc: true,
+      );
       final delta = resetAt.difference(DateTime.now().toUtc());
       if (delta.isNegative) {
         return Duration.zero;

@@ -674,9 +674,8 @@ class _CategoryDonutCardHeader extends StatelessWidget {
           )
         : null;
 
-    final trailing = (titleTrailing == null &&
-            onShare == null &&
-            onOpenFullscreen == null)
+    final trailing =
+        (titleTrailing == null && onShare == null && onOpenFullscreen == null)
         ? null
         : AppChartHeaderTrailing(
             titleTrailing: titleTrailing,

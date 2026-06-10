@@ -72,8 +72,7 @@ class CadastroFilialFilter {
             ),
       page: page ?? this.page,
       pageSize: pageSize ?? this.pageSize,
-      mapCatalogProjection:
-          mapCatalogProjection ?? this.mapCatalogProjection,
+      mapCatalogProjection: mapCatalogProjection ?? this.mapCatalogProjection,
     );
   }
 

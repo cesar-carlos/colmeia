@@ -34,7 +34,10 @@ abstract final class SalesLiveMapAvailableAgentsAssembler {
           (option) => DashboardAgentOption(
             agentId: option.agentId,
             name: namesById[option.agentId] ?? option.name,
-            connectionStatus: _connectionStatusFor(onlineAgentIds, option.agentId),
+            connectionStatus: _connectionStatusFor(
+              onlineAgentIds,
+              option.agentId,
+            ),
             missingLocalClientToken: option.missingLocalClientToken,
           ),
         )

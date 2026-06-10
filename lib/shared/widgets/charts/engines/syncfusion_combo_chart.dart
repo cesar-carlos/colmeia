@@ -137,10 +137,11 @@ class SyncfusionComboChart<T> extends StatelessWidget {
       final primaryGridW = primaryYAxisGrid && style.showYGridLines ? 1.0 : 0.0;
       final barLabelsVisible =
           style.showDataLabels && layout != _ComboLayout.yAxisStrip;
-      final outerBarLabelHeadroom = comparisonBarChartNeedsOuterDataLabelHeadroom(
-        showDataLabels: barLabelsVisible,
-        dataLabelAlignment: style.barDataLabelAlignment,
-      );
+      final outerBarLabelHeadroom =
+          comparisonBarChartNeedsOuterDataLabelHeadroom(
+            showDataLabels: barLabelsVisible,
+            dataLabelAlignment: style.barDataLabelAlignment,
+          );
       final leftAxisMaximum = comboNumericAxisMaximum(
         rawBarValues,
         includeOuterLabelHeadroom: outerBarLabelHeadroom,
@@ -151,7 +152,9 @@ class SyncfusionComboChart<T> extends StatelessWidget {
       final colorScheme = Theme.of(chartContext).colorScheme;
       final tokens = Theme.of(chartContext).extension<AppThemeTokens>()!;
       final legendPadding = style.compactLayout ? tokens.gapXs : tokens.gapSm;
-      final legendItemPadding = style.compactLayout ? tokens.gapSm : tokens.gapMd;
+      final legendItemPadding = style.compactLayout
+          ? tokens.gapSm
+          : tokens.gapMd;
       final useAnnotationBarLabels =
           barLabelsVisible &&
           (style.barDataLabelAlignment == ChartDataLabelAlignment.outer ||
@@ -259,7 +262,9 @@ class SyncfusionComboChart<T> extends StatelessWidget {
                       ? ChartRangePadding.none
                       : ChartRangePadding.auto,
                   axisLine: const AxisLine(width: 0),
-                  minimum: rawLineValues.every((value) => value >= 0) ? 0 : null,
+                  minimum: rawLineValues.every((value) => value >= 0)
+                      ? 0
+                      : null,
                   maximum: rightAxisMaximum,
                   majorGridLines: const MajorGridLines(width: 0),
                   labelStyle: style.axisLabelTextStyle,

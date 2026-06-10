@@ -45,8 +45,9 @@ class OverviewChartNavGrid extends StatelessWidget {
               showReadyBadge: isReady,
               semanticsLabel: semanticsLabel,
               onTap: () {
-                final activeFilter =
-                    context.read<OverviewController>().activeFilter;
+                final activeFilter = context
+                    .read<OverviewController>()
+                    .activeFilter;
                 unawaited(
                   context.pushTo(
                     AppRoute.dashboardChart,

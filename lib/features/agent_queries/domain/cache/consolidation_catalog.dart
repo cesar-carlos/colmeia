@@ -5,8 +5,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_query_key.d
 /// Registry of which queries may persist which fact kinds.
 abstract final class ConsolidationCatalog {
   static ConsolidationStorageMode storageModeFor(AgentQueryFactKind kind) {
-    return _entries[kind]?.storageMode ??
-        ConsolidationStorageMode.derivedOnly;
+    return _entries[kind]?.storageMode ?? ConsolidationStorageMode.derivedOnly;
   }
 
   static AgentQueryKey? canonicalWriterFor(AgentQueryFactKind kind) {
@@ -35,7 +34,8 @@ abstract final class ConsolidationCatalog {
         ),
         AgentQueryFactKind.branchMunicipalityPeriodSales: const _CatalogEntry(
           storageMode: ConsolidationStorageMode.persistClosedBuckets,
-          canonicalWriter: AgentQueryKey.resumoTotalVendasMunicipioFilialPeriodo,
+          canonicalWriter:
+              AgentQueryKey.resumoTotalVendasMunicipioFilialPeriodo,
         ),
         AgentQueryFactKind.monthlyParcels: const _CatalogEntry(
           storageMode: ConsolidationStorageMode.persistClosedBuckets,

@@ -158,7 +158,8 @@ abstract final class ParcelaProdutoVendidoDetalheSql {
         ppv.ValorParcela
   ''';
 
-  static const String _fromJoinsOverviewAggregate = '''
+  static const String _fromJoinsOverviewAggregate =
+      '''
       FROM ParcelaProdutoVendido ppv
       INNER JOIN ProdutoVendido pv ON
         pv.CodEmpresa = ppv.CodEmpresa
@@ -171,7 +172,8 @@ abstract final class ParcelaProdutoVendidoDetalheSql {
 $_parcelAggregateJoins
   ''';
 
-  static const String _fromJoinsFull = '''
+  static const String _fromJoinsFull =
+      '''
       FROM ParcelaProdutoVendido ppv
       INNER JOIN ProdutoVendido pv ON
         pv.CodEmpresa = ppv.CodEmpresa

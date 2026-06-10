@@ -341,7 +341,9 @@ class _SalesProdutoTendenciaMediaMovelFiltersSheetState
                     label: l10n.salesProdutoTendenciaFilterGroup,
                     hintText: l10n.salesProdutoTendenciaFilterAllOption,
                     searchHintText: l10n.salesProdutoTendenciaFilterSearchHint,
-                    minSearchLengthHint: l10n.appAsyncSearchMinSearchLengthHint(2),
+                    minSearchLengthHint: l10n.appAsyncSearchMinSearchLengthHint(
+                      2,
+                    ),
                     emptyResultsLabel: l10n.appAsyncSearchEmptyResults,
                     clearOptionLabel: l10n.salesProdutoTendenciaFilterAllOption,
                     value: _codGrupoProduto,
@@ -361,7 +363,9 @@ class _SalesProdutoTendenciaMediaMovelFiltersSheetState
                     label: l10n.salesProdutoTendenciaFilterBrand,
                     hintText: l10n.salesProdutoTendenciaFilterAllOption,
                     searchHintText: l10n.salesProdutoTendenciaFilterSearchHint,
-                    minSearchLengthHint: l10n.appAsyncSearchMinSearchLengthHint(2),
+                    minSearchLengthHint: l10n.appAsyncSearchMinSearchLengthHint(
+                      2,
+                    ),
                     emptyResultsLabel: l10n.appAsyncSearchEmptyResults,
                     clearOptionLabel: l10n.salesProdutoTendenciaFilterAllOption,
                     value: _codMarca,

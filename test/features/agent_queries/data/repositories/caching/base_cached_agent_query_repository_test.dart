@@ -31,41 +31,44 @@ void main() {
       );
     });
 
-    test('defaultLoad reads closed bucket from store without delegate', () async {
-      final filter = ResumoTotalDiarioVendasFilter(
-        dataVendaInicio: DateTime(2026, 6),
-        dataVendaFim: DateTime(2026, 6, 1, 23, 59, 59, 999, 999),
-      );
-      final row = ResumoTotalDiarioVendasRow(
-        codEmpresa: 1,
-        codFilial: 1,
-        dataVenda: DateTime(2026, 6),
-        qtdVendas: 2,
-        valorTotalDiarioVenda: 10,
-      );
-      final storageKey = strategy.storageKey(
-        userId: 'u1',
-        agentId: 'a1',
-        bucketId: '2026-06-01',
-        rangeFilter: filter,
-      );
-      await cachingRepo.factsStore.writePayload(
-        storageKey: storageKey,
-        payload: strategy.encodePayload([row]),
-        schemaVersion: strategy.schemaVersion,
-      );
+    test(
+      'defaultLoad reads closed bucket from store without delegate',
+      () async {
+        final filter = ResumoTotalDiarioVendasFilter(
+          dataVendaInicio: DateTime(2026, 6),
+          dataVendaFim: DateTime(2026, 6, 1, 23, 59, 59, 999, 999),
+        );
+        final row = ResumoTotalDiarioVendasRow(
+          codEmpresa: 1,
+          codFilial: 1,
+          dataVenda: DateTime(2026, 6),
+          qtdVendas: 2,
+          valorTotalDiarioVenda: 10,
+        );
+        final storageKey = strategy.storageKey(
+          userId: 'u1',
+          agentId: 'a1',
+          bucketId: '2026-06-01',
+          rangeFilter: filter,
+        );
+        await cachingRepo.factsStore.writePayload(
+          storageKey: storageKey,
+          payload: strategy.encodePayload([row]),
+          schemaVersion: strategy.schemaVersion,
+        );
 
-      final result = await cachingRepo.load(
-        userId: 'u1',
-        agentId: 'a1',
-        filter: filter,
-      );
+        final result = await cachingRepo.load(
+          userId: 'u1',
+          agentId: 'a1',
+          filter: filter,
+        );
 
-      final loaded = result.getOrNull();
-      expect(loaded, isNotNull);
-      expect(loaded!.single.qtdVendas, row.qtdVendas);
-      expect(fakeDelegate.loadCount, 0);
-    });
+        final loaded = result.getOrNull();
+        expect(loaded, isNotNull);
+        expect(loaded!.single.qtdVendas, row.qtdVendas);
+        expect(fakeDelegate.loadCount, 0);
+      },
+    );
 
     test('forceRefresh calls delegate even when store has data', () async {
       final filter = ResumoTotalDiarioVendasFilter(

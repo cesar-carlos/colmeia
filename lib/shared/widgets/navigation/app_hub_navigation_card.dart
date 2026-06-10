@@ -48,15 +48,15 @@ class AppHubNavigationCard extends StatelessWidget {
   final String? semanticsLabel;
   final String? tooltipMessage;
 
-  bool get _usesFixedGridTile => density != AppHubNavigationCardDensity.standard;
+  bool get _usesFixedGridTile =>
+      density != AppHubNavigationCardDensity.standard;
 
   String get _resolvedSemanticsLabel => semanticsLabel ?? label;
 
-  String get _resolvedTooltipMessage =>
-      resolveAppHubNavigationTooltipMessage(
-        label: label,
-        tooltipMessage: tooltipMessage,
-      );
+  String get _resolvedTooltipMessage => resolveAppHubNavigationTooltipMessage(
+    label: label,
+    tooltipMessage: tooltipMessage,
+  );
 
   TooltipTriggerMode? get _tooltipTriggerMode {
     if (kIsWeb) {
@@ -65,8 +65,7 @@ class AppHubNavigationCard extends StatelessWidget {
     return switch (defaultTargetPlatform) {
       TargetPlatform.android ||
       TargetPlatform.iOS ||
-      TargetPlatform.fuchsia =>
-        TooltipTriggerMode.longPress,
+      TargetPlatform.fuchsia => TooltipTriggerMode.longPress,
       _ => null,
     };
   }
@@ -158,7 +157,9 @@ class AppHubNavigationCard extends StatelessWidget {
     );
 
     final paddedContent = Padding(
-      padding: EdgeInsets.symmetric(horizontal: metrics.contentHorizontalPadding),
+      padding: EdgeInsets.symmetric(
+        horizontal: metrics.contentHorizontalPadding,
+      ),
       child: cardContent,
     );
 

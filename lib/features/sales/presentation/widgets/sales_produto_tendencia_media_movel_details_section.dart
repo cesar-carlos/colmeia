@@ -90,10 +90,9 @@ class SalesProdutoTendenciaMediaMovelDetailsSection extends StatelessWidget {
                       l10n.salesProdutoTendenciaLoadingTrendSemantics,
                   child: appDataGridSkeletonColumn(
                     tokens: tokens,
-                    dividerColor: Theme.of(context)
-                        .colorScheme
-                        .outlineVariant
-                        .withValues(alpha: 0.35),
+                    dividerColor: Theme.of(
+                      context,
+                    ).colorScheme.outlineVariant.withValues(alpha: 0.35),
                   ),
                 )
               else if (rows.isEmpty)
@@ -107,60 +106,62 @@ class SalesProdutoTendenciaMediaMovelDetailsSection extends StatelessWidget {
               else
                 AppSkeleton(
                   enabled: loading,
-                  loadingSemanticsLabel:
-                      l10n.salesProdutoTendenciaMediaMovelChartNavLoadingSemantics,
+                  loadingSemanticsLabel: l10n
+                      .salesProdutoTendenciaMediaMovelChartNavLoadingSemantics,
                   child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final minTableWidth =
-                        _SalesProdutoTendenciaMediaMovelDetailsTableLayout.minScrollContentWidth(
-                          tokens,
-                        );
-                    final outerWidth = constraints.maxWidth;
-                    final resolvedWidth = outerWidth.isFinite && outerWidth > 0
-                        ? math.max(outerWidth, minTableWidth)
-                        : minTableWidth;
-                    final hasHorizontalOverflow =
-                        outerWidth.isFinite &&
-                        outerWidth > 0 &&
-                        minTableWidth > outerWidth;
+                    builder: (context, constraints) {
+                      final minTableWidth =
+                          _SalesProdutoTendenciaMediaMovelDetailsTableLayout.minScrollContentWidth(
+                            tokens,
+                          );
+                      final outerWidth = constraints.maxWidth;
+                      final resolvedWidth =
+                          outerWidth.isFinite && outerWidth > 0
+                          ? math.max(outerWidth, minTableWidth)
+                          : minTableWidth;
+                      final hasHorizontalOverflow =
+                          outerWidth.isFinite &&
+                          outerWidth > 0 &&
+                          minTableWidth > outerWidth;
 
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        if (hasHorizontalOverflow) ...<Widget>[
-                          Text(
-                            scrollHint,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          if (hasHorizontalOverflow) ...<Widget>[
+                            Text(
+                              scrollHint,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
                             ),
+                            SizedBox(height: tokens.gapXs),
+                          ],
+                          AppCompactDataGridScrollTable(
+                            contentWidth: resolvedWidth,
+                            itemCount: rows.length,
+                            semanticsHint: hasHorizontalOverflow
+                                ? scrollHint
+                                : null,
+                            showHorizontalFade: hasHorizontalOverflow,
+                            header:
+                                SalesProdutoTendenciaMediaMovelDetailsTableHeader(
+                                  l10n: l10n,
+                                ),
+                            itemBuilder: (context, index) {
+                              return SalesProdutoTendenciaMediaMovelDetailsRow(
+                                row: rows[index],
+                                l10n: l10n,
+                                decimalFormat: decimalFormat,
+                              );
+                            },
                           ),
-                          SizedBox(height: tokens.gapXs),
                         ],
-                        AppCompactDataGridScrollTable(
-                          contentWidth: resolvedWidth,
-                          itemCount: rows.length,
-                          semanticsHint:
-                              hasHorizontalOverflow ? scrollHint : null,
-                          showHorizontalFade: hasHorizontalOverflow,
-                          header:
-                              SalesProdutoTendenciaMediaMovelDetailsTableHeader(
-                            l10n: l10n,
-                          ),
-                          itemBuilder: (context, index) {
-                            return SalesProdutoTendenciaMediaMovelDetailsRow(
-                              row: rows[index],
-                              l10n: l10n,
-                              decimalFormat: decimalFormat,
-                            );
-                          },
-                        ),
-                      ],
-                    );
-                  },
-                ),
+                      );
+                    },
+                  ),
                 ),
               if (rows.isNotEmpty) ...<Widget>[
                 AppTablePaginationNotice(
@@ -216,7 +217,8 @@ class _SalesProdutoTendenciaMediaMovelDetailsTableLayout {
   }
 }
 
-class SalesProdutoTendenciaMediaMovelDetailsTableHeader extends StatelessWidget {
+class SalesProdutoTendenciaMediaMovelDetailsTableHeader
+    extends StatelessWidget {
   const SalesProdutoTendenciaMediaMovelDetailsTableHeader({
     required this.l10n,
     super.key,
@@ -237,15 +239,18 @@ class SalesProdutoTendenciaMediaMovelDetailsTableHeader extends StatelessWidget 
     return DecoratedBox(
       decoration: appDataGridHeaderDecoration(scheme),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: kAppCompactHeaderRowHeight),
+        constraints: const BoxConstraints(
+          minHeight: kAppCompactHeaderRowHeight,
+        ),
         child: Padding(
           padding: appDataGridRowPadding(tokens),
           child: Row(
             children: <Widget>[
               SizedBox(
-                width: _SalesProdutoTendenciaMediaMovelDetailsTableLayout.product(
-                  tokens,
-                ),
+                width:
+                    _SalesProdutoTendenciaMediaMovelDetailsTableLayout.product(
+                      tokens,
+                    ),
                 child: Text(
                   l10n.salesProdutoTendenciaMediaMovelColProduct,
                   style: labelStyle,
@@ -254,8 +259,8 @@ class SalesProdutoTendenciaMediaMovelDetailsTableHeader extends StatelessWidget 
               SizedBox(
                 width:
                     _SalesProdutoTendenciaMediaMovelDetailsTableLayout.classification(
-                  tokens,
-                ),
+                      tokens,
+                    ),
                 child: Text(
                   l10n.salesProdutoTendenciaMediaMovelColClassificacao,
                   style: labelStyle,
@@ -271,9 +276,10 @@ class SalesProdutoTendenciaMediaMovelDetailsTableHeader extends StatelessWidget 
                 ),
               ),
               SizedBox(
-                width: _SalesProdutoTendenciaMediaMovelDetailsTableLayout.numeric(
-                  tokens,
-                ),
+                width:
+                    _SalesProdutoTendenciaMediaMovelDetailsTableLayout.numeric(
+                      tokens,
+                    ),
                 child: Text(
                   l10n.salesProdutoTendenciaMediaMovelColMediaAtual,
                   style: endLabelStyle,
@@ -281,9 +287,10 @@ class SalesProdutoTendenciaMediaMovelDetailsTableHeader extends StatelessWidget 
                 ),
               ),
               SizedBox(
-                width: _SalesProdutoTendenciaMediaMovelDetailsTableLayout.numeric(
-                  tokens,
-                ),
+                width:
+                    _SalesProdutoTendenciaMediaMovelDetailsTableLayout.numeric(
+                      tokens,
+                    ),
                 child: Text(
                   l10n.salesProdutoTendenciaMediaMovelColMediaAnterior,
                   style: endLabelStyle,
@@ -291,9 +298,10 @@ class SalesProdutoTendenciaMediaMovelDetailsTableHeader extends StatelessWidget 
                 ),
               ),
               SizedBox(
-                width: _SalesProdutoTendenciaMediaMovelDetailsTableLayout.numeric(
-                  tokens,
-                ),
+                width:
+                    _SalesProdutoTendenciaMediaMovelDetailsTableLayout.numeric(
+                      tokens,
+                    ),
                 child: Text(
                   l10n.salesProdutoTendenciaMediaMovelColDiferenca,
                   style: endLabelStyle,
@@ -301,9 +309,10 @@ class SalesProdutoTendenciaMediaMovelDetailsTableHeader extends StatelessWidget 
                 ),
               ),
               SizedBox(
-                width: _SalesProdutoTendenciaMediaMovelDetailsTableLayout.numeric(
-                  tokens,
-                ),
+                width:
+                    _SalesProdutoTendenciaMediaMovelDetailsTableLayout.numeric(
+                      tokens,
+                    ),
                 child: Text(
                   l10n.salesProdutoTendenciaMediaMovelColPercentual,
                   style: endLabelStyle,
@@ -361,8 +370,8 @@ class SalesProdutoTendenciaMediaMovelDetailsRow extends StatelessWidget {
             SizedBox(
               width:
                   _SalesProdutoTendenciaMediaMovelDetailsTableLayout.classification(
-                tokens,
-              ),
+                    tokens,
+                  ),
               child: Text(
                 produtoTendenciaMediaMovelClassificacaoLabel(
                   l10n,

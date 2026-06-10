@@ -31,7 +31,9 @@ void main() {
       final entity = model.toEntity();
       check(entity.codFornecedor).equals(42);
       check(entity.codigoIbge).equals('3550308');
-      check(entity.displayLabel).equals('ACME LTDA (ACME · 12.345.678/0001-90)');
+      check(
+        entity.displayLabel,
+      ).equals('ACME LTDA (ACME · 12.345.678/0001-90)');
     });
 
     test('fromMap coerces int CodigoIBGE from bridge', () {

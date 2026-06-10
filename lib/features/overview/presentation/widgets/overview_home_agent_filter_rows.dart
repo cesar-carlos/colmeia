@@ -163,17 +163,16 @@ class _InlineChipsRow extends StatelessWidget {
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 backgroundColor:
                     agent.connectionStatus == AgentConnectionStatus.offline
-                        ? scheme.errorContainer.withValues(alpha: 0.42)
-                        : agent.missingLocalClientToken
-                            ? scheme.tertiaryContainer.withValues(alpha: 0.55)
-                            : scheme.surfaceContainerHigh,
+                    ? scheme.errorContainer.withValues(alpha: 0.42)
+                    : agent.missingLocalClientToken
+                    ? scheme.tertiaryContainer.withValues(alpha: 0.55)
+                    : scheme.surfaceContainerHigh,
                 side: BorderSide(
-                  color:
-                      agent.connectionStatus == AgentConnectionStatus.offline
-                          ? scheme.error.withValues(alpha: 0.35)
-                          : agent.missingLocalClientToken
-                              ? scheme.tertiary.withValues(alpha: 0.35)
-                              : scheme.outlineVariant.withValues(alpha: 0.4),
+                  color: agent.connectionStatus == AgentConnectionStatus.offline
+                      ? scheme.error.withValues(alpha: 0.35)
+                      : agent.missingLocalClientToken
+                      ? scheme.tertiary.withValues(alpha: 0.35)
+                      : scheme.outlineVariant.withValues(alpha: 0.4),
                 ),
                 deleteIcon: canRemove
                     ? Icon(

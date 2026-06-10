@@ -300,8 +300,7 @@ void main() {
     check(branch1PercentSum).isGreaterThan(99.5);
     check(branch1PercentSum).isLessThan(100.5);
 
-    final rankedBranch1 =
-        branch1.where((row) => !row.isDiversos).toList();
+    final rankedBranch1 = branch1.where((row) => !row.isDiversos).toList();
     check(rankedBranch1.every((row) => row.posicao != null)).isTrue();
     check(rankedBranch1[0].posicao).equals(1);
     check(rankedBranch1[1].posicao).equals(2);

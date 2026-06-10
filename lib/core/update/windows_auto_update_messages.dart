@@ -26,8 +26,7 @@ abstract final class WindowsAutoUpdateMessages {
 
   static const checkFailedHeadline =
       'Nao foi possivel verificar atualizacoes agora.';
-  static const checkFailedDetails =
-      'Revise a conectividade e tente novamente.';
+  static const checkFailedDetails = 'Revise a conectividade e tente novamente.';
 
   static const updaterErrorHeadline =
       'Nao foi possivel concluir a verificacao de atualizacoes.';

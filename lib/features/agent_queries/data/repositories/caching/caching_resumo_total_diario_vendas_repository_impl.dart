@@ -10,18 +10,21 @@ import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_total_diario_vendas_repository.dart';
 
 final class CachingResumoTotalDiarioVendasRepositoryImpl
-    extends BaseCachedAgentQueryRepository<
-      ResumoTotalDiarioVendasFilter,
-      ResumoTotalDiarioVendasRow
-    >
+    extends
+        BaseCachedAgentQueryRepository<
+          ResumoTotalDiarioVendasFilter,
+          ResumoTotalDiarioVendasRow
+        >
     implements ResumoTotalDiarioVendasRepository {
   CachingResumoTotalDiarioVendasRepositoryImpl({
     required ResumoTotalDiarioVendasRepository delegate,
     required super.factsStore,
     super.agentQueriesRepository,
-    AgentQueryFactsBucketBatchSupport<ResumoTotalDiarioVendasFilter,
-            ResumoTotalDiarioVendasRow>?
-        bucketBatchSupport,
+    AgentQueryFactsBucketBatchSupport<
+      ResumoTotalDiarioVendasFilter,
+      ResumoTotalDiarioVendasRow
+    >?
+    bucketBatchSupport,
     ResumoTotalDiarioVendasCacheStrategy super.strategy =
         const ResumoTotalDiarioVendasCacheStrategy(),
     super.clock,
@@ -81,5 +84,4 @@ final class CachingResumoTotalDiarioVendasRepositoryImpl
       cancelScope: cancelScope,
     );
   }
-
 }

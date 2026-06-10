@@ -73,21 +73,21 @@ void main() {
       lifecycle
         ..noteLoadingEnded()
         ..handleNextStableKey(
-        nextMapSurfaceStableKey: 9,
-        stableKeyChanged: false,
-        markerOverlay: markerOverlay,
-        viewport: viewport,
-        shapeSourceCache: shapeSourceCache,
-        mounted: true,
-        preferredViewport: const AppMapViewport(
-          zoomLevel: 3,
-          centerLatitude: -23,
-          centerLongitude: -46,
-        ),
-        hasPreferredViewport: true,
-        pointCount: 4,
-        itemCount: 2,
-      );
+          nextMapSurfaceStableKey: 9,
+          stableKeyChanged: false,
+          markerOverlay: markerOverlay,
+          viewport: viewport,
+          shapeSourceCache: shapeSourceCache,
+          mounted: true,
+          preferredViewport: const AppMapViewport(
+            zoomLevel: 3,
+            centerLatitude: -23,
+            centerLongitude: -46,
+          ),
+          hasPreferredViewport: true,
+          pointCount: 4,
+          itemCount: 2,
+        );
 
       expect(lifecycle.pendingRemountReason, isNull);
       expect(lifecycle.cachedMapSurfaceStableKey, 9);

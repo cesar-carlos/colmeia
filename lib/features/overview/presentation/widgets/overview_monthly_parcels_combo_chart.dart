@@ -350,13 +350,13 @@ class _OverviewMonthlyParcelsComboChartState
           semanticsLabel: semanticsLabel,
           shareCaptureKey: fullscreenShareKey,
           chartBuilder: (fullscreenContext) {
-              final fullscreenTokens = Theme.of(
-                fullscreenContext,
-              ).extension<AppThemeTokens>()!;
-              var fullscreenDisplay = _display;
-              return RepaintBoundary(
-                key: fullscreenShareKey,
-                child: StatefulBuilder(
+            final fullscreenTokens = Theme.of(
+              fullscreenContext,
+            ).extension<AppThemeTokens>()!;
+            var fullscreenDisplay = _display;
+            return RepaintBoundary(
+              key: fullscreenShareKey,
+              child: StatefulBuilder(
                 builder: (context, setFullscreenState) {
                   final fullscreenValuePrimary =
                       fullscreenDisplay ==
@@ -364,97 +364,96 @@ class _OverviewMonthlyParcelsComboChartState
                   return buildSegmentedControlFullscreenBody(
                     tokens: fullscreenTokens,
                     control: AppSegmentedControl<_OverviewMonthlyParcelDisplay>(
-                            options:
-                                <
-                                  AppSegmentedControlOption<
-                                    _OverviewMonthlyParcelDisplay
-                                  >
-                                >[
-                                  AppSegmentedControlOption<
-                                    _OverviewMonthlyParcelDisplay
-                                  >(
-                                    value: _OverviewMonthlyParcelDisplay
-                                        .bySalesCount,
-                                    label:
-                                        copySnapshot?.switchSalesLabel ??
-                                        l10n.overviewMonthlyParcelsSwitchSalesLabel,
-                                  ),
-                                  AppSegmentedControlOption<
-                                    _OverviewMonthlyParcelDisplay
-                                  >(
-                                    value: _OverviewMonthlyParcelDisplay
-                                        .byParcelValue,
-                                    label:
-                                        copySnapshot?.switchParcelValueLabel ??
-                                        l10n.overviewMonthlyParcelsSwitchValueLabel,
-                                  ),
-                                ],
-                            value: fullscreenDisplay,
+                      options:
+                          <
+                            AppSegmentedControlOption<
+                              _OverviewMonthlyParcelDisplay
+                            >
+                          >[
+                            AppSegmentedControlOption<
+                              _OverviewMonthlyParcelDisplay
+                            >(
+                              value: _OverviewMonthlyParcelDisplay.bySalesCount,
+                              label:
+                                  copySnapshot?.switchSalesLabel ??
+                                  l10n.overviewMonthlyParcelsSwitchSalesLabel,
+                            ),
+                            AppSegmentedControlOption<
+                              _OverviewMonthlyParcelDisplay
+                            >(
+                              value:
+                                  _OverviewMonthlyParcelDisplay.byParcelValue,
+                              label:
+                                  copySnapshot?.switchParcelValueLabel ??
+                                  l10n.overviewMonthlyParcelsSwitchValueLabel,
+                            ),
+                          ],
+                      value: fullscreenDisplay,
                       onChanged: (v) =>
                           setFullscreenState(() => fullscreenDisplay = v),
                     ),
                     chartBuilder: (availableChartHeight) =>
                         AppComboChart<OverviewMonthlyParcelPoint>(
-                              key: ValueKey<int>(
-                                identityHashCode(pointsSnapshot),
-                              ),
-                              items: pointsSnapshot,
-                              xLabelBuilder: overviewMonthlyParcelsXLabel,
-                              barValueBuilder: fullscreenValuePrimary
-                                  ? overviewMonthlyParcelsBarByValue
-                                  : overviewMonthlyParcelsBarBySales,
-                              barSeriesLabel: fullscreenValuePrimary
-                                  ? (copySnapshot?.seriesParcelAmountLabel ??
-                                        l10n.overviewMonthlyParcelsAmountSeriesLabel)
-                                  : (copySnapshot?.seriesSalesLabel ??
-                                        l10n.overviewMonthlyParcelsSalesSeriesLabel),
-                              lineValueBuilder: fullscreenValuePrimary
-                                  ? overviewMonthlyParcelsLineByValue
-                                  : overviewMonthlyParcelsLineBySales,
-                              lineSeriesLabel: fullscreenValuePrimary
-                                  ? (copySnapshot?.seriesSalesLabel ??
-                                        l10n.overviewMonthlyParcelsSalesSeriesLabel)
-                                  : (copySnapshot?.seriesParcelAmountLabel ??
-                                        l10n.overviewMonthlyParcelsAmountSeriesLabel),
-                              barDataLabelBuilder: fullscreenValuePrimary
-                                  ? _barDataLabelCurrency
-                                  : _barDataLabelDecimal,
-                              style: () {
-                                final built = _buildComboStyle(
-                                  tokens: fullscreenTokens,
-                                  l10n: l10n,
-                                  leftAxis: fullscreenValuePrimary
-                                      ? _compactCurrencyFormat
-                                      : _decimalFormat,
-                                  rightAxis: fullscreenValuePrimary
-                                      ? _decimalFormat
-                                      : _compactCurrencyFormat,
-                                  heightOverride: availableChartHeight,
-                                );
-                                if (isLandscapeChartViewport(context)) {
-                                  return built.forLandscapeFullscreen(
-                                    height: availableChartHeight,
-                                  );
-                                }
-                                return built;
-                              }(),
-                              isLoading: widget.isLoading,
-                              emptyPlaceholder: pointsSnapshot.isEmpty
-                                  ? Center(
-                                      child: Text(
-                                        emptyMessage,
-                                        textAlign: TextAlign.center,
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.bodyMedium,
-                                      ),
-                                    )
-                                  : null,
+                          key: ValueKey<int>(
+                            identityHashCode(pointsSnapshot),
+                          ),
+                          items: pointsSnapshot,
+                          xLabelBuilder: overviewMonthlyParcelsXLabel,
+                          barValueBuilder: fullscreenValuePrimary
+                              ? overviewMonthlyParcelsBarByValue
+                              : overviewMonthlyParcelsBarBySales,
+                          barSeriesLabel: fullscreenValuePrimary
+                              ? (copySnapshot?.seriesParcelAmountLabel ??
+                                    l10n.overviewMonthlyParcelsAmountSeriesLabel)
+                              : (copySnapshot?.seriesSalesLabel ??
+                                    l10n.overviewMonthlyParcelsSalesSeriesLabel),
+                          lineValueBuilder: fullscreenValuePrimary
+                              ? overviewMonthlyParcelsLineByValue
+                              : overviewMonthlyParcelsLineBySales,
+                          lineSeriesLabel: fullscreenValuePrimary
+                              ? (copySnapshot?.seriesSalesLabel ??
+                                    l10n.overviewMonthlyParcelsSalesSeriesLabel)
+                              : (copySnapshot?.seriesParcelAmountLabel ??
+                                    l10n.overviewMonthlyParcelsAmountSeriesLabel),
+                          barDataLabelBuilder: fullscreenValuePrimary
+                              ? _barDataLabelCurrency
+                              : _barDataLabelDecimal,
+                          style: () {
+                            final built = _buildComboStyle(
+                              tokens: fullscreenTokens,
+                              l10n: l10n,
+                              leftAxis: fullscreenValuePrimary
+                                  ? _compactCurrencyFormat
+                                  : _decimalFormat,
+                              rightAxis: fullscreenValuePrimary
+                                  ? _decimalFormat
+                                  : _compactCurrencyFormat,
+                              heightOverride: availableChartHeight,
+                            );
+                            if (isLandscapeChartViewport(context)) {
+                              return built.forLandscapeFullscreen(
+                                height: availableChartHeight,
+                              );
+                            }
+                            return built;
+                          }(),
+                          isLoading: widget.isLoading,
+                          emptyPlaceholder: pointsSnapshot.isEmpty
+                              ? Center(
+                                  child: Text(
+                                    emptyMessage,
+                                    textAlign: TextAlign.center,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium,
+                                  ),
+                                )
+                              : null,
                         ),
                   );
                 },
               ),
-              );
+            );
           },
         ),
       );

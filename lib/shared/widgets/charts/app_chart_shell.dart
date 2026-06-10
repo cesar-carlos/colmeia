@@ -142,9 +142,7 @@ class AppChartShell extends StatelessWidget {
   }
 
   Widget? _resolveTrailing() {
-    if (titleTrailing == null &&
-        onShare == null &&
-        onOpenFullscreen == null) {
+    if (titleTrailing == null && onShare == null && onOpenFullscreen == null) {
       return null;
     }
 

@@ -23,7 +23,10 @@ List<DashboardYearMonth> salesMonthlyPnlAnchorMonthChoices() {
   return list;
 }
 
-String formatSalesAnchorMonthLabel(BuildContext context, DashboardYearMonth ym) {
+String formatSalesAnchorMonthLabel(
+  BuildContext context,
+  DashboardYearMonth ym,
+) {
   final locale = Localizations.localeOf(context).toString();
   final date = DateTime(ym.year, ym.month);
   return DateFormat.yMMM(locale).format(date);

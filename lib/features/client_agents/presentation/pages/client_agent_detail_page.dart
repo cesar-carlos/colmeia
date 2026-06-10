@@ -100,7 +100,10 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage> {
     if (!leavingProfile && !leavingConnection) {
       return true;
     }
-    final discard = await confirmDiscardClientAgentUnsavedChanges(context, l10n);
+    final discard = await confirmDiscardClientAgentUnsavedChanges(
+      context,
+      l10n,
+    );
     if (!discard || !mounted) {
       return false;
     }
@@ -141,14 +144,12 @@ class _ClientAgentDetailPageState extends State<ClientAgentDetailPage> {
     var nextError = _refreshFromAgentError;
     var changed = false;
 
-    if (c.isRefreshingFromAgent &&
-        (nextNotice != null || nextError != null)) {
+    if (c.isRefreshingFromAgent && (nextNotice != null || nextError != null)) {
       nextNotice = null;
       nextError = null;
       changed = true;
     }
-    if (c.refreshFromAgentFeedback != null ||
-        c.refreshFromAgentError != null) {
+    if (c.refreshFromAgentFeedback != null || c.refreshFromAgentError != null) {
       nextNotice = c.refreshFromAgentFeedback;
       nextError = c.refreshFromAgentError;
       c.clearRefreshFromAgentFeedback();

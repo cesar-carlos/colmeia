@@ -181,8 +181,8 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
       force: pending.force,
       reason: pending.reason,
     );
-    _coordinator.lastAutoRefreshReloadResult =
-        _coordinator.classifyControllerReloadOutcome(outcome);
+    _coordinator.lastAutoRefreshReloadResult = _coordinator
+        .classifyControllerReloadOutcome(outcome);
   }
 
   @override

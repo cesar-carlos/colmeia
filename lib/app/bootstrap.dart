@@ -84,7 +84,8 @@ Future<void> bootstrap() async {
           AppLogger.warning(
             'Brazil UF GeoJSON precache failed',
             context: const <String, Object?>{
-              'operation': 'AppBrazilMapStaticData.precacheBrazilUfGeoJsonAsset',
+              'operation':
+                  'AppBrazilMapStaticData.precacheBrazilUfGeoJsonAsset',
             },
             error: error,
             stackTrace: st,
@@ -106,9 +107,10 @@ Future<void> bootstrap() async {
       }),
     );
     unawaited(
-      getIt<WindowsAutoUpdateController>()
-          .initialize()
-          .catchError((Object error, StackTrace st) {
+      getIt<WindowsAutoUpdateController>().initialize().catchError((
+        Object error,
+        StackTrace st,
+      ) {
         AppLogger.warning(
           'Windows auto-update initialization failed',
           context: const <String, Object?>{

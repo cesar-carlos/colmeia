@@ -10,7 +10,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class SalesProdutoTendenciaMediaMovelAutoRefreshSection extends StatelessWidget {
+class SalesProdutoTendenciaMediaMovelAutoRefreshSection
+    extends StatelessWidget {
   const SalesProdutoTendenciaMediaMovelAutoRefreshSection({
     required this.onOptionChanged,
     required this.onRefreshNow,
@@ -25,13 +26,17 @@ class SalesProdutoTendenciaMediaMovelAutoRefreshSection extends StatelessWidget 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final autoRefreshSupported = salesAutoRefreshIsAvailableForViewport(context);
+    final autoRefreshSupported = salesAutoRefreshIsAvailableForViewport(
+      context,
+    );
 
     return ValueListenableBuilder<AutoRefreshUiState>(
       valueListenable: stateListenable,
       builder: (context, refreshState, _) {
-        return Selector<SalesProdutoTendenciaMediaMovelController,
-            _SalesProdutoTendenciaMediaMovelAutoRefreshSlice>(
+        return Selector<
+          SalesProdutoTendenciaMediaMovelController,
+          _SalesProdutoTendenciaMediaMovelAutoRefreshSlice
+        >(
           selector: (_, controller) =>
               _SalesProdutoTendenciaMediaMovelAutoRefreshSlice.from(
                 controller.state,

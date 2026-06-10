@@ -41,8 +41,12 @@ void main() {
       check(transportBody).contains(AgentSqlRpcFailureUiKey.transportTimeout);
       check(queryBody).contains(en.agentSqlFailureTitleQueryTimeout);
       check(queryBody).contains(AgentSqlRpcFailureUiKey.queryTimeout);
-      check(transportBody.contains(en.agentSqlFailureTitleQueryTimeout)).isFalse();
-      check(queryBody.contains(en.agentSqlFailureTitleTransportTimeout)).isFalse();
+      check(
+        transportBody.contains(en.agentSqlFailureTitleQueryTimeout),
+      ).isFalse();
+      check(
+        queryBody.contains(en.agentSqlFailureTitleTransportTimeout),
+      ).isFalse();
     },
   );
 }

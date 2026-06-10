@@ -1,4 +1,3 @@
-
 import 'package:colmeia/shared/widgets/charts/chart_capture_image_processor.dart';
 import 'package:flutter/foundation.dart';
 

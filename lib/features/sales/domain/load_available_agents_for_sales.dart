@@ -64,7 +64,10 @@ class LoadAvailableAgentsForSales {
     AgentQueryTargetResolver resolver, {
     required String userId,
   }) async {
-    final resolution = await _resolveForSales(userId: userId, resolver: resolver);
+    final resolution = await _resolveForSales(
+      userId: userId,
+      resolver: resolver,
+    );
     if (resolution == null) {
       return <DashboardAgentOption>[];
     }

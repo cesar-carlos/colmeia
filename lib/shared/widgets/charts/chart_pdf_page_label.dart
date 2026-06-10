@@ -1,5 +1,7 @@
 /// Derives a `{page}` / `{pages}` template from a localized label builder.
-String? pageLabelTemplateFromBuilder(String Function(int page, int pages)? builder) {
+String? pageLabelTemplateFromBuilder(
+  String Function(int page, int pages)? builder,
+) {
   if (builder == null) {
     return null;
   }
@@ -11,7 +13,5 @@ String? pageLabelTemplateFromBuilder(String Function(int page, int pages)? build
 }
 
 String formatPdfPageLabel(String template, int page, int pages) {
-  return template
-      .replaceAll('{page}', '$page')
-      .replaceAll('{pages}', '$pages');
+  return template.replaceAll('{page}', '$page').replaceAll('{pages}', '$pages');
 }

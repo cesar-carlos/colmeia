@@ -59,15 +59,18 @@ void main() {
       const userId = 'user-a';
 
       await memory.putString(
-        key: '${AgentQueryFactsKeyPrefix.forUser(userId)}agent1:dailySales:2026-01-01',
+        key:
+            '${AgentQueryFactsKeyPrefix.forUser(userId)}agent1:dailySales:2026-01-01',
         value: 'a',
       );
       await memory.putString(
-        key: '${AgentQueryFactsKeyPrefix.forUser(userId)}agent2:monthlyParcels:2026-01',
+        key:
+            '${AgentQueryFactsKeyPrefix.forUser(userId)}agent2:monthlyParcels:2026-01',
         value: 'b',
       );
       await memory.putString(
-        key: '${AgentQueryFactsKeyPrefix.forUser('other')}agent1:dailySales:2026-01-01',
+        key:
+            '${AgentQueryFactsKeyPrefix.forUser('other')}agent1:dailySales:2026-01-01',
         value: 'c',
       );
 
@@ -122,9 +125,18 @@ void main() {
         );
       }
 
-      expect(await memory.getString('${prefix}agent1:dailySales:2026-01-00'), isNull);
-      expect(await memory.getString('${prefix}agent1:dailySales:2026-01-01'), isNull);
-      expect(await memory.getString('${prefix}agent1:dailySales:2026-01-05'), isNotNull);
+      expect(
+        await memory.getString('${prefix}agent1:dailySales:2026-01-00'),
+        isNull,
+      );
+      expect(
+        await memory.getString('${prefix}agent1:dailySales:2026-01-01'),
+        isNull,
+      );
+      expect(
+        await memory.getString('${prefix}agent1:dailySales:2026-01-05'),
+        isNotNull,
+      );
     });
 
     test('removeMatchingFactKind deletes only matching fact kind', () async {
@@ -133,11 +145,13 @@ void main() {
       const userId = 'user-b';
 
       await memory.putString(
-        key: '${AgentQueryFactsKeyPrefix.forUser(userId)}a1:dailySales:2026-01-01',
+        key:
+            '${AgentQueryFactsKeyPrefix.forUser(userId)}a1:dailySales:2026-01-01',
         value: 'd',
       );
       await memory.putString(
-        key: '${AgentQueryFactsKeyPrefix.forUser(userId)}a1:monthlyParcels:2026-01',
+        key:
+            '${AgentQueryFactsKeyPrefix.forUser(userId)}a1:monthlyParcels:2026-01',
         value: 'm',
       );
 

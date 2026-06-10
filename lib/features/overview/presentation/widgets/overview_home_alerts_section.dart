@@ -139,21 +139,21 @@ class _OverviewAlertBanner extends StatelessWidget {
       final details = overview?.partialQueryFailureDetails ?? const [];
       if (details.isNotEmpty) {
         return () => unawaited(
-              showOverviewPartialFailureDetailsSheet(
-                context: context,
-                l10n: host.l10n,
-                details: details,
-              ),
-            );
+          showOverviewPartialFailureDetailsSheet(
+            context: context,
+            l10n: host.l10n,
+            details: details,
+          ),
+        );
       }
     }
     return () => unawaited(
-          showOverviewAlertPlainDetailSheet(
-            context: context,
-            title: _detailsSheetTitle(),
-            body: detailsBody,
-          ),
-        );
+      showOverviewAlertPlainDetailSheet(
+        context: context,
+        title: _detailsSheetTitle(),
+        body: detailsBody,
+      ),
+    );
   }
 
   String _detailsSheetTitle() {

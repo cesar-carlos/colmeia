@@ -180,12 +180,14 @@ final class OverviewCachedSectionLoader {
     }
 
     return OverviewCachedSections(
-      dailyRows: dailyResult?.getOrNull() ?? const <ResumoTotalDiarioVendasRow>[],
+      dailyRows:
+          dailyResult?.getOrNull() ?? const <ResumoTotalDiarioVendasRow>[],
       monthlyRows:
           monthlyResult?.getOrNull() ?? const <ResumoParcelasMensalRow>[],
       weekdayRows:
           weekdayResult?.getOrNull() ?? const <ResumoParcelasDiaSemanaRow>[],
-      lucratividadeRows: lucratividadeResult?.getOrNull() ??
+      lucratividadeRows:
+          lucratividadeResult?.getOrNull() ??
           const <ResumoProdutoVendaLucratividadeRow>[],
       dailyFailure: dailyResult?.exceptionOrNull(),
       monthlyFailure: monthlyResult?.exceptionOrNull(),

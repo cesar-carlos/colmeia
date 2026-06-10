@@ -472,7 +472,9 @@ void main() {
             ).captured.single
             as AgentSqlExecuteRequest;
 
-    check(captured.sql).equals(ProdutoVendidoTendenciaDeVendaSummarySql.query());
+    check(
+      captured.sql,
+    ).equals(ProdutoVendidoTendenciaDeVendaSummarySql.query());
     check(captured.namedParams['periodoAtualInicio']).equals('2026-03-01');
     check(captured.namedParams['origem']).equals('FrenteLoja');
     check(captured.executeOptions?.maxRows).equals(32);
@@ -589,186 +591,198 @@ void main() {
     },
   );
 
-  test('loadPageAndSummary returns failure when page batch item is missing', () async {
-    when(
-      () => agentQueriesRepository.executeSqlBatch(any()),
-    ).thenAnswer(
-      (_) async => const Success<AgentSqlBatchExecutionResult, AppFailure>(
-        AgentSqlBatchExecutionResult(
-          items: <AgentSqlBatchExecutionItem>[
-            AgentSqlBatchExecutionItem(
-              index: 1,
-              ok: true,
-              rows: <Map<String, dynamic>>[],
-              rowCount: 0,
-            ),
-          ],
-          totalCommands: 4,
-          successfulCommands: 1,
-          failedCommands: 0,
+  test(
+    'loadPageAndSummary returns failure when page batch item is missing',
+    () async {
+      when(
+        () => agentQueriesRepository.executeSqlBatch(any()),
+      ).thenAnswer(
+        (_) async => const Success<AgentSqlBatchExecutionResult, AppFailure>(
+          AgentSqlBatchExecutionResult(
+            items: <AgentSqlBatchExecutionItem>[
+              AgentSqlBatchExecutionItem(
+                index: 1,
+                ok: true,
+                rows: <Map<String, dynamic>>[],
+                rowCount: 0,
+              ),
+            ],
+            totalCommands: 4,
+            successfulCommands: 1,
+            failedCommands: 0,
+          ),
         ),
-      ),
-    );
+      );
 
-    final filter = buildValidFilter();
-    final result = await repository.loadPageAndSummary(
-      userId: 'user-1',
-      agentId: 'agent-1',
-      pageFilter: filter,
-      summaryFilter: filter,
-    );
+      final filter = buildValidFilter();
+      final result = await repository.loadPageAndSummary(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        pageFilter: filter,
+        summaryFilter: filter,
+      );
 
-    check(result.isError()).isTrue();
-    final failure = result.exceptionOrNull();
-    check(failure).isA<RpcFailure>();
-    check((failure! as RpcFailure).reason).equals('missing_batch_item');
-  });
+      check(result.isError()).isTrue();
+      final failure = result.exceptionOrNull();
+      check(failure).isA<RpcFailure>();
+      check((failure! as RpcFailure).reason).equals('missing_batch_item');
+    },
+  );
 
-  test('loadPageAndSummary returns failure when summary item ok is false', () async {
-    when(
-      () => agentQueriesRepository.executeSqlBatch(any()),
-    ).thenAnswer(
-      (_) async => const Success<AgentSqlBatchExecutionResult, AppFailure>(
-        AgentSqlBatchExecutionResult(
-          items: <AgentSqlBatchExecutionItem>[
-            AgentSqlBatchExecutionItem(
-              index: 0,
-              ok: true,
-              rows: <Map<String, dynamic>>[],
-              rowCount: 0,
-            ),
-            AgentSqlBatchExecutionItem(
-              index: 1,
-              ok: false,
-              error: 'summary failed',
-              rows: <Map<String, dynamic>>[],
-              rowCount: 0,
-            ),
-          ],
-          totalCommands: 4,
-          successfulCommands: 1,
-          failedCommands: 1,
+  test(
+    'loadPageAndSummary returns failure when summary item ok is false',
+    () async {
+      when(
+        () => agentQueriesRepository.executeSqlBatch(any()),
+      ).thenAnswer(
+        (_) async => const Success<AgentSqlBatchExecutionResult, AppFailure>(
+          AgentSqlBatchExecutionResult(
+            items: <AgentSqlBatchExecutionItem>[
+              AgentSqlBatchExecutionItem(
+                index: 0,
+                ok: true,
+                rows: <Map<String, dynamic>>[],
+                rowCount: 0,
+              ),
+              AgentSqlBatchExecutionItem(
+                index: 1,
+                ok: false,
+                error: 'summary failed',
+                rows: <Map<String, dynamic>>[],
+                rowCount: 0,
+              ),
+            ],
+            totalCommands: 4,
+            successfulCommands: 1,
+            failedCommands: 1,
+          ),
         ),
-      ),
-    );
+      );
 
-    final filter = buildValidFilter();
-    final result = await repository.loadPageAndSummary(
-      userId: 'user-1',
-      agentId: 'agent-1',
-      pageFilter: filter,
-      summaryFilter: filter,
-    );
+      final filter = buildValidFilter();
+      final result = await repository.loadPageAndSummary(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        pageFilter: filter,
+        summaryFilter: filter,
+      );
 
-    check(result.isError()).isTrue();
-    final failure = result.exceptionOrNull();
-    check(failure).isA<RpcFailure>();
-    check((failure! as RpcFailure).reason).equals('batch_item_failed');
-    check(failure.message).contains('summary failed');
-  });
+      check(result.isError()).isTrue();
+      final failure = result.exceptionOrNull();
+      check(failure).isA<RpcFailure>();
+      check((failure! as RpcFailure).reason).equals('batch_item_failed');
+      check(failure.message).contains('summary failed');
+    },
+  );
 
-  test('loadPageAndSummary returns failure when top gainers item ok is false', () async {
-    when(
-      () => agentQueriesRepository.executeSqlBatch(any()),
-    ).thenAnswer(
-      (_) async => const Success<AgentSqlBatchExecutionResult, AppFailure>(
-        AgentSqlBatchExecutionResult(
-          items: <AgentSqlBatchExecutionItem>[
-            AgentSqlBatchExecutionItem(
-              index: 0,
-              ok: true,
-              rows: <Map<String, dynamic>>[],
-              rowCount: 0,
-            ),
-            AgentSqlBatchExecutionItem(
-              index: 1,
-              ok: true,
-              rows: <Map<String, dynamic>>[],
-              rowCount: 0,
-            ),
-            AgentSqlBatchExecutionItem(
-              index: 2,
-              ok: false,
-              error: 'top gainers failed',
-              rows: <Map<String, dynamic>>[],
-              rowCount: 0,
-            ),
-          ],
-          totalCommands: 4,
-          successfulCommands: 2,
-          failedCommands: 1,
+  test(
+    'loadPageAndSummary returns failure when top gainers item ok is false',
+    () async {
+      when(
+        () => agentQueriesRepository.executeSqlBatch(any()),
+      ).thenAnswer(
+        (_) async => const Success<AgentSqlBatchExecutionResult, AppFailure>(
+          AgentSqlBatchExecutionResult(
+            items: <AgentSqlBatchExecutionItem>[
+              AgentSqlBatchExecutionItem(
+                index: 0,
+                ok: true,
+                rows: <Map<String, dynamic>>[],
+                rowCount: 0,
+              ),
+              AgentSqlBatchExecutionItem(
+                index: 1,
+                ok: true,
+                rows: <Map<String, dynamic>>[],
+                rowCount: 0,
+              ),
+              AgentSqlBatchExecutionItem(
+                index: 2,
+                ok: false,
+                error: 'top gainers failed',
+                rows: <Map<String, dynamic>>[],
+                rowCount: 0,
+              ),
+            ],
+            totalCommands: 4,
+            successfulCommands: 2,
+            failedCommands: 1,
+          ),
         ),
-      ),
-    );
+      );
 
-    final filter = buildValidFilter();
-    final result = await repository.loadPageAndSummary(
-      userId: 'user-1',
-      agentId: 'agent-1',
-      pageFilter: filter,
-      summaryFilter: filter,
-    );
+      final filter = buildValidFilter();
+      final result = await repository.loadPageAndSummary(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        pageFilter: filter,
+        summaryFilter: filter,
+      );
 
-    check(result.isError()).isTrue();
-    final failure = result.exceptionOrNull();
-    check(failure).isA<RpcFailure>();
-    check((failure! as RpcFailure).reason).equals('batch_item_failed');
-    check(failure.message).contains('top gainers failed');
-  });
+      check(result.isError()).isTrue();
+      final failure = result.exceptionOrNull();
+      check(failure).isA<RpcFailure>();
+      check((failure! as RpcFailure).reason).equals('batch_item_failed');
+      check(failure.message).contains('top gainers failed');
+    },
+  );
 
-  test('loadPageAndSummary returns UnknownFailure when page rows are malformed', () async {
-    when(
-      () => agentQueriesRepository.executeSqlBatch(any()),
-    ).thenAnswer(
-      (_) async => const Success<AgentSqlBatchExecutionResult, AppFailure>(
-        AgentSqlBatchExecutionResult(
-          items: <AgentSqlBatchExecutionItem>[
-            AgentSqlBatchExecutionItem(
-              index: 0,
-              ok: true,
-              rows: <Map<String, dynamic>>[
-                <String, dynamic>{
-                  'TotalCount': 1,
-                  'CodProduto': 1,
-                },
-              ],
-              rowCount: 1,
-            ),
-            AgentSqlBatchExecutionItem(
-              index: 1,
-              ok: true,
-              rows: <Map<String, dynamic>>[],
-              rowCount: 0,
-            ),
-            AgentSqlBatchExecutionItem(
-              index: 2,
-              ok: true,
-              rows: <Map<String, dynamic>>[],
-              rowCount: 0,
-            ),
-            AgentSqlBatchExecutionItem(
-              index: 3,
-              ok: true,
-              rows: <Map<String, dynamic>>[],
-              rowCount: 0,
-            ),
-          ],
-          totalCommands: 4,
-          successfulCommands: 4,
-          failedCommands: 0,
+  test(
+    'loadPageAndSummary returns UnknownFailure when page rows are malformed',
+    () async {
+      when(
+        () => agentQueriesRepository.executeSqlBatch(any()),
+      ).thenAnswer(
+        (_) async => const Success<AgentSqlBatchExecutionResult, AppFailure>(
+          AgentSqlBatchExecutionResult(
+            items: <AgentSqlBatchExecutionItem>[
+              AgentSqlBatchExecutionItem(
+                index: 0,
+                ok: true,
+                rows: <Map<String, dynamic>>[
+                  <String, dynamic>{
+                    'TotalCount': 1,
+                    'CodProduto': 1,
+                  },
+                ],
+                rowCount: 1,
+              ),
+              AgentSqlBatchExecutionItem(
+                index: 1,
+                ok: true,
+                rows: <Map<String, dynamic>>[],
+                rowCount: 0,
+              ),
+              AgentSqlBatchExecutionItem(
+                index: 2,
+                ok: true,
+                rows: <Map<String, dynamic>>[],
+                rowCount: 0,
+              ),
+              AgentSqlBatchExecutionItem(
+                index: 3,
+                ok: true,
+                rows: <Map<String, dynamic>>[],
+                rowCount: 0,
+              ),
+            ],
+            totalCommands: 4,
+            successfulCommands: 4,
+            failedCommands: 0,
+          ),
         ),
-      ),
-    );
+      );
 
-    final filter = buildValidFilter();
-    final result = await repository.loadPageAndSummary(
-      userId: 'user-1',
-      agentId: 'agent-1',
-      pageFilter: filter,
-      summaryFilter: filter,
-    );
+      final filter = buildValidFilter();
+      final result = await repository.loadPageAndSummary(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        pageFilter: filter,
+        summaryFilter: filter,
+      );
 
-    check(result.isError()).isTrue();
-    check(result.exceptionOrNull()).isA<UnknownFailure>();
-  });
+      check(result.isError()).isTrue();
+      check(result.exceptionOrNull()).isA<UnknownFailure>();
+    },
+  );
 }

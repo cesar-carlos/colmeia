@@ -33,7 +33,8 @@ String agentSqlFailureMessageForUiKey(String key, AppLocalizations l10n) {
       l10n.agentSqlErrorExecutionCancelled,
     AgentSqlRpcFailureUiKey.unexpectedAgentResponse =>
       l10n.agentSqlErrorUnexpectedAgentResponse,
-    AgentSqlRpcFailureUiKey.queryLoadFailed => l10n.agentSqlErrorQueryLoadFailed,
+    AgentSqlRpcFailureUiKey.queryLoadFailed =>
+      l10n.agentSqlErrorQueryLoadFailed,
     AgentSqlRpcFailureUiKey.tendenciaSummaryUnexpectedFormat =>
       l10n.agentSqlErrorTendenciaSummaryUnexpectedFormat,
     AgentSqlRpcFailureUiKey.mediaMovelSummaryUnexpectedFormat =>
@@ -52,7 +53,8 @@ String agentSqlFailureTitleForUiKey(String key, AppLocalizations l10n) {
       l10n.agentSqlFailureTitlePermissionDenied,
     AgentSqlRpcFailureUiKey.transportTimeout =>
       l10n.agentSqlFailureTitleTransportTimeout,
-    AgentSqlRpcFailureUiKey.networkError => l10n.agentSqlFailureTitleNetworkError,
+    AgentSqlRpcFailureUiKey.networkError =>
+      l10n.agentSqlFailureTitleNetworkError,
     AgentSqlRpcFailureUiKey.rateLimited => l10n.agentSqlFailureTitleRateLimited,
     AgentSqlRpcFailureUiKey.replayDetected =>
       l10n.agentSqlFailureTitleReplayDetected,
@@ -68,7 +70,8 @@ String agentSqlFailureTitleForUiKey(String key, AppLocalizations l10n) {
       l10n.agentSqlFailureTitleResultTooLarge,
     AgentSqlRpcFailureUiKey.databaseConnectionFailed =>
       l10n.agentSqlFailureTitleDatabaseConnectionFailed,
-    AgentSqlRpcFailureUiKey.queryTimeout => l10n.agentSqlFailureTitleQueryTimeout,
+    AgentSqlRpcFailureUiKey.queryTimeout =>
+      l10n.agentSqlFailureTitleQueryTimeout,
     AgentSqlRpcFailureUiKey.invalidDatabaseConfig =>
       l10n.agentSqlFailureTitleInvalidDatabaseConfig,
     AgentSqlRpcFailureUiKey.executionNotFound =>

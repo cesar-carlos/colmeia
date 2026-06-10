@@ -40,13 +40,14 @@ abstract final class AgentQueryCacheScope {
       segments.add('f$codFilial');
     }
     if (filter.selectedBranches.isNotEmpty) {
-      final branchKeys = filter.selectedBranches
-          .map(
-            (branch) =>
-                '${branch.normalizedAgentId}:${branch.codEmpresa}:${branch.codFilial}',
-          )
-          .toList(growable: false)
-        ..sort();
+      final branchKeys =
+          filter.selectedBranches
+              .map(
+                (branch) =>
+                    '${branch.normalizedAgentId}:${branch.codEmpresa}:${branch.codFilial}',
+              )
+              .toList(growable: false)
+            ..sort();
       segments.add('br:${branchKeys.join(',')}');
     }
     if (segments.isEmpty) {
@@ -80,7 +81,9 @@ abstract final class AgentQueryCacheScope {
     return '$base|${segments.join('|')}';
   }
 
-  static String lucratividadeScope(ResumoProdutoVendaLucratividadeFilter filter) {
+  static String lucratividadeScope(
+    ResumoProdutoVendaLucratividadeFilter filter,
+  ) {
     return filter.trimmedOrigem;
   }
 

@@ -15,10 +15,12 @@ double resolveFullscreenChartMinHeight(double maxHeight) {
     return 0;
   }
   if (maxHeight < 300) {
-    return math.max(
-      kFullscreenChartMinHeightCompact,
-      maxHeight * 0.5,
-    ).clamp(0, maxHeight);
+    return math
+        .max(
+          kFullscreenChartMinHeightCompact,
+          maxHeight * 0.5,
+        )
+        .clamp(0, maxHeight);
   }
   return math.min(kFullscreenChartMinHeight, maxHeight);
 }
@@ -31,8 +33,7 @@ double resolveFullscreenChartHeight({
 }) {
   final maxH = maxHeight;
   final raw = (maxH - reservedHeight).clamp(0.0, maxH);
-  final resolvedMin =
-      minChartHeight ?? resolveFullscreenChartMinHeight(maxH);
+  final resolvedMin = minChartHeight ?? resolveFullscreenChartMinHeight(maxH);
   final minH = math.min(resolvedMin, raw);
   return raw.clamp(minH, maxH);
 }
@@ -79,7 +80,8 @@ Widget buildSegmentedControlFullscreenBody({
     children: <Widget>[
       control,
       Builder(
-        builder: (context) => SizedBox(height: _controlChartGap(tokens, context)),
+        builder: (context) =>
+            SizedBox(height: _controlChartGap(tokens, context)),
       ),
       Expanded(
         child: LayoutBuilder(

@@ -25,13 +25,16 @@ void main() {
       const request = OverviewSectionRequest.full;
 
       expect(request.runMainBatch, isTrue);
-      expect(request.sectionBatchSections, containsAll(<OverviewProgressiveSection>{
-        OverviewProgressiveSection.dailySales,
-        OverviewProgressiveSection.monthlyParcels,
-        OverviewProgressiveSection.weekdaySales,
-        OverviewProgressiveSection.weekdayUserSales,
-        OverviewProgressiveSection.lucratividadePeriod,
-      }));
+      expect(
+        request.sectionBatchSections,
+        containsAll(<OverviewProgressiveSection>{
+          OverviewProgressiveSection.dailySales,
+          OverviewProgressiveSection.monthlyParcels,
+          OverviewProgressiveSection.weekdaySales,
+          OverviewProgressiveSection.weekdayUserSales,
+          OverviewProgressiveSection.lucratividadePeriod,
+        }),
+      );
       expect(
         request.sectionBatchSections,
         isNot(contains(OverviewProgressiveSection.lucratividadeMensal)),

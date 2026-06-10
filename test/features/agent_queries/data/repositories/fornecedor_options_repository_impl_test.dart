@@ -68,54 +68,56 @@ void main() {
     verify(() => agentQueriesRepository.executeSql(any())).called(1);
   });
 
-  test('single execute sends paged SQL, search pattern, and relay route',
-      () async {
-    when(
-      () => agentQueriesRepository.executeSql(any()),
-    ).thenAnswer(
-      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
-        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
-      ),
-    );
+  test(
+    'single execute sends paged SQL, search pattern, and relay route',
+    () async {
+      when(
+        () => agentQueriesRepository.executeSql(any()),
+      ).thenAnswer(
+        (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+        ),
+      );
 
-    await repository.loadPage(
-      userId: 'user-1',
-      agentId: 'agent-1',
-      clientToken: 'tok',
-      bridgeTimeoutMs: 5000,
-      filter: const FornecedorOptionsFilter(
-        searchTerm: 'acme',
-        page: 2,
-        pageSize: 10,
-      ),
-    );
+      await repository.loadPage(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        clientToken: 'tok',
+        bridgeTimeoutMs: 5000,
+        filter: const FornecedorOptionsFilter(
+          searchTerm: 'acme',
+          page: 2,
+          pageSize: 10,
+        ),
+      );
 
-    final captured =
-        verify(
-              () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured.single
-            as AgentSqlExecuteRequest;
+      final captured =
+          verify(
+                () => agentQueriesRepository.executeSql(captureAny()),
+              ).captured.single
+              as AgentSqlExecuteRequest;
 
-    check(captured.sql).equals(FornecedorOptionsSql.pagedQuery);
-    check(captured.namedParams.keys.toSet()).deepEquals(<String>{
-      'searchPattern',
-      'searchDigitsPattern',
-      'startRow',
-      'endRow',
-    });
-    check(captured.namedParams['searchDigitsPattern']).isNull();
-    check(captured.namedParams['startRow']).equals(11);
-    check(captured.namedParams['endRow']).equals(20);
-    check(captured.namedParams['searchPattern']).equals(
-      ResumoVendasDiariasSuggestionSqlParams.buildSearchPattern('acme'),
-    );
-    check(captured.clientToken).equals('tok');
-    check(captured.bridgeTimeoutMs).equals(5000);
-    check(captured.executeOptions?.maxRows).equals(
-      AgentQueriesBoundedResultMaxRows.fornecedorOptionsPage,
-    );
-    check(captured.useRelay).isTrue();
-  });
+      check(captured.sql).equals(FornecedorOptionsSql.pagedQuery);
+      check(captured.namedParams.keys.toSet()).deepEquals(<String>{
+        'searchPattern',
+        'searchDigitsPattern',
+        'startRow',
+        'endRow',
+      });
+      check(captured.namedParams['searchDigitsPattern']).isNull();
+      check(captured.namedParams['startRow']).equals(11);
+      check(captured.namedParams['endRow']).equals(20);
+      check(captured.namedParams['searchPattern']).equals(
+        ResumoVendasDiariasSuggestionSqlParams.buildSearchPattern('acme'),
+      );
+      check(captured.clientToken).equals('tok');
+      check(captured.bridgeTimeoutMs).equals(5000);
+      check(captured.executeOptions?.maxRows).equals(
+        AgentQueriesBoundedResultMaxRows.fornecedorOptionsPage,
+      );
+      check(captured.useRelay).isTrue();
+    },
+  );
 
   test('normalizes blank searchTerm as null searchPattern', () async {
     when(

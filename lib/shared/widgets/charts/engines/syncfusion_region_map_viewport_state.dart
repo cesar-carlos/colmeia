@@ -25,10 +25,12 @@ class SyncfusionRegionMapViewportState {
   }) {
     return SyncfusionRegionMapViewportState(
       zoomLevel: zoomLevel ?? this.zoomLevel,
-      centerLatitude: identical(centerLatitude, _syncfusionRegionMapViewportUnset)
+      centerLatitude:
+          identical(centerLatitude, _syncfusionRegionMapViewportUnset)
           ? this.centerLatitude
           : centerLatitude as double?,
-      centerLongitude: identical(centerLongitude, _syncfusionRegionMapViewportUnset)
+      centerLongitude:
+          identical(centerLongitude, _syncfusionRegionMapViewportUnset)
           ? this.centerLongitude
           : centerLongitude as double?,
       userHasManualViewport:

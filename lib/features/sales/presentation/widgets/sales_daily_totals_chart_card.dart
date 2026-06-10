@@ -47,18 +47,18 @@ class SalesDailyTotalsChartCard extends StatelessWidget {
       useSalesDailyTotalsLabels: true,
       onRequestFullscreen: onRequestFullscreen,
       onRequestShare: onRequestShare,
-        salesSubtitleOverride: range != null
-            ? salesDailyTotalsEffectiveSubtitle(
-                l10n,
-                dailySaleDateRange: range,
-              )
-            : null,
-        salesScopeHintOverride: range != null
-            ? salesDailyTotalsEffectiveScopeHint(
-                l10n,
-                dailySaleDateRange: range,
-              )
-            : null,
+      salesSubtitleOverride: range != null
+          ? salesDailyTotalsEffectiveSubtitle(
+              l10n,
+              dailySaleDateRange: range,
+            )
+          : null,
+      salesScopeHintOverride: range != null
+          ? salesDailyTotalsEffectiveScopeHint(
+              l10n,
+              dailySaleDateRange: range,
+            )
+          : null,
     );
   }
 }

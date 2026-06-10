@@ -23,7 +23,9 @@ class AgentQueryFailureSupportContext {
 
   final Map<String, String> lines;
 
-  AgentQueryFailureSupportContext merge(AgentQueryFailureSupportContext? other) {
+  AgentQueryFailureSupportContext merge(
+    AgentQueryFailureSupportContext? other,
+  ) {
     if (other == null || other.lines.isEmpty) {
       return this;
     }

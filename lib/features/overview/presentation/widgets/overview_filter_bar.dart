@@ -203,8 +203,8 @@ class _OverviewFilterHeader extends StatelessWidget {
             onPressed: isDisabled
                 ? null
                 : () => onFilterChanged?.call(
-                      filter.copyWith(selectedAgentIds: null),
-                    ),
+                    filter.copyWith(selectedAgentIds: null),
+                  ),
           ),
           SizedBox(width: tokens.gapXs),
         ],

@@ -1,4 +1,4 @@
-﻿import 'package:colmeia/app/router/app_routes.dart';
+import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/di/injector_agent_queries.dart';
 import 'package:colmeia/core/errors/retry_after_gate.dart';
@@ -152,13 +152,14 @@ List<RouteBase> buildSalesRoutes() {
                   LoadProdutoVendidoTendenciaDeVendaMediaMovelScreenUseCase
                 >(),
             loadTrendPageUseCase:
-                getIt<LoadProdutoVendidoTendenciaDeVendaMediaMovelPageUseCase>(),
+                getIt<
+                  LoadProdutoVendidoTendenciaDeVendaMediaMovelPageUseCase
+                >(),
             loadGrupoProdutoOptionsUseCase:
                 getIt<LoadGrupoProdutoOptionsUseCase>(),
             loadMarcaProdutoOptionsUseCase:
                 getIt<LoadMarcaProdutoOptionsUseCase>(),
-            loadRowsForShareUseCase:
-                getIt<LoadMediaMovelRowsForShareUseCase>(),
+            loadRowsForShareUseCase: getIt<LoadMediaMovelRowsForShareUseCase>(),
             relayCancelScopeBinder: _wireSalesAgentSqlRelayCancel,
           );
         }

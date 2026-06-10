@@ -41,13 +41,14 @@ void main() {
 
     test('expires entries after ttl', () {
       var now = DateTime.utc(2026, 6, 3, 12);
-      final cache = InMemoryAgentQueryTargetResolutionCache(
-        ttl: () => const Duration(seconds: 30),
-        now: () => now,
-      )..publish(
-        userId: 'user-1',
-        resolution: _resolution(agentIds: const <String>['agent-a']),
-      );
+      final cache =
+          InMemoryAgentQueryTargetResolutionCache(
+            ttl: () => const Duration(seconds: 30),
+            now: () => now,
+          )..publish(
+            userId: 'user-1',
+            resolution: _resolution(agentIds: const <String>['agent-a']),
+          );
 
       now = now.add(const Duration(seconds: 31));
 

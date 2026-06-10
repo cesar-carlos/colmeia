@@ -28,8 +28,7 @@ void main() {
     const failure = NetworkFailure(
       message: 'relay timeout',
       context: <String, Object?>{
-        AgentSqlRpcFailureUiKey.field:
-            AgentSqlRpcFailureUiKey.transportTimeout,
+        AgentSqlRpcFailureUiKey.field: AgentSqlRpcFailureUiKey.transportTimeout,
       },
     );
     final presentation = AgentQueryFailurePresentation.from(failure, en);

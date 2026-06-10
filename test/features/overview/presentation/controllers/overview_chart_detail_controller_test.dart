@@ -30,33 +30,36 @@ void main() {
       shellCache = OverviewShellCache();
     });
 
-    test('restores overview from shell cache when section is complete', () async {
-      final filter = DashboardFilter.initial();
-      final signature = overviewLoadSignature(userId: 'user', filter: filter);
-      final cached = _overviewWithDailySales();
-      shellCache.publish(
-        signature: signature,
-        overview: cached,
-        activeFilter: filter,
-        availableAgents: const <DashboardAgentOption>[],
-        completedSections: <OverviewProgressiveSection>{
-          OverviewProgressiveSection.dailySales,
-        },
-      );
-      final repository = _RecordingSectionsRepository();
-      final controller = OverviewChartDetailController(
-        chartId: 'daily_sales',
-        loadOverviewSectionsUseCase: LoadOverviewSectionsUseCase(repository),
-        shellCache: shellCache,
-        initialFilter: filter,
-      );
+    test(
+      'restores overview from shell cache when section is complete',
+      () async {
+        final filter = DashboardFilter.initial();
+        final signature = overviewLoadSignature(userId: 'user', filter: filter);
+        final cached = _overviewWithDailySales();
+        shellCache.publish(
+          signature: signature,
+          overview: cached,
+          activeFilter: filter,
+          availableAgents: const <DashboardAgentOption>[],
+          completedSections: <OverviewProgressiveSection>{
+            OverviewProgressiveSection.dailySales,
+          },
+        );
+        final repository = _RecordingSectionsRepository();
+        final controller = OverviewChartDetailController(
+          chartId: 'daily_sales',
+          loadOverviewSectionsUseCase: LoadOverviewSectionsUseCase(repository),
+          shellCache: shellCache,
+          initialFilter: filter,
+        );
 
-      await controller.loadIfNeeded(userId: 'user');
+        await controller.loadIfNeeded(userId: 'user');
 
-      check(controller.overview).equals(cached);
-      check(controller.isLoading).isFalse();
-      check(repository.progressiveCallCount).equals(0);
-    });
+        check(controller.overview).equals(cached);
+        check(controller.isLoading).isFalse();
+        check(repository.progressiveCallCount).equals(0);
+      },
+    );
 
     test('loads section and merges into shell cache on success', () async {
       final filter = DashboardFilter.initial();
@@ -100,36 +103,45 @@ void main() {
       check(controller.overview).equals(loaded);
       check(repository.progressiveCallCount).equals(1);
       final entry = shellCache.read(signature);
-      check(entry!.completedSections).contains(OverviewProgressiveSection.dailySales);
+      check(
+        entry!.completedSections,
+      ).contains(OverviewProgressiveSection.dailySales);
       check(entry.overview.dailySalesTrend).deepEquals(loaded.dailySalesTrend);
-      check(entry.overview.kpis.totalAmount).equals(_overview().kpis.totalAmount);
+      check(
+        entry.overview.kpis.totalAmount,
+      ).equals(_overview().kpis.totalAmount);
     });
 
-    test('surfaces failure without arming retry gate when no retry hint', () async {
-      final repository = _RecordingSectionsRepository(
-        streams: <Stream<AppResult<OverviewProgressiveSnapshot>>>[
-          Stream<AppResult<OverviewProgressiveSnapshot>>.value(
-            const Failure<OverviewProgressiveSnapshot, AppFailure>(
-              NetworkFailure(message: 'offline'),
+    test(
+      'surfaces failure without arming retry gate when no retry hint',
+      () async {
+        final repository = _RecordingSectionsRepository(
+          streams: <Stream<AppResult<OverviewProgressiveSnapshot>>>[
+            Stream<AppResult<OverviewProgressiveSnapshot>>.value(
+              const Failure<OverviewProgressiveSnapshot, AppFailure>(
+                NetworkFailure(message: 'offline'),
+              ),
             ),
-          ),
-        ],
-      );
-      final gate = RetryAfterGate(tickInterval: const Duration(milliseconds: 5));
-      addTearDown(gate.dispose);
-      final controller = OverviewChartDetailController(
-        chartId: 'daily_sales',
-        loadOverviewSectionsUseCase: LoadOverviewSectionsUseCase(repository),
-        shellCache: shellCache,
-        retryAfterGate: gate,
-      );
+          ],
+        );
+        final gate = RetryAfterGate(
+          tickInterval: const Duration(milliseconds: 5),
+        );
+        addTearDown(gate.dispose);
+        final controller = OverviewChartDetailController(
+          chartId: 'daily_sales',
+          loadOverviewSectionsUseCase: LoadOverviewSectionsUseCase(repository),
+          shellCache: shellCache,
+          retryAfterGate: gate,
+        );
 
-      await controller.loadIfNeeded(userId: 'user');
+        await controller.loadIfNeeded(userId: 'user');
 
-      check(controller.errorMessage).isNotNull();
-      check(controller.isLoading).isFalse();
-      check(controller.isOnRetryCooldown).isFalse();
-    });
+        check(controller.errorMessage).isNotNull();
+        check(controller.isLoading).isFalse();
+        check(controller.isOnRetryCooldown).isFalse();
+      },
+    );
 
     test('blocks load while retry gate is closed', () async {
       final repository = _RecordingSectionsRepository(
@@ -147,7 +159,9 @@ void main() {
           ),
         ],
       );
-      final gate = RetryAfterGate(tickInterval: const Duration(milliseconds: 5));
+      final gate = RetryAfterGate(
+        tickInterval: const Duration(milliseconds: 5),
+      );
       addTearDown(gate.dispose);
       final controller = OverviewChartDetailController(
         chartId: 'daily_sales',
@@ -201,8 +215,9 @@ void main() {
       await controller.loadIfNeeded(userId: 'user');
 
       check(controller.activeFilter).equals(initialFilter);
-      check(repository.lastFilter?.selectedAgentIds)
-          .equals(initialFilter.selectedAgentIds);
+      check(
+        repository.lastFilter?.selectedAgentIds,
+      ).equals(initialFilter.selectedAgentIds);
     });
 
     test('falls back to shell cache filter when initialFilter is null', () {

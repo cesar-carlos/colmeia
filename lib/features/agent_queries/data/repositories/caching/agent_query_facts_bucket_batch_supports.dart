@@ -270,8 +270,9 @@ final class ResumoTotalVendasMunicipioFilialPeriodoFactsBucketBatchSupport
       ResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl.operation;
 
   @override
-  String? validationError(ResumoTotalVendasMunicipioFilialPeriodoFilter filter) =>
-      filter.validationError();
+  String? validationError(
+    ResumoTotalVendasMunicipioFilialPeriodoFilter filter,
+  ) => filter.validationError();
 
   @override
   AgentSqlExecuteBatchCommand commandForBucket({
@@ -309,8 +310,8 @@ final class ResumoTotalVendasMunicipioFilialPeriodoFactsBucketBatchSupport
       bridgeTimeoutMs ?? AppEnvironment.agentSqlBridgeTimeoutMs;
 
   @override
-  int get batchMaxRows => AgentQueriesBoundedResultMaxRows
-      .resumoTotalVendasMunicipioFilialPeriodo;
+  int get batchMaxRows =>
+      AgentQueriesBoundedResultMaxRows.resumoTotalVendasMunicipioFilialPeriodo;
 
   @override
   bool bypassTransportCache(AgentQueryLoadPolicy cachePolicy) =>

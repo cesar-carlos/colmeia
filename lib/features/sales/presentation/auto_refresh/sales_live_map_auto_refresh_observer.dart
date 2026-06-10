@@ -58,9 +58,10 @@ class SalesLiveMapAutoRefreshObserver {
       coordinator.lastSchedulingSlice = schedulingSlice;
       refreshAutoRefreshScheduling();
     }
-    final successfulRefreshAt = SalesLiveMapViewModel.resolveSuccessfulRefreshAt(
-      state,
-    );
+    final successfulRefreshAt =
+        SalesLiveMapViewModel.resolveSuccessfulRefreshAt(
+          state,
+        );
     if (successfulRefreshAt != null &&
         !reloadInProgress &&
         successfulRefreshAt != coordinator.lastRecordedSuccessfulRefreshAt) {
@@ -80,8 +81,7 @@ class SalesLiveMapAutoRefreshObserver {
     coordinator.wasControllerLoading = state.isLoading;
     if (state.closeFullscreenRequestId !=
         coordinator.lastCloseFullscreenRequestId) {
-      coordinator.lastCloseFullscreenRequestId =
-          state.closeFullscreenRequestId;
+      coordinator.lastCloseFullscreenRequestId = state.closeFullscreenRequestId;
       onCloseFullscreenRequested();
     }
   }

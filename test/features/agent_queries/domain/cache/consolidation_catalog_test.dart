@@ -32,7 +32,9 @@ void main() {
 
     test('weekday user period is derived only', () {
       expect(
-        ConsolidationCatalog.storageModeFor(AgentQueryFactKind.weekdayUserPeriod),
+        ConsolidationCatalog.storageModeFor(
+          AgentQueryFactKind.weekdayUserPeriod,
+        ),
         ConsolidationStorageMode.derivedOnly,
       );
       expect(
@@ -46,7 +48,9 @@ void main() {
 
     test('unknown fact kind defaults to derived only', () {
       expect(
-        ConsolidationCatalog.storageModeFor(AgentQueryFactKind.lucratividadeMensal),
+        ConsolidationCatalog.storageModeFor(
+          AgentQueryFactKind.lucratividadeMensal,
+        ),
         ConsolidationStorageMode.derivedOnly,
       );
     });

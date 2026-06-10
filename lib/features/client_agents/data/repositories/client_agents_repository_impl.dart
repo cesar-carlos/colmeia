@@ -35,12 +35,12 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
   ClientAgentsRepositoryImpl({
     required ClientAgentsRemoteDataSource remoteDataSource,
     required ClientAgentsLocalDataSource localDataSource,
-  })  : _remoteDataSource = remoteDataSource,
-        _localDataSource = localDataSource,
-        _synchronizer = PendingClientAgentActionsSynchronizer(
-          remoteDataSource: remoteDataSource,
-          localDataSource: localDataSource,
-        );
+  }) : _remoteDataSource = remoteDataSource,
+       _localDataSource = localDataSource,
+       _synchronizer = PendingClientAgentActionsSynchronizer(
+         remoteDataSource: remoteDataSource,
+         localDataSource: localDataSource,
+       );
 
   static const Duration _onlineStatusMaxAge = Duration(minutes: 1);
 
@@ -197,8 +197,7 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
         return mapClientAgentProfile(remote, onlineIds: onlineIds);
       },
       fallbackMessage: 'Unable to update catalog agent profile',
-      fallbackUserMessage:
-          'Could not update the agent profile on the server.',
+      fallbackUserMessage: 'Could not update the agent profile on the server.',
       context: <String, Object?>{
         'operation': 'updateCatalogAgentProfile',
         'userId': userId,
@@ -492,14 +491,15 @@ class ClientAgentsRepositoryImpl implements ClientAgentsRepository {
 
   @override
   Future<AppResult<PaginatedResult<ClientAgentAccessRequest>>>
-      loadAccessRequests({
+  loadAccessRequests({
     required String userId,
     required PaginatedQuery query,
     String? search,
     String? status,
   }) {
     return withRepositoryErrorMapping<
-        PaginatedResult<ClientAgentAccessRequest>>(
+      PaginatedResult<ClientAgentAccessRequest>
+    >(
       action: () async {
         final remote = await _remoteDataSource.fetchAccessRequests(
           query: query,

@@ -74,38 +74,40 @@ void main() {
       expect(sorted.agents.map((a) => a.agentId).toList(), <String>['a']);
     });
 
-    test('sorts users by totalAmount descending and drops zero-amount rows',
-        () {
-      final overview = _overviewWith(
-        users: const <OverviewUserRanking>[
-          OverviewUserRanking(
-            userName: 'low',
-            totalSalesCount: 1,
-            totalAmount: 50,
-            averageTicket: 50,
-          ),
-          OverviewUserRanking(
-            userName: 'zero',
-            totalSalesCount: 0,
-            totalAmount: 0,
-            averageTicket: 0,
-          ),
-          OverviewUserRanking(
-            userName: 'high',
-            totalSalesCount: 1,
-            totalAmount: 500,
-            averageTicket: 500,
-          ),
-        ],
-      );
+    test(
+      'sorts users by totalAmount descending and drops zero-amount rows',
+      () {
+        final overview = _overviewWith(
+          users: const <OverviewUserRanking>[
+            OverviewUserRanking(
+              userName: 'low',
+              totalSalesCount: 1,
+              totalAmount: 50,
+              averageTicket: 50,
+            ),
+            OverviewUserRanking(
+              userName: 'zero',
+              totalSalesCount: 0,
+              totalAmount: 0,
+              averageTicket: 0,
+            ),
+            OverviewUserRanking(
+              userName: 'high',
+              totalSalesCount: 1,
+              totalAmount: 500,
+              averageTicket: 500,
+            ),
+          ],
+        );
 
-      final sorted = OverviewSortedRankings.from(overview);
+        final sorted = OverviewSortedRankings.from(overview);
 
-      expect(
-        sorted.users.map((u) => u.userName).toList(),
-        <String>['high', 'low'],
-      );
-    });
+        expect(
+          sorted.users.map((u) => u.userName).toList(),
+          <String>['high', 'low'],
+        );
+      },
+    );
 
     test('does not mutate the original lists', () {
       final originalAgents = <OverviewAgentRanking>[
@@ -146,25 +148,27 @@ void main() {
   });
 
   group('OverviewSortedRankingsCache', () {
-    test('resolves once and reuses the same instance for the same overview',
-        () {
-      final overview = _overviewWith(
-        agents: const <OverviewAgentRanking>[
-          OverviewAgentRanking(
-            agentId: 'a',
-            displayName: 'Alpha',
-            totalSalesCount: 1,
-            totalAmount: 100,
-          ),
-        ],
-      );
-      final cache = OverviewSortedRankingsCache();
+    test(
+      'resolves once and reuses the same instance for the same overview',
+      () {
+        final overview = _overviewWith(
+          agents: const <OverviewAgentRanking>[
+            OverviewAgentRanking(
+              agentId: 'a',
+              displayName: 'Alpha',
+              totalSalesCount: 1,
+              totalAmount: 100,
+            ),
+          ],
+        );
+        final cache = OverviewSortedRankingsCache();
 
-      final first = cache.resolve(overview);
-      final second = cache.resolve(overview);
+        final first = cache.resolve(overview);
+        final second = cache.resolve(overview);
 
-      expect(identical(first, second), isTrue);
-    });
+        expect(identical(first, second), isTrue);
+      },
+    );
 
     test('recomputes when a different overview instance is passed', () {
       final overviewA = _overviewWith(

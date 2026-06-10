@@ -35,8 +35,7 @@ void main() {
       email: email,
       accessToken: 'access-token',
       refreshToken: 'refresh-token',
-      expiresAt:
-          expiresAt ?? DateTime.now().add(const Duration(hours: 1)),
+      expiresAt: expiresAt ?? DateTime.now().add(const Duration(hours: 1)),
     );
   }
 
@@ -56,8 +55,7 @@ void main() {
   });
 
   group('login', () {
-    test('returns Success with auth session and persists it locally',
-        () async {
+    test('returns Success with auth session and persists it locally', () async {
       final session = buildSession();
       when(
         () => remote.login(
@@ -79,37 +77,40 @@ void main() {
   });
 
   group('register', () {
-    test('returns Success with registration submission on happy path',
-        () async {
-      const submission = ClientRegistrationSubmission(
-        status: ClientRegistrationStatus.pending,
-        message: 'Pending approval',
-        approvalToken: 'token-abc',
-      );
-      when(
-        () => remote.register(
-          ownerEmail: any(named: 'ownerEmail'),
-          firstName: any(named: 'firstName'),
-          lastName: any(named: 'lastName'),
-          email: any(named: 'email'),
-          password: any(named: 'password'),
-          mobile: any(named: 'mobile'),
-        ),
-      ).thenAnswer((_) async => submission);
+    test(
+      'returns Success with registration submission on happy path',
+      () async {
+        const submission = ClientRegistrationSubmission(
+          status: ClientRegistrationStatus.pending,
+          message: 'Pending approval',
+          approvalToken: 'token-abc',
+        );
+        when(
+          () => remote.register(
+            ownerEmail: any(named: 'ownerEmail'),
+            firstName: any(named: 'firstName'),
+            lastName: any(named: 'lastName'),
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+            mobile: any(named: 'mobile'),
+          ),
+        ).thenAnswer((_) async => submission);
 
-      final result = await repository.register(
-        ownerEmail: 'owner@corp.com',
-        firstName: 'Alice',
-        lastName: 'Doe',
-        email: 'client@corp.com',
-        password: 'pa55w0rd',
-      );
+        final result = await repository.register(
+          ownerEmail: 'owner@corp.com',
+          firstName: 'Alice',
+          lastName: 'Doe',
+          email: 'client@corp.com',
+          password: 'pa55w0rd',
+        );
 
-      check(result.isSuccess()).isTrue();
-      check(result.getOrNull()?.status)
-          .equals(ClientRegistrationStatus.pending);
-      check(result.getOrNull()?.approvalToken).equals('token-abc');
-    });
+        check(result.isSuccess()).isTrue();
+        check(
+          result.getOrNull()?.status,
+        ).equals(ClientRegistrationStatus.pending);
+        check(result.getOrNull()?.approvalToken).equals('token-abc');
+      },
+    );
   });
 
   group('restoreSession', () {
@@ -123,78 +124,87 @@ void main() {
 
       check(result.isSuccess()).isTrue();
       check(result.getOrNull()?.userId).equals('client-1');
-      verifyNever(() => remote.refreshSession(currentSession: any(named: 'currentSession')));
+      verifyNever(
+        () =>
+            remote.refreshSession(currentSession: any(named: 'currentSession')),
+      );
     });
 
-    test('refreshes the session remotely when stored token is expired',
-        () async {
-      final expiredSession = buildSession(
-        expiresAt: DateTime.now().subtract(const Duration(minutes: 1)),
-      );
-      final refreshedSession = buildSession(
-        expiresAt: DateTime.now().add(const Duration(hours: 2)),
-      );
-      when(() => local.readSession()).thenAnswer((_) async => expiredSession);
-      when(
-        () => remote.refreshSession(
-          currentSession: any(named: 'currentSession'),
-        ),
-      ).thenAnswer((_) async => refreshedSession);
-      when(() => local.saveSession(any())).thenAnswer((_) async {});
+    test(
+      'refreshes the session remotely when stored token is expired',
+      () async {
+        final expiredSession = buildSession(
+          expiresAt: DateTime.now().subtract(const Duration(minutes: 1)),
+        );
+        final refreshedSession = buildSession(
+          expiresAt: DateTime.now().add(const Duration(hours: 2)),
+        );
+        when(() => local.readSession()).thenAnswer((_) async => expiredSession);
+        when(
+          () => remote.refreshSession(
+            currentSession: any(named: 'currentSession'),
+          ),
+        ).thenAnswer((_) async => refreshedSession);
+        when(() => local.saveSession(any())).thenAnswer((_) async {});
 
-      final result = await repository.restoreSession();
+        final result = await repository.restoreSession();
 
-      check(result.isSuccess()).isTrue();
-      check(result.getOrNull()?.userId).equals('client-1');
-      verify(() => local.saveSession(refreshedSession)).called(1);
-    });
+        check(result.isSuccess()).isTrue();
+        check(result.getOrNull()?.userId).equals('client-1');
+        verify(() => local.saveSession(refreshedSession)).called(1);
+      },
+    );
   });
 
   group('readCurrentUserProfile', () {
-    test('returns Success with user profile when stored session exists',
-        () async {
-      const profile = UserProfile(
-        id: 'client-1',
-        name: 'Alice Doe',
-        roleLabel: 'Owner',
-      );
-      when(() => local.readSession()).thenAnswer((_) async => buildSession());
-      when(() => remote.readCurrentUserProfile()).thenAnswer(
-        (_) async => profile,
-      );
+    test(
+      'returns Success with user profile when stored session exists',
+      () async {
+        const profile = UserProfile(
+          id: 'client-1',
+          name: 'Alice Doe',
+          roleLabel: 'Owner',
+        );
+        when(() => local.readSession()).thenAnswer((_) async => buildSession());
+        when(() => remote.readCurrentUserProfile()).thenAnswer(
+          (_) async => profile,
+        );
 
-      final result = await repository.readCurrentUserProfile();
+        final result = await repository.readCurrentUserProfile();
 
-      check(result.isSuccess()).isTrue();
-      check(result.getOrNull()?.id).equals('client-1');
-      check(result.getOrNull()?.name).equals('Alice Doe');
-    });
+        check(result.isSuccess()).isTrue();
+        check(result.getOrNull()?.id).equals('client-1');
+        check(result.getOrNull()?.name).equals('Alice Doe');
+      },
+    );
   });
 
   group('changePassword', () {
-    test('returns Success(unit) when remote password change succeeds',
-        () async {
-      when(() => local.readSession()).thenAnswer((_) async => buildSession());
-      when(
-        () => remote.changePassword(
-          currentPassword: any(named: 'currentPassword'),
-          newPassword: any(named: 'newPassword'),
-        ),
-      ).thenAnswer((_) async {});
+    test(
+      'returns Success(unit) when remote password change succeeds',
+      () async {
+        when(() => local.readSession()).thenAnswer((_) async => buildSession());
+        when(
+          () => remote.changePassword(
+            currentPassword: any(named: 'currentPassword'),
+            newPassword: any(named: 'newPassword'),
+          ),
+        ).thenAnswer((_) async {});
 
-      final result = await repository.changePassword(
-        currentPassword: 'old-pa55',
-        newPassword: 'new-pa55',
-      );
-
-      check(result.isSuccess()).isTrue();
-      check(result.getOrNull()).equals(unit);
-      verify(
-        () => remote.changePassword(
+        final result = await repository.changePassword(
           currentPassword: 'old-pa55',
           newPassword: 'new-pa55',
-        ),
-      ).called(1);
-    });
+        );
+
+        check(result.isSuccess()).isTrue();
+        check(result.getOrNull()).equals(unit);
+        verify(
+          () => remote.changePassword(
+            currentPassword: 'old-pa55',
+            newPassword: 'new-pa55',
+          ),
+        ).called(1);
+      },
+    );
   });
 }

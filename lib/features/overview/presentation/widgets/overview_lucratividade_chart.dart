@@ -427,14 +427,14 @@ class _OverviewLucratividadeChartState
           semanticsLabel: shareTitle,
           shareCaptureKey: fullscreenShareKey,
           chartBuilder: (fullscreenContext) {
-              final fullscreenTokens = Theme.of(
-                fullscreenContext,
-              ).extension<AppThemeTokens>()!;
-              var fullscreenDisplay = _display;
-              var fullscreenPercentMetric = _percentMetric;
-              return RepaintBoundary(
-                key: fullscreenShareKey,
-                child: StatefulBuilder(
+            final fullscreenTokens = Theme.of(
+              fullscreenContext,
+            ).extension<AppThemeTokens>()!;
+            var fullscreenDisplay = _display;
+            var fullscreenPercentMetric = _percentMetric;
+            return RepaintBoundary(
+              key: fullscreenShareKey,
+              child: StatefulBuilder(
                 builder: (context, setFullscreenState) {
                   final fsPercent =
                       fullscreenDisplay == _LucratividadeDisplay.percentMetrics;
@@ -561,57 +561,57 @@ class _OverviewLucratividadeChartState
                     control: fsBelowMode,
                     chartBuilder: (availableChartHeight) =>
                         AppComboChart<ResumoProdutoVendaLucratividadeRow>(
-                              key: ValueKey<Object>(
-                                Object.hash(
-                                  sortedPointsSnapshot.length,
-                                  fullscreenDisplay,
-                                  fullscreenPercentMetric,
-                                ),
-                              ),
-                              items: sortedPointsSnapshot,
-                              xLabelBuilder: overviewLucratividadeAgentXLabel,
-                              barValueBuilder: fsBarFn,
-                              barSeriesLabel: fsBarLabel,
-                              lineValueBuilder: fsLineFn,
-                              lineSeriesLabel:
-                                  fsPercent ||
-                                      fullscreenDisplay ==
-                                          _LucratividadeDisplay.costRevenue ||
-                                      fullscreenDisplay ==
-                                          _LucratividadeDisplay.profitRevenue
-                                  ? l10n.overviewLucratividadeRevenueSeriesLabel
-                                  : l10n.overviewLucratividadeCostSeriesLabel,
-                              barDataLabelBuilder: fsLabelFn,
-                              style: _buildStyle(
-                                fullscreenTokens,
-                                l10n: l10n,
-                                usePercentPrimaryAxis: fsPercent,
-                                useMarkupAxisFormat: fsMarkupAxis,
-                                barColor:
-                                    fullscreenDisplay ==
-                                        _LucratividadeDisplay.costRevenue
-                                    ? fullscreenTokens.warning
-                                    : fullscreenTokens.chartSeriesPrimary,
-                                heightOverride: availableChartHeight,
-                                fastChartAnimation: fsPercent,
-                                tooltipBodyResolver: fsTooltipResolver,
-                              ),
-                              emptyPlaceholder: sortedPointsSnapshot.isEmpty
-                                  ? Center(
-                                      child: Text(
-                                        emptyMessage,
-                                        textAlign: TextAlign.center,
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.bodyMedium,
-                                      ),
-                                    )
-                                  : null,
+                          key: ValueKey<Object>(
+                            Object.hash(
+                              sortedPointsSnapshot.length,
+                              fullscreenDisplay,
+                              fullscreenPercentMetric,
+                            ),
+                          ),
+                          items: sortedPointsSnapshot,
+                          xLabelBuilder: overviewLucratividadeAgentXLabel,
+                          barValueBuilder: fsBarFn,
+                          barSeriesLabel: fsBarLabel,
+                          lineValueBuilder: fsLineFn,
+                          lineSeriesLabel:
+                              fsPercent ||
+                                  fullscreenDisplay ==
+                                      _LucratividadeDisplay.costRevenue ||
+                                  fullscreenDisplay ==
+                                      _LucratividadeDisplay.profitRevenue
+                              ? l10n.overviewLucratividadeRevenueSeriesLabel
+                              : l10n.overviewLucratividadeCostSeriesLabel,
+                          barDataLabelBuilder: fsLabelFn,
+                          style: _buildStyle(
+                            fullscreenTokens,
+                            l10n: l10n,
+                            usePercentPrimaryAxis: fsPercent,
+                            useMarkupAxisFormat: fsMarkupAxis,
+                            barColor:
+                                fullscreenDisplay ==
+                                    _LucratividadeDisplay.costRevenue
+                                ? fullscreenTokens.warning
+                                : fullscreenTokens.chartSeriesPrimary,
+                            heightOverride: availableChartHeight,
+                            fastChartAnimation: fsPercent,
+                            tooltipBodyResolver: fsTooltipResolver,
+                          ),
+                          emptyPlaceholder: sortedPointsSnapshot.isEmpty
+                              ? Center(
+                                  child: Text(
+                                    emptyMessage,
+                                    textAlign: TextAlign.center,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodyMedium,
+                                  ),
+                                )
+                              : null,
                         ),
                   );
                 },
               ),
-              );
+            );
           },
         ),
       );
