@@ -1,4 +1,5 @@
 import 'package:colmeia/shared/forms/app_form_validators.dart';
+import 'package:colmeia/shared/forms/registration_form_policy.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -11,13 +12,89 @@ void main() {
       expect(AppFormValidators.email(' camila@example.com '), isNull);
     });
 
-    test('should validate required and min password length', () {
-      expect(AppFormValidators.password(null), 'Informe a senha');
+    test('should validate registration password policy', () {
       expect(
-        AppFormValidators.password('123'),
-        'A senha deve ter pelo menos 6 caracteres.',
+        AppFormValidators.password(
+          null,
+          requiredMessage: 'Enter password',
+        ),
+        'Enter password',
       );
-      expect(AppFormValidators.password('123456'), isNull);
+      expect(
+        AppFormValidators.password(
+          'short',
+          tooShortMessage: (min) => 'Too short $min',
+        ),
+        'Too short 8',
+      );
+      expect(
+        AppFormValidators.password(
+          'alllowercase1',
+          needsUppercaseMessage: 'Needs uppercase',
+        ),
+        'Needs uppercase',
+      );
+      expect(
+        AppFormValidators.password(
+          'NoNumbers',
+          needsNumberMessage: 'Needs number',
+        ),
+        'Needs number',
+      );
+      expect(
+        AppFormValidators.password('ValidPass1'),
+        isNull,
+      );
+      expect(
+        AppFormValidators.password(
+          'a' * (RegistrationFormPolicy.passwordMaxLength + 1),
+          tooLongMessage: 'Too long',
+        ),
+        'Too long',
+      );
+    });
+
+    test('should validate optional brazilian mobile', () {
+      expect(
+        AppFormValidators.optionalBrazilianMobile(
+          '',
+          invalidMessage: 'Invalid mobile',
+        ),
+        isNull,
+      );
+      expect(
+        AppFormValidators.optionalBrazilianMobile(
+          '11888880000',
+          invalidMessage: 'Invalid mobile',
+        ),
+        'Invalid mobile',
+      );
+      expect(
+        AppFormValidators.optionalBrazilianMobile(
+          '11999990000',
+          invalidMessage: 'Invalid mobile',
+        ),
+        isNull,
+      );
+    });
+
+    test('should validate registration poll token format', () {
+      expect(
+        AppFormValidators.registrationPollToken(
+          'short',
+          emptyMessage: 'Empty',
+          invalidMessage: 'Invalid',
+        ),
+        'Invalid',
+      );
+      expect(
+        AppFormValidators.registrationPollToken(
+          'abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr',
+          emptyMessage: 'Empty',
+          invalidMessage: 'Invalid',
+        ),
+        isNull,
+      );
     });
 
     test('should validate employee id format', () {

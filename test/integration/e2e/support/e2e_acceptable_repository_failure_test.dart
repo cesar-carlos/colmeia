@@ -87,6 +87,42 @@ void main() {
     });
   });
 
+  group('isKnownE2eAgentSqlDatabaseConnectionFailure', () {
+    test('returns true for database_connection_failed RpcFailure', () {
+      const failure = RpcFailure(
+        message:
+            'Connection timeout when connecting to database',
+        userMessage:
+            'The database connection took longer than expected. '
+            'Confirm the server is accessible and try again.',
+        rpcCode: -32106,
+        retryable: false,
+        reason: 'database_connection_failed',
+        category: 'database',
+        context: <String, Object?>{
+          AgentSqlRpcFailureUiKey.field:
+              AgentSqlRpcFailureUiKey.databaseConnectionFailed,
+        },
+      );
+
+      expect(isKnownE2eAgentSqlDatabaseConnectionFailure(failure), isTrue);
+      expect(isRetryableE2eAgentSqlHubFailure(failure), isTrue);
+      expect(isAcceptableE2eAgentSqlRepositoryFailure(failure), isTrue);
+    });
+
+    test('returns false for unrelated RpcFailure', () {
+      const failure = RpcFailure(
+        message: 'm',
+        userMessage: 'u',
+        rpcCode: -1,
+        retryable: false,
+        reason: 'sql_execution_failed',
+        category: 'sql',
+      );
+      expect(isKnownE2eAgentSqlDatabaseConnectionFailure(failure), isFalse);
+    });
+  });
+
   group('isKnownE2eAgentDisconnectedAtDispatchFailure', () {
     test('returns true for agent_disconnected_at_dispatch RpcFailure', () {
       const failure = RpcFailure(

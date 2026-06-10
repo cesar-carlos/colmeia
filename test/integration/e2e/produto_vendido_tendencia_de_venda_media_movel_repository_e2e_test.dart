@@ -166,7 +166,7 @@ void main() {
         final repository =
             getIt<ProdutoVendidoTendenciaDeVendaMediaMovelRepository>();
 
-        final result = await runE2eAppResult(
+        final result = await runE2eAppResultWithHubRetry(
           () => repository.loadSummary(
             userId: 'user-1',
             agentId: AppEnvironment.e2eAgentId,
@@ -175,6 +175,7 @@ void main() {
               quantidadeDias: 7,
             ),
           ),
+          actionLabel: 'produto_vendido_tendencia_media_movel_loadSummary',
         );
 
         result.fold(

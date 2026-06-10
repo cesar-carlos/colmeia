@@ -1,11 +1,11 @@
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/auth/domain/entities/client_registration_submission.dart';
-import 'package:colmeia/features/auth/domain/repositories/auth_repository.dart';
+import 'package:colmeia/features/auth/domain/repositories/client_registration_repository.dart';
 
 class RegisterUseCase {
-  RegisterUseCase(this._authRepository);
+  RegisterUseCase(this._clientRegistrationRepository);
 
-  final AuthRepository _authRepository;
+  final ClientRegistrationRepository _clientRegistrationRepository;
 
   Future<AppResult<ClientRegistrationSubmission>> call({
     required String ownerEmail,
@@ -15,7 +15,7 @@ class RegisterUseCase {
     required String password,
     String? mobile,
   }) {
-    return _authRepository.register(
+    return _clientRegistrationRepository.register(
       ownerEmail: ownerEmail,
       firstName: firstName,
       lastName: lastName,

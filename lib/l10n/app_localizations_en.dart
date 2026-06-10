@@ -4797,12 +4797,168 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authRegisterBackToLogin => 'Back to sign in';
 
   @override
+  String get authRegistrationStatusTitle => 'Check registration status';
+
+  @override
+  String get authRegistrationStatusSubtitle =>
+      'If you received a tracking token, enter it below to see whether your registration is still pending, was approved, rejected, or expired.';
+
+  @override
+  String get authRegistrationStatusTokenLabel => 'Tracking token';
+
+  @override
+  String get authRegistrationStatusTokenRequired =>
+      'Enter the token to check registration status.';
+
+  @override
+  String get authRegistrationStatusSubmitButton => 'Check status';
+
+  @override
+  String get authRegistrationStatusGoToLogin => 'Go to sign in';
+
+  @override
+  String get authRegistrationStatusCreateNew => 'Create new registration';
+
+  @override
+  String get authRegistrationStatusPendingTitle => 'Registration pending';
+
+  @override
+  String get authRegistrationStatusPendingMessage =>
+      'Your request is still waiting for owner approval.';
+
+  @override
+  String get authRegistrationStatusApprovedTitle => 'Registration approved';
+
+  @override
+  String get authRegistrationStatusApprovedMessage =>
+      'You can now sign in with the e-mail and password you provided.';
+
+  @override
+  String get authRegistrationStatusRejectedTitle => 'Registration rejected';
+
+  @override
+  String get authRegistrationStatusRejectedMessage =>
+      'The request was rejected. You can resend approval with your account credentials or submit a new registration.';
+
+  @override
+  String get authRegistrationStatusExpiredTitle => 'Registration expired';
+
+  @override
+  String get authRegistrationStatusExpiredMessage =>
+      'The tracking token expired. Resend the request with your account credentials or submit a new registration.';
+
+  @override
+  String get authRegistrationStatusBlockedTitle => 'Registration blocked';
+
+  @override
+  String get authRegistrationStatusBlockedMessage =>
+      'This account was blocked. Contact the approving owner for more information.';
+
+  @override
+  String get authRegistrationStatusUnknownTitle => 'Unknown status';
+
+  @override
+  String get authRegistrationStatusUnknownMessage =>
+      'The API returned a status we could not classify.';
+
+  @override
+  String get authRegistrationRetryPrompt =>
+      'If the request was rejected or expired, you can resend the approval request to the owner.';
+
+  @override
+  String get authRegistrationRetryAction => 'Resend request';
+
+  @override
+  String get authRegistrationRetrySubmit => 'Confirm resend';
+
+  @override
+  String get authRegistrationRetryGenericSuccess =>
+      'If eligible, a new approval request will be sent to the owner.';
+
+  @override
+  String get authRegisterGenericSuccess =>
+      'Registration submitted successfully. Wait for owner approval.';
+
+  @override
+  String get authRegisterSubmitFailure =>
+      'Unable to submit your registration request right now.';
+
+  @override
+  String get authRegistrationStatusLoadFailure =>
+      'Unable to check registration status right now.';
+
+  @override
+  String get authRegistrationRetryFailure =>
+      'Unable to resend the registration request right now.';
+
+  @override
+  String get authRegisterOwnerEmailNotEligible =>
+      'The owner e-mail is not eligible to approve this registration.';
+
+  @override
+  String get authRegistrationRateLimited =>
+      'You exceeded the attempt limit. Wait before trying again.';
+
+  @override
+  String get authRegistrationStatusTokenInvalid =>
+      'The tracking token format is invalid.';
+
+  @override
+  String get authRegistrationStatusTokenExpired =>
+      'The tracking token expired. Submit a new registration.';
+
+  @override
+  String get authRegisterFirstNameTooLong =>
+      'First name must be at most 120 characters.';
+
+  @override
+  String get authRegisterLastNameTooLong =>
+      'Last name must be at most 120 characters.';
+
+  @override
+  String get authRegisterMobileInvalid =>
+      'Enter a valid Brazilian mobile number (11 digits, starting with 9).';
+
+  @override
+  String get authRegisterDuplicateTitle => 'Request already received';
+
+  @override
+  String get authRegisterDuplicateMessage =>
+      'We already have a registration request for these details. Check the status or wait for owner approval.';
+
+  @override
+  String get authRegisterDuplicateCheckStatus => 'Check registration status';
+
+  @override
+  String get authRegistrationApprovedSignInNow => 'Sign in now';
+
+  @override
+  String get authRegistrationApprovedAgentAccessNote =>
+      'After signing in, request agent access from your account settings if needed.';
+
+  @override
+  String get authPasswordRequired => 'Enter the password.';
+
+  @override
   String authPasswordTooShort(int minLength) {
     return 'Password must be at least $minLength characters.';
   }
 
   @override
   String get authConfirmPasswordRequired => 'Confirm your password.';
+
+  @override
+  String authPasswordTooLong(int maxLength) {
+    return 'Password must be at most $maxLength characters.';
+  }
+
+  @override
+  String get authPasswordNeedsUppercase =>
+      'Password must contain at least one uppercase letter.';
+
+  @override
+  String get authPasswordNeedsNumber =>
+      'Password must contain at least one number.';
 
   @override
   String get authPasswordsMismatch => 'Passwords do not match.';

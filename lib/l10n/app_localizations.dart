@@ -7885,6 +7885,246 @@ abstract class AppLocalizations {
   /// **'Back to sign in'**
   String get authRegisterBackToLogin;
 
+  /// No description provided for @authRegistrationStatusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Check registration status'**
+  String get authRegistrationStatusTitle;
+
+  /// No description provided for @authRegistrationStatusSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'If you received a tracking token, enter it below to see whether your registration is still pending, was approved, rejected, or expired.'**
+  String get authRegistrationStatusSubtitle;
+
+  /// No description provided for @authRegistrationStatusTokenLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracking token'**
+  String get authRegistrationStatusTokenLabel;
+
+  /// No description provided for @authRegistrationStatusTokenRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the token to check registration status.'**
+  String get authRegistrationStatusTokenRequired;
+
+  /// No description provided for @authRegistrationStatusSubmitButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Check status'**
+  String get authRegistrationStatusSubmitButton;
+
+  /// No description provided for @authRegistrationStatusGoToLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to sign in'**
+  String get authRegistrationStatusGoToLogin;
+
+  /// No description provided for @authRegistrationStatusCreateNew.
+  ///
+  /// In en, this message translates to:
+  /// **'Create new registration'**
+  String get authRegistrationStatusCreateNew;
+
+  /// No description provided for @authRegistrationStatusPendingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration pending'**
+  String get authRegistrationStatusPendingTitle;
+
+  /// No description provided for @authRegistrationStatusPendingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your request is still waiting for owner approval.'**
+  String get authRegistrationStatusPendingMessage;
+
+  /// No description provided for @authRegistrationStatusApprovedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration approved'**
+  String get authRegistrationStatusApprovedTitle;
+
+  /// No description provided for @authRegistrationStatusApprovedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You can now sign in with the e-mail and password you provided.'**
+  String get authRegistrationStatusApprovedMessage;
+
+  /// No description provided for @authRegistrationStatusRejectedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration rejected'**
+  String get authRegistrationStatusRejectedTitle;
+
+  /// No description provided for @authRegistrationStatusRejectedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The request was rejected. You can resend approval with your account credentials or submit a new registration.'**
+  String get authRegistrationStatusRejectedMessage;
+
+  /// No description provided for @authRegistrationStatusExpiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration expired'**
+  String get authRegistrationStatusExpiredTitle;
+
+  /// No description provided for @authRegistrationStatusExpiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The tracking token expired. Resend the request with your account credentials or submit a new registration.'**
+  String get authRegistrationStatusExpiredMessage;
+
+  /// No description provided for @authRegistrationStatusBlockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration blocked'**
+  String get authRegistrationStatusBlockedTitle;
+
+  /// No description provided for @authRegistrationStatusBlockedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This account was blocked. Contact the approving owner for more information.'**
+  String get authRegistrationStatusBlockedMessage;
+
+  /// No description provided for @authRegistrationStatusUnknownTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown status'**
+  String get authRegistrationStatusUnknownTitle;
+
+  /// No description provided for @authRegistrationStatusUnknownMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The API returned a status we could not classify.'**
+  String get authRegistrationStatusUnknownMessage;
+
+  /// No description provided for @authRegistrationRetryPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'If the request was rejected or expired, you can resend the approval request to the owner.'**
+  String get authRegistrationRetryPrompt;
+
+  /// No description provided for @authRegistrationRetryAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend request'**
+  String get authRegistrationRetryAction;
+
+  /// No description provided for @authRegistrationRetrySubmit.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm resend'**
+  String get authRegistrationRetrySubmit;
+
+  /// No description provided for @authRegistrationRetryGenericSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'If eligible, a new approval request will be sent to the owner.'**
+  String get authRegistrationRetryGenericSuccess;
+
+  /// No description provided for @authRegisterGenericSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration submitted successfully. Wait for owner approval.'**
+  String get authRegisterGenericSuccess;
+
+  /// No description provided for @authRegisterSubmitFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to submit your registration request right now.'**
+  String get authRegisterSubmitFailure;
+
+  /// No description provided for @authRegistrationStatusLoadFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to check registration status right now.'**
+  String get authRegistrationStatusLoadFailure;
+
+  /// No description provided for @authRegistrationRetryFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to resend the registration request right now.'**
+  String get authRegistrationRetryFailure;
+
+  /// No description provided for @authRegisterOwnerEmailNotEligible.
+  ///
+  /// In en, this message translates to:
+  /// **'The owner e-mail is not eligible to approve this registration.'**
+  String get authRegisterOwnerEmailNotEligible;
+
+  /// No description provided for @authRegistrationRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'You exceeded the attempt limit. Wait before trying again.'**
+  String get authRegistrationRateLimited;
+
+  /// No description provided for @authRegistrationStatusTokenInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'The tracking token format is invalid.'**
+  String get authRegistrationStatusTokenInvalid;
+
+  /// No description provided for @authRegistrationStatusTokenExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'The tracking token expired. Submit a new registration.'**
+  String get authRegistrationStatusTokenExpired;
+
+  /// No description provided for @authRegisterFirstNameTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'First name must be at most 120 characters.'**
+  String get authRegisterFirstNameTooLong;
+
+  /// No description provided for @authRegisterLastNameTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Last name must be at most 120 characters.'**
+  String get authRegisterLastNameTooLong;
+
+  /// No description provided for @authRegisterMobileInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid Brazilian mobile number (11 digits, starting with 9).'**
+  String get authRegisterMobileInvalid;
+
+  /// No description provided for @authRegisterDuplicateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Request already received'**
+  String get authRegisterDuplicateTitle;
+
+  /// No description provided for @authRegisterDuplicateMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We already have a registration request for these details. Check the status or wait for owner approval.'**
+  String get authRegisterDuplicateMessage;
+
+  /// No description provided for @authRegisterDuplicateCheckStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Check registration status'**
+  String get authRegisterDuplicateCheckStatus;
+
+  /// No description provided for @authRegistrationApprovedSignInNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in now'**
+  String get authRegistrationApprovedSignInNow;
+
+  /// No description provided for @authRegistrationApprovedAgentAccessNote.
+  ///
+  /// In en, this message translates to:
+  /// **'After signing in, request agent access from your account settings if needed.'**
+  String get authRegistrationApprovedAgentAccessNote;
+
+  /// No description provided for @authPasswordRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the password.'**
+  String get authPasswordRequired;
+
   /// No description provided for @authPasswordTooShort.
   ///
   /// In en, this message translates to:
@@ -7896,6 +8136,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Confirm your password.'**
   String get authConfirmPasswordRequired;
+
+  /// No description provided for @authPasswordTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at most {maxLength} characters.'**
+  String authPasswordTooLong(int maxLength);
+
+  /// No description provided for @authPasswordNeedsUppercase.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must contain at least one uppercase letter.'**
+  String get authPasswordNeedsUppercase;
+
+  /// No description provided for @authPasswordNeedsNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must contain at least one number.'**
+  String get authPasswordNeedsNumber;
 
   /// No description provided for @authPasswordsMismatch.
   ///

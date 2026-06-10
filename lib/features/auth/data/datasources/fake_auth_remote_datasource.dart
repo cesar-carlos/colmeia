@@ -42,19 +42,25 @@ final class FakeAuthRemoteDataSource implements AuthRemoteDataSource {
       return ClientRegistrationSubmission(
         status: ClientRegistrationStatus.pending,
         message: 'Cadastro enviado e aguardando aprovacao.',
-        approvalToken: 'fake-client-approval-${email.trim().toLowerCase()}',
+        pollToken: 'fake-client-poll-${email.trim().toLowerCase()}',
       );
-    } on FakeBackendConflictException catch (error) {
-      throw DioException(
-        requestOptions: RequestOptions(path: ClientAuthApiRoutes.register),
-        type: DioExceptionType.badResponse,
-        response: Response<void>(
-          requestOptions: RequestOptions(path: ClientAuthApiRoutes.register),
-          statusCode: 409,
-        ),
-        message: error.message,
+    } on FakeBackendConflictException {
+      return const ClientRegistrationSubmission(
+        status: ClientRegistrationStatus.pending,
+        message:
+            'If eligible, your registration request will be processed.',
       );
     }
+  }
+
+  @override
+  Future<String> retryClientRegistration({
+    required String ownerEmail,
+    required String email,
+    required String password,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    return 'If eligible, a new approval request will be sent.';
   }
 
   @override

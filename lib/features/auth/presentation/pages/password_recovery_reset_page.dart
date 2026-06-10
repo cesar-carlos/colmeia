@@ -194,10 +194,7 @@ class _PasswordRecoveryResetPageBodyState
                             enabled: !controller.isLoading,
                             label: 'Nova senha',
                             icon: Icons.lock_outline_rounded,
-                            validator: (value) => AppFormValidators.password(
-                              value,
-                              minLength: 8,
-                            ),
+                            validator: AppFormValidators.password,
                           ),
                           SizedBox(height: tokens.gapMd),
                           AuthPasswordTextField(

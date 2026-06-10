@@ -1,6 +1,7 @@
 import 'package:colmeia/core/cache/app_cache_store.dart';
 import 'package:colmeia/core/network/auth_session_events.dart';
 import 'package:colmeia/features/auth/application/auth_login_preferences_service.dart';
+import 'package:colmeia/features/auth/application/auth_registration_preferences_service.dart';
 import 'package:colmeia/features/auth/application/usecases/change_password_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/login_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/logout_use_case.dart';
@@ -11,12 +12,15 @@ import 'package:colmeia/features/auth/application/usecases/register_use_case.dar
 import 'package:colmeia/features/auth/application/usecases/request_password_recovery_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/reset_password_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/restore_session_use_case.dart';
+import 'package:colmeia/features/auth/application/usecases/retry_client_registration_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/update_current_user_profile_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/upload_client_thumbnail_use_case.dart';
 import 'package:colmeia/features/auth/data/datasources/auth_local_datasource.dart';
 import 'package:colmeia/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:colmeia/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:colmeia/features/auth/data/repositories/client_registration_repository_impl.dart';
 import 'package:colmeia/features/auth/domain/repositories/auth_repository.dart';
+import 'package:colmeia/features/auth/domain/repositories/client_registration_repository.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -25,6 +29,14 @@ void registerInjectorAuth(GetIt getIt) {
   getIt
     ..registerLazySingleton<AuthLoginPreferencesService>(
       () => AuthLoginPreferencesService(getIt<SharedPreferences>()),
+    )
+    ..registerLazySingleton<AuthRegistrationPreferencesService>(
+      () => AuthRegistrationPreferencesService(getIt<SharedPreferences>()),
+    )
+    ..registerLazySingleton<ClientRegistrationRepository>(
+      () => ClientRegistrationRepositoryImpl(
+        remoteDataSource: getIt<AuthRemoteDataSource>(),
+      ),
     )
     ..registerLazySingleton<AuthRepository>(
       () => AuthRepositoryImpl(
@@ -41,10 +53,15 @@ void registerInjectorAuth(GetIt getIt) {
       () => RestoreSessionUseCase(getIt<AuthRepository>()),
     )
     ..registerLazySingleton<RegisterUseCase>(
-      () => RegisterUseCase(getIt<AuthRepository>()),
+      () => RegisterUseCase(getIt<ClientRegistrationRepository>()),
     )
     ..registerLazySingleton<ReadRegistrationStatusUseCase>(
-      () => ReadRegistrationStatusUseCase(getIt<AuthRepository>()),
+      () =>
+          ReadRegistrationStatusUseCase(getIt<ClientRegistrationRepository>()),
+    )
+    ..registerLazySingleton<RetryClientRegistrationUseCase>(
+      () =>
+          RetryClientRegistrationUseCase(getIt<ClientRegistrationRepository>()),
     )
     ..registerLazySingleton<ReadCurrentUserProfileUseCase>(
       () => ReadCurrentUserProfileUseCase(getIt<AuthRepository>()),
@@ -75,9 +92,10 @@ void registerInjectorAuth(GetIt getIt) {
       () => AuthController(
         loginUseCase: getIt<LoginUseCase>(),
         logoutUseCase: getIt<LogoutUseCase>(),
-        registerUseCase: getIt<RegisterUseCase>(),
         restoreSessionUseCase: getIt<RestoreSessionUseCase>(),
         authSessionEvents: getIt<AuthSessionEvents>(),
+        registrationPreferencesService:
+            getIt<AuthRegistrationPreferencesService>(),
       ),
     );
 }

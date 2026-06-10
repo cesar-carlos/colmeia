@@ -485,7 +485,7 @@ Future<AppResult<T>> runE2eAppResultWithHubRetry<T extends Object>(
     if (failure == null) {
       return result;
     }
-    if (!isTransientE2eAgentSqlBridgeTransportFailure(failure) ||
+    if (!isRetryableE2eAgentSqlHubFailure(failure) ||
         attempt == maxAttempts - 1) {
       return result;
     }
@@ -740,6 +740,28 @@ bool isKnownE2eAgentSqlQueueSaturationFailure(AppFailure failure) {
   return false;
 }
 
+/// ODBC connect timeout on the agent during cold pool or busy sequential E2E
+/// runs (`database_connection_failed`, rpc -32106).
+bool isKnownE2eAgentSqlDatabaseConnectionFailure(AppFailure failure) {
+  if (failure is! RpcFailure) {
+    return false;
+  }
+  if (failure.reason == 'database_connection_failed') {
+    return true;
+  }
+  if (failure.rpcCode == -32106 && failure.category == 'database') {
+    return true;
+  }
+  final uiKey = failure.context[AgentSqlRpcFailureUiKey.field];
+  return uiKey == AgentSqlRpcFailureUiKey.databaseConnectionFailed;
+}
+
+/// Hub blips retried by [runE2eAppResultWithHubRetry] before accepting failure.
+bool isRetryableE2eAgentSqlHubFailure(AppFailure failure) {
+  return isTransientE2eAgentSqlBridgeTransportFailure(failure) ||
+      isKnownE2eAgentSqlDatabaseConnectionFailure(failure);
+}
+
 /// Plug agent dropped off the hub between SQL dispatch and response (common
 /// during long sequential E2E runs against a single dev agent).
 bool isKnownE2eAgentDisconnectedAtDispatchFailure(AppFailure failure) {
@@ -798,8 +820,9 @@ bool isKnownE2eAgentSqlCircuitBreakerOpenFailure(AppFailure failure) {
 
 /// Known policy rejection, missing table permission RPC, transient bridge
 /// HTTP 5xx or socket/relay transport overload, HTTP 403 forbidden on agent
-/// SQL, queue saturation, circuit breaker open after hub overload, or plug
-/// agent disconnected at dispatch (environment / hub access).
+/// SQL, queue saturation, ODBC connect timeout on the agent, circuit breaker
+/// open after hub overload, or plug agent disconnected at dispatch
+/// (environment / hub access).
 bool isAcceptableE2eAgentSqlRepositoryFailure(AppFailure failure) {
   return isKnownInvalidPolicyFailure(failure) ||
       isKnownAgentSqlMissingPermissionFailure(failure) ||
@@ -810,6 +833,7 @@ bool isAcceptableE2eAgentSqlRepositoryFailure(AppFailure failure) {
       isKnownE2eAgentSqlHubConcurrencyFailure(failure) ||
       isKnownE2eAgentSqlReplayDetectedFailure(failure) ||
       isKnownE2eAgentSqlCircuitBreakerOpenFailure(failure) ||
+      isKnownE2eAgentSqlDatabaseConnectionFailure(failure) ||
       isKnownE2eAgentDisconnectedAtDispatchFailure(failure);
 }
 

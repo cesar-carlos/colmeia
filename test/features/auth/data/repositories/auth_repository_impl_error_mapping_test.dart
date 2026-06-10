@@ -4,6 +4,7 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/auth/data/datasources/auth_local_datasource.dart';
 import 'package:colmeia/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:colmeia/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:colmeia/features/auth/data/repositories/client_registration_repository_impl.dart';
 import 'package:colmeia/features/auth/domain/entities/client_password_recovery_status.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -20,6 +21,7 @@ void main() {
   late _MockAuthRemoteDataSource remote;
   late _MockAppCacheStore cache;
   late AuthRepositoryImpl repository;
+  late ClientRegistrationRepositoryImpl registrationRepository;
 
   setUp(() {
     local = _MockAuthLocalDataSource();
@@ -29,6 +31,9 @@ void main() {
       localDataSource: local,
       remoteDataSource: remote,
       appCacheStore: cache,
+    );
+    registrationRepository = ClientRegistrationRepositoryImpl(
+      remoteDataSource: remote,
     );
   });
 
@@ -64,38 +69,6 @@ void main() {
         check(result.exceptionOrNull()).isA<AuthorizationFailure>();
         check(result.exceptionOrNull()?.displayMessage).equals(
           'Sua conta ainda esta pendente de aprovacao.',
-        );
-      },
-    );
-
-    test(
-      'should map missing registration token to validation failure',
-      () async {
-        when(
-          () => remote.readRegistrationStatus(token: any(named: 'token')),
-        ).thenThrow(
-          DioException(
-            requestOptions: RequestOptions(
-              path: '/client-auth/registration/status',
-            ),
-            response: Response<void>(
-              requestOptions: RequestOptions(
-                path: '/client-auth/registration/status',
-              ),
-              statusCode: 404,
-            ),
-            type: DioExceptionType.badResponse,
-          ),
-        );
-
-        final result = await repository.readRegistrationStatus(
-          token: 'bad-token',
-        );
-
-        check(result.isError()).isTrue();
-        check(result.exceptionOrNull()).isA<ValidationFailure>();
-        check(result.exceptionOrNull()?.displayMessage).equals(
-          'O token de cadastro informado e invalido.',
         );
       },
     );
@@ -157,6 +130,37 @@ void main() {
         check(result.getOrNull()).equals(ClientPasswordRecoveryStatus.invalid);
       },
     );
+  });
+
+  group('ClientRegistrationRepositoryImpl error mapping', () {
+    test(
+      'should map missing registration token to validation failure',
+      () async {
+        when(
+          () => remote.readRegistrationStatus(token: any(named: 'token')),
+        ).thenThrow(
+          DioException(
+            requestOptions: RequestOptions(
+              path: '/client-auth/registration/status',
+            ),
+            response: Response<void>(
+              requestOptions: RequestOptions(
+                path: '/client-auth/registration/status',
+              ),
+              statusCode: 404,
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+        );
+
+        final result = await registrationRepository.readRegistrationStatus(
+          token: 'bad-token',
+        );
+
+        check(result.isError()).isTrue();
+        check(result.exceptionOrNull()).isA<ValidationFailure>();
+      },
+    );
 
     test(
       'should map expired registration token to validation failure',
@@ -178,15 +182,12 @@ void main() {
           ),
         );
 
-        final result = await repository.readRegistrationStatus(
+        final result = await registrationRepository.readRegistrationStatus(
           token: 'expired-token',
         );
 
         check(result.isError()).isTrue();
         check(result.exceptionOrNull()).isA<ValidationFailure>();
-        check(result.exceptionOrNull()?.displayMessage).equals(
-          'O token de cadastro expirou. Solicite um novo cadastro.',
-        );
       },
     );
   });

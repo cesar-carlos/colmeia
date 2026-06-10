@@ -11,6 +11,8 @@ import 'package:colmeia/features/auth/data/models/client_patch_me_request_dto.da
 import 'package:colmeia/features/auth/data/models/client_refresh_response_dto.dart';
 import 'package:colmeia/features/auth/data/models/client_register_request_dto.dart';
 import 'package:colmeia/features/auth/data/models/client_register_response_dto.dart';
+import 'package:colmeia/features/auth/data/models/client_registration_retry_accepted_dto.dart';
+import 'package:colmeia/features/auth/data/models/client_registration_retry_request_dto.dart';
 import 'package:colmeia/features/auth/data/models/client_registration_status_response_dto.dart';
 import 'package:colmeia/features/auth/data/models/login_request_dto.dart';
 import 'package:colmeia/features/auth/domain/entities/client_password_recovery_status.dart';
@@ -37,6 +39,12 @@ abstract interface class AuthRemoteDataSource {
 
   Future<ClientRegistrationStatus> readRegistrationStatus({
     required String token,
+  });
+
+  Future<String> retryClientRegistration({
+    required String ownerEmail,
+    required String email,
+    required String password,
   });
 
   Future<AuthSessionModel> refreshSession({
@@ -118,9 +126,30 @@ class ApiAuthRemoteDataSource implements AuthRemoteDataSource {
       options: _publicClientAuthOptions,
     );
 
-    return ClientRegisterResponseDto.fromJson(
+    final responseBody = response.data ?? const <String, dynamic>{};
+
+    return ClientRegisterResponseDto.fromJson(responseBody).toEntity();
+  }
+
+  @override
+  Future<String> retryClientRegistration({
+    required String ownerEmail,
+    required String email,
+    required String password,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ClientAuthApiRoutes.registrationRetry,
+      data: ClientRegistrationRetryRequestDto(
+        ownerEmail: ownerEmail,
+        email: email,
+        password: password,
+      ).toJson(),
+      options: _publicClientAuthOptions,
+    );
+
+    return ClientRegistrationRetryAcceptedDto.fromJson(
       response.data ?? const <String, dynamic>{},
-    ).toEntity();
+    ).message;
   }
 
   @override

@@ -4,8 +4,6 @@ import 'package:colmeia/features/auth/data/datasources/auth_local_datasource.dar
 import 'package:colmeia/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:colmeia/features/auth/data/models/auth_session_model.dart';
 import 'package:colmeia/features/auth/data/repositories/auth_repository_impl.dart';
-import 'package:colmeia/features/auth/domain/entities/client_registration_status.dart';
-import 'package:colmeia/features/auth/domain/entities/client_registration_submission.dart';
 import 'package:colmeia/features/user_context/domain/entities/user_profile.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -74,43 +72,6 @@ void main() {
       check(result.getOrNull()?.userId).equals('client-1');
       verify(() => local.saveSession(session)).called(1);
     });
-  });
-
-  group('register', () {
-    test(
-      'returns Success with registration submission on happy path',
-      () async {
-        const submission = ClientRegistrationSubmission(
-          status: ClientRegistrationStatus.pending,
-          message: 'Pending approval',
-          approvalToken: 'token-abc',
-        );
-        when(
-          () => remote.register(
-            ownerEmail: any(named: 'ownerEmail'),
-            firstName: any(named: 'firstName'),
-            lastName: any(named: 'lastName'),
-            email: any(named: 'email'),
-            password: any(named: 'password'),
-            mobile: any(named: 'mobile'),
-          ),
-        ).thenAnswer((_) async => submission);
-
-        final result = await repository.register(
-          ownerEmail: 'owner@corp.com',
-          firstName: 'Alice',
-          lastName: 'Doe',
-          email: 'client@corp.com',
-          password: 'pa55w0rd',
-        );
-
-        check(result.isSuccess()).isTrue();
-        check(
-          result.getOrNull()?.status,
-        ).equals(ClientRegistrationStatus.pending);
-        check(result.getOrNull()?.approvalToken).equals('token-abc');
-      },
-    );
   });
 
   group('restoreSession', () {

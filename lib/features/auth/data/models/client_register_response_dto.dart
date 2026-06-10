@@ -6,7 +6,8 @@ class ClientRegisterResponseDto {
   const ClientRegisterResponseDto({
     required this.status,
     this.message,
-    this.approvalToken,
+    this.pollToken,
+    this.duplicate = false,
   });
 
   factory ClientRegisterResponseDto.fromJson(Map<String, dynamic> json) {
@@ -24,22 +25,47 @@ class ClientRegisterResponseDto {
     return ClientRegisterResponseDto(
       status: ClientRegistrationStatusParsing.fromRaw(rawStatus),
       message: readOptionalString(payload, const <String>['message']),
-      approvalToken: readOptionalString(
-        payload,
-        const <String>['approvalToken', 'approval_token', 'token'],
-      ),
+      pollToken: _resolvePollToken(payload),
+      duplicate: _resolveDuplicate(payload),
     );
   }
 
   final ClientRegistrationStatus status;
   final String? message;
-  final String? approvalToken;
+  final String? pollToken;
+  final bool duplicate;
+
+  static String? _resolvePollToken(Map<String, dynamic> payload) {
+    return readOptionalString(
+          payload,
+          const <String>[
+            'registrationPollToken',
+            'registration_poll_token',
+          ],
+        ) ??
+        readOptionalString(
+          payload,
+          const <String>['approvalToken', 'approval_token', 'token'],
+        );
+  }
+
+  static bool _resolveDuplicate(Map<String, dynamic> payload) {
+    final raw = payload['duplicate'] ?? payload['isDuplicate'];
+    if (raw is bool) {
+      return raw;
+    }
+    if (raw is String) {
+      return raw.toLowerCase() == 'true';
+    }
+    return false;
+  }
 
   ClientRegistrationSubmission toEntity() {
     return ClientRegistrationSubmission(
       status: status,
       message: message,
-      approvalToken: approvalToken,
+      pollToken: pollToken,
+      duplicate: duplicate,
     );
   }
 }

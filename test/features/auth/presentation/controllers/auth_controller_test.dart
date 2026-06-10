@@ -1,9 +1,9 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/network/auth_session_events.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
+import 'package:colmeia/features/auth/application/auth_registration_preferences_service.dart';
 import 'package:colmeia/features/auth/application/usecases/login_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/logout_use_case.dart';
-import 'package:colmeia/features/auth/application/usecases/register_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/restore_session_use_case.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/domain/repositories/auth_repository.dart';
@@ -11,10 +11,13 @@ import 'package:colmeia/features/auth/presentation/controllers/auth_controller.d
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:result_dart/result_dart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockAuthRepository extends Mock implements AuthRepository {}
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   group('AuthController', () {
     late _MockAuthRepository repository;
     late AuthSessionEvents sessionEvents;
@@ -28,15 +31,18 @@ void main() {
       expiresAt: DateTime.now().add(const Duration(hours: 1)),
     );
 
-    setUp(() {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
       repository = _MockAuthRepository();
       sessionEvents = AuthSessionEvents();
+      final prefs = await SharedPreferences.getInstance();
       controller = AuthController(
         loginUseCase: LoginUseCase(repository),
         logoutUseCase: LogoutUseCase(repository),
-        registerUseCase: RegisterUseCase(repository),
         restoreSessionUseCase: RestoreSessionUseCase(repository),
         authSessionEvents: sessionEvents,
+        registrationPreferencesService:
+            AuthRegistrationPreferencesService(prefs),
       );
     });
 

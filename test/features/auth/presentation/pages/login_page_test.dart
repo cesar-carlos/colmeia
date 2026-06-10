@@ -3,13 +3,11 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/network/auth_session_events.dart';
 import 'package:colmeia/features/auth/application/auth_login_preferences_service.dart';
+import 'package:colmeia/features/auth/application/auth_registration_preferences_service.dart';
 import 'package:colmeia/features/auth/application/usecases/login_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/logout_use_case.dart';
-import 'package:colmeia/features/auth/application/usecases/register_use_case.dart';
 import 'package:colmeia/features/auth/application/usecases/restore_session_use_case.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
-import 'package:colmeia/features/auth/domain/entities/client_registration_status.dart';
-import 'package:colmeia/features/auth/domain/entities/client_registration_submission.dart';
 import 'package:colmeia/features/auth/domain/repositories/auth_repository.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/auth/presentation/controllers/login_page_controller.dart';
@@ -29,14 +27,15 @@ void main() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
   });
 
-  AuthController buildAuthController() {
+  Future<AuthController> buildAuthController() async {
     final repo = _FakeAuthRepository();
+    final prefs = await SharedPreferences.getInstance();
     return AuthController(
       loginUseCase: LoginUseCase(repo),
       logoutUseCase: LogoutUseCase(repo),
-      registerUseCase: RegisterUseCase(repo),
       restoreSessionUseCase: RestoreSessionUseCase(repo),
       authSessionEvents: AuthSessionEvents(),
+      registrationPreferencesService: AuthRegistrationPreferencesService(prefs),
     );
   }
 
@@ -50,7 +49,7 @@ void main() {
   testWidgets('should show e-mail validation when submitting empty e-mail', (
     tester,
   ) async {
-    final auth = buildAuthController();
+    final auth = await buildAuthController();
     final loginPage = await buildLoginPage();
 
     await tester.pumpWidget(
@@ -84,7 +83,7 @@ void main() {
   });
 
   testWidgets('should toggle password visibility', (tester) async {
-    final auth = buildAuthController();
+    final auth = await buildAuthController();
     final loginPage = await buildLoginPage();
 
     await tester.pumpWidget(
@@ -111,12 +110,13 @@ void main() {
   });
 
   testWidgets('should show inline alert when sign-in fails', (tester) async {
+    final prefs = await SharedPreferences.getInstance();
     final auth = AuthController(
       loginUseCase: LoginUseCase(_FakeAuthLoginFailureRepository()),
       logoutUseCase: LogoutUseCase(_FakeAuthRepository()),
-      registerUseCase: RegisterUseCase(_FakeAuthRepository()),
       restoreSessionUseCase: RestoreSessionUseCase(_FakeAuthRepository()),
       authSessionEvents: AuthSessionEvents(),
+      registrationPreferencesService: AuthRegistrationPreferencesService(prefs),
     );
     final loginPage = await buildLoginPage();
 
@@ -170,29 +170,6 @@ final class _FakeAuthLoginFailureRepository implements AuthRepository {
   Future<AppResult<Unit>> logout() async => const Success(unit);
 
   @override
-  Future<AppResult<ClientRegistrationSubmission>> register({
-    required String ownerEmail,
-    required String firstName,
-    required String lastName,
-    required String email,
-    required String password,
-    String? mobile,
-  }) async {
-    return const Failure<ClientRegistrationSubmission, AppFailure>(
-      UnknownFailure(message: 'test', userMessage: 'test'),
-    );
-  }
-
-  @override
-  Future<AppResult<ClientRegistrationStatus>> readRegistrationStatus({
-    required String token,
-  }) async {
-    return const Failure<ClientRegistrationStatus, AppFailure>(
-      UnknownFailure(message: 'test', userMessage: 'test'),
-    );
-  }
-
-  @override
   Future<AppResult<AuthSession>> restoreSession() async {
     return const Failure<AuthSession, AppFailure>(
       SessionFailure(message: 'none', userMessage: 'none'),
@@ -216,29 +193,6 @@ final class _FakeAuthRepository implements AuthRepository {
 
   @override
   Future<AppResult<Unit>> logout() async => const Success(unit);
-
-  @override
-  Future<AppResult<ClientRegistrationSubmission>> register({
-    required String ownerEmail,
-    required String firstName,
-    required String lastName,
-    required String email,
-    required String password,
-    String? mobile,
-  }) async {
-    return const Failure<ClientRegistrationSubmission, AppFailure>(
-      UnknownFailure(message: 'test', userMessage: 'test'),
-    );
-  }
-
-  @override
-  Future<AppResult<ClientRegistrationStatus>> readRegistrationStatus({
-    required String token,
-  }) async {
-    return const Failure<ClientRegistrationStatus, AppFailure>(
-      UnknownFailure(message: 'test', userMessage: 'test'),
-    );
-  }
 
   @override
   Future<AppResult<AuthSession>> restoreSession() async {

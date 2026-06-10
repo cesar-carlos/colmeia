@@ -3,6 +3,7 @@ enum ClientRegistrationStatus {
   approved,
   rejected,
   expired,
+  blocked,
   unknown,
 }
 
@@ -13,6 +14,7 @@ extension ClientRegistrationStatusParsing on ClientRegistrationStatus {
       'approved' => ClientRegistrationStatus.approved,
       'rejected' => ClientRegistrationStatus.rejected,
       'expired' => ClientRegistrationStatus.expired,
+      'blocked' => ClientRegistrationStatus.blocked,
       _ => ClientRegistrationStatus.unknown,
     };
   }
@@ -22,6 +24,7 @@ extension ClientRegistrationStatusParsing on ClientRegistrationStatus {
     ClientRegistrationStatus.approved => 'approved',
     ClientRegistrationStatus.rejected => 'rejected',
     ClientRegistrationStatus.expired => 'expired',
+    ClientRegistrationStatus.blocked => 'blocked',
     ClientRegistrationStatus.unknown => 'unknown',
   };
 }

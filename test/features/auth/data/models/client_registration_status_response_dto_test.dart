@@ -15,6 +15,16 @@ void main() {
       check(dto.status).equals(ClientRegistrationStatus.approved);
     });
 
+    test('should parse blocked status', () {
+      final dto = ClientRegistrationStatusResponseDto.fromJson(
+        const <String, dynamic>{
+          'status': 'blocked',
+        },
+      );
+
+      check(dto.status).equals(ClientRegistrationStatus.blocked);
+    });
+
     test('should parse wrapped pending status', () {
       final dto = ClientRegistrationStatusResponseDto.fromJson(
         const <String, dynamic>{

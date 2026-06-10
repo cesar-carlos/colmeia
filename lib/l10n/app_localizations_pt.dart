@@ -4860,12 +4860,168 @@ class AppLocalizationsPt extends AppLocalizations {
   String get authRegisterBackToLogin => 'Voltar para o login';
 
   @override
+  String get authRegistrationStatusTitle => 'Consultar status do cadastro';
+
+  @override
+  String get authRegistrationStatusSubtitle =>
+      'Se você recebeu um token de acompanhamento, informe-o abaixo para verificar se o cadastro continua pendente, foi aprovado, rejeitado ou expirou.';
+
+  @override
+  String get authRegistrationStatusTokenLabel => 'Token de acompanhamento';
+
+  @override
+  String get authRegistrationStatusTokenRequired =>
+      'Informe o token para consultar o cadastro.';
+
+  @override
+  String get authRegistrationStatusSubmitButton => 'Consultar status';
+
+  @override
+  String get authRegistrationStatusGoToLogin => 'Ir para o login';
+
+  @override
+  String get authRegistrationStatusCreateNew => 'Criar novo cadastro';
+
+  @override
+  String get authRegistrationStatusPendingTitle => 'Cadastro pendente';
+
+  @override
+  String get authRegistrationStatusPendingMessage =>
+      'Sua solicitação ainda está aguardando a aprovação do responsável.';
+
+  @override
+  String get authRegistrationStatusApprovedTitle => 'Cadastro aprovado';
+
+  @override
+  String get authRegistrationStatusApprovedMessage =>
+      'Seu cadastro já pode acessar o login com o e-mail e senha informados.';
+
+  @override
+  String get authRegistrationStatusRejectedTitle => 'Cadastro rejeitado';
+
+  @override
+  String get authRegistrationStatusRejectedMessage =>
+      'A solicitação foi rejeitada. Você pode reenviar a aprovação com os dados da conta ou criar um novo cadastro.';
+
+  @override
+  String get authRegistrationStatusExpiredTitle => 'Cadastro expirado';
+
+  @override
+  String get authRegistrationStatusExpiredMessage =>
+      'O token de acompanhamento expirou. Reenvie a solicitação com os dados da conta ou crie um novo cadastro.';
+
+  @override
+  String get authRegistrationStatusBlockedTitle => 'Cadastro bloqueado';
+
+  @override
+  String get authRegistrationStatusBlockedMessage =>
+      'Esta conta foi bloqueada. Fale com o responsável pela aprovação para mais informações.';
+
+  @override
+  String get authRegistrationStatusUnknownTitle => 'Status desconhecido';
+
+  @override
+  String get authRegistrationStatusUnknownMessage =>
+      'Não foi possível classificar o status retornado pela API.';
+
+  @override
+  String get authRegistrationRetryPrompt =>
+      'Se a solicitação foi rejeitada ou expirou, você pode reenviar o pedido de aprovação ao responsável.';
+
+  @override
+  String get authRegistrationRetryAction => 'Reenviar solicitação';
+
+  @override
+  String get authRegistrationRetrySubmit => 'Confirmar reenvio';
+
+  @override
+  String get authRegistrationRetryGenericSuccess =>
+      'Se elegível, uma nova solicitação de aprovação será enviada ao responsável.';
+
+  @override
+  String get authRegisterGenericSuccess =>
+      'Cadastro enviado com sucesso. Aguarde a aprovação.';
+
+  @override
+  String get authRegisterSubmitFailure =>
+      'Não foi possível enviar sua solicitação de cadastro agora.';
+
+  @override
+  String get authRegistrationStatusLoadFailure =>
+      'Não foi possível consultar o status da solicitação agora.';
+
+  @override
+  String get authRegistrationRetryFailure =>
+      'Não foi possível reenviar a solicitação de cadastro agora.';
+
+  @override
+  String get authRegisterOwnerEmailNotEligible =>
+      'O e-mail do responsável não está apto para aprovar este cadastro.';
+
+  @override
+  String get authRegistrationRateLimited =>
+      'Você excedeu o limite de tentativas. Aguarde para tentar novamente.';
+
+  @override
+  String get authRegistrationStatusTokenInvalid =>
+      'O formato do token de acompanhamento é inválido.';
+
+  @override
+  String get authRegistrationStatusTokenExpired =>
+      'O token de acompanhamento expirou. Solicite um novo cadastro.';
+
+  @override
+  String get authRegisterFirstNameTooLong =>
+      'O nome deve ter no máximo 120 caracteres.';
+
+  @override
+  String get authRegisterLastNameTooLong =>
+      'O sobrenome deve ter no máximo 120 caracteres.';
+
+  @override
+  String get authRegisterMobileInvalid =>
+      'Informe um celular brasileiro válido (11 dígitos, começando com 9).';
+
+  @override
+  String get authRegisterDuplicateTitle => 'Solicitação já recebida';
+
+  @override
+  String get authRegisterDuplicateMessage =>
+      'Já existe uma solicitação de cadastro com esses dados. Consulte o status ou aguarde a aprovação do responsável.';
+
+  @override
+  String get authRegisterDuplicateCheckStatus => 'Consultar status do cadastro';
+
+  @override
+  String get authRegistrationApprovedSignInNow => 'Entrar agora';
+
+  @override
+  String get authRegistrationApprovedAgentAccessNote =>
+      'Após entrar, solicite acesso a agentes nas configurações da conta, se necessário.';
+
+  @override
+  String get authPasswordRequired => 'Informe a senha.';
+
+  @override
   String authPasswordTooShort(int minLength) {
     return 'A senha deve ter pelo menos $minLength caracteres.';
   }
 
   @override
   String get authConfirmPasswordRequired => 'Confirme sua senha.';
+
+  @override
+  String authPasswordTooLong(int maxLength) {
+    return 'A senha deve ter no máximo $maxLength caracteres.';
+  }
+
+  @override
+  String get authPasswordNeedsUppercase =>
+      'A senha deve conter pelo menos uma letra maiúscula.';
+
+  @override
+  String get authPasswordNeedsNumber =>
+      'A senha deve conter pelo menos um número.';
 
   @override
   String get authPasswordsMismatch => 'As senhas não conferem.';
@@ -9748,12 +9904,168 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get authRegisterBackToLogin => 'Voltar para o login';
 
   @override
+  String get authRegistrationStatusTitle => 'Consultar status do cadastro';
+
+  @override
+  String get authRegistrationStatusSubtitle =>
+      'Se você recebeu um token de acompanhamento, informe-o abaixo para verificar se o cadastro continua pendente, foi aprovado, rejeitado ou expirou.';
+
+  @override
+  String get authRegistrationStatusTokenLabel => 'Token de acompanhamento';
+
+  @override
+  String get authRegistrationStatusTokenRequired =>
+      'Informe o token para consultar o cadastro.';
+
+  @override
+  String get authRegistrationStatusSubmitButton => 'Consultar status';
+
+  @override
+  String get authRegistrationStatusGoToLogin => 'Ir para o login';
+
+  @override
+  String get authRegistrationStatusCreateNew => 'Criar novo cadastro';
+
+  @override
+  String get authRegistrationStatusPendingTitle => 'Cadastro pendente';
+
+  @override
+  String get authRegistrationStatusPendingMessage =>
+      'Sua solicitação ainda está aguardando a aprovação do responsável.';
+
+  @override
+  String get authRegistrationStatusApprovedTitle => 'Cadastro aprovado';
+
+  @override
+  String get authRegistrationStatusApprovedMessage =>
+      'Seu cadastro já pode acessar o login com o e-mail e senha informados.';
+
+  @override
+  String get authRegistrationStatusRejectedTitle => 'Cadastro rejeitado';
+
+  @override
+  String get authRegistrationStatusRejectedMessage =>
+      'A solicitação foi rejeitada. Você pode reenviar a aprovação com os dados da conta ou criar um novo cadastro.';
+
+  @override
+  String get authRegistrationStatusExpiredTitle => 'Cadastro expirado';
+
+  @override
+  String get authRegistrationStatusExpiredMessage =>
+      'O token de acompanhamento expirou. Reenvie a solicitação com os dados da conta ou crie um novo cadastro.';
+
+  @override
+  String get authRegistrationStatusBlockedTitle => 'Cadastro bloqueado';
+
+  @override
+  String get authRegistrationStatusBlockedMessage =>
+      'Esta conta foi bloqueada. Fale com o responsável pela aprovação para mais informações.';
+
+  @override
+  String get authRegistrationStatusUnknownTitle => 'Status desconhecido';
+
+  @override
+  String get authRegistrationStatusUnknownMessage =>
+      'Não foi possível classificar o status retornado pela API.';
+
+  @override
+  String get authRegistrationRetryPrompt =>
+      'Se a solicitação foi rejeitada ou expirou, você pode reenviar o pedido de aprovação ao responsável.';
+
+  @override
+  String get authRegistrationRetryAction => 'Reenviar solicitação';
+
+  @override
+  String get authRegistrationRetrySubmit => 'Confirmar reenvio';
+
+  @override
+  String get authRegistrationRetryGenericSuccess =>
+      'Se elegível, uma nova solicitação de aprovação será enviada ao responsável.';
+
+  @override
+  String get authRegisterGenericSuccess =>
+      'Cadastro enviado com sucesso. Aguarde a aprovação.';
+
+  @override
+  String get authRegisterSubmitFailure =>
+      'Não foi possível enviar sua solicitação de cadastro agora.';
+
+  @override
+  String get authRegistrationStatusLoadFailure =>
+      'Não foi possível consultar o status da solicitação agora.';
+
+  @override
+  String get authRegistrationRetryFailure =>
+      'Não foi possível reenviar a solicitação de cadastro agora.';
+
+  @override
+  String get authRegisterOwnerEmailNotEligible =>
+      'O e-mail do responsável não está apto para aprovar este cadastro.';
+
+  @override
+  String get authRegistrationRateLimited =>
+      'Você excedeu o limite de tentativas. Aguarde para tentar novamente.';
+
+  @override
+  String get authRegistrationStatusTokenInvalid =>
+      'O formato do token de acompanhamento é inválido.';
+
+  @override
+  String get authRegistrationStatusTokenExpired =>
+      'O token de acompanhamento expirou. Solicite um novo cadastro.';
+
+  @override
+  String get authRegisterFirstNameTooLong =>
+      'O nome deve ter no máximo 120 caracteres.';
+
+  @override
+  String get authRegisterLastNameTooLong =>
+      'O sobrenome deve ter no máximo 120 caracteres.';
+
+  @override
+  String get authRegisterMobileInvalid =>
+      'Informe um celular brasileiro válido (11 dígitos, começando com 9).';
+
+  @override
+  String get authRegisterDuplicateTitle => 'Solicitação já recebida';
+
+  @override
+  String get authRegisterDuplicateMessage =>
+      'Já existe uma solicitação de cadastro com esses dados. Consulte o status ou aguarde a aprovação do responsável.';
+
+  @override
+  String get authRegisterDuplicateCheckStatus => 'Consultar status do cadastro';
+
+  @override
+  String get authRegistrationApprovedSignInNow => 'Entrar agora';
+
+  @override
+  String get authRegistrationApprovedAgentAccessNote =>
+      'Após entrar, solicite acesso a agentes nas configurações da conta, se necessário.';
+
+  @override
+  String get authPasswordRequired => 'Informe a senha.';
+
+  @override
   String authPasswordTooShort(int minLength) {
     return 'A senha deve ter pelo menos $minLength caracteres.';
   }
 
   @override
   String get authConfirmPasswordRequired => 'Confirme sua senha.';
+
+  @override
+  String authPasswordTooLong(int maxLength) {
+    return 'A senha deve ter no máximo $maxLength caracteres.';
+  }
+
+  @override
+  String get authPasswordNeedsUppercase =>
+      'A senha deve conter pelo menos uma letra maiúscula.';
+
+  @override
+  String get authPasswordNeedsNumber =>
+      'A senha deve conter pelo menos um número.';
 
   @override
   String get authPasswordsMismatch => 'As senhas não conferem.';

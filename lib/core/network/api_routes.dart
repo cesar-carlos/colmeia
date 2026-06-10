@@ -61,6 +61,7 @@ abstract final class OwnerClientAccessApiRoutes {
 abstract final class ClientAuthApiRoutes {
   static const String register = '/client-auth/register';
   static const String registrationStatus = '/client-auth/registration/status';
+  static const String registrationRetry = '/client-auth/registration/retry';
   static const String login = '/client-auth/login';
   static const String refresh = '/client-auth/refresh';
   static const String logout = '/client-auth/logout';
@@ -77,6 +78,7 @@ abstract final class ClientAuthApiRoutes {
   static const Set<String> unauthenticated = <String>{
     register,
     registrationStatus,
+    registrationRetry,
     login,
     refresh,
     logout,
