@@ -29,10 +29,12 @@ void main() {
     await tester.binding.setSurfaceSize(const Size(1440, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
+    final l10n = lookupAppLocalizations(const Locale('pt', 'BR'));
+
     await tester.pumpWidget(
       LocalizedTestApp(
         child: SalesRankingProdutosFaturamentoBranchCard(
-          l10n: lookupAppLocalizations(const Locale('pt', 'BR')),
+          l10n: l10n,
           codEmpresa: 1,
           codFilial: 1,
           branchDisplayName: 'Rondonopolis Lions',
@@ -53,7 +55,7 @@ void main() {
             ),
           ],
           onRequestShare: (_, _) {},
-          metricSubtitle: 'Top 5 â€¢ Faturamento',
+          metricSubtitle: 'Top 5 • Faturamento',
         ),
       ),
     );
@@ -65,26 +67,28 @@ void main() {
       find.byKey(const Key('sales-ranking-branch-desktop-layout')),
       findsOneWidget,
     );
-    expect(find.byTooltip('Compartilhar grÃ¡fico'), findsOneWidget);
+    expect(find.byTooltip(l10n.chartShareTooltip), findsOneWidget);
     expect(find.byIcon(Icons.download_outlined), findsNothing);
   });
 
   testWidgets('disables share when rows are empty', (tester) async {
+    final l10n = lookupAppLocalizations(const Locale('pt', 'BR'));
+
     await tester.pumpWidget(
       LocalizedTestApp(
         child: SalesRankingProdutosFaturamentoBranchCard(
-          l10n: lookupAppLocalizations(const Locale('pt', 'BR')),
+          l10n: l10n,
           codEmpresa: 1,
           codFilial: 1,
           rows: const <RankingProdutosFaturamentoRow>[],
           onRequestShare: (_, _) {},
-          metricSubtitle: 'Top 5 â€¢ Faturamento',
+          metricSubtitle: 'Top 5 • Faturamento',
         ),
       ),
     );
 
     await tester.pumpAndSettle();
 
-    expect(find.byTooltip('Compartilhar grÃ¡fico'), findsNothing);
+    expect(find.byTooltip(l10n.chartShareTooltip), findsNothing);
   });
 }

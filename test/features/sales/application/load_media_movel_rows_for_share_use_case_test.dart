@@ -68,7 +68,7 @@ void main() {
       userId: 'u',
       agentId: 'a',
       filter: filter,
-      totalCount: 501,
+      totalCount: LoadMediaMovelRowsForShareUseCase.maxExportRowCount + 1,
     );
 
     expect(result.isError(), isTrue);
