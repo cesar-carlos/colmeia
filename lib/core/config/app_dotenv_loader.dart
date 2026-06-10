@@ -12,6 +12,9 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 ///
 /// The merge step uses a small line parser (see `assets/env/.env.example`); for
 /// `bundledDefault`, the full `flutter_dotenv` parser applies.
+///
+/// Failures are rethrown so `bootstrap()` can surface the failure shell;
+/// release builds rely on that catch instead of crashing the process.
 Future<void> loadAppDotenv() async {
   try {
     await dotenv.load(fileName: EnvAssetPaths.bundledDefault);
@@ -20,6 +23,7 @@ Future<void> loadAppDotenv() async {
       'Failed to load ${EnvAssetPaths.bundledDefault}',
       context: const <String, Object?>{
         'component': 'loadAppDotenv',
+        'releaseMode': kReleaseMode,
       },
       error: error,
       stackTrace: stackTrace,

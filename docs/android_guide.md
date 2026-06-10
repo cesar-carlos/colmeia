@@ -6,7 +6,7 @@ Para iOS/TestFlight, veja [ios_guide.md](install/ios_guide.md). Valores abaixo r
 ## Pré-requisitos
 
 - **Flutter** compatível com `pubspec.yaml` (`sdk: ^3.11.0`). Confira com `flutter doctor -v`.
-- **JDK 17** — o módulo Android usa `sourceCompatibility` / `targetCompatibility` e `jvmTarget` em **17** (`android/app/build.gradle.kts`).
+- **JDK 17** — o módulo `:app` define Java 17 em `compileOptions` e alinha o Kotlin com `tasks.withType<KotlinCompile> { compilerOptions.jvmTarget = JVM_17 }` em `android/app/build.gradle.kts`. Plugins Flutter legados em outros subprojetos herdam o alinhamento via `android/build.gradle.kts`.
 - **Android SDK** instalado (via Android Studio ou `sdkmanager`). O `compileSdk`, `minSdk` e `targetSdk` seguem as versões definidas pelo **Flutter** (`flutter.compileSdkVersion`, `flutter.minSdkVersion`, `flutter.targetSdkVersion` no `build.gradle.kts` do app).
 - Arquivo **`android/local.properties`** gerado pelo Flutter/Android Studio com `sdk.dir` e `flutter.sdk` (não versionar credenciais ou caminhos sensíveis se a política do time exigir).
 
@@ -76,17 +76,47 @@ flutter run --release
 
 ## Assinatura (release)
 
-No `android/app/build.gradle.kts`, o bloco `release` ainda aponta para **`signingConfigs.debug`** com comentário de TODO. Isso serve para `flutter run --release` em desenvolvimento, **não** para publicação na Play Store.
+`flutter build apk --release` e `flutter build appbundle --release` exigem `android/key.properties` com keystore válido. O Gradle valida o arquivo antes de compilar release (caminho relativo a `android/`, keystore dentro de `android/`).
 
-Para produção:
+Para produção local:
 
 1. Gere um keystore (ou use o keystore da empresa).
-2. Crie `android/key.properties` (ou equivalente seguro no CI) com `storePassword`, `keyPassword`, `keyAlias`, `storeFile`.
-3. Configure `signingConfigs.release` no `app/build.gradle.kts` e associe `buildTypes.release` a essa config.
-4. **Nunca** commite senhas ou arquivos `.jks` em repositório público.
+2. Copie `android/key.properties.example` para `android/key.properties` e preencha `storePassword`, `keyPassword`, `keyAlias`, `storeFile`.
+3. **Nunca** commite senhas ou arquivos `.jks` em repositório público.
+
+No **CI** (`flutter_ci.yml`), o job `android_release_smoke` gera um keystore efêmero só para compilar release e detectar erros de build; não substitui os secrets de assinatura usados em `windows_release.yml` para artefatos de loja.
 
 Consulte a documentação oficial do Flutter: [Sign the app](https://docs.flutter.dev/deployment/android#sign-the-app).
 
+## Páginas de 16 KB (Android 15+ / Galaxy S24)
+
+A partir do Android 15, dispositivos com **page size de 16 KB** (ex.: Galaxy S24 em builds recentes) exigem que bibliotecas nativas (`.so`) estejam alinhadas para 16 KB. Builds Flutter recentes e o NDK do projeto já endereçam isso na maioria dos casos; valide em hardware ou emulador 16 KB antes de publicar.
+
+**Como testar:**
+
+1. Use um emulador Android 15+ com imagem **16 KB page size** (Android Studio → Device Manager → criar AVD com system image marcada como 16 KB), ou um Galaxy S24 (ou equivalente) com Android 15+.
+2. Instale um build release assinado: `flutter build apk --release` (com `key.properties`) e `adb install`.
+3. Abra o app, exercite fluxos com plugins nativos (câmera, arquivos, notificações) e monitore `adb logcat` por falhas de carregamento de `.so` ou crashes na inicialização.
+
+**Verificação automatizada (CI e local):**
+
+`ash
+python tool/check_apk_native_alignment.py build/app/outputs/flutter-apk/app-release.apk
+`
+
+O job ndroid_release_smoke em .github/workflows/flutter_ci.yml executa esse script após lutter build apk --release.
+
+Se o app falhar só em 16 KB, atualize Flutter/NDK/plugins para versões compatíveis e recompile; consulte [Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes) na documentação Android.
+
+
+## Backup e extração de dados
+
+O app define ndroid:allowBackup="false" e regras explícitas em:
+
+- ndroid/app/src/main/res/xml/backup_rules.xml (ndroid:fullBackupContent)
+- ndroid/app/src/main/res/xml/data_extraction_rules.xml (ndroid:dataExtractionRules)
+
+Isso evita backup em nuvem ou transferência entre dispositivos de dados locais (Hive, preferências, cache).
 ## Deep links e App Links
 
 O `AndroidManifest.xml` declara `intent-filter` com `android:autoVerify="true"` para URLs HTTPS do host **`plug-server.se7esistemassinop.com.br`**, incluindo prefixos de revisão de recuperação de senha e registro (com e sem prefixo `/api/v1`).

@@ -118,12 +118,18 @@ flutter:
     # Note: assets/icons/ is build-time only (flutter_launcher_icons) and
     # should NOT be listed here.
 
-  # Custom fonts — the project uses google_fonts at runtime, so no bundled
-  # font files are needed today. When offline-first fonts become necessary,
-  # download them to assets/fonts/ and declare them here:
-  # fonts:
-  #   - family: Inter
-  #     fonts:
-  #       - asset: assets/fonts/Inter-Regular.ttf
-  #       - asset: assets/fonts/Inter-Bold.ttf
-  #         weight: 700
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-Bold.ttf
+          weight: 700
+    - family: Manrope
+      fonts:
+        - asset: assets/fonts/Manrope-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Manrope-Bold.ttf
+          weight: 700

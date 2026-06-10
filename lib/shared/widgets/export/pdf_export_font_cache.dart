@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'dart:typed_data';
 
+import 'package:colmeia/shared/design_system/app_font_families.dart';
+import 'package:flutter/services.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 
 const Duration _kPdfFontWarmTimeout = Duration(seconds: 15);
 
@@ -18,7 +18,7 @@ abstract final class PdfExportFontCache {
   /// Whether PDF export fonts are already available without awaiting network I/O.
   static bool get isWarmed => _fontsLoaded;
 
-  /// Preloads Google Fonts used by PDF exports.
+  /// Preloads bundled Inter fonts used by PDF exports.
   static Future<void> warmFonts() {
     if (_fontsLoaded) {
       return Future<void>.value();
@@ -31,16 +31,16 @@ abstract final class PdfExportFontCache {
       return;
     }
     try {
-      final headerFont = await PdfGoogleFonts.interBold().timeout(
-        _kPdfFontWarmTimeout,
-      );
-      final bodyFont = await PdfGoogleFonts.interRegular().timeout(
-        _kPdfFontWarmTimeout,
-      );
-      _headerFont = headerFont;
-      _bodyFont = bodyFont;
-      _headerFontBytes = _optionalFontBytes(headerFont);
-      _bodyFontBytes = _optionalFontBytes(bodyFont);
+      final headerData = await rootBundle
+          .load(AppFontAssets.interBold)
+          .timeout(_kPdfFontWarmTimeout);
+      final bodyData = await rootBundle
+          .load(AppFontAssets.interRegular)
+          .timeout(_kPdfFontWarmTimeout);
+      _headerFontBytes = headerData.buffer.asUint8List();
+      _bodyFontBytes = bodyData.buffer.asUint8List();
+      _headerFont = pw.Font.ttf(headerData);
+      _bodyFont = pw.Font.ttf(bodyData);
     } on Object {
       _headerFont = pw.Font.helveticaBold();
       _bodyFont = pw.Font.helvetica();
@@ -48,13 +48,6 @@ abstract final class PdfExportFontCache {
       _bodyFontBytes = null;
     }
     _fontsLoaded = true;
-  }
-
-  static Uint8List? _optionalFontBytes(pw.Font font) {
-    if (font is pw.TtfFont) {
-      return font.data.buffer.asUint8List();
-    }
-    return null;
   }
 
   static Future<pw.Font> headerFont() async {

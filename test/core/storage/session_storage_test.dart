@@ -4,6 +4,7 @@ import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/security/app_crypto.dart';
 import 'package:colmeia/core/storage/session_storage.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -65,6 +66,56 @@ void main() {
       final value = await sessionStorage.read('auth_session');
 
       check(value).equals('legacy-session');
+    });
+
+    test('should fall back to in-memory storage on platform write error', () async {
+      when(
+        () => secureStorage.write(
+          key: any(named: 'key'),
+          value: any(named: 'value'),
+        ),
+      ).thenThrow(
+        PlatformException(code: 'write_failed', message: 'Keystore unavailable'),
+      );
+      when(
+        () => secureStorage.read(key: any(named: 'key')),
+      ).thenThrow(MissingPluginException());
+
+      await sessionStorage.write(
+        key: 'auth_session',
+        value: 'raw-session',
+      );
+
+      final value = await sessionStorage.read('auth_session');
+
+      check(value).equals('raw-session');
+    });
+
+    test('should clear in-memory fallback on platform delete error', () async {
+      when(
+        () => secureStorage.write(
+          key: any(named: 'key'),
+          value: any(named: 'value'),
+        ),
+      ).thenThrow(MissingPluginException());
+      when(
+        () => secureStorage.delete(key: any(named: 'key')),
+      ).thenThrow(
+        PlatformException(code: 'delete_failed', message: 'Keystore unavailable'),
+      );
+      when(
+        () => secureStorage.read(key: any(named: 'key')),
+      ).thenThrow(MissingPluginException());
+
+      await sessionStorage.write(
+        key: 'auth_session',
+        value: 'raw-session',
+      );
+      await sessionStorage.delete('auth_session');
+
+      final value = await sessionStorage.read('auth_session');
+
+      check(value).isNull();
     });
 
     test('should throw storage failure when digest is invalid', () async {

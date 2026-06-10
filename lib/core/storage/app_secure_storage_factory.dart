@@ -19,5 +19,12 @@ FlutterSecureStorage createAppSecureStorage() {
       ),
     );
   }
+  if (defaultTargetPlatform == TargetPlatform.android) {
+    return const FlutterSecureStorage(
+      aOptions: AndroidOptions(
+        migrateWithBackup: true,
+      ),
+    );
+  }
   return const FlutterSecureStorage();
 }

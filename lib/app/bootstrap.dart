@@ -1,21 +1,29 @@
 import 'dart:async';
 
 import 'package:colmeia/app/app.dart';
+import 'package:colmeia/app/bootstrap_failure_app.dart';
 import 'package:colmeia/app/preferences/app_user_experience_preferences_controller.dart';
 import 'package:colmeia/app/router/app_router.dart';
 import 'package:colmeia/app/socket_lifecycle_observer.dart';
 import 'package:colmeia/app/theme/app_theme_mode_controller.dart';
 import 'package:colmeia/app/web_url_strategy.dart';
+import 'package:colmeia/core/cache/app_cache_store.dart';
 import 'package:colmeia/core/config/agent_bridge_transport.dart';
 import 'package:colmeia/core/config/app_dotenv_loader.dart';
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/observability/app_global_error_handlers.dart';
-import 'package:colmeia/core/observability/sentry_bootstrap.dart';
+import 'package:colmeia/core/observability/sentry_bootstrap.dart'
+    show
+        configureSentryBootScope,
+        runAppWithOptionalSentry,
+        sentryProvidesBootstrapZoneGuarding,
+        shouldInitializeSentry;
 import 'package:colmeia/core/observability/socket/socket_metrics_listener.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation_pre_warmer.dart';
+import 'package:colmeia/core/storage/app_hive.dart';
 import 'package:colmeia/core/update/windows_auto_update_controller.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
@@ -23,8 +31,10 @@ import 'package:colmeia/shared/widgets/charts/app_brazil_map_static_data.dart';
 import 'package:colmeia/shared/widgets/export/pdf_export_font_cache.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 @visibleForTesting
 void logResolvedAgentBridgeTransportAtBootstrap() {
@@ -63,21 +73,71 @@ void logResolvedAgentBridgeTransportAtBootstrap() {
 
 Future<void> bootstrap() async {
   WidgetsFlutterBinding.ensureInitialized();
+  GoogleFonts.config.allowRuntimeFetching = false;
   configureColmeiaWebUrlStrategy();
   AppLogger.configureForRuntime();
   installGlobalErrorHandlers();
   installBrandedErrorWidget();
-  await loadAppDotenv();
 
-  // Boot-time observability: surface the resolved bridge transport
-  // immediately so triaging "why is the app still on REST?" does not
-  // require a Sentry round-trip — the answer shows up in the very
-  // first lines of `flutter logs`. Cheap (single info line per cold
-  // start) and pays for itself on every env-flip rollout.
-  logResolvedAgentBridgeTransportAtBootstrap();
+  if (sentryProvidesBootstrapZoneGuarding) {
+    await _runBootstrapOrShowFailure();
+    return;
+  }
 
-  await runAppWithOptionalSentry(() async {
+  await runZonedGuarded(
+    _runBootstrapOrShowFailure,
+    _onBootstrapZoneError,
+  );
+}
+
+void _onBootstrapZoneError(Object error, StackTrace stack) {
+  AppLogger.error(
+    'Uncaught bootstrap zone error',
+    context: const <String, Object?>{
+      'component': 'bootstrap',
+    },
+    error: error,
+    stackTrace: stack,
+  );
+}
+
+Future<void> _runBootstrapOrShowFailure() async {
+  await runAppWithOptionalSentry(_executeBootstrapPhases);
+}
+
+Future<void> _executeBootstrapPhases() async {
+  try {
+    await loadAppDotenv();
+
+    // Boot-time observability: surface the resolved bridge transport
+    // immediately so triaging "why is the app still on REST?" does not
+    // require a Sentry round-trip — the answer shows up in the very
+    // first lines of `flutter logs`. Cheap (single info line per cold
+    // start) and pays for itself on every env-flip rollout.
+    logResolvedAgentBridgeTransportAtBootstrap();
+  } on Object catch (error, stackTrace) {
+    await _handleBootstrapFailure(
+      phase: 'load_dotenv',
+      error: error,
+      stackTrace: stackTrace,
+    );
+    return;
+  }
+
+  try {
+    await _bootstrapAppRunner();
+  } on Object catch (error, stackTrace) {
+    await _handleBootstrapFailure(
+      phase: 'setup_dependencies',
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
+}
+
+Future<void> _bootstrapAppRunner() async {
     await setupDependencies();
+    await configureSentryBootScope();
     unawaited(
       AppBrazilMapStaticData.precacheBrazilUfGeoJsonAsset().catchError(
         (Object error, StackTrace st) {
@@ -132,7 +192,68 @@ Future<void> bootstrap() async {
       getIt<RelayConversationPreWarmer>();
     }
     runApp(const ColmeiaBootstrap());
-  });
+}
+
+Future<void> _handleBootstrapFailure({
+  required String phase,
+  required Object error,
+  required StackTrace stackTrace,
+}) async {
+  AppLogger.error(
+    'Bootstrap failed',
+    context: <String, Object?>{
+      'component': 'bootstrap',
+      'bootstrap_phase': phase,
+    },
+    error: error,
+    stackTrace: stackTrace,
+  );
+  await _captureBootstrapException(
+    phase: phase,
+    error: error,
+    stackTrace: stackTrace,
+  );
+  final offersHiveRecovery = _isHiveRecoverableBootstrapPhase(phase);
+  runApp(
+    BootstrapFailureApp(
+      onRetry: _retryBootstrap,
+      onClearCacheAndRetry:
+          offersHiveRecovery ? _clearLocalCacheAndRetryBootstrap : null,
+    ),
+  );
+}
+
+bool _isHiveRecoverableBootstrapPhase(String phase) =>
+    phase == 'setup_dependencies';
+
+Future<void> _clearLocalCacheAndRetryBootstrap() async {
+  await AppHive.clearLocalKvCacheForRecovery();
+  await _retryBootstrap();
+}
+
+Future<void> _retryBootstrap() async {
+  if (getIt.isRegistered<AppCacheStore>()) {
+    await getIt.reset();
+  }
+  await _runBootstrapOrShowFailure();
+}
+
+Future<void> _captureBootstrapException({
+  required String phase,
+  required Object error,
+  required StackTrace stackTrace,
+}) async {
+  if (!shouldInitializeSentry) {
+    return;
+  }
+
+  await Sentry.captureException(
+    error,
+    stackTrace: stackTrace,
+    withScope: (scope) {
+      unawaited(scope.setTag('bootstrap_phase', phase));
+    },
+  );
 }
 
 /// GetIt lazy singletons must not be [ChangeNotifier.dispose]d by Provider

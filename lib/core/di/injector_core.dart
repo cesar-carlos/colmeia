@@ -34,12 +34,11 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
-import 'package:hive_ce/hive_ce.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> registerInjectorCore(GetIt getIt) async {
   await AppHive.ensureInitialized();
-  final kvCacheBox = await Hive.openBox<String>(AppHive.kvCacheBoxName);
+  final kvCacheBox = await AppHive.openHiveKvCacheBox();
   final sharedPreferences = await SharedPreferences.getInstance();
 
   getIt

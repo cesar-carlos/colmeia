@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
 import shutil
 import subprocess
 import sys
@@ -87,12 +88,34 @@ def resolve_requested_formats(args: argparse.Namespace) -> list[str]:
     return formats or ["apk", "aab"]
 
 
+def release_dart_defines() -> list[str]:
+    """Forward CI secrets as compile-time defines.
+
+    CI example (GitHub Actions)::
+
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        run: python tool/build_android_release.py --apk
+
+    When ``SENTRY_DSN`` is set in the environment, this script passes
+    ``--dart-define=SENTRY_DSN=<value>`` to ``flutter build`` so release
+    artifacts ship with Sentry enabled without storing the DSN in the repo.
+  """
+    defines: list[str] = []
+    sentry_dsn = os.environ.get("SENTRY_DSN", "").strip()
+    if sentry_dsn:
+        defines.extend(["--dart-define", f"SENTRY_DSN={sentry_dsn}"])
+    return defines
+
+
 def build_command(artifact_format: str) -> list[str]:
     if artifact_format == "apk":
-        return ["flutter", "build", "apk", "--release"]
-    if artifact_format == "aab":
-        return ["flutter", "build", "appbundle", "--release"]
-    raise SystemExit(f"Unsupported Android artifact format: {artifact_format}")
+        command = ["flutter", "build", "apk", "--release"]
+    elif artifact_format == "aab":
+        command = ["flutter", "build", "appbundle", "--release"]
+    else:
+        raise SystemExit(f"Unsupported Android artifact format: {artifact_format}")
+    return command + release_dart_defines()
 
 
 def build_output_path(artifact_format: str) -> Path:

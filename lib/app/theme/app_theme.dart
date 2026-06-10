@@ -1,10 +1,10 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
+import 'package:colmeia/shared/design_system/app_font_families.dart';
 import 'package:colmeia/shared/design_system/app_motion_tokens.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 abstract final class AppTheme {
   static final Map<_ThemeCacheKey, ThemeData> _cache =
@@ -397,62 +397,81 @@ abstract final class AppTheme {
         ).textTheme.apply(
           bodyColor: colorScheme.onSurface,
           displayColor: colorScheme.onSurface,
+          fontFamily: AppFontFamilies.inter,
         );
 
-    final interTextTheme = GoogleFonts.interTextTheme(baseTextTheme);
+    return baseTextTheme.copyWith(
+      displayLarge: _manropeStyle(
+        baseTextTheme.displayLarge,
+        fontWeight: FontWeight.w700,
+      ),
+      displayMedium: _manropeStyle(
+        baseTextTheme.displayMedium,
+        fontWeight: FontWeight.w700,
+      ),
+      displaySmall: _manropeStyle(
+        baseTextTheme.displaySmall,
+        fontWeight: FontWeight.w700,
+      ),
+      headlineLarge: _manropeStyle(
+        baseTextTheme.headlineLarge,
+        fontWeight: FontWeight.w700,
+      ),
+      headlineMedium: _manropeStyle(
+        baseTextTheme.headlineMedium,
+        fontWeight: FontWeight.w700,
+      ),
+      headlineSmall: _manropeStyle(
+        baseTextTheme.headlineSmall,
+        fontWeight: FontWeight.w600,
+      ),
+      titleLarge: _manropeStyle(
+        baseTextTheme.titleLarge,
+        fontWeight: FontWeight.w600,
+      ),
+      titleMedium: _manropeStyle(
+        baseTextTheme.titleMedium,
+        fontWeight: FontWeight.w600,
+      ),
+      titleSmall: _manropeStyle(
+        baseTextTheme.titleSmall,
+        fontWeight: FontWeight.w600,
+      ),
+      bodyLarge: _interStyle(baseTextTheme.bodyLarge),
+      bodyMedium: _interStyle(baseTextTheme.bodyMedium),
+      bodySmall: _interStyle(baseTextTheme.bodySmall),
+      labelLarge: _interStyle(
+        baseTextTheme.labelLarge,
+        fontWeight: FontWeight.w500,
+      ),
+      labelMedium: _interStyle(
+        baseTextTheme.labelMedium,
+        fontWeight: FontWeight.w500,
+      ),
+      labelSmall: _interStyle(
+        baseTextTheme.labelSmall,
+        fontWeight: FontWeight.w500,
+      ),
+    );
+  }
 
-    return interTextTheme.copyWith(
-      displayLarge: GoogleFonts.manrope(
-        textStyle: interTextTheme.displayLarge,
-        fontWeight: FontWeight.w700,
-      ),
-      displayMedium: GoogleFonts.manrope(
-        textStyle: interTextTheme.displayMedium,
-        fontWeight: FontWeight.w700,
-      ),
-      displaySmall: GoogleFonts.manrope(
-        textStyle: interTextTheme.displaySmall,
-        fontWeight: FontWeight.w700,
-      ),
-      headlineLarge: GoogleFonts.manrope(
-        textStyle: interTextTheme.headlineLarge,
-        fontWeight: FontWeight.w700,
-      ),
-      headlineMedium: GoogleFonts.manrope(
-        textStyle: interTextTheme.headlineMedium,
-        fontWeight: FontWeight.w700,
-      ),
-      headlineSmall: GoogleFonts.manrope(
-        textStyle: interTextTheme.headlineSmall,
-        fontWeight: FontWeight.w600,
-      ),
-      titleLarge: GoogleFonts.manrope(
-        textStyle: interTextTheme.titleLarge,
-        fontWeight: FontWeight.w600,
-      ),
-      titleMedium: GoogleFonts.manrope(
-        textStyle: interTextTheme.titleMedium,
-        fontWeight: FontWeight.w600,
-      ),
-      titleSmall: GoogleFonts.manrope(
-        textStyle: interTextTheme.titleSmall,
-        fontWeight: FontWeight.w600,
-      ),
-      bodyLarge: GoogleFonts.inter(textStyle: interTextTheme.bodyLarge),
-      bodyMedium: GoogleFonts.inter(textStyle: interTextTheme.bodyMedium),
-      bodySmall: GoogleFonts.inter(textStyle: interTextTheme.bodySmall),
-      labelLarge: GoogleFonts.inter(
-        textStyle: interTextTheme.labelLarge,
-        fontWeight: FontWeight.w500,
-      ),
-      labelMedium: GoogleFonts.inter(
-        textStyle: interTextTheme.labelMedium,
-        fontWeight: FontWeight.w500,
-      ),
-      labelSmall: GoogleFonts.inter(
-        textStyle: interTextTheme.labelSmall,
-        fontWeight: FontWeight.w500,
-      ),
+  static TextStyle _interStyle(
+    TextStyle? base, {
+    FontWeight? fontWeight,
+  }) {
+    return (base ?? const TextStyle()).copyWith(
+      fontFamily: AppFontFamilies.inter,
+      fontWeight: fontWeight,
+    );
+  }
+
+  static TextStyle _manropeStyle(
+    TextStyle? base, {
+    required FontWeight fontWeight,
+  }) {
+    return (base ?? const TextStyle()).copyWith(
+      fontFamily: AppFontFamilies.manrope,
+      fontWeight: fontWeight,
     );
   }
 }

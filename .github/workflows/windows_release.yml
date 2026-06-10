@@ -102,6 +102,8 @@ jobs:
   build_android:
     needs: prepare_release
     runs-on: ubuntu-latest
+    env:
+      SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -154,26 +156,20 @@ jobs:
           EOF
           chmod 600 android/key.properties android/app/upload-keystore.jks
 
-      - name: Build signed Android APK
+      - name: Build signed Android release artifacts
         shell: bash
         run: |
           set -euo pipefail
-          flutter build apk --release
-
-      - name: Build signed Android App Bundle
-        shell: bash
-        run: |
-          set -euo pipefail
-          flutter build appbundle --release
+          python tool/build_android_release.py --apk --aab
 
       - name: Prepare Android release assets
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p release-assets
-          cp build/app/outputs/flutter-apk/app-release.apk \
+          cp "installer/dist/${{ needs.prepare_release.outputs.android_apk_asset_name }}" \
             "release-assets/${{ needs.prepare_release.outputs.android_apk_asset_name }}"
-          cp build/app/outputs/bundle/release/app-release.aab \
+          cp "installer/dist/${{ needs.prepare_release.outputs.android_aab_asset_name }}" \
             "release-assets/${{ needs.prepare_release.outputs.android_aab_asset_name }}"
 
       - name: Upload Android artifacts

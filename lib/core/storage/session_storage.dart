@@ -35,6 +35,17 @@ class SessionStorage {
         key: key,
         storedValue: _fallbackStorage[key],
       );
+    } on PlatformException catch (error, stackTrace) {
+      AppLogger.warning(
+        'Secure storage platform error on read; session cleared',
+        context: <String, Object?>{
+          'storageKey': key,
+          'code': error.code,
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return null;
     }
   }
 
@@ -54,6 +65,17 @@ class SessionStorage {
         },
       );
       _fallbackStorage[key] = encodedValue;
+    } on PlatformException catch (error, stackTrace) {
+      AppLogger.warning(
+        'Secure storage platform error on write; using in-memory fallback',
+        context: <String, Object?>{
+          'storageKey': key,
+          'code': error.code,
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
+      _fallbackStorage[key] = encodedValue;
     }
   }
 
@@ -66,6 +88,17 @@ class SessionStorage {
         context: <String, Object?>{
           'storageKey': key,
         },
+      );
+      _fallbackStorage.remove(key);
+    } on PlatformException catch (error, stackTrace) {
+      AppLogger.warning(
+        'Secure storage platform error on delete; clearing in-memory fallback',
+        context: <String, Object?>{
+          'storageKey': key,
+          'code': error.code,
+        },
+        error: error,
+        stackTrace: stackTrace,
       );
       _fallbackStorage.remove(key);
     }

@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -49,6 +51,42 @@ class BuildAndroidReleaseTest(unittest.TestCase):
             "Colmeia-Android-1.2.3.aab",
             self.module.release_asset_name("aab", "1.2.3"),
         )
+
+    def test_release_dart_defines_injects_sentry_dsn_when_env_set(self) -> None:
+        with mock.patch.dict(
+            os.environ,
+            {"SENTRY_DSN": "https://example.ingest.sentry.io/1"},
+            clear=False,
+        ):
+            self.assertEqual(
+                [
+                    "--dart-define",
+                    "SENTRY_DSN=https://example.ingest.sentry.io/1",
+                ],
+                self.module.release_dart_defines(),
+            )
+
+    def test_release_dart_defines_omits_empty_sentry_dsn(self) -> None:
+        with mock.patch.dict(os.environ, {}, clear=True):
+            self.assertEqual([], self.module.release_dart_defines())
+
+    def test_build_command_appends_release_dart_defines(self) -> None:
+        with mock.patch.dict(
+            os.environ,
+            {"SENTRY_DSN": "https://example.ingest.sentry.io/1"},
+            clear=False,
+        ):
+            self.assertEqual(
+                [
+                    "flutter",
+                    "build",
+                    "apk",
+                    "--release",
+                    "--dart-define",
+                    "SENTRY_DSN=https://example.ingest.sentry.io/1",
+                ],
+                self.module.build_command("apk"),
+            )
 
     def test_export_artifact_and_checksum_copy_to_destination(self) -> None:
         source = self.workspace / "app-release.apk"
