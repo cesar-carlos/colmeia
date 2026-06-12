@@ -37,8 +37,12 @@ export 'app_brazil_store_sales_map_chart/brazil_map_chart_overlay_widgets.dart'
         AppBrazilStoreSalesBranchHoverDetailAnchor,
         AppBrazilStoreSalesSelectedMarkerDetailAnchor;
 
+part 'app_brazil_store_sales_map_chart/brazil_map_map_controls.dart';
 part 'app_brazil_store_sales_map_chart/brazil_map_marker_presenter.dart';
 part 'app_brazil_store_sales_map_chart/brazil_map_point_interaction_handler.dart';
+part 'app_brazil_store_sales_map_chart/brazil_map_snapshot_lifecycle.dart';
+part 'app_brazil_store_sales_map_chart/brazil_map_viewport_navigation_handler.dart';
+part 'app_brazil_store_sales_map_chart/brazil_map_widget_update_handler.dart';
 part 'app_brazil_store_sales_map_chart_scaffold.dart';
 
 class AppBrazilStoreSalesMapChart extends StatefulWidget {
@@ -149,6 +153,14 @@ class _AppBrazilStoreSalesMapChartState
       _BrazilMapMarkerPresenter(this);
   late final _BrazilMapPointInteractionHandler _pointInteraction =
       _BrazilMapPointInteractionHandler(this);
+  late final _BrazilMapMapControlsBuilder _mapControls =
+      _BrazilMapMapControlsBuilder(this);
+  late final _BrazilMapViewportNavigationHandler _navigation =
+      _BrazilMapViewportNavigationHandler(this);
+  late final _BrazilMapWidgetUpdateHandler _widgetUpdate =
+      _BrazilMapWidgetUpdateHandler(this);
+  late final _BrazilMapSnapshotLifecycleCoordinator _snapshotLifecycle =
+      _BrazilMapSnapshotLifecycleCoordinator(this);
   String? _activeRegionKey;
   bool _desktopBranchSidebarCollapsed = false;
   AppBrazilStoreSalesMapDiagnostics? _lastEmittedDiagnostics;
@@ -161,22 +173,18 @@ class _AppBrazilStoreSalesMapChartState
       _markerHighlight.notifier;
 
   Widget _wrapRegionMapForTouchGestures(Widget regionMap) {
-    if (!_shouldDeferViewportClusteringDuringGesture) {
-      return regionMap;
-    }
-
-    return Listener(
-      behavior: HitTestBehavior.translucent,
-      onPointerDown: (_) => _viewport.handleMapPointerDown(
+    return BrazilMapTouchGestureViewportWrapper(
+      deferDuringGesture: _shouldDeferViewportClusteringDuringGesture,
+      onPointerDown: () => _viewport.handleMapPointerDown(
         deferDuringGesture: _shouldDeferViewportClusteringDuringGesture,
       ),
-      onPointerUp: (_) => _viewport.handleMapPointerUp(
+      onPointerUp: () => _viewport.handleMapPointerUp(
         deferDuringGesture: _shouldDeferViewportClusteringDuringGesture,
-        onApplyClusterZoom: _applyViewportClusterZoomLevel,
+        onApplyClusterZoom: _navigation.applyViewportClusterZoomLevel,
       ),
-      onPointerCancel: (_) => _viewport.handleMapPointerUp(
+      onPointerCancel: () => _viewport.handleMapPointerUp(
         deferDuringGesture: _shouldDeferViewportClusteringDuringGesture,
-        onApplyClusterZoom: _applyViewportClusterZoomLevel,
+        onApplyClusterZoom: _navigation.applyViewportClusterZoomLevel,
       ),
       child: regionMap,
     );
@@ -186,59 +194,6 @@ class _AppBrazilStoreSalesMapChartState
       BrazilMapViewportCoordinator.shouldDebounceTouchViewportClustering(
         enableZoomPan: widget.style.enableZoomPan,
       );
-
-  void _scheduleConsumeCameraFocus() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_selection.focusCameraOnSelectedStore) {
-        return;
-      }
-      setState(_selection.consumeCameraFocus);
-    });
-  }
-
-  void _invalidateResolvedSnapshotData() {
-    _snapshots.invalidateData();
-    _scheduleSnapshotRefresh();
-  }
-
-  void _invalidateResolvedSnapshotVisual() {
-    _snapshots.invalidateVisual();
-    _scheduleSnapshotRefresh();
-  }
-
-  void _scheduleSnapshotRefresh() {
-    if (_snapshotRefreshScheduled) {
-      return;
-    }
-    _snapshotRefreshScheduled = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _snapshotRefreshScheduled = false;
-      if (!mounted) {
-        return;
-      }
-      _syncDisplaySnapshot(notify: true);
-    });
-  }
-
-  void _syncDisplaySnapshot({required bool notify}) {
-    if (!mounted) {
-      return;
-    }
-    final snapshot = _snapshots.resolve(
-      context: context,
-      input: _snapshotBuildInput,
-      selectedStoreId: _selectedStoreId,
-      requestedStateKey: _selection.internalSelectedStateKey,
-    );
-    _emitDiagnosticsIfNeeded(snapshot.diagnostics);
-    if (identical(_displaySnapshot, snapshot)) {
-      return;
-    }
-    _displaySnapshot = snapshot;
-    if (notify) {
-      setState(() {});
-    }
-  }
 
   BrazilMapLayoutCalculator get _layout =>
       BrazilMapLayoutCalculator(chrome: _chrome, style: widget.style);
@@ -254,33 +209,23 @@ class _AppBrazilStoreSalesMapChartState
     setState(update);
   }
 
-  BrazilMapSnapshotBuildInput get _snapshotBuildInput =>
-      BrazilMapSnapshotBuildInput(
-        points: widget.points,
-        metric: _selectedMetric,
-        activeRegionKey: _activeRegionKey,
-        zoomLevel: _zoom.clusteringZoomLevel,
-        style: widget.style,
-        fixedBranchIds: widget.fixedBranchIds,
-        filterBranchIds: widget.filterBranchIds,
-        includeVisibleBranchListItems: _includeVisibleBranchListItems,
-      );
+  void _scheduleConsumeCameraFocus() =>
+      _snapshotLifecycle.scheduleConsumeCameraFocus();
+
+  void _invalidateResolvedSnapshotData() =>
+      _snapshotLifecycle.invalidateResolvedSnapshotData();
+
+  void _invalidateResolvedSnapshotVisual() =>
+      _snapshotLifecycle.invalidateResolvedSnapshotVisual();
+
+  void _scheduleSnapshotRefresh() => _snapshotLifecycle.scheduleSnapshotRefresh();
+
+  void _syncDisplaySnapshot({required bool notify}) =>
+      _snapshotLifecycle.syncDisplaySnapshot(notify: notify);
 
   bool get _suppressMapLayoutShiftOnStoreSelection =>
       !widget.style.autoFocusSelectedStore ||
       defaultTargetPlatform == TargetPlatform.windows;
-
-  void _handleRegionMapViewportChanged(AppMapViewportChangedEvent event) {
-    final filtered = _viewport.filterViewportChangedEvent(
-      event,
-      blocksViewportDrivenClusteringOnWindows: _selection
-          .blocksViewportDrivenClustering(widget.selectedStoreId),
-    );
-    if (filtered == null) {
-      return;
-    }
-    _handleViewportChanged(filtered);
-  }
 
   void _handleBrazilUfGeoJsonReadinessChanged() {
     if (!mounted) {
@@ -337,115 +282,7 @@ class _AppBrazilStoreSalesMapChartState
   @override
   void didUpdateWidget(covariant AppBrazilStoreSalesMapChart oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _chrome = BrazilMapChartChrome.resolve(
-      style: widget.style,
-      presentationMode: widget.presentationMode,
-      useCleanFullscreenChrome: widget.useCleanFullscreenChrome,
-      showDesktopBranchSidebar: widget.showDesktopBranchSidebar,
-    );
-    if (oldWidget.initialMetric != widget.initialMetric) {
-      _selectedMetric = widget.initialMetric;
-      _invalidateResolvedSnapshotData();
-    }
-
-    if (oldWidget.selectedStoreId != widget.selectedStoreId ||
-        oldWidget.style != widget.style) {
-      if (widget.selectedStoreId == null) {
-        _viewportController.reset();
-      } else if (!widget.style.autoFocusSelectedStore) {
-        _viewportController.withdrawPreferredViewportForStoreSelection();
-      }
-      _selection.syncControlledSelection(
-        previousControlledId: oldWidget.selectedStoreId,
-        nextControlledId: widget.selectedStoreId,
-        selectedStoreZoomLevel: widget.style.selectedStoreZoomLevel,
-        onAdoptControlledSelection: () {
-          if (widget.style.autoFocusSelectedStore) {
-            _zoom.clusteringZoomLevel = widget.style.selectedStoreZoomLevel;
-          }
-          _viewport.cancelPendingViewportClusterSampling();
-        },
-        onReleaseControlledSelection: () {
-          if (oldWidget.style.autoFocusSelectedStore ||
-              widget.style.autoFocusSelectedStore) {
-            _zoom.resetToBrazilDefault();
-          }
-          _viewport.cancelPendingViewportClusterSampling();
-        },
-      );
-      if (oldWidget.style != widget.style) {
-        _invalidateResolvedSnapshotData();
-      }
-      if (widget.selectedStoreId != null &&
-          widget.style.autoFocusSelectedStore &&
-          _selection.focusCameraOnSelectedStore) {
-        _scheduleConsumeCameraFocus();
-      }
-      _publishMarkerSelection();
-    }
-
-    if (oldWidget.filterBranchIds != widget.filterBranchIds ||
-        oldWidget.fixedBranchIds != widget.fixedBranchIds) {
-      _invalidateResolvedSnapshotData();
-    }
-
-    if (oldWidget.showDesktopBranchSidebar != widget.showDesktopBranchSidebar ||
-        oldWidget.presentationMode != widget.presentationMode ||
-        oldWidget.useCleanFullscreenChrome != widget.useCleanFullscreenChrome) {
-      if (!widget.showDesktopBranchSidebar) {
-        _desktopBranchSidebarCollapsed = false;
-      }
-      _invalidateResolvedSnapshotVisual();
-    }
-
-    if (oldWidget.style.markerAggregation != widget.style.markerAggregation) {
-      _viewport.resetManualViewport();
-    }
-
-    if (!identical(oldWidget.points, widget.points)) {
-      _snapshots.invalidatePointsDigestIfSourceChanged(widget.points);
-      _viewport.cachedPreferredViewport = null;
-      final selectedStoreId = _selection.resolveSelectedStoreId(
-        widget.selectedStoreId,
-      );
-      if (selectedStoreId != null &&
-          _pointInteraction.pointById(selectedStoreId) == null) {
-        _selection.clearStoreSelection(
-          controlledSelectedStoreId: widget.selectedStoreId,
-        );
-        _markerHighlight.previewedStoreId = null;
-        if (widget.style.autoFocusSelectedStore) {
-          _zoom.resetToBrazilDefault();
-        }
-        _viewport.cancelPendingViewportClusterSampling();
-        _invalidateResolvedSnapshotData();
-      }
-    }
-
-    final previewedStoreId = _markerHighlight.previewedStoreId;
-    if (previewedStoreId != null &&
-        (_pointInteraction.pointById(previewedStoreId) == null ||
-            !_pointInteraction.pointMatchesActiveRegion(previewedStoreId))) {
-      _markerHighlight.previewedStoreId = null;
-    }
-
-    if (widget.lifecycleRecoveryRequestId > 0 &&
-        oldWidget.lifecycleRecoveryRequestId !=
-            widget.lifecycleRecoveryRequestId) {
-      _recoverAfterHiddenLifecycle();
-    }
-  }
-
-  void _recoverAfterHiddenLifecycle() {
-    _viewport.invalidatePreferredViewport();
-    _invalidateResolvedSnapshotData();
-    _publishMarkerSelection();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {});
-    });
+    _widgetUpdate.handleDidUpdateWidget(oldWidget);
   }
 
   @override
@@ -503,8 +340,8 @@ class _AppBrazilStoreSalesMapChartState
       layoutSelectionGroup: layoutSelectionGroup,
       layoutSelectionStateBucket: layoutSelectionStateBucket,
       selectedRegionKey: selectedRegionKey,
-      preferredViewport: _resolvePreferredViewportForBuild(snapshot),
-      resetViewport: _resetTargetViewportForScope(),
+      preferredViewport: _navigation.resolvePreferredViewportForBuild(snapshot),
+      resetViewport: _navigation.resetTargetViewportForScope(),
     );
   }
 
@@ -543,9 +380,6 @@ class _AppBrazilStoreSalesMapChartState
 
   bool get _useWindowsSafeMarkerDetails => _chrome.useWindowsSafeMarkerDetails;
 
-  bool get _blocksViewportDrivenClustering =>
-      _selection.blocksViewportDrivenClustering(widget.selectedStoreId);
-
   bool get _usesCleanFullscreenChrome => _chrome.usesCleanFullscreenChrome;
 
   bool get _includeVisibleBranchListItems =>
@@ -573,135 +407,39 @@ class _AppBrazilStoreSalesMapChartState
     required String? selectedStoreId,
     required AppLocalizations l10n,
     required BrazilMapChartVisualSnapshot snapshot,
-  }) {
-    final overlays = <Widget>[];
-    if (_showsFloatingMetricSelector || _showsFloatingScopeSelector) {
-      overlays.add(
-        BrazilMapChartFloatingMapControlsOverlay(
-          topInset: BrazilMapLayoutConstants.floatingMapControlsTopInset,
-          leftInset: BrazilMapLayoutConstants.floatingMapControlsLeftInset,
-          metrics: _showsFloatingMetricSelector ? _buildMetrics(l10n) : null,
-          selectedMetricKey: _selectedMetric.key,
-          onMetricChanged: _handleMetricChanged,
-          scopeOptions: _showsFloatingScopeSelector
-              ? AppBrazilStoreSalesMapLocalizations.regionScopeOptions(l10n)
-              : const <AppMapScopeOption>[],
-          activeScopeKey: _activeRegionKey,
-          scopeRootLabel: l10n.brazilStoreSalesMapCountryLabel,
-          onScopeChanged: _showsFloatingScopeSelector
-              ? _handleScopeChanged
-              : null,
-        ),
-      );
-    }
-    if (showsDesktopBranchSidebar) {
-      final sidebarMaxHeight = BrazilMapDesktopSidebarLayout.maxHeight(
+  }) =>
+      _mapControls.buildMapOverlay(
         mapTileHeight: mapTileHeight,
-        topInset: sidebarTopInset,
+        showsDesktopBranchSidebar: showsDesktopBranchSidebar,
+        sidebarWidth: sidebarWidth,
+        sidebarTopInset: sidebarTopInset,
+        sidebarHorizontalInset: sidebarHorizontalInset,
+        entries: entries,
+        selectedStoreId: selectedStoreId,
+        l10n: l10n,
+        snapshot: snapshot,
       );
-      if (sidebarMaxHeight > 0) {
-        overlays.add(
-          _desktopBranchSidebarCollapsed
-              ? BrazilMapChartDesktopBranchSidebarCollapsedOverlay(
-                  topInset: sidebarTopInset,
-                  horizontalInset: sidebarHorizontalInset,
-                  onExpand: _toggleDesktopBranchSidebarCollapsed,
-                )
-              : BrazilMapChartDesktopBranchSidebarOverlay(
-                  width: sidebarWidth,
-                  maxHeight: sidebarMaxHeight,
-                  topInset: sidebarTopInset,
-                  horizontalInset: sidebarHorizontalInset,
-                  entries: entries,
-                  selectedStoreId: selectedStoreId,
-                  allowCollapse: _usesCleanFullscreenChrome,
-                  onToggleCollapsed: _toggleDesktopBranchSidebarCollapsed,
-                  onSelectBranch: (point) =>
-                      _pointInteraction.handleMarkerBranchAction(
-                        point: point,
-                        index: _pointInteraction.mapPointIndexFor(
-                          point,
-                          snapshot,
-                        ),
-                      ),
-                  onPreviewBranchStart: _pointInteraction.setPreviewedPoint,
-                  onPreviewBranchEnd: _pointInteraction.clearPreviewedPoint,
-                ),
-        );
-      }
-    }
-    if (overlays.isEmpty) {
-      return null;
-    }
-    if (overlays.length == 1) {
-      return overlays.first;
-    }
-    return Positioned.fill(
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: overlays,
-      ),
-    );
-  }
-
-  void _toggleDesktopBranchSidebarCollapsed() {
-    setState(() {
-      _desktopBranchSidebarCollapsed = !_desktopBranchSidebarCollapsed;
-    });
-  }
 
   List<AppMapMetric<AppBrazilStoreSalesStateBucket>> _buildMetrics(
     AppLocalizations l10n,
-  ) => <AppMapMetric<AppBrazilStoreSalesStateBucket>>[
-    AppMapMetric<AppBrazilStoreSalesStateBucket>(
-      key: AppBrazilStoreSalesMapMetric.revenue.key,
-      label: l10n.brazilStoreSalesMapMetricRevenueShort,
-      legendLabel: l10n.brazilStoreSalesMapLegendRevenuePerState,
-      valueBuilder: (bucket) => bucket.salesAmount,
-      tooltipBuilder: _stateTooltipSubtitle,
-    ),
-    AppMapMetric<AppBrazilStoreSalesStateBucket>(
-      key: AppBrazilStoreSalesMapMetric.salesCount.key,
-      label: l10n.brazilStoreSalesMapMetricSalesShort,
-      legendLabel: l10n.brazilStoreSalesMapLegendSalesPerState,
-      valueBuilder: (bucket) => bucket.salesCount,
-      tooltipBuilder: _stateTooltipSubtitle,
-    ),
-  ];
+  ) =>
+      _mapControls.buildMetrics(l10n);
 
-  AppMapViewport? _resolvePreferredViewportForBuild(
-    BrazilMapChartVisualSnapshot snapshot,
-  ) {
-    return _viewport.preferredViewportForBuild(
-      BrazilMapPreferredViewportRequest(
-        userHasManualMapViewport: _viewport.userHasManualMapViewport,
-        cachedBindingKey: _viewport.cachedPreferredViewportBinding,
-        regionBindingKey: _viewport.regionBindingKey(_activeRegionKey),
-        selectedStoreId: _selectedStoreId,
-        selectedPoint:
-            snapshot.selectedPoint ??
-            _pointInteraction.pointById(_selectedStoreId),
-        shouldFocusCameraOnSelectedStore: _selection
-            .shouldFocusCameraOnSelectedStore(
-              controlledSelectedStoreId: widget.selectedStoreId,
-              autoFocusSelectedStore: widget.style.autoFocusSelectedStore,
-            ),
-        selectedStoreZoomLevel: widget.style.selectedStoreZoomLevel,
-        activeRegionKey: _activeRegionKey,
-      ),
-    );
-  }
+  void _handleResetViewport() => _navigation.handleResetViewport();
 
-  AppMapViewport _resetTargetViewportForScope() =>
-      _viewport.resetTargetViewportForScope(_activeRegionKey);
+  void _handleMetricChanged(AppMapMetricChangedEvent event) =>
+      _navigation.handleMetricChanged(event);
 
-  void _handleResetViewport() {
-    setState(() {
-      _viewportController.reset();
-      _viewport.resetManualViewport();
-      _zoom.applyScopeZoom(_resetTargetViewportForScope().zoomLevel);
-    });
-  }
+  void _handleScopeChanged(AppMapScopeChangedEvent event) =>
+      _navigation.handleScopeChanged(event);
+
+  void _handleStateTap(
+    AppMapRegionTapEvent<AppBrazilStoreSalesStateBucket> event,
+  ) =>
+      _navigation.handleStateTap(event);
+
+  void _handleRegionMapViewportChanged(AppMapViewportChangedEvent event) =>
+      _navigation.handleRegionMapViewportChanged(event);
 
   String _stateLabelFor(
     AppBrazilStoreSalesStateBucket bucket, {
@@ -715,145 +453,6 @@ class _AppBrazilStoreSalesMapChartState
 
   String? get _selectedStoreId =>
       _selection.resolveSelectedStoreId(widget.selectedStoreId);
-
-  void _handleMetricChanged(AppMapMetricChangedEvent event) {
-    final metric = AppBrazilStoreSalesMapMetric.values.firstWhere(
-      (candidate) => candidate.key == event.metricKey,
-      orElse: () => _selectedMetric,
-    );
-
-    if (metric == _selectedMetric) {
-      return;
-    }
-
-    setState(() {
-      _selectedMetric = metric;
-      _invalidateResolvedSnapshotData();
-    });
-    widget.onMetricChanged?.call(metric);
-  }
-
-  void _handleScopeChanged(AppMapScopeChangedEvent event) {
-    setState(() {
-      _viewportController.reset();
-      _viewport.resetManualViewport();
-      _activeRegionKey = event.currentScopeKey;
-      _zoom.applyScopeZoom(
-        (event.currentScopeKey == null
-                ? AppBrazilMapStaticData.brazilViewport
-                : AppBrazilMapStaticData.regionViewports[event.currentScopeKey])
-            ?.zoomLevel,
-      );
-      _selection.clearStoreIfOutsideActiveRegion(
-        activeRegionKey: _activeRegionKey,
-        controlledSelectedStoreId: widget.selectedStoreId,
-        pointById: _pointInteraction.pointById,
-      );
-      if (!_pointInteraction.pointMatchesActiveRegion(
-        _markerHighlight.previewedStoreId,
-      )) {
-        _markerHighlight.previewedStoreId = null;
-      }
-      _publishMarkerSelection();
-      _invalidateResolvedSnapshotData();
-    });
-  }
-
-  void _handleStateTap(
-    AppMapRegionTapEvent<AppBrazilStoreSalesStateBucket> event,
-  ) {
-    final preserveStoreSelection = _selection
-        .shouldPreserveStoreSelectionForRegionTap(
-          regionKey: event.regionKey,
-          controlledSelectedStoreId: widget.selectedStoreId,
-          pointById: _pointInteraction.pointById,
-        );
-    if (_selection.shouldSkipRedundantRegionTap(
-      regionKey: event.regionKey,
-      preserveStoreSelection: preserveStoreSelection,
-      controlledSelectedStoreId: widget.selectedStoreId,
-    )) {
-      widget.onStateTap?.call(event);
-      return;
-    }
-
-    setState(() {
-      _selection.applyRegionTap(
-        regionKey: event.regionKey,
-        preserveStoreSelection: preserveStoreSelection,
-      );
-      if (!preserveStoreSelection) {
-        _markerHighlight.previewedStoreId = null;
-        _viewportController.reset();
-      }
-      _invalidateResolvedSnapshotVisual();
-      _publishMarkerSelection();
-    });
-    widget.onStateTap?.call(event);
-  }
-
-  void _handleViewportChanged(AppMapViewportChangedEvent event) {
-    _viewport.handleViewportChanged(
-      event: event,
-      enableProximityCluster: widget.style.enableProximityCluster,
-      blocksViewportDrivenClustering: _blocksViewportDrivenClustering,
-      enableZoomPan: widget.style.enableZoomPan,
-      zoom: _zoom,
-      onMarkManualViewport: () {
-        if (!mounted) {
-          return;
-        }
-        setState(() {
-          _viewport.userHasManualMapViewport = true;
-        });
-      },
-      shouldClearStoreDetailOnUserViewportChange:
-          widget.style.showStoreDetail &&
-          _selectedStoreId != null &&
-          !_markerHighlight.selectedDetailIsClusterOrMunicipality,
-      onClearStoreDetail: _pointInteraction.clearSelectedMarkerDetail,
-      onApplyClusterZoom: _applyViewportClusterZoomLevel,
-      pointCount: widget.points.length,
-      activeRegionKey: _activeRegionKey,
-    );
-  }
-
-  void _applyViewportClusterZoomLevel(double nextZoomLevel) {
-    if (!mounted) {
-      return;
-    }
-    if (_blocksViewportDrivenClustering) {
-      return;
-    }
-    if (!_zoom.shouldApplyViewportClusterSample(
-      nextZoomLevel,
-      blocksViewportDrivenClustering: _blocksViewportDrivenClustering,
-    )) {
-      return;
-    }
-
-    setState(() {
-      _zoom.clusteringZoomLevel = nextZoomLevel;
-      _invalidateResolvedSnapshotData();
-    });
-  }
-
-  void _emitDiagnosticsIfNeeded(
-    AppBrazilStoreSalesMapDiagnostics diagnostics,
-  ) {
-    final callback = widget.onDiagnosticsChanged;
-    if (callback == null || _lastEmittedDiagnostics == diagnostics) {
-      return;
-    }
-
-    _lastEmittedDiagnostics = diagnostics;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      callback(diagnostics);
-    });
-  }
 
   @override
   @visibleForTesting
@@ -887,23 +486,6 @@ class _AppBrazilStoreSalesMapChartState
   @visibleForTesting
   bool get suppressPreferredViewportForTesting =>
       _viewportController.suppressPreferredViewport;
-
-  String _stateTooltipSubtitle(AppBrazilStoreSalesStateBucket bucket) {
-    final l10n = AppLocalizations.of(context);
-    final revenue = AppBrFormatters.currency(bucket.salesAmount);
-    final salesCount = brazilMapChartFormatSalesCount(
-      context,
-      bucket.salesCount,
-    );
-    final stores = brazilMapChartFormatSalesCount(context, bucket.storeCount);
-    return l10n.brazilStoreSalesMapStateInlineTooltip(
-      bucket.stateName,
-      bucket.uf,
-      revenue,
-      salesCount,
-      stores,
-    );
-  }
 
   Color _lowColor(BuildContext context) {
     return Theme.of(context).colorScheme.surfaceContainerHighest;

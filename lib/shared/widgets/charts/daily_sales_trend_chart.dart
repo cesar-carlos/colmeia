@@ -1,40 +1,28 @@
-import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
-import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
-import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_chart_failure_placeholder_content.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/charts/daily_sales_trend_chart_labels.dart';
 import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
 import 'package:colmeia/shared/charts/daily_sales_weekday_labels.dart';
-import 'package:colmeia/shared/charts/metric_toggle_comparison_bar_fullscreen_body.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
-import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_dashboard_comparison_bar_chart_preset.dart';
-import 'package:colmeia/shared/widgets/charts/chart_share_actions.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
-import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
+import 'package:colmeia/shared/widgets/charts/metric_toggle_comparison_bar_card.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-enum _OverviewDailyMetric {
-  salesCount,
-  salesAmount,
-}
-
 /// Daily sales totals (bar chart) for the overview period or Sales branch/month scope.
-class DailySalesTrendChart extends StatefulWidget {
+class DailySalesTrendChart extends StatelessWidget {
   const DailySalesTrendChart({
     required this.l10n,
     required this.points,
-    required this.loadFailed,
+    required this.emptyMessage,
     this.isLoading = false,
-    this.loadFailure,
-    this.loadFailureMessage,
+    this.emptyPlaceholder,
     this.useSalesDailyTotalsLabels = false,
     this.salesSubtitleOverride,
     this.salesScopeHintOverride,
@@ -45,98 +33,64 @@ class DailySalesTrendChart extends StatefulWidget {
 
   final AppLocalizations l10n;
   final List<DailySalesTrendPoint> points;
-  final bool loadFailed;
+  final String emptyMessage;
   final bool isLoading;
-  final AppFailure? loadFailure;
-  final String? loadFailureMessage;
-
-  /// When non-null, enables the fullscreen affordance: the chart emits an
-  /// app-agnostic [AppChartFullscreenRequest] that the app layer maps to its
-  /// fullscreen route, keeping this shared widget free of `app/` imports.
+  final Widget? emptyPlaceholder;
+  final bool useSalesDailyTotalsLabels;
+  final String? salesSubtitleOverride;
+  final String? salesScopeHintOverride;
   final AppChartFullscreenRequestCallback? onRequestFullscreen;
-
-  /// When non-null, enables the share affordance: the chart emits an
-  /// app-agnostic [AppChartShareRequest] that the app layer maps to the
-  /// platform share sheet, keeping this shared widget free of `app/` imports.
   final AppChartShareRequestCallback? onRequestShare;
 
-  /// When true, chart titles and messages use [DailySalesTrendChartLabels] sales
-  /// branch/month strings instead of overview home copy.
-  final bool useSalesDailyTotalsLabels;
-
-  /// When [useSalesDailyTotalsLabels] is true, replaces resolved subtitle (e.g. custom date range).
-  final String? salesSubtitleOverride;
-
-  /// When [useSalesDailyTotalsLabels] is true, replaces resolved Semantics scope hint.
-  final String? salesScopeHintOverride;
-
-  @override
-  State<DailySalesTrendChart> createState() =>
-      _OverviewDailySalesTrendChartState();
-}
-
-class _OverviewDailySalesTrendChartState extends State<DailySalesTrendChart> {
-  final GlobalKey _shareKey = GlobalKey();
-
-  _OverviewDailyMetric _metric = _OverviewDailyMetric.salesCount;
-
-  List<DailySalesTrendPoint> _chartPointsNonZero() {
-    if (_metric == _OverviewDailyMetric.salesCount) {
+  List<DailySalesTrendPoint> _filterItems(
+    List<DailySalesTrendPoint> source,
+    MetricToggleComparisonBarMetric metric,
+  ) {
+    if (metric == MetricToggleComparisonBarMetric.count) {
       return [
-        for (final p in widget.points)
-          if (p.salesCount > 0) p,
+        for (final point in source)
+          if (point.salesCount > 0) point,
       ];
     }
     return [
-      for (final p in widget.points)
-        if (p.salesAmount > 0) p,
+      for (final point in source)
+        if (point.salesAmount > 0) point,
     ];
   }
 
-  String _dayAxisLabel(DailySalesTrendPoint p) {
-    final l10n = widget.l10n;
-    final dateLine = AppBrFormatters.shortDate(p.saleDate);
-    final dowLine = dailySalesShortWeekdayFromDateTime(l10n, p.saleDate);
+  String _dayAxisLabel(DailySalesTrendPoint point) {
+    final dateLine = AppBrFormatters.shortDate(point.saleDate);
+    final dowLine = dailySalesShortWeekdayFromDateTime(l10n, point.saleDate);
     return '$dateLine\n$dowLine';
   }
 
-  String _tooltipDateLine(DailySalesTrendPoint p) {
-    final l10n = widget.l10n;
-    return '${AppBrFormatters.shortDate(p.saleDate)} Â· ${dailySalesShortWeekdayFromDateTime(l10n, p.saleDate)}';
+  String _tooltipDateLine(DailySalesTrendPoint point) {
+    return '${AppBrFormatters.shortDate(point.saleDate)} · ${dailySalesShortWeekdayFromDateTime(l10n, point.saleDate)}';
   }
 
   @override
   Widget build(BuildContext context) {
-    final l10n = widget.l10n;
     final labels = DailySalesTrendChartLabels.resolve(
       l10n,
-      salesBranchMonth: widget.useSalesDailyTotalsLabels,
+      salesBranchMonth: useSalesDailyTotalsLabels,
     );
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final localeName = Localizations.localeOf(context).toString();
     final salesCountFormat = NumberFormat.decimalPattern(localeName);
     final compactSalesCountFormat = NumberFormat.compact(locale: localeName);
-    final isSalesCount = _metric == _OverviewDailyMetric.salesCount;
-    final emptyMessage = widget.loadFailed
-        ? chartAgentQueryLoadFailureMessage(
-            l10n: l10n,
-            loadFailure: widget.loadFailure,
-            legacyMessage: widget.loadFailureMessage,
-            genericFallback: labels.resolveEmptyMessage(
-              loadFailed: true,
+    final resolvedSubtitle = salesSubtitleOverride ?? labels.subtitle;
+    final resolvedScopeHint = salesScopeHintOverride ?? labels.scopeHint;
+    final resolvedEmptyPlaceholder = emptyPlaceholder ??
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: tokens.contentSpacing),
+          child: Center(
+            child: Text(
+              emptyMessage,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
-          )
-        : labels.resolveEmptyMessage(
-            loadFailed: false,
-          );
-    final chartPoints = _chartPointsNonZero();
-    final showEmptyPlaceholder = widget.points.isEmpty || chartPoints.isEmpty;
-
-    final resolvedSubtitle = widget.salesSubtitleOverride ?? labels.subtitle;
-    final resolvedScopeHint = widget.salesScopeHintOverride ?? labels.scopeHint;
-
-    final onRequestFullscreen = widget.onRequestFullscreen;
-    final onRequestShare = widget.onRequestShare;
+          ),
+        );
 
     ChartShareMetadata shareMetadata({
       required bool isSalesCountMetric,
@@ -153,7 +107,7 @@ class _OverviewDailySalesTrendChartState extends State<DailySalesTrendChart> {
             labels.metricAmountLabel,
           ],
           rows: <List<String>>[
-            for (final point in widget.points)
+            for (final point in points)
               <String>[
                 AppBrFormatters.shortDate(point.saleDate),
                 dailySalesShortWeekdayFromDateTime(l10n, point.saleDate),
@@ -169,185 +123,63 @@ class _OverviewDailySalesTrendChartState extends State<DailySalesTrendChart> {
         title: shareTitle,
         subtitle: resolvedSubtitle,
         filterSummary: tableLimit.truncationNotice,
-        // Wide daily tables read better on landscape PDF pages.
         pdfOrientation: ChartSharePdfOrientation.landscape,
         tableData: tableLimit.tableData,
         subject: shareTitle,
       );
     }
 
-    final shareActions = ChartShareActions(
-      context: context,
-      captureKey: _shareKey,
-      metadata: shareMetadata(isSalesCountMetric: isSalesCount),
-      onRequestShare: onRequestShare,
-      onRequestFullscreen: onRequestFullscreen,
-      shareEnabled: !widget.isLoading,
-    );
-
-    void openFullscreen() {
-      final chartPointsSnapshot = List<DailySalesTrendPoint>.of(
-        chartPoints,
-        growable: false,
-      );
-      final isSalesCountSnapshot = isSalesCount;
-      final isLoadingSnapshot = widget.isLoading;
-      final fullscreenShareKey = GlobalKey();
-      final metadata = shareMetadata(isSalesCountMetric: isSalesCountSnapshot);
-      shareActions.openFullscreen(
-        metadata.toFullscreenRequest(
-          semanticsLabel: labels.semanticsForMetric(
-            isSalesCount: isSalesCountSnapshot,
-          ),
-          shareCaptureKey: fullscreenShareKey,
-          chartBuilder: (fullscreenContext) {
-            final fullscreenTokens = Theme.of(
-              fullscreenContext,
-            ).extension<AppThemeTokens>()!;
-            var fullscreenMetric = _metric;
-            return RepaintBoundary(
-              key: fullscreenShareKey,
-              child: StatefulBuilder(
-                builder: (context, setFullscreenState) {
-                  final fullscreenIsSalesCount =
-                      fullscreenMetric == _OverviewDailyMetric.salesCount;
-                  return buildMetricToggleComparisonBarFullscreenBody(
-                    tokens: fullscreenTokens,
-                    metricToggle: AppSegmentedControl<_OverviewDailyMetric>(
-                      options:
-                          <AppSegmentedControlOption<_OverviewDailyMetric>>[
-                            AppSegmentedControlOption<_OverviewDailyMetric>(
-                              value: _OverviewDailyMetric.salesCount,
-                              label: labels.metricCountLabel,
-                            ),
-                            AppSegmentedControlOption<_OverviewDailyMetric>(
-                              value: _OverviewDailyMetric.salesAmount,
-                              label: labels.metricAmountLabel,
-                            ),
-                          ],
-                      value: fullscreenMetric,
-                      onChanged: (value) => setFullscreenState(
-                        () => fullscreenMetric = value,
-                      ),
-                    ),
-                    chartBuilder: (availableChartHeight) =>
-                        AppComparisonBarChart<DailySalesTrendPoint>(
-                          items: chartPointsSnapshot,
-                          isLoading: isLoadingSnapshot,
-                          plotFloorAccessibilityNotice:
-                              l10n.chartComparisonPlotFloorNotice,
-                          extremeSpreadAccessibilityNotice:
-                              l10n.chartComparisonExtremeValueSpreadNotice,
-                          labelBuilder: _dayAxisLabel,
-                          valueBuilder: (point) => fullscreenIsSalesCount
-                              ? point.salesCount
-                              : point.salesAmount,
-                          tooltipLabelBuilder: (point, value) {
-                            final dateStr = _tooltipDateLine(point);
-                            return labels.tooltip(
-                              dateStr,
-                              salesCountFormat.format(point.salesCount),
-                              AppBrFormatters.currency(point.salesAmount),
-                            );
-                          },
-                          dataLabelBuilder: (_, value) => fullscreenIsSalesCount
-                              ? compactSalesCountFormat.format(value)
-                              : AppBrFormatters.compactCurrency(value),
-                          style: appDashboardComparisonBarChartStyle(
-                            tokens: fullscreenTokens,
-                            kind: AppDashboardComparisonBarChartKind.daily,
-                            l10n: l10n,
-                            weekdayUsesCurrencyAxis: !fullscreenIsSalesCount,
-                            weekdayRevenueDataLabelBackground:
-                                fullscreenIsSalesCount
-                                ? null
-                                : Theme.of(context).colorScheme.surface,
-                            heightOverride: availableChartHeight,
-                          ),
-                          emptyPlaceholder: showEmptyPlaceholder
-                              ? AgentQueryChartFailurePlaceholderContent(
-                                  emptyMessage: emptyMessage,
-                                  textStyle: Theme.of(
-                                    context,
-                                  ).textTheme.bodyMedium,
-                                  verticalPadding:
-                                      fullscreenTokens.contentSpacing,
-                                  loadFailure: widget.loadFailed
-                                      ? widget.loadFailure
-                                      : null,
-                                )
-                              : null,
-                        ),
-                  );
-                },
-              ),
-            );
-          },
-        ),
-      );
-    }
-
-    return Semantics(
-      label: labels.semanticsForMetric(isSalesCount: isSalesCount),
-      hint: resolvedScopeHint,
-      child: RepaintBoundary(
-        key: _shareKey,
-        child: AppComparisonBarChart<DailySalesTrendPoint>(
-          title: labels.titleForMetric(isSalesCount: isSalesCount),
-          subtitle: resolvedSubtitle,
-          onShare: shareActions.shareCallback(),
-          shareProgressKey: _shareKey,
-          shareEnabled: !widget.isLoading,
-          onOpenFullscreen: shareActions.fullscreenCallback(openFullscreen),
-          belowSubtitle: AppSegmentedControl<_OverviewDailyMetric>(
-            options: <AppSegmentedControlOption<_OverviewDailyMetric>>[
-              AppSegmentedControlOption<_OverviewDailyMetric>(
-                value: _OverviewDailyMetric.salesCount,
-                label: labels.metricCountLabel,
-              ),
-              AppSegmentedControlOption<_OverviewDailyMetric>(
-                value: _OverviewDailyMetric.salesAmount,
-                label: labels.metricAmountLabel,
-              ),
-            ],
-            value: _metric,
-            onChanged: (value) => setState(() => _metric = value),
-          ),
-          items: chartPoints,
-          isLoading: widget.isLoading,
-          plotFloorAccessibilityNotice: l10n.chartComparisonPlotFloorNotice,
-          extremeSpreadAccessibilityNotice:
-              l10n.chartComparisonExtremeValueSpreadNotice,
-          labelBuilder: _dayAxisLabel,
-          valueBuilder: (point) =>
-              isSalesCount ? point.salesCount : point.salesAmount,
-          tooltipLabelBuilder: (point, value) => labels.tooltip(
-            _tooltipDateLine(point),
-            salesCountFormat.format(point.salesCount),
-            AppBrFormatters.currency(point.salesAmount),
-          ),
-          dataLabelBuilder: (_, value) => isSalesCount
-              ? compactSalesCountFormat.format(value)
-              : AppBrFormatters.compactCurrency(value),
-          style: appDashboardComparisonBarChartStyle(
-            tokens: tokens,
-            kind: AppDashboardComparisonBarChartKind.daily,
-            l10n: l10n,
-            weekdayUsesCurrencyAxis: !isSalesCount,
-            weekdayRevenueDataLabelBackground: isSalesCount
-                ? null
-                : Theme.of(context).colorScheme.surface,
-          ),
-          emptyPlaceholder: showEmptyPlaceholder
-              ? AgentQueryChartFailurePlaceholderContent(
-                  emptyMessage: emptyMessage,
-                  textStyle: Theme.of(context).textTheme.bodyMedium,
-                  verticalPadding: tokens.contentSpacing,
-                  loadFailure: widget.loadFailed ? widget.loadFailure : null,
-                )
-              : null,
-        ),
+    return MetricToggleComparisonBarCard<DailySalesTrendPoint>(
+      items: points,
+      countMetricLabel: labels.metricCountLabel,
+      amountMetricLabel: labels.metricAmountLabel,
+      filterItems: _filterItems,
+      titleForMetric: (metric) => labels.titleForMetric(
+        isSalesCount: metric == MetricToggleComparisonBarMetric.count,
       ),
+      subtitle: resolvedSubtitle,
+      semanticsLabelForMetric: (metric) => labels.semanticsForMetric(
+        isSalesCount: metric == MetricToggleComparisonBarMetric.count,
+      ),
+      semanticsHint: resolvedScopeHint,
+      labelBuilder: _dayAxisLabel,
+      valueBuilder: (point, metric) =>
+          metric == MetricToggleComparisonBarMetric.count
+          ? point.salesCount
+          : point.salesAmount,
+      tooltipLabelBuilder: (point, _, metric) => labels.tooltip(
+        _tooltipDateLine(point),
+        salesCountFormat.format(point.salesCount),
+        AppBrFormatters.currency(point.salesAmount),
+      ),
+      dataLabelBuilder: (point, value, metric) =>
+          metric == MetricToggleComparisonBarMetric.count
+          ? compactSalesCountFormat.format(value)
+          : AppBrFormatters.compactCurrency(value),
+      styleBuilder: (chartContext, metric, {heightOverride}) {
+        final isSalesCount = metric == MetricToggleComparisonBarMetric.count;
+        return appDashboardComparisonBarChartStyle(
+          tokens: tokens,
+          kind: AppDashboardComparisonBarChartKind.daily,
+          l10n: l10n,
+          weekdayUsesCurrencyAxis: !isSalesCount,
+          weekdayRevenueDataLabelBackground: isSalesCount
+              ? null
+              : Theme.of(chartContext).colorScheme.surface,
+          heightOverride: heightOverride,
+        );
+      },
+      shareMetadataBuilder: (metric) => shareMetadata(
+        isSalesCountMetric: metric == MetricToggleComparisonBarMetric.count,
+      ),
+      plotFloorAccessibilityNotice: l10n.chartComparisonPlotFloorNotice,
+      extremeSpreadAccessibilityNotice:
+          l10n.chartComparisonExtremeValueSpreadNotice,
+      emptyPlaceholder: resolvedEmptyPlaceholder,
+      isLoading: isLoading,
+      onRequestFullscreen: onRequestFullscreen,
+      onRequestShare: onRequestShare,
+      shareEnabled: !isLoading,
     );
   }
 }

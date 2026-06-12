@@ -7,12 +7,13 @@ import 'package:colmeia/features/overview/presentation/widgets/overview_weekday_
 import 'package:colmeia/features/overview/presentation/widgets/weekday_user_grouped_chart_data.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/charts/daily_sales_weekday_labels.dart';
+import 'package:colmeia/shared/charts/metric_toggle_comparison_bar_fullscreen_body.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_actions.dart';
-import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
+import 'package:colmeia/shared/widgets/charts/metric_toggle_comparison_bar_card.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -43,20 +44,16 @@ class OverviewWeekdayUserSalesTrendChart extends StatefulWidget {
       _OverviewWeekdayUserSalesTrendChartState();
 }
 
-enum _OverviewWeekdayUserMetric {
-  salesCount,
-  salesAmount,
-}
-
 class _OverviewWeekdayUserSalesTrendChartState
     extends State<OverviewWeekdayUserSalesTrendChart> {
   final GlobalKey _shareKey = GlobalKey();
 
-  _OverviewWeekdayUserMetric _metric = _OverviewWeekdayUserMetric.salesCount;
+  MetricToggleComparisonBarMetric _metric =
+      MetricToggleComparisonBarMetric.count;
 
   List<OverviewWeekdayUserSalesTrendPoint>? _cachedChartPoints;
   List<OverviewWeekdayUserSalesTrendPoint>? _cachePointsIdentity;
-  _OverviewWeekdayUserMetric? _cacheMetricForChartPoints;
+  MetricToggleComparisonBarMetric? _cacheMetricForChartPoints;
 
   List<OverviewWeekdayUserSalesTrendPoint> _chartPointsForBuild() {
     if (_cachedChartPoints != null &&
@@ -66,7 +63,7 @@ class _OverviewWeekdayUserSalesTrendChartState
     }
     _cachePointsIdentity = widget.points;
     _cacheMetricForChartPoints = _metric;
-    if (_metric == _OverviewWeekdayUserMetric.salesCount) {
+    if (_metric == MetricToggleComparisonBarMetric.count) {
       _cachedChartPoints = [
         for (final p in widget.points)
           if (p.salesCount > 0) p,
@@ -81,7 +78,7 @@ class _OverviewWeekdayUserSalesTrendChartState
   }
 
   List<OverviewWeekdayUserSalesTrendPoint>? _semanticsPointsRef;
-  _OverviewWeekdayUserMetric? _semanticsMetric;
+  MetricToggleComparisonBarMetric? _semanticsMetric;
   bool? _semanticsLoadFailed;
   String? _semanticsSummaryCache;
 
@@ -127,7 +124,7 @@ class _OverviewWeekdayUserSalesTrendChartState
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final localeName = Localizations.localeOf(context).toString();
     final salesCountFormat = NumberFormat.decimalPattern(localeName);
-    final isSalesCount = _metric == _OverviewWeekdayUserMetric.salesCount;
+    final isSalesCount = _metric == MetricToggleComparisonBarMetric.count;
     final emptyMessage = overviewChartLoadFailureMessage(
       l10n: l10n,
       loadFailed: widget.loadFailed,
@@ -150,17 +147,7 @@ class _OverviewWeekdayUserSalesTrendChartState
         ? l10n.overviewWeekdayUserSalesChartSemantics
         : l10n.overviewWeekdayUserRevenueChartSemantics;
 
-    final segmented = AppSegmentedControl<_OverviewWeekdayUserMetric>(
-      options: <AppSegmentedControlOption<_OverviewWeekdayUserMetric>>[
-        AppSegmentedControlOption<_OverviewWeekdayUserMetric>(
-          value: _OverviewWeekdayUserMetric.salesCount,
-          label: l10n.overviewWeekdayMetricSalesCountLabel,
-        ),
-        AppSegmentedControlOption<_OverviewWeekdayUserMetric>(
-          value: _OverviewWeekdayUserMetric.salesAmount,
-          label: l10n.overviewWeekdayMetricSalesAmountLabel,
-        ),
-      ],
+    final segmented = buildMetricToggleComparisonBarSegmentedControl(
       value: _metric,
       onChanged: (value) => setState(() {
         _metric = value;
@@ -168,6 +155,8 @@ class _OverviewWeekdayUserSalesTrendChartState
         _cachePointsIdentity = null;
         _cacheMetricForChartPoints = null;
       }),
+      countMetricLabel: l10n.overviewWeekdayMetricSalesCountLabel,
+      amountMetricLabel: l10n.overviewWeekdayMetricSalesAmountLabel,
     );
 
     final metadata = buildOverviewWeekdayUserSalesTrendShareMetadata(
@@ -208,7 +197,8 @@ class _OverviewWeekdayUserSalesTrendChartState
               child: StatefulBuilder(
                 builder: (context, setFullscreenState) {
                   final fullscreenIsSalesCount =
-                      fullscreenMetric == _OverviewWeekdayUserMetric.salesCount;
+                      fullscreenMetric ==
+                      MetricToggleComparisonBarMetric.count;
                   if (showEmptyPlaceholder) {
                     return Center(
                       child: Text(
@@ -218,62 +208,39 @@ class _OverviewWeekdayUserSalesTrendChartState
                       ),
                     );
                   }
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      AppSegmentedControl<_OverviewWeekdayUserMetric>(
-                        options:
-                            <
-                              AppSegmentedControlOption<
-                                _OverviewWeekdayUserMetric
-                              >
-                            >[
-                              AppSegmentedControlOption<
-                                _OverviewWeekdayUserMetric
-                              >(
-                                value: _OverviewWeekdayUserMetric.salesCount,
-                                label: fullscreenL10n
-                                    .overviewWeekdayMetricSalesCountLabel,
-                              ),
-                              AppSegmentedControlOption<
-                                _OverviewWeekdayUserMetric
-                              >(
-                                value: _OverviewWeekdayUserMetric.salesAmount,
-                                label: fullscreenL10n
-                                    .overviewWeekdayMetricSalesAmountLabel,
-                              ),
-                            ],
-                        value: fullscreenMetric,
-                        onChanged: (value) => setFullscreenState(
-                          () => fullscreenMetric = value,
-                        ),
+                  return buildSegmentedControlFullscreenBody(
+                    tokens: fullscreenTokens,
+                    control: buildMetricToggleComparisonBarSegmentedControl(
+                      value: fullscreenMetric,
+                      onChanged: (value) => setFullscreenState(
+                        () => fullscreenMetric = value,
                       ),
-                      SizedBox(height: fullscreenTokens.contentSpacing),
-                      Expanded(
-                        child: OverviewWeekdayUserGroupedBarChart(
-                          l10n: fullscreenL10n,
-                          model: buildWeekdayUserGroupedChartModel(
-                            points: chartPointsSnapshot,
-                            l10n: fullscreenL10n,
-                            useSalesCount: fullscreenIsSalesCount,
-                          ),
-                          isSalesCount: fullscreenIsSalesCount,
-                          title: fullscreenIsSalesCount
-                              ? fullscreenL10n.overviewWeekdayUserSalesTitle
-                              : fullscreenL10n.overviewWeekdayUserRevenueTitle,
-                          subtitle:
-                              fullscreenL10n.overviewWeekdayUserSalesSubtitle,
-                          belowSubtitle: const SizedBox.shrink(),
-                          plotFloorAccessibilityNotice:
-                              fullscreenL10n.chartComparisonPlotFloorNotice,
-                          extremeSpreadAccessibilityNotice: fullscreenL10n
-                              .chartComparisonExtremeValueSpreadNotice,
-                          tokens: fullscreenTokens,
-                          useChartShell: false,
-                          expandPlotVertically: true,
-                        ),
+                      countMetricLabel: fullscreenL10n
+                          .overviewWeekdayMetricSalesCountLabel,
+                      amountMetricLabel: fullscreenL10n
+                          .overviewWeekdayMetricSalesAmountLabel,
+                    ),
+                    chartBuilder: (_) => OverviewWeekdayUserGroupedBarChart(
+                      l10n: fullscreenL10n,
+                      model: buildWeekdayUserGroupedChartModel(
+                        points: chartPointsSnapshot,
+                        l10n: fullscreenL10n,
+                        useSalesCount: fullscreenIsSalesCount,
                       ),
-                    ],
+                      isSalesCount: fullscreenIsSalesCount,
+                      title: fullscreenIsSalesCount
+                          ? fullscreenL10n.overviewWeekdayUserSalesTitle
+                          : fullscreenL10n.overviewWeekdayUserRevenueTitle,
+                      subtitle: fullscreenL10n.overviewWeekdayUserSalesSubtitle,
+                      belowSubtitle: const SizedBox.shrink(),
+                      plotFloorAccessibilityNotice:
+                          fullscreenL10n.chartComparisonPlotFloorNotice,
+                      extremeSpreadAccessibilityNotice:
+                          fullscreenL10n.chartComparisonExtremeValueSpreadNotice,
+                      tokens: fullscreenTokens,
+                      useChartShell: false,
+                      expandPlotVertically: true,
+                    ),
                   );
                 },
               ),
@@ -355,10 +322,10 @@ class _OverviewWeekdayUserSalesTrendChartState
       (total, point) => total + point.salesAmount,
     );
     final topPoint = points.reduce((left, right) {
-      final leftValue = _metric == _OverviewWeekdayUserMetric.salesCount
+      final leftValue = _metric == MetricToggleComparisonBarMetric.count
           ? left.salesCount.toDouble()
           : left.salesAmount;
-      final rightValue = _metric == _OverviewWeekdayUserMetric.salesCount
+      final rightValue = _metric == MetricToggleComparisonBarMetric.count
           ? right.salesCount.toDouble()
           : right.salesAmount;
       return rightValue > leftValue ? right : left;
@@ -371,7 +338,7 @@ class _OverviewWeekdayUserSalesTrendChartState
     final topUserName = topPoint.userName.trim().isEmpty
         ? '—'
         : topPoint.userName.trim();
-    return _metric == _OverviewWeekdayUserMetric.salesCount
+    return _metric == MetricToggleComparisonBarMetric.count
         ? l10n.overviewWeekdayUserSalesSummarySemantics(
             salesCountFormat.format(totalSalesCount),
             AppBrFormatters.currency(totalSalesAmount),

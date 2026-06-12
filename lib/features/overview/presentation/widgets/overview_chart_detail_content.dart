@@ -14,6 +14,7 @@ import 'package:colmeia/features/overview/presentation/widgets/overview_rankings
 import 'package:colmeia/features/overview/presentation/widgets/overview_weekday_sales_trend_chart.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_weekday_user_sales_trend_chart.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_fade_in.dart';
 import 'package:colmeia/shared/widgets/charts/daily_sales_trend_chart.dart';
 import 'package:flutter/material.dart';
@@ -71,13 +72,25 @@ class _OverviewChartDetailContentState
       );
     }
 
+    final dailySalesEmptyMessage = section == OverviewProgressiveSection.dailySales
+        ? _dailySalesEmptyMessage(l10n, overview)
+        : null;
+
     final chart = switch (section) {
       OverviewProgressiveSection.dailySales => DailySalesTrendChart(
         l10n: l10n,
         points: overview.dailySalesTrend,
-        loadFailed: overview.dailySalesTrendLoadFailed,
-        loadFailure: overview.dailySalesTrendLoadFailure,
-        loadFailureMessage: overview.dailySalesTrendLoadFailureMessage,
+        emptyMessage: dailySalesEmptyMessage!,
+        emptyPlaceholder: overviewChartEmptyPlaceholder(
+          emptyMessage: dailySalesEmptyMessage,
+          textStyle: Theme.of(context).textTheme.bodyMedium,
+          verticalPadding: Theme.of(context)
+              .extension<AppThemeTokens>()!
+              .contentSpacing,
+          loadFailure: overview.dailySalesTrendLoadFailed
+              ? overview.dailySalesTrendLoadFailure
+              : null,
+        ),
         onRequestFullscreen: (context, request) =>
             context.pushChartFullscreenFromRequest(request),
         onRequestShare: (context, request) =>
@@ -178,5 +191,17 @@ class _OverviewChartDetailContentState
       return chart;
     }
     return AppChartFadeIn(child: chart);
+  }
+
+  String _dailySalesEmptyMessage(AppLocalizations l10n, Overview overview) {
+    return overviewChartLoadFailureMessage(
+      l10n: l10n,
+      loadFailed: overview.dailySalesTrendLoadFailed,
+      loadFailure: overview.dailySalesTrendLoadFailure,
+      legacyMessage: overview.dailySalesTrendLoadFailureMessage,
+      genericFallback: overview.dailySalesTrendLoadFailed
+          ? l10n.overviewDailySalesLoadFailed
+          : l10n.overviewDailySalesEmpty,
+    );
   }
 }

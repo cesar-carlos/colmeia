@@ -1,6 +1,6 @@
 import 'package:colmeia/core/errors/app_failure.dart';
-import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_diagnostic.dart';
 import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
+import 'package:colmeia/features/overview/application/overview_app_failure_diagnostic.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/overview_failure_ui_key.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -96,9 +96,9 @@ List<OverviewAlertBannerSpec> buildOverviewAlertBannerSpecs({
 
   if (errorMessage != null) {
     final technicalBody = loadFailure != null
-        ? agentQueryFailureTechnicalDetailsBody(
+        ? overviewAppFailureDiagnosticBody(
             loadFailure,
-            l10n: l10n,
+            localizedUserMessage: errorMessage,
           )
         : errorDiagnosticBody;
     specs.add(

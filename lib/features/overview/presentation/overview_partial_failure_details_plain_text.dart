@@ -1,5 +1,6 @@
 import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
 import 'package:colmeia/features/overview/domain/overview_failure_referenced_agent_id.dart';
+import 'package:colmeia/features/overview/presentation/overview_agent_query_failure_detail_l10n.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 
 /// Plain-text diagnostic for partial agent failures (clipboard / logs).

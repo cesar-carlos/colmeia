@@ -2,6 +2,7 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
 import 'package:colmeia/features/overview/domain/overview_agent_query_failure_mapper.dart';
+import 'package:colmeia/features/overview/presentation/overview_agent_query_failure_detail_l10n.dart';
 import 'package:colmeia/l10n/app_localizations_en.dart';
 import 'package:flutter_test/flutter_test.dart';
 

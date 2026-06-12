@@ -23,19 +23,18 @@ import 'package:colmeia/features/client_agents/application/usecases/save_client_
 import 'package:colmeia/features/client_agents/application/usecases/sync_pending_client_agent_actions_use_case.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
-import 'package:colmeia/features/client_agents/domain/entities/client_agent_token_constraints.dart';
-import 'package:colmeia/features/client_agents/domain/entities/client_agents_list_page_size.dart';
-import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_result.dart';
 import 'package:colmeia/features/client_agents/domain/entities/pending_agent_action.dart';
-import 'package:colmeia/features/client_agents/domain/entities/sync_pending_agent_actions_result.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_access_mutation_coordinator.dart';
+import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_access_request_actions_coordinator.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_approval_polling_coordinator.dart';
+import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_list_loading_coordinator.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_presence_coordinator.dart';
+import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_sync_coordinator.dart';
+import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_token_draft_coordinator.dart';
 import 'package:colmeia/features/client_agents/presentation/controllers/request_access_submission_snapshot.dart';
 import 'package:colmeia/features/client_agents/presentation/models/client_agent_access_request_row_input.dart';
 import 'package:colmeia/features/client_agents/presentation/models/client_agents_presentation_message.dart';
-import 'package:colmeia/features/client_agents/presentation/utils/client_agent_id_format.dart';
 import 'package:colmeia/shared/ports/agent_query_target_resolution_invalidator.dart';
 import 'package:flutter/foundation.dart';
 import 'package:result_dart/result_dart.dart' show Unit;
@@ -46,7 +45,11 @@ class ClientAgentsController extends ChangeNotifier
     implements
         ClientAgentsPresenceHost,
         ClientAgentsApprovalPollingHost,
-        ClientAgentsAccessMutationHost {
+        ClientAgentsAccessMutationHost,
+        ClientAgentsTokenDraftHost,
+        ClientAgentsSyncHost,
+        ClientAgentsListLoadingHost,
+        ClientAgentsAccessRequestActionsHost {
   ClientAgentsController({
     required AuthController authController,
     required ClientAgentTokenDraftStore clientTokenDraftStore,
@@ -72,20 +75,8 @@ class ClientAgentsController extends ChangeNotifier
     RetryAfterGate? syncRetryAfterGate,
     RetryAfterGate? requestAccessRetryAfterGate,
   }) : _authController = authController,
-       _clientTokenDraftStore = clientTokenDraftStore,
-       _loadApprovedAgentsUseCase = loadApprovedAgentsUseCase,
-       _loadAccessRequestsUseCase = loadAccessRequestsUseCase,
        _loadClientAgentDetailUseCase = loadClientAgentDetailUseCase,
-       _discardQueuedClientAgentRequestAccessUseCase =
-           discardQueuedClientAgentRequestAccessUseCase,
-       _readPendingActionsUseCase = readPendingActionsUseCase,
-       _syncPendingActionsUseCase = syncPendingActionsUseCase,
-       _getClientAgentTokenUseCase = getClientAgentTokenUseCase,
-       _saveClientAgentTokenUseCase = saveClientAgentTokenUseCase,
-       _retryClientAccessRequestUseCase = retryClientAccessRequestUseCase,
        _targetResolutionInvalidator = targetResolutionInvalidator,
-       _syncRetryAfterGate = syncRetryAfterGate ?? RetryAfterGate(),
-       _ownsSyncRetryAfterGate = syncRetryAfterGate == null,
        _requestAccessRetryAfterGate =
            requestAccessRetryAfterGate ?? RetryAfterGate(),
        _ownsRequestAccessRetryAfterGate = requestAccessRetryAfterGate == null {
@@ -114,25 +105,34 @@ class ClientAgentsController extends ChangeNotifier
           discardQueuedClientAgentRequestAccessUseCase,
       readPendingActionsUseCase: readPendingActionsUseCase,
     );
-    // Re-broadcast gate ticks so consumer widgets that already listen to
-    // the controller refresh the countdown label without subscribing to
-    // each gate individually.
-    _syncRetryAfterGate.addListener(_handleSyncRetryAfterGateChanged);
+    _tokenDraft = ClientAgentsTokenDraftCoordinator(
+      host: this,
+      clientTokenDraftStore: clientTokenDraftStore,
+      getClientAgentTokenUseCase: getClientAgentTokenUseCase,
+      saveClientAgentTokenUseCase: saveClientAgentTokenUseCase,
+    );
+    _sync = ClientAgentsSyncCoordinator(
+      host: this,
+      syncPendingActionsUseCase: syncPendingActionsUseCase,
+      syncRetryAfterGate: syncRetryAfterGate,
+    );
+    _listLoading = ClientAgentsListLoadingCoordinator(
+      host: this,
+      loadApprovedAgentsUseCase: loadApprovedAgentsUseCase,
+      loadAccessRequestsUseCase: loadAccessRequestsUseCase,
+      readPendingActionsUseCase: readPendingActionsUseCase,
+    );
+    _accessRequestActions = ClientAgentsAccessRequestActionsCoordinator(
+      host: this,
+      retryClientAccessRequestUseCase: retryClientAccessRequestUseCase,
+      discardQueuedClientAgentRequestAccessUseCase:
+          discardQueuedClientAgentRequestAccessUseCase,
+    );
     _requestAccessRetryAfterGate.addListener(_notifyListenersIfAlive);
   }
 
   final AuthController _authController;
-  final ClientAgentTokenDraftStore _clientTokenDraftStore;
-  final LoadClientApprovedAgentsUseCase _loadApprovedAgentsUseCase;
-  final LoadClientAccessRequestsUseCase _loadAccessRequestsUseCase;
   final LoadClientAgentDetailUseCase _loadClientAgentDetailUseCase;
-  final DiscardQueuedClientAgentRequestAccessUseCase
-  _discardQueuedClientAgentRequestAccessUseCase;
-  final ReadPendingClientAgentActionsUseCase _readPendingActionsUseCase;
-  final SyncPendingClientAgentActionsUseCase _syncPendingActionsUseCase;
-  final GetClientAgentTokenUseCase _getClientAgentTokenUseCase;
-  final SaveClientAgentTokenUseCase _saveClientAgentTokenUseCase;
-  final RetryClientAccessRequestUseCase _retryClientAccessRequestUseCase;
   final AgentQueryTargetResolutionInvalidator? _targetResolutionInvalidator;
 
   /// Owns the realtime presence concern (socket subscription, hint timers,
@@ -141,13 +141,10 @@ class ClientAgentsController extends ChangeNotifier
   late final ClientAgentsPresenceCoordinator _presence;
   late final ClientAgentsApprovalPollingCoordinator _approvalPolling;
   late final ClientAgentsAccessMutationCoordinator _accessMutation;
-
-  /// Cooldown for `syncPending`. Armed every time the underlying use
-  /// case fails with a `Retry-After` hint; the UI uses
-  /// [syncRetryAfter] / [isSyncOnCooldown] to gray the button out.
-  final RetryAfterGate _syncRetryAfterGate;
-
-  final bool _ownsSyncRetryAfterGate;
+  late final ClientAgentsTokenDraftCoordinator _tokenDraft;
+  late final ClientAgentsSyncCoordinator _sync;
+  late final ClientAgentsListLoadingCoordinator _listLoading;
+  late final ClientAgentsAccessRequestActionsCoordinator _accessRequestActions;
 
   /// Same idea for the request-access flow. The hub returns
   /// `Retry-After` for the dedicated `REST_CLIENT_ME_AGENTS_POST_RATE_LIMIT_*`
@@ -162,6 +159,18 @@ class ClientAgentsController extends ChangeNotifier
   bool _isSyncingPending = false;
   bool _isMutating = false;
   bool _hasLoadedInitialData = false;
+  @override
+  bool get hasLoadedInitialData => _hasLoadedInitialData;
+  @override
+  set hasLoadedInitialData(bool value) => _hasLoadedInitialData = value;
+  @override
+  set isLoadingInitial(bool value) => _isLoadingInitial = value;
+  @override
+  set isRefreshing(bool value) => _isRefreshing = value;
+  @override
+  int get refreshAllToken => _refreshAllToken;
+  @override
+  set refreshAllToken(int value) => _refreshAllToken = value;
   ClientAgentsPresentationMessage? _actionError;
   ClientAgentsPresentationNotice? _actionNotice;
   ClientAgentsPresentationMessage? _approvedAgentsError;
@@ -171,7 +180,6 @@ class ClientAgentsController extends ChangeNotifier
   PaginatedResult<ClientAgent>? _approvedAgents;
   PaginatedResult<ClientAgentAccessRequest>? _accessRequests;
   List<PendingAgentAction> _pendingActions = const <PendingAgentAction>[];
-  final Set<String> _pendingLocalTokenServerFlushAgentIds = <String>{};
   int _refreshAllToken = 0;
   Future<void> _pendingMutationTail = Future.value();
 
@@ -197,12 +205,15 @@ class ClientAgentsController extends ChangeNotifier
   }
 
   bool get isLoading => _isLoadingInitial || _isRefreshing;
+  @override
   bool get isLoadingInitial => _isLoadingInitial;
+  @override
   bool get isRefreshing => _isRefreshing;
   bool get isSyncing => _isSyncingPending;
   bool get isMutating => _isMutating;
   @override
   bool get isBusy => _isSyncingPending || _isMutating;
+  @override
   ClientAgentsPresentationMessage? get actionError => _actionError;
   ClientAgentsPresentationNotice? get actionNotice => _actionNotice;
   ClientAgentsPresentationMessage? get approvedAgentsError =>
@@ -231,8 +242,8 @@ class ClientAgentsController extends ChangeNotifier
 
   /// Time left in the `Retry-After` cooldown for the sync action, or
   /// `null` when the action is allowed.
-  Duration? get syncRetryAfter => _syncRetryAfterGate.remaining;
-  bool get isSyncOnCooldown => !_syncRetryAfterGate.isOpen;
+  Duration? get syncRetryAfter => _sync.syncRetryAfter;
+  bool get isSyncOnCooldown => _sync.isSyncOnCooldown;
 
   /// Time left in the `Retry-After` cooldown for the request-access
   /// action, or `null` when the action is allowed.
@@ -244,7 +255,7 @@ class ClientAgentsController extends ChangeNotifier
     if (_hasLoadedInitialData || isLoading) {
       return;
     }
-    await _refreshAll(keepContentVisible: false);
+    await _listLoading.refreshAll(keepContentVisible: false);
     // Subscribe to realtime presence after the initial load so the first
     // hints/catalog events have a populated `_approvedAgents` to upsert
     // into. Subscription is idempotent — re-running `initialize()` is a
@@ -256,95 +267,15 @@ class ClientAgentsController extends ChangeNotifier
   Future<void> refreshAll() async {
     if (isBusy) {
       await _runPendingMutationSerialized(
-        () => _refreshAll(keepContentVisible: hasContent),
+        () => _listLoading.refreshAll(keepContentVisible: hasContent),
         resetBusyFlags: false,
       );
       return;
     }
-    await _refreshAll(keepContentVisible: hasContent);
+    await _listLoading.refreshAll(keepContentVisible: hasContent);
   }
 
-  bool get hasContent {
-    return _approvedAgents != null ||
-        _accessRequests != null ||
-        _pendingActions.isNotEmpty;
-  }
-
-  Future<void> _refreshAll({
-    required bool keepContentVisible,
-  }) async {
-    final userId = _authController.session?.userId;
-    if (userId == null || userId.isEmpty) {
-      _actionError =
-          ClientAgentsPresentationMessage.clientAgentsSessionUnavailableLoad();
-      _notifyListenersIfAlive();
-      return;
-    }
-
-    final refreshToken = ++_refreshAllToken;
-    if (keepContentVisible) {
-      _isLoadingInitial = false;
-      _isRefreshing = true;
-    } else {
-      _isRefreshing = false;
-      _isLoadingInitial = true;
-    }
-    _clearSectionErrors();
-    _notifyListenersIfAlive();
-
-    const query = PaginatedQuery(pageSize: kClientAgentsListPageSize);
-    try {
-      late AppResult<PaginatedResult<ClientAgent>> approvedResult;
-      late AppResult<PaginatedResult<ClientAgentAccessRequest>> requestsResult;
-      late AppResult<List<PendingAgentAction>> pendingResult;
-
-      await Future.wait<void>(<Future<void>>[
-        _loadApprovedAgentsUseCase(
-          userId: userId,
-          query: query,
-          refresh: keepContentVisible,
-        ).then((value) => approvedResult = value),
-        _loadAccessRequestsUseCase(
-          userId: userId,
-          query: query,
-        ).then((value) => requestsResult = value),
-        _readPendingActionsUseCase(userId: userId).then(
-          (value) => pendingResult = value,
-        ),
-      ]);
-      if (_isDisposed || refreshToken != _refreshAllToken) {
-        return;
-      }
-
-      _approvedAgentsError = consumeResult(
-        result: approvedResult,
-        onSuccess: (value) => _approvedAgents = value,
-        operation: 'loadApprovedClientAgents',
-      );
-      _accessRequestsError = consumeResult(
-        result: requestsResult,
-        onSuccess: (value) => _accessRequests = value,
-        operation: 'loadClientAgentAccessRequests',
-      );
-      _pendingActionsError = consumeResult(
-        result: pendingResult,
-        onSuccess: (value) => _pendingActions = value,
-        operation: 'readPendingClientAgentActions',
-      );
-      _scheduleLocalTokenServerFlushForApprovedAgents(userId: userId);
-    } finally {
-      if (!_isDisposed && refreshToken == _refreshAllToken) {
-        if (keepContentVisible) {
-          _isRefreshing = false;
-        } else {
-          _isLoadingInitial = false;
-        }
-        _hasLoadedInitialData = true;
-        _notifyListenersIfAlive();
-        _scheduleAutoSyncIfNeeded();
-      }
-    }
-  }
+  bool get hasContent => hasListContent();
 
   /// Reads the token to prefill in the request-access form for [agentId].
   ///
@@ -354,367 +285,28 @@ class ClientAgentsController extends ChangeNotifier
   /// on auth/network failure (so the form keeps working offline). For
   /// agents that are NOT yet approved, the server returns 403 by design and
   /// only the local draft is meaningful.
-  Future<String?> readLocalClientToken(String agentId) async {
-    final userId = _authController.session?.userId;
-    if (userId == null || userId.isEmpty) {
-      return null;
-    }
-    final trimmedAgentId = agentId.trim();
-    if (trimmedAgentId.isEmpty) {
-      return null;
-    }
-    if (_approvedAgentIds().contains(trimmedAgentId)) {
-      final result = await _getClientAgentTokenUseCase(
-        userId: userId,
-        agentId: trimmedAgentId,
-      );
-      final snapshot = result.getOrNull();
-      if (snapshot != null) {
-        return snapshot.token;
-      }
-      // Server unreachable / forbidden: fall back to local cache below.
-    }
-    return _clientTokenDraftStore.read(
-      userId: userId,
-      agentId: trimmedAgentId,
-    );
-  }
+  Future<String?> readLocalClientToken(String agentId) =>
+      _tokenDraft.readLocalClientToken(agentId);
 
-  /// Persists or clears the local token for a draft row when the agent id is
-  /// a valid UUID (used from the request-access form while editing).
-  ///
-  /// Tokens longer than [ClientAgentTokenConstraints.maxLength] are
-  /// dropped before touching storage so a value the server would reject
-  /// never lands on disk.
+  @override
   Future<void> persistLocalClientTokenDraftLine({
     required String agentIdRaw,
     required String clientTokenRaw,
-  }) async {
-    final userId = _authController.session?.userId;
-    if (userId == null || userId.isEmpty) {
-      return;
-    }
-    final id = agentIdRaw.trim();
-    if (!isValidClientAgentId(id)) {
-      return;
-    }
-    final token = clientTokenRaw.trim();
-    if (token.length > ClientAgentTokenConstraints.maxLength) {
-      AppLogger.warning(
-        'Client token draft exceeds server cap; not persisted',
-        context: <String, Object?>{
-          'operation': 'persistLocalClientTokenDraftLine',
-          'agentId': id,
-          'length': token.length,
-          'cap': ClientAgentTokenConstraints.maxLength,
-        },
-      );
-      return;
-    }
-    if (token.isEmpty) {
-      await _clientTokenDraftStore.delete(userId: userId, agentId: id);
-    } else {
-      await _clientTokenDraftStore.write(
-        userId: userId,
-        agentId: id,
-        clientToken: token,
-      );
-    }
-  }
+  }) => _tokenDraft.persistLocalClientTokenDraftLine(
+    agentIdRaw: agentIdRaw,
+    clientTokenRaw: clientTokenRaw,
+  );
 
-  /// Submits an access request transactionally w.r.t. the local token cache.
-  ///
-  /// 1. Snapshots existing local tokens for the rows we are about to touch
-  ///    so we can roll back on failure.
-  /// 2. Validates token length BEFORE touching storage.
-  /// 3. Calls [requestAccess] (which probes / classifies / queues).
-  /// 4. On success, applies the new token values:
-  ///    - For ids the server reported as **already linked** (relink path),
-  ///      pushes the token to the server via [SaveClientAgentTokenUseCase]
-  ///      so the bridge can use it on the next SQL call. The use case
-  ///      mirrors into the local cache on success.
-  ///    - For ids that landed in the local pending queue (new request),
-  ///      writes the token to the local cache. After approval polling
-  ///      detects the link, [_pushLocalTokenToServerAfterApproval] flushes
-  ///      it to the server.
-  ///    - For blocked ids (already approved/pending/queued), the local
-  ///      cache is left untouched — the user's draft cannot silently
-  ///      overwrite a token they did not intend to change.
-  /// 5. On failure of the underlying [requestAccess], the local cache for
-  ///    the touched ids is restored to its pre-submit state.
   Future<bool> submitAccessRequestWithLocalTokens(
     List<ClientAgentAccessRequestRowInput> rows,
-  ) async {
-    final userId = _authController.session?.userId;
-    if (userId == null || userId.isEmpty) {
-      _actionError =
-          ClientAgentsPresentationMessage.clientAgentsSessionUnavailableRequest();
-      _notifyListenersIfAlive();
-      return false;
-    }
-
-    final tokenByAgentId = <String, String>{};
-    final tokensTooLongIds = <String>[];
-    for (final row in rows) {
-      final id = row.agentIdRaw.trim();
-      if (!isValidClientAgentId(id)) {
-        continue;
-      }
-      final token = row.clientTokenRaw.trim();
-      if (token.length > ClientAgentTokenConstraints.maxLength) {
-        tokensTooLongIds.add(id);
-        continue;
-      }
-      tokenByAgentId[id] = token;
-    }
-
-    if (tokensTooLongIds.isNotEmpty) {
-      _actionError =
-          ClientAgentsPresentationMessage.clientAgentsValidationTokenTooLong(
-            maxLength: ClientAgentTokenConstraints.maxLength,
-            agentIds: tokensTooLongIds,
-          );
-      _notifyListenersIfAlive();
-      return false;
-    }
-
-    final requestedIds = tokenByAgentId.keys.toSet();
-    if (requestedIds.isEmpty) {
-      return false;
-    }
-
-    // Snapshot existing local tokens for the ids we may touch, so we can
-    // roll back on failure. `null` means "no token previously stored".
-    final localSnapshotById = <String, String?>{};
-    for (final id in requestedIds) {
-      localSnapshotById[id] = await _clientTokenDraftStore.read(
-        userId: userId,
-        agentId: id,
-      );
-    }
-
-    AppLogger.info(
-      'Client agents request access submission starting',
-      context: <String, Object?>{
-        'operation': 'submitAccessRequestWithLocalTokens',
-        'requestedCount': requestedIds.length,
-        'withTokenCount': tokenByAgentId.values
-            .where((t) => t.isNotEmpty)
-            .length,
-      },
-    );
-
-    final outcome = await requestAccess(
-      agentIds: requestedIds,
-      onResolved: (snapshot) async {
-        await _applySubmittedTokensTransactionally(
-          userId: userId,
-          tokenByAgentId: tokenByAgentId,
-          snapshot: snapshot,
-        );
-      },
-    );
-
-    if (!outcome) {
-      // Best-effort rollback: requestAccess did not place anything in the
-      // local pending queue (auth abort or all blocked). Leave the local
-      // cache exactly as it was before this call so the form retry stays
-      // idempotent. We did not write anything yet, so restoring is a no-op
-      // unless `onResolved` ran (it does not when we abort early — the
-      // closure runs AFTER queueing succeeds).
-      // Defensive: re-write the snapshot in case any future change starts
-      // mutating the cache earlier in `requestAccess`.
-      await _restoreLocalTokenSnapshot(
-        userId: userId,
-        snapshotById: localSnapshotById,
-      );
-    }
-
-    return outcome;
-  }
-
-  /// Server-applies the user-typed tokens for ids whose access was resolved
-  /// by [requestAccess].
-  ///
-  /// - **Relinked ids** (server already had this client linked): tokens are
-  ///   pushed to the server immediately via the dedicated PUT endpoint. The
-  ///   underlying repository mirrors successful writes into the local cache.
-  /// - **Queued ids** (new request placed in the local pending queue):
-  ///   tokens land in the local secure-storage cache only. After approval
-  ///   polling detects the link, [_pushLocalTokenToServerAfterApproval]
-  ///   flushes them to the server.
-  /// - Tokens NOT present in [tokenByAgentId] (or empty) trigger a server
-  ///   clear for relinked ids and a local delete for queued ids.
-  Future<void> _applySubmittedTokensTransactionally({
-    required String userId,
-    required Map<String, String> tokenByAgentId,
-    required RequestAccessSubmissionSnapshot snapshot,
-  }) async {
-    for (final agentId in snapshot.relinkedAgentIds) {
-      final token = tokenByAgentId[agentId] ?? '';
-      final result = await _saveClientAgentTokenUseCase(
-        userId: userId,
-        agentId: agentId,
-        clientToken: token,
-      );
-      if (result.isError()) {
-        _pendingLocalTokenServerFlushAgentIds.add(agentId);
-        final failure = result.exceptionOrNull()!;
-        AppLogger.warning(
-          'Server PUT of client-agent token after relink failed; falling '
-          'back to local cache (will retry on next approval flush)',
-          context: <String, Object?>{
-            'operation': 'applySubmittedTokens',
-            'agentId': agentId,
-            'phase': 'relinked',
-            'technicalMessage': failure.message,
-          },
-          error: failure.cause ?? failure,
-          stackTrace: failure.stackTrace,
-        );
-        await _writeLocalTokenSafely(
-          userId: userId,
-          agentId: agentId,
-          token: token,
-        );
-      } else {
-        _pendingLocalTokenServerFlushAgentIds.remove(agentId);
-      }
-    }
-
-    for (final agentId in snapshot.queuedAgentIds) {
-      final token = tokenByAgentId[agentId] ?? '';
-      await _writeLocalTokenSafely(
-        userId: userId,
-        agentId: agentId,
-        token: token,
-      );
-    }
-  }
-
-  Future<void> _writeLocalTokenSafely({
-    required String userId,
-    required String agentId,
-    required String token,
-  }) async {
-    if (token.isEmpty) {
-      _pendingLocalTokenServerFlushAgentIds.remove(agentId);
-      await _clientTokenDraftStore.delete(userId: userId, agentId: agentId);
-      return;
-    }
-    await _clientTokenDraftStore.write(
-      userId: userId,
-      agentId: agentId,
-      clientToken: token,
-    );
-  }
-
-  Future<void> _restoreLocalTokenSnapshot({
-    required String userId,
-    required Map<String, String?> snapshotById,
-  }) async {
-    for (final entry in snapshotById.entries) {
-      final previous = entry.value;
-      if (previous == null || previous.isEmpty) {
-        await _clientTokenDraftStore.delete(
-          userId: userId,
-          agentId: entry.key,
-        );
-      } else {
-        await _clientTokenDraftStore.write(
-          userId: userId,
-          agentId: entry.key,
-          clientToken: previous,
-        );
-      }
-    }
-  }
-
-  /// After polling confirms an agent was approved, flush any local token we
-  /// stashed during submission to the server.
-  Future<void> _pushLocalTokenToServerAfterApproval({
-    required String userId,
-    required Iterable<String> agentIds,
-  }) async {
-    var failedCount = 0;
-    for (final agentId in agentIds) {
-      final localToken = await _clientTokenDraftStore.read(
-        userId: userId,
-        agentId: agentId,
-      );
-      if (localToken == null) {
-        continue;
-      }
-      final result = await _saveClientAgentTokenUseCase(
-        userId: userId,
-        agentId: agentId,
-        clientToken: localToken,
-      );
-      if (result.isError()) {
-        failedCount++;
-        _pendingLocalTokenServerFlushAgentIds.add(agentId);
-        final failure = result.exceptionOrNull()!;
-        AppLogger.warning(
-          'Server PUT of client-agent token after approval failed; local '
-          'cache kept as fallback',
-          context: <String, Object?>{
-            'operation': 'pushLocalTokenAfterApproval',
-            'agentId': agentId,
-            'technicalMessage': failure.message,
-          },
-          error: failure.cause ?? failure,
-          stackTrace: failure.stackTrace,
-        );
-      } else {
-        _pendingLocalTokenServerFlushAgentIds.remove(agentId);
-      }
-    }
-    if (failedCount > 0 && !_isDisposed) {
-      _setActionFeedback(
-        message:
-            ClientAgentsPresentationMessage.clientAgentsLocalTokenServerFlushFailed(
-              failedCount: failedCount,
-            ),
-        kind: ClientAgentsActionFeedbackKind.info,
-      );
-      _notifyListenersIfAlive();
-    }
-  }
-
-  void _scheduleLocalTokenServerFlushForApprovedAgents({
-    required String userId,
-    Iterable<String> preferredAgentIds = const <String>[],
-  }) {
-    if (_isDisposed) {
-      return;
-    }
-    final approvedItems = _approvedAgents?.items;
-    if (approvedItems == null || approvedItems.isEmpty) {
-      return;
-    }
-    final approvedIds = approvedItems.map((agent) => agent.agentId).toSet();
-    final candidates = <String>{
-      ..._pendingLocalTokenServerFlushAgentIds,
-      ...preferredAgentIds,
-      for (final agent in approvedItems)
-        if (agent.hasServerClientToken != true) agent.agentId,
-    }.intersection(approvedIds);
-    if (candidates.isEmpty) {
-      return;
-    }
-    unawaited(
-      _pushLocalTokenToServerAfterApproval(
-        userId: userId,
-        agentIds: candidates,
-      ),
-    );
-  }
+  ) => _tokenDraft.submitAccessRequestWithLocalTokens(rows);
 
   /// Optional callback fired by [requestAccess] right after the controller
   /// has resolved every id into either "relinked" (server already linked the
   /// client) or "queued" (POST will fire on the next sync). Lets callers
   /// (e.g. `submitAccessRequestWithLocalTokens`) apply side effects keyed by
   /// the resolved ids without re-reading the controller's internal state.
+  @override
   Future<bool> requestAccess({
     required Set<String> agentIds,
     Future<void> Function(RequestAccessSubmissionSnapshot snapshot)? onResolved,
@@ -772,51 +364,9 @@ class ClientAgentsController extends ChangeNotifier
   Future<void> retryAccessRequest({
     required ClientAgentAccessRequest request,
   }) async {
-    final requestId = request.requestId?.trim();
-    if (requestId == null || requestId.isEmpty) {
-      _actionError =
-          ClientAgentsPresentationMessage.clientAgentsRetryMissingRequestId();
-      _notifyListenersIfAlive();
-      return;
-    }
-    final userId = _authController.session?.userId;
-    if (userId == null || userId.isEmpty) {
-      _actionError =
-          ClientAgentsPresentationMessage.clientAgentsSessionUnavailableRequest();
-      _notifyListenersIfAlive();
-      return;
-    }
-
-    await _runPendingMutationSerialized(() async {
-      if (_isDisposed) {
-        return;
-      }
-      _isMutating = true;
-      _actionError = null;
-      _clearActionFeedback();
-      _notifyListenersIfAlive();
-      final retryResult = await _retryClientAccessRequestUseCase(
-        userId: userId,
-        requestId: requestId,
-      );
-      _actionError = consumeResult(
-        result: retryResult,
-        operation: 'retryClientAccessRequest',
-      );
-      await _refreshAfterMutation(userId: userId);
-      if (_actionError == null) {
-        _setActionFeedback(
-          message: ClientAgentsPresentationMessage.clientAgentsRetrySuccess(),
-          kind: ClientAgentsActionFeedbackKind.info,
-        );
-        _isMutating = false;
-        _approvalPolling.startPolling(
-          userId: userId,
-          agentIds: <String>{request.agentId},
-        );
-      }
-      _notifyListenersIfAlive();
-    });
+    await _runPendingMutationSerialized(
+      () => _accessRequestActions.retryAccessRequest(request: request),
+    );
   }
 
   /// Drops a **local** `requestAccess` action that is still `queued` or
@@ -826,263 +376,22 @@ class ClientAgentsController extends ChangeNotifier
   Future<void> discardQueuedRequestAccess({
     required PendingAgentAction action,
   }) async {
-    await _runPendingMutationSerialized(() async {
-      if (_isDisposed) {
-        return;
-      }
-      final userId = _authController.session?.userId;
-      if (userId == null || userId.isEmpty) {
-        _actionError =
-            ClientAgentsPresentationMessage.clientAgentsSessionUnavailableRequest();
-        _notifyListenersIfAlive();
-        return;
-      }
-      final agentId = action.agentId.trim();
-      if (!_matchesDiscardableLocalRequestAccess(action, agentId)) {
-        _actionError =
-            ClientAgentsPresentationMessage.clientAgentsDiscardQueuedRequestInvalidState();
-        _notifyListenersIfAlive();
-        return;
-      }
-      final beforeCount = _pendingActions
-          .where((a) => _matchesDiscardableLocalRequestAccess(a, agentId))
-          .length;
-      if (beforeCount == 0) {
-        _actionError =
-            ClientAgentsPresentationMessage.clientAgentsDiscardQueuedRequestInvalidState();
-        _notifyListenersIfAlive();
-        return;
-      }
-
-      _isMutating = true;
-      _actionError = null;
-      _clearActionFeedback();
-      _notifyListenersIfAlive();
-
-      final discardResult = await _discardQueuedClientAgentRequestAccessUseCase(
-        userId: userId,
-        agentIds: <String>{agentId},
-      );
-      _actionError = consumeResult(
-        result: discardResult,
-        operation: 'discardQueuedClientAgentRequestAccess',
-      );
-      await _refreshAfterMutation(userId: userId);
-      if (_actionError == null) {
-        final afterCount = _pendingActions
-            .where((a) => _matchesDiscardableLocalRequestAccess(a, agentId))
-            .length;
-        if (beforeCount > afterCount) {
-          await persistLocalClientTokenDraftLine(
-            agentIdRaw: agentId,
-            clientTokenRaw: '',
-          );
-          _setActionFeedback(
-            message:
-                ClientAgentsPresentationMessage.clientAgentsDiscardQueuedRequestSuccess(),
-            kind: ClientAgentsActionFeedbackKind.info,
-          );
-        }
-      }
-      _notifyListenersIfAlive();
-    });
+    await _runPendingMutationSerialized(
+      () => _accessRequestActions.discardQueuedRequestAccess(action: action),
+    );
   }
 
-  bool _matchesDiscardableLocalRequestAccess(
-    PendingAgentAction action,
-    String trimmedAgentId,
-  ) {
-    return action.agentId.trim() == trimmedAgentId &&
-        action.type == PendingAgentActionType.requestAccess &&
-        (action.state == PendingAgentActionState.queued ||
-            action.state == PendingAgentActionState.failed);
-  }
+  Future<void> syncPending({bool autoTriggered = false}) =>
+      _sync.syncPending(autoTriggered: autoTriggered);
 
-  Future<void> syncPending({
-    bool autoTriggered = false,
-  }) async {
-    final userId = _authController.session?.userId;
-    if (userId == null || userId.isEmpty) {
-      _actionError =
-          ClientAgentsPresentationMessage.clientAgentsSessionUnavailableSync();
-      _notifyListenersIfAlive();
-      return;
-    }
-
-    if (!_syncRetryAfterGate.isOpen) {
-      // Honour the server's `Retry-After`: do not even attempt the call
-      // until the cooldown elapses. Auto-triggered runs (post-enqueue
-      // schedule) are silent so we do not spam the user with the same
-      // banner across ticks; manual taps surface the wait window.
-      if (!autoTriggered) {
-        _actionError = ClientAgentsPresentationMessage.clientAgentsSyncCooldown(
-          seconds: _remainingRetryAfterSeconds(_syncRetryAfterGate.remaining),
-        );
-        _notifyListenersIfAlive();
-      }
-      return;
-    }
-
-    await _runPendingMutationSerialized(() async {
-      if (_isDisposed) {
-        return;
-      }
-
-      final pendingCount = _pendingActions
-          .where(
-            (action) =>
-                action.state == PendingAgentActionState.queued ||
-                action.state == PendingAgentActionState.failed,
-          )
-          .length;
-      if (pendingCount == 0) {
-        if (!autoTriggered) {
-          _setActionFeedback(
-            message:
-                ClientAgentsPresentationMessage.clientAgentsNoLocalPendingToSync(),
-            kind: ClientAgentsActionFeedbackKind.info,
-          );
-          _notifyListenersIfAlive();
-        }
-        return;
-      }
-
-      _isSyncingPending = true;
-      _isMutating = true;
-      _actionError = null;
-      if (!autoTriggered) {
-        _clearActionFeedback();
-      }
-      _notifyListenersIfAlive();
-      final syncResult = await _syncPendingActionsUseCase(userId: userId);
-      syncResult.fold(
-        (value) {
-          AppLogger.info(
-            'Client agents pending sync outcome',
-            context: <String, Object?>{
-              'operation': 'syncPendingClientAgentActions',
-              'pollIds': value.requestAccessPollAgentIds.length,
-              'alreadyApproved':
-                  value.requestAccessAlreadyApprovedAgentIds.length,
-              'debounced': value.requestAccessDebouncedAgentIds.length,
-              'newRequests': value.requestAccessNewRequestsAgentIds.length,
-            },
-          );
-        },
-        (_) {},
-      );
-      final requestAccessPollAgentIds = syncResult.fold(
-        (value) => value.requestAccessPollAgentIds,
-        (_) => const <String>{},
-      );
-      final requestAccessAlreadyApprovedOnSync = syncResult.fold(
-        (value) => value.requestAccessAlreadyApprovedAgentIds,
-        (_) => const <String>{},
-      );
-      final requestAccessDebouncedOnSync = syncResult.fold(
-        (value) => value.requestAccessDebouncedAgentIds,
-        (_) => const <String>{},
-      );
-      _actionError = consumeResult(
-        result: syncResult,
-        operation: 'syncPendingClientAgentActions',
-      );
-      _maybeArmSyncRetryGateFromResult(syncResult);
-      await _refreshAfterMutation(userId: userId);
-      if (_actionError == null &&
-          requestAccessAlreadyApprovedOnSync.isNotEmpty) {
-        await _hydrateApprovedAgentsInMemory(
-          userId: userId,
-          agentIds: requestAccessAlreadyApprovedOnSync,
-        );
-        _invalidateTargetResolution(userId: userId);
-      }
-      if (_actionError == null) {
-        final outcome = syncResult.fold((v) => v, (_) => null);
-        if (outcome != null) {
-          _setActionFeedback(
-            message: ClientAgentsPresentationMessage.clientAgentsSyncSuccess(
-              syncedCount: outcome.successfulActionCount,
-              failedCount: outcome.failedActionCount,
-              attemptedPendingCount: pendingCount,
-              autoTriggered: autoTriggered,
-              watchingApproval: requestAccessPollAgentIds.isNotEmpty,
-              alreadyApprovedCount: requestAccessAlreadyApprovedOnSync.length,
-              debouncedCount: requestAccessDebouncedOnSync.length,
-            ),
-            kind: ClientAgentsActionFeedbackKind.success,
-          );
-          if (outcome.successfulRemoveAccessAgentIds.isNotEmpty) {
-            _invalidateTargetResolution(userId: userId);
-          }
-        }
-        // Sync may have discovered that some queued ids were already
-        // approved server-side. Flush any local token we stashed for those
-        // ids to the server right away so the user does not have to wait
-        // for the polling loop to catch up.
-        if (requestAccessAlreadyApprovedOnSync.isNotEmpty) {
-          unawaited(
-            _pushLocalTokenToServerAfterApproval(
-              userId: userId,
-              agentIds: requestAccessAlreadyApprovedOnSync,
-            ),
-          );
-        }
-        _isSyncingPending = false;
-        _isMutating = false;
-        _approvalPolling.startPolling(
-          userId: userId,
-          agentIds: requestAccessPollAgentIds,
-        );
-        _notifyListenersIfAlive();
-      }
-    });
-  }
+  @override
+  Future<void> refreshAfterMutation({required String userId}) =>
+      _refreshAfterMutation(userId: userId);
 
   Future<void> _refreshAfterMutation({
     required String userId,
   }) async {
-    const query = PaginatedQuery(pageSize: kClientAgentsListPageSize);
-    late AppResult<PaginatedResult<ClientAgent>> approvedResult;
-    late AppResult<PaginatedResult<ClientAgentAccessRequest>> requestsResult;
-    late AppResult<List<PendingAgentAction>> pendingResult;
-
-    await Future.wait<void>(<Future<void>>[
-      _loadApprovedAgentsUseCase(
-        userId: userId,
-        query: query,
-        refresh: true,
-      ).then((value) => approvedResult = value),
-      _loadAccessRequestsUseCase(
-        userId: userId,
-        query: query,
-      ).then((value) => requestsResult = value),
-      _readPendingActionsUseCase(userId: userId).then(
-        (value) => pendingResult = value,
-      ),
-    ]);
-    if (_isDisposed) {
-      return;
-    }
-
-    _approvedAgentsError = consumeResult(
-      result: approvedResult,
-      onSuccess: (value) => _approvedAgents = value,
-      operation: 'loadApprovedClientAgents',
-    );
-    _accessRequestsError = consumeResult(
-      result: requestsResult,
-      onSuccess: (value) => _accessRequests = value,
-      operation: 'loadClientAgentAccessRequests',
-    );
-    _pendingActionsError = consumeResult(
-      result: pendingResult,
-      onSuccess: (value) => _pendingActions = value,
-      operation: 'readPendingClientAgentActions',
-    );
-
-    _scheduleLocalTokenServerFlushForApprovedAgents(userId: userId);
-    _notifyListenersIfAlive();
+    await _listLoading.refreshAfterMutation(userId: userId);
   }
 
   @override
@@ -1128,12 +437,36 @@ class ClientAgentsController extends ChangeNotifier
     _notifyListenersIfAlive();
   }
 
-  void _clearSectionErrors() {
+  @override
+  void clearSectionErrors() {
     _actionError = null;
     _approvedAgentsError = null;
     _accessRequestsError = null;
     _pendingActionsError = null;
   }
+
+  @override
+  bool hasListContent() {
+    return _approvedAgents != null ||
+        _accessRequests != null ||
+        _pendingActions.isNotEmpty;
+  }
+
+  @override
+  void notifyListChanged() => _notifyListenersIfAlive();
+
+  @override
+  void scheduleLocalTokenServerFlushForApprovedAgents({
+    required String userId,
+  }) {
+    _tokenDraft.scheduleLocalTokenServerFlushForApprovedAgents(userId: userId);
+  }
+
+  @override
+  void scheduleAutoSyncIfNeeded() => _sync.scheduleAutoSyncIfNeeded();
+
+  @override
+  void notifyActionsChanged() => _notifyListenersIfAlive();
 
   void _clearActionFeedback() {
     _actionNotice = null;
@@ -1149,36 +482,8 @@ class ClientAgentsController extends ChangeNotifier
     );
   }
 
-  void _scheduleAutoSyncIfNeeded() {
-    if (isBusy || !_syncRetryAfterGate.isOpen) {
-      return;
-    }
-    final hasPendingSync = _pendingActions.any(
-      (action) =>
-          action.state == PendingAgentActionState.queued ||
-          action.state == PendingAgentActionState.failed,
-    );
-    if (!hasPendingSync) {
-      return;
-    }
-    unawaited(syncPending(autoTriggered: true));
-  }
-
-  void _handleSyncRetryAfterGateChanged() {
-    if (_isDisposed) {
-      return;
-    }
-    _notifyListenersIfAlive();
-    if (_syncRetryAfterGate.isOpen) {
-      _scheduleAutoSyncIfNeeded();
-    }
-  }
-
-  int _remainingRetryAfterSeconds(Duration? remaining) {
-    return (remaining?.inSeconds ?? 0).clamp(1, 86400);
-  }
-
-  Future<void> _hydrateApprovedAgentsInMemory({
+  @override
+  Future<void> hydrateApprovedAgentsInMemory({
     required String userId,
     required Iterable<String> agentIds,
   }) async {
@@ -1242,15 +547,6 @@ class ClientAgentsController extends ChangeNotifier
           ? current.pageSize
           : mergedItems.length,
     );
-  }
-
-  Set<String> _approvedAgentIds() {
-    return _approvedAgents?.items.map((agent) => agent.agentId).toSet() ??
-        const <String>{};
-  }
-
-  void _invalidateTargetResolution({required String userId}) {
-    invalidateTargetResolution(userId: userId);
   }
 
   void _notifyListenersIfAlive() {
@@ -1324,7 +620,7 @@ class ClientAgentsController extends ChangeNotifier
   @override
   void notifyMutationChanged() {
     _notifyListenersIfAlive();
-    _scheduleAutoSyncIfNeeded();
+    _sync.scheduleAutoSyncIfNeeded();
   }
 
   // ----- Approval polling host (delegated to the coordinator) -----
@@ -1362,7 +658,7 @@ class ClientAgentsController extends ChangeNotifier
     required Iterable<String> agentIds,
   }) {
     unawaited(
-      _pushLocalTokenToServerAfterApproval(
+      _tokenDraft.pushLocalTokenToServerAfterApproval(
         userId: userId,
         agentIds: agentIds,
       ),
@@ -1393,6 +689,49 @@ class ClientAgentsController extends ChangeNotifier
     return null;
   }
 
+  // ----- Token draft host -----
+
+  @override
+  void notifyTokenDraftChanged() => _notifyListenersIfAlive();
+
+  // ----- Sync host -----
+
+  @override
+  void setSyncingPending({required bool value}) => _isSyncingPending = value;
+
+  @override
+  void setMutating({required bool value}) => _isMutating = value;
+
+  @override
+  void notifySyncChanged() => _notifyListenersIfAlive();
+
+  @override
+  Future<T> runPendingMutationSerialized<T>(
+    Future<T> Function() action, {
+    bool resetBusyFlags = true,
+  }) => _runPendingMutationSerialized(action, resetBusyFlags: resetBusyFlags);
+
+  @override
+  void startApprovalPolling({
+    required String userId,
+    required Set<String> agentIds,
+  }) {
+    _approvalPolling.startPolling(userId: userId, agentIds: agentIds);
+  }
+
+  @override
+  void pushLocalTokensAfterApproval({
+    required String userId,
+    required Iterable<String> agentIds,
+  }) {
+    unawaited(
+      _tokenDraft.pushLocalTokenToServerAfterApproval(
+        userId: userId,
+        agentIds: agentIds,
+      ),
+    );
+  }
+
   @override
   void dispose() {
     if (_isDisposed) {
@@ -1403,36 +742,13 @@ class ClientAgentsController extends ChangeNotifier
     }
     _approvalPolling.dispose();
     _presence.dispose();
-    _syncRetryAfterGate.removeListener(_handleSyncRetryAfterGateChanged);
-    if (_ownsSyncRetryAfterGate) {
-      _syncRetryAfterGate.dispose();
-    }
+    _sync.dispose();
     _requestAccessRetryAfterGate.removeListener(_notifyListenersIfAlive);
     if (_ownsRequestAccessRetryAfterGate) {
       _requestAccessRetryAfterGate.dispose();
     }
     _isDisposed = true;
     super.dispose();
-  }
-
-  /// Inspects [result] and arms [_syncRetryAfterGate] when the underlying
-  /// failure carries a `Retry-After` hint propagated from the hub.
-  void _maybeArmSyncRetryGateFromResult(
-    AppResult<SyncPendingAgentActionsResult> result,
-  ) {
-    result.fold(
-      (value) {
-        final retryAfter = value.retryAfter;
-        if (retryAfter != null) {
-          _syncRetryAfterGate.arm(retryAfter);
-        }
-      },
-      (_) {},
-    );
-    final retryAfter = _retryAfterFromResult(result);
-    if (retryAfter != null) {
-      _syncRetryAfterGate.arm(retryAfter);
-    }
   }
 
   void _maybeArmRequestAccessRetryGateFromResult(AppResult<Unit> result) {

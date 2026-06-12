@@ -1,27 +1,21 @@
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
+import 'package:colmeia/shared/widgets/charts/app_grouped_column_chart_series.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
-/// Three grouped column series per category: [salesValue] uses the primary
-/// (left) Y-axis; [profitValue] and [costValue] share a secondary opposed axis
-/// so smaller magnitudes stay readable when sales dominates.
+/// Grouped column chart with one or more series per category.
+///
+/// Series on [AppGroupedColumnYAxis.primary] use the left Y-axis; series on
+/// [AppGroupedColumnYAxis.secondary] share an opposed axis for smaller magnitudes.
 class AppGroupedColumnChart<T> extends StatelessWidget {
   const AppGroupedColumnChart({
     required this.items,
     required this.xLabelBuilder,
-    required this.salesValue,
-    required this.profitValue,
-    required this.costValue,
-    required this.salesLabel,
-    required this.profitLabel,
-    required this.costLabel,
-    required this.salesColor,
-    required this.profitColor,
-    required this.costColor,
+    required this.series,
     required this.primaryAxisFormat,
     required this.secondaryAxisFormat,
     required this.height,
@@ -29,9 +23,9 @@ class AppGroupedColumnChart<T> extends StatelessWidget {
     super.key,
     this.preset = AppChartPreset.standard,
     this.animationDuration,
-    this.categorySlotWidth = 72,
-    this.horizontalPadding = 24,
-    this.minPlotWidth = 560,
+    this.categorySlotWidth = AppGroupedColumnChartLayout.defaultCategorySlotWidth,
+    this.horizontalPadding = AppGroupedColumnChartLayout.defaultHorizontalPadding,
+    this.minPlotWidth = AppGroupedColumnChartLayout.defaultMinPlotWidth,
     this.gridLineColor,
     this.horizontalScrollSemanticsHint,
     this.secondaryAxisTitle,
@@ -41,44 +35,20 @@ class AppGroupedColumnChart<T> extends StatelessWidget {
 
   final List<T> items;
   final String Function(T item) xLabelBuilder;
-  final double Function(T item) salesValue;
-  final double Function(T item) profitValue;
-  final double Function(T item) costValue;
-
-  final String salesLabel;
-  final String profitLabel;
-  final String costLabel;
-
-  final Color salesColor;
-  final Color profitColor;
-  final Color costColor;
-
+  final List<AppGroupedColumnChartSeries<T>> series;
   final NumberFormat primaryAxisFormat;
   final NumberFormat secondaryAxisFormat;
-
   final double height;
-
   final ChartWidgetBuilder<dynamic, dynamic> tooltipBuilder;
-
   final AppChartPreset preset;
-
   final Duration? animationDuration;
-
   final double categorySlotWidth;
   final double horizontalPadding;
   final double minPlotWidth;
-
   final Color? gridLineColor;
-
   final String? horizontalScrollSemanticsHint;
-
-  /// Shown on the secondary axis (defaults to "$profitLabel · $costLabel").
   final String? secondaryAxisTitle;
-
-  /// Optional short label on the primary axis (often same as [salesLabel]).
   final String? primaryAxisTitle;
-
-  /// Optional stable key for tests / semantics targeting (wraps [ChartHorizontalScrollShell]).
   final Key? horizontalScrollShellKey;
 
   static const BorderRadius kDefaultBarBorderRadius = BorderRadius.all(
@@ -88,9 +58,11 @@ class AppGroupedColumnChart<T> extends StatelessWidget {
   static double resolvePlotWidth({
     required double availableWidth,
     required int categoryCount,
-    double categorySlotWidth = 72,
-    double horizontalPadding = 24,
-    double minPlotWidth = 560,
+    double categorySlotWidth =
+        AppGroupedColumnChartLayout.defaultCategorySlotWidth,
+    double horizontalPadding =
+        AppGroupedColumnChartLayout.defaultHorizontalPadding,
+    double minPlotWidth = AppGroupedColumnChartLayout.defaultMinPlotWidth,
   }) {
     if (categoryCount <= 0) {
       return availableWidth.clamp(minPlotWidth, double.infinity);
@@ -115,8 +87,18 @@ class AppGroupedColumnChart<T> extends StatelessWidget {
       defaultMs: AppChartEngineAnimationDefaults.cartesianSeriesMs,
     );
 
-    final secondaryTitle = secondaryAxisTitle ?? '$profitLabel · $costLabel';
-    final primaryTitle = primaryAxisTitle ?? salesLabel;
+    final primarySeries = series
+        .where((entry) => entry.yAxis == AppGroupedColumnYAxis.primary)
+        .toList(growable: false);
+    final secondarySeries = series
+        .where((entry) => entry.yAxis == AppGroupedColumnYAxis.secondary)
+        .toList(growable: false);
+
+    final resolvedPrimaryTitle =
+        primaryAxisTitle ?? primarySeries.firstOrNull?.name;
+    final resolvedSecondaryTitle =
+        secondaryAxisTitle ??
+        secondarySeries.map((entry) => entry.name).join(' · ');
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -154,7 +136,7 @@ class AppGroupedColumnChart<T> extends StatelessWidget {
                   majorGridLines: MajorGridLines(width: 0),
                 ),
                 primaryYAxis: NumericAxis(
-                  name: '_salesAxis',
+                  name: '_primaryAxis',
                   numberFormat: primaryAxisFormat,
                   axisLine: const AxisLine(width: 0),
                   majorGridLines: MajorGridLines(
@@ -162,71 +144,49 @@ class AppGroupedColumnChart<T> extends StatelessWidget {
                     width: 1,
                   ),
                   title: AxisTitle(
-                    text: primaryTitle,
+                    text: resolvedPrimaryTitle ?? '',
                     textStyle: legendStyle,
                   ),
                 ),
-                axes: <ChartAxis>[
-                  NumericAxis(
-                    name: '_profitCostAxis',
-                    opposedPosition: true,
-                    numberFormat: secondaryAxisFormat,
-                    axisLine: const AxisLine(width: 0),
-                    majorGridLines: const MajorGridLines(width: 0),
-                    title: AxisTitle(
-                      text: secondaryTitle,
-                      textStyle: legendStyle,
-                    ),
-                  ),
-                ],
+                axes: secondarySeries.isEmpty
+                    ? const <ChartAxis>[]
+                    : <ChartAxis>[
+                        NumericAxis(
+                          name: '_secondaryAxis',
+                          opposedPosition: true,
+                          numberFormat: secondaryAxisFormat,
+                          axisLine: const AxisLine(width: 0),
+                          majorGridLines: const MajorGridLines(width: 0),
+                          title: AxisTitle(
+                            text: resolvedSecondaryTitle,
+                            textStyle: legendStyle,
+                          ),
+                        ),
+                      ],
                 zoomPanBehavior: ZoomPanBehavior(
                   enablePinching: chartTheme.enableSelectionZooming,
                   enablePanning: chartTheme.enableSelectionZooming,
                   enableSelectionZooming: chartTheme.enableSelectionZooming,
                 ),
                 series: <CartesianSeries<T, String>>[
-                  ColumnSeries<T, String>(
-                    dataSource: items,
-                    xValueMapper: (item, _) => xLabelBuilder(item),
-                    yValueMapper: (item, _) => salesValue(item),
-                    name: salesLabel,
-                    yAxisName: '_salesAxis',
-                    color: salesColor,
-                    borderRadius: kDefaultBarBorderRadius,
-                    width: AppChartEngineCartesianBarGeometryDefaults
-                        .columnWidthRatio,
-                    spacing: AppChartEngineCartesianBarGeometryDefaults
-                        .columnSpacingRatio,
-                    animationDuration: animMs,
-                  ),
-                  ColumnSeries<T, String>(
-                    dataSource: items,
-                    xValueMapper: (item, _) => xLabelBuilder(item),
-                    yValueMapper: (item, _) => profitValue(item),
-                    name: profitLabel,
-                    yAxisName: '_profitCostAxis',
-                    color: profitColor,
-                    borderRadius: kDefaultBarBorderRadius,
-                    width: AppChartEngineCartesianBarGeometryDefaults
-                        .columnWidthRatio,
-                    spacing: AppChartEngineCartesianBarGeometryDefaults
-                        .columnSpacingRatio,
-                    animationDuration: animMs,
-                  ),
-                  ColumnSeries<T, String>(
-                    dataSource: items,
-                    xValueMapper: (item, _) => xLabelBuilder(item),
-                    yValueMapper: (item, _) => costValue(item),
-                    name: costLabel,
-                    yAxisName: '_profitCostAxis',
-                    color: costColor,
-                    borderRadius: kDefaultBarBorderRadius,
-                    width: AppChartEngineCartesianBarGeometryDefaults
-                        .columnWidthRatio,
-                    spacing: AppChartEngineCartesianBarGeometryDefaults
-                        .columnSpacingRatio,
-                    animationDuration: animMs,
-                  ),
+                  for (final entry in series)
+                    ColumnSeries<T, String>(
+                      dataSource: items,
+                      xValueMapper: (item, _) => xLabelBuilder(item),
+                      yValueMapper: (item, _) => entry.valueMapper(item),
+                      name: entry.name,
+                      yAxisName: entry.yAxis ==
+                              AppGroupedColumnYAxis.secondary
+                          ? '_secondaryAxis'
+                          : '_primaryAxis',
+                      color: entry.color,
+                      borderRadius: kDefaultBarBorderRadius,
+                      width: AppChartEngineCartesianBarGeometryDefaults
+                          .columnWidthRatio,
+                      spacing: AppChartEngineCartesianBarGeometryDefaults
+                          .columnSpacingRatio,
+                      animationDuration: animMs,
+                    ),
                 ],
               ),
             ),

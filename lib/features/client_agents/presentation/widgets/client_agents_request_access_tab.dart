@@ -3,12 +3,11 @@ import 'dart:async';
 import 'package:colmeia/features/client_agents/presentation/models/client_agent_access_request_row_input.dart';
 import 'package:colmeia/features/client_agents/presentation/utils/client_agent_id_format.dart';
 import 'package:colmeia/features/client_agents/presentation/utils/client_agents_request_access_form_parser.dart';
+import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_request_access_row.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
-import 'package:colmeia/shared/widgets/app_section_card.dart';
-import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:flutter/material.dart';
 
 class ClientAgentsRequestAccessTab extends StatefulWidget {
@@ -421,10 +420,12 @@ class _ClientAgentsRequestAccessTabState
         SizedBox(height: tokens.gapMd),
         for (var i = 0; i < _rows.length; i++) ...<Widget>[
           if (i > 0) SizedBox(height: tokens.gapMd),
-          _RequestAccessRow(
+          ClientAgentsRequestAccessRow(
             key: ValueKey<Object>(_rows[i].identity),
             index: i,
-            row: _rows[i],
+            agentIdController: _rows[i].agentId,
+            clientTokenController: _rows[i].clientToken,
+            obscureToken: _rows[i].obscureToken,
             l10n: l10n,
             tokens: tokens,
             onToggleObscure: () {
@@ -545,94 +546,5 @@ class _ClientAgentsRequestAccessTabState
           failure.agentIds.join(', '),
         ),
     };
-  }
-}
-
-class _RequestAccessRow extends StatelessWidget {
-  const _RequestAccessRow({
-    required this.index,
-    required this.row,
-    required this.l10n,
-    required this.tokens,
-    required this.onToggleObscure,
-    required this.onAgentIdChanged,
-    required this.onTokenChanged,
-    required this.onFieldSubmitted,
-    required this.canRemove,
-    required this.onRemove,
-    super.key,
-  });
-
-  final int index;
-  final _RowControllers row;
-  final AppLocalizations l10n;
-  final AppThemeTokens tokens;
-  final VoidCallback onToggleObscure;
-  final ValueChanged<String> onAgentIdChanged;
-  final ValueChanged<String> onTokenChanged;
-  final VoidCallback onFieldSubmitted;
-  final bool canRemove;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return AppSectionCard(
-      padding: EdgeInsets.all(tokens.gapMd),
-      borderSide: BorderSide(color: colorScheme.outlineVariant),
-      color: colorScheme.surface,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  l10n.clientAgentsRequestAccessRowTitle(index + 1),
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-              ),
-              if (canRemove)
-                IconButton(
-                  tooltip: l10n.clientAgentsRequestAccessRemoveRow,
-                  onPressed: onRemove,
-                  icon: const Icon(Icons.close_rounded),
-                ),
-            ],
-          ),
-          SizedBox(height: tokens.gapSm),
-          AppTextField(
-            controller: row.agentId,
-            label: l10n.clientAgentsAgentIdsLabel,
-            hintText: '11111111-1111-1111-1111-111111111111',
-            textInputAction: TextInputAction.next,
-            onChanged: onAgentIdChanged,
-            onFieldSubmitted: (_) => onFieldSubmitted(),
-          ),
-          SizedBox(height: tokens.gapSm),
-          AppTextField(
-            controller: row.clientToken,
-            label: l10n.clientAgentsClientTokenLabel,
-            hintText: l10n.clientAgentsClientTokenHint,
-            obscureText: row.obscureToken,
-            textInputAction: TextInputAction.done,
-            onChanged: onTokenChanged,
-            onFieldSubmitted: (_) => onFieldSubmitted(),
-            suffix: IconButton(
-              tooltip: row.obscureToken
-                  ? l10n.clientAgentsClientTokenShow
-                  : l10n.clientAgentsClientTokenHide,
-              onPressed: onToggleObscure,
-              icon: Icon(
-                row.obscureToken
-                    ? Icons.visibility_rounded
-                    : Icons.visibility_off_rounded,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

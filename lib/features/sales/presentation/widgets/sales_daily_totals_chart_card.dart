@@ -1,7 +1,11 @@
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
+import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_chart_failure_placeholder_content.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_daily_totals_chart_copy.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/charts/daily_sales_trend_chart_labels.dart';
 import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
+import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
@@ -28,8 +32,6 @@ class SalesDailyTotalsChartCard extends StatelessWidget {
   final bool isLoading;
   final AppFailure? loadFailure;
   final String? loadFailureMessage;
-
-  /// When non-null, daily totals were loaded for this inclusive span instead of the anchor month.
   final DashboardDateRange? dailySaleDateRange;
   final AppChartFullscreenRequestCallback? onRequestFullscreen;
   final AppChartShareRequestCallback? onRequestShare;
@@ -37,12 +39,30 @@ class SalesDailyTotalsChartCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final range = dailySaleDateRange;
+    final labels = DailySalesTrendChartLabels.resolve(
+      l10n,
+      salesBranchMonth: true,
+    );
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+    final emptyMessage = loadFailed
+        ? chartAgentQueryLoadFailureMessage(
+            l10n: l10n,
+            loadFailure: loadFailure,
+            legacyMessage: loadFailureMessage,
+            genericFallback: labels.resolveEmptyMessage(loadFailed: true),
+          )
+        : labels.resolveEmptyMessage(loadFailed: false);
+
     return DailySalesTrendChart(
       l10n: l10n,
       points: points,
-      loadFailed: loadFailed,
-      loadFailure: loadFailure,
-      loadFailureMessage: loadFailureMessage,
+      emptyMessage: emptyMessage,
+      emptyPlaceholder: AgentQueryChartFailurePlaceholderContent(
+        emptyMessage: emptyMessage,
+        textStyle: Theme.of(context).textTheme.bodyMedium,
+        verticalPadding: tokens.contentSpacing,
+        loadFailure: loadFailed ? loadFailure : null,
+      ),
       isLoading: isLoading,
       useSalesDailyTotalsLabels: true,
       onRequestFullscreen: onRequestFullscreen,

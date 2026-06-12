@@ -1,7 +1,10 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
+import 'package:colmeia/features/overview/application/overview_agent_query_failure_technical_summary.dart';
+import 'package:colmeia/features/overview/application/overview_app_failure_diagnostic.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
-import 'package:colmeia/features/overview/domain/overview_partial_failure_details_plain_text.dart';
+import 'package:colmeia/features/overview/presentation/overview_agent_query_failure_detail_l10n.dart';
+import 'package:colmeia/features/overview/presentation/overview_partial_failure_details_plain_text.dart';
 import 'package:colmeia/l10n/app_localizations_en.dart';
 import 'package:flutter_test/flutter_test.dart';
 

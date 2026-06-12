@@ -1,11 +1,11 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_diario_vendas_use_case.dart';
+import 'package:colmeia/features/agent_queries/data/mappers/daily_sales_trend_point_mapper.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_complete_period.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
-import 'package:colmeia/shared/data/charts/daily_sales_trend_point_mappers.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 
 typedef SalesDailyTotalsLoadResult = ({

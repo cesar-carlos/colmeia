@@ -600,3 +600,35 @@ class BrazilMapChartStoreMarker extends StatelessWidget {
     );
   }
 }
+
+class BrazilMapTouchGestureViewportWrapper extends StatelessWidget {
+  const BrazilMapTouchGestureViewportWrapper({
+    required this.child,
+    required this.deferDuringGesture,
+    required this.onPointerDown,
+    required this.onPointerUp,
+    required this.onPointerCancel,
+    super.key,
+  });
+
+  final Widget child;
+  final bool deferDuringGesture;
+  final VoidCallback onPointerDown;
+  final VoidCallback onPointerUp;
+  final VoidCallback onPointerCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!deferDuringGesture) {
+      return child;
+    }
+
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (_) => onPointerDown(),
+      onPointerUp: (_) => onPointerUp(),
+      onPointerCancel: (_) => onPointerCancel(),
+      child: child,
+    );
+  }
+}

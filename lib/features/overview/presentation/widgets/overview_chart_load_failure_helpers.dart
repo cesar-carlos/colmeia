@@ -1,18 +1,12 @@
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/features/agent_queries/application/agent_query_chart_load_failure_message.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_support_context.dart';
 import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
 import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_chart_failure_placeholder_content.dart';
-import 'package:colmeia/features/overview/domain/entities/overview.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 
-bool overviewHasPartialFailuresForSource(
-  Overview overview,
-  OverviewAgentQueryFailureSource source,
-) {
-  return overview.partialQueryFailureDetails.any((d) => d.source == source);
-}
+export 'package:colmeia/features/overview/application/overview_chart_partial_failure.dart';
 
 String overviewChartLoadFailureMessage({
   required AppLocalizations l10n,
@@ -24,11 +18,12 @@ String overviewChartLoadFailureMessage({
   if (!loadFailed) {
     return genericFallback;
   }
-  return chartAgentQueryLoadFailureMessage(
-    l10n: l10n,
+  return resolveAgentQueryChartLoadFailureMessage(
     loadFailure: loadFailure,
     legacyMessage: legacyMessage,
     genericFallback: genericFallback,
+    localizedFailureMessage: (failure) =>
+        agentQueryFailureUserMessageOrNull(failure, l10n),
   );
 }
 

@@ -11,6 +11,7 @@ import 'package:colmeia/features/sales/domain/sales_monthly_pnl_bar_chart_prefer
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_point_percent_metric.dart';
 import 'package:colmeia/features/sales/presentation/sales_monthly_pnl_chart_keys.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_monthly_pnl_share.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_monthly_pnl_grouped_column_series.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
@@ -427,18 +428,16 @@ class _SalesMonthlyPnlBarChartBody extends StatelessWidget {
         ),
       );
     } else {
-      chartBody = AppGroupedColumnChart<SalesMonthlyPnlPoint>(
-        items: points,
-        xLabelBuilder: (p) => _monthShort(p, localeTag),
-        salesValue: (p) => p.venda,
-        profitValue: (p) => p.lucro,
-        costValue: (p) => p.custoMercadoria,
-        salesLabel: l10n.salesMonthlyPnlSeriesSalesLabel,
-        profitLabel: l10n.salesMonthlyPnlSeriesProfitLabel,
-        costLabel: l10n.salesMonthlyPnlSeriesCostLabel,
+      final groupedSeries = salesMonthlyPnlGroupedColumnSeries(
+        l10n: l10n,
         salesColor: chartTheme.primaryColor,
         profitColor: chartTheme.paletteColor(1),
         costColor: chartTheme.paletteColor(2),
+      );
+      chartBody = AppGroupedColumnChart<SalesMonthlyPnlPoint>(
+        items: points,
+        xLabelBuilder: (p) => _monthShort(p, localeTag),
+        series: groupedSeries,
         primaryAxisFormat: primaryMoney,
         secondaryAxisFormat: primaryMoney,
         height: chartHeightOverride,
@@ -449,16 +448,8 @@ class _SalesMonthlyPnlBarChartBody extends StatelessWidget {
             l10n.overviewComparisonBarHorizontalScrollHint,
         tooltipBuilder: (data, point, series, pointIndex, seriesIndex) {
           final p = data as SalesMonthlyPnlPoint;
-          final label = switch (seriesIndex) {
-            1 => l10n.salesMonthlyPnlSeriesProfitLabel,
-            2 => l10n.salesMonthlyPnlSeriesCostLabel,
-            _ => l10n.salesMonthlyPnlSeriesSalesLabel,
-          };
-          final value = switch (seriesIndex) {
-            1 => p.lucro,
-            2 => p.custoMercadoria,
-            _ => p.venda,
-          };
+          final label = groupedSeries[seriesIndex].name;
+          final value = groupedSeries[seriesIndex].valueMapper(p);
           return Padding(
             padding: const EdgeInsets.all(8),
             child: Column(

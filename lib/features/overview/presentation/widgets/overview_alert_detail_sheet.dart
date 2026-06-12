@@ -6,7 +6,8 @@ import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_support_context.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
 import 'package:colmeia/features/overview/domain/overview_failure_referenced_agent_id.dart';
-import 'package:colmeia/features/overview/domain/overview_partial_failure_details_plain_text.dart';
+import 'package:colmeia/features/overview/presentation/overview_agent_query_failure_detail_l10n.dart';
+import 'package:colmeia/features/overview/presentation/overview_partial_failure_details_plain_text.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';

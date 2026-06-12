@@ -1,40 +1,14 @@
 import 'package:colmeia/core/errors/app_failure.dart';
-import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_failure_codes.dart';
+import 'package:colmeia/features/agent_queries/application/agent_query_chart_load_failure_message.dart';
+import 'package:colmeia/features/agent_queries/data/agent_query_failure_ui_key_resolver.dart';
+import 'package:colmeia/features/agent_queries/domain/agent_query_failure_classification.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
-import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/presentation/localization/agent_sql_failure_message_for_ui_key.dart';
 import 'package:colmeia/features/agent_queries/presentation/localization/agent_sql_rpc_failure_l10n.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 
-/// Whether [failure] should surface agent-query rate-limit copy (RPC, socket,
-/// REST 429 on commands).
-bool isAgentQueryRateLimitedFailure(AppFailure failure) {
-  if (failure.context[AgentSqlRpcFailureUiKey.field] ==
-      AgentSqlRpcFailureUiKey.rateLimited) {
-    return true;
-  }
-  final transportCode =
-      failure.context[AgentQueriesFailureContext.transportCodeField];
-  if (transportCode is String && isSocketRateLimitedCode(transportCode)) {
-    return true;
-  }
-  if (failure is RpcFailure && failure.rpcCode == -32013) {
-    return true;
-  }
-  return false;
-}
-
-/// True when UI should not show an error surface (navigation away / cancel).
-bool shouldSuppressAgentQueryFailureUi(AppFailure failure) {
-  if (isCancelledAgentQueryFailure(failure.context)) {
-    return true;
-  }
-  if (failure is OperationCancelledFailure) {
-    return true;
-  }
-  final uiKey = failure.context[AgentSqlRpcFailureUiKey.field];
-  return uiKey == AgentSqlRpcFailureUiKey.executionCancelled;
-}
+export 'package:colmeia/features/agent_queries/domain/agent_query_failure_classification.dart'
+    show isAgentQueryRateLimitedFailure, shouldSuppressAgentQueryFailureUi;
 
 /// Localized user-facing text for agent SQL / bridge / transport failures.
 ///
@@ -95,17 +69,13 @@ String chartAgentQueryLoadFailureMessage({
   AppFailure? loadFailure,
   String? legacyMessage,
 }) {
-  if (loadFailure != null) {
-    final localized = agentQueryFailureUserMessageOrNull(loadFailure, l10n);
-    if (localized != null && localized.trim().isNotEmpty) {
-      return localized;
-    }
-  }
-  final legacy = legacyMessage?.trim();
-  if (legacy != null && legacy.isNotEmpty) {
-    return legacy;
-  }
-  return genericFallback;
+  return resolveAgentQueryChartLoadFailureMessage(
+    genericFallback: genericFallback,
+    loadFailure: loadFailure,
+    legacyMessage: legacyMessage,
+    localizedFailureMessage: (failure) =>
+        agentQueryFailureUserMessageOrNull(failure, l10n),
+  );
 }
 
 String _withRateLimitWait(

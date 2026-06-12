@@ -5,6 +5,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
+import 'package:colmeia/shared/widgets/charts/comparison_bar_chart_point_mapper.dart';
 import 'package:colmeia/shared/widgets/charts/comparison_bar_plot_floor.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
@@ -659,67 +660,23 @@ class AppComparisonBarChart<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations);
+    final tokens = Theme.of(context).extension<AppThemeTokens>()!;
     final n = items.length;
     final values = List<num>.generate(n, (i) => valueBuilder(items[i]));
     debugLogSuspiciousComparisonBarSpread(values);
 
-    // X-axis label shaping: optional two-line wrap, else optional single-line
-    // truncation. Tooltips still use [tooltipLabelBuilder] with full context.
-    String formatXLabel(String raw) {
-      if (style.wrapXAxisLabelsInTwoLines) {
-        return formatComparisonBarXAxisLabelWrapped(
-          raw,
-          maxCharsPerLine: style.wrapXAxisCharsPerLine,
-          maxLines: style.wrapXAxisMaxLines,
-        );
-      }
-      final maxChars = style.xLabelMaxChars;
-      if (maxChars == null) {
-        return raw;
-      }
-      return formatComparisonBarXAxisLabelCollapsed(raw, maxChars: maxChars);
-    }
-
-    final rawPoints = <AppChartPoint>[];
-    List<Color?>? pointColorsOut;
-    List<String?>? dataLabelsOut;
-    List<String?>? tooltipLabelsOut;
-    if (colorBuilder != null) {
-      pointColorsOut = <Color?>[];
-    }
-    if (style.showDataLabels) {
-      dataLabelsOut = <String?>[];
-    }
-    if (tooltipLabelBuilder != null) {
-      tooltipLabelsOut = <String?>[];
-    }
-    for (var i = 0; i < n; i++) {
-      final item = items[i];
-      final v = values[i];
-      rawPoints.add(
-        AppChartPoint(
-          label: formatXLabel(labelBuilder(item)),
-          value: v,
-        ),
-      );
-      pointColorsOut?.add(colorBuilder!(item));
-      dataLabelsOut?.add(
-        dataLabelBuilder?.call(item, v) ?? v.toString(),
-      );
-      tooltipLabelsOut?.add(
-        _truncateComparisonTooltipLabel(
-          tooltipLabelBuilder!.call(item, v),
-          style.tooltipLabelMaxChars,
-        ),
-      );
-    }
-    final points = applyComparisonBarPlotHeightFloor(
-      rawPoints,
-      style.minPlottedValueShareOfMax,
-      strictLinearBarHeights: style.strictLinearBarHeights,
+    final mapped = mapComparisonBarChartPoints<T>(
+      items: items,
+      values: values,
+      labelBuilder: labelBuilder,
+      style: style,
+      colorBuilder: colorBuilder,
+      dataLabelBuilder: dataLabelBuilder,
+      tooltipLabelBuilder: tooltipLabelBuilder,
     );
-    final hasPlotFloor = points.any((p) => p.plottedValue != null);
-    final hasExtremeSpread = comparisonBarValuesHaveExtremeSpread(values);
+    final points = mapped.points;
+    final hasPlotFloor = mapped.hasPlotFloor;
+    final hasExtremeSpread = mapped.hasExtremeSpread;
 
     final semanticsParts = <String>[];
     final floorNotice = plotFloorAccessibilityNotice?.trim();
@@ -752,6 +709,7 @@ class AppComparisonBarChart<T> extends StatelessWidget {
     final mergedTitleTrailing = _mergeComparisonTitleTrailing(
       titleTrailing,
       floorNoticeTrailing,
+      gap: tokens.gapSm,
     );
 
     final resolvedLoadingLabel =
@@ -779,9 +737,9 @@ class AppComparisonBarChart<T> extends StatelessWidget {
       points: points,
       preset: preset,
       style: style,
-      pointColors: pointColorsOut,
-      dataLabels: dataLabelsOut,
-      tooltipLabels: tooltipLabelsOut,
+      pointColors: mapped.pointColors,
+      dataLabels: mapped.dataLabels,
+      tooltipLabels: mapped.tooltipLabels,
       onPointTap: (onPointTap == null && onPointTapEvent == null)
           ? null
           : handlePointTap,
@@ -823,7 +781,11 @@ class AppComparisonBarChart<T> extends StatelessWidget {
   }
 }
 
-Widget? _mergeComparisonTitleTrailing(Widget? primary, Widget? secondary) {
+Widget? _mergeComparisonTitleTrailing(
+  Widget? primary,
+  Widget? secondary, {
+  required double gap,
+}) {
   if (primary == null) {
     return secondary;
   }
@@ -834,26 +796,10 @@ Widget? _mergeComparisonTitleTrailing(Widget? primary, Widget? secondary) {
     mainAxisSize: MainAxisSize.min,
     children: <Widget>[
       primary,
-      const SizedBox(width: 8),
+      SizedBox(width: gap),
       secondary,
     ],
   );
-}
-
-String? _truncateComparisonTooltipLabel(String? raw, int? maxChars) {
-  if (raw == null) {
-    return null;
-  }
-  final trimmed = raw.trim();
-  if (trimmed.isEmpty) {
-    return raw;
-  }
-  final max = maxChars;
-  if (max == null || trimmed.length <= max) {
-    return raw;
-  }
-  final cap = math.max(4, max);
-  return '${trimmed.substring(0, cap)}\u2026';
 }
 
 /// Single-line category label: trims and collapses with U+2026 when longer

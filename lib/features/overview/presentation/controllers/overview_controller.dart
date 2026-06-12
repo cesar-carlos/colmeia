@@ -1,13 +1,14 @@
 import 'dart:async';
-import 'package:colmeia/core/config/app_environment.dart';
+
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
 import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_registry.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
-import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_diagnostic.dart';
-import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after.dart';
+import 'package:colmeia/features/overview/application/overview_prefetch_session.dart';
+import 'package:colmeia/features/overview/application/overview_rpc_capabilities_warm_up_coordinator.dart';
+import 'package:colmeia/features/overview/application/overview_section_prefetch_coordinator.dart';
 import 'package:colmeia/features/overview/application/overview_shell_cache.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_sections_use_case.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
@@ -15,26 +16,27 @@ import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_policy.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
-import 'package:colmeia/features/overview/domain/entities/overview_section_request.dart';
 import 'package:colmeia/features/overview/domain/overview_load_signature.dart';
+import 'package:colmeia/features/overview/presentation/controllers/overview_load_orchestration_coordinator.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_load_session.dart';
-import 'package:colmeia/features/overview/presentation/controllers/overview_prefetch_session.dart';
 import 'package:colmeia/features/overview/presentation/overview_agent_alert_names_projection.dart';
 import 'package:colmeia/features/overview/presentation/overview_available_agents_assembler.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 
-typedef OverviewFailureMessageBuilder = String Function(AppFailure failure);
+export 'package:colmeia/features/overview/presentation/controllers/overview_load_orchestration_coordinator.dart'
+    show OverviewFailureMessageBuilder;
 
 /// Drives overview loading for the home dashboard.
 ///
 /// Progressive loads ([OverviewLoadingMode.progressive]) emit partial
 /// [Overview] snapshots; UI can render KPIs from [overview] while sections
 /// are still loading ([completedOverviewSections]).
-class OverviewController extends ChangeNotifier {
+class OverviewController extends ChangeNotifier
+    implements OverviewLoadOrchestrationHost {
   OverviewController(
-    this._loadOverviewUseCase, {
+    LoadOverviewUseCase loadOverviewUseCase, {
     LoadOverviewSectionsUseCase? loadSectionsUseCase,
     RetryAfterGate? retryAfterGate,
     AgentRpcCapabilitiesRegistry? agentRpcCapabilitiesRegistry,
@@ -47,35 +49,30 @@ class OverviewController extends ChangeNotifier {
        _shellCache = shellCache,
        _session = OverviewLoadSession(
          relayCancelScopeBinder: relayCancelScopeBinder,
-       ) {
+       ),
+       _loadOverviewUseCase = loadOverviewUseCase {
+    _loadOrchestration = OverviewLoadOrchestrationCoordinator(
+      host: this,
+      loadOverviewUseCase: _loadOverviewUseCase,
+    );
+    _sectionPrefetchCoordinator = OverviewSectionPrefetchCoordinator(
+      prefetchSession: _prefetchSession,
+      isOnRetryCooldown: () => isOnRetryCooldown,
+      isLoading: () => isLoading,
+      notifyListeners: _notifyListenersIfAlive,
+      isNarrowViewport: _isNarrowPrefetchViewport,
+    );
     // Re-publish gate ticks (countdown updates + window expired) through
     // the controller so the home page's retry button reacts without
     // subscribing to the gate directly.
     _retryAfterGate.addListener(_notifyListenersIfAlive);
   }
 
-  // Lazy sections not loaded by [OverviewSectionRequest.home], ordered by
-  // likelihood of being opened first so the most useful data warms earliest.
-  static const List<OverviewProgressiveSection> _prefetchSectionsWide =
-      <OverviewProgressiveSection>[
-        OverviewProgressiveSection.paymentMix,
-        OverviewProgressiveSection.userRanking,
-        OverviewProgressiveSection.dailySales,
-        OverviewProgressiveSection.weekdaySales,
-        OverviewProgressiveSection.weekdayUserSales,
-        OverviewProgressiveSection.lucratividadePeriod,
-      ];
-
-  static const List<OverviewProgressiveSection> _prefetchSectionsNarrow =
-      <OverviewProgressiveSection>[
-        OverviewProgressiveSection.dailySales,
-        OverviewProgressiveSection.weekdaySales,
-      ];
-
   static const double _narrowPrefetchViewportWidth = 600;
 
   final LoadOverviewUseCase _loadOverviewUseCase;
   final LoadOverviewSectionsUseCase? _loadSectionsUseCase;
+  late final OverviewLoadOrchestrationCoordinator _loadOrchestration;
 
   /// Cool-down gate fed by `Retry-After` hints surfaced by the bridge
   /// (HTTP header, JSON-RPC `error.data.retry_after_ms`). The overview
@@ -104,6 +101,10 @@ class OverviewController extends ChangeNotifier {
   /// like orchestration steps instead of bookkeeping mutations.
   final OverviewLoadSession _session;
   final OverviewPrefetchSession _prefetchSession = OverviewPrefetchSession();
+  late final OverviewSectionPrefetchCoordinator _sectionPrefetchCoordinator;
+  final OverviewRpcCapabilitiesWarmUpCoordinator
+  _rpcCapabilitiesWarmUpCoordinator =
+      const OverviewRpcCapabilitiesWarmUpCoordinator();
 
   Overview? _overview;
   bool _isLoadingInitial = false;
@@ -118,7 +119,11 @@ class OverviewController extends ChangeNotifier {
   DashboardFilter _activeFilter = DashboardFilter.initial();
 
   /// The filter currently applied to the overview.
+  @override
   DashboardFilter get activeFilter => _activeFilter;
+
+  @override
+  set activeFilter(DashboardFilter value) => _activeFilter = value;
 
   /// Agent options derived from the last successful overview load.
   ///
@@ -160,8 +165,51 @@ class OverviewController extends ChangeNotifier {
     if (_disposed) {
       return;
     }
-    notifyListeners();
+    super.notifyListeners();
   }
+
+  @override
+  bool get disposed => _disposed;
+
+  @override
+  OverviewLoadSession get session => _session;
+
+  @override
+  OverviewPrefetchSession get prefetchSession => _prefetchSession;
+
+  @override
+  OverviewShellCache? get shellCache => _shellCache;
+
+  @override
+  RetryAfterGate get retryAfterGate => _retryAfterGate;
+
+  @override
+  void notifyOverviewChanged() => _notifyListenersIfAlive();
+
+  @override
+  Future<bool> updateAvailableAgents(
+    Overview overview,
+    String userId,
+    int generation,
+  ) => _updateAvailableAgents(overview, userId, generation);
+
+  @override
+  void scheduleSectionPrefetch({
+    required String userId,
+    required String signature,
+    required int generation,
+    required OverviewLoadLabels rowLabels,
+  }) {
+    _scheduleSectionPrefetch(
+      userId: userId,
+      signature: signature,
+      generation: generation,
+      rowLabels: rowLabels,
+    );
+  }
+
+  @override
+  void publishShellCache(String signature) => _publishShellCache(signature);
 
   /// Defers [notifyListeners] until after the current frame so callers
   /// invoked from widget mount/build (e.g. [scheduleOverviewLoadIfNeeded])
@@ -175,27 +223,49 @@ class OverviewController extends ChangeNotifier {
     });
   }
 
-  void _setOverview(Overview? overview) {
+  @override
+  void setOverview(Overview? overview) {
     _overview = overview;
     _alertNamesProjection.update(overview);
   }
 
-  bool _isOverviewLoadStale(int generation) => _session.isStale(generation);
+  @override
+  bool isOverviewLoadStale(int generation) => _session.isStale(generation);
 
+  @override
   Overview? get overview => _overview;
   bool get isLoading => _isLoadingInitial || _isRefreshing;
+  @override
   bool get isLoadingInitial => _isLoadingInitial;
+  @override
   bool get isRefreshing => _isRefreshing;
+  @override
+  set isLoadingInitial(bool value) => _isLoadingInitial = value;
+  @override
+  set isRefreshing(bool value) => _isRefreshing = value;
   bool get hasContent => _overview != null;
+  @override
   String? get errorMessage => _errorMessage;
+  @override
+  set errorMessage(String? value) => _errorMessage = value;
 
   /// Last full overview load failure for agent-query UX (title, technical body).
+  @override
   AppFailure? get loadFailure => _loadFailure;
+  @override
+  set loadFailure(AppFailure? value) => _loadFailure = value;
 
   /// Technical lines for the last full overview load failure (no stack trace).
+  @override
   String? get errorDiagnosticBody => _errorDiagnosticBody;
+  @override
+  set errorDiagnosticBody(String? value) => _errorDiagnosticBody = value;
+  @override
   Set<OverviewProgressiveSection> get completedOverviewSections =>
       _completedOverviewSections;
+  @override
+  set completedOverviewSections(Set<OverviewProgressiveSection> value) =>
+      _completedOverviewSections = value;
 
   /// Chart nav cards whose SQL data is already in the home load or shell cache.
   Set<OverviewProgressiveSection> get chartNavReadySections {
@@ -211,10 +281,6 @@ class OverviewController extends ChangeNotifier {
     }
     return Set<OverviewProgressiveSection>.unmodifiable(ready);
   }
-
-  /// Read-only access to the cool-down gate so the home page can render
-  /// a "Retry in Ns" countdown.
-  RetryAfterGate get retryAfterGate => _retryAfterGate;
 
   /// Convenience for "is the overview currently throttled by a server
   /// `Retry-After` hint?". Page combines this with `isLoading` to gate
@@ -370,310 +436,14 @@ class OverviewController extends ChangeNotifier {
     required OverviewLoadingMode loadingMode,
     required OverviewLoadLabels rowLabels,
     required OverviewFailureMessageBuilder failureMessageBuilder,
-  }) async {
-    final ctx = _beginLoad(
-      userId: userId,
-      keepContentVisible: keepContentVisible,
-      loadingMode: loadingMode,
-      policy: policy,
-    );
-
-    if (loadingMode == OverviewLoadingMode.progressive) {
-      await _loadOverviewProgressively(
-        userId: userId,
-        policy: policy,
-        keepContentVisible: keepContentVisible,
-        rowLabels: rowLabels,
-        failureMessageBuilder: failureMessageBuilder,
-        signature: ctx.signature,
-        generation: ctx.generation,
-        sqlCancelScope: ctx.sqlCancelScope,
-      );
-      return;
-    }
-
-    final result = await _loadOverviewUseCase(
-      userId: userId,
-      policy: policy,
-      filter: _activeFilter,
-      rowLabels: rowLabels,
-      cancelScope: ctx.sqlCancelScope,
-      sectionRequest: OverviewSectionRequest.home,
-    );
-    if (_isOverviewLoadStale(ctx.generation)) {
-      return;
-    }
-
-    final overview = result.getOrNull();
-    if (overview != null) {
-      _applyOneShotSuccess(
-        overview: overview,
-        signature: ctx.signature,
-        userId: userId,
-        policy: policy,
-      );
-    } else {
-      final failure = result.exceptionOrNull();
-      if (failure != null) {
-        _applyFailure(
-          failure,
-          userId: userId,
-          policy: policy,
-          keepContentVisible: keepContentVisible,
-          failureMessageBuilder: failureMessageBuilder,
-        );
-      }
-    }
-
-    if (keepContentVisible) {
-      _isRefreshing = false;
-    } else {
-      _isLoadingInitial = false;
-    }
-    _notifyListenersIfAlive();
-
-    if (overview != null &&
-        await _updateAvailableAgents(overview, userId, ctx.generation)) {
-      _notifyListenersIfAlive();
-    }
-
-    if (overview != null && !_isOverviewLoadStale(ctx.generation)) {
-      _scheduleSectionPrefetch(
-        userId: userId,
-        signature: ctx.signature,
-        generation: ctx.generation,
-        rowLabels: rowLabels,
-      );
-    }
-  }
-
-  /// Normalizes the filter, opens a fresh [OverviewLoadSession] entry,
-  /// primes the loading flags and returns the bookkeeping the calling
-  /// load path needs (signature + generation + cancel scope).
-  ({
-    String signature,
-    int generation,
-    AgentQueriesCancelScope sqlCancelScope,
-  })
-  _beginLoad({
-    required String userId,
-    required bool keepContentVisible,
-    required OverviewLoadingMode loadingMode,
-    required OverviewLoadPolicy policy,
-  }) {
-    final normalized = _activeFilter.normalizedForHomeDashboardReferenceRange();
-    if (normalized != _activeFilter) {
-      _activeFilter = normalized;
-      _notifyListenersIfAlive();
-    }
-    final signature = _signatureFor(userId: userId);
-    _prefetchSession.cancel();
-    final generation = _session.begin(signature);
-    final sqlCancelScope = _session.cancelScope!;
-
-    AppLogger.debug(
-      'Starting overview load in controller',
-      context: <String, Object?>{
-        'operation': 'loadOverview',
-        'userId': userId,
-        'policy': policy.name,
-        'keepContentVisible': keepContentVisible,
-        'loadingMode': loadingMode.name,
-      },
-    );
-
-    if (keepContentVisible) {
-      _isLoadingInitial = false;
-      _isRefreshing = true;
-    } else {
-      _isRefreshing = false;
-      _isLoadingInitial = true;
-      _setOverview(null);
-      _session.clearLoaded();
-      _completedOverviewSections = const <OverviewProgressiveSection>{};
-    }
-    _errorMessage = null;
-    _errorDiagnosticBody = null;
-    _loadFailure = null;
-    _notifyListenersIfAlive();
-    return (
-      signature: signature,
-      generation: generation,
-      sqlCancelScope: sqlCancelScope,
-    );
-  }
-
-  void _armRetryAfterFromFailures(AppFailure failure) {
-    armAgentQueryRetryAfterGate(_retryAfterGate, failure);
-  }
-
-  void _armRetryAfterFromPartialFailures(Overview overview) {
-    for (final detail in overview.partialQueryFailureDetails) {
-      if (shouldArmRetryAfterFromPartialAgentQueryFailure(detail.failure)) {
-        _armRetryAfterFromFailures(detail.failure);
-      }
-    }
-  }
-
-  void _applyOneShotSuccess({
-    required Overview overview,
-    required String signature,
-    required String userId,
-    required OverviewLoadPolicy policy,
-  }) {
-    _armRetryAfterFromPartialFailures(overview);
-    _setOverview(overview);
-    _completedOverviewSections = OverviewSectionRequest.home
-        .completedWhenFinal();
-    _session.loadedSignature = signature;
-    _errorMessage = null;
-    _errorDiagnosticBody = null;
-    _loadFailure = null;
-    _publishShellCache(signature);
-    AppLogger.info(
-      'Overview loaded in controller',
-      context: <String, Object?>{
-        'operation': 'loadOverview',
-        'userId': userId,
-        'paymentMethods': overview.paymentMethods.length,
-        'policy': policy.name,
-      },
-    );
-  }
-
-  /// Shared failure path used by both one-shot and progressive loads:
-  /// arms the retry-after gate when the bridge sent a hint, captures the
-  /// user-facing message + diagnostic body, and logs the technical
-  /// failure with the same shape as the legacy in-line block.
-  void _applyFailure(
-    AppFailure failure, {
-    required String userId,
-    required OverviewLoadPolicy policy,
-    required bool keepContentVisible,
-    required OverviewFailureMessageBuilder failureMessageBuilder,
-  }) {
-    if (!keepContentVisible) {
-      _setOverview(null);
-      _session.clearLoaded();
-      _completedOverviewSections = const <OverviewProgressiveSection>{};
-    }
-    _armRetryAfterFromFailures(failure);
-    final userMessage = failureMessageBuilder(failure);
-    _errorMessage = userMessage;
-    _loadFailure = failure;
-    _errorDiagnosticBody = overviewAppFailureDiagnosticBody(
-      failure,
-      localizedUserMessage: userMessage,
-    );
-    AppLogger.warning(
-      'Overview load failed in controller',
-      context: <String, Object?>{
-        'operation': 'loadOverview',
-        'userId': userId,
-        'policy': policy.name,
-        'keepContentVisible': keepContentVisible,
-        'technicalMessage': switch (failure) {
-          RpcFailure(:final technicalMessage) => technicalMessage,
-          _ => failure.message,
-        },
-      },
-      error: failure.cause ?? failure,
-      stackTrace: failure.stackTrace,
-    );
-  }
-
-  Future<void> _loadOverviewProgressively({
-    required String userId,
-    required OverviewLoadPolicy policy,
-    required bool keepContentVisible,
-    required OverviewLoadLabels rowLabels,
-    required OverviewFailureMessageBuilder failureMessageBuilder,
-    required String signature,
-    required int generation,
-    required AgentQueriesCancelScope sqlCancelScope,
-  }) async {
-    await for (final result in _loadOverviewUseCase.progressively(
-      userId: userId,
-      policy: policy,
-      filter: _activeFilter,
-      rowLabels: rowLabels,
-      cancelScope: sqlCancelScope,
-      sectionRequest: OverviewSectionRequest.home,
-    )) {
-      if (_isOverviewLoadStale(generation)) {
-        return;
-      }
-
-      final snapshot = result.getOrNull();
-      if (snapshot != null) {
-        _setOverview(snapshot.overview);
-        _completedOverviewSections = snapshot.completedSections;
-        _armRetryAfterFromPartialFailures(snapshot.overview);
-        _errorMessage = null;
-        _errorDiagnosticBody = null;
-        _loadFailure = null;
-        if (snapshot.completedSections.contains(
-          OverviewProgressiveSection.summary,
-        )) {
-          _isLoadingInitial = false;
-        }
-        if (snapshot.isFinal) {
-          _session.loadedSignature = signature;
-          _publishShellCache(signature);
-          AppLogger.info(
-            'Overview loaded progressively in controller',
-            context: <String, Object?>{
-              'operation': 'loadOverview',
-              'userId': userId,
-              'paymentMethods': snapshot.overview.paymentMethods.length,
-              'policy': policy.name,
-            },
-          );
-          _finishProgressiveLoading(keepContentVisible: keepContentVisible);
-          if (await _updateAvailableAgents(
-            snapshot.overview,
-            userId,
-            generation,
-          )) {
-            _notifyListenersIfAlive();
-          }
-          _scheduleSectionPrefetch(
-            userId: userId,
-            signature: signature,
-            generation: generation,
-            rowLabels: rowLabels,
-          );
-          return;
-        }
-        _notifyListenersIfAlive();
-        continue;
-      }
-
-      final failure = result.exceptionOrNull();
-      if (failure != null) {
-        _applyFailure(
-          failure,
-          userId: userId,
-          policy: policy,
-          keepContentVisible: keepContentVisible,
-          failureMessageBuilder: failureMessageBuilder,
-        );
-      }
-      _finishProgressiveLoading(keepContentVisible: keepContentVisible);
-      return;
-    }
-
-    _finishProgressiveLoading(keepContentVisible: keepContentVisible);
-  }
-
-  void _finishProgressiveLoading({required bool keepContentVisible}) {
-    if (keepContentVisible) {
-      _isRefreshing = false;
-    } else {
-      _isLoadingInitial = false;
-    }
-    _notifyListenersIfAlive();
-  }
+  }) => _loadOrchestration.loadOverview(
+    userId: userId,
+    policy: policy,
+    keepContentVisible: keepContentVisible,
+    loadingMode: loadingMode,
+    rowLabels: rowLabels,
+    failureMessageBuilder: failureMessageBuilder,
+  );
 
   static String _defaultFailureMessageBuilder(AppFailure failure) {
     return failure.displayMessage;
@@ -695,7 +465,7 @@ class OverviewController extends ChangeNotifier {
       return false;
     }
     _activeFilter = entry.activeFilter;
-    _setOverview(entry.overview);
+    setOverview(entry.overview);
     _availableAgents = entry.availableAgents;
     _completedOverviewSections = Set<OverviewProgressiveSection>.of(
       entry.completedSections,
@@ -753,12 +523,6 @@ class OverviewController extends ChangeNotifier {
     );
   }
 
-  /// Fires background prefetch for the 4 section-only chart cards that are
-  /// not included in [OverviewSectionRequest.home].  Each section is fetched
-  /// serially so the bridge is never flooded, and each step checks the shell
-  /// cache before issuing SQL (avoids redundant work after the user opens a
-  /// card manually before prefetch reaches it).  Failures are swallowed —
-  /// the controller state is never mutated; only the shell cache is warmed.
   void _scheduleSectionPrefetch({
     required String userId,
     required String signature,
@@ -767,27 +531,20 @@ class OverviewController extends ChangeNotifier {
   }) {
     final useCase = _loadSectionsUseCase;
     final cache = _shellCache;
-    if (useCase == null || cache == null || isOnRetryCooldown) {
+    if (useCase == null || cache == null) {
       return;
     }
-    final prefetchGeneration = _prefetchSession.begin();
-    unawaited(
-      _prefetchSectionsInBackground(
-        useCase: useCase,
-        cache: cache,
-        userId: userId,
-        signature: signature,
-        loadGeneration: generation,
-        prefetchGeneration: prefetchGeneration,
-        rowLabels: rowLabels,
-      ),
+    _sectionPrefetchCoordinator.schedule(
+      useCase: useCase,
+      cache: cache,
+      userId: userId,
+      signature: signature,
+      loadGeneration: generation,
+      activeFilter: _activeFilter,
+      rowLabels: rowLabels,
+      isLoadStale: isOverviewLoadStale,
+      disposed: _disposed,
     );
-  }
-
-  List<OverviewProgressiveSection> _prefetchSectionsForViewport() {
-    return _isNarrowPrefetchViewport()
-        ? _prefetchSectionsNarrow
-        : _prefetchSectionsWide;
   }
 
   bool _isNarrowPrefetchViewport() {
@@ -797,100 +554,6 @@ class OverviewController extends ChangeNotifier {
     }
     final width = view.physicalSize.width / view.devicePixelRatio;
     return width < _narrowPrefetchViewportWidth;
-  }
-
-  bool _isPrefetchStale({
-    required int loadGeneration,
-    required int prefetchGeneration,
-  }) {
-    return _disposed ||
-        _isOverviewLoadStale(loadGeneration) ||
-        _prefetchSession.isStale(prefetchGeneration);
-  }
-
-  Future<void> _prefetchSectionsInBackground({
-    required LoadOverviewSectionsUseCase useCase,
-    required OverviewShellCache cache,
-    required String userId,
-    required String signature,
-    required int loadGeneration,
-    required int prefetchGeneration,
-    required OverviewLoadLabels rowLabels,
-  }) async {
-    final sections = _prefetchSectionsForViewport();
-    final delayMs = AppEnvironment.overviewSectionPrefetchDelayMs;
-    if (delayMs > 0) {
-      await Future<void>.delayed(Duration(milliseconds: delayMs));
-      if (_isPrefetchStale(
-        loadGeneration: loadGeneration,
-        prefetchGeneration: prefetchGeneration,
-      )) {
-        return;
-      }
-    }
-
-    AppLogger.debug(
-      'Overview section prefetch started',
-      context: <String, Object?>{
-        'operation': 'prefetchOverviewSections',
-        'userId': userId,
-        'sections': sections.map((s) => s.name).toList(),
-      },
-    );
-    final cancelScope = _prefetchSession.cancelScope;
-    for (final section in sections) {
-      if (_isPrefetchStale(
-        loadGeneration: loadGeneration,
-        prefetchGeneration: prefetchGeneration,
-      )) {
-        return;
-      }
-      if (isOnRetryCooldown || isLoading) {
-        return;
-      }
-      final entry = cache.read(signature);
-      if (entry == null) {
-        return;
-      }
-      if (entry.completedSections.contains(section)) {
-        continue;
-      }
-
-      final request = OverviewSectionRequest.forChartSection(section);
-      await for (final result in useCase.progressively(
-        userId: userId,
-        sectionRequest: request,
-        filter: _activeFilter,
-        rowLabels: rowLabels,
-        cancelScope: cancelScope,
-      )) {
-        if (_isPrefetchStale(
-          loadGeneration: loadGeneration,
-          prefetchGeneration: prefetchGeneration,
-        )) {
-          return;
-        }
-        final snapshot = result.getOrNull();
-        if (snapshot != null && snapshot.isFinal) {
-          if (request.isSectionBatchOnly || request.runMainBatch) {
-            cache.mergePublish(
-              signature: signature,
-              detailOverview: snapshot.overview,
-              section: section,
-              addedSections: request.completedWhenFinal(),
-            );
-            _notifyListenersIfAlive();
-            AppLogger.debug(
-              'Overview section prefetch warmed',
-              context: <String, Object?>{
-                'operation': 'prefetchOverviewSections',
-                'section': section.name,
-              },
-            );
-          }
-        }
-      }
-    }
   }
 
   /// Rebuilds [_availableAgents] from the overview (per-agent rankings and
@@ -911,7 +574,7 @@ class OverviewController extends ChangeNotifier {
       );
     }
 
-    if (_isOverviewLoadStale(generation)) {
+    if (isOverviewLoadStale(generation)) {
       return false;
     }
 
@@ -934,40 +597,15 @@ class OverviewController extends ChangeNotifier {
     return true;
   }
 
-  /// Fire-and-forgets a `rpc.discover` for every agent that we both
-  /// have surfaced in [_availableAgents] **and** for which we hold a
-  /// client token (so the bridge can actually route the call). The
-  /// registry deduplicates per-agent in-flight requests, so calling
-  /// this on every successful overview load is cheap (only new ids
-  /// do work). The future is intentionally not awaited: the overview
-  /// UI must not block on a best-effort capability cache.
-  ///
-  /// Agents without a local client token are intentionally skipped:
-  /// the hub answers `404` to `agents/commands` for those (because
-  /// it cannot bind the request to a `(client, agent)` pair without
-  /// the token), so the prefetch would just spam the log + Sentry
-  /// with non-actionable failures. The legitimate
-  /// `requiresClientTokenSetup` UX banner already surfaces that
-  /// state separately.
   void _scheduleAgentRpcCapabilityPrefetch() {
     final registry = _agentRpcCapabilitiesRegistry;
-    if (registry == null || _availableAgents.isEmpty) {
+    if (registry == null) {
       return;
     }
-    final ids = <String>{
-      for (final option in _availableAgents)
-        if (option.agentId.trim().isNotEmpty && !option.missingLocalClientToken)
-          option.agentId.trim(),
-    };
-    if (ids.isEmpty) {
-      return;
-    }
-    final cancelScope = _session.cancelScope;
-    unawaited(
-      registry.prefetch(
-        ids,
-        shouldAbort: () => cancelScope?.isCancelled ?? false,
-      ),
+    _rpcCapabilitiesWarmUpCoordinator.schedule(
+      registry: registry,
+      availableAgents: _availableAgents,
+      cancelScope: _session.cancelScope,
     );
   }
 }
