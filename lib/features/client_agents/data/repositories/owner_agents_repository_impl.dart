@@ -55,8 +55,8 @@ class OwnerAgentsRepositoryImpl implements OwnerAgentsRepository {
         }
         final onlineIds = await _cacheSupport.readOnlineAgentIds(
           userId: userId,
-          maxAge:
-              ClientAgentsRepositoryCacheSupport.onlineStatusOfflineFallbackMaxAge,
+          maxAge: ClientAgentsRepositoryCacheSupport
+              .onlineStatusOfflineFallbackMaxAge,
         );
         return cached.agents
             .map(

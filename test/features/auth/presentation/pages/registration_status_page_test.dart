@@ -17,8 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  const validToken =
-      'abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr';
+  const validToken = 'abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr';
 
   setUp(() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -55,7 +54,10 @@ void main() {
     );
 
     expect(find.text(l10n.authRegistrationStatusUnknownTitle), findsOneWidget);
-    expect(find.text(l10n.authRegistrationStatusUnknownMessage), findsOneWidget);
+    expect(
+      find.text(l10n.authRegistrationStatusUnknownMessage),
+      findsOneWidget,
+    );
   });
 }
 

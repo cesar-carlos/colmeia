@@ -15,7 +15,11 @@ abstract final class SyncfusionRegionMapMarkerBuilder {
     required AppMapMarkerStyle defaultMarkerStyle,
     required Color defaultColor,
     required Color defaultStrokeColor,
-    required Widget Function(BuildContext context, AppMapPoint point, int index)?
+    required Widget Function(
+      BuildContext context,
+      AppMapPoint point,
+      int index,
+    )?
     markerBuilder,
     required ValueChanged<AppMapPointTapEvent>? onPointTap,
   }) {
@@ -45,8 +49,7 @@ abstract final class SyncfusionRegionMapMarkerBuilder {
     final markerSize = isMobilePlatform
         ? math.max(minTapSize, visualSize)
         : visualSize;
-    final markerChild =
-        isMobilePlatform && markerSize > visualSize
+    final markerChild = isMobilePlatform && markerSize > visualSize
         ? SizedBox(
             width: markerSize,
             height: markerSize,

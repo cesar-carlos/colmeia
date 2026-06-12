@@ -219,7 +219,8 @@ class _AppBrazilStoreSalesMapChartState
   void _invalidateResolvedSnapshotVisual() =>
       _snapshotLifecycle.invalidateResolvedSnapshotVisual();
 
-  void _scheduleSnapshotRefresh() => _snapshotLifecycle.scheduleSnapshotRefresh();
+  void _scheduleSnapshotRefresh() =>
+      _snapshotLifecycle.scheduleSnapshotRefresh();
 
   void _syncDisplaySnapshot({required bool notify}) =>
       _snapshotLifecycle.syncDisplaySnapshot(notify: notify);
@@ -360,23 +361,21 @@ class _AppBrazilStoreSalesMapChartState
     required String? selectedStoreId,
     required AppLocalizations l10n,
     required BrazilMapChartVisualSnapshot snapshot,
-  }) =>
-      _mapControls.buildMapOverlay(
-        mapTileHeight: mapTileHeight,
-        showsDesktopBranchSidebar: showsDesktopBranchSidebar,
-        sidebarWidth: sidebarWidth,
-        sidebarTopInset: sidebarTopInset,
-        sidebarHorizontalInset: sidebarHorizontalInset,
-        entries: entries,
-        selectedStoreId: selectedStoreId,
-        l10n: l10n,
-        snapshot: snapshot,
-      );
+  }) => _mapControls.buildMapOverlay(
+    mapTileHeight: mapTileHeight,
+    showsDesktopBranchSidebar: showsDesktopBranchSidebar,
+    sidebarWidth: sidebarWidth,
+    sidebarTopInset: sidebarTopInset,
+    sidebarHorizontalInset: sidebarHorizontalInset,
+    entries: entries,
+    selectedStoreId: selectedStoreId,
+    l10n: l10n,
+    snapshot: snapshot,
+  );
 
   List<AppMapMetric<AppBrazilStoreSalesStateBucket>> _buildMetrics(
     AppLocalizations l10n,
-  ) =>
-      _mapControls.buildMetrics(l10n);
+  ) => _mapControls.buildMetrics(l10n);
 
   void _handleResetViewport() => _navigation.handleResetViewport();
 
@@ -388,8 +387,7 @@ class _AppBrazilStoreSalesMapChartState
 
   void _handleStateTap(
     AppMapRegionTapEvent<AppBrazilStoreSalesStateBucket> event,
-  ) =>
-      _navigation.handleStateTap(event);
+  ) => _navigation.handleStateTap(event);
 
   void _handleRegionMapViewportChanged(AppMapViewportChangedEvent event) =>
       _navigation.handleRegionMapViewportChanged(event);

@@ -370,5 +370,4 @@ class ApiClientAgentsRemoteDataSource
       fallbackAgentId: agentId,
     );
   }
-
 }

@@ -77,9 +77,11 @@ class _BrazilMapWidgetUpdateHandler {
       _state._invalidateResolvedSnapshotData();
     }
 
-    if (oldWidget.showDesktopBranchSidebar != _widget.showDesktopBranchSidebar ||
+    if (oldWidget.showDesktopBranchSidebar !=
+            _widget.showDesktopBranchSidebar ||
         oldWidget.presentationMode != _widget.presentationMode ||
-        oldWidget.useCleanFullscreenChrome != _widget.useCleanFullscreenChrome) {
+        oldWidget.useCleanFullscreenChrome !=
+            _widget.useCleanFullscreenChrome) {
       if (!_widget.showDesktopBranchSidebar) {
         _state._desktopBranchSidebarCollapsed = false;
       }

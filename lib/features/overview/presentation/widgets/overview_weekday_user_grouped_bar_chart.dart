@@ -126,24 +126,28 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
     );
 
     final seriesCount = math.max(1, model.userNames.length);
-    final categorySlotWidth = AppGroupedColumnChartLayout.clusteredCategorySlotWidth(
-      seriesCount,
-    );
+    final categorySlotWidth =
+        AppGroupedColumnChartLayout.clusteredCategorySlotWidth(
+          seriesCount,
+        );
     final categories = weekdayUserGroupedCategories(model);
-    final groupedSeries = <AppGroupedColumnChartSeries<WeekdayUserGroupedCategory>>[
-      for (var s = 0; s < model.userNames.length; s++)
-        AppGroupedColumnChartSeries<WeekdayUserGroupedCategory>(
-          name: truncateLegendUserName(model.userNames[s]),
-          color: chartTheme.paletteColor(s),
-          valueMapper: (category) => category.cells[s].plottedY.toDouble(),
-        ),
-    ];
+    final groupedSeries =
+        <AppGroupedColumnChartSeries<WeekdayUserGroupedCategory>>[
+          for (var s = 0; s < model.userNames.length; s++)
+            AppGroupedColumnChartSeries<WeekdayUserGroupedCategory>(
+              name: truncateLegendUserName(model.userNames[s]),
+              color: chartTheme.paletteColor(s),
+              valueMapper: (category) => category.cells[s].plottedY.toDouble(),
+            ),
+        ];
 
     final yFormat = isSalesCount
         ? NumberFormat.decimalPattern(localeName)
         : AppBrFormatters.compactCurrencyFormatForLocale(localeName);
 
-    final animMs = animationDurationMs ?? AppGroupedColumnChartLayout.defaultCartesianAnimationMs;
+    final animMs =
+        animationDurationMs ??
+        AppGroupedColumnChartLayout.defaultCartesianAnimationMs;
 
     Widget buildGroupedPlot(double plotH) {
       return AppGroupedColumnChart<WeekdayUserGroupedCategory>(

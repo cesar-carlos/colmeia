@@ -62,7 +62,9 @@ void main() {
       });
 
       final submission = dto.toEntity();
-      check(submission.message).isNotNull().which((m) => m.contains('eligible'));
+      check(
+        submission.message,
+      ).isNotNull().which((m) => m.contains('eligible'));
       check(submission.pollToken).isNull();
       check(submission.canPollStatus).isFalse();
       check(submission.duplicate).isTrue();

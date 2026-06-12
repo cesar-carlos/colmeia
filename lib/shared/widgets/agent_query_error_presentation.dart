@@ -1,4 +1,5 @@
-import 'package:colmeia/shared/widgets/agent_query_error_panel.dart' show AgentQueryErrorPanel;
+import 'package:colmeia/shared/widgets/agent_query_error_panel.dart'
+    show AgentQueryErrorPanel;
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 
 /// Immutable view model for [AgentQueryErrorPanel] without feature coupling.

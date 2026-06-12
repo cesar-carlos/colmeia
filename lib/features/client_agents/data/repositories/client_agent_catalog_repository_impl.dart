@@ -65,8 +65,8 @@ class ClientAgentCatalogRepositoryImpl implements ClientAgentCatalogRepository {
         }
         final onlineIds = await _cacheSupport.readOnlineAgentIds(
           userId: userId,
-          maxAge:
-              ClientAgentsRepositoryCacheSupport.onlineStatusOfflineFallbackMaxAge,
+          maxAge: ClientAgentsRepositoryCacheSupport
+              .onlineStatusOfflineFallbackMaxAge,
         );
         return mapClientAgentCatalogResponse(
           cached,
@@ -120,8 +120,8 @@ class ClientAgentCatalogRepositoryImpl implements ClientAgentCatalogRepository {
         }
         final onlineIds = await _cacheSupport.readOnlineAgentIds(
           userId: userId,
-          maxAge:
-              ClientAgentsRepositoryCacheSupport.onlineStatusOfflineFallbackMaxAge,
+          maxAge: ClientAgentsRepositoryCacheSupport
+              .onlineStatusOfflineFallbackMaxAge,
         );
         return ClientAgentCatalogItem(
           agent: mapClientAgentProfile(cached, onlineIds: onlineIds),

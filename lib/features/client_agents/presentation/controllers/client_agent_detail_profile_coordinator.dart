@@ -43,7 +43,8 @@ class ClientAgentDetailProfileCoordinator {
 
   bool get isSavingProfile => _isSavingProfile;
   ClientAgentsPresentationMessage? get profileSaveError => _profileSaveError;
-  ClientAgentsPresentationMessage? get profileSaveSuccess => _profileSaveSuccess;
+  ClientAgentsPresentationMessage? get profileSaveSuccess =>
+      _profileSaveSuccess;
 
   void clearProfileFeedback() {
     if (_profileSaveError == null && _profileSaveSuccess == null) {

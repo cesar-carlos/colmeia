@@ -1,5 +1,7 @@
-import 'package:colmeia/shared/widgets/charts/app_horizontal_progress_chart.dart' show AppHorizontalProgressChart;
-import 'package:colmeia/shared/widgets/widgets.dart' show AppHorizontalProgressChart;
+import 'package:colmeia/shared/widgets/charts/app_horizontal_progress_chart.dart'
+    show AppHorizontalProgressChart;
+import 'package:colmeia/shared/widgets/widgets.dart'
+    show AppHorizontalProgressChart;
 import 'package:flutter/material.dart';
 
 class AppHorizontalProgressChartStyle {

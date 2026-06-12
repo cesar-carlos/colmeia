@@ -26,8 +26,10 @@ class AppGroupedColumnChart<T> extends StatelessWidget {
     super.key,
     this.preset = AppChartPreset.standard,
     this.animationDuration,
-    this.categorySlotWidth = AppGroupedColumnChartLayout.defaultCategorySlotWidth,
-    this.horizontalPadding = AppGroupedColumnChartLayout.defaultHorizontalPadding,
+    this.categorySlotWidth =
+        AppGroupedColumnChartLayout.defaultCategorySlotWidth,
+    this.horizontalPadding =
+        AppGroupedColumnChartLayout.defaultHorizontalPadding,
     this.minPlotWidth = AppGroupedColumnChartLayout.defaultMinPlotWidth,
     this.gridLineColor,
     this.horizontalScrollSemanticsHint,
@@ -194,78 +196,77 @@ class AppGroupedColumnChart<T> extends StatelessWidget {
           width: plotWidth,
           height: height,
           child: SfCartesianChart(
-                margin: EdgeInsets.zero,
-                plotAreaBorderWidth: 0,
-                onTooltipRender: buildSanitizingTooltipRenderer(),
-                tooltipBehavior: buildChartTooltipBehavior(
-                  context,
-                  enable: true,
-                  shared: true,
-                  builder: tooltipBuilder,
-                ),
-                legend: Legend(
-                  isVisible: showLegend,
-                  position: LegendPosition.bottom,
-                  overflowMode: LegendItemOverflowMode.wrap,
-                  textStyle: legendStyle,
-                ),
-                primaryXAxis: const CategoryAxis(
-                  majorGridLines: MajorGridLines(width: 0),
-                ),
-                primaryYAxis: NumericAxis(
-                  name: '_primaryAxis',
-                  numberFormat: primaryAxisFormat,
-                  axisLine: const AxisLine(width: 0),
-                  majorGridLines: MajorGridLines(
-                    color: resolvedGrid,
-                    width: 1,
-                  ),
-                  title: AxisTitle(
-                    text: resolvedPrimaryTitle ?? '',
-                    textStyle: legendStyle,
-                  ),
-                ),
-                axes: secondarySeries.isEmpty
-                    ? const <ChartAxis>[]
-                    : <ChartAxis>[
-                        NumericAxis(
-                          name: '_secondaryAxis',
-                          opposedPosition: true,
-                          numberFormat: secondaryAxisFormat,
-                          axisLine: const AxisLine(width: 0),
-                          majorGridLines: const MajorGridLines(width: 0),
-                          title: AxisTitle(
-                            text: resolvedSecondaryTitle,
-                            textStyle: legendStyle,
-                          ),
-                        ),
-                      ],
-                zoomPanBehavior: ZoomPanBehavior(
-                  enablePinching: chartTheme.enableSelectionZooming,
-                  enablePanning: chartTheme.enableSelectionZooming,
-                  enableSelectionZooming: chartTheme.enableSelectionZooming,
-                ),
-                series: <CartesianSeries<T, String>>[
-                  for (final entry in series)
-                    ColumnSeries<T, String>(
-                      dataSource: items,
-                      xValueMapper: (item, _) => xLabelBuilder(item),
-                      yValueMapper: (item, _) => entry.valueMapper(item),
-                      name: entry.name,
-                      yAxisName: entry.yAxis ==
-                              AppGroupedColumnYAxis.secondary
-                          ? '_secondaryAxis'
-                          : '_primaryAxis',
-                      color: entry.color,
-                      borderRadius: kDefaultBarBorderRadius,
-                      width: AppChartEngineCartesianBarGeometryDefaults
-                          .columnWidthRatio,
-                      spacing: AppChartEngineCartesianBarGeometryDefaults
-                          .columnSpacingRatio,
-                      animationDuration: animMs,
-                    ),
-                ],
+            margin: EdgeInsets.zero,
+            plotAreaBorderWidth: 0,
+            onTooltipRender: buildSanitizingTooltipRenderer(),
+            tooltipBehavior: buildChartTooltipBehavior(
+              context,
+              enable: true,
+              shared: true,
+              builder: tooltipBuilder,
+            ),
+            legend: Legend(
+              isVisible: showLegend,
+              position: LegendPosition.bottom,
+              overflowMode: LegendItemOverflowMode.wrap,
+              textStyle: legendStyle,
+            ),
+            primaryXAxis: const CategoryAxis(
+              majorGridLines: MajorGridLines(width: 0),
+            ),
+            primaryYAxis: NumericAxis(
+              name: '_primaryAxis',
+              numberFormat: primaryAxisFormat,
+              axisLine: const AxisLine(width: 0),
+              majorGridLines: MajorGridLines(
+                color: resolvedGrid,
+                width: 1,
               ),
+              title: AxisTitle(
+                text: resolvedPrimaryTitle ?? '',
+                textStyle: legendStyle,
+              ),
+            ),
+            axes: secondarySeries.isEmpty
+                ? const <ChartAxis>[]
+                : <ChartAxis>[
+                    NumericAxis(
+                      name: '_secondaryAxis',
+                      opposedPosition: true,
+                      numberFormat: secondaryAxisFormat,
+                      axisLine: const AxisLine(width: 0),
+                      majorGridLines: const MajorGridLines(width: 0),
+                      title: AxisTitle(
+                        text: resolvedSecondaryTitle,
+                        textStyle: legendStyle,
+                      ),
+                    ),
+                  ],
+            zoomPanBehavior: ZoomPanBehavior(
+              enablePinching: chartTheme.enableSelectionZooming,
+              enablePanning: chartTheme.enableSelectionZooming,
+              enableSelectionZooming: chartTheme.enableSelectionZooming,
+            ),
+            series: <CartesianSeries<T, String>>[
+              for (final entry in series)
+                ColumnSeries<T, String>(
+                  dataSource: items,
+                  xValueMapper: (item, _) => xLabelBuilder(item),
+                  yValueMapper: (item, _) => entry.valueMapper(item),
+                  name: entry.name,
+                  yAxisName: entry.yAxis == AppGroupedColumnYAxis.secondary
+                      ? '_secondaryAxis'
+                      : '_primaryAxis',
+                  color: entry.color,
+                  borderRadius: kDefaultBarBorderRadius,
+                  width: AppChartEngineCartesianBarGeometryDefaults
+                      .columnWidthRatio,
+                  spacing: AppChartEngineCartesianBarGeometryDefaults
+                      .columnSpacingRatio,
+                  animationDuration: animMs,
+                ),
+            ],
+          ),
         );
         return SizedBox(
           height: height,

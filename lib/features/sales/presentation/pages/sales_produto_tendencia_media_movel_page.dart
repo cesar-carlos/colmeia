@@ -667,7 +667,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
       child: RefreshIndicator(
         onRefresh: _reload,
         child: ListView(
-          scrollCacheExtent: AppScrollTokens.chartDashboardListCacheExtent,
+          cacheExtent: AppScrollTokens.chartDashboardListCacheExtent,
           physics: const AlwaysScrollableScrollPhysics(),
           padding: context.pageScrollPadding(
             tokens,

@@ -90,8 +90,7 @@ void main() {
   group('isKnownE2eAgentSqlDatabaseConnectionFailure', () {
     test('returns true for database_connection_failed RpcFailure', () {
       const failure = RpcFailure(
-        message:
-            'Connection timeout when connecting to database',
+        message: 'Connection timeout when connecting to database',
         userMessage:
             'The database connection took longer than expected. '
             'Confirm the server is accessible and try again.',

@@ -39,7 +39,9 @@ class OverviewLucratividadeChart extends StatelessWidget {
   final AppChartFullscreenRequestCallback? onRequestFullscreen;
   final AppChartShareRequestCallback? onRequestShare;
 
-  static final LucratividadeComboRowAccessors<ResumoProdutoVendaLucratividadeRow>
+  static final LucratividadeComboRowAccessors<
+    ResumoProdutoVendaLucratividadeRow
+  >
   _rowAccessors = LucratividadeComboRowAccessors(
     lucro: (r) => r.lucro,
     valorTotalItem: (r) => r.valorTotalItem,
@@ -52,7 +54,8 @@ class OverviewLucratividadeChart extends StatelessWidget {
         sorted.sort((a, b) => b.custoReposicao.compareTo(a.custoReposicao));
       } else if (display == LucratividadeComboDisplay.percentMetrics) {
         sorted.sort(
-          (a, b) => compareLucratividadeRowsByPercentMetric(a, b, percentMetric),
+          (a, b) =>
+              compareLucratividadeRowsByPercentMetric(a, b, percentMetric),
         );
       } else {
         sorted.sort((a, b) => b.valorTotalItem.compareTo(a.valorTotalItem));

@@ -130,8 +130,8 @@ class ClientApprovedAgentsRepositoryImpl
         }
         final onlineIds = await _cacheSupport.readOnlineAgentIds(
           userId: userId,
-          maxAge:
-              ClientAgentsRepositoryCacheSupport.onlineStatusOfflineFallbackMaxAge,
+          maxAge: ClientAgentsRepositoryCacheSupport
+              .onlineStatusOfflineFallbackMaxAge,
         );
         return mapClientAgentProfile(
           cached.agent,

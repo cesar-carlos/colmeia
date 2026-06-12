@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -223,6 +223,7 @@ class BrazilMapChartMarkerScaleLegendContent extends StatelessWidget {
     );
   }
 }
+
 class BrazilMapChartMarkerScaleLegendItem extends StatelessWidget {
   const BrazilMapChartMarkerScaleLegendItem({
     required this.label,

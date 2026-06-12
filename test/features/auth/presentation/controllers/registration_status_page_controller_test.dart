@@ -14,8 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   const emptyTokenMessage = 'Enter the token to check registration status.';
   const invalidTokenMessage = 'The tracking token format is invalid.';
-  const validToken =
-      'abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr';
+  const validToken = 'abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqr';
 
   setUp(() {
     SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -76,8 +75,9 @@ void main() {
         mapFailure: (failure) => failure.displayMessage,
       );
 
-      check(controller.successMessage)
-          .equals('If eligible, a new approval request will be sent.');
+      check(
+        controller.successMessage,
+      ).equals('If eligible, a new approval request will be sent.');
       check(controller.status).equals(ClientRegistrationStatus.rejected);
     });
   });
@@ -90,8 +90,7 @@ Future<RegistrationStatusPageController> _buildController({
   final prefs = await SharedPreferences.getInstance();
   return RegistrationStatusPageController(
     readRegistrationStatusUseCase: ReadRegistrationStatusUseCase(repository),
-    retryClientRegistrationUseCase:
-        RetryClientRegistrationUseCase(repository),
+    retryClientRegistrationUseCase: RetryClientRegistrationUseCase(repository),
     preferencesService: AuthRegistrationPreferencesService(prefs),
     initialToken: initialToken,
   );

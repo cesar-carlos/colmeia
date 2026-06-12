@@ -5,7 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import '../../../support/localized_test_app.dart';
 
 void main() {
-  testWidgets('AppCategoryDonutCard mounts with sample segments', (tester) async {
+  testWidgets('AppCategoryDonutCard mounts with sample segments', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const LocalizedTestApp(
         child: AppCategoryDonutCard(

@@ -68,19 +68,19 @@ class ClientAgentsAccessRequestActionsCoordinator {
     final requestId = request.requestId?.trim();
     if (requestId == null || requestId.isEmpty) {
       _host
-      ..setActionError(
-        ClientAgentsPresentationMessage.clientAgentsRetryMissingRequestId(),
-      )
-      ..notifyActionsChanged();
+        ..setActionError(
+          ClientAgentsPresentationMessage.clientAgentsRetryMissingRequestId(),
+        )
+        ..notifyActionsChanged();
       return;
     }
     final userId = _host.currentUserId;
     if (userId == null || userId.isEmpty) {
       _host
-      ..setActionError(
-        ClientAgentsPresentationMessage.clientAgentsSessionUnavailableRequest(),
-      )
-      ..notifyActionsChanged();
+        ..setActionError(
+          ClientAgentsPresentationMessage.clientAgentsSessionUnavailableRequest(),
+        )
+        ..notifyActionsChanged();
       return;
     }
 
@@ -127,19 +127,19 @@ class ClientAgentsAccessRequestActionsCoordinator {
     final userId = _host.currentUserId;
     if (userId == null || userId.isEmpty) {
       _host
-      ..setActionError(
-        ClientAgentsPresentationMessage.clientAgentsSessionUnavailableRequest(),
-      )
-      ..notifyActionsChanged();
+        ..setActionError(
+          ClientAgentsPresentationMessage.clientAgentsSessionUnavailableRequest(),
+        )
+        ..notifyActionsChanged();
       return;
     }
     final agentId = action.agentId.trim();
     if (!_matchesDiscardableLocalRequestAccess(action, agentId)) {
       _host
-      ..setActionError(
-        ClientAgentsPresentationMessage.clientAgentsDiscardQueuedRequestInvalidState(),
-      )
-      ..notifyActionsChanged();
+        ..setActionError(
+          ClientAgentsPresentationMessage.clientAgentsDiscardQueuedRequestInvalidState(),
+        )
+        ..notifyActionsChanged();
       return;
     }
     final beforeCount = _host.pendingActionsSnapshot
@@ -147,10 +147,10 @@ class ClientAgentsAccessRequestActionsCoordinator {
         .length;
     if (beforeCount == 0) {
       _host
-      ..setActionError(
-        ClientAgentsPresentationMessage.clientAgentsDiscardQueuedRequestInvalidState(),
-      )
-      ..notifyActionsChanged();
+        ..setActionError(
+          ClientAgentsPresentationMessage.clientAgentsDiscardQueuedRequestInvalidState(),
+        )
+        ..notifyActionsChanged();
       return;
     }
 
@@ -180,8 +180,8 @@ class ClientAgentsAccessRequestActionsCoordinator {
           clientTokenRaw: '',
         );
         _host.setActionFeedback(
-          message: ClientAgentsPresentationMessage
-              .clientAgentsDiscardQueuedRequestSuccess(),
+          message:
+              ClientAgentsPresentationMessage.clientAgentsDiscardQueuedRequestSuccess(),
           kind: ClientAgentsActionFeedbackKind.info,
         );
       }

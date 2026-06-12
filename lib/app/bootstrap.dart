@@ -136,62 +136,61 @@ Future<void> _executeBootstrapPhases() async {
 }
 
 Future<void> _bootstrapAppRunner() async {
-    await setupDependencies();
-    await configureSentryBootScope();
-    unawaited(
-      AppBrazilMapStaticData.precacheBrazilUfGeoJsonAsset().catchError(
-        (Object error, StackTrace st) {
-          AppLogger.warning(
-            'Brazil UF GeoJSON precache failed',
-            context: const <String, Object?>{
-              'operation':
-                  'AppBrazilMapStaticData.precacheBrazilUfGeoJsonAsset',
-            },
-            error: error,
-            stackTrace: st,
-          );
-          return false;
+  await setupDependencies();
+  await configureSentryBootScope();
+  unawaited(
+    AppBrazilMapStaticData.precacheBrazilUfGeoJsonAsset().catchError(
+      (Object error, StackTrace st) {
+        AppLogger.warning(
+          'Brazil UF GeoJSON precache failed',
+          context: const <String, Object?>{
+            'operation': 'AppBrazilMapStaticData.precacheBrazilUfGeoJsonAsset',
+          },
+          error: error,
+          stackTrace: st,
+        );
+        return false;
+      },
+    ),
+  );
+  unawaited(
+    PdfExportFontCache.warmFonts().catchError((Object error, StackTrace st) {
+      AppLogger.warning(
+        'PDF export font warm-up failed',
+        context: const <String, Object?>{
+          'operation': 'PdfExportFontCache.warmFonts',
         },
-      ),
-    );
-    unawaited(
-      PdfExportFontCache.warmFonts().catchError((Object error, StackTrace st) {
-        AppLogger.warning(
-          'PDF export font warm-up failed',
-          context: const <String, Object?>{
-            'operation': 'PdfExportFontCache.warmFonts',
-          },
-          error: error,
-          stackTrace: st,
-        );
-      }),
-    );
-    unawaited(
-      getIt<WindowsAutoUpdateController>().initialize().catchError((
-        Object error,
-        StackTrace st,
-      ) {
-        AppLogger.warning(
-          'Windows auto-update initialization failed',
-          context: const <String, Object?>{
-            'operation': 'WindowsAutoUpdateController.initialize',
-          },
-          error: error,
-          stackTrace: st,
-        );
-      }),
-    );
-    if (AppEnvironment.consumerSocketLifecycleEnabled) {
-      getIt<SocketMetricsListener>().start();
-    }
-    // Touch the relay pre-warmer so its connection-state subscription
-    // attaches before the first `connect()` lands. It is a lazy singleton
-    // gated by relay availability inside `injector_client_agents.dart`, so
-    // REST-only or relay-disabled builds skip this entirely.
-    if (getIt.isRegistered<RelayConversationPreWarmer>()) {
-      getIt<RelayConversationPreWarmer>();
-    }
-    runApp(const ColmeiaBootstrap());
+        error: error,
+        stackTrace: st,
+      );
+    }),
+  );
+  unawaited(
+    getIt<WindowsAutoUpdateController>().initialize().catchError((
+      Object error,
+      StackTrace st,
+    ) {
+      AppLogger.warning(
+        'Windows auto-update initialization failed',
+        context: const <String, Object?>{
+          'operation': 'WindowsAutoUpdateController.initialize',
+        },
+        error: error,
+        stackTrace: st,
+      );
+    }),
+  );
+  if (AppEnvironment.consumerSocketLifecycleEnabled) {
+    getIt<SocketMetricsListener>().start();
+  }
+  // Touch the relay pre-warmer so its connection-state subscription
+  // attaches before the first `connect()` lands. It is a lazy singleton
+  // gated by relay availability inside `injector_client_agents.dart`, so
+  // REST-only or relay-disabled builds skip this entirely.
+  if (getIt.isRegistered<RelayConversationPreWarmer>()) {
+    getIt<RelayConversationPreWarmer>();
+  }
+  runApp(const ColmeiaBootstrap());
 }
 
 Future<void> _handleBootstrapFailure({
@@ -217,8 +216,9 @@ Future<void> _handleBootstrapFailure({
   runApp(
     BootstrapFailureApp(
       onRetry: _retryBootstrap,
-      onClearCacheAndRetry:
-          offersHiveRecovery ? _clearLocalCacheAndRetryBootstrap : null,
+      onClearCacheAndRetry: offersHiveRecovery
+          ? _clearLocalCacheAndRetryBootstrap
+          : null,
     ),
   );
 }

@@ -178,7 +178,10 @@ void main() {
         );
         await tester.pump(pumpDuration);
 
-        expect(find.byType(AppBrazilStoreSalesMapChartDemoPage), findsOneWidget);
+        expect(
+          find.byType(AppBrazilStoreSalesMapChartDemoPage),
+          findsOneWidget,
+        );
         expect(find.text('AppBrazilStoreSalesMapChart'), findsOneWidget);
       } finally {
         debugDefaultTargetPlatformOverride = null;

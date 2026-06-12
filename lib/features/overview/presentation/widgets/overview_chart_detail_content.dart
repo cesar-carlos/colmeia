@@ -78,7 +78,8 @@ class _OverviewChartDetailContentState
       );
     }
 
-    final dailySalesEmptyMessage = section == OverviewProgressiveSection.dailySales
+    final dailySalesEmptyMessage =
+        section == OverviewProgressiveSection.dailySales
         ? _dailySalesEmptyMessage(l10n, overview)
         : null;
     final exportHeaderContext = buildOverviewChartShareExportHeaderContext(
@@ -98,9 +99,9 @@ class _OverviewChartDetailContentState
         emptyPlaceholder: overviewChartEmptyPlaceholder(
           emptyMessage: dailySalesEmptyMessage,
           textStyle: Theme.of(context).textTheme.bodyMedium,
-          verticalPadding: Theme.of(context)
-              .extension<AppThemeTokens>()!
-              .contentSpacing,
+          verticalPadding: Theme.of(
+            context,
+          ).extension<AppThemeTokens>()!.contentSpacing,
           loadFailure: overview.dailySalesTrendLoadFailed
               ? overview.dailySalesTrendLoadFailure
               : null,

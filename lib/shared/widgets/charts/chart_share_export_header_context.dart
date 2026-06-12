@@ -106,7 +106,9 @@ String? buildChartSharePdfFilterSummary({
   String? additionalFilterSummary,
   String? truncationNotice,
 }) {
-  final appliedFilters = formatChartShareExportHeaderContext(exportHeaderContext);
+  final appliedFilters = formatChartShareExportHeaderContext(
+    exportHeaderContext,
+  );
   return joinChartShareFilterSummary(
     filterSummary: joinChartShareFilterSummary(
       filterSummary: appliedFilters,

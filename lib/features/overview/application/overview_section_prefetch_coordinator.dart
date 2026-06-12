@@ -83,9 +83,7 @@ final class OverviewSectionPrefetchCoordinator {
   }
 
   List<OverviewProgressiveSection> _prefetchSectionsForViewport() {
-    return _isNarrowViewport()
-        ? prefetchSectionsNarrow
-        : prefetchSectionsWide;
+    return _isNarrowViewport() ? prefetchSectionsNarrow : prefetchSectionsWide;
   }
 
   bool _isPrefetchStale({

@@ -47,8 +47,7 @@ final class FakeAuthRemoteDataSource implements AuthRemoteDataSource {
     } on FakeBackendConflictException {
       return const ClientRegistrationSubmission(
         status: ClientRegistrationStatus.pending,
-        message:
-            'If eligible, your registration request will be processed.',
+        message: 'If eligible, your registration request will be processed.',
       );
     }
   }

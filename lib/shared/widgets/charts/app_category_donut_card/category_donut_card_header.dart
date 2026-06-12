@@ -48,11 +48,12 @@ class CategoryDonutCardHeader extends StatelessWidget {
       children: <Widget>[
         Text(
           title,
-          style: tightenCategoryDonutTypographyFontSize(
-            typography.sectionHeaderH2,
-          ).copyWith(
-            fontWeight: FontWeight.w700,
-          ),
+          style:
+              tightenCategoryDonutTypographyFontSize(
+                typography.sectionHeaderH2,
+              ).copyWith(
+                fontWeight: FontWeight.w700,
+              ),
         ),
         if (subtitle != null) ...<Widget>[
           SizedBox(height: tokens.gapXs),

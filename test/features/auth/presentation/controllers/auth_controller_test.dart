@@ -41,8 +41,9 @@ void main() {
         logoutUseCase: LogoutUseCase(repository),
         restoreSessionUseCase: RestoreSessionUseCase(repository),
         authSessionEvents: sessionEvents,
-        registrationPreferencesService:
-            AuthRegistrationPreferencesService(prefs),
+        registrationPreferencesService: AuthRegistrationPreferencesService(
+          prefs,
+        ),
       );
     });
 

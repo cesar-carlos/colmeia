@@ -329,8 +329,9 @@ class _OverviewMetricsSection extends StatelessWidget {
                 displayOverview: displayOverview,
                 completedSections: slice.completedSections,
                 filter: context.read<OverviewController>().activeFilter,
-                availableAgents:
-                    context.read<OverviewController>().availableAgents,
+                availableAgents: context
+                    .read<OverviewController>()
+                    .availableAgents,
               ),
             ],
           ),

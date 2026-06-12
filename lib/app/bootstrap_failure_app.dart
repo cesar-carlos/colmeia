@@ -74,13 +74,16 @@ class _BootstrapFailureAppState extends State<BootstrapFailureApp> {
           return Scaffold(
             body: SafeArea(
               child: Padding(
-                padding: EdgeInsets.all(tokens.pagePaddingHorizontalComfortable),
+                padding: EdgeInsets.all(
+                  tokens.pagePaddingHorizontalComfortable,
+                ),
                 child: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 480),
                     child: AppInlineErrorPanel(
                       title: 'Não foi possível iniciar o aplicativo',
-                      message: widget.message ??
+                      message:
+                          widget.message ??
                           'Ocorreu um erro ao preparar o Colmeia. '
                               'Tente novamente.',
                       actions: Column(
@@ -89,8 +92,9 @@ class _BootstrapFailureAppState extends State<BootstrapFailureApp> {
                           AppPrimaryButton(
                             label: 'Tentar novamente',
                             isLoading: _isRetrying,
-                            onPressed:
-                                _isBusy ? null : () => unawaited(_handleRetry()),
+                            onPressed: _isBusy
+                                ? null
+                                : () => unawaited(_handleRetry()),
                             fillWidth: true,
                           ),
                           if (onClearCacheAndRetry != null) ...<Widget>[
@@ -100,7 +104,8 @@ class _BootstrapFailureAppState extends State<BootstrapFailureApp> {
                               isLoading: _isClearingCache,
                               onPressed: _isBusy
                                   ? null
-                                  : () => unawaited(_handleClearCacheAndRetry()),
+                                  : () =>
+                                        unawaited(_handleClearCacheAndRetry()),
                               fillWidth: true,
                             ),
                           ],

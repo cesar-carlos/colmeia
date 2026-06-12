@@ -35,7 +35,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
     AgentQueryFactsPrefetchCoordinator? factsPrefetchCoordinator,
     DateTime Function()? now,
     OverviewBatchAssembler assembler = const OverviewBatchAssembler(),
-    OverviewBatchSectionMapper sectionMapper = const OverviewBatchSectionMapper(),
+    OverviewBatchSectionMapper sectionMapper =
+        const OverviewBatchSectionMapper(),
   }) : _batchLoader = batchLoader,
        _factsStore = factsStore,
        _factsPrefetchCoordinator = factsPrefetchCoordinator,
@@ -283,8 +284,8 @@ class OverviewRepositoryImpl implements OverviewRepository {
           lucratividadeTrend: _sectionMapper.lucratividadePoints(batchResults),
           lucratividadeTrendLoadFailed: lucratividadeSectionFailure.loadFailed,
           lucratividadeTrendLoadFailure: lucratividadeSectionFailure.failure,
-          lucratividadePartialFailureAgentNames:
-              _sectionMapper.lucratividadePartialFailureAgentNames(
+          lucratividadePartialFailureAgentNames: _sectionMapper
+              .lucratividadePartialFailureAgentNames(
                 batchResults,
               ),
           lucratividadeMensalTrend: _sectionMapper.lucratividadeMensalRows(

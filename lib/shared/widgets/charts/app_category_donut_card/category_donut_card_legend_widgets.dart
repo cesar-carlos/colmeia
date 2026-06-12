@@ -217,11 +217,12 @@ class CategoryDonutLegendRow extends StatelessWidget {
                 Expanded(
                   child: Text(
                     segment.label,
-                    style: tightenCategoryDonutTypographyFontSize(
-                      typography.body,
-                    ).copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style:
+                        tightenCategoryDonutTypographyFontSize(
+                          typography.body,
+                        ).copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -236,20 +237,22 @@ class CategoryDonutLegendRow extends StatelessWidget {
                     children: <Widget>[
                       Text(
                         valueLabel,
-                        style: tightenCategoryDonutTypographyFontSize(
-                          typography.body,
-                        ).copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style:
+                            tightenCategoryDonutTypographyFontSize(
+                              typography.body,
+                            ).copyWith(
+                              fontWeight: FontWeight.w800,
+                            ),
                       ),
                       Text(
                         percentLabel,
-                        style: tightenCategoryDonutTypographyFontSize(
-                          typography.caption,
-                        ).copyWith(
-                          color: swatchColor,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style:
+                            tightenCategoryDonutTypographyFontSize(
+                              typography.caption,
+                            ).copyWith(
+                              color: swatchColor,
+                              fontWeight: FontWeight.w700,
+                            ),
                       ),
                     ],
                   ),

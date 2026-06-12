@@ -7,7 +7,8 @@ import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:flutter/material.dart';
 
-ChartShareExportHeaderContext buildSalesSingleAgentChartShareExportHeaderContext({
+ChartShareExportHeaderContext
+buildSalesSingleAgentChartShareExportHeaderContext({
   required AppLocalizations l10n,
   required String agentName,
   List<ChartShareExportHeaderParameter> parameters =
@@ -52,7 +53,8 @@ String salesChartShareDateTimeRangeValue(DateTimeRange range) {
       '${AppBrFormatters.shortDate(range.end)}';
 }
 
-ChartShareExportHeaderContext buildSalesProdutoTendenciaChartShareExportHeaderContext({
+ChartShareExportHeaderContext
+buildSalesProdutoTendenciaChartShareExportHeaderContext({
   required AppLocalizations l10n,
   required String agentName,
   required DateTimeRange periodoAtual,

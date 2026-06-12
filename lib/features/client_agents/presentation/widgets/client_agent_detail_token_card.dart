@@ -37,7 +37,8 @@ class ClientAgentDetailTokenCard extends StatefulWidget {
       _ClientAgentDetailTokenCardState();
 }
 
-class _ClientAgentDetailTokenCardState extends State<ClientAgentDetailTokenCard> {
+class _ClientAgentDetailTokenCardState
+    extends State<ClientAgentDetailTokenCard> {
   late final TextEditingController _tokenController;
   int _lastSyncedRevision = -1;
   bool _obscureToken = true;

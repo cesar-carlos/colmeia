@@ -18,6 +18,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_section_reque
 import 'package:colmeia/features/overview/domain/overview_load_signature.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_load_session.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
+
 /// Surface the load orchestration coordinator needs from the overview
 /// controller host.
 abstract interface class OverviewLoadOrchestrationHost {

@@ -98,8 +98,10 @@ class _BrazilMapMapControlsBuilder {
                           snapshot,
                         ),
                       ),
-                  onPreviewBranchStart: _state._pointInteraction.setPreviewedPoint,
-                  onPreviewBranchEnd: _state._pointInteraction.clearPreviewedPoint,
+                  onPreviewBranchStart:
+                      _state._pointInteraction.setPreviewedPoint,
+                  onPreviewBranchEnd:
+                      _state._pointInteraction.clearPreviewedPoint,
                 ),
         );
       }

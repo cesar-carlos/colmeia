@@ -229,8 +229,7 @@ class _OverviewWeekdayUserSalesTrendChartState
               child: StatefulBuilder(
                 builder: (context, setFullscreenState) {
                   final fullscreenIsSalesCount =
-                      fullscreenMetric ==
-                      MetricToggleComparisonBarMetric.count;
+                      fullscreenMetric == MetricToggleComparisonBarMetric.count;
                   if (showEmptyPlaceholder) {
                     return Center(
                       child: Text(
@@ -247,10 +246,10 @@ class _OverviewWeekdayUserSalesTrendChartState
                       onChanged: (value) => setFullscreenState(
                         () => fullscreenMetric = value,
                       ),
-                      countMetricLabel: fullscreenL10n
-                          .overviewWeekdayMetricSalesCountLabel,
-                      amountMetricLabel: fullscreenL10n
-                          .overviewWeekdayMetricSalesAmountLabel,
+                      countMetricLabel:
+                          fullscreenL10n.overviewWeekdayMetricSalesCountLabel,
+                      amountMetricLabel:
+                          fullscreenL10n.overviewWeekdayMetricSalesAmountLabel,
                     ),
                     chartBuilder: (_) => OverviewWeekdayUserGroupedBarChart(
                       l10n: fullscreenL10n,
@@ -267,8 +266,8 @@ class _OverviewWeekdayUserSalesTrendChartState
                       belowSubtitle: const SizedBox.shrink(),
                       plotFloorAccessibilityNotice:
                           fullscreenL10n.chartComparisonPlotFloorNotice,
-                      extremeSpreadAccessibilityNotice:
-                          fullscreenL10n.chartComparisonExtremeValueSpreadNotice,
+                      extremeSpreadAccessibilityNotice: fullscreenL10n
+                          .chartComparisonExtremeValueSpreadNotice,
                       tokens: fullscreenTokens,
                       useChartShell: false,
                       expandPlotVertically: true,

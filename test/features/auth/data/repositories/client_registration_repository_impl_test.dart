@@ -18,34 +18,37 @@ void main() {
   });
 
   group('ClientRegistrationRepositoryImpl', () {
-    test('returns Success with registration submission on happy path', () async {
-      const submission = ClientRegistrationSubmission(
-        status: ClientRegistrationStatus.pending,
-        message: 'Pending approval',
-        pollToken: 'token-abc',
-      );
-      when(
-        () => remote.register(
-          ownerEmail: any(named: 'ownerEmail'),
-          firstName: any(named: 'firstName'),
-          lastName: any(named: 'lastName'),
-          email: any(named: 'email'),
-          password: any(named: 'password'),
-          mobile: any(named: 'mobile'),
-        ),
-      ).thenAnswer((_) async => submission);
+    test(
+      'returns Success with registration submission on happy path',
+      () async {
+        const submission = ClientRegistrationSubmission(
+          status: ClientRegistrationStatus.pending,
+          message: 'Pending approval',
+          pollToken: 'token-abc',
+        );
+        when(
+          () => remote.register(
+            ownerEmail: any(named: 'ownerEmail'),
+            firstName: any(named: 'firstName'),
+            lastName: any(named: 'lastName'),
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+            mobile: any(named: 'mobile'),
+          ),
+        ).thenAnswer((_) async => submission);
 
-      final result = await repository.register(
-        ownerEmail: 'owner@corp.com',
-        firstName: 'Alice',
-        lastName: 'Doe',
-        email: 'client@corp.com',
-        password: 'Password1',
-      );
+        final result = await repository.register(
+          ownerEmail: 'owner@corp.com',
+          firstName: 'Alice',
+          lastName: 'Doe',
+          email: 'client@corp.com',
+          password: 'Password1',
+        );
 
-      check(result.isSuccess()).isTrue();
-      check(result.getOrNull()?.pollToken).equals('token-abc');
-    });
+        check(result.isSuccess()).isTrue();
+        check(result.getOrNull()?.pollToken).equals('token-abc');
+      },
+    );
 
     test('returns unknown status on 200 without mapping to failure', () async {
       when(

@@ -68,28 +68,34 @@ void main() {
       check(value).equals('legacy-session');
     });
 
-    test('should fall back to in-memory storage on platform write error', () async {
-      when(
-        () => secureStorage.write(
-          key: any(named: 'key'),
-          value: any(named: 'value'),
-        ),
-      ).thenThrow(
-        PlatformException(code: 'write_failed', message: 'Keystore unavailable'),
-      );
-      when(
-        () => secureStorage.read(key: any(named: 'key')),
-      ).thenThrow(MissingPluginException());
+    test(
+      'should fall back to in-memory storage on platform write error',
+      () async {
+        when(
+          () => secureStorage.write(
+            key: any(named: 'key'),
+            value: any(named: 'value'),
+          ),
+        ).thenThrow(
+          PlatformException(
+            code: 'write_failed',
+            message: 'Keystore unavailable',
+          ),
+        );
+        when(
+          () => secureStorage.read(key: any(named: 'key')),
+        ).thenThrow(MissingPluginException());
 
-      await sessionStorage.write(
-        key: 'auth_session',
-        value: 'raw-session',
-      );
+        await sessionStorage.write(
+          key: 'auth_session',
+          value: 'raw-session',
+        );
 
-      final value = await sessionStorage.read('auth_session');
+        final value = await sessionStorage.read('auth_session');
 
-      check(value).equals('raw-session');
-    });
+        check(value).equals('raw-session');
+      },
+    );
 
     test('should clear in-memory fallback on platform delete error', () async {
       when(
@@ -101,7 +107,10 @@ void main() {
       when(
         () => secureStorage.delete(key: any(named: 'key')),
       ).thenThrow(
-        PlatformException(code: 'delete_failed', message: 'Keystore unavailable'),
+        PlatformException(
+          code: 'delete_failed',
+          message: 'Keystore unavailable',
+        ),
       );
       when(
         () => secureStorage.read(key: any(named: 'key')),

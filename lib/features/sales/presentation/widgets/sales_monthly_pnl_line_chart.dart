@@ -192,14 +192,16 @@ class _SalesMonthlyPnlLineChartState extends State<SalesMonthlyPnlLineChart> {
                             return const SizedBox.shrink();
                           }
                           final item = points[pointIndex];
-                          final label = salesMonthlyPnlLineChartTooltipSeriesLabel(
-                            l10n,
-                            seriesIndex,
-                          );
-                          final value = salesMonthlyPnlLineChartTooltipSeriesValue(
-                            item,
-                            seriesIndex,
-                          );
+                          final label =
+                              salesMonthlyPnlLineChartTooltipSeriesLabel(
+                                l10n,
+                                seriesIndex,
+                              );
+                          final value =
+                              salesMonthlyPnlLineChartTooltipSeriesValue(
+                                item,
+                                seriesIndex,
+                              );
                           return Padding(
                             padding: const EdgeInsets.all(8),
                             child: Column(

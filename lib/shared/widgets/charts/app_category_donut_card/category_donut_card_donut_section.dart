@@ -166,11 +166,12 @@ class CategoryDonutCardDonutSection extends StatelessWidget {
                     Text(
                       centerSecondary!,
                       textAlign: TextAlign.center,
-                      style: tightenCategoryDonutTypographyFontSize(
-                        typography.utilityOverline,
-                      ).copyWith(
-                        color: context.appColors.onSurfaceVariant,
-                      ),
+                      style:
+                          tightenCategoryDonutTypographyFontSize(
+                            typography.utilityOverline,
+                          ).copyWith(
+                            color: context.appColors.onSurfaceVariant,
+                          ),
                     ),
                   ],
                 ],

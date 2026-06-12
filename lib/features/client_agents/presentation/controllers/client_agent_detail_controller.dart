@@ -184,9 +184,11 @@ class ClientAgentDetailController extends ChangeNotifier
         _agent = loadedAgent;
         _errorMessage = null;
         _connection.seedTokenStatusFromAgent(loadedAgent);
-        unawaited(_connection.refreshPersistedClientTokenFromServer(
-          agentId: agentId,
-        ));
+        unawaited(
+          _connection.refreshPersistedClientTokenFromServer(
+            agentId: agentId,
+          ),
+        );
         unawaited(_agentMeta.discoverAgentRpcMethods(agentId: agentId));
       } else {
         final failure = result.exceptionOrNull()!;

@@ -96,7 +96,8 @@ Widget buildLucratividadeComboFullscreenBody<T>({
               tooltipBodyResolver: tooltipResolver,
             );
             final landscapeOverride = landscapeStyleOverride;
-            if (landscapeOverride != null && isLandscapeChartViewport(context)) {
+            if (landscapeOverride != null &&
+                isLandscapeChartViewport(context)) {
               built = landscapeOverride(built, availableChartHeight);
             }
             return AppComboChart<T>(

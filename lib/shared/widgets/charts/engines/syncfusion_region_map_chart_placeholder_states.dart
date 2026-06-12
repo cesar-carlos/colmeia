@@ -113,7 +113,8 @@ Widget buildSyncfusionRegionMapDefaultEmptyState({
 }
 
 /// Resolves map chrome colors shared by loading/empty/content states.
-({Color background, BorderRadius borderRadius, double height}) resolveSyncfusionRegionMapChrome({
+({Color background, BorderRadius borderRadius, double height})
+resolveSyncfusionRegionMapChrome({
   required BuildContext context,
   required AppChartTheme chartTheme,
   required double? styleHeight,

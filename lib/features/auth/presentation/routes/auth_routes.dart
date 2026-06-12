@@ -48,7 +48,9 @@ List<RouteBase> buildAuthRoutes() {
       path: AppRoute.registrationStatus.path,
       builder: (context, state) {
         final preferencesService = getIt<AuthRegistrationPreferencesService>();
-        final extraToken = state.extra is String ? state.extra! as String : null;
+        final extraToken = state.extra is String
+            ? state.extra! as String
+            : null;
         return RegistrationStatusPage(
           controller: RegistrationStatusPageController(
             readRegistrationStatusUseCase:

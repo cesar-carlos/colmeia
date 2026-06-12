@@ -6,7 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 
 void main() {
-  testWidgets('AppGroupedColumnChart mounts with sample series', (tester) async {
+  testWidgets('AppGroupedColumnChart mounts with sample series', (
+    tester,
+  ) async {
     final primaryFormat = NumberFormat.compact();
     final secondaryFormat = NumberFormat.compact();
 
@@ -43,7 +45,10 @@ void main() {
       ),
     );
 
-    expect(find.byType(AppGroupedColumnChart<_GroupedSamplePoint>), findsOneWidget);
+    expect(
+      find.byType(AppGroupedColumnChart<_GroupedSamplePoint>),
+      findsOneWidget,
+    );
     await tester.pump(const Duration(milliseconds: 500));
   });
 }

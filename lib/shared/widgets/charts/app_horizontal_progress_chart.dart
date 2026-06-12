@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 
 export 'app_horizontal_progress_chart_style.dart';
 export 'horizontal_progress_chart_typedefs.dart';
+
 class AppHorizontalProgressChart<T> extends StatelessWidget {
   const AppHorizontalProgressChart({
     required this.items,

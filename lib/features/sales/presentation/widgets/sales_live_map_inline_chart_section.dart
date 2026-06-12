@@ -59,20 +59,22 @@ class SalesLiveMapInlineChartSection extends StatelessWidget {
           );
         }
         final state = slice.state;
-        final exportHeaderContext = buildSalesLiveMapChartShareExportHeaderContext(
-          l10n: l10n,
-          agentsSummary: viewModel.agentsSummary,
-          singleBranchName: resolveSalesLiveMapSingleBranchName(
-            selectedBranchIds: state.filter.selectedBranchIds,
-            branchOptions:
-                state.result?.branchOptions ?? const <SalesLiveMapBranchOption>[],
-          ),
-          periodSummary: viewModel.periodSummary,
-          detailSummary: viewModel.detailSummary,
-          visualSummary: viewModel.visualSummary,
-          usesMapLabel: viewModel.usesMapLabel,
-          mapMetricLabel: salesLiveMapMetricExportLabel(l10n, slice.metric),
-        );
+        final exportHeaderContext =
+            buildSalesLiveMapChartShareExportHeaderContext(
+              l10n: l10n,
+              agentsSummary: viewModel.agentsSummary,
+              singleBranchName: resolveSalesLiveMapSingleBranchName(
+                selectedBranchIds: state.filter.selectedBranchIds,
+                branchOptions:
+                    state.result?.branchOptions ??
+                    const <SalesLiveMapBranchOption>[],
+              ),
+              periodSummary: viewModel.periodSummary,
+              detailSummary: viewModel.detailSummary,
+              visualSummary: viewModel.visualSummary,
+              usesMapLabel: viewModel.usesMapLabel,
+              mapMetricLabel: salesLiveMapMetricExportLabel(l10n, slice.metric),
+            );
         return SalesLiveMapChartPanel(
           mode: SalesLiveMapChartPanelMode.inline,
           mapPayloadDigest: slice.mapPayloadDigest,

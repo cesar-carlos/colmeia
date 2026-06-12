@@ -112,7 +112,9 @@ class ClientAgentsSyncCoordinator {
         _host
           ..setActionError(
             ClientAgentsPresentationMessage.clientAgentsSyncCooldown(
-              seconds: _remainingRetryAfterSeconds(_syncRetryAfterGate.remaining),
+              seconds: _remainingRetryAfterSeconds(
+                _syncRetryAfterGate.remaining,
+              ),
             ),
           )
           ..notifySyncChanged();
