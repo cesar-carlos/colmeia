@@ -410,6 +410,7 @@
   "chartComboEmptyDefault": "Sem dados combinados para este recorte.",
   "chartOpenFullscreenTooltip": "Abrir gráfico em tela cheia",
   "chartShareTooltip": "Compartilhar gráfico",
+  "chartShareDefaultTitle": "Gráfico",
   "chartShareSuccess": "Gráfico compartilhado",
   "chartShareFailed": "Não foi possível compartilhar o gráfico. Tente novamente.",
   "chartShareFailedMissingBoundary": "O gráfico ainda não está pronto para compartilhar. Tente novamente.",

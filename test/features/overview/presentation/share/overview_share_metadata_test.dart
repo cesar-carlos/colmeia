@@ -1,5 +1,3 @@
-import 'dart:ui' show Locale;
-
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
@@ -15,20 +13,17 @@ import 'package:colmeia/features/overview/presentation/share/overview_rankings_s
 import 'package:colmeia/features/overview/presentation/share/overview_weekday_sales_trend_share.dart';
 import 'package:colmeia/features/overview/presentation/share/overview_weekday_user_sales_trend_share.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 
 void main() {
   late AppLocalizations l10n;
-  late AppThemeTokens tokens;
-
   setUp(() {
     l10n = lookupAppLocalizations(const Locale('en'));
-    tokens = AppThemeTokens.light;
   });
 
   test('weekday sales trend share metadata is table-only landscape export', () {
@@ -67,12 +62,11 @@ void main() {
 
     final metadata = buildOverviewWeekdayUserSalesTrendShareMetadata(
       l10n: l10n,
-      tokens: tokens,
       points: points,
-      chartPoints: points,
       isSalesCount: true,
       title: l10n.overviewWeekdayUserSalesTitle,
       salesCountFormat: salesCountFormat,
+      chartExportBuilder: (_) => const SizedBox.shrink(),
     );
 
     expect(metadata.title, l10n.overviewWeekdayUserSalesTitle);

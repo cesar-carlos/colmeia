@@ -5,6 +5,7 @@ import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
 import 'package:colmeia/features/overview/presentation/overview_sorted_rankings.dart';
+import 'package:colmeia/features/overview/presentation/share/overview_chart_share_export_filter.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_alert_detail_sheet.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_chart_load_failure_helpers.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_lucratividade_chart.dart';
@@ -15,6 +16,7 @@ import 'package:colmeia/features/overview/presentation/widgets/overview_weekday_
 import 'package:colmeia/features/overview/presentation/widgets/overview_weekday_user_sales_trend_chart.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_fade_in.dart';
 import 'package:colmeia/shared/widgets/charts/daily_sales_trend_chart.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +26,8 @@ class OverviewChartDetailContent extends StatefulWidget {
     required this.l10n,
     required this.section,
     required this.overview,
+    required this.filter,
+    required this.availableAgents,
     super.key,
     this.animateEntrance = true,
     this.isSingleAgentSelected = false,
@@ -34,6 +38,8 @@ class OverviewChartDetailContent extends StatefulWidget {
   final Overview overview;
   final bool animateEntrance;
   final bool isSingleAgentSelected;
+  final DashboardFilter filter;
+  final List<DashboardAgentOption> availableAgents;
 
   @override
   State<OverviewChartDetailContent> createState() =>
@@ -75,10 +81,18 @@ class _OverviewChartDetailContentState
     final dailySalesEmptyMessage = section == OverviewProgressiveSection.dailySales
         ? _dailySalesEmptyMessage(l10n, overview)
         : null;
+    final exportHeaderContext = buildOverviewChartShareExportHeaderContext(
+      l10n: l10n,
+      filter: widget.filter,
+      availableAgents: widget.availableAgents,
+      periodStart: overview.periodStart,
+      periodEnd: overview.periodEnd,
+    );
 
     final chart = switch (section) {
       OverviewProgressiveSection.dailySales => DailySalesTrendChart(
         l10n: l10n,
+        exportHeaderContext: exportHeaderContext,
         points: overview.dailySalesTrend,
         emptyMessage: dailySalesEmptyMessage!,
         emptyPlaceholder: overviewChartEmptyPlaceholder(
@@ -98,6 +112,7 @@ class _OverviewChartDetailContentState
       ),
       OverviewProgressiveSection.paymentMix => OverviewPaymentMixCard(
         l10n: l10n,
+        exportHeaderContext: exportHeaderContext,
         methods: overview.paymentMethods,
         onRequestFullscreen: (context, request) =>
             context.pushChartFullscreenFromRequest(request),
@@ -106,6 +121,7 @@ class _OverviewChartDetailContentState
       ),
       OverviewProgressiveSection.weekdaySales => OverviewWeekdaySalesTrendChart(
         l10n: l10n,
+        exportHeaderContext: exportHeaderContext,
         points: overview.weekdaySalesTrend,
         loadFailed: overview.weekdaySalesTrendLoadFailed,
         loadFailure: overview.weekdaySalesTrendLoadFailure,
@@ -121,6 +137,7 @@ class _OverviewChartDetailContentState
       OverviewProgressiveSection.weekdayUserSales =>
         OverviewWeekdayUserSalesTrendChart(
           l10n: l10n,
+          exportHeaderContext: exportHeaderContext,
           points: overview.weekdayUserSalesTrend,
           loadFailed: overview.weekdayUserSalesTrendLoadFailed,
           loadFailure: overview.weekdayUserSalesTrendLoadFailure,
@@ -135,7 +152,10 @@ class _OverviewChartDetailContentState
         ),
       OverviewProgressiveSection.userRanking => OverviewUserRankingCard(
         l10n: l10n,
+        exportHeaderContext: exportHeaderContext,
         userRankings: _rankingsCache.resolve(overview).users,
+        loadFailed: overview.userRankingsLoadFailed,
+        loadFailure: overview.userRankingsLoadFailure,
         onRequestFullscreen: (context, request) =>
             context.pushChartFullscreenFromRequest(request),
         onRequestShare: (context, request) =>
@@ -144,6 +164,7 @@ class _OverviewChartDetailContentState
       OverviewProgressiveSection.lucratividadePeriod =>
         OverviewLucratividadeChart(
           l10n: l10n,
+          exportHeaderContext: exportHeaderContext,
           points: overview.lucratividadeTrend,
           loadFailed: overview.lucratividadeTrendLoadFailed,
           loadFailure: overview.lucratividadeTrendLoadFailure,
@@ -170,6 +191,7 @@ class _OverviewChartDetailContentState
       OverviewProgressiveSection.lucratividadeMensal =>
         OverviewLucratividadeMensalChart(
           l10n: l10n,
+          exportHeaderContext: exportHeaderContext,
           points: overview.lucratividadeMensalTrend,
           loadFailed: overview.lucratividadeMensalTrendLoadFailed,
           loadFailure: overview.lucratividadeMensalTrendLoadFailure,

@@ -19,6 +19,7 @@ import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_header_trailing.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_actions.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/metrics/app_compact_kpi_stat.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
@@ -33,6 +34,7 @@ class SalesRankingProdutosFaturamentoBranchCard extends StatefulWidget {
     required this.rows,
     required this.metricSubtitle,
     this.branchDisplayName,
+    this.exportHeaderContext,
     this.isLoading = false,
     this.onRequestShare,
     super.key,
@@ -44,6 +46,7 @@ class SalesRankingProdutosFaturamentoBranchCard extends StatefulWidget {
   final List<RankingProdutosFaturamentoRow> rows;
   final String metricSubtitle;
   final String? branchDisplayName;
+  final ChartShareExportHeaderContext? exportHeaderContext;
   final bool isLoading;
   final AppChartShareRequestCallback? onRequestShare;
 
@@ -115,6 +118,7 @@ class _SalesRankingProdutosFaturamentoBranchCardState
         branchTitle: _branchTitle,
         metricSubtitle: widget.metricSubtitle,
         displayRows: _displayRows,
+        exportHeaderContext: widget.exportHeaderContext,
       );
 
   void _openFullscreen() {
@@ -130,6 +134,7 @@ class _SalesRankingProdutosFaturamentoBranchCardState
       branchTitle: branchTitle,
       metricSubtitle: metricSubtitle,
       displayRows: rowsSnapshot,
+      exportHeaderContext: widget.exportHeaderContext,
     );
     final fullscreenShareKey = GlobalKey();
 

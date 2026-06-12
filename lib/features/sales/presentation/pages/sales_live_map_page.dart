@@ -18,6 +18,7 @@ import 'package:colmeia/features/sales/presentation/coordinators/sales_live_map_
 import 'package:colmeia/features/sales/presentation/mappers/sales_live_map_chart_mapper.dart';
 import 'package:colmeia/features/sales/presentation/mappers/sales_live_map_visual_spec_mapper.dart';
 import 'package:colmeia/features/sales/presentation/rules/sales_live_map_presentation_rules.dart';
+import 'package:colmeia/features/sales/presentation/share/sales_chart_share_export_filter.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_live_map_share.dart';
 import 'package:colmeia/features/sales/presentation/view_models/sales_live_map_view_model.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_auto_refresh_section.dart';
@@ -251,6 +252,20 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
     );
     final fullscreenShareKey = GlobalKey();
     final shareTitle = l10n.salesLiveMapChartTitle;
+    final exportHeaderContext = buildSalesLiveMapChartShareExportHeaderContext(
+      l10n: l10n,
+      agentsSummary: viewModel.agentsSummary,
+      singleBranchName: resolveSalesLiveMapSingleBranchName(
+        selectedBranchIds: state.filter.selectedBranchIds,
+        branchOptions:
+            state.result?.branchOptions ?? const <SalesLiveMapBranchOption>[],
+      ),
+      periodSummary: viewModel.periodSummary,
+      detailSummary: viewModel.detailSummary,
+      visualSummary: viewModel.visualSummary,
+      usesMapLabel: viewModel.usesMapLabel,
+      mapMetricLabel: salesLiveMapMetricExportLabel(l10n, mapSlice.metric),
+    );
     final shareMetadata = buildSalesLiveMapShareMetadata(
       l10n: l10n,
       title: shareTitle,
@@ -259,6 +274,7 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
       exportMetric: SalesLiveMapChartMapper.toChartMetric(mapSlice.metric),
       exportStyle: exportStyle,
       filterBranchIds: mapSlice.filterBranchIds,
+      exportHeaderContext: exportHeaderContext,
     );
     _setLiveMapFullscreenOpen(true);
 

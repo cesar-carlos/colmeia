@@ -93,4 +93,53 @@ void main() {
       check(others[mondayIdx].value).equals(3);
     },
   );
+
+  test('weekdayUserGroupedCategories maps model rows to category adapters', () {
+    const model = WeekdayUserGroupedChartModel(
+      userNames: <String>['Alice', 'Bob'],
+      weekdayCategoryLabels: <String>['Mon', 'Wed'],
+      seriesData: <List<WeekdayUserGroupedBarDatum>>[
+        <WeekdayUserGroupedBarDatum>[
+          WeekdayUserGroupedBarDatum(
+            weekdayCategoryLabel: 'Mon',
+            value: 3,
+            plottedY: 3,
+            salesCount: 3,
+            salesAmount: 100,
+          ),
+          WeekdayUserGroupedBarDatum(
+            weekdayCategoryLabel: 'Wed',
+            value: 2,
+            plottedY: 2,
+            salesCount: 2,
+            salesAmount: 50,
+          ),
+        ],
+        <WeekdayUserGroupedBarDatum>[
+          WeekdayUserGroupedBarDatum(
+            weekdayCategoryLabel: 'Mon',
+            value: 5,
+            plottedY: 5,
+            salesCount: 5,
+            salesAmount: 200,
+          ),
+          WeekdayUserGroupedBarDatum(
+            weekdayCategoryLabel: 'Wed',
+            value: 0,
+            plottedY: 0,
+            salesCount: 0,
+            salesAmount: 0,
+          ),
+        ],
+      ],
+    );
+
+    final categories = weekdayUserGroupedCategories(model);
+
+    check(categories).length.equals(2);
+    check(categories[0].label).equals('Mon');
+    check(categories[0].cells).length.equals(2);
+    check(categories[0].cells[0].salesCount).equals(3);
+    check(categories[1].cells[1].salesCount).equals(0);
+  });
 }

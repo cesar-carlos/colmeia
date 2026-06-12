@@ -1,16 +1,17 @@
 import 'dart:math' as math;
 
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
-import 'package:colmeia/shared/widgets/charts/chart_pan_footnote_column.dart';
 import 'package:colmeia/shared/widgets/charts/comparison_bar_chart_margin.dart';
 import 'package:colmeia/shared/widgets/charts/comparison_bar_value_label.dart';
 import 'package:colmeia/shared/widgets/charts/engines/cartesian_scroll_geometry.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
+import 'package:colmeia/shared/widgets/charts/engines/syncfusion_cartesian_viewport_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
@@ -49,14 +50,15 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
   final bool isLoading;
   final Widget? emptyPlaceholder;
 
-  /// Falls back to [AppComparisonBarChartStyle.loadingLabel], then English.
+  /// Falls back to [AppComparisonBarChartStyle.loadingLabel], then l10n.
   final String? resolvedLoadingLabel;
 
-  /// Falls back to [AppComparisonBarChartStyle.emptyMessage], then English.
+  /// Falls back to [AppComparisonBarChartStyle.emptyMessage], then l10n.
   final String? resolvedEmptyMessage;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations);
     final chartTheme = AppChartTheme.fromContext(context, preset: preset);
     final colorScheme = Theme.of(context).colorScheme;
     final resolvedHeight = style.height ?? chartTheme.height;
@@ -71,7 +73,7 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
         label:
             resolvedLoadingLabel ??
             style.loadingLabel ??
-            'Loading comparison chart…',
+            l10n?.chartComparisonLoadingDefault,
       );
     }
 
@@ -82,7 +84,8 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
         message:
             resolvedEmptyMessage ??
             style.emptyMessage ??
-            'Nothing to compare right now.',
+            l10n?.chartComparisonEmptyDefault ??
+            '',
         placeholder: emptyPlaceholder,
       );
     }
@@ -168,12 +171,9 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
         ),
         plotAreaBorderWidth: 0,
         plotAreaBackgroundColor: style.plotAreaBackgroundColor,
-        zoomPanBehavior: useCategoryAxisPan
-            ? ZoomPanBehavior(
-                enablePanning: true,
-                zoomMode: ZoomMode.x,
-              )
-            : null,
+        zoomPanBehavior: buildCategoryViewportZoomPanBehavior(
+          enabled: useCategoryAxisPan,
+        ),
         onDataLabelRender:
             style.showDataLabels && enableInteraction && dataLabels == null
             ? (args) {
@@ -436,46 +436,34 @@ class SyncfusionComparisonBarChart extends StatelessWidget {
 
           if (!style.enableAutoScroll) {
             final slotW = geometry.nonScrollSlotWidth;
-            final footText = geometry.footnoteText;
-            // Pan footnote layout matches [SyncfusionComboChart] (shared
-            // [ChartPanFootnoteColumn]).
-            var chart = showPanFootnote
-                ? ChartPanFootnoteColumn(
-                    plot: SizedBox(
-                      width: layoutWidth,
-                      child: buildChart(
-                        context,
-                        slotW,
-                        yAxisLabelsVisible: true,
-                        xAxisLabelsVisible: true,
-                        yAxisGridVisible: true,
-                        enableInteraction: true,
-                        enableCategoryViewportPan: useCategoryViewportPan,
-                      ),
-                    ),
-                    footnoteText: footText,
-                  )
-                : sizedBarChart(
-                    layoutWidth,
-                    slotW,
-                    resolvedHeight,
-                    categoryViewportPan: useCategoryViewportPan,
-                  );
-            if (useCategoryViewportPan) {
-              final panLabel = style.categoryViewportPanSemanticsLabel?.trim();
-              final hint = style.horizontalScrollSemanticsHint?.trim();
-              if ((panLabel != null && panLabel.isNotEmpty) ||
-                  (hint != null && hint.isNotEmpty)) {
-                chart = Semantics(
-                  label: (panLabel != null && panLabel.isNotEmpty)
-                      ? panLabel
-                      : null,
-                  hint: (hint != null && hint.isNotEmpty) ? hint : null,
-                  child: chart,
-                );
-              }
-            }
-            return chart;
+            final chart = buildCartesianNonAutoScrollLayout(
+              showPanFootnote: showPanFootnote,
+              layoutWidth: layoutWidth,
+              footnoteText: geometry.footnoteText,
+              panFootnotePlot: buildChart(
+                context,
+                slotW,
+                yAxisLabelsVisible: true,
+                xAxisLabelsVisible: true,
+                yAxisGridVisible: true,
+                enableInteraction: true,
+                enableCategoryViewportPan: useCategoryViewportPan,
+              ),
+              sizedChart: sizedBarChart(
+                layoutWidth,
+                slotW,
+                resolvedHeight,
+                categoryViewportPan: useCategoryViewportPan,
+              ),
+            );
+            return wrapCartesianCategoryViewportPanSemantics(
+              chart: chart,
+              useCategoryViewportPan: useCategoryViewportPan,
+              categoryViewportPanSemanticsLabel:
+                  style.categoryViewportPanSemanticsLabel,
+              horizontalScrollSemanticsHint:
+                  style.horizontalScrollSemanticsHint,
+            );
           }
 
           final plot = geometry.resolveScrollPlot(

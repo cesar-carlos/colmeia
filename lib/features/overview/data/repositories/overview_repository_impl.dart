@@ -208,6 +208,10 @@ class OverviewRepositoryImpl implements OverviewRepository {
         final userRankingRowsByAgentId = batchUserRankingsOverride == null
             ? null
             : _sectionMapper.userRankingRowsByAgentId(batchResults);
+        final mainSectionFailure = _sectionMapper.sectionFailure(
+          batchResults,
+          (result) => result.mainFailure,
+        );
         final monthlySectionFailure = _sectionMapper.sectionFailure(
           batchResults,
           (result) => result.monthlyFailure,
@@ -329,6 +333,10 @@ class OverviewRepositoryImpl implements OverviewRepository {
               loaded.resolution.hubPresenceOnlineAgentIdsSnapshot,
           userRankingsOverride: batchUserRankingsOverride,
           userRankingRowsByAgentId: userRankingRowsByAgentId,
+          agentRankingsLoadFailed: mainSectionFailure.loadFailed,
+          agentRankingsLoadFailure: mainSectionFailure.failure,
+          userRankingsLoadFailed: mainSectionFailure.loadFailed,
+          userRankingsLoadFailure: mainSectionFailure.failure,
         );
 
         if (loaded.isFinal) {

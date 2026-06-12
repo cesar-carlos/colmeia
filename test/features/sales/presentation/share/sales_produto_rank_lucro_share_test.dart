@@ -53,7 +53,7 @@ void main() {
 
     expect(metadata.title, l10n.salesProdutoRankLucroChartTitle);
     expect(metadata.subject, l10n.salesProdutoRankLucroChartTitle);
-    expect(metadata.subtitle, '01/05/2026 â€“ 31/05/2026');
+    expect(metadata.subtitle, isNull);
     expect(
       metadata.tableData?.headers,
       <String>[

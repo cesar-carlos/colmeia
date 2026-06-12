@@ -3,6 +3,7 @@ import 'package:colmeia/core/network/auth_request_options.dart';
 import 'package:colmeia/features/auth/data/models/auth_session_model.dart';
 import 'package:colmeia/features/auth/data/models/client_change_password_request_dto.dart';
 import 'package:colmeia/features/auth/data/models/client_login_response_dto.dart';
+import 'package:colmeia/features/auth/data/models/client_me_response_dto.dart';
 import 'package:colmeia/features/auth/data/models/client_password_recovery_request_accepted_dto.dart';
 import 'package:colmeia/features/auth/data/models/client_password_recovery_request_dto.dart';
 import 'package:colmeia/features/auth/data/models/client_password_recovery_reset_request_dto.dart';
@@ -18,8 +19,8 @@ import 'package:colmeia/features/auth/data/models/login_request_dto.dart';
 import 'package:colmeia/features/auth/domain/entities/client_password_recovery_status.dart';
 import 'package:colmeia/features/auth/domain/entities/client_registration_status.dart';
 import 'package:colmeia/features/auth/domain/entities/client_registration_submission.dart';
+import 'package:colmeia/features/user_context/data/mappers/client_auth_user_profile_mapper.dart';
 import 'package:colmeia/features/user_context/domain/entities/user_profile.dart';
-import 'package:colmeia/shared/data/identity/client_me_response_dto.dart';
 import 'package:dio/dio.dart';
 
 abstract interface class AuthRemoteDataSource {
@@ -240,7 +241,9 @@ class ApiAuthRemoteDataSource implements AuthRemoteDataSource {
       throw const FormatException('Current client profile response is null');
     }
 
-    return ClientMeResponseDto.fromJson(responseBody).user.toUserProfile();
+    return userProfileFromClientAuthUserDto(
+      ClientMeResponseDto.fromJson(responseBody).user,
+    );
   }
 
   @override
@@ -265,7 +268,9 @@ class ApiAuthRemoteDataSource implements AuthRemoteDataSource {
       throw const FormatException('Updated client profile response is null');
     }
 
-    return ClientMeResponseDto.fromJson(responseBody).user.toUserProfile();
+    return userProfileFromClientAuthUserDto(
+      ClientMeResponseDto.fromJson(responseBody).user,
+    );
   }
 
   @override
@@ -289,7 +294,9 @@ class ApiAuthRemoteDataSource implements AuthRemoteDataSource {
       throw const FormatException('Upload thumbnail response is null');
     }
 
-    return ClientMeResponseDto.fromJson(responseBody).user.toUserProfile();
+    return userProfileFromClientAuthUserDto(
+      ClientMeResponseDto.fromJson(responseBody).user,
+    );
   }
 
   @override

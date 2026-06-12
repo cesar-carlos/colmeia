@@ -957,6 +957,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get chartShareTooltip => 'Compartilhar gráfico';
 
   @override
+  String get chartShareDefaultTitle => 'Gráfico';
+
+  @override
   String get chartShareSuccess => 'Gráfico compartilhado';
 
   @override
@@ -5999,6 +6002,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get chartShareTooltip => 'Compartilhar gráfico';
+
+  @override
+  String get chartShareDefaultTitle => 'Gráfico';
 
   @override
   String get chartShareSuccess => 'Gráfico compartilhado';

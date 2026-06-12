@@ -1,10 +1,10 @@
-import 'package:colmeia/shared/charts/metric_toggle_comparison_bar_fullscreen_body.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_actions.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
+import 'package:colmeia/shared/widgets/charts/metric_toggle_comparison_bar_fullscreen_body.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
 
@@ -89,9 +89,17 @@ class MetricToggleComparisonBarCard<T> extends StatefulWidget {
   final String Function(T item) labelBuilder;
   final num Function(T item, MetricToggleComparisonBarMetric metric)
   valueBuilder;
-  final String Function(T item, num value, MetricToggleComparisonBarMetric metric)
+  final String Function(
+    T item,
+    num value,
+    MetricToggleComparisonBarMetric metric,
+  )
   tooltipLabelBuilder;
-  final String Function(T item, num value, MetricToggleComparisonBarMetric metric)
+  final String Function(
+    T item,
+    num value,
+    MetricToggleComparisonBarMetric metric,
+  )
   dataLabelBuilder;
   final MetricToggleComparisonBarStyleBuilder styleBuilder;
   final ChartShareMetadata Function(MetricToggleComparisonBarMetric metric)
@@ -122,8 +130,7 @@ class _MetricToggleComparisonBarCardState<T>
   MetricToggleComparisonBarMetric _metric =
       MetricToggleComparisonBarMetric.count;
 
-  List<T> _chartItems() =>
-      widget.filterItems(widget.items, _metric);
+  List<T> _chartItems() => widget.filterItems(widget.items, _metric);
 
   Widget _metricToggle({
     required MetricToggleComparisonBarMetric value,
@@ -140,8 +147,7 @@ class _MetricToggleComparisonBarCardState<T>
   @override
   Widget build(BuildContext context) {
     final chartItems = _chartItems();
-    final showEmptyPlaceholder =
-        widget.items.isEmpty || chartItems.isEmpty;
+    final showEmptyPlaceholder = widget.items.isEmpty || chartItems.isEmpty;
     final shareActions = ChartShareActions(
       context: context,
       captureKey: _shareKey,
@@ -187,8 +193,7 @@ class _MetricToggleComparisonBarCardState<T>
                         fullscreenMetric,
                         heightOverride: availableChartHeight,
                       );
-                      final landscapeOverride =
-                          widget.landscapeStyleOverride;
+                      final landscapeOverride = widget.landscapeStyleOverride;
                       if (landscapeOverride != null &&
                           isLandscapeChartViewport(context)) {
                         style = landscapeOverride(
@@ -201,8 +206,8 @@ class _MetricToggleComparisonBarCardState<T>
                         isLoading: isLoadingSnapshot,
                         plotFloorAccessibilityNotice:
                             widget.plotFloorAccessibilityNotice,
-                        extremeSpreadAccessibilityNotice: widget
-                            .extremeSpreadAccessibilityNotice,
+                        extremeSpreadAccessibilityNotice:
+                            widget.extremeSpreadAccessibilityNotice,
                         labelBuilder: widget.labelBuilder,
                         valueBuilder: (item) =>
                             widget.valueBuilder(item, fullscreenMetric),
@@ -258,8 +263,7 @@ class _MetricToggleComparisonBarCardState<T>
         dataLabelBuilder: (item, value) =>
             widget.dataLabelBuilder(item, value, _metric),
         style: widget.styleBuilder(context, _metric),
-        emptyPlaceholder:
-            showEmptyPlaceholder ? widget.emptyPlaceholder : null,
+        emptyPlaceholder: showEmptyPlaceholder ? widget.emptyPlaceholder : null,
       ),
     );
 
@@ -267,8 +271,7 @@ class _MetricToggleComparisonBarCardState<T>
       label: widget.semanticsLabelForMetric(_metric),
       hint: widget.semanticsHint,
       value:
-          widget.semanticsValue ??
-          widget.semanticsValueBuilder?.call(_metric),
+          widget.semanticsValue ?? widget.semanticsValueBuilder?.call(_metric),
       child: semanticsChild,
     );
   }

@@ -1,7 +1,7 @@
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_resolution.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target_selection_scope.dart';
-import 'package:colmeia/shared/ports/agent_query_target_resolution_cache.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_resolution_cache.dart';
 
 final class _AgentQueryTargetResolutionCacheEntry {
   const _AgentQueryTargetResolutionCacheEntry({

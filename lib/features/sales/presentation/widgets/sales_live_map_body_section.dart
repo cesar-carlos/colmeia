@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_diagnostic.dart';
+import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_error_panel_factory.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
 import 'package:colmeia/features/sales/presentation/rules/sales_live_map_presentation_rules.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_operational_fingerprint.dart';
@@ -16,7 +17,6 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_kpi_g
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
-import 'package:colmeia/shared/widgets/agent_query_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
@@ -138,7 +138,7 @@ class _SalesLiveMapBodyStatusContent extends StatelessWidget {
           Padding(
             padding: EdgeInsets.only(top: tokens.gapMd),
             child: result!.loadFailure != null
-                ? AgentQueryErrorPanel.fromFailure(
+                ? AgentQueryErrorPanelFactory.fromFailure(
                     result.loadFailure!,
                     l10n,
                     detailsBody: agentQueryFailureTechnicalDetailsBody(

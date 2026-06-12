@@ -1,11 +1,12 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
-import 'package:colmeia/features/overview/presentation/widgets/overview_monthly_parcels_combo_chart.dart';
+import 'package:colmeia/features/overview/presentation/monthly_parcels_combo_chart_strings.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart'
     show formatComparisonBarXAxisLabelWrapped;
 import 'package:colmeia/shared/widgets/charts/chart_export_capture.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
@@ -41,6 +42,7 @@ ChartShareMetadata buildOverviewMonthlyParcelsComboShareMetadata({
   required String subtitle,
   required NumberFormat decimalFormat,
   required NumberFormat compactCurrencyFormat,
+  ChartShareExportHeaderContext? exportHeaderContext,
 }) {
   final salesHeader =
       copy?.seriesSalesLabel ?? l10n.overviewMonthlyParcelsSalesSeriesLabel;
@@ -71,7 +73,10 @@ ChartShareMetadata buildOverviewMonthlyParcelsComboShareMetadata({
   return ChartShareMetadata(
     title: title,
     subtitle: subtitle,
-    filterSummary: tableLimit.truncationNotice,
+    filterSummary: buildChartSharePdfFilterSummary(
+      exportHeaderContext: exportHeaderContext,
+      truncationNotice: tableLimit.truncationNotice,
+    ),
     tableData: tableLimit.tableData,
     pdfOrientation: ChartSharePdfOrientation.landscape,
     chartExportBuilder: points.isEmpty

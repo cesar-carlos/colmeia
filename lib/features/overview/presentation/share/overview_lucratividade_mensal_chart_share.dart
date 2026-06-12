@@ -3,6 +3,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_ve
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_export_capture.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
@@ -37,6 +38,7 @@ ChartShareMetadata buildOverviewLucratividadeMensalChartShareMetadata({
   required List<ResumoProdutoVendaLucratividadeMensalRow> sortedPoints,
   required AppComboChartStyle exportBaseStyle,
   required OverviewLucratividadeMensalComboShareSeries series,
+  ChartShareExportHeaderContext? exportHeaderContext,
 }) {
   final tableLimit = applyChartShareTableRowLimit(
     tableData: ChartShareTableData(
@@ -63,7 +65,10 @@ ChartShareMetadata buildOverviewLucratividadeMensalChartShareMetadata({
   return ChartShareMetadata(
     title: l10n.overviewLucratividadeMensalTitle,
     subtitle: l10n.overviewLucratividadeMensalSubtitle,
-    filterSummary: tableLimit.truncationNotice,
+    filterSummary: buildChartSharePdfFilterSummary(
+      exportHeaderContext: exportHeaderContext,
+      truncationNotice: tableLimit.truncationNotice,
+    ),
     tableData: tableLimit.tableData,
     pdfOrientation: ChartSharePdfOrientation.landscape,
     chartExportBuilder: sortedPoints.isEmpty

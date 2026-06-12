@@ -1,5 +1,5 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
-import 'package:colmeia/features/agent_queries/presentation/widgets/dashboard_lucratividade_percent_metrics.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/lucratividade_percent_metric.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.dart';
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_bar_chart_preferences.dart';
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_point_percent_metric.dart';
@@ -11,6 +11,7 @@ import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_dashboard_comparison_bar_chart_preset.dart';
 import 'package:colmeia/shared/widgets/charts/chart_export_capture.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
@@ -29,6 +30,7 @@ ChartShareMetadata buildSalesMonthlyPnlBarChartShareMetadata({
   required NumberFormat primaryMoney,
   required Color gridLineColor,
   required NumberFormat percentRatioFormat,
+  ChartShareExportHeaderContext? exportHeaderContext,
 }) {
   final isPercent =
       session.displayMode == SalesMonthlyPnlBarDisplayMode.percent;
@@ -59,7 +61,10 @@ ChartShareMetadata buildSalesMonthlyPnlBarChartShareMetadata({
   return ChartShareMetadata(
     title: l10n.salesMonthlyPnlBarChartTitle,
     subtitle: l10n.salesMonthlyPnlBarChartSubtitle,
-    filterSummary: tableLimit.truncationNotice,
+    filterSummary: buildChartSharePdfFilterSummary(
+      exportHeaderContext: exportHeaderContext,
+      truncationNotice: tableLimit.truncationNotice,
+    ),
     tableData: tableLimit.tableData,
     pdfOrientation: ChartSharePdfOrientation.landscape,
     chartExportBuilder: points.isEmpty || !isPercent
@@ -79,6 +84,7 @@ ChartShareMetadata buildSalesMonthlyPnlBarChartShareMetadata({
 ChartShareMetadata buildSalesMonthlyPnlLineChartShareMetadata({
   required AppLocalizations l10n,
   required List<SalesMonthlyPnlPoint> points,
+  ChartShareExportHeaderContext? exportHeaderContext,
 }) {
   final tableLimit = applyChartShareTableRowLimit(
     tableData: ChartShareTableData(
@@ -103,7 +109,10 @@ ChartShareMetadata buildSalesMonthlyPnlLineChartShareMetadata({
   return ChartShareMetadata(
     title: l10n.salesMonthlyPnlChartTitle,
     subtitle: l10n.salesMonthlyPnlChartSubtitle,
-    filterSummary: tableLimit.truncationNotice,
+    filterSummary: buildChartSharePdfFilterSummary(
+      exportHeaderContext: exportHeaderContext,
+      truncationNotice: tableLimit.truncationNotice,
+    ),
     tableData: tableLimit.tableData,
     pdfOrientation: ChartSharePdfOrientation.landscape,
     chartExportBuilder: points.isEmpty

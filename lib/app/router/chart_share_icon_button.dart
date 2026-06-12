@@ -16,10 +16,11 @@ Widget buildChartFullscreenShareTrailing({
   String? subtitle,
   String? filterSummary,
 }) {
+  final l10n = AppLocalizations.of(context);
   final resolved =
       metadata ??
       ChartShareMetadata(
-        title: subject ?? 'chart',
+        title: subject ?? l10n.chartShareDefaultTitle,
         subtitle: subtitle,
         filterSummary: filterSummary,
         subject: subject,
@@ -111,7 +112,7 @@ class _ChartShareIconButtonState extends State<ChartShareIconButton> {
     final l10n = AppLocalizations.of(context);
     final canPress = widget.enabled && !_inProgress;
 
-    return IconButton(
+    final action = IconButton(
       onPressed: canPress ? () => unawaited(_onPressed()) : null,
       tooltip: l10n.chartShareTooltip,
       icon: _inProgress
@@ -124,6 +125,11 @@ class _ChartShareIconButtonState extends State<ChartShareIconButton> {
               ),
             )
           : Icon(chartShareActionIcon()),
+    );
+    return Semantics(
+      button: true,
+      label: l10n.chartShareTooltip,
+      child: action,
     );
   }
 }

@@ -936,6 +936,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chartShareTooltip => 'Share chart';
 
   @override
+  String get chartShareDefaultTitle => 'Chart';
+
+  @override
   String get chartShareSuccess => 'Chart shared';
 
   @override

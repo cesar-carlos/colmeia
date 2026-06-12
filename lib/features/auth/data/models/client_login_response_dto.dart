@@ -1,6 +1,6 @@
 import 'package:colmeia/features/auth/data/models/auth_session_model.dart';
 import 'package:colmeia/features/auth/data/models/client_auth_tokens_dto.dart';
-import 'package:colmeia/shared/data/identity/client_auth_user_dto.dart';
+import 'package:colmeia/features/auth/data/models/client_auth_user_dto.dart';
 import 'package:colmeia/shared/data/json/wrapped_json_reader.dart';
 
 class ClientLoginResponseDto {

@@ -445,6 +445,8 @@
   "@chartOpenFullscreenTooltip": {"description": "Tooltip and semantics label for the chart fullscreen action button."},
   "chartShareTooltip": "Share chart",
   "@chartShareTooltip": {"description": "Tooltip and semantics label for the chart share action button."},
+  "chartShareDefaultTitle": "Chart",
+  "@chartShareDefaultTitle": {"description": "Fallback PDF title when chart share metadata has no subject or title."},
   "chartShareSuccess": "Chart shared",
   "@chartShareSuccess": {"description": "SnackBar shown when chart PDF export and share complete successfully."},
   "chartShareFailed": "Could not share chart. Try again.",

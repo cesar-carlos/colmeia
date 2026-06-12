@@ -4,9 +4,8 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
 import 'package:intl/intl.dart';
 
-/// Column definitions for CSV export of the ranking faturamento grid.
 List<AppReportColumn<RankingProdutosFaturamentoRow>>
-rankingProdutosFaturamentoGridColumns(AppLocalizations l10n) {
+rankingProdutosFaturamentoShareGridColumns(AppLocalizations l10n) {
   final percentFormat = NumberFormat('#,##0.0', 'pt_BR');
 
   return <AppReportColumn<RankingProdutosFaturamentoRow>>[

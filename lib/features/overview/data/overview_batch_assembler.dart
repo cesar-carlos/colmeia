@@ -75,6 +75,10 @@ class OverviewBatchAssembler {
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     List<OverviewUserRanking>? userRankingsOverride,
     Map<String, List<ResumoParcelaPorUsuarioRow>>? userRankingRowsByAgentId,
+    bool agentRankingsLoadFailed = false,
+    AppFailure? agentRankingsLoadFailure,
+    bool userRankingsLoadFailed = false,
+    AppFailure? userRankingsLoadFailure,
   }) {
     final paymentBuckets = <String, _PaymentMethodAggregate>{};
     final userBuckets = <String, _UserAggregate>{};
@@ -204,6 +208,10 @@ class OverviewBatchAssembler {
       paymentMethods: paymentMethods,
       agentRankings: agentRankings,
       userRankings: userRankings,
+      agentRankingsLoadFailed: agentRankingsLoadFailed,
+      agentRankingsLoadFailure: agentRankingsLoadFailure,
+      userRankingsLoadFailed: userRankingsLoadFailed,
+      userRankingsLoadFailure: userRankingsLoadFailure,
       monthlyParcelTrend: monthlyParcelTrend,
       monthlyParcelTrendLoadFailed: monthlyParcelTrendLoadFailed,
       monthlyParcelTrendLoadFailure: monthlyParcelTrendLoadFailure,

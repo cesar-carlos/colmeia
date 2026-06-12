@@ -1,9 +1,11 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_user_sales_trend_point.dart';
+import 'package:colmeia/features/overview/presentation/share/overview_chart_share_export_filter.dart';
 import 'package:colmeia/features/overview/presentation/share/overview_weekday_user_sales_trend_share.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_chart_load_failure_helpers.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_weekday_user_grouped_bar_chart.dart';
+import 'package:colmeia/features/overview/presentation/widgets/overview_weekday_user_sales_trend_chart_export.dart';
 import 'package:colmeia/features/overview/presentation/widgets/weekday_user_grouped_chart_data.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/charts/daily_sales_weekday_labels.dart';
@@ -13,6 +15,7 @@ import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart'
 import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_actions.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/charts/metric_toggle_comparison_bar_card.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -27,10 +30,12 @@ class OverviewWeekdayUserSalesTrendChart extends StatefulWidget {
     this.onViewAgentFailureDetails,
     this.onRequestFullscreen,
     this.onRequestShare,
+    this.exportHeaderContext,
     super.key,
   });
 
   final AppLocalizations l10n;
+  final ChartShareExportHeaderContext? exportHeaderContext;
   final List<OverviewWeekdayUserSalesTrendPoint> points;
   final bool loadFailed;
   final AppFailure? loadFailure;
@@ -159,14 +164,41 @@ class _OverviewWeekdayUserSalesTrendChartState
       amountMetricLabel: l10n.overviewWeekdayMetricSalesAmountLabel,
     );
 
+    final groupedModel = showEmptyPlaceholder
+        ? null
+        : buildWeekdayUserGroupedChartModel(
+            points: chartPoints,
+            l10n: l10n,
+            useSalesCount: isSalesCount,
+          );
+    final seriesTruncationNotice =
+        groupedModel != null && groupedModel.combinedRemainingUsers
+        ? l10n.overviewWeekdayUserGroupedTruncationFootnote(
+            kWeekdayUserGroupedMaxSeries - 1,
+            l10n.overviewWeekdayUserGroupedOthersLabel,
+          )
+        : null;
+
     final metadata = buildOverviewWeekdayUserSalesTrendShareMetadata(
       l10n: l10n,
-      tokens: tokens,
       points: widget.points,
-      chartPoints: chartPoints,
       isSalesCount: isSalesCount,
       title: chartTitle,
       salesCountFormat: salesCountFormat,
+      exportHeaderContext: overviewWeekdayChartShareExportHeaderContext(
+        base: widget.exportHeaderContext,
+        l10n: l10n,
+        isSalesCountMetric: isSalesCount,
+      ),
+      seriesTruncationNotice: seriesTruncationNotice,
+      chartExportBuilder: buildOverviewWeekdayUserGroupedChartExportBuilder(
+        model: groupedModel,
+        l10n: l10n,
+        tokens: tokens,
+        isSalesCount: isSalesCount,
+        title: chartTitle,
+        subtitle: l10n.overviewWeekdayUserSalesSubtitle,
+      ),
     );
     final shareActions = ChartShareActions(
       context: context,

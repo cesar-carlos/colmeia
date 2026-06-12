@@ -22,4 +22,20 @@ class AppGroupedColumnChartLayout {
   static const double defaultCategorySlotWidth = 72;
   static const double defaultHorizontalPadding = 24;
   static const double defaultMinPlotWidth = 560;
+
+  /// Logical-pixel floor per bar in clustered grouped charts (weekday × user).
+  static const double clusteredPerBarSlot = 18;
+
+  /// Minimum category width for clustered charts with several series.
+  static const double clusteredMinCategoryWidthFloor = 88;
+
+  static const int defaultCartesianAnimationMs = 350;
+
+  static double clusteredCategorySlotWidth(int seriesCount) {
+    final count = seriesCount < 1 ? 1 : seriesCount;
+    final perCategory = count * clusteredPerBarSlot;
+    return perCategory < clusteredMinCategoryWidthFloor
+        ? clusteredMinCategoryWidthFloor
+        : perCategory;
+  }
 }

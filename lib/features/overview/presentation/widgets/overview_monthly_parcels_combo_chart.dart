@@ -1,6 +1,7 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
+import 'package:colmeia/features/overview/presentation/monthly_parcels_combo_chart_strings.dart';
 import 'package:colmeia/features/overview/presentation/share/overview_monthly_parcels_combo_chart_share.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_chart_load_failure_helpers.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -11,42 +12,12 @@ import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart'
 import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_actions.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
-
-/// Optional copy for [OverviewMonthlyParcelsComboChart] outside the overview
-/// (e.g. Sales hub) so titles do not imply multi-branch scope.
-@immutable
-class MonthlyParcelsComboChartStrings {
-  const MonthlyParcelsComboChartStrings({
-    required this.chartTitle,
-    required this.subtitleWhenSalesPrimary,
-    required this.subtitleWhenValuePrimary,
-    required this.switchSalesLabel,
-    required this.switchParcelValueLabel,
-    required this.seriesSalesLabel,
-    required this.seriesParcelAmountLabel,
-    required this.emptyMessage,
-    required this.loadFailedMessage,
-    required this.semanticsWhenSalesPrimary,
-    required this.semanticsWhenValuePrimary,
-  });
-
-  final String chartTitle;
-  final String subtitleWhenSalesPrimary;
-  final String subtitleWhenValuePrimary;
-  final String switchSalesLabel;
-  final String switchParcelValueLabel;
-  final String seriesSalesLabel;
-  final String seriesParcelAmountLabel;
-  final String emptyMessage;
-  final String loadFailedMessage;
-  final String semanticsWhenSalesPrimary;
-  final String semanticsWhenValuePrimary;
-}
 
 /// Last-12-months parcel trend (bar + line) with a sales vs parcel-value
 /// toggle.
@@ -65,10 +36,12 @@ class OverviewMonthlyParcelsComboChart extends StatefulWidget {
     this.isLoading = false,
     this.onRequestFullscreen,
     this.onRequestShare,
+    this.exportHeaderContext,
     super.key,
   });
 
   final AppLocalizations l10n;
+  final ChartShareExportHeaderContext? exportHeaderContext;
   final List<OverviewMonthlyParcelPoint> points;
   final bool loadFailed;
   final AppFailure? loadFailure;
@@ -328,6 +301,7 @@ class _OverviewMonthlyParcelsComboChartState
       subtitle: shareSubtitle,
       decimalFormat: _decimalFormat,
       compactCurrencyFormat: _compactCurrencyFormat,
+      exportHeaderContext: widget.exportHeaderContext,
     );
     final shareActions = ChartShareActions(
       context: context,

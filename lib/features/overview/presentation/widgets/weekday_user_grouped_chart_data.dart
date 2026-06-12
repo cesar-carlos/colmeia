@@ -4,6 +4,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_weekday_user_
 import 'package:colmeia/features/overview/domain/overview_weekday_display_order.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/charts/daily_sales_weekday_labels.dart';
+import 'package:colmeia/shared/widgets/charts/app_grouped_column_chart.dart' show AppGroupedColumnChart;
 import 'package:colmeia/shared/widgets/charts/comparison_bar_plot_floor.dart';
 
 /// One cell in the weekday × user matrix for grouped column charts.
@@ -43,6 +44,34 @@ class WeekdayUserGroupedChartModel {
 
 /// Maximum simultaneous series (users); remainder are summed into \"Others\".
 const int kWeekdayUserGroupedMaxSeries = 8;
+
+/// One weekday category row for [AppGroupedColumnChart] adapters.
+class WeekdayUserGroupedCategory {
+  const WeekdayUserGroupedCategory({
+    required this.label,
+    required this.cells,
+  });
+
+  final String label;
+  final List<WeekdayUserGroupedBarDatum> cells;
+}
+
+List<WeekdayUserGroupedCategory> weekdayUserGroupedCategories(
+  WeekdayUserGroupedChartModel model,
+) {
+  if (model.weekdayCategoryLabels.isEmpty || model.seriesData.isEmpty) {
+    return const <WeekdayUserGroupedCategory>[];
+  }
+  final dayCount = model.weekdayCategoryLabels.length;
+  return List<WeekdayUserGroupedCategory>.generate(dayCount, (dayIndex) {
+    return WeekdayUserGroupedCategory(
+      label: model.weekdayCategoryLabels[dayIndex],
+      cells: [
+        for (final series in model.seriesData) series[dayIndex],
+      ],
+    );
+  }, growable: false);
+}
 
 const String _kWeekdayUserGroupedOthersSeriesKey =
     '__colmeia_weekday_user_grouped_others__';

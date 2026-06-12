@@ -1,100 +1,9 @@
 import 'package:colmeia/features/agent_queries/domain/entities/lucratividade_percent_metric.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
+import 'package:colmeia/features/agent_queries/presentation/lucratividade_percent_metric_labels.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:flutter/material.dart';
-
-export 'package:colmeia/features/agent_queries/domain/entities/lucratividade_percent_metric.dart';
-
-extension LucratividadePercentMetricOnLucratividadeRow
-    on ResumoProdutoVendaLucratividadeRow {
-  num metricBarValue(LucratividadePercentMetric metric) {
-    switch (metric) {
-      case LucratividadePercentMetric.costOverRevenue:
-        return percentualCustoSobreVenda;
-      case LucratividadePercentMetric.grossMargin:
-        return margemLucroBrutoPercent;
-      case LucratividadePercentMetric.markupOverCost:
-        return markupSobreCustoPercent;
-    }
-  }
-}
-
-extension LucratividadePercentMetricOnMensalRow
-    on ResumoProdutoVendaLucratividadeMensalRow {
-  num metricBarValue(LucratividadePercentMetric metric) {
-    switch (metric) {
-      case LucratividadePercentMetric.costOverRevenue:
-        return percentualCustoSobreVenda;
-      case LucratividadePercentMetric.grossMargin:
-        return margemLucroBrutoPercent;
-      case LucratividadePercentMetric.markupOverCost:
-        return markupSobreCustoPercent;
-    }
-  }
-}
-
-int compareLucratividadeRowsByPercentMetric(
-  ResumoProdutoVendaLucratividadeRow a,
-  ResumoProdutoVendaLucratividadeRow b,
-  LucratividadePercentMetric metric,
-) => b.metricBarValue(metric).compareTo(a.metricBarValue(metric));
-
-String lucratividadePercentMetricExplanation(
-  AppLocalizations l10n,
-  LucratividadePercentMetric metric,
-) {
-  switch (metric) {
-    case LucratividadePercentMetric.costOverRevenue:
-      return l10n.overviewLucratividadePercentHelpCostBody;
-    case LucratividadePercentMetric.grossMargin:
-      return l10n.overviewLucratividadePercentHelpGrossBody;
-    case LucratividadePercentMetric.markupOverCost:
-      return l10n.overviewLucratividadePercentHelpMarkupBody;
-  }
-}
-
-String lucratividadePercentBarSeriesLabel(
-  AppLocalizations l10n,
-  LucratividadePercentMetric metric,
-) {
-  switch (metric) {
-    case LucratividadePercentMetric.costOverRevenue:
-      return l10n.overviewLucratividadePercentSeriesCostLabel;
-    case LucratividadePercentMetric.grossMargin:
-      return l10n.overviewLucratividadePercentSeriesGrossLabel;
-    case LucratividadePercentMetric.markupOverCost:
-      return l10n.overviewLucratividadePercentSeriesMarkupLabel;
-  }
-}
-
-/// Semantics-friendly summary for the active percent metric (formula + hint).
-String lucratividadePercentMetricSemanticsLabel(
-  AppLocalizations l10n,
-  LucratividadePercentMetric metric,
-) {
-  switch (metric) {
-    case LucratividadePercentMetric.costOverRevenue:
-      return l10n.overviewLucratividadePercentSemanticsCost;
-    case LucratividadePercentMetric.grossMargin:
-      return l10n.overviewLucratividadePercentSemanticsGross;
-    case LucratividadePercentMetric.markupOverCost:
-      return l10n.overviewLucratividadePercentSemanticsMarkup;
-  }
-}
-
-String _segmentTooltip(AppLocalizations l10n, LucratividadePercentMetric m) {
-  switch (m) {
-    case LucratividadePercentMetric.costOverRevenue:
-      return l10n.overviewLucratividadePercentMetricCostTooltip;
-    case LucratividadePercentMetric.grossMargin:
-      return l10n.overviewLucratividadePercentMetricGrossTooltip;
-    case LucratividadePercentMetric.markupOverCost:
-      return l10n.overviewLucratividadePercentMetricMarkupTooltip;
-  }
-}
 
 /// Sub-selector for [LucratividadePercentMetric] plus explanation text.
 class DashboardLucratividadePercentMetricSection extends StatelessWidget {
@@ -180,7 +89,7 @@ class DashboardLucratividadePercentMetricSection extends StatelessWidget {
               AppSegmentedControlOption<LucratividadePercentMetric>(
                 value: LucratividadePercentMetric.costOverRevenue,
                 label: l10n.overviewLucratividadePercentMetricCostShort,
-                tooltip: _segmentTooltip(
+                tooltip: lucratividadePercentMetricSegmentTooltip(
                   l10n,
                   LucratividadePercentMetric.costOverRevenue,
                 ),
@@ -188,7 +97,7 @@ class DashboardLucratividadePercentMetricSection extends StatelessWidget {
               AppSegmentedControlOption<LucratividadePercentMetric>(
                 value: LucratividadePercentMetric.grossMargin,
                 label: l10n.overviewLucratividadePercentMetricGrossShort,
-                tooltip: _segmentTooltip(
+                tooltip: lucratividadePercentMetricSegmentTooltip(
                   l10n,
                   LucratividadePercentMetric.grossMargin,
                 ),
@@ -196,7 +105,7 @@ class DashboardLucratividadePercentMetricSection extends StatelessWidget {
               AppSegmentedControlOption<LucratividadePercentMetric>(
                 value: LucratividadePercentMetric.markupOverCost,
                 label: l10n.overviewLucratividadePercentMetricMarkupShort,
-                tooltip: _segmentTooltip(
+                tooltip: lucratividadePercentMetricSegmentTooltip(
                   l10n,
                   LucratividadePercentMetric.markupOverCost,
                 ),

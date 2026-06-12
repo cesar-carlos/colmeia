@@ -17,6 +17,7 @@ import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_agent_auto_refresh_mixin.dart';
+import 'package:colmeia/features/sales/presentation/share/sales_chart_share_export_filter.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_anchor_month_support.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_daily_totals_chart_copy.dart';
@@ -30,6 +31,7 @@ import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -312,6 +314,28 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
     );
   }
 
+  ChartShareExportHeaderContext _dailyTotalsExportHeaderContext(
+    AppLocalizations l10n,
+    String selectedBranchName,
+    String anchorLabel,
+  ) {
+    final rangeParameter = salesDailyTotalsRangeExportHeaderParameter(
+      l10n: l10n,
+      dailyTotalsDateRange: _dailyTotalsDateRange,
+    );
+    return buildSalesSingleAgentChartShareExportHeaderContext(
+      l10n: l10n,
+      agentName: selectedBranchName,
+      parameters: <ChartShareExportHeaderParameter>[
+        salesAnchorMonthExportHeaderParameter(
+          l10n: l10n,
+          anchorMonthLabel: anchorLabel,
+        ),
+        ?rangeParameter,
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -402,6 +426,11 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
               loadFailureMessage: _loadFailureMessage,
               isLoading: _loading && _selectedAgentId != null,
               dailySaleDateRange: _dailyTotalsDateRange,
+              exportHeaderContext: _dailyTotalsExportHeaderContext(
+                l10n,
+                selectedBranchName,
+                anchorLabel,
+              ),
               onRequestFullscreen: (context, request) =>
                   context.pushChartFullscreenFromRequest(request),
               onRequestShare: (context, request) =>

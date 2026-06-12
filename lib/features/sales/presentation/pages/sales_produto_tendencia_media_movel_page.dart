@@ -25,6 +25,7 @@ import 'package:colmeia/features/sales/presentation/async_search/sales_produto_d
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_agent_auto_refresh_mixin.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_produto_tendencia_media_movel_controller.dart';
+import 'package:colmeia/features/sales/presentation/share/sales_chart_share_export_filter.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_produto_tendencia_media_movel_share.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_produto_tendencia_media_movel_presentation_state.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_auto_refresh_section.dart';
@@ -34,7 +35,6 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tenden
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_classificacao_labels.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_filter_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_filters_sheet.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_summary_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_trend_comparison_bar_chart_style.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
@@ -42,6 +42,7 @@ import 'package:colmeia/shared/design_system/app_scroll_tokens.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_guard.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
@@ -352,37 +353,86 @@ class _SalesProdutoTendenciaMediaMovelPageState
     });
   }
 
-  String _detailsShareFilterSummary(
+  ChartShareExportHeaderContext _exportHeaderContext(
     AppLocalizations l10n,
     SalesProdutoTendenciaMediaMovelPresentationState state,
   ) {
-    final parts = <String>[
-      l10n.salesProdutoTendenciaMediaMovelFilterQuantidadeDiasValue(
-        state.quantidadeDias,
+    final selectedBranch = state.availableAgents
+        .cast<DashboardAgentOption?>()
+        .firstWhere(
+          (agent) => agent?.agentId == state.selectedAgentId,
+          orElse: () => null,
+        );
+    return buildSalesProdutoTendenciaMediaMovelChartShareExportHeaderContext(
+      l10n: l10n,
+      agentName: selectedBranch?.name ?? l10n.salesBranchPickerEmpty,
+      quantidadeDias: state.quantidadeDias,
+    );
+  }
+
+  ChartShareExportHeaderContext _detailsShareExportHeaderContext(
+    AppLocalizations l10n,
+    SalesProdutoTendenciaMediaMovelPresentationState state,
+  ) {
+    final extraParameters = <ChartShareExportHeaderParameter>[
+      ChartShareExportHeaderParameter(
+        label: l10n.salesProdutoTendenciaMediaMovelFilterSortBy,
+        value: produtoTendenciaMediaMovelSortLabel(l10n, state.sortBy),
       ),
-      l10n.salesProdutoTendenciaMediaMovelDetailsSortedBy(
-        produtoTendenciaMediaMovelSortLabel(l10n, state.sortBy),
+      ChartShareExportHeaderParameter(
+        label: l10n.salesProdutoTendenciaMediaMovelDetailsEntityLabel,
+        value: state.pageResult.totalCount.toString(),
       ),
-      '${state.pageResult.totalCount} ${l10n.salesProdutoTendenciaMediaMovelDetailsEntityLabel}',
     ];
-    if (state.searchTerm.trim().isNotEmpty) {
-      parts.add(state.searchTerm.trim());
+    final searchTerm = state.searchTerm.trim();
+    if (searchTerm.isNotEmpty) {
+      extraParameters.add(
+        ChartShareExportHeaderParameter(
+          label: l10n.salesProdutoTendenciaFilterSearch,
+          value: searchTerm,
+        ),
+      );
     }
-    if (state.classificacao != null) {
-      parts.add(
-        produtoTendenciaMediaMovelClassificacaoLabel(
-          l10n,
-          state.classificacao!,
+    final classificacao = state.classificacao;
+    if (classificacao != null) {
+      extraParameters.add(
+        ChartShareExportHeaderParameter(
+          label: l10n.salesProdutoTendenciaFilterClassification,
+          value: produtoTendenciaMediaMovelClassificacaoLabel(
+            l10n,
+            classificacao,
+          ),
         ),
       );
     }
     if (state.codGrupoProduto != null && state.grupoProdutoLabel != null) {
-      parts.add(state.grupoProdutoLabel!);
+      extraParameters.add(
+        ChartShareExportHeaderParameter(
+          label: l10n.salesProdutoTendenciaFilterGroup,
+          value: state.grupoProdutoLabel!,
+        ),
+      );
     }
     if (state.codMarca != null && state.marcaProdutoLabel != null) {
-      parts.add(state.marcaProdutoLabel!);
+      extraParameters.add(
+        ChartShareExportHeaderParameter(
+          label: l10n.salesProdutoTendenciaFilterBrand,
+          value: state.marcaProdutoLabel!,
+        ),
+      );
     }
-    return parts.join(' · ');
+    final selectedBranch = state.availableAgents
+        .cast<DashboardAgentOption?>()
+        .firstWhere(
+          (agent) => agent?.agentId == state.selectedAgentId,
+          orElse: () => null,
+        );
+    return buildSalesProdutoTendenciaMediaMovelChartShareExportHeaderContext(
+      l10n: l10n,
+      agentName: selectedBranch?.name ?? l10n.salesBranchPickerEmpty,
+      quantidadeDias: state.quantidadeDias,
+      extraParameters: extraParameters,
+    );
   }
 
   void _onChartSelected(
@@ -406,10 +456,12 @@ class _SalesProdutoTendenciaMediaMovelPageState
     final fullscreenShareKey = GlobalKey();
     final shareTitle =
         l10n.salesProdutoTendenciaMediaMovelSummaryByClassificacaoTitle;
+    final exportHeaderContext = _exportHeaderContext(l10n, state);
     final shareMetadata =
         buildSalesProdutoTendenciaMediaMovelCountShareMetadata(
           l10n: l10n,
           buckets: buckets,
+          exportHeaderContext: exportHeaderContext,
         );
     unawaited(
       context.pushChartFullscreen<void>(
@@ -468,10 +520,12 @@ class _SalesProdutoTendenciaMediaMovelPageState
     final l10n = AppLocalizations.of(context);
     final fullscreenShareKey = GlobalKey();
     final shareTitle = l10n.salesProdutoTendenciaMediaMovelSummaryByImpactTitle;
+    final exportHeaderContext = _exportHeaderContext(l10n, state);
     final shareMetadata =
         buildSalesProdutoTendenciaMediaMovelImpactShareMetadata(
           l10n: l10n,
           buckets: buckets,
+          exportHeaderContext: exportHeaderContext,
         );
     unawaited(
       context.pushChartFullscreen<void>(
@@ -581,7 +635,7 @@ class _SalesProdutoTendenciaMediaMovelPageState
           buildSalesProdutoTendenciaMediaMovelDetailsShareMetadata(
             l10n: l10n,
             rows: rows,
-            filterSummary: _detailsShareFilterSummary(l10n, state),
+            exportHeaderContext: _detailsShareExportHeaderContext(l10n, state),
           ).toShareRequest(_detailsShareKey),
         );
       },

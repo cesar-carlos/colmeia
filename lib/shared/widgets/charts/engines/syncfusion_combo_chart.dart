@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
@@ -7,12 +8,12 @@ import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
-import 'package:colmeia/shared/widgets/charts/chart_pan_footnote_column.dart';
 import 'package:colmeia/shared/widgets/charts/comparison_bar_chart_margin.dart';
 import 'package:colmeia/shared/widgets/charts/comparison_bar_plot_floor.dart';
 import 'package:colmeia/shared/widgets/charts/engines/cartesian_scroll_geometry.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
+import 'package:colmeia/shared/widgets/charts/engines/syncfusion_cartesian_viewport_layout.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
@@ -69,6 +70,7 @@ class SyncfusionComboChart<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final chartTheme = AppChartTheme.fromContext(context, preset: preset);
     final colors = Theme.of(context).appColors;
     final resolvedHeight = style.height ?? chartTheme.height;
@@ -107,7 +109,7 @@ class SyncfusionComboChart<T> extends StatelessWidget {
         context: context,
         height: resolvedHeight,
         indicatorColor: resolvedBarColor,
-        label: resolvedLoadingLabel ?? 'Loading bar and line chart…',
+        label: resolvedLoadingLabel ?? l10n.chartComboLoadingDefault,
       );
     }
 
@@ -115,7 +117,7 @@ class SyncfusionComboChart<T> extends StatelessWidget {
       return buildChartEmptyState(
         context: context,
         height: resolvedHeight,
-        message: resolvedEmptyMessage ?? 'No combined data for this view.',
+        message: resolvedEmptyMessage ?? l10n.chartComboEmptyDefault,
         placeholder: emptyPlaceholder,
       );
     }
@@ -188,12 +190,9 @@ class SyncfusionComboChart<T> extends StatelessWidget {
         annotations: barValueAnnotations,
         margin: chartMargin,
         plotAreaBorderWidth: 0,
-        zoomPanBehavior: useCategoryAxisPan
-            ? ZoomPanBehavior(
-                enablePanning: true,
-                zoomMode: ZoomMode.x,
-              )
-            : null,
+        zoomPanBehavior: buildCategoryViewportZoomPanBehavior(
+          enabled: useCategoryAxisPan,
+        ),
         onTooltipRender: enableTooltip
             ? buildSanitizingTooltipRenderer(
                 bodyResolver: style.tooltipBodyResolver,
@@ -407,48 +406,36 @@ class SyncfusionComboChart<T> extends StatelessWidget {
 
           if (!style.enableAutoScroll) {
             final slotW = geometry.nonScrollSlotWidth;
-            final footText = geometry.footnoteText;
-            // Pan footnote layout matches [SyncfusionComparisonBarChart]
-            // (shared [ChartPanFootnoteColumn]).
-            var chart = showPanFootnote
-                ? ChartPanFootnoteColumn(
-                    plot: SizedBox(
-                      width: layoutWidth,
-                      child: buildCartesian(
-                        context,
-                        layout: _ComboLayout.full,
-                        slotWidth: slotW,
-                        showLegendInChart: true,
-                        enableTooltip: true,
-                        showPrimaryYAxisLabels: true,
-                        showXAxisLabels: true,
-                        primaryYAxisGrid: true,
-                        enableCategoryViewportPan: useCategoryViewportPan,
-                      ),
-                    ),
-                    footnoteText: footText,
-                  )
-                : sizedCombo(
-                    layoutWidth,
-                    slotW,
-                    resolvedHeight,
-                    categoryViewportPan: useCategoryViewportPan,
-                  );
-            if (useCategoryViewportPan) {
-              final panLabel = style.categoryViewportPanSemanticsLabel?.trim();
-              final hint = style.horizontalScrollSemanticsHint?.trim();
-              if ((panLabel != null && panLabel.isNotEmpty) ||
-                  (hint != null && hint.isNotEmpty)) {
-                chart = Semantics(
-                  label: (panLabel != null && panLabel.isNotEmpty)
-                      ? panLabel
-                      : null,
-                  hint: (hint != null && hint.isNotEmpty) ? hint : null,
-                  child: chart,
-                );
-              }
-            }
-            return chart;
+            final chart = buildCartesianNonAutoScrollLayout(
+              showPanFootnote: showPanFootnote,
+              layoutWidth: layoutWidth,
+              footnoteText: geometry.footnoteText,
+              panFootnotePlot: buildCartesian(
+                context,
+                layout: _ComboLayout.full,
+                slotWidth: slotW,
+                showLegendInChart: true,
+                enableTooltip: true,
+                showPrimaryYAxisLabels: true,
+                showXAxisLabels: true,
+                primaryYAxisGrid: true,
+                enableCategoryViewportPan: useCategoryViewportPan,
+              ),
+              sizedChart: sizedCombo(
+                layoutWidth,
+                slotW,
+                resolvedHeight,
+                categoryViewportPan: useCategoryViewportPan,
+              ),
+            );
+            return wrapCartesianCategoryViewportPanSemantics(
+              chart: chart,
+              useCategoryViewportPan: useCategoryViewportPan,
+              categoryViewportPanSemanticsLabel:
+                  style.categoryViewportPanSemanticsLabel,
+              horizontalScrollSemanticsHint:
+                  style.horizontalScrollSemanticsHint,
+            );
           }
 
           final plot = geometry.resolveScrollPlot(

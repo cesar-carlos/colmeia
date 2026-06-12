@@ -1,19 +1,21 @@
-import 'dart:math' as math;
-
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
+import 'package:colmeia/shared/widgets/charts/engines/syncfusion_region_map_chart_placeholder_states.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_region_map_chart_widgets.dart';
+import 'package:colmeia/shared/widgets/charts/engines/syncfusion_region_map_marker_builder.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_region_map_marker_overlay_coordinator.dart';
+import 'package:colmeia/shared/widgets/charts/engines/syncfusion_region_map_pointer_wheel_policy.dart';
+import 'package:colmeia/shared/widgets/charts/engines/syncfusion_region_map_region_selection_handler.dart';
+import 'package:colmeia/shared/widgets/charts/engines/syncfusion_region_map_semantics.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_region_map_shape_source_cache.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_region_map_surface_lifecycle.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_region_map_viewport_coordinator.dart';
 import 'package:colmeia/shared/widgets/charts/region_map_marker_overlay_policy.dart';
 import 'package:colmeia/shared/widgets/charts/region_map_viewport_sync_policy.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_maps/maps.dart';
@@ -209,22 +211,10 @@ class _SyncfusionRegionMapChartState<T>
     );
   }
 
-  bool get _isPointerWheelZoomEnabled {
-    if (!_viewportCoordinator.isZoomPanEnabled) {
-      return false;
-    }
-    if (kIsWeb) {
-      return true;
-    }
-    return switch (defaultTargetPlatform) {
-      TargetPlatform.linux ||
-      TargetPlatform.macOS ||
-      TargetPlatform.windows => true,
-      TargetPlatform.android ||
-      TargetPlatform.fuchsia ||
-      TargetPlatform.iOS => false,
-    };
-  }
+  bool get _isPointerWheelZoomEnabled =>
+      SyncfusionRegionMapPointerWheelPolicy.isEnabled(
+        zoomPanEnabled: _viewportCoordinator.isZoomPanEnabled,
+      );
 
   bool get _isPreferredViewportSuppressed =>
       widget.viewportController?.suppressPreferredViewport ?? false;
@@ -246,95 +236,48 @@ class _SyncfusionRegionMapChartState<T>
     );
     final colors = Theme.of(context).appColors;
     final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-    final resolvedHeight = widget.style.height ?? chartTheme.height;
-
-    final mapBackground = Theme.of(
-      context,
-    ).colorScheme.surfaceContainerLow.withValues(alpha: 0.5);
-    final mapBorderRadius = BorderRadius.circular(tokens.cardRadius);
+    final chrome = resolveSyncfusionRegionMapChrome(
+      context: context,
+      chartTheme: chartTheme,
+      styleHeight: widget.style.height,
+    );
+    final resolvedHeight = chrome.height;
+    final mapBackground = chrome.background;
+    final mapBorderRadius = chrome.borderRadius;
 
     if (widget.isLoading) {
-      final loadingLabel =
-          widget.style.mapLoadingMessage ?? l10n.regionMapLoadingMessage;
-      return SyncfusionRegionMapSurface(
+      return buildSyncfusionRegionMapLoadingState(
+        context: context,
         height: resolvedHeight,
-        background: mapBackground,
-        borderRadius: mapBorderRadius,
-        child: Center(
-          child: Semantics(
-            label: loadingLabel,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                SizedBox(
-                  width: 36,
-                  height: 36,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3,
-                    color: chartTheme.primaryColor,
-                  ),
-                ),
-                SizedBox(height: tokens.gapMd),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: tokens.gapMd),
-                  child: Text(
-                    loadingLabel,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: colors.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        mapBackground: mapBackground,
+        mapBorderRadius: mapBorderRadius,
+        loadingLabel: resolveSyncfusionRegionMapLoadingLabel(
+          l10n: l10n,
+          styleMessage: widget.style.mapLoadingMessage,
         ),
+        indicatorColor: chartTheme.primaryColor,
       );
     }
 
     if (widget.items.isEmpty && widget.emptyPlaceholder != null) {
-      return SyncfusionRegionMapSurface(
+      return buildSyncfusionRegionMapEmptyPlaceholderState(
+        context: context,
         height: resolvedHeight,
-        background: mapBackground,
-        borderRadius: mapBorderRadius,
-        child: Center(child: widget.emptyPlaceholder),
+        mapBackground: mapBackground,
+        mapBorderRadius: mapBorderRadius,
+        placeholder: widget.emptyPlaceholder!,
       );
     }
 
     if (widget.items.isEmpty) {
-      final emptyLabel =
-          widget.style.emptyStateMessage ?? l10n.regionMapEmptyStateMessage;
-      return SyncfusionRegionMapSurface(
+      return buildSyncfusionRegionMapDefaultEmptyState(
+        context: context,
         height: resolvedHeight,
-        background: mapBackground,
-        borderRadius: mapBorderRadius,
-        child: Center(
-          child: Padding(
-            padding: EdgeInsets.all(tokens.gapMd * 2),
-            child: Semantics(
-              label: emptyLabel,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Icon(
-                    Icons.map_outlined,
-                    size: 40,
-                    color: colors.onSurfaceVariant,
-                  ),
-                  SizedBox(height: tokens.gapMd),
-                  Text(
-                    emptyLabel,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: colors.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+        mapBackground: mapBackground,
+        mapBorderRadius: mapBorderRadius,
+        emptyLabel: resolveSyncfusionRegionMapEmptyLabel(
+          l10n: l10n,
+          styleMessage: widget.style.emptyStateMessage,
         ),
       );
     }
@@ -466,12 +409,14 @@ class _SyncfusionRegionMapChartState<T>
                       child: SyncfusionMapsSemanticsBoundary(
                         excludeOnWindows:
                             widget.style.excludeNativeMapSemanticsOnWindows,
-                        label: _mapSemanticsLabel(
+                        label: SyncfusionRegionMapSemantics.mapLabel(
                           l10n: l10n,
+                          metricLabel: widget.metric.label,
                           regionCount: regionKeys.length,
                           markerCount: markerPoints.length,
                           selectedIndex: selectedIndex,
                           regionLabels: regionLabels,
+                          customSemanticsLabel: widget.style.mapSemanticsLabel,
                         ),
                         child: SfMaps(
                           key: mapSurfaceKey,
@@ -540,63 +485,15 @@ class _SyncfusionRegionMapChartState<T>
                                   ? null
                                   : (context, index) {
                                       final point = markerPoints[index];
-                                      final effectiveStyle =
-                                          point.style ?? widget.markerStyle;
-                                      final fallbackChild =
-                                          SyncfusionRegionMapMarkerShape(
-                                            style: effectiveStyle,
-                                            defaultColor:
-                                                chartTheme.primaryColor,
-                                            defaultStrokeColor: colors.surface,
-                                          );
-                                      final builtChild =
-                                          widget.markerBuilder?.call(
-                                            mapBuilderContext,
-                                            point,
-                                            index,
-                                          ) ??
-                                          fallbackChild;
-                                      final tapWrappedChild =
-                                          widget.onPointTap == null
-                                          ? builtChild
-                                          : GestureDetector(
-                                              behavior: HitTestBehavior.opaque,
-                                              onTap: () =>
-                                                  widget.onPointTap!.call(
-                                                    AppMapPointTapEvent(
-                                                      point: point,
-                                                      index: index,
-                                                    ),
-                                                  ),
-                                              child: builtChild,
-                                            );
-                                      final visualSize = effectiveStyle.size;
-                                      const minTapSize = 48.0;
-                                      final isMobilePlatform =
-                                          !kIsWeb &&
-                                          (defaultTargetPlatform ==
-                                                  TargetPlatform.android ||
-                                              defaultTargetPlatform ==
-                                                  TargetPlatform.iOS);
-                                      final markerSize = isMobilePlatform
-                                          ? math.max(minTapSize, visualSize)
-                                          : visualSize;
-                                      final markerChild =
-                                          isMobilePlatform &&
-                                              markerSize > visualSize
-                                          ? SizedBox(
-                                              width: markerSize,
-                                              height: markerSize,
-                                              child: Center(
-                                                child: tapWrappedChild,
-                                              ),
-                                            )
-                                          : tapWrappedChild;
-                                      return MapMarker(
-                                        latitude: point.latitude,
-                                        longitude: point.longitude,
-                                        size: Size.square(markerSize),
-                                        child: markerChild,
+                                      return SyncfusionRegionMapMarkerBuilder.build(
+                                        mapBuilderContext: mapBuilderContext,
+                                        point: point,
+                                        index: index,
+                                        defaultMarkerStyle: widget.markerStyle,
+                                        defaultColor: chartTheme.primaryColor,
+                                        defaultStrokeColor: colors.surface,
+                                        markerBuilder: widget.markerBuilder,
+                                        onPointTap: widget.onPointTap,
                                       );
                                     },
                               markerTooltipBuilder:
@@ -772,127 +669,21 @@ class _SyncfusionRegionMapChartState<T>
     required List<String> regionLabels,
     required List<double> metricValues,
   }) {
-    if (index < 0 || index >= widget.items.length) {
-      return;
-    }
-
-    final item = widget.items[index];
-    final regionKey = regionKeys[index];
-    final regionLabel = regionLabels[index];
-    final metricValue = metricValues[index];
-    final previousRegionKey = widget.selectedRegionKey;
-    final previousIndex = previousRegionKey == null
-        ? -1
-        : regionKeys.indexOf(previousRegionKey);
-    final previousItem = previousIndex >= 0
-        ? widget.items[previousIndex]
-        : null;
-
-    if (regionKey == widget.selectedRegionKey) {
-      final nextDrill = _nextDrillLevel(widget.currentDrillLevel);
-      final canDrillFurther =
-          widget.style.enableAutoDrillOnTap &&
-          nextDrill != null &&
-          _shouldAutoDrillTo(nextDrill);
-      if (!canDrillFurther) {
-        widget.onSelectionChanged?.call(
-          AppMapSelectionChangedEvent<T>(
-            previousRegionKey: previousRegionKey,
-            currentRegionKey: null,
-            previousItem: item,
-            metricKey: widget.metric.key,
-            metricLabel: widget.metric.label,
-          ),
-        );
-        return;
-      }
-    }
-
-    widget.onRegionTap?.call(item, regionKey);
-    widget.onRegionTapEvent?.call(
-      AppMapRegionTapEvent<T>(
-        item: item,
-        regionKey: regionKey,
-        regionLabel: regionLabel,
-        metricKey: widget.metric.key,
-        metricValue: metricValue,
-        index: index,
-      ),
+    SyncfusionRegionMapRegionSelectionHandler<T>(
+      items: widget.items,
+      metric: widget.metric,
+      selectedRegionKey: widget.selectedRegionKey,
+      currentDrillLevel: widget.currentDrillLevel,
+      style: widget.style,
+      onRegionTap: widget.onRegionTap,
+      onRegionTapEvent: widget.onRegionTapEvent,
+      onSelectionChanged: widget.onSelectionChanged,
+      onDrillDownRequested: widget.onDrillDownRequested,
+    ).handle(
+      index: index,
+      regionKeys: regionKeys,
+      regionLabels: regionLabels,
+      metricValues: metricValues,
     );
-    widget.onSelectionChanged?.call(
-      AppMapSelectionChangedEvent<T>(
-        previousRegionKey: previousRegionKey,
-        currentRegionKey: regionKey,
-        previousItem: previousItem,
-        currentItem: item,
-        metricKey: widget.metric.key,
-        metricLabel: widget.metric.label,
-      ),
-    );
-
-    if (widget.style.enableAutoDrillOnTap) {
-      final nextDrillLevel = _nextDrillLevel(widget.currentDrillLevel);
-      if (nextDrillLevel != null && _shouldAutoDrillTo(nextDrillLevel)) {
-        widget.onDrillDownRequested?.call(
-          AppMapDrillDownEvent<T>(
-            item: item,
-            regionKey: regionKey,
-            fromLevel: widget.currentDrillLevel,
-            toLevel: nextDrillLevel,
-          ),
-        );
-      }
-    }
-  }
-
-  AppMapDrillLevel? _nextDrillLevel(AppMapDrillLevel level) {
-    return switch (level) {
-      AppMapDrillLevel.region => AppMapDrillLevel.state,
-      AppMapDrillLevel.state => AppMapDrillLevel.city,
-      AppMapDrillLevel.city => AppMapDrillLevel.custom,
-      AppMapDrillLevel.custom => null,
-    };
-  }
-
-  bool _shouldAutoDrillTo(AppMapDrillLevel nextLevel) {
-    final ceiling = widget.style.autoDrillCeiling;
-    if (ceiling == null) {
-      return true;
-    }
-    return nextLevel.index <= ceiling.index;
-  }
-
-  String _mapSemanticsLabel({
-    required AppLocalizations l10n,
-    required int regionCount,
-    required int markerCount,
-    required int selectedIndex,
-    required List<String> regionLabels,
-  }) {
-    final customLabel = widget.style.mapSemanticsLabel?.trim();
-    if (customLabel != null && customLabel.isNotEmpty) {
-      return customLabel;
-    }
-
-    final buffer = StringBuffer()
-      ..write(l10n.regionMapTerritorialSemanticsLabel)
-      ..write(' ')
-      ..write(l10n.regionMapSemanticsMetricLabel(widget.metric.label))
-      ..write(' ')
-      ..write(l10n.regionMapSemanticsRegionCount(regionCount));
-    if (markerCount > 0) {
-      buffer
-        ..write(' ')
-        ..write(l10n.regionMapSemanticsMarkerCount(markerCount));
-    }
-    if (selectedIndex >= 0 && selectedIndex < regionLabels.length) {
-      buffer
-        ..write(' ')
-        ..write(
-          l10n.regionMapSemanticsSelectedRegion(regionLabels[selectedIndex]),
-        );
-    }
-
-    return buffer.toString();
   }
 }

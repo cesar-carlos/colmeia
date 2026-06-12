@@ -1,8 +1,11 @@
+import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_grouped_column_chart_series.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
+import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -31,6 +34,14 @@ class AppGroupedColumnChart<T> extends StatelessWidget {
     this.secondaryAxisTitle,
     this.primaryAxisTitle,
     this.horizontalScrollShellKey,
+    this.showLegend = true,
+    this.isLoading = false,
+    this.emptyPlaceholder,
+    this.semanticsLabel,
+    this.semanticsHint,
+    this.semanticsValue,
+    this.loadingLabel,
+    this.emptyMessage,
   });
 
   final List<T> items;
@@ -50,10 +61,33 @@ class AppGroupedColumnChart<T> extends StatelessWidget {
   final String? secondaryAxisTitle;
   final String? primaryAxisTitle;
   final Key? horizontalScrollShellKey;
+  final bool showLegend;
+  final bool isLoading;
+  final Widget? emptyPlaceholder;
+  final String? semanticsLabel;
+  final String? semanticsHint;
+  final String? semanticsValue;
+  final String? loadingLabel;
+  final String? emptyMessage;
 
   static const BorderRadius kDefaultBarBorderRadius = BorderRadius.all(
     Radius.circular(6),
   );
+
+  static double loadingBlockHeight(
+    AppThemeTokens tokens, {
+    AppChartPreset preset = AppChartPreset.standard,
+    double? styleHeight,
+  }) {
+    if (styleHeight != null) {
+      return styleHeight;
+    }
+    return switch (preset) {
+      AppChartPreset.compact => tokens.chartCompactHeight,
+      AppChartPreset.standard => tokens.chartStandardHeight,
+      AppChartPreset.explorable => tokens.chartStandardHeight,
+    };
+  }
 
   static double resolvePlotWidth({
     required double availableWidth,
@@ -73,8 +107,25 @@ class AppGroupedColumnChart<T> extends StatelessWidget {
         .clamp(minPlotWidth, double.infinity);
   }
 
+  static bool resolveNeedsHorizontalScroll({
+    required double availableWidth,
+    required int categoryCount,
+    double categorySlotWidth =
+        AppGroupedColumnChartLayout.defaultCategorySlotWidth,
+    double horizontalPadding =
+        AppGroupedColumnChartLayout.defaultHorizontalPadding,
+  }) {
+    if (categoryCount <= 0) {
+      return false;
+    }
+    final contentWidth =
+        (categoryCount * categorySlotWidth) + horizontalPadding;
+    return contentWidth > availableWidth + 0.5;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations);
     final chartTheme = AppChartTheme.fromContext(context, preset: preset);
     final theme = Theme.of(context);
     final legendStyle = theme.textTheme.bodySmall;
@@ -86,6 +137,30 @@ class AppGroupedColumnChart<T> extends StatelessWidget {
       styleDuration: animationDuration,
       defaultMs: AppChartEngineAnimationDefaults.cartesianSeriesMs,
     );
+    final resolvedLoadingLabel =
+        loadingLabel ?? l10n?.chartComparisonLoadingDefault;
+    final resolvedEmptyMessage =
+        emptyMessage ?? l10n?.chartComparisonEmptyDefault;
+
+    if (isLoading) {
+      return buildChartLoadingState(
+        context: context,
+        height: height,
+        indicatorColor: chartTheme.primaryColor,
+        label: resolvedLoadingLabel,
+        variant: ChartLoadingPlaceholderVariant.timeSeries,
+      );
+    }
+
+    if (items.isEmpty) {
+      return buildChartEmptyState(
+        context: context,
+        height: height,
+        message: resolvedEmptyMessage ?? '',
+        placeholder: emptyPlaceholder,
+        semanticsLabel: semanticsLabel,
+      );
+    }
 
     final primarySeries = series
         .where((entry) => entry.yAxis == AppGroupedColumnYAxis.primary)
@@ -100,7 +175,7 @@ class AppGroupedColumnChart<T> extends StatelessWidget {
         secondaryAxisTitle ??
         secondarySeries.map((entry) => entry.name).join(' · ');
 
-    return LayoutBuilder(
+    Widget innerChart = LayoutBuilder(
       builder: (context, constraints) {
         final plotWidth = resolvePlotWidth(
           availableWidth: constraints.maxWidth,
@@ -109,14 +184,16 @@ class AppGroupedColumnChart<T> extends StatelessWidget {
           horizontalPadding: horizontalPadding,
           minPlotWidth: minPlotWidth,
         );
-        return SizedBox(
+        final needsScroll = resolveNeedsHorizontalScroll(
+          availableWidth: constraints.maxWidth,
+          categoryCount: items.length,
+          categorySlotWidth: categorySlotWidth,
+          horizontalPadding: horizontalPadding,
+        );
+        final chart = SizedBox(
+          width: plotWidth,
           height: height,
-          width: constraints.maxWidth,
-          child: ChartHorizontalScrollShell(
-            SizedBox(
-              width: plotWidth,
-              height: height,
-              child: SfCartesianChart(
+          child: SfCartesianChart(
                 margin: EdgeInsets.zero,
                 plotAreaBorderWidth: 0,
                 onTooltipRender: buildSanitizingTooltipRenderer(),
@@ -127,7 +204,7 @@ class AppGroupedColumnChart<T> extends StatelessWidget {
                   builder: tooltipBuilder,
                 ),
                 legend: Legend(
-                  isVisible: true,
+                  isVisible: showLegend,
                   position: LegendPosition.bottom,
                   overflowMode: LegendItemOverflowMode.wrap,
                   textStyle: legendStyle,
@@ -189,12 +266,31 @@ class AppGroupedColumnChart<T> extends StatelessWidget {
                     ),
                 ],
               ),
-            ),
-            semanticsHint: horizontalScrollSemanticsHint,
-            key: horizontalScrollShellKey,
-          ),
+        );
+        return SizedBox(
+          height: height,
+          width: constraints.maxWidth,
+          child: needsScroll
+              ? ChartHorizontalScrollShell(
+                  chart,
+                  semanticsHint: horizontalScrollSemanticsHint,
+                  key: horizontalScrollShellKey,
+                )
+              : chart,
         );
       },
     );
+
+    final trimmedLabel = semanticsLabel?.trim();
+    if (trimmedLabel != null && trimmedLabel.isNotEmpty) {
+      innerChart = Semantics(
+        label: trimmedLabel,
+        hint: semanticsHint,
+        value: semanticsValue,
+        child: innerChart,
+      );
+    }
+
+    return innerChart;
   }
 }

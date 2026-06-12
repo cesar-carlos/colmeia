@@ -2,6 +2,7 @@ import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
@@ -19,6 +20,8 @@ ChartShareMetadata buildSalesLiveMapShareMetadata({
   AppBrazilStoreSalesMapMetric? exportMetric,
   AppBrazilStoreSalesMapStyle? exportStyle,
   Set<String>? filterBranchIds,
+  ChartShareExportHeaderContext? exportHeaderContext,
+  String? additionalFilterSummary,
 }) {
   final tableLimit = applyChartShareTableRowLimit(
     tableData: ChartShareTableData(
@@ -47,7 +50,11 @@ ChartShareMetadata buildSalesLiveMapShareMetadata({
   return ChartShareMetadata(
     title: title,
     subtitle: subtitle,
-    filterSummary: tableLimit.truncationNotice,
+    filterSummary: buildChartSharePdfFilterSummary(
+      exportHeaderContext: exportHeaderContext,
+      additionalFilterSummary: additionalFilterSummary,
+      truncationNotice: tableLimit.truncationNotice,
+    ),
     tableData: tableLimit.tableData,
     pdfOrientation: ChartSharePdfOrientation.landscape,
     chartExportBuilder:

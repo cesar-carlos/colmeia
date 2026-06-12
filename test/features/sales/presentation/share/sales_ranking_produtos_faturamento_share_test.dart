@@ -1,4 +1,5 @@
 import 'package:colmeia/features/agent_queries/domain/entities/ranking_produtos_faturamento_row.dart';
+import 'package:colmeia/features/sales/presentation/share/sales_chart_share_export_filter.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_ranking_produtos_faturamento_share.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
@@ -28,6 +29,25 @@ void main() {
 
   setUp(() {
     l10n = lookupAppLocalizations(const Locale('pt', 'BR'));
+  });
+
+  test('share metadata includes export header filters when provided', () {
+    final metadata = buildSalesRankingProdutosFaturamentoShareMetadata(
+      l10n: l10n,
+      branchTitle: 'Lucas Centro',
+      metricSubtitle: 'Top 15 • Faturamento',
+      displayRows: const <RankingProdutosFaturamentoRow>[],
+      exportHeaderContext:
+          buildSalesRankingProdutosFaturamentoChartShareExportHeaderContext(
+            l10n: l10n,
+            branchName: 'Lucas Centro',
+            periodLabel: '01/06/2026 – 30/06/2026',
+            quantidadeProdutos: 15,
+          ),
+    );
+
+    expect(metadata.filterSummary, contains('Lucas Centro'));
+    expect(metadata.filterSummary, contains('15'));
   });
 
   test('share metadata includes table rows without offscreen chart export', () {

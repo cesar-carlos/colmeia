@@ -73,7 +73,7 @@ ComparisonBarChartMappedPoints<T> mapComparisonBarChartPoints<T>({
       dataLabelBuilder?.call(item, value) ?? value.toString(),
     );
     tooltipLabelsOut?.add(
-      _truncateComparisonTooltipLabel(
+      truncateComparisonTooltipLabel(
         tooltipLabelBuilder!.call(item, value),
         style.tooltipLabelMaxChars,
       ),
@@ -95,7 +95,34 @@ ComparisonBarChartMappedPoints<T> mapComparisonBarChartPoints<T>({
   );
 }
 
-String? _truncateComparisonTooltipLabel(String? raw, int? maxChars) {
+/// Joins optional accessibility notices for the comparison bar chart body.
+String? buildComparisonBarChartSemanticsLabel({
+  required bool hasPlotFloor,
+  required bool hasExtremeSpread,
+  String? plotFloorAccessibilityNotice,
+  String? extremeSpreadAccessibilityNotice,
+  String? chartSemanticsCoordinatorNotice,
+}) {
+  final semanticsParts = <String>[];
+  final floorNotice = plotFloorAccessibilityNotice?.trim();
+  if (hasPlotFloor && floorNotice != null && floorNotice.isNotEmpty) {
+    semanticsParts.add(floorNotice);
+  }
+  final spreadNotice = extremeSpreadAccessibilityNotice?.trim();
+  if (hasExtremeSpread && spreadNotice != null && spreadNotice.isNotEmpty) {
+    semanticsParts.add(spreadNotice);
+  }
+  final coordinatorExtra = chartSemanticsCoordinatorNotice?.trim();
+  if (coordinatorExtra != null && coordinatorExtra.isNotEmpty) {
+    semanticsParts.add(coordinatorExtra);
+  }
+  if (semanticsParts.isEmpty) {
+    return null;
+  }
+  return semanticsParts.join(' ');
+}
+
+String? truncateComparisonTooltipLabel(String? raw, int? maxChars) {
   if (raw == null) {
     return null;
   }

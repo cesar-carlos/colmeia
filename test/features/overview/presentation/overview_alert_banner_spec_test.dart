@@ -69,7 +69,7 @@ void main() {
     expect(specs.single.message, l10n.agentSqlErrorQueryTimeout);
     expect(
       specs.single.detailsBody,
-      contains(l10n.agentSqlFailureTitleQueryTimeout),
+      contains(l10n.agentSqlErrorQueryTimeout),
     );
   });
 

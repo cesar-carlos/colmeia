@@ -161,6 +161,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_dia
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_text_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_vendedor_option.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_resolution_cache.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_resolver.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_sql_execution_eligibility_port.dart';
@@ -210,16 +211,15 @@ import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:colmeia/shared/maps/resolve_postal_address_location_use_case.dart';
-import 'package:colmeia/shared/ports/agent_query_target_resolution_cache.dart';
 import 'package:colmeia/shared/ports/agent_query_target_resolution_invalidator.dart';
 import 'package:dio/dio.dart';
 import 'package:get_it/get_it.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
-part 'injector_agent_queries_wiring.dart';
-part 'injector_agent_queries_transport.dart';
 part 'injector_agent_queries_repos.dart';
+part 'injector_agent_queries_transport.dart';
 part 'injector_agent_queries_usecases.dart';
+part 'injector_agent_queries_wiring.dart';
 
 void registerInjectorAgentQueries(GetIt getIt) {
   getIt.registerLazySingleton<ResolveCadastroFilialLocationUseCase>(

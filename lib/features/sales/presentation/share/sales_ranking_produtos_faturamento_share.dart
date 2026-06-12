@@ -1,6 +1,7 @@
 import 'package:colmeia/features/agent_queries/domain/entities/ranking_produtos_faturamento_row.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_ranking_produtos_faturamento_grid_columns.dart';
+import 'package:colmeia/features/sales/presentation/share/mappers/sales_ranking_produtos_faturamento_share_mapper.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
@@ -10,10 +11,11 @@ ChartShareMetadata buildSalesRankingProdutosFaturamentoShareMetadata({
   required String branchTitle,
   required String metricSubtitle,
   required List<RankingProdutosFaturamentoRow> displayRows,
+  ChartShareExportHeaderContext? exportHeaderContext,
 }) {
   final tableLimit = applyChartShareTableRowLimit(
     tableData: ChartShareTableData.fromReportColumns(
-      columns: rankingProdutosFaturamentoGridColumns(l10n),
+      columns: rankingProdutosFaturamentoShareGridColumns(l10n),
       rows: displayRows,
     ),
     truncationNoticeBuilder: (shownRows, totalRows) =>
@@ -23,7 +25,10 @@ ChartShareMetadata buildSalesRankingProdutosFaturamentoShareMetadata({
   return ChartShareMetadata(
     title: branchTitle,
     subtitle: metricSubtitle,
-    filterSummary: tableLimit.truncationNotice,
+    filterSummary: buildChartSharePdfFilterSummary(
+      exportHeaderContext: exportHeaderContext,
+      truncationNotice: tableLimit.truncationNotice,
+    ),
     tableData: tableLimit.tableData,
   );
 }

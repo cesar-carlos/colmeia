@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_support_context.dart';
+import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_error_panel_factory.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_produto_tendencia_controller.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_produto_tendencia_share.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_produto_tendencia_presentation_state.dart';
@@ -11,7 +12,6 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tenden
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_summary_section.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:colmeia/shared/widgets/agent_query_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -69,7 +69,7 @@ class SalesProdutoTendenciaBodySection extends StatelessWidget {
         }
 
         if (state.loadFailure != null) {
-          return AgentQueryErrorPanel.fromFailure(
+          return AgentQueryErrorPanelFactory.fromFailure(
             state.loadFailure!,
             l10n,
             onRetry: onRetryReload,

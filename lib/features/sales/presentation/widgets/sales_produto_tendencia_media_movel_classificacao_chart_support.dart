@@ -1,6 +1,6 @@
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_summary_row.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_classificacao_labels.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_summary_section.dart';
+import 'package:colmeia/features/sales/presentation/share/mappers/sales_produto_tendencia_media_movel_share_mapper.dart';
+import 'package:colmeia/features/sales/presentation/share/sales_produto_tendencia_media_movel_share.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_trend_comparison_bar_chart_style.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
@@ -61,42 +61,6 @@ Color salesProdutoTendenciaMediaMovelClassificacaoColor(
     'ESTAVEL' => colors.outline,
     _ => colors.primary,
   };
-}
-
-String salesProdutoTendenciaMediaMovelClassificacaoOneLineLegend(
-  AppLocalizations l10n,
-) {
-  return l10n.salesProdutoTendenciaMediaMovelSummaryClassificacaoLegend;
-}
-
-String salesProdutoTendenciaMediaMovelClassificacaoDescription(
-  AppLocalizations l10n,
-  String classificacao,
-) {
-  return switch (classificacao.trim().toUpperCase()) {
-    'CRESCENDO' => l10n.salesProdutoTendenciaMediaMovelClassificacaoDescGrowing,
-    'CAINDO' => l10n.salesProdutoTendenciaMediaMovelClassificacaoDescFalling,
-    'NOVO' => l10n.salesProdutoTendenciaMediaMovelClassificacaoDescNew,
-    'PAROU' => l10n.salesProdutoTendenciaMediaMovelClassificacaoDescStopped,
-    'ESTAVEL' => l10n.salesProdutoTendenciaMediaMovelClassificacaoDescStable,
-    _ => '',
-  };
-}
-
-String salesProdutoTendenciaMediaMovelClassificacaoPdfLegend(
-  AppLocalizations l10n,
-  List<SalesProdutoTendenciaMediaMovelClassBucket> buckets,
-) {
-  if (buckets.isEmpty) {
-    return salesProdutoTendenciaMediaMovelClassificacaoOneLineLegend(l10n);
-  }
-  return buckets
-      .map(
-        (bucket) =>
-            '${produtoTendenciaMediaMovelClassificacaoLabel(l10n, bucket.classificacao)}: '
-            '${salesProdutoTendenciaMediaMovelClassificacaoDescription(l10n, bucket.classificacao)}',
-      )
-      .join(' · ');
 }
 
 Widget buildSalesProdutoTendenciaMediaMovelClassificacaoBarChart({

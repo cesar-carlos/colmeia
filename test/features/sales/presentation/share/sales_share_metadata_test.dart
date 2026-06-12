@@ -4,10 +4,10 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.dart';
 import 'package:colmeia/features/sales/domain/sales_monthly_pnl_bar_chart_preferences.dart';
+import 'package:colmeia/features/sales/presentation/share/sales_chart_share_export_filter.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_monthly_pnl_share.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_produto_tendencia_media_movel_share.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_produto_tendencia_share.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_summary_section.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
@@ -376,7 +376,12 @@ void main() {
       final metadata = buildSalesProdutoTendenciaMediaMovelDetailsShareMetadata(
         l10n: l10n,
         rows: rows,
-        filterSummary: '7 days',
+        exportHeaderContext:
+            buildSalesProdutoTendenciaMediaMovelChartShareExportHeaderContext(
+              l10n: l10n,
+              agentName: 'Centro',
+              quantidadeDias: 7,
+            ),
       );
 
       expect(metadata.title, l10n.salesProdutoTendenciaMediaMovelDetailsTitle);
@@ -384,7 +389,8 @@ void main() {
         metadata.subtitle,
         l10n.salesProdutoTendenciaMediaMovelDetailsSubtitle,
       );
-      expect(metadata.filterSummary, contains('7 days'));
+      expect(metadata.filterSummary, contains('Centro'));
+      expect(metadata.filterSummary, contains('7'));
       expect(
         metadata.tableData?.headers,
         <String>[

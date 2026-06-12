@@ -355,6 +355,9 @@ class AppComboChart<T> extends StatelessWidget {
     this.preset = AppChartPreset.standard,
     this.isLoading = false,
     this.emptyPlaceholder,
+    this.semanticsLabel,
+    this.semanticsHint,
+    this.semanticsValue,
   });
 
   /// Same idea as `AppComparisonBarChart.loadingBlockHeight` / the donut
@@ -420,6 +423,12 @@ class AppComboChart<T> extends StatelessWidget {
   final bool isLoading;
   final Widget? emptyPlaceholder;
 
+  /// Optional screen-reader label wrapping the chart body (and shell when set).
+  final String? semanticsLabel;
+
+  final String? semanticsHint;
+  final String? semanticsValue;
+
   @override
   Widget build(BuildContext context) {
     final l10n = Localizations.of<AppLocalizations>(context, AppLocalizations);
@@ -474,24 +483,34 @@ class AppComboChart<T> extends StatelessWidget {
       resolvedEmptyMessage: resolvedEmptyMessage,
     );
 
-    if (title == null) {
-      return innerChart;
+    Widget chart = innerChart;
+    if (title != null) {
+      chart = AppChartShell(
+        title: title!,
+        subtitle: subtitle,
+        titleTrailing: titleTrailing,
+        onShare: onShare,
+        shareProgressKey: shareProgressKey,
+        shareEnabled: shareEnabled && !isLoading,
+        openShareTooltip: openShareTooltip,
+        openShareSemanticLabel: openShareSemanticLabel,
+        onOpenFullscreen: onOpenFullscreen,
+        openFullscreenTooltip: openFullscreenTooltip,
+        openFullscreenSemanticLabel: openFullscreenSemanticLabel,
+        belowSubtitle: belowSubtitle,
+        child: innerChart,
+      );
     }
 
-    return AppChartShell(
-      title: title!,
-      subtitle: subtitle,
-      titleTrailing: titleTrailing,
-      onShare: onShare,
-      shareProgressKey: shareProgressKey,
-      shareEnabled: shareEnabled && !isLoading,
-      openShareTooltip: openShareTooltip,
-      openShareSemanticLabel: openShareSemanticLabel,
-      onOpenFullscreen: onOpenFullscreen,
-      openFullscreenTooltip: openFullscreenTooltip,
-      openFullscreenSemanticLabel: openFullscreenSemanticLabel,
-      belowSubtitle: belowSubtitle,
-      child: innerChart,
-    );
+    final trimmedLabel = semanticsLabel?.trim();
+    if (trimmedLabel != null && trimmedLabel.isNotEmpty) {
+      return Semantics(
+        label: trimmedLabel,
+        hint: semanticsHint,
+        value: semanticsValue,
+        child: chart,
+      );
+    }
+    return chart;
   }
 }

@@ -21,6 +21,7 @@ import 'package:colmeia/features/sales/presentation/async_search/sales_produto_d
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_agent_auto_refresh_mixin.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_produto_tendencia_controller.dart';
+import 'package:colmeia/features/sales/presentation/share/sales_chart_share_export_filter.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_produto_tendencia_share.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_produto_tendencia_presentation_state.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_auto_refresh_section.dart';
@@ -36,6 +37,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_actions.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -293,6 +295,24 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     );
   }
 
+  ChartShareExportHeaderContext _exportHeaderContext(
+    AppLocalizations l10n,
+    SalesProdutoTendenciaPresentationState state,
+  ) {
+    final selectedBranch = state.availableAgents
+        .cast<DashboardAgentOption?>()
+        .firstWhere(
+          (agent) => agent?.agentId == state.selectedAgentId,
+          orElse: () => null,
+        );
+    return buildSalesProdutoTendenciaChartShareExportHeaderContext(
+      l10n: l10n,
+      agentName: selectedBranch?.name ?? l10n.salesBranchPickerEmpty,
+      periodoAtual: state.periodoAtual,
+      periodoAnterior: state.periodoAnterior,
+    );
+  }
+
   Future<void> _openFiltersSheet() async {
     if (!mounted) {
       return;
@@ -334,10 +354,12 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     final buckets = salesProdutoTendenciaOrderedClassBuckets(state.summaryRows);
     final fullscreenShareKey = GlobalKey();
     final shareTitle = l10n.salesProdutoTendenciaSummaryByClassificacaoTitle;
+    final exportHeaderContext = _exportHeaderContext(l10n, state);
     final shareMetadata = buildSalesProdutoTendenciaClassificacaoShareMetadata(
       l10n: l10n,
       summaryRows: state.summaryRows,
       buckets: buckets,
+      exportHeaderContext: exportHeaderContext,
     );
     unawaited(
       context.pushChartFullscreen<void>(
@@ -405,6 +427,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     }
     final l10n = AppLocalizations.of(context);
     final buckets = salesProdutoTendenciaOrderedClassBuckets(state.summaryRows);
+    final exportHeaderContext = _exportHeaderContext(l10n, state);
     ChartShareActions(
       context: context,
       captureKey: _classificacaoShareKey,
@@ -412,6 +435,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
         l10n: l10n,
         summaryRows: state.summaryRows,
         buckets: buckets,
+        exportHeaderContext: exportHeaderContext,
       ),
       onRequestShare: (context, request) =>
           context.shareChartFromRequest(request),
@@ -456,16 +480,19 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     final fullscreenShareKey = GlobalKey();
     final l10n = AppLocalizations.of(context);
     final tokens = context.appTokens;
+    final exportHeaderContext = _exportHeaderContext(l10n, _controller.state);
     final shareMetadata = useAbsolutePercentForLosers
         ? buildSalesProdutoTendenciaTopLosersShareMetadata(
             l10n: l10n,
             rows: items,
             tokens: tokens,
+            exportHeaderContext: exportHeaderContext,
           )
         : buildSalesProdutoTendenciaTopGainersShareMetadata(
             l10n: l10n,
             rows: items,
             tokens: tokens,
+            exportHeaderContext: exportHeaderContext,
           );
     unawaited(
       context.pushChartFullscreen<void>(

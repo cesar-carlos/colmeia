@@ -7,6 +7,7 @@ import 'package:colmeia/shared/widgets/charts/app_category_donut_card_models.dar
 import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_actions.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:flutter/material.dart';
 
 /// Payment mix donut for the overview home. Caches derived segments and total
@@ -16,13 +17,17 @@ class OverviewPaymentMixCard extends StatefulWidget {
   const OverviewPaymentMixCard({
     required this.l10n,
     required this.methods,
+    this.isLoading = false,
     this.onRequestFullscreen,
     this.onRequestShare,
+    this.exportHeaderContext,
     super.key,
   });
 
   final AppLocalizations l10n;
+  final ChartShareExportHeaderContext? exportHeaderContext;
   final List<OverviewPaymentMethodBreakdown> methods;
+  final bool isLoading;
   final AppChartFullscreenRequestCallback? onRequestFullscreen;
   final AppChartShareRequestCallback? onRequestShare;
 
@@ -80,6 +85,7 @@ class _OverviewPaymentMixCardState extends State<OverviewPaymentMixCard> {
     final metadata = buildOverviewPaymentMixShareMetadata(
       l10n: l10n,
       segments: _segments,
+      exportHeaderContext: widget.exportHeaderContext,
     );
     final shareActions = ChartShareActions(
       context: context,
@@ -140,6 +146,9 @@ class _OverviewPaymentMixCardState extends State<OverviewPaymentMixCard> {
         onOpenFullscreen: shareActions.fullscreenCallback(openFullscreen),
         onShare: shareActions.shareCallback(),
         shareProgressKey: _shareKey,
+        shareEnabled: !widget.isLoading,
+        isLoading: widget.isLoading,
+        loadingSemanticsLabel: l10n.overviewLoadingPaymentMixSemantics,
         style: const AppCategoryDonutCardStyle(
           legendMaxHeight: 280,
         ),

@@ -1,9 +1,11 @@
 import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_chart_failure_placeholder_content.dart';
+import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_live_map_point.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
 import 'package:colmeia/features/sales/presentation/models/sales_live_map_visual_spec.dart';
 import 'package:colmeia/features/sales/presentation/rules/sales_live_map_presentation_rules.dart';
+import 'package:colmeia/features/sales/presentation/share/sales_chart_share_export_filter.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_operational_fingerprint.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
 import 'package:colmeia/features/sales/presentation/view_models/sales_live_map_view_model.dart';
@@ -56,6 +58,21 @@ class SalesLiveMapInlineChartSection extends StatelessWidget {
             ),
           );
         }
+        final state = slice.state;
+        final exportHeaderContext = buildSalesLiveMapChartShareExportHeaderContext(
+          l10n: l10n,
+          agentsSummary: viewModel.agentsSummary,
+          singleBranchName: resolveSalesLiveMapSingleBranchName(
+            selectedBranchIds: state.filter.selectedBranchIds,
+            branchOptions:
+                state.result?.branchOptions ?? const <SalesLiveMapBranchOption>[],
+          ),
+          periodSummary: viewModel.periodSummary,
+          detailSummary: viewModel.detailSummary,
+          visualSummary: viewModel.visualSummary,
+          usesMapLabel: viewModel.usesMapLabel,
+          mapMetricLabel: salesLiveMapMetricExportLabel(l10n, slice.metric),
+        );
         return SalesLiveMapChartPanel(
           mode: SalesLiveMapChartPanelMode.inline,
           mapPayloadDigest: slice.mapPayloadDigest,
@@ -63,6 +80,7 @@ class SalesLiveMapInlineChartSection extends StatelessWidget {
           suspendParentScrollLock: suspendParentScrollLock,
           title: l10n.salesLiveMapChartTitle,
           subtitle: viewModel.mapSubtitle,
+          exportHeaderContext: exportHeaderContext,
           points: slice.points,
           metric: slice.metric,
           filterBranchIds: slice.filterBranchIds,

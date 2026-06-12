@@ -1,5 +1,6 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_support_context.dart';
+import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_error_panel_factory.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/agent_query_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
@@ -60,7 +61,7 @@ class AgentQueryLoadErrorSurface extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final failure = loadFailure;
     if (failure != null) {
-      return AgentQueryErrorPanel.fromFailure(
+      return AgentQueryErrorPanelFactory.fromFailure(
         failure,
         l10n,
         onRetry: onRetry,

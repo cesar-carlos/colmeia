@@ -9,6 +9,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/charts/daily_sales_trend_chart.dart';
 import 'package:flutter/material.dart';
 
@@ -21,6 +22,7 @@ class SalesDailyTotalsChartCard extends StatelessWidget {
     this.loadFailure,
     this.loadFailureMessage,
     this.dailySaleDateRange,
+    this.exportHeaderContext,
     this.onRequestFullscreen,
     this.onRequestShare,
     super.key,
@@ -33,6 +35,7 @@ class SalesDailyTotalsChartCard extends StatelessWidget {
   final AppFailure? loadFailure;
   final String? loadFailureMessage;
   final DashboardDateRange? dailySaleDateRange;
+  final ChartShareExportHeaderContext? exportHeaderContext;
   final AppChartFullscreenRequestCallback? onRequestFullscreen;
   final AppChartShareRequestCallback? onRequestShare;
 
@@ -79,6 +82,7 @@ class SalesDailyTotalsChartCard extends StatelessWidget {
               dailySaleDateRange: range,
             )
           : null,
+      exportHeaderContext: exportHeaderContext,
     );
   }
 }

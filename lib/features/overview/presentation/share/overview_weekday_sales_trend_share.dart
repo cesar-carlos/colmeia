@@ -3,6 +3,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales
 import 'package:colmeia/features/overview/domain/overview_weekday_display_order.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/charts/daily_sales_weekday_labels.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
@@ -27,6 +28,7 @@ ChartShareMetadata buildOverviewWeekdaySalesTrendShareMetadata({
   required List<OverviewWeekdaySalesTrendPoint> tablePoints,
   required bool isSalesCountMetric,
   required NumberFormat salesCountFormat,
+  ChartShareExportHeaderContext? exportHeaderContext,
 }) {
   final tableLimit = applyChartShareTableRowLimit(
     tableData: ChartShareTableData(
@@ -53,7 +55,10 @@ ChartShareMetadata buildOverviewWeekdaySalesTrendShareMetadata({
         ? l10n.overviewWeekdaySalesTitle
         : l10n.overviewWeekdayRevenueTitle,
     subtitle: l10n.overviewWeekdaySalesSubtitle,
-    filterSummary: tableLimit.truncationNotice,
+    filterSummary: buildChartSharePdfFilterSummary(
+      exportHeaderContext: exportHeaderContext,
+      truncationNotice: tableLimit.truncationNotice,
+    ),
     tableData: tableLimit.tableData,
     pdfOrientation: ChartSharePdfOrientation.landscape,
   );

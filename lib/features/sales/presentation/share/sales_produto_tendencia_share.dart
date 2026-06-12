@@ -1,16 +1,20 @@
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_classificacao_chart_support.dart';
+import 'package:colmeia/features/sales/presentation/share/mappers/sales_produto_tendencia_share_mapper.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_export_capture.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
+export 'package:colmeia/features/sales/presentation/share/mappers/sales_produto_tendencia_share_mapper.dart'
+    show salesProdutoTendenciaClassificacaoOneLineLegend;
 
 class SalesProdutoTendenciaClassBucket {
   const SalesProdutoTendenciaClassBucket({
@@ -107,6 +111,7 @@ ChartShareMetadata buildSalesProdutoTendenciaClassificacaoShareMetadata({
   required AppLocalizations l10n,
   required List<ProdutoVendidoTendenciaDeVendaSummaryRow> summaryRows,
   required List<SalesProdutoTendenciaClassBucket> buckets,
+  ChartShareExportHeaderContext? exportHeaderContext,
 }) {
   final legend = salesProdutoTendenciaClassificacaoPdfLegend(l10n, buckets);
   final tableLimit = applyChartShareTableRowLimit(
@@ -135,7 +140,10 @@ ChartShareMetadata buildSalesProdutoTendenciaClassificacaoShareMetadata({
     title: l10n.salesProdutoTendenciaSummaryByClassificacaoTitle,
     subtitle:
         '${l10n.salesProdutoTendenciaSummaryByClassificacaoSubtitle}\n$legend',
-    filterSummary: tableLimit.truncationNotice,
+    filterSummary: buildChartSharePdfFilterSummary(
+      exportHeaderContext: exportHeaderContext,
+      truncationNotice: tableLimit.truncationNotice,
+    ),
     pdfOrientation: ChartSharePdfOrientation.landscape,
     tableData: tableLimit.tableData,
   );
@@ -145,6 +153,7 @@ ChartShareMetadata buildSalesProdutoTendenciaTopGainersShareMetadata({
   required AppLocalizations l10n,
   required List<ProdutoVendidoTendenciaDeVendaRow> rows,
   required AppThemeTokens tokens,
+  ChartShareExportHeaderContext? exportHeaderContext,
 }) {
   final tableLimit = applyChartShareTableRowLimit(
     tableData: ChartShareTableData(
@@ -167,7 +176,10 @@ ChartShareMetadata buildSalesProdutoTendenciaTopGainersShareMetadata({
   return ChartShareMetadata(
     title: l10n.salesProdutoTendenciaTopGainersTitle,
     subtitle: l10n.salesProdutoTendenciaTopGainersSubtitle,
-    filterSummary: tableLimit.truncationNotice,
+    filterSummary: buildChartSharePdfFilterSummary(
+      exportHeaderContext: exportHeaderContext,
+      truncationNotice: tableLimit.truncationNotice,
+    ),
     tableData: tableLimit.tableData,
     pdfOrientation: ChartSharePdfOrientation.landscape,
     chartExportBuilder: rows.isEmpty
@@ -186,6 +198,7 @@ ChartShareMetadata buildSalesProdutoTendenciaTopLosersShareMetadata({
   required AppLocalizations l10n,
   required List<ProdutoVendidoTendenciaDeVendaRow> rows,
   required AppThemeTokens tokens,
+  ChartShareExportHeaderContext? exportHeaderContext,
 }) {
   final tableLimit = applyChartShareTableRowLimit(
     tableData: ChartShareTableData(
@@ -208,7 +221,10 @@ ChartShareMetadata buildSalesProdutoTendenciaTopLosersShareMetadata({
   return ChartShareMetadata(
     title: l10n.salesProdutoTendenciaTopLosersTitle,
     subtitle: l10n.salesProdutoTendenciaTopLosersSubtitle,
-    filterSummary: tableLimit.truncationNotice,
+    filterSummary: buildChartSharePdfFilterSummary(
+      exportHeaderContext: exportHeaderContext,
+      truncationNotice: tableLimit.truncationNotice,
+    ),
     tableData: tableLimit.tableData,
     pdfOrientation: ChartSharePdfOrientation.landscape,
     chartExportBuilder: rows.isEmpty

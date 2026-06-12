@@ -1,16 +1,17 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:colmeia/shared/charts/daily_sales_trend_chart_labels.dart';
-import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
-import 'package:colmeia/shared/charts/daily_sales_weekday_labels.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_dashboard_comparison_bar_chart_preset.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
+import 'package:colmeia/shared/widgets/charts/daily_sales_trend_chart_labels.dart';
+import 'package:colmeia/shared/widgets/charts/daily_sales_trend_point.dart';
+import 'package:colmeia/shared/widgets/charts/daily_sales_weekday_labels.dart';
 import 'package:colmeia/shared/widgets/charts/metric_toggle_comparison_bar_card.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -26,6 +27,7 @@ class DailySalesTrendChart extends StatelessWidget {
     this.useSalesDailyTotalsLabels = false,
     this.salesSubtitleOverride,
     this.salesScopeHintOverride,
+    this.exportHeaderContext,
     this.onRequestFullscreen,
     this.onRequestShare,
     super.key,
@@ -39,6 +41,7 @@ class DailySalesTrendChart extends StatelessWidget {
   final bool useSalesDailyTotalsLabels;
   final String? salesSubtitleOverride;
   final String? salesScopeHintOverride;
+  final ChartShareExportHeaderContext? exportHeaderContext;
   final AppChartFullscreenRequestCallback? onRequestFullscreen;
   final AppChartShareRequestCallback? onRequestShare;
 
@@ -80,7 +83,8 @@ class DailySalesTrendChart extends StatelessWidget {
     final compactSalesCountFormat = NumberFormat.compact(locale: localeName);
     final resolvedSubtitle = salesSubtitleOverride ?? labels.subtitle;
     final resolvedScopeHint = salesScopeHintOverride ?? labels.scopeHint;
-    final resolvedEmptyPlaceholder = emptyPlaceholder ??
+    final resolvedEmptyPlaceholder =
+        emptyPlaceholder ??
         Padding(
           padding: EdgeInsets.symmetric(vertical: tokens.contentSpacing),
           child: Center(
@@ -122,7 +126,10 @@ class DailySalesTrendChart extends StatelessWidget {
       return ChartShareMetadata(
         title: shareTitle,
         subtitle: resolvedSubtitle,
-        filterSummary: tableLimit.truncationNotice,
+        filterSummary: buildChartSharePdfFilterSummary(
+          exportHeaderContext: exportHeaderContext,
+          truncationNotice: tableLimit.truncationNotice,
+        ),
         pdfOrientation: ChartSharePdfOrientation.landscape,
         tableData: tableLimit.tableData,
         subject: shareTitle,

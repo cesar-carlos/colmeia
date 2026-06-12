@@ -118,3 +118,15 @@ void Function(TooltipArgs args) buildSanitizingTooltipRenderer({
     }
   };
 }
+
+/// Shared category-axis viewport pan behavior for cartesian engines that use
+/// [CategoryAxis.autoScrollingDelta] (comparison bar + combo charts).
+ZoomPanBehavior? buildCategoryViewportZoomPanBehavior({required bool enabled}) {
+  if (!enabled) {
+    return null;
+  }
+  return ZoomPanBehavior(
+    enablePanning: true,
+    zoomMode: ZoomMode.x,
+  );
+}

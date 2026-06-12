@@ -1,3 +1,4 @@
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:flutter/material.dart';
 
 class AppTypographyTokens extends ThemeExtension<AppTypographyTokens> {
@@ -58,6 +59,11 @@ class AppTypographyTokens extends ThemeExtension<AppTypographyTokens> {
   final TextStyle caption;
   final TextStyle utilityOverline;
 
+  static final AppTypographyTokens light = AppTypographyTokens.fromTheme(
+    textTheme: ThemeData.light().textTheme,
+    colorScheme: AppColors.light.toColorScheme(),
+  );
+
   @override
   AppTypographyTokens copyWith({
     TextStyle? displayH1,
@@ -99,7 +105,8 @@ class AppTypographyTokens extends ThemeExtension<AppTypographyTokens> {
 }
 
 extension AppTypographyThemeDataX on ThemeData {
-  AppTypographyTokens get appTypography => extension<AppTypographyTokens>()!;
+  AppTypographyTokens get appTypography =>
+      extension<AppTypographyTokens>() ?? AppTypographyTokens.light;
 }
 
 extension AppTypographyBuildContextX on BuildContext {

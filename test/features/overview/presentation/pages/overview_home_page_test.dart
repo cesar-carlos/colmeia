@@ -330,6 +330,8 @@ void main() {
                     completedSections: const <OverviewProgressiveSection>{
                       OverviewProgressiveSection.monthlyParcels,
                     },
+                    filter: DashboardFilter.initial(),
+                    availableAgents: const <DashboardAgentOption>[],
                   ),
                 );
               },
@@ -438,7 +440,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
-    expect(find.byIcon(Icons.check_circle_outline), findsNWidgets(6));
+    expect(find.byIcon(Icons.check_circle_outline), findsNWidgets(7));
   });
 }
 

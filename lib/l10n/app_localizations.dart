@@ -1624,6 +1624,12 @@ abstract class AppLocalizations {
   /// **'Share chart'**
   String get chartShareTooltip;
 
+  /// Fallback PDF title when chart share metadata has no subject or title.
+  ///
+  /// In en, this message translates to:
+  /// **'Chart'**
+  String get chartShareDefaultTitle;
+
   /// SnackBar shown when chart PDF export and share complete successfully.
   ///
   /// In en, this message translates to:

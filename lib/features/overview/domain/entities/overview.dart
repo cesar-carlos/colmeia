@@ -20,6 +20,10 @@ class Overview {
     required this.paymentMethods,
     required this.agentRankings,
     required this.userRankings,
+    this.agentRankingsLoadFailed = false,
+    this.agentRankingsLoadFailure,
+    this.userRankingsLoadFailed = false,
+    this.userRankingsLoadFailure,
     this.monthlyParcelTrend = const <OverviewMonthlyParcelPoint>[],
     this.monthlyParcelTrendLoadFailed = false,
     this.monthlyParcelTrendLoadFailure,
@@ -83,6 +87,17 @@ class Overview {
   final List<OverviewPaymentMethodBreakdown> paymentMethods;
   final List<OverviewAgentRanking> agentRankings;
   final List<OverviewUserRanking> userRankings;
+
+  /// True when the main payment resumo query failed for every agent; rankings
+  /// may be empty for this reason instead of genuinely having no sales.
+  final bool agentRankingsLoadFailed;
+
+  final AppFailure? agentRankingsLoadFailure;
+
+  /// Same source as [agentRankingsLoadFailed] for the user ranking card.
+  final bool userRankingsLoadFailed;
+
+  final AppFailure? userRankingsLoadFailure;
 
   /// Last 12 calendar months of parcel totals (sales count and amount) for
   /// the home chart. Empty when unavailable or not loaded (e.g. stale cache).
@@ -244,6 +259,10 @@ class Overview {
     List<OverviewPaymentMethodBreakdown>? paymentMethods,
     List<OverviewAgentRanking>? agentRankings,
     List<OverviewUserRanking>? userRankings,
+    bool? agentRankingsLoadFailed,
+    AppFailure? agentRankingsLoadFailure,
+    bool? userRankingsLoadFailed,
+    AppFailure? userRankingsLoadFailure,
     int? approvedAgentCount,
     List<String>? agentIdsExcludedFromQueryFailure,
     List<String>? agentNamesExcludedFromQueryFailure,
@@ -287,6 +306,14 @@ class Overview {
       paymentMethods: paymentMethods ?? this.paymentMethods,
       agentRankings: agentRankings ?? this.agentRankings,
       userRankings: userRankings ?? this.userRankings,
+      agentRankingsLoadFailed:
+          agentRankingsLoadFailed ?? this.agentRankingsLoadFailed,
+      agentRankingsLoadFailure:
+          agentRankingsLoadFailure ?? this.agentRankingsLoadFailure,
+      userRankingsLoadFailed:
+          userRankingsLoadFailed ?? this.userRankingsLoadFailed,
+      userRankingsLoadFailure:
+          userRankingsLoadFailure ?? this.userRankingsLoadFailure,
       monthlyParcelTrend: monthlyParcelTrend ?? this.monthlyParcelTrend,
       monthlyParcelTrendLoadFailed:
           monthlyParcelTrendLoadFailed ?? this.monthlyParcelTrendLoadFailed,
@@ -430,15 +457,23 @@ class Overview {
       ),
       OverviewProgressiveSection.userRanking => copyWith(
         userRankings: detail.userRankings,
+        userRankingsLoadFailed: detail.userRankingsLoadFailed,
+        userRankingsLoadFailure: detail.userRankingsLoadFailure,
       ),
       OverviewProgressiveSection.agentRanking => copyWith(
         agentRankings: detail.agentRankings,
+        agentRankingsLoadFailed: detail.agentRankingsLoadFailed,
+        agentRankingsLoadFailure: detail.agentRankingsLoadFailure,
       ),
       OverviewProgressiveSection.summary => copyWith(
         kpis: detail.kpis,
         paymentMethods: detail.paymentMethods,
         agentRankings: detail.agentRankings,
         userRankings: detail.userRankings,
+        agentRankingsLoadFailed: detail.agentRankingsLoadFailed,
+        agentRankingsLoadFailure: detail.agentRankingsLoadFailure,
+        userRankingsLoadFailed: detail.userRankingsLoadFailed,
+        userRankingsLoadFailure: detail.userRankingsLoadFailure,
         approvedAgentCount: detail.approvedAgentCount,
         agentIdsExcludedFromQueryFailure:
             detail.agentIdsExcludedFromQueryFailure,

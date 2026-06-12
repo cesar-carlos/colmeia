@@ -7,22 +7,14 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
-import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
+import 'package:colmeia/shared/widgets/charts/app_grouped_column_chart.dart';
+import 'package:colmeia/shared/widgets/charts/app_grouped_column_chart_series.dart';
 import 'package:colmeia/shared/widgets/charts/comparison_bar_plot_floor.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:syncfusion_flutter_charts/charts.dart';
 
-/// Grouped column chart: weekdays on the category axis; one [ColumnSeries] per
-/// user (side‑by‑side clusters).
-///
-/// Rendering layout:
-/// - The Syncfusion `Legend` is **disabled**; legend chips are rendered above
-///   the chart in a [Wrap] so they stay visible (and don't scroll horizontally
-///   with the plot when the chart overflows).
-/// - The chart is wrapped in a [ChartHorizontalScrollShell] only when the
-///   minimum cluster width × weekday count exceeds the available width.
+/// Grouped column chart: weekdays on the category axis; one series per user.
 class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
   const OverviewWeekdayUserGroupedBarChart({
     required this.l10n,
@@ -43,6 +35,11 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
     this.chartHeightOverride,
     this.expandPlotVertically = false,
     this.animationDurationMs,
+    this.isLoading = false,
+    this.emptyPlaceholder,
+    this.semanticsLabel,
+    this.semanticsHint,
+    this.semanticsValue,
   });
 
   final AppLocalizations l10n;
@@ -60,23 +57,13 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
   final VoidCallback? onOpenFullscreen;
   final bool useChartShell;
   final double? chartHeightOverride;
-
-  /// When true (typically fullscreen with [useChartShell] false), the plot
-  /// fills remaining vertical space below the external legend instead of using
-  /// a fixed [chartHeightOverride] that would ignore legend / pan-hint height.
   final bool expandPlotVertically;
-
-  /// When null, uses [_kGroupedChartAnimationMs]. Pass `0` for PDF export.
   final int? animationDurationMs;
-
-  static const double _kGroupedChartAnimationMs = 350;
-
-  /// Logical-pixel floor per **bar**, so a cluster with N series gets at least
-  /// `N × _kPerBarSlot` of horizontal space (clamped to keep the chart usable
-  /// even with a single user).
-  static const double _kPerBarSlot = 18;
-
-  static const double _kMinCategoryWidthFloor = 88;
+  final bool isLoading;
+  final Widget? emptyPlaceholder;
+  final String? semanticsLabel;
+  final String? semanticsHint;
+  final String? semanticsValue;
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +74,6 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
       preset: AppChartPreset.standard,
     );
     final colorScheme = Theme.of(context).colorScheme;
-    final axisLabelStyle = Theme.of(context).textTheme.bodySmall;
 
     final flat = weekdayUserGroupedFlatValues(model);
     if (kDebugMode) {
@@ -105,19 +91,19 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
     final semanticsParts = <String>[];
     if (hasPlotFloor) {
       final t = plotFloorAccessibilityNotice.trim();
-      if (t.isNotEmpty) {
-        semanticsParts.add(t);
-      }
+      if (t.isNotEmpty) semanticsParts.add(t);
     }
     if (hasExtremeSpread) {
       final t = extremeSpreadAccessibilityNotice.trim();
-      if (t.isNotEmpty) {
-        semanticsParts.add(t);
-      }
+      if (t.isNotEmpty) semanticsParts.add(t);
     }
-    final semanticsCoordinatorLabel = semanticsParts.isEmpty
-        ? null
-        : semanticsParts.join(' ');
+    final coordinatorLabel = semanticsParts.isEmpty
+        ? semanticsLabel
+        : [
+            if (semanticsLabel != null && semanticsLabel!.trim().isNotEmpty)
+              semanticsLabel!.trim(),
+            ...semanticsParts,
+          ].join(' ');
 
     Widget? floorTrailing;
     if (hasPlotFloor) {
@@ -140,7 +126,66 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
     );
 
     final seriesCount = math.max(1, model.userNames.length);
-    final categoryCount = math.max(1, model.weekdayCategoryLabels.length);
+    final categorySlotWidth = AppGroupedColumnChartLayout.clusteredCategorySlotWidth(
+      seriesCount,
+    );
+    final categories = weekdayUserGroupedCategories(model);
+    final groupedSeries = <AppGroupedColumnChartSeries<WeekdayUserGroupedCategory>>[
+      for (var s = 0; s < model.userNames.length; s++)
+        AppGroupedColumnChartSeries<WeekdayUserGroupedCategory>(
+          name: truncateLegendUserName(model.userNames[s]),
+          color: chartTheme.paletteColor(s),
+          valueMapper: (category) => category.cells[s].plottedY.toDouble(),
+        ),
+    ];
+
+    final yFormat = isSalesCount
+        ? NumberFormat.decimalPattern(localeName)
+        : AppBrFormatters.compactCurrencyFormatForLocale(localeName);
+
+    final animMs = animationDurationMs ?? AppGroupedColumnChartLayout.defaultCartesianAnimationMs;
+
+    Widget buildGroupedPlot(double plotH) {
+      return AppGroupedColumnChart<WeekdayUserGroupedCategory>(
+        items: categories,
+        xLabelBuilder: (category) => category.label,
+        series: groupedSeries,
+        primaryAxisFormat: yFormat,
+        secondaryAxisFormat: yFormat,
+        height: plotH,
+        showLegend: false,
+        isLoading: isLoading,
+        emptyPlaceholder: emptyPlaceholder,
+        semanticsLabel: coordinatorLabel,
+        semanticsHint: semanticsHint,
+        semanticsValue: semanticsValue,
+        loadingLabel: l10n.overviewComparisonChartLoading,
+        categorySlotWidth: categorySlotWidth,
+        horizontalScrollSemanticsHint:
+            l10n.overviewComparisonBarHorizontalScrollHint,
+        animationDuration: Duration(milliseconds: animMs),
+        tooltipBuilder: (data, point, series, pointIndex, seriesIndex) {
+          final category = data as WeekdayUserGroupedCategory;
+          final d = category.cells[seriesIndex];
+          final day = d.weekdayCategoryLabel;
+          final user = model.userNames[seriesIndex].trim().isEmpty
+              ? '—'
+              : model.userNames[seriesIndex].trim();
+          return Padding(
+            padding: const EdgeInsets.all(8),
+            child: Text(
+              l10n.overviewWeekdayUserSalesTooltip(
+                day,
+                user,
+                salesCountFormat.format(d.salesCount),
+                AppBrFormatters.currency(d.salesAmount),
+              ),
+              style: TextStyle(color: colorScheme.onInverseSurface),
+            ),
+          );
+        },
+      );
+    }
 
     final plotHeight = expandPlotVertically
         ? 0.0
@@ -148,93 +193,6 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
               (tokens.chartStandardHeight +
                   tokens.contentSpacing * 2 +
                   tokens.gapMd));
-
-    final yFormat = isSalesCount
-        ? NumberFormat.decimalPattern(localeName)
-        : AppBrFormatters.compactCurrencyFormatForLocale(localeName);
-
-    final seriesList = <CartesianSeries<WeekdayUserGroupedBarDatum, String>>[];
-    for (var s = 0; s < model.userNames.length; s++) {
-      final userName = model.userNames[s];
-      final data = model.seriesData[s];
-      final displayName = truncateLegendUserName(userName);
-      seriesList.add(
-        ColumnSeries<WeekdayUserGroupedBarDatum, String>(
-          name: displayName,
-          legendItemText: displayName,
-          dataSource: data,
-          xValueMapper: (d, _) => d.weekdayCategoryLabel,
-          yValueMapper: (d, _) => d.plottedY,
-          width: 0.72,
-          spacing: 0.12,
-          borderRadius: BorderRadius.circular(6),
-          color: chartTheme.paletteColor(s),
-          animationDuration:
-              animationDurationMs?.toDouble() ?? _kGroupedChartAnimationMs,
-        ),
-      );
-    }
-
-    Widget buildCartesian(double width, double height) {
-      return SizedBox(
-        width: width,
-        height: height,
-        child: SfCartesianChart(
-          margin: const EdgeInsets.fromLTRB(4, 8, 4, 4),
-          plotAreaBorderWidth: 0,
-          tooltipBehavior: TooltipBehavior(
-            enable: true,
-            duration: 4000,
-          ),
-          primaryXAxis: CategoryAxis(
-            majorGridLines: const MajorGridLines(width: 0),
-            labelStyle: axisLabelStyle,
-          ),
-          primaryYAxis: NumericAxis(
-            minimum: 0,
-            axisLine: const AxisLine(width: 0),
-            majorGridLines: MajorGridLines(
-              width: 1,
-              color: colorScheme.outlineVariant.withValues(alpha: 0.35),
-            ),
-            labelStyle: axisLabelStyle,
-            numberFormat: yFormat,
-          ),
-          onTooltipRender: (args) {
-            final si = args.seriesIndex;
-            final pi = args.pointIndex;
-            if (si is! int || pi is! int) {
-              return;
-            }
-            if (si < 0 ||
-                si >= model.userNames.length ||
-                pi < 0 ||
-                pi >= model.seriesData[si].length) {
-              return;
-            }
-            final d = model.seriesData[si][pi];
-            final day = d.weekdayCategoryLabel;
-            final user = model.userNames[si].trim().isEmpty
-                ? '—'
-                : model.userNames[si].trim();
-            args
-              ..header = day
-              ..text = l10n.overviewWeekdayUserSalesTooltip(
-                day,
-                user,
-                salesCountFormat.format(d.salesCount),
-                AppBrFormatters.currency(d.salesAmount),
-              );
-          },
-          series: seriesList,
-        ),
-      );
-    }
-
-    final minCategoryWidth = math.max(
-      _kMinCategoryWidthFloor,
-      seriesCount * _kPerBarSlot,
-    );
 
     final showsLegend = model.userNames.isNotEmpty;
     final externalLegend = showsLegend
@@ -253,39 +211,12 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
         mediaPlatform == TargetPlatform.iOS ||
         mediaPlatform == TargetPlatform.fuchsia;
 
-    Widget buildPlotSizedCore({
-      required double layoutW,
-      required double plotH,
-    }) {
-      var w = layoutW;
-      if (!w.isFinite || w <= 0) {
-        w = minCategoryWidth * categoryCount;
-      }
-      final requiredW = math.max(w, minCategoryWidth * categoryCount);
-      final needsScroll = requiredW > w + 0.5;
-      final scrollSlot = chartHorizontalScrollBottomTrackSlotHeight(context);
-      final chartBodyH = needsScroll ? plotH - scrollSlot : plotH;
-
-      var body = buildCartesian(
-        needsScroll ? requiredW : w,
-        chartBodyH,
-      );
-      if (needsScroll) {
-        body = ChartHorizontalScrollShell(
-          body,
-          bottomTrackSlot: scrollSlot,
-          semanticsHint: l10n.overviewComparisonBarHorizontalScrollHint,
-        );
-      }
-
-      return SizedBox(height: plotH, child: body);
-    }
-
     Widget wrapWithPanHintIfNeeded({
       required double layoutW,
       required Widget plotSlot,
     }) {
-      final wouldScroll = (minCategoryWidth * categoryCount) > layoutW + 0.5;
+      final wouldScroll =
+          (categorySlotWidth * math.max(1, categories.length)) > layoutW + 0.5;
       if (!wouldScroll || !isMobilePlatform) {
         return plotSlot;
       }
@@ -337,7 +268,8 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
                   ? expandedConstraints.maxWidth
                   : MediaQuery.sizeOf(context).width;
               final wouldScroll =
-                  (minCategoryWidth * categoryCount) > layoutW + 0.5;
+                  (categorySlotWidth * math.max(1, categories.length)) >
+                  layoutW + 0.5;
               final wantsPanHint = wouldScroll && isMobilePlatform;
               final panHintBlock =
                   wantsPanHint && expandedConstraints.maxHeight >= 140
@@ -346,7 +278,7 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
               final plotH = expandedConstraints.maxHeight - panHintBlock < 1
                   ? 1.0
                   : expandedConstraints.maxHeight - panHintBlock;
-              final core = buildPlotSizedCore(layoutW: layoutW, plotH: plotH);
+              final core = buildGroupedPlot(plotH);
               if (panHintBlock <= 0) {
                 return core;
               }
@@ -378,16 +310,9 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
         children: flexChildren,
       );
     } else {
-      final chart = LayoutBuilder(
-        builder: (context, constraints) {
-          final layoutW =
-              constraints.hasBoundedWidth &&
-                  constraints.maxWidth.isFinite &&
-                  constraints.maxWidth > 0
-              ? constraints.maxWidth
-              : MediaQuery.sizeOf(context).width;
-          return buildPlotSizedCore(layoutW: layoutW, plotH: plotHeight);
-        },
+      final chart = SizedBox(
+        height: plotHeight,
+        child: buildGroupedPlot(plotHeight),
       );
 
       final children = <Widget>[
@@ -413,15 +338,6 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
       );
     }
 
-    if (semanticsCoordinatorLabel != null &&
-        semanticsCoordinatorLabel.isNotEmpty) {
-      shellChild = Semantics(
-        label: semanticsCoordinatorLabel,
-        excludeSemantics: true,
-        child: shellChild,
-      );
-    }
-
     if (!useChartShell) {
       return shellChild;
     }
@@ -435,13 +351,12 @@ class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {
       openShareTooltip: openShareTooltip,
       openShareSemanticLabel: openShareSemanticLabel,
       onOpenFullscreen: onOpenFullscreen,
+      shareEnabled: !isLoading,
       child: shellChild,
     );
   }
 }
 
-/// Wrap-based legend rendered outside the Syncfusion chart so it stays inside
-/// the visible width even when the plot scrolls horizontally.
 class _GroupedChartLegend extends StatelessWidget {
   const _GroupedChartLegend({
     required this.userNames,

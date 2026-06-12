@@ -15,12 +15,14 @@ import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_support_context.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after_host.dart';
 import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
+import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_error_panel_factory.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_agent_auto_refresh_mixin.dart';
+import 'package:colmeia/features/sales/presentation/share/sales_chart_share_export_filter.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_produto_rank_lucro_share.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
@@ -32,11 +34,11 @@ import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
-import 'package:colmeia/shared/widgets/agent_query_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/charts/app_horizontal_progress_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_actions.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/forms/app_date_picker_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
@@ -425,6 +427,20 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
         branchName: selectedBranchName,
         metricLabel: metricLabel,
         maxValue: maxValue,
+        exportHeaderContext: buildSalesSingleAgentChartShareExportHeaderContext(
+          l10n: l10n,
+          agentName: selectedBranchName,
+          parameters: <ChartShareExportHeaderParameter>[
+            ChartShareExportHeaderParameter(
+              label: l10n.salesProdutoRankLucroFilterSortBy,
+              value: metricLabel,
+            ),
+            ChartShareExportHeaderParameter(
+              label: l10n.salesProdutoRankLucroFilterPeriod,
+              value: periodSubtitle,
+            ),
+          ],
+        ),
       ),
       onRequestShare: (context, request) =>
           context.shareChartFromRequest(request),
@@ -485,7 +501,7 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
               message: l10n.salesBranchRequiredMessage,
             )
           else if (_loadFailure != null)
-            AgentQueryErrorPanel.fromFailure(
+            AgentQueryErrorPanelFactory.fromFailure(
               _loadFailure!,
               l10n,
               onRetry: () => unawaited(_reload()),

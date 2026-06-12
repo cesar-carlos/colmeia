@@ -1,11 +1,13 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_produto_rank_lucro_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_produto_rank_lucro_sort_by.dart';
+import 'package:colmeia/features/sales/presentation/share/sales_chart_share_export_filter.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_horizontal_progress_chart.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
@@ -59,6 +61,7 @@ ChartShareMetadata buildSalesProdutoRankLucroShareMetadata({
   required String branchName,
   required String metricLabel,
   required double maxValue,
+  ChartShareExportHeaderContext? exportHeaderContext,
 }) {
   final metricProfit =
       sortBy == ProdutoVendidoProdutoRankLucroSortBy.totalValorLucro;
@@ -90,11 +93,24 @@ ChartShareMetadata buildSalesProdutoRankLucroShareMetadata({
 
   return ChartShareMetadata(
     title: l10n.salesProdutoRankLucroChartTitle,
-    subtitle: periodSubtitle,
-    filterSummary: joinChartShareFilterSummary(
-      filterSummary:
-          '${l10n.salesBranchFilterLabel}: $branchName • '
-          '${l10n.salesProdutoRankLucroFilterSortBy}: $metricLabel',
+    filterSummary: buildChartSharePdfFilterSummary(
+      exportHeaderContext:
+          exportHeaderContext ??
+          buildSalesSingleAgentChartShareExportHeaderContext(
+            l10n: l10n,
+            agentName: branchName,
+            parameters: <ChartShareExportHeaderParameter>[
+              ChartShareExportHeaderParameter(
+                label: l10n.salesProdutoRankLucroFilterSortBy,
+                value: metricLabel,
+              ),
+              if (periodSubtitle.trim().isNotEmpty)
+                ChartShareExportHeaderParameter(
+                  label: l10n.salesProdutoRankLucroFilterPeriod,
+                  value: periodSubtitle,
+                ),
+            ],
+          ),
       truncationNotice: tableLimit.truncationNotice,
     ),
     tableData: tableLimit.tableData,
@@ -125,6 +141,10 @@ ChartShareMetadata buildSalesProdutoRankLucroShareMetadata({
               rows,
               growable: false,
             );
+            final rankByRow = <ProdutoVendidoProdutoRankLucroRow, int>{
+              for (var i = 0; i < rowsSnapshot.length; i++)
+                rowsSnapshot[i]: i + 1,
+            };
 
             return ColoredBox(
               color: theme.colorScheme.surface,
@@ -141,7 +161,7 @@ ChartShareMetadata buildSalesProdutoRankLucroShareMetadata({
                           _chartValueForRow(row, sortBy).toDouble(),
                       maxValue: maxValue,
                       rowLeadingBuilder: (context, row) => _RankBadge(
-                        rank: rowsSnapshot.indexOf(row) + 1,
+                        rank: rankByRow[row] ?? 0,
                       ),
                       rowTooltipBuilder: (row, value, _) {
                         final name = row.nomeProduto.trim();

@@ -1,5 +1,7 @@
 import 'package:colmeia/features/settings/presentation/pages/app_area_trend_chart_demo_page.dart';
+import 'package:colmeia/features/settings/presentation/pages/app_brazil_store_sales_map_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_bullet_chart_demo_page.dart';
+import 'package:colmeia/features/settings/presentation/pages/app_category_donut_card_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_combo_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_comparison_bar_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_distribution_chart_demo_page.dart';
@@ -20,6 +22,7 @@ import 'package:colmeia/features/settings/presentation/pages/app_time_series_cha
 import 'package:colmeia/features/settings/presentation/pages/app_treemap_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_waterfall_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/horizontal_progress_chart_demo_page.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -139,6 +142,11 @@ void main() {
       pageType: HorizontalProgressChartDemoPage,
       title: 'AppHorizontalProgressChart',
     ),
+    (
+      page: const AppCategoryDonutCardDemoPage(),
+      pageType: AppCategoryDonutCardDemoPage,
+      title: 'AppCategoryDonutCard',
+    ),
   ];
 
   for (final demo in chartDemos) {
@@ -152,4 +160,29 @@ void main() {
       expect(find.text(demo.title), findsOneWidget);
     });
   }
+
+  testWidgets(
+    'AppBrazilStoreSalesMapChart demo mounts without throwing',
+    (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+      tester.view.physicalSize = const Size(1200, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      try {
+        await tester.pumpWidget(
+          const LocalizedTestApp(
+            child: AppBrazilStoreSalesMapChartDemoPage(),
+          ),
+        );
+        await tester.pump(pumpDuration);
+
+        expect(find.byType(AppBrazilStoreSalesMapChartDemoPage), findsOneWidget);
+        expect(find.text('AppBrazilStoreSalesMapChart'), findsOneWidget);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    },
+  );
 }

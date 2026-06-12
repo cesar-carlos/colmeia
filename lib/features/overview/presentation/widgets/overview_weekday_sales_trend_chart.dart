@@ -2,6 +2,7 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/overview_weekday_display_order.dart';
+import 'package:colmeia/features/overview/presentation/share/overview_chart_share_export_filter.dart';
 import 'package:colmeia/features/overview/presentation/share/overview_weekday_sales_trend_share.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_chart_load_failure_helpers.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -10,6 +11,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_dashboard_comparison_bar_chart_preset.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/charts/metric_toggle_comparison_bar_card.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -24,10 +26,12 @@ class OverviewWeekdaySalesTrendChart extends StatefulWidget {
     this.onViewAgentFailureDetails,
     this.onRequestFullscreen,
     this.onRequestShare,
+    this.exportHeaderContext,
     super.key,
   });
 
   final AppLocalizations l10n;
+  final ChartShareExportHeaderContext? exportHeaderContext;
   final List<OverviewWeekdaySalesTrendPoint> points;
   final bool loadFailed;
   final AppFailure? loadFailure;
@@ -169,14 +173,21 @@ class _OverviewWeekdaySalesTrendChartState
           metric == MetricToggleComparisonBarMetric.count
           ? l10n.overviewWeekdaySalesChartSemantics
           : l10n.overviewWeekdayRevenueChartSemantics,
-      shareMetadataBuilder: (metric) =>
-          buildOverviewWeekdaySalesTrendShareMetadata(
+      shareMetadataBuilder: (metric) {
+        final isSalesCountMetric =
+            metric == MetricToggleComparisonBarMetric.count;
+        return buildOverviewWeekdaySalesTrendShareMetadata(
+          l10n: l10n,
+          tablePoints: overviewWeekdaySalesTrendTableRows(widget.points),
+          isSalesCountMetric: isSalesCountMetric,
+          salesCountFormat: salesCountFormat,
+          exportHeaderContext: overviewWeekdayChartShareExportHeaderContext(
+            base: widget.exportHeaderContext,
             l10n: l10n,
-            tablePoints: overviewWeekdaySalesTrendTableRows(widget.points),
-            isSalesCountMetric:
-                metric == MetricToggleComparisonBarMetric.count,
-            salesCountFormat: salesCountFormat,
+            isSalesCountMetric: isSalesCountMetric,
           ),
+        );
+      },
       plotFloorAccessibilityNotice: l10n.chartComparisonPlotFloorNotice,
       extremeSpreadAccessibilityNotice:
           l10n.chartComparisonExtremeValueSpreadNotice,

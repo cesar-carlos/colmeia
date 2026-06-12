@@ -1,4 +1,4 @@
-import 'package:colmeia/features/client_agents/domain/entities/agent_connection_status.dart';
+import 'package:colmeia/shared/domain/agent_connection_status.dart';
 import 'package:flutter/foundation.dart';
 
 /// Represents a named agent option available for overview filtering.

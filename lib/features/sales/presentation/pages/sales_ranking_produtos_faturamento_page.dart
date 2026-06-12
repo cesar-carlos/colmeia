@@ -14,12 +14,14 @@ import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_support_context.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after_host.dart';
 import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
+import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_error_panel_factory.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_agent_auto_refresh_mixin.dart';
+import 'package:colmeia/features/sales/presentation/share/sales_chart_share_export_filter.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
@@ -30,7 +32,6 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
-import 'package:colmeia/shared/widgets/agent_query_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
@@ -413,6 +414,13 @@ class _SalesRankingProdutosFaturamentoPageState
         selectedBranch?.name ?? l10n.salesBranchPickerEmpty;
     final metricSubtitle =
         'Top $_quantidadeProdutos • ${l10n.salesRankingProdutosFaturamentoMetricFaturamento}';
+    final exportHeaderContext =
+        buildSalesRankingProdutosFaturamentoChartShareExportHeaderContext(
+          l10n: l10n,
+          branchName: selectedBranchName,
+          periodLabel: periodSubtitle,
+          quantidadeProdutos: _quantidadeProdutos,
+        );
 
     final sections = _branchSections();
 
@@ -471,7 +479,7 @@ class _SalesRankingProdutosFaturamentoPageState
               message: l10n.salesBranchRequiredMessage,
             )
           else if (_loadFailure != null)
-            AgentQueryErrorPanel.fromFailure(
+            AgentQueryErrorPanelFactory.fromFailure(
               _loadFailure!,
               l10n,
               onRetry: () => unawaited(_reload()),
@@ -542,6 +550,7 @@ class _SalesRankingProdutosFaturamentoPageState
                     codEmpresa: section.codEmpresa,
                     codFilial: section.codFilial,
                     branchDisplayName: selectedBranch?.name,
+                    exportHeaderContext: exportHeaderContext,
                     rows: section.rows,
                     metricSubtitle: metricSubtitle,
                     isLoading: _loading,

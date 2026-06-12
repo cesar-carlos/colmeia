@@ -5,6 +5,7 @@ import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
 import 'package:colmeia/features/overview/presentation/overview_sorted_rankings.dart';
+import 'package:colmeia/features/overview/presentation/share/overview_chart_share_export_filter.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_alert_detail_sheet.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_chart_load_failure_helpers.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_chart_staged_block.dart';
@@ -13,6 +14,7 @@ import 'package:colmeia/features/overview/presentation/widgets/overview_rankings
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_motion_tokens.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/material.dart';
 
 /// Charts that remain embedded on the overview home (monthly trend + agent ranking).
@@ -23,6 +25,8 @@ class OverviewHomeChartsBelowKpis extends StatefulWidget {
     required this.showSkeleton,
     required this.displayOverview,
     required this.completedSections,
+    required this.filter,
+    required this.availableAgents,
     super.key,
   });
 
@@ -31,6 +35,8 @@ class OverviewHomeChartsBelowKpis extends StatefulWidget {
   final bool showSkeleton;
   final Overview displayOverview;
   final Set<OverviewProgressiveSection> completedSections;
+  final DashboardFilter filter;
+  final List<DashboardAgentOption> availableAgents;
 
   @override
   State<OverviewHomeChartsBelowKpis> createState() =>
@@ -64,6 +70,15 @@ class _OverviewHomeChartsBelowKpisState
     final agentRankings = widget.showSkeleton
         ? OverviewSortedRankings.empty.agents
         : _rankingsCache.resolve(overview).agents;
+    final exportHeaderContext = widget.showSkeleton
+        ? null
+        : buildOverviewChartShareExportHeaderContext(
+            l10n: l10n,
+            filter: widget.filter,
+            availableAgents: widget.availableAgents,
+            periodStart: overview.periodStart,
+            periodEnd: overview.periodEnd,
+          );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -77,6 +92,7 @@ class _OverviewHomeChartsBelowKpisState
           loadingSemanticsLabel: l10n.overviewLoadingMonthlyParcelsSemantics,
           child: OverviewMonthlyParcelsComboChart(
             l10n: l10n,
+            exportHeaderContext: exportHeaderContext,
             points: overview.monthlyParcelTrend,
             loadFailed: overview.monthlyParcelTrendLoadFailed,
             loadFailure: overview.monthlyParcelTrendLoadFailure,
@@ -110,7 +126,10 @@ class _OverviewHomeChartsBelowKpisState
           loadingSemanticsLabel: l10n.overviewLoadingRankingsSemantics,
           child: OverviewAgentRankingCard(
             l10n: l10n,
+            exportHeaderContext: exportHeaderContext,
             agentRankings: agentRankings,
+            loadFailed: overview.agentRankingsLoadFailed,
+            loadFailure: overview.agentRankingsLoadFailure,
             onRequestFullscreen: (context, request) =>
                 context.pushChartFullscreenFromRequest(request),
             onRequestShare: (context, request) =>

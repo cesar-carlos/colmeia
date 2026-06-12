@@ -151,6 +151,8 @@ class _OverviewChartDetailPageState extends State<OverviewChartDetailPage> {
                   OverviewChartDetailLoadingBlock(
                     l10n: l10n,
                     section: slice.section!,
+                    filter: slice.activeFilter,
+                    availableAgents: slice.availableAgents,
                   )
                 else if (slice.overview != null && slice.section != null)
                   OverviewChartDetailContent(
@@ -160,6 +162,8 @@ class _OverviewChartDetailPageState extends State<OverviewChartDetailPage> {
                     isSingleAgentSelected: _isSingleAgentSelected(
                       slice.activeFilter,
                     ),
+                    filter: slice.activeFilter,
+                    availableAgents: slice.availableAgents,
                   )
                 else if (!slice.isLoading && slice.overview == null)
                   AppInlineErrorPanel(

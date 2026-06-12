@@ -2,6 +2,7 @@ import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
@@ -30,6 +31,7 @@ String overviewUserRankingShareDataLabel(
 ChartShareMetadata buildOverviewAgentRankingShareMetadata({
   required AppLocalizations l10n,
   required List<OverviewAgentRanking> agentRankings,
+  ChartShareExportHeaderContext? exportHeaderContext,
 }) {
   final tableLimit = applyChartShareTableRowLimit(
     tableData: ChartShareTableData.fromRanking(
@@ -54,7 +56,10 @@ ChartShareMetadata buildOverviewAgentRankingShareMetadata({
   return ChartShareMetadata(
     title: l10n.dashboardAgentRankingTitle,
     subtitle: l10n.dashboardAgentRankingSubtitle,
-    filterSummary: tableLimit.truncationNotice,
+    filterSummary: buildChartSharePdfFilterSummary(
+      exportHeaderContext: exportHeaderContext,
+      truncationNotice: tableLimit.truncationNotice,
+    ),
     tableData: tableLimit.tableData,
     pdfOrientation: ChartSharePdfOrientation.landscape,
   );
@@ -63,6 +68,7 @@ ChartShareMetadata buildOverviewAgentRankingShareMetadata({
 ChartShareMetadata buildOverviewUserRankingShareMetadata({
   required AppLocalizations l10n,
   required List<OverviewUserRanking> userRankings,
+  ChartShareExportHeaderContext? exportHeaderContext,
 }) {
   final tableLimit = applyChartShareTableRowLimit(
     tableData: ChartShareTableData.fromRanking(
@@ -87,7 +93,10 @@ ChartShareMetadata buildOverviewUserRankingShareMetadata({
   return ChartShareMetadata(
     title: l10n.dashboardUserRankingTitle,
     subtitle: l10n.dashboardUserRankingSubtitle,
-    filterSummary: tableLimit.truncationNotice,
+    filterSummary: buildChartSharePdfFilterSummary(
+      exportHeaderContext: exportHeaderContext,
+      truncationNotice: tableLimit.truncationNotice,
+    ),
     tableData: tableLimit.tableData,
     pdfOrientation: ChartSharePdfOrientation.landscape,
   );

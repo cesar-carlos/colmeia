@@ -14,6 +14,7 @@ import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart.d
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_actions.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:flutter/material.dart';
 
 enum SalesLiveMapChartPanelMode {
@@ -50,6 +51,7 @@ class SalesLiveMapChartPanel extends StatefulWidget {
     this.showHeader = true,
     this.title,
     this.subtitle,
+    this.exportHeaderContext,
   });
 
   final SalesLiveMapChartPanelMode mode;
@@ -68,6 +70,7 @@ class SalesLiveMapChartPanel extends StatefulWidget {
   final bool showHeader;
   final String? title;
   final String? subtitle;
+  final ChartShareExportHeaderContext? exportHeaderContext;
 
   @override
   State<SalesLiveMapChartPanel> createState() => _SalesLiveMapChartPanelState();
@@ -144,6 +147,7 @@ class _SalesLiveMapChartPanelState extends State<SalesLiveMapChartPanel> {
               ),
               exportStyle: chartStyle,
               filterBranchIds: widget.filterBranchIds,
+              exportHeaderContext: widget.exportHeaderContext,
             ),
             onRequestShare: widget.onRequestShare,
             shareEnabled: widget.showHeader && !widget.isRefreshing,

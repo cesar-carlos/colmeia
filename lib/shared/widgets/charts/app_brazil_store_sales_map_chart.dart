@@ -42,6 +42,7 @@ part 'app_brazil_store_sales_map_chart/brazil_map_marker_presenter.dart';
 part 'app_brazil_store_sales_map_chart/brazil_map_point_interaction_handler.dart';
 part 'app_brazil_store_sales_map_chart/brazil_map_snapshot_lifecycle.dart';
 part 'app_brazil_store_sales_map_chart/brazil_map_viewport_navigation_handler.dart';
+part 'app_brazil_store_sales_map_chart/brazil_map_widget_lifecycle.dart';
 part 'app_brazil_store_sales_map_chart/brazil_map_widget_update_handler.dart';
 part 'app_brazil_store_sales_map_chart_scaffold.dart';
 
@@ -161,13 +162,13 @@ class _AppBrazilStoreSalesMapChartState
       _BrazilMapWidgetUpdateHandler(this);
   late final _BrazilMapSnapshotLifecycleCoordinator _snapshotLifecycle =
       _BrazilMapSnapshotLifecycleCoordinator(this);
+  late final _BrazilMapWidgetLifecycleCoordinator _lifecycle =
+      _BrazilMapWidgetLifecycleCoordinator(this);
   String? _activeRegionKey;
   bool _desktopBranchSidebarCollapsed = false;
   AppBrazilStoreSalesMapDiagnostics? _lastEmittedDiagnostics;
   BrazilMapChartVisualSnapshot? _displaySnapshot;
   bool _snapshotRefreshScheduled = false;
-  bool _brazilShapeSourcePrecacheAttemptComplete =
-      AppBrazilMapStaticData.brazilUfGeoJsonBytesOrNull != null;
 
   ValueNotifier<BrazilMapMarkerSelection> get _markerSelection =>
       _markerHighlight.notifier;
@@ -227,56 +228,13 @@ class _AppBrazilStoreSalesMapChartState
       !widget.style.autoFocusSelectedStore ||
       defaultTargetPlatform == TargetPlatform.windows;
 
-  void _handleBrazilUfGeoJsonReadinessChanged() {
-    if (!mounted) {
-      return;
-    }
-    setState(() {});
-  }
-
-  void _startBrazilShapeSourcePrecacheIfNeeded() {
-    if (_brazilShapeSourcePrecacheAttemptComplete) {
-      return;
-    }
-    unawaited(
-      AppBrazilMapStaticData.precacheBrazilUfGeoJsonAsset().whenComplete(() {
-        if (!mounted) {
-          return;
-        }
-        setState(() {
-          _brazilShapeSourcePrecacheAttemptComplete = true;
-        });
-      }),
-    );
-  }
-
   bool get _isBrazilMapShapeSourceLoading =>
-      !_brazilShapeSourcePrecacheAttemptComplete;
+      _lifecycle.isBrazilMapShapeSourceLoading;
 
   @override
   void initState() {
     super.initState();
-    _selectedMetric = widget.initialMetric;
-    _chrome = BrazilMapChartChrome.resolve(
-      style: widget.style,
-      presentationMode: widget.presentationMode,
-      useCleanFullscreenChrome: widget.useCleanFullscreenChrome,
-      showDesktopBranchSidebar: widget.showDesktopBranchSidebar,
-    );
-    _markerHighlight.publishWithControlledId(
-      _selection,
-      widget.selectedStoreId,
-    );
-    AppBrazilMapStaticData.brazilUfGeoJsonReadiness.addListener(
-      _handleBrazilUfGeoJsonReadinessChanged,
-    );
-    _markerSelection.addListener(_scheduleSnapshotRefresh);
-    _startBrazilShapeSourcePrecacheIfNeeded();
-    if (widget.selectedStoreId != null && widget.style.autoFocusSelectedStore) {
-      _selection.adoptControlledSelectionOnInit();
-      _zoom.clusteringZoomLevel = widget.style.selectedStoreZoomLevel;
-      _scheduleConsumeCameraFocus();
-    }
+    _lifecycle.initialize();
   }
 
   @override
@@ -293,12 +251,7 @@ class _AppBrazilStoreSalesMapChartState
 
   @override
   void dispose() {
-    _markerSelection.removeListener(_scheduleSnapshotRefresh);
-    AppBrazilMapStaticData.brazilUfGeoJsonReadiness.removeListener(
-      _handleBrazilUfGeoJsonReadinessChanged,
-    );
-    _viewport.dispose();
-    _markerHighlight.dispose();
+    _lifecycle.dispose();
     super.dispose();
   }
 

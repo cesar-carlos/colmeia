@@ -1,4 +1,3 @@
-import 'package:colmeia/features/user_context/domain/entities/user_profile.dart';
 import 'package:colmeia/shared/data/json/wrapped_json_reader.dart';
 import 'package:colmeia/shared/identity/client_account_status.dart';
 
@@ -79,19 +78,6 @@ class ClientAuthUserDto {
     }
 
     return accountStatus.wireValue;
-  }
-
-  UserProfile toUserProfile() {
-    return UserProfile(
-      id: id,
-      name: displayName,
-      roleLabel: resolvedRoleLabel,
-      corporateEmail: email,
-      phone: mobile ?? '',
-      firstName: firstName ?? '',
-      lastName: lastName ?? '',
-      thumbnailUrl: thumbnailUrl,
-    );
   }
 
   static String? _readFirstName(Map<String, dynamic> json) {

@@ -5,6 +5,7 @@ import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart'
     show formatComparisonBarXAxisLabelWrapped;
 import 'package:colmeia/shared/widgets/charts/chart_export_capture.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
@@ -43,6 +44,7 @@ ChartShareMetadata buildOverviewLucratividadeChartShareMetadata({
   required List<ResumoProdutoVendaLucratividadeRow> sortedPoints,
   required AppComboChartStyle exportBaseStyle,
   required OverviewLucratividadeComboShareSeries series,
+  ChartShareExportHeaderContext? exportHeaderContext,
 }) {
   final tableLimit = applyChartShareTableRowLimit(
     tableData: ChartShareTableData(
@@ -69,7 +71,10 @@ ChartShareMetadata buildOverviewLucratividadeChartShareMetadata({
   return ChartShareMetadata(
     title: l10n.overviewLucratividadeTitle,
     subtitle: l10n.overviewLucratividadeSubtitle,
-    filterSummary: tableLimit.truncationNotice,
+    filterSummary: buildChartSharePdfFilterSummary(
+      exportHeaderContext: exportHeaderContext,
+      truncationNotice: tableLimit.truncationNotice,
+    ),
     tableData: tableLimit.tableData,
     pdfOrientation: ChartSharePdfOrientation.landscape,
     chartExportBuilder: sortedPoints.isEmpty
