@@ -7,6 +7,7 @@ import 'package:colmeia/core/errors/app_failure.dart'
     show AppFailure, RpcFailure, SessionFailure;
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:flutter_test/flutter_test.dart' hide group;
@@ -21,7 +22,7 @@ void main() {
       registerE2eAgentQueriesSuiteHooks();
 
       test(
-        'executeSql loads Cliente rows on the legacy bridge',
+        'executeSql loads Municipio rows on the legacy bridge',
         () async {
           final missingKeys = missingE2eRepositoryKeys();
           if (missingKeys.isNotEmpty) {
@@ -46,9 +47,12 @@ void main() {
                 agentId: AppEnvironment.e2eAgentId,
                 clientToken: AppEnvironment.e2eClientToken,
                 sql:
-                    'SELECT TOP 10 CodCliente, Nome FROM Cliente '
-                    'ORDER BY CodCliente',
+                    'SELECT TOP 10 CodMunicipio, Nome FROM Municipio '
+                    'ORDER BY CodMunicipio',
                 bridgeTimeoutMs: 30000,
+                executeOptions: const AgentSqlExecuteOptions(
+                  maxRows: 10,
+                ),
               ),
             ),
             actionLabel: 'agent_sql_bridge_execute',
@@ -91,6 +95,10 @@ void main() {
                     'ORDER BY CodCliente',
                 bridgeTimeoutMs: 30000,
                 pagination: const AgentSqlPagePagination(page: 1, pageSize: 10),
+                executeOptions: const AgentSqlExecuteOptions(
+                  maxRows: 10,
+                  preferDbStreaming: true,
+                ),
               ),
             ),
             actionLabel: 'agent_sql_bridge_pagination',
@@ -140,6 +148,7 @@ void main() {
               AgentSqlExecuteBatchRequest(
                 agentId: AppEnvironment.e2eAgentId,
                 clientToken: AppEnvironment.e2eClientToken,
+                options: const AgentSqlExecuteBatchOptions(maxRows: 1),
                 commands: const <AgentSqlExecuteBatchCommand>[
                   AgentSqlExecuteBatchCommand(
                     sql:

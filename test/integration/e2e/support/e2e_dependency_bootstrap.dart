@@ -785,6 +785,42 @@ bool isKnownE2eAgentSqlReplayDetectedFailure(AppFailure failure) {
       message.contains('duplicate request');
 }
 
+String? _agentSqlErrorDataCode(AppFailure failure) {
+  if (failure is! RpcFailure) {
+    return null;
+  }
+  final errorData = failure.context[AgentSqlRpcFailureUiKey.errorDataField];
+  return switch (errorData) {
+    Map<Object?, Object?>() =>
+      errorData['code']?.toString().trim().toUpperCase(),
+    _ => null,
+  };
+}
+
+/// Agent or hub rejected the result set size (`result_too_large`, rpc -32105).
+bool isKnownE2eAgentSqlResultTooLargeFailure(AppFailure failure) {
+  if (failure is! RpcFailure) {
+    return false;
+  }
+  if (failure.rpcCode == -32105 && failure.category == 'sql') {
+    return true;
+  }
+  final reasonLower = failure.reason?.trim().toLowerCase() ?? '';
+  if (reasonLower == 'result_too_large') {
+    return true;
+  }
+  final uiKey = failure.context[AgentSqlRpcFailureUiKey.field];
+  return uiKey == AgentSqlRpcFailureUiKey.resultTooLarge;
+}
+
+/// Hub relay stream slot limit during heavy parallel E2E runs (retryable).
+bool isKnownE2eAgentSqlStreamCapacityReachedFailure(AppFailure failure) {
+  if (failure is! RpcFailure) {
+    return false;
+  }
+  return _agentSqlErrorDataCode(failure) == 'AGENT_STREAM_CAPACITY_REACHED';
+}
+
 /// Hub concurrency / rate-limit RPCs during heavy parallel `flutter test` runs.
 bool isKnownE2eAgentSqlHubConcurrencyFailure(AppFailure failure) {
   if (failure is! RpcFailure) {
@@ -834,6 +870,8 @@ bool isAcceptableE2eAgentSqlRepositoryFailure(AppFailure failure) {
       isKnownE2eAgentSqlReplayDetectedFailure(failure) ||
       isKnownE2eAgentSqlCircuitBreakerOpenFailure(failure) ||
       isKnownE2eAgentSqlDatabaseConnectionFailure(failure) ||
+      isKnownE2eAgentSqlResultTooLargeFailure(failure) ||
+      isKnownE2eAgentSqlStreamCapacityReachedFailure(failure) ||
       isKnownE2eAgentDisconnectedAtDispatchFailure(failure);
 }
 

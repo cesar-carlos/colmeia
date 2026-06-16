@@ -560,7 +560,7 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
           await _reload();
         },
         child: ListView(
-          cacheExtent: AppScrollTokens.chartDashboardListCacheExtent,
+          scrollCacheExtent: AppScrollTokens.chartDashboardListCacheExtent,
           physics: const AlwaysScrollableScrollPhysics(),
           padding: context.pageScrollPadding(
             tokens,

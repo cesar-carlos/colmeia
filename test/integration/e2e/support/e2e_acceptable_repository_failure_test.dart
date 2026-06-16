@@ -209,6 +209,105 @@ void main() {
     });
   });
 
+  group('isKnownE2eAgentSqlResultTooLargeFailure', () {
+    test('returns true for result_too_large RpcFailure by rpc code', () {
+      const failure = RpcFailure(
+        message: 'Result set exceeds size limit',
+        userMessage: 'The query returned too many rows.',
+        rpcCode: -32105,
+        retryable: false,
+        reason: 'result_too_large',
+        category: 'sql',
+        context: <String, Object?>{
+          AgentSqlRpcFailureUiKey.field:
+              AgentSqlRpcFailureUiKey.resultTooLarge,
+        },
+      );
+
+      expect(isKnownE2eAgentSqlResultTooLargeFailure(failure), isTrue);
+      expect(isAcceptableE2eAgentSqlRepositoryFailure(failure), isTrue);
+    });
+
+    test('returns true when only uiKey is resultTooLarge', () {
+      const failure = RpcFailure(
+        message: 'Result too large',
+        userMessage: 'Too many rows.',
+        rpcCode: -32105,
+        retryable: false,
+        category: 'sql',
+        context: <String, Object?>{
+          AgentSqlRpcFailureUiKey.field:
+              AgentSqlRpcFailureUiKey.resultTooLarge,
+        },
+      );
+
+      expect(isKnownE2eAgentSqlResultTooLargeFailure(failure), isTrue);
+      expect(isAcceptableE2eAgentSqlRepositoryFailure(failure), isTrue);
+    });
+
+    test('returns false for unrelated RpcFailure', () {
+      const failure = RpcFailure(
+        message: 'm',
+        userMessage: 'u',
+        rpcCode: -32104,
+        retryable: false,
+        reason: 'connection_pool_exhausted',
+        category: 'sql',
+      );
+
+      expect(isKnownE2eAgentSqlResultTooLargeFailure(failure), isFalse);
+      expect(isAcceptableE2eAgentSqlRepositoryFailure(failure), isFalse);
+    });
+  });
+
+  group('isKnownE2eAgentSqlStreamCapacityReachedFailure', () {
+    test('returns true when error data code is AGENT_STREAM_CAPACITY_REACHED',
+        () {
+      const failure = RpcFailure(
+        message: 'Relay stream capacity reached',
+        userMessage: 'Wait and try again.',
+        rpcCode: -32000,
+        retryable: true,
+        reason: 'stream_capacity_reached',
+        category: 'transport',
+        context: <String, Object?>{
+          AgentSqlRpcFailureUiKey.errorDataField: <String, Object?>{
+            'code': 'AGENT_STREAM_CAPACITY_REACHED',
+          },
+        },
+      );
+
+      expect(isKnownE2eAgentSqlStreamCapacityReachedFailure(failure), isTrue);
+      expect(isAcceptableE2eAgentSqlRepositoryFailure(failure), isTrue);
+    });
+
+    test('returns false for unrelated error data code', () {
+      const failure = RpcFailure(
+        message: 'm',
+        userMessage: 'u',
+        rpcCode: -32000,
+        retryable: true,
+        category: 'transport',
+        context: <String, Object?>{
+          AgentSqlRpcFailureUiKey.errorDataField: <String, Object?>{
+            'code': 'RATE_LIMITED',
+          },
+        },
+      );
+
+      expect(isKnownE2eAgentSqlStreamCapacityReachedFailure(failure), isFalse);
+    });
+
+    test('returns false for non-RpcFailure', () {
+      const failure = NetworkFailure(
+        message: 'other',
+        userMessage: 'u',
+      );
+
+      expect(isKnownE2eAgentSqlStreamCapacityReachedFailure(failure), isFalse);
+    });
+  });
+
   group('isKnownE2eAgentSqlHttpForbiddenFailure', () {
     test('accepts batch Agent SQL authorization failures', () {
       const failure = AuthorizationFailure(

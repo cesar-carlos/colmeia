@@ -8,7 +8,9 @@ import 'package:colmeia/core/errors/app_failure.dart'
     show AppFailure, RpcFailure;
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:flutter_test/flutter_test.dart' hide group;
@@ -41,8 +43,13 @@ void main() {
             AgentSqlExecuteRequest(
               agentId: AppEnvironment.e2eAgentId,
               clientToken: AppEnvironment.e2eClientToken,
-              sql: 'SELECT TOP 1 CodCliente FROM Cliente ORDER BY CodCliente',
+              sql: 'SELECT CodCliente, Nome FROM Cliente ORDER BY CodCliente',
               bridgeTimeoutMs: 30000,
+              pagination: const AgentSqlPagePagination(page: 1, pageSize: 1),
+              executeOptions: const AgentSqlExecuteOptions(
+                maxRows: 1,
+                preferDbStreaming: true,
+              ),
               useRelay: true,
             ),
           ),
@@ -65,14 +72,15 @@ void main() {
               agentId: AppEnvironment.e2eAgentId,
               clientToken: AppEnvironment.e2eClientToken,
               bridgeTimeoutMs: 30000,
+              options: const AgentSqlExecuteBatchOptions(maxRows: 1),
               useRelay: true,
               commands: const <AgentSqlExecuteBatchCommand>[
                 AgentSqlExecuteBatchCommand(
                   sql:
-                      'SELECT TOP 1 CodCliente FROM Cliente ORDER BY CodCliente',
+                      'SELECT CodCliente FROM Cliente ORDER BY CodCliente',
                 ),
                 AgentSqlExecuteBatchCommand(
-                  sql: 'SELECT TOP 1 Nome FROM Cliente ORDER BY CodCliente',
+                  sql: 'SELECT Nome FROM Cliente ORDER BY CodCliente',
                 ),
               ],
             ),
