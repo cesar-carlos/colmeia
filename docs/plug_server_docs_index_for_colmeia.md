@@ -93,7 +93,7 @@ envelope shapes and validation.
 | Flag | Hub / client contract | Colmeia default | Rollout notes |
 | --- | --- | --- | --- |
 | `SOCKET_RELAY_BATCH_ENABLED` | `relay:rpc.request.batch` — multiple JSON-RPC commands per relay emit (ADR 0008). | `true` in bundled `default.env` | Hub v1 shipped **2026-05-28**; E2E validated before production default. Override `false` for A/B. Distinct from `SOCKET_BATCH_ENABLED` (see [`bridge_agent_sql_api_options.md`](bridge_agent_sql_api_options.md)). |
-| `SOCKET_RELAY_FAST_PATH_ENABLED` | Relay unary skips `relay:rpc.accepted` when `fastPath: true` (ADR 0009). | `false` | **Keep false** until the hub echoes the client JSON-RPC `id` on fast-path responses (documented defect in [`server_adjustments/relay_unary_fast_path.md`](server_adjustments/relay_unary_fast_path.md)). |
+| `SOCKET_RELAY_FAST_PATH_ENABLED` | Relay unary skips `relay:rpc.accepted` when `fastPath: true` (ADR 0009). | `true` in bundled `default.env` | Hub fix shipped **2026-05** (Option B) + ADR 0009 **2026-06-24**. Roll back to `false` if a hub still returns hub UUID in `body.id` (see [`server_adjustments/relay_unary_fast_path.md`](server_adjustments/relay_unary_fast_path.md)). |
 | `SOCKET_REQUEST_SERVER_TIMINGS_ENABLED` | Appends `serverTimings` phase snapshot to relay, `agents:command`, and REST responses (ADR 0010). | `false` | Safe for E2E and diagnostic builds (~120 B per response). Enable when correlating client metrics with hub queue/SQL phases. |
 
 Related client-only socket tuning (no hub mirror flag): `SOCKET_BATCH_ENABLED`

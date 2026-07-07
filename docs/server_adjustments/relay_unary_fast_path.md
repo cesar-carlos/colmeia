@@ -1,10 +1,14 @@
 # Relay unary fast-path (skip `rpc.accepted` for unary SQL)
 
-> **Document audience.** This page is for the **`plug_server` hub team**.
-> The Colmeia client is wired and ready; we hit one defect on the hub
-> side that blocks rollout. Sections 1–3 are the actionable bug report.
-> Sections 4+ keep the original proposal and design as historical
+> **Status: RESOLVED (hub fix shipped 2026-05; ADR 0009 `clientRequestIdEcho`
+> v1 shipped 2026-06-24).** Colmeia enables
+> `SOCKET_RELAY_FAST_PATH_ENABLED=true` in bundled `assets/env/default.env`.
+> Sections 1–3 below are the original bug report and adoption notes (kept for
+> history). Sections 4+ keep the original proposal and design as historical
 > record.
+
+> **Document audience.** This page was written for the **`plug_server` hub team**
+> during the defect window. The actionable checklist in §1 is complete.
 
 ## 1. Hub team — action checklist
 
@@ -13,25 +17,25 @@
 (skip `relay:rpc.accepted` path, see `socket_relay_protocol.md`
 "Relay unary fast-path").
 
-- [ ] **Echo the client JSON-RPC `id` in the fast-path response body.**
+- [x] **Echo the client JSON-RPC `id` in the fast-path response body.**
       The hub currently writes its own server-assigned UUID into
       `body.id`; it must instead carry the same `id` value that arrived
       in the inbound `relay:rpc.request` PayloadFrame (the JSON-RPC
       `id` is the client's correlation token; the hub's internal
       `requestId` is the wire-level correlator and stays on the
       envelope).
-- [ ] Add a hub-side contract test: send a `relay:rpc.request` with
+- [x] Add a hub-side contract test: send a `relay:rpc.request` with
       `fastPath: true` and a known `id`; assert the matching
       `relay:rpc.response` envelope has `requestId != id` (server's
       UUID) **and** the decoded body has `id` equal to the client's id.
       This is the regression guard.
-- [ ] Update `docs/socket_relay_protocol.md` "Relay unary fast-path"
+- [x] Update `docs/socket_relay_protocol.md` "Relay unary fast-path"
       to reaffirm JSON-RPC 2.0 §5 compliance for fast-path responses
       (the existing `DELIVERED.md` client snippet already assumes this
       behaviour — it just hasn't been honoured in code).
-- [ ] Bump a metric `plug_socket_relay_fast_path_id_echo_total` (or
+- [x] Bump a metric `plug_socket_relay_fast_path_id_echo_total` (or
       similar) so we can observe in production that the fix landed.
-- [ ] When the fix is in a non-production env, ping the Colmeia client
+- [x] When the fix is in a non-production env, ping the Colmeia client
       side: nothing on the client changes besides flipping
       `SOCKET_RELAY_FAST_PATH_ENABLED=true` in the chosen env file —
       see §3 below.
@@ -133,7 +137,12 @@ fast-path response and the dispatcher drops the frame.
 
 ## 3. Client adoption — after the hub fix lands
 
-**No client code change is required.** The wiring already implements
+**Status (2026-07):** hub fix is deployed; Colmeia bundled default is
+`SOCKET_RELAY_FAST_PATH_ENABLED=true` in `assets/env/default.env`. Roll back
+to `false` only if E2E against a target hub shows the pre-fix symptom
+(7 s baseline → ~278 s with retries).
+
+**No client code change was required.** The wiring already implements
 the contract the hub team specified. Once the hub fix is deployed in a
 target environment, the Colmeia operator flips a single env knob:
 
