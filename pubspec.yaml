@@ -2,7 +2,7 @@ name: colmeia
 description: "Dashboards e relatórios operacionais para gestão multi-loja."
 publish_to: "none"
 
-version: 1.6.1+24
+version: 1.6.2+25
 
 environment:
   sdk: ^3.11.0
