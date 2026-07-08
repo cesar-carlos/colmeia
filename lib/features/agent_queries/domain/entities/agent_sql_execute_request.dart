@@ -136,9 +136,9 @@ class AgentSqlExecuteRequest {
 
   /// Stable JSON-RPC / relay `clientRequestId` for the logical operation.
   ///
-  /// Set by [RetryingAgentQueriesRepository] so retries reuse the same wire
-  /// id and the hub can dedupe post-timeout replays. Callers should leave
-  /// this `null`; transport layers generate a fresh id when absent.
+  /// Set by the retrying agent-queries repository decorator so retries reuse
+  /// the same wire id and the hub can dedupe post-timeout replays. Callers
+  /// should leave this `null`; transport layers generate a fresh id when absent.
   final String? transportRpcId;
 
   String get trimmedAgentId => agentId.trim();

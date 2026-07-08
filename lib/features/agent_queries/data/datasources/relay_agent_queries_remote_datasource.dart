@@ -5,9 +5,9 @@ import 'package:colmeia/features/agent_queries/data/agent_sql_execute_batch_requ
 import 'package:colmeia/features/agent_queries/data/agent_sql_execute_request_to_bridge_body.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_relay_response_adapter.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
+import 'package:colmeia/features/agent_queries/domain/agent_sql_transport_timeouts.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
-import 'package:colmeia/features/agent_queries/domain/agent_sql_transport_timeouts.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:uuid/uuid.dart';
 

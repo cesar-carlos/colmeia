@@ -329,7 +329,6 @@ PayloadFrameCodec _buildPayloadFrameCodec() {
       gzipDecodeIsolateThresholdBytes: gzipDecodeThreshold,
       gzipEncodeIsolateThresholdBytes: gzipEncodeThreshold,
       jsonDecodeIsolateThresholdBytes: jsonDecodeThreshold,
-      requireSignature: false,
     );
   }
   final keyId = AppEnvironment.socketPayloadSigningKeyId;

@@ -188,7 +188,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     final leaderClient = Completer<Map<String, dynamic>>();
     _coalesceLeaderClientCompleterByRpcId[rpcId] = leaderClient;
     final tracked = hubFuture.then(
-      (Map<String, dynamic> value) {
+      (value) {
         if (!leaderClient.isCompleted) {
           leaderClient.complete(value);
         }
@@ -198,7 +198,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
         if (!leaderClient.isCompleted) {
           leaderClient.completeError(error, stack);
         }
-        throw error;
+        return Future<Map<String, dynamic>>.error(error, stack);
       },
     );
     _inflightByKey[key] = tracked;
@@ -343,7 +343,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
         cause: e,
       );
       rethrow;
-    } on Object catch (e, s) {
+    } on Object {
       _meta.remove(rpcId);
       gate?.release(agentId);
       rethrow;

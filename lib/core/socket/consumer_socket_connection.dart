@@ -187,7 +187,7 @@ class ConsumerSocketConnection {
       );
       if (outcome is _ConnectSuccess &&
           attemptGeneration != _connectGeneration) {
-        outcome = _ConnectCancelled(reason: 'superseded');
+        outcome = const _ConnectCancelled(reason: 'superseded');
       }
       switch (outcome) {
         case _ConnectCancelled():

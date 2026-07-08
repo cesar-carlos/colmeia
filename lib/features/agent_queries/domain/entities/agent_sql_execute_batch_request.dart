@@ -32,7 +32,7 @@ class AgentSqlExecuteBatchRequest {
   final RelayPayloadFrameCompression? payloadFrameCompression;
   final bool skipTransportCache;
 
-  /// See [AgentSqlExecuteRequest.transportRpcId].
+  /// Same semantics as `transportRpcId` on single execute requests.
   final String? transportRpcId;
 
   String get trimmedAgentId => agentId.trim();
