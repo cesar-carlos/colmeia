@@ -69,6 +69,12 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
 
   StreamSubscription<ConsumerSocketConnectionState>? _connectionStatesSub;
 
+  /// Minimum gap between automatic reconnects triggered by unexpected
+  /// server-side disconnects while the app stays in foreground.
+  static const _unexpectedReconnectCooldown = Duration(seconds: 3);
+
+  DateTime? _lastUnexpectedReconnectAt;
+
   /// Reasons that identify an intentional disconnect initiated by the app.
   /// Unexpected server-side disconnects will carry a Socket.IO transport
   /// reason (e.g. "io server disconnect", "transport close") or null, and
@@ -132,7 +138,12 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
         unawaited(_safePause());
       case AppLifecycleState.resumed:
         if (widget.authGate.isAuthenticated) {
-          unawaited(_safeResume(reason: 'app_resumed'));
+          final connection = widget.connection;
+          if (connection != null && connection.state is ConsumerSocketError) {
+            unawaited(_safeResume(reason: 'recover_from_socket_error'));
+          } else {
+            unawaited(_safeResume(reason: 'app_resumed'));
+          }
         }
       case AppLifecycleState.inactive:
       case AppLifecycleState.hidden:
@@ -154,6 +165,10 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
   /// backoff/retry loop internally, so concurrent or redundant calls here
   /// are safe.
   void _onConnectionStateChanged(ConsumerSocketConnectionState state) {
+    if (state is ConsumerSocketConnected) {
+      _lastUnexpectedReconnectAt = null;
+      return;
+    }
     if (state is! ConsumerSocketDisconnected) {
       return;
     }
@@ -167,6 +182,13 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
     if (reason != null && _intentionalDisconnectReasons.contains(reason)) {
       return;
     }
+    final now = DateTime.now();
+    final last = _lastUnexpectedReconnectAt;
+    if (last != null &&
+        now.difference(last) < _unexpectedReconnectCooldown) {
+      return;
+    }
+    _lastUnexpectedReconnectAt = now;
     AppLogger.debug(
       'SocketLifecycleObserver: unexpected disconnect — scheduling reconnect',
       context: <String, Object?>{

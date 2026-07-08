@@ -180,7 +180,7 @@ void main() {
       const request = AgentSqlExecuteRequest(
         agentId: 'agent-1',
         sql: 'SELECT 1',
-        bridgeTimeoutMs: 60000,
+        bridgeTimeoutMs: 1000,
       );
       when(() => delegate.executeSql(any())).thenAnswer((_) async {
         await Future<void>.delayed(const Duration(milliseconds: 30));

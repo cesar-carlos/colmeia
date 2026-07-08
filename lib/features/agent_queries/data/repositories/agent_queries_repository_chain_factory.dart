@@ -27,13 +27,13 @@ class AgentQueriesRepositoryChain {
   final List<String> decorators;
 
   /// Inner metrics decorator (latency / periodic logs). Same instance the
-  /// chain wires below [CachingAgentQueriesRepository].
+  /// chain wires below [AdaptiveTimeoutAgentQueriesRepository].
   final MetricsAgentQueriesRepository metricsRepository;
 
   /// In-memory SQL result cache wired outside [MetricsAgentQueriesRepository].
   final CachingAgentQueriesRepository cachingRepository;
 
-  /// In-flight dedupe decorator between cache and metrics.
+  /// In-flight dedupe decorator between cache and retry.
   final CoalescingAgentQueriesRepository coalescingRepository;
 }
 
@@ -57,20 +57,20 @@ abstract final class AgentQueriesRepositoryChainFactory {
           )
         : base;
 
-    final retrying = RetryingAgentQueriesRepository(
+    final metrics = MetricsAgentQueriesRepository(
       delegate: retryingDelegate,
     );
 
     final adaptiveTimeout = AdaptiveTimeoutAgentQueriesRepository(
-      delegate: retrying,
+      delegate: metrics,
     );
 
-    final metrics = MetricsAgentQueriesRepository(
+    final retrying = RetryingAgentQueriesRepository(
       delegate: adaptiveTimeout,
     );
 
     final coalescing = CoalescingAgentQueriesRepository(
-      delegate: metrics,
+      delegate: retrying,
     );
 
     final caching = CachingAgentQueriesRepository(
@@ -95,9 +95,9 @@ abstract final class AgentQueriesRepositoryChainFactory {
       'CircuitBreakerAgentQueriesRepository',
       'CachingAgentQueriesRepository',
       'CoalescingAgentQueriesRepository',
-      'MetricsAgentQueriesRepository',
-      'AdaptiveTimeoutAgentQueriesRepository',
       'RetryingAgentQueriesRepository',
+      'AdaptiveTimeoutAgentQueriesRepository',
+      'MetricsAgentQueriesRepository',
       if (agentSqlRestMaxInflightPerAgent > 0)
         'RestInflightAgentQueriesRepository',
       'AgentQueriesRepositoryImpl',

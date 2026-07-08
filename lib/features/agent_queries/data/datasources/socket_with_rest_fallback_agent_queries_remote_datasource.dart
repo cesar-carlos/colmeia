@@ -1,4 +1,5 @@
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/network/auth_session_events.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
@@ -41,9 +42,12 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
     required AgentQueriesRemoteDataSource socketDelegate,
     required AgentQueriesRemoteDataSource restDelegate,
     void Function(SocketDispatchException trigger)? onFallback,
+    AuthSessionEvents? sessionEvents,
   }) : _socketDelegate = socketDelegate,
        _restDelegate = restDelegate,
-       _onFallback = onFallback;
+       _onFallback = onFallback {
+    sessionEvents?.stream.listen((_) => resetLatch(reason: 'auth_session'));
+  }
 
   final AgentQueriesRemoteDataSource _socketDelegate;
   final AgentQueriesRemoteDataSource _restDelegate;
@@ -55,13 +59,29 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
   final void Function(SocketDispatchException trigger)? _onFallback;
 
   /// `true` once the latch has caught a permanent failure. Stays
-  /// `true` until the process restarts.
+  /// `true` until the process restarts or [resetLatch] runs.
   bool _latched = false;
 
   /// Visible-for-testing accessor. UI code SHOULD NOT depend on
   /// this — the contract is "you get a working datasource"; whether
   /// it is socket or REST is an implementation detail.
   bool get isLatchedToRest => _latched;
+
+  /// Clears the REST fallback latch so a new auth session can retry
+  /// the socket transport.
+  void resetLatch({required String reason}) {
+    if (!_latched) {
+      return;
+    }
+    _latched = false;
+    AppLogger.info(
+      'Agent queries REST fallback latch cleared',
+      context: <String, Object?>{
+        'component': 'SocketWithRestFallbackAgentQueriesRemoteDataSource',
+        'reason': reason,
+      },
+    );
+  }
 
   @override
   Future<Map<String, dynamic>> postSqlExecute(

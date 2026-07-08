@@ -21,15 +21,25 @@ final class AgentQueriesTransportFailureMapper {
     );
 
     if (error is SocketDispatchCancelled) {
-      return UnknownFailure(
+      return OperationCancelledFailure(
         message: error.message,
-        cause: error,
-        stackTrace: stackTrace,
         context: _cancelledContext(
           _withUiKey(
             context,
             AgentSqlRpcFailureUiKey.executionCancelled,
           ),
+        ),
+      );
+    }
+
+    if (error is SocketDispatchTimeout) {
+      return NetworkFailure(
+        message: error.message,
+        cause: error,
+        stackTrace: stackTrace,
+        context: _withUiKey(
+          context,
+          AgentSqlRpcFailureUiKey.transportTimeout,
         ),
       );
     }

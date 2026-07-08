@@ -3,10 +3,10 @@ import 'dart:math' as math;
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
-import 'package:colmeia/features/agent_queries/data/agent_query_failure_ui_key_resolver.dart';
-import 'package:colmeia/features/agent_queries/data/agent_sql_rpc_user_message_resolver.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_failure_codes.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_retry_backoff.dart';
+import 'package:colmeia/features/agent_queries/data/agent_query_failure_ui_key_resolver.dart';
+import 'package:colmeia/features/agent_queries/data/agent_sql_rpc_user_message_resolver.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
@@ -14,6 +14,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
+import 'package:uuid/uuid.dart';
 
 /// Decorator that retries transient failures automatically with exponential
 /// backoff, preserving the original request semantics while improving
@@ -31,26 +32,34 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
     required AgentQueriesRepository delegate,
     int maxAttempts = 3,
     Duration initialRetryDelay = const Duration(milliseconds: 200),
+    Duration defaultTotalRetryBudget = const Duration(minutes: 9),
     math.Random? random,
+    Uuid? uuid,
   }) : _delegate = delegate,
        _maxAttempts = maxAttempts,
        _initialRetryDelay = initialRetryDelay,
-       _random = random ?? math.Random();
+       _defaultTotalRetryBudget = defaultTotalRetryBudget,
+       _random = random ?? math.Random(),
+       _uuid = uuid ?? const Uuid();
 
   final AgentQueriesRepository _delegate;
   final int _maxAttempts;
   final Duration _initialRetryDelay;
+  final Duration _defaultTotalRetryBudget;
   final math.Random _random;
-
+  final Uuid _uuid;
   @override
   Future<AppResult<AgentSqlExecutionResult>> executeSql(
     AgentSqlExecuteRequest request, {
     AgentQueriesCancelScope? cancelScope,
   }) async {
+    final logicalRequest = _stableExecuteRequest(request);
+    final budget = Stopwatch()..start();
     var attempt = 1;
+    AppResult<AgentSqlExecutionResult>? lastFailure;
     while (true) {
       final result = await _delegate.executeSql(
-        request,
+        logicalRequest,
         cancelScope: cancelScope,
       );
 
@@ -60,7 +69,7 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
             'Agent SQL execute succeeded after retry',
             context: <String, Object?>{
               'operation': 'executeAgentSql',
-              'agentId': request.trimmedAgentId,
+              'agentId': logicalRequest.trimmedAgentId,
               'attempt': attempt,
             },
           );
@@ -68,15 +77,21 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
         return result;
       }
 
+      lastFailure = result;
       final failure = result.exceptionOrNull()!;
 
-      if (attempt >= _maxAttempts || !_shouldRetry(failure)) {
+      if (attempt >= _maxAttempts ||
+          !_shouldRetry(failure, cancelScope) ||
+          !_hasRetryBudgetRemaining(
+            budget,
+            bridgeTimeoutMs: logicalRequest.bridgeTimeoutMs,
+          )) {
         if (attempt > 1) {
           AppLogger.warning(
             'Agent SQL execute failed after all retries',
             context: <String, Object?>{
               'operation': 'executeAgentSql',
-              'agentId': request.trimmedAgentId,
+              'agentId': logicalRequest.trimmedAgentId,
               'attempt': attempt,
               'failureType': failure.runtimeType.toString(),
             },
@@ -86,11 +101,18 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
       }
 
       final delay = _calculateBackoffDelay(attempt);
+      if (!_canAffordDelay(
+        budget,
+        delay,
+        bridgeTimeoutMs: logicalRequest.bridgeTimeoutMs,
+      )) {
+        return result;
+      }
       AppLogger.debug(
         'Agent SQL execute failed, will retry',
         context: <String, Object?>{
           'operation': 'executeAgentSql',
-          'agentId': request.trimmedAgentId,
+          'agentId': logicalRequest.trimmedAgentId,
           'attempt': attempt,
           'failureType': failure.runtimeType.toString(),
           'retryDelayMs': delay.inMilliseconds,
@@ -98,19 +120,24 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
       );
 
       await Future<void>.delayed(delay);
+      if (cancelScope?.isCancelled == true) {
+        return lastFailure;
+      }
       attempt++;
     }
   }
-
   @override
   Future<AppResult<AgentSqlBatchExecutionResult>> executeSqlBatch(
     AgentSqlExecuteBatchRequest request, {
     AgentQueriesCancelScope? cancelScope,
   }) async {
+    final logicalRequest = _stableBatchRequest(request);
+    final budget = Stopwatch()..start();
     var attempt = 1;
+    AppResult<AgentSqlBatchExecutionResult>? lastFailure;
     while (true) {
       final result = await _delegate.executeSqlBatch(
-        request,
+        logicalRequest,
         cancelScope: cancelScope,
       );
 
@@ -118,17 +145,30 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
         return result;
       }
 
+      lastFailure = result;
       final failure = result.exceptionOrNull()!;
-      if (attempt >= _maxAttempts || !_shouldRetry(failure)) {
+      if (attempt >= _maxAttempts ||
+          !_shouldRetry(failure, cancelScope) ||
+          !_hasRetryBudgetRemaining(
+            budget,
+            bridgeTimeoutMs: logicalRequest.bridgeTimeoutMs,
+          )) {
         return result;
       }
 
       final delay = _calculateBackoffDelay(attempt);
+      if (!_canAffordDelay(
+        budget,
+        delay,
+        bridgeTimeoutMs: logicalRequest.bridgeTimeoutMs,
+      )) {
+        return result;
+      }
       AppLogger.debug(
         'Agent SQL batch execute failed, will retry',
         context: <String, Object?>{
           'operation': 'executeAgentSqlBatch',
-          'agentId': request.trimmedAgentId,
+          'agentId': logicalRequest.trimmedAgentId,
           'attempt': attempt,
           'failureType': failure.runtimeType.toString(),
           'retryDelayMs': delay.inMilliseconds,
@@ -136,10 +176,53 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
       );
 
       await Future<void>.delayed(delay);
+      if (cancelScope?.isCancelled == true) {
+        return lastFailure;
+      }
       attempt++;
     }
   }
 
+  AgentSqlExecuteRequest _stableExecuteRequest(AgentSqlExecuteRequest request) {
+    final existing = request.transportRpcId?.trim();
+    if (existing != null && existing.isNotEmpty) {
+      return request;
+    }
+    return request.copyWith(transportRpcId: _uuid.v4());
+  }
+
+  AgentSqlExecuteBatchRequest _stableBatchRequest(
+    AgentSqlExecuteBatchRequest request,
+  ) {
+    final existing = request.transportRpcId?.trim();
+    if (existing != null && existing.isNotEmpty) {
+      return request;
+    }
+    return request.copyWith(transportRpcId: _uuid.v4());
+  }
+
+  Duration _totalRetryBudget({required int? bridgeTimeoutMs}) {
+    if (bridgeTimeoutMs != null) {
+      return Duration(milliseconds: bridgeTimeoutMs * _maxAttempts);
+    }
+    return _defaultTotalRetryBudget;
+  }
+
+  bool _hasRetryBudgetRemaining(
+    Stopwatch budget, {
+    required int? bridgeTimeoutMs,
+  }) {
+    return budget.elapsed < _totalRetryBudget(bridgeTimeoutMs: bridgeTimeoutMs);
+  }
+
+  bool _canAffordDelay(
+    Stopwatch budget,
+    Duration delay, {
+    required int? bridgeTimeoutMs,
+  }) {
+    final total = _totalRetryBudget(bridgeTimeoutMs: bridgeTimeoutMs);
+    return budget.elapsed + delay < total;
+  }
   Duration _calculateBackoffDelay(int failedAttempt) {
     final ceiling = AgentQueriesRetryBackoff.ceiling(
       initialDelay: _initialRetryDelay,
@@ -151,7 +234,16 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
     );
   }
 
-  bool _shouldRetry(AppFailure failure) {
+  bool _shouldRetry(
+    AppFailure failure, [
+    AgentQueriesCancelScope? cancelScope,
+  ]) {
+    if (cancelScope?.isCancelled == true) {
+      return false;
+    }
+    if (failure is OperationCancelledFailure) {
+      return false;
+    }
     if (_isRateLimitedFailure(failure)) {
       return false;
     }

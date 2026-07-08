@@ -53,7 +53,7 @@ void main() {
     final result = await retrying.executeSql(request);
 
     check(result.isSuccess()).isTrue();
-    verify(() => delegate.executeSql(request)).called(1);
+    verify(() => delegate.executeSql(any())).called(1);
   });
 
   test('transient failure then success: delegate called twice', () async {
@@ -76,7 +76,7 @@ void main() {
     final result = await retrying.executeSql(request);
 
     check(result.isSuccess()).isTrue();
-    verify(() => delegate.executeSql(request)).called(2);
+    verify(() => delegate.executeSql(any())).called(2);
   });
 
   test(
@@ -95,7 +95,7 @@ void main() {
 
       check(result.isError()).isTrue();
       check(result.exceptionOrNull()).isA<NetworkFailure>();
-      verify(() => delegate.executeSql(request)).called(3);
+      verify(() => delegate.executeSql(any())).called(3);
     },
   );
 
@@ -126,7 +126,7 @@ void main() {
       final result = await retrying.executeSql(request);
 
       check(result.isSuccess()).isTrue();
-      verify(() => delegate.executeSql(request)).called(2);
+      verify(() => delegate.executeSql(any())).called(2);
     },
   );
 
@@ -143,7 +143,7 @@ void main() {
 
     check(result.isError()).isTrue();
     check(result.exceptionOrNull()).isA<ValidationFailure>();
-    verify(() => delegate.executeSql(request)).called(1);
+    verify(() => delegate.executeSql(any())).called(1);
   });
 
   test('NetworkFailure with retryAfter: no retry', () async {
@@ -160,7 +160,7 @@ void main() {
 
     check(result.isError()).isTrue();
     check(result.exceptionOrNull()).isA<NetworkFailure>();
-    verify(() => delegate.executeSql(request)).called(1);
+    verify(() => delegate.executeSql(any())).called(1);
   });
 
   test('RpcFailure replay_detected (-32014): no retry', () async {
@@ -179,7 +179,7 @@ void main() {
 
     check(result.isError()).isTrue();
     check(result.exceptionOrNull()).isA<RpcFailure>();
-    verify(() => delegate.executeSql(request)).called(1);
+    verify(() => delegate.executeSql(any())).called(1);
   });
 
   test('RpcFailure rate limit (-32013) without retryAfter: no retry', () async {
@@ -196,7 +196,7 @@ void main() {
     final result = await retrying.executeSql(request);
 
     check(result.isError()).isTrue();
-    verify(() => delegate.executeSql(request)).called(1);
+    verify(() => delegate.executeSql(any())).called(1);
   });
 
   test(
@@ -217,7 +217,7 @@ void main() {
       final result = await retrying.executeSql(request);
 
       check(result.isError()).isTrue();
-      verify(() => delegate.executeSql(request)).called(1);
+      verify(() => delegate.executeSql(any())).called(1);
     },
   );
 
@@ -242,7 +242,7 @@ void main() {
       final result = await retrying.executeSql(request);
 
       check(result.isError()).isTrue();
-      verify(() => delegate.executeSql(request)).called(1);
+      verify(() => delegate.executeSql(any())).called(1);
     },
   );
 
@@ -261,7 +261,7 @@ void main() {
     final result = await retrying.executeSql(request);
 
     check(result.isError()).isTrue();
-    verify(() => delegate.executeSql(request)).called(1);
+    verify(() => delegate.executeSql(any())).called(1);
   });
 
   test('RpcFailure with retryAfter: no retry', () async {
@@ -280,7 +280,7 @@ void main() {
 
     check(result.isError()).isTrue();
     check(result.exceptionOrNull()).isA<RpcFailure>();
-    verify(() => delegate.executeSql(request)).called(1);
+    verify(() => delegate.executeSql(any())).called(1);
   });
 
   test('RpcFailure(retryable: false): no retry', () async {
@@ -298,7 +298,7 @@ void main() {
 
     check(result.isError()).isTrue();
     check(result.exceptionOrNull()).isA<RpcFailure>();
-    verify(() => delegate.executeSql(request)).called(1);
+    verify(() => delegate.executeSql(any())).called(1);
   });
 
   test('SessionFailure: no retry (isTransient=false)', () async {
@@ -314,7 +314,7 @@ void main() {
 
     check(result.isError()).isTrue();
     check(result.exceptionOrNull()).isA<SessionFailure>();
-    verify(() => delegate.executeSql(request)).called(1);
+    verify(() => delegate.executeSql(any())).called(1);
   });
 
   test('AuthorizationFailure: no retry (isTransient=false)', () async {
@@ -330,7 +330,7 @@ void main() {
 
     check(result.isError()).isTrue();
     check(result.exceptionOrNull()).isA<AuthorizationFailure>();
-    verify(() => delegate.executeSql(request)).called(1);
+    verify(() => delegate.executeSql(any())).called(1);
   });
 
   test('StorageFailure: no retry (isTransient=false)', () async {
@@ -346,7 +346,7 @@ void main() {
 
     check(result.isError()).isTrue();
     check(result.exceptionOrNull()).isA<StorageFailure>();
-    verify(() => delegate.executeSql(request)).called(1);
+    verify(() => delegate.executeSql(any())).called(1);
   });
 
   test('RpcFailure(retryable: true, no retryAfter): retries', () async {
@@ -370,7 +370,7 @@ void main() {
     final result = await retrying.executeSql(request);
 
     check(result.isSuccess()).isTrue();
-    verify(() => delegate.executeSql(request)).called(2);
+    verify(() => delegate.executeSql(any())).called(2);
   });
 
   group('AgentQueriesRetryBackoff', () {
@@ -463,6 +463,6 @@ void main() {
     final result = await retryingWithRandom.executeSql(request);
 
     check(result.isError()).isTrue();
-    verify(() => delegate.executeSql(request)).called(3);
+    verify(() => delegate.executeSql(any())).called(3);
   });
 }

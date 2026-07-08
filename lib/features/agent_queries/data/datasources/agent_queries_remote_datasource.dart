@@ -143,7 +143,7 @@ class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
     AgentSqlExecuteRequest request, {
     AgentQueriesCancelScope? cancelScope,
   }) {
-    final rpcId = _uuid.v4();
+    final rpcId = request.transportRpcId ?? _uuid.v4();
     final body = _withServerTimingsFlag(
       _bodyMapper.build(request: request, rpcId: rpcId),
     );
@@ -161,7 +161,7 @@ class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
     AgentSqlExecuteBatchRequest request, {
     AgentQueriesCancelScope? cancelScope,
   }) {
-    final rpcId = _uuid.v4();
+    final rpcId = request.transportRpcId ?? _uuid.v4();
     final body = _withServerTimingsFlag(
       _batchBodyMapper.build(request: request, rpcId: rpcId),
     );

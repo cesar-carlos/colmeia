@@ -59,11 +59,11 @@ void main() {
         'GatedAgentQueriesRepository',
         'CircuitBreakerAgentQueriesRepository',
         'CachingAgentQueriesRepository',
-        'CoalescingAgentQueriesRepository',
-        'MetricsAgentQueriesRepository',
-        'AdaptiveTimeoutAgentQueriesRepository',
-        'RetryingAgentQueriesRepository',
-        'AgentQueriesRepositoryImpl',
+      'CoalescingAgentQueriesRepository',
+      'RetryingAgentQueriesRepository',
+      'AdaptiveTimeoutAgentQueriesRepository',
+      'MetricsAgentQueriesRepository',
+      'AgentQueriesRepositoryImpl',
       ]);
     },
   );
@@ -86,9 +86,9 @@ void main() {
         'CircuitBreakerAgentQueriesRepository',
         'CachingAgentQueriesRepository',
         'CoalescingAgentQueriesRepository',
-        'MetricsAgentQueriesRepository',
-        'AdaptiveTimeoutAgentQueriesRepository',
         'RetryingAgentQueriesRepository',
+        'AdaptiveTimeoutAgentQueriesRepository',
+        'MetricsAgentQueriesRepository',
         'RestInflightAgentQueriesRepository',
         'AgentQueriesRepositoryImpl',
       ]);

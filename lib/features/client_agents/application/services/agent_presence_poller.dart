@@ -40,6 +40,10 @@ class AgentPresencePoller {
   /// socket disconnected".
   static const Duration defaultInterval = Duration(seconds: 30);
 
+  static const Duration _backoffBase = Duration(seconds: 30);
+  static const Duration _backoffStep = Duration(seconds: 30);
+  static const Duration _backoffMax = Duration(seconds: 120);
+
   final ClientAgentsRepository _clientAgentsRepository;
   final Sink<AgentPresenceEvent> _sink;
   final Duration _interval;
@@ -49,6 +53,8 @@ class AgentPresencePoller {
   bool _tickInFlight = false;
   bool _isDisposed = false;
   int _epoch = 0;
+  int _consecutiveTickFailures = 0;
+  Duration _currentBackoff = Duration.zero;
 
   bool get isRunning => _timer != null;
 
@@ -68,6 +74,8 @@ class AgentPresencePoller {
     _timer?.cancel();
     _epoch++;
     _activeUserId = userId;
+    _consecutiveTickFailures = 0;
+    _currentBackoff = Duration.zero;
     _timer = Timer.periodic(_interval, (_) => unawaited(_tick()));
     unawaited(_tick());
   }
@@ -119,6 +127,12 @@ class AgentPresencePoller {
   }
 
   Future<void> _runOneTick(String userId, {required int epoch}) async {
+    if (_currentBackoff > Duration.zero) {
+      await Future<void>.delayed(_currentBackoff);
+      if (_isDisposed || _activeUserId != userId || _epoch != epoch) {
+        return;
+      }
+    }
     try {
       final ids = await _clientAgentsRepository.loadOnlineAgentIds(
         userId: userId,
@@ -126,6 +140,8 @@ class AgentPresencePoller {
       if (_isDisposed || _activeUserId != userId || _epoch != epoch) {
         return;
       }
+      _consecutiveTickFailures = 0;
+      _currentBackoff = Duration.zero;
       if (ids == null) {
         // Indeterminate: don't fire hints — we only know "online" when
         // the server tells us, and `null` means it could not resolve.
@@ -143,11 +159,19 @@ class AgentPresencePoller {
         );
       }
     } on Object catch (error, stackTrace) {
+      _consecutiveTickFailures += 1;
+      final stepIndex = (_consecutiveTickFailures - 1).clamp(0, 2);
+      _currentBackoff = _backoffBase + _backoffStep * stepIndex;
+      if (_currentBackoff > _backoffMax) {
+        _currentBackoff = _backoffMax;
+      }
       AppLogger.warning(
         'AgentPresencePoller tick failed',
-        context: const <String, Object?>{
+        context: <String, Object?>{
           'component': 'AgentPresencePoller',
           'operation': 'tick_failed',
+          'consecutiveFailures': _consecutiveTickFailures,
+          'nextBackoffMs': _currentBackoff.inMilliseconds,
         },
         error: error,
         stackTrace: stackTrace,

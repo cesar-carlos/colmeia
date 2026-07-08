@@ -144,7 +144,7 @@ void main() {
         poller.start(userId: 'client-1');
         await Future<void>.delayed(const Duration(milliseconds: 100));
 
-        check(calls).isGreaterOrEqual(2);
+        check(calls).equals(1);
         check(poller.isRunning).isTrue();
       },
     );

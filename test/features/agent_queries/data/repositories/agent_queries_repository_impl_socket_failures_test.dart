@@ -233,8 +233,7 @@ void main() {
     });
 
     test(
-      'maps SocketDispatchCancelled to UnknownFailure with cancelled flag '
-      '(BUG #2: cancellation must be benign for the UI)',
+      'maps SocketDispatchCancelled to OperationCancelledFailure with cancelled flag',
       () async {
         final repo = AgentQueriesRepositoryImpl(
           _ThrowingDataSource(
@@ -242,7 +241,7 @@ void main() {
           ),
         );
         final failure = _failureOf(await repo.executeSql(request));
-        check(failure).isA<UnknownFailure>();
+        check(failure).isA<OperationCancelledFailure>();
         check(
           failure.context[AgentQueriesFailureContext.cancelledField],
         ).equals(true);
@@ -778,7 +777,7 @@ void main() {
       check(failure.context['clientRequestId']).equals('req-1');
     });
 
-    test('maps cancellation to UnknownFailure with cancelled flag', () async {
+    test('maps cancellation to OperationCancelledFailure with cancelled flag', () async {
       final repo = AgentQueriesRepositoryImpl(
         _ThrowingDataSource(
           const SocketDispatchCancelled(message: 'controller disposed'),
@@ -787,7 +786,7 @@ void main() {
 
       final failure = _batchFailureOf(await repo.executeSqlBatch(batchRequest));
 
-      check(failure).isA<UnknownFailure>();
+      check(failure).isA<OperationCancelledFailure>();
       check(
         failure.context[AgentQueriesFailureContext.cancelledField],
       ).equals(true);

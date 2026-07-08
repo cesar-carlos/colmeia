@@ -217,7 +217,22 @@ class ClientAgentProfileUpdatedListener {
       return DateTime.now().toUtc();
     }
     final parsed = DateTime.tryParse(raw);
-    return (parsed ?? DateTime.now()).toUtc();
+    if (parsed == null) {
+      return DateTime.now().toUtc();
+    }
+    if (parsed.isUtc) {
+      return parsed;
+    }
+    return DateTime.utc(
+      parsed.year,
+      parsed.month,
+      parsed.day,
+      parsed.hour,
+      parsed.minute,
+      parsed.second,
+      parsed.millisecond,
+      parsed.microsecond,
+    );
   }
 
   Set<String> _parseChangedFields(Map<String, Object?> logical) {

@@ -49,8 +49,17 @@ void wireAgentQueriesCancelScopeHandlers(
 
   if (getIt.isRegistered<SocketCommandDispatcher>()) {
     final socket = getIt<SocketCommandDispatcher>();
+    final batchCoordinator = getIt.isRegistered<AgentCommandBatchCoordinator>()
+        ? getIt<AgentCommandBatchCoordinator>()
+        : null;
     scope.socketRpcCancelHandler = (rpcIds) {
-      rpcIds.forEach(socket.cancel);
+      for (final rpcId in rpcIds) {
+        final cancelledInBatch =
+            batchCoordinator?.cancelPending(rpcId) ?? false;
+        if (!cancelledInBatch) {
+          socket.cancel(rpcId);
+        }
+      }
     };
   } else {
     scope.socketRpcCancelHandler = null;

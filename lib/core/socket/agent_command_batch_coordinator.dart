@@ -135,6 +135,34 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
     return completer.future;
   }
 
+  /// Removes a queued (not yet flushed) RPC from the collector window.
+  /// Returns `true` when [rpcId] was found and cancelled.
+  bool cancelPending(String rpcId, {String reason = 'caller_cancelled'}) {
+    if (_isDisposed) {
+      return false;
+    }
+    final error = SocketDispatchCancelled(
+      message: 'Request cancelled by caller (reason=$reason)',
+    );
+    for (final collector in _collectorsByAgent.values) {
+      final index = collector.queue.indexWhere((p) => p.rpcId == rpcId);
+      if (index < 0) {
+        continue;
+      }
+      final pending = collector.queue.removeAt(index);
+      collector.coalesceMap.removeWhere((_, value) => identical(value, pending));
+      if (!pending.completer.isCompleted) {
+        pending.completer.completeError(error);
+      }
+      if (collector.queue.isEmpty) {
+        collector.flushTimer?.cancel();
+        collector.flushTimer = null;
+      }
+      return true;
+    }
+    return false;
+  }
+
   /// Forces flush across every agent. Useful for sign-out and dispose.
   ///
   /// Cancels any pending flush timers before dispatching so the timer
@@ -194,9 +222,9 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
     coalesceKeysToDrop.forEach(collector.coalesceMap.remove);
 
     if (taken.length < _minBatchSize) {
-      // minBatchSize is typically 1; this branch only fires when the env
-      // pushes minBatchSize > 1 and we have a single straggler.
-      await _dispatchAsSingle(agentId: collector.agentId, pending: taken.first);
+      for (final pending in taken) {
+        await _dispatchAsSingle(agentId: collector.agentId, pending: pending);
+      }
       return;
     }
 

@@ -92,6 +92,12 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
   /// Populated only after `relay:rpc.accepted`.
   final Map<String, String> _clientIdByRequestId = <String, String>{};
 
+  /// Client request ids belonging to the most recently emitted batch per
+  /// `conversationId`. Used to scope envelope-level rejections without
+  /// failing unrelated pendings on the same conversation.
+  final Map<String, Set<String>> _activeBatchClientIdsByConversationId =
+      <String, Set<String>>{};
+
   /// Client request ids currently pending per `conversationId`. Used for
   /// O(1) routing in [_pendingRouteFromFrame] when the hub omits `requestId` on
   /// the frame and exactly one RPC is in flight for that conversation.
@@ -457,11 +463,11 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     }
 
     final effectiveTimeout = timeout ?? _resolveBatchTimeout(items);
-    for (final pending in pendings) {
+    for (var i = 0; i < pendings.length; i++) {
       _armPendingTimeout(
-        pending,
-        effectiveTimeout,
-        rpcMethodHint: _extractMethod(items[pendings.indexOf(pending)].body),
+        pendings[i],
+        items[i].timeout ?? effectiveTimeout,
+        rpcMethodHint: _extractMethod(items[i].body),
       );
     }
 
@@ -497,6 +503,11 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
 
     final emittedAt = pendings.first.stopwatch.elapsed;
     try {
+      final resolvedConversationId = conversationId;
+      if (resolvedConversationId != null) {
+        _activeBatchClientIdsByConversationId[resolvedConversationId] =
+            pendings.map((p) => p.clientRequestId).toSet();
+      }
       _connection.raw.emit(
         RelayEventNames.rpcRequestBatch,
         <String, Object?>{
@@ -676,11 +687,19 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     if (conversationId == null) {
       return;
     }
-    final pendingIds = _pendingClientIdsByConversationId[conversationId];
-    if (pendingIds == null) {
+    final batchClientIds =
+        _activeBatchClientIdsByConversationId.remove(conversationId);
+    if (batchClientIds == null || batchClientIds.isEmpty) {
+      AppLogger.warning(
+        'relay batch envelope rejected without item list or active batch ids',
+        context: <String, Object?>{
+          'component': 'RelayCommandDispatcherImpl',
+          'conversationId': conversationId,
+        },
+      );
       return;
     }
-    for (final clientRequestId in pendingIds.toList(growable: false)) {
+    for (final clientRequestId in batchClientIds) {
       _failPending(clientRequestId, failure);
     }
   }
@@ -1757,6 +1776,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     final entry = _pendingByClientId.remove(clientRequestId);
     if (entry != null) {
       _unregisterPendingConversation(entry.conversationId, clientRequestId);
+      _clearActiveBatchMembership(entry.conversationId, clientRequestId);
     }
     if (entry is! _PendingUnary) {
       return;
@@ -1836,6 +1856,20 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     }
   }
 
+  void _clearActiveBatchMembership(
+    String conversationId,
+    String clientRequestId,
+  ) {
+    final batchIds = _activeBatchClientIdsByConversationId[conversationId];
+    if (batchIds == null) {
+      return;
+    }
+    batchIds.remove(clientRequestId);
+    if (batchIds.isEmpty) {
+      _activeBatchClientIdsByConversationId.remove(conversationId);
+    }
+  }
+
   void _failPending(
     String clientRequestId,
     RelayDispatchException exception,
@@ -1844,6 +1878,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     if (entry == null) {
       return;
     }
+    _clearActiveBatchMembership(entry.conversationId, clientRequestId);
     final gate = _concurrencyGate;
     final qw = entry.gateQueueWaitCompleter;
     if (gate != null && qw != null) {

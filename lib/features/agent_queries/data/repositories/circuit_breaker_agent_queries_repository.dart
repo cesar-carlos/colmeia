@@ -50,14 +50,17 @@ class CircuitBreakerAgentQueriesRepository implements AgentQueriesRepository {
     return _circuits.putIfAbsent(agentId, _AgentCircuit.new);
   }
 
+  _AgentCircuit? _circuitOrNull(String agentId) => _circuits[agentId];
+
   /// Visible for testing and observability — returns the breaker state name
   /// for [agentId] (`closed`, `open`, or `halfOpen`).
-  String stateFor(String agentId) => _circuitFor(agentId).state.name;
+  String stateFor(String agentId) =>
+      _circuitOrNull(agentId)?.state.name ?? _CircuitState.closed.name;
 
   /// Visible for testing and observability — returns the consecutive failure
   /// count for [agentId].
   int consecutiveFailuresFor(String agentId) =>
-      _circuitFor(agentId).consecutiveFailures;
+      _circuitOrNull(agentId)?.consecutiveFailures ?? 0;
 
   @override
   Future<AppResult<AgentSqlExecutionResult>> executeSql(
@@ -75,22 +78,36 @@ class CircuitBreakerAgentQueriesRepository implements AgentQueriesRepository {
       return openFailure;
     }
 
-    final result = await _delegate.executeSql(
-      request,
-      cancelScope: cancelScope,
-    );
+    final halfOpenProbeFailure =
+        _halfOpenProbeInFlightFailure<AgentSqlExecutionResult>(
+          circuit: circuit,
+          agentId: agentId,
+        );
+    if (halfOpenProbeFailure != null) {
+      return halfOpenProbeFailure;
+    }
 
-    if (result.isSuccess()) {
-      _onSuccess(circuit, agentId);
+    final armedProbe = _armHalfOpenProbe(circuit);
+    try {
+      final result = await _delegate.executeSql(
+        request,
+        cancelScope: cancelScope,
+      );
+
+      if (result.isSuccess()) {
+        _onSuccess(circuit, agentId);
+        return result;
+      }
+
+      final failure = result.exceptionOrNull()!;
+      if (_isCircuitBreakingFailure(failure)) {
+        _onFailure(circuit, agentId, failure);
+      }
+
       return result;
+    } finally {
+      _releaseHalfOpenProbe(circuit, armedProbe: armedProbe);
     }
-
-    final failure = result.exceptionOrNull()!;
-    if (_isCircuitBreakingFailure(failure)) {
-      _onFailure(circuit, agentId, failure);
-    }
-
-    return result;
   }
 
   @override
@@ -109,20 +126,34 @@ class CircuitBreakerAgentQueriesRepository implements AgentQueriesRepository {
       return openFailure;
     }
 
-    final result = await _delegate.executeSqlBatch(
-      request,
-      cancelScope: cancelScope,
-    );
-    if (result.isSuccess()) {
-      _onSuccess(circuit, agentId);
-      return result;
+    final halfOpenProbeFailure =
+        _halfOpenProbeInFlightFailure<AgentSqlBatchExecutionResult>(
+          circuit: circuit,
+          agentId: agentId,
+        );
+    if (halfOpenProbeFailure != null) {
+      return halfOpenProbeFailure;
     }
 
-    final failure = result.exceptionOrNull()!;
-    if (_isCircuitBreakingFailure(failure)) {
-      _onFailure(circuit, agentId, failure);
+    final armedProbe = _armHalfOpenProbe(circuit);
+    try {
+      final result = await _delegate.executeSqlBatch(
+        request,
+        cancelScope: cancelScope,
+      );
+      if (result.isSuccess()) {
+        _onSuccess(circuit, agentId);
+        return result;
+      }
+
+      final failure = result.exceptionOrNull()!;
+      if (_isCircuitBreakingFailure(failure)) {
+        _onFailure(circuit, agentId, failure);
+      }
+      return result;
+    } finally {
+      _releaseHalfOpenProbe(circuit, armedProbe: armedProbe);
     }
-    return result;
   }
 
   AppResult<T>? _openCircuitFailure<T extends Object>({
@@ -163,6 +194,44 @@ class CircuitBreakerAgentQueriesRepository implements AgentQueriesRepository {
         },
       ),
     );
+  }
+
+  AppResult<T>? _halfOpenProbeInFlightFailure<T extends Object>({
+    required _AgentCircuit circuit,
+    required String agentId,
+  }) {
+    if (circuit.state != _CircuitState.halfOpen || !circuit.probeInFlight) {
+      return null;
+    }
+    return Failure<T, AppFailure>(
+      NetworkFailure(
+        message: 'Circuit breaker half-open: probe already in flight',
+        userMessage:
+            'O servidor esta se recuperando. Tente novamente em instantes.',
+        context: <String, Object?>{
+          'agentId': agentId,
+          'circuitBreakerState': 'halfOpen',
+          'probeInFlight': true,
+        },
+      ),
+    );
+  }
+
+  bool _armHalfOpenProbe(_AgentCircuit circuit) {
+    if (circuit.state != _CircuitState.halfOpen) {
+      return false;
+    }
+    circuit.probeInFlight = true;
+    return true;
+  }
+
+  void _releaseHalfOpenProbe(
+    _AgentCircuit circuit, {
+    required bool armedProbe,
+  }) {
+    if (armedProbe) {
+      circuit.probeInFlight = false;
+    }
   }
 
   bool _isCircuitBreakingFailure(AppFailure failure) {
@@ -260,6 +329,7 @@ class _AgentCircuit {
   _CircuitState state = _CircuitState.closed;
   int consecutiveFailures = 0;
   DateTime? openedAt;
+  bool probeInFlight = false;
 }
 
 enum _CircuitState {

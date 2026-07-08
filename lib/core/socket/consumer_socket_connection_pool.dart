@@ -4,7 +4,9 @@ import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 /// [poolSize] `1` and route everything through [primary].
 ///
 /// A second connection (`secondary`) is reserved for future throughput
-/// experiments — see roadmap phase 5. Ops must keep sticky sessions when
+/// experiments — see roadmap phase 5. **Not wired in DI today:** even when
+/// `poolSize > 1`, callers must inject [secondary] explicitly; production
+/// builds keep `poolSize == 1`. Ops must keep sticky sessions when
 /// `poolSize > 1`.
 class ConsumerSocketConnectionPool {
   ConsumerSocketConnectionPool({

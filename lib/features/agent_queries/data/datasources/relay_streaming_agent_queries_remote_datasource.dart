@@ -4,6 +4,7 @@ import 'package:colmeia/core/socket/relay/relay_event_names.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_execute_request_to_bridge_body.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_streaming_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
+import 'package:colmeia/features/agent_queries/domain/agent_sql_transport_timeouts.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:uuid/uuid.dart';
 
@@ -41,7 +42,7 @@ class RelayStreamingAgentQueriesRemoteDataSource
             'streamSqlExecute skipped: AgentQueriesCancelScope already cancelled',
       );
     }
-    final clientRequestId = _uuid.v4();
+    final clientRequestId = request.transportRpcId ?? _uuid.v4();
     cancelScope?.trackRelayPending(clientRequestId);
     try {
       final body = _bodyMapper.buildRelayCommand(
@@ -57,7 +58,9 @@ class RelayStreamingAgentQueriesRemoteDataSource
           agentId: request.trimmedAgentId,
           body: body,
           clientRequestId: clientRequestId,
-          timeout: _resolveTimeout(request),
+          timeout: agentSqlTransportDispatchTimeout(
+            bridgeTimeoutMs: request.bridgeTimeoutMs,
+          ),
           compression: _resolveCompression(request.payloadFrameCompression),
         ),
       );
@@ -94,14 +97,6 @@ class RelayStreamingAgentQueriesRemoteDataSource
     }
     final trimmed = raw.trim();
     return trimmed.isEmpty ? null : trimmed;
-  }
-
-  /// Same +5s buffer the unary paths apply: keeps the relay timeout
-  /// one tick wider than the bridge wait window so the hub has a
-  /// chance to surface its own JSON-RPC error before our deadline.
-  Duration _resolveTimeout(AgentSqlExecuteRequest request) {
-    final base = request.bridgeTimeoutMs ?? 15000;
-    return Duration(milliseconds: base + 5000);
   }
 
   RelayPayloadFrameCompression _resolveCompression(

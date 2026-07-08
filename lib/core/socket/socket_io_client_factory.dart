@@ -24,6 +24,7 @@ class DefaultSocketIoClientFactory implements SocketIoClientFactory {
           .setTransports(<String>['websocket'])
           .disableAutoConnect()
           .disableReconnection()
+          .enableForceNew()
           .setAuth(<String, dynamic>{'token': accessToken})
           .build(),
     );

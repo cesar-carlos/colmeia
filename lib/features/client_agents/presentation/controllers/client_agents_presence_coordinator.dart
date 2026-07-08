@@ -69,10 +69,13 @@ class ClientAgentsPresenceCoordinator {
   StreamSubscription<AgentPresenceEvent>? _presenceSub;
   StreamSubscription<ConsumerSocketConnectionState>? _socketStateSub;
 
-  final Map<String, _PresenceObservation> _lastPresenceObservedByAgentId =
+  final Map<String, _PresenceObservation> _lastCatalogObservedByAgentId =
       <String, _PresenceObservation>{};
+  final Map<String, DateTime> _lastHintObservedByAgentId =
+      <String, DateTime>{};
   final Map<String, Timer> _hintConfirmTimers = <String, Timer>{};
 
+  bool _isDisposed = false;
   bool _isScreenVisible = false;
   bool _isSocketConnected = false;
 
@@ -130,6 +133,9 @@ class ClientAgentsPresenceCoordinator {
   /// as the socket comes back, push events take over and the poller
   /// stops to avoid double-counting.
   void _reconcilePollerGate() {
+    if (_isDisposed) {
+      return;
+    }
     final poller = _agentPresencePoller;
     if (poller == null) {
       return;
@@ -151,16 +157,29 @@ class ClientAgentsPresenceCoordinator {
   /// changed. Only effective when the poller + connection were wired —
   /// no-op otherwise so the legacy build behaves identically.
   void setScreenVisible({required bool isVisible}) {
+    if (_isDisposed) {
+      return;
+    }
     _isScreenVisible = isVisible;
     _reconcilePollerGate();
   }
 
   void _onPresence(AgentPresenceEvent event) {
-    if (_host.isDisposed) {
+    if (_isDisposed || _host.isDisposed) {
       return;
     }
-    final last = _lastPresenceObservedByAgentId[event.agentId];
-    if (!_shouldAcceptPresenceEvent(event: event, last: last)) {
+
+    switch (event) {
+      case AgentPresenceCatalogUpdated():
+        _onCatalogPresence(event);
+      case AgentPresenceHint():
+        _onHintPresence(event);
+    }
+  }
+
+  void _onCatalogPresence(AgentPresenceCatalogUpdated event) {
+    final last = _lastCatalogObservedByAgentId[event.agentId];
+    if (!_shouldAcceptCatalogEvent(event: event, last: last)) {
       AppLogger.debug(
         'Discarded stale presence event',
         context: <String, Object?>{
@@ -171,44 +190,57 @@ class ClientAgentsPresenceCoordinator {
       );
       return;
     }
-    _lastPresenceObservedByAgentId[event.agentId] = _PresenceObservation(
+    _lastCatalogObservedByAgentId[event.agentId] = _PresenceObservation(
       observedAt: event.observedAt,
-      profileVersion: switch (event) {
-        AgentPresenceCatalogUpdated(:final profileVersion) => profileVersion,
-        AgentPresenceHint() => last?.profileVersion,
-      },
+      profileVersion: event.profileVersion,
     );
 
     final userId = _host.currentUserId;
     if (userId == null || userId.isEmpty) {
       return;
     }
-
-    switch (event) {
-      case AgentPresenceCatalogUpdated():
-        unawaited(
-          _refreshAgentDetailFromPresence(
-            userId: userId,
-            agentId: event.agentId,
-          ),
-        );
-      case AgentPresenceHint():
-        _applyHintInMemory(
-          agentId: event.agentId,
-          online: event.online,
-        );
-        _scheduleHintConfirm(userId: userId, agentId: event.agentId);
-    }
+    unawaited(
+      _refreshAgentDetailFromPresence(
+        userId: userId,
+        agentId: event.agentId,
+      ),
+    );
   }
 
-  bool _shouldAcceptPresenceEvent({
-    required AgentPresenceEvent event,
+  void _onHintPresence(AgentPresenceHint event) {
+    final lastHint = _lastHintObservedByAgentId[event.agentId];
+    if (lastHint != null &&
+        !PushEventDeduper.isObservationAfter(
+          candidate: event.observedAt,
+          lastObservedAt: lastHint,
+        )) {
+      return;
+    }
+    _lastHintObservedByAgentId[event.agentId] = event.observedAt;
+
+    final changed = _applyHintInMemory(
+      agentId: event.agentId,
+      online: event.online,
+    );
+    if (!changed || event.source == 'polling_rest') {
+      return;
+    }
+
+    final userId = _host.currentUserId;
+    if (userId == null || userId.isEmpty) {
+      return;
+    }
+    _scheduleHintConfirm(userId: userId, agentId: event.agentId);
+  }
+
+  bool _shouldAcceptCatalogEvent({
+    required AgentPresenceCatalogUpdated event,
     required _PresenceObservation? last,
   }) {
     if (last == null) {
       return true;
     }
-    if (event case AgentPresenceCatalogUpdated(:final profileVersion?)) {
+    if (event.profileVersion case final profileVersion?) {
       final lastVersion = last.profileVersion;
       if (lastVersion != null) {
         if (profileVersion > lastVersion) {
@@ -258,7 +290,7 @@ class ClientAgentsPresenceCoordinator {
     );
   }
 
-  void _applyHintInMemory({
+  bool _applyHintInMemory({
     required String agentId,
     required bool online,
   }) {
@@ -266,7 +298,7 @@ class ClientAgentsPresenceCoordinator {
     if (current == null) {
       // No approved list yet — the next refresh will reconcile presence
       // with the server. Hints are a UI optimisation, not the truth.
-      return;
+      return false;
     }
     var changed = false;
     final updatedItems = current.items
@@ -285,7 +317,7 @@ class ClientAgentsPresenceCoordinator {
         })
         .toList(growable: false);
     if (!changed) {
-      return;
+      return false;
     }
     _host
       ..replaceApprovedAgents(
@@ -298,6 +330,7 @@ class ClientAgentsPresenceCoordinator {
         ),
       )
       ..notifyPresenceChanged();
+    return true;
   }
 
   void _scheduleHintConfirm({
@@ -320,6 +353,10 @@ class ClientAgentsPresenceCoordinator {
   }
 
   void dispose() {
+    if (_isDisposed) {
+      return;
+    }
+    _isDisposed = true;
     for (final timer in _hintConfirmTimers.values) {
       timer.cancel();
     }
@@ -331,7 +368,8 @@ class ClientAgentsPresenceCoordinator {
     // Shared GetIt singleton — stop the timer only; never call
     // [AgentPresencePoller.dispose] from a route-scoped coordinator.
     _agentPresencePoller?.stop();
-    _lastPresenceObservedByAgentId.clear();
+    _lastCatalogObservedByAgentId.clear();
+    _lastHintObservedByAgentId.clear();
   }
 }
 

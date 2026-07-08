@@ -7,6 +7,7 @@ import 'package:colmeia/features/agent_queries/data/agent_sql_relay_response_ada
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
+import 'package:colmeia/features/agent_queries/domain/agent_sql_transport_timeouts.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:uuid/uuid.dart';
 
@@ -52,7 +53,7 @@ class RelayAgentQueriesRemoteDataSource
         ),
       );
     }
-    final clientRequestId = _uuid.v4();
+    final clientRequestId = request.transportRpcId ?? _uuid.v4();
     cancelScope?.trackRelayPending(clientRequestId);
     final body = _bodyMapper.buildRelayCommand(
       request: request,
@@ -64,7 +65,9 @@ class RelayAgentQueriesRemoteDataSource
           agentId: request.trimmedAgentId,
           body: body,
           clientRequestId: clientRequestId,
-          timeout: _resolveTimeout(request),
+          timeout: agentSqlTransportDispatchTimeout(
+            bridgeTimeoutMs: request.bridgeTimeoutMs,
+          ),
           compression: _resolveCompression(request.payloadFrameCompression),
         )
         .then(
@@ -89,7 +92,7 @@ class RelayAgentQueriesRemoteDataSource
         ),
       );
     }
-    final clientRequestId = _uuid.v4();
+    final clientRequestId = request.transportRpcId ?? _uuid.v4();
     cancelScope?.trackRelayPending(clientRequestId);
     final body = _batchBodyMapper.buildRelayCommand(
       request: request,
@@ -101,7 +104,9 @@ class RelayAgentQueriesRemoteDataSource
           agentId: request.trimmedAgentId,
           body: body,
           clientRequestId: clientRequestId,
-          timeout: _resolveBatchTimeout(request),
+          timeout: agentSqlTransportDispatchTimeout(
+            bridgeTimeoutMs: request.bridgeTimeoutMs,
+          ),
           compression: _resolveCompression(request.payloadFrameCompression),
         )
         .then(
@@ -111,18 +116,6 @@ class RelayAgentQueriesRemoteDataSource
           ),
         )
         .whenComplete(() => cancelScope?.untrackRelayPending(clientRequestId));
-  }
-
-  /// Same +5s buffer the REST and unitary socket paths apply, so the relay
-  /// timeout sits one tick wider than the bridge wait window.
-  Duration _resolveTimeout(AgentSqlExecuteRequest request) {
-    final base = request.bridgeTimeoutMs ?? 15000;
-    return Duration(milliseconds: base + 5000);
-  }
-
-  Duration _resolveBatchTimeout(AgentSqlExecuteBatchRequest request) {
-    final base = request.bridgeTimeoutMs ?? 15000;
-    return Duration(milliseconds: base + 5000);
   }
 
   RelayPayloadFrameCompression _resolveCompression(

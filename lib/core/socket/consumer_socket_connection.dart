@@ -76,6 +76,15 @@ class ConsumerSocketConnection {
   Completer<_ConnectOutcome>? _connectAbortCompleter;
   bool _isDisposed = false;
 
+  /// Bumped on every intentional teardown so in-flight [ _connectOnce]
+  /// attempts from a superseded cycle cannot clobber [_socket] or [_state].
+  int _connectGeneration = 0;
+
+  /// When [disconnect] runs while a connect attempt is still in flight, the
+  /// attempt may finish with `superseded`. Preserve the intentional reason
+  /// (e.g. `app_paused`) instead of overwriting it on the public state.
+  String? _intentionalDisconnectReason;
+
   // ----- Public API -----
 
   ConsumerSocketConnectionState get state => _state;
@@ -128,20 +137,16 @@ class ConsumerSocketConnection {
   /// invalidation stream — call [SocketAuthTokenProvider.sessionInvalidations]
   /// listeners only on real session loss.
   Future<void> disconnect({String? reason}) async {
-    _cancelInFlightConnect(reason ?? 'disconnect');
+    _connectGeneration += 1;
+    final resolvedReason = reason ?? 'disconnect';
+    _intentionalDisconnectReason = resolvedReason;
+    _cancelInFlightConnect(resolvedReason);
     final socket = _socket;
     _socket = null;
     if (socket != null) {
-      try {
-        _detachHandshakeListeners(socket, includeDisconnect: true);
-        socket
-          ..disconnect()
-          ..dispose();
-      } on Object catch (_) {
-        // Swallow: state still transitions to disconnected below.
-      }
+      _disposeSocket(socket);
     }
-    _setState(ConsumerSocketDisconnected(reason: reason));
+    _setState(ConsumerSocketDisconnected(reason: resolvedReason));
   }
 
   Future<ConsumerSocketConnected> reconnect({String? reason}) async {
@@ -175,18 +180,30 @@ class ConsumerSocketConnection {
       attempt += 1;
       _setState(ConsumerSocketConnecting(attempt: attempt));
 
-      final outcome = await _connectOnce(abortSignal);
+      final attemptGeneration = _connectGeneration;
+      var outcome = await _connectOnce(
+        abortSignal,
+        attemptGeneration: attemptGeneration,
+      );
+      if (outcome is _ConnectSuccess &&
+          attemptGeneration != _connectGeneration) {
+        outcome = _ConnectCancelled(reason: 'superseded');
+      }
       switch (outcome) {
+        case _ConnectCancelled():
+          final disconnectReason = _resolveCancelledDisconnectReason(
+            outcome.reason,
+          );
+          _setState(ConsumerSocketDisconnected(reason: disconnectReason));
+          throw ConsumerSocketConnectCancelled(
+            message: 'Consumer socket connect cancelled: $disconnectReason',
+            reason: disconnectReason,
+          );
+
         case _ConnectSuccess():
+          _intentionalDisconnectReason = null;
           _setState(outcome.connectedState);
           return outcome.connectedState;
-
-        case _ConnectCancelled():
-          _setState(ConsumerSocketDisconnected(reason: outcome.reason));
-          throw ConsumerSocketConnectCancelled(
-            message: 'Consumer socket connect cancelled: ${outcome.reason}',
-            reason: outcome.reason,
-          );
 
         case _ConnectAuthFailure():
           _setState(const ConsumerSocketUnauthorized());
@@ -249,10 +266,7 @@ class ConsumerSocketConnection {
               delay: _clampServerHint(serverHint),
             );
             if (cancelled != null) {
-              _setState(ConsumerSocketDisconnected(reason: cancelled.reason));
-              throw StateError(
-                'Consumer socket connect cancelled: ${cancelled.reason}',
-              );
+              _throwConnectCancelled(cancelled.reason);
             }
             // Reset the local backoff floor — the next failure starts
             // from `reconnectInitialDelay` again so a single overload
@@ -267,10 +281,7 @@ class ConsumerSocketConnection {
               ),
             );
             if (cancelled != null) {
-              _setState(ConsumerSocketDisconnected(reason: cancelled.reason));
-              throw StateError(
-                'Consumer socket connect cancelled: ${cancelled.reason}',
-              );
+              _throwConnectCancelled(cancelled.reason);
             }
             delay = SocketReconnectBackoff.nextCeiling(
               current: delay,
@@ -301,10 +312,32 @@ class ConsumerSocketConnection {
     return result is _ConnectCancelled ? result : null;
   }
 
+  Never _throwConnectCancelled(String reason) {
+    _setState(ConsumerSocketDisconnected(reason: reason));
+    throw ConsumerSocketConnectCancelled(
+      message: 'Consumer socket connect cancelled: $reason',
+      reason: reason,
+    );
+  }
+
+  String _resolveCancelledDisconnectReason(String outcomeReason) {
+    if (outcomeReason == 'superseded') {
+      final intentional = _intentionalDisconnectReason;
+      if (intentional != null && intentional.isNotEmpty) {
+        return intentional;
+      }
+    }
+    return outcomeReason;
+  }
+
   Future<_ConnectOutcome> _connectOnce(
-    Future<_ConnectOutcome> abortSignal,
-  ) async {
+    Future<_ConnectOutcome> abortSignal, {
+    required int attemptGeneration,
+  }) async {
     final token = await _tokenProvider.readAccessToken();
+    if (attemptGeneration != _connectGeneration) {
+      return const _ConnectCancelled(reason: 'superseded');
+    }
     if (token == null) {
       return const _ConnectAuthFailure(reason: 'no_token');
     }
@@ -317,6 +350,10 @@ class ConsumerSocketConnection {
     }
 
     final socket = _factory.create(url: url, accessToken: token);
+    if (attemptGeneration != _connectGeneration) {
+      _disposeSocket(socket);
+      return const _ConnectCancelled(reason: 'superseded');
+    }
     _socket = socket;
 
     final readyCompleter = Completer<ConsumerSocketConnected>();
@@ -394,10 +431,10 @@ class ConsumerSocketConnection {
       })
       ..onDisconnect((reason) {
         final reasonText = reason?.toString();
-        if (identical(_socket, socket)) {
-          _socket = null;
-        }
         if (_state is ConsumerSocketConnecting && !readyCompleter.isCompleted) {
+          if (identical(_socket, socket)) {
+            _socket = null;
+          }
           resolveError(
             _ConnectTransientFailure(
               error:
@@ -408,8 +445,12 @@ class ConsumerSocketConnection {
           return;
         }
         // If the disconnect happens after we already moved to `connected`,
-        // emit a clean disconnected state so callers can react.
+        // tear down the native socket and emit a clean disconnected state.
         if (_state is! ConsumerSocketConnecting) {
+          if (identical(_socket, socket)) {
+            _disposeSocket(socket);
+            _socket = null;
+          }
           AppLogger.warning(
             'Consumer socket disconnected by remote peer',
             context: <String, Object?>{
@@ -431,20 +472,34 @@ class ConsumerSocketConnection {
       abortSignal,
     ]);
 
-    if (outcome is! _ConnectSuccess) {
-      try {
-        _detachHandshakeListeners(socket, includeDisconnect: true);
-        socket
-          ..disconnect()
-          ..dispose();
-      } on Object catch (_) {
-        // Already in shutdown path; nothing else to do.
+    if (attemptGeneration != _connectGeneration) {
+      _disposeSocket(socket);
+      if (identical(_socket, socket)) {
+        _socket = null;
       }
-      _socket = null;
+      return const _ConnectCancelled(reason: 'superseded');
+    }
+
+    if (outcome is! _ConnectSuccess) {
+      _disposeSocket(socket);
+      if (identical(_socket, socket)) {
+        _socket = null;
+      }
     } else {
       _detachHandshakeListeners(socket, includeDisconnect: false);
     }
     return outcome;
+  }
+
+  void _disposeSocket(io.Socket socket) {
+    try {
+      _detachHandshakeListeners(socket, includeDisconnect: true);
+      socket
+        ..disconnect()
+        ..dispose();
+    } on Object catch (_) {
+      // Swallow: caller still transitions state.
+    }
   }
 
   void _cancelInFlightConnect(String reason) {

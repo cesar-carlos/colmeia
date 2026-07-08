@@ -47,6 +47,7 @@ class AgentSqlExecuteRequest {
     this.outboundCompression,
     this.payloadFrameCompression,
     this.skipTransportCache = false,
+    this.transportRpcId,
   });
 
   final String agentId;
@@ -133,6 +134,13 @@ class AgentSqlExecuteRequest {
   /// result (used with business-layer [AgentQueryLoadPolicy.forceRefresh]).
   final bool skipTransportCache;
 
+  /// Stable JSON-RPC / relay `clientRequestId` for the logical operation.
+  ///
+  /// Set by [RetryingAgentQueriesRepository] so retries reuse the same wire
+  /// id and the hub can dedupe post-timeout replays. Callers should leave
+  /// this `null`; transport layers generate a fresh id when absent.
+  final String? transportRpcId;
+
   String get trimmedAgentId => agentId.trim();
   String get trimmedSql => sql.trim();
   String? get trimmedClientToken => clientToken?.trim();
@@ -195,6 +203,51 @@ class AgentSqlExecuteRequest {
 
   /// Current Agent SQL bridge limit for `namedParams` size.
   static const int bridgeMaxNamedParameterCount = 5;
+
+  AgentSqlExecuteRequest copyWith({
+    String? agentId,
+    String? sql,
+    Map<String, Object?>? namedParams,
+    String? clientToken,
+    String? requestingUserId,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
+    int? bridgeTimeoutMs,
+    AgentSqlBridgePagination? pagination,
+    AgentSqlExecuteOptions? executeOptions,
+    bool? useRelay,
+    AgentSqlRelayMode? relayMode,
+    String? apiVersion,
+    AgentOutboundCompression? outboundCompression,
+    RelayPayloadFrameCompression? payloadFrameCompression,
+    bool? skipTransportCache,
+    String? transportRpcId,
+  }) {
+    return AgentSqlExecuteRequest(
+      agentId: agentId ?? this.agentId,
+      sql: sql ?? this.sql,
+      namedParams: namedParams ?? this.namedParams,
+      clientToken: clientToken ?? this.clientToken,
+      requestingUserId: requestingUserId ?? this.requestingUserId,
+      hubPresenceOnlineAgentIdsSnapshot:
+          hubPresenceOnlineAgentIdsSnapshot ??
+          this.hubPresenceOnlineAgentIdsSnapshot,
+      hubConnectedFromApprovedCatalogRow:
+          hubConnectedFromApprovedCatalogRow ??
+          this.hubConnectedFromApprovedCatalogRow,
+      bridgeTimeoutMs: bridgeTimeoutMs ?? this.bridgeTimeoutMs,
+      pagination: pagination ?? this.pagination,
+      executeOptions: executeOptions ?? this.executeOptions,
+      useRelay: useRelay ?? this.useRelay,
+      relayMode: relayMode ?? this.relayMode,
+      apiVersion: apiVersion ?? this.apiVersion,
+      outboundCompression: outboundCompression ?? this.outboundCompression,
+      payloadFrameCompression:
+          payloadFrameCompression ?? this.payloadFrameCompression,
+      skipTransportCache: skipTransportCache ?? this.skipTransportCache,
+      transportRpcId: transportRpcId ?? this.transportRpcId,
+    );
+  }
 }
 
 enum AgentSqlRelayMode {

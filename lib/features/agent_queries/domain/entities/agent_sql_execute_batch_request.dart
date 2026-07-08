@@ -16,6 +16,7 @@ class AgentSqlExecuteBatchRequest {
     this.apiVersion = kColmeiaAgentBatchApiVersion,
     this.payloadFrameCompression,
     this.skipTransportCache = false,
+    this.transportRpcId,
   });
 
   final String agentId;
@@ -30,6 +31,9 @@ class AgentSqlExecuteBatchRequest {
   final String apiVersion;
   final RelayPayloadFrameCompression? payloadFrameCompression;
   final bool skipTransportCache;
+
+  /// See [AgentSqlExecuteRequest.transportRpcId].
+  final String? transportRpcId;
 
   String get trimmedAgentId => agentId.trim();
   String? get trimmedClientToken => clientToken?.trim();
@@ -70,6 +74,43 @@ class AgentSqlExecuteBatchRequest {
     }
 
     return options?.validationError();
+  }
+
+  AgentSqlExecuteBatchRequest copyWith({
+    String? agentId,
+    List<AgentSqlExecuteBatchCommand>? commands,
+    String? clientToken,
+    String? requestingUserId,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
+    int? bridgeTimeoutMs,
+    AgentSqlExecuteBatchOptions? options,
+    bool? useRelay,
+    String? apiVersion,
+    RelayPayloadFrameCompression? payloadFrameCompression,
+    bool? skipTransportCache,
+    String? transportRpcId,
+  }) {
+    return AgentSqlExecuteBatchRequest(
+      agentId: agentId ?? this.agentId,
+      commands: commands ?? this.commands,
+      clientToken: clientToken ?? this.clientToken,
+      requestingUserId: requestingUserId ?? this.requestingUserId,
+      hubPresenceOnlineAgentIdsSnapshot:
+          hubPresenceOnlineAgentIdsSnapshot ??
+          this.hubPresenceOnlineAgentIdsSnapshot,
+      hubConnectedFromApprovedCatalogRow:
+          hubConnectedFromApprovedCatalogRow ??
+          this.hubConnectedFromApprovedCatalogRow,
+      bridgeTimeoutMs: bridgeTimeoutMs ?? this.bridgeTimeoutMs,
+      options: options ?? this.options,
+      useRelay: useRelay ?? this.useRelay,
+      apiVersion: apiVersion ?? this.apiVersion,
+      payloadFrameCompression:
+          payloadFrameCompression ?? this.payloadFrameCompression,
+      skipTransportCache: skipTransportCache ?? this.skipTransportCache,
+      transportRpcId: transportRpcId ?? this.transportRpcId,
+    );
   }
 }
 

@@ -313,12 +313,23 @@ PayloadFrameCodec _buildPayloadFrameCodec() {
       AppEnvironment.socketPayloadJsonDecodeIsolateThresholdBytes;
 
   final key = AppEnvironment.socketPayloadSigningKey;
+  final requireSignature = AppEnvironment.socketPayloadRequireSignature;
+  if (requireSignature && key.isEmpty) {
+    AppLogger.warning(
+      'SOCKET_PAYLOAD_REQUIRE_SIGNATURE is true but '
+      'SOCKET_PAYLOAD_SIGNING_KEY is empty — strict verification disabled',
+      context: const <String, Object?>{
+        'component': 'injector_socket',
+      },
+    );
+  }
   if (key.isEmpty) {
     return PayloadFrameCodec(
       workerIsolatesEnabled: worker,
       gzipDecodeIsolateThresholdBytes: gzipDecodeThreshold,
       gzipEncodeIsolateThresholdBytes: gzipEncodeThreshold,
       jsonDecodeIsolateThresholdBytes: jsonDecodeThreshold,
+      requireSignature: false,
     );
   }
   final keyId = AppEnvironment.socketPayloadSigningKeyId;

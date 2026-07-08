@@ -307,6 +307,9 @@ class PayloadFrame {
       return raw;
     }
     if (raw is num) {
+      if (!raw.isFinite) {
+        return null;
+      }
       return raw.toInt();
     }
     if (raw is String) {

@@ -50,14 +50,15 @@ class RelayConversationManager {
     if (existing != null && existing.isActive) {
       return existing;
     }
-    final conversation =
-        existing ??
-        RelayConversation(
-          connection: _connection,
-          agentId: agentId,
-          startTimeout: _startTimeout,
-          endTimeout: _endTimeout,
-        );
+    if (existing != null && !existing.isActive) {
+      _byAgentId.remove(agentId);
+    }
+    final conversation = RelayConversation(
+      connection: _connection,
+      agentId: agentId,
+      startTimeout: _startTimeout,
+      endTimeout: _endTimeout,
+    );
     _byAgentId[agentId] = conversation;
     // Only the first-time open pays the round-trip; the metric reservoir
     // therefore reflects per-agent cold starts (the pre-warmer is what

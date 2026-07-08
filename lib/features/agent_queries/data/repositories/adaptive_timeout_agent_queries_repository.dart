@@ -56,27 +56,10 @@ class AdaptiveTimeoutAgentQueriesRepository implements AgentQueriesRepository {
     AgentSqlExecuteRequest request, {
     AgentQueriesCancelScope? cancelScope,
   }) async {
-    final adaptiveTimeout = _calculateAdaptiveTimeout(request);
+    final adaptiveTimeout = _effectiveAdaptiveTimeout(request);
 
     final adjustedRequest = adaptiveTimeout != null
-        ? AgentSqlExecuteRequest(
-            agentId: request.agentId,
-            sql: request.sql,
-            namedParams: request.namedParams,
-            requestingUserId: request.requestingUserId,
-            clientToken: request.clientToken,
-            bridgeTimeoutMs: adaptiveTimeout.inMilliseconds,
-            executeOptions: request.executeOptions,
-            useRelay: request.useRelay,
-            pagination: request.pagination,
-            apiVersion: request.apiVersion,
-            outboundCompression: request.outboundCompression,
-            payloadFrameCompression: request.payloadFrameCompression,
-            hubPresenceOnlineAgentIdsSnapshot:
-                request.hubPresenceOnlineAgentIdsSnapshot,
-            hubConnectedFromApprovedCatalogRow:
-                request.hubConnectedFromApprovedCatalogRow,
-          )
+        ? request.copyWith(bridgeTimeoutMs: adaptiveTimeout.inMilliseconds)
         : request;
 
     if (adaptiveTimeout != null &&
@@ -111,24 +94,10 @@ class AdaptiveTimeoutAgentQueriesRepository implements AgentQueriesRepository {
     AgentSqlExecuteBatchRequest request, {
     AgentQueriesCancelScope? cancelScope,
   }) async {
-    final adaptiveTimeout = _calculateBatchAdaptiveTimeout(request);
+    final adaptiveTimeout = _effectiveBatchAdaptiveTimeout(request);
     final adjustedRequest = adaptiveTimeout == null
         ? request
-        : AgentSqlExecuteBatchRequest(
-            agentId: request.agentId,
-            commands: request.commands,
-            clientToken: request.clientToken,
-            requestingUserId: request.requestingUserId,
-            hubPresenceOnlineAgentIdsSnapshot:
-                request.hubPresenceOnlineAgentIdsSnapshot,
-            hubConnectedFromApprovedCatalogRow:
-                request.hubConnectedFromApprovedCatalogRow,
-            bridgeTimeoutMs: adaptiveTimeout.inMilliseconds,
-            options: request.options,
-            useRelay: request.useRelay,
-            apiVersion: request.apiVersion,
-            payloadFrameCompression: request.payloadFrameCompression,
-          );
+        : request.copyWith(bridgeTimeoutMs: adaptiveTimeout.inMilliseconds);
 
     final stopwatch = Stopwatch()..start();
     final result = await _delegate.executeSqlBatch(
@@ -141,6 +110,34 @@ class AdaptiveTimeoutAgentQueriesRepository implements AgentQueriesRepository {
       _recordLatency(request.trimmedAgentId, stopwatch.elapsed);
     }
     return result;
+  }
+
+  Duration? _effectiveAdaptiveTimeout(AgentSqlExecuteRequest request) {
+    final declaredMs = request.bridgeTimeoutMs;
+    if (declaredMs == null) {
+      return null;
+    }
+    final declared = Duration(milliseconds: declaredMs);
+    final adaptive = _calculateAdaptiveTimeout(request);
+    if (adaptive == null) {
+      return declared;
+    }
+    return adaptive > declared ? adaptive : declared;
+  }
+
+  Duration? _effectiveBatchAdaptiveTimeout(
+    AgentSqlExecuteBatchRequest request,
+  ) {
+    final declaredMs = request.bridgeTimeoutMs;
+    if (declaredMs == null) {
+      return null;
+    }
+    final declared = Duration(milliseconds: declaredMs);
+    final adaptive = _calculateBatchAdaptiveTimeout(request);
+    if (adaptive == null) {
+      return declared;
+    }
+    return adaptive > declared ? adaptive : declared;
   }
 
   Duration? _calculateAdaptiveTimeout(AgentSqlExecuteRequest request) {

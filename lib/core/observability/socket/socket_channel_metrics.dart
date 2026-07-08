@@ -42,6 +42,10 @@ class SocketChannelMetrics {
   /// for memory vs accuracy in client-side aggregation.
   final int reservoirSize;
 
+  /// Caps keyed histogram/counter maps so long sessions cannot grow maps
+  /// without bound when many agents or methods are observed.
+  static const int _maxKeyedMapEntries = 256;
+
   final _ReservoirHistogram _handshakeMs;
   final Map<String, _ReservoirHistogram> _dispatchMsByKey;
   final Map<String, int> _outcomesTotal;
@@ -93,9 +97,7 @@ class SocketChannelMetrics {
     required Duration elapsed,
   }) {
     final key = _dispatchKey(agentId: agentId, method: method);
-    _dispatchMsByKey
-        .putIfAbsent(key, () => _ReservoirHistogram(reservoirSize))
-        .add(elapsed.inMicroseconds / 1000.0);
+    _histogramFor(_dispatchMsByKey, key).add(elapsed.inMicroseconds / 1000.0);
   }
 
   /// Records an outcome from `SocketCommandDispatcher.outcomes()`. Counts
@@ -103,13 +105,13 @@ class SocketChannelMetrics {
   /// before/after activation.
   void recordOutcome({required AgentCommandOutcome outcome}) {
     final key = _outcomeKey(outcome);
-    _outcomesTotal[key] = (_outcomesTotal[key] ?? 0) + 1;
+    _bumpCounter(_outcomesTotal, key);
   }
 
   /// Records a reconnect attempt by reason (e.g. `app_paused`,
   /// `transient_error`, `unauthorized`).
   void recordReconnect({required String reason}) {
-    _reconnectsByReason[reason] = (_reconnectsByReason[reason] ?? 0) + 1;
+    _bumpCounter(_reconnectsByReason, reason);
   }
 
   /// Records that the dispatcher reused an in-flight Future instead of
@@ -132,7 +134,7 @@ class SocketChannelMetrics {
   /// `paginated`, `multi_result`, `executeBatch`, `cancel`,
   /// `caller_opt_out`, `disabled`.
   void recordBatchBypass({required String reason}) {
-    _batchBypassByReason[reason] = (_batchBypassByReason[reason] ?? 0) + 1;
+    _bumpCounter(_batchBypassByReason, reason);
   }
 
   /// Late wire response after the correlator dropped the pending entry
@@ -206,8 +208,7 @@ class SocketChannelMetrics {
 
   /// Relay decode failure with stable `code` from `PayloadFrameCodec`.
   void recordRelayDecodeFailure({required String code}) {
-    _relayDecodeFailureByCode[code] =
-        (_relayDecodeFailureByCode[code] ?? 0) + 1;
+    _bumpCounter(_relayDecodeFailureByCode, code);
   }
 
   /// Elapsed from successful stream accept to first chunk delivered.
@@ -227,14 +228,14 @@ class SocketChannelMetrics {
     required Duration elapsed,
   }) {
     final key = _dispatchKey(agentId: agentId, method: method);
-    _relayDispatchMsByKey
-        .putIfAbsent(key, () => _ReservoirHistogram(reservoirSize))
-        .add(elapsed.inMicroseconds / 1000.0);
+    _histogramFor(_relayDispatchMsByKey, key).add(
+      elapsed.inMicroseconds / 1000.0,
+    );
   }
 
   void recordRelayOutcome({required RelayRpcOutcome outcome}) {
     final key = _relayOutcomeKey(outcome);
-    _relayOutcomesTotal[key] = (_relayOutcomesTotal[key] ?? 0) + 1;
+    _bumpCounter(_relayOutcomesTotal, key);
   }
 
   /// Records that `RelayBatchCommandCoordinator` flushed a batch via
@@ -257,8 +258,7 @@ class SocketChannelMetrics {
   /// `multi_result`, `sql.executeBatch`, `sql.cancel`, or no recognisable
   /// method). Mirrors [recordBatchBypass] for the relay channel.
   void recordRelayBatchBypass({required String reason}) {
-    _relayBatchBypassByReason[reason] =
-        (_relayBatchBypassByReason[reason] ?? 0) + 1;
+    _bumpCounter(_relayBatchBypassByReason, reason);
   }
 
   /// Folds a server-side phase snapshot returned via
@@ -275,9 +275,7 @@ class SocketChannelMetrics {
       return;
     }
     timings.phasesMs.forEach((phase, ms) {
-      _serverPhaseMsByName
-          .putIfAbsent(phase, () => _ReservoirHistogram(reservoirSize))
-          .add(ms);
+      _histogramFor(_serverPhaseMsByName, phase).add(ms);
     });
   }
 
@@ -380,6 +378,30 @@ class SocketChannelMetrics {
   }
 
   // ----- Helpers -----
+
+  void _bumpCounter(Map<String, int> map, String key) {
+    map[key] = (map[key] ?? 0) + 1;
+    _evictOldestMapKeyIfNeeded(map);
+  }
+
+  _ReservoirHistogram _histogramFor(
+    Map<String, _ReservoirHistogram> map,
+    String key,
+  ) {
+    final histogram = map.putIfAbsent(
+      key,
+      () => _ReservoirHistogram(reservoirSize),
+    );
+    _evictOldestMapKeyIfNeeded(map);
+    return histogram;
+  }
+
+  void _evictOldestMapKeyIfNeeded(Map<dynamic, Object> map) {
+    if (map.length <= _maxKeyedMapEntries) {
+      return;
+    }
+    map.remove(map.keys.first);
+  }
 
   String _relayOutcomeKey(RelayRpcOutcome outcome) {
     return switch (outcome) {

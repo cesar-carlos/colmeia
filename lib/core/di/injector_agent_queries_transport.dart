@@ -64,6 +64,9 @@ void _registerAgentQueryTransport(GetIt getIt) {
           return SocketWithRestFallbackAgentQueriesRemoteDataSource(
             socketDelegate: socketDelegate,
             restDelegate: rest,
+            sessionEvents: getIt.isRegistered<AuthSessionEvents>()
+                ? getIt<AuthSessionEvents>()
+                : null,
             onFallback: (trigger) =>
                 _onAgentQueriesRestFallbackLatched(getIt, trigger, latchLabel),
           );

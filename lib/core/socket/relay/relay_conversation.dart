@@ -39,6 +39,9 @@ class RelayConversation {
   Future<RelayConversationActive>? _inFlightStart;
   Future<void>? _inFlightEnd;
 
+  void Function(Object?)? _conversationStartedHandler;
+  void Function(Object?)? _conversationEndedHandler;
+
   String get agentId => _agentId;
   RelayConversationState get state => _state;
 
@@ -126,6 +129,7 @@ class RelayConversation {
       );
     }
 
+    _conversationStartedHandler = onStarted;
     _connection.raw.on(RelayEventNames.conversationStarted, onStarted);
     try {
       _connection.raw.emit(
@@ -133,7 +137,7 @@ class RelayConversation {
         <String, Object?>{'agentId': _agentId},
       );
     } on Object catch (e, s) {
-      _connection.raw.off(RelayEventNames.conversationStarted, onStarted);
+      _detachConversationStartedListener();
       _setState(
         RelayConversationEnded(agentId: _agentId, reason: 'emit_failed'),
       );
@@ -149,7 +153,7 @@ class RelayConversation {
     try {
       active = await completer.future.timeout(_startTimeout);
     } on TimeoutException catch (e, s) {
-      _connection.raw.off(RelayEventNames.conversationStarted, onStarted);
+      _detachConversationStartedListener();
       _setState(
         RelayConversationEnded(agentId: _agentId, reason: 'start_timeout'),
       );
@@ -160,13 +164,13 @@ class RelayConversation {
         stackTrace: s,
       );
     } on RelayConversationStartFailure {
-      _connection.raw.off(RelayEventNames.conversationStarted, onStarted);
+      _detachConversationStartedListener();
       _setState(
         RelayConversationEnded(agentId: _agentId, reason: 'rejected'),
       );
       rethrow;
     } on Object catch (e, s) {
-      _connection.raw.off(RelayEventNames.conversationStarted, onStarted);
+      _detachConversationStartedListener();
       _setState(
         RelayConversationEnded(agentId: _agentId, reason: 'start_error'),
       );
@@ -178,7 +182,7 @@ class RelayConversation {
       );
     }
 
-    _connection.raw.off(RelayEventNames.conversationStarted, onStarted);
+    _detachConversationStartedListener();
     _setState(active);
     AppLogger.debug(
       'Relay conversation opened',
@@ -236,6 +240,7 @@ class RelayConversation {
       completer.complete();
     }
 
+    _conversationEndedHandler = onEnded;
     _connection.raw.on(RelayEventNames.conversationEnded, onEnded);
     try {
       _connection.raw.emit(
@@ -267,7 +272,7 @@ class RelayConversation {
         },
       );
     } finally {
-      _connection.raw.off(RelayEventNames.conversationEnded, onEnded);
+      _detachConversationEndedListener();
       _setState(
         RelayConversationEnded(
           agentId: _agentId,
@@ -284,6 +289,8 @@ class RelayConversation {
     final id = conversationId;
     _inFlightStart = null;
     _inFlightEnd = null;
+    _detachConversationStartedListener();
+    _detachConversationEndedListener();
     _setState(
       RelayConversationEnded(
         agentId: _agentId,
@@ -291,6 +298,22 @@ class RelayConversation {
         reason: reason,
       ),
     );
+  }
+
+  void _detachConversationStartedListener() {
+    final handler = _conversationStartedHandler;
+    if (handler != null) {
+      _connection.raw.off(RelayEventNames.conversationStarted, handler);
+      _conversationStartedHandler = null;
+    }
+  }
+
+  void _detachConversationEndedListener() {
+    final handler = _conversationEndedHandler;
+    if (handler != null) {
+      _connection.raw.off(RelayEventNames.conversationEnded, handler);
+      _conversationEndedHandler = null;
+    }
   }
 
   // Setters do not compose with the sealed-class state pattern as cleanly

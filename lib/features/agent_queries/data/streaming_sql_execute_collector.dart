@@ -170,6 +170,15 @@ class BridgeShapedSqlExecuteCollector implements StreamingSqlExecuteCollector {
       throw FormatException('Relay streaming response incomplete: $reason');
     }
 
+    if (totalRowsFromComplete != null &&
+        affectedRows == null &&
+        rows.length != totalRowsFromComplete) {
+      throw FormatException(
+        'Relay streaming row count mismatch: buffered=${rows.length}, '
+        'total_rows=$totalRowsFromComplete',
+      );
+    }
+
     final rowCount = totalRowsFromComplete ?? rows.length;
 
     final result = <String, dynamic>{

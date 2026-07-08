@@ -379,6 +379,14 @@ class PayloadFrameCodec {
         'original size ${frame.originalSize} exceeds cap $maxPayloadBytes',
       );
     }
+    if (frame.cmp == PayloadFrame.compressionGzip) {
+      if (frame.originalSize <= 0 || frame.compressedSize <= 0) {
+        throw const PayloadFrameDecodeException(
+          'invalid_gzip_metadata',
+          'gzip frames require positive originalSize and compressedSize',
+        );
+      }
+    }
     _verifySignatureIfConfigured(frame);
   }
 
@@ -492,6 +500,12 @@ class PayloadFrameCodec {
   void _verifySignatureIfConfigured(PayloadFrame frame) {
     final activeVerifier = verifier;
     if (activeVerifier == null) {
+      if (requireSignature) {
+        throw const PayloadFrameDecodeException(
+          'signature_required',
+          'requireSignature is true but no verifier is configured',
+        );
+      }
       return;
     }
     final outcome = activeVerifier.verify(

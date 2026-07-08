@@ -71,6 +71,9 @@ void main() {
       when(() => connection.states()).thenAnswer(
         (_) => const Stream<ConsumerSocketConnectionState>.empty(),
       );
+      when(() => connection.state).thenReturn(
+        const ConsumerSocketDisconnected(reason: 'disconnect'),
+      );
       authGate = _StubAuthGate();
     });
 
