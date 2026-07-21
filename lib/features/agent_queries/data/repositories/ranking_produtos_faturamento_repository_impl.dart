@@ -26,14 +26,18 @@ import 'package:flutter/foundation.dart';
 ///
 /// Uses relay **unary** with `preferDbStreaming: false`. Streaming on the E2E
 /// SQL Anywhere agent returns an empty success payload for this CTE ranking.
-/// Revisit streaming only after the agent/hub fix is validated; unary also
-/// means agent-side `sql.cancel` is not guaranteed (fail-fast client cancel
-/// only — see `docs/Features/socket/sql_cancel_contract_colmeia_map.md`).
+/// Skips the short transport cache and retries once on empty success. Revisit
+/// streaming only after the agent/hub fix is validated; unary also means
+/// agent-side `sql.cancel` is not guaranteed (fail-fast client cancel only —
+/// see `docs/Features/socket/sql_cancel_contract_colmeia_map.md`).
 class RankingProdutosFaturamentoRepositoryImpl
     implements RankingProdutosFaturamentoRepository {
   RankingProdutosFaturamentoRepositoryImpl(this._agentQueriesRepository);
 
   static const String _operation = 'loadRankingProdutosFaturamento';
+
+  /// Delay before retrying an empty success (agent replay / flakiness).
+  static const Duration emptySuccessRetryDelay = Duration(seconds: 2);
 
   /// Conservative upper bound for distinct branches when sizing `max_rows`.
   ///
@@ -79,6 +83,7 @@ class RankingProdutosFaturamentoRepositoryImpl
       bridgeTimeoutMs: bridgeTimeoutMs,
     );
     final maxRows = maxRowsForFilter(filter);
+    final trimmedAgentId = agentId.trim();
 
     if (kDebugMode) {
       final start = DateTime(
@@ -95,7 +100,7 @@ class RankingProdutosFaturamentoRepositoryImpl
         'RankingProdutosFaturamento load',
         context: <String, Object?>{
           'operation': _operation,
-          'agentId': agentId.trim(),
+          'agentId': trimmedAgentId,
           'quantidadeProdutos': filter.quantidadeProdutos,
           'inclusiveDays': end.difference(start).inDays + 1,
           'maxRows': maxRows,
@@ -107,54 +112,76 @@ class RankingProdutosFaturamentoRepositoryImpl
     final restrictToSingleBranch =
         filter.codEmpresa != null && filter.codFilial != null;
 
-    final request = AgentSqlExecuteRequest(
-      agentId: agentId,
-      requestingUserId: userId,
-      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
-      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
-      sql: RankingProdutosFaturamentoSql.buildQuery(
-        restrictToSingleBranch: restrictToSingleBranch,
-        origem: filter.trimmedOrigem,
-        preVenda: filter.trimmedPreVenda,
-        quantidadeProdutos: filter.quantidadeProdutos,
-      ),
-      clientToken: clientToken,
-      bridgeTimeoutMs: timeouts.bridgeMs,
-      namedParams: _namedParamsFor(filter),
-      executeOptions: AgentSqlExecuteOptions(
-        executionMode: AgentSqlExecutionMode.preserve,
-        maxRows: maxRows,
-        sqlTimeoutMs: timeouts.sqlMs,
-        // Streaming returns an empty success payload for this CTE ranking on
-        // the SQL Anywhere E2E agent (unary REST/relay returns Top-N + DIVERSOS).
-        preferDbStreaming: false,
-      ),
-      useRelay: true,
-      // Explicit unary: default is unary, but this report is a documented
-      // streaming exception — keep the mode visible for readers and the
-      // unary-report guard test.
-      // ignore: avoid_redundant_argument_values
-      relayMode: AgentSqlRelayMode.unary,
-      skipTransportCache: true,
-    );
-
-    return AgentSqlRepositoryExecution.execute<
-      RankingProdutosFaturamentoLoadResult
-    >(
-      agentQueriesRepository: _agentQueriesRepository,
-      request: request,
-      operation: _operation,
-      agentId: agentId.trim(),
-      unexpectedRowsLogMessage: 'Unexpected row shape for $_operation',
-      mapExecution: (executionResult) => RankingProdutosFaturamentoLoadResult(
-        rows: _mapExecution(
-          executionResult,
-          agentId: agentId.trim(),
-          maxRows: maxRows,
+    Future<AppResult<RankingProdutosFaturamentoLoadResult>> executeOnce() {
+      final request = AgentSqlExecuteRequest(
+        agentId: agentId,
+        requestingUserId: userId,
+        hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+        hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
+        sql: RankingProdutosFaturamentoSql.buildQuery(
+          restrictToSingleBranch: restrictToSingleBranch,
+          origem: filter.trimmedOrigem,
+          preVenda: filter.trimmedPreVenda,
+          quantidadeProdutos: filter.quantidadeProdutos,
         ),
-      ),
-      cancelScope: cancelScope,
+        clientToken: clientToken,
+        bridgeTimeoutMs: timeouts.bridgeMs,
+        namedParams: _namedParamsFor(filter),
+        executeOptions: AgentSqlExecuteOptions(
+          executionMode: AgentSqlExecutionMode.preserve,
+          maxRows: maxRows,
+          sqlTimeoutMs: timeouts.sqlMs,
+          // Streaming returns an empty success payload for this CTE ranking on
+          // the SQL Anywhere E2E agent (unary REST/relay returns Top-N + DIVERSOS).
+          preferDbStreaming: false,
+        ),
+        useRelay: true,
+        // Explicit unary: default is unary, but this report is a documented
+        // streaming exception — keep the mode visible for readers and the
+        // unary-report guard test.
+        // ignore: avoid_redundant_argument_values
+        relayMode: AgentSqlRelayMode.unary,
+        skipTransportCache: true,
+      );
+
+      return AgentSqlRepositoryExecution.execute<
+        RankingProdutosFaturamentoLoadResult
+      >(
+        agentQueriesRepository: _agentQueriesRepository,
+        request: request,
+        operation: _operation,
+        agentId: trimmedAgentId,
+        unexpectedRowsLogMessage: 'Unexpected row shape for $_operation',
+        mapExecution: (executionResult) => RankingProdutosFaturamentoLoadResult(
+          rows: _mapExecution(
+            executionResult,
+            agentId: trimmedAgentId,
+            maxRows: maxRows,
+          ),
+        ),
+        cancelScope: cancelScope,
+      );
+    }
+
+    final first = await executeOnce();
+    if (first.isError()) {
+      return first;
+    }
+    final firstRows = first.getOrThrow().rows;
+    if (firstRows.isNotEmpty) {
+      return first;
+    }
+
+    AppLogger.info(
+      'Retrying empty unary success for $_operation',
+      context: <String, Object?>{
+        'operation': _operation,
+        'agentId': trimmedAgentId,
+        'retryDelayMs': emptySuccessRetryDelay.inMilliseconds,
+      },
     );
+    await Future<void>.delayed(emptySuccessRetryDelay);
+    return executeOnce();
   }
 
   static Map<String, Object?> _namedParamsFor(

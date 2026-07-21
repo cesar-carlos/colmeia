@@ -111,10 +111,7 @@ Iterable<File> _streamingReportFiles() sync* {
     'resumo_parcelas_dia_semana_usuario_repository_impl.dart',
     'resumo_parcelas_forma_pagamento_por_mes_repository_impl.dart',
     'resumo_parcelas_mensal_repository_impl.dart',
-    'resumo_produto_venda_lucratividade_repository_impl.dart',
-    'resumo_produto_venda_repository_impl.dart',
     'resumo_total_vendas_municipio_filial_diario_repository_impl.dart',
-    'resumo_total_vendas_municipio_filial_periodo_repository_impl.dart',
     'resumo_vendas_diarias_por_vendedor_repository_impl.dart',
   };
   for (final fileName in fileNames) {
@@ -143,9 +140,12 @@ Iterable<File> _unaryReportExceptionFiles() sync* {
     'ranking_produtos_faturamento_repository_impl.dart',
     'produto_vendido_produto_rank_lucro_repository_impl.dart',
     'resumo_produto_venda_lucratividade_mensal_repository_impl.dart',
+    'resumo_produto_venda_lucratividade_repository_impl.dart',
+    'resumo_produto_venda_repository_impl.dart',
     'produto_vendido_tendencia_de_venda_repository_impl.dart',
     'produto_vendido_tendencia_de_venda_media_movel_repository_impl.dart',
     'resumo_total_diario_vendas_repository_impl.dart',
+    'resumo_total_vendas_municipio_filial_periodo_repository_impl.dart',
   };
   for (final fileName in fileNames) {
     yield File(_repositoryPath(fileName));

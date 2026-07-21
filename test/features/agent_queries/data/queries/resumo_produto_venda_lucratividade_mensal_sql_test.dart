@@ -24,6 +24,14 @@ void main() {
     check(sql).contains(':origem');
   });
 
+  test('query uses half-open sargable DataVenda predicates', () {
+    check(sql).contains('pv.DataVenda >= CAST(:dataVendaInicio AS DATE)');
+    check(sql).contains(
+      'pv.DataVenda < DATEADD(day, 1, CAST(:dataVendaFim AS DATE))',
+    );
+    check(sql.contains('CAST(pv.DataVenda AS DATE) BETWEEN')).isFalse();
+  });
+
   test('query selects AnoMes as formatted YYYY/MM', () {
     check(sql).contains('AnoMes');
     check(sql).contains("CAST(Ano AS VARCHAR(4)) + '/'");

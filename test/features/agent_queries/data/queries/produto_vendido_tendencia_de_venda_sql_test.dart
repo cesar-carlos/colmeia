@@ -27,14 +27,24 @@ void main() {
   });
 
   test(
-    'query keeps separate BETWEEN clauses for current and previous periods',
+    'query uses half-open date ranges for current and previous periods',
     () {
-      check(
-        sql,
-      ).contains('BETWEEN prm.PeriodoAtualInicio AND prm.PeriodoAtualFim');
       check(sql).contains(
-        'BETWEEN prm.PeriodoAnteriorInicio AND prm.PeriodoAnteriorFim',
+        'pv.DataVenda >= prm.PeriodoAtualInicio',
       );
+      check(sql).contains(
+        'pv.DataVenda < DATEADD(day, 1, prm.PeriodoAtualFim)',
+      );
+      check(sql).contains(
+        'pv.DataVenda >= prm.PeriodoAnteriorInicio',
+      );
+      check(sql).contains(
+        'pv.DataVenda < DATEADD(day, 1, prm.PeriodoAnteriorFim)',
+      );
+      check(sql.contains('CAST(pv.DataVenda AS DATE)')).isFalse();
+      check(
+        sql.contains('BETWEEN prm.PeriodoAtualInicio AND prm.PeriodoAtualFim'),
+      ).isFalse();
     },
   );
 

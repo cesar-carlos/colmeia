@@ -1,8 +1,8 @@
 /// Filters for the product sales trend query (`ATUAL` versus `ANTERIOR`).
 ///
-/// Both periods are inclusive and evaluated in SQL with:
-/// `BETWEEN :periodoAtualInicio AND :periodoAtualFim` and
-/// `BETWEEN :periodoAnteriorInicio AND :periodoAnteriorFim`.
+/// Both periods are inclusive calendar windows evaluated in SQL with half-open
+/// predicates on `pv.DataVenda` (start inclusive, end exclusive via
+/// `DATEADD(day, 1, …)`).
 class ProdutoVendidoTendenciaDeVendaFilter {
   const ProdutoVendidoTendenciaDeVendaFilter({
     required this.periodoAtualInicio,

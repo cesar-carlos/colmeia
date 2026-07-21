@@ -1,10 +1,9 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_tendencia_de_venda_screen_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_tendencia_de_venda_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_tendencia_de_venda_summary_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/produto_vendido_tendencia_de_venda_repository_impl.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
@@ -33,14 +32,6 @@ void main() {
         sql: 'SELECT 1',
       ),
     );
-    registerFallbackValue(
-      const AgentSqlExecuteBatchRequest(
-        agentId: 'fallback-agent',
-        commands: <AgentSqlExecuteBatchCommand>[
-          AgentSqlExecuteBatchCommand(sql: 'SELECT 1'),
-        ],
-      ),
-    );
   });
 
   setUp(() {
@@ -50,14 +41,26 @@ void main() {
     );
   });
 
-  ProdutoVendidoTendenciaDeVendaFilter buildValidFilter() {
+  ProdutoVendidoTendenciaDeVendaFilter buildValidFilter({
+    String? classificacao,
+    String? searchTerm,
+    int? codGrupoProduto,
+    int page = 1,
+    int pageSize = 20,
+  }) {
     return ProdutoVendidoTendenciaDeVendaFilter(
       periodoAtualInicio: atualInicio,
       periodoAtualFim: atualFim,
       periodoAnteriorInicio: anteriorInicio,
       periodoAnteriorFim: anteriorFim,
+      classificacao: classificacao,
+      searchTerm: searchTerm,
+      codGrupoProduto: codGrupoProduto,
+      page: page,
+      pageSize: pageSize,
     );
   }
+
 
   test('returns validation failure when current period is invalid', () async {
     final result = await repository.loadAll(
@@ -436,55 +439,61 @@ void main() {
     check(row.classificacao).equals('CRESCENDO');
   });
 
-  test('loadPageAndSummary maps totalCount from paged batch item', () async {
+  test('loadPageAndSummary maps totalCount and partitions RowKind rows', () async {
     when(
-      () => agentQueriesRepository.executeSqlBatch(any()),
+      () => agentQueriesRepository.executeSql(any()),
     ).thenAnswer(
-      (_) async => const Success<AgentSqlBatchExecutionResult, AppFailure>(
-        AgentSqlBatchExecutionResult(
-          items: <AgentSqlBatchExecutionItem>[
-            AgentSqlBatchExecutionItem(
-              index: 0,
-              ok: true,
-              rows: <Map<String, dynamic>>[
-                <String, dynamic>{
-                  'TotalCount': 57,
-                  'CodEmpresa': 1,
-                  'CodFilial': 1,
-                  'CodProduto': 4051,
-                  'NomeProduto': 'BOMBA DE AR',
-                  'CodUnidadeMedida': 'PT',
-                  'QtdAnterior': '1.0000000',
-                  'QtdAtual': '20.0000000',
-                  'Diferenca': '19.0000000',
-                  'PercentualTendencia': '1900.0000000',
-                  'Classificacao': 'CRESCENDO',
-                },
-              ],
-              rowCount: 1,
-            ),
-            AgentSqlBatchExecutionItem(
-              index: 1,
-              ok: true,
-              rows: <Map<String, dynamic>>[],
-              rowCount: 0,
-            ),
-            AgentSqlBatchExecutionItem(
-              index: 2,
-              ok: true,
-              rows: <Map<String, dynamic>>[],
-              rowCount: 0,
-            ),
-            AgentSqlBatchExecutionItem(
-              index: 3,
-              ok: true,
-              rows: <Map<String, dynamic>>[],
-              rowCount: 0,
-            ),
+      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(
+          rows: <Map<String, dynamic>>[
+            <String, dynamic>{
+              'RowKind': 'SUMMARY',
+              'Classificacao': 'CRESCENDO',
+              'QuantidadeProdutos': 8,
+              'ImpactoLiquido': '53.0',
+            },
+            <String, dynamic>{
+              'RowKind': 'PAGE',
+              'TotalCount': 57,
+              'CodEmpresa': 1,
+              'CodFilial': 1,
+              'CodProduto': 4051,
+              'NomeProduto': 'BOMBA DE AR',
+              'CodUnidadeMedida': 'PT',
+              'QtdAnterior': '1.0000000',
+              'QtdAtual': '20.0000000',
+              'Diferenca': '19.0000000',
+              'PercentualTendencia': '1900.0000000',
+              'Classificacao': 'CRESCENDO',
+            },
+            <String, dynamic>{
+              'RowKind': 'GAINER',
+              'CodEmpresa': 1,
+              'CodFilial': 1,
+              'CodProduto': 4051,
+              'NomeProduto': 'BOMBA DE AR',
+              'CodUnidadeMedida': 'PT',
+              'QtdAnterior': '1.0000000',
+              'QtdAtual': '20.0000000',
+              'Diferenca': '19.0000000',
+              'PercentualTendencia': '1900.0000000',
+              'Classificacao': 'CRESCENDO',
+            },
+            <String, dynamic>{
+              'RowKind': 'LOSER',
+              'CodEmpresa': 1,
+              'CodFilial': 1,
+              'CodProduto': 9001,
+              'NomeProduto': 'ITEM CAINDO',
+              'CodUnidadeMedida': 'UN',
+              'QtdAnterior': '10.0000000',
+              'QtdAtual': '1.0000000',
+              'Diferenca': '-9.0000000',
+              'PercentualTendencia': '-90.0000000',
+              'Classificacao': 'CAINDO',
+            },
           ],
-          totalCommands: 4,
-          successfulCommands: 4,
-          failedCommands: 0,
+          rowCount: 4,
         ),
       ),
     );
@@ -502,6 +511,9 @@ void main() {
     check(data.totalCount).equals(57);
     check(data.rows.length).equals(1);
     check(data.rows.single.codProduto).equals(4051);
+    check(data.summaryRows.single.quantidadeProdutos).equals(8);
+    check(data.topGainers.single.codProduto).equals(4051);
+    check(data.topLosers.single.codProduto).equals(9001);
   });
 
   test('loadSummary sends summary SQL and bounded maxRows', () async {
@@ -605,42 +617,26 @@ void main() {
   });
 
   test(
-    'loadPageAndSummary uses single executeSqlBatch with page, summary, top gainers, top losers',
+    'loadPageAndSummary uses single executeSql with shared screen SQL',
     () async {
       when(
-        () => agentQueriesRepository.executeSqlBatch(any()),
+        () => agentQueriesRepository.executeSql(any()),
       ).thenAnswer(
-        (_) async => const Success<AgentSqlBatchExecutionResult, AppFailure>(
-          AgentSqlBatchExecutionResult(
-            items: <AgentSqlBatchExecutionItem>[
-              AgentSqlBatchExecutionItem(
-                index: 0,
-                ok: true,
-                rows: <Map<String, dynamic>>[],
-                rowCount: 0,
-              ),
-              AgentSqlBatchExecutionItem(
-                index: 1,
-                ok: true,
-                rows: <Map<String, dynamic>>[],
-                rowCount: 0,
-              ),
-              AgentSqlBatchExecutionItem(
-                index: 2,
-                ok: true,
-                rows: <Map<String, dynamic>>[],
-                rowCount: 0,
-              ),
-              AgentSqlBatchExecutionItem(
-                index: 3,
-                ok: true,
-                rows: <Map<String, dynamic>>[],
-                rowCount: 0,
-              ),
+        (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(
+            rows: <Map<String, dynamic>>[
+              <String, dynamic>{
+                'RowKind': 'SUMMARY',
+                'Classificacao': 'ESTAVEL',
+                'QuantidadeProdutos': 1,
+                'ImpactoLiquido': '0.0',
+              },
+              <String, dynamic>{
+                'RowKind': 'PAGE',
+                'TotalCount': 0,
+              },
             ],
-            totalCommands: 4,
-            successfulCommands: 4,
-            failedCommands: 0,
+            rowCount: 2,
           ),
         ),
       );
@@ -656,167 +652,94 @@ void main() {
       check(result.isSuccess()).isTrue();
       check(result.getOrThrow().rows).isEmpty();
       check(result.getOrThrow().totalCount).equals(0);
-      check(result.getOrThrow().summaryRows).isEmpty();
+      check(result.getOrThrow().summaryRows).length.equals(1);
       check(result.getOrThrow().topGainers).isEmpty();
       check(result.getOrThrow().topLosers).isEmpty();
 
-      verifyNever(() => agentQueriesRepository.executeSql(any()));
       final captured =
           verify(
-                () => agentQueriesRepository.executeSqlBatch(captureAny()),
+                () => agentQueriesRepository.executeSql(captureAny()),
               ).captured.single
-              as AgentSqlExecuteBatchRequest;
-      check(captured.commands).length.equals(4);
-      check(captured.commands[0].sql).equals(
-        ProdutoVendidoTendenciaDeVendaSql.pagedQuery(startRow: 1, endRow: 20),
+              as AgentSqlExecuteRequest;
+      check(captured.sql).equals(
+        ProdutoVendidoTendenciaDeVendaScreenSql.query(
+          startRow: 1,
+          endRow: 20,
+        ),
       );
-      check(captured.commands[1].sql).equals(
-        ProdutoVendidoTendenciaDeVendaSummarySql.query(),
-      );
-      check(captured.commands[2].sql).equals(
-        ProdutoVendidoTendenciaDeVendaSql.topGainersQuery(),
-      );
-      check(captured.commands[3].sql).equals(
-        ProdutoVendidoTendenciaDeVendaSql.topLosersQuery(),
-      );
-      check(captured.useRelay).isTrue();
+      check(captured.namedParams['periodoAtualInicio']).equals('2026-03-01');
+      check(captured.executeOptions?.preferDbStreaming).equals(false);
+      check(captured.relayMode).equals(AgentSqlRelayMode.unary);
       check(captured.skipTransportCache).isTrue();
+      check(captured.executeOptions?.maxRows).equals(107);
     },
   );
 
   test(
-    'loadPageAndSummary returns failure when page batch item is missing',
+    'loadPageAndSummary rejects divergent page and summary universe filters',
     () async {
-      when(
-        () => agentQueriesRepository.executeSqlBatch(any()),
-      ).thenAnswer(
-        (_) async => const Success<AgentSqlBatchExecutionResult, AppFailure>(
-          AgentSqlBatchExecutionResult(
-            items: <AgentSqlBatchExecutionItem>[
-              AgentSqlBatchExecutionItem(
-                index: 1,
-                ok: true,
-                rows: <Map<String, dynamic>>[],
-                rowCount: 0,
-              ),
-            ],
-            totalCommands: 4,
-            successfulCommands: 1,
-            failedCommands: 0,
-          ),
-        ),
-      );
-
-      final filter = buildValidFilter();
       final result = await repository.loadPageAndSummary(
         userId: 'user-1',
         agentId: 'agent-1',
-        pageFilter: filter,
-        summaryFilter: filter,
+        pageFilter: buildValidFilter(searchTerm: 'fox'),
+        summaryFilter: buildValidFilter(searchTerm: 'other'),
       );
 
       check(result.isError()).isTrue();
-      final failure = result.exceptionOrNull();
-      check(failure).isA<RpcFailure>();
-      check((failure! as RpcFailure).reason).equals('missing_batch_item');
+      check(result.exceptionOrNull()).isA<ValidationFailure>();
+      check(result.exceptionOrNull()!.message).equals(
+        ProdutoVendidoTendenciaDeVendaRepositoryImpl.errorScreenUniverseMismatch,
+      );
+      verifyNever(() => agentQueriesRepository.executeSql(any()));
     },
   );
 
   test(
-    'loadPageAndSummary returns failure when summary item ok is false',
+    'loadPageAndSummary allows divergent classificacao between page and summary',
     () async {
       when(
-        () => agentQueriesRepository.executeSqlBatch(any()),
+        () => agentQueriesRepository.executeSql(any()),
       ).thenAnswer(
-        (_) async => const Success<AgentSqlBatchExecutionResult, AppFailure>(
-          AgentSqlBatchExecutionResult(
-            items: <AgentSqlBatchExecutionItem>[
-              AgentSqlBatchExecutionItem(
-                index: 0,
-                ok: true,
-                rows: <Map<String, dynamic>>[],
-                rowCount: 0,
-              ),
-              AgentSqlBatchExecutionItem(
-                index: 1,
-                ok: false,
-                error: 'summary failed',
-                rows: <Map<String, dynamic>>[],
-                rowCount: 0,
-              ),
+        (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(
+            rows: <Map<String, dynamic>>[
+              <String, dynamic>{
+                'RowKind': 'SUMMARY',
+                'Classificacao': 'CAINDO',
+                'QuantidadeProdutos': 2,
+                'ImpactoLiquido': '-4.0',
+              },
+              <String, dynamic>{
+                'RowKind': 'PAGE',
+                'TotalCount': 0,
+              },
             ],
-            totalCommands: 4,
-            successfulCommands: 1,
-            failedCommands: 1,
+            rowCount: 2,
           ),
         ),
       );
 
-      final filter = buildValidFilter();
       final result = await repository.loadPageAndSummary(
         userId: 'user-1',
         agentId: 'agent-1',
-        pageFilter: filter,
-        summaryFilter: filter,
+        pageFilter: buildValidFilter(classificacao: 'CRESCENDO'),
+        summaryFilter: buildValidFilter(classificacao: 'CAINDO'),
       );
 
-      check(result.isError()).isTrue();
-      final failure = result.exceptionOrNull();
-      check(failure).isA<RpcFailure>();
-      check((failure! as RpcFailure).reason).equals('batch_item_failed');
-      check(failure.message).contains('summary failed');
-    },
-  );
-
-  test(
-    'loadPageAndSummary returns failure when top gainers item ok is false',
-    () async {
-      when(
-        () => agentQueriesRepository.executeSqlBatch(any()),
-      ).thenAnswer(
-        (_) async => const Success<AgentSqlBatchExecutionResult, AppFailure>(
-          AgentSqlBatchExecutionResult(
-            items: <AgentSqlBatchExecutionItem>[
-              AgentSqlBatchExecutionItem(
-                index: 0,
-                ok: true,
-                rows: <Map<String, dynamic>>[],
-                rowCount: 0,
-              ),
-              AgentSqlBatchExecutionItem(
-                index: 1,
-                ok: true,
-                rows: <Map<String, dynamic>>[],
-                rowCount: 0,
-              ),
-              AgentSqlBatchExecutionItem(
-                index: 2,
-                ok: false,
-                error: 'top gainers failed',
-                rows: <Map<String, dynamic>>[],
-                rowCount: 0,
-              ),
-            ],
-            totalCommands: 4,
-            successfulCommands: 2,
-            failedCommands: 1,
-          ),
+      check(result.isSuccess()).isTrue();
+      final captured =
+          verify(
+                () => agentQueriesRepository.executeSql(captureAny()),
+              ).captured.single
+              as AgentSqlExecuteRequest;
+      check(captured.sql).equals(
+        ProdutoVendidoTendenciaDeVendaScreenSql.query(
+          startRow: 1,
+          endRow: 20,
+          pageClassificacao: 'CRESCENDO',
+          summaryClassificacao: 'CAINDO',
         ),
       );
-
-      final filter = buildValidFilter();
-      final result = await repository.loadPageAndSummary(
-        userId: 'user-1',
-        agentId: 'agent-1',
-        pageFilter: filter,
-        summaryFilter: filter,
-      );
-
-      check(result.isError()).isTrue();
-      final failure = result.exceptionOrNull();
-      check(failure).isA<RpcFailure>();
-      check((failure! as RpcFailure).reason).equals('batch_item_failed');
-      check(failure.message).contains('top gainers failed');
     },
   );
 
@@ -824,44 +747,50 @@ void main() {
     'loadPageAndSummary returns UnknownFailure when page rows are malformed',
     () async {
       when(
-        () => agentQueriesRepository.executeSqlBatch(any()),
+        () => agentQueriesRepository.executeSql(any()),
       ).thenAnswer(
-        (_) async => const Success<AgentSqlBatchExecutionResult, AppFailure>(
-          AgentSqlBatchExecutionResult(
-            items: <AgentSqlBatchExecutionItem>[
-              AgentSqlBatchExecutionItem(
-                index: 0,
-                ok: true,
-                rows: <Map<String, dynamic>>[
-                  <String, dynamic>{
-                    'TotalCount': 1,
-                    'CodProduto': 1,
-                  },
-                ],
-                rowCount: 1,
-              ),
-              AgentSqlBatchExecutionItem(
-                index: 1,
-                ok: true,
-                rows: <Map<String, dynamic>>[],
-                rowCount: 0,
-              ),
-              AgentSqlBatchExecutionItem(
-                index: 2,
-                ok: true,
-                rows: <Map<String, dynamic>>[],
-                rowCount: 0,
-              ),
-              AgentSqlBatchExecutionItem(
-                index: 3,
-                ok: true,
-                rows: <Map<String, dynamic>>[],
-                rowCount: 0,
-              ),
+        (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(
+            rows: <Map<String, dynamic>>[
+              <String, dynamic>{
+                'RowKind': 'PAGE',
+                'TotalCount': 1,
+                'CodProduto': 1,
+              },
             ],
-            totalCommands: 4,
-            successfulCommands: 4,
-            failedCommands: 0,
+            rowCount: 1,
+          ),
+        ),
+      );
+
+      final filter = buildValidFilter();
+      final result = await repository.loadPageAndSummary(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        pageFilter: filter,
+        summaryFilter: filter,
+      );
+
+      check(result.isError()).isTrue();
+      check(result.exceptionOrNull()).isA<UnknownFailure>();
+    },
+  );
+
+  test(
+    'loadPageAndSummary returns UnknownFailure for unexpected RowKind',
+    () async {
+      when(
+        () => agentQueriesRepository.executeSql(any()),
+      ).thenAnswer(
+        (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(
+            rows: <Map<String, dynamic>>[
+              <String, dynamic>{
+                'RowKind': 'OTHER',
+                'TotalCount': 0,
+              },
+            ],
+            rowCount: 1,
           ),
         ),
       );

@@ -134,6 +134,51 @@ void main() {
     check(result.isSuccess()).isTrue();
     check(result.getOrThrow()).isA<RankingProdutosFaturamentoLoadResult>();
     check(result.getOrThrow().rows).isEmpty();
+    // Empty unary success triggers one retry.
+    verify(() => agentQueriesRepository.executeSql(any())).called(2);
+  });
+
+  test('retries once when first unary response is empty', () async {
+    var calls = 0;
+    when(
+      () => agentQueriesRepository.executeSql(any()),
+    ).thenAnswer((_) async {
+      calls++;
+      if (calls == 1) {
+        return const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+        );
+      }
+      return const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(
+          rows: <Map<String, dynamic>>[
+            <String, dynamic>{
+              'CodEmpresa': 1,
+              'CodFilial': 1,
+              'CodProduto': 100,
+              'NomeProduto': 'Produto A',
+              'CodUnidadeMedida': 'UN',
+              'CodGrupoProduto': 10,
+              'NomeGrupoProduto': 'Grupo',
+              'ValorVenda': 50.5,
+              'Posicao': 1,
+              'Percentual': 100.0,
+            },
+          ],
+          rowCount: 1,
+        ),
+      );
+    });
+
+    final result = await repository.load(
+      userId: 'user-1',
+      agentId: 'agent-1',
+      filter: filterTop3,
+    );
+
+    check(result.isSuccess()).isTrue();
+    check(result.getOrThrow().rows.single.codProduto).equals(100);
+    verify(() => agentQueriesRepository.executeSql(any())).called(2);
   });
 
   test(
@@ -156,7 +201,7 @@ void main() {
       final captured =
           verify(
                 () => agentQueriesRepository.executeSql(captureAny()),
-              ).captured.single
+              ).captured.first
               as AgentSqlExecuteRequest;
 
       check(captured.sql).equals(
@@ -211,7 +256,7 @@ void main() {
     final captured =
         verify(
               () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured.single
+            ).captured.first
             as AgentSqlExecuteRequest;
 
     check(captured.namedParams['codEmpresa']).equals(2);

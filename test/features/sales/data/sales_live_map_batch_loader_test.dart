@@ -100,6 +100,8 @@ void main() {
           SalesLiveMapBatchLoadConfig.batchMaxRows,
         );
         check(request.options?.maxParallelReadOnlyBatchItems).isNotNull();
+        check(request.skipTransportCache).isTrue();
+        check(request.useRelay).isTrue();
         check(request.commands.first.sql).contains('Filial');
         check(request.commands.last.sql).contains('ProdutoVendido');
       },

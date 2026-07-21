@@ -75,6 +75,9 @@ final class SalesLiveMapBatchTargetRunner {
           maxRows: SalesLiveMapBatchLoadConfig.batchMaxRows,
           maxParallelReadOnlyBatchItems: _maxParallelReadOnlyBatchItems,
         ),
+        // Avoid sticking empty agent successes on the live-map refresh path.
+        skipTransportCache: true,
+        useRelay: true,
       ),
       dashboardBatch: true,
     );
@@ -214,6 +217,8 @@ final class SalesLiveMapBatchTargetRunner {
             maxRows: AgentQueriesBoundedResultMaxRows.cadastroFilialPage,
             maxParallelReadOnlyBatchItems: _maxParallelReadOnlyBatchItems,
           ),
+          skipTransportCache: true,
+          useRelay: true,
         ),
         dashboardBatch: true,
       );

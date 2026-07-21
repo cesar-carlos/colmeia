@@ -73,7 +73,8 @@ abstract final class ResumoParcelasFormaPagamentoPorMesSql {
   static const String _queryTail = '''
       ) Detalhe
     ) ResumoParcelasFormaPagamentoPorMes
-    WHERE DataVenda BETWEEN :dataVendaInicio AND :dataVendaFim
+    WHERE DataVenda >= CAST(:dataVendaInicio AS DATE)
+      AND DataVenda < DATEADD(day, 1, CAST(:dataVendaFim AS DATE))
       AND Origem = :origem
       AND GeraFinanceiro = :geraFinanceiro
       AND PreVenda = :preVenda

@@ -120,6 +120,13 @@ void main() {
     check(capturedRequest.sql).contains(
       'ResumoParcelaFormaPagamento',
     );
+    check(capturedRequest.sql).contains(
+      'DataVenda >= CAST(:dataVendaInicio AS DATE)',
+    );
+    check(capturedRequest.sql).contains(
+      'DataVenda < DATEADD(day, 1, CAST(:dataVendaFim AS DATE))',
+    );
+    check(capturedRequest.sql.contains('DataVenda BETWEEN')).isFalse();
     check(rows.single.isAnoMesConsistentWithParts).isTrue();
   });
 

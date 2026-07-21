@@ -112,6 +112,13 @@ void main() {
     check(capturedRequest.namedParams['codVendedor']).isNull();
     check(capturedRequest.namedParams.length).equals(5);
     check(capturedRequest.sql).contains('ResumoParcelasMensal');
+    check(capturedRequest.sql).contains(
+      'DataVenda >= CAST(:dataVendaInicio AS DATE)',
+    );
+    check(capturedRequest.sql).contains(
+      'DataVenda < DATEADD(day, 1, CAST(:dataVendaFim AS DATE))',
+    );
+    check(capturedRequest.sql.contains('DataVenda BETWEEN')).isFalse();
     expect(capturedRequest.sql, isNot(contains(':codEmpresa')));
     check(capturedRequest.sql).contains(':dataVendaInicio');
     check(capturedRequest.sql.contains(':codEmpresa')).isFalse();

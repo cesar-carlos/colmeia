@@ -110,10 +110,13 @@ void main() {
     check(capturedRequest.trimmedAgentId).equals('agent-1');
     check(capturedRequest.trimmedClientToken).equals('token-123');
     check(capturedRequest.useRelay).isTrue();
+    check(capturedRequest.relayMode).equals(AgentSqlRelayMode.unary);
+    check(capturedRequest.skipTransportCache).isTrue();
     check(capturedRequest.bridgeTimeoutMs).equals(120000);
     check(capturedRequest.executeOptions!.executionMode?.name).equals(
       'preserve',
     );
+    check(capturedRequest.executeOptions!.preferDbStreaming).equals(false);
     check(capturedRequest.executeOptions!.maxRows).equals(
       AgentQueriesBoundedResultMaxRows.resumoTotalVendasMunicipioFilialPeriodo,
     );
@@ -153,8 +156,22 @@ void main() {
     ).thenAnswer(
       (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
         AgentSqlExecutionResult(
-          rows: <Map<String, dynamic>>[],
-          rowCount: 0,
+          rows: <Map<String, dynamic>>[
+            <String, dynamic>{
+              'CodEmpresa': 1,
+              'CodFilial': 6,
+              'NomeFilial': 'Filial Centro',
+              'NomeFantasiaFilial': 'Fantasia',
+              'CEPFilial': '01310100',
+              'CodMunicipioFilial': 3550308,
+              'NomeMunicipioFilial': 'Sao Paulo',
+              'UFMunicipioFilial': 'SP',
+              'CodigoIBGEMunicipioFilial': '3550308',
+              'QtdVendas': 1,
+              'TotalVenda': 10.0,
+            },
+          ],
+          rowCount: 1,
         ),
       ),
     );
@@ -206,8 +223,22 @@ void main() {
     ).thenAnswer(
       (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
         AgentSqlExecutionResult(
-          rows: <Map<String, dynamic>>[],
-          rowCount: 0,
+          rows: <Map<String, dynamic>>[
+            <String, dynamic>{
+              'CodEmpresa': 1,
+              'CodFilial': 1,
+              'NomeFilial': 'Filial',
+              'NomeFantasiaFilial': null,
+              'CEPFilial': null,
+              'CodMunicipioFilial': null,
+              'NomeMunicipioFilial': null,
+              'UFMunicipioFilial': null,
+              'CodigoIBGEMunicipioFilial': null,
+              'QtdVendas': 1,
+              'TotalVenda': 10.0,
+            },
+          ],
+          rowCount: 1,
         ),
       ),
     );
@@ -234,6 +265,53 @@ void main() {
     );
     expect(capturedRequest.sql, isNot(contains(':codEmpresa')));
     expect(capturedRequest.sql, isNot(contains(':codFilial')));
+  });
+
+  test('retries once when first unary response is empty', () async {
+    var calls = 0;
+    when(
+      () => agentQueriesRepository.executeSql(any()),
+    ).thenAnswer((_) async {
+      calls++;
+      if (calls == 1) {
+        return const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+        );
+      }
+      return const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(
+          rows: <Map<String, dynamic>>[
+            <String, dynamic>{
+              'CodEmpresa': 1,
+              'CodFilial': 6,
+              'NomeFilial': 'Filial Centro',
+              'NomeFantasiaFilial': 'Fantasia',
+              'CEPFilial': '01310100',
+              'CodMunicipioFilial': 3550308,
+              'NomeMunicipioFilial': 'Sao Paulo',
+              'UFMunicipioFilial': 'SP',
+              'CodigoIBGEMunicipioFilial': '3550308',
+              'QtdVendas': 5,
+              'TotalVenda': 200.25,
+            },
+          ],
+          rowCount: 1,
+        ),
+      );
+    });
+
+    final result = await repository.load(
+      userId: 'user-1',
+      agentId: 'agent-1',
+      filter: ResumoTotalVendasMunicipioFilialPeriodoFilter(
+        dataVendaInicio: DateTime.utc(2026),
+        dataVendaFim: DateTime.utc(2026, 12, 31),
+      ),
+    );
+
+    check(result.isSuccess()).isTrue();
+    check(result.getOrThrow().rows).has((it) => it.length, 'length').equals(1);
+    verify(() => agentQueriesRepository.executeSql(any())).called(2);
   });
 
   test(

@@ -97,7 +97,8 @@ abstract final class ResumoVendasDiariasPorVendedorSql {
           ) det_inner
         ) Detalhe
       ) ResumoVendasDiarioVendedor
-      WHERE DataVenda BETWEEN :dataVendaInicio AND :dataVendaFim
+      WHERE DataVenda >= CAST(:dataVendaInicio AS DATE)
+        AND DataVenda < DATEADD(day, 1, CAST(:dataVendaFim AS DATE))
         AND Origem = :origem
         AND GeraFinanceiro = :geraFinanceiro
         AND PreVenda = :preVenda

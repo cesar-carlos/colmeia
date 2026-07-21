@@ -37,6 +37,14 @@ void main() {
     check(sql).contains("pv.PreVenda = 'N'");
   });
 
+  test('query uses half-open sargable DataVenda predicates', () {
+    check(sql).contains('pv.DataVenda >= CAST(:dataVendaInicio AS DATE)');
+    check(sql).contains(
+      'pv.DataVenda < DATEADD(day, 1, CAST(:dataVendaFim AS DATE))',
+    );
+    check(sql.contains('CAST(pv.DataVenda AS DATE) BETWEEN')).isFalse();
+  });
+
   test('query does not contain pagination ROW_NUMBER', () {
     check(sql.contains('ROW_NUMBER')).isFalse();
     check(sql.contains(':startRow')).isFalse();

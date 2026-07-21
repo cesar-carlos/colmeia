@@ -15,6 +15,15 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_ve
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_produto_venda_repository.dart';
 
+/// Paged product sales summary (`ResumoProdutoVenda`).
+///
+/// ## Transport
+///
+/// Uses relay **unary** with `preferDbStreaming: false`. E2E SQL Anywhere
+/// streaming returned empty success for this CTE page shape; unary returns the
+/// page slice. Skips the short transport cache. Empty-success retry is not used
+/// here because a legitimate empty page is a `TotalCount = 0` sentinel row, not
+/// an empty payload — retrying would add latency on valid empty filters.
 class ResumoProdutoVendaRepositoryImpl implements ResumoProdutoVendaRepository {
   ResumoProdutoVendaRepositoryImpl(this._agentQueriesRepository);
 
@@ -92,10 +101,13 @@ class ResumoProdutoVendaRepositoryImpl implements ResumoProdutoVendaRepository {
         executionMode: AgentSqlExecutionMode.preserve,
         maxRows: filter.pageSize + _maxRowsPageBuffer,
         sqlTimeoutMs: effectiveSqlMs,
-        preferDbStreaming: true,
+        preferDbStreaming: false,
       ),
       useRelay: true,
-      relayMode: AgentSqlRelayMode.streaming,
+      // Explicit unary: documented streaming exception for this CTE page.
+      // ignore: avoid_redundant_argument_values
+      relayMode: AgentSqlRelayMode.unary,
+      skipTransportCache: true,
     );
 
     return AgentSqlRepositoryExecution.execute<ResumoProdutoVendaPageResult>(

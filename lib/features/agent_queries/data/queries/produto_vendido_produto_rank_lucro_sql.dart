@@ -69,7 +69,8 @@ WITH Resumo AS (
         cp.CodEmpresa = pv.CodEmpresa
         AND cp.CodFilial = pv.CodFilial
         AND cp.CodProduto = ipv.CodProduto
-    WHERE CAST(pv.DataVenda AS DATE) BETWEEN :dataVendaInicio AND :dataVendaFim
+    WHERE pv.DataVenda >= CAST(:dataVendaInicio AS DATE)
+      AND pv.DataVenda < DATEADD(day, 1, CAST(:dataVendaFim AS DATE))
       AND pv.Origem = :origem
       AND COALESCE(tos.GeraFinanceiro, 'N') = 'S'
       AND pv.PreVenda = 'N'

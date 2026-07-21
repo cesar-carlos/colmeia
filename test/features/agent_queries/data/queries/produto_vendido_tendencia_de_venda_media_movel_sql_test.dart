@@ -26,6 +26,13 @@ void main() {
     check(sql).contains('ROWS BETWEEN 6 PRECEDING AND CURRENT ROW');
     check(sql).contains('ROWS BETWEEN 13 PRECEDING AND 7 PRECEDING');
     check(sql).contains('DATEADD(DAY, -13, CAST(GETDATE() AS DATE))');
+    check(sql).contains(
+      'pv.DataVenda >= DATEADD(DAY, -13, CAST(GETDATE() AS DATE))',
+    );
+    check(sql).contains(
+      'pv.DataVenda < DATEADD(day, 1, CAST(GETDATE() AS DATE))',
+    );
+    check(sql.contains('BETWEEN DATEADD(DAY,')).isFalse();
   });
 
   test('query computes moving-average metrics and classification', () {

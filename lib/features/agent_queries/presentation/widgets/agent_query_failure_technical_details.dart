@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart' show ShareParams, SharePlus;
 
 const double _kTechnicalDetailsMaxHeight = 240;
+const double _kTechnicalDetailsCompactMaxHeight = 120;
 const double _kMinTouchTargetSize = 48;
 
 /// Expandable support-oriented diagnostic text with copy and share.
@@ -239,8 +240,10 @@ class _AgentQueryFailureTechnicalDetailsState
                       ),
                       SizedBox(height: tokens.gapSm),
                       ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          maxHeight: _kTechnicalDetailsMaxHeight,
+                        constraints: BoxConstraints(
+                          maxHeight: widget.compact
+                              ? _kTechnicalDetailsCompactMaxHeight
+                              : _kTechnicalDetailsMaxHeight,
                         ),
                         child: Scrollbar(
                           controller: _detailsScrollController,

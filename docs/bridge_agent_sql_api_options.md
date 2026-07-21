@@ -154,13 +154,17 @@ Allowed values:
   `RankingProdutosFaturamentoRepositoryImpl`,
   `ProdutoVendidoProdutoRankLucroRepositoryImpl`,
   `ResumoProdutoVendaLucratividadeMensalRepositoryImpl`,
+  `ResumoProdutoVendaLucratividadeRepositoryImpl`,
+  `ResumoProdutoVendaRepositoryImpl`,
   `ProdutoVendidoTendenciaDeVendaRepositoryImpl` (`loadPage` / `loadSummary`),
   `ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl`
-  (`loadPage` / `loadSummary`), and `ResumoTotalDiarioVendasRepositoryImpl`
-  keep `relayMode: unary` and `prefer_db_streaming: false` because SQL Anywhere
-  streaming (and older nested-subquery shapes) returned empty success payloads.
-  Guarded by `agent_sql_execute_request_use_relay_guard_test.dart`. Revisit
-  after an agent/hub fix; unary also lacks guaranteed agent-side `sql.cancel`.
+  (`loadPage` / `loadSummary`), `ResumoTotalDiarioVendasRepositoryImpl`, and
+  `ResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl` (live-map parallel
+  path) keep `relayMode: unary` and `prefer_db_streaming: false` because SQL
+  Anywhere streaming (and older nested-subquery shapes) returned empty success
+  payloads. Guarded by `agent_sql_execute_request_use_relay_guard_test.dart`.
+  Revisit after an agent/hub fix; unary also lacks guaranteed agent-side
+  `sql.cancel`.
 - The monthly profitability query uses a CTE + `COUNT(DISTINCT CodProdutoVendido)`
   (sale id) instead of nested string-built ids. It also sets
   `skipTransportCache: true` and retries once on empty success so agent replay
@@ -170,9 +174,14 @@ Allowed values:
   (`ProdutoVendidoTendenciaDeVenda` / `…MediaMovel`) use the same
   `skipTransportCache` + empty-success retry on standalone page/summary loads;
   their screen batch paths (`sql.executeBatch`) also set `skipTransportCache`.
-- Daily sales totals (`ResumoTotalDiarioVendas`) follow the same unary +
-  `skipTransportCache` + empty-success retry policy as the other sales-hub
-  reports.
+- Daily sales totals (`ResumoTotalDiarioVendas`), live-map period aggregates
+  (`ResumoTotalVendasMunicipioFilialPeriodo`), period product profitability
+  (`ResumoProdutoVendaLucratividade`), and paged product sales
+  (`ResumoProdutoVenda`) follow unary + `skipTransportCache`. Period
+  profitability also retries once on empty success; the paged product sales
+  path does not, because a legitimate empty page is a `TotalCount = 0`
+  sentinel row. The live-map merged `sql.executeBatch` path also sets
+  `skipTransportCache`.
 - Overview read-only `sql.executeBatch` calls set
   `options.max_parallel_read_only_batch_items: 4`.
 - Local performance knobs:

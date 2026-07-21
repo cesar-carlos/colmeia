@@ -89,6 +89,7 @@ void main() {
 
     check(result.isSuccess()).isTrue();
     check(result.getOrThrow()).isEmpty();
+    verify(() => agentQueriesRepository.executeSql(any())).called(2);
   });
 
   test('execute sends correct SQL, dates, and options', () async {
@@ -96,7 +97,21 @@ void main() {
       () => agentQueriesRepository.executeSql(any()),
     ).thenAnswer(
       (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
-        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+        AgentSqlExecutionResult(
+          rows: <Map<String, dynamic>>[
+            <String, dynamic>{
+              'CodEmpresa': 1,
+              'CodFilial': 2,
+              'QtdVendas': 1,
+              'QtdItensVendido': 1,
+              'ValorTotalCustoMedio': 1,
+              'CustoReposicao': 1,
+              'PontoEquilibrio': 0,
+              'ValorTotalItem': 2,
+            },
+          ],
+          rowCount: 1,
+        ),
       ),
     );
 
@@ -127,7 +142,10 @@ void main() {
     check(captured.executeOptions?.executionMode).equals(
       AgentSqlExecutionMode.preserve,
     );
+    check(captured.executeOptions?.preferDbStreaming).equals(false);
     check(captured.useRelay).isTrue();
+    check(captured.relayMode).equals(AgentSqlRelayMode.unary);
+    check(captured.skipTransportCache).isTrue();
   });
 
   test('custom bridgeTimeoutMs adjusts sql timeout', () async {
@@ -135,7 +153,21 @@ void main() {
       () => agentQueriesRepository.executeSql(any()),
     ).thenAnswer(
       (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
-        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+        AgentSqlExecutionResult(
+          rows: <Map<String, dynamic>>[
+            <String, dynamic>{
+              'CodEmpresa': 1,
+              'CodFilial': 2,
+              'QtdVendas': 1,
+              'QtdItensVendido': 1,
+              'ValorTotalCustoMedio': 1,
+              'CustoReposicao': 1,
+              'PontoEquilibrio': 0,
+              'ValorTotalItem': 2,
+            },
+          ],
+          rowCount: 1,
+        ),
       ),
     );
 
@@ -157,6 +189,50 @@ void main() {
 
     check(captured.bridgeTimeoutMs).equals(60000);
     check(captured.executeOptions?.sqlTimeoutMs).equals(54000);
+  });
+
+  test('retries once when first unary response is empty', () async {
+    var calls = 0;
+    when(
+      () => agentQueriesRepository.executeSql(any()),
+    ).thenAnswer((_) async {
+      calls++;
+      if (calls == 1) {
+        return const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+        );
+      }
+      return const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(
+          rows: <Map<String, dynamic>>[
+            <String, dynamic>{
+              'CodEmpresa': 1,
+              'CodFilial': 2,
+              'QtdVendas': 42,
+              'QtdItensVendido': 150,
+              'ValorTotalCustoMedio': 3000,
+              'CustoReposicao': 2500,
+              'PontoEquilibrio': 0,
+              'ValorTotalItem': 5000,
+            },
+          ],
+          rowCount: 1,
+        ),
+      );
+    });
+
+    final result = await repository.loadAll(
+      userId: 'user-1',
+      agentId: 'agent-1',
+      filter: ResumoProdutoVendaLucratividadeFilter(
+        dataVendaInicio: periodStart,
+        dataVendaFim: periodEnd,
+      ),
+    );
+
+    check(result.isSuccess()).isTrue();
+    check(result.getOrThrow()).has((it) => it.length, 'length').equals(1);
+    verify(() => agentQueriesRepository.executeSql(any())).called(2);
   });
 
   test('maps rows to entities correctly', () async {

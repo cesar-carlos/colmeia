@@ -86,7 +86,12 @@ void main() {
       () => agentQueriesRepository.executeSql(any()),
     ).thenAnswer(
       (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
-        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+        AgentSqlExecutionResult(
+          rows: <Map<String, dynamic>>[
+            <String, dynamic>{'TotalCount': 0},
+          ],
+          rowCount: 1,
+        ),
       ),
     );
 
@@ -122,7 +127,10 @@ void main() {
     check(captured.executeOptions?.executionMode).equals(
       AgentSqlExecutionMode.preserve,
     );
+    check(captured.executeOptions?.preferDbStreaming).equals(false);
     check(captured.useRelay).isTrue();
+    check(captured.relayMode).equals(AgentSqlRelayMode.unary);
+    check(captured.skipTransportCache).isTrue();
   });
 
   test('execute uses ROW_NUMBER order from filter.sortBy qtdVendas', () async {
@@ -130,7 +138,12 @@ void main() {
       () => agentQueriesRepository.executeSql(any()),
     ).thenAnswer(
       (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
-        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+        AgentSqlExecutionResult(
+          rows: <Map<String, dynamic>>[
+            <String, dynamic>{'TotalCount': 0},
+          ],
+          rowCount: 1,
+        ),
       ),
     );
 

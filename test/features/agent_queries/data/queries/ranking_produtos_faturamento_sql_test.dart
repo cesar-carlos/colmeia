@@ -25,7 +25,14 @@ void main() {
     expect(sql, contains('NULLIF(t.TotalVenda, 0)'));
     expect(sql, contains('Posicao'));
     expect(sql, isNot(contains('9999')));
-    expect(sql, contains('CAST(pv.DataVenda AS DATE) BETWEEN'));
+    expect(sql, contains('pv.DataVenda >= CAST(:dataVendaInicio AS DATE)'));
+    expect(
+      sql,
+      contains(
+        'pv.DataVenda < DATEADD(day, 1, CAST(:dataVendaFim AS DATE))',
+      ),
+    );
+    expect(sql, isNot(contains('CAST(pv.DataVenda AS DATE) BETWEEN')));
     expect(sql, contains("CAST('DIVERSOS' AS VARCHAR(50))"));
     expect(sql, contains('LEFT JOIN GrupoProduto gp'));
     expect(sql, isNot(contains('INNER JOIN GrupoProduto')));

@@ -46,7 +46,8 @@ WITH DetalheProdutoVenda AS (
     INNER JOIN TipoOperacaoSaida tos ON
         tos.CodEmpresa = pv.CodEmpresa
     AND tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida
-    WHERE CAST(pv.DataVenda AS DATE) BETWEEN :dataVendaInicio AND :dataVendaFim
+    WHERE pv.DataVenda >= CAST(:dataVendaInicio AS DATE)
+      AND pv.DataVenda < DATEADD(day, 1, CAST(:dataVendaFim AS DATE))
       AND pv.Origem = :origem
       AND COALESCE(tos.GeraFinanceiro, 'N') = 'S'
       AND pv.PreVenda = 'N'

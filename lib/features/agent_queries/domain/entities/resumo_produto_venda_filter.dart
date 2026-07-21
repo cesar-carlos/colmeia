@@ -5,9 +5,9 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_ve
 ///
 /// **Período de venda:** o usuário informa [dataVendaInicio] e [dataVendaFim]
 /// (obrigatórios). Apenas a parte de **data** importa: o repositório envia
-/// `yyyy-MM-dd` ao agente e a SQL aplica
-/// `CAST(pv.DataVenda AS DATE) BETWEEN :dataVendaInicio AND :dataVendaFim` no
-/// `WHERE` do detalhe (intervalo **inclusivo**). Hora/minuto em [DateTime] é
+/// `yyyy-MM-dd` ao agente e a SQL aplica um intervalo civil half-open
+/// (`pv.DataVenda >= :inicio` e `< DATEADD(day, 1, :fim)`) — equivalente ao
+/// intervalo **inclusivo** por dia civil. Hora/minuto em [DateTime] é
 /// ignorada na validação e no bind.
 ///
 /// **Ordenação:** `CodEmpresa` e `CodFilial` sempre lideram em ASC. [sortBy]

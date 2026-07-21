@@ -87,9 +87,8 @@ abstract final class ProdutoVendidoTendenciaDeVendaMediaMovelSql {
       INNER JOIN TipoOperacaoSaida tos ON
         tos.CodEmpresa = pv.CodEmpresa
         AND tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida
-      WHERE CAST(pv.DataVenda AS DATE)
-          BETWEEN DATEADD(DAY, -$lookbackDays, CAST(GETDATE() AS DATE))
-              AND CAST(GETDATE() AS DATE)
+      WHERE pv.DataVenda >= DATEADD(DAY, -$lookbackDays, CAST(GETDATE() AS DATE))
+        AND pv.DataVenda < DATEADD(day, 1, CAST(GETDATE() AS DATE))
         AND pv.Origem = 'FrenteLoja'
         AND COALESCE(tos.GeraFinanceiro, 'N') = 'S'
         AND pv.PreVenda = 'N'

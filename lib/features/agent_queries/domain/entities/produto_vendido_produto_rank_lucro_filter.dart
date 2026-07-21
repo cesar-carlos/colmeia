@@ -4,8 +4,8 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_ve
 /// Filters for the product profitability rank `sql.execute` query.
 ///
 /// Only [dataVendaInicio] and [dataVendaFim] are required. The repository sends
-/// `yyyy-MM-dd` strings; the SQL uses
-/// `CAST(pv.DataVenda AS DATE) BETWEEN :dataVendaInicio AND :dataVendaFim`.
+/// `yyyy-MM-dd` strings; the SQL uses a half-open calendar range on
+/// `pv.DataVenda` (inclusive civil days).
 class ProdutoVendidoProdutoRankLucroFilter {
   const ProdutoVendidoProdutoRankLucroFilter({
     required this.dataVendaInicio,

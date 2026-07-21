@@ -2,7 +2,7 @@
 ///
 /// Only `dataVendaInicio` and `dataVendaFim` are required. The date part is
 /// what matters: the repository sends `yyyy-MM-dd` strings and the SQL applies
-/// `CAST(pv.DataVenda AS DATE) BETWEEN :dataVendaInicio AND :dataVendaFim`.
+/// a half-open calendar range on `pv.DataVenda` (inclusive civil days).
 ///
 /// The result is bounded by one row per `CodEmpresa/CodFilial` — at most
 /// the number of active branches in the agent's database.

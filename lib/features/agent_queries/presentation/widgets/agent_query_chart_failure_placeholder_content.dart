@@ -38,37 +38,49 @@ class AgentQueryChartFailurePlaceholderContent extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: verticalPadding),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(
-            emptyMessage,
-            textAlign: TextAlign.center,
-            style: textStyle,
-          ),
-          if (onViewAgentFailureDetails != null)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton(
-                onPressed: onViewAgentFailureDetails,
-                child: Text(
-                  AppLocalizations.of(
-                    context,
-                  ).agentSqlFailureActionViewAffectedAgents,
-                ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final content = Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                emptyMessage,
+                textAlign: TextAlign.center,
+                style: textStyle,
               ),
-            ),
-          if (technicalBody != null && technicalBody.isNotEmpty) ...<Widget>[
-            if (onViewAgentFailureDetails != null)
-              SizedBox(height: tokens.gapSm),
-            AgentQueryFailureTechnicalDetails(
-              body: technicalBody,
-              failure: failure,
-              supportContext: supportContext,
-              compact: true,
-            ),
-          ],
-        ],
+              if (onViewAgentFailureDetails != null)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: onViewAgentFailureDetails,
+                    child: Text(
+                      AppLocalizations.of(
+                        context,
+                      ).agentSqlFailureActionViewAffectedAgents,
+                    ),
+                  ),
+                ),
+              if (technicalBody != null && technicalBody.isNotEmpty) ...<Widget>[
+                if (onViewAgentFailureDetails != null)
+                  SizedBox(height: tokens.gapSm),
+                AgentQueryFailureTechnicalDetails(
+                  body: technicalBody,
+                  failure: failure,
+                  supportContext: supportContext,
+                  compact: true,
+                ),
+              ],
+            ],
+          );
+
+          if (!constraints.hasBoundedHeight) {
+            return content;
+          }
+
+          return SingleChildScrollView(
+            child: content,
+          );
+        },
       ),
     );
   }

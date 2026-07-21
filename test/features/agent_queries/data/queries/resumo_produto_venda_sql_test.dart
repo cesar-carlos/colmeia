@@ -68,4 +68,15 @@ void main() {
       check(sql).contains('a.CodFilial ASC');
     }
   });
+
+  test('paged query uses half-open sargable DataVenda predicates', () {
+    final sql = ResumoProdutoVendaSql.pagedQuery(
+      sortBy: ResumoProdutoVendaSortBy.codProduto,
+    );
+    check(sql).contains('pv.DataVenda >= CAST(:dataVendaInicio AS DATE)');
+    check(sql).contains(
+      'pv.DataVenda < DATEADD(day, 1, CAST(:dataVendaFim AS DATE))',
+    );
+    check(sql.contains('CAST(pv.DataVenda AS DATE) BETWEEN')).isFalse();
+  });
 }

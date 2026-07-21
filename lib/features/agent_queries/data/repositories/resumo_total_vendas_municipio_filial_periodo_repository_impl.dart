@@ -19,6 +19,17 @@ import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_total_vendas_municipio_filial_periodo_repository.dart';
 import 'package:flutter/foundation.dart';
 
+/// Period sales aggregate by branch (`ResumoTotalVendasMunicipioFilialPeriodo`).
+///
+/// Powers the sales live map parallel load path (across-agents) when the merged
+/// SQL batch is not used.
+///
+/// ## Transport
+///
+/// Uses relay **unary** with `preferDbStreaming: false`. Sibling sales-hub
+/// reports empty-streamed on the E2E SQL Anywhere agent; this path stays
+/// aligned with those unary exceptions. Always skips the short transport cache
+/// and retries once on empty success (agent replay / flakiness).
 class ResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl
     implements ResumoTotalVendasMunicipioFilialPeriodoRepository {
   ResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl(
@@ -27,6 +38,9 @@ class ResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl
 
   static const String operation = 'loadResumoTotalVendasMunicipioFilialPeriodo';
   static const String _operation = operation;
+
+  /// Delay before retrying an empty success (agent replay / flakiness).
+  static const Duration emptySuccessRetryDelay = Duration(seconds: 2);
 
   final AgentQueriesRepository _agentQueriesRepository;
 
@@ -58,54 +72,88 @@ class ResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl
     final trimmedAgentId = agentId.trim();
     final branchFilters = filter.branchesForAgent(trimmedAgentId);
 
-    final request = AgentSqlExecuteRequest(
-      agentId: agentId,
-      requestingUserId: userId,
-      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
-      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
-      sql: ResumoTotalVendasMunicipioFilialPeriodoSql.query(
-        branches: branchFilters,
-        codEmpresa: filter.codEmpresa,
-        codFilial: filter.codFilial,
-      ),
-      clientToken: clientToken,
-      bridgeTimeoutMs:
-          bridgeTimeoutMs ?? AppEnvironment.agentSqlBridgeTimeoutMs,
-      namedParams: <String, Object?>{
-        'dataVendaInicio': AgentQueriesSqlLocalDate.format(
-          filter.dataVendaInicio,
+    Future<
+      AppResult<
+        AgentQueryLoadedRows<ResumoTotalVendasMunicipioFilialPeriodoRow>
+      >
+    >
+    executeOnce() {
+      final request = AgentSqlExecuteRequest(
+        agentId: agentId,
+        requestingUserId: userId,
+        hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+        hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
+        sql: ResumoTotalVendasMunicipioFilialPeriodoSql.query(
+          branches: branchFilters,
+          codEmpresa: filter.codEmpresa,
+          codFilial: filter.codFilial,
         ),
-        'dataVendaFim': AgentQueriesSqlLocalDate.format(filter.dataVendaFim),
-        'origem': filter.trimmedOrigem,
-        'geraFinanceiro': filter.trimmedGeraFinanceiro,
-        'preVenda': filter.trimmedPreVenda,
-      },
-      executeOptions: const AgentSqlExecuteOptions(
-        executionMode: AgentSqlExecutionMode.preserve,
-        preferDbStreaming: true,
-        maxRows: AgentQueriesBoundedResultMaxRows
-            .resumoTotalVendasMunicipioFilialPeriodo,
-      ),
-      useRelay: true,
-      relayMode: AgentSqlRelayMode.streaming,
-    );
+        clientToken: clientToken,
+        bridgeTimeoutMs:
+            bridgeTimeoutMs ?? AppEnvironment.agentSqlBridgeTimeoutMs,
+        namedParams: <String, Object?>{
+          'dataVendaInicio': AgentQueriesSqlLocalDate.format(
+            filter.dataVendaInicio,
+          ),
+          'dataVendaFim': AgentQueriesSqlLocalDate.format(filter.dataVendaFim),
+          'origem': filter.trimmedOrigem,
+          'geraFinanceiro': filter.trimmedGeraFinanceiro,
+          'preVenda': filter.trimmedPreVenda,
+        },
+        executeOptions: const AgentSqlExecuteOptions(
+          executionMode: AgentSqlExecutionMode.preserve,
+          preferDbStreaming: false,
+          maxRows: AgentQueriesBoundedResultMaxRows
+              .resumoTotalVendasMunicipioFilialPeriodo,
+        ),
+        useRelay: true,
+        // Explicit unary: documented streaming exception for live-map sales.
+        // ignore: avoid_redundant_argument_values
+        relayMode: AgentSqlRelayMode.unary,
+        skipTransportCache: switch (cachePolicy) {
+          AgentQueryLoadPolicy.defaultLoad ||
+          AgentQueryLoadPolicy.forceRefresh ||
+          AgentQueryLoadPolicy.networkOnly => true,
+        },
+      );
 
-    return AgentSqlRepositoryExecution.execute<
-      AgentQueryLoadedRows<ResumoTotalVendasMunicipioFilialPeriodoRow>
-    >(
-      agentQueriesRepository: _agentQueriesRepository,
-      request: request,
-      operation: _operation,
-      agentId: trimmedAgentId,
-      unexpectedRowsLogMessage:
-          'Unexpected row shape for ResumoTotalVendasMunicipioFilialPeriodo',
-      mapExecution: (executionResult) => _mapExecutionToRows(
-        executionResult,
+      return AgentSqlRepositoryExecution.execute<
+        AgentQueryLoadedRows<ResumoTotalVendasMunicipioFilialPeriodoRow>
+      >(
+        agentQueriesRepository: _agentQueriesRepository,
+        request: request,
+        operation: _operation,
         agentId: trimmedAgentId,
-        filter: filter,
-      ),
-      cancelScope: cancelScope,
+        unexpectedRowsLogMessage:
+            'Unexpected row shape for ResumoTotalVendasMunicipioFilialPeriodo',
+        mapExecution: (executionResult) => _mapExecutionToRows(
+          executionResult,
+          agentId: trimmedAgentId,
+          filter: filter,
+        ),
+        cancelScope: cancelScope,
+      );
+    }
+
+    final first = await executeOnce();
+    if (first.isError()) {
+      return first;
+    }
+    final firstRows = first.getOrThrow().rows;
+    if (firstRows.isNotEmpty) {
+      return first;
+    }
+
+    AppLogger.info(
+      'Retrying empty unary success for $_operation',
+      context: <String, Object?>{
+        'operation': _operation,
+        'agentId': trimmedAgentId,
+        'retryDelayMs': emptySuccessRetryDelay.inMilliseconds,
+      },
     );
+    await Future<void>.delayed(emptySuccessRetryDelay);
+    return executeOnce();
   }
 
   AgentQueryLoadedRows<ResumoTotalVendasMunicipioFilialPeriodoRow>

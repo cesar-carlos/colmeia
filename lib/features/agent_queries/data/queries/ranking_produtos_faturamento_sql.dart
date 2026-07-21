@@ -120,7 +120,8 @@ WITH Produtos AS (
         p.CodProduto = ipv.CodProduto
     LEFT JOIN GrupoProduto gp ON
         gp.CodGrupoProduto = p.CodGrupoProduto
-    WHERE CAST(pv.DataVenda AS DATE) BETWEEN :dataVendaInicio AND :dataVendaFim
+    WHERE pv.DataVenda >= CAST(:dataVendaInicio AS DATE)
+      AND pv.DataVenda < DATEADD(day, 1, CAST(:dataVendaFim AS DATE))
       AND COALESCE(tos.GeraFinanceiro, 'N') = 'S'$salesSourceFilter
     GROUP BY
         pv.CodEmpresa,

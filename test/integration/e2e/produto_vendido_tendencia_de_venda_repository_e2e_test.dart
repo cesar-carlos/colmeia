@@ -305,7 +305,7 @@ void main() {
       );
 
       test(
-        'loadPageAndSummary returns page, summary, and top movers in one batch',
+        'loadPageAndSummary returns page, summary, and top movers in one round-trip',
         () async {
           final missingKeys = missingE2eRepositoryKeys();
           if (missingKeys.isNotEmpty) {
@@ -313,7 +313,7 @@ void main() {
             // ignore: avoid_print
             print(
               'SKIP produto_vendido_tendencia_de_venda_repository_e2e '
-              '(batch): missing ${missingKeys.join(', ')}.',
+              '(screen): missing ${missingKeys.join(', ')}.',
             );
             return;
           }

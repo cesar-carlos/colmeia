@@ -74,11 +74,11 @@ abstract final class ProdutoVendidoTendenciaDeVendaSql {
         m.CodMarca,
         m.Nome AS NomeMarca,
         CASE
-          WHEN CAST(pv.DataVenda AS DATE)
-            BETWEEN prm.PeriodoAtualInicio AND prm.PeriodoAtualFim
+          WHEN pv.DataVenda >= prm.PeriodoAtualInicio
+            AND pv.DataVenda < DATEADD(day, 1, prm.PeriodoAtualFim)
             THEN 'ATUAL'
-          WHEN CAST(pv.DataVenda AS DATE)
-            BETWEEN prm.PeriodoAnteriorInicio AND prm.PeriodoAnteriorFim
+          WHEN pv.DataVenda >= prm.PeriodoAnteriorInicio
+            AND pv.DataVenda < DATEADD(day, 1, prm.PeriodoAnteriorFim)
             THEN 'ANTERIOR'
         END AS Periodo,
         ipv.Quantidade
@@ -97,9 +97,14 @@ abstract final class ProdutoVendidoTendenciaDeVendaSql {
         m.CodMarca = p.CodMarca
       CROSS JOIN Parametros prm
       WHERE (
-        CAST(pv.DataVenda AS DATE) BETWEEN prm.PeriodoAtualInicio AND prm.PeriodoAtualFim
-        OR CAST(pv.DataVenda AS DATE)
-          BETWEEN prm.PeriodoAnteriorInicio AND prm.PeriodoAnteriorFim
+        (
+          pv.DataVenda >= prm.PeriodoAtualInicio
+          AND pv.DataVenda < DATEADD(day, 1, prm.PeriodoAtualFim)
+        )
+        OR (
+          pv.DataVenda >= prm.PeriodoAnteriorInicio
+          AND pv.DataVenda < DATEADD(day, 1, prm.PeriodoAnteriorFim)
+        )
       )
         AND pv.Origem = :origem
         AND COALESCE(tos.GeraFinanceiro, 'N') = 'S'
