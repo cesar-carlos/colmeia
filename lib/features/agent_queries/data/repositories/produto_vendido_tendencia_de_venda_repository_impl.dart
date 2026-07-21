@@ -28,6 +28,18 @@ import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_tendencia_de_venda_repository.dart';
 import 'package:result_dart/result_dart.dart';
 
+/// Product sales trend (`ProdutoVendidoTendenciaDeVenda`).
+///
+/// ## Transport
+///
+/// Standalone `loadPage` / `loadSummary` use relay **unary** with
+/// `preferDbStreaming: false`. Streaming returned empty success payloads on the
+/// E2E SQL Anywhere agent for this CTE shape; pagination uses `loadPage` and
+/// must not wipe the detail table. Skips the short transport cache and retries
+/// once on empty success because the agent can still return an empty replay.
+///
+/// `loadPageAndSummary` stays on `sql.executeBatch` (relay unary at the batch
+/// layer) and already returned correct rows on the same agent.
 class ProdutoVendidoTendenciaDeVendaRepositoryImpl
     implements ProdutoVendidoTendenciaDeVendaRepository {
   ProdutoVendidoTendenciaDeVendaRepositoryImpl(this._agentQueriesRepository);
@@ -36,6 +48,9 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
   static const int _defaultSqlTimeoutMs = 162000;
   static const int _minSqlTimeoutMs = 5000;
   static const int _maxRowsPageBuffer = 25;
+
+  /// Delay before retrying an empty success (agent replay / flakiness).
+  static const Duration emptySuccessRetryDelay = Duration(seconds: 2);
 
   static const String _operation = 'loadProdutoVendidoTendenciaDeVendaPage';
   static const String _summaryOperation =
@@ -81,49 +96,75 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
       _maxRowsPageBuffer + 1,
       AgentQueriesBoundedResultMaxRows.produtoVendidoTendenciaDeVenda,
     );
+    final trimmedAgentId = agentId.trim();
 
-    final request = AgentSqlExecuteRequest(
-      agentId: agentId,
-      requestingUserId: userId,
-      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
-      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
-      sql: ProdutoVendidoTendenciaDeVendaSql.pagedQuery(
-        startRow: filter.startRow,
-        endRow: filter.endRow,
-        searchTerm: filter.normalizedSearchTerm,
-        classificacao: filter.normalizedClassificacao,
-        codGrupoProduto: filter.codGrupoProduto,
-        codMarca: filter.codMarca,
-      ),
-      clientToken: clientToken,
-      bridgeTimeoutMs: effectiveBridgeMs,
-      namedParams: _buildPeriodNamedParams(filter),
-      executeOptions: AgentSqlExecuteOptions(
-        executionMode: AgentSqlExecutionMode.preserve,
-        maxRows: sqlMaxRowsCap,
-        sqlTimeoutMs: effectiveSqlMs,
-        preferDbStreaming: true,
-      ),
-      useRelay: true,
-      relayMode: AgentSqlRelayMode.streaming,
-    );
+    Future<AppResult<ProdutoVendidoTendenciaDeVendaPageResult>> executeOnce() {
+      final request = AgentSqlExecuteRequest(
+        agentId: agentId,
+        requestingUserId: userId,
+        hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+        hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
+        sql: ProdutoVendidoTendenciaDeVendaSql.pagedQuery(
+          startRow: filter.startRow,
+          endRow: filter.endRow,
+          searchTerm: filter.normalizedSearchTerm,
+          classificacao: filter.normalizedClassificacao,
+          codGrupoProduto: filter.codGrupoProduto,
+          codMarca: filter.codMarca,
+        ),
+        clientToken: clientToken,
+        bridgeTimeoutMs: effectiveBridgeMs,
+        namedParams: _buildPeriodNamedParams(filter),
+        executeOptions: AgentSqlExecuteOptions(
+          executionMode: AgentSqlExecutionMode.preserve,
+          maxRows: sqlMaxRowsCap,
+          sqlTimeoutMs: effectiveSqlMs,
+          preferDbStreaming: false,
+        ),
+        useRelay: true,
+        // Explicit unary: documented streaming exception for this CTE report.
+        // ignore: avoid_redundant_argument_values
+        relayMode: AgentSqlRelayMode.unary,
+        skipTransportCache: true,
+      );
 
-    return AgentSqlRepositoryExecution.execute<
-      ProdutoVendidoTendenciaDeVendaPageResult
-    >(
-      agentQueriesRepository: _agentQueriesRepository,
-      request: request,
-      operation: _operation,
-      agentId: agentId.trim(),
-      unexpectedRowsLogMessage: 'Unexpected row shape for $_operation',
-      unexpectedRowsUiKey: AgentSqlRpcFailureUiKey.unexpectedAgentResponse,
-      mapExecution: (executionResult) => _mapPagedExecution(
-        executionResult,
-        agentId: agentId.trim(),
-        sqlMaxRowsCap: sqlMaxRowsCap,
-      ),
-      cancelScope: cancelScope,
+      return AgentSqlRepositoryExecution.execute<
+        ProdutoVendidoTendenciaDeVendaPageResult
+      >(
+        agentQueriesRepository: _agentQueriesRepository,
+        request: request,
+        operation: _operation,
+        agentId: trimmedAgentId,
+        unexpectedRowsLogMessage: 'Unexpected row shape for $_operation',
+        unexpectedRowsUiKey: AgentSqlRpcFailureUiKey.unexpectedAgentResponse,
+        mapExecution: (executionResult) => _mapPagedExecution(
+          executionResult,
+          agentId: trimmedAgentId,
+          sqlMaxRowsCap: sqlMaxRowsCap,
+        ),
+        cancelScope: cancelScope,
+      );
+    }
+
+    final first = await executeOnce();
+    if (first.isError()) {
+      return first;
+    }
+    final firstPage = first.getOrThrow();
+    if (firstPage.items.isNotEmpty || firstPage.totalCount > 0) {
+      return first;
+    }
+
+    AppLogger.info(
+      'Retrying empty unary success for $_operation',
+      context: <String, Object?>{
+        'operation': _operation,
+        'agentId': trimmedAgentId,
+        'retryDelayMs': emptySuccessRetryDelay.inMilliseconds,
+      },
     );
+    await Future<void>.delayed(emptySuccessRetryDelay);
+    return executeOnce();
   }
 
   @override
@@ -180,44 +221,72 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
       _defaultSqlTimeoutMs,
     );
 
-    final request = AgentSqlExecuteRequest(
-      agentId: agentId,
-      requestingUserId: userId,
-      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
-      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
-      sql: ProdutoVendidoTendenciaDeVendaSummarySql.query(
-        searchTerm: filter.normalizedSearchTerm,
-        classificacao: filter.normalizedClassificacao,
-        codGrupoProduto: filter.codGrupoProduto,
-        codMarca: filter.codMarca,
-      ),
-      clientToken: clientToken,
-      bridgeTimeoutMs: effectiveBridgeMs,
-      namedParams: _buildPeriodNamedParams(filter),
-      executeOptions: AgentSqlExecuteOptions(
-        executionMode: AgentSqlExecutionMode.preserve,
-        maxRows: AgentQueriesBoundedResultMaxRows
-            .produtoVendidoTendenciaDeVendaSummary,
-        sqlTimeoutMs: effectiveSqlMs,
-        preferDbStreaming: true,
-      ),
-      useRelay: true,
-      relayMode: AgentSqlRelayMode.streaming,
-    );
+    final trimmedAgentId = agentId.trim();
 
-    return AgentSqlRepositoryExecution.execute<
-      List<ProdutoVendidoTendenciaDeVendaSummaryRow>
-    >(
-      agentQueriesRepository: _agentQueriesRepository,
-      request: request,
-      operation: _summaryOperation,
-      agentId: agentId.trim(),
-      unexpectedRowsLogMessage: 'Unexpected row shape for $_summaryOperation',
-      unexpectedRowsUiKey:
-          AgentSqlRpcFailureUiKey.tendenciaSummaryUnexpectedFormat,
-      mapExecution: _mapSummaryExecution,
-      cancelScope: cancelScope,
+    Future<AppResult<List<ProdutoVendidoTendenciaDeVendaSummaryRow>>>
+    executeOnce() {
+      final request = AgentSqlExecuteRequest(
+        agentId: agentId,
+        requestingUserId: userId,
+        hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+        hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
+        sql: ProdutoVendidoTendenciaDeVendaSummarySql.query(
+          searchTerm: filter.normalizedSearchTerm,
+          classificacao: filter.normalizedClassificacao,
+          codGrupoProduto: filter.codGrupoProduto,
+          codMarca: filter.codMarca,
+        ),
+        clientToken: clientToken,
+        bridgeTimeoutMs: effectiveBridgeMs,
+        namedParams: _buildPeriodNamedParams(filter),
+        executeOptions: AgentSqlExecuteOptions(
+          executionMode: AgentSqlExecutionMode.preserve,
+          maxRows: AgentQueriesBoundedResultMaxRows
+              .produtoVendidoTendenciaDeVendaSummary,
+          sqlTimeoutMs: effectiveSqlMs,
+          preferDbStreaming: false,
+        ),
+        useRelay: true,
+        // Explicit unary: documented streaming exception for this CTE report.
+        // ignore: avoid_redundant_argument_values
+        relayMode: AgentSqlRelayMode.unary,
+        skipTransportCache: true,
+      );
+
+      return AgentSqlRepositoryExecution.execute<
+        List<ProdutoVendidoTendenciaDeVendaSummaryRow>
+      >(
+        agentQueriesRepository: _agentQueriesRepository,
+        request: request,
+        operation: _summaryOperation,
+        agentId: trimmedAgentId,
+        unexpectedRowsLogMessage: 'Unexpected row shape for $_summaryOperation',
+        unexpectedRowsUiKey:
+            AgentSqlRpcFailureUiKey.tendenciaSummaryUnexpectedFormat,
+        mapExecution: _mapSummaryExecution,
+        cancelScope: cancelScope,
+      );
+    }
+
+    final first = await executeOnce();
+    if (first.isError()) {
+      return first;
+    }
+    final firstRows = first.getOrThrow();
+    if (firstRows.isNotEmpty) {
+      return first;
+    }
+
+    AppLogger.info(
+      'Retrying empty unary success for $_summaryOperation',
+      context: <String, Object?>{
+        'operation': _summaryOperation,
+        'agentId': trimmedAgentId,
+        'retryDelayMs': emptySuccessRetryDelay.inMilliseconds,
+      },
     );
+    await Future<void>.delayed(emptySuccessRetryDelay);
+    return executeOnce();
   }
 
   @override
@@ -286,6 +355,7 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
       clientToken: clientToken,
       bridgeTimeoutMs: effectiveBridgeMs,
       useRelay: true,
+      skipTransportCache: true,
       options: AgentSqlReadOnlyBatchOptions.dashboard(
         sqlTimeoutMs: effectiveSqlMs,
         maxRows: batchMaxRows,

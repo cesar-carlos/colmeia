@@ -21,6 +21,14 @@ import 'package:flutter/foundation.dart';
 
 /// Ad-hoc billing ranking per agent; parameters vary by screen — transport SQL
 /// cache is always skipped (`skipTransportCache: true`).
+///
+/// ## Transport
+///
+/// Uses relay **unary** with `preferDbStreaming: false`. Streaming on the E2E
+/// SQL Anywhere agent returns an empty success payload for this CTE ranking.
+/// Revisit streaming only after the agent/hub fix is validated; unary also
+/// means agent-side `sql.cancel` is not guaranteed (fail-fast client cancel
+/// only — see `docs/Features/socket/sql_cancel_contract_colmeia_map.md`).
 class RankingProdutosFaturamentoRepositoryImpl
     implements RankingProdutosFaturamentoRepository {
   RankingProdutosFaturamentoRepositoryImpl(this._agentQueriesRepository);
@@ -28,7 +36,12 @@ class RankingProdutosFaturamentoRepositoryImpl
   static const String _operation = 'loadRankingProdutosFaturamento';
 
   /// Conservative upper bound for distinct branches when sizing `max_rows`.
-  static const int maxFilialEstimate = 100;
+  ///
+  /// Kept modest so `(quantidadeProdutos + 1) * maxFilialEstimate` stays in
+  /// the range the bridge/agent accepts for this heavy ranking CTE. Raise only
+  /// after validating larger `max_rows` on the target agent; prefer
+  /// single-branch filters when the catalog exceeds this estimate.
+  static const int maxFilialEstimate = 25;
 
   final AgentQueriesRepository _agentQueriesRepository;
 
@@ -86,6 +99,7 @@ class RankingProdutosFaturamentoRepositoryImpl
           'quantidadeProdutos': filter.quantidadeProdutos,
           'inclusiveDays': end.difference(start).inDays + 1,
           'maxRows': maxRows,
+          'maxFilialEstimate': maxFilialEstimate,
         },
       );
     }
@@ -102,6 +116,7 @@ class RankingProdutosFaturamentoRepositoryImpl
         restrictToSingleBranch: restrictToSingleBranch,
         origem: filter.trimmedOrigem,
         preVenda: filter.trimmedPreVenda,
+        quantidadeProdutos: filter.quantidadeProdutos,
       ),
       clientToken: clientToken,
       bridgeTimeoutMs: timeouts.bridgeMs,
@@ -110,10 +125,16 @@ class RankingProdutosFaturamentoRepositoryImpl
         executionMode: AgentSqlExecutionMode.preserve,
         maxRows: maxRows,
         sqlTimeoutMs: timeouts.sqlMs,
-        preferDbStreaming: true,
+        // Streaming returns an empty success payload for this CTE ranking on
+        // the SQL Anywhere E2E agent (unary REST/relay returns Top-N + DIVERSOS).
+        preferDbStreaming: false,
       ),
       useRelay: true,
-      relayMode: AgentSqlRelayMode.streaming,
+      // Explicit unary: default is unary, but this report is a documented
+      // streaming exception — keep the mode visible for readers and the
+      // unary-report guard test.
+      // ignore: avoid_redundant_argument_values
+      relayMode: AgentSqlRelayMode.unary,
       skipTransportCache: true,
     );
 
@@ -139,12 +160,13 @@ class RankingProdutosFaturamentoRepositoryImpl
   static Map<String, Object?> _namedParamsFor(
     RankingProdutosFaturamentoFilter filter,
   ) {
+    // quantidadeProdutos is inlined in SQL (validated int) so ODBC/SQL Anywhere
+    // does not see the same named host variable twice.
     final base = <String, Object?>{
       'dataVendaInicio': AgentQueriesSqlLocalDate.format(
         filter.dataVendaInicio,
       ),
       'dataVendaFim': AgentQueriesSqlLocalDate.format(filter.dataVendaFim),
-      'quantidadeProdutos': filter.quantidadeProdutos,
     };
 
     final codEmpresa = filter.codEmpresa;

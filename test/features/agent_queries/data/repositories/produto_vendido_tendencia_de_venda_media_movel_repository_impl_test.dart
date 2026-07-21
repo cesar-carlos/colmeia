@@ -65,7 +65,7 @@ void main() {
     verifyNever(() => agentQueriesRepository.executeSql(any()));
   });
 
-  test('total zero returns empty items in one execute', () async {
+  test('total zero returns empty items without empty-payload retry', () async {
     when(
       () => agentQueriesRepository.executeSql(any()),
     ).thenAnswer(
@@ -88,6 +88,52 @@ void main() {
     check(result.isSuccess()).isTrue();
     check(result.getOrThrow().totalCount).equals(0);
     check(result.getOrThrow().items).isEmpty();
+    // Tot row with TotalCount=0 is a real empty universe, not a transport empty.
+    verify(() => agentQueriesRepository.executeSql(any())).called(1);
+  });
+
+  test('retries once when first page payload is empty', () async {
+    var calls = 0;
+    when(
+      () => agentQueriesRepository.executeSql(any()),
+    ).thenAnswer((_) async {
+      calls++;
+      if (calls == 1) {
+        return const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+        );
+      }
+      return const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(
+          rows: <Map<String, dynamic>>[
+            <String, dynamic>{
+              'TotalCount': 1,
+              'CodEmpresa': 1,
+              'CodFilial': 1,
+              'CodProduto': 100,
+              'NomeProduto': 'Produto A',
+              'CodUnidadeMedida': 'UN',
+              'MediaAtual': 2.5,
+              'MediaAnterior': 1.0,
+              'Diferenca': 1.5,
+              'TendenciaPercentual': 150,
+              'Classificacao': 'CRESCENDO',
+            },
+          ],
+          rowCount: 1,
+        ),
+      );
+    });
+
+    final result = await repository.loadPage(
+      userId: 'user-1',
+      agentId: 'agent-1',
+      filter: buildValidFilter(),
+    );
+
+    check(result.isSuccess()).isTrue();
+    check(result.getOrThrow().items.single.codProduto).equals(100);
+    verify(() => agentQueriesRepository.executeSql(any())).called(2);
   });
 
   test('execute sends paged SQL, dias, pagination, and options', () async {
@@ -110,7 +156,7 @@ void main() {
     final captured =
         verify(
               () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured.single
+            ).captured.first
             as AgentSqlExecuteRequest;
 
     check(captured.sql).equals(
@@ -125,7 +171,10 @@ void main() {
     check(captured.executeOptions?.executionMode).equals(
       AgentSqlExecutionMode.preserve,
     );
+    check(captured.executeOptions?.preferDbStreaming).equals(false);
     check(captured.useRelay).isTrue();
+    check(captured.relayMode).equals(AgentSqlRelayMode.unary);
+    check(captured.skipTransportCache).isTrue();
   });
 
   test('custom page and pageSize set startRow and endRow', () async {
@@ -149,7 +198,7 @@ void main() {
     final captured =
         verify(
               () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured.single
+            ).captured.first
             as AgentSqlExecuteRequest;
 
     check(captured.namedParams['startRow']).equals(41);
@@ -186,7 +235,7 @@ void main() {
     final captured =
         verify(
               () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured.single
+            ).captured.first
             as AgentSqlExecuteRequest;
 
     check(captured.sql).contains('AND p.CodGrupoProduto = 14');
@@ -266,7 +315,7 @@ void main() {
     final captured =
         verify(
               () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured.single
+            ).captured.first
             as AgentSqlExecuteRequest;
 
     check(captured.sql).equals(
@@ -277,6 +326,9 @@ void main() {
     );
     check(captured.namedParams).isEmpty();
     check(captured.executeOptions?.maxRows).equals(32);
+    check(captured.executeOptions?.preferDbStreaming).equals(false);
+    check(captured.relayMode).equals(AgentSqlRelayMode.unary);
+    check(captured.skipTransportCache).isTrue();
   });
 
   test('loadSummary maps summary rows to entities', () async {
@@ -359,6 +411,7 @@ void main() {
               as AgentSqlExecuteBatchRequest;
       check(captured.commands).length.equals(2);
       check(captured.useRelay).isTrue();
+      check(captured.skipTransportCache).isTrue();
     },
   );
 }

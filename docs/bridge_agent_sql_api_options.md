@@ -150,6 +150,29 @@ Allowed values:
 - Rollout policy: large report/chart queries use relay streaming with
   `options.prefer_db_streaming: true`; lookup/options queries stay relay unary
   to avoid streaming overhead on small payloads.
+- **Known unary report exceptions:**
+  `RankingProdutosFaturamentoRepositoryImpl`,
+  `ProdutoVendidoProdutoRankLucroRepositoryImpl`,
+  `ResumoProdutoVendaLucratividadeMensalRepositoryImpl`,
+  `ProdutoVendidoTendenciaDeVendaRepositoryImpl` (`loadPage` / `loadSummary`),
+  `ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl`
+  (`loadPage` / `loadSummary`), and `ResumoTotalDiarioVendasRepositoryImpl`
+  keep `relayMode: unary` and `prefer_db_streaming: false` because SQL Anywhere
+  streaming (and older nested-subquery shapes) returned empty success payloads.
+  Guarded by `agent_sql_execute_request_use_relay_guard_test.dart`. Revisit
+  after an agent/hub fix; unary also lacks guaranteed agent-side `sql.cancel`.
+- The monthly profitability query uses a CTE + `COUNT(DISTINCT CodProdutoVendido)`
+  (sale id) instead of nested string-built ids. It also sets
+  `skipTransportCache: true` and retries once on empty success so agent replay
+  empties do not stick on the sales chart. The short transport SQL cache skips
+  caching empty success payloads globally.
+- Product sales trend and moving-average trend
+  (`ProdutoVendidoTendenciaDeVenda` / `…MediaMovel`) use the same
+  `skipTransportCache` + empty-success retry on standalone page/summary loads;
+  their screen batch paths (`sql.executeBatch`) also set `skipTransportCache`.
+- Daily sales totals (`ResumoTotalDiarioVendas`) follow the same unary +
+  `skipTransportCache` + empty-success retry policy as the other sales-hub
+  reports.
 - Overview read-only `sql.executeBatch` calls set
   `options.max_parallel_read_only_batch_items: 4`.
 - Local performance knobs:

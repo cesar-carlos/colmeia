@@ -1,3 +1,5 @@
+import 'package:colmeia/features/agent_queries/domain/entities/ranking_produtos_faturamento_filter.dart';
+
 /// Product billing ranking by `ValorVenda` (`RankingProdutosFaturamento`) —
 /// one `sql.execute` round-trip.
 ///
@@ -14,6 +16,9 @@
 /// - `SUM(CASE WHEN …)` plus non-grouped literals in the same `GROUP BY`
 /// - `SUM(…) OVER (PARTITION BY …)` on the outer `SELECT` after `UNION ALL`
 /// - Inline subquery on `Resultado` for branch totals (use `TotaisPorFilial` CTE)
+/// - Repeating the same named param twice (ODBC/SQL Anywhere expands each
+///   `:name` to a positional `?`; a single JSON bind then leaves the second
+///   host variable unbound and can yield an empty result set)
 ///
 /// DIVERSOS uses `DiversosBase` (aggregate only grouped keys) then `DiversosAgg`
 /// (constants in a non-grouped outer select). Percentual uses `TotaisPorFilial`
@@ -27,17 +32,18 @@
 /// | `pv` | `ProdutoVendido` | sale date, origin, branch keys |
 /// | `tos` | `TipoOperacaoSaida` | `GeraFinanceiro` filter |
 /// | `p` | `Produto` | product name and unit |
-/// | `gp` | `GrupoProduto` | product group |
+/// | `gp` | `GrupoProduto` | product group (optional; LEFT JOIN) |
 ///
 /// ## Parameters (bridge limit: 5 named params)
 ///
-/// Default `buildQuery`: `:dataVendaInicio`, `:dataVendaFim`,
-/// `:quantidadeProdutos`, `:origem`, `:preVenda`.
+/// Default `buildQuery`: `:dataVendaInicio`, `:dataVendaFim`, `:origem`,
+/// `:preVenda`. Top-N (`quantidadeProdutos`) is inlined as a validated integer
+/// literal so it is not bound twice via ODBC.
 ///
 /// Single-branch `buildQuery` with `restrictToSingleBranch: true`:
-/// `:dataVendaInicio`, `:dataVendaFim`, `:quantidadeProdutos`, `:codEmpresa`,
-/// `:codFilial`. `pv.Origem` and `pv.PreVenda` are inlined from validated
-/// filter values (same literals as named params in the default query).
+/// `:dataVendaInicio`, `:dataVendaFim`, `:codEmpresa`, `:codFilial`.
+/// `pv.Origem`, `pv.PreVenda`, and top-N are inlined from validated filter
+/// values.
 ///
 /// ## Ranking scope
 ///
@@ -46,9 +52,9 @@
 ///
 /// ## DIVERSOS row
 ///
-/// One aggregate per branch for products with `Posicao > :quantidadeProdutos`,
-/// using real `CodEmpresa`/`CodFilial` (no 9999 sentinels). Ordering places
-/// DIVERSOS after ranked products within each branch.
+/// One aggregate per branch for products with `Posicao >` top-N, using real
+/// `CodEmpresa`/`CodFilial` (no 9999 sentinels). Ordering places DIVERSOS after
+/// ranked products within each branch.
 abstract final class RankingProdutosFaturamentoSql {
   /// Column list shared by `TopProdutos`, `DiversosAgg`, and `Resultado` so
   /// `UNION ALL` types align on SQL Server and SQL Anywhere.
@@ -67,7 +73,21 @@ abstract final class RankingProdutosFaturamentoSql {
     required bool restrictToSingleBranch,
     required String origem,
     required String preVenda,
+    required int quantidadeProdutos,
   }) {
+    if (quantidadeProdutos <
+            RankingProdutosFaturamentoFilter.minQuantidadeProdutos ||
+        quantidadeProdutos >
+            RankingProdutosFaturamentoFilter.maxQuantidadeProdutos) {
+      throw ArgumentError.value(
+        quantidadeProdutos,
+        'quantidadeProdutos',
+        'must be between '
+            '${RankingProdutosFaturamentoFilter.minQuantidadeProdutos} and '
+            '${RankingProdutosFaturamentoFilter.maxQuantidadeProdutos}',
+      );
+    }
+
     final salesSourceFilter = restrictToSingleBranch
         ? '''
       AND pv.CodEmpresa = :codEmpresa
@@ -98,7 +118,7 @@ WITH Produtos AS (
     AND tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida
     INNER JOIN Produto p ON
         p.CodProduto = ipv.CodProduto
-    INNER JOIN GrupoProduto gp ON
+    LEFT JOIN GrupoProduto gp ON
         gp.CodGrupoProduto = p.CodGrupoProduto
     WHERE CAST(pv.DataVenda AS DATE) BETWEEN :dataVendaInicio AND :dataVendaFim
       AND COALESCE(tos.GeraFinanceiro, 'N') = 'S'$salesSourceFilter
@@ -131,7 +151,7 @@ TopProdutos AS (
     SELECT
 $_resultRowColumns
     FROM Ranking
-    WHERE Posicao <= :quantidadeProdutos
+    WHERE Posicao <= $quantidadeProdutos
 ),
 DiversosBase AS (
     SELECT
@@ -139,7 +159,7 @@ DiversosBase AS (
         r.CodFilial,
         SUM(r.ValorVenda) AS ValorVenda
     FROM Ranking r
-    WHERE r.Posicao > :quantidadeProdutos
+    WHERE r.Posicao > $quantidadeProdutos
     GROUP BY r.CodEmpresa, r.CodFilial
 ),
 DiversosAgg AS (

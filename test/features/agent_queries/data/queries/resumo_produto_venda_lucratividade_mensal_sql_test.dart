@@ -5,10 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const sql = ResumoProdutoVendaLucratividadeMensalSql.query;
 
-  test('query uses DetalheProdutoVenda subquery (no CTEs)', () {
-    check(sql).contains('DetalheProdutoVenda');
-    check(sql.contains('WITH ')).isFalse();
-    check(sql.contains('Agregada AS')).isFalse();
+  test('query uses DetalheProdutoVenda CTE', () {
+    check(sql).contains('WITH DetalheProdutoVenda AS');
+    check(sql).contains('FROM DetalheProdutoVenda');
   });
 
   test('query groups by CodEmpresa, CodFilial, Ano, Mes', () {
@@ -31,6 +30,11 @@ void main() {
     check(sql).contains('CASE WHEN Mes < 10');
   });
 
+  test('query counts distinct CodProdutoVendido (sale id)', () {
+    check(sql).contains('COUNT(DISTINCT CodProdutoVendido)');
+    check(sql.contains("CAST(pv.CodEmpresa AS VARCHAR) + '-'")).isFalse();
+  });
+
   test('query orders by CodEmpresa, CodFilial, Ano, Mes ascending', () {
     final orderBlock = sql.split('ORDER BY').last;
     final empresa = orderBlock.indexOf('CodEmpresa ASC');
@@ -44,7 +48,7 @@ void main() {
   });
 
   test('query applies GeraFinanceiro and PreVenda filters', () {
-    check(sql).contains("tos.GeraFinanceiro = 'S'");
+    check(sql).contains("COALESCE(tos.GeraFinanceiro, 'N') = 'S'");
     check(sql).contains("pv.PreVenda = 'N'");
   });
 

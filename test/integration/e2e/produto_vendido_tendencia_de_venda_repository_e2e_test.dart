@@ -44,10 +44,10 @@ void main() {
               agentId: AppEnvironment.e2eAgentId,
               clientToken: AppEnvironment.e2eClientToken,
               filter: ProdutoVendidoTendenciaDeVendaFilter(
-                periodoAtualInicio: DateTime(2026, 3),
-                periodoAtualFim: DateTime(2026, 3, 31),
-                periodoAnteriorInicio: DateTime(2026, 2),
-                periodoAnteriorFim: DateTime(2026, 2, 28),
+                periodoAtualInicio: DateTime(2026, 7),
+                periodoAtualFim: DateTime(2026, 7, 21),
+                periodoAnteriorInicio: DateTime(2026, 6, 10),
+                periodoAnteriorFim: DateTime(2026, 6, 30),
               ),
             ),
           );
@@ -106,10 +106,10 @@ void main() {
             agentId: AppEnvironment.e2eAgentId,
             clientToken: AppEnvironment.e2eClientToken,
             filter: ProdutoVendidoTendenciaDeVendaFilter(
-              periodoAtualInicio: DateTime(2026, 3),
-              periodoAtualFim: DateTime(2026, 3, 31),
-              periodoAnteriorInicio: DateTime(2026, 2),
-              periodoAnteriorFim: DateTime(2026, 2, 28),
+              periodoAtualInicio: DateTime(2026, 7),
+              periodoAtualFim: DateTime(2026, 7, 21),
+              periodoAnteriorInicio: DateTime(2026, 6, 10),
+              periodoAnteriorFim: DateTime(2026, 6, 30),
             ),
           ),
         );
@@ -153,10 +153,10 @@ void main() {
               agentId: AppEnvironment.e2eAgentId,
               clientToken: AppEnvironment.e2eClientToken,
               filter: ProdutoVendidoTendenciaDeVendaFilter(
-                periodoAtualInicio: DateTime(2026, 3),
-                periodoAtualFim: DateTime(2026, 3, 31),
-                periodoAnteriorInicio: DateTime(2026, 2),
-                periodoAnteriorFim: DateTime(2026, 2, 28),
+                periodoAtualInicio: DateTime(2026, 7),
+                periodoAtualFim: DateTime(2026, 7, 21),
+                periodoAnteriorInicio: DateTime(2026, 6, 10),
+                periodoAnteriorFim: DateTime(2026, 6, 30),
               ),
             ),
             actionLabel: 'load_produto_vendido_tendencia_de_venda_use_case',
@@ -206,10 +206,10 @@ void main() {
           final repository = getIt<ProdutoVendidoTendenciaDeVendaRepository>();
           const smallPageSize = 5;
           final summaryFilter = ProdutoVendidoTendenciaDeVendaFilter(
-            periodoAtualInicio: DateTime(2026, 3),
-            periodoAtualFim: DateTime(2026, 3, 31),
-            periodoAnteriorInicio: DateTime(2026, 2),
-            periodoAnteriorFim: DateTime(2026, 2, 28),
+            periodoAtualInicio: DateTime(2026, 7),
+            periodoAtualFim: DateTime(2026, 7, 21),
+            periodoAnteriorInicio: DateTime(2026, 6, 10),
+            periodoAnteriorFim: DateTime(2026, 6, 30),
           );
 
           final first = await runE2eAppResult(
@@ -320,10 +320,10 @@ void main() {
 
           final repository = getIt<ProdutoVendidoTendenciaDeVendaRepository>();
           final filter = ProdutoVendidoTendenciaDeVendaFilter(
-            periodoAtualInicio: DateTime(2026, 3),
-            periodoAtualFim: DateTime(2026, 3, 31),
-            periodoAnteriorInicio: DateTime(2026, 2),
-            periodoAnteriorFim: DateTime(2026, 2, 28),
+            periodoAtualInicio: DateTime(2026, 7),
+            periodoAtualFim: DateTime(2026, 7, 21),
+            periodoAnteriorInicio: DateTime(2026, 6, 10),
+            periodoAnteriorFim: DateTime(2026, 6, 30),
             pageSize: 10,
           );
 
@@ -364,10 +364,10 @@ void main() {
                 ),
               );
               for (final row in data.topGainers) {
-                expect(row.percentualTendencia, greaterThan(0));
+                expect(row.diferenca, greaterThan(0));
               }
               for (final row in data.topLosers) {
-                expect(row.percentualTendencia, lessThan(0));
+                expect(row.diferenca, lessThan(0));
               }
             },
             (failure) {

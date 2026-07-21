@@ -15,11 +15,24 @@ import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_produto_rank_lucro_repository.dart';
 
+/// Top product ranking by quantity sold and profit metrics
+/// (`ProdutoVendidoProdutoRankLucro`) — one `sql.execute` round-trip.
+///
+/// ## Transport
+///
+/// Uses relay **unary** with `preferDbStreaming: false`. Streaming on the E2E
+/// SQL Anywhere agent returns an empty success payload for this CTE ranking
+/// (same class of defect as product billing ranking). Skips the short transport
+/// cache and retries once on empty success. Revisit streaming only after the
+/// agent/hub fix is validated.
 class ProdutoVendidoProdutoRankLucroRepositoryImpl
     implements ProdutoVendidoProdutoRankLucroRepository {
   ProdutoVendidoProdutoRankLucroRepositoryImpl(this._agentQueriesRepository);
 
   static const String _operation = 'loadProdutoVendidoProdutoRankLucro';
+
+  /// Delay before retrying an empty success (agent replay / flakiness).
+  static const Duration emptySuccessRetryDelay = Duration(seconds: 2);
 
   final AgentQueriesRepository _agentQueriesRepository;
 
@@ -48,48 +61,78 @@ class ProdutoVendidoProdutoRankLucroRepositoryImpl
     final timeouts = AgentSqlBridgeTimeout.resolve(
       bridgeTimeoutMs: bridgeTimeoutMs,
     );
+    final trimmedAgentId = agentId.trim();
 
-    final request = AgentSqlExecuteRequest(
-      agentId: agentId,
-      requestingUserId: userId,
-      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
-      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
-      sql: ProdutoVendidoProdutoRankLucroSql.query(
-        sortBy: filter.sortBy,
-        sortDirection: filter.sortDirection,
-      ),
-      clientToken: clientToken,
-      bridgeTimeoutMs: timeouts.bridgeMs,
-      namedParams: <String, Object?>{
-        'dataVendaInicio': AgentQueriesSqlLocalDate.format(
-          filter.dataVendaInicio,
+    Future<AppResult<List<ProdutoVendidoProdutoRankLucroRow>>> executeOnce() {
+      final request = AgentSqlExecuteRequest(
+        agentId: agentId,
+        requestingUserId: userId,
+        hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+        hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
+        sql: ProdutoVendidoProdutoRankLucroSql.query(
+          sortBy: filter.sortBy,
+          sortDirection: filter.sortDirection,
         ),
-        'dataVendaFim': AgentQueriesSqlLocalDate.format(filter.dataVendaFim),
-        'origem': filter.trimmedOrigem,
-      },
-      executeOptions: AgentSqlExecuteOptions(
-        executionMode: AgentSqlExecutionMode.preserve,
-        maxRows:
-            AgentQueriesBoundedResultMaxRows.produtoVendidoProdutoRankLucro,
-        sqlTimeoutMs: timeouts.sqlMs,
-        preferDbStreaming: true,
-      ),
-      useRelay: true,
-      relayMode: AgentSqlRelayMode.streaming,
-    );
+        clientToken: clientToken,
+        bridgeTimeoutMs: timeouts.bridgeMs,
+        namedParams: <String, Object?>{
+          'dataVendaInicio': AgentQueriesSqlLocalDate.format(
+            filter.dataVendaInicio,
+          ),
+          'dataVendaFim': AgentQueriesSqlLocalDate.format(filter.dataVendaFim),
+          'origem': filter.trimmedOrigem,
+        },
+        executeOptions: AgentSqlExecuteOptions(
+          executionMode: AgentSqlExecutionMode.preserve,
+          maxRows:
+              AgentQueriesBoundedResultMaxRows.produtoVendidoProdutoRankLucro,
+          sqlTimeoutMs: timeouts.sqlMs,
+          // Streaming returns an empty success payload for this CTE ranking on
+          // the SQL Anywhere E2E agent (unary returns TOP 15 rows).
+          preferDbStreaming: false,
+        ),
+        useRelay: true,
+        // Explicit unary: default is unary, but this report is a documented
+        // streaming exception — keep the mode visible for readers and the
+        // unary-report guard test.
+        // ignore: avoid_redundant_argument_values
+        relayMode: AgentSqlRelayMode.unary,
+        skipTransportCache: true,
+      );
 
-    return AgentSqlRepositoryExecution.execute<
-      List<ProdutoVendidoProdutoRankLucroRow>
-    >(
-      agentQueriesRepository: _agentQueriesRepository,
-      request: request,
-      operation: _operation,
-      agentId: agentId.trim(),
-      unexpectedRowsLogMessage: 'Unexpected row shape for $_operation',
-      mapExecution: (executionResult) =>
-          _mapExecution(executionResult, agentId: agentId.trim()),
-      cancelScope: cancelScope,
+      return AgentSqlRepositoryExecution.execute<
+        List<ProdutoVendidoProdutoRankLucroRow>
+      >(
+        agentQueriesRepository: _agentQueriesRepository,
+        request: request,
+        operation: _operation,
+        agentId: trimmedAgentId,
+        unexpectedRowsLogMessage: 'Unexpected row shape for $_operation',
+        mapExecution: (executionResult) =>
+            _mapExecution(executionResult, agentId: trimmedAgentId),
+        cancelScope: cancelScope,
+      );
+    }
+
+    final first = await executeOnce();
+    if (first.isError()) {
+      return first;
+    }
+    final firstRows = first.getOrThrow();
+    if (firstRows.isNotEmpty) {
+      return first;
+    }
+
+    AppLogger.info(
+      'Retrying empty unary success for $_operation',
+      context: <String, Object?>{
+        'operation': _operation,
+        'agentId': trimmedAgentId,
+        'retryDelayMs': emptySuccessRetryDelay.inMilliseconds,
+      },
     );
+    await Future<void>.delayed(emptySuccessRetryDelay);
+    return executeOnce();
   }
 
   List<ProdutoVendidoProdutoRankLucroRow> _mapExecution(

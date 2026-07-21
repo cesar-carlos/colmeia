@@ -166,6 +166,56 @@ void main() {
 
     check(result.isSuccess()).isTrue();
     check(result.getOrThrow()).isEmpty();
+    // Empty unary success triggers one retry.
+    verify(() => agentQueriesRepository.executeSql(any())).called(2);
+  });
+
+  test('retries once when first page response is empty', () async {
+    var calls = 0;
+    when(
+      () => agentQueriesRepository.executeSql(any()),
+    ).thenAnswer((_) async {
+      calls++;
+      if (calls == 1) {
+        return const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+        );
+      }
+      return const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(
+          rows: <Map<String, dynamic>>[
+            <String, dynamic>{
+              'TotalCount': 1,
+              'CodEmpresa': 1,
+              'CodFilial': 1,
+              'CodProduto': 100,
+              'NomeProduto': 'Produto A',
+              'CodUnidadeMedida': 'UN',
+              'CodGrupoProduto': 10,
+              'NomeGrupoProduto': 'Grupo',
+              'CodMarca': 20,
+              'NomeMarca': 'Marca',
+              'QtdAnterior': 5,
+              'QtdAtual': 12,
+              'Diferenca': 7,
+              'PercentualTendencia': 140,
+              'Classificacao': 'CRESCENDO',
+            },
+          ],
+          rowCount: 1,
+        ),
+      );
+    });
+
+    final result = await repository.loadAll(
+      userId: 'user-1',
+      agentId: 'agent-1',
+      filter: buildValidFilter(),
+    );
+
+    check(result.isSuccess()).isTrue();
+    check(result.getOrThrow().single.codProduto).equals(100);
+    verify(() => agentQueriesRepository.executeSql(any())).called(2);
   });
 
   test('execute sends correct SQL, period params, and options', () async {
@@ -186,7 +236,7 @@ void main() {
     final captured =
         verify(
               () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured.single
+            ).captured.first
             as AgentSqlExecuteRequest;
 
     check(captured.sql).equals(
@@ -206,7 +256,10 @@ void main() {
     check(captured.executeOptions?.executionMode).equals(
       AgentSqlExecutionMode.preserve,
     );
+    check(captured.executeOptions?.preferDbStreaming).equals(false);
     check(captured.useRelay).isTrue();
+    check(captured.relayMode).equals(AgentSqlRelayMode.unary);
+    check(captured.skipTransportCache).isTrue();
   });
 
   test('custom bridgeTimeoutMs adjusts sql timeout', () async {
@@ -228,7 +281,7 @@ void main() {
     final captured =
         verify(
               () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured.single
+            ).captured.first
             as AgentSqlExecuteRequest;
 
     check(captured.bridgeTimeoutMs).equals(60000);
@@ -259,7 +312,7 @@ void main() {
     final captured =
         verify(
               () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured.single
+            ).captured.first
             as AgentSqlExecuteRequest;
 
     check(captured.sql).equals(
@@ -297,7 +350,7 @@ void main() {
     final captured =
         verify(
               () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured.single
+            ).captured.first
             as AgentSqlExecuteRequest;
 
     check(captured.sql).contains('AND p.CodGrupoProduto = 14');
@@ -469,7 +522,7 @@ void main() {
     final captured =
         verify(
               () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured.single
+            ).captured.first
             as AgentSqlExecuteRequest;
 
     check(
@@ -478,6 +531,45 @@ void main() {
     check(captured.namedParams['periodoAtualInicio']).equals('2026-03-01');
     check(captured.namedParams['origem']).equals('FrenteLoja');
     check(captured.executeOptions?.maxRows).equals(32);
+    check(captured.executeOptions?.preferDbStreaming).equals(false);
+    check(captured.relayMode).equals(AgentSqlRelayMode.unary);
+    check(captured.skipTransportCache).isTrue();
+  });
+
+  test('retries once when first summary response is empty', () async {
+    var calls = 0;
+    when(
+      () => agentQueriesRepository.executeSql(any()),
+    ).thenAnswer((_) async {
+      calls++;
+      if (calls == 1) {
+        return const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+        );
+      }
+      return const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(
+          rows: <Map<String, dynamic>>[
+            <String, dynamic>{
+              'Classificacao': 'NOVO PRODUTO',
+              'QuantidadeProdutos': 84,
+              'ImpactoLiquido': '2522.806',
+            },
+          ],
+          rowCount: 1,
+        ),
+      );
+    });
+
+    final result = await repository.loadSummary(
+      userId: 'user-1',
+      agentId: 'agent-1',
+      filter: buildValidFilter(),
+    );
+
+    check(result.isSuccess()).isTrue();
+    check(result.getOrThrow().single.quantidadeProdutos).equals(84);
+    verify(() => agentQueriesRepository.executeSql(any())).called(2);
   });
 
   test('loadSummary maps aggregated rows', () async {
@@ -588,6 +680,7 @@ void main() {
         ProdutoVendidoTendenciaDeVendaSql.topLosersQuery(),
       );
       check(captured.useRelay).isTrue();
+      check(captured.skipTransportCache).isTrue();
     },
   );
 

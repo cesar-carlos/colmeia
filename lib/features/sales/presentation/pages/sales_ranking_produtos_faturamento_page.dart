@@ -103,7 +103,7 @@ class _SalesRankingProdutosFaturamentoPageState
     final raw = _filters['quantidadeProdutos'];
     if (raw is int) {
       return raw.clamp(
-        1,
+        RankingProdutosFaturamentoFilter.minQuantidadeProdutos,
         RankingProdutosFaturamentoFilter.maxQuantidadeProdutos,
       );
     }
@@ -631,7 +631,7 @@ class _SalesRankingProdutosFaturamentoFiltersSheetState
       'agentId': selectedAgentId,
       'periodo': _period,
       'quantidadeProdutos': parsedQuantity.clamp(
-        1,
+        RankingProdutosFaturamentoFilter.minQuantidadeProdutos,
         RankingProdutosFaturamentoFilter.maxQuantidadeProdutos,
       ),
     });

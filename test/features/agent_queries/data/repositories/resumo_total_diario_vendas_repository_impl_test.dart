@@ -92,6 +92,9 @@ void main() {
     check(capturedRequest.trimmedAgentId).equals('agent-1');
     check(capturedRequest.trimmedClientToken).equals('token-123');
     check(capturedRequest.useRelay).isTrue();
+    check(capturedRequest.relayMode).equals(AgentSqlRelayMode.unary);
+    check(capturedRequest.skipTransportCache).isTrue();
+    check(capturedRequest.executeOptions!.preferDbStreaming).equals(false);
     check(capturedRequest.bridgeTimeoutMs).equals(120000);
     check(capturedRequest.executeOptions!.executionMode?.name).equals(
       'preserve',
@@ -110,6 +113,9 @@ void main() {
       'DATEADD(day, 1, CAST(:dataVendaFim AS DATE))',
     );
     check(capturedRequest.sql).contains('pv.Origem = :origem');
+    check(capturedRequest.sql).contains(
+      "COALESCE(tos.GeraFinanceiro, 'N') = :geraFinanceiro",
+    );
     check(capturedRequest.sql).contains('tos.CodEmpresa = pv.CodEmpresa');
     check(capturedRequest.sql).contains(
       'tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida',

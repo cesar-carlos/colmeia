@@ -48,7 +48,7 @@ FROM (
   WHERE pv.DataVenda >= CAST(:dataVendaInicio AS DATE)
     AND pv.DataVenda < DATEADD(day, 1, CAST(:dataVendaFim AS DATE))
     AND pv.Origem = :origem
-    AND tos.GeraFinanceiro = :geraFinanceiro
+    AND COALESCE(tos.GeraFinanceiro, 'N') = :geraFinanceiro
     AND pv.PreVenda = :preVenda
 ) AS ResumoTotalDiarioVendasInner
 GROUP BY

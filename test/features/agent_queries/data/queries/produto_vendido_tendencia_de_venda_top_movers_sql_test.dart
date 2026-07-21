@@ -10,8 +10,8 @@ void main() {
       'SELECT TOP ${ProdutoVendidoTendenciaDeVendaSql.topMoversLimit}',
     );
     check(sql).contains('WHERE Diferenca > 0');
-    check(sql).contains('PercentualTendencia DESC');
     check(sql).contains('Diferenca DESC');
+    check(sql).contains('PercentualTendencia DESC');
     check(sql).contains(':periodoAtualInicio');
     check(sql).contains(':origem');
   });
@@ -23,8 +23,8 @@ void main() {
       'SELECT TOP ${ProdutoVendidoTendenciaDeVendaSql.topMoversLimit}',
     );
     check(sql).contains('WHERE Diferenca < 0');
-    check(sql).contains('PercentualTendencia ASC');
     check(sql).contains('Diferenca ASC');
+    check(sql).contains('PercentualTendencia ASC');
   });
 
   test('top movers queries inline optional detail filters', () {

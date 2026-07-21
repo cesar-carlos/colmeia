@@ -96,6 +96,26 @@ void main() {
     },
   );
 
+  test(
+    'returns validation failure when origem contains a single quote',
+    () async {
+      final result = await repository.load(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        filter: RankingProdutosFaturamentoFilter(
+          dataVendaInicio: periodStart,
+          dataVendaFim: periodEnd,
+          quantidadeProdutos: 15,
+          origem: "O'Reilly",
+        ),
+      );
+
+      check(result.isError()).isTrue();
+      check(result.exceptionOrNull()).isA<ValidationFailure>();
+      verifyNever(() => agentQueriesRepository.executeSql(any()));
+    },
+  );
+
   test('returns empty load result when agent returns no rows', () async {
     when(
       () => agentQueriesRepository.executeSql(any()),
@@ -117,7 +137,7 @@ void main() {
   });
 
   test(
-    'execute sends SQL, dates, quantidadeProdutos, origem, skipTransportCache, maxRows',
+    'execute sends SQL, dates, inlined top-N, origem, skipTransportCache, maxRows',
     () async {
       when(
         () => agentQueriesRepository.executeSql(any()),
@@ -144,20 +164,26 @@ void main() {
           restrictToSingleBranch: false,
           origem: 'FrenteLoja',
           preVenda: 'N',
+          quantidadeProdutos: 3,
         ),
       );
       check(captured.namedParams['dataVendaInicio']).equals('2026-03-10');
       check(captured.namedParams['dataVendaFim']).equals('2026-04-08');
-      check(captured.namedParams['quantidadeProdutos']).equals(3);
+      check(captured.namedParams.containsKey('quantidadeProdutos')).isFalse();
       check(captured.namedParams['origem']).equals('FrenteLoja');
       check(captured.namedParams['preVenda']).equals('N');
+      check(captured.namedParams.length).equals(4);
       check(captured.skipTransportCache).isTrue();
       check(captured.executeOptions?.maxRows).equals(
         RankingProdutosFaturamentoRepositoryImpl.maxRowsForFilter(filterTop3),
       );
-      check(captured.executeOptions?.maxRows).equals(400);
+      // (3 + 1) * maxFilialEstimate(25) = 100
+      check(captured.executeOptions?.maxRows).equals(100);
+      check(captured.executeOptions?.preferDbStreaming).equals(false);
       check(captured.useRelay).isTrue();
-      check(captured.sql).contains('r.Posicao > :quantidadeProdutos');
+      check(captured.relayMode).equals(AgentSqlRelayMode.unary);
+      check(captured.sql).contains('r.Posicao > 3');
+      check(captured.sql.contains(':quantidadeProdutos')).isFalse();
     },
   );
 
@@ -191,8 +217,10 @@ void main() {
     check(captured.namedParams['codEmpresa']).equals(2);
     check(captured.namedParams['codFilial']).equals(3);
     check(captured.namedParams.containsKey('origem')).isFalse();
-    check(captured.namedParams.length).equals(5);
+    check(captured.namedParams.containsKey('quantidadeProdutos')).isFalse();
+    check(captured.namedParams.length).equals(4);
     check(captured.sql).contains(':codEmpresa');
+    check(captured.sql).contains('WHERE Posicao <= 10');
   });
 
   test('maxRowsForFilter caps at bounded constant for large N', () {

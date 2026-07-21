@@ -35,6 +35,24 @@ void main() {
     check(caching.cacheMisses).equals(1);
   });
 
+  test('should not cache empty successful responses', () async {
+    final delegate = _SequenceAgentQueriesRepository();
+    final caching = CachingAgentQueriesRepository(delegate: delegate);
+    delegate
+      ..enqueue(_successResult(rowCount: 0))
+      ..enqueue(_successResult(rowCount: 2));
+
+    final first = await caching.executeSql(baseRequest);
+    final second = await caching.executeSql(baseRequest);
+
+    check(first.getOrNull()?.rowCount).equals(0);
+    check(second.getOrNull()?.rowCount).equals(2);
+    check(delegate.callCount).equals(2);
+    check(caching.cacheHits).equals(0);
+    check(caching.cacheMisses).equals(2);
+    check(caching.cacheSize).equals(1);
+  });
+
   test('should keep paginated requests in separate cache entries', () async {
     final delegate = _SequenceAgentQueriesRepository();
     final caching = CachingAgentQueriesRepository(delegate: delegate);
@@ -228,11 +246,14 @@ AgentSqlExecuteRequest _request(String sql) {
 }
 
 AppResult<AgentSqlExecutionResult> _successResult({required int rowCount}) {
+  final rows = rowCount <= 0
+      ? const <Map<String, dynamic>>[]
+      : <Map<String, dynamic>>[
+          <String, dynamic>{'value': rowCount},
+        ];
   return Success<AgentSqlExecutionResult, AppFailure>(
     AgentSqlExecutionResult(
-      rows: <Map<String, dynamic>>[
-        <String, dynamic>{'value': rowCount},
-      ],
+      rows: rows,
       rowCount: rowCount,
     ),
   );

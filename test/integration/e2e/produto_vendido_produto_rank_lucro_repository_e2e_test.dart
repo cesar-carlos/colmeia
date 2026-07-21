@@ -35,8 +35,10 @@ void main() {
           }
 
           final repository = getIt<ProdutoVendidoProdutoRankLucroRepository>();
-          final periodStart = DateTime(2026);
-          final periodEnd = DateTime(2026, 3, 31);
+          // E2E SQL Anywhere agent has July 2026 sales for this ranking; Q1
+          // returned empty for the same query (period has no matching rows).
+          final periodStart = DateTime(2026, 7);
+          final periodEnd = DateTime(2026, 7, 21);
 
           final result = await runE2eAppResult(
             () => repository.loadAll(
@@ -52,6 +54,11 @@ void main() {
 
           result.fold(
             (rows) {
+              expect(rows, isNotEmpty);
+              expect(
+                rows.length,
+                lessThanOrEqualTo(15),
+              );
               for (final row in rows) {
                 expect(row.codEmpresa, greaterThan(0));
                 expect(row.codFilial, greaterThanOrEqualTo(0));
@@ -98,8 +105,8 @@ void main() {
           }
 
           final useCase = getIt<LoadProdutoVendidoProdutoRankLucroUseCase>();
-          final periodStart = DateTime(2026);
-          final periodEnd = DateTime(2026, 3, 31);
+          final periodStart = DateTime(2026, 7);
+          final periodEnd = DateTime(2026, 7, 21);
 
           final result = await runE2eAppResult(
             () => useCase(
@@ -116,6 +123,7 @@ void main() {
 
           result.fold(
             (rows) {
+              expect(rows, isNotEmpty);
               for (final row in rows) {
                 expect(row.codProduto, greaterThan(0));
               }

@@ -18,7 +18,6 @@ import 'package:colmeia/core/observability/sentry_bootstrap.dart'
     show
         configureSentryBootScope,
         runAppWithOptionalSentry,
-        sentryProvidesBootstrapZoneGuarding,
         shouldInitializeSentry;
 import 'package:colmeia/core/observability/socket/socket_metrics_listener.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
@@ -72,6 +71,10 @@ void logResolvedAgentBridgeTransportAtBootstrap() {
 }
 
 Future<void> bootstrap() async {
+  // Binding and runApp must share one zone. Do not wrap the rest of boot in
+  // runZonedGuarded / SentryFlutter appRunner — those open a second zone and
+  // trigger Flutter's "Zone mismatch" assertion. Uncaught errors are handled
+  // by installGlobalErrorHandlers (PlatformDispatcher / FlutterError).
   WidgetsFlutterBinding.ensureInitialized();
   GoogleFonts.config.allowRuntimeFetching = false;
   configureColmeiaWebUrlStrategy();
@@ -79,33 +82,10 @@ Future<void> bootstrap() async {
   installGlobalErrorHandlers();
   installBrandedErrorWidget();
 
-  if (sentryProvidesBootstrapZoneGuarding) {
-    await _runBootstrapOrShowFailure();
-    return;
-  }
-
-  await runZonedGuarded(
-    _runBootstrapOrShowFailure,
-    _onBootstrapZoneError,
-  );
-}
-
-void _onBootstrapZoneError(Object error, StackTrace stack) {
-  AppLogger.error(
-    'Uncaught bootstrap zone error',
-    context: const <String, Object?>{
-      'component': 'bootstrap',
-    },
-    error: error,
-    stackTrace: stack,
-  );
+  await _runBootstrapOrShowFailure();
 }
 
 Future<void> _runBootstrapOrShowFailure() async {
-  await runAppWithOptionalSentry(_executeBootstrapPhases);
-}
-
-Future<void> _executeBootstrapPhases() async {
   try {
     await loadAppDotenv();
 
@@ -124,6 +104,11 @@ Future<void> _executeBootstrapPhases() async {
     return;
   }
 
+  // Dotenv is loaded first so shouldInitializeSentry sees the real DSN.
+  await runAppWithOptionalSentry(_executeBootstrapPhases);
+}
+
+Future<void> _executeBootstrapPhases() async {
   try {
     await _bootstrapAppRunner();
   } on Object catch (error, stackTrace) {

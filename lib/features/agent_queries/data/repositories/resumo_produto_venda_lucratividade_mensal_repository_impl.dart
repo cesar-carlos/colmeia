@@ -15,6 +15,15 @@ import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_produto_venda_lucratividade_mensal_repository.dart';
 
+/// Monthly product profitability (`ResumoProdutoVendaLucratividadeMensal`).
+///
+/// ## Transport
+///
+/// Uses relay **unary** with `preferDbStreaming: false`. Nested-subquery +
+/// streaming variants returned empty success payloads on the E2E SQL Anywhere
+/// agent; the CTE rewrite returns Top-N monthly buckets on unary. Skips the
+/// short transport cache and retries once on empty success because the agent
+/// can still return an empty replay for the same `client_token`.
 class ResumoProdutoVendaLucratividadeMensalRepositoryImpl
     implements ResumoProdutoVendaLucratividadeMensalRepository {
   ResumoProdutoVendaLucratividadeMensalRepositoryImpl(
@@ -25,6 +34,9 @@ class ResumoProdutoVendaLucratividadeMensalRepositoryImpl
   /// and floored at the minimum so very short bridge timeouts stay usable.
   static const int _defaultSqlTimeoutMs = 108000;
   static const int _minSqlTimeoutMs = 5000;
+
+  /// Delay before retrying an empty success (agent replay / flakiness).
+  static const Duration emptySuccessRetryDelay = Duration(seconds: 2);
 
   static const String _operation = 'loadResumoProdutoVendaLucratividadeMensal';
 
@@ -59,46 +71,74 @@ class ResumoProdutoVendaLucratividadeMensalRepositoryImpl
       _defaultSqlTimeoutMs,
     );
 
-    final request = AgentSqlExecuteRequest(
-      agentId: agentId,
-      requestingUserId: userId,
-      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
-      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
-      sql: ResumoProdutoVendaLucratividadeMensalSql.query,
-      clientToken: clientToken,
-      bridgeTimeoutMs: effectiveBridgeMs,
-      namedParams: <String, Object?>{
-        'dataVendaInicio': AgentQueriesSqlLocalDate.format(
-          filter.dataVendaInicio,
+    Future<AppResult<List<ResumoProdutoVendaLucratividadeMensalRow>>>
+    executeOnce() {
+      final request = AgentSqlExecuteRequest(
+        agentId: agentId,
+        requestingUserId: userId,
+        hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+        hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
+        sql: ResumoProdutoVendaLucratividadeMensalSql.query,
+        clientToken: clientToken,
+        bridgeTimeoutMs: effectiveBridgeMs,
+        namedParams: <String, Object?>{
+          'dataVendaInicio': AgentQueriesSqlLocalDate.format(
+            filter.dataVendaInicio,
+          ),
+          'dataVendaFim': AgentQueriesSqlLocalDate.format(filter.dataVendaFim),
+          'origem': filter.trimmedOrigem,
+        },
+        executeOptions: AgentSqlExecuteOptions(
+          executionMode: AgentSqlExecutionMode.preserve,
+          maxRows: AgentQueriesBoundedResultMaxRows
+              .resumoProdutoVendaLucratividadeMensal,
+          sqlTimeoutMs: effectiveSqlMs,
+          preferDbStreaming: false,
         ),
-        'dataVendaFim': AgentQueriesSqlLocalDate.format(filter.dataVendaFim),
-        'origem': filter.trimmedOrigem,
-      },
-      executeOptions: AgentSqlExecuteOptions(
-        executionMode: AgentSqlExecutionMode.preserve,
-        maxRows: AgentQueriesBoundedResultMaxRows
-            .resumoProdutoVendaLucratividadeMensal,
-        sqlTimeoutMs: effectiveSqlMs,
-        preferDbStreaming: true,
-      ),
-      useRelay: true,
-      relayMode: AgentSqlRelayMode.streaming,
-    );
+        useRelay: true,
+        // Explicit unary: default is unary, but this report is a documented
+        // streaming exception — keep the mode visible for readers and the
+        // unary-report guard test.
+        // ignore: avoid_redundant_argument_values
+        relayMode: AgentSqlRelayMode.unary,
+        skipTransportCache: true,
+      );
 
-    return AgentSqlRepositoryExecution.execute<
-      List<ResumoProdutoVendaLucratividadeMensalRow>
-    >(
-      agentQueriesRepository: _agentQueriesRepository,
-      request: request,
-      operation: _operation,
-      agentId: agentId.trim(),
-      unexpectedRowsLogMessage: 'Unexpected row shape for $_operation',
-      mapExecution: (executionResult) => _mapExecution(
-        executionResult,
+      return AgentSqlRepositoryExecution.execute<
+        List<ResumoProdutoVendaLucratividadeMensalRow>
+      >(
+        agentQueriesRepository: _agentQueriesRepository,
+        request: request,
+        operation: _operation,
         agentId: agentId.trim(),
-      ),
-      cancelScope: cancelScope,
+        unexpectedRowsLogMessage: 'Unexpected row shape for $_operation',
+        mapExecution: (executionResult) => _mapExecution(
+          executionResult,
+          agentId: agentId.trim(),
+        ),
+        cancelScope: cancelScope,
+      );
+    }
+
+    final first = await executeOnce();
+    if (first.isError()) {
+      return first;
+    }
+    final firstRows = first.getOrThrow();
+    if (firstRows.isNotEmpty) {
+      return first;
+    }
+
+    AppLogger.info(
+      'Retrying empty unary success for $_operation',
+      context: <String, Object?>{
+        'operation': _operation,
+        'agentId': agentId.trim(),
+        'retryDelayMs': emptySuccessRetryDelay.inMilliseconds,
+      },
     );
+    await Future<void>.delayed(emptySuccessRetryDelay);
+    return executeOnce();
   }
 
   List<ResumoProdutoVendaLucratividadeMensalRow> _mapExecution(

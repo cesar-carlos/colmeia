@@ -8,7 +8,6 @@ import 'package:colmeia/features/agent_queries/data/models/resumo_total_diario_v
 import 'package:colmeia/features/agent_queries/data/queries/resumo_total_diario_vendas_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repository_execution.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy_extensions.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
@@ -19,12 +18,23 @@ import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_total_diario_vendas_repository.dart';
 import 'package:flutter/foundation.dart';
 
+/// Daily sales totals (`ResumoTotalDiarioVendas`).
+///
+/// ## Transport
+///
+/// Uses relay **unary** with `preferDbStreaming: false`. Sibling sales-hub
+/// reports empty-streamed on the E2E SQL Anywhere agent; this path stays
+/// aligned with those unary exceptions. Always skips the short transport cache
+/// and retries once on empty success (agent replay / flakiness).
 class ResumoTotalDiarioVendasRepositoryImpl
     implements ResumoTotalDiarioVendasRepository {
   ResumoTotalDiarioVendasRepositoryImpl(this._agentQueriesRepository);
 
   static const String operation = 'loadResumoTotalDiarioVendas';
   static const String _operation = operation;
+
+  /// Delay before retrying an empty success (agent replay / flakiness).
+  static const Duration emptySuccessRetryDelay = Duration(seconds: 2);
 
   final AgentQueriesRepository _agentQueriesRepository;
 
@@ -51,50 +61,82 @@ class ResumoTotalDiarioVendasRepositoryImpl
       );
     }
 
-    final request = AgentSqlExecuteRequest(
-      agentId: agentId,
-      requestingUserId: userId,
-      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
-      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
-      sql: ResumoTotalDiarioVendasSql.query,
-      clientToken: clientToken,
-      bridgeTimeoutMs:
-          bridgeTimeoutMs ?? AppEnvironment.agentSqlBridgeTimeoutMs,
-      namedParams: <String, Object?>{
-        'dataVendaInicio': AgentQueriesSqlLocalDate.format(
-          filter.dataVendaInicio,
-        ),
-        'dataVendaFim': AgentQueriesSqlLocalDate.format(filter.dataVendaFim),
-        'origem': filter.trimmedOrigem,
-        'geraFinanceiro': filter.trimmedGeraFinanceiro,
-        'preVenda': filter.trimmedPreVenda,
-      },
-      executeOptions: const AgentSqlExecuteOptions(
-        executionMode: AgentSqlExecutionMode.preserve,
-        preferDbStreaming: true,
-        maxRows: AgentQueriesBoundedResultMaxRows.resumoTotalDiarioVendas,
-      ),
-      useRelay: true,
-      relayMode: AgentSqlRelayMode.streaming,
-      skipTransportCache: cachePolicy.bypassTransportCache,
-    );
+    final trimmedAgentId = agentId.trim();
 
-    return AgentSqlRepositoryExecution.execute<
-      List<ResumoTotalDiarioVendasRow>
-    >(
-      agentQueriesRepository: _agentQueriesRepository,
-      request: request,
-      operation: _operation,
-      agentId: agentId.trim(),
-      unexpectedRowsLogMessage:
-          'Unexpected row shape for ResumoTotalDiarioVendas',
-      mapExecution: (executionResult) => _mapExecutionToRows(
-        executionResult,
-        agentId: agentId.trim(),
-        filter: filter,
-      ),
-      cancelScope: cancelScope,
+    Future<AppResult<List<ResumoTotalDiarioVendasRow>>> executeOnce() {
+      final request = AgentSqlExecuteRequest(
+        agentId: agentId,
+        requestingUserId: userId,
+        hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+        hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
+        sql: ResumoTotalDiarioVendasSql.query,
+        clientToken: clientToken,
+        bridgeTimeoutMs:
+            bridgeTimeoutMs ?? AppEnvironment.agentSqlBridgeTimeoutMs,
+        namedParams: <String, Object?>{
+          'dataVendaInicio': AgentQueriesSqlLocalDate.format(
+            filter.dataVendaInicio,
+          ),
+          'dataVendaFim': AgentQueriesSqlLocalDate.format(filter.dataVendaFim),
+          'origem': filter.trimmedOrigem,
+          'geraFinanceiro': filter.trimmedGeraFinanceiro,
+          'preVenda': filter.trimmedPreVenda,
+        },
+        executeOptions: const AgentSqlExecuteOptions(
+          executionMode: AgentSqlExecutionMode.preserve,
+          preferDbStreaming: false,
+          maxRows: AgentQueriesBoundedResultMaxRows.resumoTotalDiarioVendas,
+        ),
+        useRelay: true,
+        // Explicit unary: documented streaming exception for sales-hub reports.
+        // ignore: avoid_redundant_argument_values
+        relayMode: AgentSqlRelayMode.unary,
+        // Sales-hub daily totals always bypass the short transport cache,
+        // including default loads (same policy as other unary report exceptions).
+        skipTransportCache: switch (cachePolicy) {
+          AgentQueryLoadPolicy.defaultLoad ||
+          AgentQueryLoadPolicy.forceRefresh ||
+          AgentQueryLoadPolicy.networkOnly => true,
+        },
+      );
+
+      return AgentSqlRepositoryExecution.execute<
+        List<ResumoTotalDiarioVendasRow>
+      >(
+        agentQueriesRepository: _agentQueriesRepository,
+        request: request,
+        operation: _operation,
+        agentId: trimmedAgentId,
+        unexpectedRowsLogMessage:
+            'Unexpected row shape for ResumoTotalDiarioVendas',
+        mapExecution: (executionResult) => _mapExecutionToRows(
+          executionResult,
+          agentId: trimmedAgentId,
+          filter: filter,
+        ),
+        cancelScope: cancelScope,
+      );
+    }
+
+    final first = await executeOnce();
+    if (first.isError()) {
+      return first;
+    }
+    final firstRows = first.getOrThrow();
+    if (firstRows.isNotEmpty) {
+      return first;
+    }
+
+    AppLogger.info(
+      'Retrying empty unary success for $_operation',
+      context: <String, Object?>{
+        'operation': _operation,
+        'agentId': trimmedAgentId,
+        'retryDelayMs': emptySuccessRetryDelay.inMilliseconds,
+      },
     );
+    await Future<void>.delayed(emptySuccessRetryDelay);
+    return executeOnce();
   }
 
   List<ResumoTotalDiarioVendasRow> _mapExecutionToRows(

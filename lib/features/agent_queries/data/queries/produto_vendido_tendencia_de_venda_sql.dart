@@ -331,19 +331,20 @@ $classificacaoLine
       codGrupoProduto: codGrupoProduto,
       codMarca: codMarca,
     );
-    // NOVO PRODUTO rows have PercentualTendencia = 0 when QtdAnterior = 0; use
-    // quantity delta so new products with positive sales appear in top gainers.
+    // NOVO PRODUTO rows have PercentualTendencia = 0 when QtdAnterior = 0.
+    // Rank by quantity delta first so large new/stopped movers are not buried
+    // under small percentage swings.
     final percentPredicate = gainers ? 'Diferenca > 0' : 'Diferenca < 0';
     final orderBy = gainers
         ? '''
-      PercentualTendencia DESC,
       Diferenca DESC,
+      PercentualTendencia DESC,
       CodEmpresa ASC,
       CodFilial ASC,
       NomeProduto ASC'''
         : '''
-      PercentualTendencia ASC,
       Diferenca ASC,
+      PercentualTendencia ASC,
       CodEmpresa ASC,
       CodFilial ASC,
       NomeProduto ASC''';

@@ -21,8 +21,10 @@ import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries
 /// - Maximum cache size is exceeded (LRU eviction, default 500 entries)
 /// - Session changes (clientToken mismatch)
 ///
-/// Only successful results are cached. Failures propagate immediately without
-/// caching to allow retries and circuit breaker logic to operate normally.
+/// Only successful **non-empty** results are cached. Failures and empty
+/// success payloads propagate without caching so retries and circuit breaker
+/// logic can operate normally (empty streaming successes are often flaky on
+/// some agents, not a durable "no data" answer).
 ///
 /// [executeSqlBatch] uses [AgentQueriesRequestKey.buildBatch] for the same TTL
 /// and combined LRU budget as single-query cache entries.
@@ -102,12 +104,18 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
     );
 
     if (result.isSuccess() && !request.skipTransportCache) {
-      _sqlCache[key] = _SqlCacheEntry(
-        result: result,
-        cachedAt: DateTime.now(),
-      );
+      final execution = result.getOrThrow();
+      // Empty success payloads are often transport/agent flakiness on SQL
+      // Anywhere streaming (not a durable "no data" answer). Caching them
+      // poisons refreshes and sibling screens that share the same request key.
+      if (execution.rows.isNotEmpty) {
+        _sqlCache[key] = _SqlCacheEntry(
+          result: result,
+          cachedAt: DateTime.now(),
+        );
 
-      _evictOldestIfOverBudget();
+        _evictOldestIfOverBudget();
+      }
     }
 
     return result;

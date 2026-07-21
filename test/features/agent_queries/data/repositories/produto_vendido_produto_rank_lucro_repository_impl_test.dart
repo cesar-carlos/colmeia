@@ -91,6 +91,8 @@ void main() {
 
     check(result.isSuccess()).isTrue();
     check(result.getOrThrow()).isEmpty();
+    // Empty unary success triggers one retry.
+    verify(() => agentQueriesRepository.executeSql(any())).called(2);
   });
 
   test(
@@ -116,7 +118,7 @@ void main() {
       final captured =
           verify(
                 () => agentQueriesRepository.executeSql(captureAny()),
-              ).captured.single
+              ).captured.first
               as AgentSqlExecuteRequest;
 
       check(captured.sql).equals(
@@ -135,7 +137,10 @@ void main() {
       check(captured.executeOptions?.executionMode).equals(
         AgentSqlExecutionMode.preserve,
       );
+      check(captured.executeOptions?.preferDbStreaming).equals(false);
       check(captured.useRelay).isTrue();
+      check(captured.relayMode).equals(AgentSqlRelayMode.unary);
+      check(captured.skipTransportCache).isTrue();
       check(captured.sql).contains('Resultado.QtdItensVendido DESC');
       final sql = captured.sql;
       final iEmp = sql.indexOf('Resultado.CodEmpresa ASC');
@@ -173,7 +178,7 @@ void main() {
       final captured =
           verify(
                 () => agentQueriesRepository.executeSql(captureAny()),
-              ).captured.single
+              ).captured.first
               as AgentSqlExecuteRequest;
 
       check(captured.sql).equals(
@@ -218,7 +223,7 @@ void main() {
     final captured =
         verify(
               () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured.single
+            ).captured.first
             as AgentSqlExecuteRequest;
 
     check(captured.bridgeTimeoutMs).equals(60000);

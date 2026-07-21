@@ -18,10 +18,6 @@ bool get shouldInitializeSentry {
   return AppEnvironment.sentryDebug;
 }
 
-/// When true, `SentryFlutter.init` already wraps the bootstrap app runner in a
-/// guarded zone — callers must not nest another `runZonedGuarded` around it.
-bool get sentryProvidesBootstrapZoneGuarding => shouldInitializeSentry;
-
 String get _sentryEnvironmentName {
   if (kReleaseMode) {
     return 'release';
@@ -70,6 +66,14 @@ Future<void> configureSentryBootScope() async {
   }
 }
 
+/// Initializes Sentry when configured, then runs [appRunner] in the **same**
+/// zone as the caller.
+///
+/// Deliberately omits `SentryFlutter.init`'s `appRunner` parameter: that
+/// callback can run in a different zone than `WidgetsFlutterBinding.ensureInitialized`,
+/// which triggers Flutter's "Zone mismatch" assertion around `runApp`.
+/// Uncaught errors are still covered by [PlatformDispatcher.onError] /
+/// `FlutterError.onError` (and Sentry's integrations once init completes).
 Future<void> runAppWithOptionalSentry(
   Future<void> Function() appRunner,
 ) async {
@@ -78,25 +82,21 @@ Future<void> runAppWithOptionalSentry(
     return;
   }
 
-  await SentryFlutter.init(
-    (options) {
-      options
-        ..dsn = AppEnvironment.sentryDsn
-        ..environment = _sentryEnvironmentName
-        ..tracesSampleRate = AppEnvironment.sentryTracesSampleRate
-        ..sendDefaultPii = false;
-    },
-    appRunner: () async {
-      // Wire the log sink AFTER `SentryFlutter.init` resolves so the
-      // first call to `Sentry.captureException` already has a hub
-      // bound. Cleared in `appRunner` exit so a future hot-restart
-      // does not retain a stale sink pointing at a closed hub.
-      AppLogger.sink = SentryAppLogSink();
-      try {
-        await appRunner();
-      } finally {
-        AppLogger.sink = null;
-      }
-    },
-  );
+  await SentryFlutter.init((options) {
+    options
+      ..dsn = AppEnvironment.sentryDsn
+      ..environment = _sentryEnvironmentName
+      ..tracesSampleRate = AppEnvironment.sentryTracesSampleRate
+      ..sendDefaultPii = false;
+  });
+
+  // Wire the log sink AFTER `SentryFlutter.init` resolves so the first call
+  // to `Sentry.captureException` already has a hub bound. Cleared on exit so
+  // a future hot-restart does not retain a stale sink pointing at a closed hub.
+  AppLogger.sink = SentryAppLogSink();
+  try {
+    await appRunner();
+  } finally {
+    AppLogger.sink = null;
+  }
 }

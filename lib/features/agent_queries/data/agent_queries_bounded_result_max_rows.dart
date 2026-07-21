@@ -82,9 +82,16 @@ abstract final class AgentQueriesBoundedResultMaxRows {
   /// `TOP 15` product ranking rows — margin above the nominal cap as a safety net.
   static const int produtoVendidoProdutoRankLucro = 32;
 
-  /// Billing ranking per branch: up to (N+1) rows × many filiais — aligned with
-  /// [aggregateMultiBranchCap].
-  static const int rankingProdutosFaturamento = aggregateMultiBranchCap;
+  /// Billing ranking per branch: up to (N+1) rows × filiais.
+  ///
+  /// Keep this well below [aggregateMultiBranchCap]. On the E2E SQL Anywhere
+  /// agent, `max_rows` around 1600 for this heavy CTE query returned an empty
+  /// success payload while the same SQL with `max_rows` 50–400 returned the
+  /// expected Top-N + DIVERSOS rows. Paired with
+  /// `RankingProdutosFaturamentoRepositoryImpl.maxFilialEstimate` (25): default
+  /// top-15 needs `(15 + 1) * 25 = 400`. Prefer single-branch filters when the
+  /// live catalog exceeds that estimate.
+  static const int rankingProdutosFaturamento = 400;
 
   /// Trend rows by product between two periods; can be high cardinality for
   /// catalogs with many active SKUs.

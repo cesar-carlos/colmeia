@@ -34,7 +34,9 @@ final class AppHubNavigationCardMetrics {
         contentHorizontalPadding: tokens.gapSm,
         readyBadgeSize: 14,
         readyBadgeInset: tokens.gapXs,
-        labelMaxLines: 2,
+        // Sales hub titles like "Tendência de vendas (média móvel)" need a
+        // third line on narrow tiles; overview density already uses 3.
+        labelMaxLines: 3,
         iconUsesRoundedRect: false,
         labelStyle: typography.body.copyWith(
           fontWeight: FontWeight.w600,
