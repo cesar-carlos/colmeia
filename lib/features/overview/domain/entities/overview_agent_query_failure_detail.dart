@@ -9,7 +9,6 @@ enum OverviewAgentQueryFailureSource {
   weekdayTrend,
   weekdayUserTrend,
   dailyTrend,
-  lucratividadeMensalTrend,
 }
 
 /// One agent-scoped failure captured during overview load for diagnostics UI.

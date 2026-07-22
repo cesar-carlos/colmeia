@@ -59,6 +59,7 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
     required Map<String, Object?> body,
     required String clientRequestId,
     Duration? timeout,
+    int? timeoutMs,
     RelayPayloadFrameCompression compression =
         RelayPayloadFrameCompression.auto,
   }) {
@@ -75,6 +76,7 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
         body: body,
         clientRequestId: clientRequestId,
         timeout: timeout,
+        timeoutMs: timeoutMs,
         compression: compression,
       );
     }
@@ -93,6 +95,7 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
           clientRequestId: clientRequestId,
           body: body,
           timeout: timeout,
+          timeoutMs: timeoutMs,
         ),
         completer: completer,
       ),
@@ -117,6 +120,7 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
     required Map<String, Object?> body,
     required String clientRequestId,
     Duration? timeout,
+    int? timeoutMs,
     int? initialWindowSize,
     int? refillThreshold,
     RelayPayloadFrameCompression compression =
@@ -129,6 +133,7 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
       body: body,
       clientRequestId: clientRequestId,
       timeout: timeout,
+      timeoutMs: timeoutMs,
       initialWindowSize: initialWindowSize,
       refillThreshold: refillThreshold,
       compression: compression,
@@ -140,6 +145,7 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
     required String agentId,
     required List<RelayBatchItem> items,
     Duration? timeout,
+    int? timeoutMs,
     RelayPayloadFrameCompression compression =
         RelayPayloadFrameCompression.auto,
   }) {
@@ -149,6 +155,7 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
       agentId: agentId,
       items: items,
       timeout: timeout,
+      timeoutMs: timeoutMs,
       compression: compression,
     );
   }

@@ -35,11 +35,20 @@ abstract interface class RelayCommandDispatcher {
   ///
   /// Throws subtypes of `RelayDispatchException`; never throws raw
   /// `StateError` for transport problems.
+  ///
+  /// [timeoutMs] is forwarded on the `relay:rpc.request` envelope for
+  /// forward-compat with REST-style per-request waits. The hub schema
+  /// does **not** honor it yet (field is stripped; wait stays
+  /// `SOCKET_RELAY_REQUEST_TIMEOUT_MS`) — see
+  /// `docs/plug_server/relay_envelope_timeout_ms.md`. [timeout] is the
+  /// consumer-side pending deadline; prefer the caller's
+  /// `bridgeTimeoutMs` (not `bridgeTimeoutMs + buffer`) for both.
   Future<Map<String, dynamic>> sendUnary({
     required String agentId,
     required Map<String, Object?> body,
     required String clientRequestId,
     Duration? timeout,
+    int? timeoutMs,
     RelayPayloadFrameCompression compression =
         RelayPayloadFrameCompression.auto,
   });
@@ -75,6 +84,7 @@ abstract interface class RelayCommandDispatcher {
     required Map<String, Object?> body,
     required String clientRequestId,
     Duration? timeout,
+    int? timeoutMs,
     int? initialWindowSize,
     int? refillThreshold,
     RelayPayloadFrameCompression compression =
@@ -110,6 +120,7 @@ abstract interface class RelayCommandDispatcher {
     required String agentId,
     required List<RelayBatchItem> items,
     Duration? timeout,
+    int? timeoutMs,
     RelayPayloadFrameCompression compression =
         RelayPayloadFrameCompression.auto,
   });

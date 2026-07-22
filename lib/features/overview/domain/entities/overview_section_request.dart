@@ -33,8 +33,7 @@ final class OverviewSectionRequest {
       OverviewProgressiveSection.monthlyParcels ||
       OverviewProgressiveSection.weekdaySales ||
       OverviewProgressiveSection.weekdayUserSales ||
-      OverviewProgressiveSection.lucratividadePeriod ||
-      OverviewProgressiveSection.lucratividadeMensal => OverviewSectionRequest(
+      OverviewProgressiveSection.lucratividadePeriod => OverviewSectionRequest(
         runMainBatch: false,
         sectionBatchSections: <OverviewProgressiveSection>{section},
       ),
@@ -53,9 +52,6 @@ final class OverviewSectionRequest {
   );
 
   /// Full overview load (legacy / tests).
-  ///
-  /// Monthly lucratividade is surfaced via Sales monthly PnL — there is no
-  /// active chart card or detail route for [OverviewProgressiveSection.lucratividadeMensal].
   static const OverviewSectionRequest full = OverviewSectionRequest(
     runMainBatch: true,
     sectionBatchSections: <OverviewProgressiveSection>{

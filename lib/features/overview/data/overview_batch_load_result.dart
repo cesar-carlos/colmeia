@@ -9,7 +9,6 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_po
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_usuario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_row.dart';
 
@@ -60,8 +59,6 @@ final class OverviewBatchTargetResult {
     this.dailyRows = const <ResumoTotalDiarioVendasRow>[],
     this.weekdayUserRows = const <ResumoParcelasDiaSemanaUsuarioRow>[],
     this.lucratividadeRows = const <ResumoProdutoVendaLucratividadeRow>[],
-    this.lucratividadeMensalRows =
-        const <ResumoProdutoVendaLucratividadeMensalRow>[],
     this.mainFailure,
     this.userRankingFailure,
     this.monthlyFailure,
@@ -69,7 +66,6 @@ final class OverviewBatchTargetResult {
     this.dailyFailure,
     this.weekdayUserFailure,
     this.lucratividadeFailure,
-    this.lucratividadeMensalFailure,
   });
 
   final AgentQueryTarget target;
@@ -81,7 +77,6 @@ final class OverviewBatchTargetResult {
   final List<ResumoTotalDiarioVendasRow> dailyRows;
   final List<ResumoParcelasDiaSemanaUsuarioRow> weekdayUserRows;
   final List<ResumoProdutoVendaLucratividadeRow> lucratividadeRows;
-  final List<ResumoProdutoVendaLucratividadeMensalRow> lucratividadeMensalRows;
   final AppFailure? mainFailure;
   final AppFailure? userRankingFailure;
   final AppFailure? monthlyFailure;
@@ -89,7 +84,6 @@ final class OverviewBatchTargetResult {
   final AppFailure? dailyFailure;
   final AppFailure? weekdayUserFailure;
   final AppFailure? lucratividadeFailure;
-  final AppFailure? lucratividadeMensalFailure;
 
   bool get hasAnyFailure =>
       mainFailure != null ||
@@ -98,14 +92,12 @@ final class OverviewBatchTargetResult {
       weekdayFailure != null ||
       dailyFailure != null ||
       weekdayUserFailure != null ||
-      lucratividadeFailure != null ||
-      lucratividadeMensalFailure != null;
+      lucratividadeFailure != null;
 
   bool get hasSectionFailure =>
       monthlyFailure != null ||
       weekdayFailure != null ||
       dailyFailure != null ||
       weekdayUserFailure != null ||
-      lucratividadeFailure != null ||
-      lucratividadeMensalFailure != null;
+      lucratividadeFailure != null;
 }

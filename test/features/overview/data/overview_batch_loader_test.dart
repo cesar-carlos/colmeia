@@ -87,14 +87,13 @@ void main() {
           }
           return Success<AgentSqlBatchExecutionResult, AppFailure>(
             _batchResult(
-              commandCount: 6,
+              commandCount: 5,
               rowsByIndex: <int, List<Map<String, dynamic>>>{
                 0: <Map<String, dynamic>>[_monthlyRow()],
                 1: <Map<String, dynamic>>[_weekdayRow()],
                 2: <Map<String, dynamic>>[_dailyRow()],
                 3: <Map<String, dynamic>>[_weekdayUserRow()],
                 4: <Map<String, dynamic>>[_lucratividadeRow()],
-                5: <Map<String, dynamic>>[_lucratividadeMensalRow()],
               },
             ),
           );
@@ -207,7 +206,7 @@ void main() {
             );
           }
           return Success<AgentSqlBatchExecutionResult, AppFailure>(
-            _batchResult(commandCount: 6, failedIndexes: const <int>{0}),
+            _batchResult(commandCount: 5, failedIndexes: const <int>{0}),
           );
         });
 
@@ -219,7 +218,7 @@ void main() {
         check(targetResult.monthlyFailure).isA<RpcFailure>();
         check(targetResult.weekdayFailure).isNull();
         check(targetResult.dailyFailure).isNull();
-        check(targetResult.lucratividadeMensalFailure).isNull();
+        check(targetResult.lucratividadeFailure).isNull();
       },
     );
 
@@ -314,10 +313,6 @@ void main() {
           ),
           periodStart: DateTime(2026, 4),
           periodEnd: DateTime(2026, 4, 30),
-          last12Range: (
-            dataVendaInicio: DateTime(2025, 5),
-            dataVendaFim: DateTime(2026, 4, 30),
-          ),
           mensalFilter: _mensalFilter(),
           weekdayFilter: _weekdayFilter(),
           dailyTotalFilter: _dailyFilter(),
@@ -361,7 +356,7 @@ void main() {
     );
 
     test(
-      'omits monthly lucratividade when multiple agents are selected',
+      'loads main and section batches for each of multiple selected agents',
       () async {
         final targets = <AgentQueryTarget>[
           _agentTarget('agent-1', token: 'token-1'),
@@ -394,10 +389,6 @@ void main() {
           ),
           periodStart: DateTime(2026, 4),
           periodEnd: DateTime(2026, 4, 30),
-          last12Range: (
-            dataVendaInicio: DateTime(2025, 5),
-            dataVendaFim: DateTime(2026, 4, 30),
-          ),
           mensalFilter: _mensalFilter(),
           weekdayFilter: _weekdayFilter(),
           dailyTotalFilter: _dailyFilter(),
@@ -420,7 +411,7 @@ void main() {
         }
         check(
           result.getOrThrow().targetResults.every(
-            (target) => target.lucratividadeMensalFailure == null,
+            (target) => target.lucratividadeFailure == null,
           ),
         ).isTrue();
       },
@@ -480,10 +471,6 @@ void main() {
           ),
           periodStart: DateTime(2026, 4),
           periodEnd: DateTime(2026, 4, 30),
-          last12Range: (
-            dataVendaInicio: DateTime(2025, 5),
-            dataVendaFim: DateTime(2026, 4, 30),
-          ),
           mensalFilter: _mensalFilter(),
           weekdayFilter: _weekdayFilter(),
           dailyTotalFilter: _dailyFilter(),
@@ -531,10 +518,6 @@ void main() {
           filter: const DashboardFilter(selectedAgentIds: <String>{'agent-1'}),
           periodStart: DateTime(2026, 4),
           periodEnd: DateTime(2026, 4, 30),
-          last12Range: (
-            dataVendaInicio: DateTime(2025, 5),
-            dataVendaFim: DateTime(2026, 4, 30),
-          ),
           mensalFilter: _mensalFilter(),
           weekdayFilter: _weekdayFilter(),
           dailyTotalFilter: _dailyFilter(),
@@ -604,10 +587,6 @@ void main() {
           ),
           periodStart: DateTime(2026, 4),
           periodEnd: DateTime(2026, 4, 30),
-          last12Range: (
-            dataVendaInicio: DateTime(2025, 5),
-            dataVendaFim: DateTime(2026, 4, 30),
-          ),
           mensalFilter: _mensalFilter(),
           weekdayFilter: _weekdayFilter(),
           dailyTotalFilter: _dailyFilter(),
@@ -652,10 +631,6 @@ Future<ResultDart<OverviewBatchLoadResult, AppFailure>> _loadSingleAgent(
     filter: const DashboardFilter(selectedAgentIds: <String>{'agent-1'}),
     periodStart: DateTime(2026, 4),
     periodEnd: DateTime(2026, 4, 30),
-    last12Range: (
-      dataVendaInicio: DateTime(2025, 5),
-      dataVendaFim: DateTime(2026, 4, 30),
-    ),
     mensalFilter: _mensalFilter(),
     weekdayFilter: _weekdayFilter(),
     dailyTotalFilter: _dailyFilter(),
@@ -801,15 +776,6 @@ Map<String, dynamic> _lucratividadeRow() {
     'CustoReposicao': 95.0,
     'PontoEquilibrio': 100.0,
     'ValorTotalItem': 140.0,
-  };
-}
-
-Map<String, dynamic> _lucratividadeMensalRow() {
-  return <String, dynamic>{
-    ..._lucratividadeRow(),
-    'Ano': 2026,
-    'Mes': 4,
-    'AnoMes': '2026/04',
   };
 }
 

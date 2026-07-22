@@ -1,5 +1,4 @@
 import 'package:checks/checks.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
 import 'package:colmeia/features/overview/data/models/overview_model.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
@@ -56,11 +55,6 @@ void main() {
         );
         check(decoded.dailySalesTrend.single.salesCount).equals(8);
         check(decoded.dailySalesTrendLoadFailed).isFalse();
-        check(decoded.lucratividadeMensalTrend).length.equals(1);
-        check(decoded.lucratividadeMensalTrend.single.anoMes).equals(
-          '2026/04',
-        );
-        check(decoded.lucratividadeMensalTrendLoadFailed).isFalse();
         check(decoded.lucratividadeTrend).length.equals(1);
         check(decoded.lucratividadeTrend.single.chartAxisLabel).equals(
           'Agente 1',
@@ -144,8 +138,6 @@ void main() {
         check(decoded.weekdayUserSalesTrendLoadFailed).isFalse();
         check(decoded.dailySalesTrend).isEmpty();
         check(decoded.dailySalesTrendLoadFailed).isFalse();
-        check(decoded.lucratividadeMensalTrend).isEmpty();
-        check(decoded.lucratividadeMensalTrendLoadFailed).isFalse();
         check(decoded.lucratividadeTrend).isEmpty();
         check(decoded.lucratividadeTrendLoadFailed).isFalse();
       });
@@ -171,8 +163,6 @@ void main() {
         check(decoded.weekdayUserSalesTrendLoadFailed).isFalse();
         check(decoded.dailySalesTrend).isEmpty();
         check(decoded.dailySalesTrendLoadFailed).isFalse();
-        check(decoded.lucratividadeMensalTrend).isEmpty();
-        check(decoded.lucratividadeMensalTrendLoadFailed).isFalse();
         check(decoded.lucratividadeTrend).isEmpty();
         check(decoded.lucratividadeTrendLoadFailed).isFalse();
       });
@@ -198,8 +188,6 @@ void main() {
         check(entity.weekdayUserSalesTrendLoadFailed).isFalse();
         check(entity.dailySalesTrend.single.salesCount).equals(8);
         check(entity.dailySalesTrendLoadFailed).isFalse();
-        check(entity.lucratividadeMensalTrend.single.anoMes).equals('2026/04');
-        check(entity.lucratividadeMensalTrendLoadFailed).isFalse();
         check(entity.lucratividadeTrend.single.chartAxisLabel).equals(
           'Agente 1',
         );
@@ -252,23 +240,6 @@ void main() {
             ),
           ],
           dailySalesTrendLoadFailed: true,
-          lucratividadeMensalTrend:
-              const <ResumoProdutoVendaLucratividadeMensalRow>[
-                ResumoProdutoVendaLucratividadeMensalRow(
-                  codEmpresa: 1,
-                  codFilial: 1,
-                  ano: 2026,
-                  mes: 4,
-                  anoMes: '2026/04',
-                  qtdVendas: 5,
-                  qtdItensVendido: 6,
-                  valorTotalCustoMedio: 50,
-                  custoReposicao: 60,
-                  pontoEquilibrio: 70,
-                  valorTotalItem: 150,
-                ),
-              ],
-          lucratividadeMensalTrendLoadFailed: true,
           lucratividadeTrend: const <ResumoProdutoVendaLucratividadeRow>[
             ResumoProdutoVendaLucratividadeRow(
               codEmpresa: 1,
@@ -298,8 +269,6 @@ void main() {
           DateTime(2026, 4, 7),
         );
         check(model.dailySalesTrendLoadFailed).isTrue();
-        check(model.lucratividadeMensalTrend.single.anoMes).equals('2026/04');
-        check(model.lucratividadeMensalTrendLoadFailed).isTrue();
         check(model.lucratividadeTrend.single.chartAxisLabel).equals('Loja 2');
         check(model.lucratividadeTrendLoadFailed).isTrue();
       });
@@ -436,21 +405,6 @@ OverviewModel _fullModel() {
         saleDate: DateTime(2026, 4, 7),
         salesCount: 8,
         salesAmount: 720,
-      ),
-    ],
-    lucratividadeMensalTrend: const <ResumoProdutoVendaLucratividadeMensalRow>[
-      ResumoProdutoVendaLucratividadeMensalRow(
-        codEmpresa: 1,
-        codFilial: 1,
-        ano: 2026,
-        mes: 4,
-        anoMes: '2026/04',
-        qtdVendas: 10,
-        qtdItensVendido: 12,
-        valorTotalCustoMedio: 100,
-        custoReposicao: 120,
-        pontoEquilibrio: 130,
-        valorTotalItem: 300,
       ),
     ],
     lucratividadeTrend: const <ResumoProdutoVendaLucratividadeRow>[

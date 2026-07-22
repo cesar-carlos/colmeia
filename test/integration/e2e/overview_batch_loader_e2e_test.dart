@@ -70,10 +70,6 @@ void main() {
               ),
               periodStart: periodStart,
               periodEnd: periodEnd,
-              last12Range: (
-                dataVendaInicio: last12Start,
-                dataVendaFim: periodEnd,
-              ),
               mensalFilter: ResumoParcelasMensalFilter(
                 dataVendaInicio: last12Start,
                 dataVendaFim: periodEnd,
@@ -203,7 +199,6 @@ void _expectOverviewBatchLoaderSectionFailures(
     target.dailyFailure,
     target.weekdayUserFailure,
     target.lucratividadeFailure,
-    target.lucratividadeMensalFailure,
   ]) {
     if (failure == null) {
       continue;

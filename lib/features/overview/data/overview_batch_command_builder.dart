@@ -4,7 +4,6 @@ import 'package:colmeia/features/agent_queries/data/queries/resumo_parcela_por_u
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_dia_semana_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_dia_semana_usuario_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_mensal_sql.dart';
-import 'package:colmeia/features/agent_queries/data/queries/resumo_produto_venda_lucratividade_mensal_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_produto_venda_lucratividade_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_total_diario_vendas_sql.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
@@ -37,7 +36,6 @@ final class OverviewBatchCommandIndexes {
     required this.daily,
     required this.lucratividade,
     this.weekdayUser,
-    this.lucratividadeMensal,
   });
 
   final int main;
@@ -47,7 +45,6 @@ final class OverviewBatchCommandIndexes {
   final int? daily;
   final int? lucratividade;
   final int? weekdayUser;
-  final int? lucratividadeMensal;
 }
 
 final class OverviewMainBatchCommandIndexes {
@@ -70,7 +67,6 @@ final class OverviewSectionBatchCommandIndexes {
     this.lucratividade,
     this.monthly,
     this.daily,
-    this.lucratividadeMensal,
   });
 
   final int? monthly;
@@ -78,7 +74,6 @@ final class OverviewSectionBatchCommandIndexes {
   final int? daily;
   final int? weekdayUser;
   final int? lucratividade;
-  final int? lucratividadeMensal;
 }
 
 final class OverviewBatchCommands {
@@ -167,11 +162,9 @@ final class OverviewBatchCommandBuilder {
   }
 
   OverviewSectionBatchCommands buildSectionCommands({
-    required ({DateTime dataVendaInicio, DateTime dataVendaFim}) last12Range,
     required ResumoParcelasMensalFilter mensalFilter,
     required ResumoParcelasDiaSemanaFilter weekdayFilter,
     required ResumoTotalDiarioVendasFilter dailyTotalFilter,
-    required bool includeLucratividadeMensal,
     OverviewCachedSectionSqlOmission omitCachedSectionsFromSqlBatch =
         const OverviewCachedSectionSqlOmission(),
     Set<OverviewProgressiveSection>? includedSectionBatchSections,
@@ -181,11 +174,9 @@ final class OverviewBatchCommandBuilder {
     final full = buildCommands(
       periodStart: dailyTotalFilter.dataVendaInicio,
       periodEnd: dailyTotalFilter.dataVendaFim,
-      last12Range: last12Range,
       mensalFilter: mensalFilter,
       weekdayFilter: weekdayFilter,
       dailyTotalFilter: dailyTotalFilter,
-      includeLucratividadeMensal: includeLucratividadeMensal,
       omitCachedSectionsFromSqlBatch: omitCachedSectionsFromSqlBatch,
       includedSectionBatchSections: includedSectionBatchSections,
       includeMainBatch: includeMainBatch,
@@ -208,11 +199,9 @@ final class OverviewBatchCommandBuilder {
   OverviewBatchCommands buildCommands({
     required DateTime periodStart,
     required DateTime periodEnd,
-    required ({DateTime dataVendaInicio, DateTime dataVendaFim}) last12Range,
     required ResumoParcelasMensalFilter mensalFilter,
     required ResumoParcelasDiaSemanaFilter weekdayFilter,
     required ResumoTotalDiarioVendasFilter dailyTotalFilter,
-    required bool includeLucratividadeMensal,
     OverviewCachedSectionSqlOmission omitCachedSectionsFromSqlBatch =
         const OverviewCachedSectionSqlOmission(),
     Set<OverviewProgressiveSection>? includedSectionBatchSections,
@@ -318,10 +307,6 @@ final class OverviewBatchCommandBuilder {
       dataVendaInicio: periodStart,
       dataVendaFim: periodEnd,
     );
-    final lucratividadeMensalFilter = ResumoProdutoVendaLucratividadeFilter(
-      dataVendaInicio: last12Range.dataVendaInicio,
-      dataVendaFim: last12Range.dataVendaFim,
-    );
     final int? lucratividade;
     if (includesSection(OverviewProgressiveSection.lucratividadePeriod) &&
         !omitCachedSectionsFromSqlBatch.lucratividade) {
@@ -331,16 +316,6 @@ final class OverviewBatchCommandBuilder {
       );
     } else {
       lucratividade = null;
-    }
-    final int? lucratividadeMensal;
-    if (includeLucratividadeMensal &&
-        includesSection(OverviewProgressiveSection.lucratividadeMensal)) {
-      lucratividadeMensal = add(
-        ResumoProdutoVendaLucratividadeMensalSql.query,
-        _lucratividadeParams(lucratividadeMensalFilter),
-      );
-    } else {
-      lucratividadeMensal = null;
     }
 
     return OverviewBatchCommands(
@@ -353,7 +328,6 @@ final class OverviewBatchCommandBuilder {
         daily: daily,
         weekdayUser: weekdayUser,
         lucratividade: lucratividade,
-        lucratividadeMensal: lucratividadeMensal,
       ),
     );
   }
@@ -371,7 +345,6 @@ final class OverviewBatchCommandBuilder {
           ? null
           : full.weekdayUser! - mainOffset,
       lucratividade: subtract(full.lucratividade),
-      lucratividadeMensal: subtract(full.lucratividadeMensal),
     );
   }
 

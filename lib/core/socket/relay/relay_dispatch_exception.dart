@@ -89,10 +89,18 @@ final class RelayRequestRejected extends RelayDispatchException {
 final class RelayStreamTerminated extends RelayDispatchException {
   const RelayStreamTerminated({
     required super.message,
-    required String terminalStatus,
+    required this.terminalStatus,
+    this.errorCode,
     super.conversationId,
     super.clientRequestId,
   }) : super(code: 'stream_$terminalStatus');
+
+  /// Hub `terminal_status` (`aborted`, `error`, …).
+  final String terminalStatus;
+
+  /// Optional hub `error_code` on the complete payload
+  /// (e.g. `RELAY_STREAM_TIMEOUT`, `AGENT_DISCONNECTED`).
+  final String? errorCode;
 }
 
 /// No `relay:rpc.response` / `relay:rpc.complete` arrived within the

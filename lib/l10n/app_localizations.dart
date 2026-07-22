@@ -513,12 +513,6 @@ abstract class AppLocalizations {
   /// **'Daily sales query'**
   String get overviewHomeAlertFailureSourceDailyTrend;
 
-  /// No description provided for @overviewHomeAlertFailureSourceLucratividadeMensalTrend.
-  ///
-  /// In en, this message translates to:
-  /// **'Monthly profitability query'**
-  String get overviewHomeAlertFailureSourceLucratividadeMensalTrend;
-
   /// No description provided for @overviewHomeAlertDetailsUserLine.
   ///
   /// In en, this message translates to:
@@ -5320,84 +5314,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Loading profitability by branch chart…'**
   String get overviewLoadingLucratividadeSemantics;
-
-  /// No description provided for @overviewLucratividadeMensalTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Monthly product profitability'**
-  String get overviewLucratividadeMensalTitle;
-
-  /// No description provided for @overviewLucratividadeMensalSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Revenue, replacement cost and margin per month (selected branch).'**
-  String get overviewLucratividadeMensalSubtitle;
-
-  /// No description provided for @overviewLucratividadeMensalEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'No profitability data for this period.'**
-  String get overviewLucratividadeMensalEmpty;
-
-  /// No description provided for @overviewLucratividadeMensalMultiAgentHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Select a single branch to view monthly profitability.'**
-  String get overviewLucratividadeMensalMultiAgentHint;
-
-  /// No description provided for @overviewLucratividadeMensalSwitchProfit.
-  ///
-  /// In en, this message translates to:
-  /// **'Profit'**
-  String get overviewLucratividadeMensalSwitchProfit;
-
-  /// No description provided for @overviewLucratividadeMensalSwitchRevenue.
-  ///
-  /// In en, this message translates to:
-  /// **'Revenue'**
-  String get overviewLucratividadeMensalSwitchRevenue;
-
-  /// No description provided for @overviewLucratividadeMensalSwitchCost.
-  ///
-  /// In en, this message translates to:
-  /// **'Cost'**
-  String get overviewLucratividadeMensalSwitchCost;
-
-  /// No description provided for @overviewLucratividadeMensalSwitchMargin.
-  ///
-  /// In en, this message translates to:
-  /// **'Percent metrics'**
-  String get overviewLucratividadeMensalSwitchMargin;
-
-  /// No description provided for @overviewLucratividadeMensalProfitSeriesLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Profit'**
-  String get overviewLucratividadeMensalProfitSeriesLabel;
-
-  /// No description provided for @overviewLucratividadeMensalRevenueSeriesLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Revenue'**
-  String get overviewLucratividadeMensalRevenueSeriesLabel;
-
-  /// No description provided for @overviewLucratividadeMensalCostSeriesLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Replacement cost'**
-  String get overviewLucratividadeMensalCostSeriesLabel;
-
-  /// No description provided for @overviewLucratividadeMensalMarginSeriesLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Margin %'**
-  String get overviewLucratividadeMensalMarginSeriesLabel;
-
-  /// No description provided for @overviewLoadingLucratividadeMensalSemantics.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading monthly product profitability chart…'**
-  String get overviewLoadingLucratividadeMensalSemantics;
 
   /// No description provided for @salesHubTitle.
   ///

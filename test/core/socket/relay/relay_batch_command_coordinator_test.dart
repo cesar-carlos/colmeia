@@ -30,6 +30,7 @@ class _RecordingRelayDispatcher implements RelayCommandDispatcher {
     required Map<String, Object?> body,
     required String clientRequestId,
     Duration? timeout,
+    int? timeoutMs,
     RelayPayloadFrameCompression compression =
         RelayPayloadFrameCompression.auto,
   }) async {
@@ -54,6 +55,7 @@ class _RecordingRelayDispatcher implements RelayCommandDispatcher {
     required String agentId,
     required List<RelayBatchItem> items,
     Duration? timeout,
+    int? timeoutMs,
     RelayPayloadFrameCompression compression =
         RelayPayloadFrameCompression.auto,
   }) async {
@@ -84,6 +86,7 @@ class _RecordingRelayDispatcher implements RelayCommandDispatcher {
     required Map<String, Object?> body,
     required String clientRequestId,
     Duration? timeout,
+    int? timeoutMs,
     int? initialWindowSize,
     int? refillThreshold,
     RelayPayloadFrameCompression compression =

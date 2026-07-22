@@ -4,7 +4,6 @@ import 'package:colmeia/features/agent_queries/data/queries/resumo_parcela_por_u
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_dia_semana_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_dia_semana_usuario_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_mensal_sql.dart';
-import 'package:colmeia/features/agent_queries/data/queries/resumo_produto_venda_lucratividade_mensal_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_produto_venda_lucratividade_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_total_diario_vendas_sql.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
@@ -19,10 +18,6 @@ void main() {
 
   final periodStart = DateTime(2026, 4);
   final periodEnd = DateTime(2026, 4, 30);
-  final last12Range = (
-    dataVendaInicio: DateTime(2025, 5),
-    dataVendaFim: DateTime(2026, 4, 30),
-  );
   final mensalFilter = ResumoParcelasMensalFilter(
     dataVendaInicio: periodStart,
     dataVendaFim: periodEnd,
@@ -90,14 +85,12 @@ void main() {
       final batch = builder.buildCommands(
         periodStart: periodStart,
         periodEnd: periodEnd,
-        last12Range: last12Range,
         mensalFilter: mensalFilter,
         weekdayFilter: weekdayFilter,
         dailyTotalFilter: dailyTotalFilter,
-        includeLucratividadeMensal: true,
       );
 
-      check(batch.commands.length).equals(8);
+      check(batch.commands.length).equals(7);
       final sqlBodies = batch.commands.map((command) => command.sql).toList();
       check(
         sqlBodies.contains(ResumoParcelaFormaPagamentoSqlV2.query),
@@ -127,21 +120,16 @@ void main() {
       check(
         sqlBodies.contains(ResumoProdutoVendaLucratividadeSql.query),
       ).isTrue();
-      check(
-        sqlBodies.contains(ResumoProdutoVendaLucratividadeMensalSql.query),
-      ).isTrue();
-      check(batch.indexes.lucratividadeMensal).isNotNull();
+      check(batch.indexes.lucratividade).isNotNull();
     });
 
     test('buildCommands omits cached sections when configured', () {
       final batch = builder.buildCommands(
         periodStart: periodStart,
         periodEnd: periodEnd,
-        last12Range: last12Range,
         mensalFilter: mensalFilter,
         weekdayFilter: weekdayFilter,
         dailyTotalFilter: dailyTotalFilter,
-        includeLucratividadeMensal: false,
         omitCachedSectionsFromSqlBatch: const OverviewCachedSectionSqlOmission(
           dailyMonthly: true,
           weekday: true,
@@ -161,11 +149,9 @@ void main() {
       'buildSectionCommands for home scope includes only monthly parcels',
       () {
         final batch = builder.buildSectionCommands(
-          last12Range: last12Range,
           mensalFilter: mensalFilter,
           weekdayFilter: weekdayFilter,
           dailyTotalFilter: dailyTotalFilter,
-          includeLucratividadeMensal: false,
           includedSectionBatchSections:
               OverviewSectionRequest.home.sectionBatchSections,
           includeMainBatch: false,
@@ -189,19 +175,17 @@ void main() {
       'buildSectionCommands skips main commands and reindexes execution order',
       () {
         final batch = builder.buildSectionCommands(
-          last12Range: last12Range,
           mensalFilter: mensalFilter,
           weekdayFilter: weekdayFilter,
           dailyTotalFilter: dailyTotalFilter,
-          includeLucratividadeMensal: true,
         );
 
-        check(batch.commands.length).equals(6);
+        check(batch.commands.length).equals(5);
         check(batch.commands.first.executionOrder).equals(0);
-        check(batch.commands.last.executionOrder).equals(5);
+        check(batch.commands.last.executionOrder).equals(4);
         check(batch.indexes.monthly).equals(0);
         check(batch.indexes.weekdayUser).equals(3);
-        check(batch.indexes.lucratividadeMensal).equals(5);
+        check(batch.indexes.lucratividade).equals(4);
       },
     );
   });

@@ -21,23 +21,19 @@ void main() {
       expect(request.mainBatchCommandCount, 1);
     });
 
-    test('full excludes lucratividadeMensal section batch', () {
+    test('full includes expected section batch sections', () {
       const request = OverviewSectionRequest.full;
 
       expect(request.runMainBatch, isTrue);
       expect(
         request.sectionBatchSections,
-        containsAll(<OverviewProgressiveSection>{
+        equals(<OverviewProgressiveSection>{
           OverviewProgressiveSection.dailySales,
           OverviewProgressiveSection.monthlyParcels,
           OverviewProgressiveSection.weekdaySales,
           OverviewProgressiveSection.weekdayUserSales,
           OverviewProgressiveSection.lucratividadePeriod,
         }),
-      );
-      expect(
-        request.sectionBatchSections,
-        isNot(contains(OverviewProgressiveSection.lucratividadeMensal)),
       );
       expect(request.isMainBatchOnly, isFalse);
     });

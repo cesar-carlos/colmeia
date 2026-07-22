@@ -17,6 +17,35 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 
+class _RecordingAgentCommandSender implements AgentCommandSender {
+  int calls = 0;
+
+  @override
+  Future<Map<String, dynamic>> send({
+    required String agentId,
+    required Map<String, Object?> body,
+    required String rpcId,
+    Duration? timeout,
+  }) async {
+    calls++;
+    return <String, dynamic>{
+      'response': <String, dynamic>{
+        'success': true,
+        'type': 'single',
+        'item': <String, dynamic>{
+          'success': true,
+          'result': <String, dynamic>{
+            'rows': <Map<String, Object?>>[
+              <String, Object?>{'value': 1},
+            ],
+            'row_count': 1,
+          },
+        },
+      },
+    };
+  }
+}
+
 class _ThrowingAgentCommandSender implements AgentCommandSender {
   int calls = 0;
 
@@ -54,6 +83,7 @@ class _FakeRelayCommandDispatcher implements RelayCommandDispatcher {
     required Map<String, Object?> body,
     required String clientRequestId,
     Duration? timeout,
+    int? timeoutMs,
     RelayPayloadFrameCompression compression =
         RelayPayloadFrameCompression.auto,
   }) async {
@@ -81,6 +111,7 @@ class _FakeRelayCommandDispatcher implements RelayCommandDispatcher {
     required String agentId,
     required List<RelayBatchItem> items,
     Duration? timeout,
+    int? timeoutMs,
     RelayPayloadFrameCompression compression =
         RelayPayloadFrameCompression.auto,
   }) async {
@@ -96,6 +127,7 @@ class _FakeRelayCommandDispatcher implements RelayCommandDispatcher {
     required Map<String, Object?> body,
     required String clientRequestId,
     Duration? timeout,
+    int? timeoutMs,
     int? initialWindowSize,
     int? refillThreshold,
     RelayPayloadFrameCompression compression =
@@ -164,11 +196,11 @@ AGENT_BRIDGE_TRANSPORT=rest
   });
 
   test(
-    'socket transport routes useRelay=false through relay unary when relay '
-    'is registered',
+    'socket transport routes useRelay=false through agents:command base '
+    'when relay is registered',
     () async {
       final getIt = GetIt.asNewInstance();
-      final sender = _ThrowingAgentCommandSender();
+      final sender = _RecordingAgentCommandSender();
       final relay = _FakeRelayCommandDispatcher();
       getIt
         ..registerLazySingleton<Dio>(Dio.new)
@@ -185,9 +217,9 @@ AGENT_BRIDGE_TRANSPORT=rest
         ),
       );
 
-      check(relay.unaryCalls).equals(1);
+      check(sender.calls).equals(1);
+      check(relay.unaryCalls).equals(0);
       check(relay.streamingCalls).equals(0);
-      check(sender.calls).equals(0);
 
       await getIt.reset();
     },

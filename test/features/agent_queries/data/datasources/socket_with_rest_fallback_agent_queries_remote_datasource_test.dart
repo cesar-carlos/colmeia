@@ -244,7 +244,7 @@ void main() {
           response: <String, dynamic>{'response': 'ok-from-rest'},
         );
         final metrics = SocketChannelMetrics(reservoirSize: 8);
-        var now = DateTime.utc(2026, 7, 22, 12);
+        final now = DateTime.utc(2026, 7, 22, 12);
         final fallback = SocketWithRestFallbackAgentQueriesRemoteDataSource(
           socketDelegate: socket,
           restDelegate: rest,
@@ -284,7 +284,6 @@ void main() {
           socketDelegate: socket,
           restDelegate: rest,
           clock: () => now,
-          temporaryLatchCooldown: const Duration(seconds: 60),
         );
         addTearDown(fallback.dispose);
 

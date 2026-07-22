@@ -45,11 +45,6 @@ const List<OverviewChartCardDescriptor> allOverviewChartCards =
         icon: Icons.account_balance_outlined,
         section: OverviewProgressiveSection.lucratividadePeriod,
       ),
-      OverviewChartCardDescriptor(
-        id: 'lucratividade_mensal',
-        icon: Icons.calendar_month_outlined,
-        section: OverviewProgressiveSection.lucratividadeMensal,
-      ),
     ];
 
 OverviewChartCardDescriptor? overviewChartCardById(String id) {

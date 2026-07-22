@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
@@ -32,10 +31,6 @@ class OverviewModel {
     this.dailySalesTrend = const <DailySalesTrendPoint>[],
     this.dailySalesTrendLoadFailed = false,
     this.dailySalesTrendLoadFailureMessage,
-    this.lucratividadeMensalTrend =
-        const <ResumoProdutoVendaLucratividadeMensalRow>[],
-    this.lucratividadeMensalTrendLoadFailed = false,
-    this.lucratividadeMensalTrendLoadFailureMessage,
     this.lucratividadeTrend = const <ResumoProdutoVendaLucratividadeRow>[],
     this.lucratividadeTrendLoadFailed = false,
     this.lucratividadeTrendLoadFailureMessage,
@@ -67,10 +62,6 @@ class OverviewModel {
         json['dailySalesTrend'] as List<dynamic>? ?? const <dynamic>[];
     final dailySalesTrendLoadFailed =
         json['dailySalesTrendLoadFailed'] as bool? ?? false;
-    final lucratividadeMensalJson =
-        json['lucratividadeMensalTrend'] as List<dynamic>? ?? const <dynamic>[];
-    final lucratividadeMensalTrendLoadFailed =
-        json['lucratividadeMensalTrendLoadFailed'] as bool? ?? false;
     final lucratividadeJson =
         json['lucratividadeTrend'] as List<dynamic>? ?? const <dynamic>[];
     final lucratividadeTrendLoadFailed =
@@ -172,26 +163,6 @@ class OverviewModel {
           })
           .toList(growable: false),
       dailySalesTrendLoadFailed: dailySalesTrendLoadFailed,
-      lucratividadeMensalTrend: lucratividadeMensalJson
-          .map((item) {
-            final row = item as Map<String, dynamic>;
-            return ResumoProdutoVendaLucratividadeMensalRow(
-              codEmpresa: row['codEmpresa'] as int,
-              codFilial: row['codFilial'] as int,
-              ano: row['ano'] as int,
-              mes: row['mes'] as int,
-              anoMes: row['anoMes'] as String,
-              qtdVendas: row['qtdVendas'] as int,
-              qtdItensVendido: (row['qtdItensVendido'] as num).toDouble(),
-              valorTotalCustoMedio: (row['valorTotalCustoMedio'] as num)
-                  .toDouble(),
-              custoReposicao: (row['custoReposicao'] as num).toDouble(),
-              pontoEquilibrio: (row['pontoEquilibrio'] as num).toDouble(),
-              valorTotalItem: (row['valorTotalItem'] as num).toDouble(),
-            );
-          })
-          .toList(growable: false),
-      lucratividadeMensalTrendLoadFailed: lucratividadeMensalTrendLoadFailed,
       lucratividadeTrend: lucratividadeJson
           .map((item) {
             final row = item as Map<String, dynamic>;
@@ -249,11 +220,6 @@ class OverviewModel {
       dailySalesTrendLoadFailed: overview.dailySalesTrendLoadFailed,
       dailySalesTrendLoadFailureMessage:
           overview.dailySalesTrendLoadFailureMessage,
-      lucratividadeMensalTrend: overview.lucratividadeMensalTrend,
-      lucratividadeMensalTrendLoadFailed:
-          overview.lucratividadeMensalTrendLoadFailed,
-      lucratividadeMensalTrendLoadFailureMessage:
-          overview.lucratividadeMensalTrendLoadFailureMessage,
       lucratividadeTrend: overview.lucratividadeTrend,
       lucratividadeTrendLoadFailed: overview.lucratividadeTrendLoadFailed,
       lucratividadeTrendLoadFailureMessage:
@@ -300,13 +266,6 @@ class OverviewModel {
   /// Transient runtime field; not persisted in [toJson].
   final String? dailySalesTrendLoadFailureMessage;
 
-  final List<ResumoProdutoVendaLucratividadeMensalRow> lucratividadeMensalTrend;
-
-  final bool lucratividadeMensalTrendLoadFailed;
-
-  /// Transient runtime field; not persisted in [toJson].
-  final String? lucratividadeMensalTrendLoadFailureMessage;
-
   final List<ResumoProdutoVendaLucratividadeRow> lucratividadeTrend;
 
   final bool lucratividadeTrendLoadFailed;
@@ -342,10 +301,6 @@ class OverviewModel {
       dailySalesTrend: dailySalesTrend,
       dailySalesTrendLoadFailed: dailySalesTrendLoadFailed,
       dailySalesTrendLoadFailureMessage: dailySalesTrendLoadFailureMessage,
-      lucratividadeMensalTrend: lucratividadeMensalTrend,
-      lucratividadeMensalTrendLoadFailed: lucratividadeMensalTrendLoadFailed,
-      lucratividadeMensalTrendLoadFailureMessage:
-          lucratividadeMensalTrendLoadFailureMessage,
       lucratividadeTrend: lucratividadeTrend,
       lucratividadeTrendLoadFailed: lucratividadeTrendLoadFailed,
       lucratividadeTrendLoadFailureMessage:
@@ -429,24 +384,6 @@ class OverviewModel {
           )
           .toList(growable: false),
       'dailySalesTrendLoadFailed': dailySalesTrendLoadFailed,
-      'lucratividadeMensalTrend': lucratividadeMensalTrend
-          .map(
-            (p) => <String, Object?>{
-              'codEmpresa': p.codEmpresa,
-              'codFilial': p.codFilial,
-              'ano': p.ano,
-              'mes': p.mes,
-              'anoMes': p.anoMes,
-              'qtdVendas': p.qtdVendas,
-              'qtdItensVendido': p.qtdItensVendido,
-              'valorTotalCustoMedio': p.valorTotalCustoMedio,
-              'custoReposicao': p.custoReposicao,
-              'pontoEquilibrio': p.pontoEquilibrio,
-              'valorTotalItem': p.valorTotalItem,
-            },
-          )
-          .toList(growable: false),
-      'lucratividadeMensalTrendLoadFailed': lucratividadeMensalTrendLoadFailed,
       'lucratividadeTrend': lucratividadeTrend
           .map(
             (p) => <String, Object?>{

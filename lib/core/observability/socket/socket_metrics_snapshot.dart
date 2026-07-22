@@ -28,6 +28,7 @@ class SocketMetricsSnapshot {
     this.relayConversationStartMs = HistogramSnapshot.empty,
     this.relayGzipDecodeIsolateTotal = 0,
     this.relayJsonDecodeIsolateTotal = 0,
+    this.relayAcceptedInFlightTotal = 0,
     this.relayDecodeFailureTotalByCode = const <String, int>{},
     this.relayDispatchMsByKey = const <String, HistogramSnapshot>{},
     this.relayOutcomesTotal = const <String, int>{},
@@ -128,6 +129,9 @@ class SocketMetricsSnapshot {
   /// Frames whose JSON parse ran on a worker isolate.
   final int relayJsonDecodeIsolateTotal;
 
+  /// Hub `relay:rpc.accepted` with `inFlight: true` (duplicate waiter).
+  final int relayAcceptedInFlightTotal;
+
   /// Counts of decode failures by stable `code` (e.g. `gzip_decode_failed`).
   final Map<String, int> relayDecodeFailureTotalByCode;
 
@@ -203,6 +207,7 @@ class SocketMetricsSnapshot {
       'relayConversationStartMs': relayConversationStartMs.toJson(),
       'relayGzipDecodeIsolateTotal': relayGzipDecodeIsolateTotal,
       'relayJsonDecodeIsolateTotal': relayJsonDecodeIsolateTotal,
+      'relayAcceptedInFlightTotal': relayAcceptedInFlightTotal,
       'relayDecodeFailureTotalByCode': relayDecodeFailureTotalByCode,
       'relayDispatchMsByKey': <String, Object?>{
         for (final entry in relayDispatchMsByKey.entries)
@@ -237,6 +242,9 @@ class SocketMetricsSnapshot {
     }
     if (relayJsonDecodeIsolateTotal != 0) {
       out['relayJsonDecodeIsolateUses'] = relayJsonDecodeIsolateTotal;
+    }
+    if (relayAcceptedInFlightTotal != 0) {
+      out['relayAcceptedInFlightTotal'] = relayAcceptedInFlightTotal;
     }
     if (relayDecodeFailureTotalByCode.isNotEmpty) {
       out['relayDecodeFailureByCode'] = Map<String, int>.from(

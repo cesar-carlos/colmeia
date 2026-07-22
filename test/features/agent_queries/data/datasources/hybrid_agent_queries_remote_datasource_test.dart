@@ -134,6 +134,7 @@ void main() {
           body: any(named: 'body'),
           clientRequestId: any(named: 'clientRequestId'),
           timeout: any(named: 'timeout'),
+          timeoutMs: any(named: 'timeoutMs'),
           compression: any(named: 'compression'),
         ),
       );
@@ -151,6 +152,7 @@ void main() {
           body: any(named: 'body'),
           clientRequestId: any(named: 'clientRequestId'),
           timeout: any(named: 'timeout'),
+          timeoutMs: any(named: 'timeoutMs'),
           compression: any(named: 'compression'),
         ),
       ).thenAnswer(
@@ -175,6 +177,7 @@ void main() {
           body: any(named: 'body'),
           clientRequestId: any(named: 'clientRequestId'),
           timeout: any(named: 'timeout'),
+          timeoutMs: any(named: 'timeoutMs'),
           compression: any(named: 'compression'),
         ),
       ).called(1);
@@ -213,6 +216,7 @@ void main() {
           body: any(named: 'body'),
           clientRequestId: any(named: 'clientRequestId'),
           timeout: any(named: 'timeout'),
+          timeoutMs: any(named: 'timeoutMs'),
           compression: any(named: 'compression'),
         ),
       ).thenAnswer((invocation) async {
@@ -241,6 +245,7 @@ void main() {
           body: any(named: 'body'),
           clientRequestId: any(named: 'clientRequestId'),
           timeout: any(named: 'timeout'),
+          timeoutMs: any(named: 'timeoutMs'),
           compression: any(named: 'compression'),
         ),
       ).called(1);
@@ -283,6 +288,7 @@ void main() {
           body: any(named: 'body'),
           clientRequestId: any(named: 'clientRequestId'),
           timeout: any(named: 'timeout'),
+          timeoutMs: any(named: 'timeoutMs'),
           compression: any(named: 'compression'),
         ),
       ).thenAnswer(

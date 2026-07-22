@@ -36,6 +36,7 @@ void main() {
           body: any(named: 'body'),
           clientRequestId: any(named: 'clientRequestId'),
           timeout: any(named: 'timeout'),
+          timeoutMs: any(named: 'timeoutMs'),
           compression: any(named: 'compression'),
         ),
       ).thenAnswer((_) => controller.stream);
@@ -76,6 +77,7 @@ void main() {
           body: any(named: 'body'),
           clientRequestId: any(named: 'clientRequestId'),
           timeout: any(named: 'timeout'),
+          timeoutMs: any(named: 'timeoutMs'),
           compression: any(named: 'compression'),
         ),
       ).thenAnswer((_) => controller.stream);
@@ -113,16 +115,19 @@ void main() {
     test('forwards bridgeTimeoutMs + 5s as the relay timeout', () async {
       final dispatcher = _MockRelayDispatcher();
       Duration? capturedTimeout;
+      int? capturedTimeoutMs;
       when(
         () => dispatcher.sendStreaming(
           agentId: any(named: 'agentId'),
           body: any(named: 'body'),
           clientRequestId: any(named: 'clientRequestId'),
           timeout: any(named: 'timeout'),
+          timeoutMs: any(named: 'timeoutMs'),
           compression: any(named: 'compression'),
         ),
       ).thenAnswer((invocation) {
         capturedTimeout = invocation.namedArguments[#timeout] as Duration?;
+        capturedTimeoutMs = invocation.namedArguments[#timeoutMs] as int?;
         return const Stream<Map<String, dynamic>>.empty();
       });
 
@@ -140,6 +145,7 @@ void main() {
           .toList();
 
       check(capturedTimeout).equals(const Duration(milliseconds: 17000));
+      check(capturedTimeoutMs).equals(12000);
     });
 
     test(
@@ -185,6 +191,7 @@ void main() {
           body: any(named: 'body'),
           clientRequestId: any(named: 'clientRequestId'),
           timeout: any(named: 'timeout'),
+          timeoutMs: any(named: 'timeoutMs'),
           compression: any(named: 'compression'),
         ),
       ).thenAnswer((invocation) {
@@ -326,6 +333,7 @@ void main() {
           body: any(named: 'body'),
           clientRequestId: any(named: 'clientRequestId'),
           timeout: any(named: 'timeout'),
+          timeoutMs: any(named: 'timeoutMs'),
           compression: any(named: 'compression'),
         ),
       ).thenAnswer((_) => controller.stream);

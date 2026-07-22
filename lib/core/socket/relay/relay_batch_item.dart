@@ -16,6 +16,7 @@ class RelayBatchItem {
     required this.clientRequestId,
     required this.body,
     this.timeout,
+    this.timeoutMs,
   });
 
   /// JSON-RPC `id` for this item. Must be unique within the envelope
@@ -30,4 +31,10 @@ class RelayBatchItem {
   /// every item's timeout; items whose individual deadline elapsed
   /// before the response arrives are failed locally without waiting.
   final Duration? timeout;
+
+  /// Optional `timeoutMs` on the batch envelope (forward-compat). The
+  /// hub does not honor it yet — see
+  /// `docs/plug_server/relay_envelope_timeout_ms.md`. Prefer the
+  /// caller's `bridgeTimeoutMs`.
+  final int? timeoutMs;
 }

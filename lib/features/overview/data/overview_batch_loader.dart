@@ -113,7 +113,6 @@ class OverviewBatchLoader {
     required DashboardFilter filter,
     required DateTime periodStart,
     required DateTime periodEnd,
-    required ({DateTime dataVendaInicio, DateTime dataVendaFim}) last12Range,
     required ResumoParcelasMensalFilter mensalFilter,
     required ResumoParcelasDiaSemanaFilter weekdayFilter,
     required ResumoTotalDiarioVendasFilter dailyTotalFilter,
@@ -130,7 +129,6 @@ class OverviewBatchLoader {
       filter: filter,
       periodStart: periodStart,
       periodEnd: periodEnd,
-      last12Range: last12Range,
       mensalFilter: mensalFilter,
       weekdayFilter: weekdayFilter,
       dailyTotalFilter: dailyTotalFilter,
@@ -161,7 +159,6 @@ class OverviewBatchLoader {
     required DashboardFilter filter,
     required DateTime periodStart,
     required DateTime periodEnd,
-    required ({DateTime dataVendaInicio, DateTime dataVendaFim}) last12Range,
     required ResumoParcelasMensalFilter mensalFilter,
     required ResumoParcelasDiaSemanaFilter weekdayFilter,
     required ResumoTotalDiarioVendasFilter dailyTotalFilter,
@@ -205,9 +202,6 @@ class OverviewBatchLoader {
       return;
     }
 
-    final selectedNorm = _normalizeSelectedAgentIds(filter.selectedAgentIds);
-    final includeLucratividadeMensal =
-        selectedNorm != null && selectedNorm.length == 1;
     final loadsCachedSectionsViaUseCases = _cachedSectionLoader.isConfiguredFor(
       cachePolicy,
     );
@@ -238,11 +232,9 @@ class OverviewBatchLoader {
         executionStrategy: executionStrategy,
         periodStart: periodStart,
         periodEnd: periodEnd,
-        last12Range: last12Range,
         mensalFilter: mensalFilter,
         weekdayFilter: weekdayFilter,
         dailyTotalFilter: dailyTotalFilter,
-        includeLucratividadeMensal: includeLucratividadeMensal,
         skipCachedSectionUseCases: true,
         cancelScope: cancelScope,
         cachePolicy: cachePolicy,
@@ -258,11 +250,9 @@ class OverviewBatchLoader {
         executionStrategy: executionStrategy,
         periodStart: periodStart,
         periodEnd: periodEnd,
-        last12Range: last12Range,
         mensalFilter: mensalFilter,
         weekdayFilter: weekdayFilter,
         dailyTotalFilter: dailyTotalFilter,
-        includeLucratividadeMensal: includeLucratividadeMensal,
         omitCachedSectionsFromSqlBatch: omitCachedSectionsFromSqlBatch,
         skipCachedSectionUseCases: !useCachedSectionUseCases,
         cancelScope: cancelScope,
@@ -280,11 +270,9 @@ class OverviewBatchLoader {
       executionStrategy: executionStrategy,
       periodStart: periodStart,
       periodEnd: periodEnd,
-      last12Range: last12Range,
       mensalFilter: mensalFilter,
       weekdayFilter: weekdayFilter,
       dailyTotalFilter: dailyTotalFilter,
-      includeLucratividadeMensal: includeLucratividadeMensal,
       omitCachedSectionsFromSqlBatch: omitCachedSectionsFromSqlBatch,
       cancelScope: cancelScope,
       cachePolicy: cachePolicy,
@@ -300,11 +288,9 @@ class OverviewBatchLoader {
     required AgentQueryExecutionStrategy executionStrategy,
     required DateTime periodStart,
     required DateTime periodEnd,
-    required ({DateTime dataVendaInicio, DateTime dataVendaFim}) last12Range,
     required ResumoParcelasMensalFilter mensalFilter,
     required ResumoParcelasDiaSemanaFilter weekdayFilter,
     required ResumoTotalDiarioVendasFilter dailyTotalFilter,
-    required bool includeLucratividadeMensal,
     required OverviewCachedSectionSqlOmission omitCachedSectionsFromSqlBatch,
     required OverviewSectionRequest sectionRequest,
     AgentQueriesCancelScope? cancelScope,
@@ -316,11 +302,9 @@ class OverviewBatchLoader {
     final sectionBatch = sectionRequest.sectionBatchSections.isEmpty
         ? null
         : _commandBuilder.buildSectionCommands(
-            last12Range: last12Range,
             mensalFilter: mensalFilter,
             weekdayFilter: weekdayFilter,
             dailyTotalFilter: dailyTotalFilter,
-            includeLucratividadeMensal: includeLucratividadeMensal,
             omitCachedSectionsFromSqlBatch: omitCachedSectionsFromSqlBatch,
             includedSectionBatchSections: sectionRequest.sectionBatchSections,
             includeMainBatch: false,
@@ -357,7 +341,6 @@ class OverviewBatchLoader {
           mensalFilter: mensalFilter,
           weekdayFilter: weekdayFilter,
           dailyTotalFilter: dailyTotalFilter,
-          includeLucratividadeMensal: includeLucratividadeMensal,
           hubPresenceOnlineAgentIdsSnapshot:
               resolution.hubPresenceOnlineAgentIdsSnapshot,
           cancelScope: cancelScope,
@@ -463,7 +446,6 @@ class OverviewBatchLoader {
         mensalFilter: mensalFilter,
         weekdayFilter: weekdayFilter,
         dailyTotalFilter: dailyTotalFilter,
-        includeLucratividadeMensal: includeLucratividadeMensal,
         hubPresenceOnlineAgentIdsSnapshot:
             resolution.hubPresenceOnlineAgentIdsSnapshot,
         cancelScope: cancelScope,
@@ -541,11 +523,9 @@ class OverviewBatchLoader {
     required AgentQueryExecutionStrategy executionStrategy,
     required DateTime periodStart,
     required DateTime periodEnd,
-    required ({DateTime dataVendaInicio, DateTime dataVendaFim}) last12Range,
     required ResumoParcelasMensalFilter mensalFilter,
     required ResumoParcelasDiaSemanaFilter weekdayFilter,
     required ResumoTotalDiarioVendasFilter dailyTotalFilter,
-    required bool includeLucratividadeMensal,
     OverviewCachedSectionSqlOmission omitCachedSectionsFromSqlBatch =
         const OverviewCachedSectionSqlOmission(),
     bool skipCachedSectionUseCases = false,
@@ -557,11 +537,9 @@ class OverviewBatchLoader {
     final batch = _commandBuilder.buildCommands(
       periodStart: periodStart,
       periodEnd: periodEnd,
-      last12Range: last12Range,
       mensalFilter: mensalFilter,
       weekdayFilter: weekdayFilter,
       dailyTotalFilter: dailyTotalFilter,
-      includeLucratividadeMensal: includeLucratividadeMensal,
       omitCachedSectionsFromSqlBatch: omitCachedSectionsFromSqlBatch,
       includedSectionBatchSections: sectionRequest.sectionBatchSections.isEmpty
           ? null
@@ -581,7 +559,6 @@ class OverviewBatchLoader {
         mensalFilter: mensalFilter,
         weekdayFilter: weekdayFilter,
         dailyTotalFilter: dailyTotalFilter,
-        includeLucratividadeMensal: includeLucratividadeMensal,
         hubPresenceOnlineAgentIdsSnapshot:
             resolution.hubPresenceOnlineAgentIdsSnapshot,
         cancelScope: cancelScope,
@@ -620,7 +597,6 @@ class OverviewBatchLoader {
     required ResumoParcelasMensalFilter mensalFilter,
     required ResumoParcelasDiaSemanaFilter weekdayFilter,
     required ResumoTotalDiarioVendasFilter dailyTotalFilter,
-    required bool includeLucratividadeMensal,
     required Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool skipCachedSectionUseCases = false,
     AgentQueriesCancelScope? cancelScope,
@@ -672,7 +648,6 @@ class OverviewBatchLoader {
         target: target,
         elapsedMs: elapsedMs,
         failure: result.exceptionOrNull()!,
-        includeLucratividadeMensal: includeLucratividadeMensal,
         cachedSections: cachedSections,
         mainFailure: result.exceptionOrNull(),
       );
@@ -697,7 +672,6 @@ class OverviewBatchLoader {
         daily: batch.indexes.daily,
         weekdayUser: batch.indexes.weekdayUser,
         lucratividade: batch.indexes.lucratividade,
-        lucratividadeMensal: batch.indexes.lucratividadeMensal,
       ),
     );
     final merged = _sectionBatchRunner.mergeCachedSections(
@@ -711,7 +685,6 @@ class OverviewBatchLoader {
         dailyRows: sectionMapped.dailyRows,
         weekdayUserRows: sectionMapped.weekdayUserRows,
         lucratividadeRows: sectionMapped.lucratividadeRows,
-        lucratividadeMensalRows: sectionMapped.lucratividadeMensalRows,
         mainFailure: mainMapped.mainFailure,
         userRankingFailure: mainMapped.userRankingFailure,
         monthlyFailure: sectionMapped.monthlyFailure,
@@ -719,7 +692,6 @@ class OverviewBatchLoader {
         dailyFailure: sectionMapped.dailyFailure,
         weekdayUserFailure: sectionMapped.weekdayUserFailure,
         lucratividadeFailure: sectionMapped.lucratividadeFailure,
-        lucratividadeMensalFailure: sectionMapped.lucratividadeMensalFailure,
       ),
       cached: cachedSections,
     );
@@ -759,7 +731,6 @@ class OverviewBatchLoader {
             dailyRows: sections.dailyRows,
             weekdayUserRows: sections.weekdayUserRows,
             lucratividadeRows: sections.lucratividadeRows,
-            lucratividadeMensalRows: sections.lucratividadeMensalRows,
             mainFailure: main.mainFailure,
             userRankingFailure: main.userRankingFailure,
             monthlyFailure: sections.monthlyFailure,
@@ -767,7 +738,6 @@ class OverviewBatchLoader {
             dailyFailure: sections.dailyFailure,
             weekdayUserFailure: sections.weekdayUserFailure,
             lucratividadeFailure: sections.lucratividadeFailure,
-            lucratividadeMensalFailure: sections.lucratividadeMensalFailure,
           );
         })
         .toList(growable: false);
@@ -804,18 +774,5 @@ class OverviewBatchLoader {
           )
           .toList(growable: false),
     );
-  }
-
-  List<String>? _normalizeSelectedAgentIds(Set<String>? selectedAgentIds) {
-    if (selectedAgentIds == null) {
-      return null;
-    }
-    final ids =
-        selectedAgentIds
-            .map((id) => id.trim())
-            .where((id) => id.isNotEmpty)
-            .toList(growable: false)
-          ..sort();
-    return ids;
   }
 }

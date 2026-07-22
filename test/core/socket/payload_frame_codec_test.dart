@@ -45,7 +45,29 @@ void main() {
       );
       check(result.frame.cmp).equals(PayloadFrame.compressionGzip);
       check(result.frame.compressedSize).isLessThan(result.encoded.length);
+      check(
+        result.encoded.length - result.frame.compressedSize,
+      ).isGreaterOrEqual(PayloadFrameCodec.defaultMinGzipSavingsBytes);
       check(result.frame.originalSize).equals(result.encoded.length);
+    });
+
+    test('keeps cmp=none when gzip savings are below minGzipSavingsBytes', () {
+      // Highly compressible but configure a huge savings floor so auto-gzip
+      // refuses even when compressed is smaller than raw.
+      const strict = PayloadFrameCodec(minGzipSavingsBytes: 1 << 20);
+      final rows = List<Map<String, Object?>>.generate(
+        200,
+        (i) => <String, Object?>{
+          'id': i,
+          'name': 'agent-$i',
+          'tag': 'sample-payload-row-${i % 7}',
+        },
+      );
+      final result = strict.encodeJson(<String, Object?>{'rows': rows});
+      check(result.encoded.length).isGreaterOrEqual(
+        PayloadFrameCodec.defaultCompressionThresholdBytes,
+      );
+      check(result.frame.cmp).equals(PayloadFrame.compressionNone);
     });
 
     test('keeps cmp=none when gzip would exceed the inflation guard', () {

@@ -308,6 +308,10 @@ class ColmeiaBootstrap extends StatelessWidget {
             authGate: context.read<AuthController>(),
             transport: transport,
             warmUpAfterLogin: AppEnvironment.socketWarmUpAfterLogin,
+            idleKeepaliveInterval: Duration(
+              milliseconds:
+                  AppEnvironment.socketConsumerIdleKeepaliveIntervalMs,
+            ),
             child: const ColmeiaApp(),
           );
         },

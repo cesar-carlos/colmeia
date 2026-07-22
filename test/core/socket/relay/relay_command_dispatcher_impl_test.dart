@@ -623,6 +623,57 @@ void main() {
       check(outcomes.single).isA<RelayRpcSuccess>();
     });
 
+    test('forwards timeoutMs on the relay:rpc.request envelope '
+        '(forward-compat; hub schema still strips it)', () async {
+      final dispatcher = await dispatcherFor();
+      addTearDown(dispatcher.dispose);
+
+      await openConversation();
+
+      final future = dispatcher.sendUnary(
+        agentId: 'agent-1',
+        body: <String, Object?>{
+          'jsonrpc': '2.0',
+          'method': 'sql.execute',
+          'id': 'rpc-timeout-ms',
+          'params': <String, Object?>{'sql': 'SELECT 1'},
+        },
+        clientRequestId: 'rpc-timeout-ms',
+        timeoutMs: 30000,
+      );
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      final rpcEmit = wiring.emits.firstWhere(
+        (e) => e.event == RelayEventNames.rpcRequest,
+      );
+      final rpcEnvelope = rpcEmit.data! as Map<String, Object?>;
+      check(rpcEnvelope['timeoutMs']).equals(30000);
+
+      wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+        'conversationId': 'conv-agent-1',
+        'clientRequestId': 'rpc-timeout-ms',
+        'requestId': 'srv-timeout-ms',
+        'success': true,
+      });
+      wiring.fire(
+        RelayEventNames.rpcResponse,
+        _buildResponseFrame(
+          <String, Object?>{
+            'response': <String, Object?>{
+              'type': 'single',
+              'item': <String, Object?>{
+                'id': 'rpc-timeout-ms',
+                'success': true,
+              },
+            },
+          },
+          requestId: 'srv-timeout-ms',
+        ),
+      );
+      await future;
+    });
+
     test(
       'rpc.response without frame requestId is ignored even when exactly one '
       'pending exists for the conversation',
@@ -886,6 +937,109 @@ void main() {
             ..has((e) => e.retryAfter, 'retryAfter').equals(
               const Duration(milliseconds: 1250),
             ),
+        );
+      },
+    );
+
+    test(
+      'accepted BAD_REQUEST with clientRequestId fails immediately '
+      '(no client timer wait)',
+      () async {
+        final dispatcher = await dispatcherFor(
+          defaultTimeout: const Duration(seconds: 30),
+        );
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final sw = Stopwatch()..start();
+        final future = dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'jsonrpc': '2.0',
+            'method': 'sql.execute',
+            'id': 'rpc-bad-request',
+            'params': <String, Object?>{
+              'sql': 'SELECT 1',
+              'options': <String, Object?>{'prefer_db_streaming': true},
+            },
+          },
+          clientRequestId: 'rpc-bad-request',
+        );
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': 'rpc-bad-request',
+          'success': false,
+          'error': <String, Object?>{
+            'code': 'BAD_REQUEST',
+            'message':
+                'fastPath is not allowed for streaming-capable RPC methods',
+            'statusCode': 400,
+          },
+        });
+
+        await check(future).throws<RelayRequestRejected>(
+          (subject) => subject
+            ..has((e) => e.code, 'code').equals('BAD_REQUEST')
+            ..has(
+              (e) => e.conversationId,
+              'conversationId',
+            ).equals('conv-agent-1')
+            ..has(
+              (e) => e.clientRequestId,
+              'clientRequestId',
+            ).equals('rpc-bad-request'),
+        );
+        sw.stop();
+        check(sw.elapsedMilliseconds).isLessThan(2000);
+      },
+    );
+
+    test(
+      'orphan accepted success=false without clientRequestId fails sole pending',
+      () async {
+        final dispatcher = await dispatcherFor();
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final future = dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'jsonrpc': '2.0',
+            'method': 'sql.execute',
+            'id': 'rpc-orphan',
+            'params': <String, Object?>{
+              'sql': 'SELECT 1',
+              'options': <String, Object?>{'prefer_db_streaming': true},
+            },
+          },
+          clientRequestId: 'rpc-orphan',
+        );
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        // Optional defense: error accepted without clientRequestId.
+        wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+          'success': false,
+          'error': <String, Object?>{
+            'code': 'BAD_REQUEST',
+            'message':
+                'fastPath is not allowed for streaming-capable RPC methods',
+            'statusCode': 400,
+          },
+        });
+
+        await check(future).throws<RelayRequestRejected>(
+          (subject) => subject
+            ..has((e) => e.code, 'code').equals('BAD_REQUEST')
+            ..has(
+              (e) => e.clientRequestId,
+              'clientRequestId',
+            ).equals('rpc-orphan'),
         );
       },
     );
@@ -1275,6 +1429,107 @@ void main() {
           (subject) =>
               subject.has((e) => e.code, 'code').equals('stream_aborted'),
         );
+      },
+    );
+
+    test(
+      'rpc.complete surfaces hub error_code on RelayStreamTerminated',
+      () async {
+        final dispatcher = await dispatcherFor();
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final future = dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-4b',
+            },
+          },
+          clientRequestId: 'rpc-4b',
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': 'rpc-4b',
+          'requestId': 'srv-req-4b',
+          'success': true,
+        });
+
+        wiring.fire(
+          RelayEventNames.rpcComplete,
+          _buildResponseFrame(
+            <String, Object?>{
+              'terminal_status': 'error',
+              'error_code': 'RELAY_STREAM_TIMEOUT',
+            },
+            requestId: 'srv-req-4b',
+          ),
+        );
+
+        await check(future).throws<RelayStreamTerminated>((subject) {
+          subject
+            ..has((e) => e.code, 'code').equals('stream_error')
+            ..has((e) => e.errorCode, 'errorCode').equals('RELAY_STREAM_TIMEOUT')
+            ..has((e) => e.terminalStatus, 'terminalStatus').equals('error');
+        });
+      },
+    );
+
+    test(
+      'accepted inFlight waits for response without completing early',
+      () async {
+        final dispatcher = await dispatcherFor();
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final future = dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-inflight',
+            },
+          },
+          clientRequestId: 'rpc-inflight',
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': 'rpc-inflight',
+          'requestId': 'srv-req-inflight',
+          'success': true,
+          'deduplicated': true,
+          'inFlight': true,
+        });
+
+        // Still pending — must not complete on accept alone.
+        var completed = false;
+        unawaited(future.then((_) => completed = true));
+        await Future<void>.delayed(Duration.zero);
+        check(completed).isFalse();
+
+        wiring.fire(
+          RelayEventNames.rpcResponse,
+          _buildResponseFrame(
+            <String, Object?>{
+              'jsonrpc': '2.0',
+              'id': 'rpc-inflight',
+              'result': <String, Object?>{'ok': true},
+            },
+            requestId: 'srv-req-inflight',
+          ),
+        );
+
+        final response = await future;
+        check(response['result']).isA<Map<Object?, Object?>>();
       },
     );
 
@@ -2112,6 +2367,42 @@ void main() {
               subject.has((e) => e.code, 'code').equals('BATCH_DUPLICATE_ID'),
         );
         // No envelope hit the wire.
+        check(
+          wiring.emits.where((e) => e.event == RelayEventNames.rpcRequestBatch),
+        ).isEmpty();
+      },
+    );
+
+    test(
+      'sendBatch rejects streaming-capable items before emit',
+      () async {
+        final dispatcher = await dispatcherFor();
+        addTearDown(dispatcher.dispose);
+
+        await check(
+          dispatcher.sendBatch(
+            agentId: 'agent-1',
+            items: <RelayBatchItem>[
+              const RelayBatchItem(
+                clientRequestId: 'rpc-stream-batch',
+                body: <String, Object?>{
+                  'jsonrpc': '2.0',
+                  'method': 'sql.execute',
+                  'id': 'rpc-stream-batch',
+                  'params': <String, Object?>{
+                    'options': <String, Object?>{
+                      'prefer_db_streaming': true,
+                    },
+                  },
+                },
+              ),
+            ],
+          ),
+        ).throws<RelayRequestRejected>(
+          (subject) => subject
+              .has((e) => e.code, 'code')
+              .equals('BATCH_STREAMING_ITEM_REJECTED'),
+        );
         check(
           wiring.emits.where((e) => e.event == RelayEventNames.rpcRequestBatch),
         ).isEmpty();

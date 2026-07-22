@@ -31,6 +31,20 @@ void main() {
       check(result).equals(const Duration(milliseconds: 2000));
     });
 
+    test('reads error.retryAfterMs (agents:command overload shed)', () {
+      final result = extractRetryAfterFromAppError(<String, Object?>{
+        'success': false,
+        'requestId': 'rpc-1',
+        'error': <String, Object?>{
+          'code': 'SERVICE_UNAVAILABLE',
+          'message': 'Consumer namespace temporarily overloaded',
+          'statusCode': 503,
+          'retryAfterMs': 1250,
+        },
+      });
+      check(result).equals(const Duration(milliseconds: 1250));
+    });
+
     test('reads error.data.retry_after_ms (standard JSON-RPC envelope)', () {
       // -32013 RATE_LIMITED / client_token.getPolicy responses ship the
       // hint nested under `error.data`.

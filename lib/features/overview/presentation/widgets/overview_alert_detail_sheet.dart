@@ -43,8 +43,6 @@ String _sourceLabel(
       l10n.overviewHomeAlertFailureSourceWeekdayUserTrend,
     OverviewAgentQueryFailureSource.dailyTrend =>
       l10n.overviewHomeAlertFailureSourceDailyTrend,
-    OverviewAgentQueryFailureSource.lucratividadeMensalTrend =>
-      l10n.overviewHomeAlertFailureSourceLucratividadeMensalTrend,
   };
 }
 

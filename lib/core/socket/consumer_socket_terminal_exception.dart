@@ -68,3 +68,16 @@ final class ConsumerSocketNamespaceForbidden
   /// Namespace that emitted the rejection (e.g. `/consumers`).
   final String? namespace;
 }
+
+/// Hub emitted a terminal `app:error` and the `/consumers` session must not
+/// be reused. See `ConsumerSocketAppErrorCodes`.
+final class ConsumerSocketHubForcedDisconnect
+    extends ConsumerSocketTerminalException {
+  const ConsumerSocketHubForcedDisconnect({
+    required super.message,
+    required this.serverCode,
+  });
+
+  /// Original hub `app:error` code (e.g. `ACCOUNT_BLOCKED`).
+  final String serverCode;
+}

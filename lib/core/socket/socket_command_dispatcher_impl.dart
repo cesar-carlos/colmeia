@@ -5,9 +5,12 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/observability/socket/server_timings.dart';
 import 'package:colmeia/core/socket/agent_command_outcome.dart';
 import 'package:colmeia/core/socket/agent_latency_oracle.dart';
+import 'package:colmeia/core/socket/agents_wire_payload.dart';
+import 'package:colmeia/core/socket/consumer_socket_app_error_codes.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/core/socket/consumer_socket_terminal_exception.dart';
+import 'package:colmeia/core/socket/payload_frame_codec.dart';
 import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
 import 'package:colmeia/core/socket/socket_app_error_retry_after.dart';
 import 'package:colmeia/core/socket/socket_coalesce_key.dart';
@@ -38,6 +41,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     required SocketRequestCorrelator correlator,
     PerAgentConcurrencyGate? concurrencyGate,
     AgentLatencyOracle? latencyOracle,
+    PayloadFrameCodec? payloadFrameCodec,
     Duration defaultTimeout = const Duration(seconds: 20),
     bool coalescingEnabled = true,
     void Function()? onCoalesced,
@@ -46,6 +50,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
        _correlator = correlator,
        _concurrencyGate = concurrencyGate,
        _latencyOracle = latencyOracle,
+       _payloadFrameCodec = payloadFrameCodec ?? const PayloadFrameCodec(),
        _defaultTimeout = defaultTimeout,
        _coalescingEnabled = coalescingEnabled,
        _coalescer = SocketCommandCoalescer(onCoalesced: onCoalesced),
@@ -58,6 +63,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
   final SocketRequestCorrelator _correlator;
   final PerAgentConcurrencyGate? _concurrencyGate;
   final AgentLatencyOracle? _latencyOracle;
+  final PayloadFrameCodec _payloadFrameCodec;
   final Duration _defaultTimeout;
   final bool _coalescingEnabled;
   final SocketCommandCoalescer _coalescer;
@@ -166,6 +172,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
           );
         case ConsumerSocketConnectCancelled():
         case ConsumerSocketReconnectExhausted():
+        case ConsumerSocketHubForcedDisconnect():
           throw SocketDispatchDisconnected(
             message: 'Connect failed before dispatch: $e',
             cause: e,
@@ -485,9 +492,25 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
 
   void _onCommandResponse(Object? raw) {
     final normalizedRaw = _normalizeCommandResponseRaw(raw);
-    final map = _unwrapAgentsCommandResponseEnvelope(
-      _toStringKeyedMap(normalizedRaw),
-    );
+    Map<String, dynamic>? decodedMap;
+    try {
+      decodedMap = decodeAgentsWirePayloadMap(
+        normalizedRaw,
+        codec: _payloadFrameCodec,
+      );
+    } on PayloadFrameDecodeException catch (error, stackTrace) {
+      AppLogger.warning(
+        'agents:command_response PayloadFrame decode failed',
+        context: <String, Object?>{
+          'component': 'SocketCommandDispatcherImpl',
+          'code': error.code,
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return;
+    }
+    final map = _unwrapAgentsCommandResponseEnvelope(decodedMap);
     if (map == null) {
       AppLogger.warning(
         'agents:command_response is not a Map',
@@ -539,6 +562,14 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       );
       return;
     }
+    // Top-level bridge failure (overload shed, auth, etc.):
+    // `{ success: false, requestId, error: { code, retryAfterMs? } }`.
+    // Fail the pending with SocketDispatchAppError so retry policies see
+    // the backoff hint — do not completeWith the error map as success.
+    if (map['success'] == false) {
+      _correlator.failWith(rpcId, _flatBridgeFailureException(map));
+      return;
+    }
     _correlator.completeWith(rpcId, map);
   }
 
@@ -560,6 +591,13 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       serverCode: code,
       retryAfter: extractRetryAfterFromAppError(map),
     );
+
+    if (ConsumerSocketAppErrorCodes.isTerminal(code)) {
+      // Connection layer owns teardown + intentional disconnect reason.
+      // Fail all pendings here so callers do not hang until disconnect.
+      _correlator.failAll(exception);
+      return;
+    }
 
     if (rpcId != null) {
       _correlator.failWith(rpcId, exception);
@@ -802,19 +840,28 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
   }
 
   Object _flatBridgeFailureException(Map<String, dynamic> map) {
+    final retryAfter = extractRetryAfterFromAppError(map);
     final err = map['error'];
     if (err is Map<String, dynamic>) {
       final code = err['code']?.toString() ?? 'bridge_error';
       final message =
           err['message']?.toString() ?? err['reason']?.toString() ?? code;
-      return SocketDispatchAppError(message: message, serverCode: code);
+      return SocketDispatchAppError(
+        message: message,
+        serverCode: code,
+        retryAfter: retryAfter,
+      );
     }
     if (err is Map) {
       final m = Map<String, dynamic>.from(err);
       final code = m['code']?.toString() ?? 'bridge_error';
       final message =
           m['message']?.toString() ?? m['reason']?.toString() ?? code;
-      return SocketDispatchAppError(message: message, serverCode: code);
+      return SocketDispatchAppError(
+        message: message,
+        serverCode: code,
+        retryAfter: retryAfter,
+      );
     }
     return const SocketDispatchDecodeFailure(
       message:

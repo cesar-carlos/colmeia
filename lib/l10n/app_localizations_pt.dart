@@ -245,10 +245,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Consulta de vendas diárias';
 
   @override
-  String get overviewHomeAlertFailureSourceLucratividadeMensalTrend =>
-      'Consulta lucratividade mensal';
-
-  @override
   String get overviewHomeAlertDetailsUserLine => 'O que ocorreu';
 
   @override
@@ -3277,50 +3273,6 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get overviewLoadingLucratividadeSemantics =>
       'Carregando gráfico de lucratividade por filial…';
-
-  @override
-  String get overviewLucratividadeMensalTitle =>
-      'Lucratividade mensal do produto';
-
-  @override
-  String get overviewLucratividadeMensalSubtitle =>
-      'Receita, custo de reposição e margem por mês (filial selecionada).';
-
-  @override
-  String get overviewLucratividadeMensalEmpty =>
-      'Sem dados de lucratividade para este período.';
-
-  @override
-  String get overviewLucratividadeMensalMultiAgentHint =>
-      'Selecione uma unica filial para visualizar a lucratividade mensal.';
-
-  @override
-  String get overviewLucratividadeMensalSwitchProfit => 'Lucro';
-
-  @override
-  String get overviewLucratividadeMensalSwitchRevenue => 'Receita';
-
-  @override
-  String get overviewLucratividadeMensalSwitchCost => 'Custo';
-
-  @override
-  String get overviewLucratividadeMensalSwitchMargin => 'Percentuais';
-
-  @override
-  String get overviewLucratividadeMensalProfitSeriesLabel => 'Lucro';
-
-  @override
-  String get overviewLucratividadeMensalRevenueSeriesLabel => 'Receita';
-
-  @override
-  String get overviewLucratividadeMensalCostSeriesLabel => 'Custo reposição';
-
-  @override
-  String get overviewLucratividadeMensalMarginSeriesLabel => 'Margem %';
-
-  @override
-  String get overviewLoadingLucratividadeMensalSemantics =>
-      'Carregando gráfico de lucratividade mensal do produto…';
 
   @override
   String get salesHubTitle => 'Vendas';
@@ -5292,10 +5244,6 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Consulta de vendas diárias';
 
   @override
-  String get overviewHomeAlertFailureSourceLucratividadeMensalTrend =>
-      'Consulta lucratividade mensal';
-
-  @override
   String get overviewHomeAlertDetailsUserLine => 'O que ocorreu';
 
   @override
@@ -8324,50 +8272,6 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get overviewLoadingLucratividadeSemantics =>
       'Carregando gráfico de lucratividade por filial…';
-
-  @override
-  String get overviewLucratividadeMensalTitle =>
-      'Lucratividade mensal do produto';
-
-  @override
-  String get overviewLucratividadeMensalSubtitle =>
-      'Receita, custo de reposição e margem por mês (filial selecionada).';
-
-  @override
-  String get overviewLucratividadeMensalEmpty =>
-      'Sem dados de lucratividade para este período.';
-
-  @override
-  String get overviewLucratividadeMensalMultiAgentHint =>
-      'Selecione uma unica filial para visualizar a lucratividade mensal.';
-
-  @override
-  String get overviewLucratividadeMensalSwitchProfit => 'Lucro';
-
-  @override
-  String get overviewLucratividadeMensalSwitchRevenue => 'Receita';
-
-  @override
-  String get overviewLucratividadeMensalSwitchCost => 'Custo';
-
-  @override
-  String get overviewLucratividadeMensalSwitchMargin => 'Percentuais';
-
-  @override
-  String get overviewLucratividadeMensalProfitSeriesLabel => 'Lucro';
-
-  @override
-  String get overviewLucratividadeMensalRevenueSeriesLabel => 'Receita';
-
-  @override
-  String get overviewLucratividadeMensalCostSeriesLabel => 'Custo reposição';
-
-  @override
-  String get overviewLucratividadeMensalMarginSeriesLabel => 'Margem %';
-
-  @override
-  String get overviewLoadingLucratividadeMensalSemantics =>
-      'Carregando gráfico de lucratividade mensal do produto…';
 
   @override
   String get salesHubTitle => 'Vendas';

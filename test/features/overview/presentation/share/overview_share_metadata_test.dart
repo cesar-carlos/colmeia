@@ -1,4 +1,3 @@
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
@@ -6,7 +5,6 @@ import 'package:colmeia/features/overview/domain/entities/overview_user_ranking.
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_sales_trend_point.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_weekday_user_sales_trend_point.dart';
 import 'package:colmeia/features/overview/presentation/share/overview_lucratividade_chart_share.dart';
-import 'package:colmeia/features/overview/presentation/share/overview_lucratividade_mensal_chart_share.dart';
 import 'package:colmeia/features/overview/presentation/share/overview_monthly_parcels_combo_chart_share.dart';
 import 'package:colmeia/features/overview/presentation/share/overview_payment_mix_share.dart';
 import 'package:colmeia/features/overview/presentation/share/overview_rankings_share.dart';
@@ -173,44 +171,6 @@ void main() {
     expect(metadata.pdfOrientation, ChartSharePdfOrientation.landscape);
   });
 
-  test('lucratividade mensal share metadata includes month values', () {
-    const points = <ResumoProdutoVendaLucratividadeMensalRow>[
-      ResumoProdutoVendaLucratividadeMensalRow(
-        codEmpresa: 1,
-        codFilial: 1,
-        ano: 2026,
-        mes: 5,
-        anoMes: '2026/05',
-        qtdVendas: 10,
-        qtdItensVendido: 20,
-        valorTotalCustoMedio: 400,
-        custoReposicao: 500,
-        pontoEquilibrio: 0,
-        valorTotalItem: 1000,
-      ),
-    ];
-    const exportStyle = AppComboChartStyle(height: 280);
-    const series = OverviewLucratividadeMensalComboShareSeries(
-      barValueBuilder: _mensalBarByProfit,
-      lineValueBuilder: _mensalLineByProfit,
-      barDataLabelBuilder: _mensalBarDataLabel,
-      barSeriesLabel: 'Profit',
-      lineSeriesLabel: 'Revenue',
-    );
-
-    final metadata = buildOverviewLucratividadeMensalChartShareMetadata(
-      l10n: l10n,
-      sortedPoints: points,
-      exportBaseStyle: exportStyle,
-      series: series,
-    );
-
-    expect(metadata.title, l10n.overviewLucratividadeMensalTitle);
-    expect(metadata.tableData?.rows.single.first, '2026/05');
-    expect(metadata.chartExportBuilder, isNotNull);
-    expect(metadata.pdfOrientation, ChartSharePdfOrientation.landscape);
-  });
-
   test('monthly parcels combo share metadata uses landscape export', () {
     const points = <OverviewMonthlyParcelPoint>[
       OverviewMonthlyParcelPoint(
@@ -249,12 +209,3 @@ num _barByProfit(ResumoProdutoVendaLucratividadeRow row) => row.lucro;
 num _lineByProfit(ResumoProdutoVendaLucratividadeRow row) => row.valorTotalItem;
 String _barDataLabel(ResumoProdutoVendaLucratividadeRow _, num value) =>
     value.toStringAsFixed(0);
-
-num _mensalBarByProfit(ResumoProdutoVendaLucratividadeMensalRow row) =>
-    row.lucro;
-num _mensalLineByProfit(ResumoProdutoVendaLucratividadeMensalRow row) =>
-    row.valorTotalItem;
-String _mensalBarDataLabel(
-  ResumoProdutoVendaLucratividadeMensalRow _,
-  num value,
-) => value.toStringAsFixed(0);

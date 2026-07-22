@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:colmeia/app/authentication_gate.dart';
 import 'package:colmeia/core/config/agent_bridge_transport.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/socket/consumer_socket_app_error_codes.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
+import 'package:colmeia/core/socket/consumer_socket_idle_keepalive.dart';
 import 'package:flutter/widgets.dart';
 
 /// Observer that wires the consumer Socket connection lifecycle to:
@@ -40,6 +42,7 @@ class SocketLifecycleObserver extends StatefulWidget {
     required this.warmUpAfterLogin,
     required this.child,
     this.connection,
+    this.idleKeepaliveInterval = Duration.zero,
     super.key,
   });
 
@@ -52,6 +55,10 @@ class SocketLifecycleObserver extends StatefulWidget {
   final AuthenticationGate authGate;
   final AgentBridgeTransport transport;
   final bool warmUpAfterLogin;
+
+  /// When positive, emits a lightweight inbound touch while the app is
+  /// foregrounded and the socket is connected (hub idle default is 30 min).
+  final Duration idleKeepaliveInterval;
   final Widget child;
 
   @override
@@ -68,6 +75,7 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
   AppLifecycleState? _currentLifecycleState;
 
   StreamSubscription<ConsumerSocketConnectionState>? _connectionStatesSub;
+  ConsumerSocketIdleKeepalive? _idleKeepalive;
 
   /// Minimum gap between automatic reconnects triggered by unexpected
   /// server-side disconnects while the app stays in foreground.
@@ -75,10 +83,11 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
 
   DateTime? _lastUnexpectedReconnectAt;
 
-  /// Reasons that identify an intentional disconnect initiated by the app.
-  /// Unexpected server-side disconnects will carry a Socket.IO transport
-  /// reason (e.g. "io server disconnect", "transport close") or null, and
-  /// must trigger an automatic reconnect.
+  /// Reasons that identify an intentional disconnect initiated by the app
+  /// or a hub-forced terminal `app:error`. Unexpected server-side
+  /// disconnects will carry a Socket.IO transport reason (e.g.
+  /// "io server disconnect", "transport close") or null, and must trigger
+  /// an automatic reconnect — except when the reason is hub-forced.
   static const _intentionalDisconnectReasons = <String>{
     'app_paused',
     'signed_out',
@@ -86,6 +95,14 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
     'disposed',
     'disconnect',
   };
+
+  bool _isIntentionalDisconnectReason(String? reason) {
+    if (reason == null) {
+      return false;
+    }
+    return _intentionalDisconnectReasons.contains(reason) ||
+        ConsumerSocketAppErrorCodes.isHubForcedDisconnectReason(reason);
+  }
 
   bool get _isAppInForeground {
     final s = _currentLifecycleState;
@@ -104,6 +121,12 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
       _connectionStatesSub = widget.connection!.states().listen(
         _onConnectionStateChanged,
       );
+      if (widget.idleKeepaliveInterval > Duration.zero) {
+        _idleKeepalive = ConsumerSocketIdleKeepalive(
+          connection: widget.connection!,
+          interval: widget.idleKeepaliveInterval,
+        )..start();
+      }
     }
 
     // Cold-start / hot-reload race fix: if the auth gate is already
@@ -119,6 +142,8 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
 
   @override
   void dispose() {
+    unawaited(_idleKeepalive?.dispose() ?? Future<void>.value());
+    _idleKeepalive = null;
     unawaited(_connectionStatesSub?.cancel() ?? Future<void>.value());
     _connectionStatesSub = null;
     widget.authGate.removeListener(_onAuthChanged);
@@ -135,6 +160,7 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
     switch (state) {
       case AppLifecycleState.paused:
       case AppLifecycleState.detached:
+        _idleKeepalive?.stop();
         unawaited(_safePause());
       case AppLifecycleState.resumed:
         if (widget.authGate.isAuthenticated) {
@@ -144,6 +170,7 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
           } else {
             unawaited(_safeResume(reason: 'app_resumed'));
           }
+          _idleKeepalive?.start();
         }
       case AppLifecycleState.inactive:
       case AppLifecycleState.hidden:
@@ -179,7 +206,7 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
       return;
     }
     final reason = state.reason;
-    if (reason != null && _intentionalDisconnectReasons.contains(reason)) {
+    if (_isIntentionalDisconnectReason(reason)) {
       return;
     }
     final now = DateTime.now();

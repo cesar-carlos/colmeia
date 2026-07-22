@@ -14,7 +14,6 @@ import 'package:colmeia/features/agent_queries/data/queries/resumo_parcela_por_u
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_dia_semana_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_dia_semana_usuario_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_mensal_sql.dart';
-import 'package:colmeia/features/agent_queries/data/queries/resumo_produto_venda_lucratividade_mensal_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_produto_venda_lucratividade_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_total_diario_vendas_sql.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
@@ -244,7 +243,7 @@ void _expectOverviewMergedBatchSql(
   );
 
   if (omitCachedSectionSql) {
-    expect(batchRequest.commands.length, inInclusiveRange(3, 4));
+    expect(batchRequest.commands.length, 3);
     expect(sqlBodies.contains(ResumoTotalDiarioVendasSql.query), isFalse);
     expect(
       sqlBodies.contains(
@@ -262,16 +261,10 @@ void _expectOverviewMergedBatchSql(
       sqlBodies.contains(ResumoProdutoVendaLucratividadeSql.query),
       isFalse,
     );
-    if (batchRequest.commands.length == 4) {
-      expect(
-        sqlBodies.contains(ResumoProdutoVendaLucratividadeMensalSql.query),
-        isTrue,
-      );
-    }
     return;
   }
 
-  expect(batchRequest.commands.length, inInclusiveRange(7, 8));
+  expect(batchRequest.commands.length, 7);
   expect(sqlBodies.contains(ResumoTotalDiarioVendasSql.query), isTrue);
   expect(
     sqlBodies.contains(
@@ -289,12 +282,6 @@ void _expectOverviewMergedBatchSql(
     sqlBodies.contains(ResumoProdutoVendaLucratividadeSql.query),
     isTrue,
   );
-  if (batchRequest.commands.length == 8) {
-    expect(
-      sqlBodies.contains(ResumoProdutoVendaLucratividadeMensalSql.query),
-      isTrue,
-    );
-  }
 }
 
 Future<AppResult<Overview>> _loadOverviewProgressiveEnd(

@@ -64,6 +64,7 @@ class PayloadFrameCodec {
     this.compressionThresholdBytes = defaultCompressionThresholdBytes,
     this.maxPayloadBytes = defaultMaxPayloadBytes,
     this.maxInflationRatio = defaultMaxInflationRatio,
+    this.minGzipSavingsBytes = defaultMinGzipSavingsBytes,
     this.workerIsolatesEnabled = true,
     this.gzipDecodeIsolateThresholdBytes =
         defaultGzipDecodeIsolateThresholdBytes,
@@ -116,6 +117,10 @@ class PayloadFrameCodec {
   /// 10x - server-side gzip inflation guard.
   static const int defaultMaxInflationRatio = 10;
 
+  /// Hub `PAYLOAD_FRAME_AUTO_GZIP_MIN_SAVINGS_BYTES` default — gzip is kept
+  /// only when it saves at least this many bytes vs raw JSON UTF-8.
+  static const int defaultMinGzipSavingsBytes = 64;
+
   /// When inbound [PayloadFrame.cmp] is gzip and `payload.length` is at or
   /// above this threshold, [decodeJsonAsync] runs `gzip.decode` via Flutter
   /// `compute` instead of blocking the UI isolate. Sync [decodeJson] always
@@ -133,6 +138,10 @@ class PayloadFrameCodec {
   final int compressionThresholdBytes;
   final int maxPayloadBytes;
   final int maxInflationRatio;
+
+  /// Minimum byte savings required to keep gzip (`cmp: gzip`) in auto mode.
+  /// Aligns with hub `PAYLOAD_FRAME_AUTO_GZIP_MIN_SAVINGS_BYTES` (default 64).
+  final int minGzipSavingsBytes;
 
   /// When `false`, no worker-isolate paths run (gzip encode/decode, JSON
   /// decode) regardless of thresholds.
@@ -289,7 +298,11 @@ class PayloadFrameCodec {
   }
 
   bool _shouldUseCompressed(Uint8List encoded, Uint8List compressed) {
-    if (compressed.length >= encoded.length || compressed.isEmpty) {
+    if (compressed.isEmpty) {
+      return false;
+    }
+    final savings = encoded.length - compressed.length;
+    if (savings < minGzipSavingsBytes) {
       return false;
     }
     return encoded.length / compressed.length <= maxInflationRatio;

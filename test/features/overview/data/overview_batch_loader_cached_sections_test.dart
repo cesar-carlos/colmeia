@@ -249,10 +249,6 @@ void main() {
       filter: filter,
       periodStart: periodStart,
       periodEnd: periodEnd,
-      last12Range: (
-        dataVendaInicio: DateTime(2025, 4),
-        dataVendaFim: periodEnd,
-      ),
       mensalFilter: mensalFilter,
       weekdayFilter: ResumoParcelasDiaSemanaFilter(
         dataVendaInicio: periodStart,
@@ -540,10 +536,6 @@ void main() {
             filter: const DashboardFilter(),
             periodStart: periodStart,
             periodEnd: periodEnd,
-            last12Range: (
-              dataVendaInicio: DateTime(2025, 4),
-              dataVendaFim: periodEnd,
-            ),
             mensalFilter: ResumoParcelasMensalFilter(
               dataVendaInicio: DateTime(2025, 4),
               dataVendaFim: periodEnd,

@@ -6,7 +6,6 @@ import 'package:colmeia/features/agent_queries/data/agent_sql_read_only_batch_op
 import 'package:colmeia/features/agent_queries/data/models/resumo_parcelas_dia_semana_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/models/resumo_parcelas_dia_semana_usuario_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/models/resumo_parcelas_mensal_row_model.dart';
-import 'package:colmeia/features/agent_queries/data/models/resumo_produto_venda_lucratividade_mensal_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/models/resumo_produto_venda_lucratividade_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/models/resumo_total_diario_vendas_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_transport_policy.dart';
@@ -20,7 +19,6 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_d
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_usuario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_row.dart';
@@ -81,7 +79,6 @@ final class OverviewSectionBatchRunner {
     required ResumoParcelasMensalFilter mensalFilter,
     required ResumoParcelasDiaSemanaFilter weekdayFilter,
     required ResumoTotalDiarioVendasFilter dailyTotalFilter,
-    required bool includeLucratividadeMensal,
     required Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     AgentQueriesCancelScope? cancelScope,
     AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
@@ -114,7 +111,6 @@ final class OverviewSectionBatchRunner {
         target: target,
         elapsedMs: elapsedMs,
         failure: batchOutcome.failure!,
-        includeLucratividadeMensal: includeLucratividadeMensal,
         cachedSections: cachedSections,
       );
     }
@@ -192,7 +188,6 @@ final class OverviewSectionBatchRunner {
       dailyRows: cached.dailyRows,
       weekdayUserRows: base.weekdayUserRows,
       lucratividadeRows: cached.lucratividadeRows,
-      lucratividadeMensalRows: base.lucratividadeMensalRows,
       mainFailure: base.mainFailure,
       userRankingFailure: base.userRankingFailure,
       monthlyFailure: cached.monthlyFailure ?? base.monthlyFailure,
@@ -201,7 +196,6 @@ final class OverviewSectionBatchRunner {
       weekdayUserFailure: base.weekdayUserFailure,
       lucratividadeFailure:
           cached.lucratividadeFailure ?? base.lucratividadeFailure,
-      lucratividadeMensalFailure: base.lucratividadeMensalFailure,
     );
   }
 
@@ -209,7 +203,6 @@ final class OverviewSectionBatchRunner {
     required AgentQueryTarget target,
     required int elapsedMs,
     required AppFailure failure,
-    required bool includeLucratividadeMensal,
     OverviewCachedSections? cachedSections,
     AppFailure? mainFailure,
   }) {
@@ -237,7 +230,6 @@ final class OverviewSectionBatchRunner {
       lucratividadeFailure: _usesCachedLucratividadeSection
           ? cached?.lucratividadeFailure
           : failure,
-      lucratividadeMensalFailure: includeLucratividadeMensal ? failure : null,
     );
   }
 
@@ -344,28 +336,6 @@ final class OverviewSectionBatchRunner {
             AgentQueriesBoundedResultMaxRows.resumoProdutoVendaLucratividade,
       );
     }
-    final lucratividadeMensal = indexes.lucratividadeMensal == null
-        ? const OverviewSqlBatchItemRowsResult<
-            ResumoProdutoVendaLucratividadeMensalRow
-          >(
-            rows: <ResumoProdutoVendaLucratividadeMensalRow>[],
-          )
-        : OverviewSqlBatchItemRowsMapper.mapRowsForIndex(
-            byIndex,
-            indexes.lucratividadeMensal!,
-            (row) => ResumoProdutoVendaLucratividadeMensalRowModel.fromMap(
-              row,
-            ).toEntity(),
-          );
-    if (indexes.lucratividadeMensal != null) {
-      _warnIfReachedMaxRows(
-        target: target,
-        section: 'lucratividadeMensal',
-        rowCount: lucratividadeMensal.rows.length,
-        maxRows: AgentQueriesBoundedResultMaxRows
-            .resumoProdutoVendaLucratividadeMensal,
-      );
-    }
 
     return OverviewBatchTargetResult(
       target: target,
@@ -375,13 +345,11 @@ final class OverviewSectionBatchRunner {
       dailyRows: daily.rows,
       weekdayUserRows: weekdayUser.rows,
       lucratividadeRows: lucratividade.rows,
-      lucratividadeMensalRows: lucratividadeMensal.rows,
       monthlyFailure: monthly.failure,
       weekdayFailure: weekday.failure,
       dailyFailure: daily.failure,
       weekdayUserFailure: weekdayUser.failure,
       lucratividadeFailure: lucratividade.failure,
-      lucratividadeMensalFailure: lucratividadeMensal.failure,
     );
   }
 

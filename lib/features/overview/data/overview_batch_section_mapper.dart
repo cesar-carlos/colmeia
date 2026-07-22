@@ -11,7 +11,6 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_d
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_usuario_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_row.dart';
@@ -130,15 +129,6 @@ class OverviewBatchSectionMapper {
       );
     }
     return rows;
-  }
-
-  List<ResumoProdutoVendaLucratividadeMensalRow> lucratividadeMensalRows(
-    List<OverviewBatchTargetResult> results,
-  ) {
-    return results
-        .where((result) => result.lucratividadeMensalFailure == null)
-        .expand((result) => result.lucratividadeMensalRows)
-        .toList(growable: false);
   }
 
   Map<String, List<ResumoParcelaPorUsuarioRow>> userRankingRowsByAgentId(

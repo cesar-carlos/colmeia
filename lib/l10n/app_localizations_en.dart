@@ -239,10 +239,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overviewHomeAlertFailureSourceDailyTrend => 'Daily sales query';
 
   @override
-  String get overviewHomeAlertFailureSourceLucratividadeMensalTrend =>
-      'Monthly profitability query';
-
-  @override
   String get overviewHomeAlertDetailsUserLine => 'What happened';
 
   @override
@@ -3228,50 +3224,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get overviewLoadingLucratividadeSemantics =>
       'Loading profitability by branch chart…';
-
-  @override
-  String get overviewLucratividadeMensalTitle =>
-      'Monthly product profitability';
-
-  @override
-  String get overviewLucratividadeMensalSubtitle =>
-      'Revenue, replacement cost and margin per month (selected branch).';
-
-  @override
-  String get overviewLucratividadeMensalEmpty =>
-      'No profitability data for this period.';
-
-  @override
-  String get overviewLucratividadeMensalMultiAgentHint =>
-      'Select a single branch to view monthly profitability.';
-
-  @override
-  String get overviewLucratividadeMensalSwitchProfit => 'Profit';
-
-  @override
-  String get overviewLucratividadeMensalSwitchRevenue => 'Revenue';
-
-  @override
-  String get overviewLucratividadeMensalSwitchCost => 'Cost';
-
-  @override
-  String get overviewLucratividadeMensalSwitchMargin => 'Percent metrics';
-
-  @override
-  String get overviewLucratividadeMensalProfitSeriesLabel => 'Profit';
-
-  @override
-  String get overviewLucratividadeMensalRevenueSeriesLabel => 'Revenue';
-
-  @override
-  String get overviewLucratividadeMensalCostSeriesLabel => 'Replacement cost';
-
-  @override
-  String get overviewLucratividadeMensalMarginSeriesLabel => 'Margin %';
-
-  @override
-  String get overviewLoadingLucratividadeMensalSemantics =>
-      'Loading monthly product profitability chart…';
 
   @override
   String get salesHubTitle => 'Sales';

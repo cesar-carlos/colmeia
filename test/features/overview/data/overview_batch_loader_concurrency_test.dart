@@ -278,10 +278,6 @@ void main() {
         filter: const DashboardFilter(),
         periodStart: DateTime(2026, 4),
         periodEnd: DateTime(2026, 4, 15),
-        last12Range: (
-          dataVendaInicio: DateTime(2025, 4),
-          dataVendaFim: DateTime(2026, 4, 15),
-        ),
         mensalFilter: ResumoParcelasMensalFilter(
           dataVendaInicio: DateTime(2025, 4),
           dataVendaFim: DateTime(2026, 4, 15),
@@ -338,10 +334,6 @@ void main() {
         filter: const DashboardFilter(),
         periodStart: DateTime(2026, 4),
         periodEnd: DateTime(2026, 4, 15),
-        last12Range: (
-          dataVendaInicio: DateTime(2025, 4),
-          dataVendaFim: DateTime(2026, 4, 15),
-        ),
         mensalFilter: ResumoParcelasMensalFilter(
           dataVendaInicio: DateTime(2025, 4),
           dataVendaFim: DateTime(2026, 4, 15),

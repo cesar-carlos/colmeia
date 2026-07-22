@@ -29,6 +29,11 @@ sealed class _PendingRelay {
   String? requestId;
   bool deduplicated = false;
   bool replayed = false;
+
+  /// Hub `relay:rpc.accepted` flagged this `client_request_id` as still
+  /// in flight on another waiter. The pending stays open until response;
+  /// callers must not resend.
+  bool inFlight = false;
   Timer? timeoutTimer;
 
   /// [Stopwatch.elapsed] right after `relay:rpc.request` was successfully

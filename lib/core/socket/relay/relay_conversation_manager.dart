@@ -52,36 +52,31 @@ class RelayConversationManager {
   /// Concurrent callers for the same [agentId] share a single in-flight
   /// Future (manager-level single-flight); [RelayConversation.start] remains
   /// single-flight as a second line of defense on the instance itself.
-  Future<RelayConversation> obtain(String agentId) async {
+  Future<RelayConversation> obtain(String agentId) {
     if (_isDisposed) {
-      throw StateError('RelayConversationManager used after dispose');
+      return Future<RelayConversation>.error(
+        StateError('RelayConversationManager used after dispose'),
+      );
     }
     final existingActive = _byAgentId[agentId];
     if (existingActive != null && existingActive.isActive) {
-      return existingActive;
+      return Future<RelayConversation>.value(existingActive);
     }
     final inflight = _inflightObtainByAgentId[agentId];
     if (inflight != null) {
       return inflight;
     }
-    final gate = Completer<RelayConversation>();
-    _inflightObtainByAgentId[agentId] = gate.future;
-    try {
-      final conversation = await _obtainInternal(agentId);
-      if (!gate.isCompleted) {
-        gate.complete(conversation);
-      }
-      return conversation;
-    } on Object catch (error, stackTrace) {
-      if (!gate.isCompleted) {
-        gate.completeError(error, stackTrace);
-      }
-      rethrow;
-    } finally {
-      // `Map.remove` returns `Future<RelayConversation>?` here, which trips
-      // `unawaited_futures` even though we only want to drop the key.
-      _inflightObtainByAgentId.removeWhere((key, _) => key == agentId);
-    }
+    // Share the same Future with concurrent callers. Do not wrap errors in a
+    // Completer: `completeError` with no listener yet becomes an unhandled
+    // async error and bypasses `_prepareSend`'s typed catches.
+    late final Future<RelayConversation> shared;
+    shared = _obtainInternal(agentId).whenComplete(() {
+      _inflightObtainByAgentId.removeWhere(
+        (key, value) => identical(value, shared),
+      );
+    });
+    _inflightObtainByAgentId[agentId] = shared;
+    return shared;
   }
 
   Future<RelayConversation> _obtainInternal(String agentId) async {

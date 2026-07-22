@@ -45,6 +45,7 @@ void main() {
         String? capturedAgentId;
         String? capturedClientRequestId;
         Duration? capturedTimeout;
+        int? capturedTimeoutMs;
         RelayPayloadFrameCompression? capturedCompression;
 
         when(
@@ -53,6 +54,7 @@ void main() {
             body: any(named: 'body'),
             clientRequestId: any(named: 'clientRequestId'),
             timeout: any(named: 'timeout'),
+            timeoutMs: any(named: 'timeoutMs'),
             compression: any(named: 'compression'),
           ),
         ).thenAnswer((invocation) async {
@@ -60,6 +62,7 @@ void main() {
           capturedClientRequestId =
               invocation.namedArguments[#clientRequestId] as String?;
           capturedTimeout = invocation.namedArguments[#timeout] as Duration?;
+          capturedTimeoutMs = invocation.namedArguments[#timeoutMs] as int?;
           capturedCompression =
               invocation.namedArguments[#compression]
                   as RelayPayloadFrameCompression?;
@@ -99,6 +102,8 @@ void main() {
         check(capturedClientRequestId).isNotNull();
         // Timeout should be `bridgeTimeoutMs + 5s` = 17000ms.
         check(capturedTimeout).equals(const Duration(milliseconds: 17000));
+        // Hub envelope timeoutMs mirrors bridgeTimeoutMs (no +5s buffer).
+        check(capturedTimeoutMs).equals(12000);
         check(capturedCompression).equals(RelayPayloadFrameCompression.always);
 
         final body = captured.single;
@@ -130,6 +135,7 @@ void main() {
             body: any(named: 'body'),
             clientRequestId: any(named: 'clientRequestId'),
             timeout: any(named: 'timeout'),
+            timeoutMs: any(named: 'timeoutMs'),
             compression: any(named: 'compression'),
           ),
         ).thenAnswer((invocation) async {
@@ -171,6 +177,7 @@ void main() {
           body: any(named: 'body'),
           clientRequestId: any(named: 'clientRequestId'),
           timeout: any(named: 'timeout'),
+          timeoutMs: any(named: 'timeoutMs'),
           compression: any(named: 'compression'),
         ),
       ).thenAnswer((invocation) async {
@@ -206,6 +213,7 @@ void main() {
             body: any(named: 'body'),
             clientRequestId: any(named: 'clientRequestId'),
             timeout: any(named: 'timeout'),
+            timeoutMs: any(named: 'timeoutMs'),
             compression: any(named: 'compression'),
           ),
         ).thenAnswer((invocation) async {

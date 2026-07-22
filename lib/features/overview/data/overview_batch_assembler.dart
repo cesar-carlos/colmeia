@@ -1,6 +1,5 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_por_usuario_row.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
 import 'package:colmeia/features/overview/data/mappers/overview_user_ranking_mapper.dart';
 import 'package:colmeia/features/overview/data/overview_kpis_from_user_rows.dart';
@@ -58,11 +57,6 @@ class OverviewBatchAssembler {
     bool weekdayUserSalesTrendLoadFailed = false,
     AppFailure? weekdayUserSalesTrendLoadFailure,
     String? weekdayUserSalesTrendLoadFailureMessage,
-    List<ResumoProdutoVendaLucratividadeMensalRow> lucratividadeMensalTrend =
-        const <ResumoProdutoVendaLucratividadeMensalRow>[],
-    bool lucratividadeMensalTrendLoadFailed = false,
-    AppFailure? lucratividadeMensalTrendLoadFailure,
-    String? lucratividadeMensalTrendLoadFailureMessage,
     List<ResumoProdutoVendaLucratividadeRow> lucratividadeTrend =
         const <ResumoProdutoVendaLucratividadeRow>[],
     bool lucratividadeTrendLoadFailed = false,
@@ -230,11 +224,6 @@ class OverviewBatchAssembler {
       weekdayUserSalesTrendLoadFailure: weekdayUserSalesTrendLoadFailure,
       weekdayUserSalesTrendLoadFailureMessage:
           weekdayUserSalesTrendLoadFailureMessage,
-      lucratividadeMensalTrend: lucratividadeMensalTrend,
-      lucratividadeMensalTrendLoadFailed: lucratividadeMensalTrendLoadFailed,
-      lucratividadeMensalTrendLoadFailure: lucratividadeMensalTrendLoadFailure,
-      lucratividadeMensalTrendLoadFailureMessage:
-          lucratividadeMensalTrendLoadFailureMessage,
       lucratividadeTrend: lucratividadeTrend,
       lucratividadeTrendLoadFailed: lucratividadeTrendLoadFailed,
       lucratividadeTrendLoadFailure: lucratividadeTrendLoadFailure,

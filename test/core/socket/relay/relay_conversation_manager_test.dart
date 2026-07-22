@@ -161,22 +161,23 @@ void main() {
             .length,
       ).equals(2);
 
-      wiring.fire(
-        RelayEventNames.conversationStarted,
-        <String, Object?>{
-          'success': true,
-          'conversationId': 'conv-a',
-          'agentId': 'agent-a',
-        },
-      );
-      wiring.fire(
-        RelayEventNames.conversationStarted,
-        <String, Object?>{
-          'success': true,
-          'conversationId': 'conv-b',
-          'agentId': 'agent-b',
-        },
-      );
+      wiring
+        ..fire(
+          RelayEventNames.conversationStarted,
+          <String, Object?>{
+            'success': true,
+            'conversationId': 'conv-a',
+            'agentId': 'agent-a',
+          },
+        )
+        ..fire(
+          RelayEventNames.conversationStarted,
+          <String, Object?>{
+            'success': true,
+            'conversationId': 'conv-b',
+            'agentId': 'agent-b',
+          },
+        );
 
       final a = await fa;
       final b = await fb;

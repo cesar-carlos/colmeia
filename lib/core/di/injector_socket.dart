@@ -12,6 +12,7 @@ import 'package:colmeia/core/socket/agent_latency_oracle.dart';
 import 'package:colmeia/core/socket/agent_sql_cancel_emitter.dart';
 import 'package:colmeia/core/socket/app_socket_url_resolver.dart';
 import 'package:colmeia/core/socket/connection_ready_payload.dart';
+import 'package:colmeia/core/socket/consumer_socket_app_error_codes.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_pool.dart';
 import 'package:colmeia/core/socket/direct_agent_command_sender.dart';
@@ -76,6 +77,17 @@ void registerInjectorSocket(GetIt getIt) {
         reconnectMaxDelay: Duration(
           milliseconds: AppEnvironment.socketReconnectMaxDelayMs,
         ),
+        onTerminalHubAppError: (code, message) {
+          if (!ConsumerSocketAppErrorCodes.requiresAuthSessionInvalidation(
+            code,
+          )) {
+            return;
+          }
+          if (!getIt.isRegistered<AuthSessionEvents>()) {
+            return;
+          }
+          getIt<AuthSessionEvents>().notifyInvalidated();
+        },
       ),
       dispose: (connection) => connection.dispose(),
     )
@@ -101,6 +113,7 @@ void registerInjectorSocket(GetIt getIt) {
         correlator: getIt<SocketRequestCorrelator>(),
         concurrencyGate: _resolveConcurrencyGate(getIt),
         latencyOracle: _resolveLatencyOracle(getIt),
+        payloadFrameCodec: getIt<PayloadFrameCodec>(),
         defaultTimeout: Duration(
           milliseconds: AppEnvironment.socketRequestTimeoutMs,
         ),

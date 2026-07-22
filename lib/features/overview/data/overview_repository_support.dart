@@ -234,7 +234,6 @@ void logOverviewLoadTelemetry({
   var weekdaySectionFailures = 0;
   var weekdayUserSectionFailures = 0;
   var lucratividadeSectionFailures = 0;
-  var lucratividadeMensalSectionFailures = 0;
   for (final result in batchResults) {
     if (result.monthlyFailure != null) {
       monthlySectionFailures++;
@@ -250,9 +249,6 @@ void logOverviewLoadTelemetry({
     }
     if (result.lucratividadeFailure != null) {
       lucratividadeSectionFailures++;
-    }
-    if (result.lucratividadeMensalFailure != null) {
-      lucratividadeMensalSectionFailures++;
     }
   }
 
@@ -278,7 +274,6 @@ void logOverviewLoadTelemetry({
       'weekdaySectionFailures': weekdaySectionFailures,
       'weekdayUserSectionFailures': weekdayUserSectionFailures,
       'lucratividadeSectionFailures': lucratividadeSectionFailures,
-      'lucratividadeMensalSectionFailures': lucratividadeMensalSectionFailures,
     },
   );
 }

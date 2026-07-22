@@ -515,6 +515,17 @@ abstract final class AppEnvironment {
         fallback: true,
       );
 
+  /// Keepalive interval for long foreground `/consumers` sessions.
+  /// `0` disables. Default 12 minutes (under hub idle default of 30 min).
+  static int get socketConsumerIdleKeepaliveIntervalMs =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.socketConsumerIdleKeepaliveIntervalMs,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.socketConsumerIdleKeepaliveIntervalMs),
+        fallback: 12 * 60 * 1000,
+      );
+
   /// Default ceiling for `PerAgentConcurrencyGate`. `0` disables the gate.
   static const int defaultSocketMaxInflightPerAgent = 8;
 

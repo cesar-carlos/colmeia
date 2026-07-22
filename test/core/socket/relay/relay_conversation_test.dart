@@ -83,11 +83,18 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       check(wiring.emits.length).equals(1);
       check(wiring.emits.first.event).equals(RelayEventNames.conversationStart);
+      final startBody = Map<Object?, Object?>.from(
+        wiring.emits.first.data! as Map,
+      );
+      check(startBody['agentId']).equals('agent-1');
+      check(startBody['requestId']).isA<String>();
+      final startRequestId = startBody['requestId']! as String;
 
       wiring.fire(
         RelayEventNames.conversationStarted,
         <String, Object?>{
           'success': true,
+          'requestId': startRequestId,
           'conversationId': 'conv-1',
           'agentId': 'agent-1',
           'createdAt': '2026-04-17T00:00:00Z',
@@ -204,23 +211,28 @@ void main() {
       final endFuture = conversation.end(reason: 'logout');
       await Future<void>.delayed(Duration.zero);
 
-      check(
-        wiring.emits
-            .where((e) => e.event == RelayEventNames.conversationEnd)
-            .length,
-      ).equals(1);
+      final endEmit = wiring.emits.lastWhere(
+        (e) => e.event == RelayEventNames.conversationEnd,
+      );
+      final endBody = Map<Object?, Object?>.from(endEmit.data! as Map);
+      check(endBody['conversationId']).equals('conv-4');
+      check(endBody['requestId']).isA<String>();
+      final endRequestId = endBody['requestId']! as String;
 
       wiring.fire(
         RelayEventNames.conversationEnded,
         <String, Object?>{
           'success': true,
+          'requestId': endRequestId,
           'conversationId': 'conv-4',
+          'reason': 'consumer_ended',
         },
       );
 
       await endFuture;
       check(conversation.isActive).isFalse();
-      check(conversation.state).isA<RelayConversationEnded>();
+      final ended = conversation.state as RelayConversationEnded;
+      check(ended.reason).equals('consumer_ended');
     });
 
     test('end without prior start is a no-op', () async {

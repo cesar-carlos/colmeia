@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/app_socket_url_resolver.dart';
 import 'package:colmeia/core/socket/connection_ready_payload.dart';
+import 'package:colmeia/core/socket/consumer_socket_app_error_codes.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/core/socket/consumer_socket_terminal_exception.dart';
 import 'package:colmeia/core/socket/socket_app_error_retry_after.dart';
@@ -41,6 +42,7 @@ class ConsumerSocketConnection {
     Duration reconnectInitialDelay = const Duration(seconds: 1),
     Duration reconnectMaxDelay = const Duration(seconds: 30),
     math.Random? random,
+    void Function(String code, String message)? onTerminalHubAppError,
   }) : _urlResolver = urlResolver,
        _tokenProvider = tokenProvider,
        _factory = factory,
@@ -49,7 +51,8 @@ class ConsumerSocketConnection {
        _maxReconnectAttempts = maxReconnectAttempts,
        _reconnectInitialDelay = reconnectInitialDelay,
        _reconnectMaxDelay = reconnectMaxDelay,
-       _random = random ?? math.Random() {
+       _random = random ?? math.Random(),
+       _onTerminalHubAppError = onTerminalHubAppError {
     _sessionInvalidationSub = _tokenProvider.sessionInvalidations().listen(
       (_) => unawaited(disconnect(reason: 'session_invalidated')),
     );
@@ -64,9 +67,11 @@ class ConsumerSocketConnection {
   final Duration _reconnectInitialDelay;
   final Duration _reconnectMaxDelay;
   final math.Random _random;
+  final void Function(String code, String message)? _onTerminalHubAppError;
 
   io.Socket? _socket;
   StreamSubscription<void>? _sessionInvalidationSub;
+  void Function(Object?)? _connectedAppErrorHandler;
 
   final StreamController<ConsumerSocketConnectionState> _states =
       StreamController<ConsumerSocketConnectionState>.broadcast();
@@ -233,6 +238,28 @@ class ConsumerSocketConnection {
             message: outcome.message,
             role: outcome.role,
             namespace: outcome.namespace,
+          );
+
+        case _ConnectTerminalHubError():
+          AppLogger.warning(
+            'Consumer socket handshake ended by terminal hub app:error',
+            context: <String, Object?>{
+              'component': 'ConsumerSocketConnection',
+              'serverCode': outcome.code,
+              'message': outcome.message,
+            },
+          );
+          _notifyTerminalHubAppError(outcome.code, outcome.message);
+          _setState(
+            ConsumerSocketDisconnected(
+              reason: ConsumerSocketAppErrorCodes.disconnectReasonFor(
+                outcome.code,
+              ),
+            ),
+          );
+          throw ConsumerSocketHubForcedDisconnect(
+            message: outcome.message,
+            serverCode: outcome.code,
           );
 
         case _ConnectTransientFailure():
@@ -488,12 +515,14 @@ class ConsumerSocketConnection {
       }
     } else {
       _detachHandshakeListeners(socket, includeDisconnect: false);
+      _attachConnectedAppErrorListener(socket);
     }
     return outcome;
   }
 
   void _disposeSocket(io.Socket socket) {
     try {
+      _detachConnectedAppErrorListener(socket);
       _detachHandshakeListeners(socket, includeDisconnect: true);
       socket
         ..disconnect()
@@ -531,19 +560,98 @@ class ConsumerSocketConnection {
   /// — anything we cannot parse is still treated as transient with a
   /// stable error code, so the reconnect loop keeps making progress
   /// instead of stalling on a malformed envelope.
-  _ConnectTransientFailure _buildHandshakeAppErrorOutcome(Object? raw) {
+  ///
+  /// Terminal hub codes (`ACCOUNT_BLOCKED`, …) become
+  /// [_ConnectTerminalHubError] so the connect loop does not retry.
+  _ConnectOutcome _buildHandshakeAppErrorOutcome(Object? raw) {
     final map = _toStringKeyedMap(raw);
     if (map == null) {
       return const _ConnectTransientFailure(
         error: 'handshake_app_error_invalid_shape',
       );
     }
-    final code = map['code']?.toString() ?? 'handshake_app_error';
+    final error = _toStringKeyedMap(map['error']);
+    final code =
+        map['code']?.toString() ??
+        error?['code']?.toString() ??
+        'handshake_app_error';
+    final message =
+        map['message']?.toString() ??
+        map['userMessage']?.toString() ??
+        error?['message']?.toString() ??
+        code;
+    if (ConsumerSocketAppErrorCodes.isTerminal(code)) {
+      return _ConnectTerminalHubError(code: code, message: message);
+    }
     final retryAfter = extractRetryAfterFromAppError(map);
     return _ConnectTransientFailure(
       error: code,
       retryAfter: retryAfter,
     );
+  }
+
+  void _attachConnectedAppErrorListener(io.Socket socket) {
+    _detachConnectedAppErrorListener(socket);
+    void handler(Object? raw) {
+      unawaited(_handleConnectedAppError(raw));
+    }
+
+    _connectedAppErrorHandler = handler;
+    socket.on('app:error', handler);
+  }
+
+  void _detachConnectedAppErrorListener(io.Socket socket) {
+    final handler = _connectedAppErrorHandler;
+    if (handler != null) {
+      socket.off('app:error', handler);
+      _connectedAppErrorHandler = null;
+    }
+  }
+
+  Future<void> _handleConnectedAppError(Object? raw) async {
+    final map = _toStringKeyedMap(raw);
+    if (map == null) {
+      return;
+    }
+    final error = _toStringKeyedMap(map['error']);
+    final code =
+        map['code']?.toString() ?? error?['code']?.toString() ?? 'app_error';
+    if (!ConsumerSocketAppErrorCodes.isTerminal(code)) {
+      return;
+    }
+    final message =
+        map['message']?.toString() ??
+        map['userMessage']?.toString() ??
+        error?['message']?.toString() ??
+        code;
+    AppLogger.warning(
+      'Consumer socket received terminal hub app:error',
+      context: <String, Object?>{
+        'component': 'ConsumerSocketConnection',
+        'serverCode': code,
+        'message': message,
+      },
+    );
+    _notifyTerminalHubAppError(code, message);
+    await disconnect(
+      reason: ConsumerSocketAppErrorCodes.disconnectReasonFor(code),
+    );
+  }
+
+  void _notifyTerminalHubAppError(String code, String message) {
+    try {
+      _onTerminalHubAppError?.call(code, message);
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'onTerminalHubAppError callback failed',
+        context: <String, Object?>{
+          'component': 'ConsumerSocketConnection',
+          'serverCode': code,
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   Map<String, dynamic>? _toStringKeyedMap(Object? raw) =>
@@ -666,6 +774,16 @@ final class _ConnectNamespaceForbidden extends _ConnectOutcome {
   final String message;
   final String? role;
   final String? namespace;
+}
+
+final class _ConnectTerminalHubError extends _ConnectOutcome {
+  const _ConnectTerminalHubError({
+    required this.code,
+    required this.message,
+  });
+
+  final String code;
+  final String message;
 }
 
 final class _ConnectTransientFailure extends _ConnectOutcome {

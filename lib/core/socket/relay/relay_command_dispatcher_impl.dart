@@ -5,6 +5,7 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/observability/socket/server_timings.dart';
 import 'package:colmeia/core/observability/socket/socket_channel_metrics.dart';
 import 'package:colmeia/core/socket/agent_latency_oracle.dart';
+import 'package:colmeia/core/socket/consumer_socket_app_error_codes.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/core/socket/consumer_socket_terminal_exception.dart';
@@ -18,6 +19,7 @@ import 'package:colmeia/core/socket/relay/relay_conversation_manager.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
 import 'package:colmeia/core/socket/relay/relay_rpc_outcome.dart';
+import 'package:colmeia/core/socket/relay/relay_streaming_capable_command.dart';
 import 'package:colmeia/core/socket/socket_app_error_retry_after.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/core/socket/socket_wire_utils.dart';
@@ -140,6 +142,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     required Map<String, Object?> body,
     required String clientRequestId,
     Duration? timeout,
+    int? timeoutMs,
     RelayPayloadFrameCompression compression =
         RelayPayloadFrameCompression.auto,
   }) async {
@@ -200,10 +203,12 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       pending: pending,
       // Unary RPCs can opt into the hub fast-path: if enabled, the hub
       // skips `relay:rpc.accepted` on the happy path and goes straight
-      // from `rpc.request` → `rpc.response`. Streaming MUST NOT use it
-      // because the initial pull window depends on `accepted` arriving
-      // first.
-      allowFastPath: true,
+      // from `rpc.request` → `rpc.response`. Never combine fastPath with
+      // streaming-capable bodies (prefer_db_streaming / multi_result /
+      // sql.executeBatch) — the hub rejects that with
+      // `accepted { success: false, clientRequestId }` (BAD_REQUEST).
+      allowFastPath: !isRelayStreamingCapableRpcBody(body),
+      timeoutMs: timeoutMs,
     );
     return pending.completer.future;
   }
@@ -214,6 +219,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     required Map<String, Object?> body,
     required String clientRequestId,
     Duration? timeout,
+    int? timeoutMs,
     int? initialWindowSize,
     int? refillThreshold,
     RelayPayloadFrameCompression compression =
@@ -332,6 +338,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
           body: body,
           compression: compression,
           pending: pending,
+          timeoutMs: timeoutMs,
         );
       })().catchError((Object error, StackTrace stack) async {
         reportUnhandledStreamError(error, stack);
@@ -346,6 +353,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     required String agentId,
     required List<RelayBatchItem> items,
     Duration? timeout,
+    int? timeoutMs,
     RelayPayloadFrameCompression compression =
         RelayPayloadFrameCompression.auto,
   }) async {
@@ -370,13 +378,24 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     // with BATCH_DUPLICATE_ID, but catching it client-side avoids the
     // round-trip and the `_pendingByClientId` collision below.
     final seen = <String>{};
-    for (final item in items) {
+    for (var index = 0; index < items.length; index++) {
+      final item = items[index];
       if (!seen.add(item.clientRequestId)) {
         throw RelayRequestRejected(
           message:
               'relay batch contains duplicate clientRequestId '
               '"${item.clientRequestId}"',
           serverCode: 'BATCH_DUPLICATE_ID',
+        );
+      }
+      if (isRelayStreamingCapableRpcBody(item.body)) {
+        throw RelayRequestRejected(
+          message:
+              'relay batch item[$index] is streaming-capable '
+              '(prefer_db_streaming / multi_result / sql.executeBatch); '
+              'hub would reject with BATCH_STREAMING_ITEM_REJECTED',
+          serverCode: 'BATCH_STREAMING_ITEM_REJECTED',
+          clientRequestId: item.clientRequestId,
         );
       }
     }
@@ -505,9 +524,11 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     try {
       final resolvedConversationId = conversationId;
       if (resolvedConversationId != null) {
-        _activeBatchClientIdsByConversationId[resolvedConversationId] =
-            pendings.map((p) => p.clientRequestId).toSet();
+        _activeBatchClientIdsByConversationId[resolvedConversationId] = pendings
+            .map((p) => p.clientRequestId)
+            .toSet();
       }
+      final hubTimeoutMs = _resolveBatchHubTimeoutMs(items, timeoutMs);
       _connection.raw.emit(
         RelayEventNames.rpcRequestBatch,
         <String, Object?>{
@@ -520,6 +541,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
                   .wireValue,
           if (AppEnvironment.socketRequestServerTimingsEnabled)
             'requestServerTimings': true,
+          'timeoutMs': ?hubTimeoutMs,
         },
       );
       for (final pending in pendings) {
@@ -572,6 +594,27 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       }
     }
     return max ?? _defaultTimeout;
+  }
+
+  int? _resolveBatchHubTimeoutMs(List<RelayBatchItem> items, int? timeoutMs) {
+    var max = _normalizeHubTimeoutMs(timeoutMs);
+    for (final item in items) {
+      final itemMs = _normalizeHubTimeoutMs(item.timeoutMs);
+      if (itemMs == null) {
+        continue;
+      }
+      if (max == null || itemMs > max) {
+        max = itemMs;
+      }
+    }
+    return max;
+  }
+
+  int? _normalizeHubTimeoutMs(int? timeoutMs) {
+    if (timeoutMs == null || timeoutMs < 1) {
+      return null;
+    }
+    return timeoutMs;
   }
 
   /// Routes the single `relay:rpc.batch_accepted` envelope received per
@@ -656,7 +699,11 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       pending
         ..deduplicated = item['deduplicated'] == true
         ..replayed = item['replayed'] == true
+        ..inFlight = item['inFlight'] == true
         ..unaryAcceptedAtElapsed = acceptedAt;
+      if (pending.inFlight) {
+        _channelMetrics?.recordRelayAcceptedInFlight();
+      }
     }
   }
 
@@ -687,8 +734,9 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     if (conversationId == null) {
       return;
     }
-    final batchClientIds =
-        _activeBatchClientIdsByConversationId.remove(conversationId);
+    final batchClientIds = _activeBatchClientIdsByConversationId.remove(
+      conversationId,
+    );
     if (batchClientIds == null || batchClientIds.isEmpty) {
       AppLogger.warning(
         'relay batch envelope rejected without item list or active batch ids',
@@ -803,6 +851,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
           );
         case ConsumerSocketReconnectExhausted():
         case ConsumerSocketConnectCancelled():
+        case ConsumerSocketHubForcedDisconnect():
           throw SocketDispatchDisconnected(
             message: 'Cannot start relay conversation: $e',
             cause: e,
@@ -885,6 +934,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     required RelayPayloadFrameCompression compression,
     required _PendingRelay pending,
     bool allowFastPath = false,
+    int? timeoutMs,
   }) async {
     pending.method ??= _extractMethod(body);
     PayloadFrameEncodeResult encoded;
@@ -923,6 +973,11 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
 
     final useFastPath =
         allowFastPath && AppEnvironment.socketRelayFastPathEnabled;
+    // Forward-compat: hub Zod schema does not accept timeoutMs yet
+    // (stripped; wait stays SOCKET_RELAY_REQUEST_TIMEOUT_MS). Keep
+    // emitting so the field is ready when the hub ships
+    // docs/plug_server/relay_envelope_timeout_ms.md.
+    final hubTimeoutMs = _normalizeHubTimeoutMs(timeoutMs);
     try {
       _connection.raw.emit(
         RelayEventNames.rpcRequest,
@@ -937,6 +992,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
           if (AppEnvironment.socketRequestServerTimingsEnabled)
             'requestServerTimings': true,
           if (useFastPath) 'fastPath': true,
+          'timeoutMs': ?hubTimeoutMs,
         },
       );
       pending.requestEmittedAtElapsed = pending.stopwatch.elapsed;
@@ -1051,6 +1107,18 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
         error?['message']?.toString() ??
         code;
     final retryAfter = extractRetryAfterFromAppError(map);
+    if (ConsumerSocketAppErrorCodes.isTerminal(code)) {
+      _failAllPending(
+        (entry) => RelayRequestRejected(
+          message: message,
+          serverCode: code,
+          retryAfter: retryAfter,
+          conversationId: entry.conversationId,
+          clientRequestId: entry.clientRequestId,
+        ),
+      );
+      return;
+    }
     final clientRequestId = _resolveClientRequestIdForAppError(map);
     if (clientRequestId != null) {
       final pending = _pendingByClientId[clientRequestId];
@@ -1147,6 +1215,25 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       // reflects what the server actually authorized.
       pending.outstandingCredits = granted;
     }
+    final rateLimit = _toMap(map['rateLimit']) ?? _toMap(map['rate_limit']);
+    final remainingCredits =
+        _toIntOrNull(rateLimit?['remainingCredits']) ??
+        _toIntOrNull(rateLimit?['remaining_credits']);
+    if (remainingCredits != null && remainingCredits >= 0) {
+      if (remainingCredits < pending.outstandingCredits) {
+        pending.outstandingCredits = remainingCredits;
+      }
+      AppLogger.debug(
+        'relay stream pull rateLimit snapshot',
+        context: <String, Object?>{
+          'component': 'RelayCommandDispatcherImpl',
+          'clientRequestId': clientRequestId,
+          'remainingCredits': remainingCredits,
+          'limit': rateLimit?['limit'],
+          'scope': rateLimit?['scope'],
+        },
+      );
+    }
   }
 
   String? _resolveClientRequestIdForPull(Map<String, Object?> map) {
@@ -1230,31 +1317,25 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     if (map == null) {
       return;
     }
+    final success = map['success'];
+    final isRejection = success is bool && !success;
     final clientRequestId = map['clientRequestId']?.toString();
     if (clientRequestId == null || clientRequestId.isEmpty) {
+      // Optional defense: hub now echoes clientRequestId on error accepted,
+      // but older builds / early pre-decode failures may omit it. When
+      // exactly one pending matches (optionally by conversationId), fail it
+      // immediately instead of waiting for the client timer.
+      if (isRejection) {
+        _failOrphanAcceptedRejection(map);
+      }
       return;
     }
     final pending = _pendingByClientId[clientRequestId];
     if (pending == null) {
       return;
     }
-    final success = map['success'];
-    if (success is bool && !success) {
-      final error = _toMap(map['error']);
-      final code = error?['code']?.toString() ?? 'request_rejected';
-      final message =
-          error?['message']?.toString() ??
-          'relay:rpc.accepted reported success=false';
-      _failPending(
-        clientRequestId,
-        RelayRequestRejected(
-          message: message,
-          serverCode: code,
-          retryAfter: extractRetryAfterFromAppError(map),
-          conversationId: pending.conversationId,
-          clientRequestId: clientRequestId,
-        ),
-      );
+    if (isRejection) {
+      _failAcceptedRejection(pending: pending, map: map);
       return;
     }
     final requestId = map['requestId']?.toString();
@@ -1264,7 +1345,21 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     }
     pending
       ..deduplicated = map['deduplicated'] == true
-      ..replayed = map['replayed'] == true;
+      ..replayed = map['replayed'] == true
+      ..inFlight = map['inFlight'] == true;
+
+    if (pending.inFlight) {
+      AppLogger.debug(
+        'relay:rpc.accepted inFlight — waiting without resend',
+        context: <String, Object?>{
+          'component': 'RelayCommandDispatcherImpl',
+          'clientRequestId': clientRequestId,
+          'requestId': pending.requestId,
+          'conversationId': pending.conversationId,
+        },
+      );
+      _channelMetrics?.recordRelayAcceptedInFlight();
+    }
 
     // Record the request→accepted phase for both unary and streaming
     // pendings. The emit timestamp can be null if the accept fires
@@ -1282,15 +1377,71 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     // has acknowledged the request. Without an explicit budget the hub
     // would buffer chunks server-side and possibly abort the stream when
     // the buffer cap is hit.
+    //
+    // When inFlight=true this waiter must NOT grant a new pull window —
+    // the original request already owns credits / stream state.
     if (pending is _PendingStream) {
       pending.streamAcceptedAtElapsed = acceptedAt;
-      _enqueueRelayFrameWork(
-        pending,
-        () => _grantPullAsync(pending, pending.initialWindow),
-      );
+      if (!pending.inFlight) {
+        _enqueueRelayFrameWork(
+          pending,
+          () => _grantPullAsync(pending, pending.initialWindow),
+        );
+      }
     } else {
       pending.unaryAcceptedAtElapsed = acceptedAt;
     }
+  }
+
+  void _failAcceptedRejection({
+    required _PendingRelay pending,
+    required Map<String, dynamic> map,
+  }) {
+    final error = _toMap(map['error']);
+    final code = error?['code']?.toString() ?? 'request_rejected';
+    final message =
+        error?['message']?.toString() ??
+        'relay:rpc.accepted reported success=false';
+    final acceptedConversationId = map['conversationId']?.toString();
+    final conversationId =
+        acceptedConversationId != null && acceptedConversationId.isNotEmpty
+        ? acceptedConversationId
+        : pending.conversationId;
+    _failPending(
+      pending.clientRequestId,
+      RelayRequestRejected(
+        message: message,
+        serverCode: code,
+        retryAfter: extractRetryAfterFromAppError(map),
+        conversationId: conversationId,
+        clientRequestId: pending.clientRequestId,
+      ),
+    );
+  }
+
+  void _failOrphanAcceptedRejection(Map<String, dynamic> map) {
+    final conversationId = map['conversationId']?.toString();
+    final candidates = _pendingByClientId.values
+        .where((pending) {
+          if (conversationId == null || conversationId.isEmpty) {
+            return true;
+          }
+          return pending.conversationId == conversationId;
+        })
+        .toList(growable: false);
+    if (candidates.length != 1) {
+      AppLogger.warning(
+        'Ignoring relay:rpc.accepted success=false without clientRequestId',
+        context: <String, Object?>{
+          'component': 'RelayCommandDispatcherImpl',
+          'conversationId': conversationId,
+          'pendingCandidates': candidates.length,
+          'errorCode': _toMap(map['error'])?['code'],
+        },
+      );
+      return;
+    }
+    _failAcceptedRejection(pending: candidates.single, map: map);
   }
 
   void _enqueueRelayFrameWork(
@@ -1466,11 +1617,16 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     if (eventName == 'rpc.complete') {
       final terminalStatus = _terminalStatusOf(logical);
       if (terminalStatus != null && !_isHealthyTerminal(terminalStatus)) {
+        final errorCode = _streamErrorCodeOf(logical);
         _failPending(
           pending.clientRequestId,
           RelayStreamTerminated(
-            message: 'relay:rpc.complete terminal_status=$terminalStatus',
+            message: errorCode == null
+                ? 'relay:rpc.complete terminal_status=$terminalStatus'
+                : 'relay:rpc.complete terminal_status=$terminalStatus '
+                      'error_code=$errorCode',
             terminalStatus: terminalStatus,
+            errorCode: errorCode,
             conversationId: pending.conversationId,
             clientRequestId: pending.clientRequestId,
           ),
@@ -1506,11 +1662,16 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     if (eventName == 'rpc.complete') {
       final terminalStatus = _terminalStatusOf(logical);
       if (terminalStatus != null && !_isHealthyTerminal(terminalStatus)) {
+        final errorCode = _streamErrorCodeOf(logical);
         _failPending(
           pending.clientRequestId,
           RelayStreamTerminated(
-            message: 'relay:rpc.complete terminal_status=$terminalStatus',
+            message: errorCode == null
+                ? 'relay:rpc.complete terminal_status=$terminalStatus'
+                : 'relay:rpc.complete terminal_status=$terminalStatus '
+                      'error_code=$errorCode',
             terminalStatus: terminalStatus,
+            errorCode: errorCode,
             conversationId: pending.conversationId,
             clientRequestId: pending.clientRequestId,
           ),
@@ -1613,6 +1774,15 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
 
   bool _isHealthyTerminal(String status) =>
       status == 'completed' || status == 'success';
+
+  String? _streamErrorCodeOf(Map<String, dynamic> logical) {
+    final code =
+        logical['error_code']?.toString() ?? logical['errorCode']?.toString();
+    if (code == null || code.isEmpty) {
+      return null;
+    }
+    return code;
+  }
 
   void _captureStreamId(
     _PendingStream pending,
@@ -1845,6 +2015,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       method: entry.method,
       deduplicated: entry.deduplicated,
       replayed: entry.replayed,
+      inFlight: entry.inFlight,
     );
   }
 

@@ -37,6 +37,7 @@ final class RelayRpcSuccess extends RelayRpcOutcome {
     super.method,
     this.deduplicated = false,
     this.replayed = false,
+    this.inFlight = false,
   });
 
   /// `relay:rpc.accepted` indicated the response was served from the
@@ -45,6 +46,9 @@ final class RelayRpcSuccess extends RelayRpcOutcome {
 
   /// Idempotent replay (same `client_request_id`, response cached on hub).
   final bool replayed;
+
+  /// Hub reported `inFlight: true` on accept (duplicate waiter; do not resend).
+  final bool inFlight;
 }
 
 final class RelayRpcFailure extends RelayRpcOutcome {

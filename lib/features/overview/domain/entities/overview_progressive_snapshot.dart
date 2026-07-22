@@ -10,7 +10,6 @@ enum OverviewProgressiveSection {
   agentRanking,
   userRanking,
   lucratividadePeriod,
-  lucratividadeMensal,
 }
 
 class OverviewProgressiveSnapshot {

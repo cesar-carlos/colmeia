@@ -180,6 +180,12 @@ abstract final class EnvKeys {
   /// socket builds; ignored on REST.
   static const String socketWarmUpAfterLogin = 'SOCKET_WARM_UP_AFTER_LOGIN';
 
+  /// Interval in ms for a lightweight inbound touch that refreshes hub
+  /// `SOCKET_CONSUMER_IDLE_TIMEOUT_MS` (default 30 min). `0` disables.
+  /// Default `720000` (12 min).
+  static const String socketConsumerIdleKeepaliveIntervalMs =
+      'SOCKET_CONSUMER_IDLE_KEEPALIVE_INTERVAL_MS';
+
   /// Per-agent in-flight `agents:command` ceiling enforced by
   /// `PerAgentConcurrencyGate`. Conservative mirror of the hub's
   /// `SOCKET_REST_AGENT_MAX_INFLIGHT` (default 32 server-side; we use 8

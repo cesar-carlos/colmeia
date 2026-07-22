@@ -1,5 +1,4 @@
 import 'package:colmeia/core/errors/app_failure.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_query_failure_detail.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_agent_ranking.dart';
@@ -40,11 +39,6 @@ class Overview {
     this.dailySalesTrendLoadFailed = false,
     this.dailySalesTrendLoadFailure,
     this.dailySalesTrendLoadFailureMessage,
-    this.lucratividadeMensalTrend =
-        const <ResumoProdutoVendaLucratividadeMensalRow>[],
-    this.lucratividadeMensalTrendLoadFailed = false,
-    this.lucratividadeMensalTrendLoadFailure,
-    this.lucratividadeMensalTrendLoadFailureMessage,
     this.lucratividadeTrend = const <ResumoProdutoVendaLucratividadeRow>[],
     this.lucratividadeTrendLoadFailed = false,
     this.lucratividadeTrendLoadFailure,
@@ -147,20 +141,6 @@ class Overview {
   final AppFailure? dailySalesTrendLoadFailure;
 
   final String? dailySalesTrendLoadFailureMessage;
-
-  /// Monthly product profitability trend (lucratividade mensal): 12 months
-  /// ending at the filter month. Each row carries `anoMes`, costs, revenue,
-  /// and derived percent metrics (`percentualCustoSobreVenda`,
-  /// `margemLucroBrutoPercent`, `markupSobreCustoPercent`). Empty when not
-  /// loaded or when the query fails.
-  final List<ResumoProdutoVendaLucratividadeMensalRow> lucratividadeMensalTrend;
-
-  /// True when the lucratividade mensal query failed.
-  final bool lucratividadeMensalTrendLoadFailed;
-
-  final AppFailure? lucratividadeMensalTrendLoadFailure;
-
-  final String? lucratividadeMensalTrendLoadFailureMessage;
 
   /// Period product profitability (lucratividade): **one row per agent** for
   /// the overview filter date range (all branches summed per agent). Empty
@@ -286,10 +266,6 @@ class Overview {
     bool? dailySalesTrendLoadFailed,
     AppFailure? dailySalesTrendLoadFailure,
     String? dailySalesTrendLoadFailureMessage,
-    List<ResumoProdutoVendaLucratividadeMensalRow>? lucratividadeMensalTrend,
-    bool? lucratividadeMensalTrendLoadFailed,
-    AppFailure? lucratividadeMensalTrendLoadFailure,
-    String? lucratividadeMensalTrendLoadFailureMessage,
     List<ResumoProdutoVendaLucratividadeRow>? lucratividadeTrend,
     bool? lucratividadeTrendLoadFailed,
     AppFailure? lucratividadeTrendLoadFailure,
@@ -349,17 +325,6 @@ class Overview {
       dailySalesTrendLoadFailureMessage:
           dailySalesTrendLoadFailureMessage ??
           this.dailySalesTrendLoadFailureMessage,
-      lucratividadeMensalTrend:
-          lucratividadeMensalTrend ?? this.lucratividadeMensalTrend,
-      lucratividadeMensalTrendLoadFailed:
-          lucratividadeMensalTrendLoadFailed ??
-          this.lucratividadeMensalTrendLoadFailed,
-      lucratividadeMensalTrendLoadFailure:
-          lucratividadeMensalTrendLoadFailure ??
-          this.lucratividadeMensalTrendLoadFailure,
-      lucratividadeMensalTrendLoadFailureMessage:
-          lucratividadeMensalTrendLoadFailureMessage ??
-          this.lucratividadeMensalTrendLoadFailureMessage,
       lucratividadeTrend: lucratividadeTrend ?? this.lucratividadeTrend,
       lucratividadeTrendLoadFailed:
           lucratividadeTrendLoadFailed ?? this.lucratividadeTrendLoadFailed,
@@ -441,15 +406,6 @@ class Overview {
         lucratividadePartialFailureAgentNames:
             detail.lucratividadePartialFailureAgentNames,
         partialQueryFailureDetails: detail.partialQueryFailureDetails,
-      ),
-      OverviewProgressiveSection.lucratividadeMensal => copyWith(
-        lucratividadeMensalTrend: detail.lucratividadeMensalTrend,
-        lucratividadeMensalTrendLoadFailed:
-            detail.lucratividadeMensalTrendLoadFailed,
-        lucratividadeMensalTrendLoadFailure:
-            detail.lucratividadeMensalTrendLoadFailure,
-        lucratividadeMensalTrendLoadFailureMessage:
-            detail.lucratividadeMensalTrendLoadFailureMessage,
       ),
       OverviewProgressiveSection.paymentMix => copyWith(
         paymentMethods: detail.paymentMethods,

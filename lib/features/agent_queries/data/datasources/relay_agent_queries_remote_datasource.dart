@@ -68,6 +68,7 @@ class RelayAgentQueriesRemoteDataSource
           timeout: agentSqlTransportDispatchTimeout(
             bridgeTimeoutMs: request.bridgeTimeoutMs,
           ),
+          timeoutMs: request.bridgeTimeoutMs,
           compression: _resolveCompression(request.payloadFrameCompression),
         )
         .then(
@@ -107,6 +108,7 @@ class RelayAgentQueriesRemoteDataSource
           timeout: agentSqlTransportDispatchTimeout(
             bridgeTimeoutMs: request.bridgeTimeoutMs,
           ),
+          timeoutMs: request.bridgeTimeoutMs,
           compression: _resolveCompression(request.payloadFrameCompression),
         )
         .then(

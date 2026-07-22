@@ -61,6 +61,7 @@ class RelayStreamingAgentQueriesRemoteDataSource
           timeout: agentSqlTransportDispatchTimeout(
             bridgeTimeoutMs: request.bridgeTimeoutMs,
           ),
+          timeoutMs: request.bridgeTimeoutMs,
           compression: _resolveCompression(request.payloadFrameCompression),
         ),
       );

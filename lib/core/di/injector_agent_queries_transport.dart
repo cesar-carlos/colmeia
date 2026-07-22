@@ -128,17 +128,16 @@ void _registerAgentQueryTransport(GetIt getIt) {
           );
         }
 
-        // When relay is available on socket transport, route all SQL
-        // (including `useRelay: false`) through relay unary instead of
-        // `agents:command`, which hangs when the hub does not respond.
+        // Socket base channel is always `agents:command`. Relay is selected
+        // per-call via Hybrid when `useRelay: true` (and relay is registered).
+        // Do not collapse base→relay: that made A/B impossible and hid hangs
+        // that are specific to the hub→agent relay hop.
+        // Escape hatch: `E2E_DISABLE_RELAY_DISPATCH=true` skips relay DI so
+        // even `useRelay: true` falls through Hybrid bypass / single base.
         final base = switch (AppEnvironment.agentBridgeTransport) {
-          AgentBridgeTransport.socket => relayFallback ?? legacySocketBase(),
+          AgentBridgeTransport.socket => legacySocketBase(),
           AgentBridgeTransport.rest => rest,
         };
-        // PR-L+ part 1: wrap with the per-call selector when the relay
-        // datasource is available (SOCKET_RELAY_ENABLED=true). Requests
-        // with `useRelay: true` flow through the relay channel; on REST
-        // transport everything else stays on REST.
         final relayWrapped = relay == null
             ? base
             : HybridAgentQueriesRemoteDataSource(
@@ -150,14 +149,14 @@ void _registerAgentQueryTransport(GetIt getIt) {
           context: <String, Object?>{
             'transport': AppEnvironment.agentBridgeTransport.wireValue,
             'relayEnabled': relay != null,
-            'baseUsesRelayOnSocket':
-                AppEnvironment.agentBridgeTransport ==
-                    AgentBridgeTransport.socket &&
-                relay != null,
+            'baseChannel': switch (AppEnvironment.agentBridgeTransport) {
+              AgentBridgeTransport.socket => 'agents:command',
+              AgentBridgeTransport.rest => 'rest',
+            },
+            'e2eDisableRelayDispatch': AppEnvironment.e2eDisableRelayDispatch,
             'baseUsesSocketRestFallback':
                 AppEnvironment.agentBridgeTransport ==
-                    AgentBridgeTransport.socket &&
-                relay == null,
+                AgentBridgeTransport.socket,
             'relayUsesSocketRestFallback': relay != null,
           },
         );

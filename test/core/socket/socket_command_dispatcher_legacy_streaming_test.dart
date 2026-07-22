@@ -410,4 +410,57 @@ void main() {
       await expectLater(future, throwsA(isA<SocketDispatchAppError>()));
     },
   );
+
+  test(
+    'agents:command_response success:false with requestId fails pending '
+    'and surfaces retryAfterMs (overload shed)',
+    () async {
+      const rpcId = 'rpc-overload-1';
+      final body = <String, Object?>{
+        'agentId': 'agent-1',
+        'command': <String, Object?>{
+          'jsonrpc': '2.0',
+          'method': 'sql.execute',
+          'id': rpcId,
+          'params': const <String, Object?>{'sql': 'SELECT 1'},
+        },
+      };
+
+      final future = dispatcher.sendAgentsCommand(
+        agentId: 'agent-1',
+        body: body,
+        rpcId: rpcId,
+        timeout: const Duration(seconds: 2),
+      );
+
+      await Future<void>.delayed(Duration.zero);
+      check(commandResponseHandler).isNotNull();
+
+      commandResponseHandler!(
+        <String, dynamic>{
+          'success': false,
+          'requestId': rpcId,
+          'error': <String, dynamic>{
+            'code': 'SERVICE_UNAVAILABLE',
+            'message': 'Consumer namespace temporarily overloaded',
+            'statusCode': 503,
+            'retryAfterMs': 800,
+          },
+        },
+      );
+
+      await expectLater(
+        future,
+        throwsA(
+          isA<SocketDispatchAppError>()
+              .having((e) => e.code, 'code', 'SERVICE_UNAVAILABLE')
+              .having(
+                (e) => e.retryAfter,
+                'retryAfter',
+                const Duration(milliseconds: 800),
+              ),
+        ),
+      );
+    },
+  );
 }

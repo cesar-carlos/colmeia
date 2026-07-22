@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
+import 'package:colmeia/core/socket/relay/relay_conversation_end_reasons.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation_state.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
 import 'package:colmeia/core/socket/socket_wire_utils.dart';
+import 'package:uuid/uuid.dart';
 
 /// One conversation against one agent, isolated by `conversationId`. A
 /// conversation is the unit of correlation in the relay protocol — every
@@ -25,15 +27,18 @@ class RelayConversation {
     required String agentId,
     Duration startTimeout = const Duration(seconds: 10),
     Duration endTimeout = const Duration(seconds: 5),
+    Uuid uuid = const Uuid(),
   }) : _connection = connection,
        _agentId = agentId,
        _startTimeout = startTimeout,
-       _endTimeout = endTimeout;
+       _endTimeout = endTimeout,
+       _uuid = uuid;
 
   final ConsumerSocketConnection _connection;
   final String _agentId;
   final Duration _startTimeout;
   final Duration _endTimeout;
+  final Uuid _uuid;
 
   RelayConversationState _state = const RelayConversationIdle();
   Future<RelayConversationActive>? _inFlightStart;
@@ -76,6 +81,7 @@ class RelayConversation {
   Future<RelayConversationActive> _startInternal() async {
     _setState(RelayConversationStarting(agentId: _agentId));
 
+    final startRequestId = _uuid.v4();
     final completer = Completer<RelayConversationActive>();
     void onStarted(Object? raw) {
       if (completer.isCompleted) {
@@ -89,6 +95,13 @@ class RelayConversation {
             code: 'malformed_started',
           ),
         );
+        return;
+      }
+      final echoedRequestId = map['requestId']?.toString();
+      if (echoedRequestId != null &&
+          echoedRequestId.isNotEmpty &&
+          echoedRequestId != startRequestId) {
+        // Hub echo for a different start; ignore.
         return;
       }
       final agentInPayload = map['agentId']?.toString();
@@ -134,7 +147,10 @@ class RelayConversation {
     try {
       _connection.raw.emit(
         RelayEventNames.conversationStart,
-        <String, Object?>{'agentId': _agentId},
+        <String, Object?>{
+          'requestId': startRequestId,
+          'agentId': _agentId,
+        },
       );
     } on Object catch (e, s) {
       _detachConversationStartedListener();
@@ -226,6 +242,8 @@ class RelayConversation {
       RelayConversationEnding(agentId: _agentId, conversationId: id),
     );
 
+    final endRequestId = _uuid.v4();
+    String? hubEndedReason;
     final completer = Completer<void>();
     void onEnded(Object? raw) {
       if (completer.isCompleted) {
@@ -237,6 +255,13 @@ class RelayConversation {
         // Different conversation; not ours.
         return;
       }
+      final echoedRequestId = map?['requestId']?.toString();
+      if (echoedRequestId != null &&
+          echoedRequestId.isNotEmpty &&
+          echoedRequestId != endRequestId) {
+        return;
+      }
+      hubEndedReason = map?['reason']?.toString();
       completer.complete();
     }
 
@@ -245,7 +270,10 @@ class RelayConversation {
     try {
       _connection.raw.emit(
         RelayEventNames.conversationEnd,
-        <String, Object?>{'conversationId': id},
+        <String, Object?>{
+          'requestId': endRequestId,
+          'conversationId': id,
+        },
       );
     } on Object catch (e) {
       AppLogger.warning(
@@ -277,7 +305,10 @@ class RelayConversation {
         RelayConversationEnded(
           agentId: _agentId,
           conversationId: id,
-          reason: reason ?? 'closed',
+          reason: RelayConversationEndReasons.resolve(
+            hubReason: hubEndedReason,
+            localReason: reason ?? 'closed',
+          ),
         ),
       );
     }

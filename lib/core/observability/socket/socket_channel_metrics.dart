@@ -66,6 +66,7 @@ class SocketChannelMetrics {
   final _ReservoirHistogram _relayConversationStartMs;
   int _relayGzipDecodeIsolateTotal = 0;
   int _relayJsonDecodeIsolateTotal = 0;
+  int _relayAcceptedInFlightTotal = 0;
   final Map<String, int> _relayDecodeFailureByCode = <String, int>{};
   final _ReservoirHistogram _batchSizeDistribution;
   final Map<String, int> _batchBypassByReason;
@@ -180,6 +181,11 @@ class SocketChannelMetrics {
   /// validation/enqueue time. Recorded for unary and streaming.
   void recordRelayRequestToAccepted({required Duration elapsed}) {
     _relayRequestToAcceptedMs.add(elapsed.inMicroseconds / 1000.0);
+  }
+
+  /// Hub accepted a duplicate waiter (`inFlight: true`) — do not resend.
+  void recordRelayAcceptedInFlight() {
+    _relayAcceptedInFlightTotal += 1;
   }
 
   /// Elapsed from `relay:rpc.accepted` to `relay:rpc.response` on
@@ -321,6 +327,7 @@ class SocketChannelMetrics {
       relayConversationStartMs: _relayConversationStartMs.snapshot(),
       relayGzipDecodeIsolateTotal: _relayGzipDecodeIsolateTotal,
       relayJsonDecodeIsolateTotal: _relayJsonDecodeIsolateTotal,
+      relayAcceptedInFlightTotal: _relayAcceptedInFlightTotal,
       relayDecodeFailureTotalByCode: Map<String, int>.unmodifiable(
         _relayDecodeFailureByCode,
       ),
@@ -364,6 +371,7 @@ class SocketChannelMetrics {
     _relayStreamingUnhandledErrorTotal = 0;
     _relayGzipDecodeIsolateTotal = 0;
     _relayJsonDecodeIsolateTotal = 0;
+    _relayAcceptedInFlightTotal = 0;
     _relayDecodeFailureByCode.clear();
     _relayPayloadDecodeWallClockMs.clear();
     _relayPayloadEncodeWallClockMs.clear();

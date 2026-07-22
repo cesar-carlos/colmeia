@@ -8,10 +8,13 @@
 /// 1. Top-level `retryAfterMs` / `retry_after_ms` — used by overload
 ///    responses (`SERVICE_UNAVAILABLE` triggered by
 ///    `SOCKET_RELAY_OUTBOUND_OVERLOAD_BACKLOG`).
-/// 2. `data.retry_after_ms` / `data.retryAfterMs` — used when the hub
+/// 2. `error.retryAfterMs` / `error.retry_after_ms` — used when overload
+///    shed is returned on `agents:command_response` as
+///    `{ success: false, error: { code, retryAfterMs } }`.
+/// 3. `data.retry_after_ms` / `data.retryAfterMs` — used when the hub
 ///    forwards an agent's JSON-RPC error verbatim and the data block is
 ///    flattened to the envelope root by the bridge.
-/// 3. `error.data.retry_after_ms` / `error.data.retryAfterMs` — used by
+/// 4. `error.data.retry_after_ms` / `error.data.retryAfterMs` — used by
 ///    the standard JSON-RPC envelope (e.g. `-32013` `RATE_LIMITED`,
 ///    `client_token.getPolicy` rate-limit).
 ///
@@ -27,6 +30,10 @@ Duration? extractRetryAfterFromAppError(Map<String, Object?> map) {
     map['retry_after_ms'],
     _readPath(map, const <String>['data', 'retry_after_ms']),
     _readPath(map, const <String>['data', 'retryAfterMs']),
+    // Overload shed on agents:command puts retryAfterMs on the error object
+    // itself (`error: { code, message, statusCode, retryAfterMs }`).
+    _readPath(map, const <String>['error', 'retryAfterMs']),
+    _readPath(map, const <String>['error', 'retry_after_ms']),
     _readPath(map, const <String>['error', 'data', 'retry_after_ms']),
     _readPath(map, const <String>['error', 'data', 'retryAfterMs']),
   ];

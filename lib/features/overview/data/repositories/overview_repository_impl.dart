@@ -151,7 +151,6 @@ class OverviewRepositoryImpl implements OverviewRepository {
         filter: filter,
         periodStart: period.start,
         periodEnd: period.end,
-        last12Range: last12Range,
         mensalFilter: mensalFilter,
         weekdayFilter: weekdayFilter,
         dailyTotalFilter: dailyTotalFilter,
@@ -233,10 +232,6 @@ class OverviewRepositoryImpl implements OverviewRepository {
           batchResults,
           (result) => result.lucratividadeFailure,
         );
-        final lucratividadeMensalSectionFailure = _sectionMapper.sectionFailure(
-          batchResults,
-          (result) => result.lucratividadeMensalFailure,
-        );
         final overview = _assembler.buildOverview(
           _sectionMapper.mapOverviewRows(report.mergedRows),
           rowsByAgentId: _sectionMapper.mapRowsByAgentId(report.rowsByAgentId),
@@ -288,13 +283,6 @@ class OverviewRepositoryImpl implements OverviewRepository {
               .lucratividadePartialFailureAgentNames(
                 batchResults,
               ),
-          lucratividadeMensalTrend: _sectionMapper.lucratividadeMensalRows(
-            batchResults,
-          ),
-          lucratividadeMensalTrendLoadFailed:
-              lucratividadeMensalSectionFailure.loadFailed,
-          lucratividadeMensalTrendLoadFailure:
-              lucratividadeMensalSectionFailure.failure,
           mainResumoHadPlannedTargets: report.plannedTargets.isNotEmpty,
           partialQueryFailureDetails: <OverviewAgentQueryFailureDetail>[
             ...overviewPartialFailuresFromParticipants(report.participants),
@@ -323,11 +311,6 @@ class OverviewRepositoryImpl implements OverviewRepository {
               batchResults,
               failureOf: (result) => result.dailyFailure,
               source: OverviewAgentQueryFailureSource.dailyTrend,
-            ),
-            ..._sectionMapper.sectionPartialFailureDetails(
-              batchResults,
-              failureOf: (result) => result.lucratividadeMensalFailure,
-              source: OverviewAgentQueryFailureSource.lucratividadeMensalTrend,
             ),
           ],
           hubPresenceOnlineAgentIdsSnapshot:
