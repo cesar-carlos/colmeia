@@ -218,9 +218,10 @@ much higher than 30 s of grep.
 
 5. **Logout**:
    - Sign out.
-   - Logs should show `signed_out` reason on the lifecycle observer
+   - Logs should show disconnect reason `signed_out` (via
+     `ConsumerSocketConnection.pause(reason: 'signed_out')`)
      and a clean disconnect (state → `ConsumerSocketDisconnected`).
-   - No more `agents:command` should be emitted.
+   - No more `agents:command` / relay RPCs should be emitted.
 
 6. **Token revocation** (catalog push, Mode A/B/C):
    - On the hub, revoke the client token of an agent the device has
@@ -279,6 +280,25 @@ Sentry custom metrics view, ensure it includes:
 - coalesce hits (fewer round-trips for free)
 - batch emissions (only when `SOCKET_BATCH_ENABLED=true`)
 - reconnect counter aggregated by `reasonCode`
+- `restFallbackLatchTotal` — permanent REST latch (auth / namespace)
+- `restFallbackTemporaryLatchTotal` — temporary REST window after
+  consecutive socket/relay transport timeouts / disconnects
+
+### 4.4 Troubleshooting — socket hang vs REST degradation
+
+| Symptom | Likely cause | Client signal | Action |
+| --- | --- | --- | --- |
+| Charts fail with transport timeout, then recover on REST | Hub `/consumers` or relay stalled | After 3 consecutive timeouts, logs show temporary REST latch; metric `restFallbackTemporaryLatchTotal` increments | Confirm hub relay health; temporary window is 60s then socket probe |
+| Every chart shows session-expired style auth failure | Hub `SOCKET_CONSUMER_ROLES` or exhausted refresh | Permanent REST latch; `restFallbackLatchTotal` | Fix hub roles / re-login |
+| Parallel RPCs on same conversation time out with fastPath | Hub overwrites JSON-RPC `id` (ADR 0009 defect) | Client regression test documents both timeout | Set hub `SOCKET_RELAY_FAST_PATH_ENABLED=false` or deploy hub fix that echoes client `id` — see [`docs/server_adjustments/relay_unary_fast_path.md`](../../server_adjustments/relay_unary_fast_path.md) |
+
+### 4.5 PayloadFrame isolates (recommended defaults)
+
+Client defaults (do not change without measuring UI jank):
+
+- `SOCKET_PAYLOAD_WORKER_ISOLATES_ENABLED=true`
+- Gzip decode isolate threshold ≈ 16 KiB
+- Gzip encode / JSON decode thresholds follow `AppEnvironment` defaults
 
 ---
 

@@ -60,7 +60,9 @@ void main() {
 
     setUp(() {
       connection = _MockConnection();
-      when(() => connection.pause()).thenAnswer((_) async {});
+      when(
+        () => connection.pause(reason: any(named: 'reason')),
+      ).thenAnswer((_) async {});
       when(() => connection.resume()).thenAnswer(
         (_) async => ConsumerSocketConnected(
           socketId: 'sock-1',
@@ -96,7 +98,7 @@ void main() {
           AppLifecycleState.paused,
         );
         await tester.pump();
-        verify(() => connection.pause()).called(1);
+        verify(() => connection.pause(reason: any(named: 'reason'))).called(1);
       },
     );
 
@@ -161,7 +163,7 @@ void main() {
           AppLifecycleState.paused,
         );
         await tester.pump();
-        verifyNever(() => connection.pause());
+        verifyNever(() => connection.pause(reason: any(named: 'reason')));
 
         tester.binding.handleAppLifecycleStateChanged(
           AppLifecycleState.resumed,
@@ -187,7 +189,7 @@ void main() {
           AppLifecycleState.paused,
         );
         await tester.pump();
-        verify(() => connection.pause()).called(1);
+        verify(() => connection.pause(reason: any(named: 'reason'))).called(1);
       },
     );
 
@@ -226,7 +228,7 @@ void main() {
     );
 
     testWidgets(
-      'sign-out transition (authenticated -> null) pauses the socket',
+      'sign-out transition (authenticated -> null) pauses with signed_out',
       (tester) async {
         authGate.setAuthenticated(value: true);
         await _pumpObserver(
@@ -240,14 +242,16 @@ void main() {
 
         authGate.setAuthenticated(value: false);
         await tester.pump();
-        verify(() => connection.pause()).called(1);
+        verify(() => connection.pause(reason: 'signed_out')).called(1);
       },
     );
 
     testWidgets(
       'pause failure is swallowed (must not crash the app)',
       (tester) async {
-        when(() => connection.pause()).thenThrow(StateError('boom'));
+        when(
+          () => connection.pause(reason: any(named: 'reason')),
+        ).thenThrow(StateError('boom'));
         await _pumpObserver(
           tester,
           connection: connection,
@@ -282,7 +286,7 @@ void main() {
           AppLifecycleState.paused,
         );
         await tester.pump();
-        verifyNever(() => connection.pause());
+        verifyNever(() => connection.pause(reason: any(named: 'reason')));
       },
     );
 
@@ -390,7 +394,7 @@ void main() {
 
         authGate.setAuthenticated(value: false);
         await tester.pump();
-        verifyNever(() => connection.pause());
+        verifyNever(() => connection.pause(reason: any(named: 'reason')));
       },
     );
   });

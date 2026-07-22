@@ -38,6 +38,7 @@ class SocketMetricsSnapshot {
     this.serverPhaseMsByName = const <String, HistogramSnapshot>{},
     this.serverTimingsSchemaMismatchTotal = 0,
     this.restFallbackLatchTotal = 0,
+    this.restFallbackTemporaryLatchTotal = 0,
     this.lastGateSessionPeakSample = 0,
   });
 
@@ -167,6 +168,10 @@ class SocketMetricsSnapshot {
   /// Times the SQL datasource latched to REST for auth/namespace failures.
   final int restFallbackLatchTotal;
 
+  /// Times the SQL datasource opened a temporary REST window after
+  /// consecutive socket/relay transport timeouts or disconnects.
+  final int restFallbackTemporaryLatchTotal;
+
   /// Last sampled [PerAgentConcurrencyGate.sessionPeakMaxAgentInflight] at
   /// socket disconnect export (0 if never sampled).
   final int lastGateSessionPeakSample;
@@ -214,6 +219,7 @@ class SocketMetricsSnapshot {
       },
       'serverTimingsSchemaMismatchTotal': serverTimingsSchemaMismatchTotal,
       'restFallbackLatchTotal': restFallbackLatchTotal,
+      'restFallbackTemporaryLatchTotal': restFallbackTemporaryLatchTotal,
       'lastGateSessionPeakSample': lastGateSessionPeakSample,
     };
   }
@@ -307,6 +313,7 @@ class SocketMetricsSnapshot {
       'gateAcquireWaitTimeoutTotal': gateAcquireWaitTimeoutTotal,
       'lastGateSessionPeakSample': lastGateSessionPeakSample,
       'restFallbackLatchTotal': restFallbackLatchTotal,
+      'restFallbackTemporaryLatchTotal': restFallbackTemporaryLatchTotal,
       'outcomesTotal': outcomesTotal,
       'relayOutcomesTotal': relayOutcomesTotal,
       'reconnectsTotalByReason': reconnectsTotalByReason,

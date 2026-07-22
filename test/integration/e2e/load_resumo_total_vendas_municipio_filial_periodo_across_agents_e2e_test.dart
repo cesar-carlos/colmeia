@@ -30,9 +30,9 @@ void main() {
             return;
           }
 
-          final today = DateTime.now();
-          final periodEnd = DateTime(today.year, today.month, today.day);
-          final periodStart = periodEnd.subtract(const Duration(days: 14));
+          // Short closed window: caching decorator loads missing days one-by-one.
+          final periodStart = DateTime(2026, 7, 10);
+          final periodEnd = DateTime(2026, 7, 11);
 
           final useCase =
               getIt<

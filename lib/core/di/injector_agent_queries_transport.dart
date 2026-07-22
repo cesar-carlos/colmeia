@@ -32,6 +32,39 @@ void _onAgentQueriesRestFallbackLatched(
   );
 }
 
+void _onAgentQueriesRestFallbackTemporaryLatched(
+  GetIt getIt,
+  String latchLabel, {
+  required String reason,
+  required Object trigger,
+}) {
+  if (getIt.isRegistered<SocketChannelMetrics>()) {
+    getIt<SocketChannelMetrics>().recordRestFallbackTemporaryLatch();
+  }
+  AppLogger.warning(
+    '$latchLabel temporarily latched to REST fallback',
+    context: <String, Object?>{
+      'reason': reason,
+      'trigger': trigger.toString(),
+      'transport': AppEnvironment.agentBridgeTransport.wireValue,
+    },
+  );
+  unawaited(
+    Sentry.addBreadcrumb(
+      Breadcrumb(
+        category: 'agent_queries.transport',
+        message: 'REST temporary fallback latched ($latchLabel)',
+        data: <String, String>{
+          'reason': reason,
+          'trigger': trigger.toString(),
+          'latchLabel': latchLabel,
+        },
+        level: SentryLevel.warning,
+      ),
+    ),
+  );
+}
+
 void _registerAgentQueryTransport(GetIt getIt) {
   getIt
     ..registerLazySingleton<AgentSqlExecutionEligibilityPolicy>(
@@ -69,6 +102,13 @@ void _registerAgentQueryTransport(GetIt getIt) {
                 : null,
             onFallback: (trigger) =>
                 _onAgentQueriesRestFallbackLatched(getIt, trigger, latchLabel),
+            onTemporaryFallback: ({required reason, required trigger}) =>
+                _onAgentQueriesRestFallbackTemporaryLatched(
+                  getIt,
+                  latchLabel,
+                  reason: reason,
+                  trigger: trigger,
+                ),
           );
         }
 

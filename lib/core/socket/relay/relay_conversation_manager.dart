@@ -5,11 +5,16 @@ import 'package:colmeia/core/observability/socket/socket_channel_metrics.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation.dart';
+import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 
 /// Tracks one active relay conversation per `agentId`. The dispatcher asks
 /// the manager for an active conversation; the manager opens one on demand
 /// and recycles it across requests so the hub doesn't need to spin up a new
 /// `conversationId` for every RPC.
+///
+/// Concurrent [obtain] calls for the same `agentId` share a single in-flight
+/// Future so the hub never receives two `relay:conversation.start` events
+/// for the same agent in the same cold-start wave.
 ///
 /// Resets the registry whenever the underlying socket transitions away from
 /// `connected` — relay conversations are bound to the consumer socket id, so
@@ -35,17 +40,61 @@ class RelayConversationManager {
   final Map<String, RelayConversation> _byAgentId =
       <String, RelayConversation>{};
 
+  /// In-flight [obtain] Futures keyed by `agentId`. Concurrent callers share
+  /// the same Future so only one conversation is opened per agent.
+  final Map<String, Future<RelayConversation>> _inflightObtainByAgentId =
+      <String, Future<RelayConversation>>{};
+
   StreamSubscription<ConsumerSocketConnectionState>? _stateSub;
   bool _isDisposed = false;
 
-  /// Returns an open conversation for [agentId], opening one on demand. A
-  /// single in-flight start is shared by concurrent callers via
-  /// [RelayConversation.start].
+  /// Returns an open conversation for [agentId], opening one on demand.
+  /// Concurrent callers for the same [agentId] share a single in-flight
+  /// Future (manager-level single-flight); [RelayConversation.start] remains
+  /// single-flight as a second line of defense on the instance itself.
   Future<RelayConversation> obtain(String agentId) async {
     if (_isDisposed) {
       throw StateError('RelayConversationManager used after dispose');
     }
+    final existingActive = _byAgentId[agentId];
+    if (existingActive != null && existingActive.isActive) {
+      return existingActive;
+    }
+    final inflight = _inflightObtainByAgentId[agentId];
+    if (inflight != null) {
+      return inflight;
+    }
+    final gate = Completer<RelayConversation>();
+    _inflightObtainByAgentId[agentId] = gate.future;
+    try {
+      final conversation = await _obtainInternal(agentId);
+      if (!gate.isCompleted) {
+        gate.complete(conversation);
+      }
+      return conversation;
+    } on Object catch (error, stackTrace) {
+      if (!gate.isCompleted) {
+        gate.completeError(error, stackTrace);
+      }
+      rethrow;
+    } finally {
+      // `Map.remove` returns `Future<RelayConversation>?` here, which trips
+      // `unawaited_futures` even though we only want to drop the key.
+      _inflightObtainByAgentId.removeWhere((key, _) => key == agentId);
+    }
+  }
+
+  Future<RelayConversation> _obtainInternal(String agentId) async {
+    if (_isDisposed) {
+      throw StateError('RelayConversationManager used after dispose');
+    }
     await _connection.connect();
+    if (_isDisposed) {
+      throw const RelayConversationStartFailure(
+        message: 'RelayConversationManager disposed during obtain',
+        code: 'manager_disposed',
+      );
+    }
     final existing = _byAgentId[agentId];
     if (existing != null && existing.isActive) {
       return existing;
@@ -67,11 +116,22 @@ class RelayConversationManager {
     try {
       await conversation.start();
       startSw.stop();
+      if (_isDisposed || !_byAgentId.containsKey(agentId)) {
+        conversation.forceEnd(reason: 'obtain_superseded');
+        throw const RelayConversationStartFailure(
+          message:
+              'Relay conversation was discarded while start was in flight',
+          code: 'obtain_superseded',
+        );
+      }
       _channelMetrics?.recordRelayConversationStart(elapsed: startSw.elapsed);
     } on Object {
       startSw.stop();
       // Don't record failed starts: the latency reservoir is for
       // successful first opens, not for retried/timed-out attempts.
+      if (identical(_byAgentId[agentId], conversation)) {
+        _byAgentId.remove(agentId);
+      }
       rethrow;
     }
     return conversation;
@@ -108,7 +168,7 @@ class RelayConversationManager {
   }
 
   void _forceCloseAll({required String reason}) {
-    if (_byAgentId.isEmpty) {
+    if (_byAgentId.isEmpty && _inflightObtainByAgentId.isEmpty) {
       return;
     }
     AppLogger.debug(
@@ -117,6 +177,7 @@ class RelayConversationManager {
         'component': 'RelayConversationManager',
         'reason': reason,
         'count': _byAgentId.length,
+        'inflightObtainCount': _inflightObtainByAgentId.length,
       },
     );
     final conversations = _byAgentId.values.toList(growable: false);
@@ -124,6 +185,9 @@ class RelayConversationManager {
     for (final conversation in conversations) {
       conversation.forceEnd(reason: reason);
     }
+    // In-flight obtain Futures remain until their start settles; they detect
+    // discard via `_byAgentId` / disposed checks and fail with
+    // `obtain_superseded` or the underlying start failure.
   }
 
   Future<void> dispose() async {

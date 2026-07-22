@@ -126,15 +126,17 @@ void main() {
           }
 
           final period = _recentPeriod();
-          final yearStart = DateTime(period.end.year);
 
+          // Keep the same recent window as sibling reports. A year-to-date
+          // scan dominated this suite (~30s+) on the E2E agent without adding
+          // coverage beyond the dedicated annual repository smoke.
           final anual = getIt<LoadResumoParcelasAnualAcrossAgentsUseCase>();
           _expectReport(
             await runE2eAppResult(
               () => anual(
                 userId: 'e2e-agent-query-user',
                 filter: ResumoParcelasAnualFilter(
-                  dataVendaInicio: yearStart,
+                  dataVendaInicio: period.start,
                   dataVendaFim: period.end,
                 ),
                 bridgeTimeoutMs: 300000,
@@ -306,10 +308,9 @@ bool _skipWhenMissingKeys(String testName) {
 }
 
 ({DateTime start, DateTime end}) _recentPeriod() {
-  final today = DateTime.now();
-  final end = DateTime(today.year, today.month, today.day);
-  final start = end.subtract(const Duration(days: 14));
-  return (start: start, end: end);
+  // Prefer a short closed July window with known E2E-agent sales so this
+  // multi-report smoke stays well under a minute (rolling 14 days was ~30s+).
+  return (start: DateTime(2026, 7, 10), end: DateTime(2026, 7, 11));
 }
 
 void _expectReport<Row>(

@@ -745,6 +745,64 @@ void main() {
     );
 
     test(
+      'hub fastPath server UUID as JSON-RPC id cannot correlate two '
+      'pendings without frame requestId mapping (both timeout)',
+      () async {
+        // Documents hub fast-path bug (2026-05-28): when the hub honours
+        // `fastPath: true` it may overwrite the JSON-RPC `id` with a
+        // server-assigned UUID. With two in-flight RPCs and no usable
+        // frame `requestId` ↔ client map, body-id lookup misses and both
+        // clients time out. Fix belongs on the hub (echo client id).
+        final dispatcher = await dispatcherFor(
+          defaultTimeout: const Duration(milliseconds: 150),
+        );
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final f1 = dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'jsonrpc': '2.0',
+            'method': 'sql.execute',
+            'id': 'client-rpc-a',
+            'params': <String, Object?>{'sql': 'SELECT 1'},
+          },
+          clientRequestId: 'client-rpc-a',
+        );
+        final f2 = dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'jsonrpc': '2.0',
+            'method': 'sql.execute',
+            'id': 'client-rpc-b',
+            'params': <String, Object?>{'sql': 'SELECT 2'},
+          },
+          clientRequestId: 'client-rpc-b',
+        );
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        // No `relay:rpc.accepted` — mirrors a fast-path that skips the
+        // accept hop and therefore never populates `_clientIdByRequestId`.
+        final fastPathBody = <String, Object?>{
+          'jsonrpc': '2.0',
+          'id': 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
+          'result': <String, Object?>{'rows': <Object?>[]},
+        };
+        wiring.fire(
+          RelayEventNames.rpcResponse,
+          _buildResponseFrameWithoutRequestId(fastPathBody),
+        );
+
+        await Future.wait<void>(<Future<void>>[
+          expectLater(f1, throwsA(isA<RelayRequestTimeout>())),
+          expectLater(f2, throwsA(isA<RelayRequestTimeout>())),
+        ]);
+      },
+    );
+
+    test(
       'completes on relay:rpc.complete when the hub bundles a response',
       () async {
         final dispatcher = await dispatcherFor();

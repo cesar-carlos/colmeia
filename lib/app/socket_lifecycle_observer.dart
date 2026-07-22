@@ -233,7 +233,7 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
       return;
     }
     try {
-      await connection.pause();
+      await connection.pause(reason: reason);
     } on Object catch (error, stackTrace) {
       AppLogger.warning(
         'SocketLifecycleObserver pause failed',

@@ -114,10 +114,25 @@ aplicar **por wave** de queries:
 
 ## 5. Melhorias sugeridas (com justificativa e esforço)
 
+> **Status (Colmeia client, 2026-07):** delivered on the client —
+> **5.1** coalescing (`SocketCommandCoalescer`), **5.2** batch coordinators
+> (agents:command + relay batch), **5.4** reconnect jitter,
+> **5.5** per-agent inflight gate, adaptive timeout oracle (opt-in),
+> **temporary REST latch** after consecutive socket/relay transport timeouts
+> (`SocketWithRestFallbackAgentQueriesRemoteDataSource`), and
+> **single-flight `RelayConversationManager.obtain`**. Connection pool stays
+> `poolSize == 1` (not wired for multi-socket). PayloadFrame worker isolates
+> default **on** (`SOCKET_PAYLOAD_WORKER_ISOLATES_ENABLED`, gzip/json thresholds
+> 16 KiB class). Hub `fastPath` JSON-RPC `id` echo remains a hub concern
+> (see § fast-path caveat below and
+> [`docs/server_adjustments/relay_unary_fast_path.md`](../../server_adjustments/relay_unary_fast_path.md)).
+
 Cada melhoria mapeada como item acionável, com impacto esperado. **Todas
 opcionais ao plano base** — prioridade por ordem.
 
 ### 5.1 Request coalescing no `SocketCommandDispatcher`
+
+**Status:** delivered — maps live in `lib/core/socket/socket_command_coalescer.dart`.
 
 **Problema**: se `ClientAgentsController` e `OverviewController` dispararem
 a mesma query `agent.getProfile` para o mesmo agente em < 100 ms (caso real
@@ -564,8 +579,14 @@ Audit against PR2 baseline and roadmap phases. **Do not duplicate policy from
 | Phase 6 | Transport policy matrix | Done (env) | `AgentQueryTransportPolicy`, `AGENT_QUERY_TRANSPORT_POLICY` |
 
 **Gaps / hub-dependent**: relay JSON-RPC batch on plug_server; optional second
-socket connection factory when `SOCKET_CONNECTION_POOL_SIZE > 1`; unary
-`sql.cancel` semantics on the agent.
+socket connection factory when `SOCKET_CONNECTION_POOL_SIZE > 1` (**not wired** —
+production stays on a single `ConsumerSocketConnection`); unary
+`sql.cancel` semantics on the agent. Hub `fastPath` must echo the client
+JSON-RPC `id` (see `docs/server_adjustments/relay_unary_fast_path.md`).
+
+**Client reliability (2026-07):** temporary REST latch after 3 consecutive
+socket/relay transport timeouts; `RelayConversationManager.obtain` is
+single-flight per `agentId`.
 
 ### Performance follow-up (Colmeia-only plan)
 

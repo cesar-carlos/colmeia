@@ -1,147 +1,219 @@
+import 'dart:async';
+
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/network/auth_session_events.dart';
+import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 
-/// Wraps a primary (socket) datasource with a permanent REST
-/// fallback for the rare classes of failures that no amount of
-/// retry will fix:
+/// Wraps a primary (socket / relay) datasource with REST fallback.
 ///
-/// * [SocketDispatchNamespaceForbidden] — the hub's
-///   `SOCKET_CONSUMER_ROLES` does not include the JWT role. Until
-///   the server admin fixes the env + restarts, every dispatch will
-///   fail the same way. Pivoting to REST keeps the user productive
-///   instead of seeing "Sua sessao expirou" on every chart.
-/// * [SocketDispatchUnauthorized] — the connection layer already
-///   exhausted retries (5 by default) and a single token refresh
-///   attempt. Same conclusion: the socket is dead for this session.
+/// **Permanent latch** (session-scoped until [resetLatch]):
+/// * [SocketDispatchNamespaceForbidden] — hub role policy rejects `/consumers`.
+/// * [SocketDispatchUnauthorized] — auth refresh exhausted on the socket.
 ///
-/// Once the fallback latches on, **every subsequent dispatch in the
-/// same process goes through REST**. This is intentional: the
-/// failure modes that trigger the latch are server-side and
-/// session-scoped (a hub config edit + restart requires the user to
-/// re-launch the app anyway, since the JWT/socket lifecycle is
-/// rebuilt on cold start).
+/// **Temporary latch** (cooldown then half-open probe):
+/// After `transientFailureThreshold` consecutive transport failures
+/// (`SocketDispatchTimeout`, `SocketDispatchDisconnected`,
+/// `RelayRequestTimeout`, `RelayConversationLost`, eligible
+/// `RelayConversationStartFailure`), subsequent calls use REST for
+/// `temporaryLatchCooldown`. The next call after the cooldown probes
+/// socket again; success clears the counter, another transient failure
+/// re-opens the temporary latch.
 ///
-/// [SocketDispatchLegacyStreamingUnsupported] is deliberately NOT
-/// fallback-eligible: progressive socket streaming is relay-only in Colmeia.
-/// Callers that need streaming should use `useRelay: true`.
-///
-/// Transient errors ([SocketDispatchTimeout], plain
-/// [SocketDispatchDisconnected] without an auth bind, regular
-/// `app:error` overload responses, etc.) are NOT fallback-eligible:
-/// the socket layer's own backoff + `RetryAfterGate` already handles
-/// those, and pivoting to REST on a momentary blip would mask
-/// recoverable problems and break sticky-session affinity.
+/// [SocketDispatchLegacyStreamingUnsupported] and cancel errors are never
+/// fallback-eligible.
 class SocketWithRestFallbackAgentQueriesRemoteDataSource
     implements AgentQueriesRemoteDataSource {
   SocketWithRestFallbackAgentQueriesRemoteDataSource({
     required AgentQueriesRemoteDataSource socketDelegate,
     required AgentQueriesRemoteDataSource restDelegate,
     void Function(SocketDispatchException trigger)? onFallback,
+    void Function({required String reason, required Object trigger})?
+    onTemporaryFallback,
     AuthSessionEvents? sessionEvents,
+    int transientFailureThreshold = 3,
+    Duration temporaryLatchCooldown = const Duration(seconds: 60),
+    DateTime Function()? clock,
   }) : _socketDelegate = socketDelegate,
        _restDelegate = restDelegate,
-       _onFallback = onFallback {
-    sessionEvents?.stream.listen((_) => resetLatch(reason: 'auth_session'));
+       _onFallback = onFallback,
+       _onTemporaryFallback = onTemporaryFallback,
+       _transientFailureThreshold = transientFailureThreshold,
+       _temporaryLatchCooldown = temporaryLatchCooldown,
+       _clock = clock ?? DateTime.now {
+    final events = sessionEvents;
+    if (events != null) {
+      _sessionEventsSub = events.stream.listen(
+        (_) => resetLatch(reason: 'auth_session'),
+      );
+    }
   }
 
   final AgentQueriesRemoteDataSource _socketDelegate;
   final AgentQueriesRemoteDataSource _restDelegate;
-
-  /// Optional observability hook. Called exactly once per process,
-  /// the first time the latch flips. Useful to bump a Sentry
-  /// breadcrumb / metric counter so ops can spot fleet-wide
-  /// fallback events.
   final void Function(SocketDispatchException trigger)? _onFallback;
+  final void Function({required String reason, required Object trigger})?
+  _onTemporaryFallback;
+  final int _transientFailureThreshold;
+  final Duration _temporaryLatchCooldown;
+  final DateTime Function() _clock;
 
-  /// `true` once the latch has caught a permanent failure. Stays
-  /// `true` until the process restarts or [resetLatch] runs.
+  StreamSubscription<AuthSessionEvent>? _sessionEventsSub;
+
+  /// `true` once the latch has caught a permanent failure.
   bool _latched = false;
 
-  /// Visible-for-testing accessor. UI code SHOULD NOT depend on
-  /// this — the contract is "you get a working datasource"; whether
-  /// it is socket or REST is an implementation detail.
+  int _consecutiveTransientFailures = 0;
+  DateTime? _temporaryLatchedUntil;
+
+  /// Visible-for-testing accessor for the permanent latch.
   bool get isLatchedToRest => _latched;
 
-  /// Clears the REST fallback latch so a new auth session can retry
-  /// the socket transport.
+  /// Visible-for-testing: temporary REST window is still active.
+  bool get isTemporarilyLatchedToRest {
+    final until = _temporaryLatchedUntil;
+    if (until == null) {
+      return false;
+    }
+    return _clock().isBefore(until);
+  }
+
+  /// Clears permanent and temporary REST fallback so a new auth session
+  /// (or test) can retry the socket transport.
   void resetLatch({required String reason}) {
-    if (!_latched) {
+    final hadPermanent = _latched;
+    final hadTemporary =
+        _temporaryLatchedUntil != null || _consecutiveTransientFailures > 0;
+    if (!hadPermanent && !hadTemporary) {
       return;
     }
     _latched = false;
+    _consecutiveTransientFailures = 0;
+    _temporaryLatchedUntil = null;
     AppLogger.info(
       'Agent queries REST fallback latch cleared',
       context: <String, Object?>{
         'component': 'SocketWithRestFallbackAgentQueriesRemoteDataSource',
         'reason': reason,
+        'clearedPermanent': hadPermanent,
+        'clearedTemporary': hadTemporary,
       },
     );
+  }
+
+  Future<void> dispose() async {
+    await _sessionEventsSub?.cancel();
+    _sessionEventsSub = null;
   }
 
   @override
   Future<Map<String, dynamic>> postSqlExecute(
     AgentSqlExecuteRequest request, {
     AgentQueriesCancelScope? cancelScope,
-  }) async {
-    if (_latched) {
-      return _restDelegate.postSqlExecute(request, cancelScope: cancelScope);
-    }
-    try {
-      return await _socketDelegate.postSqlExecute(
-        request,
-        cancelScope: cancelScope,
-      );
-    } on SocketDispatchNamespaceForbidden catch (trigger) {
-      _latch(trigger, reason: 'namespace_forbidden');
-      return _restDelegate.postSqlExecute(request, cancelScope: cancelScope);
-    } on SocketDispatchUnauthorized catch (trigger) {
-      _latch(trigger, reason: 'unauthorized_exhausted');
-      return _restDelegate.postSqlExecute(request, cancelScope: cancelScope);
-    }
-    // All other SocketDispatchException variants (timeout,
-    // disconnected, app_error, decode_failed, cancelled) propagate
-    // verbatim — the socket layer's RetryAfterGate / circuit
-    // breaker / user retry handle those better than a permanent
-    // pivot would.
+  }) {
+    return _dispatch(
+      useRest: () =>
+          _restDelegate.postSqlExecute(request, cancelScope: cancelScope),
+      useSocket: () =>
+          _socketDelegate.postSqlExecute(request, cancelScope: cancelScope),
+    );
   }
 
   @override
   Future<Map<String, dynamic>> postSqlExecuteBatch(
     AgentSqlExecuteBatchRequest request, {
     AgentQueriesCancelScope? cancelScope,
-  }) async {
-    if (_latched) {
-      return _restDelegate.postSqlExecuteBatch(
+  }) {
+    return _dispatch(
+      useRest: () =>
+          _restDelegate.postSqlExecuteBatch(request, cancelScope: cancelScope),
+      useSocket: () => _socketDelegate.postSqlExecuteBatch(
         request,
         cancelScope: cancelScope,
-      );
+      ),
+    );
+  }
+
+  Future<Map<String, dynamic>> _dispatch({
+    required Future<Map<String, dynamic>> Function() useRest,
+    required Future<Map<String, dynamic>> Function() useSocket,
+  }) async {
+    if (_latched || isTemporarilyLatchedToRest) {
+      return useRest();
     }
     try {
-      return await _socketDelegate.postSqlExecuteBatch(
-        request,
-        cancelScope: cancelScope,
-      );
+      final response = await useSocket();
+      _onSocketSuccess();
+      return response;
     } on SocketDispatchNamespaceForbidden catch (trigger) {
-      _latch(trigger, reason: 'namespace_forbidden');
-      return _restDelegate.postSqlExecuteBatch(
-        request,
-        cancelScope: cancelScope,
-      );
+      _latchPermanent(trigger, reason: 'namespace_forbidden');
+      return useRest();
     } on SocketDispatchUnauthorized catch (trigger) {
-      _latch(trigger, reason: 'unauthorized_exhausted');
-      return _restDelegate.postSqlExecuteBatch(
-        request,
-        cancelScope: cancelScope,
+      _latchPermanent(trigger, reason: 'unauthorized_exhausted');
+      return useRest();
+    } on SocketDispatchException catch (error) {
+      if (_isTransientSocketFailure(error)) {
+        _noteTransientFailure(error, reason: error.code);
+      }
+      rethrow;
+    } on RelayDispatchException catch (error) {
+      if (_isTransientRelayFailure(error)) {
+        _noteTransientFailure(error, reason: error.code);
+      }
+      rethrow;
+    }
+  }
+
+  void _onSocketSuccess() {
+    _consecutiveTransientFailures = 0;
+    _temporaryLatchedUntil = null;
+  }
+
+  void _noteTransientFailure(Object trigger, {required String reason}) {
+    _consecutiveTransientFailures += 1;
+    if (_consecutiveTransientFailures < _transientFailureThreshold) {
+      return;
+    }
+    final alreadyOpen = isTemporarilyLatchedToRest;
+    _temporaryLatchedUntil = _clock().add(_temporaryLatchCooldown);
+    if (alreadyOpen) {
+      return;
+    }
+    AppLogger.warning(
+      'Agent queries datasource temporarily latched to REST fallback '
+      '(socket/relay transient failures)',
+      context: <String, Object?>{
+        'component': 'SocketWithRestFallbackAgentQueriesRemoteDataSource',
+        'reason': reason,
+        'consecutiveFailures': _consecutiveTransientFailures,
+        'cooldownMs': _temporaryLatchCooldown.inMilliseconds,
+        'trigger': trigger.toString(),
+      },
+      error: trigger is Exception ? trigger : null,
+    );
+    final hook = _onTemporaryFallback;
+    if (hook == null) {
+      return;
+    }
+    try {
+      hook(reason: reason, trigger: trigger);
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Temporary fallback observability hook threw',
+        context: const <String, Object?>{
+          'component': 'SocketWithRestFallbackAgentQueriesRemoteDataSource',
+        },
+        error: error,
+        stackTrace: stackTrace,
       );
     }
   }
 
-  void _latch(
+  void _latchPermanent(
     SocketDispatchException trigger, {
     required String reason,
   }) {
@@ -149,6 +221,8 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
       return;
     }
     _latched = true;
+    _consecutiveTransientFailures = 0;
+    _temporaryLatchedUntil = null;
     AppLogger.warning(
       'Agent queries datasource latched to REST fallback '
       '(socket permanent failure)',
@@ -165,8 +239,6 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
       try {
         hook(trigger);
       } on Object catch (error, stackTrace) {
-        // The hook is observability — never let it break the
-        // dispatch path that just decided to fall back.
         AppLogger.warning(
           'Fallback observability hook threw',
           context: const <String, Object?>{
@@ -177,5 +249,30 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
         );
       }
     }
+  }
+
+  static bool _isTransientSocketFailure(SocketDispatchException error) {
+    return error is SocketDispatchTimeout ||
+        error is SocketDispatchDisconnected;
+  }
+
+  static bool _isTransientRelayFailure(RelayDispatchException error) {
+    if (error is RelayRequestTimeout || error is RelayConversationLost) {
+      return true;
+    }
+    if (error is RelayConversationStartFailure) {
+      const eligible = <String>{
+        'conversation_start_failed',
+        'start_timeout',
+        'start_error',
+        'emit_failed',
+        'manager_disposed',
+        'obtain_superseded',
+      };
+      return eligible.contains(error.code) ||
+          error.code.toLowerCase().contains('overload') ||
+          error.code.toLowerCase().contains('unavailable');
+    }
+    return false;
   }
 }

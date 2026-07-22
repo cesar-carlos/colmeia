@@ -33,9 +33,10 @@ void main() {
           }
 
           final repository = getIt<ResumoTotalDiarioVendasRepository>();
-          final today = DateTime.now();
-          final periodEnd = DateTime(today.year, today.month, today.day);
-          final periodStart = periodEnd.subtract(const Duration(days: 14));
+          // Caching loads one SQL per missing closed day; keep the smoke
+          // window short (single-day coverage lives in the next test).
+          final periodStart = DateTime(2026, 7, 10);
+          final periodEnd = DateTime(2026, 7, 11);
 
           final result = await runE2eAppResult(
             () => repository.load(

@@ -22,7 +22,8 @@ constants.
 | `docs/adrs/0010-request-server-timings.md` | ADR for per-phase `requestServerTimings` on relay, `agents:command`, and REST. |
 | `docs/plug_agente/03_performance_roadmap.md` | Agent-side performance roadmap and expectations for bridge SQL, streaming, and batch semantics. |
 | Colmeia [`docs/bridge_agent_sql_api_options.md`](bridge_agent_sql_api_options.md) | Colmeia-facing bridge SQL summary: `sql.execute` / `sql.executeBatch`, choosing `multi_result` vs semantic batch vs JSON-RPC batch arrays, overview read-only parallelism (`max_parallel_read_only_batch_items`). Payload examples: `plug_server/docs/snippets/agent_command_performance_options.ts`. |
-| Colmeia [`docs/server_adjustments/README.md`](server_adjustments/README.md) | Colmeia-side hub performance gap matrix, smoke validation, and env flip guidance for relay batch / fast-path / server timings. |
+| Colmeia [`docs/Features/socket/socket_channel_performance_review.md`](Features/socket/socket_channel_performance_review.md) | Client socket/relay performance notes: coalescing, batch, gates, temporary REST latch, obtain single-flight, pool=`1`. |
+| Colmeia [`docs/Features/socket/socket_production_rollout_runbook.md`](Features/socket/socket_production_rollout_runbook.md) | Rollout smoke + troubleshooting (temp REST latch, fastPath id echo). |
 
 ## Socket contract used by Colmeia
 

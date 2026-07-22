@@ -38,8 +38,10 @@ void main() {
           }
 
           final repository = getIt<ResumoProdutoVendaLucratividadeRepository>();
-          final periodStart = DateTime(2026);
-          final periodEnd = DateTime(2026, 3, 31);
+          // E2E SQL Anywhere agent has July 2026 sales; Q1 scanned for minutes
+          // with little/no matching rows on this agent.
+          final periodStart = DateTime(2026, 7);
+          final periodEnd = DateTime(2026, 7, 21);
 
           final result = await runE2eAppResult(
             () => repository.loadAll(
@@ -104,8 +106,8 @@ void main() {
           }
 
           final useCase = getIt<LoadResumoProdutoVendaLucratividadeUseCase>();
-          final periodStart = DateTime(2026);
-          final periodEnd = DateTime(2026, 3, 31);
+          final periodStart = DateTime(2026, 7);
+          final periodEnd = DateTime(2026, 7, 21);
 
           final result = await runE2eAppResult(
             () => useCase(

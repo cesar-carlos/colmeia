@@ -155,7 +155,8 @@ class ConsumerSocketConnection {
   }
 
   /// App-lifecycle hooks: invoke from the root `WidgetsBindingObserver`.
-  Future<void> pause() => disconnect(reason: 'app_paused');
+  Future<void> pause({String reason = 'app_paused'}) =>
+      disconnect(reason: reason);
   Future<ConsumerSocketConnected> resume() => connect();
 
   Future<void> dispose() async {

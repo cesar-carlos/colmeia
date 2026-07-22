@@ -28,6 +28,7 @@ void main() {
       check(snap.relayJsonDecodeIsolateTotal).equals(0);
       check(snap.relayDecodeFailureTotalByCode).isEmpty();
       check(snap.restFallbackLatchTotal).equals(0);
+      check(snap.restFallbackTemporaryLatchTotal).equals(0);
       check(snap.lastGateSessionPeakSample).equals(0);
     });
 
@@ -277,6 +278,7 @@ void main() {
       check(snap.relayGzipDecodeIsolateTotal).equals(0);
       check(snap.relayDecodeFailureTotalByCode).isEmpty();
       check(snap.restFallbackLatchTotal).equals(0);
+      check(snap.restFallbackTemporaryLatchTotal).equals(0);
       check(snap.lastGateSessionPeakSample).equals(0);
     });
   });

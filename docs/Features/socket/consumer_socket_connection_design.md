@@ -418,7 +418,8 @@ class ConsumerSocketConnection {
   }
 
   /// Foreground/background hooks chamados pelo app shell.
-  Future<void> pause() => disconnect(reason: 'app_paused');
+  Future<void> pause({String reason = 'app_paused'}) =>
+      disconnect(reason: reason);
   Future<ConsumerSocketConnected> resume() => connect();
 
   Future<void> dispose() async {
@@ -638,7 +639,7 @@ final class _ConnectTransientFailure extends _ConnectOutcome {
 | `ConsumerSocketConnection._connectInternal` | Retry com **backoff exponencial** (`1s → 2s → 4s → 8s → 16s → 30s teto`), até `maxReconnectAttempts = 5`. |
 | Após `unauthorized`                         | **Não reconecta**. Estado terminal; UI deve mandar usuário para login.                                    |
 | Após `error` final                          | Permanece em `error`; nova tentativa só com `connect()` explícito (ex.: usuário aciona "Reconectar").     |
-| `pause()` (background)                      | `disconnect(reason: 'app_paused')`; em `resume()` chama `connect()` que reinicia o ciclo.                 |
+| `pause({reason})` (background / sign-out)   | `disconnect(reason: …)`; lifecycle uses `app_paused`, sign-out uses `signed_out`. `resume()` calls `connect()`. |
 
 > Por que single-flight: chamadas concorrentes a `connect()` durante
 > reconexão pendente devem **compartilhar** o mesmo Future, e nunca
@@ -846,7 +847,7 @@ A mesma `ConsumerSocketConnection` carrega tanto `agents:command` quanto
 | `relay_dispatch_exception.dart`        | Sealed `RelayDispatchException` com subtipos estáveis: `RelayConversationStartFailure`, `RelayConversationLost`, `RelayRequestRejected`, `RelayStreamTerminated`, `RelayRequestTimeout`, `RelayDecodeFailure`, `RelayDuplicateRequestId`, `RelayDispatcherDisposed`. Todos carregam `code`, `conversationId`, `clientRequestId` para metric pivots.                                                                             |
 | `relay_conversation_state.dart`        | Sealed (`Idle`, `Starting`, `Active`, `Ending`, `Ended`).                                                                                                                                                                                                                                                                                                                                                                       |
 | `relay_conversation.dart`              | Single-flight em `start()` (não emite dois `relay:conversation.start` em paralelo); `end()` idempotente; `forceEnd(reason)` para socket drop sem emitir nada para o hub.                                                                                                                                                                                                                                                        |
-| `relay_conversation_manager.dart`      | Map `agentId → RelayConversation`. Reescuta `connection.states()` e descarta tudo em `Disconnected/Error/Unauthorized`. Reabre on demand via `obtain(agentId)` (que primeiro garante `connection.connect()`).                                                                                                                                                                                                                   |
+| `relay_conversation_manager.dart`      | Map `agentId → RelayConversation`. **Single-flight por `agentId` em `obtain()`** (concurrent callers share one in-flight Future) so cold-start waves never open two hub conversations for the same agent. Reescuta `connection.states()` e descarta tudo em `Disconnected/Error/Unauthorized`. Reabre on demand via `obtain(agentId)` (que primeiro garante `connection.connect()`). |
 | `relay_command_dispatcher.dart` (port) | `Future<Map> sendUnary({agentId, body, clientRequestId, timeout, compression})` + `Stream<RelayRpcOutcome> outcomes()`.                                                                                                                                                                                                                                                                                                         |
 | `relay_command_dispatcher_impl.dart`   | Encoda `body` como `PayloadFrame` (auto-gzip via `PayloadFrameCodec`), emite `relay:rpc.request` com `{conversationId, frame, payloadFrameCompression}`, registra ouvintes uma vez por conexão para `accepted/response/chunk/complete`. Correlaciona via `clientRequestId` ↔ `requestId` (do `accepted`). Ignora `chunk` graciosamente (esqueleto pronto para PR-L+) e termina em `response` ou `complete` (`terminal_status`). |
 | `relay_rpc_outcome.dart`               | Sealed `RelayRpcOutcome` (`RelayRpcSuccess` com `deduplicated/replayed`, `RelayRpcFailure` com `exception`). Mesmo padrão do `AgentCommandOutcome`.                                                                                                                                                                                                                                                                             |

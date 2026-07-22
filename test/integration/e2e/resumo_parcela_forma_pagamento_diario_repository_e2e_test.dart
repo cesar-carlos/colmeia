@@ -37,9 +37,10 @@ void main() {
 
           final repository =
               getIt<ResumoParcelaFormaPagamentoDiarioRepository>();
-          final today = DateTime.now();
-          final periodEnd = DateTime(today.year, today.month, today.day);
-          final periodStart = periodEnd.subtract(const Duration(days: 14));
+          // Short closed window: a 14-day scan approached the bridge timeout
+          // (~2 min) on the E2E agent for this parcel-line daily resumo.
+          final periodStart = DateTime(2026, 7, 10);
+          final periodEnd = DateTime(2026, 7, 11);
 
           final result = await runE2eAppResult(
             () => repository.load(

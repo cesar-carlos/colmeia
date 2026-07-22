@@ -78,6 +78,7 @@ class SocketChannelMetrics {
   final Map<String, _ReservoirHistogram> _serverPhaseMsByName;
   int _serverTimingsSchemaMismatchTotal = 0;
   int _restFallbackLatchTotal = 0;
+  int _restFallbackTemporaryLatchTotal = 0;
   int lastGateSessionPeakSample = 0;
 
   // ----- Recording API -----
@@ -222,6 +223,12 @@ class SocketChannelMetrics {
     _restFallbackLatchTotal += 1;
   }
 
+  /// One increment when the datasource opens a temporary REST window after
+  /// consecutive socket/relay transport timeouts or disconnects.
+  void recordRestFallbackTemporaryLatch() {
+    _restFallbackTemporaryLatchTotal += 1;
+  }
+
   void recordRelayDispatch({
     required String agentId,
     required String? method,
@@ -334,6 +341,7 @@ class SocketChannelMetrics {
       },
       serverTimingsSchemaMismatchTotal: _serverTimingsSchemaMismatchTotal,
       restFallbackLatchTotal: _restFallbackLatchTotal,
+      restFallbackTemporaryLatchTotal: _restFallbackTemporaryLatchTotal,
       lastGateSessionPeakSample: lastGateSessionPeakSample,
     );
   }
@@ -374,6 +382,7 @@ class SocketChannelMetrics {
     _serverPhaseMsByName.clear();
     _serverTimingsSchemaMismatchTotal = 0;
     _restFallbackLatchTotal = 0;
+    _restFallbackTemporaryLatchTotal = 0;
     lastGateSessionPeakSample = 0;
   }
 

@@ -11,6 +11,7 @@ import 'package:colmeia/core/socket/consumer_socket_terminal_exception.dart';
 import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
 import 'package:colmeia/core/socket/socket_app_error_retry_after.dart';
 import 'package:colmeia/core/socket/socket_coalesce_key.dart';
+import 'package:colmeia/core/socket/socket_command_coalescer.dart';
 import 'package:colmeia/core/socket/socket_command_dispatcher.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/core/socket/socket_request_correlator.dart';
@@ -27,7 +28,8 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 /// SRP-conscious: this dispatcher knows nothing about
 /// `features/agent_queries/*`. It inspects the bridge response structure
 /// (`response.item.error`) only enough to classify outcomes; the actual
-/// JSON-RPC parsing remains in the repository.
+/// JSON-RPC parsing remains in the repository. Request coalescing lives in
+/// [SocketCommandCoalescer].
 ///
 /// See `docs/Features/socket_command_dispatcher_design.md` §5.
 class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
@@ -46,7 +48,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
        _latencyOracle = latencyOracle,
        _defaultTimeout = defaultTimeout,
        _coalescingEnabled = coalescingEnabled,
-       _onCoalesced = onCoalesced,
+       _coalescer = SocketCommandCoalescer(onCoalesced: onCoalesced),
        _onServerTimings = onServerTimings,
        _outcomes = StreamController<AgentCommandOutcome>.broadcast() {
     _stateSub = _connection.states().listen(_onConnectionState);
@@ -58,33 +60,9 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
   final AgentLatencyOracle? _latencyOracle;
   final Duration _defaultTimeout;
   final bool _coalescingEnabled;
-  final void Function()? _onCoalesced;
+  final SocketCommandCoalescer _coalescer;
   final void Function(ServerTimings)? _onServerTimings;
   final StreamController<AgentCommandOutcome> _outcomes;
-
-  /// Maps `SocketCoalesceKey` → in-flight Future. Reused while the entry
-  /// exists so concurrent identical sends share the same response (and
-  /// the same error). Entries are removed when the underlying future
-  /// settles.
-  final Map<String, Future<Map<String, dynamic>>> _inflightByKey =
-      <String, Future<Map<String, dynamic>>>{};
-
-  /// Leader `rpcId` for each active coalesce `key` (registered in correlator).
-  final Map<String, String> _coalesceLeaderRpcIdByKey = <String, String>{};
-
-  /// Leader client-facing completer when coalescing is active — allows
-  /// cancelling the leader without failing the shared hub flight for followers.
-  final Map<String, Completer<Map<String, dynamic>>>
-  _coalesceLeaderClientCompleterByRpcId =
-      <String, Completer<Map<String, dynamic>>>{};
-
-  /// Followers of a coalesced flight: separate [Future] per `rpcId` for
-  /// targeted cancellation without cancelling the shared hub request.
-  final Map<String, Completer<Map<String, dynamic>>> _coalesceAwaiterByRpcId =
-      <String, Completer<Map<String, dynamic>>>{};
-
-  /// Follower `rpcId` → coalesce `key`.
-  final Map<String, String> _coalesceAwaiterKeyByRpcId = <String, String>{};
 
   StreamSubscription<ConsumerSocketConnectionState>? _stateSub;
   io.Socket? _attachedSocket;
@@ -132,52 +110,25 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
         timeout: timeout,
       );
     }
-    final existing = _inflightByKey[key];
-    if (existing != null) {
-      _onCoalesced?.call();
-      final leaderRpcId = _coalesceLeaderRpcIdByKey[key];
-      AppLogger.debug(
-        'Coalesced agents:command into in-flight request',
-        context: <String, Object?>{
-          'component': 'SocketCommandDispatcherImpl',
-          'agentId': agentId,
-          'followerRpcId': rpcId,
-          'leaderRpcId': leaderRpcId,
-        },
-      );
-      final followerCompleter = Completer<Map<String, dynamic>>();
-      final methodFollower = _extractMethod(body);
-      final followerStopwatch = Stopwatch()..start();
-      _meta[rpcId] = _PendingMeta(
-        agentId: agentId,
-        stopwatch: followerStopwatch,
-        method: methodFollower,
-      );
-      _coalesceAwaiterByRpcId[rpcId] = followerCompleter;
-      _coalesceAwaiterKeyByRpcId[rpcId] = key;
-      unawaited(
-        existing
-            .then<void>(
-              (value) {
-                followerStopwatch.stop();
-                if (!followerCompleter.isCompleted) {
-                  followerCompleter.complete(value);
-                }
-              },
-              onError: (Object error, StackTrace stack) {
-                followerStopwatch.stop();
-                if (!followerCompleter.isCompleted) {
-                  followerCompleter.completeError(error, stack);
-                }
-              },
-            )
-            .whenComplete(() {
-              _meta.remove(rpcId);
-              _coalesceAwaiterByRpcId.remove(rpcId);
-              _coalesceAwaiterKeyByRpcId.remove(rpcId);
-            }),
-      );
-      return followerCompleter.future;
+    final followerFuture = _coalescer.tryJoinAsFollower(
+      key: key,
+      rpcId: rpcId,
+      agentId: agentId,
+      onJoined: (_) {
+        final methodFollower = _extractMethod(body);
+        final followerStopwatch = Stopwatch()..start();
+        _meta[rpcId] = _PendingMeta(
+          agentId: agentId,
+          stopwatch: followerStopwatch,
+          method: methodFollower,
+        );
+      },
+    );
+    if (followerFuture != null) {
+      return followerFuture.whenComplete(() {
+        final meta = _meta.remove(rpcId);
+        meta?.stopwatch.stop();
+      });
     }
     final hubFuture = _dispatchAgentsCommand(
       agentId: agentId,
@@ -185,47 +136,11 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       rpcId: rpcId,
       timeout: timeout,
     );
-    final leaderClient = Completer<Map<String, dynamic>>();
-    _coalesceLeaderClientCompleterByRpcId[rpcId] = leaderClient;
-    final tracked = hubFuture.then(
-      (value) {
-        if (!leaderClient.isCompleted) {
-          leaderClient.complete(value);
-        }
-        return value;
-      },
-      onError: (Object error, StackTrace stack) {
-        if (!leaderClient.isCompleted) {
-          leaderClient.completeError(error, stack);
-        }
-        return Future<Map<String, dynamic>>.error(error, stack);
-      },
+    return _coalescer.beginLead(
+      key: key,
+      rpcId: rpcId,
+      hubFuture: hubFuture,
     );
-    _inflightByKey[key] = tracked;
-    _coalesceLeaderRpcIdByKey[key] = rpcId;
-    unawaited(_clearCoalescingEntryWhenDone(key, tracked));
-    return leaderClient.future;
-  }
-
-  Future<void> _clearCoalescingEntryWhenDone(
-    String key,
-    Future<Map<String, dynamic>> future,
-  ) async {
-    try {
-      await future;
-    } on Object {
-      // The original future is still returned to callers. This helper only
-      // prevents the cleanup task from reporting a second unhandled error.
-    } finally {
-      final current = _inflightByKey[key];
-      if (identical(current, future)) {
-        _inflightByKey.remove(key)?.ignore();
-        final leaderRpcId = _coalesceLeaderRpcIdByKey.remove(key);
-        if (leaderRpcId != null) {
-          _coalesceLeaderClientCompleterByRpcId.remove(leaderRpcId);
-        }
-      }
-    }
   }
 
   Future<Map<String, dynamic>> _dispatchAgentsCommand({
@@ -452,9 +367,8 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     if (_isDisposed) {
       return;
     }
-    final followerCompleter = _coalesceAwaiterByRpcId.remove(rpcId);
+    final followerCompleter = _coalescer.takeFollower(rpcId);
     if (followerCompleter != null) {
-      _coalesceAwaiterKeyByRpcId.remove(rpcId);
       final metaFollower = _meta.remove(rpcId);
       if (metaFollower != null) {
         metaFollower.stopwatch.stop();
@@ -479,25 +393,17 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     if (meta == null) {
       return;
     }
-    String? leaderCoalesceKey;
-    for (final entry in _coalesceLeaderRpcIdByKey.entries) {
-      if (entry.value == rpcId) {
-        leaderCoalesceKey = entry.key;
-        break;
-      }
-    }
+    final leaderCoalesceKey = _coalescer.leaderKeyForRpcId(rpcId);
     final hasFollowers =
         leaderCoalesceKey != null &&
-        _coalesceAwaiterKeyByRpcId.values.any(
-          (key) => key == leaderCoalesceKey,
-        );
+        _coalescer.hasFollowersForKey(leaderCoalesceKey);
     final cancelled = SocketDispatchCancelled(
       message: 'Request cancelled by caller (reason=$reason)',
     );
     if (hasFollowers) {
       _meta.remove(rpcId);
       meta.stopwatch.stop();
-      final leaderClient = _coalesceLeaderClientCompleterByRpcId.remove(rpcId);
+      final leaderClient = _coalescer.takeLeaderClientCompleter(rpcId);
       if (leaderClient != null && !leaderClient.isCompleted) {
         leaderClient.completeError(cancelled);
       }
@@ -533,16 +439,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     _stateSub = null;
     _detachListeners();
     await _correlator.dispose();
-    for (final c in _coalesceAwaiterByRpcId.values) {
-      if (!c.isCompleted) {
-        c.completeError(
-          const SocketDispatchDisconnected(message: 'Dispatcher disposed'),
-        );
-      }
-    }
-    _coalesceAwaiterByRpcId.clear();
-    _coalesceAwaiterKeyByRpcId.clear();
-    _coalesceLeaderClientCompleterByRpcId.clear();
+    _coalescer.dispose();
     if (!_outcomes.isClosed) {
       await _outcomes.close();
     }
@@ -678,19 +575,11 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       case ConsumerSocketError():
       case ConsumerSocketUnauthorized():
         _detachListeners();
-        _inflightByKey.clear();
-        _coalesceLeaderRpcIdByKey.clear();
-        for (final c in _coalesceAwaiterByRpcId.values) {
-          if (!c.isCompleted) {
-            c.completeError(
-              const SocketDispatchDisconnected(
-                message: 'Socket transitioned away from connected',
-              ),
-            );
-          }
-        }
-        _coalesceAwaiterByRpcId.clear();
-        _coalesceAwaiterKeyByRpcId.clear();
+        _coalescer.failFollowersAndClearInflight(
+          const SocketDispatchDisconnected(
+            message: 'Socket transitioned away from connected',
+          ),
+        );
         _correlator.failAll(
           const SocketDispatchDisconnected(
             message: 'Socket transitioned away from connected',

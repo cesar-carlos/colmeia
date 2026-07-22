@@ -1,5 +1,7 @@
 import 'package:checks/checks.dart';
+import 'package:colmeia/core/network/auth_session_events.dart';
 import 'package:colmeia/core/observability/socket/socket_channel_metrics.dart';
+import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/socket_with_rest_fallback_agent_queries_remote_datasource.dart';
@@ -26,6 +28,7 @@ void main() {
           socketDelegate: socket,
           restDelegate: rest,
         );
+        addTearDown(fallback.dispose);
 
         final response = await fallback.postSqlExecute(request);
 
@@ -52,12 +55,14 @@ void main() {
           socketDelegate: socket,
           restDelegate: rest,
         );
+        addTearDown(fallback.dispose);
 
         final raised = await _capture(fallback.postSqlExecute(request));
         check(raised).isA<SocketDispatchLegacyStreamingUnsupported>();
         check(socket.callCount).equals(1);
         check(rest.callCount).equals(0);
         check(fallback.isLatchedToRest).isFalse();
+        check(fallback.isTemporarilyLatchedToRest).isFalse();
       },
     );
 
@@ -78,6 +83,7 @@ void main() {
           socketDelegate: socket,
           restDelegate: rest,
         );
+        addTearDown(fallback.dispose);
 
         final raised = await _capture(
           fallback.postSqlExecuteBatch(batchRequest),
@@ -109,6 +115,7 @@ void main() {
           restDelegate: rest,
           onFallback: (trigger) => observedTrigger = trigger,
         );
+        addTearDown(fallback.dispose);
 
         final first = await fallback.postSqlExecute(request);
         check(first['response']).equals('ok-from-rest');
@@ -117,7 +124,6 @@ void main() {
         check(fallback.isLatchedToRest).isTrue();
         check(observedTrigger).isA<SocketDispatchNamespaceForbidden>();
 
-        // Second call: socket MUST NOT be touched; REST count grows.
         final second = await fallback.postSqlExecute(request);
         check(second['response']).equals('ok-from-rest');
         check(socket.callCount).equals(1);
@@ -144,6 +150,7 @@ void main() {
           restDelegate: rest,
           onFallback: (_) => metrics.recordRestFallbackLatch(),
         );
+        addTearDown(fallback.dispose);
 
         await fallback.postSqlExecute(request);
         check(metrics.snapshot().restFallbackLatchTotal).equals(1);
@@ -163,13 +170,14 @@ void main() {
         socketDelegate: socket,
         restDelegate: rest,
       );
+      addTearDown(fallback.dispose);
 
       await fallback.postSqlExecute(request);
       check(fallback.isLatchedToRest).isTrue();
     });
 
     test(
-      'reconnect exhaustion mapped as disconnected does not latch',
+      'single disconnected failure does not open temporary latch',
       () async {
         final socket = _RecordingDataSource(
           throwOn: const SocketDispatchDisconnected(
@@ -183,21 +191,21 @@ void main() {
           socketDelegate: socket,
           restDelegate: rest,
         );
+        addTearDown(fallback.dispose);
 
         final raised = await _capture(fallback.postSqlExecute(request));
         check(raised).isA<SocketDispatchDisconnected>();
         check(fallback.isLatchedToRest).isFalse();
+        check(fallback.isTemporarilyLatchedToRest).isFalse();
         check(rest.callCount).equals(0);
       },
     );
 
     test(
-      'transient errors propagate (no fallback): timeout, disconnected, '
-      'app:error and decode failures stay on socket',
+      'single timeout / cancel / app:error / decode do not latch',
       () async {
-        final transientCases = <SocketDispatchException>[
+        final transientCases = <Object>[
           const SocketDispatchTimeout(message: 'timeout'),
-          const SocketDispatchDisconnected(message: 'disconnected'),
           const SocketDispatchAppError(
             message: 'service unavailable',
             serverCode: 'SERVICE_UNAVAILABLE',
@@ -215,25 +223,115 @@ void main() {
             socketDelegate: socket,
             restDelegate: rest,
           );
+          addTearDown(fallback.dispose);
 
           final raised = await _capture(fallback.postSqlExecute(request));
-          check(raised).isA<SocketDispatchException>();
-          check(
-            (raised! as SocketDispatchException).code,
-          ).equals(transient.code);
-          // Critical: the transient case MUST NOT pivot — the
-          // socket layer's own RetryAfterGate / circuit breaker
-          // owns recovery for these.
+          check(raised).isNotNull();
           check(fallback.isLatchedToRest).isFalse();
+          check(fallback.isTemporarilyLatchedToRest).isFalse();
           check(rest.callCount).equals(0);
         }
       },
     );
 
+    test(
+      'three RelayRequestTimeouts open temporary latch; fourth uses REST',
+      () async {
+        final socket = _RecordingDataSource(
+          throwOn: const RelayRequestTimeout(message: 'relay timed out'),
+        );
+        final rest = _RecordingDataSource(
+          response: <String, dynamic>{'response': 'ok-from-rest'},
+        );
+        final metrics = SocketChannelMetrics(reservoirSize: 8);
+        var now = DateTime.utc(2026, 7, 22, 12);
+        final fallback = SocketWithRestFallbackAgentQueriesRemoteDataSource(
+          socketDelegate: socket,
+          restDelegate: rest,
+          clock: () => now,
+          onTemporaryFallback: ({required reason, required trigger}) {
+            metrics.recordRestFallbackTemporaryLatch();
+          },
+        );
+        addTearDown(fallback.dispose);
+
+        for (var i = 0; i < 3; i++) {
+          final raised = await _capture(fallback.postSqlExecute(request));
+          check(raised).isA<RelayRequestTimeout>();
+        }
+        check(fallback.isTemporarilyLatchedToRest).isTrue();
+        check(metrics.snapshot().restFallbackTemporaryLatchTotal).equals(1);
+        check(rest.callCount).equals(0);
+
+        final fourth = await fallback.postSqlExecute(request);
+        check(fourth['response']).equals('ok-from-rest');
+        check(socket.callCount).equals(3);
+        check(rest.callCount).equals(1);
+      },
+    );
+
+    test(
+      'after temporary cooldown, socket probe succeeds and clears latch',
+      () async {
+        final socket = _RecordingDataSource(
+          throwOn: const RelayRequestTimeout(message: 'relay timed out'),
+        );
+        final rest = _RecordingDataSource(
+          response: <String, dynamic>{'response': 'ok-from-rest'},
+        );
+        var now = DateTime.utc(2026, 7, 22, 12);
+        final fallback = SocketWithRestFallbackAgentQueriesRemoteDataSource(
+          socketDelegate: socket,
+          restDelegate: rest,
+          clock: () => now,
+          temporaryLatchCooldown: const Duration(seconds: 60),
+        );
+        addTearDown(fallback.dispose);
+
+        for (var i = 0; i < 3; i++) {
+          await _capture(fallback.postSqlExecute(request));
+        }
+        check(fallback.isTemporarilyLatchedToRest).isTrue();
+
+        now = now.add(const Duration(seconds: 61));
+        socket
+          ..throwOn = null
+          ..response = <String, dynamic>{'response': 'ok-from-socket'};
+
+        final recovered = await fallback.postSqlExecute(request);
+        check(recovered['response']).equals('ok-from-socket');
+        check(fallback.isTemporarilyLatchedToRest).isFalse();
+        check(rest.callCount).equals(0);
+      },
+    );
+
+    test('auth session reset clears temporary latch', () async {
+      final events = AuthSessionEvents();
+      addTearDown(events.dispose);
+      final socket = _RecordingDataSource(
+        throwOn: const SocketDispatchTimeout(message: 'timeout'),
+      );
+      final rest = _RecordingDataSource(
+        response: <String, dynamic>{'response': 'ok-from-rest'},
+      );
+      final fallback = SocketWithRestFallbackAgentQueriesRemoteDataSource(
+        socketDelegate: socket,
+        restDelegate: rest,
+        sessionEvents: events,
+      );
+      addTearDown(fallback.dispose);
+
+      for (var i = 0; i < 3; i++) {
+        await _capture(fallback.postSqlExecute(request));
+      }
+      check(fallback.isTemporarilyLatchedToRest).isTrue();
+
+      events.notifyInvalidated();
+      await Future<void>.delayed(Duration.zero);
+      check(fallback.isTemporarilyLatchedToRest).isFalse();
+    });
+
     test('fallback observability hook firing exception is swallowed', () async {
-      // Observability MUST NOT break the dispatch path that just
-      // decided to fall back. Otherwise the user gets the same
-      // "blank screen" the fallback was designed to prevent.
       final socket = _RecordingDataSource(
         throwOn: const SocketDispatchNamespaceForbidden(
           message: 'forbidden',
@@ -247,9 +345,8 @@ void main() {
         restDelegate: rest,
         onFallback: (_) => throw StateError('boom'),
       );
+      addTearDown(fallback.dispose);
 
-      // No try/catch around the call: if the hook leaked the test
-      // would fail with an uncaught exception.
       final response = await fallback.postSqlExecute(request);
       check(response).deepEquals(<String, dynamic>{'response': 'still-works'});
     });
@@ -259,8 +356,8 @@ void main() {
 class _RecordingDataSource implements AgentQueriesRemoteDataSource {
   _RecordingDataSource({this.response, this.throwOn});
 
-  final Map<String, dynamic>? response;
-  final SocketDispatchException? throwOn;
+  Map<String, dynamic>? response;
+  Object? throwOn;
   int callCount = 0;
 
   @override
@@ -315,9 +412,6 @@ AgentSqlExecuteBatchRequest _batchRequest() {
   );
 }
 
-/// Awaits [future] and returns the error it throws, or `null` when
-/// it resolves normally. Avoids the test API friction with
-/// `check(...).throws<T>()` not being available on `Future`.
 Future<Object?> _capture(Future<Object?> future) async {
   try {
     await future;
