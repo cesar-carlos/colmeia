@@ -2085,10 +2085,26 @@
   "salesProdutoTendenciaFilterGroup": "Group",
   "salesProdutoTendenciaFilterBrand": "Brand",
   "salesProdutoTendenciaFilterPageSize": "Rows per page",
+  "salesTrendFilterMetricTitle": "Metric",
+  "salesTrendFilterMetricQuantity": "Quantity",
+  "salesTrendFilterMetricRevenue": "Revenue (R$)",
+  "salesTrendFilterFilialLabel": "Branch",
+  "salesTrendFilterMinVolumeTitle": "Minimum volume floor",
+  "salesTrendFilterThresholdTitle": "Trend threshold",
+  "salesTrendFilterThresholdPercentLabel": "{percent}%",
+  "@salesTrendFilterThresholdPercentLabel": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "salesTrendFilterTopMoversSortTitle": "Sort top movers by",
+  "salesTrendFilterTopMoversSortDifference": "By difference",
+  "salesTrendFilterTopMoversSortPercent": "By percent",
+  "salesTrendFilterPeriodsGapWarning": "There is a gap between the end of the previous period and the start of the current period. The comparison is still valid, but the windows are not contiguous.",
   "salesProdutoTendenciaFilterAllOption": "All",
   "salesProdutoTendenciaFilterQuickPeriodsTitle": "Suggested periods",
   "salesProdutoTendenciaFilterQuickPeriodsSubtitle": "Pick a base window and the report will align the comparison for you.",
-  "salesProdutoTendenciaFilterPresetCurrentMonth": "Current month",
+  "salesProdutoTendenciaFilterPresetCurrentMonth": "Month to date",
   "salesProdutoTendenciaFilterPresetPreviousMonth": "Previous month",
   "salesProdutoTendenciaFilterPresetLast7Days": "Last 7 days",
   "salesProdutoTendenciaFilterPresetLast30Days": "Last 30 days",
@@ -2114,7 +2130,7 @@
   "salesProdutoTendenciaSummaryByClassificacaoTitle": "Products by classification",
   "salesProdutoTendenciaSummaryByClassificacaoSubtitle": "Same counts as the summary above, grouped by sales trend.",
   "salesProdutoTendenciaSummaryByClassificacaoDrillDownHint": "Tap a bar to filter the detail grid below.",
-  "salesProdutoTendenciaSummaryClassificacaoLegend": "Growing: +20% vs prior · Falling: −20% · New: sold now, not before · Stopped: sold before, not now · Stable: within ±20%",
+  "salesProdutoTendenciaSummaryClassificacaoLegend": "Growing: +20% vs prior · Falling: −20% · Current only: sold now, not before · Stopped: sold before, not now · Stable: within ±20%",
   "salesProdutoTendenciaKpiFilterSemantics": "Filter details by {classification}",
   "@salesProdutoTendenciaKpiFilterSemantics": {
     "placeholders": {
@@ -2148,7 +2164,7 @@
   "salesProdutoTendenciaNoData": "No trend data for the selected filters.",
   "salesProdutoTendenciaKpiGrowing": "Growing products",
   "salesProdutoTendenciaKpiFalling": "Falling products",
-  "salesProdutoTendenciaKpiNewProducts": "New products",
+  "salesProdutoTendenciaKpiNewProducts": "Current period only",
   "salesProdutoTendenciaKpiStopped": "Stopped selling",
   "salesProdutoTendenciaKpiStable": "Stable products",
   "salesProdutoTendenciaKpiNetImpact": "Net impact (qty)",
@@ -2171,7 +2187,7 @@
     }
   },
   "salesProdutoTendenciaClassificacaoStopped": "Stopped selling",
-  "salesProdutoTendenciaClassificacaoNew": "New product",
+  "salesProdutoTendenciaClassificacaoNew": "Current period only",
   "salesProdutoTendenciaClassificacaoGrowing": "Growing",
   "salesProdutoTendenciaClassificacaoFalling": "Falling",
   "salesProdutoTendenciaClassificacaoStable": "Stable",
@@ -2191,10 +2207,10 @@
       }
     }
   },
-  "salesProdutoTendenciaMediaMovelPageSubtitle": "Moving-average dashboard with classification summary and paged product detail.",
+  "salesProdutoTendenciaMediaMovelPageSubtitle": "Daily quantity average over the last N calendar days versus the previous N days.",
   "salesProdutoTendenciaMediaMovelFilterQuantidadeDias": "Window size",
-  "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHint": "Number of days used in each moving average",
-  "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHelper": "Use the same window size for the current and previous averages.",
+  "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHint": "Calendar days in each average (ends today)",
+  "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHelper": "Days with no sales count as zero. Compares the current average with the immediately previous window.",
   "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasInvalid": "Enter a valid number of days greater than zero.",
   "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasPresetsTitle": "Quick windows",
   "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasTooLarge": "Use at most {maxDays} days.",

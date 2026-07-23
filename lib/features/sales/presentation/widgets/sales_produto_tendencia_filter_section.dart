@@ -1,4 +1,6 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_filter_limits.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_metric_mode.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_produto_tendencia_controller.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_produto_tendencia_share.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_produto_tendencia_presentation_state.dart';
@@ -100,6 +102,11 @@ class _SalesProdutoTendenciaFilterSlice {
     required this.grupoProdutoLabel,
     required this.codMarca,
     required this.marcaProdutoLabel,
+    required this.codFilial,
+    required this.filialLabel,
+    required this.metricMode,
+    required this.minVolumeUnits,
+    required this.trendThresholdPercent,
     required this.loading,
   });
 
@@ -125,6 +132,11 @@ class _SalesProdutoTendenciaFilterSlice {
       grupoProdutoLabel: state.grupoProdutoLabel,
       codMarca: state.codMarca,
       marcaProdutoLabel: state.marcaProdutoLabel,
+      codFilial: state.codFilial,
+      filialLabel: state.filialLabel,
+      metricMode: state.metricMode,
+      minVolumeUnits: state.minVolumeUnits,
+      trendThresholdPercent: state.trendThresholdPercent,
       loading: state.loading,
     );
   }
@@ -139,6 +151,11 @@ class _SalesProdutoTendenciaFilterSlice {
   final String? grupoProdutoLabel;
   final int? codMarca;
   final String? marcaProdutoLabel;
+  final int? codFilial;
+  final String? filialLabel;
+  final SalesTrendMetricMode metricMode;
+  final int minVolumeUnits;
+  final double trendThresholdPercent;
   final bool loading;
 
   static int _activeFilterCount(SalesProdutoTendenciaPresentationState state) {
@@ -153,6 +170,19 @@ class _SalesProdutoTendenciaFilterSlice {
       count++;
     }
     if (state.codMarca != null) {
+      count++;
+    }
+    if (state.codFilial != null) {
+      count++;
+    }
+    if (state.metricMode != SalesTrendMetricMode.quantity) {
+      count++;
+    }
+    if (state.minVolumeUnits != SalesTrendFilterLimits.defaultMinVolumeUnits) {
+      count++;
+    }
+    if (state.trendThresholdPercent !=
+        SalesTrendFilterLimits.defaultTrendThresholdPercent) {
       count++;
     }
     return count;
@@ -204,6 +234,40 @@ class _SalesProdutoTendenciaFilterSlice {
         ),
       );
     }
+    if (codFilial != null) {
+      final label = filialLabel ?? '#$codFilial';
+      chips.add(
+        _SalesProdutoTendenciaFilterChip(
+          label: '${l10n.salesTrendFilterFilialLabel}: $label',
+        ),
+      );
+    }
+    if (metricMode != SalesTrendMetricMode.quantity) {
+      chips.add(
+        _SalesProdutoTendenciaFilterChip(
+          label:
+              '${l10n.salesTrendFilterMetricTitle}: '
+              '${l10n.salesTrendFilterMetricRevenue}',
+        ),
+      );
+    }
+    if (minVolumeUnits != SalesTrendFilterLimits.defaultMinVolumeUnits) {
+      chips.add(
+        _SalesProdutoTendenciaFilterChip(
+          label: '${l10n.salesTrendFilterMinVolumeTitle}: $minVolumeUnits',
+        ),
+      );
+    }
+    if (trendThresholdPercent !=
+        SalesTrendFilterLimits.defaultTrendThresholdPercent) {
+      chips.add(
+        _SalesProdutoTendenciaFilterChip(
+          label:
+              '${l10n.salesTrendFilterThresholdTitle}: '
+              '${l10n.salesTrendFilterThresholdPercentLabel((trendThresholdPercent * 100).round())}',
+        ),
+      );
+    }
     return chips;
   }
 
@@ -220,6 +284,11 @@ class _SalesProdutoTendenciaFilterSlice {
         other.grupoProdutoLabel == grupoProdutoLabel &&
         other.codMarca == codMarca &&
         other.marcaProdutoLabel == marcaProdutoLabel &&
+        other.codFilial == codFilial &&
+        other.filialLabel == filialLabel &&
+        other.metricMode == metricMode &&
+        other.minVolumeUnits == minVolumeUnits &&
+        other.trendThresholdPercent == trendThresholdPercent &&
         other.loading == loading;
   }
 
@@ -233,9 +302,16 @@ class _SalesProdutoTendenciaFilterSlice {
     classificacao,
     codGrupoProduto,
     grupoProdutoLabel,
-    codMarca,
-    marcaProdutoLabel,
-    loading,
+    Object.hash(
+      codMarca,
+      marcaProdutoLabel,
+      codFilial,
+      filialLabel,
+      metricMode,
+      minVolumeUnits,
+      trendThresholdPercent,
+      loading,
+    ),
   );
 }
 

@@ -33,9 +33,12 @@ import 'package:result_dart/result_dart.dart';
 /// Standalone `loadPage` / `loadSummary` use relay **unary** with
 /// `preferDbStreaming: false`. Streaming returned empty success payloads on the
 /// E2E SQL Anywhere agent for this CTE/window shape; pagination uses `loadPage`
-/// and must not wipe the detail table. Skips the short transport cache and
-/// retries once on empty success because the agent can still return an empty
-/// replay.
+/// and must not wipe the detail table. Retries once on empty success because the
+/// agent can still return an empty replay.
+///
+/// Transport cache is enabled for identical filter fingerprints. Day-bucket /
+/// Hive facts are **not** used: rolling calendar windows plus metric/threshold
+/// knobs do not map cleanly onto fixed day facts.
 ///
 /// `loadPageAndSummary` stays on `sql.executeBatch` (relay unary at the batch
 /// layer) and already returned correct rows on the same agent.
@@ -114,6 +117,10 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
           classificacao: filter.normalizedClassificacao,
           codGrupoProduto: filter.codGrupoProduto,
           codMarca: filter.codMarca,
+          codFilial: filter.codFilial,
+          metricMode: filter.metricMode,
+          minVolumeUnits: filter.minVolumeUnits,
+          trendThresholdPercent: filter.trendThresholdPercent,
           sortBy: filter.sortBy,
         ),
         clientToken: clientToken,
@@ -132,7 +139,6 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
         // Explicit unary: documented streaming exception for this CTE report.
         // ignore: avoid_redundant_argument_values
         relayMode: AgentSqlRelayMode.unary,
-        skipTransportCache: true,
       );
 
       return AgentSqlRepositoryExecution.execute<
@@ -220,6 +226,10 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
           classificacao: filter.normalizedClassificacao,
           codGrupoProduto: filter.codGrupoProduto,
           codMarca: filter.codMarca,
+          codFilial: filter.codFilial,
+          metricMode: filter.metricMode,
+          minVolumeUnits: filter.minVolumeUnits,
+          trendThresholdPercent: filter.trendThresholdPercent,
         ),
         clientToken: clientToken,
         bridgeTimeoutMs: effectiveBridgeMs,
@@ -234,7 +244,6 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
         // Explicit unary: documented streaming exception for this CTE report.
         // ignore: avoid_redundant_argument_values
         relayMode: AgentSqlRelayMode.unary,
-        skipTransportCache: true,
       );
 
       return AgentSqlRepositoryExecution.execute<
@@ -324,7 +333,6 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
       clientToken: clientToken,
       bridgeTimeoutMs: effectiveBridgeMs,
       useRelay: true,
-      skipTransportCache: true,
       options: AgentSqlReadOnlyBatchOptions.dashboard(
         sqlTimeoutMs: effectiveSqlMs,
         maxRows: batchMaxRows,
@@ -337,6 +345,10 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
             classificacao: filter.normalizedClassificacao,
             codGrupoProduto: filter.codGrupoProduto,
             codMarca: filter.codMarca,
+            codFilial: filter.codFilial,
+            metricMode: filter.metricMode,
+            minVolumeUnits: filter.minVolumeUnits,
+            trendThresholdPercent: filter.trendThresholdPercent,
             sortBy: filter.sortBy,
           ),
           namedParams: <String, Object?>{
@@ -352,6 +364,10 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
             classificacao: filter.normalizedClassificacao,
             codGrupoProduto: filter.codGrupoProduto,
             codMarca: filter.codMarca,
+            codFilial: filter.codFilial,
+            metricMode: filter.metricMode,
+            minVolumeUnits: filter.minVolumeUnits,
+            trendThresholdPercent: filter.trendThresholdPercent,
           ),
           executionOrder: _batchIndexSummary,
         ),

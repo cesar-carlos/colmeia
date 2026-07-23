@@ -140,6 +140,46 @@ void main() {
       },
     );
 
+    test(
+      'updateZoomPanBehaviorFlags recreates behavior while detached',
+      () {
+        final previous = coordinator.zoomPanBehavior;
+        coordinator
+          ..mapSurfaceAttached = false
+          ..state = coordinator.state.copyWith(zoomLevel: 2.4)
+          ..updateZoomPanBehaviorFlags(
+            enableDoubleTapZooming: false,
+            showToolbar: true,
+          );
+
+        expect(coordinator.mapSurfaceAttached, isFalse);
+        expect(identical(coordinator.zoomPanBehavior, previous), isFalse);
+        expect(coordinator.zoomPanBehavior.zoomLevel, 2.4);
+        expect(coordinator.zoomPanBehavior.showToolbar, isTrue);
+      },
+    );
+
+    test(
+      'markMapSurfaceDetached before apply seeds zoom without in-place mutation',
+      () {
+        coordinator
+          ..markMapSurfaceAttached()
+          ..state = coordinator.state.copyWith(
+            zoomLevel: 3.5,
+            centerLatitude: -12.0,
+            centerLongitude: -48.0,
+          );
+        final attachedBehavior = coordinator.zoomPanBehavior;
+        coordinator.markMapSurfaceDetached();
+
+        expect(coordinator.mapSurfaceAttached, isFalse);
+        expect(identical(coordinator.zoomPanBehavior, attachedBehavior), isFalse);
+        expect(coordinator.zoomPanBehavior.zoomLevel, 3.5);
+        expect(coordinator.zoomPanBehavior.focalLatLng?.latitude, -12);
+        expect(coordinator.zoomPanBehavior.focalLatLng?.longitude, -48);
+      },
+    );
+
     test('applyPreferredViewport skips when user has manual viewport', () {
       coordinator
         ..state = coordinator.state.copyWith(userHasManualViewport: true)

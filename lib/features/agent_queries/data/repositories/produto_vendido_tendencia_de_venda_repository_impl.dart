@@ -31,9 +31,12 @@ import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendi
 /// Standalone `loadPage` / `loadSummary` and screen `loadPageAndSummary` use
 /// relay **unary** with `preferDbStreaming: false`. Streaming returned empty
 /// success payloads on the E2E SQL Anywhere agent for this CTE shape;
-/// pagination uses `loadPage` and must not wipe the detail table. Skips the
-/// short transport cache and retries once on empty success because the agent
-/// can still return an empty replay.
+/// pagination uses `loadPage` and must not wipe the detail table. Retries once
+/// on empty success because the agent can still return an empty replay.
+///
+/// Transport cache is enabled for identical filter fingerprints. Day-bucket /
+/// Hive facts are **not** used: custom period windows and metric/threshold
+/// knobs do not map cleanly onto fixed calendar day facts.
 ///
 /// `loadPageAndSummary` runs one tagged `UNION ALL` query over a shared CTE
 /// universe (summary + page + top movers) instead of `sql.executeBatch`.
@@ -59,7 +62,8 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
 
   static const String errorScreenUniverseMismatch =
       'pageFilter and summaryFilter must share the same search, grupo, marca, '
-      'origem, and periods for screen load';
+      'filial, metric, volume floor, threshold, origem, and periods for '
+      'screen load';
 
   final AgentQueriesRepository _agentQueriesRepository;
 
@@ -110,6 +114,10 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
           classificacao: filter.normalizedClassificacao,
           codGrupoProduto: filter.codGrupoProduto,
           codMarca: filter.codMarca,
+          codFilial: filter.codFilial,
+          metricMode: filter.metricMode,
+          minVolumeUnits: filter.minVolumeUnits,
+          trendThresholdPercent: filter.trendThresholdPercent,
         ),
         clientToken: clientToken,
         bridgeTimeoutMs: effectiveBridgeMs,
@@ -124,7 +132,6 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
         // Explicit unary: documented streaming exception for this CTE report.
         // ignore: avoid_redundant_argument_values
         relayMode: AgentSqlRelayMode.unary,
-        skipTransportCache: true,
       );
 
       return AgentSqlRepositoryExecution.execute<
@@ -234,6 +241,10 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
           classificacao: filter.normalizedClassificacao,
           codGrupoProduto: filter.codGrupoProduto,
           codMarca: filter.codMarca,
+          codFilial: filter.codFilial,
+          metricMode: filter.metricMode,
+          minVolumeUnits: filter.minVolumeUnits,
+          trendThresholdPercent: filter.trendThresholdPercent,
         ),
         clientToken: clientToken,
         bridgeTimeoutMs: effectiveBridgeMs,
@@ -249,7 +260,6 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
         // Explicit unary: documented streaming exception for this CTE report.
         // ignore: avoid_redundant_argument_values
         relayMode: AgentSqlRelayMode.unary,
-        skipTransportCache: true,
       );
 
       return AgentSqlRepositoryExecution.execute<
@@ -370,6 +380,11 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
           summaryClassificacao: summaryFilter.normalizedClassificacao,
           codGrupoProduto: pageFilter.codGrupoProduto,
           codMarca: pageFilter.codMarca,
+          codFilial: pageFilter.codFilial,
+          metricMode: pageFilter.metricMode,
+          minVolumeUnits: pageFilter.minVolumeUnits,
+          trendThresholdPercent: pageFilter.trendThresholdPercent,
+          topMoversSortBy: pageFilter.topMoversSortBy,
         ),
         clientToken: clientToken,
         bridgeTimeoutMs: effectiveBridgeMs,
@@ -384,7 +399,6 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
         // Explicit unary: documented streaming exception for this CTE report.
         // ignore: avoid_redundant_argument_values
         relayMode: AgentSqlRelayMode.unary,
-        skipTransportCache: true,
       );
 
       return AgentSqlRepositoryExecution.execute<
@@ -441,6 +455,11 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
     if (pageFilter.normalizedSearchTerm != summaryFilter.normalizedSearchTerm ||
         pageFilter.codGrupoProduto != summaryFilter.codGrupoProduto ||
         pageFilter.codMarca != summaryFilter.codMarca ||
+        pageFilter.codFilial != summaryFilter.codFilial ||
+        pageFilter.metricMode != summaryFilter.metricMode ||
+        pageFilter.minVolumeUnits != summaryFilter.minVolumeUnits ||
+        pageFilter.trendThresholdPercent !=
+            summaryFilter.trendThresholdPercent ||
         pageFilter.trimmedOrigem != summaryFilter.trimmedOrigem ||
         !_sameCalendarDate(
           pageFilter.periodoAtualInicio,

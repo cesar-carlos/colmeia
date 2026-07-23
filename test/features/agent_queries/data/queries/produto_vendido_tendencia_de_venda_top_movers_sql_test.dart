@@ -10,6 +10,7 @@ void main() {
       'SELECT TOP ${ProdutoVendidoTendenciaDeVendaSql.topMoversLimit}',
     );
     check(sql).contains('WHERE Diferenca > 0');
+    check(sql).contains("Classificacao <> N'NOVO'");
     check(sql).contains('Diferenca DESC');
     check(sql).contains('PercentualTendencia DESC');
     check(sql).contains(':periodoAtualInicio');

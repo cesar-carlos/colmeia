@@ -1,12 +1,12 @@
 import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_tendencia_de_venda_sql.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_classificacao.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_filter_limits.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_metric_mode.dart';
 
 /// Single-round-trip screen load for product sales trend.
 ///
 /// Shares one filtered universe CTE through `Resultado`, then returns tagged
 /// rows (`SUMMARY` / `PAGE` / `GAINER` / `LOSER`) via `UNION ALL`.
-///
-/// Page and summary may use different `classificacao` filters; search, grupo,
-/// marca, and periods must be the same (enforced by the repository).
 abstract final class ProdutoVendidoTendenciaDeVendaScreenSql {
   static const String rowKindSummary = 'SUMMARY';
   static const String rowKindPage = 'PAGE';
@@ -21,6 +21,13 @@ abstract final class ProdutoVendidoTendenciaDeVendaScreenSql {
     String? summaryClassificacao,
     int? codGrupoProduto,
     int? codMarca,
+    int? codFilial,
+    SalesTrendMetricMode metricMode = SalesTrendMetricMode.quantity,
+    int minVolumeUnits = SalesTrendFilterLimits.defaultMinVolumeUnits,
+    double trendThresholdPercent =
+        SalesTrendFilterLimits.defaultTrendThresholdPercent,
+    SalesTrendTopMoversSortBy topMoversSortBy =
+        SalesTrendTopMoversSortBy.diferenca,
   }) {
     if (startRow < 1) {
       throw ArgumentError.value(startRow, 'startRow', 'must be >= 1');
@@ -37,10 +44,40 @@ abstract final class ProdutoVendidoTendenciaDeVendaScreenSql {
       searchTerm: searchTerm,
       codGrupoProduto: codGrupoProduto,
       codMarca: codMarca,
+      codFilial: codFilial,
+      metricMode: metricMode,
+      minVolumeUnits: minVolumeUnits,
+      trendThresholdPercent: trendThresholdPercent,
     );
     final pageClassLine = _whereOptionalClassificacao(pageClassificacao);
     final summaryClassLine = _whereOptionalClassificacao(summaryClassificacao);
     const topMovers = ProdutoVendidoTendenciaDeVendaSql.topMoversLimit;
+    final gainerOrder = topMoversSortBy == SalesTrendTopMoversSortBy.percentual
+        ? '''
+        PercentualTendencia DESC,
+        Diferenca DESC,
+        CodEmpresa ASC,
+        CodFilial ASC,
+        NomeProduto ASC'''
+        : '''
+        Diferenca DESC,
+        PercentualTendencia DESC,
+        CodEmpresa ASC,
+        CodFilial ASC,
+        NomeProduto ASC''';
+    final loserOrder = topMoversSortBy == SalesTrendTopMoversSortBy.percentual
+        ? '''
+        PercentualTendencia ASC,
+        Diferenca ASC,
+        CodEmpresa ASC,
+        CodFilial ASC,
+        NomeProduto ASC'''
+        : '''
+        Diferenca ASC,
+        PercentualTendencia ASC,
+        CodEmpresa ASC,
+        CodFilial ASC,
+        NomeProduto ASC''';
 
     return '''
 $filteredCtes,
@@ -88,7 +125,9 @@ $pageClassLine
           ORDER BY
             CodEmpresa ASC,
             CodFilial ASC,
-            PercentualTendencia DESC
+            PercentualTendencia DESC,
+            Diferenca DESC,
+            NomeProduto ASC
         ) AS RowNum,
         CodEmpresa,
         CodFilial,
@@ -164,12 +203,9 @@ $pageClassLine
         Classificacao
       FROM GainerFiltrado
       WHERE Diferenca > 0
+        AND Classificacao <> N'${SalesTrendClassificacao.novo}'
       ORDER BY
-        Diferenca DESC,
-        PercentualTendencia DESC,
-        CodEmpresa ASC,
-        CodFilial ASC,
-        NomeProduto ASC
+$gainerOrder
     ),
     LoserFiltrado AS (
       SELECT
@@ -209,11 +245,7 @@ $pageClassLine
       FROM LoserFiltrado
       WHERE Diferenca < 0
       ORDER BY
-        Diferenca ASC,
-        PercentualTendencia ASC,
-        CodEmpresa ASC,
-        CodFilial ASC,
-        NomeProduto ASC
+$loserOrder
     )
     SELECT
       CAST('$rowKindSummary' AS VARCHAR(16)) AS RowKind,
@@ -317,7 +349,7 @@ $pageClassLine
       CodFilial ASC,
       NomeProduto ASC
   ''';
-}
+  }
 
   static String _whereOptionalClassificacao(String? classificacao) {
     final normalized = classificacao?.trim();

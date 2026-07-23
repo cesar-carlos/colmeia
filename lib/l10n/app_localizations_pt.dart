@@ -4150,6 +4150,43 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesProdutoTendenciaFilterPageSize => 'Linhas por página';
 
   @override
+  String get salesTrendFilterMetricTitle => 'Métrica';
+
+  @override
+  String get salesTrendFilterMetricQuantity => 'Quantidade';
+
+  @override
+  String get salesTrendFilterMetricRevenue => 'Receita (R\$)';
+
+  @override
+  String get salesTrendFilterFilialLabel => 'Filial';
+
+  @override
+  String get salesTrendFilterMinVolumeTitle => 'Piso mínimo de volume';
+
+  @override
+  String get salesTrendFilterThresholdTitle => 'Limiar de tendência';
+
+  @override
+  String salesTrendFilterThresholdPercentLabel(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String get salesTrendFilterTopMoversSortTitle =>
+      'Ordenar principais movimentações';
+
+  @override
+  String get salesTrendFilterTopMoversSortDifference => 'Por diferença';
+
+  @override
+  String get salesTrendFilterTopMoversSortPercent => 'Por percentual';
+
+  @override
+  String get salesTrendFilterPeriodsGapWarning =>
+      'Há um intervalo entre o fim do período anterior e o início do período atual. A comparação ainda é válida, mas as janelas não são contíguas.';
+
+  @override
   String get salesProdutoTendenciaFilterAllOption => 'Todos';
 
   @override
@@ -4161,7 +4198,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Escolha uma janela base e o relatório alinha a comparação automáticamente.';
 
   @override
-  String get salesProdutoTendenciaFilterPresetCurrentMonth => 'Mês atual';
+  String get salesProdutoTendenciaFilterPresetCurrentMonth => 'Mês até hoje';
 
   @override
   String get salesProdutoTendenciaFilterPresetPreviousMonth => 'Mês anterior';
@@ -4239,7 +4276,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesProdutoTendenciaSummaryClassificacaoLegend =>
-      'Crescendo: +20% vs anterior · Caindo: −20% · Novo: vendeu agora, não antes · Parou: vendeu antes, não agora · Estável: entre ±20%';
+      'Crescendo: +20% vs anterior · Caindo: −20% · Só no atual: vendeu agora, não antes · Parou: vendeu antes, não agora · Estável: entre ±20%';
 
   @override
   String salesProdutoTendenciaKpiFilterSemantics(String classification) {
@@ -4338,7 +4375,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesProdutoTendenciaKpiFalling => 'Produtos caindo';
 
   @override
-  String get salesProdutoTendenciaKpiNewProducts => 'Produtos novos';
+  String get salesProdutoTendenciaKpiNewProducts => 'Só no período atual';
 
   @override
   String get salesProdutoTendenciaKpiStopped => 'Parou de vender';
@@ -4382,7 +4419,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesProdutoTendenciaClassificacaoStopped => 'Parou de vender';
 
   @override
-  String get salesProdutoTendenciaClassificacaoNew => 'Novo produto';
+  String get salesProdutoTendenciaClassificacaoNew => 'Só no período atual';
 
   @override
   String get salesProdutoTendenciaClassificacaoGrowing => 'Crescendo';
@@ -4412,7 +4449,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesProdutoTendenciaMediaMovelPageSubtitle =>
-      'Painel de média móvel com resumo por classificação e detalhe páginado por produto.';
+      'Média diária de quantidade nos últimos N dias de calendário versus os N dias anteriores.';
 
   @override
   String get salesProdutoTendenciaMediaMovelFilterQuantidadeDias =>
@@ -4420,11 +4457,11 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHint =>
-      'Quantidade de dias usada em cada média móvel';
+      'Dias de calendário em cada média (termina hoje)';
 
   @override
   String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHelper =>
-      'Use a mesma janela para comparar a média atual com a anterior.';
+      'Dias sem venda entram como zero. Compara a média atual com a janela imediatamente anterior.';
 
   @override
   String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasInvalid =>
@@ -9166,6 +9203,43 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesProdutoTendenciaFilterPageSize => 'Linhas por página';
 
   @override
+  String get salesTrendFilterMetricTitle => 'Métrica';
+
+  @override
+  String get salesTrendFilterMetricQuantity => 'Quantidade';
+
+  @override
+  String get salesTrendFilterMetricRevenue => 'Receita (R\$)';
+
+  @override
+  String get salesTrendFilterFilialLabel => 'Filial';
+
+  @override
+  String get salesTrendFilterMinVolumeTitle => 'Piso mínimo de volume';
+
+  @override
+  String get salesTrendFilterThresholdTitle => 'Limiar de tendência';
+
+  @override
+  String salesTrendFilterThresholdPercentLabel(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String get salesTrendFilterTopMoversSortTitle =>
+      'Ordenar principais movimentações';
+
+  @override
+  String get salesTrendFilterTopMoversSortDifference => 'Por diferença';
+
+  @override
+  String get salesTrendFilterTopMoversSortPercent => 'Por percentual';
+
+  @override
+  String get salesTrendFilterPeriodsGapWarning =>
+      'Há um intervalo entre o fim do período anterior e o início do período atual. A comparação ainda é válida, mas as janelas não são contíguas.';
+
+  @override
   String get salesProdutoTendenciaFilterAllOption => 'Todos';
 
   @override
@@ -9177,7 +9251,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Escolha uma janela base e o relatório alinha a comparação automáticamente.';
 
   @override
-  String get salesProdutoTendenciaFilterPresetCurrentMonth => 'Mês atual';
+  String get salesProdutoTendenciaFilterPresetCurrentMonth => 'Mês até hoje';
 
   @override
   String get salesProdutoTendenciaFilterPresetPreviousMonth => 'Mês anterior';
@@ -9255,7 +9329,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesProdutoTendenciaSummaryClassificacaoLegend =>
-      'Crescendo: +20% vs anterior · Caindo: −20% · Novo: vendeu agora, não antes · Parou: vendeu antes, não agora · Estável: entre ±20%';
+      'Crescendo: +20% vs anterior · Caindo: −20% · Só no atual: vendeu agora, não antes · Parou: vendeu antes, não agora · Estável: entre ±20%';
 
   @override
   String salesProdutoTendenciaKpiFilterSemantics(String classification) {
@@ -9354,7 +9428,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesProdutoTendenciaKpiFalling => 'Produtos caindo';
 
   @override
-  String get salesProdutoTendenciaKpiNewProducts => 'Produtos novos';
+  String get salesProdutoTendenciaKpiNewProducts => 'Só no período atual';
 
   @override
   String get salesProdutoTendenciaKpiStopped => 'Parou de vender';
@@ -9398,7 +9472,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesProdutoTendenciaClassificacaoStopped => 'Parou de vender';
 
   @override
-  String get salesProdutoTendenciaClassificacaoNew => 'Novo produto';
+  String get salesProdutoTendenciaClassificacaoNew => 'Só no período atual';
 
   @override
   String get salesProdutoTendenciaClassificacaoGrowing => 'Crescendo';
@@ -9428,7 +9502,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesProdutoTendenciaMediaMovelPageSubtitle =>
-      'Painel de média móvel com resumo por classificação e detalhe páginado por produto.';
+      'Média diária de quantidade nos últimos N dias de calendário versus os N dias anteriores.';
 
   @override
   String get salesProdutoTendenciaMediaMovelFilterQuantidadeDias =>
@@ -9436,11 +9510,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHint =>
-      'Quantidade de dias usada em cada média móvel';
+      'Dias de calendário em cada média (termina hoje)';
 
   @override
   String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHelper =>
-      'Use a mesma janela para comparar a média atual com a anterior.';
+      'Dias sem venda entram como zero. Compara a média atual com a janela imediatamente anterior.';
 
   @override
   String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasInvalid =>

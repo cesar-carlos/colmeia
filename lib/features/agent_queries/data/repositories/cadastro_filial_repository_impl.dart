@@ -57,6 +57,7 @@ class CadastroFilialRepositoryImpl implements CadastroFilialRepository {
         hasSelectedBranches: filter.hasSelectedBranches,
         codEmpresa: filter.codEmpresa,
         codFilial: filter.codFilial,
+        searchTerm: filter.normalizedSearchTerm,
         projection: filter.mapCatalogProjection
             ? CadastroFilialSqlProjection.mapCatalog
             : CadastroFilialSqlProjection.registration,

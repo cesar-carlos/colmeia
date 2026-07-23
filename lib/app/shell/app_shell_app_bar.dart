@@ -33,10 +33,17 @@ IconData _shellLeadingBackIcon() {
 
 class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
   const AppShellAppBar({
+    required this.matchedLocation,
     super.key,
     this.primary = true,
     this.showBrandTitle = true,
   });
+
+  /// Current shell matched location from `ShellRoute.builder` state.
+  ///
+  /// Passed explicitly so the app bar rebuilds with the shell on navigation
+  /// and never needs `GoRouterState.of` during auth redirects.
+  final String matchedLocation;
 
   /// When `false`, sits beside the desktop rail in the body (no duplicate
   /// top status-bar padding). When `true` (default), used as [Scaffold.appBar].
@@ -62,7 +69,10 @@ class AppShellAppBar extends StatelessWidget implements PreferredSizeWidget {
     final useRail = AppBreakpoints.useRail(context);
     final showUserDetails = useRail;
     final materialLocalizations = MaterialLocalizations.of(context);
-    final showBack = shellSectionBackVisible(context);
+    final showBack = shellSectionBackVisible(
+      context,
+      matchedLocation: matchedLocation,
+    );
     final titleSpacing = showBrandTitle ? 0.0 : tokens.contentSpacing;
 
     final Widget? leading;

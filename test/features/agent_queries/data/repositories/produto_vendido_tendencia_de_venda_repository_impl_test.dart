@@ -262,7 +262,7 @@ void main() {
     check(captured.executeOptions?.preferDbStreaming).equals(false);
     check(captured.useRelay).isTrue();
     check(captured.relayMode).equals(AgentSqlRelayMode.unary);
-    check(captured.skipTransportCache).isTrue();
+    check(captured.skipTransportCache).isFalse();
   });
 
   test('custom bridgeTimeoutMs adjusts sql timeout', () async {
@@ -545,7 +545,7 @@ void main() {
     check(captured.executeOptions?.maxRows).equals(32);
     check(captured.executeOptions?.preferDbStreaming).equals(false);
     check(captured.relayMode).equals(AgentSqlRelayMode.unary);
-    check(captured.skipTransportCache).isTrue();
+    check(captured.skipTransportCache).isFalse();
   });
 
   test('retries once when first summary response is empty', () async {
@@ -563,7 +563,7 @@ void main() {
         AgentSqlExecutionResult(
           rows: <Map<String, dynamic>>[
             <String, dynamic>{
-              'Classificacao': 'NOVO PRODUTO',
+              'Classificacao': 'NOVO',
               'QuantidadeProdutos': 84,
               'ImpactoLiquido': '2522.806',
             },
@@ -670,7 +670,7 @@ void main() {
       check(captured.namedParams['periodoAtualInicio']).equals('2026-03-01');
       check(captured.executeOptions?.preferDbStreaming).equals(false);
       check(captured.relayMode).equals(AgentSqlRelayMode.unary);
-      check(captured.skipTransportCache).isTrue();
+      check(captured.skipTransportCache).isFalse();
       check(captured.executeOptions?.maxRows).equals(107);
     },
   );

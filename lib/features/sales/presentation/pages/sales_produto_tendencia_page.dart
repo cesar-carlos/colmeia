@@ -6,6 +6,7 @@ import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/app/router/chart_share_icon_button.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_screen_use_case.dart';
@@ -17,6 +18,7 @@ import 'package:colmeia/features/auth/presentation/controllers/auth_controller.d
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
+import 'package:colmeia/features/sales/presentation/async_search/sales_filial_async_search_loader.dart';
 import 'package:colmeia/features/sales/presentation/async_search/sales_produto_dimension_async_search_loaders.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_agent_auto_refresh_mixin.dart';
@@ -31,6 +33,7 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tenden
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_filter_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_filters_sheet.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_trend_comparison_bar_chart_style.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_trend_shared_filter_controls.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_scroll_tokens.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -52,6 +55,7 @@ class SalesProdutoTendenciaPage extends StatefulWidget {
     required this.loadTrendPageUseCase,
     required this.loadGrupoProdutoOptionsUseCase,
     required this.loadMarcaProdutoOptionsUseCase,
+    required this.loadCadastroFilialPageUseCase,
     this.relayCancelScopeBinder,
     super.key,
   });
@@ -63,6 +67,7 @@ class SalesProdutoTendenciaPage extends StatefulWidget {
   final LoadProdutoVendidoTendenciaDeVendaUseCase loadTrendPageUseCase;
   final LoadGrupoProdutoOptionsUseCase loadGrupoProdutoOptionsUseCase;
   final LoadMarcaProdutoOptionsUseCase loadMarcaProdutoOptionsUseCase;
+  final LoadCadastroFilialPageUseCase loadCadastroFilialPageUseCase;
   final AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder;
 
   @override
@@ -176,6 +181,49 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     });
   }
 
+  Map<String, Object?> _filterPayloadFromState(
+    SalesProdutoTendenciaPresentationState state, {
+    Object? classificacao = _unset,
+    Object? searchTerm = _unset,
+    Object? codGrupoProduto = _unset,
+    Object? codMarca = _unset,
+    Object? codFilial = _unset,
+    Object? grupoProdutoLabel = _unset,
+    Object? marcaProdutoLabel = _unset,
+    Object? filialLabel = _unset,
+  }) {
+    return <String, Object?>{
+      'agentId': state.selectedAgentId,
+      'periodoAtual': state.periodoAtual,
+      'periodoAnterior': state.periodoAnterior,
+      'searchTerm': identical(searchTerm, _unset)
+          ? state.searchTerm
+          : searchTerm,
+      'classificacao': identical(classificacao, _unset)
+          ? state.classificacao
+          : classificacao,
+      'codGrupoProduto': identical(codGrupoProduto, _unset)
+          ? state.codGrupoProduto
+          : codGrupoProduto,
+      'codMarca': identical(codMarca, _unset) ? state.codMarca : codMarca,
+      'codFilial': identical(codFilial, _unset) ? state.codFilial : codFilial,
+      'grupoProdutoLabel': identical(grupoProdutoLabel, _unset)
+          ? state.grupoProdutoLabel
+          : grupoProdutoLabel,
+      'marcaProdutoLabel': identical(marcaProdutoLabel, _unset)
+          ? state.marcaProdutoLabel
+          : marcaProdutoLabel,
+      'filialLabel': identical(filialLabel, _unset)
+          ? state.filialLabel
+          : filialLabel,
+      'metricMode': state.metricMode,
+      'minVolumeUnits': state.minVolumeUnits,
+      'trendThresholdPercent': state.trendThresholdPercent,
+      'topMoversSortBy': state.topMoversSortBy,
+      'pageSize': state.pageSize,
+    };
+  }
+
   Future<void> _onFiltersChanged(Map<String, Object?> next) async {
     await _controller.applyFilters(next);
     _showFiltersAppliedSnackBar();
@@ -183,18 +231,9 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
 
   Future<void> _applyClassificacaoFromChart(String classificacao) async {
     final state = _controller.state;
-    await _controller.applyFilters(<String, Object?>{
-      'agentId': state.selectedAgentId,
-      'periodoAtual': state.periodoAtual,
-      'periodoAnterior': state.periodoAnterior,
-      'searchTerm': state.searchTerm,
-      'classificacao': classificacao,
-      'codGrupoProduto': state.codGrupoProduto,
-      'codMarca': state.codMarca,
-      'grupoProdutoLabel': state.grupoProdutoLabel,
-      'marcaProdutoLabel': state.marcaProdutoLabel,
-      'pageSize': state.pageSize,
-    });
+    await _controller.applyFilters(
+      _filterPayloadFromState(state, classificacao: classificacao),
+    );
     _showFiltersAppliedSnackBar();
     _scrollToDetailsSection();
   }
@@ -221,18 +260,19 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
 
   Future<void> _clearDetailFilters() async {
     final state = _controller.state;
-    await _controller.applyFilters(<String, Object?>{
-      'agentId': state.selectedAgentId,
-      'periodoAtual': state.periodoAtual,
-      'periodoAnterior': state.periodoAnterior,
-      'searchTerm': '',
-      'classificacao': null,
-      'codGrupoProduto': null,
-      'codMarca': null,
-      'grupoProdutoLabel': null,
-      'marcaProdutoLabel': null,
-      'pageSize': state.pageSize,
-    });
+    await _controller.applyFilters(
+      _filterPayloadFromState(
+        state,
+        searchTerm: '',
+        classificacao: null,
+        codGrupoProduto: null,
+        codMarca: null,
+        codFilial: null,
+        grupoProdutoLabel: null,
+        marcaProdutoLabel: null,
+        filialLabel: null,
+      ),
+    );
   }
 
   Future<void> _clearClassificacaoFilter() async {
@@ -240,18 +280,9 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     if (state.classificacao == null) {
       return;
     }
-    await _controller.applyFilters(<String, Object?>{
-      'agentId': state.selectedAgentId,
-      'periodoAtual': state.periodoAtual,
-      'periodoAnterior': state.periodoAnterior,
-      'searchTerm': state.searchTerm,
-      'classificacao': null,
-      'codGrupoProduto': state.codGrupoProduto,
-      'codMarca': state.codMarca,
-      'grupoProdutoLabel': state.grupoProdutoLabel,
-      'marcaProdutoLabel': state.marcaProdutoLabel,
-      'pageSize': state.pageSize,
-    });
+    await _controller.applyFilters(
+      _filterPayloadFromState(state, classificacao: null),
+    );
   }
 
   SalesProdutoDimensionLoaderFactory _grupoProdutoLoaderFactory(
@@ -296,6 +327,25 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     );
   }
 
+  SalesProdutoDimensionLoaderFactory _filialLoaderFactory(String userId) {
+    final clientTokenUnavailableMessage = AppLocalizations.of(
+      context,
+    ).salesAsyncSearchClientTokenUnavailable;
+    final l10n = AppLocalizations.of(context);
+    return (agentIdProvider) => createSalesFilialAsyncSearchLoader(
+      useCase: widget.loadCadastroFilialPageUseCase,
+      userId: userId,
+      agentIdProvider: agentIdProvider,
+      resolveClientToken: (agentId) => _controller.resolveClientToken(
+        userId: userId,
+        agentId: agentId,
+      ),
+      clientTokenUnavailableMessage: clientTokenUnavailableMessage,
+      l10n: l10n,
+      cancelScope: _controller.sqlCancelScope,
+    );
+  }
+
   ChartShareExportHeaderContext _exportHeaderContext(
     AppLocalizations l10n,
     SalesProdutoTendenciaPresentationState state,
@@ -311,6 +361,14 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
       agentName: selectedBranch?.name ?? l10n.salesBranchPickerEmpty,
       periodoAtual: state.periodoAtual,
       periodoAnterior: state.periodoAnterior,
+      extraParameters: salesTrendShareExtraParameters(
+        l10n: l10n,
+        metricMode: state.metricMode,
+        minVolumeUnits: state.minVolumeUnits,
+        trendThresholdPercent: state.trendThresholdPercent,
+        filialLabel: state.filialLabel,
+        codFilial: state.codFilial,
+      ),
     );
   }
 
@@ -337,11 +395,18 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
           initialClassificacao: state.classificacao,
           initialCodGrupoProduto: state.codGrupoProduto,
           initialCodMarca: state.codMarca,
+          initialCodFilial: state.codFilial,
           initialGrupoProdutoLabel: state.grupoProdutoLabel,
           initialMarcaProdutoLabel: state.marcaProdutoLabel,
+          initialFilialLabel: state.filialLabel,
+          initialMetricMode: state.metricMode,
+          initialMinVolumeUnits: state.minVolumeUnits,
+          initialTrendThresholdPercent: state.trendThresholdPercent,
+          initialTopMoversSortBy: state.topMoversSortBy,
           initialPageSize: state.pageSize,
           grupoProdutoLoaderFactory: _grupoProdutoLoaderFactory(userId),
           marcaProdutoLoaderFactory: _marcaProdutoLoaderFactory(userId),
+          filialLoaderFactory: _filialLoaderFactory(userId),
           onApply: (next) => unawaited(_onFiltersChanged(next)),
         );
       },
@@ -614,3 +679,5 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
     );
   }
 }
+
+const Object _unset = Object();

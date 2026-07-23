@@ -48,15 +48,17 @@ void main() {
   group('salesTrendCurrentRangeForPreset', () {
     final anchor = DateTime(2026, 3, 15);
 
-    test('currentMonth matches full month helper', () {
+    test('currentMonth is month-to-date through the anchor day', () {
       final range = salesTrendCurrentRangeForPreset(
         SalesTrendDatePreset.currentMonth,
         anchor: anchor,
       );
 
       check(
-        salesTrendSameRange(range, salesTrendFullMonthInclusiveRange(anchor)),
+        salesTrendSameRange(range, salesTrendMonthToDateInclusiveRange(anchor)),
       ).isTrue();
+      check(range.start).equals(DateTime(2026, 3));
+      check(range.end).equals(DateTime(2026, 3, 15));
     });
 
     test('previousMonth matches previous month helper', () {
@@ -204,6 +206,30 @@ void main() {
         ).equals(salesTrendInclusiveDayCount(current));
         check(previous.end).equals(DateTime(2026, 3, 9));
         check(previous.start).equals(DateTime(2026, 2, 27));
+        check(previous.end.add(const Duration(days: 1))).equals(current.start);
+      },
+    );
+
+    test('maps month-to-date to the same day span in the previous month', () {
+      final current = salesTrendMonthToDateInclusiveRange(DateTime(2026, 7, 21));
+      final previous = salesTrendAutoPreviousRange(current);
+
+      check(previous.start).equals(DateTime(2026, 6));
+      check(previous.end).equals(DateTime(2026, 6, 21));
+      check(salesTrendInclusiveDayCount(previous)).equals(21);
+    });
+
+    test(
+      'falls back to adjacent equal-length window when prior month is shorter',
+      () {
+        final current = salesTrendMonthToDateInclusiveRange(
+          DateTime(2026, 3, 30),
+        );
+        final previous = salesTrendAutoPreviousRange(current);
+
+        check(salesTrendInclusiveDayCount(previous)).equals(30);
+        check(previous.end).equals(DateTime(2026, 2, 28));
+        check(previous.start).equals(DateTime(2026, 1, 30));
         check(previous.end.add(const Duration(days: 1))).equals(current.start);
       },
     );

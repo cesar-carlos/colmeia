@@ -1,8 +1,12 @@
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_classificacao.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_filter_limits.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_metric_mode.dart';
 import 'package:colmeia/features/sales/presentation/async_search/sales_produto_dimension_async_search_loaders.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_filters_sheet_scaffold.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_classificacao_labels.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_single_agent_picker_control.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_trend_shared_filter_controls.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -33,12 +37,18 @@ class SalesProdutoTendenciaMediaMovelFiltersSheet extends StatefulWidget {
     required this.initialClassificacao,
     required this.initialCodGrupoProduto,
     required this.initialCodMarca,
+    required this.initialCodFilial,
     required this.initialGrupoProdutoLabel,
     required this.initialMarcaProdutoLabel,
+    required this.initialFilialLabel,
+    required this.initialMetricMode,
+    required this.initialMinVolumeUnits,
+    required this.initialTrendThresholdPercent,
     required this.initialSortBy,
     required this.initialPageSize,
     required this.grupoProdutoLoaderFactory,
     required this.marcaProdutoLoaderFactory,
+    required this.filialLoaderFactory,
     super.key,
   });
 
@@ -50,12 +60,18 @@ class SalesProdutoTendenciaMediaMovelFiltersSheet extends StatefulWidget {
   final String? initialClassificacao;
   final int? initialCodGrupoProduto;
   final int? initialCodMarca;
+  final int? initialCodFilial;
   final String? initialGrupoProdutoLabel;
   final String? initialMarcaProdutoLabel;
+  final String? initialFilialLabel;
+  final SalesTrendMetricMode initialMetricMode;
+  final int initialMinVolumeUnits;
+  final double initialTrendThresholdPercent;
   final ProdutoVendidoTendenciaDeVendaMediaMovelSortBy initialSortBy;
   final int initialPageSize;
   final SalesProdutoDimensionLoaderFactory grupoProdutoLoaderFactory;
   final SalesProdutoDimensionLoaderFactory marcaProdutoLoaderFactory;
+  final SalesProdutoDimensionLoaderFactory filialLoaderFactory;
 
   @override
   State<SalesProdutoTendenciaMediaMovelFiltersSheet> createState() =>
@@ -68,6 +84,7 @@ class _SalesProdutoTendenciaMediaMovelFiltersSheetState
 
   late final AppAsyncSearchLoader<int> _grupoProdutoLoader;
   late final AppAsyncSearchLoader<int> _marcaProdutoLoader;
+  late final AppAsyncSearchLoader<int> _filialLoader;
 
   String? _selectedAgentId;
   late final TextEditingController _quantidadeDiasController;
@@ -75,8 +92,13 @@ class _SalesProdutoTendenciaMediaMovelFiltersSheetState
   String? _classificacao;
   int? _codGrupoProduto;
   int? _codMarca;
+  int? _codFilial;
   String? _grupoProdutoLabel;
   String? _marcaProdutoLabel;
+  String? _filialLabel;
+  late SalesTrendMetricMode _metricMode;
+  late int _minVolumeUnits;
+  late double _trendThresholdPercent;
   late ProdutoVendidoTendenciaDeVendaMediaMovelSortBy _sortBy;
   int _pageSize =
       ProdutoVendidoTendenciaDeVendaMediaMovelFilter.defaultPageSize;
@@ -91,15 +113,23 @@ class _SalesProdutoTendenciaMediaMovelFiltersSheetState
     _marcaProdutoLoader = widget.marcaProdutoLoaderFactory(
       () => _selectedAgentId,
     );
+    _filialLoader = widget.filialLoaderFactory(() => _selectedAgentId);
     _quantidadeDiasController = TextEditingController(
       text: '${widget.initialQuantidadeDias}',
     );
     _searchController = TextEditingController(text: widget.initialSearchTerm);
-    _classificacao = widget.initialClassificacao;
+    _classificacao = SalesTrendClassificacao.normalize(
+      widget.initialClassificacao,
+    );
     _codGrupoProduto = widget.initialCodGrupoProduto;
     _codMarca = widget.initialCodMarca;
+    _codFilial = widget.initialCodFilial;
     _grupoProdutoLabel = widget.initialGrupoProdutoLabel;
     _marcaProdutoLabel = widget.initialMarcaProdutoLabel;
+    _filialLabel = widget.initialFilialLabel;
+    _metricMode = widget.initialMetricMode;
+    _minVolumeUnits = widget.initialMinVolumeUnits;
+    _trendThresholdPercent = widget.initialTrendThresholdPercent;
     _sortBy = widget.initialSortBy;
     _pageSize = widget.initialPageSize;
   }
@@ -166,8 +196,13 @@ class _SalesProdutoTendenciaMediaMovelFiltersSheetState
       'classificacao': _classificacao,
       'codGrupoProduto': _codGrupoProduto,
       'codMarca': _codMarca,
+      'codFilial': _codFilial,
       'grupoProdutoLabel': _grupoProdutoLabel,
       'marcaProdutoLabel': _marcaProdutoLabel,
+      'filialLabel': _filialLabel,
+      'metricMode': _metricMode,
+      'minVolumeUnits': _minVolumeUnits,
+      'trendThresholdPercent': _trendThresholdPercent,
       'sortBy': _sortBy.name,
       'pageSize': _pageSize,
     });
@@ -180,8 +215,14 @@ class _SalesProdutoTendenciaMediaMovelFiltersSheetState
       _classificacao = null;
       _codGrupoProduto = null;
       _codMarca = null;
+      _codFilial = null;
       _grupoProdutoLabel = null;
       _marcaProdutoLabel = null;
+      _filialLabel = null;
+      _metricMode = SalesTrendMetricMode.quantity;
+      _minVolumeUnits = SalesTrendFilterLimits.defaultMinVolumeUnits;
+      _trendThresholdPercent =
+          SalesTrendFilterLimits.defaultTrendThresholdPercent;
       _sortBy = ProdutoVendidoTendenciaDeVendaMediaMovelSortBy
           .tendenciaPercentualDesc;
       _pageSize =
@@ -338,6 +379,28 @@ class _SalesProdutoTendenciaMediaMovelFiltersSheetState
                   ),
                   SizedBox(height: tokens.contentSpacing),
                   AppAsyncSearchField<int>(
+                    label: l10n.salesTrendFilterFilialLabel,
+                    hintText: l10n.salesProdutoTendenciaFilterAllOption,
+                    searchHintText: l10n.salesProdutoTendenciaFilterSearchHint,
+                    minSearchLengthHint: l10n.appAsyncSearchMinSearchLengthHint(
+                      2,
+                    ),
+                    emptyResultsLabel: l10n.appAsyncSearchEmptyResults,
+                    clearOptionLabel: l10n.salesProdutoTendenciaFilterAllOption,
+                    value: _codFilial,
+                    selectedDisplayLabel: _filialLabel,
+                    density: AppTextFieldDensity.compact,
+                    enabled: _selectedAgentId != null,
+                    loader: _filialLoader,
+                    onChanged: (value, {label}) {
+                      setState(() {
+                        _codFilial = value;
+                        _filialLabel = value == null ? null : label;
+                      });
+                    },
+                  ),
+                  SizedBox(height: tokens.contentSpacing),
+                  AppAsyncSearchField<int>(
                     label: l10n.salesProdutoTendenciaFilterGroup,
                     hintText: l10n.salesProdutoTendenciaFilterAllOption,
                     searchHintText: l10n.salesProdutoTendenciaFilterSearchHint,
@@ -378,6 +441,22 @@ class _SalesProdutoTendenciaMediaMovelFiltersSheetState
                         _codMarca = value;
                         _marcaProdutoLabel = value == null ? null : label;
                       });
+                    },
+                  ),
+                  SizedBox(height: tokens.contentSpacing),
+                  SalesTrendSharedFilterControls(
+                    l10n: l10n,
+                    metricMode: _metricMode,
+                    minVolumeUnits: _minVolumeUnits,
+                    trendThresholdPercent: _trendThresholdPercent,
+                    onMetricModeChanged: (mode) {
+                      setState(() => _metricMode = mode);
+                    },
+                    onMinVolumeChanged: (value) {
+                      setState(() => _minVolumeUnits = value);
+                    },
+                    onThresholdChanged: (value) {
+                      setState(() => _trendThresholdPercent = value);
                     },
                   ),
                   SizedBox(height: tokens.contentSpacing),

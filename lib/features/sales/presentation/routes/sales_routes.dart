@@ -2,6 +2,7 @@ import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/di/injector_agent_queries.dart';
 import 'package:colmeia/core/errors/retry_after_gate.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_produto_rank_lucro_use_case.dart';
@@ -136,6 +137,8 @@ List<RouteBase> buildSalesRoutes() {
                 getIt<LoadGrupoProdutoOptionsUseCase>(),
             loadMarcaProdutoOptionsUseCase:
                 getIt<LoadMarcaProdutoOptionsUseCase>(),
+            loadCadastroFilialPageUseCase:
+                getIt<LoadCadastroFilialPageUseCase>(),
             relayCancelScopeBinder: _wireSalesAgentSqlRelayCancel,
           );
         }
@@ -158,6 +161,8 @@ List<RouteBase> buildSalesRoutes() {
                 getIt<LoadGrupoProdutoOptionsUseCase>(),
             loadMarcaProdutoOptionsUseCase:
                 getIt<LoadMarcaProdutoOptionsUseCase>(),
+            loadCadastroFilialPageUseCase:
+                getIt<LoadCadastroFilialPageUseCase>(),
             loadRowsForShareUseCase: getIt<LoadMediaMovelRowsForShareUseCase>(),
             relayCancelScopeBinder: _wireSalesAgentSqlRelayCancel,
           );

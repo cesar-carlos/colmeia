@@ -7,10 +7,14 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_screen_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_use_case.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_page_result.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/grupo_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/marca_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_filter.dart';
@@ -61,6 +65,9 @@ class _MockLoadGrupoProdutoOptionsUseCase extends Mock
 class _MockLoadMarcaProdutoOptionsUseCase extends Mock
     implements LoadMarcaProdutoOptionsUseCase {}
 
+class _MockLoadCadastroFilialPageUseCase extends Mock
+    implements LoadCadastroFilialPageUseCase {}
+
 late SalesPreferences _pumpSalesPreferences;
 late LoadAvailableAgentsForSales _pumpLoadAvailableAgentsForSales;
 late AgentClientTokenReader _pumpTokenReader;
@@ -69,6 +76,7 @@ _pumpLoadTrendScreenUseCase;
 late LoadProdutoVendidoTendenciaDeVendaUseCase _pumpLoadTrendPageUseCase;
 late LoadGrupoProdutoOptionsUseCase _pumpLoadGrupoProdutoOptionsUseCase;
 late LoadMarcaProdutoOptionsUseCase _pumpLoadMarcaProdutoOptionsUseCase;
+late LoadCadastroFilialPageUseCase _pumpLoadCadastroFilialPageUseCase;
 
 void main() {
   late _MockAuthController authController;
@@ -80,9 +88,11 @@ void main() {
   late _MockLoadProdutoVendidoTendenciaDeVendaUseCase loadTrendPageUseCase;
   late _MockLoadGrupoProdutoOptionsUseCase loadGrupoProdutoOptionsUseCase;
   late _MockLoadMarcaProdutoOptionsUseCase loadMarcaProdutoOptionsUseCase;
+  late _MockLoadCadastroFilialPageUseCase loadCadastroFilialPageUseCase;
 
   setUpAll(() {
     Provider.debugCheckInvalidValueType = null;
+    registerFallbackValue(const CadastroFilialFilter());
     registerFallbackValue(
       ProdutoVendidoTendenciaDeVendaFilter(
         periodoAtualInicio: DateTime(2026),
@@ -108,6 +118,7 @@ void main() {
     loadTrendPageUseCase = _MockLoadProdutoVendidoTendenciaDeVendaUseCase();
     loadGrupoProdutoOptionsUseCase = _MockLoadGrupoProdutoOptionsUseCase();
     loadMarcaProdutoOptionsUseCase = _MockLoadMarcaProdutoOptionsUseCase();
+    loadCadastroFilialPageUseCase = _MockLoadCadastroFilialPageUseCase();
     _pumpSalesPreferences = salesPreferences;
     _pumpLoadAvailableAgentsForSales = loadAvailableAgentsForSales;
     _pumpTokenReader = tokenReader;
@@ -115,6 +126,7 @@ void main() {
     _pumpLoadTrendPageUseCase = loadTrendPageUseCase;
     _pumpLoadGrupoProdutoOptionsUseCase = loadGrupoProdutoOptionsUseCase;
     _pumpLoadMarcaProdutoOptionsUseCase = loadMarcaProdutoOptionsUseCase;
+    _pumpLoadCadastroFilialPageUseCase = loadCadastroFilialPageUseCase;
 
     when(() => authController.session).thenReturn(
       AuthSession(
@@ -235,6 +247,25 @@ void main() {
     ).thenAnswer(
       (_) async => const Success<List<MarcaProdutoOption>, AppFailure>(
         <MarcaProdutoOption>[],
+      ),
+    );
+
+    when(
+      () => loadCadastroFilialPageUseCase.call(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        filter: any(named: 'filter'),
+        clientToken: any(named: 'clientToken'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        hubPresenceOnlineAgentIdsSnapshot:
+            any(named: 'hubPresenceOnlineAgentIdsSnapshot'),
+        hubConnectedFromApprovedCatalogRow:
+            any(named: 'hubConnectedFromApprovedCatalogRow'),
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    ).thenAnswer(
+      (_) async => const Success<CadastroFilialPageResult, AppFailure>(
+        CadastroFilialPageResult(items: <CadastroFilialRow>[], totalCount: 0),
       ),
     );
 
@@ -366,7 +397,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('Current month'), findsOneWidget);
+    expect(find.text('Month to date'), findsOneWidget);
     expect(find.text('Previous month'), findsOneWidget);
     expect(find.text('Last 7 days'), findsOneWidget);
     expect(find.text('Last 30 days'), findsOneWidget);
@@ -816,6 +847,7 @@ Future<void> _pumpTrendPage(
             loadTrendPageUseCase: _pumpLoadTrendPageUseCase,
             loadGrupoProdutoOptionsUseCase: _pumpLoadGrupoProdutoOptionsUseCase,
             loadMarcaProdutoOptionsUseCase: _pumpLoadMarcaProdutoOptionsUseCase,
+            loadCadastroFilialPageUseCase: _pumpLoadCadastroFilialPageUseCase,
           ),
         ),
       ),

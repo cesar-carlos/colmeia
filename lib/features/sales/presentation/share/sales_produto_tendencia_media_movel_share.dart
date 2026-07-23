@@ -1,5 +1,6 @@
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_summary_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_classificacao.dart';
 import 'package:colmeia/features/sales/presentation/share/mappers/sales_produto_tendencia_media_movel_share_mapper.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
@@ -27,6 +28,7 @@ class SalesProdutoTendenciaMediaMovelSummary {
     required this.countFalling,
     required this.countNew,
     required this.countStopped,
+    required this.countStable,
     required this.netImpact,
     required this.buckets,
   });
@@ -35,6 +37,7 @@ class SalesProdutoTendenciaMediaMovelSummary {
   final int countFalling;
   final int countNew;
   final int countStopped;
+  final int countStable;
   final double netImpact;
   final List<SalesProdutoTendenciaMediaMovelClassBucket> buckets;
 }
@@ -48,7 +51,9 @@ buildSalesProdutoTendenciaMediaMovelSummary(
   var netImpact = 0.0;
 
   for (final row in summaryRows) {
-    final classificacao = row.classificacao.trim().toUpperCase();
+    final classificacao =
+        SalesTrendClassificacao.normalize(row.classificacao) ??
+        row.classificacao.trim().toUpperCase();
     counts[classificacao] =
         (counts[classificacao] ?? 0) + row.quantidadeProdutos;
     impacts[classificacao] = (impacts[classificacao] ?? 0) + row.impactoLiquido;
@@ -68,10 +73,11 @@ buildSalesProdutoTendenciaMediaMovelSummary(
         ..sort((a, b) => b.count.compareTo(a.count));
 
   return SalesProdutoTendenciaMediaMovelSummary(
-    countGrowing: counts['CRESCENDO'] ?? 0,
-    countFalling: counts['CAINDO'] ?? 0,
-    countNew: counts['NOVO'] ?? 0,
-    countStopped: counts['PAROU'] ?? 0,
+    countGrowing: counts[SalesTrendClassificacao.crescendo] ?? 0,
+    countFalling: counts[SalesTrendClassificacao.caindo] ?? 0,
+    countNew: counts[SalesTrendClassificacao.novo] ?? 0,
+    countStopped: counts[SalesTrendClassificacao.parou] ?? 0,
+    countStable: counts[SalesTrendClassificacao.estavel] ?? 0,
     netImpact: netImpact,
     buckets: buckets,
   );

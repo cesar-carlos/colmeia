@@ -1830,10 +1830,26 @@
   "salesProdutoTendenciaFilterGroup": "Grupo",
   "salesProdutoTendenciaFilterBrand": "Marca",
   "salesProdutoTendenciaFilterPageSize": "Linhas por página",
+  "salesTrendFilterMetricTitle": "Métrica",
+  "salesTrendFilterMetricQuantity": "Quantidade",
+  "salesTrendFilterMetricRevenue": "Receita (R$)",
+  "salesTrendFilterFilialLabel": "Filial",
+  "salesTrendFilterMinVolumeTitle": "Piso mínimo de volume",
+  "salesTrendFilterThresholdTitle": "Limiar de tendência",
+  "salesTrendFilterThresholdPercentLabel": "{percent}%",
+  "@salesTrendFilterThresholdPercentLabel": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "salesTrendFilterTopMoversSortTitle": "Ordenar principais movimentações",
+  "salesTrendFilterTopMoversSortDifference": "Por diferença",
+  "salesTrendFilterTopMoversSortPercent": "Por percentual",
+  "salesTrendFilterPeriodsGapWarning": "Há um intervalo entre o fim do período anterior e o início do período atual. A comparação ainda é válida, mas as janelas não são contíguas.",
   "salesProdutoTendenciaFilterAllOption": "Todos",
   "salesProdutoTendenciaFilterQuickPeriodsTitle": "Períodos sugeridos",
   "salesProdutoTendenciaFilterQuickPeriodsSubtitle": "Escolha uma janela base e o relatório alinha a comparação automáticamente.",
-  "salesProdutoTendenciaFilterPresetCurrentMonth": "Mês atual",
+  "salesProdutoTendenciaFilterPresetCurrentMonth": "Mês até hoje",
   "salesProdutoTendenciaFilterPresetPreviousMonth": "Mês anterior",
   "salesProdutoTendenciaFilterPresetLast7Days": "Últimos 7 dias",
   "salesProdutoTendenciaFilterPresetLast30Days": "Últimos 30 dias",
@@ -1859,7 +1875,7 @@
   "salesProdutoTendenciaSummaryByClassificacaoTitle": "Produtos por classificação",
   "salesProdutoTendenciaSummaryByClassificacaoSubtitle": "Mesmas quantidades do resumo acima, agrupadas por tendência de venda.",
   "salesProdutoTendenciaSummaryByClassificacaoDrillDownHint": "Toque em uma barra para filtrar a grade de detalhes abaixo.",
-  "salesProdutoTendenciaSummaryClassificacaoLegend": "Crescendo: +20% vs anterior · Caindo: −20% · Novo: vendeu agora, não antes · Parou: vendeu antes, não agora · Estável: entre ±20%",
+  "salesProdutoTendenciaSummaryClassificacaoLegend": "Crescendo: +20% vs anterior · Caindo: −20% · Só no atual: vendeu agora, não antes · Parou: vendeu antes, não agora · Estável: entre ±20%",
   "salesProdutoTendenciaKpiFilterSemantics": "Filtrar detalhes por {classification}",
   "@salesProdutoTendenciaKpiFilterSemantics": {
     "placeholders": {
@@ -1893,7 +1909,7 @@
   "salesProdutoTendenciaNoData": "Sem dados de tendência para os filtros selecionados.",
   "salesProdutoTendenciaKpiGrowing": "Produtos crescendo",
   "salesProdutoTendenciaKpiFalling": "Produtos caindo",
-  "salesProdutoTendenciaKpiNewProducts": "Produtos novos",
+  "salesProdutoTendenciaKpiNewProducts": "Só no período atual",
   "salesProdutoTendenciaKpiStopped": "Parou de vender",
   "salesProdutoTendenciaKpiStable": "Produtos estáveis",
   "salesProdutoTendenciaKpiNetImpact": "Impacto líquido (qtd)",
@@ -1916,7 +1932,7 @@
     }
   },
   "salesProdutoTendenciaClassificacaoStopped": "Parou de vender",
-  "salesProdutoTendenciaClassificacaoNew": "Novo produto",
+  "salesProdutoTendenciaClassificacaoNew": "Só no período atual",
   "salesProdutoTendenciaClassificacaoGrowing": "Crescendo",
   "salesProdutoTendenciaClassificacaoFalling": "Caindo",
   "salesProdutoTendenciaClassificacaoStable": "Estável",
@@ -1936,10 +1952,10 @@
       }
     }
   },
-  "salesProdutoTendenciaMediaMovelPageSubtitle": "Painel de média móvel com resumo por classificação e detalhe páginado por produto.",
+  "salesProdutoTendenciaMediaMovelPageSubtitle": "Média diária de quantidade nos últimos N dias de calendário versus os N dias anteriores.",
   "salesProdutoTendenciaMediaMovelFilterQuantidadeDias": "Janela de dias",
-  "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHint": "Quantidade de dias usada em cada média móvel",
-  "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHelper": "Use a mesma janela para comparar a média atual com a anterior.",
+  "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHint": "Dias de calendário em cada média (termina hoje)",
+  "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHelper": "Dias sem venda entram como zero. Compara a média atual com a janela imediatamente anterior.",
   "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasInvalid": "Informe uma quantidade de dias válida e maior que zero.",
   "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasPresetsTitle": "Janelas rápidas",
   "salesProdutoTendenciaMediaMovelFilterQuantidadeDiasTooLarge": "Use no máximo {maxDays} dias.",

@@ -8,13 +8,16 @@ void main() {
     quantidadeDias: 7,
   );
 
-  test('query keeps CTE structure for daily and moving-average flow', () {
-    check(sql).contains('WITH Diario AS (');
-    check(sql).contains('Movel AS (');
-    check(sql).contains('UltimaLinha AS (');
+  test('query keeps CTE structure for calendar-window moving-average flow', () {
+    check(sql).contains('WITH BaseVendas AS (');
+    check(sql).contains('Vendas AS (');
+    check(sql).contains('Pivotado AS (');
     check(sql).contains('Resultado AS (');
     check(sql).contains('Tot AS (');
     check(sql).contains('Numbered AS (');
+    check(sql.contains('Diario AS (')).isFalse();
+    check(sql.contains('UltimaLinha AS (')).isFalse();
+    check(sql.contains('ROWS BETWEEN')).isFalse();
   });
 
   test('query uses named params for pagination', () {
@@ -22,17 +25,25 @@ void main() {
     check(sql).contains(':endRow');
   });
 
-  test('query inlines moving-average window and lookback literals', () {
-    check(sql).contains('ROWS BETWEEN 6 PRECEDING AND CURRENT ROW');
-    check(sql).contains('ROWS BETWEEN 13 PRECEDING AND 7 PRECEDING');
+  test('query anchors calendar windows on today and divides by window size', () {
     check(sql).contains('DATEADD(DAY, -13, CAST(GETDATE() AS DATE))');
-    check(sql).contains(
-      'pv.DataVenda >= DATEADD(DAY, -13, CAST(GETDATE() AS DATE))',
-    );
+    check(sql).contains('DATEADD(DAY, -6, CAST(GETDATE() AS DATE))');
     check(sql).contains(
       'pv.DataVenda < DATEADD(day, 1, CAST(GETDATE() AS DATE))',
     );
-    check(sql.contains('BETWEEN DATEADD(DAY,')).isFalse();
+    check(sql).contains('(QtdAtual * 1.0 / 7) AS MediaAtual');
+    check(sql).contains('(QtdAnterior * 1.0 / 7) AS MediaAnterior');
+    check(sql).contains(
+      '(QtdAtual + QtdAnterior) >= '
+      '${ProdutoVendidoTendenciaDeVendaMediaMovelFilter.defaultMinVolumeUnits}',
+    );
+  });
+
+  test('query groups by empresa, filial and produto', () {
+    check(sql).contains('GROUP BY');
+    check(sql).contains('CodEmpresa,');
+    check(sql).contains('CodFilial,');
+    check(sql).contains('CodProduto,');
   });
 
   test('query computes moving-average metrics and classification', () {
@@ -51,6 +62,7 @@ void main() {
     check(sql).contains("THEN 'CRESCENDO'");
     check(sql).contains("THEN 'CAINDO'");
     check(sql).contains("ELSE 'ESTAVEL'");
+    check(sql).contains('QtdAtual = 0 AND QtdAnterior > 0');
   });
 
   test('query carries total count through left-joined pagination', () {
@@ -97,7 +109,8 @@ void main() {
     check(filtered).contains('AND p.CodMarca = 490');
     check(filtered).contains("N'%fox'' prime%'");
     check(filtered).contains("WHERE Classificacao = N'CRESCENDO'");
-    check(filtered).contains('ROWS BETWEEN 27 PRECEDING AND 14 PRECEDING');
+    check(filtered).contains('(QtdAtual * 1.0 / 14) AS MediaAtual');
+    check(filtered).contains('DATEADD(DAY, -27, CAST(GETDATE() AS DATE))');
   });
 
   test('pagedQuery validates quantidadeDias', () {

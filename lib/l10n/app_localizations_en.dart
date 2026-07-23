@@ -4093,6 +4093,42 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesProdutoTendenciaFilterPageSize => 'Rows per page';
 
   @override
+  String get salesTrendFilterMetricTitle => 'Metric';
+
+  @override
+  String get salesTrendFilterMetricQuantity => 'Quantity';
+
+  @override
+  String get salesTrendFilterMetricRevenue => 'Revenue (R\$)';
+
+  @override
+  String get salesTrendFilterFilialLabel => 'Branch';
+
+  @override
+  String get salesTrendFilterMinVolumeTitle => 'Minimum volume floor';
+
+  @override
+  String get salesTrendFilterThresholdTitle => 'Trend threshold';
+
+  @override
+  String salesTrendFilterThresholdPercentLabel(int percent) {
+    return '$percent%';
+  }
+
+  @override
+  String get salesTrendFilterTopMoversSortTitle => 'Sort top movers by';
+
+  @override
+  String get salesTrendFilterTopMoversSortDifference => 'By difference';
+
+  @override
+  String get salesTrendFilterTopMoversSortPercent => 'By percent';
+
+  @override
+  String get salesTrendFilterPeriodsGapWarning =>
+      'There is a gap between the end of the previous period and the start of the current period. The comparison is still valid, but the windows are not contiguous.';
+
+  @override
   String get salesProdutoTendenciaFilterAllOption => 'All';
 
   @override
@@ -4104,7 +4140,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Pick a base window and the report will align the comparison for you.';
 
   @override
-  String get salesProdutoTendenciaFilterPresetCurrentMonth => 'Current month';
+  String get salesProdutoTendenciaFilterPresetCurrentMonth => 'Month to date';
 
   @override
   String get salesProdutoTendenciaFilterPresetPreviousMonth => 'Previous month';
@@ -4180,7 +4216,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesProdutoTendenciaSummaryClassificacaoLegend =>
-      'Growing: +20% vs prior · Falling: −20% · New: sold now, not before · Stopped: sold before, not now · Stable: within ±20%';
+      'Growing: +20% vs prior · Falling: −20% · Current only: sold now, not before · Stopped: sold before, not now · Stable: within ±20%';
 
   @override
   String salesProdutoTendenciaKpiFilterSemantics(String classification) {
@@ -4279,7 +4315,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesProdutoTendenciaKpiFalling => 'Falling products';
 
   @override
-  String get salesProdutoTendenciaKpiNewProducts => 'New products';
+  String get salesProdutoTendenciaKpiNewProducts => 'Current period only';
 
   @override
   String get salesProdutoTendenciaKpiStopped => 'Stopped selling';
@@ -4323,7 +4359,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesProdutoTendenciaClassificacaoStopped => 'Stopped selling';
 
   @override
-  String get salesProdutoTendenciaClassificacaoNew => 'New product';
+  String get salesProdutoTendenciaClassificacaoNew => 'Current period only';
 
   @override
   String get salesProdutoTendenciaClassificacaoGrowing => 'Growing';
@@ -4353,7 +4389,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesProdutoTendenciaMediaMovelPageSubtitle =>
-      'Moving-average dashboard with classification summary and paged product detail.';
+      'Daily quantity average over the last N calendar days versus the previous N days.';
 
   @override
   String get salesProdutoTendenciaMediaMovelFilterQuantidadeDias =>
@@ -4361,11 +4397,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHint =>
-      'Number of days used in each moving average';
+      'Calendar days in each average (ends today)';
 
   @override
   String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHelper =>
-      'Use the same window size for the current and previous averages.';
+      'Days with no sales count as zero. Compares the current average with the immediately previous window.';
 
   @override
   String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasInvalid =>

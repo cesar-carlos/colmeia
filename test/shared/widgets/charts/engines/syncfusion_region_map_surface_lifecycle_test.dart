@@ -91,10 +91,35 @@ void main() {
 
       expect(lifecycle.pendingRemountReason, isNull);
       expect(lifecycle.cachedMapSurfaceStableKey, 9);
+      expect(viewport.mapSurfaceAttached, isFalse);
       expect(viewport.state.zoomLevel, 3);
       expect(viewport.state.centerLatitude, -23);
       expect(viewport.state.centerLongitude, -46);
       expect(viewport.zoomPanBehavior.zoomLevel, 3);
+    });
+
+    test('remount detaches before seeding so disposed controllers are dropped', () {
+      final previous = viewport.zoomPanBehavior;
+      viewport.markMapSurfaceAttached();
+
+      lifecycle
+        ..noteLoadingEnded()
+        ..handleNextStableKey(
+          nextMapSurfaceStableKey: 11,
+          stableKeyChanged: false,
+          markerOverlay: markerOverlay,
+          viewport: viewport,
+          shapeSourceCache: shapeSourceCache,
+          mounted: true,
+          preferredViewport: null,
+          hasPreferredViewport: false,
+          pointCount: 1,
+          itemCount: 1,
+        );
+
+      expect(viewport.mapSurfaceAttached, isFalse);
+      expect(identical(viewport.zoomPanBehavior, previous), isFalse);
+      expect(viewport.zoomPanBehavior.zoomLevel, 2.5);
     });
 
     test('prefers loadingEnded remount reason over stableKeyChanged', () {

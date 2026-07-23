@@ -17,6 +17,7 @@ abstract final class CadastroFilialSql {
     bool hasSelectedBranches = false,
     int? codEmpresa,
     int? codFilial,
+    String? searchTerm,
     CadastroFilialSqlProjection projection =
         CadastroFilialSqlProjection.registration,
   }) {
@@ -26,6 +27,7 @@ abstract final class CadastroFilialSql {
       codEmpresa: codEmpresa,
       codFilial: codFilial,
     );
+    final searchPredicate = _searchPredicate(searchTerm);
     final baseColumns = projection == CadastroFilialSqlProjection.mapCatalog
         ? _baseColumnsMapCatalog
         : _baseColumnsRegistration;
@@ -41,6 +43,7 @@ $baseColumns
         m.CodMunicipio = f.CodMunicipio
       WHERE 1 = 1
 $branchPredicate
+$searchPredicate
     ),
     Tot AS (
       SELECT COUNT(*) AS TotalCount FROM Base
@@ -120,6 +123,21 @@ $outerColumns
       N.CodigoIBGE,
       N.UFMunicipio,
 ''';
+
+  static String _searchPredicate(String? searchTerm) {
+    final normalized = searchTerm?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      return '';
+    }
+    final escaped = normalized.replaceAll("'", "''");
+    final likeLiteral = "N'%$escaped%'";
+    return '''
+        AND (
+          UPPER(f.Nome) LIKE UPPER($likeLiteral)
+          OR UPPER(COALESCE(f.NomeFantasia, '')) LIKE UPPER($likeLiteral)
+          OR CAST(f.CodFilial AS VARCHAR(20)) LIKE $likeLiteral
+        )''';
+  }
 
   static String _branchPredicate({
     required Iterable<CadastroFilialBranchRef> branches,

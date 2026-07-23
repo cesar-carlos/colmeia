@@ -7,10 +7,14 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_screen_use_case.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_page_result.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/grupo_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/marca_produto_option.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_filter.dart';
@@ -65,6 +69,9 @@ class _MockLoadMarcaProdutoOptionsUseCase extends Mock
 class _MockLoadMediaMovelRowsForShareUseCase extends Mock
     implements LoadMediaMovelRowsForShareUseCase {}
 
+class _MockLoadCadastroFilialPageUseCase extends Mock
+    implements LoadCadastroFilialPageUseCase {}
+
 late SalesPreferences _pumpSalesPreferences;
 late LoadAvailableAgentsForSales _pumpLoadAvailableAgentsForSales;
 late AgentClientTokenReader _pumpTokenReader;
@@ -75,6 +82,7 @@ _pumpLoadTrendPageUseCase;
 late LoadGrupoProdutoOptionsUseCase _pumpLoadGrupoProdutoOptionsUseCase;
 late LoadMarcaProdutoOptionsUseCase _pumpLoadMarcaProdutoOptionsUseCase;
 late LoadMediaMovelRowsForShareUseCase _pumpLoadRowsForShareUseCase;
+late LoadCadastroFilialPageUseCase _pumpLoadCadastroFilialPageUseCase;
 
 void main() {
   late _MockAuthController authController;
@@ -86,9 +94,11 @@ void main() {
   late _MockLoadGrupoProdutoOptionsUseCase loadGrupoProdutoOptionsUseCase;
   late _MockLoadMarcaProdutoOptionsUseCase loadMarcaProdutoOptionsUseCase;
   late _MockLoadMediaMovelRowsForShareUseCase loadRowsForShareUseCase;
+  late _MockLoadCadastroFilialPageUseCase loadCadastroFilialPageUseCase;
 
   setUpAll(() {
     Provider.debugCheckInvalidValueType = null;
+    registerFallbackValue(const CadastroFilialFilter());
     registerFallbackValue(
       const ProdutoVendidoTendenciaDeVendaMediaMovelFilter(quantidadeDias: 7),
     );
@@ -109,6 +119,7 @@ void main() {
     loadGrupoProdutoOptionsUseCase = _MockLoadGrupoProdutoOptionsUseCase();
     loadMarcaProdutoOptionsUseCase = _MockLoadMarcaProdutoOptionsUseCase();
     loadRowsForShareUseCase = _MockLoadMediaMovelRowsForShareUseCase();
+    loadCadastroFilialPageUseCase = _MockLoadCadastroFilialPageUseCase();
     _pumpSalesPreferences = salesPreferences;
     _pumpLoadAvailableAgentsForSales = loadAvailableAgentsForSales;
     _pumpTokenReader = tokenReader;
@@ -117,6 +128,7 @@ void main() {
     _pumpLoadGrupoProdutoOptionsUseCase = loadGrupoProdutoOptionsUseCase;
     _pumpLoadMarcaProdutoOptionsUseCase = loadMarcaProdutoOptionsUseCase;
     _pumpLoadRowsForShareUseCase = loadRowsForShareUseCase;
+    _pumpLoadCadastroFilialPageUseCase = loadCadastroFilialPageUseCase;
 
     when(() => authController.session).thenReturn(
       AuthSession(
@@ -243,6 +255,25 @@ void main() {
     ).thenAnswer(
       (_) async => const Success<List<MarcaProdutoOption>, AppFailure>(
         <MarcaProdutoOption>[],
+      ),
+    );
+
+    when(
+      () => loadCadastroFilialPageUseCase.call(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        filter: any(named: 'filter'),
+        clientToken: any(named: 'clientToken'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        hubPresenceOnlineAgentIdsSnapshot:
+            any(named: 'hubPresenceOnlineAgentIdsSnapshot'),
+        hubConnectedFromApprovedCatalogRow:
+            any(named: 'hubConnectedFromApprovedCatalogRow'),
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    ).thenAnswer(
+      (_) async => const Success<CadastroFilialPageResult, AppFailure>(
+        CadastroFilialPageResult(items: <CadastroFilialRow>[], totalCount: 0),
       ),
     );
 
@@ -836,6 +867,7 @@ Future<void> _pumpPage(
             loadGrupoProdutoOptionsUseCase: _pumpLoadGrupoProdutoOptionsUseCase,
             loadMarcaProdutoOptionsUseCase: _pumpLoadMarcaProdutoOptionsUseCase,
             loadRowsForShareUseCase: _pumpLoadRowsForShareUseCase,
+            loadCadastroFilialPageUseCase: _pumpLoadCadastroFilialPageUseCase,
           ),
         ),
       ),

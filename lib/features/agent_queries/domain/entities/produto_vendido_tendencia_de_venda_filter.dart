@@ -1,3 +1,7 @@
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_classificacao.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_filter_limits.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_metric_mode.dart';
+
 /// Filters for the product sales trend query (`ATUAL` versus `ANTERIOR`).
 ///
 /// Both periods are inclusive calendar windows evaluated in SQL with half-open
@@ -14,6 +18,12 @@ class ProdutoVendidoTendenciaDeVendaFilter {
     this.classificacao,
     this.codGrupoProduto,
     this.codMarca,
+    this.codFilial,
+    this.metricMode = SalesTrendMetricMode.quantity,
+    this.minVolumeUnits = SalesTrendFilterLimits.defaultMinVolumeUnits,
+    this.trendThresholdPercent =
+        SalesTrendFilterLimits.defaultTrendThresholdPercent,
+    this.topMoversSortBy = SalesTrendTopMoversSortBy.diferenca,
     this.page = 1,
     this.pageSize = defaultPageSize,
   });
@@ -22,6 +32,11 @@ class ProdutoVendidoTendenciaDeVendaFilter {
   static const int maxDateRangeDays = 366;
   static const int defaultPageSize = 20;
   static const int maxPageSize = 500;
+
+  /// Default minimum combined metric across both periods.
+  static const int defaultMinVolumeUnits =
+      SalesTrendFilterLimits.defaultMinVolumeUnits;
+
   static const String errorOrigemMustNotBeEmpty = 'origem must not be empty';
   static const String errorPageMustBePositive = 'page must be >= 1';
   static const String errorPageSizeMustBePositive = 'pageSize must be >= 1';
@@ -35,13 +50,9 @@ class ProdutoVendidoTendenciaDeVendaFilter {
       'periodoAnterior must end before periodoAtual starts';
   static const String errorPeriodsMustCoverEquivalentWindows =
       'periodoAtual and periodoAnterior must cover equivalent windows';
-  static const Set<String> allowedClassificacoes = <String>{
-    'PAROU DE VENDER',
-    'NOVO PRODUTO',
-    'CRESCENDO',
-    'CAINDO',
-    'ESTAVEL',
-  };
+
+  static const Set<String> allowedClassificacoes =
+      SalesTrendClassificacao.allowed;
 
   final DateTime periodoAtualInicio;
   final DateTime periodoAtualFim;
@@ -55,13 +66,18 @@ class ProdutoVendidoTendenciaDeVendaFilter {
   final String? classificacao;
   final int? codGrupoProduto;
   final int? codMarca;
+  final int? codFilial;
+  final SalesTrendMetricMode metricMode;
+  final int minVolumeUnits;
+  final double trendThresholdPercent;
+  final SalesTrendTopMoversSortBy topMoversSortBy;
   final int page;
   final int pageSize;
 
   String get trimmedOrigem => origem.trim();
   String? get normalizedSearchTerm => _normalizeOptionalText(searchTerm);
   String? get normalizedClassificacao =>
-      _normalizeOptionalText(classificacao)?.toUpperCase();
+      SalesTrendClassificacao.normalize(classificacao);
   int get offset => (page - 1) * pageSize;
   int get startRow => offset + 1;
   int get endRow => offset + pageSize;
@@ -92,8 +108,25 @@ class ProdutoVendidoTendenciaDeVendaFilter {
     if (marca != null && marca <= 0) {
       return 'codMarca must be > 0 when provided';
     }
-    final categoria = normalizedClassificacao;
-    if (categoria != null && !allowedClassificacoes.contains(categoria)) {
+    final filialError = SalesTrendFilterLimits.validateCodFilial(codFilial);
+    if (filialError != null) {
+      return filialError;
+    }
+    final volumeError = SalesTrendFilterLimits.validateMinVolumeUnits(
+      minVolumeUnits,
+    );
+    if (volumeError != null) {
+      return volumeError;
+    }
+    final thresholdError = SalesTrendFilterLimits.validateTrendThresholdPercent(
+      trendThresholdPercent,
+    );
+    if (thresholdError != null) {
+      return thresholdError;
+    }
+    if (classificacao != null &&
+        classificacao!.trim().isNotEmpty &&
+        normalizedClassificacao == null) {
       return errorClassificacaoNotAllowed;
     }
 
@@ -179,14 +212,59 @@ class ProdutoVendidoTendenciaDeVendaFilter {
       anteriorInicio,
       anteriorFim,
     );
-    if (atualIsCalendarMonthWindow || anteriorIsCalendarMonthWindow) {
-      return atualIsCalendarMonthWindow &&
-          anteriorIsCalendarMonthWindow &&
-          _calendarMonthSpan(atualInicio, atualFim) ==
-              _calendarMonthSpan(anteriorInicio, anteriorFim);
+    if (atualIsCalendarMonthWindow && anteriorIsCalendarMonthWindow) {
+      return _calendarMonthSpan(atualInicio, atualFim) ==
+          _calendarMonthSpan(anteriorInicio, anteriorFim);
+    }
+
+    if (_isMonthToDateAlignedPair(
+      atualInicio: atualInicio,
+      atualFim: atualFim,
+      anteriorInicio: anteriorInicio,
+      anteriorFim: anteriorFim,
+    )) {
+      return true;
     }
 
     return atualInclusiveDays == anteriorInclusiveDays;
+  }
+
+  bool _isMonthToDateAlignedPair({
+    required DateTime atualInicio,
+    required DateTime atualFim,
+    required DateTime anteriorInicio,
+    required DateTime anteriorFim,
+  }) {
+    if (atualInicio.day != 1 || anteriorInicio.day != 1) {
+      return false;
+    }
+    if (atualFim.year != atualInicio.year ||
+        atualFim.month != atualInicio.month ||
+        anteriorFim.year != anteriorInicio.year ||
+        anteriorFim.month != anteriorInicio.month) {
+      return false;
+    }
+
+    final expectedAnteriorStart = DateTime(
+      atualInicio.year,
+      atualInicio.month - 1,
+    );
+    if (anteriorInicio.year != expectedAnteriorStart.year ||
+        anteriorInicio.month != expectedAnteriorStart.month) {
+      return false;
+    }
+
+    if (atualFim.day == anteriorFim.day) {
+      return true;
+    }
+
+    final anteriorLastDay = DateTime(
+      anteriorFim.year,
+      anteriorFim.month + 1,
+      0,
+    ).day;
+    return anteriorFim.day == anteriorLastDay &&
+        atualFim.day > anteriorLastDay;
   }
 
   bool _isWholeCalendarMonthWindow(DateTime start, DateTime end) {

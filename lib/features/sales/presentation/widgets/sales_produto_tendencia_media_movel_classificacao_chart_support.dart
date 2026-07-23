@@ -1,4 +1,5 @@
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_summary_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_classificacao.dart';
 import 'package:colmeia/features/sales/presentation/share/mappers/sales_produto_tendencia_media_movel_share_mapper.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_produto_tendencia_media_movel_share.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_trend_comparison_bar_chart_style.dart';
@@ -10,13 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 const List<String> kSalesProdutoTendenciaMediaMovelClassificacaoDisplayOrder =
-    <String>[
-      'CRESCENDO',
-      'CAINDO',
-      'NOVO',
-      'PAROU',
-      'ESTAVEL',
-    ];
+    SalesTrendClassificacao.displayOrder;
 
 List<SalesProdutoTendenciaMediaMovelClassBucket>
 salesProdutoTendenciaMediaMovelOrderedClassBuckets(
@@ -53,12 +48,12 @@ Color salesProdutoTendenciaMediaMovelClassificacaoColor(
   AppColors colors,
   String classificacao,
 ) {
-  return switch (classificacao.trim().toUpperCase()) {
-    'CRESCENDO' => colors.tertiary,
-    'CAINDO' => colors.error,
-    'NOVO' => colors.primary,
-    'PAROU' => colors.onSurfaceVariant,
-    'ESTAVEL' => colors.outline,
+  return switch (SalesTrendClassificacao.normalize(classificacao)) {
+    SalesTrendClassificacao.crescendo => colors.tertiary,
+    SalesTrendClassificacao.caindo => colors.error,
+    SalesTrendClassificacao.novo => colors.primary,
+    SalesTrendClassificacao.parou => colors.onSurfaceVariant,
+    SalesTrendClassificacao.estavel => colors.outline,
     _ => colors.primary,
   };
 }

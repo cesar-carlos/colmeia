@@ -68,7 +68,8 @@ class AppShellScaffold extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    const AppShellAppBar(
+                    AppShellAppBar(
+                      matchedLocation: currentLocation,
                       primary: false,
                       showBrandTitle: false,
                     ),
@@ -83,8 +84,9 @@ class AppShellScaffold extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: const AppShellAppBar(),
-      drawer: showShellNav && !shellSectionDrawerSuppressed(context)
+      appBar: AppShellAppBar(matchedLocation: currentLocation),
+      drawer: showShellNav &&
+              !shellSectionDrawerSuppressedForLocation(currentLocation)
           ? AppShellDrawer(
               currentLocation: currentLocation,
               currentRoute: currentRoute,

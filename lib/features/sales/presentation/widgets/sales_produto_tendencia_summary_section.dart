@@ -1,5 +1,6 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_classificacao.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_produto_tendencia_share.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_classificacao_chart_support.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_filtered_empty_state.dart';
@@ -203,7 +204,7 @@ class _TrendSummaryKpiStrip extends StatelessWidget {
           label: l10n.salesProdutoTendenciaKpiGrowing,
           value: nf.format(summary.countGrowing),
           iconForeground: colors.tertiary,
-          classificacao: 'CRESCENDO',
+          classificacao: SalesTrendClassificacao.crescendo,
           emphasis: AppMetricStatCardEmphasis.hero,
         ),
         _classificacaoKpi(
@@ -211,28 +212,28 @@ class _TrendSummaryKpiStrip extends StatelessWidget {
           label: l10n.salesProdutoTendenciaKpiFalling,
           value: nf.format(summary.countFalling),
           iconForeground: colors.error,
-          classificacao: 'CAINDO',
+          classificacao: SalesTrendClassificacao.caindo,
         ),
         _classificacaoKpi(
           icon: Icons.new_releases_outlined,
           label: l10n.salesProdutoTendenciaKpiNewProducts,
           value: nf.format(summary.countNew),
           iconForeground: colors.primary,
-          classificacao: 'NOVO PRODUTO',
+          classificacao: SalesTrendClassificacao.novo,
         ),
         _classificacaoKpi(
           icon: Icons.pause_circle_outline_rounded,
           label: l10n.salesProdutoTendenciaKpiStopped,
           value: nf.format(summary.countStopped),
           iconForeground: colors.onSurfaceVariant,
-          classificacao: 'PAROU DE VENDER',
+          classificacao: SalesTrendClassificacao.parou,
         ),
         _classificacaoKpi(
           icon: Icons.horizontal_rule_rounded,
           label: l10n.salesProdutoTendenciaKpiStable,
           value: nf.format(summary.countStable),
           iconForeground: colors.onSurfaceVariant,
-          classificacao: 'ESTAVEL',
+          classificacao: SalesTrendClassificacao.estavel,
         ),
         SalesProdutoTendenciaKpiCard(
           icon: Icons.balance_rounded,

@@ -7,6 +7,7 @@ import 'package:colmeia/core/errors/app_failure.dart' show SessionFailure;
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_summary_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_classificacao.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_tendencia_de_venda_media_movel_repository.dart';
 import 'package:flutter_test/flutter_test.dart' hide group;
 import 'package:test_api/scaffolding.dart' show group;
@@ -260,7 +261,11 @@ void checkPageInvariants(
     expect(row.mediaAtual, isNotNaN);
     expect(row.mediaAnterior, isNotNaN);
     expect(row.tendenciaPercentual, isNotNaN);
-    expect(row.classificacao, isNotEmpty);
+    expect(
+      SalesTrendClassificacao.allowed.contains(row.classificacao),
+      isTrue,
+      reason: 'unexpected classificacao ${row.classificacao}',
+    );
   }
 }
 
@@ -268,7 +273,11 @@ void checkSummaryInvariants(
   List<ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow> items,
 ) {
   for (final row in items) {
-    expect(row.classificacao, isNotEmpty);
+    expect(
+      SalesTrendClassificacao.allowed.contains(row.classificacao),
+      isTrue,
+      reason: 'unexpected classificacao ${row.classificacao}',
+    );
     expect(row.quantidadeProdutos, greaterThanOrEqualTo(0));
     expect(row.impactoLiquido, isNotNaN);
   }

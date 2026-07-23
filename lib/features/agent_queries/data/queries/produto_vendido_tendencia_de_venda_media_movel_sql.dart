@@ -1,34 +1,19 @@
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_classificacao.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_filter_limits.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_metric_mode.dart';
 
-// Product sales trend by moving average (`ProdutoVendidoTendenciaDeVendaMediaMovel`)
-// in a single `sql.execute` round-trip.
+// Product sales trend by calendar moving average
+// (`ProdutoVendidoTendenciaDeVendaMediaMovel`) in a single `sql.execute`
+// round-trip.
 //
-// Compares the latest moving-average window against the immediately previous
-// window of the same size and returns one row per product with the current
-// average, previous average, delta, percentage trend, and classification.
+// Compares the mean daily metric over the latest N calendar days (ending
+// today) against the previous N calendar days. Dividing period totals by N is
+// equivalent to a calendar moving average that treats days without sales as
+// zero — without materializing a product×day calendar explode (costly on SQL
+// Anywhere). Metric is quantity or net line revenue.
 //
-// ---
-//
-// ## Active joins and relationships
-//
-// | Alias | Table | Relationship / role |
-// |---|---|---|
-// | ipv | ItemProdutoVendido | Sale item line (`Quantidade`, `CodProduto`) |
-// | pv | ProdutoVendido | `pv.CodEmpresa = ipv.CodEmpresa` and `pv.CodProdutoVendido = ipv.CodProdutoVendido`; provides `DataVenda`, `Origem`, `PreVenda`, `CodFilial` |
-// | tos | TipoOperacaoSaida | `tos.CodEmpresa = pv.CodEmpresa`, `tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida`; validates financeiro rows |
-// | p | Produto | `p.CodProduto = ipv.CodProduto`; provides product identity and `CodUnidadeMedida` |
-// | gp | GrupoProduto | `gp.CodGrupoProduto = p.CodGrupoProduto` (optional metadata) |
-// | m | Marca | `m.CodMarca = p.CodMarca` (optional metadata) |
-//
-// ## Query parameters
-//
-// Named params:
-// - `:startRow`
-// - `:endRow`
-//
-// `quantidadeDias` and optional detail filters are inlined as validated SQL
-// literals because SQL Server window-frame offsets must remain integer
-// literals in `ROWS BETWEEN ... PRECEDING`.
+// One result row per `CodEmpresa` + `CodFilial` + `CodProduto`.
 abstract final class ProdutoVendidoTendenciaDeVendaMediaMovelSql {
   static String filteredUniverseCtes({
     required int quantidadeDias,
@@ -36,6 +21,11 @@ abstract final class ProdutoVendidoTendenciaDeVendaMediaMovelSql {
     String? classificacao,
     int? codGrupoProduto,
     int? codMarca,
+    int? codFilial,
+    SalesTrendMetricMode metricMode = SalesTrendMetricMode.quantity,
+    int minVolumeUnits = SalesTrendFilterLimits.defaultMinVolumeUnits,
+    double trendThresholdPercent =
+        SalesTrendFilterLimits.defaultTrendThresholdPercent,
   }) {
     if (quantidadeDias < 1) {
       throw ArgumentError.value(
@@ -45,10 +35,8 @@ abstract final class ProdutoVendidoTendenciaDeVendaMediaMovelSql {
       );
     }
 
-    final currentWindowRows = quantidadeDias - 1;
-    final previousWindowStart = (quantidadeDias * 2) - 1;
-    final previousWindowEnd = quantidadeDias;
-    final lookbackDays = previousWindowStart;
+    final currentWindowStartOffset = quantidadeDias - 1;
+    final lookbackDays = (quantidadeDias * 2) - 1;
     final codGrupoProdutoLine = _whereIntEquals(
       columnSql: 'p.CodGrupoProduto',
       value: codGrupoProduto,
@@ -57,15 +45,20 @@ abstract final class ProdutoVendidoTendenciaDeVendaMediaMovelSql {
       columnSql: 'p.CodMarca',
       value: codMarca,
     );
+    final codFilialLine = _whereIntEquals(
+      columnSql: 'pv.CodFilial',
+      value: codFilial,
+    );
     final searchTermLine = _whereContainsProductDimensions(searchTerm);
     final classificacaoLine = _whereOptionalClassificacao(classificacao);
+    final metricSql = metricMode.lineMetricSql;
+    final threshold = trendThresholdPercent;
 
     return '''
-    WITH Diario AS (
+    WITH BaseVendas AS (
       SELECT
         pv.CodEmpresa,
         pv.CodFilial,
-        CAST(pv.DataVenda AS DATE) AS DataVenda,
         ipv.CodProduto,
         p.Nome AS NomeProduto,
         p.CodUnidadeMedida,
@@ -73,7 +66,15 @@ abstract final class ProdutoVendidoTendenciaDeVendaMediaMovelSql {
         gp.Nome AS NomeGrupoProduto,
         m.CodMarca,
         m.Nome AS NomeMarca,
-        SUM(ipv.Quantidade) AS QtdDia
+        CASE
+          WHEN pv.DataVenda >= DATEADD(DAY, -$currentWindowStartOffset, CAST(GETDATE() AS DATE))
+            AND pv.DataVenda < DATEADD(day, 1, CAST(GETDATE() AS DATE))
+            THEN 'ATUAL'
+          WHEN pv.DataVenda >= DATEADD(DAY, -$lookbackDays, CAST(GETDATE() AS DATE))
+            AND pv.DataVenda < DATEADD(DAY, -$currentWindowStartOffset, CAST(GETDATE() AS DATE))
+            THEN 'ANTERIOR'
+        END AS Periodo,
+        $metricSql AS MetricaLinha
       FROM ItemProdutoVendido ipv
       INNER JOIN ProdutoVendido pv ON
         pv.CodEmpresa = ipv.CodEmpresa
@@ -94,20 +95,37 @@ abstract final class ProdutoVendidoTendenciaDeVendaMediaMovelSql {
         AND pv.PreVenda = 'N'
 $codGrupoProdutoLine
 $codMarcaLine
+$codFilialLine
 $searchTermLine
+    ),
+    Vendas AS (
+      SELECT
+        CodEmpresa,
+        CodFilial,
+        CodProduto,
+        NomeProduto,
+        CodUnidadeMedida,
+        CodGrupoProduto,
+        NomeGrupoProduto,
+        CodMarca,
+        NomeMarca,
+        Periodo,
+        SUM(MetricaLinha) AS Metrica
+      FROM BaseVendas
+      WHERE Periodo IS NOT NULL
       GROUP BY
-        pv.CodEmpresa,
-        pv.CodFilial,
-        CAST(pv.DataVenda AS DATE),
-        ipv.CodProduto,
-        p.Nome,
-        p.CodUnidadeMedida,
-        gp.CodGrupoProduto,
-        gp.Nome,
-        m.CodMarca,
-        m.Nome
+        CodEmpresa,
+        CodFilial,
+        CodProduto,
+        NomeProduto,
+        CodUnidadeMedida,
+        CodGrupoProduto,
+        NomeGrupoProduto,
+        CodMarca,
+        NomeMarca,
+        Periodo
     ),
-    Movel AS (
+    Pivotado AS (
       SELECT
         CodEmpresa,
         CodFilial,
@@ -118,21 +136,11 @@ $searchTermLine
         NomeGrupoProduto,
         CodMarca,
         NomeMarca,
-        DataVenda,
-        AVG(QtdDia * 1.0) OVER (
-          PARTITION BY CodProduto
-          ORDER BY DataVenda
-          ROWS BETWEEN $currentWindowRows PRECEDING AND CURRENT ROW
-        ) AS MediaAtual,
-        AVG(QtdDia * 1.0) OVER (
-          PARTITION BY CodProduto
-          ORDER BY DataVenda
-          ROWS BETWEEN $previousWindowStart PRECEDING AND $previousWindowEnd PRECEDING
-        ) AS MediaAnterior
-      FROM Diario
-    ),
-    UltimaLinha AS (
-      SELECT
+        SUM(CASE WHEN Periodo = 'ATUAL' THEN Metrica ELSE 0 END) AS QtdAtual,
+        SUM(CASE WHEN Periodo = 'ANTERIOR' THEN Metrica ELSE 0 END)
+          AS QtdAnterior
+      FROM Vendas
+      GROUP BY
         CodEmpresa,
         CodFilial,
         CodProduto,
@@ -141,14 +149,7 @@ $searchTermLine
         CodGrupoProduto,
         NomeGrupoProduto,
         CodMarca,
-        NomeMarca,
-        MediaAtual,
-        MediaAnterior,
-        ROW_NUMBER() OVER (
-          PARTITION BY CodProduto
-          ORDER BY DataVenda DESC
-        ) AS Linha
-      FROM Movel
+        NomeMarca
     ),
     Resultado AS (
       SELECT
@@ -161,34 +162,27 @@ $searchTermLine
         NomeGrupoProduto,
         CodMarca,
         NomeMarca,
-        COALESCE(MediaAtual, 0) AS MediaAtual,
-        COALESCE(MediaAnterior, 0) AS MediaAnterior,
-        COALESCE(MediaAtual, 0) - COALESCE(MediaAnterior, 0) AS Diferenca,
+        (QtdAtual * 1.0 / $quantidadeDias) AS MediaAtual,
+        (QtdAnterior * 1.0 / $quantidadeDias) AS MediaAnterior,
+        ((QtdAtual - QtdAnterior) * 1.0 / $quantidadeDias) AS Diferenca,
         CASE
-          WHEN COALESCE(MediaAnterior, 0) > 0
-            THEN (
-              (COALESCE(MediaAtual, 0) - COALESCE(MediaAnterior, 0))
-              * 100.0
-              / MediaAnterior
-            )
+          WHEN QtdAnterior > 0
+            THEN ((QtdAtual - QtdAnterior) * 100.0 / QtdAnterior)
           ELSE 0
         END AS TendenciaPercentual,
         CASE
-          WHEN COALESCE(MediaAnterior, 0) = 0
-            AND COALESCE(MediaAtual, 0) > 0 THEN 'NOVO'
-          WHEN COALESCE(MediaAtual, 0) = 0 THEN 'PAROU'
+          WHEN QtdAnterior = 0 AND QtdAtual > 0 THEN '${SalesTrendClassificacao.novo}'
+          WHEN QtdAtual = 0 AND QtdAnterior > 0 THEN '${SalesTrendClassificacao.parou}'
           WHEN (
-            (COALESCE(MediaAtual, 0) - COALESCE(MediaAnterior, 0))
-            / NULLIF(MediaAnterior, 0)
-          ) > 0.2 THEN 'CRESCENDO'
+            (QtdAtual - QtdAnterior) * 1.0 / NULLIF(QtdAnterior, 0)
+          ) > $threshold THEN '${SalesTrendClassificacao.crescendo}'
           WHEN (
-            (COALESCE(MediaAtual, 0) - COALESCE(MediaAnterior, 0))
-            / NULLIF(MediaAnterior, 0)
-          ) < -0.2 THEN 'CAINDO'
-          ELSE 'ESTAVEL'
+            (QtdAtual - QtdAnterior) * 1.0 / NULLIF(QtdAnterior, 0)
+          ) < -$threshold THEN '${SalesTrendClassificacao.caindo}'
+          ELSE '${SalesTrendClassificacao.estavel}'
         END AS Classificacao
-      FROM UltimaLinha
-      WHERE Linha = 1
+      FROM Pivotado
+      WHERE (QtdAtual + QtdAnterior) >= $minVolumeUnits
     ),
     Filtrado AS (
       SELECT
@@ -217,6 +211,11 @@ $classificacaoLine
     String? classificacao,
     int? codGrupoProduto,
     int? codMarca,
+    int? codFilial,
+    SalesTrendMetricMode metricMode = SalesTrendMetricMode.quantity,
+    int minVolumeUnits = SalesTrendFilterLimits.defaultMinVolumeUnits,
+    double trendThresholdPercent =
+        SalesTrendFilterLimits.defaultTrendThresholdPercent,
     ProdutoVendidoTendenciaDeVendaMediaMovelSortBy sortBy =
         ProdutoVendidoTendenciaDeVendaMediaMovelSortBy.tendenciaPercentualDesc,
   }) {
@@ -226,6 +225,10 @@ $classificacaoLine
       classificacao: classificacao,
       codGrupoProduto: codGrupoProduto,
       codMarca: codMarca,
+      codFilial: codFilial,
+      metricMode: metricMode,
+      minVolumeUnits: minVolumeUnits,
+      trendThresholdPercent: trendThresholdPercent,
     );
 
     return '''
@@ -289,8 +292,8 @@ $filteredCtes,
   }
 
   static String _whereOptionalClassificacao(String? classificacao) {
-    final normalized = classificacao?.trim();
-    if (normalized == null || normalized.isEmpty) {
+    final normalized = SalesTrendClassificacao.normalize(classificacao);
+    if (normalized == null) {
       return '      WHERE (1 = 1)';
     }
     final escaped = normalized.replaceAll("'", "''");

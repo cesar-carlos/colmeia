@@ -6738,6 +6738,72 @@ abstract class AppLocalizations {
   /// **'Rows per page'**
   String get salesProdutoTendenciaFilterPageSize;
 
+  /// No description provided for @salesTrendFilterMetricTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Metric'**
+  String get salesTrendFilterMetricTitle;
+
+  /// No description provided for @salesTrendFilterMetricQuantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get salesTrendFilterMetricQuantity;
+
+  /// No description provided for @salesTrendFilterMetricRevenue.
+  ///
+  /// In en, this message translates to:
+  /// **'Revenue (R\$)'**
+  String get salesTrendFilterMetricRevenue;
+
+  /// No description provided for @salesTrendFilterFilialLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch'**
+  String get salesTrendFilterFilialLabel;
+
+  /// No description provided for @salesTrendFilterMinVolumeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum volume floor'**
+  String get salesTrendFilterMinVolumeTitle;
+
+  /// No description provided for @salesTrendFilterThresholdTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Trend threshold'**
+  String get salesTrendFilterThresholdTitle;
+
+  /// No description provided for @salesTrendFilterThresholdPercentLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}%'**
+  String salesTrendFilterThresholdPercentLabel(int percent);
+
+  /// No description provided for @salesTrendFilterTopMoversSortTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort top movers by'**
+  String get salesTrendFilterTopMoversSortTitle;
+
+  /// No description provided for @salesTrendFilterTopMoversSortDifference.
+  ///
+  /// In en, this message translates to:
+  /// **'By difference'**
+  String get salesTrendFilterTopMoversSortDifference;
+
+  /// No description provided for @salesTrendFilterTopMoversSortPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'By percent'**
+  String get salesTrendFilterTopMoversSortPercent;
+
+  /// No description provided for @salesTrendFilterPeriodsGapWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'There is a gap between the end of the previous period and the start of the current period. The comparison is still valid, but the windows are not contiguous.'**
+  String get salesTrendFilterPeriodsGapWarning;
+
   /// No description provided for @salesProdutoTendenciaFilterAllOption.
   ///
   /// In en, this message translates to:
@@ -6759,7 +6825,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesProdutoTendenciaFilterPresetCurrentMonth.
   ///
   /// In en, this message translates to:
-  /// **'Current month'**
+  /// **'Month to date'**
   String get salesProdutoTendenciaFilterPresetCurrentMonth;
 
   /// No description provided for @salesProdutoTendenciaFilterPresetPreviousMonth.
@@ -6873,7 +6939,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesProdutoTendenciaSummaryClassificacaoLegend.
   ///
   /// In en, this message translates to:
-  /// **'Growing: +20% vs prior · Falling: −20% · New: sold now, not before · Stopped: sold before, not now · Stable: within ±20%'**
+  /// **'Growing: +20% vs prior · Falling: −20% · Current only: sold now, not before · Stopped: sold before, not now · Stable: within ±20%'**
   String get salesProdutoTendenciaSummaryClassificacaoLegend;
 
   /// No description provided for @salesProdutoTendenciaKpiFilterSemantics.
@@ -7035,7 +7101,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesProdutoTendenciaKpiNewProducts.
   ///
   /// In en, this message translates to:
-  /// **'New products'**
+  /// **'Current period only'**
   String get salesProdutoTendenciaKpiNewProducts;
 
   /// No description provided for @salesProdutoTendenciaKpiStopped.
@@ -7116,7 +7182,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesProdutoTendenciaClassificacaoNew.
   ///
   /// In en, this message translates to:
-  /// **'New product'**
+  /// **'Current period only'**
   String get salesProdutoTendenciaClassificacaoNew;
 
   /// No description provided for @salesProdutoTendenciaClassificacaoGrowing.
@@ -7152,7 +7218,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesProdutoTendenciaMediaMovelPageSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Moving-average dashboard with classification summary and paged product detail.'**
+  /// **'Daily quantity average over the last N calendar days versus the previous N days.'**
   String get salesProdutoTendenciaMediaMovelPageSubtitle;
 
   /// No description provided for @salesProdutoTendenciaMediaMovelFilterQuantidadeDias.
@@ -7164,13 +7230,13 @@ abstract class AppLocalizations {
   /// No description provided for @salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHint.
   ///
   /// In en, this message translates to:
-  /// **'Number of days used in each moving average'**
+  /// **'Calendar days in each average (ends today)'**
   String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHint;
 
   /// No description provided for @salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHelper.
   ///
   /// In en, this message translates to:
-  /// **'Use the same window size for the current and previous averages.'**
+  /// **'Days with no sales count as zero. Compares the current average with the immediately previous window.'**
   String get salesProdutoTendenciaMediaMovelFilterQuantidadeDiasHelper;
 
   /// No description provided for @salesProdutoTendenciaMediaMovelFilterQuantidadeDiasInvalid.

@@ -50,7 +50,9 @@ class SyncfusionRegionMapSurfaceLifecycle {
       );
     }
 
-      viewport
+    // Drop any Syncfusion controller still hanging on the previous behavior
+    // before seeding viewport state into a fresh MapZoomPanBehavior.
+    viewport
       ..logRemount(
         reason: remountReason.name,
         stableKeyChanged: stableKeyChanged,
@@ -59,7 +61,7 @@ class SyncfusionRegionMapSurfaceLifecycle {
         pointCount: pointCount,
         itemCount: itemCount,
       )
-      ..recreateZoomPanBehavior(seedFromState: true)
+      ..markMapSurfaceDetached()
       ..applyZoomPanBehaviorViewport(
         reason: 'map_surface_remount_${remountReason.name}',
         mounted: mounted,

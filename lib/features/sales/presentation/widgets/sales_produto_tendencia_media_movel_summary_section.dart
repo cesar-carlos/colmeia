@@ -1,4 +1,5 @@
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_summary_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_classificacao.dart';
 import 'package:colmeia/features/sales/presentation/share/mappers/sales_produto_tendencia_media_movel_share_mapper.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_produto_tendencia_media_movel_share.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_filtered_empty_state.dart';
@@ -179,14 +180,14 @@ class _MediaMovelSummaryKpiStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppResponsiveMetricStatGrid(
-      extraWideColumns: 5,
+      extraWideColumns: 6,
       children: <Widget>[
         _classificacaoKpi(
           icon: Icons.trending_up_rounded,
           label: l10n.salesProdutoTendenciaMediaMovelKpiGrowing,
           value: numberFormat.format(summary.countGrowing),
           iconForeground: colors.tertiary,
-          classificacao: 'CRESCENDO',
+          classificacao: SalesTrendClassificacao.crescendo,
           emphasis: AppMetricStatCardEmphasis.hero,
         ),
         _classificacaoKpi(
@@ -194,21 +195,28 @@ class _MediaMovelSummaryKpiStrip extends StatelessWidget {
           label: l10n.salesProdutoTendenciaMediaMovelKpiFalling,
           value: numberFormat.format(summary.countFalling),
           iconForeground: colors.error,
-          classificacao: 'CAINDO',
+          classificacao: SalesTrendClassificacao.caindo,
         ),
         _classificacaoKpi(
           icon: Icons.new_releases_outlined,
           label: l10n.salesProdutoTendenciaMediaMovelKpiNewProducts,
           value: numberFormat.format(summary.countNew),
           iconForeground: colors.primary,
-          classificacao: 'NOVO',
+          classificacao: SalesTrendClassificacao.novo,
         ),
         _classificacaoKpi(
           icon: Icons.pause_circle_outline_rounded,
           label: l10n.salesProdutoTendenciaMediaMovelKpiStopped,
           value: numberFormat.format(summary.countStopped),
           iconForeground: colors.onSurfaceVariant,
-          classificacao: 'PAROU',
+          classificacao: SalesTrendClassificacao.parou,
+        ),
+        _classificacaoKpi(
+          icon: Icons.horizontal_rule_rounded,
+          label: l10n.salesProdutoTendenciaKpiStable,
+          value: numberFormat.format(summary.countStable),
+          iconForeground: colors.onSurfaceVariant,
+          classificacao: SalesTrendClassificacao.estavel,
         ),
         SalesProdutoTendenciaKpiCard(
           icon: Icons.balance_rounded,

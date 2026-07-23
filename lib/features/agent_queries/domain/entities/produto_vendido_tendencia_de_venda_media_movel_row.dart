@@ -1,4 +1,4 @@
-/// One row per sold product with moving-average trend metrics.
+/// One row per empresa/filial/product with calendar moving-average trend metrics.
 class ProdutoVendidoTendenciaDeVendaMediaMovelRow {
   const ProdutoVendidoTendenciaDeVendaMediaMovelRow({
     required this.codEmpresa,

@@ -8,6 +8,7 @@ import 'package:colmeia/app/router/chart_share_icon_button.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_page_use_case.dart';
@@ -21,6 +22,7 @@ import 'package:colmeia/features/sales/application/load_media_movel_rows_for_sha
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
+import 'package:colmeia/features/sales/presentation/async_search/sales_filial_async_search_loader.dart';
 import 'package:colmeia/features/sales/presentation/async_search/sales_produto_dimension_async_search_loaders.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_agent_auto_refresh_mixin.dart';
@@ -36,6 +38,7 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tenden
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_filter_section.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_produto_tendencia_media_movel_filters_sheet.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_trend_comparison_bar_chart_style.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_trend_shared_filter_controls.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_scroll_tokens.dart';
@@ -59,6 +62,7 @@ class SalesProdutoTendenciaMediaMovelPage extends StatefulWidget {
     required this.loadTrendPageUseCase,
     required this.loadGrupoProdutoOptionsUseCase,
     required this.loadMarcaProdutoOptionsUseCase,
+    required this.loadCadastroFilialPageUseCase,
     required this.loadRowsForShareUseCase,
     this.relayCancelScopeBinder,
     super.key,
@@ -73,6 +77,7 @@ class SalesProdutoTendenciaMediaMovelPage extends StatefulWidget {
   loadTrendPageUseCase;
   final LoadGrupoProdutoOptionsUseCase loadGrupoProdutoOptionsUseCase;
   final LoadMarcaProdutoOptionsUseCase loadMarcaProdutoOptionsUseCase;
+  final LoadCadastroFilialPageUseCase loadCadastroFilialPageUseCase;
   final LoadMediaMovelRowsForShareUseCase loadRowsForShareUseCase;
   final AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder;
 
@@ -191,10 +196,16 @@ class _SalesProdutoTendenciaMediaMovelPageState
       'classificacao': null,
       'codGrupoProduto': null,
       'codMarca': null,
+      'codFilial': null,
       'grupoProdutoLabel': null,
       'marcaProdutoLabel': null,
+      'filialLabel': null,
+      'metricMode': state.metricMode,
+      'minVolumeUnits': state.minVolumeUnits,
+      'trendThresholdPercent': state.trendThresholdPercent,
       'sortBy': ProdutoVendidoTendenciaDeVendaMediaMovelSortBy
-          .tendenciaPercentualDesc,
+          .tendenciaPercentualDesc
+          .name,
       'pageSize':
           ProdutoVendidoTendenciaDeVendaMediaMovelFilter.defaultPageSize,
     });
@@ -212,8 +223,13 @@ class _SalesProdutoTendenciaMediaMovelPageState
       'classificacao': null,
       'codGrupoProduto': state.codGrupoProduto,
       'codMarca': state.codMarca,
+      'codFilial': state.codFilial,
       'grupoProdutoLabel': state.grupoProdutoLabel,
       'marcaProdutoLabel': state.marcaProdutoLabel,
+      'filialLabel': state.filialLabel,
+      'metricMode': state.metricMode,
+      'minVolumeUnits': state.minVolumeUnits,
+      'trendThresholdPercent': state.trendThresholdPercent,
       'sortBy': state.sortBy.name,
       'pageSize': state.pageSize,
     });
@@ -228,8 +244,13 @@ class _SalesProdutoTendenciaMediaMovelPageState
       'classificacao': classificacao,
       'codGrupoProduto': state.codGrupoProduto,
       'codMarca': state.codMarca,
+      'codFilial': state.codFilial,
       'grupoProdutoLabel': state.grupoProdutoLabel,
       'marcaProdutoLabel': state.marcaProdutoLabel,
+      'filialLabel': state.filialLabel,
+      'metricMode': state.metricMode,
+      'minVolumeUnits': state.minVolumeUnits,
+      'trendThresholdPercent': state.trendThresholdPercent,
       'sortBy': state.sortBy.name,
       'pageSize': state.pageSize,
     });
@@ -299,6 +320,25 @@ class _SalesProdutoTendenciaMediaMovelPageState
     );
   }
 
+  SalesProdutoDimensionLoaderFactory _filialLoaderFactory(String userId) {
+    final clientTokenUnavailableMessage = AppLocalizations.of(
+      context,
+    ).salesAsyncSearchClientTokenUnavailable;
+    final l10n = AppLocalizations.of(context);
+    return (agentIdProvider) => createSalesFilialAsyncSearchLoader(
+      useCase: widget.loadCadastroFilialPageUseCase,
+      userId: userId,
+      agentIdProvider: agentIdProvider,
+      resolveClientToken: (agentId) => _controller.resolveClientToken(
+        userId: userId,
+        agentId: agentId,
+      ),
+      clientTokenUnavailableMessage: clientTokenUnavailableMessage,
+      l10n: l10n,
+      cancelScope: _controller.sqlCancelScope,
+    );
+  }
+
   Future<void> _openFilters() async {
     final l10n = AppLocalizations.of(context);
     final state = _controller.state;
@@ -317,12 +357,18 @@ class _SalesProdutoTendenciaMediaMovelPageState
         initialClassificacao: state.classificacao,
         initialCodGrupoProduto: state.codGrupoProduto,
         initialCodMarca: state.codMarca,
+        initialCodFilial: state.codFilial,
         initialGrupoProdutoLabel: state.grupoProdutoLabel,
         initialMarcaProdutoLabel: state.marcaProdutoLabel,
+        initialFilialLabel: state.filialLabel,
+        initialMetricMode: state.metricMode,
+        initialMinVolumeUnits: state.minVolumeUnits,
+        initialTrendThresholdPercent: state.trendThresholdPercent,
         initialSortBy: state.sortBy,
         initialPageSize: state.pageSize,
         grupoProdutoLoaderFactory: _grupoProdutoLoaderFactory(userId),
         marcaProdutoLoaderFactory: _marcaProdutoLoaderFactory(userId),
+        filialLoaderFactory: _filialLoaderFactory(userId),
       ),
     );
 
@@ -368,6 +414,14 @@ class _SalesProdutoTendenciaMediaMovelPageState
       l10n: l10n,
       agentName: selectedBranch?.name ?? l10n.salesBranchPickerEmpty,
       quantidadeDias: state.quantidadeDias,
+      extraParameters: salesTrendShareExtraParameters(
+        l10n: l10n,
+        metricMode: state.metricMode,
+        minVolumeUnits: state.minVolumeUnits,
+        trendThresholdPercent: state.trendThresholdPercent,
+        filialLabel: state.filialLabel,
+        codFilial: state.codFilial,
+      ),
     );
   }
 
@@ -376,6 +430,14 @@ class _SalesProdutoTendenciaMediaMovelPageState
     SalesProdutoTendenciaMediaMovelPresentationState state,
   ) {
     final extraParameters = <ChartShareExportHeaderParameter>[
+      ...salesTrendShareExtraParameters(
+        l10n: l10n,
+        metricMode: state.metricMode,
+        minVolumeUnits: state.minVolumeUnits,
+        trendThresholdPercent: state.trendThresholdPercent,
+        filialLabel: state.filialLabel,
+        codFilial: state.codFilial,
+      ),
       ChartShareExportHeaderParameter(
         label: l10n.salesProdutoTendenciaMediaMovelFilterSortBy,
         value: produtoTendenciaMediaMovelSortLabel(l10n, state.sortBy),

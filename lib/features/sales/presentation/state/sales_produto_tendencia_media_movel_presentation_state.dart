@@ -3,6 +3,8 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_summary_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_filter_limits.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_metric_mode.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/foundation.dart';
 
@@ -14,10 +16,16 @@ class SalesProdutoTendenciaMediaMovelPresentationState {
     this.availableAgents = const <DashboardAgentOption>[],
     this.grupoProdutoLabel,
     this.marcaProdutoLabel,
+    this.filialLabel,
     this.searchTerm = '',
     this.classificacao,
     this.codGrupoProduto,
     this.codMarca,
+    this.codFilial,
+    this.metricMode = SalesTrendMetricMode.quantity,
+    this.minVolumeUnits = SalesTrendFilterLimits.defaultMinVolumeUnits,
+    this.trendThresholdPercent =
+        SalesTrendFilterLimits.defaultTrendThresholdPercent,
     this.sortBy =
         ProdutoVendidoTendenciaDeVendaMediaMovelSortBy.tendenciaPercentualDesc,
     this.page = 1,
@@ -39,11 +47,16 @@ class SalesProdutoTendenciaMediaMovelPresentationState {
   final List<DashboardAgentOption> availableAgents;
   final String? grupoProdutoLabel;
   final String? marcaProdutoLabel;
+  final String? filialLabel;
   final int quantidadeDias;
   final String searchTerm;
   final String? classificacao;
   final int? codGrupoProduto;
   final int? codMarca;
+  final int? codFilial;
+  final SalesTrendMetricMode metricMode;
+  final int minVolumeUnits;
+  final double trendThresholdPercent;
   final ProdutoVendidoTendenciaDeVendaMediaMovelSortBy sortBy;
   final int page;
   final int pageSize;
@@ -61,11 +74,16 @@ class SalesProdutoTendenciaMediaMovelPresentationState {
     List<DashboardAgentOption>? availableAgents,
     Object? grupoProdutoLabel = _sentinel,
     Object? marcaProdutoLabel = _sentinel,
+    Object? filialLabel = _sentinel,
     int? quantidadeDias,
     String? searchTerm,
     Object? classificacao = _sentinel,
     Object? codGrupoProduto = _sentinel,
     Object? codMarca = _sentinel,
+    Object? codFilial = _sentinel,
+    SalesTrendMetricMode? metricMode,
+    int? minVolumeUnits,
+    double? trendThresholdPercent,
     ProdutoVendidoTendenciaDeVendaMediaMovelSortBy? sortBy,
     int? page,
     int? pageSize,
@@ -85,6 +103,9 @@ class SalesProdutoTendenciaMediaMovelPresentationState {
       marcaProdutoLabel: identical(marcaProdutoLabel, _sentinel)
           ? this.marcaProdutoLabel
           : marcaProdutoLabel as String?,
+      filialLabel: identical(filialLabel, _sentinel)
+          ? this.filialLabel
+          : filialLabel as String?,
       quantidadeDias: quantidadeDias ?? this.quantidadeDias,
       searchTerm: searchTerm ?? this.searchTerm,
       classificacao: identical(classificacao, _sentinel)
@@ -96,6 +117,13 @@ class SalesProdutoTendenciaMediaMovelPresentationState {
       codMarca: identical(codMarca, _sentinel)
           ? this.codMarca
           : codMarca as int?,
+      codFilial: identical(codFilial, _sentinel)
+          ? this.codFilial
+          : codFilial as int?,
+      metricMode: metricMode ?? this.metricMode,
+      minVolumeUnits: minVolumeUnits ?? this.minVolumeUnits,
+      trendThresholdPercent:
+          trendThresholdPercent ?? this.trendThresholdPercent,
       sortBy: sortBy ?? this.sortBy,
       page: page ?? this.page,
       pageSize: pageSize ?? this.pageSize,
@@ -120,11 +148,16 @@ class SalesProdutoTendenciaMediaMovelPresentationState {
         listEquals(other.availableAgents, availableAgents) &&
         other.grupoProdutoLabel == grupoProdutoLabel &&
         other.marcaProdutoLabel == marcaProdutoLabel &&
+        other.filialLabel == filialLabel &&
         other.quantidadeDias == quantidadeDias &&
         other.searchTerm == searchTerm &&
         other.classificacao == classificacao &&
         other.codGrupoProduto == codGrupoProduto &&
         other.codMarca == codMarca &&
+        other.codFilial == codFilial &&
+        other.metricMode == metricMode &&
+        other.minVolumeUnits == minVolumeUnits &&
+        other.trendThresholdPercent == trendThresholdPercent &&
         other.sortBy == sortBy &&
         other.page == page &&
         other.pageSize == pageSize &&
@@ -142,18 +175,25 @@ class SalesProdutoTendenciaMediaMovelPresentationState {
     Object.hashAll(availableAgents),
     grupoProdutoLabel,
     marcaProdutoLabel,
+    filialLabel,
     quantidadeDias,
     searchTerm,
     classificacao,
     codGrupoProduto,
-    codMarca,
-    sortBy,
-    page,
-    pageSize,
-    loading,
-    detailsLoading,
-    authenticationFailed,
-    loadFailure,
+    Object.hash(
+      codMarca,
+      codFilial,
+      metricMode,
+      minVolumeUnits,
+      trendThresholdPercent,
+      sortBy,
+      page,
+      pageSize,
+      loading,
+      detailsLoading,
+      authenticationFailed,
+      loadFailure,
+    ),
     pageResult,
     Object.hashAll(summaryRows),
   );

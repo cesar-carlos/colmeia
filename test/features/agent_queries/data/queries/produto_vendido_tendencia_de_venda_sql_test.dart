@@ -1,5 +1,7 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_tendencia_de_venda_sql.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_metric_mode.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -56,29 +58,52 @@ void main() {
     check(sql.contains('tos.CodFilial = pv.CodFilial')).isFalse();
     check(sql).contains("COALESCE(tos.GeraFinanceiro, 'N') = 'S'");
     check(sql).contains("pv.PreVenda = 'N'");
-    check(sql).contains('WHERE (QtdAtual + QtdAnterior) >= 10');
+    check(sql).contains(
+      'WHERE (QtdAtual + QtdAnterior) >= '
+      '${ProdutoVendidoTendenciaDeVendaFilter.defaultMinVolumeUnits}',
+    );
   });
 
   test('query computes trend metrics and classification', () {
     check(sql).contains('AS Diferenca');
     check(sql).contains('AS PercentualTendencia');
-    check(sql).contains("THEN 'PAROU DE VENDER'");
-    check(sql).contains("THEN 'NOVO PRODUTO'");
+    check(sql).contains("THEN 'PAROU'");
+    check(sql).contains("THEN 'NOVO'");
     check(sql).contains("THEN 'CRESCENDO'");
     check(sql).contains("THEN 'CAINDO'");
     check(sql).contains("ELSE 'ESTAVEL'");
   });
 
+  test('query supports revenue metric, filial, and custom threshold', () {
+    final revenueSql = ProdutoVendidoTendenciaDeVendaSql.pagedQuery(
+      startRow: 1,
+      endRow: 20,
+      metricMode: SalesTrendMetricMode.revenue,
+      codFilial: 3,
+      minVolumeUnits: 50,
+      trendThresholdPercent: 0.3,
+    );
+    check(revenueSql).contains('(ipv.Quantidade * ipv.ValorUnitarioLiquido)');
+    check(revenueSql).contains('AND pv.CodFilial = 3');
+    check(revenueSql).contains('WHERE (QtdAtual + QtdAnterior) >= 50');
+    check(revenueSql).contains('> 0.3');
+    check(revenueSql).contains('< -0.3');
+  });
+
   test(
-    'row_number ordering uses empresa, filial, percentual tendencia DESC',
+    'row_number ordering uses empresa, filial, percentual, diferenca, nome',
     () {
       final rowNumberBlock = sql.split('ROW_NUMBER() OVER').last;
       final empresa = rowNumberBlock.indexOf('CodEmpresa ASC');
       final filial = rowNumberBlock.indexOf('CodFilial ASC');
       final tendencia = rowNumberBlock.indexOf('PercentualTendencia DESC');
+      final diferenca = rowNumberBlock.indexOf('Diferenca DESC');
+      final nome = rowNumberBlock.indexOf('NomeProduto ASC');
       check(empresa).isGreaterThan(-1);
       check(empresa).isLessThan(filial);
       check(filial).isLessThan(tendencia);
+      check(tendencia).isLessThan(diferenca);
+      check(diferenca).isLessThan(nome);
     },
   );
 

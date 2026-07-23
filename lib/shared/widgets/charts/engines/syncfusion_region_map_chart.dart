@@ -118,6 +118,10 @@ class _SyncfusionRegionMapChartState<T>
   final SyncfusionRegionMapSurfaceLifecycle _surfaceLifecycle =
       SyncfusionRegionMapSurfaceLifecycle();
 
+  /// Last [SfMaps] key fingerprint that owned [MapZoomPanBehavior]. Used to
+  /// drop Syncfusion's disposed controller before the surface remounts.
+  int? _attachedMapSurfaceKeyFingerprint;
+
   @override
   void initState() {
     super.initState();
@@ -151,6 +155,12 @@ class _SyncfusionRegionMapChartState<T>
     }
 
     _syncViewportCoordinatorConfig();
+    // Remount owns viewport re-seed; keep the stale Syncfusion controller from
+    // receiving zoom/flag mutations in didUpdateWidget before build remounts.
+    final remountPending = _surfaceLifecycle.pendingRemountReason != null;
+    if (remountPending) {
+      _viewportCoordinator.mapSurfaceAttached = false;
+    }
     _viewportCoordinator.updateZoomPanBehaviorFlags(
       enableDoubleTapZooming:
           widget.style.enableDoubleTapZooming ||
@@ -159,7 +169,6 @@ class _SyncfusionRegionMapChartState<T>
     );
     // Remount after loading/geometry change owns viewport re-seed; applying
     // against a behavior still holding Syncfusion's disposed controller crashes.
-    final remountPending = _surfaceLifecycle.pendingRemountReason != null;
     if (!remountPending &&
         !_isPreferredViewportSuppressed &&
         RegionMapViewportSyncPolicy.shouldApplyPreferredViewportOnWidgetUpdate(
@@ -252,6 +261,7 @@ class _SyncfusionRegionMapChartState<T>
 
     if (widget.isLoading) {
       _viewportCoordinator.markMapSurfaceDetached();
+      _attachedMapSurfaceKeyFingerprint = null;
       return buildSyncfusionRegionMapLoadingState(
         context: context,
         height: resolvedHeight,
@@ -267,6 +277,7 @@ class _SyncfusionRegionMapChartState<T>
 
     if (widget.items.isEmpty && widget.emptyPlaceholder != null) {
       _viewportCoordinator.markMapSurfaceDetached();
+      _attachedMapSurfaceKeyFingerprint = null;
       return buildSyncfusionRegionMapEmptyPlaceholderState(
         context: context,
         height: resolvedHeight,
@@ -278,6 +289,7 @@ class _SyncfusionRegionMapChartState<T>
 
     if (widget.items.isEmpty) {
       _viewportCoordinator.markMapSurfaceDetached();
+      _attachedMapSurfaceKeyFingerprint = null;
       return buildSyncfusionRegionMapDefaultEmptyState(
         context: context,
         height: resolvedHeight,
@@ -326,6 +338,26 @@ class _SyncfusionRegionMapChartState<T>
       showDataLabels: widget.style.showDataLabels,
     );
     final mapSurfaceStableKey = geometryFingerprint;
+    final deferMarkers = RegionMapMarkerOverlayPolicy.shouldDeferMarkers(
+      isLoading: widget.isLoading,
+      markersOverlayReady: _markerOverlayCoordinator.markersOverlayReady,
+      pointCount: widget.points.length,
+      itemCount: widget.items.length,
+    );
+    final mapSurfaceKeyFingerprint =
+        RegionMapMarkerOverlayPolicy.mapSurfaceKeyFingerprint(
+          geometryFingerprint: mapSurfaceStableKey,
+          markerOverlayMountGeneration:
+              _markerOverlayCoordinator.markerOverlayMountGeneration,
+        );
+    // Marker overlay readiness bumps the SfMaps key without a geometry remount.
+    // Syncfusion disposes the layer AnimationController but keeps a stale
+    // MapController on MapZoomPanBehavior — drop it before the remount.
+    final previousSurfaceKeyFingerprint = _attachedMapSurfaceKeyFingerprint;
+    if (previousSurfaceKeyFingerprint != null &&
+        previousSurfaceKeyFingerprint != mapSurfaceKeyFingerprint) {
+      _viewportCoordinator.markMapSurfaceDetached();
+    }
     final stableKeyChanged =
         _surfaceLifecycle.cachedMapSurfaceStableKey != null &&
         _surfaceLifecycle.cachedMapSurfaceStableKey != mapSurfaceStableKey;
@@ -342,6 +374,7 @@ class _SyncfusionRegionMapChartState<T>
       itemCount: widget.items.length,
     );
     _viewportCoordinator.markMapSurfaceAttached();
+    _attachedMapSurfaceKeyFingerprint = mapSurfaceKeyFingerprint;
 
     final shapeSource = _shapeSourceCache.resolve(
       geometryFingerprint: geometryFingerprint,
@@ -357,19 +390,7 @@ class _SyncfusionRegionMapChartState<T>
       fontWeight: FontWeight.w600,
     );
     final mapBuilderContext = context;
-    final deferMarkers = RegionMapMarkerOverlayPolicy.shouldDeferMarkers(
-      isLoading: widget.isLoading,
-      markersOverlayReady: _markerOverlayCoordinator.markersOverlayReady,
-      pointCount: widget.points.length,
-      itemCount: widget.items.length,
-    );
-    final mapSurfaceKey = ValueKey<int>(
-      RegionMapMarkerOverlayPolicy.mapSurfaceKeyFingerprint(
-        geometryFingerprint: mapSurfaceStableKey,
-        markerOverlayMountGeneration:
-            _markerOverlayCoordinator.markerOverlayMountGeneration,
-      ),
-    );
+    final mapSurfaceKey = ValueKey<int>(mapSurfaceKeyFingerprint);
     final markerPoints = RegionMapMarkerOverlayPolicy.effectivePoints(
       points: widget.points,
       deferMarkers: deferMarkers,
@@ -644,6 +665,10 @@ class _SyncfusionRegionMapChartState<T>
   }
 
   void _recoverAfterHiddenLifecycle() {
+    // Hidden/Offstage recovery can leave Syncfusion's MapZoomPanBehavior holding
+    // a disposed AnimationController; seed a fresh behavior before re-applying.
+    _viewportCoordinator.markMapSurfaceDetached();
+    _attachedMapSurfaceKeyFingerprint = null;
     _markerOverlayCoordinator.recoverAfterHiddenLifecycle(
       cachedMapSurfaceStableKey: _surfaceLifecycle.cachedMapSurfaceStableKey,
       mounted: () => mounted,

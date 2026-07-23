@@ -23,6 +23,18 @@ DateTimeRange salesTrendFullMonthInclusiveRange(DateTime anchor) {
   );
 }
 
+/// Month-to-date window: 1st of [anchor]'s month through [anchor] (calendar day).
+///
+/// Avoids comparing a partial live month against a full previous month by
+/// including future days with zero sales in the current window.
+DateTimeRange salesTrendMonthToDateInclusiveRange(DateTime anchor) {
+  final today = _salesTrendCalendarDate(anchor);
+  return DateTimeRange(
+    start: DateTime(today.year, today.month),
+    end: today,
+  );
+}
+
 DateTimeRange salesTrendPreviousMonthInclusiveRange(DateTime anchor) {
   final previous = DateTime(anchor.year, anchor.month - 1);
   return DateTimeRange(
@@ -37,7 +49,7 @@ DateTimeRange salesTrendCurrentRangeForPreset(
 }) {
   final today = _salesTrendCalendarDate(anchor ?? DateTime.now());
   return switch (preset) {
-    SalesTrendDatePreset.currentMonth => salesTrendFullMonthInclusiveRange(
+    SalesTrendDatePreset.currentMonth => salesTrendMonthToDateInclusiveRange(
       today,
     ),
     SalesTrendDatePreset.previousMonth => salesTrendPreviousMonthInclusiveRange(
@@ -83,6 +95,7 @@ int salesTrendCalendarMonthSpan(DateTimeRange range) {
 
 DateTimeRange salesTrendAutoPreviousRange(DateTimeRange currentRange) {
   final normalizedStart = _salesTrendCalendarDate(currentRange.start);
+  final normalizedEnd = _salesTrendCalendarDate(currentRange.end);
   if (salesTrendIsWholeCalendarMonthRange(currentRange)) {
     final monthSpan = salesTrendCalendarMonthSpan(currentRange);
     return DateTimeRange(
@@ -92,6 +105,35 @@ DateTimeRange salesTrendAutoPreviousRange(DateTimeRange currentRange) {
       ),
       end: DateTime(normalizedStart.year, normalizedStart.month, 0),
     );
+  }
+
+  // Month-to-date (1st → mid/end of same month): align to the same day span
+  // in the previous calendar month (retail MTD vs prior MTD). When February is
+  // shorter than the current day-of-month, fall through to equal-length
+  // adjacent windows so filter equivalence still holds.
+  if (normalizedStart.day == 1 &&
+      normalizedEnd.year == normalizedStart.year &&
+      normalizedEnd.month == normalizedStart.month) {
+    final previousMonth = DateTime(
+      normalizedStart.year,
+      normalizedStart.month - 1,
+    );
+    final lastDayPreviousMonth = DateTime(
+      previousMonth.year,
+      previousMonth.month + 1,
+      0,
+    ).day;
+    final previousEndDay = normalizedEnd.day > lastDayPreviousMonth
+        ? lastDayPreviousMonth
+        : normalizedEnd.day;
+    final monthToDatePrevious = DateTimeRange(
+      start: DateTime(previousMonth.year, previousMonth.month),
+      end: DateTime(previousMonth.year, previousMonth.month, previousEndDay),
+    );
+    if (salesTrendInclusiveDayCount(monthToDatePrevious) ==
+        salesTrendInclusiveDayCount(currentRange)) {
+      return monthToDatePrevious;
+    }
   }
 
   final inclusiveDays = salesTrendInclusiveDayCount(currentRange);

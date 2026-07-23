@@ -3,6 +3,7 @@ class CadastroFilialFilter {
   const CadastroFilialFilter({
     this.codEmpresa,
     this.codFilial,
+    this.searchTerm,
     this.selectedBranches = const <CadastroFilialBranchRef>[],
     this.page = 1,
     this.pageSize = defaultPageSize,
@@ -17,9 +18,20 @@ class CadastroFilialFilter {
 
   final int? codEmpresa;
   final int? codFilial;
+
+  /// Optional free-text match on branch name / fantasy name / code.
+  final String? searchTerm;
   final List<CadastroFilialBranchRef> selectedBranches;
   final int page;
   final int pageSize;
+
+  String? get normalizedSearchTerm {
+    final normalized = searchTerm?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      return null;
+    }
+    return normalized;
+  }
 
   /// When true, SQL omits CNPJ/CodMunicipio columns unused by the sales map.
   final bool mapCatalogProjection;
@@ -56,6 +68,7 @@ class CadastroFilialFilter {
   CadastroFilialFilter copyWith({
     int? codEmpresa,
     int? codFilial,
+    Object? searchTerm = _sentinel,
     Object? selectedBranches = _sentinel,
     int? page,
     int? pageSize,
@@ -64,6 +77,9 @@ class CadastroFilialFilter {
     return CadastroFilialFilter(
       codEmpresa: codEmpresa ?? this.codEmpresa,
       codFilial: codFilial ?? this.codFilial,
+      searchTerm: identical(searchTerm, _sentinel)
+          ? this.searchTerm
+          : searchTerm as String?,
       selectedBranches: selectedBranches == _sentinel
           ? this.selectedBranches
           : List<CadastroFilialBranchRef>.unmodifiable(

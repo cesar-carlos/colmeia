@@ -174,7 +174,7 @@ void main() {
     check(captured.executeOptions?.preferDbStreaming).equals(false);
     check(captured.useRelay).isTrue();
     check(captured.relayMode).equals(AgentSqlRelayMode.unary);
-    check(captured.skipTransportCache).isTrue();
+    check(captured.skipTransportCache).isFalse();
   });
 
   test('custom page and pageSize set startRow and endRow', () async {
@@ -328,7 +328,7 @@ void main() {
     check(captured.executeOptions?.maxRows).equals(32);
     check(captured.executeOptions?.preferDbStreaming).equals(false);
     check(captured.relayMode).equals(AgentSqlRelayMode.unary);
-    check(captured.skipTransportCache).isTrue();
+    check(captured.skipTransportCache).isFalse();
   });
 
   test('loadSummary maps summary rows to entities', () async {
@@ -411,7 +411,7 @@ void main() {
               as AgentSqlExecuteBatchRequest;
       check(captured.commands).length.equals(2);
       check(captured.useRelay).isTrue();
-      check(captured.skipTransportCache).isTrue();
+      check(captured.skipTransportCache).isFalse();
     },
   );
 }

@@ -1,8 +1,13 @@
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_classificacao.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_filter_limits.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_metric_mode.dart';
 import 'package:colmeia/features/sales/presentation/async_search/sales_produto_dimension_async_search_loaders.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_trend_date_preset.dart';
+import 'package:colmeia/features/sales/presentation/utils/sales_trend_filter_support.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_filters_sheet_scaffold.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_single_agent_picker_control.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_trend_shared_filter_controls.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
@@ -16,15 +21,7 @@ import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:flutter/material.dart';
 
 /// Modal bottom-sheet form that owns the filter state for the produto
-/// tendência screen: branch picker, current/previous period ranges, free
-/// text search, classification dropdown, grupo/marca dropdowns, and page
-/// size.
-///
-/// The sheet keeps its own draft state, validates period rules locally
-/// (`Periodo anterior deve preceder o atual`, `Periodos devem cobrir
-/// janelas equivalentes`), and only emits `onApply` once the user taps
-/// "Aplicar" with valid input — the host page is never re-rendered while
-/// the user is still editing filters.
+/// tendência screen.
 class SalesProdutoTendenciaFiltersSheet extends StatefulWidget {
   const SalesProdutoTendenciaFiltersSheet({
     required this.l10n,
@@ -36,11 +33,18 @@ class SalesProdutoTendenciaFiltersSheet extends StatefulWidget {
     required this.initialClassificacao,
     required this.initialCodGrupoProduto,
     required this.initialCodMarca,
+    required this.initialCodFilial,
     required this.initialGrupoProdutoLabel,
     required this.initialMarcaProdutoLabel,
+    required this.initialFilialLabel,
+    required this.initialMetricMode,
+    required this.initialMinVolumeUnits,
+    required this.initialTrendThresholdPercent,
+    required this.initialTopMoversSortBy,
     required this.initialPageSize,
     required this.grupoProdutoLoaderFactory,
     required this.marcaProdutoLoaderFactory,
+    required this.filialLoaderFactory,
     required this.onApply,
     super.key,
   });
@@ -54,11 +58,18 @@ class SalesProdutoTendenciaFiltersSheet extends StatefulWidget {
   final String? initialClassificacao;
   final int? initialCodGrupoProduto;
   final int? initialCodMarca;
+  final int? initialCodFilial;
   final String? initialGrupoProdutoLabel;
   final String? initialMarcaProdutoLabel;
+  final String? initialFilialLabel;
+  final SalesTrendMetricMode initialMetricMode;
+  final int initialMinVolumeUnits;
+  final double initialTrendThresholdPercent;
+  final SalesTrendTopMoversSortBy initialTopMoversSortBy;
   final int initialPageSize;
   final SalesProdutoDimensionLoaderFactory grupoProdutoLoaderFactory;
   final SalesProdutoDimensionLoaderFactory marcaProdutoLoaderFactory;
+  final SalesProdutoDimensionLoaderFactory filialLoaderFactory;
   final ValueChanged<Map<String, Object?>> onApply;
 
   @override
@@ -70,6 +81,7 @@ class _SalesProdutoTendenciaFiltersSheetState
     extends State<SalesProdutoTendenciaFiltersSheet> {
   late final AppAsyncSearchLoader<int> _grupoProdutoLoader;
   late final AppAsyncSearchLoader<int> _marcaProdutoLoader;
+  late final AppAsyncSearchLoader<int> _filialLoader;
 
   String? _selectedAgentId;
   DateTimeRange? _periodoAtual;
@@ -78,8 +90,14 @@ class _SalesProdutoTendenciaFiltersSheetState
   String? _classificacao;
   int? _codGrupoProduto;
   int? _codMarca;
+  int? _codFilial;
   String? _grupoProdutoLabel;
   String? _marcaProdutoLabel;
+  String? _filialLabel;
+  late SalesTrendMetricMode _metricMode;
+  late int _minVolumeUnits;
+  late double _trendThresholdPercent;
+  late SalesTrendTopMoversSortBy _topMoversSortBy;
   late int _pageSize;
 
   SalesTrendDatePreset? get _selectedPreset {
@@ -142,14 +160,23 @@ class _SalesProdutoTendenciaFiltersSheetState
     _marcaProdutoLoader = widget.marcaProdutoLoaderFactory(
       () => _selectedAgentId,
     );
+    _filialLoader = widget.filialLoaderFactory(() => _selectedAgentId);
     _periodoAtual = widget.initialPeriodoAtual;
     _periodoAnterior = widget.initialPeriodoAnterior;
     _searchController = TextEditingController(text: widget.initialSearchTerm);
-    _classificacao = widget.initialClassificacao;
+    _classificacao = SalesTrendClassificacao.normalize(
+      widget.initialClassificacao,
+    );
     _codGrupoProduto = widget.initialCodGrupoProduto;
     _codMarca = widget.initialCodMarca;
+    _codFilial = widget.initialCodFilial;
     _grupoProdutoLabel = widget.initialGrupoProdutoLabel;
     _marcaProdutoLabel = widget.initialMarcaProdutoLabel;
+    _filialLabel = widget.initialFilialLabel;
+    _metricMode = widget.initialMetricMode;
+    _minVolumeUnits = widget.initialMinVolumeUnits;
+    _trendThresholdPercent = widget.initialTrendThresholdPercent;
+    _topMoversSortBy = widget.initialTopMoversSortBy;
     _pageSize = widget.initialPageSize;
   }
 
@@ -189,8 +216,14 @@ class _SalesProdutoTendenciaFiltersSheetState
       'classificacao': _classificacao,
       'codGrupoProduto': _codGrupoProduto,
       'codMarca': _codMarca,
+      'codFilial': _codFilial,
       'grupoProdutoLabel': _grupoProdutoLabel,
       'marcaProdutoLabel': _marcaProdutoLabel,
+      'filialLabel': _filialLabel,
+      'metricMode': _metricMode,
+      'minVolumeUnits': _minVolumeUnits,
+      'trendThresholdPercent': _trendThresholdPercent,
+      'topMoversSortBy': _topMoversSortBy,
       'pageSize': _pageSize,
     });
     Navigator.of(context).pop();
@@ -216,15 +249,23 @@ class _SalesProdutoTendenciaFiltersSheetState
 
   void _clear() {
     final now = DateTime.now();
+    final current = salesTrendMonthToDateInclusiveRange(now);
     setState(() {
-      _periodoAtual = salesTrendFullMonthInclusiveRange(now);
-      _periodoAnterior = salesTrendPreviousMonthInclusiveRange(now);
+      _periodoAtual = current;
+      _periodoAnterior = salesTrendAutoPreviousRange(current);
       _searchController.text = '';
       _classificacao = null;
       _codGrupoProduto = null;
       _codMarca = null;
+      _codFilial = null;
       _grupoProdutoLabel = null;
       _marcaProdutoLabel = null;
+      _filialLabel = null;
+      _metricMode = SalesTrendMetricMode.quantity;
+      _minVolumeUnits = SalesTrendFilterLimits.defaultMinVolumeUnits;
+      _trendThresholdPercent =
+          SalesTrendFilterLimits.defaultTrendThresholdPercent;
+      _topMoversSortBy = SalesTrendTopMoversSortBy.diferenca;
       _pageSize = ProdutoVendidoTendenciaDeVendaFilter.defaultPageSize;
     });
   }
@@ -424,28 +465,50 @@ class _SalesProdutoTendenciaFiltersSheetState
                         label: l10n.salesProdutoTendenciaFilterAllOption,
                       ),
                       AppDropdownOption<String?>(
-                        value: 'CRESCENDO',
+                        value: SalesTrendClassificacao.crescendo,
                         label: l10n.salesProdutoTendenciaClassificacaoGrowing,
                       ),
                       AppDropdownOption<String?>(
-                        value: 'CAINDO',
+                        value: SalesTrendClassificacao.caindo,
                         label: l10n.salesProdutoTendenciaClassificacaoFalling,
                       ),
                       AppDropdownOption<String?>(
-                        value: 'NOVO PRODUTO',
+                        value: SalesTrendClassificacao.novo,
                         label: l10n.salesProdutoTendenciaClassificacaoNew,
                       ),
                       AppDropdownOption<String?>(
-                        value: 'PAROU DE VENDER',
+                        value: SalesTrendClassificacao.parou,
                         label: l10n.salesProdutoTendenciaClassificacaoStopped,
                       ),
                       AppDropdownOption<String?>(
-                        value: 'ESTAVEL',
+                        value: SalesTrendClassificacao.estavel,
                         label: l10n.salesProdutoTendenciaClassificacaoStable,
                       ),
                     ],
                     onChanged: (value) {
                       setState(() => _classificacao = value);
+                    },
+                  ),
+                  SizedBox(height: tokens.contentSpacing),
+                  AppAsyncSearchField<int>(
+                    label: l10n.salesTrendFilterFilialLabel,
+                    hintText: l10n.salesProdutoTendenciaFilterAllOption,
+                    searchHintText: l10n.salesProdutoTendenciaFilterSearchHint,
+                    minSearchLengthHint: l10n.appAsyncSearchMinSearchLengthHint(
+                      2,
+                    ),
+                    emptyResultsLabel: l10n.appAsyncSearchEmptyResults,
+                    clearOptionLabel: l10n.salesProdutoTendenciaFilterAllOption,
+                    value: _codFilial,
+                    selectedDisplayLabel: _filialLabel,
+                    density: AppTextFieldDensity.compact,
+                    enabled: _selectedAgentId != null,
+                    loader: _filialLoader,
+                    onChanged: (value, {label}) {
+                      setState(() {
+                        _codFilial = value;
+                        _filialLabel = value == null ? null : label;
+                      });
                     },
                   ),
                   SizedBox(height: tokens.contentSpacing),
@@ -492,6 +555,39 @@ class _SalesProdutoTendenciaFiltersSheetState
                       });
                     },
                   ),
+                  SizedBox(height: tokens.contentSpacing),
+                  SalesTrendSharedFilterControls(
+                    l10n: l10n,
+                    metricMode: _metricMode,
+                    minVolumeUnits: _minVolumeUnits,
+                    trendThresholdPercent: _trendThresholdPercent,
+                    topMoversSortBy: _topMoversSortBy,
+                    onMetricModeChanged: (mode) {
+                      setState(() => _metricMode = mode);
+                    },
+                    onMinVolumeChanged: (value) {
+                      setState(() => _minVolumeUnits = value);
+                    },
+                    onThresholdChanged: (value) {
+                      setState(() => _trendThresholdPercent = value);
+                    },
+                    onTopMoversSortChanged: (value) {
+                      setState(() => _topMoversSortBy = value);
+                    },
+                  ),
+                  if (_periodoAtual != null &&
+                      _periodoAnterior != null &&
+                      salesTrendPeriodsHaveGap(
+                        _periodoAtual!,
+                        _periodoAnterior!,
+                      )) ...<Widget>[
+                    SizedBox(height: tokens.contentSpacing),
+                    AppInlineErrorPanel(
+                      variant: AppInlineErrorPanelVariant.plain,
+                      tone: AppInlinePanelTone.informational,
+                      message: l10n.salesTrendFilterPeriodsGapWarning,
+                    ),
+                  ],
                   SizedBox(height: tokens.contentSpacing),
                   AppDropdownField<int>(
                     label: l10n.salesProdutoTendenciaFilterPageSize,

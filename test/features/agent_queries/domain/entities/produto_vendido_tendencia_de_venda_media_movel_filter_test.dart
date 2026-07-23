@@ -34,6 +34,9 @@ void main() {
       check(filter.normalizedSearchTerm).equals('smart fox');
       check(filter.startRow).equals(1);
       check(filter.endRow).equals(20);
+      check(
+        ProdutoVendidoTendenciaDeVendaMediaMovelFilter.defaultMinVolumeUnits,
+      ).equals(10);
     });
 
     test('rejects non-positive quantidadeDias', () {

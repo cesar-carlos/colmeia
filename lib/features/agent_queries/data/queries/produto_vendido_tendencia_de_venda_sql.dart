@@ -1,8 +1,14 @@
-// Product sales trend by quantity (`ProdutoVendidoTendenciaDeVenda`)
-// in a single `sql.execute` round-trip.
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_classificacao.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_filter_limits.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_metric_mode.dart';
+
+// Product sales trend (`ProdutoVendidoTendenciaDeVenda`) in a single
+// `sql.execute` round-trip.
 //
 // Compares two explicit periods (`ATUAL` and `ANTERIOR`) and returns one row
-// per product with difference, percentage trend, and classification.
+// per empresa/filial/product with difference, percentage trend, and
+// classification. Metric is quantity or net line revenue
+// (`Quantidade * ValorUnitarioLiquido`).
 //
 // ---
 //
@@ -10,7 +16,7 @@
 //
 // | Alias | Table | Relationship / role |
 // |---|---|---|
-// | ipv | ItemProdutoVendido | Sale item line (`Quantidade`, `CodProduto`) |
+// | ipv | ItemProdutoVendido | Sale item line (`Quantidade`, `ValorUnitarioLiquido`, `CodProduto`) |
 // | pv | ProdutoVendido | `pv.CodEmpresa = ipv.CodEmpresa` and `pv.CodProdutoVendido = ipv.CodProdutoVendido`; provides `DataVenda`, `Origem`, `PreVenda`, `CodFilial` |
 // | tos | TipoOperacaoSaida | `tos.CodEmpresa = pv.CodEmpresa`, `tos.CodTipoOperacaoSaida = pv.CodTipoOperacaoSaida`; validates financeiro rows |
 // | p | Produto | `p.CodProduto = ipv.CodProduto`; provides product identity and `CodUnidadeMedida` |
@@ -43,6 +49,11 @@ abstract final class ProdutoVendidoTendenciaDeVendaSql {
     String? searchTerm,
     int? codGrupoProduto,
     int? codMarca,
+    int? codFilial,
+    SalesTrendMetricMode metricMode = SalesTrendMetricMode.quantity,
+    int minVolumeUnits = SalesTrendFilterLimits.defaultMinVolumeUnits,
+    double trendThresholdPercent =
+        SalesTrendFilterLimits.defaultTrendThresholdPercent,
   }) {
     final codGrupoProdutoLine = _whereIntEquals(
       columnSql: 'p.CodGrupoProduto',
@@ -52,7 +63,13 @@ abstract final class ProdutoVendidoTendenciaDeVendaSql {
       columnSql: 'p.CodMarca',
       value: codMarca,
     );
+    final codFilialLine = _whereIntEquals(
+      columnSql: 'pv.CodFilial',
+      value: codFilial,
+    );
     final searchTermLine = _whereContainsProductDimensions(searchTerm);
+    final metricSql = metricMode.lineMetricSql;
+    final threshold = trendThresholdPercent;
 
     return '''
     WITH Parametros AS (
@@ -81,7 +98,7 @@ abstract final class ProdutoVendidoTendenciaDeVendaSql {
             AND pv.DataVenda < DATEADD(day, 1, prm.PeriodoAnteriorFim)
             THEN 'ANTERIOR'
         END AS Periodo,
-        ipv.Quantidade
+        $metricSql AS MetricaLinha
       FROM ItemProdutoVendido ipv
       INNER JOIN ProdutoVendido pv ON
         pv.CodEmpresa = ipv.CodEmpresa
@@ -111,6 +128,7 @@ abstract final class ProdutoVendidoTendenciaDeVendaSql {
         AND pv.PreVenda = 'N'
 $codGrupoProdutoLine
 $codMarcaLine
+$codFilialLine
 $searchTermLine
     ),
     Vendas AS (
@@ -125,7 +143,7 @@ $searchTermLine
         CodMarca,
         NomeMarca,
         Periodo,
-        SUM(Quantidade) AS Quantidade
+        SUM(MetricaLinha) AS Metrica
       FROM BaseVendas
       WHERE Periodo IS NOT NULL
       GROUP BY
@@ -151,8 +169,8 @@ $searchTermLine
         NomeGrupoProduto,
         CodMarca,
         NomeMarca,
-        SUM(CASE WHEN Periodo = 'ATUAL' THEN Quantidade ELSE 0 END) AS QtdAtual,
-        SUM(CASE WHEN Periodo = 'ANTERIOR' THEN Quantidade ELSE 0 END) AS QtdAnterior
+        SUM(CASE WHEN Periodo = 'ATUAL' THEN Metrica ELSE 0 END) AS QtdAtual,
+        SUM(CASE WHEN Periodo = 'ANTERIOR' THEN Metrica ELSE 0 END) AS QtdAnterior
       FROM Vendas
       GROUP BY
         CodEmpresa,
@@ -185,16 +203,16 @@ $searchTermLine
           ELSE 0
         END AS PercentualTendencia,
         CASE
-          WHEN QtdAtual = 0 AND QtdAnterior > 0 THEN 'PAROU DE VENDER'
-          WHEN QtdAnterior = 0 AND QtdAtual > 0 THEN 'NOVO PRODUTO'
-          WHEN ((QtdAtual - QtdAnterior) * 1.0 / NULLIF(QtdAnterior, 0)) > 0.2
-            THEN 'CRESCENDO'
-          WHEN ((QtdAtual - QtdAnterior) * 1.0 / NULLIF(QtdAnterior, 0)) < -0.2
-            THEN 'CAINDO'
-          ELSE 'ESTAVEL'
+          WHEN QtdAtual = 0 AND QtdAnterior > 0 THEN '${SalesTrendClassificacao.parou}'
+          WHEN QtdAnterior = 0 AND QtdAtual > 0 THEN '${SalesTrendClassificacao.novo}'
+          WHEN ((QtdAtual - QtdAnterior) * 1.0 / NULLIF(QtdAnterior, 0)) > $threshold
+            THEN '${SalesTrendClassificacao.crescendo}'
+          WHEN ((QtdAtual - QtdAnterior) * 1.0 / NULLIF(QtdAnterior, 0)) < -$threshold
+            THEN '${SalesTrendClassificacao.caindo}'
+          ELSE '${SalesTrendClassificacao.estavel}'
         END AS Classificacao
       FROM Pivotado
-      WHERE (QtdAtual + QtdAnterior) >= 10
+      WHERE (QtdAtual + QtdAnterior) >= $minVolumeUnits
     )''';
   }
 
@@ -205,6 +223,11 @@ $searchTermLine
     String? classificacao,
     int? codGrupoProduto,
     int? codMarca,
+    int? codFilial,
+    SalesTrendMetricMode metricMode = SalesTrendMetricMode.quantity,
+    int minVolumeUnits = SalesTrendFilterLimits.defaultMinVolumeUnits,
+    double trendThresholdPercent =
+        SalesTrendFilterLimits.defaultTrendThresholdPercent,
   }) {
     if (startRow < 1) {
       throw ArgumentError.value(startRow, 'startRow', 'must be >= 1');
@@ -221,6 +244,10 @@ $searchTermLine
       searchTerm: searchTerm,
       codGrupoProduto: codGrupoProduto,
       codMarca: codMarca,
+      codFilial: codFilial,
+      metricMode: metricMode,
+      minVolumeUnits: minVolumeUnits,
+      trendThresholdPercent: trendThresholdPercent,
     );
 
     return '''
@@ -253,7 +280,9 @@ $classificacaoLine
           ORDER BY
             CodEmpresa ASC,
             CodFilial ASC,
-            PercentualTendencia DESC
+            PercentualTendencia DESC,
+            Diferenca DESC,
+            NomeProduto ASC
         ) AS RowNum,
         CodEmpresa,
         CodFilial,
@@ -298,12 +327,24 @@ $classificacaoLine
     String? classificacao,
     int? codGrupoProduto,
     int? codMarca,
+    int? codFilial,
+    SalesTrendMetricMode metricMode = SalesTrendMetricMode.quantity,
+    int minVolumeUnits = SalesTrendFilterLimits.defaultMinVolumeUnits,
+    double trendThresholdPercent =
+        SalesTrendFilterLimits.defaultTrendThresholdPercent,
+    SalesTrendTopMoversSortBy topMoversSortBy =
+        SalesTrendTopMoversSortBy.diferenca,
   }) {
     return _topMoversQuery(
       searchTerm: searchTerm,
       classificacao: classificacao,
       codGrupoProduto: codGrupoProduto,
       codMarca: codMarca,
+      codFilial: codFilial,
+      metricMode: metricMode,
+      minVolumeUnits: minVolumeUnits,
+      trendThresholdPercent: trendThresholdPercent,
+      topMoversSortBy: topMoversSortBy,
       gainers: true,
     );
   }
@@ -313,12 +354,24 @@ $classificacaoLine
     String? classificacao,
     int? codGrupoProduto,
     int? codMarca,
+    int? codFilial,
+    SalesTrendMetricMode metricMode = SalesTrendMetricMode.quantity,
+    int minVolumeUnits = SalesTrendFilterLimits.defaultMinVolumeUnits,
+    double trendThresholdPercent =
+        SalesTrendFilterLimits.defaultTrendThresholdPercent,
+    SalesTrendTopMoversSortBy topMoversSortBy =
+        SalesTrendTopMoversSortBy.diferenca,
   }) {
     return _topMoversQuery(
       searchTerm: searchTerm,
       classificacao: classificacao,
       codGrupoProduto: codGrupoProduto,
       codMarca: codMarca,
+      codFilial: codFilial,
+      metricMode: metricMode,
+      minVolumeUnits: minVolumeUnits,
+      trendThresholdPercent: trendThresholdPercent,
+      topMoversSortBy: topMoversSortBy,
       gainers: false,
     );
   }
@@ -328,6 +381,11 @@ $classificacaoLine
     required String? classificacao,
     required int? codGrupoProduto,
     required int? codMarca,
+    required int? codFilial,
+    required SalesTrendMetricMode metricMode,
+    required int minVolumeUnits,
+    required double trendThresholdPercent,
+    required SalesTrendTopMoversSortBy topMoversSortBy,
     required bool gainers,
   }) {
     final classificacaoLine = _whereOptionalClassificacao(classificacao);
@@ -335,24 +393,42 @@ $classificacaoLine
       searchTerm: searchTerm,
       codGrupoProduto: codGrupoProduto,
       codMarca: codMarca,
+      codFilial: codFilial,
+      metricMode: metricMode,
+      minVolumeUnits: minVolumeUnits,
+      trendThresholdPercent: trendThresholdPercent,
     );
-    // NOVO PRODUTO rows have PercentualTendencia = 0 when QtdAnterior = 0.
-    // Rank by quantity delta first so large new/stopped movers are not buried
-    // under small percentage swings.
-    final percentPredicate = gainers ? 'Diferenca > 0' : 'Diferenca < 0';
-    final orderBy = gainers
-        ? '''
+    // NOVO has PercentualTendencia = 0 and can dominate "top altas" by raw
+    // delta. Exclude it so gainers reflect products that also sold before.
+    final percentPredicate = gainers
+        ? "Diferenca > 0 AND Classificacao <> N'${SalesTrendClassificacao.novo}'"
+        : 'Diferenca < 0';
+    final orderBy = switch ((gainers, topMoversSortBy)) {
+      (true, SalesTrendTopMoversSortBy.diferenca) => '''
       Diferenca DESC,
       PercentualTendencia DESC,
       CodEmpresa ASC,
       CodFilial ASC,
-      NomeProduto ASC'''
-        : '''
+      NomeProduto ASC''',
+      (true, SalesTrendTopMoversSortBy.percentual) => '''
+      PercentualTendencia DESC,
+      Diferenca DESC,
+      CodEmpresa ASC,
+      CodFilial ASC,
+      NomeProduto ASC''',
+      (false, SalesTrendTopMoversSortBy.diferenca) => '''
       Diferenca ASC,
       PercentualTendencia ASC,
       CodEmpresa ASC,
       CodFilial ASC,
-      NomeProduto ASC''';
+      NomeProduto ASC''',
+      (false, SalesTrendTopMoversSortBy.percentual) => '''
+      PercentualTendencia ASC,
+      Diferenca ASC,
+      CodEmpresa ASC,
+      CodFilial ASC,
+      NomeProduto ASC''',
+    };
 
     return '''
 $filteredCtes,

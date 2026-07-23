@@ -1,4 +1,5 @@
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_classificacao.dart';
 import 'package:colmeia/features/sales/presentation/share/mappers/sales_produto_tendencia_share_mapper.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_produto_tendencia_share.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_trend_comparison_bar_chart_style.dart';
@@ -10,13 +11,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 /// Display order aligned with the executive summary KPI strip.
-const List<String> kSalesProdutoTendenciaClassificacaoDisplayOrder = <String>[
-  'CRESCENDO',
-  'CAINDO',
-  'NOVO PRODUTO',
-  'PAROU DE VENDER',
-  'ESTAVEL',
-];
+const List<String> kSalesProdutoTendenciaClassificacaoDisplayOrder =
+    SalesTrendClassificacao.displayOrder;
 
 List<SalesProdutoTendenciaClassBucket> salesProdutoTendenciaOrderedClassBuckets(
   List<ProdutoVendidoTendenciaDeVendaSummaryRow> summaryRows, {
@@ -51,12 +47,12 @@ Color salesProdutoTendenciaClassificacaoColor(
   AppColors colors,
   String classificacao,
 ) {
-  return switch (classificacao.trim().toUpperCase()) {
-    'CRESCENDO' => colors.tertiary,
-    'CAINDO' => colors.error,
-    'NOVO PRODUTO' => colors.primary,
-    'PAROU DE VENDER' => colors.onSurfaceVariant,
-    'ESTAVEL' => colors.outline,
+  return switch (SalesTrendClassificacao.normalize(classificacao)) {
+    SalesTrendClassificacao.crescendo => colors.tertiary,
+    SalesTrendClassificacao.caindo => colors.error,
+    SalesTrendClassificacao.novo => colors.primary,
+    SalesTrendClassificacao.parou => colors.onSurfaceVariant,
+    SalesTrendClassificacao.estavel => colors.outline,
     _ => colors.primary,
   };
 }

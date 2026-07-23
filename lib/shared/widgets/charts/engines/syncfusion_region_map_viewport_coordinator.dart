@@ -371,7 +371,7 @@ class SyncfusionRegionMapViewportCoordinator {
     state = clampedViewportState(state);
     if (!mapSurfaceAttached) {
       // Seed a fresh behavior before SfMaps attaches; never animate a disposed
-      // Syncfusion controller left behind after loading/empty unmounts.
+      // Syncfusion controller left behind after loading/empty/key remounts.
       recreateZoomPanBehavior(seedFromState: true);
     } else {
       zoomPanBehavior.zoomLevel = state.zoomLevel;

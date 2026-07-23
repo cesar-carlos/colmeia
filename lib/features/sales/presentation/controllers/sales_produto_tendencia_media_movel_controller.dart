@@ -6,6 +6,9 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_summary_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_classificacao.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_filter_limits.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_metric_mode.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_trend_controller_base.dart';
@@ -62,24 +65,47 @@ class SalesProdutoTendenciaMediaMovelController
         ) ??
         7;
     final searchTerm = (restored['search_term'] as String?)?.trim() ?? '';
-    final restoredClassificacao = (restored['classificacao'] as String?)
-        ?.trim()
-        .toUpperCase();
-    final classificacao =
-        ProdutoVendidoTendenciaDeVendaMediaMovelFilter.allowedClassificacoes
-            .contains(restoredClassificacao)
-        ? restoredClassificacao
-        : null;
+    final classificacao = SalesTrendClassificacao.normalize(
+      restored['classificacao'] as String?,
+    );
     final codGrupoProduto = SalesTrendControllerBase.restorePositiveInt(
       restored['cod_grupo_produto'],
     );
     final codMarca = SalesTrendControllerBase.restorePositiveInt(
       restored['cod_marca'],
     );
+    final codFilial = SalesTrendControllerBase.restorePositiveInt(
+      restored['cod_filial'],
+    );
     final restoredGrupoLabel = (restored['grupo_produto_label'] as String?)
         ?.trim();
     final restoredMarcaLabel = (restored['marca_produto_label'] as String?)
         ?.trim();
+    final restoredFilialLabel = (restored['filial_label'] as String?)?.trim();
+    final metricMode = SalesTrendFilterLimits.metricModeFromName(
+      restored['metric_mode'] as String?,
+    );
+    final restoredMinVolume = SalesTrendControllerBase.restorePositiveInt(
+      restored['min_volume_units'],
+    );
+    final minVolumeUnits =
+        restoredMinVolume != null &&
+            SalesTrendFilterLimits.validateMinVolumeUnits(restoredMinVolume) ==
+                null
+        ? restoredMinVolume
+        : SalesTrendFilterLimits.defaultMinVolumeUnits;
+    final restoredThreshold = restored['trend_threshold_percent'];
+    final parsedThreshold = restoredThreshold is num
+        ? restoredThreshold.toDouble()
+        : null;
+    final trendThresholdPercent =
+        parsedThreshold != null &&
+            SalesTrendFilterLimits.validateTrendThresholdPercent(
+                  parsedThreshold,
+                ) ==
+                null
+        ? parsedThreshold
+        : SalesTrendFilterLimits.defaultTrendThresholdPercent;
 
     final restoredSortByName = (restored['sort_by'] as String?)?.trim();
     final sortBy = ProdutoVendidoTendenciaDeVendaMediaMovelSortBy.values
@@ -105,6 +131,10 @@ class SalesProdutoTendenciaMediaMovelController
       classificacao: classificacao,
       codGrupoProduto: codGrupoProduto,
       codMarca: codMarca,
+      codFilial: codFilial,
+      metricMode: metricMode,
+      minVolumeUnits: minVolumeUnits,
+      trendThresholdPercent: trendThresholdPercent,
       grupoProdutoLabel:
           codGrupoProduto != null &&
               restoredGrupoLabel != null &&
@@ -116,6 +146,12 @@ class SalesProdutoTendenciaMediaMovelController
               restoredMarcaLabel != null &&
               restoredMarcaLabel.isNotEmpty
           ? restoredMarcaLabel
+          : null,
+      filialLabel:
+          codFilial != null &&
+              restoredFilialLabel != null &&
+              restoredFilialLabel.isNotEmpty
+          ? restoredFilialLabel
           : null,
       sortBy: sortBy,
       pageSize: pageSize,
@@ -132,8 +168,10 @@ class SalesProdutoTendenciaMediaMovelController
         page: 1,
         grupoProdutoLabel: null,
         marcaProdutoLabel: null,
+        filialLabel: null,
         codGrupoProduto: null,
         codMarca: null,
+        codFilial: null,
       ),
     );
     await _sessionService.setSelectedAgentId(agentId);
@@ -148,17 +186,33 @@ class SalesProdutoTendenciaMediaMovelController
     final nextQuantidadeDias =
         (next['quantidadeDias'] as int?) ?? _state.quantidadeDias;
     final nextSearch = (next['searchTerm'] as String?)?.trim() ?? '';
-    final nextClassificacao = (next['classificacao'] as String?)
-        ?.trim()
-        .toUpperCase();
+    final nextClassificacao = SalesTrendClassificacao.normalize(
+      next['classificacao'] as String?,
+    );
     final nextGrupo = SalesTrendControllerBase.restorePositiveInt(
       next['codGrupoProduto'],
     );
     final nextMarca = SalesTrendControllerBase.restorePositiveInt(
       next['codMarca'],
     );
+    final nextFilial = SalesTrendControllerBase.restorePositiveInt(
+      next['codFilial'],
+    );
     final nextGrupoLabel = (next['grupoProdutoLabel'] as String?)?.trim();
     final nextMarcaLabel = (next['marcaProdutoLabel'] as String?)?.trim();
+    final nextFilialLabel = (next['filialLabel'] as String?)?.trim();
+    final nextMetricMode = next['metricMode'] is SalesTrendMetricMode
+        ? next['metricMode']! as SalesTrendMetricMode
+        : SalesTrendFilterLimits.metricModeFromName(
+            next['metricMode'] as String?,
+          );
+    final nextMinVolume =
+        SalesTrendControllerBase.restorePositiveInt(next['minVolumeUnits']) ??
+        _state.minVolumeUnits;
+    final nextThresholdRaw = next['trendThresholdPercent'];
+    final nextThreshold = nextThresholdRaw is num
+        ? nextThresholdRaw.toDouble()
+        : _state.trendThresholdPercent;
     final nextSortByName = next['sortBy'] as String?;
     final nextSortBy = ProdutoVendidoTendenciaDeVendaMediaMovelSortBy.values
         .firstWhere(
@@ -177,19 +231,31 @@ class SalesProdutoTendenciaMediaMovelController
         selectedAgentId: normalizedAgentId,
         quantidadeDias: nextQuantidadeDias,
         searchTerm: nextSearch,
-        classificacao:
-            ProdutoVendidoTendenciaDeVendaMediaMovelFilter.allowedClassificacoes
-                .contains(nextClassificacao)
-            ? nextClassificacao
-            : null,
+        classificacao: nextClassificacao,
         codGrupoProduto: nextGrupo,
         codMarca: nextMarca,
+        codFilial: nextFilial,
+        metricMode: nextMetricMode,
+        minVolumeUnits:
+            SalesTrendFilterLimits.validateMinVolumeUnits(nextMinVolume) == null
+            ? nextMinVolume
+            : _state.minVolumeUnits,
+        trendThresholdPercent:
+            SalesTrendFilterLimits.validateTrendThresholdPercent(
+                  nextThreshold,
+                ) ==
+                null
+            ? nextThreshold
+            : _state.trendThresholdPercent,
         grupoProdutoLabel: agentChanged || nextGrupo == null
             ? (nextGrupo == null ? null : nextGrupoLabel)
             : (nextGrupoLabel ?? _state.grupoProdutoLabel),
         marcaProdutoLabel: agentChanged || nextMarca == null
             ? (nextMarca == null ? null : nextMarcaLabel)
             : (nextMarcaLabel ?? _state.marcaProdutoLabel),
+        filialLabel: agentChanged || nextFilial == null
+            ? (nextFilial == null ? null : nextFilialLabel)
+            : (nextFilialLabel ?? _state.filialLabel),
         sortBy: nextSortBy,
         pageSize:
             SalesTrendControllerBase.pageSizeOptions.contains(nextPageSize)
@@ -443,6 +509,10 @@ class SalesProdutoTendenciaMediaMovelController
       classificacao: _state.classificacao,
       codGrupoProduto: _state.codGrupoProduto,
       codMarca: _state.codMarca,
+      codFilial: _state.codFilial,
+      metricMode: _state.metricMode,
+      minVolumeUnits: _state.minVolumeUnits,
+      trendThresholdPercent: _state.trendThresholdPercent,
       sortBy: _state.sortBy,
       page: _state.page,
       pageSize: _state.pageSize,
@@ -456,8 +526,13 @@ class SalesProdutoTendenciaMediaMovelController
       'classificacao': _state.classificacao,
       'cod_grupo_produto': _state.codGrupoProduto,
       'cod_marca': _state.codMarca,
+      'cod_filial': _state.codFilial,
       'grupo_produto_label': _state.grupoProdutoLabel,
       'marca_produto_label': _state.marcaProdutoLabel,
+      'filial_label': _state.filialLabel,
+      'metric_mode': _state.metricMode.name,
+      'min_volume_units': _state.minVolumeUnits,
+      'trend_threshold_percent': _state.trendThresholdPercent,
       'sort_by': _state.sortBy.name,
       'page_size': _state.pageSize,
     });
