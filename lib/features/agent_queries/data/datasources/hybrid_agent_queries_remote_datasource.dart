@@ -1,5 +1,6 @@
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
+import 'package:colmeia/features/agent_queries/data/datasources/socket_with_rest_fallback_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
@@ -32,6 +33,18 @@ class HybridAgentQueriesRemoteDataSource
 
   final AgentQueriesRemoteDataSource _baseDelegate;
   final AgentQueriesRemoteDataSource? _relayDelegate;
+
+  /// Cancels nested REST-fallback session subscriptions when present.
+  Future<void> dispose() async {
+    await _disposeNested(_baseDelegate);
+    await _disposeNested(_relayDelegate);
+  }
+
+  static Future<void> _disposeNested(AgentQueriesRemoteDataSource? delegate) async {
+    if (delegate is SocketWithRestFallbackAgentQueriesRemoteDataSource) {
+      await delegate.dispose();
+    }
+  }
 
   @override
   Future<Map<String, dynamic>> postSqlExecute(

@@ -111,8 +111,10 @@ final class ResumoParcelasDiaSemanaCacheStrategy
     required String bucketId,
     required ResumoParcelasDiaSemanaFilter rangeFilter,
   }) {
-    // Weekday aggregates have no month key; range coalesce is unsupported.
-    return const <ResumoParcelasDiaSemanaRow>[];
+    throw UnsupportedError(
+      'Range coalesce is not supported for '
+      'resumo_parcelas_dia_semana buckets (bucketId=$bucketId).',
+    );
   }
 
   @override

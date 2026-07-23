@@ -162,6 +162,13 @@ void _registerAgentQueryTransport(GetIt getIt) {
         );
         return relayWrapped;
       },
+      dispose: (datasource) {
+        if (datasource is SocketWithRestFallbackAgentQueriesRemoteDataSource) {
+          unawaited(datasource.dispose());
+        } else if (datasource is HybridAgentQueriesRemoteDataSource) {
+          unawaited(datasource.dispose());
+        }
+      },
     )
     ..registerLazySingleton<AgentSqlExecutionEligibilityPort>(
       () => AgentSqlExecutionEligibilityChecker(

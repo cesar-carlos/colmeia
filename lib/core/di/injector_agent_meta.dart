@@ -38,6 +38,11 @@ void registerInjectorAgentMeta(GetIt getIt) {
           ),
         AgentBridgeTransport.rest => ApiAgentMetaRemoteDataSource(getIt<Dio>()),
       },
+      dispose: (datasource) {
+        if (datasource is SocketWithRestFallbackAgentMetaRemoteDataSource) {
+          datasource.dispose();
+        }
+      },
     )
     ..registerLazySingleton<AgentMetaRepository>(
       () => AgentMetaRepositoryImpl(getIt<AgentMetaRemoteDataSource>()),

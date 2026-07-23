@@ -76,7 +76,10 @@ final class ResumoProdutoVendaLucratividadeCacheStrategy
     required String bucketId,
     required ResumoProdutoVendaLucratividadeFilter rangeFilter,
   }) {
-    return const <ResumoProdutoVendaLucratividadeRow>[];
+    throw UnsupportedError(
+      'Range coalesce is not supported for period-range '
+      'resumo_produto_venda_lucratividade buckets (bucketId=$bucketId).',
+    );
   }
 
   @override

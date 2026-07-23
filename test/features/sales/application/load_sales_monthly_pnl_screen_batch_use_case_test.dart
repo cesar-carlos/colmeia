@@ -34,7 +34,10 @@ void main() {
 
   setUp(() {
     repository = _MockAgentQueriesRepository();
-    useCase = LoadSalesMonthlyPnlScreenBatchUseCase(repository);
+    useCase = LoadSalesMonthlyPnlScreenBatchUseCase(
+      repository,
+      delay: (_) async {},
+    );
   });
 
   test('command builder emits monthly then daily with shared date binds', () {

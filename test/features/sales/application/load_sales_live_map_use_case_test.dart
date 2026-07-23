@@ -204,7 +204,9 @@ void main() {
     );
   }
 
-  test('agrega varias linhas da mesma filial em um ponto', () async {
+  test(
+    'agrega varias linhas da mesma filial: soma receita e mantem primeiro qtdVendas',
+    () async {
     _stubReport(
       loadAcrossAgents,
       _report(
@@ -249,9 +251,10 @@ void main() {
     check(point.branchCode).equals(1);
     check(point.agentName).equals('Agente agent-a');
     check(point.salesAmount).equals(200);
-    check(point.salesCount).equals(5);
+    // Period COUNT(DISTINCT) must not be summed across duplicate branch rows.
+    check(point.salesCount).equals(2);
     check(result.totalRevenue).equals(200);
-    check(result.totalSalesCount).equals(5);
+    check(result.totalSalesCount).equals(2);
     check(result.totalBranchCount).equals(1);
     check(result.mappedBranchCount).equals(1);
     check(result.mappedMunicipalityCount).equals(1);

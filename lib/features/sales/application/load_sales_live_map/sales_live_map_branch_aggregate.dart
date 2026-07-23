@@ -83,6 +83,7 @@ class SalesLiveMapBranchAggregate {
   final String? codigoIbgeMunicipioFilial;
   double totalVenda = 0;
   int qtdVendas = 0;
+  bool _salesCountSet = false;
   bool salesDataLoading = false;
   bool salesDataUnavailable = false;
   String? salesDataStatusLabel;
@@ -122,7 +123,12 @@ class SalesLiveMapBranchAggregate {
 
   void add(ResumoTotalVendasMunicipioFilialPeriodoRow row) {
     totalVenda += row.totalVenda;
-    qtdVendas += row.qtdVendas;
+    // `qtdVendas` is a period COUNT(DISTINCT …); keep the first value and
+    // never sum across duplicate branch rows.
+    if (!_salesCountSet) {
+      qtdVendas = row.qtdVendas;
+      _salesCountSet = true;
+    }
   }
 
   void markSalesDataLoading() {

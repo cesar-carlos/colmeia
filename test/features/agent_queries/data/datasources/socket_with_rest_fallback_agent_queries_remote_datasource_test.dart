@@ -235,7 +235,7 @@ void main() {
     );
 
     test(
-      'three RelayRequestTimeouts open temporary latch; fourth uses REST',
+      'five RelayRequestTimeouts open temporary latch; sixth uses REST',
       () async {
         final socket = _RecordingDataSource(
           throwOn: const RelayRequestTimeout(message: 'relay timed out'),
@@ -255,17 +255,58 @@ void main() {
         );
         addTearDown(fallback.dispose);
 
-        for (var i = 0; i < 3; i++) {
+        for (var i = 0; i < 5; i++) {
           final raised = await _capture(fallback.postSqlExecute(request));
           check(raised).isA<RelayRequestTimeout>();
         }
         check(fallback.isTemporarilyLatchedToRest).isTrue();
+        check(fallback.isTemporarilyLatchedToRestFor(request.agentId)).isTrue();
         check(metrics.snapshot().restFallbackTemporaryLatchTotal).equals(1);
         check(rest.callCount).equals(0);
 
-        final fourth = await fallback.postSqlExecute(request);
-        check(fourth['response']).equals('ok-from-rest');
-        check(socket.callCount).equals(3);
+        final sixth = await fallback.postSqlExecute(request);
+        check(sixth['response']).equals('ok-from-rest');
+        check(socket.callCount).equals(5);
+        check(rest.callCount).equals(1);
+      },
+    );
+
+    test(
+      'temporary latch is scoped per agentId',
+      () async {
+        final socket = _RecordingDataSource(
+          throwOn: const RelayRequestTimeout(message: 'relay timed out'),
+        );
+        final rest = _RecordingDataSource(
+          response: <String, dynamic>{'response': 'ok-from-rest'},
+        );
+        final now = DateTime.utc(2026, 7, 22, 12);
+        final fallback = SocketWithRestFallbackAgentQueriesRemoteDataSource(
+          socketDelegate: socket,
+          restDelegate: rest,
+          clock: () => now,
+          transientFailureThreshold: 2,
+        );
+        addTearDown(fallback.dispose);
+
+        final agentA = _request('SELECT 1', agentId: 'agent-a');
+        final agentB = _request('SELECT 1', agentId: 'agent-b');
+
+        for (var i = 0; i < 2; i++) {
+          await _capture(fallback.postSqlExecute(agentA));
+        }
+        check(fallback.isTemporarilyLatchedToRestFor('agent-a')).isTrue();
+        check(fallback.isTemporarilyLatchedToRestFor('agent-b')).isFalse();
+
+        socket
+          ..throwOn = null
+          ..response = <String, dynamic>{'response': 'ok-from-socket'};
+        final other = await fallback.postSqlExecute(agentB);
+        check(other['response']).equals('ok-from-socket');
+        check(rest.callCount).equals(0);
+
+        final latched = await fallback.postSqlExecute(agentA);
+        check(latched['response']).equals('ok-from-rest');
         check(rest.callCount).equals(1);
       },
     );
@@ -284,6 +325,7 @@ void main() {
           socketDelegate: socket,
           restDelegate: rest,
           clock: () => now,
+          transientFailureThreshold: 3,
         );
         addTearDown(fallback.dispose);
 
@@ -317,6 +359,7 @@ void main() {
         socketDelegate: socket,
         restDelegate: rest,
         sessionEvents: events,
+        transientFailureThreshold: 3,
       );
       addTearDown(fallback.dispose);
 
@@ -390,9 +433,12 @@ class _RecordingDataSource implements AgentQueriesRemoteDataSource {
   }
 }
 
-AgentSqlExecuteRequest _request(String sql) {
+AgentSqlExecuteRequest _request(
+  String sql, {
+  String agentId = '00000000-0000-0000-0000-000000000001',
+}) {
   return AgentSqlExecuteRequest(
-    agentId: '00000000-0000-0000-0000-000000000001',
+    agentId: agentId,
     sql: sql,
     clientToken: 'token',
     bridgeTimeoutMs: 1000,

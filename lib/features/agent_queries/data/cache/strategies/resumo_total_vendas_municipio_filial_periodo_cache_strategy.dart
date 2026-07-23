@@ -80,8 +80,11 @@ final class ResumoTotalVendasMunicipioFilialPeriodoCacheStrategy
     required String bucketId,
     required ResumoTotalVendasMunicipioFilialPeriodoFilter rangeFilter,
   }) {
-    // Single period-range bucket; coalesce across day keys is unsupported.
-    return const <ResumoTotalVendasMunicipioFilialPeriodoRow>[];
+    throw UnsupportedError(
+      'Range coalesce is not supported for period-range '
+      'resumo_total_vendas_municipio_filial_periodo buckets '
+      '(bucketId=$bucketId).',
+    );
   }
 
   @override

@@ -15,14 +15,14 @@ import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel
 /// * [SocketDispatchNamespaceForbidden] — hub role policy rejects `/consumers`.
 /// * [SocketDispatchUnauthorized] — auth refresh exhausted on the socket.
 ///
-/// **Temporary latch** (cooldown then half-open probe):
+/// **Temporary latch** (per agentId, cooldown then half-open probe):
 /// After `transientFailureThreshold` consecutive transport failures
-/// (`SocketDispatchTimeout`, `SocketDispatchDisconnected`,
+/// for the same agent (`SocketDispatchTimeout`, `SocketDispatchDisconnected`,
 /// `RelayRequestTimeout`, `RelayConversationLost`, eligible
-/// `RelayConversationStartFailure`), subsequent calls use REST for
-/// `temporaryLatchCooldown`. The next call after the cooldown probes
-/// socket again; success clears the counter, another transient failure
-/// re-opens the temporary latch.
+/// `RelayConversationStartFailure`), subsequent calls for that agent use REST
+/// for `temporaryLatchCooldown`. Other agents keep probing socket.
+/// The next call after the cooldown probes socket again; success clears the
+/// counter, another transient failure re-opens the temporary latch.
 ///
 /// [SocketDispatchLegacyStreamingUnsupported] and cancel errors are never
 /// fallback-eligible.
@@ -67,33 +67,39 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
   /// `true` once the latch has caught a permanent failure.
   bool _latched = false;
 
-  int _consecutiveTransientFailures = 0;
-  DateTime? _temporaryLatchedUntil;
+  final Map<String, _AgentTransientLatchState> _transientByAgent =
+      <String, _AgentTransientLatchState>{};
 
   /// Visible-for-testing accessor for the permanent latch.
   bool get isLatchedToRest => _latched;
 
-  /// Visible-for-testing: temporary REST window is still active.
+  /// Visible-for-testing: any agent is inside a temporary REST window.
   bool get isTemporarilyLatchedToRest {
-    final until = _temporaryLatchedUntil;
-    if (until == null) {
-      return false;
+    final now = _clock();
+    for (final state in _transientByAgent.values) {
+      final until = state.latchedUntil;
+      if (until != null && now.isBefore(until)) {
+        return true;
+      }
     }
-    return _clock().isBefore(until);
+    return false;
+  }
+
+  /// Visible-for-testing: temporary REST window for a specific agent.
+  bool isTemporarilyLatchedToRestFor(String agentId) {
+    return _isAgentTemporarilyLatched(_normalizeAgentId(agentId));
   }
 
   /// Clears permanent and temporary REST fallback so a new auth session
   /// (or test) can retry the socket transport.
   void resetLatch({required String reason}) {
     final hadPermanent = _latched;
-    final hadTemporary =
-        _temporaryLatchedUntil != null || _consecutiveTransientFailures > 0;
+    final hadTemporary = _transientByAgent.isNotEmpty;
     if (!hadPermanent && !hadTemporary) {
       return;
     }
     _latched = false;
-    _consecutiveTransientFailures = 0;
-    _temporaryLatchedUntil = null;
+    _transientByAgent.clear();
     AppLogger.info(
       'Agent queries REST fallback latch cleared',
       context: <String, Object?>{
@@ -116,6 +122,7 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
     AgentQueriesCancelScope? cancelScope,
   }) {
     return _dispatch(
+      agentId: request.agentId,
       useRest: () =>
           _restDelegate.postSqlExecute(request, cancelScope: cancelScope),
       useSocket: () =>
@@ -129,6 +136,7 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
     AgentQueriesCancelScope? cancelScope,
   }) {
     return _dispatch(
+      agentId: request.agentId,
       useRest: () =>
           _restDelegate.postSqlExecuteBatch(request, cancelScope: cancelScope),
       useSocket: () => _socketDelegate.postSqlExecuteBatch(
@@ -139,15 +147,17 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
   }
 
   Future<Map<String, dynamic>> _dispatch({
+    required String agentId,
     required Future<Map<String, dynamic>> Function() useRest,
     required Future<Map<String, dynamic>> Function() useSocket,
   }) async {
-    if (_latched || isTemporarilyLatchedToRest) {
+    final normalizedAgentId = _normalizeAgentId(agentId);
+    if (_latched || _isAgentTemporarilyLatched(normalizedAgentId)) {
       return useRest();
     }
     try {
       final response = await useSocket();
-      _onSocketSuccess();
+      _onSocketSuccess(normalizedAgentId);
       return response;
     } on SocketDispatchNamespaceForbidden catch (trigger) {
       _latchPermanent(trigger, reason: 'namespace_forbidden');
@@ -157,29 +167,55 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
       return useRest();
     } on SocketDispatchException catch (error) {
       if (_isTransientSocketFailure(error)) {
-        _noteTransientFailure(error, reason: error.code);
+        _noteTransientFailure(
+          normalizedAgentId,
+          error,
+          reason: error.code,
+        );
       }
       rethrow;
     } on RelayDispatchException catch (error) {
       if (_isTransientRelayFailure(error)) {
-        _noteTransientFailure(error, reason: error.code);
+        _noteTransientFailure(
+          normalizedAgentId,
+          error,
+          reason: error.code,
+        );
       }
       rethrow;
     }
   }
 
-  void _onSocketSuccess() {
-    _consecutiveTransientFailures = 0;
-    _temporaryLatchedUntil = null;
+  bool _isAgentTemporarilyLatched(String agentId) {
+    final state = _transientByAgent[agentId];
+    if (state == null) {
+      return false;
+    }
+    final until = state.latchedUntil;
+    if (until == null) {
+      return false;
+    }
+    return _clock().isBefore(until);
   }
 
-  void _noteTransientFailure(Object trigger, {required String reason}) {
-    _consecutiveTransientFailures += 1;
-    if (_consecutiveTransientFailures < _transientFailureThreshold) {
+  void _onSocketSuccess(String agentId) {
+    _transientByAgent.remove(agentId);
+  }
+
+  void _noteTransientFailure(
+    String agentId,
+    Object trigger, {
+    required String reason,
+  }) {
+    final state = _transientByAgent.putIfAbsent(
+      agentId,
+      _AgentTransientLatchState.new,
+    )..consecutiveFailures += 1;
+    if (state.consecutiveFailures < _transientFailureThreshold) {
       return;
     }
-    final alreadyOpen = isTemporarilyLatchedToRest;
-    _temporaryLatchedUntil = _clock().add(_temporaryLatchCooldown);
+    final alreadyOpen = _isAgentTemporarilyLatched(agentId);
+    state.latchedUntil = _clock().add(_temporaryLatchCooldown);
     if (alreadyOpen) {
       return;
     }
@@ -189,7 +225,8 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
       context: <String, Object?>{
         'component': 'SocketWithRestFallbackAgentQueriesRemoteDataSource',
         'reason': reason,
-        'consecutiveFailures': _consecutiveTransientFailures,
+        'agentId': agentId,
+        'consecutiveFailures': state.consecutiveFailures,
         'cooldownMs': _temporaryLatchCooldown.inMilliseconds,
         'trigger': trigger.toString(),
       },
@@ -221,8 +258,7 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
       return;
     }
     _latched = true;
-    _consecutiveTransientFailures = 0;
-    _temporaryLatchedUntil = null;
+    _transientByAgent.clear();
     AppLogger.warning(
       'Agent queries datasource latched to REST fallback '
       '(socket permanent failure)',
@@ -251,6 +287,11 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
     }
   }
 
+  static String _normalizeAgentId(String agentId) {
+    final trimmed = agentId.trim();
+    return trimmed.isEmpty ? '_' : trimmed;
+  }
+
   static bool _isTransientSocketFailure(SocketDispatchException error) {
     return error is SocketDispatchTimeout ||
         error is SocketDispatchDisconnected;
@@ -275,4 +316,9 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
     }
     return false;
   }
+}
+
+final class _AgentTransientLatchState {
+  int consecutiveFailures = 0;
+  DateTime? latchedUntil;
 }

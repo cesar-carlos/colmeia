@@ -129,24 +129,25 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
     );
 
     final Map<String, AppResult<List<Row>>> prefetchedNetworkResults;
-    final useRangeCoalesce =
-        needNetworkBucketIds.length >= 2 &&
-        _strategy.supportsRangeCoalesce &&
-        !_isSparseNetworkMiss(needNetworkBucketIds);
-    if (useRangeCoalesce) {
-      prefetchedNetworkResults = await _loadNetworkBucketsViaRangeCoalesce(
-        userId: userId,
-        agentId: agentId,
-        rangeFilter: filter,
-        needNetworkBucketIds: needNetworkBucketIds,
-        cachePolicy: cachePolicy,
-        clock: clock,
-        clientToken: clientToken,
-        bridgeTimeoutMs: bridgeTimeoutMs,
-        hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
-        hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
-        cancelScope: cancelScope,
-      );
+    if (needNetworkBucketIds.isEmpty) {
+      prefetchedNetworkResults = <String, AppResult<List<Row>>>{};
+    } else if (_strategy.supportsRangeCoalesce) {
+      prefetchedNetworkResults =
+          await _loadNetworkBucketsPreferringContiguousCoalesce(
+            userId: userId,
+            agentId: agentId,
+            rangeFilter: filter,
+            needNetworkBucketIds: needNetworkBucketIds,
+            plan: plan,
+            cachePolicy: cachePolicy,
+            clock: clock,
+            clientToken: clientToken,
+            bridgeTimeoutMs: bridgeTimeoutMs,
+            hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+            hubConnectedFromApprovedCatalogRow:
+                hubConnectedFromApprovedCatalogRow,
+            cancelScope: cancelScope,
+          );
     } else {
       prefetchedNetworkResults = await _loadNetworkBucketsViaExecuteBatch(
         userId: userId,
@@ -229,20 +230,97 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
     return needNetwork;
   }
 
+  /// Coalesce contiguous day-bucket runs; load isolated misses via batch/unary
+  /// so sparse holes do not re-download days already in cache.
+  Future<Map<String, AppResult<List<Row>>>>
+  _loadNetworkBucketsPreferringContiguousCoalesce({
+    required String userId,
+    required String agentId,
+    required Filter rangeFilter,
+    required List<String> needNetworkBucketIds,
+    required AgentQueryBucketPlan plan,
+    required AgentQueryLoadPolicy cachePolicy,
+    required DateTime clock,
+    String? clientToken,
+    int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
+    final results = <String, AppResult<List<Row>>>{};
+    final singles = <String>[];
+    for (final run in _contiguousDayRuns(needNetworkBucketIds)) {
+      if (run.length >= 2) {
+        results.addAll(
+          await _loadNetworkBucketsViaRangeCoalesce(
+            userId: userId,
+            agentId: agentId,
+            rangeFilter: rangeFilter,
+            needNetworkBucketIds: run,
+            cachePolicy: cachePolicy,
+            clock: clock,
+            clientToken: clientToken,
+            bridgeTimeoutMs: bridgeTimeoutMs,
+            hubPresenceOnlineAgentIdsSnapshot:
+                hubPresenceOnlineAgentIdsSnapshot,
+            hubConnectedFromApprovedCatalogRow:
+                hubConnectedFromApprovedCatalogRow,
+            cancelScope: cancelScope,
+          ),
+        );
+      } else {
+        singles.addAll(run);
+      }
+    }
+    if (singles.isNotEmpty) {
+      results.addAll(
+        await _loadNetworkBucketsViaExecuteBatch(
+          userId: userId,
+          agentId: agentId,
+          rangeFilter: rangeFilter,
+          networkBucketIds: singles,
+          plan: plan,
+          cachePolicy: cachePolicy,
+          clock: clock,
+          clientToken: clientToken,
+          bridgeTimeoutMs: bridgeTimeoutMs,
+          hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+          hubConnectedFromApprovedCatalogRow:
+              hubConnectedFromApprovedCatalogRow,
+          cancelScope: cancelScope,
+        ),
+      );
+    }
+    return results;
+  }
+
   /// Prefer per-bucket batch when misses are sparse inside a wide span, so a
   /// range coalesce does not re-download many days already in cache.
-  bool _isSparseNetworkMiss(List<String> needNetworkBucketIds) {
-    if (needNetworkBucketIds.length < 2) {
-      return false;
+  List<List<String>> _contiguousDayRuns(List<String> needNetworkBucketIds) {
+    if (needNetworkBucketIds.isEmpty) {
+      return const <List<String>>[];
     }
     final sorted = List<String>.from(needNetworkBucketIds)..sort();
-    final start = CalendarBucketClosure.parseDayBucketId(sorted.first);
-    final end = CalendarBucketClosure.parseDayBucketId(sorted.last);
-    if (start == null || end == null) {
-      return false;
+    final runs = <List<String>>[];
+    var current = <String>[sorted.first];
+    var previousDay = CalendarBucketClosure.parseDayBucketId(sorted.first);
+    for (var i = 1; i < sorted.length; i++) {
+      final bucketId = sorted[i];
+      final day = CalendarBucketClosure.parseDayBucketId(bucketId);
+      final isContiguous =
+          previousDay != null &&
+          day != null &&
+          day.difference(previousDay).inDays == 1;
+      if (isContiguous) {
+        current.add(bucketId);
+      } else {
+        runs.add(current);
+        current = <String>[bucketId];
+      }
+      previousDay = day;
     }
-    final spanDays = end.difference(start).inDays + 1;
-    return spanDays > needNetworkBucketIds.length * 2;
+    runs.add(current);
+    return runs;
   }
 
   List<Row>? _tryDecodePayload(List<int> bytes, {required String storageKey}) {
@@ -306,6 +384,7 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
     }
 
     final results = <String, AppResult<List<Row>>>{};
+    final writes = <Future<void>>[];
     for (final bucketId in needNetworkBucketIds) {
       final bucketRows = _strategy.selectRowsForBucket(
         rows: rows,
@@ -325,17 +404,22 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
             factKind: _strategy.factKind,
             writer: _strategy.queryKey,
           )) {
-        await _factsStore.writePayload(
-          storageKey: _strategy.storageKey(
-            userId: userId,
-            agentId: agentId,
-            bucketId: bucketId,
-            rangeFilter: rangeFilter,
+        writes.add(
+          _factsStore.writePayload(
+            storageKey: _strategy.storageKey(
+              userId: userId,
+              agentId: agentId,
+              bucketId: bucketId,
+              rangeFilter: rangeFilter,
+            ),
+            payload: _strategy.encodePayload(bucketRows),
+            schemaVersion: _strategy.schemaVersion,
           ),
-          payload: _strategy.encodePayload(bucketRows),
-          schemaVersion: _strategy.schemaVersion,
         );
       }
+    }
+    if (writes.isNotEmpty) {
+      await Future.wait(writes);
     }
     return results;
   }
@@ -552,6 +636,7 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
         for (final item in execution.items) item.index: item,
       };
 
+      final writes = <Future<void>>[];
       for (var i = 0; i < chunkBucketIds.length; i++) {
         final bucketId = bucketIdsByExecutionIndex[i]!;
         final mapped = AgentSqlBatchItemRowsMapper.mapRowsForIndex<Row>(
@@ -578,17 +663,22 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
               factKind: _strategy.factKind,
               writer: _strategy.queryKey,
             )) {
-          await _factsStore.writePayload(
-            storageKey: _strategy.storageKey(
-              userId: userId,
-              agentId: agentId,
-              bucketId: bucketId,
-              rangeFilter: rangeFilter,
+          writes.add(
+            _factsStore.writePayload(
+              storageKey: _strategy.storageKey(
+                userId: userId,
+                agentId: agentId,
+                bucketId: bucketId,
+                rangeFilter: rangeFilter,
+              ),
+              payload: _strategy.encodePayload(rows),
+              schemaVersion: _strategy.schemaVersion,
             ),
-            payload: _strategy.encodePayload(rows),
-            schemaVersion: _strategy.schemaVersion,
           );
         }
+      }
+      if (writes.isNotEmpty) {
+        await Future.wait(writes);
       }
     }
 

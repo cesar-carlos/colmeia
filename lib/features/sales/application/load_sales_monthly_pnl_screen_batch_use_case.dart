@@ -41,6 +41,8 @@ class LoadSalesMonthlyPnlScreenBatchUseCase {
     this._agentQueriesRepository, {
     AgentQueryTransportPolicy? transportPolicy,
     int? maxParallelReadOnlyBatchItems,
+    Duration? emptySuccessRetryDelay,
+    Future<void> Function(Duration duration)? delay,
   }) : _transportPolicy =
            transportPolicy ??
            AgentQueryTransportPolicy(
@@ -48,14 +50,25 @@ class LoadSalesMonthlyPnlScreenBatchUseCase {
            ),
        _maxParallelReadOnlyBatchItems =
            maxParallelReadOnlyBatchItems ??
-           AppEnvironment.agentSqlOverviewBatchMaxParallelReadOnlyItems;
+           AppEnvironment.agentSqlOverviewBatchMaxParallelReadOnlyItems,
+       _emptySuccessRetryDelay =
+           emptySuccessRetryDelay ?? defaultEmptySuccessRetryDelay,
+       _delay =
+           delay ??
+           // ignore: unnecessary_lambdas — tear-off has an optional 2nd arg.
+           ((duration) => Future<void>.delayed(duration));
 
   static const String _operation = 'loadSalesMonthlyPnlScreenBatch';
-  static const Duration emptySuccessRetryDelay = Duration(seconds: 2);
+  static const Duration defaultEmptySuccessRetryDelay = Duration(seconds: 2);
+
+  /// Kept for call-site compatibility with older tests/docs.
+  static const Duration emptySuccessRetryDelay = defaultEmptySuccessRetryDelay;
 
   final AgentQueriesRepository _agentQueriesRepository;
   final AgentQueryTransportPolicy _transportPolicy;
   final int _maxParallelReadOnlyBatchItems;
+  final Duration _emptySuccessRetryDelay;
+  final Future<void> Function(Duration duration) _delay;
 
   Future<SalesMonthlyPnlScreenBatchLoadResult> call({
     required String userId,
@@ -197,11 +210,11 @@ class LoadSalesMonthlyPnlScreenBatchUseCase {
       context: <String, Object?>{
         'operation': _operation,
         'agentId': trimmedAgentId,
-        'retryDelayMs': emptySuccessRetryDelay.inMilliseconds,
+        'retryDelayMs': _emptySuccessRetryDelay.inMilliseconds,
         'monthlyOnly': true,
       },
     );
-    await Future<void>.delayed(emptySuccessRetryDelay);
+    await _delay(_emptySuccessRetryDelay);
     final monthlyOnly = SalesMonthlyPnlBatchCommandBuilder.buildMonthlyOnly(
       monthlyFilter: monthlyFilter,
     );
