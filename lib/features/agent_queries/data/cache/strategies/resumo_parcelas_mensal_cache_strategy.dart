@@ -102,6 +102,55 @@ final class ResumoParcelasMensalCacheStrategy
   }
 
   @override
+  bool get supportsRangeCoalesce => true;
+
+  @override
+  List<ResumoParcelasMensalRow> selectRowsForBucket({
+    required List<ResumoParcelasMensalRow> rows,
+    required String bucketId,
+    required ResumoParcelasMensalFilter rangeFilter,
+  }) {
+    final parsed = CalendarBucketClosure.parseMonthBucketId(bucketId);
+    if (parsed == null) {
+      return const <ResumoParcelasMensalRow>[];
+    }
+    return rows
+        .where((row) => row.ano == parsed.year && row.mes == parsed.month)
+        .toList(growable: false);
+  }
+
+  @override
+  ResumoParcelasMensalFilter networkCoalesceFilter({
+    required ResumoParcelasMensalFilter rangeFilter,
+    required List<String> needNetworkBucketIds,
+  }) {
+    if (needNetworkBucketIds.isEmpty) {
+      return rangeFilter;
+    }
+    final sorted = List<String>.from(needNetworkBucketIds)..sort();
+    final startParsed = CalendarBucketClosure.parseMonthBucketId(sorted.first);
+    final endParsed = CalendarBucketClosure.parseMonthBucketId(sorted.last);
+    if (startParsed == null || endParsed == null) {
+      return rangeFilter;
+    }
+    final start = DateTime(startParsed.year, startParsed.month);
+    final end = DateTime(
+      endParsed.year,
+      endParsed.month + 1,
+    ).subtract(const Duration(microseconds: 1));
+    return ResumoParcelasMensalFilter(
+      dataVendaInicio: start,
+      dataVendaFim: end,
+      origem: rangeFilter.origem,
+      geraFinanceiro: rangeFilter.geraFinanceiro,
+      preVenda: rangeFilter.preVenda,
+      codEmpresa: rangeFilter.codEmpresa,
+      codFilial: rangeFilter.codFilial,
+      codVendedor: rangeFilter.codVendedor,
+    );
+  }
+
+  @override
   List<ResumoParcelasMensalRow> decodePayload(List<int> bytes) {
     final decoded = jsonDecode(utf8.decode(bytes));
     if (decoded is! List<dynamic>) {

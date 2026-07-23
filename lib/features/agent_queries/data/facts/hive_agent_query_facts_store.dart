@@ -78,14 +78,22 @@ final class HiveAgentQueryFactsStore implements AgentQueryFactsStore {
     required List<String> storageKeys,
     int? expectedSchemaVersion,
   }) async {
+    if (storageKeys.isEmpty) {
+      return const <String, List<int>>{};
+    }
+    final payloads = await Future.wait(
+      storageKeys.map(
+        (key) => readPayload(
+          storageKey: key,
+          expectedSchemaVersion: expectedSchemaVersion,
+        ),
+      ),
+    );
     final result = <String, List<int>>{};
-    for (final key in storageKeys) {
-      final payload = await readPayload(
-        storageKey: key,
-        expectedSchemaVersion: expectedSchemaVersion,
-      );
+    for (var i = 0; i < storageKeys.length; i++) {
+      final payload = payloads[i];
       if (payload != null) {
-        result[key] = payload;
+        result[storageKeys[i]] = payload;
       }
     }
     return result;

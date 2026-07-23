@@ -26,8 +26,9 @@ final class ResumoProdutoVendaLucratividadeCacheStrategy
   @override
   AgentQueryFactKind get factKind => AgentQueryFactKind.lucratividadePeriod;
 
+  /// Bumped when storage moved from per-day buckets to one period-range bucket.
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   ConsolidationStorageMode get storageMode =>
@@ -39,28 +40,19 @@ final class ResumoProdutoVendaLucratividadeCacheStrategy
     required DateTime clock,
     required AgentQueryLoadPolicy policy,
   }) {
-    final days = CalendarBucketClosure.daysInRange(
+    final bucketId = CalendarBucketClosure.periodRangeBucketId(
       start: filter.dataVendaInicio,
       end: filter.dataVendaFim,
     );
-    final allIds = days.map(CalendarBucketClosure.dayBucketId).toList();
-    final closedIds = <String>[];
-    final openIds = <String>[];
-    for (final day in days) {
-      final id = CalendarBucketClosure.dayBucketId(day);
-      if (isBucketClosed(bucketId: id, clock: clock)) {
-        closedIds.add(id);
-      } else {
-        openIds.add(id);
-      }
-    }
-
-    final networkIds = policy == AgentQueryLoadPolicy.forceRefresh
-        ? List<String>.from(allIds)
-        : List<String>.from(openIds);
+    final closed = isBucketClosed(bucketId: bucketId, clock: clock);
+    final closedIds = closed ? <String>[bucketId] : const <String>[];
+    final openIds = closed ? const <String>[] : <String>[bucketId];
+    final networkIds = policy == AgentQueryLoadPolicy.forceRefresh || !closed
+        ? <String>[bucketId]
+        : const <String>[];
 
     return AgentQueryBucketPlan(
-      allBucketIdsInRange: allIds,
+      allBucketIdsInRange: <String>[bucketId],
       closedBucketIds: closedIds,
       openBucketIds: openIds,
       networkBucketIds: networkIds,
@@ -72,16 +64,27 @@ final class ResumoProdutoVendaLucratividadeCacheStrategy
     required ResumoProdutoVendaLucratividadeFilter rangeFilter,
     required String bucketId,
   }) {
-    final day = CalendarBucketClosure.parseDayBucketId(bucketId);
-    if (day == null) {
-      return rangeFilter;
-    }
-    final end = DateTime(day.year, day.month, day.day, 23, 59, 59, 999, 999);
-    return ResumoProdutoVendaLucratividadeFilter(
-      dataVendaInicio: day,
-      dataVendaFim: end,
-      origem: rangeFilter.origem,
-    );
+    return rangeFilter;
+  }
+
+  @override
+  bool get supportsRangeCoalesce => false;
+
+  @override
+  List<ResumoProdutoVendaLucratividadeRow> selectRowsForBucket({
+    required List<ResumoProdutoVendaLucratividadeRow> rows,
+    required String bucketId,
+    required ResumoProdutoVendaLucratividadeFilter rangeFilter,
+  }) {
+    return const <ResumoProdutoVendaLucratividadeRow>[];
+  }
+
+  @override
+  ResumoProdutoVendaLucratividadeFilter networkCoalesceFilter({
+    required ResumoProdutoVendaLucratividadeFilter rangeFilter,
+    required List<String> needNetworkBucketIds,
+  }) {
+    return rangeFilter;
   }
 
   @override
@@ -146,10 +149,13 @@ final class ResumoProdutoVendaLucratividadeCacheStrategy
 
   @override
   bool isBucketClosed({required String bucketId, required DateTime clock}) {
-    final day = CalendarBucketClosure.parseDayBucketId(bucketId);
-    if (day == null) {
+    final range = CalendarBucketClosure.parsePeriodRangeBucketId(bucketId);
+    if (range == null) {
       return false;
     }
-    return CalendarBucketClosure.isCalendarDayClosed(day: day, clock: clock);
+    return CalendarBucketClosure.isCalendarDayClosed(
+      day: range.end,
+      clock: clock,
+    );
   }
 }

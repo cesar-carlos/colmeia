@@ -25,6 +25,31 @@ abstract interface class AgentQueryCacheStrategy<Filter, Row> {
     required String bucketId,
   });
 
+  /// Whether one network load of the full range filter can be split into
+  /// per-bucket payloads via [selectRowsForBucket].
+  ///
+  /// When false, multi-bucket network fills must use per-bucket loads (batch
+  /// or unary) instead of a single range query.
+  bool get supportsRangeCoalesce;
+
+  /// Rows from a range load that belong to [bucketId].
+  ///
+  /// Only called when [supportsRangeCoalesce] is true.
+  List<Row> selectRowsForBucket({
+    required List<Row> rows,
+    required String bucketId,
+    required Filter rangeFilter,
+  });
+
+  /// Filter used for a coalesced network load of [needNetworkBucketIds].
+  ///
+  /// Default implementations may return [rangeFilter]. Coalesce-capable
+  /// strategies should narrow to the span of missing buckets when possible.
+  Filter networkCoalesceFilter({
+    required Filter rangeFilter,
+    required List<String> needNetworkBucketIds,
+  });
+
   List<Row> decodePayload(List<int> bytes);
 
   List<int> encodePayload(List<Row> rows);

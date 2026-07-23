@@ -8,10 +8,22 @@ final class ClientRequestAccessResponseDto {
     this.debounced = const <String>[],
   });
 
-  factory ClientRequestAccessResponseDto.parse(Map<String, dynamic> json) {
+  /// Parses the POST body. Accepts camelCase and snake_case keys.
+  ///
+  /// When the hub returns HTTP 2xx with an empty/unrecognized body,
+  /// [fallbackRequestedIds] (the ids sent in the request) are treated as
+  /// acknowledged `requested` so sync does not mark a successful POST as failed.
+  factory ClientRequestAccessResponseDto.parse(
+    Map<String, dynamic> json, {
+    Set<String>? fallbackRequestedIds,
+  }) {
     final requested = _stringIdList(json['requested']);
-    final alreadyApproved = _stringIdList(json['alreadyApproved']);
-    final newRequests = _stringIdList(json['newRequests']);
+    final alreadyApproved = _stringIdList(
+      json['alreadyApproved'] ?? json['already_approved'],
+    );
+    final newRequests = _stringIdList(
+      json['newRequests'] ?? json['new_requests'],
+    );
     final reopened = _stringIdList(json['reopened']);
     final debounced = _stringIdList(json['debounced']);
     final hasSemantic =
@@ -21,6 +33,12 @@ final class ClientRequestAccessResponseDto {
         reopened.isNotEmpty ||
         debounced.isNotEmpty;
     if (!hasSemantic) {
+      final fallback = fallbackRequestedIds;
+      if (fallback != null && fallback.isNotEmpty) {
+        return ClientRequestAccessResponseDto(
+          requested: fallback.toList(growable: false),
+        );
+      }
       return const ClientRequestAccessResponseDto();
     }
     return ClientRequestAccessResponseDto(

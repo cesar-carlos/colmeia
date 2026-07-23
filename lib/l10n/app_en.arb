@@ -857,8 +857,16 @@
       "totalCount": {"type": "String"}
     }
   },
+  "clientAgentsAccessRequestsListTruncated": "Only {loadedCount} of {totalCount} access requests were loaded. Some entries may be missing.",
+  "@clientAgentsAccessRequestsListTruncated": {
+    "placeholders": {
+      "loadedCount": {"type": "String"},
+      "totalCount": {"type": "String"}
+    }
+  },
   "agentCatalogInactive": "inactive",
   "agentCatalogActive": "active",
+  "agentCatalogUnknown": "unknown",
   "agentConnectionOnline": "online",
   "agentConnectionOffline": "offline",
   "agentConnectionUnknown": "Connection status unknown",

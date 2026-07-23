@@ -235,6 +235,9 @@ class ClientAgentsPageTabsPanel extends StatelessWidget {
           onRetry: () => unawaited(controller.refreshAll()),
           isMutating: controller.isMutating,
           isLoading: controller.isLoadingInitial,
+          isResultTruncated: controller.accessRequestsResultTruncated,
+          loadedCount: controller.accessRequests?.items.length,
+          totalCount: controller.accessRequests?.total,
           onRetryAccessRequest: (request) =>
               controller.retryAccessRequest(request: request),
           onDiscardQueuedRequestAccess: (action) =>

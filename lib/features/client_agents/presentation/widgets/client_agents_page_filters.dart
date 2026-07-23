@@ -176,6 +176,7 @@ List<ClientAgent> filterClientAgentsApprovedList(
           return switch (catalogStatus) {
             'active' => agent.catalogStatus == AgentCatalogStatus.active,
             'inactive' => agent.catalogStatus == AgentCatalogStatus.inactive,
+            'unknown' => agent.catalogStatus == AgentCatalogStatus.unknown,
             _ => true,
           };
         })

@@ -237,6 +237,19 @@ void registerInjectorAgentQueries(GetIt getIt) {
   if (!getIt.isRegistered<RetryAfterGate>()) {
     getIt.registerLazySingleton<RetryAfterGate>(RetryAfterGate.new);
   }
+  if (getIt.isRegistered<AuthSessionEvents>()) {
+    getIt<AuthSessionEvents>().stream.listen((event) {
+      if (event.type != AuthSessionEventType.invalidated) {
+        return;
+      }
+      if (getIt.isRegistered<RetryAfterGate>()) {
+        getIt<RetryAfterGate>().release();
+      }
+      if (getIt.isRegistered<AgentQueryTargetResolutionCache>()) {
+        getIt<AgentQueryTargetResolutionCache>().clearAll();
+      }
+    });
+  }
   getIt.registerLazySingleton<AgentQueryFactsPrefetchCoordinator>(
     () => AgentQueryFactsPrefetchCoordinator(
       loadDaily: getIt<LoadResumoTotalDiarioVendasUseCase>(),

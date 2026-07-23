@@ -64,6 +64,7 @@ class ClientAgentDetailMetadataCard extends StatelessWidget {
     return switch (status) {
       AgentCatalogStatus.inactive => l10n.agentCatalogInactive,
       AgentCatalogStatus.active => l10n.agentCatalogActive,
+      AgentCatalogStatus.unknown => l10n.agentCatalogUnknown,
     };
   }
 

@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_batch_item_rows_mapper.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_read_only_batch_options.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repository_execution.dart';
@@ -13,6 +14,7 @@ import 'package:colmeia/features/agent_queries/domain/cache/agent_query_cache_st
 import 'package:colmeia/features/agent_queries/domain/cache/agent_query_fact_kind.dart';
 import 'package:colmeia/features/agent_queries/domain/cache/agent_query_facts_key_prefix.dart';
 import 'package:colmeia/features/agent_queries/domain/cache/agent_query_facts_store.dart';
+import 'package:colmeia/features/agent_queries/domain/cache/calendar_bucket_closure.dart';
 import 'package:colmeia/features/agent_queries/domain/cache/consolidation_catalog.dart';
 import 'package:colmeia/features/agent_queries/domain/cache/consolidation_storage_mode.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_cache_invalidate_scope.dart';
@@ -118,23 +120,49 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
       cachePolicy: cachePolicy,
     );
 
-    final networkBucketIds = plan.allBucketIdsInRange
-        .where(plan.networkBucketIds.contains)
-        .toList(growable: false);
-    final batchedNetworkResults = await _loadNetworkBucketsViaExecuteBatch(
+    final needNetworkBucketIds = _resolveNeedNetworkBucketIds(
       userId: userId,
       agentId: agentId,
       rangeFilter: filter,
-      networkBucketIds: networkBucketIds,
       plan: plan,
-      cachePolicy: cachePolicy,
-      clock: clock,
-      clientToken: clientToken,
-      bridgeTimeoutMs: bridgeTimeoutMs,
-      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
-      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
-      cancelScope: cancelScope,
+      prefetchedPayloads: prefetchedPayloads,
     );
+
+    final Map<String, AppResult<List<Row>>> prefetchedNetworkResults;
+    final useRangeCoalesce =
+        needNetworkBucketIds.length >= 2 &&
+        _strategy.supportsRangeCoalesce &&
+        !_isSparseNetworkMiss(needNetworkBucketIds);
+    if (useRangeCoalesce) {
+      prefetchedNetworkResults = await _loadNetworkBucketsViaRangeCoalesce(
+        userId: userId,
+        agentId: agentId,
+        rangeFilter: filter,
+        needNetworkBucketIds: needNetworkBucketIds,
+        cachePolicy: cachePolicy,
+        clock: clock,
+        clientToken: clientToken,
+        bridgeTimeoutMs: bridgeTimeoutMs,
+        hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+        hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
+        cancelScope: cancelScope,
+      );
+    } else {
+      prefetchedNetworkResults = await _loadNetworkBucketsViaExecuteBatch(
+        userId: userId,
+        agentId: agentId,
+        rangeFilter: filter,
+        networkBucketIds: needNetworkBucketIds,
+        plan: plan,
+        cachePolicy: cachePolicy,
+        clock: clock,
+        clientToken: clientToken,
+        bridgeTimeoutMs: bridgeTimeoutMs,
+        hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+        hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
+        cancelScope: cancelScope,
+      );
+    }
 
     final bucketResults = await _loadBucketsInWaves(
       bucketIds: plan.allBucketIdsInRange,
@@ -146,6 +174,7 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
         plan: plan,
         cachePolicy: cachePolicy,
         clock: clock,
+        forceNetwork: needNetworkBucketIds.contains(bucketId),
         prefetchedPayload:
             prefetchedPayloads[_strategy.storageKey(
               userId: userId,
@@ -153,7 +182,7 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
               bucketId: bucketId,
               rangeFilter: filter,
             )],
-        prefetchedNetworkResult: batchedNetworkResults[bucketId],
+        prefetchedNetworkResult: prefetchedNetworkResults[bucketId],
         clientToken: clientToken,
         bridgeTimeoutMs: bridgeTimeoutMs,
         hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
@@ -172,6 +201,143 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
     }
 
     return Success<List<Row>, AppFailure>(rows);
+  }
+
+  List<String> _resolveNeedNetworkBucketIds({
+    required String userId,
+    required String agentId,
+    required Filter rangeFilter,
+    required AgentQueryBucketPlan plan,
+    required Map<String, List<int>> prefetchedPayloads,
+  }) {
+    final needNetwork = <String>[];
+    for (final bucketId in plan.allBucketIdsInRange) {
+      if (plan.networkBucketIds.contains(bucketId)) {
+        needNetwork.add(bucketId);
+        continue;
+      }
+      final storageKey = _strategy.storageKey(
+        userId: userId,
+        agentId: agentId,
+        bucketId: bucketId,
+        rangeFilter: rangeFilter,
+      );
+      if (!prefetchedPayloads.containsKey(storageKey)) {
+        needNetwork.add(bucketId);
+      }
+    }
+    return needNetwork;
+  }
+
+  /// Prefer per-bucket batch when misses are sparse inside a wide span, so a
+  /// range coalesce does not re-download many days already in cache.
+  bool _isSparseNetworkMiss(List<String> needNetworkBucketIds) {
+    if (needNetworkBucketIds.length < 2) {
+      return false;
+    }
+    final sorted = List<String>.from(needNetworkBucketIds)..sort();
+    final start = CalendarBucketClosure.parseDayBucketId(sorted.first);
+    final end = CalendarBucketClosure.parseDayBucketId(sorted.last);
+    if (start == null || end == null) {
+      return false;
+    }
+    final spanDays = end.difference(start).inDays + 1;
+    return spanDays > needNetworkBucketIds.length * 2;
+  }
+
+  List<Row>? _tryDecodePayload(List<int> bytes, {required String storageKey}) {
+    try {
+      return _strategy.decodePayload(bytes);
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Agent query facts row decode failed; treating as miss',
+        context: <String, Object?>{
+          'operation': 'decodePayload',
+          'queryKey': _strategy.queryKey.name,
+          'storageKeyHash': storageKey.hashCode,
+        },
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
+  }
+
+  Future<Map<String, AppResult<List<Row>>>>
+  _loadNetworkBucketsViaRangeCoalesce({
+    required String userId,
+    required String agentId,
+    required Filter rangeFilter,
+    required List<String> needNetworkBucketIds,
+    required AgentQueryLoadPolicy cachePolicy,
+    required DateTime clock,
+    String? clientToken,
+    int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
+  }) async {
+    final networkPolicy = cachePolicy == AgentQueryLoadPolicy.defaultLoad
+        ? AgentQueryLoadPolicy.forceRefresh
+        : cachePolicy;
+    final coalesceFilter = _strategy.networkCoalesceFilter(
+      rangeFilter: rangeFilter,
+      needNetworkBucketIds: needNetworkBucketIds,
+    );
+    final result = await _delegateLoad(
+      userId: userId,
+      agentId: agentId,
+      filter: coalesceFilter,
+      clientToken: clientToken,
+      bridgeTimeoutMs: bridgeTimeoutMs,
+      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
+      cancelScope: cancelScope,
+      cachePolicy: networkPolicy,
+    );
+
+    final rows = result.getOrNull();
+    if (rows == null) {
+      final failure = result.exceptionOrNull()!;
+      return {
+        for (final bucketId in needNetworkBucketIds)
+          bucketId: Failure<List<Row>, AppFailure>(failure),
+      };
+    }
+
+    final results = <String, AppResult<List<Row>>>{};
+    for (final bucketId in needNetworkBucketIds) {
+      final bucketRows = _strategy.selectRowsForBucket(
+        rows: rows,
+        bucketId: bucketId,
+        rangeFilter: rangeFilter,
+      );
+      results[bucketId] = Success<List<Row>, AppFailure>(bucketRows);
+
+      if (bucketRows.isEmpty) {
+        // Match overview: do not persist empty closed buckets (flaky empty
+        // success must not poison the facts store).
+        continue;
+      }
+
+      if (_strategy.isBucketClosed(bucketId: bucketId, clock: clock) &&
+          ConsolidationCatalog.mayPersist(
+            factKind: _strategy.factKind,
+            writer: _strategy.queryKey,
+          )) {
+        await _factsStore.writePayload(
+          storageKey: _strategy.storageKey(
+            userId: userId,
+            agentId: agentId,
+            bucketId: bucketId,
+            rangeFilter: rangeFilter,
+          ),
+          payload: _strategy.encodePayload(bucketRows),
+          schemaVersion: _strategy.schemaVersion,
+        );
+      }
+    }
+    return results;
   }
 
   @override
@@ -403,6 +569,10 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
         final bucketResult = Success<List<Row>, AppFailure>(rows);
         results[bucketId] = bucketResult;
 
+        if (rows.isEmpty) {
+          continue;
+        }
+
         if (_strategy.isBucketClosed(bucketId: bucketId, clock: clock) &&
             ConsolidationCatalog.mayPersist(
               factKind: _strategy.factKind,
@@ -433,6 +603,7 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
     required AgentQueryBucketPlan plan,
     required AgentQueryLoadPolicy cachePolicy,
     required DateTime clock,
+    bool forceNetwork = false,
     List<int>? prefetchedPayload,
     AppResult<List<Row>>? prefetchedNetworkResult,
     String? clientToken,
@@ -441,7 +612,8 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
     bool? hubConnectedFromApprovedCatalogRow,
     AgentQueriesCancelScope? cancelScope,
   }) async {
-    final needsNetwork = plan.networkBucketIds.contains(bucketId);
+    final needsNetwork =
+        forceNetwork || plan.networkBucketIds.contains(bucketId);
     final isClosed = _strategy.isBucketClosed(bucketId: bucketId, clock: clock);
     final storageKey = _strategy.storageKey(
       userId: userId,
@@ -458,7 +630,11 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
             expectedSchemaVersion: _strategy.schemaVersion,
           );
       if (cached != null) {
-        return Success<List<Row>, AppFailure>(_strategy.decodePayload(cached));
+        final decoded = _tryDecodePayload(cached, storageKey: storageKey);
+        if (decoded != null) {
+          return Success<List<Row>, AppFailure>(decoded);
+        }
+        await _factsStore.removeKey(storageKey);
       }
     }
 
@@ -490,7 +666,8 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
       return Failure<List<Row>, AppFailure>(result.exceptionOrNull()!);
     }
 
-    if (isClosed &&
+    if (rows.isNotEmpty &&
+        isClosed &&
         ConsolidationCatalog.mayPersist(
           factKind: _strategy.factKind,
           writer: _strategy.queryKey,

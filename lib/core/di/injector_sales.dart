@@ -1,7 +1,6 @@
 import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_across_agents_use_case.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_produto_venda_lucratividade_mensal_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_diario_vendas_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_periodo_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_resolution_cache.dart';
@@ -14,7 +13,6 @@ import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_c
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_branch_location_cache.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_in_memory_catalog_cache.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
-import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_screen_batch_use_case.dart';
 import 'package:colmeia/features/sales/application/ports/sales_live_map_batch_loader.dart';
 import 'package:colmeia/features/sales/application/ports/sales_live_map_catalog_cache.dart';
@@ -58,11 +56,6 @@ void registerInjectorSales(GetIt getIt) {
     ..registerLazySingleton<ResolveSalesAgentClientTokenUseCase>(
       () =>
           ResolveSalesAgentClientTokenUseCase(getIt<AgentClientTokenReader>()),
-    )
-    ..registerFactory<LoadSalesMonthlyPnlLinesUseCase>(
-      () => LoadSalesMonthlyPnlLinesUseCase(
-        getIt<LoadResumoProdutoVendaLucratividadeMensalUseCase>(),
-      ),
     )
     ..registerFactory<LoadSalesDailyTotalsUseCase>(
       () => LoadSalesDailyTotalsUseCase(

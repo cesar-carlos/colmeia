@@ -123,9 +123,12 @@ class _SalesRankingProdutosFaturamentoPageState
       userId: userId,
       agentId: agentId,
     );
-    _cachedClientTokenUserId = userId;
-    _cachedClientTokenAgentId = agentId;
-    return _cachedClientToken = resolved;
+    if (resolved != null) {
+      _cachedClientTokenUserId = userId;
+      _cachedClientTokenAgentId = agentId;
+      _cachedClientToken = resolved;
+    }
+    return resolved;
   }
 
   @override
@@ -228,7 +231,7 @@ class _SalesRankingProdutosFaturamentoPageState
     });
 
     if (userId == null || agentId == null || agentId.trim().isEmpty) {
-      if (!mounted) {
+      if (!mounted || generation != _sqlLoadGeneration) {
         return;
       }
       setState(() {

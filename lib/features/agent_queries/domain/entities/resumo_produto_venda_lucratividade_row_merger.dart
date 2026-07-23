@@ -1,6 +1,9 @@
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
 
 /// Combines [ResumoProdutoVendaLucratividadeRow] from multiple calendar buckets.
+///
+/// `qtdVendas` and `pontoEquilibrio` come from period `COUNT(DISTINCT …)` /
+/// non-additive aggregates and must not be summed across duplicate keys.
 abstract final class ResumoProdutoVendaLucratividadeRowMerger {
   static List<ResumoProdutoVendaLucratividadeRow> merge(
     Iterable<ResumoProdutoVendaLucratividadeRow> rows,
@@ -39,12 +42,12 @@ abstract final class ResumoProdutoVendaLucratividadeRowMerger {
         byKey[key] = (
           codEmpresa: existing.codEmpresa,
           codFilial: existing.codFilial,
-          qtdVendas: existing.qtdVendas + row.qtdVendas,
+          qtdVendas: existing.qtdVendas,
           qtdItensVendido: existing.qtdItensVendido + row.qtdItensVendido,
           valorTotalCustoMedio:
               existing.valorTotalCustoMedio + row.valorTotalCustoMedio,
           custoReposicao: existing.custoReposicao + row.custoReposicao,
-          pontoEquilibrio: existing.pontoEquilibrio + row.pontoEquilibrio,
+          pontoEquilibrio: existing.pontoEquilibrio,
           valorTotalItem: existing.valorTotalItem + row.valorTotalItem,
           chartAxisLabel: existing.chartAxisLabel ?? row.chartAxisLabel,
         );

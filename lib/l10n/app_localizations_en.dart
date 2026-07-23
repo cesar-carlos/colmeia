@@ -1576,10 +1576,21 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String clientAgentsAccessRequestsListTruncated(
+    String loadedCount,
+    String totalCount,
+  ) {
+    return 'Only $loadedCount of $totalCount access requests were loaded. Some entries may be missing.';
+  }
+
+  @override
   String get agentCatalogInactive => 'inactive';
 
   @override
   String get agentCatalogActive => 'active';
+
+  @override
+  String get agentCatalogUnknown => 'unknown';
 
   @override
   String get agentConnectionOnline => 'online';

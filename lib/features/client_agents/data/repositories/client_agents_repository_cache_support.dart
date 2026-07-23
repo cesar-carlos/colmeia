@@ -5,6 +5,8 @@ import 'package:colmeia/features/client_agents/data/models/client_accessible_age
 import 'package:colmeia/features/client_agents/data/models/client_agent_profile_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_approved_agent_detail_response_dto.dart';
 import 'package:colmeia/features/client_agents/data/models/client_approved_agents_response_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/online_agent_dto.dart';
+import 'package:colmeia/features/client_agents/data/models/online_agents_response_dto.dart';
 import 'package:colmeia/features/client_agents/domain/entities/client_agents_list_page_size.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
 
@@ -27,22 +29,50 @@ class ClientAgentsRepositoryCacheSupport {
   final ClientAgentsLocalDataSource _localDataSource;
 
   /// Persists a synthetic `OnlineAgentsResponseDto` when [profiles] include
-  /// `is_hub_connected`, so [readOnlineAgentIds] and overview can resolve
-  /// online ids without `GET /api/v1/agents` (user-only).
+  /// `is_hub_connected`, merging into any existing presence snapshot so
+  /// paginated loads do not wipe online ids from other pages.
   Future<void> persistHubPresenceCacheFromProfiles({
     required String userId,
     required Iterable<ClientAgentProfileDto> profiles,
   }) async {
-    final synthetic = synthesizeOnlineAgentsDtoFromProfiles(
+    final stamp = DateTime.now();
+    final pageDelta = synthesizeOnlineAgentsDtoFromProfiles(
       profiles: profiles,
-      stamp: DateTime.now(),
+      stamp: stamp,
     );
-    if (synthetic == null) {
+    if (pageDelta == null) {
       return;
     }
+
+    final existing = await _localDataSource.readOnlineAgents(
+      userId: userId,
+      maxAge: onlineStatusOfflineFallbackMaxAge,
+    );
+    final onlineById = <String, OnlineAgentDto>{
+      if (existing != null)
+        for (final agent in existing.agents) agent.agentId: agent,
+    };
+
+    for (final profile in profiles) {
+      final hubConnected = profile.isHubConnected;
+      if (hubConnected == true) {
+        onlineById[profile.agentId] = OnlineAgentDto(
+          agentId: profile.agentId,
+          connectedAt: stamp,
+          lastSeenAt: stamp,
+        );
+      } else if (hubConnected == false) {
+        onlineById.remove(profile.agentId);
+      }
+    }
+
+    final mergedAgents = onlineById.values.toList(growable: false);
     await _localDataSource.saveOnlineAgents(
       userId: userId,
-      payload: synthetic,
+      payload: OnlineAgentsResponseDto(
+        agents: mergedAgents,
+        count: mergedAgents.length,
+      ),
     );
   }
 

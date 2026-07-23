@@ -30,6 +30,9 @@ class ClientAgentsRequestsTab extends StatefulWidget {
     this.onNavigateToRequestAccess,
     this.onRetryAccessRequest,
     this.onDiscardQueuedRequestAccess,
+    this.isResultTruncated = false,
+    this.loadedCount,
+    this.totalCount,
   });
 
   final List<ClientAgentAccessRequest> requests;
@@ -46,6 +49,9 @@ class ClientAgentsRequestsTab extends StatefulWidget {
   onRetryAccessRequest;
   final Future<void> Function(PendingAgentAction action)?
   onDiscardQueuedRequestAccess;
+  final bool isResultTruncated;
+  final int? loadedCount;
+  final int? totalCount;
 
   @override
   State<ClientAgentsRequestsTab> createState() =>
@@ -121,6 +127,17 @@ class _ClientAgentsRequestsTabState extends State<ClientAgentsRequestsTab> {
           message: message,
           onRetry: widget.onRetry,
           retryLabel: l10n.appInlineErrorRetry,
+        ),
+      ],
+      if (widget.isResultTruncated) ...<Widget>[
+        Text(
+          l10n.clientAgentsAccessRequestsListTruncated(
+            '${widget.loadedCount ?? widget.requests.length}',
+            '${widget.totalCount ?? widget.requests.length}',
+          ),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.error,
+          ),
         ),
       ],
     ];

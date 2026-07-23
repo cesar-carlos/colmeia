@@ -140,7 +140,8 @@ class SalesProdutoTendenciaBodySection extends StatelessWidget {
                   rows: details.rows,
                   totalCount: details.totalCount,
                   loading: details.tableLoading,
-                  paginationEnabled: !details.detailsLoading,
+                  paginationEnabled:
+                      !details.loading && !details.detailsLoading,
                   currentPage: details.page,
                   pageSize: details.pageSize,
                   onPageSelected: (page) =>

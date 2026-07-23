@@ -7,10 +7,16 @@ abstract final class SalesMonthlyPnlBatchLoadConfig {
 
   static const int sqlTimeoutMs = 300000;
 
-  /// Shared batch `max_rows`. Kept at the monthly report cap (400) because
-  /// higher values returned empty success for the ItemProdutoVendido monthly
-  /// shape on the E2E SQL Anywhere agent. Single-branch daily months fit under
-  /// this; multi-branch day grids may truncate (warned at the use case).
+  /// Batch-level `max_rows` shared by both slots. Uses the daily totals cap so
+  /// custom day grids are not truncated under the monthly (400) ceiling.
+  /// Monthly slot still warns against
+  /// [AgentQueriesBoundedResultMaxRows.resumoProdutoVendaLucratividadeMensal].
   static const int batchMaxRows =
+      AgentQueriesBoundedResultMaxRows.resumoTotalDiarioVendas;
+
+  static const int monthlyWarnMaxRows =
       AgentQueriesBoundedResultMaxRows.resumoProdutoVendaLucratividadeMensal;
+
+  static const int dailyWarnMaxRows =
+      AgentQueriesBoundedResultMaxRows.resumoTotalDiarioVendas;
 }

@@ -225,6 +225,8 @@ class ClientAgentsController extends ChangeNotifier
   PaginatedResult<ClientAgent>? get approvedAgents => _approvedAgents;
   bool get approvedAgentsResultTruncated =>
       _approvedAgents?.isResultTruncated ?? false;
+  bool get accessRequestsResultTruncated =>
+      _accessRequests?.isResultTruncated ?? false;
   PaginatedResult<ClientAgentAccessRequest>? get accessRequests =>
       _accessRequests;
   List<PendingAgentAction> get pendingActions => _pendingActions;

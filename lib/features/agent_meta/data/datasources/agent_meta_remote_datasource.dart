@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/network/api_routes.dart';
+import 'package:colmeia/core/network/auth_session_events.dart';
 import 'package:colmeia/core/network/bridge_rpc_response.dart';
 import 'package:colmeia/core/socket/agent_command_sender.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
@@ -180,17 +183,46 @@ class SocketWithRestFallbackAgentMetaRemoteDataSource
     required AgentMetaRemoteDataSource socketDelegate,
     required AgentMetaRemoteDataSource restDelegate,
     void Function(SocketDispatchException trigger)? onFallback,
+    AuthSessionEvents? sessionEvents,
   }) : _socketDelegate = socketDelegate,
        _restDelegate = restDelegate,
-       _onFallback = onFallback;
+       _onFallback = onFallback {
+    final events = sessionEvents;
+    if (events != null) {
+      _sessionEventsSub = events.stream.listen(
+        (_) => resetLatch(reason: 'auth_session'),
+      );
+    }
+  }
 
   final AgentMetaRemoteDataSource _socketDelegate;
   final AgentMetaRemoteDataSource _restDelegate;
   final void Function(SocketDispatchException trigger)? _onFallback;
 
+  StreamSubscription<AuthSessionEvent>? _sessionEventsSub;
+
   bool _latched = false;
 
   bool get isLatchedToRest => _latched;
+
+  void resetLatch({required String reason}) {
+    if (!_latched) {
+      return;
+    }
+    _latched = false;
+    AppLogger.info(
+      'Agent meta REST fallback latch cleared',
+      context: <String, Object?>{
+        'component': 'SocketWithRestFallbackAgentMetaRemoteDataSource',
+        'reason': reason,
+      },
+    );
+  }
+
+  void dispose() {
+    unawaited(_sessionEventsSub?.cancel());
+    _sessionEventsSub = null;
+  }
 
   @override
   String get transportLabel => _latched

@@ -1,7 +1,7 @@
 /// One row per company and branch, with branch municipality, for a sale period.
 ///
-/// `qtdVendas` is `COUNT(*)` in SQL. `totalVenda`
-/// sums `ValorLiquido` lines across the whole filtered period.
+/// `qtdVendas` is `COUNT(DISTINCT CodProdutoVendido)` over the filtered period.
+/// `totalVenda` sums `ValorLiquido` lines across the whole filtered period.
 class ResumoTotalVendasMunicipioFilialPeriodoRow {
   const ResumoTotalVendasMunicipioFilialPeriodoRow({
     required this.codEmpresa,

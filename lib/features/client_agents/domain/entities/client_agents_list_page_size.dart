@@ -5,9 +5,10 @@
 /// entry is reused across flows.
 const int kClientAgentsListPageSize = 50;
 
-/// Upper bound for agent ids bundled into one `POST /client/me/agents` while
-/// syncing queued offline actions (Plug accepts multiple ids per call).
+/// Upper bound for agent ids bundled into one `POST /client/me/agents` or
+/// `DELETE /client/me/agents` while syncing queued offline actions.
 const int kClientAgentsRequestAccessSyncBatchSize = 50;
 
-/// Max parallel `DELETE /client/me/agents/{id}` calls while syncing removals.
+/// Max parallel per-id `DELETE /client/me/agents/{id}` calls used only as
+/// fallback when bulk `DELETE /client/me/agents` fails for a chunk.
 const int kClientAgentsRemoveAccessSyncConcurrency = 6;

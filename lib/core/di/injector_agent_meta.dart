@@ -1,6 +1,7 @@
 import 'package:colmeia/core/config/agent_bridge_transport.dart';
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/network/auth_session_events.dart';
 import 'package:colmeia/core/socket/agent_command_sender.dart';
 import 'package:colmeia/features/agent_meta/application/agent_rpc_capabilities_registry.dart';
 import 'package:colmeia/features/agent_meta/application/usecases/discover_agent_rpc_methods_use_case.dart';
@@ -22,6 +23,9 @@ void registerInjectorAgentMeta(GetIt getIt) {
               sender: getIt<AgentCommandSender>(),
             ),
             restDelegate: ApiAgentMetaRemoteDataSource(getIt<Dio>()),
+            sessionEvents: getIt.isRegistered<AuthSessionEvents>()
+                ? getIt<AuthSessionEvents>()
+                : null,
             onFallback: (trigger) => AppLogger.warning(
               'AgentMetaRemoteDataSource latched to REST fallback',
               context: <String, Object?>{

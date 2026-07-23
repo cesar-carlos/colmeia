@@ -116,9 +116,12 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
       userId: userId,
       agentId: agentId,
     );
-    _cachedClientTokenUserId = userId;
-    _cachedClientTokenAgentId = agentId;
-    return _cachedClientToken = resolved;
+    if (resolved != null) {
+      _cachedClientTokenUserId = userId;
+      _cachedClientTokenAgentId = agentId;
+      _cachedClientToken = resolved;
+    }
+    return resolved;
   }
 
   @override
@@ -222,10 +225,11 @@ class _SalesProdutoRankLucroPageState extends State<SalesProdutoRankLucroPage>
     setState(() {
       _loading = true;
       _error = null;
+      _loadFailure = null;
     });
 
     if (userId == null || agentId == null || agentId.trim().isEmpty) {
-      if (!mounted) {
+      if (!mounted || generation != _sqlLoadGeneration) {
         return;
       }
       setState(() {

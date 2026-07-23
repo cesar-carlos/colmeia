@@ -4,6 +4,7 @@ import 'package:colmeia/features/agent_queries/data/cache/strategies/resumo_tota
 import 'package:colmeia/features/agent_queries/data/repositories/caching/caching_resumo_total_vendas_municipio_filial_periodo_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_loaded_rows.dart';
+import 'package:colmeia/features/agent_queries/domain/cache/calendar_bucket_closure.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
@@ -16,6 +17,13 @@ import '../../facts/memory_agent_query_facts_store.dart';
 void main() {
   const strategy = ResumoTotalVendasMunicipioFilialPeriodoCacheStrategy();
   final clock = DateTime(2026, 6, 3);
+
+  String periodBucketId(ResumoTotalVendasMunicipioFilialPeriodoFilter filter) {
+    return CalendarBucketClosure.periodRangeBucketId(
+      start: filter.dataVendaInicio,
+      end: filter.dataVendaFim,
+    );
+  }
 
   group('CachingResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl', () {
     late _FakeDelegate delegate;
@@ -43,7 +51,7 @@ void main() {
         final storageKey = strategy.storageKey(
           userId: 'u1',
           agentId: 'a1',
-          bucketId: '2026-06-01',
+          bucketId: periodBucketId(filter),
           rangeFilter: filter,
         );
         await cachingRepo.factsStore.writePayload(
@@ -76,7 +84,7 @@ void main() {
       final storageKey = strategy.storageKey(
         userId: 'u1',
         agentId: 'a1',
-        bucketId: '2026-06-01',
+        bucketId: periodBucketId(filter),
         rangeFilter: filter,
       );
       await cachingRepo.factsStore.writePayload(
@@ -106,7 +114,7 @@ void main() {
       final storageKey = strategy.storageKey(
         userId: 'u1',
         agentId: 'a1',
-        bucketId: '2026-06-01',
+        bucketId: periodBucketId(filter),
         rangeFilter: filter,
       );
       await cachingRepo.factsStore.writePayload(

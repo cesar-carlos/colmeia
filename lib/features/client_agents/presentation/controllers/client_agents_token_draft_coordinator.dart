@@ -217,7 +217,7 @@ class ClientAgentsTokenDraftCoordinator {
       ..._pendingLocalTokenServerFlushAgentIds,
       ...preferredAgentIds,
       for (final agent in approvedItems)
-        if (agent.hasServerClientToken != true) agent.agentId,
+        if (agent.hasServerClientToken == false) agent.agentId,
     }.intersection(approvedIds);
     if (candidates.isEmpty) {
       return;

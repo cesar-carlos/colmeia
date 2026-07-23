@@ -69,6 +69,7 @@ class AuthRefreshCoordinator {
             accountStatus: currentSession.accountStatus,
           );
       await _sessionAccessor.save(refreshedSession);
+      _sessionEvents.notifySessionRenewed();
       return refreshedSession.accessToken;
     } on DioException catch (error) {
       if (_shouldInvalidateSession(error.response?.statusCode)) {

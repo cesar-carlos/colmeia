@@ -273,15 +273,95 @@ class PendingClientAgentActionsSynchronizer {
     required PendingClientAgentActionsView view,
     required PendingClientAgentActionsSyncOutcomeBuilder outcome,
   }) async {
+    for (var start = 0; start < actions.length;) {
+      final end = min(
+        start + kClientAgentsRequestAccessSyncBatchSize,
+        actions.length,
+      );
+      final chunk = actions.sublist(start, end);
+      start = end;
+      await _syncRemoveAccessChunk(
+        userId: userId,
+        chunk: chunk,
+        view: view,
+        outcome: outcome,
+      );
+    }
+    await _local.savePendingActions(userId: userId, actions: view.toList());
+    AppLogger.info(
+      'Synced client agent remove-access operations',
+      context: <String, Object?>{
+        'operation': 'syncPendingActions',
+        'userId': userId,
+        'count': actions.length,
+        'ok': outcome.successfulRemoveAccessCount,
+        'failed': outcome.failedRemoveAccessCount,
+      },
+    );
+  }
+
+  Future<void> _syncRemoveAccessChunk({
+    required String userId,
+    required List<PendingAgentAction> chunk,
+    required PendingClientAgentActionsView view,
+    required PendingClientAgentActionsSyncOutcomeBuilder outcome,
+  }) async {
+    final agentIds = chunk.map((a) => a.agentId).toSet();
+    try {
+      final removed = await _remote.removeAccess(agentIds: agentIds);
+      final missing = <PendingAgentAction>[];
+      for (final action in chunk) {
+        if (removed.contains(action.agentId)) {
+          outcome.recordRemoveAccessSuccess(
+            actionId: action.id,
+            agentId: action.agentId,
+          );
+        } else {
+          missing.add(action);
+        }
+      }
+      if (missing.isNotEmpty) {
+        await _syncRemoveAccessPerIdFallback(
+          userId: userId,
+          actions: missing,
+          view: view,
+          outcome: outcome,
+        );
+      }
+    } on Object catch (error, _) {
+      AppLogger.warning(
+        'Bulk removeAccess failed; falling back to per-id DELETE',
+        context: <String, Object?>{
+          'operation': 'syncPendingActions',
+          'userId': userId,
+          'batchSize': chunk.length,
+          'error': error.toString(),
+        },
+      );
+      await _syncRemoveAccessPerIdFallback(
+        userId: userId,
+        actions: chunk,
+        view: view,
+        outcome: outcome,
+      );
+    }
+  }
+
+  Future<void> _syncRemoveAccessPerIdFallback({
+    required String userId,
+    required List<PendingAgentAction> actions,
+    required PendingClientAgentActionsView view,
+    required PendingClientAgentActionsSyncOutcomeBuilder outcome,
+  }) async {
     for (var i = 0; i < actions.length;) {
       final end = min(
         i + kClientAgentsRemoveAccessSyncConcurrency,
         actions.length,
       );
-      final chunk = actions.sublist(i, end);
+      final wave = actions.sublist(i, end);
       i = end;
       final outcomes = await Future.wait(
-        chunk.map(
+        wave.map(
           (action) => _attemptRemoveAccess(userId: userId, action: action),
         ),
       );
@@ -307,17 +387,6 @@ class PendingClientAgentActionsSynchronizer {
         }
       }
     }
-    await _local.savePendingActions(userId: userId, actions: view.toList());
-    AppLogger.info(
-      'Synced client agent remove-access operations',
-      context: <String, Object?>{
-        'operation': 'syncPendingActions',
-        'userId': userId,
-        'count': actions.length,
-        'ok': outcome.successfulRemoveAccessCount,
-        'failed': outcome.failedRemoveAccessCount,
-      },
-    );
   }
 
   Future<(PendingAgentAction, AppFailure?)> _attemptRemoveAccess({

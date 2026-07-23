@@ -770,8 +770,16 @@
       "totalCount": {"type": "String"}
     }
   },
+  "clientAgentsAccessRequestsListTruncated": "Apenas {loadedCount} de {totalCount} solicitações foram carregadas. Alguns registros podem estar ausentes.",
+  "@clientAgentsAccessRequestsListTruncated": {
+    "placeholders": {
+      "loadedCount": {"type": "String"},
+      "totalCount": {"type": "String"}
+    }
+  },
   "agentCatalogInactive": "inativo",
   "agentCatalogActive": "ativo",
+  "agentCatalogUnknown": "desconhecido",
   "agentConnectionOnline": "online",
   "agentConnectionOffline": "offline",
   "agentConnectionUnknown": "Estado de ligação desconhecido",

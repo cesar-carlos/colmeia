@@ -357,6 +357,9 @@ class SalesProdutoTendenciaMediaMovelController
 
   @override
   Future<SalesTrendReloadOutcome> performDetailsOnlyReload() async {
+    if (_state.loading) {
+      return const SalesTrendReloadOutcome.cancelled();
+    }
     final userId = boundUserId;
     final agentId = _state.selectedAgentId;
     final (:generation, :scope) = beginSqlLoad();
@@ -420,9 +423,9 @@ class SalesProdutoTendenciaMediaMovelController
       (failure) {
         _setState(
           _state.copyWith(
-            pageResult: ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
-              items: const <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[],
-              totalCount: _state.pageResult.totalCount,
+            pageResult: const ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
+              items: <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[],
+              totalCount: 0,
             ),
             detailsLoading: false,
             loadFailure: failure,

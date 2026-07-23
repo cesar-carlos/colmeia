@@ -87,6 +87,62 @@ final class ResumoTotalDiarioVendasCacheStrategy
   }
 
   @override
+  bool get supportsRangeCoalesce => true;
+
+  @override
+  List<ResumoTotalDiarioVendasRow> selectRowsForBucket({
+    required List<ResumoTotalDiarioVendasRow> rows,
+    required String bucketId,
+    required ResumoTotalDiarioVendasFilter rangeFilter,
+  }) {
+    final day = CalendarBucketClosure.parseDayBucketId(bucketId);
+    if (day == null) {
+      return const <ResumoTotalDiarioVendasRow>[];
+    }
+    return rows
+        .where(
+          (row) =>
+              row.dataVenda.year == day.year &&
+              row.dataVenda.month == day.month &&
+              row.dataVenda.day == day.day,
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  ResumoTotalDiarioVendasFilter networkCoalesceFilter({
+    required ResumoTotalDiarioVendasFilter rangeFilter,
+    required List<String> needNetworkBucketIds,
+  }) {
+    if (needNetworkBucketIds.isEmpty) {
+      return rangeFilter;
+    }
+    final sorted = List<String>.from(needNetworkBucketIds)..sort();
+    final start = CalendarBucketClosure.parseDayBucketId(sorted.first);
+    final endDay = CalendarBucketClosure.parseDayBucketId(sorted.last);
+    if (start == null || endDay == null) {
+      return rangeFilter;
+    }
+    final end = DateTime(
+      endDay.year,
+      endDay.month,
+      endDay.day,
+      23,
+      59,
+      59,
+      999,
+      999,
+    );
+    return ResumoTotalDiarioVendasFilter(
+      dataVendaInicio: start,
+      dataVendaFim: end,
+      origem: rangeFilter.origem,
+      geraFinanceiro: rangeFilter.geraFinanceiro,
+      preVenda: rangeFilter.preVenda,
+    );
+  }
+
+  @override
   List<ResumoTotalDiarioVendasRow> decodePayload(List<int> bytes) {
     final decoded = jsonDecode(utf8.decode(bytes));
     if (decoded is! List<dynamic>) {

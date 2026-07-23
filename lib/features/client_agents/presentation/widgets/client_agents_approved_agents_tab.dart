@@ -63,11 +63,13 @@ class _ClientAgentsApprovedAgentsTabState
       _selected.removeWhere(
         (id) => !widget.agents.any((a) => a.agentId == id),
       );
-      final totalPages = widget.totalCount == 0
+      final totalPages = widget.agents.isEmpty
           ? 0
-          : (widget.totalCount / _pageSize).ceil();
+          : (widget.agents.length / _pageSize).ceil();
       if (totalPages > 0 && _currentPage > totalPages) {
         _currentPage = totalPages;
+      } else if (totalPages == 0) {
+        _currentPage = 1;
       }
     }
   }

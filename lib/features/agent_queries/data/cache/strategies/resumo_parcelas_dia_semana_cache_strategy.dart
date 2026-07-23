@@ -103,6 +103,27 @@ final class ResumoParcelasDiaSemanaCacheStrategy
   }
 
   @override
+  bool get supportsRangeCoalesce => false;
+
+  @override
+  List<ResumoParcelasDiaSemanaRow> selectRowsForBucket({
+    required List<ResumoParcelasDiaSemanaRow> rows,
+    required String bucketId,
+    required ResumoParcelasDiaSemanaFilter rangeFilter,
+  }) {
+    // Weekday aggregates have no month key; range coalesce is unsupported.
+    return const <ResumoParcelasDiaSemanaRow>[];
+  }
+
+  @override
+  ResumoParcelasDiaSemanaFilter networkCoalesceFilter({
+    required ResumoParcelasDiaSemanaFilter rangeFilter,
+    required List<String> needNetworkBucketIds,
+  }) {
+    return rangeFilter;
+  }
+
+  @override
   List<ResumoParcelasDiaSemanaRow> decodePayload(List<int> bytes) {
     final decoded = jsonDecode(utf8.decode(bytes));
     if (decoded is! List<dynamic>) {

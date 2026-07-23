@@ -16,12 +16,14 @@ class SalesLiveMapProgressiveEmitPolicy {
 
   final SalesLiveMapDiagnosticsLogger _diagnosticsLogger;
 
+  /// Prefers one period `sql.execute` per agent via merged batch whenever the
+  /// loader is available. Catalog cache must not gate this path: day-bucketed
+  /// period facts inflate `COUNT(DISTINCT)` sales counts when summed.
   bool useMergedSqlBatchPerTarget({
     required bool envFlag,
     required SalesLiveMapBatchLoader? batchLoader,
-    required bool catalogCacheMiss,
   }) {
-    return envFlag && batchLoader != null && catalogCacheMiss;
+    return envFlag && batchLoader != null;
   }
 
   SalesLiveMapLoadResult cancelledResult({required DateTime refreshedAt}) {

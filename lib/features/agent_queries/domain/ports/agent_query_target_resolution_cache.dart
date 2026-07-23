@@ -19,4 +19,7 @@ abstract interface class AgentQueryTargetResolutionCache {
   });
 
   void invalidate({required String userId});
+
+  /// Clears every cached resolution (call on logout / session invalidate).
+  void clearAll();
 }

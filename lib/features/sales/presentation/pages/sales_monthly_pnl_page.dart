@@ -161,9 +161,12 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
       userId: userId,
       agentId: agentId,
     );
-    _cachedClientTokenUserId = userId;
-    _cachedClientTokenAgentId = agentId;
-    return _cachedClientToken = resolved;
+    if (resolved != null) {
+      _cachedClientTokenUserId = userId;
+      _cachedClientTokenAgentId = agentId;
+      _cachedClientToken = resolved;
+    }
+    return resolved;
   }
 
   Future<void> _reload({bool force = false}) =>

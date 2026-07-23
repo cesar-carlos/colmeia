@@ -103,4 +103,28 @@ abstract final class CalendarBucketClosure {
     }
     return DateTime(year, month, day);
   }
+
+  /// Single storage bucket for a period aggregate that must not be day-split
+  /// (e.g. `COUNT(DISTINCT …)` over the full filter range).
+  static String periodRangeBucketId({
+    required DateTime start,
+    required DateTime end,
+  }) {
+    return '${dayBucketId(start)}_${dayBucketId(end)}';
+  }
+
+  static ({DateTime start, DateTime end})? parsePeriodRangeBucketId(
+    String bucketId,
+  ) {
+    final parts = bucketId.split('_');
+    if (parts.length != 2) {
+      return null;
+    }
+    final start = parseDayBucketId(parts[0]);
+    final end = parseDayBucketId(parts[1]);
+    if (start == null || end == null) {
+      return null;
+    }
+    return (start: start, end: end);
+  }
 }

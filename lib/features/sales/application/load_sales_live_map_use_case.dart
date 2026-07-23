@@ -235,7 +235,6 @@ class LoadSalesLiveMapUseCase {
     final loadedViaMergedSqlBatch = _emitPolicy.useMergedSqlBatchPerTarget(
       envFlag: AppEnvironment.agentSqlSalesLiveMapMergeSqlBatchesPerTarget,
       batchLoader: _batchLoader,
-      catalogCacheMiss: cachedCatalogPage == null,
     );
 
     if (cachedCatalogPage != null && !(cancelToken?.isCancelled ?? false)) {

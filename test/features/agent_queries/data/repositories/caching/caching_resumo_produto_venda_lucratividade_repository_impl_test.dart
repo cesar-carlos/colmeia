@@ -2,6 +2,7 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/data/cache/strategies/resumo_produto_venda_lucratividade_cache_strategy.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/caching/caching_resumo_produto_venda_lucratividade_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/domain/cache/calendar_bucket_closure.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_lucratividade_row.dart';
@@ -30,7 +31,7 @@ void main() {
     });
 
     test(
-      'defaultLoad reads closed day bucket from store without delegate',
+      'defaultLoad reads closed period bucket from store without delegate',
       () async {
         final filter = ResumoProdutoVendaLucratividadeFilter(
           dataVendaInicio: DateTime(2026, 4, 8),
@@ -49,7 +50,10 @@ void main() {
         final storageKey = strategy.storageKey(
           userId: 'u1',
           agentId: 'a1',
-          bucketId: '2026-04-08',
+          bucketId: CalendarBucketClosure.periodRangeBucketId(
+            start: filter.dataVendaInicio,
+            end: filter.dataVendaFim,
+          ),
           rangeFilter: filter,
         );
         await cachingRepo.factsStore.writePayload(

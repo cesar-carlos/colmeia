@@ -246,6 +246,7 @@ class ApiClientAgentsRemoteDataSource
     );
     return ClientRequestAccessResponseDto.parse(
       response.data ?? const <String, dynamic>{},
+      fallbackRequestedIds: agentIds,
     );
   }
 

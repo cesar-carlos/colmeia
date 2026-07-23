@@ -329,6 +329,9 @@ class SalesProdutoTendenciaController extends SalesTrendControllerBase {
 
   @override
   Future<SalesTrendReloadOutcome> performDetailsOnlyReload() async {
+    if (_state.loading) {
+      return const SalesTrendReloadOutcome.cancelled();
+    }
     final userId = boundUserId;
     final agentId = _state.selectedAgentId;
     final (:generation, :scope) = beginSqlLoad();
@@ -394,6 +397,7 @@ class SalesProdutoTendenciaController extends SalesTrendControllerBase {
         _setState(
           _state.copyWith(
             rows: const <ProdutoVendidoTendenciaDeVendaRow>[],
+            totalCount: 0,
             detailsLoading: false,
             loadFailure: failure,
           ),

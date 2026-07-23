@@ -2612,6 +2612,15 @@ abstract class AppLocalizations {
     String totalCount,
   );
 
+  /// No description provided for @clientAgentsAccessRequestsListTruncated.
+  ///
+  /// In en, this message translates to:
+  /// **'Only {loadedCount} of {totalCount} access requests were loaded. Some entries may be missing.'**
+  String clientAgentsAccessRequestsListTruncated(
+    String loadedCount,
+    String totalCount,
+  );
+
   /// No description provided for @agentCatalogInactive.
   ///
   /// In en, this message translates to:
@@ -2623,6 +2632,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'active'**
   String get agentCatalogActive;
+
+  /// No description provided for @agentCatalogUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'unknown'**
+  String get agentCatalogUnknown;
 
   /// No description provided for @agentConnectionOnline.
   ///

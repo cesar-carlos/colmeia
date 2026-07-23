@@ -137,7 +137,8 @@ class SalesProdutoTendenciaMediaMovelBodySection extends StatelessWidget {
                   key: detailsSectionKey,
                   l10n: l10n,
                   loading: details.tableLoading,
-                  paginationEnabled: !details.detailsLoading,
+                  paginationEnabled:
+                      !details.loading && !details.detailsLoading,
                   rows: details.rows,
                   totalCount: details.totalCount,
                   pageSize: details.pageSize,

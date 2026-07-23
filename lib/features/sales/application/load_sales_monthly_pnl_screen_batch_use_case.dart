@@ -1,7 +1,6 @@
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
-import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_warn_if_sql_rows_at_cap.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_batch_item_rows_mapper.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_read_only_batch_options.dart';
@@ -126,14 +125,17 @@ class LoadSalesMonthlyPnlScreenBatchUseCase {
       dailyFilter: dailyFilter,
     );
 
-    Future<SalesMonthlyPnlScreenBatchLoadResult> executeOnce() async {
+    Future<SalesMonthlyPnlScreenBatchLoadResult> executeBatch(
+      SalesMonthlyPnlBatchCommands commands, {
+      SalesMonthlyPnlScreenBatchLoadResult? preserveDailyFrom,
+    }) async {
       final request = _transportPolicy.applyBatch(
         AgentSqlExecuteBatchRequest(
           agentId: trimmedAgentId,
           requestingUserId: userId,
           clientToken: clientToken,
           bridgeTimeoutMs: SalesMonthlyPnlBatchLoadConfig.bridgeTimeoutMs,
-          commands: batch.commands,
+          commands: commands.commands,
           options: AgentSqlReadOnlyBatchOptions.dashboard(
             sqlTimeoutMs: SalesMonthlyPnlBatchLoadConfig.sqlTimeoutMs,
             maxRows: SalesMonthlyPnlBatchLoadConfig.batchMaxRows,
@@ -160,21 +162,32 @@ class LoadSalesMonthlyPnlScreenBatchUseCase {
           },
           error: failure,
         );
+        if (preserveDailyFrom != null) {
+          return (
+            monthlyPoints: const <SalesMonthlyPnlPoint>[],
+            monthlyLoadFailed: true,
+            monthlyLoadFailure: failure,
+            dailyPoints: preserveDailyFrom.dailyPoints,
+            dailyLoadFailed: preserveDailyFrom.dailyLoadFailed,
+            dailyLoadFailure: preserveDailyFrom.dailyLoadFailure,
+          );
+        }
         return _bothFailed(failure);
       }
 
       return _mapExecution(
         execution: execution,
-        indexes: batch.indexes,
+        indexes: commands.indexes,
         agentId: trimmedAgentId,
         monthlyStart: last12.dataVendaInicio,
         monthlyEnd: last12.dataVendaFim,
         dailyStart: dailyStart,
         dailyEnd: dailyEnd,
+        preserveDailyFrom: preserveDailyFrom,
       );
     }
 
-    final first = await executeOnce();
+    final first = await executeBatch(batch);
     if (first.monthlyLoadFailed || first.monthlyPoints.isNotEmpty) {
       return first;
     }
@@ -185,10 +198,14 @@ class LoadSalesMonthlyPnlScreenBatchUseCase {
         'operation': _operation,
         'agentId': trimmedAgentId,
         'retryDelayMs': emptySuccessRetryDelay.inMilliseconds,
+        'monthlyOnly': true,
       },
     );
     await Future<void>.delayed(emptySuccessRetryDelay);
-    return executeOnce();
+    final monthlyOnly = SalesMonthlyPnlBatchCommandBuilder.buildMonthlyOnly(
+      monthlyFilter: monthlyFilter,
+    );
+    return executeBatch(monthlyOnly, preserveDailyFrom: first);
   }
 
   SalesMonthlyPnlScreenBatchLoadResult _mapExecution({
@@ -199,6 +216,7 @@ class LoadSalesMonthlyPnlScreenBatchUseCase {
     required DateTime monthlyEnd,
     required DateTime dailyStart,
     required DateTime dailyEnd,
+    SalesMonthlyPnlScreenBatchLoadResult? preserveDailyFrom,
   }) {
     final byIndex = <int, AgentSqlBatchExecutionItem>{
       for (final item in execution.items) item.index: item,
@@ -215,30 +233,15 @@ class LoadSalesMonthlyPnlScreenBatchUseCase {
           ).toEntity(),
           operation: _operation,
         );
-    final dailyMapped =
-        AgentSqlBatchItemRowsMapper.mapRowsForIndex<ResumoTotalDiarioVendasRow>(
-          byIndex,
-          indexes.dailyTotals,
-          (row) => ResumoTotalDiarioVendasRowModel.fromMap(row).toEntity(),
-          operation: _operation,
-        );
 
     agentQueriesWarnIfSqlRowsAtCap(
       operation: _operation,
       agentId: agentId,
       returnedRowCount: monthlyMapped.rows.length,
-      maxRows: AgentQueriesBoundedResultMaxRows
-          .resumoProdutoVendaLucratividadeMensal,
-    );
-    agentQueriesWarnIfSqlRowsAtCap(
-      operation: _operation,
-      agentId: agentId,
-      returnedRowCount: dailyMapped.rows.length,
-      maxRows: SalesMonthlyPnlBatchLoadConfig.batchMaxRows,
+      maxRows: SalesMonthlyPnlBatchLoadConfig.monthlyWarnMaxRows,
     );
 
     final monthlyFailure = monthlyMapped.failure;
-    final dailyFailure = dailyMapped.failure;
 
     final List<SalesMonthlyPnlPoint> monthlyPoints;
     if (monthlyFailure != null) {
@@ -259,6 +262,35 @@ class LoadSalesMonthlyPnlScreenBatchUseCase {
         end: monthlyEnd,
       );
     }
+
+    if (preserveDailyFrom != null || indexes.dailyTotals < 0) {
+      final daily = preserveDailyFrom;
+      return (
+        monthlyPoints: monthlyPoints,
+        monthlyLoadFailed: monthlyFailure != null,
+        monthlyLoadFailure: monthlyFailure,
+        dailyPoints: daily?.dailyPoints ?? const <DailySalesTrendPoint>[],
+        dailyLoadFailed: daily?.dailyLoadFailed ?? false,
+        dailyLoadFailure: daily?.dailyLoadFailure,
+      );
+    }
+
+    final dailyMapped =
+        AgentSqlBatchItemRowsMapper.mapRowsForIndex<ResumoTotalDiarioVendasRow>(
+          byIndex,
+          indexes.dailyTotals,
+          (row) => ResumoTotalDiarioVendasRowModel.fromMap(row).toEntity(),
+          operation: _operation,
+        );
+
+    agentQueriesWarnIfSqlRowsAtCap(
+      operation: _operation,
+      agentId: agentId,
+      returnedRowCount: dailyMapped.rows.length,
+      maxRows: SalesMonthlyPnlBatchLoadConfig.dailyWarnMaxRows,
+    );
+
+    final dailyFailure = dailyMapped.failure;
 
     final List<DailySalesTrendPoint> dailyPoints;
     if (dailyFailure != null) {

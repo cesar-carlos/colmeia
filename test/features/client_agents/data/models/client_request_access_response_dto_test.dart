@@ -17,11 +17,34 @@ void main() {
     },
   );
 
-  test('parse keeps empty semantic body unacknowledged', () {
+  test('parse keeps empty semantic body unacknowledged without fallback', () {
     final dto = ClientRequestAccessResponseDto.parse(
       const <String, dynamic>{},
     );
     check(dto.requested).isEmpty();
     check(dto.acknowledgesAgent('x')).isFalse();
+  });
+
+  test('parse accepts snake_case aliases', () {
+    final dto = ClientRequestAccessResponseDto.parse(
+      const <String, dynamic>{
+        'already_approved': <String>['a1'],
+        'new_requests': <String>['a2'],
+      },
+    );
+    check(dto.alreadyApproved).deepEquals(<String>['a1']);
+    check(dto.newRequests).deepEquals(<String>['a2']);
+    check(dto.acknowledgesAgent('a1')).isTrue();
+    check(dto.acknowledgesAgent('a2')).isTrue();
+  });
+
+  test('parse uses fallbackRequestedIds for empty 2xx body', () {
+    final dto = ClientRequestAccessResponseDto.parse(
+      const <String, dynamic>{},
+      fallbackRequestedIds: <String>{'a1', 'a2'},
+    );
+    check(dto.requested.toSet()).deepEquals(<String>{'a1', 'a2'});
+    check(dto.acknowledgesAgent('a1')).isTrue();
+    check(dto.shouldPollApprovalFor('a2')).isTrue();
   });
 }

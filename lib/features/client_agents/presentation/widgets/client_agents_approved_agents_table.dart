@@ -270,6 +270,7 @@ class ClientAgentsApprovedAgentsTableRow extends StatelessWidget {
     final catalogLabel = switch (agent.catalogStatus) {
       AgentCatalogStatus.inactive => l10n.agentCatalogInactive,
       AgentCatalogStatus.active => l10n.agentCatalogActive,
+      AgentCatalogStatus.unknown => l10n.agentCatalogUnknown,
     };
     final connectionLabel = switch (agent.connectionStatus) {
       AgentConnectionStatus.online => l10n.agentConnectionOnline,

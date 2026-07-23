@@ -35,7 +35,7 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
     void Function({required String reason, required Object trigger})?
     onTemporaryFallback,
     AuthSessionEvents? sessionEvents,
-    int transientFailureThreshold = 3,
+    int transientFailureThreshold = 5,
     Duration temporaryLatchCooldown = const Duration(seconds: 60),
     DateTime Function()? clock,
   }) : _socketDelegate = socketDelegate,

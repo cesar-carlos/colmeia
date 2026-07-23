@@ -7,6 +7,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_loaded_rows.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_periodo_row_merger.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_total_vendas_municipio_filial_periodo_repository.dart';
 import 'package:result_dart/result_dart.dart';
@@ -97,7 +98,7 @@ final class CachingResumoTotalVendasMunicipioFilialPeriodoRepositoryImpl
     if (rows != null) {
       return Success(
         AgentQueryLoadedRows<ResumoTotalVendasMunicipioFilialPeriodoRow>(
-          rows: rows,
+          rows: ResumoTotalVendasMunicipioFilialPeriodoRowMerger.merge(rows),
         ),
       );
     }

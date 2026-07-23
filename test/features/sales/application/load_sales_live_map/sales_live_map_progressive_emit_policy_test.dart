@@ -25,14 +25,13 @@ void main() {
   });
 
   group('useMergedSqlBatchPerTarget', () {
-    test('returns true only when all prerequisites are met', () {
+    test('returns true when env and batch loader are set (ignores catalog)', () {
       final batchLoader = _MockSalesLiveMapBatchLoader();
 
       expect(
         policy.useMergedSqlBatchPerTarget(
           envFlag: true,
           batchLoader: batchLoader,
-          catalogCacheMiss: true,
         ),
         isTrue,
       );
@@ -40,7 +39,6 @@ void main() {
         policy.useMergedSqlBatchPerTarget(
           envFlag: false,
           batchLoader: batchLoader,
-          catalogCacheMiss: true,
         ),
         isFalse,
       );
@@ -48,15 +46,6 @@ void main() {
         policy.useMergedSqlBatchPerTarget(
           envFlag: true,
           batchLoader: null,
-          catalogCacheMiss: true,
-        ),
-        isFalse,
-      );
-      expect(
-        policy.useMergedSqlBatchPerTarget(
-          envFlag: true,
-          batchLoader: batchLoader,
-          catalogCacheMiss: false,
         ),
         isFalse,
       );

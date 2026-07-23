@@ -60,6 +60,22 @@ void main() {
     check(batch.commands[1].namedParams['geraFinanceiro']).equals('S');
   });
 
+  test('buildMonthlyOnly emits a single monthly command', () {
+    final batch = SalesMonthlyPnlBatchCommandBuilder.buildMonthlyOnly(
+      monthlyFilter: ResumoProdutoVendaLucratividadeMensalFilter(
+        dataVendaInicio: DateTime(2025, 8),
+        dataVendaFim: DateTime(2026, 7, 31),
+      ),
+    );
+
+    check(batch.commands.length).equals(1);
+    check(batch.indexes.monthlyPnl).equals(0);
+    check(batch.indexes.dailyTotals).equals(-1);
+    check(batch.commands.single.sql).equals(
+      ResumoProdutoVendaLucratividadeMensalSql.query,
+    );
+  });
+
   test('executeSqlBatch once and maps both chart payloads', () async {
     when(
       () => repository.executeSqlBatch(
@@ -134,6 +150,99 @@ void main() {
     );
     check(july.venda).equals(100);
     check(july.lucro).equals(60);
+    check(result.dailyPoints.any((point) => point.salesAmount == 55)).isTrue();
+  });
+
+  test('empty monthly retry re-runs monthly slot only and keeps daily', () async {
+    var calls = 0;
+    when(
+      () => repository.executeSqlBatch(
+        any(),
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    ).thenAnswer((invocation) async {
+      calls++;
+      final request =
+          invocation.positionalArguments.first as AgentSqlExecuteBatchRequest;
+      if (calls == 1) {
+        check(request.commands.length).equals(2);
+        return const Success<AgentSqlBatchExecutionResult, AppFailure>(
+          AgentSqlBatchExecutionResult(
+            totalCommands: 2,
+            successfulCommands: 2,
+            failedCommands: 0,
+            items: <AgentSqlBatchExecutionItem>[
+              AgentSqlBatchExecutionItem(
+                index: 0,
+                ok: true,
+                rowCount: 0,
+                rows: <Map<String, dynamic>>[],
+              ),
+              AgentSqlBatchExecutionItem(
+                index: 1,
+                ok: true,
+                rowCount: 1,
+                rows: <Map<String, dynamic>>[
+                  <String, dynamic>{
+                    'CodEmpresa': 1,
+                    'CodFilial': 1,
+                    'DataVenda': '2026-07-15',
+                    'QtdVendas': 1,
+                    'ValorTotalDiarioVenda': 55.0,
+                  },
+                ],
+              ),
+            ],
+          ),
+        );
+      }
+
+      check(request.commands.length).equals(1);
+      check(
+        request.commands.single.sql,
+      ).equals(ResumoProdutoVendaLucratividadeMensalSql.query);
+      return const Success<AgentSqlBatchExecutionResult, AppFailure>(
+        AgentSqlBatchExecutionResult(
+          totalCommands: 1,
+          successfulCommands: 1,
+          failedCommands: 0,
+          items: <AgentSqlBatchExecutionItem>[
+            AgentSqlBatchExecutionItem(
+              index: 0,
+              ok: true,
+              rowCount: 1,
+              rows: <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'CodEmpresa': 1,
+                  'CodFilial': 1,
+                  'Ano': 2026,
+                  'Mes': 7,
+                  'AnoMes': '2026/07',
+                  'QtdVendas': 2,
+                  'QtdItensVendido': 2.0,
+                  'ValorTotalCustoMedio': 0.0,
+                  'CustoReposicao': 40.0,
+                  'PontoEquilibrio': 0.0,
+                  'ValorTotalItem': 100.0,
+                },
+              ],
+            ),
+          ],
+        ),
+      );
+    });
+
+    final result = await useCase(
+      userId: 'user-1',
+      agentId: 'agent-1',
+      anchor: const DashboardYearMonth(year: 2026, month: 7),
+      clientToken: 'token-1',
+    );
+
+    check(calls).equals(2);
+    check(result.monthlyLoadFailed).isFalse();
+    check(result.dailyLoadFailed).isFalse();
+    check(result.monthlyPoints.any((point) => point.anoMes == '2026/07')).isTrue();
     check(result.dailyPoints.any((point) => point.salesAmount == 55)).isTrue();
   });
 }

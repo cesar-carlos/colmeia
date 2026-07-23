@@ -99,6 +99,11 @@ final class InMemoryAgentQueryTargetResolutionCache
     _entries.removeWhere((_, entry) => entry.userId == userId);
   }
 
+  @override
+  void clearAll() {
+    _entries.clear();
+  }
+
   String _compositeKey({
     required String userId,
     required String selectionScopeKey,

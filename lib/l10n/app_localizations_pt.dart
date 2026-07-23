@@ -1607,10 +1607,21 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String clientAgentsAccessRequestsListTruncated(
+    String loadedCount,
+    String totalCount,
+  ) {
+    return 'Apenas $loadedCount de $totalCount solicitações foram carregadas. Alguns registros podem estar ausentes.';
+  }
+
+  @override
   String get agentCatalogInactive => 'inativo';
 
   @override
   String get agentCatalogActive => 'ativo';
+
+  @override
+  String get agentCatalogUnknown => 'desconhecido';
 
   @override
   String get agentConnectionOnline => 'online';
@@ -6612,10 +6623,21 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   }
 
   @override
+  String clientAgentsAccessRequestsListTruncated(
+    String loadedCount,
+    String totalCount,
+  ) {
+    return 'Apenas $loadedCount de $totalCount solicitações foram carregadas. Alguns registros podem estar ausentes.';
+  }
+
+  @override
   String get agentCatalogInactive => 'inativo';
 
   @override
   String get agentCatalogActive => 'ativo';
+
+  @override
+  String get agentCatalogUnknown => 'desconhecido';
 
   @override
   String get agentConnectionOnline => 'online';

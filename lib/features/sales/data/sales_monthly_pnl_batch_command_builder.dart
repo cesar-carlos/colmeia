@@ -43,6 +43,22 @@ abstract final class SalesMonthlyPnlBatchCommandBuilder {
     );
   }
 
+  /// Monthly slot only — used when retrying an empty monthly success without
+  /// re-running the daily totals query.
+  static SalesMonthlyPnlBatchCommands buildMonthlyOnly({
+    required ResumoProdutoVendaLucratividadeMensalFilter monthlyFilter,
+  }) {
+    final commands = <AgentSqlExecuteBatchCommand>[];
+    final monthlyPnl = _addMonthlyCommand(commands, monthlyFilter);
+    return SalesMonthlyPnlBatchCommands(
+      commands: commands,
+      indexes: SalesMonthlyPnlBatchCommandIndexes(
+        monthlyPnl: monthlyPnl,
+        dailyTotals: -1,
+      ),
+    );
+  }
+
   static int _addMonthlyCommand(
     List<AgentSqlExecuteBatchCommand> commands,
     ResumoProdutoVendaLucratividadeMensalFilter filter,
