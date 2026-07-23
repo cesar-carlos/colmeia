@@ -6,8 +6,7 @@ import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
-import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
-import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
+import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_screen_batch_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/data/sales_preferences.dart';
@@ -39,19 +38,15 @@ class _MockAgentClientTokenReader extends Mock
 class _MockLoadAvailableAgentsForSales extends Mock
     implements LoadAvailableAgentsForSales {}
 
-class _MockLoadSalesMonthlyPnlLinesUseCase extends Mock
-    implements LoadSalesMonthlyPnlLinesUseCase {}
-
-class _MockLoadSalesDailyTotalsUseCase extends Mock
-    implements LoadSalesDailyTotalsUseCase {}
+class _MockLoadSalesMonthlyPnlScreenBatchUseCase extends Mock
+    implements LoadSalesMonthlyPnlScreenBatchUseCase {}
 
 void main() {
   late _MockAuthController authController;
   late _MockSalesPreferences salesPreferences;
   late _MockAgentClientTokenReader tokenReader;
   late _MockLoadAvailableAgentsForSales loadAvailableAgentsForSales;
-  late _MockLoadSalesMonthlyPnlLinesUseCase loadMonthlyPnlLines;
-  late _MockLoadSalesDailyTotalsUseCase loadDailyTotals;
+  late _MockLoadSalesMonthlyPnlScreenBatchUseCase loadScreenBatch;
   late DashboardYearMonth currentAnchor;
 
   setUpAll(() {
@@ -70,8 +65,7 @@ void main() {
     salesPreferences = _MockSalesPreferences();
     tokenReader = _MockAgentClientTokenReader();
     loadAvailableAgentsForSales = _MockLoadAvailableAgentsForSales();
-    loadMonthlyPnlLines = _MockLoadSalesMonthlyPnlLinesUseCase();
-    loadDailyTotals = _MockLoadSalesDailyTotalsUseCase();
+    loadScreenBatch = _MockLoadSalesMonthlyPnlScreenBatchUseCase();
     currentAnchor = salesMonthlyPnlAnchorMonthChoices().first;
 
     when(() => authController.session).thenReturn(
@@ -142,34 +136,18 @@ void main() {
         ),
       ],
     );
-
-    when(
-      () => loadDailyTotals.call(
-        userId: any(named: 'userId'),
-        agentId: any(named: 'agentId'),
-        anchor: any(named: 'anchor'),
-        dailySaleDateRange: any(named: 'dailySaleDateRange'),
-        clientToken: any(named: 'clientToken'),
-        cancelScope: any(named: 'cancelScope'),
-      ),
-    ).thenAnswer(
-      (_) async => (
-        points: const <DailySalesTrendPoint>[],
-        loadFailed: false,
-        loadFailure: null,
-      ),
-    );
   });
 
   testWidgets('uses a time-series skeleton while the monthly chart loads', (
     tester,
   ) async {
-    final completer = Completer<SalesMonthlyPnlLinesLoadResult>();
+    final completer = Completer<SalesMonthlyPnlScreenBatchLoadResult>();
     when(
-      () => loadMonthlyPnlLines.call(
+      () => loadScreenBatch.call(
         userId: any(named: 'userId'),
         agentId: any(named: 'agentId'),
         anchor: any(named: 'anchor'),
+        dailySaleDateRange: any(named: 'dailySaleDateRange'),
         clientToken: any(named: 'clientToken'),
         cancelScope: any(named: 'cancelScope'),
       ),
@@ -181,8 +159,7 @@ void main() {
       salesPreferences: salesPreferences,
       tokenReader: tokenReader,
       loadAvailableAgentsForSales: loadAvailableAgentsForSales,
-      loadMonthlyPnlLines: loadMonthlyPnlLines,
-      loadDailyTotals: loadDailyTotals,
+      loadScreenBatch: loadScreenBatch,
     );
     await tester.pump();
     await tester.pump();
@@ -200,14 +177,15 @@ void main() {
     tester,
   ) async {
     when(
-      () => loadMonthlyPnlLines.call(
+      () => loadScreenBatch.call(
         userId: any(named: 'userId'),
         agentId: any(named: 'agentId'),
         anchor: any(named: 'anchor'),
+        dailySaleDateRange: any(named: 'dailySaleDateRange'),
         clientToken: any(named: 'clientToken'),
         cancelScope: any(named: 'cancelScope'),
       ),
-    ).thenAnswer((_) async => _bundleWithBaseValue(120));
+    ).thenAnswer((_) async => _batchWithBaseValue(120));
 
     await _pumpPage(
       tester,
@@ -215,8 +193,7 @@ void main() {
       salesPreferences: salesPreferences,
       tokenReader: tokenReader,
       loadAvailableAgentsForSales: loadAvailableAgentsForSales,
-      loadMonthlyPnlLines: loadMonthlyPnlLines,
-      loadDailyTotals: loadDailyTotals,
+      loadScreenBatch: loadScreenBatch,
     );
     await tester.pumpAndSettle();
 
@@ -235,22 +212,23 @@ void main() {
     final anchors = salesMonthlyPnlAnchorMonthChoices();
     final secondAnchor = anchors[1];
     final thirdAnchor = anchors[2];
-    final secondCompleter = Completer<SalesMonthlyPnlLinesLoadResult>();
-    final thirdCompleter = Completer<SalesMonthlyPnlLinesLoadResult>();
+    final secondCompleter = Completer<SalesMonthlyPnlScreenBatchLoadResult>();
+    final thirdCompleter = Completer<SalesMonthlyPnlScreenBatchLoadResult>();
 
     when(
-      () => loadMonthlyPnlLines.call(
+      () => loadScreenBatch.call(
         userId: any(named: 'userId'),
         agentId: any(named: 'agentId'),
         anchor: any(named: 'anchor'),
+        dailySaleDateRange: any(named: 'dailySaleDateRange'),
         clientToken: any(named: 'clientToken'),
         cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer((invocation) {
       final anchor = invocation.namedArguments[#anchor] as DashboardYearMonth;
       if (anchor == currentAnchor) {
-        return Future<SalesMonthlyPnlLinesLoadResult>.value(
-          _bundleWithBaseValue(100),
+        return Future<SalesMonthlyPnlScreenBatchLoadResult>.value(
+          _batchWithBaseValue(100),
         );
       }
       if (anchor == secondAnchor) {
@@ -268,8 +246,7 @@ void main() {
       salesPreferences: salesPreferences,
       tokenReader: tokenReader,
       loadAvailableAgentsForSales: loadAvailableAgentsForSales,
-      loadMonthlyPnlLines: loadMonthlyPnlLines,
-      loadDailyTotals: loadDailyTotals,
+      loadScreenBatch: loadScreenBatch,
     );
     await tester.pumpAndSettle();
 
@@ -300,30 +277,32 @@ void main() {
     });
     await tester.pump();
 
-    thirdCompleter.complete(_bundleWithBaseValue(900));
+    thirdCompleter.complete(_batchWithBaseValue(900));
     await tester.pumpAndSettle();
 
     _expectSalesSeriesBaseValue(tester, 900);
     verify(
-      () => loadMonthlyPnlLines.call(
+      () => loadScreenBatch.call(
         userId: any(named: 'userId'),
         agentId: any(named: 'agentId'),
         anchor: secondAnchor,
+        dailySaleDateRange: any(named: 'dailySaleDateRange'),
         clientToken: any(named: 'clientToken'),
         cancelScope: any(named: 'cancelScope'),
       ),
     ).called(1);
     verify(
-      () => loadMonthlyPnlLines.call(
+      () => loadScreenBatch.call(
         userId: any(named: 'userId'),
         agentId: any(named: 'agentId'),
         anchor: thirdAnchor,
+        dailySaleDateRange: any(named: 'dailySaleDateRange'),
         clientToken: any(named: 'clientToken'),
         cancelScope: any(named: 'cancelScope'),
       ),
     ).called(1);
 
-    secondCompleter.complete(_bundleWithBaseValue(250));
+    secondCompleter.complete(_batchWithBaseValue(250));
     await tester.pumpAndSettle();
 
     _expectSalesSeriesBaseValue(tester, 900);
@@ -336,8 +315,7 @@ Future<void> _pumpPage(
   required SalesPreferences salesPreferences,
   required AgentClientTokenReader tokenReader,
   required LoadAvailableAgentsForSales loadAvailableAgentsForSales,
-  required LoadSalesMonthlyPnlLinesUseCase loadMonthlyPnlLines,
-  required LoadSalesDailyTotalsUseCase loadDailyTotals,
+  required LoadSalesMonthlyPnlScreenBatchUseCase loadScreenBatch,
 }) async {
   await tester.pumpWidget(
     Provider<AuthController>.value(
@@ -351,8 +329,7 @@ Future<void> _pumpPage(
           body: SalesMonthlyPnlPage(
             sessionService: SalesSessionService(salesPreferences),
             loadSalesAvailableAgentsUseCase: loadAvailableAgentsForSales,
-            loadSalesMonthlyPnlLinesUseCase: loadMonthlyPnlLines,
-            loadSalesDailyTotalsUseCase: loadDailyTotals,
+            loadSalesMonthlyPnlScreenBatchUseCase: loadScreenBatch,
             resolveSalesAgentClientTokenUseCase:
                 ResolveSalesAgentClientTokenUseCase(tokenReader),
           ),
@@ -362,8 +339,8 @@ Future<void> _pumpPage(
   );
 }
 
-SalesMonthlyPnlLinesLoadResult _bundleWithBaseValue(double baseValue) => (
-  points: List<SalesMonthlyPnlPoint>.generate(12, (index) {
+SalesMonthlyPnlScreenBatchLoadResult _batchWithBaseValue(double baseValue) => (
+  monthlyPoints: List<SalesMonthlyPnlPoint>.generate(12, (index) {
     final date = DateTime(2025, index + 1);
     return SalesMonthlyPnlPoint(
       year: date.year,
@@ -376,8 +353,11 @@ SalesMonthlyPnlLinesLoadResult _bundleWithBaseValue(double baseValue) => (
       custoMercadoria: (baseValue / 3) + index,
     );
   }),
-  loadFailed: false,
-  loadFailure: null,
+  monthlyLoadFailed: false,
+  monthlyLoadFailure: null,
+  dailyPoints: const <DailySalesTrendPoint>[],
+  dailyLoadFailed: false,
+  dailyLoadFailure: null,
 );
 
 void _expectSalesSeriesBaseValue(WidgetTester tester, double expectedValue) {

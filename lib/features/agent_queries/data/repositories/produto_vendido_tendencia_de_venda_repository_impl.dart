@@ -54,6 +54,8 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
       'loadProdutoVendidoTendenciaDeVendaSummary';
   static const String _screenOperation =
       'loadProdutoVendidoTendenciaDeVendaPageAndSummary';
+  static const String _topMoversOperation =
+      'loadProdutoVendidoTendenciaDeVendaTopMovers';
 
   static const String errorScreenUniverseMismatch =
       'pageFilter and summaryFilter must share the same search, grupo, marca, '
@@ -558,12 +560,14 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
       topGainers: _mapExecution(
         AgentSqlExecutionResult(rows: gainerMaps, rowCount: gainerMaps.length),
         agentId: agentId,
+        operation: _topMoversOperation,
         sqlMaxRowsCap: AgentQueriesBoundedResultMaxRows
             .produtoVendidoTendenciaDeVendaTopMovers,
       ),
       topLosers: _mapExecution(
         AgentSqlExecutionResult(rows: loserMaps, rowCount: loserMaps.length),
         agentId: agentId,
+        operation: _topMoversOperation,
         sqlMaxRowsCap: AgentQueriesBoundedResultMaxRows
             .produtoVendidoTendenciaDeVendaTopMovers,
       ),
@@ -592,6 +596,7 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
   List<ProdutoVendidoTendenciaDeVendaRow> _mapExecution(
     AgentSqlExecutionResult executionResult, {
     required String agentId,
+    required String operation,
     required int sqlMaxRowsCap,
   }) {
     if (executionResult.rows.isEmpty) {
@@ -602,7 +607,7 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
       AppLogger.warning(
         'Agent row count reached max_rows cap (possible truncation)',
         context: <String, Object?>{
-          'operation': _operation,
+          'operation': operation,
           'agentId': agentId,
           'rowCount': executionResult.rows.length,
           'sqlMaxRowsCap': sqlMaxRowsCap,

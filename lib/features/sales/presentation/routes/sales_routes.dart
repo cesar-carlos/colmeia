@@ -14,7 +14,7 @@ import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel
 import 'package:colmeia/features/sales/application/load_media_movel_rows_for_share_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
-import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
+import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_screen_batch_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
@@ -103,9 +103,8 @@ List<RouteBase> buildSalesRoutes() {
           return SalesMonthlyPnlPage(
             sessionService: sessionService,
             loadSalesAvailableAgentsUseCase: loadSalesAvailableAgentsUseCase,
-            loadSalesMonthlyPnlLinesUseCase:
-                getIt<LoadSalesMonthlyPnlLinesUseCase>(),
-            loadSalesDailyTotalsUseCase: getIt<LoadSalesDailyTotalsUseCase>(),
+            loadSalesMonthlyPnlScreenBatchUseCase:
+                getIt<LoadSalesMonthlyPnlScreenBatchUseCase>(),
             resolveSalesAgentClientTokenUseCase:
                 resolveSalesAgentClientTokenUseCase,
             relayCancelScopeBinder: _wireSalesAgentSqlRelayCancel,

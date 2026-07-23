@@ -184,4 +184,40 @@ void main() {
       check(result.points).isEmpty();
     },
   );
+
+  test(
+    'returns empty points without padding when dependency succeeds with no rows',
+    () async {
+      when(
+        () => dependency(
+          userId: 'user-3',
+          agentId: 'agent-3',
+          filter: any(named: 'filter'),
+          clientToken: any(named: 'clientToken'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          hubPresenceOnlineAgentIdsSnapshot: any(
+            named: 'hubPresenceOnlineAgentIdsSnapshot',
+          ),
+          hubConnectedFromApprovedCatalogRow: any(
+            named: 'hubConnectedFromApprovedCatalogRow',
+          ),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            const Success<
+              List<ResumoProdutoVendaLucratividadeMensalRow>,
+              AppFailure
+            >(<ResumoProdutoVendaLucratividadeMensalRow>[]),
+      );
+
+      final result = await useCase(
+        userId: 'user-3',
+        agentId: 'agent-3',
+        anchor: const DashboardYearMonth(year: 2026, month: 7),
+      );
+
+      check(result.loadFailed).isFalse();
+      check(result.points).isEmpty();
+    },
+  );
 }

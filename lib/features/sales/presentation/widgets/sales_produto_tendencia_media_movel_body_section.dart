@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_row.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_support_context.dart';
 import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_error_panel_factory.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_produto_tendencia_media_movel_controller.dart';
@@ -51,16 +52,14 @@ class SalesProdutoTendenciaMediaMovelBodySection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Selector<
       SalesProdutoTendenciaMediaMovelController,
-      _SalesProdutoTendenciaMediaMovelBodySlice
+      _SalesProdutoTendenciaMediaMovelShellSlice
     >(
       selector: (_, controller) =>
-          _SalesProdutoTendenciaMediaMovelBodySlice.from(controller.state),
+          _SalesProdutoTendenciaMediaMovelShellSlice.from(controller.state),
       builder: (context, slice, _) {
         final l10n = AppLocalizations.of(context);
         final tokens = context.appTokens;
         final state = slice.state;
-        final controller = context
-            .read<SalesProdutoTendenciaMediaMovelController>();
 
         if (state.selectedAgentId == null ||
             state.selectedAgentId!.trim().isEmpty) {
@@ -123,39 +122,58 @@ class SalesProdutoTendenciaMediaMovelBodySection extends StatelessWidget {
               ),
             ),
             SizedBox(height: tokens.sectionSpacing),
-            SalesProdutoTendenciaMediaMovelDetailsSection(
-              key: detailsSectionKey,
-              l10n: l10n,
-              loading: state.loading,
-              rows: state.pageResult.items,
-              totalCount: state.pageResult.totalCount,
-              pageSize: state.pageSize,
-              currentPage: state.page,
-              totalPages: slice.totalPages,
-              rangeStart: slice.rangeStart,
-              rangeEnd: slice.rangeEnd,
-              sortBy: state.sortBy,
-              hasActiveDetailFilters: slice.hasActiveDetailFilters,
-              onClearFilters: onClearDetailFilters,
-              onOpenFilters: onOpenFilters,
-              headerTrailing: AppChartHeaderTrailing(
-                shareProgressKey: detailsShareKey,
-                shareEnabled: !state.loading && state.pageResult.totalCount > 0,
-                onShare: state.loading || state.pageResult.totalCount <= 0
-                    ? null
-                    : onShareDetails,
-              ),
-              onPageSelected: (page) {
-                unawaited(controller.selectPage(page));
-              },
-              onNext: state.page < slice.totalPages
-                  ? () => unawaited(controller.selectPage(state.page + 1))
-                  : null,
-              onPrevious: state.page > 1
-                  ? () => unawaited(controller.selectPage(state.page - 1))
-                  : null,
-              onPageSizeChanged: (value) {
-                unawaited(controller.changePageSize(value));
+            Selector<
+              SalesProdutoTendenciaMediaMovelController,
+              _SalesProdutoTendenciaMediaMovelDetailsSlice
+            >(
+              selector: (_, controller) =>
+                  _SalesProdutoTendenciaMediaMovelDetailsSlice.from(
+                    controller.state,
+                  ),
+              builder: (context, details, _) {
+                final controller = context
+                    .read<SalesProdutoTendenciaMediaMovelController>();
+                return SalesProdutoTendenciaMediaMovelDetailsSection(
+                  key: detailsSectionKey,
+                  l10n: l10n,
+                  loading: details.tableLoading,
+                  paginationEnabled: !details.detailsLoading,
+                  rows: details.rows,
+                  totalCount: details.totalCount,
+                  pageSize: details.pageSize,
+                  currentPage: details.page,
+                  totalPages: details.totalPages,
+                  rangeStart: details.rangeStart,
+                  rangeEnd: details.rangeEnd,
+                  sortBy: details.sortBy,
+                  hasActiveDetailFilters: details.hasActiveDetailFilters,
+                  onClearFilters: onClearDetailFilters,
+                  onOpenFilters: onOpenFilters,
+                  headerTrailing: AppChartHeaderTrailing(
+                    shareProgressKey: detailsShareKey,
+                    shareEnabled:
+                        !details.tableLoading && details.totalCount > 0,
+                    onShare: details.tableLoading || details.totalCount <= 0
+                        ? null
+                        : onShareDetails,
+                  ),
+                  onPageSelected: (page) {
+                    unawaited(controller.selectPage(page));
+                  },
+                  onNext: details.page < details.totalPages
+                      ? () => unawaited(
+                          controller.selectPage(details.page + 1),
+                        )
+                      : null,
+                  onPrevious: details.page > 1
+                      ? () => unawaited(
+                          controller.selectPage(details.page - 1),
+                        )
+                      : null,
+                  onPageSizeChanged: (value) {
+                    unawaited(controller.changePageSize(value));
+                  },
+                );
               },
             ),
           ],
@@ -166,53 +184,27 @@ class SalesProdutoTendenciaMediaMovelBodySection extends StatelessWidget {
 }
 
 @immutable
-class _SalesProdutoTendenciaMediaMovelBodySlice {
-  const _SalesProdutoTendenciaMediaMovelBodySlice({
+class _SalesProdutoTendenciaMediaMovelShellSlice {
+  const _SalesProdutoTendenciaMediaMovelShellSlice({
     required this.state,
     required this.summary,
     required this.hasSummary,
     required this.hasActiveDetailFilters,
-    required this.totalPages,
-    required this.rangeStart,
-    required this.rangeEnd,
     required this.summaryFingerprint,
-    required this.detailsFingerprint,
   });
 
-  factory _SalesProdutoTendenciaMediaMovelBodySlice.from(
+  factory _SalesProdutoTendenciaMediaMovelShellSlice.from(
     SalesProdutoTendenciaMediaMovelPresentationState state,
   ) {
     final summary = buildSalesProdutoTendenciaMediaMovelSummary(
       state.summaryRows,
     );
-    final totalPages = state.pageResult.totalCount == 0
-        ? 0
-        : (state.pageResult.totalCount / state.pageSize).ceil();
-    final rangeStart = state.pageResult.totalCount == 0
-        ? 0
-        : ((state.page - 1) * state.pageSize) + 1;
-    final rangeEnd = state.pageResult.totalCount == 0
-        ? 0
-        : math.min(
-            state.page * state.pageSize,
-            state.pageResult.totalCount,
-          );
-    return _SalesProdutoTendenciaMediaMovelBodySlice(
+    return _SalesProdutoTendenciaMediaMovelShellSlice(
       state: state,
       summary: summary,
       hasSummary: state.summaryRows.isNotEmpty,
       hasActiveDetailFilters: _hasActiveDetailFilters(state),
-      totalPages: totalPages,
-      rangeStart: rangeStart,
-      rangeEnd: rangeEnd,
       summaryFingerprint: Object.hashAll(state.summaryRows),
-      detailsFingerprint: Object.hash(
-        state.page,
-        state.pageSize,
-        state.pageResult.totalCount,
-        Object.hashAll(state.pageResult.items),
-        state.sortBy,
-      ),
     );
   }
 
@@ -220,11 +212,7 @@ class _SalesProdutoTendenciaMediaMovelBodySlice {
   final SalesProdutoTendenciaMediaMovelSummary summary;
   final bool hasSummary;
   final bool hasActiveDetailFilters;
-  final int totalPages;
-  final int rangeStart;
-  final int rangeEnd;
   final int summaryFingerprint;
-  final int detailsFingerprint;
 
   bool isChartReady(SalesProdutoTendenciaMediaMovelChartId chartId) {
     if (state.summaryRows.isEmpty) {
@@ -238,37 +226,9 @@ class _SalesProdutoTendenciaMediaMovelBodySlice {
     };
   }
 
-  static bool _hasActiveDetailFilters(
-    SalesProdutoTendenciaMediaMovelPresentationState state,
-  ) {
-    var count = 0;
-    if (state.searchTerm.trim().isNotEmpty) {
-      count++;
-    }
-    if (state.classificacao != null) {
-      count++;
-    }
-    if (state.codGrupoProduto != null) {
-      count++;
-    }
-    if (state.codMarca != null) {
-      count++;
-    }
-    if (state.sortBy !=
-        ProdutoVendidoTendenciaDeVendaMediaMovelSortBy
-            .tendenciaPercentualDesc) {
-      count++;
-    }
-    if (state.pageSize !=
-        ProdutoVendidoTendenciaDeVendaMediaMovelFilter.defaultPageSize) {
-      count++;
-    }
-    return count > 0;
-  }
-
   @override
   bool operator ==(Object other) {
-    return other is _SalesProdutoTendenciaMediaMovelBodySlice &&
+    return other is _SalesProdutoTendenciaMediaMovelShellSlice &&
         other.state.selectedAgentId == state.selectedAgentId &&
         other.state.loading == state.loading &&
         other.state.authenticationFailed == state.authenticationFailed &&
@@ -276,11 +236,7 @@ class _SalesProdutoTendenciaMediaMovelBodySlice {
         other.hasSummary == hasSummary &&
         other.state.classificacao == state.classificacao &&
         other.hasActiveDetailFilters == hasActiveDetailFilters &&
-        other.totalPages == totalPages &&
-        other.rangeStart == rangeStart &&
-        other.rangeEnd == rangeEnd &&
-        other.summaryFingerprint == summaryFingerprint &&
-        other.detailsFingerprint == detailsFingerprint;
+        other.summaryFingerprint == summaryFingerprint;
   }
 
   @override
@@ -292,10 +248,115 @@ class _SalesProdutoTendenciaMediaMovelBodySlice {
     hasSummary,
     state.classificacao,
     hasActiveDetailFilters,
-    totalPages,
-    rangeStart,
-    rangeEnd,
     summaryFingerprint,
-    detailsFingerprint,
   );
+}
+
+@immutable
+class _SalesProdutoTendenciaMediaMovelDetailsSlice {
+  const _SalesProdutoTendenciaMediaMovelDetailsSlice({
+    required this.rows,
+    required this.totalCount,
+    required this.page,
+    required this.pageSize,
+    required this.totalPages,
+    required this.rangeStart,
+    required this.rangeEnd,
+    required this.sortBy,
+    required this.loading,
+    required this.detailsLoading,
+    required this.hasActiveDetailFilters,
+    required this.detailsFingerprint,
+  });
+
+  factory _SalesProdutoTendenciaMediaMovelDetailsSlice.from(
+    SalesProdutoTendenciaMediaMovelPresentationState state,
+  ) {
+    final totalPages = state.pageResult.totalCount == 0
+        ? 0
+        : (state.pageResult.totalCount / state.pageSize).ceil();
+    final rangeStart = state.pageResult.totalCount == 0
+        ? 0
+        : ((state.page - 1) * state.pageSize) + 1;
+    final rangeEnd = state.pageResult.totalCount == 0
+        ? 0
+        : math.min(
+            state.page * state.pageSize,
+            state.pageResult.totalCount,
+          );
+    return _SalesProdutoTendenciaMediaMovelDetailsSlice(
+      rows: state.pageResult.items,
+      totalCount: state.pageResult.totalCount,
+      page: state.page,
+      pageSize: state.pageSize,
+      totalPages: totalPages,
+      rangeStart: rangeStart,
+      rangeEnd: rangeEnd,
+      sortBy: state.sortBy,
+      loading: state.loading,
+      detailsLoading: state.detailsLoading,
+      hasActiveDetailFilters: _hasActiveDetailFilters(state),
+      detailsFingerprint: Object.hash(
+        state.page,
+        state.pageSize,
+        state.pageResult.totalCount,
+        Object.hashAll(state.pageResult.items),
+        state.sortBy,
+        state.detailsLoading,
+        state.loading,
+      ),
+    );
+  }
+
+  final List<ProdutoVendidoTendenciaDeVendaMediaMovelRow> rows;
+  final int totalCount;
+  final int page;
+  final int pageSize;
+  final int totalPages;
+  final int rangeStart;
+  final int rangeEnd;
+  final ProdutoVendidoTendenciaDeVendaMediaMovelSortBy sortBy;
+  final bool loading;
+  final bool detailsLoading;
+  final bool hasActiveDetailFilters;
+  final int detailsFingerprint;
+
+  bool get tableLoading => loading || detailsLoading;
+
+  @override
+  bool operator ==(Object other) {
+    return other is _SalesProdutoTendenciaMediaMovelDetailsSlice &&
+        other.detailsFingerprint == detailsFingerprint &&
+        other.hasActiveDetailFilters == hasActiveDetailFilters;
+  }
+
+  @override
+  int get hashCode => Object.hash(detailsFingerprint, hasActiveDetailFilters);
+}
+
+bool _hasActiveDetailFilters(
+  SalesProdutoTendenciaMediaMovelPresentationState state,
+) {
+  var count = 0;
+  if (state.searchTerm.trim().isNotEmpty) {
+    count++;
+  }
+  if (state.classificacao != null) {
+    count++;
+  }
+  if (state.codGrupoProduto != null) {
+    count++;
+  }
+  if (state.codMarca != null) {
+    count++;
+  }
+  if (state.sortBy !=
+      ProdutoVendidoTendenciaDeVendaMediaMovelSortBy.tendenciaPercentualDesc) {
+    count++;
+  }
+  if (state.pageSize !=
+      ProdutoVendidoTendenciaDeVendaMediaMovelFilter.defaultPageSize) {
+    count++;
+  }
+  return count > 0;
 }

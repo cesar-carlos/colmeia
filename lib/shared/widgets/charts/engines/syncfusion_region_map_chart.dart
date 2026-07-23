@@ -157,7 +157,11 @@ class _SyncfusionRegionMapChartState<T>
           widget.preset == AppChartPreset.explorable,
       showToolbar: widget.preset == AppChartPreset.explorable,
     );
-    if (!_isPreferredViewportSuppressed &&
+    // Remount after loading/geometry change owns viewport re-seed; applying
+    // against a behavior still holding Syncfusion's disposed controller crashes.
+    final remountPending = _surfaceLifecycle.pendingRemountReason != null;
+    if (!remountPending &&
+        !_isPreferredViewportSuppressed &&
         RegionMapViewportSyncPolicy.shouldApplyPreferredViewportOnWidgetUpdate(
           previousPreferred: oldWidget.preferredViewport,
           nextPreferred: widget.preferredViewport,
@@ -165,7 +169,8 @@ class _SyncfusionRegionMapChartState<T>
               _viewportCoordinator.state.userHasManualViewport,
         )) {
       _applyPreferredViewport();
-    } else if (!_isPreferredViewportSuppressed &&
+    } else if (!remountPending &&
+        !_isPreferredViewportSuppressed &&
         RegionMapViewportSyncPolicy.shouldSyncZoomPanBehaviorOnWidgetUpdate(
           hasPreferredViewport: widget.preferredViewport != null,
           userHasManualViewport:
@@ -246,6 +251,7 @@ class _SyncfusionRegionMapChartState<T>
     final mapBorderRadius = chrome.borderRadius;
 
     if (widget.isLoading) {
+      _viewportCoordinator.markMapSurfaceDetached();
       return buildSyncfusionRegionMapLoadingState(
         context: context,
         height: resolvedHeight,
@@ -260,6 +266,7 @@ class _SyncfusionRegionMapChartState<T>
     }
 
     if (widget.items.isEmpty && widget.emptyPlaceholder != null) {
+      _viewportCoordinator.markMapSurfaceDetached();
       return buildSyncfusionRegionMapEmptyPlaceholderState(
         context: context,
         height: resolvedHeight,
@@ -270,6 +277,7 @@ class _SyncfusionRegionMapChartState<T>
     }
 
     if (widget.items.isEmpty) {
+      _viewportCoordinator.markMapSurfaceDetached();
       return buildSyncfusionRegionMapDefaultEmptyState(
         context: context,
         height: resolvedHeight,
@@ -333,6 +341,7 @@ class _SyncfusionRegionMapChartState<T>
       pointCount: widget.points.length,
       itemCount: widget.items.length,
     );
+    _viewportCoordinator.markMapSurfaceAttached();
 
     final shapeSource = _shapeSourceCache.resolve(
       geometryFingerprint: geometryFingerprint,

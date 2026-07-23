@@ -22,6 +22,7 @@ class SalesProdutoTendenciaPresentationState {
     this.page = 1,
     this.pageSize = ProdutoVendidoTendenciaDeVendaFilter.defaultPageSize,
     this.loading = false,
+    this.detailsLoading = false,
     this.authenticationFailed = false,
     this.loadFailure,
     this.rows = const <ProdutoVendidoTendenciaDeVendaRow>[],
@@ -44,6 +45,7 @@ class SalesProdutoTendenciaPresentationState {
   final int page;
   final int pageSize;
   final bool loading;
+  final bool detailsLoading;
   final bool authenticationFailed;
   final AppFailure? loadFailure;
   final List<ProdutoVendidoTendenciaDeVendaRow> rows;
@@ -68,6 +70,7 @@ class SalesProdutoTendenciaPresentationState {
     int? page,
     int? pageSize,
     bool? loading,
+    bool? detailsLoading,
     bool? authenticationFailed,
     Object? loadFailure = _sentinel,
     List<ProdutoVendidoTendenciaDeVendaRow>? rows,
@@ -100,6 +103,7 @@ class SalesProdutoTendenciaPresentationState {
       page: page ?? this.page,
       pageSize: pageSize ?? this.pageSize,
       loading: loading ?? this.loading,
+      detailsLoading: detailsLoading ?? this.detailsLoading,
       authenticationFailed: authenticationFailed ?? this.authenticationFailed,
       loadFailure: identical(loadFailure, _sentinel)
           ? this.loadFailure
@@ -131,6 +135,7 @@ class SalesProdutoTendenciaPresentationState {
         other.page == page &&
         other.pageSize == pageSize &&
         other.loading == loading &&
+        other.detailsLoading == detailsLoading &&
         other.authenticationFailed == authenticationFailed &&
         other.loadFailure == loadFailure &&
         listEquals(other.rows, rows) &&
@@ -155,6 +160,7 @@ class SalesProdutoTendenciaPresentationState {
     page,
     pageSize,
     loading,
+    detailsLoading,
     authenticationFailed,
     loadFailure,
     Object.hash(

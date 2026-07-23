@@ -15,6 +15,7 @@ import 'package:colmeia/features/sales/application/load_sales_live_map/sales_liv
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_in_memory_catalog_cache.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
+import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_screen_batch_use_case.dart';
 import 'package:colmeia/features/sales/application/ports/sales_live_map_batch_loader.dart';
 import 'package:colmeia/features/sales/application/ports/sales_live_map_catalog_cache.dart';
 import 'package:colmeia/features/sales/application/ports/sales_preferences_port.dart';
@@ -66,6 +67,11 @@ void registerInjectorSales(GetIt getIt) {
     ..registerFactory<LoadSalesDailyTotalsUseCase>(
       () => LoadSalesDailyTotalsUseCase(
         getIt<LoadResumoTotalDiarioVendasUseCase>(),
+      ),
+    )
+    ..registerFactory<LoadSalesMonthlyPnlScreenBatchUseCase>(
+      () => LoadSalesMonthlyPnlScreenBatchUseCase(
+        getIt<AgentQueriesRepository>(),
       ),
     )
     ..registerFactory<LoadMediaMovelRowsForShareUseCase>(

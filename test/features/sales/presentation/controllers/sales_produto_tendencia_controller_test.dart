@@ -194,6 +194,8 @@ void main() {
     expect(capturedCancelScopes.single, isNotNull);
 
     expect(controller.state.page, 2);
+    expect(controller.state.loading, isFalse);
+    expect(controller.state.detailsLoading, isFalse);
     expect(controller.state.rows, pageResult.items);
     expect(controller.state.totalCount, pageResult.totalCount);
   });

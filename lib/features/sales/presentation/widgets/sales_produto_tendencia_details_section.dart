@@ -25,6 +25,7 @@ class SalesProdutoTendenciaDetailsSection extends StatelessWidget {
     required this.onPageSizeChanged,
     required this.classLabelBuilder,
     super.key,
+    this.paginationEnabled = true,
     this.activeClassificacao,
     this.periodoAtualLabel,
     this.periodoAnteriorLabel,
@@ -42,6 +43,7 @@ class SalesProdutoTendenciaDetailsSection extends StatelessWidget {
   final ValueChanged<int> onPageSelected;
   final ValueChanged<int> onPageSizeChanged;
   final String Function(String value) classLabelBuilder;
+  final bool paginationEnabled;
   final String? activeClassificacao;
   final String? periodoAtualLabel;
   final String? periodoAnteriorLabel;
@@ -162,6 +164,7 @@ class SalesProdutoTendenciaDetailsSection extends StatelessWidget {
               entityLabel: l10n.salesProdutoTendenciaDetailsEntityLabel,
               pageSizeOptions: const <int>[10, 20, 50, 100],
               itemsPerPageLabel: l10n.salesProdutoTendenciaFilterPageSize,
+              enabled: paginationEnabled && !loading,
               onPageSizeChanged: onPageSizeChanged,
               onPrevious: currentPage > 1
                   ? () => onPageSelected(currentPage - 1)

@@ -32,6 +32,7 @@ class SalesProdutoTendenciaMediaMovelDetailsSection extends StatelessWidget {
     required this.onPrevious,
     required this.onPageSizeChanged,
     this.loading = false,
+    this.paginationEnabled = true,
     this.headerTrailing,
     super.key,
     this.hasActiveDetailFilters = false,
@@ -41,6 +42,7 @@ class SalesProdutoTendenciaMediaMovelDetailsSection extends StatelessWidget {
 
   final AppLocalizations l10n;
   final bool loading;
+  final bool paginationEnabled;
   final List<ProdutoVendidoTendenciaDeVendaMediaMovelRow> rows;
   final int totalCount;
   final int pageSize;
@@ -182,6 +184,7 @@ class SalesProdutoTendenciaMediaMovelDetailsSection extends StatelessWidget {
                   totalItems: totalCount,
                   entityLabel:
                       l10n.salesProdutoTendenciaMediaMovelDetailsEntityLabel,
+                  enabled: paginationEnabled && !loading,
                   onPrevious: onPrevious,
                   onNext: onNext,
                   onPageSelected: onPageSelected,

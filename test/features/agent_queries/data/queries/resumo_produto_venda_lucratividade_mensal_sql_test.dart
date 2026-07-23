@@ -5,9 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const sql = ResumoProdutoVendaLucratividadeMensalSql.query;
 
-  test('query uses DetalheProdutoVenda CTE', () {
-    check(sql).contains('WITH DetalheProdutoVenda AS');
-    check(sql).contains('FROM DetalheProdutoVenda');
+  test('query uses nested DetalheProdutoVenda then month bucket layer', () {
+    check(sql.contains('WITH DetalheProdutoVenda AS')).isFalse();
+    check(sql).contains(') DetalheProdutoVenda');
+    check(sql).contains(') ResumoProdutoVendaLucratividadeMensal');
+    check(sql).contains('FROM (');
   });
 
   test('query groups by CodEmpresa, CodFilial, Ano, Mes', () {
@@ -32,15 +34,22 @@ void main() {
     check(sql.contains('CAST(pv.DataVenda AS DATE) BETWEEN')).isFalse();
   });
 
-  test('query selects AnoMes as formatted YYYY/MM', () {
+  test('query selects AnoMes via MAX like parcelas mensal', () {
     check(sql).contains('AnoMes');
+    check(sql).contains('MAX(');
     check(sql).contains("CAST(Ano AS VARCHAR(4)) + '/'");
     check(sql).contains('CASE WHEN Mes < 10');
   });
 
-  test('query counts distinct CodProdutoVendido (sale id)', () {
-    check(sql).contains('COUNT(DISTINCT CodProdutoVendido)');
-    check(sql.contains("CAST(pv.CodEmpresa AS VARCHAR) + '-'")).isFalse();
+  test('query derives Ano/Mes from DataVenda in middle layer', () {
+    check(sql).contains('YEAR(DataVenda) AS Ano');
+    check(sql).contains('MONTH(DataVenda) AS Mes');
+    check(sql.contains('YEAR(pv.DataVenda)')).isFalse();
+  });
+
+  test('query counts distinct sale Id like period lucratividade', () {
+    check(sql).contains('COUNT(DISTINCT Id)');
+    check(sql).contains("CAST(pv.CodEmpresa AS VARCHAR) + '-'");
   });
 
   test('query orders by CodEmpresa, CodFilial, Ano, Mes ascending', () {
@@ -56,7 +65,7 @@ void main() {
   });
 
   test('query applies GeraFinanceiro and PreVenda filters', () {
-    check(sql).contains("COALESCE(tos.GeraFinanceiro, 'N') = 'S'");
+    check(sql).contains("tos.GeraFinanceiro = 'S'");
     check(sql).contains("pv.PreVenda = 'N'");
   });
 

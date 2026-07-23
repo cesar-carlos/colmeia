@@ -255,6 +255,7 @@ class SalesProdutoTendenciaMediaMovelController
     _setState(
       _state.copyWith(
         loading: true,
+        detailsLoading: false,
         authenticationFailed: false,
         loadFailure: null,
       ),
@@ -267,6 +268,7 @@ class SalesProdutoTendenciaMediaMovelController
       _setState(
         _state.copyWith(
           loading: false,
+          detailsLoading: false,
           pageResult: const ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
             items: <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[],
             totalCount: 0,
@@ -292,6 +294,7 @@ class SalesProdutoTendenciaMediaMovelController
       _setState(
         _state.copyWith(
           loading: false,
+          detailsLoading: false,
           pageResult: const ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
             items: <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[],
             totalCount: 0,
@@ -324,6 +327,7 @@ class SalesProdutoTendenciaMediaMovelController
             pageResult: data.page,
             summaryRows: data.summaryRows,
             loading: false,
+            detailsLoading: false,
             authenticationFailed: false,
             loadFailure: null,
           ),
@@ -341,6 +345,7 @@ class SalesProdutoTendenciaMediaMovelController
             summaryRows:
                 const <ProdutoVendidoTendenciaDeVendaMediaMovelSummaryRow>[],
             loading: false,
+            detailsLoading: false,
             authenticationFailed: false,
             loadFailure: failure,
           ),
@@ -358,7 +363,7 @@ class SalesProdutoTendenciaMediaMovelController
 
     _setState(
       _state.copyWith(
-        loading: true,
+        detailsLoading: true,
         loadFailure: null,
       ),
     );
@@ -367,7 +372,7 @@ class SalesProdutoTendenciaMediaMovelController
       if (isSuperseded(generation)) {
         return const SalesTrendReloadOutcome.superseded();
       }
-      _setState(_state.copyWith(loading: false));
+      _setState(_state.copyWith(detailsLoading: false));
       return const SalesTrendReloadOutcome.cancelled();
     }
 
@@ -382,7 +387,7 @@ class SalesProdutoTendenciaMediaMovelController
     if (clientToken == null) {
       _setState(
         _state.copyWith(
-          loading: false,
+          detailsLoading: false,
           authenticationFailed: true,
         ),
       );
@@ -406,7 +411,7 @@ class SalesProdutoTendenciaMediaMovelController
         _setState(
           _state.copyWith(
             pageResult: page,
-            loading: false,
+            detailsLoading: false,
             loadFailure: null,
           ),
         );
@@ -419,7 +424,7 @@ class SalesProdutoTendenciaMediaMovelController
               items: const <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[],
               totalCount: _state.pageResult.totalCount,
             ),
-            loading: false,
+            detailsLoading: false,
             loadFailure: failure,
           ),
         );

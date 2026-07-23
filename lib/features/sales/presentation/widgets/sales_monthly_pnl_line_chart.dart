@@ -147,6 +147,15 @@ class _SalesMonthlyPnlLineChartState extends State<SalesMonthlyPnlLineChart> {
       styleDuration: const Duration(milliseconds: 350),
       defaultMs: AppChartEngineAnimationDefaults.cartesianSeriesMs,
     );
+    final showZerosOnly =
+        points.isNotEmpty &&
+        !loadFailed &&
+        points.every(
+          (point) =>
+              point.venda == 0 &&
+              point.lucro == 0 &&
+              point.custoMercadoria == 0,
+        );
 
     final chartBody = isLoading
         ? buildChartLoadingState(
@@ -166,6 +175,36 @@ class _SalesMonthlyPnlLineChartState extends State<SalesMonthlyPnlLineChart> {
               textStyle: theme.textTheme.bodyMedium,
               verticalPadding: tokens.contentSpacing,
               loadFailure: loadFailed ? loadFailure : null,
+            ),
+          )
+        : showZerosOnly
+        ? buildChartEmptyState(
+            context: context,
+            height: resolvedHeight,
+            message: l10n.salesMonthlyPnlBarZerosOnlyMessage,
+            placeholder: Padding(
+              padding: EdgeInsets.symmetric(horizontal: tokens.contentSpacing),
+              child: Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Icon(
+                      Icons.info_outline,
+                      size: 20,
+                      color: theme.colorScheme.outline,
+                    ),
+                    SizedBox(width: tokens.gapSm),
+                    Expanded(
+                      child: Text(
+                        l10n.salesMonthlyPnlBarZerosOnlyMessage,
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           )
         : LayoutBuilder(

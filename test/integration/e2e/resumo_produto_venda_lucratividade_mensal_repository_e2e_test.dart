@@ -37,9 +37,9 @@ void main() {
 
           final repository =
               getIt<ResumoProdutoVendaLucratividadeMensalRepository>();
-          final today = DateTime.now();
-          final periodEnd = DateTime(today.year, today.month, today.day);
-          final periodStart = DateTime(today.year - 1, today.month);
+          // Align with period lucratividade e2e: this agent has July 2026 sales.
+          final periodStart = DateTime(2026, 7);
+          final periodEnd = DateTime(2026, 7, 21);
 
           final result = await runE2eAppResult(
             () => repository.loadAll(
@@ -55,6 +55,14 @@ void main() {
 
           result.fold(
             (rows) {
+              // E2E diagnostic; stdout is intentional for local triage.
+              // ignore: avoid_print
+              print(
+                'E2E lucratividade mensal: rowCount=${rows.length} '
+                'period=$periodStart..$periodEnd '
+                'sample=${rows.take(3).map((r) => '${r.anoMes} filial=${r.codFilial} '
+                    'venda=${r.valorTotalItem}').toList()}',
+              );
               for (final row in rows) {
                 expect(row.codEmpresa, greaterThan(0));
                 expect(row.codFilial, greaterThanOrEqualTo(0));
@@ -71,6 +79,9 @@ void main() {
               }
             },
             (failure) {
+              // E2E diagnostic; stdout is intentional for local triage.
+              // ignore: avoid_print
+              print('E2E lucratividade mensal: FAILURE $failure');
               expect(
                 failure,
                 isNot(isA<SessionFailure>()),

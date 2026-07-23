@@ -97,6 +97,49 @@ void main() {
       expect(coordinator.zoomPanBehavior.focalLatLng?.longitude, -56);
     });
 
+    test(
+      'markMapSurfaceDetached recreates behavior so disposed Syncfusion '
+      'controllers are not reused',
+      () {
+        final previous = coordinator.zoomPanBehavior;
+        coordinator
+          ..markMapSurfaceAttached()
+          ..state = coordinator.state.copyWith(zoomLevel: 3.2)
+          ..markMapSurfaceDetached();
+
+        expect(coordinator.mapSurfaceAttached, isFalse);
+        expect(identical(coordinator.zoomPanBehavior, previous), isFalse);
+        expect(coordinator.zoomPanBehavior.zoomLevel, 3.2);
+      },
+    );
+
+    test(
+      'applyZoomPanBehaviorViewport seeds a fresh behavior while detached',
+      () {
+        final previous = coordinator.zoomPanBehavior;
+        coordinator
+          ..mapSurfaceAttached = false
+          ..state = coordinator.state.copyWith(
+            zoomLevel: 2.75,
+            centerLatitude: -22.0,
+            centerLongitude: -43.0,
+          );
+
+        final applied = coordinator.applyZoomPanBehaviorViewport(
+          reason: 'detached_seed',
+          mounted: true,
+          isLoading: false,
+          shouldLog: false,
+        );
+
+        expect(applied, isTrue);
+        expect(identical(coordinator.zoomPanBehavior, previous), isFalse);
+        expect(coordinator.zoomPanBehavior.zoomLevel, 2.75);
+        expect(coordinator.zoomPanBehavior.focalLatLng?.latitude, -22);
+        expect(coordinator.zoomPanBehavior.focalLatLng?.longitude, -43);
+      },
+    );
+
     test('applyPreferredViewport skips when user has manual viewport', () {
       coordinator
         ..state = coordinator.state.copyWith(userHasManualViewport: true)

@@ -54,7 +54,6 @@ void main() {
       final baseline = SalesLiveMapMapChromeFingerprint.from(
         SalesLiveMapPresentationState(
           result: _result(salesDataPending: true),
-          isLoading: true,
         ),
       );
       final updated = SalesLiveMapMapChromeFingerprint.from(

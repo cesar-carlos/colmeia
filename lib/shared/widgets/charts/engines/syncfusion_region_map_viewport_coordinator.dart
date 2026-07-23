@@ -47,6 +47,13 @@ class SyncfusionRegionMapViewportCoordinator {
   AppMapViewport? lastAppliedPreferredViewport;
   bool lockPreferredViewportReapply = false;
 
+  /// Whether [zoomPanBehavior] is currently owned by a mounted [SfMaps] layer.
+  ///
+  /// Syncfusion keeps a private controller on [MapZoomPanBehavior] after the
+  /// layer disposes. Mutating `zoomLevel` / `focalLatLng` / zoom bounds on that
+  /// stale instance calls `AnimationController.forward()` after dispose.
+  bool mapSurfaceAttached = false;
+
   void initFromZoomPanBehavior(MapZoomPanBehavior behavior) {
     zoomPanBehavior = behavior;
     state = SyncfusionRegionMapViewportState(
@@ -56,7 +63,16 @@ class SyncfusionRegionMapViewportCoordinator {
     );
   }
 
-  MapZoomPanBehavior buildZoomPanBehavior() {
+  MapZoomPanBehavior buildZoomPanBehavior({bool seedFromState = false}) {
+    final seededZoom = seedFromState
+        ? clampZoomLevel(state.zoomLevel)
+        : minZoomLevel;
+    final seededFocal =
+        seedFromState &&
+            state.centerLatitude != null &&
+            state.centerLongitude != null
+        ? MapLatLng(state.centerLatitude!, state.centerLongitude!)
+        : null;
     return MapZoomPanBehavior(
       enablePanning: isZoomPanEnabled,
       enablePinching: isZoomPanEnabled,
@@ -64,17 +80,37 @@ class SyncfusionRegionMapViewportCoordinator {
       minZoomLevel: minZoomLevel,
       maxZoomLevel: maxZoomLevel,
       showToolbar: showToolbar,
+      zoomLevel: seededZoom,
+      focalLatLng: seededFocal,
     );
   }
 
-  void recreateZoomPanBehavior() {
-    zoomPanBehavior = buildZoomPanBehavior();
+  void recreateZoomPanBehavior({bool seedFromState = false}) {
+    zoomPanBehavior = buildZoomPanBehavior(seedFromState: seedFromState);
+  }
+
+  /// Drops Syncfusion's disposed layer controller when [SfMaps] leaves the tree.
+  void markMapSurfaceDetached() {
+    mapSurfaceAttached = false;
+    recreateZoomPanBehavior(seedFromState: true);
+  }
+
+  void markMapSurfaceAttached() {
+    mapSurfaceAttached = true;
   }
 
   void updateZoomPanBehaviorFlags({
     required bool enableDoubleTapZooming,
     required bool showToolbar,
   }) {
+    this.enableDoubleTapZooming = enableDoubleTapZooming;
+    this.showToolbar = showToolbar;
+    state = clampedViewportState(state);
+    if (!mapSurfaceAttached) {
+      // Avoid mutating a behavior still holding a disposed Syncfusion controller.
+      recreateZoomPanBehavior(seedFromState: true);
+      return;
+    }
     zoomPanBehavior
       ..enablePanning = isZoomPanEnabled
       ..enablePinching = isZoomPanEnabled
@@ -82,7 +118,6 @@ class SyncfusionRegionMapViewportCoordinator {
       ..minZoomLevel = minZoomLevel
       ..maxZoomLevel = maxZoomLevel
       ..showToolbar = showToolbar;
-    state = clampedViewportState(state);
   }
 
   double clampZoomLevel(double zoomLevel) {
@@ -334,12 +369,18 @@ class SyncfusionRegionMapViewportCoordinator {
     }
 
     state = clampedViewportState(state);
-    zoomPanBehavior.zoomLevel = state.zoomLevel;
-    if (state.centerLatitude != null && state.centerLongitude != null) {
-      zoomPanBehavior.focalLatLng = MapLatLng(
-        state.centerLatitude!,
-        state.centerLongitude!,
-      );
+    if (!mapSurfaceAttached) {
+      // Seed a fresh behavior before SfMaps attaches; never animate a disposed
+      // Syncfusion controller left behind after loading/empty unmounts.
+      recreateZoomPanBehavior(seedFromState: true);
+    } else {
+      zoomPanBehavior.zoomLevel = state.zoomLevel;
+      if (state.centerLatitude != null && state.centerLongitude != null) {
+        zoomPanBehavior.focalLatLng = MapLatLng(
+          state.centerLatitude!,
+          state.centerLongitude!,
+        );
+      }
     }
     if (shouldLog) {
       _logViewportLifecycle(

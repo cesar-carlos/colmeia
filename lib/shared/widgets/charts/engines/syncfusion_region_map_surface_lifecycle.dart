@@ -50,7 +50,7 @@ class SyncfusionRegionMapSurfaceLifecycle {
       );
     }
 
-    viewport
+      viewport
       ..logRemount(
         reason: remountReason.name,
         stableKeyChanged: stableKeyChanged,
@@ -59,7 +59,7 @@ class SyncfusionRegionMapSurfaceLifecycle {
         pointCount: pointCount,
         itemCount: itemCount,
       )
-      ..recreateZoomPanBehavior()
+      ..recreateZoomPanBehavior(seedFromState: true)
       ..applyZoomPanBehaviorViewport(
         reason: 'map_surface_remount_${remountReason.name}',
         mounted: mounted,

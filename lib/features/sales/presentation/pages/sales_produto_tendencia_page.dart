@@ -133,7 +133,8 @@ class _SalesProdutoTendenciaPageState extends State<SalesProdutoTendenciaPage>
       _controller.state.availableAgents;
 
   @override
-  bool get autoRefreshPageLoading => _controller.state.loading;
+  bool get autoRefreshPageLoading =>
+      _controller.state.loading || _controller.state.detailsLoading;
 
   @override
   Future<void> performAutoRefreshReload() async {

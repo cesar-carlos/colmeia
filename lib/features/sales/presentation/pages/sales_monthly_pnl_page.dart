@@ -11,8 +11,7 @@ import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel
 import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after_host.dart';
 import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
-import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
-import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_lines_use_case.dart';
+import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_screen_batch_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.dart';
@@ -44,8 +43,7 @@ class SalesMonthlyPnlPage extends StatefulWidget {
   const SalesMonthlyPnlPage({
     required this.sessionService,
     required this.loadSalesAvailableAgentsUseCase,
-    required this.loadSalesMonthlyPnlLinesUseCase,
-    required this.loadSalesDailyTotalsUseCase,
+    required this.loadSalesMonthlyPnlScreenBatchUseCase,
     required this.resolveSalesAgentClientTokenUseCase,
     this.relayCancelScopeBinder,
     super.key,
@@ -53,8 +51,8 @@ class SalesMonthlyPnlPage extends StatefulWidget {
 
   final SalesSessionService sessionService;
   final LoadAvailableAgentsForSales loadSalesAvailableAgentsUseCase;
-  final LoadSalesMonthlyPnlLinesUseCase loadSalesMonthlyPnlLinesUseCase;
-  final LoadSalesDailyTotalsUseCase loadSalesDailyTotalsUseCase;
+  final LoadSalesMonthlyPnlScreenBatchUseCase
+  loadSalesMonthlyPnlScreenBatchUseCase;
   final ResolveSalesAgentClientTokenUseCase resolveSalesAgentClientTokenUseCase;
   final AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder;
 
@@ -70,8 +68,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
         AgentQueryRetryAfterHost<SalesMonthlyPnlPage> {
   late final SalesSessionService _sessionService;
   late final LoadAvailableAgentsForSales _loadAgentsUseCase;
-  late final LoadSalesMonthlyPnlLinesUseCase _loadPnlLines;
-  late final LoadSalesDailyTotalsUseCase _loadDailyTotals;
+  late final LoadSalesMonthlyPnlScreenBatchUseCase _loadScreenBatch;
   late final ResolveSalesAgentClientTokenUseCase _resolveClientTokenUseCase;
 
   String? _selectedAgentId;
@@ -105,8 +102,7 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
     super.initState();
     _sessionService = widget.sessionService;
     _loadAgentsUseCase = widget.loadSalesAvailableAgentsUseCase;
-    _loadPnlLines = widget.loadSalesMonthlyPnlLinesUseCase;
-    _loadDailyTotals = widget.loadSalesDailyTotalsUseCase;
+    _loadScreenBatch = widget.loadSalesMonthlyPnlScreenBatchUseCase;
     _resolveClientTokenUseCase = widget.resolveSalesAgentClientTokenUseCase;
     _selectedAgentId = _sessionService.selectedAgentId;
     _anchorYearMonth =
@@ -253,52 +249,43 @@ class _SalesMonthlyPnlPageState extends State<SalesMonthlyPnlPage>
       return;
     }
 
-    final futures = await Future.wait(<Future<Object>>[
-      _loadPnlLines(
-        userId: userId,
-        agentId: trimmed,
-        anchor: anchor,
-        clientToken: clientToken,
-        cancelScope: sqlScope,
-      ),
-      _loadDailyTotals(
-        userId: userId,
-        agentId: trimmed,
-        anchor: anchor,
-        dailySaleDateRange: _dailyTotalsDateRange,
-        clientToken: clientToken,
-        cancelScope: sqlScope,
-      ),
-    ]);
+    final bundle = await _loadScreenBatch(
+      userId: userId,
+      agentId: trimmed,
+      anchor: anchor,
+      dailySaleDateRange: _dailyTotalsDateRange,
+      clientToken: clientToken,
+      cancelScope: sqlScope,
+    );
 
     if (!mounted || generation != _chartLoadGeneration) {
       return;
     }
-    final bundle = futures[0] as SalesMonthlyPnlLinesLoadResult;
-    final dailyBundle = futures[1] as SalesDailyTotalsLoadResult;
     setState(() {
-      _points = bundle.points;
-      _chartLoadFailed = bundle.loadFailed;
-      _chartLoadFailure = bundle.loadFailure;
-      _chartLoadFailureMessage = bundle.loadFailure == null
+      _points = bundle.monthlyPoints;
+      _chartLoadFailed = bundle.monthlyLoadFailed;
+      _chartLoadFailure = bundle.monthlyLoadFailure;
+      _chartLoadFailureMessage = bundle.monthlyLoadFailure == null
           ? null
           : agentQueryFailureUserMessage(
-              bundle.loadFailure!,
+              bundle.monthlyLoadFailure!,
               AppLocalizations.of(context),
             );
-      _dailyPoints = dailyBundle.points;
-      _dailyChartLoadFailed = dailyBundle.loadFailed;
-      _dailyChartLoadFailure = dailyBundle.loadFailure;
-      _dailyChartLoadFailureMessage = dailyBundle.loadFailure == null
+      _dailyPoints = bundle.dailyPoints;
+      _dailyChartLoadFailed = bundle.dailyLoadFailed;
+      _dailyChartLoadFailure = bundle.dailyLoadFailure;
+      _dailyChartLoadFailureMessage = bundle.dailyLoadFailure == null
           ? null
           : agentQueryFailureUserMessage(
-              dailyBundle.loadFailure!,
+              bundle.dailyLoadFailure!,
               AppLocalizations.of(context),
             );
       _loading = false;
     });
-    onAgentQueryLoadFailure(bundle.loadFailure ?? dailyBundle.loadFailure);
-    if (bundle.loadFailed || dailyBundle.loadFailed) {
+    onAgentQueryLoadFailure(
+      bundle.monthlyLoadFailure ?? bundle.dailyLoadFailure,
+    );
+    if (bundle.monthlyLoadFailed || bundle.dailyLoadFailed) {
       markAutoRefreshFailure();
       return;
     }

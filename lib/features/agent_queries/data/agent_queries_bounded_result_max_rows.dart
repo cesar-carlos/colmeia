@@ -72,8 +72,11 @@ abstract final class AgentQueriesBoundedResultMaxRows {
   static const int fornecedorOptionsPage = 501;
 
   /// Monthly product profitability buckets: `(months in range) × filiais`.
-  /// At most ~13 months × many branches; 2 000 is a conservative safety cap.
-  static const int resumoProdutoVendaLucratividadeMensal = 2000;
+  /// Keep this in the low hundreds — on the E2E SQL Anywhere agent, `max_rows`
+  /// around 1600+ for heavy report shapes returned empty success payloads
+  /// (same class of issue as billing ranking). ~13 months × ~30 branches fits
+  /// comfortably under 400.
+  static const int resumoProdutoVendaLucratividadeMensal = 400;
 
   /// Period product profitability: one row per `CodEmpresa/CodFilial`.
   /// Bounded by the number of active branches; 200 is a generous safety cap.

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_row.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_support_context.dart';
 import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_error_panel_factory.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_produto_tendencia_controller.dart';
@@ -50,15 +51,14 @@ class SalesProdutoTendenciaBodySection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Selector<
       SalesProdutoTendenciaController,
-      _SalesProdutoTendenciaBodySlice
+      _SalesProdutoTendenciaShellSlice
     >(
       selector: (_, controller) =>
-          _SalesProdutoTendenciaBodySlice.from(controller.state),
+          _SalesProdutoTendenciaShellSlice.from(controller.state),
       builder: (context, slice, _) {
         final l10n = AppLocalizations.of(context);
         final tokens = context.appTokens;
         final state = slice.state;
-        final controller = context.read<SalesProdutoTendenciaController>();
 
         if (state.selectedAgentId == null) {
           return AppInlineErrorPanel(
@@ -125,29 +125,42 @@ class SalesProdutoTendenciaBodySection extends StatelessWidget {
               onChartSelected: (chartId) => onChartSelected(state, chartId),
             ),
             SizedBox(height: tokens.sectionSpacing),
-            SalesProdutoTendenciaDetailsSection(
-              key: detailsSectionKey,
-              l10n: l10n,
-              rows: state.rows,
-              totalCount: state.totalCount,
-              loading: state.loading,
-              currentPage: state.page,
-              pageSize: state.pageSize,
-              onPageSelected: (page) => unawaited(controller.selectPage(page)),
-              onPageSizeChanged: (size) =>
-                  unawaited(controller.changePageSize(size)),
-              classLabelBuilder: (value) =>
-                  salesProdutoTendenciaClassificacaoLabel(l10n, value),
-              activeClassificacao: state.classificacao,
-              periodoAtualLabel:
-                  '${AppBrFormatters.shortDate(state.periodoAtual.start)} - '
-                  '${AppBrFormatters.shortDate(state.periodoAtual.end)}',
-              periodoAnteriorLabel:
-                  '${AppBrFormatters.shortDate(state.periodoAnterior.start)} - '
-                  '${AppBrFormatters.shortDate(state.periodoAnterior.end)}',
-              hasActiveDetailFilters: slice.hasActiveDetailFilters,
-              onClearFilters: onClearDetailFilters,
-              onOpenFilters: onOpenFilters,
+            Selector<
+              SalesProdutoTendenciaController,
+              _SalesProdutoTendenciaDetailsSlice
+            >(
+              selector: (_, controller) =>
+                  _SalesProdutoTendenciaDetailsSlice.from(controller.state),
+              builder: (context, details, _) {
+                final controller = context
+                    .read<SalesProdutoTendenciaController>();
+                return SalesProdutoTendenciaDetailsSection(
+                  key: detailsSectionKey,
+                  l10n: l10n,
+                  rows: details.rows,
+                  totalCount: details.totalCount,
+                  loading: details.tableLoading,
+                  paginationEnabled: !details.detailsLoading,
+                  currentPage: details.page,
+                  pageSize: details.pageSize,
+                  onPageSelected: (page) =>
+                      unawaited(controller.selectPage(page)),
+                  onPageSizeChanged: (size) =>
+                      unawaited(controller.changePageSize(size)),
+                  classLabelBuilder: (value) =>
+                      salesProdutoTendenciaClassificacaoLabel(l10n, value),
+                  activeClassificacao: details.classificacao,
+                  periodoAtualLabel:
+                      '${AppBrFormatters.shortDate(details.periodoAtual.start)} - '
+                      '${AppBrFormatters.shortDate(details.periodoAtual.end)}',
+                  periodoAnteriorLabel:
+                      '${AppBrFormatters.shortDate(details.periodoAnterior.start)} - '
+                      '${AppBrFormatters.shortDate(details.periodoAnterior.end)}',
+                  hasActiveDetailFilters: details.hasActiveDetailFilters,
+                  onClearFilters: onClearDetailFilters,
+                  onOpenFilters: onOpenFilters,
+                );
+              },
             ),
           ],
         );
@@ -157,31 +170,24 @@ class SalesProdutoTendenciaBodySection extends StatelessWidget {
 }
 
 @immutable
-class _SalesProdutoTendenciaBodySlice {
-  const _SalesProdutoTendenciaBodySlice({
+class _SalesProdutoTendenciaShellSlice {
+  const _SalesProdutoTendenciaShellSlice({
     required this.state,
     required this.hasActiveDetailFilters,
     required this.summaryFingerprint,
     required this.topMoversFingerprint,
-    required this.detailsFingerprint,
   });
 
-  factory _SalesProdutoTendenciaBodySlice.from(
+  factory _SalesProdutoTendenciaShellSlice.from(
     SalesProdutoTendenciaPresentationState state,
   ) {
-    return _SalesProdutoTendenciaBodySlice(
+    return _SalesProdutoTendenciaShellSlice(
       state: state,
       hasActiveDetailFilters: _hasActiveDetailFilters(state),
       summaryFingerprint: Object.hashAll(state.summaryRows),
       topMoversFingerprint: Object.hash(
         Object.hashAll(state.topGainers),
         Object.hashAll(state.topLosers),
-      ),
-      detailsFingerprint: Object.hash(
-        state.page,
-        state.pageSize,
-        state.totalCount,
-        Object.hashAll(state.rows),
       ),
     );
   }
@@ -190,7 +196,6 @@ class _SalesProdutoTendenciaBodySlice {
   final bool hasActiveDetailFilters;
   final int summaryFingerprint;
   final int topMoversFingerprint;
-  final int detailsFingerprint;
 
   bool isChartReady(SalesProdutoTendenciaChartId chartId) {
     return switch (chartId) {
@@ -201,18 +206,9 @@ class _SalesProdutoTendenciaBodySlice {
     };
   }
 
-  static bool _hasActiveDetailFilters(
-    SalesProdutoTendenciaPresentationState state,
-  ) {
-    return state.searchTerm.trim().isNotEmpty ||
-        state.classificacao != null ||
-        state.codGrupoProduto != null ||
-        state.codMarca != null;
-  }
-
   @override
   bool operator ==(Object other) {
-    return other is _SalesProdutoTendenciaBodySlice &&
+    return other is _SalesProdutoTendenciaShellSlice &&
         other.state.selectedAgentId == state.selectedAgentId &&
         other.state.loading == state.loading &&
         other.state.authenticationFailed == state.authenticationFailed &&
@@ -222,8 +218,7 @@ class _SalesProdutoTendenciaBodySlice {
         other.state.classificacao == state.classificacao &&
         other.hasActiveDetailFilters == hasActiveDetailFilters &&
         other.summaryFingerprint == summaryFingerprint &&
-        other.topMoversFingerprint == topMoversFingerprint &&
-        other.detailsFingerprint == detailsFingerprint;
+        other.topMoversFingerprint == topMoversFingerprint;
   }
 
   @override
@@ -238,6 +233,87 @@ class _SalesProdutoTendenciaBodySlice {
     hasActiveDetailFilters,
     summaryFingerprint,
     topMoversFingerprint,
-    detailsFingerprint,
   );
+}
+
+@immutable
+class _SalesProdutoTendenciaDetailsSlice {
+  const _SalesProdutoTendenciaDetailsSlice({
+    required this.rows,
+    required this.totalCount,
+    required this.page,
+    required this.pageSize,
+    required this.loading,
+    required this.detailsLoading,
+    required this.classificacao,
+    required this.periodoAtual,
+    required this.periodoAnterior,
+    required this.hasActiveDetailFilters,
+    required this.detailsFingerprint,
+  });
+
+  factory _SalesProdutoTendenciaDetailsSlice.from(
+    SalesProdutoTendenciaPresentationState state,
+  ) {
+    return _SalesProdutoTendenciaDetailsSlice(
+      rows: state.rows,
+      totalCount: state.totalCount,
+      page: state.page,
+      pageSize: state.pageSize,
+      loading: state.loading,
+      detailsLoading: state.detailsLoading,
+      classificacao: state.classificacao,
+      periodoAtual: state.periodoAtual,
+      periodoAnterior: state.periodoAnterior,
+      hasActiveDetailFilters: _hasActiveDetailFilters(state),
+      detailsFingerprint: Object.hash(
+        state.page,
+        state.pageSize,
+        state.totalCount,
+        Object.hashAll(state.rows),
+        state.detailsLoading,
+        state.loading,
+      ),
+    );
+  }
+
+  final List<ProdutoVendidoTendenciaDeVendaRow> rows;
+  final int totalCount;
+  final int page;
+  final int pageSize;
+  final bool loading;
+  final bool detailsLoading;
+  final String? classificacao;
+  final DateTimeRange periodoAtual;
+  final DateTimeRange periodoAnterior;
+  final bool hasActiveDetailFilters;
+  final int detailsFingerprint;
+
+  bool get tableLoading => loading || detailsLoading;
+
+  @override
+  bool operator ==(Object other) {
+    return other is _SalesProdutoTendenciaDetailsSlice &&
+        other.detailsFingerprint == detailsFingerprint &&
+        other.classificacao == classificacao &&
+        other.periodoAtual == periodoAtual &&
+        other.periodoAnterior == periodoAnterior &&
+        other.hasActiveDetailFilters == hasActiveDetailFilters;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    detailsFingerprint,
+    classificacao,
+    periodoAtual,
+    periodoAnterior,
+    hasActiveDetailFilters,
+  );
+}
+
+bool _hasActiveDetailFilters(SalesProdutoTendenciaPresentationState state) {
+  return state.searchTerm.trim().isNotEmpty ||
+      state.classificacao != null ||
+      state.codGrupoProduto != null ||
+      state.codMarca != null;
 }

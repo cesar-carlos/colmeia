@@ -226,6 +226,7 @@ class SalesProdutoTendenciaController extends SalesTrendControllerBase {
     _setState(
       _state.copyWith(
         loading: true,
+        detailsLoading: false,
         authenticationFailed: false,
         loadFailure: null,
       ),
@@ -238,6 +239,7 @@ class SalesProdutoTendenciaController extends SalesTrendControllerBase {
       _setState(
         _state.copyWith(
           loading: false,
+          detailsLoading: false,
           rows: const <ProdutoVendidoTendenciaDeVendaRow>[],
           totalCount: 0,
           summaryRows: const <ProdutoVendidoTendenciaDeVendaSummaryRow>[],
@@ -262,6 +264,7 @@ class SalesProdutoTendenciaController extends SalesTrendControllerBase {
       _setState(
         _state.copyWith(
           loading: false,
+          detailsLoading: false,
           rows: const <ProdutoVendidoTendenciaDeVendaRow>[],
           totalCount: 0,
           summaryRows: const <ProdutoVendidoTendenciaDeVendaSummaryRow>[],
@@ -298,6 +301,7 @@ class SalesProdutoTendenciaController extends SalesTrendControllerBase {
             topGainers: data.topGainers,
             topLosers: data.topLosers,
             loading: false,
+            detailsLoading: false,
             authenticationFailed: false,
             loadFailure: null,
           ),
@@ -313,6 +317,7 @@ class SalesProdutoTendenciaController extends SalesTrendControllerBase {
             topGainers: const <ProdutoVendidoTendenciaDeVendaRow>[],
             topLosers: const <ProdutoVendidoTendenciaDeVendaRow>[],
             loading: false,
+            detailsLoading: false,
             authenticationFailed: false,
             loadFailure: failure,
           ),
@@ -330,7 +335,7 @@ class SalesProdutoTendenciaController extends SalesTrendControllerBase {
 
     _setState(
       _state.copyWith(
-        loading: true,
+        detailsLoading: true,
         loadFailure: null,
       ),
     );
@@ -339,7 +344,7 @@ class SalesProdutoTendenciaController extends SalesTrendControllerBase {
       if (isSuperseded(generation)) {
         return const SalesTrendReloadOutcome.superseded();
       }
-      _setState(_state.copyWith(loading: false));
+      _setState(_state.copyWith(detailsLoading: false));
       return const SalesTrendReloadOutcome.cancelled();
     }
 
@@ -354,7 +359,7 @@ class SalesProdutoTendenciaController extends SalesTrendControllerBase {
     if (clientToken == null) {
       _setState(
         _state.copyWith(
-          loading: false,
+          detailsLoading: false,
           authenticationFailed: true,
         ),
       );
@@ -379,7 +384,7 @@ class SalesProdutoTendenciaController extends SalesTrendControllerBase {
           _state.copyWith(
             rows: page.items,
             totalCount: page.totalCount,
-            loading: false,
+            detailsLoading: false,
             loadFailure: null,
           ),
         );
@@ -389,7 +394,7 @@ class SalesProdutoTendenciaController extends SalesTrendControllerBase {
         _setState(
           _state.copyWith(
             rows: const <ProdutoVendidoTendenciaDeVendaRow>[],
-            loading: false,
+            detailsLoading: false,
             loadFailure: failure,
           ),
         );

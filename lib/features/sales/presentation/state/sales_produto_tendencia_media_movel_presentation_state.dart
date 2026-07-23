@@ -24,6 +24,7 @@ class SalesProdutoTendenciaMediaMovelPresentationState {
     this.pageSize =
         ProdutoVendidoTendenciaDeVendaMediaMovelFilter.defaultPageSize,
     this.loading = false,
+    this.detailsLoading = false,
     this.authenticationFailed = false,
     this.loadFailure,
     this.pageResult = const ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
@@ -47,6 +48,7 @@ class SalesProdutoTendenciaMediaMovelPresentationState {
   final int page;
   final int pageSize;
   final bool loading;
+  final bool detailsLoading;
   final bool authenticationFailed;
   final AppFailure? loadFailure;
   final ProdutoVendidoTendenciaDeVendaMediaMovelPageResult pageResult;
@@ -68,6 +70,7 @@ class SalesProdutoTendenciaMediaMovelPresentationState {
     int? page,
     int? pageSize,
     bool? loading,
+    bool? detailsLoading,
     bool? authenticationFailed,
     Object? loadFailure = _sentinel,
     ProdutoVendidoTendenciaDeVendaMediaMovelPageResult? pageResult,
@@ -97,6 +100,7 @@ class SalesProdutoTendenciaMediaMovelPresentationState {
       page: page ?? this.page,
       pageSize: pageSize ?? this.pageSize,
       loading: loading ?? this.loading,
+      detailsLoading: detailsLoading ?? this.detailsLoading,
       authenticationFailed: authenticationFailed ?? this.authenticationFailed,
       loadFailure: identical(loadFailure, _sentinel)
           ? this.loadFailure
@@ -125,6 +129,7 @@ class SalesProdutoTendenciaMediaMovelPresentationState {
         other.page == page &&
         other.pageSize == pageSize &&
         other.loading == loading &&
+        other.detailsLoading == detailsLoading &&
         other.authenticationFailed == authenticationFailed &&
         other.loadFailure == loadFailure &&
         other.pageResult == pageResult &&
@@ -146,6 +151,7 @@ class SalesProdutoTendenciaMediaMovelPresentationState {
     page,
     pageSize,
     loading,
+    detailsLoading,
     authenticationFailed,
     loadFailure,
     pageResult,

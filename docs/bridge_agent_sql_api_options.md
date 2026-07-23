@@ -165,11 +165,15 @@ Allowed values:
   payloads. Guarded by `agent_sql_execute_request_use_relay_guard_test.dart`.
   Revisit after an agent/hub fix; unary also lacks guaranteed agent-side
   `sql.cancel`.
-- The monthly profitability query uses a CTE + `COUNT(DISTINCT CodProdutoVendido)`
-  (sale id) instead of nested string-built ids. It also sets
-  `skipTransportCache: true` and retries once on empty success so agent replay
-  empties do not stick on the sales chart. The short transport SQL cache skips
-  caching empty success payloads globally.
+- The monthly profitability query matches the period lucratividade nested-
+  subquery join shape, with `YEAR`/`MONTH` applied in a middle layer (same
+  pattern as parcelas mensal) and `AnoMes` via `MAX(...)`.
+  `AgentQueriesBoundedResultMaxRows.resumoProdutoVendaLucratividadeMensal` is
+  400 — on the E2E SQL Anywhere agent, values around 1600+ returned empty
+  success for heavy report shapes (same class of issue as billing ranking).
+  It also sets `skipTransportCache: true` and retries once on empty success so
+  agent replay empties do not stick on the sales chart. The short transport
+  SQL cache skips caching empty success payloads globally.
 - Product sales trend and moving-average trend
   (`ProdutoVendidoTendenciaDeVenda` / `…MediaMovel`) use the same
   `skipTransportCache` + empty-success retry on standalone page/summary loads;

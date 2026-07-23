@@ -55,6 +55,13 @@ void main() {
 
           result.fold(
             (rows) {
+              // E2E diagnostic; stdout is intentional for local triage.
+              // ignore: avoid_print
+              print(
+                'E2E parcelas mensal: rowCount=${rows.length} '
+                'period=$periodStart..$periodEnd '
+                'sample=${rows.take(3).map((r) => r.anoMes).toList()}',
+              );
               expect(
                 rows.length,
                 lessThanOrEqualTo(

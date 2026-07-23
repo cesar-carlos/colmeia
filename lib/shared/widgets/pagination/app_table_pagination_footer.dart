@@ -78,6 +78,7 @@ class AppTablePaginationFooter extends StatelessWidget {
     this.itemsPerPageLabel,
     this.showingLabelPrefix = 'Mostrando ',
     this.showingLabelMiddle = ' de ',
+    this.enabled = true,
     this.style = const AppTablePaginationFooterStyle(),
   });
 
@@ -100,6 +101,9 @@ class AppTablePaginationFooter extends StatelessWidget {
   final String? itemsPerPageLabel;
   final String showingLabelPrefix;
   final String showingLabelMiddle;
+
+  /// When false, page navigation and page-size controls are inert.
+  final bool enabled;
   final AppTablePaginationFooterStyle style;
 
   @override
@@ -133,7 +137,7 @@ class AppTablePaginationFooter extends StatelessWidget {
                   numberFormat: numberFormat,
                   pageSize: pageSize,
                   pageSizeOptions: pageSizeOptions,
-                  onPageSizeChanged: onPageSizeChanged,
+                  onPageSizeChanged: enabled ? onPageSizeChanged : null,
                   itemsPerPageLabel: resolvedItemsPerPageLabel,
                   showingLabelPrefix: showingLabelPrefix,
                   showingLabelMiddle: showingLabelMiddle,
@@ -151,9 +155,10 @@ class AppTablePaginationFooter extends StatelessWidget {
                     tokens: tokens,
                     currentPage: currentPage,
                     totalPages: totalPages,
-                    onPrevious: onPrevious,
-                    onNext: onNext,
+                    onPrevious: enabled ? onPrevious : null,
+                    onNext: enabled ? onNext : null,
                     onPageSelected: onPageSelected,
+                    enabled: enabled,
                   ),
                 ),
               ],
@@ -168,7 +173,7 @@ class AppTablePaginationFooter extends StatelessWidget {
                     numberFormat: numberFormat,
                     pageSize: pageSize,
                     pageSizeOptions: pageSizeOptions,
-                    onPageSizeChanged: onPageSizeChanged,
+                    onPageSizeChanged: enabled ? onPageSizeChanged : null,
                     itemsPerPageLabel: resolvedItemsPerPageLabel,
                     showingLabelPrefix: showingLabelPrefix,
                     showingLabelMiddle: showingLabelMiddle,
@@ -184,9 +189,10 @@ class AppTablePaginationFooter extends StatelessWidget {
                   tokens: tokens,
                   currentPage: currentPage,
                   totalPages: totalPages,
-                  onPrevious: onPrevious,
-                  onNext: onNext,
+                  onPrevious: enabled ? onPrevious : null,
+                  onNext: enabled ? onNext : null,
                   onPageSelected: onPageSelected,
+                  enabled: enabled,
                 ),
               ],
             ),
@@ -427,6 +433,7 @@ class _PaginationControls extends StatelessWidget {
     required this.onPrevious,
     required this.onNext,
     required this.onPageSelected,
+    this.enabled = true,
   });
 
   final AppTablePaginationFooterStyle style;
@@ -437,6 +444,7 @@ class _PaginationControls extends StatelessWidget {
   final VoidCallback? onPrevious;
   final VoidCallback? onNext;
   final ValueChanged<int> onPageSelected;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -447,8 +455,8 @@ class _PaginationControls extends StatelessWidget {
       totalPages: totalPages,
     );
 
-    final canPrev = currentPage > 1 && totalPages > 0;
-    final canNext = currentPage < totalPages && totalPages > 0;
+    final canPrev = enabled && currentPage > 1 && totalPages > 0;
+    final canNext = enabled && currentPage < totalPages && totalPages > 0;
 
     final pageChunks = <Widget>[];
     for (final slot in slots) {
@@ -472,7 +480,7 @@ class _PaginationControls extends StatelessWidget {
             minSize: style.pageNumberMinSize,
             cornerRadius: style.cornerRadius,
             scheme: scheme,
-            onTap: () => onPageSelected(slot),
+            onTap: enabled ? () => onPageSelected(slot) : null,
           ),
         );
       }
@@ -586,23 +594,27 @@ class _PageNumberCell extends StatelessWidget {
   final double minSize;
   final double cornerRadius;
   final ColorScheme scheme;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final label = '$page';
+    final enabled = onTap != null;
     final textStyle = Theme.of(context).appTypography.utilityOverline.copyWith(
       letterSpacing: 0.2,
-      color: selected ? scheme.onPrimaryContainer : scheme.onSurface,
+      color: selected
+          ? scheme.onPrimaryContainer
+          : scheme.onSurface.withValues(alpha: enabled ? 1 : 0.38),
       fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
     );
     final borderColor = selected
         ? scheme.primary.withValues(alpha: 0.22)
-        : scheme.outlineVariant.withValues(alpha: 0.56);
+        : scheme.outlineVariant.withValues(alpha: enabled ? 0.56 : 0.4);
 
     return Semantics(
       button: true,
       selected: selected,
+      enabled: enabled,
       label: AppLocalizations.of(context).reportPaginationPageNumber(page),
       child: Material(
         color: selected

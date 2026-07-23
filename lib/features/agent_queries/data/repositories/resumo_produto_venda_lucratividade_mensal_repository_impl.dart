@@ -19,11 +19,12 @@ import 'package:colmeia/features/agent_queries/domain/repositories/resumo_produt
 ///
 /// ## Transport
 ///
-/// Uses relay **unary** with `preferDbStreaming: false`. Nested-subquery +
-/// streaming variants returned empty success payloads on the E2E SQL Anywhere
-/// agent; the CTE rewrite returns Top-N monthly buckets on unary. Skips the
-/// short transport cache and retries once on empty success because the agent
-/// can still return an empty replay for the same `client_token`.
+/// Uses relay **unary** with `preferDbStreaming: false`. Matches the period
+/// lucratividade nested-subquery join shape with a middle `YEAR`/`MONTH`
+/// layer. Uses `max_rows` 400 — higher caps (~1600+) returned empty success on
+/// the E2E SQL Anywhere agent for heavy report shapes. Skips the short
+/// transport cache and retries once on empty success because the agent can
+/// still return an empty replay for the same `client_token`.
 class ResumoProdutoVendaLucratividadeMensalRepositoryImpl
     implements ResumoProdutoVendaLucratividadeMensalRepository {
   ResumoProdutoVendaLucratividadeMensalRepositoryImpl(

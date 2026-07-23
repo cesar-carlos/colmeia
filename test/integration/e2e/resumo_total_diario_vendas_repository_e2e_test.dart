@@ -33,10 +33,9 @@ void main() {
           }
 
           final repository = getIt<ResumoTotalDiarioVendasRepository>();
-          // Caching loads one SQL per missing closed day; keep the smoke
-          // window short (single-day coverage lives in the next test).
-          final periodStart = DateTime(2026, 7, 10);
-          final periodEnd = DateTime(2026, 7, 11);
+          // Align with period lucratividade e2e window that has known sales.
+          final periodStart = DateTime(2026, 7);
+          final periodEnd = DateTime(2026, 7, 21);
 
           final result = await runE2eAppResult(
             () => repository.load(
@@ -52,6 +51,14 @@ void main() {
 
           result.fold(
             (rows) {
+              // E2E diagnostic; stdout is intentional for local triage.
+              // ignore: avoid_print
+              print(
+                'E2E resumo diario: rowCount=${rows.length} '
+                'period=$periodStart..$periodEnd '
+                'sample=${rows.take(3).map((r) => '${r.dataVenda} '
+                    'filial=${r.codFilial} valor=${r.valorTotalDiarioVenda}').toList()}',
+              );
               for (final row in rows) {
                 expect(row.codEmpresa, greaterThan(0));
                 expect(row.codFilial, greaterThanOrEqualTo(0));

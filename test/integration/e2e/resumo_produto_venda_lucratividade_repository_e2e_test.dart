@@ -57,6 +57,14 @@ void main() {
 
           result.fold(
             (rows) {
+              // E2E diagnostic; stdout is intentional for local triage.
+              // ignore: avoid_print
+              print(
+                'E2E lucratividade periodo: rowCount=${rows.length} '
+                'period=$periodStart..$periodEnd '
+                'sample=${rows.take(3).map((r) => 'filial=${r.codFilial} '
+                    'venda=${r.valorTotalItem}').toList()}',
+              );
               for (final row in rows) {
                 expect(row.codEmpresa, greaterThan(0));
                 expect(row.codFilial, greaterThanOrEqualTo(0));

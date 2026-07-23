@@ -110,6 +110,12 @@ void main() {
           }
 
           final loadedRows = first.getOrThrow();
+          // E2E diagnostic; stdout is intentional for local triage.
+          // ignore: avoid_print
+          print(
+            'E2E municipio periodo: sourceRowCount=${loadedRows.sourceRowCount} '
+            'rows=${loadedRows.rows.length} period=$periodStart..$periodEnd',
+          );
           expect(loadedRows.sourceRowCount, greaterThanOrEqualTo(0));
           expect(
             loadedRows.rows.length,
