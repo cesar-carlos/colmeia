@@ -61,4 +61,43 @@ void main() {
       ),
     );
   });
+
+  testWidgets('ChartShareActions builds metadata lazily on share', (
+    tester,
+  ) async {
+    final captureKey = GlobalKey();
+    var builderCalls = 0;
+    AppChartShareRequest? captured;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) {
+            final actions = ChartShareActions(
+              context: context,
+              captureKey: captureKey,
+              metadataBuilder: () {
+                builderCalls++;
+                return const ChartShareMetadata(title: 'Lazy chart');
+              },
+              onRequestShare: (ctx, request) => captured = request,
+            );
+
+            expect(builderCalls, 0);
+            return TextButton(
+              onPressed: actions.shareCallback(),
+              child: const Text('Share'),
+            );
+          },
+        ),
+      ),
+    );
+
+    expect(builderCalls, 0);
+    await tester.tap(find.text('Share'));
+    await tester.pump();
+
+    expect(builderCalls, 1);
+    expect(captured?.title, 'Lazy chart');
+  });
 }

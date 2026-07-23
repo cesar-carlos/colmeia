@@ -444,6 +444,8 @@
   "chartSharePdfColumnSalesCount": "Vendas",
   "chartSharePdfColumnMonth": "Mês",
   "chartSharePdfColumnStore": "Loja",
+  "chartSharePdfColumnMunicipality": "Município",
+  "chartSharePdfColumnState": "Estado",
   "chartSharePdfColumnUser": "Usuário",
   "chartSharePdfColumnDate": "Data",
   "chartSharePdfColumnWeekday": "Dia da semana",

@@ -3,9 +3,12 @@ import 'package:colmeia/features/sales/application/load_sales_live_map/sales_liv
 import 'package:flutter/foundation.dart';
 
 /// Value snapshot of load-result fields that drive live-map presentation
-/// outside the map point payload (KPIs, subtitles, attention panel, load
-/// errors). Selector slices compare this fingerprint so progressive operational
-/// updates rebuild even when the map digest stays stable.
+/// outside the map point payload (KPIs, attention panel, load errors).
+/// Selector slices for operational chrome compare this fingerprint so
+/// progressive KPI/attention updates rebuild even when the map digest stays
+/// stable. Map subtitle/export chrome uses
+/// `SalesLiveMapMapChromeFingerprint` instead, so revenue-only ticks do not
+/// rebuild the Brazil map.
 @immutable
 class SalesLiveMapOperationalFingerprint {
   factory SalesLiveMapOperationalFingerprint.from(

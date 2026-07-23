@@ -1,7 +1,9 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart.dart';
+import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
+import 'package:colmeia/shared/widgets/charts/brazil_map_store_sales_display_helpers.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
@@ -23,20 +25,18 @@ ChartShareMetadata buildSalesLiveMapShareMetadata({
   ChartShareExportHeaderContext? exportHeaderContext,
   String? additionalFilterSummary,
 }) {
+  final orderedPoints = _orderedSharePoints(chartPoints);
   final tableLimit = applyChartShareTableRowLimit(
     tableData: ChartShareTableData(
       headers: <String>[
         l10n.chartSharePdfColumnStore,
+        l10n.chartSharePdfColumnMunicipality,
+        l10n.chartSharePdfColumnState,
         l10n.chartSharePdfColumnSalesCount,
         l10n.chartSharePdfColumnAmount,
       ],
       rows: <List<String>>[
-        for (final point in chartPoints)
-          <String>[
-            point.name,
-            point.salesCount.toString(),
-            AppBrFormatters.currency(point.salesAmount),
-          ],
+        for (final point in orderedPoints) _shareRowForPoint(point),
       ],
     ),
     truncationNoticeBuilder: (shownRows, totalRows) =>
@@ -71,6 +71,48 @@ ChartShareMetadata buildSalesLiveMapShareMetadata({
             filterBranchIds: resolvedFilterBranchIds,
           ),
   );
+}
+
+/// Same ranking order as the desktop sidebar cards: revenue desc, then name.
+List<AppBrazilStoreSalesPoint> _orderedSharePoints(
+  List<AppBrazilStoreSalesPoint> chartPoints,
+) {
+  if (chartPoints.length < 2) {
+    return chartPoints;
+  }
+  return List<AppBrazilStoreSalesPoint>.of(chartPoints, growable: false)
+    ..sort(_compareSharePoints);
+}
+
+int _compareSharePoints(
+  AppBrazilStoreSalesPoint left,
+  AppBrazilStoreSalesPoint right,
+) {
+  final amount = right.salesAmount.compareTo(left.salesAmount);
+  if (amount != 0) {
+    return amount;
+  }
+  final salesCount = right.salesCount.compareTo(left.salesCount);
+  if (salesCount != 0) {
+    return salesCount;
+  }
+  return brazilMapBranchOrdinalName(left).compareTo(
+    brazilMapBranchOrdinalName(right),
+  );
+}
+
+List<String> _shareRowForPoint(AppBrazilStoreSalesPoint point) {
+  final display = brazilMapBranchDisplayModel(point);
+  final storeName = display.primaryName.trim().isEmpty
+      ? (brazilMapTrimmedOrNull(point.name) ?? point.id)
+      : display.primaryName;
+  return <String>[
+    storeName,
+    brazilMapTrimmedOrNull(point.city) ?? '',
+    AppBrazilStoreSalesMapData.normalizeUf(point.uf),
+    point.salesCount.toString(),
+    AppBrFormatters.currency(point.salesAmount),
+  ];
 }
 
 Widget _liveMapPdfExport({

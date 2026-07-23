@@ -73,7 +73,7 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
   late final SalesLiveMapAutoRefreshObserver _autoRefreshObserver;
   final SalesLiveMapSessionCoordinator _coordinator =
       SalesLiveMapSessionCoordinator();
-  bool _lockPageScrollForInlineMap = false;
+  final ValueNotifier<bool> _lockPageScrollForInlineMap = ValueNotifier(false);
 
   @override
   void initState() {
@@ -117,6 +117,7 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
   @override
   void dispose() {
     _controller.removeListener(_handleControllerChanged);
+    _lockPageScrollForInlineMap.dispose();
     super.dispose();
   }
 
@@ -323,7 +324,7 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
       return;
     }
     if (isOpen) {
-      _lockPageScrollForInlineMap = false;
+      _lockPageScrollForInlineMap.value = false;
     } else if (wasOpen) {
       _coordinator.requestInlineChartLifecycleRecovery();
     }
@@ -350,28 +351,31 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
   Widget build(BuildContext context) {
     final tokens = context.appTokens;
 
-    final lockPageScroll =
-        _lockPageScrollForInlineMap && AppBreakpoints.isMobile(context);
-
     return NotificationListener<SalesLiveMapParentScrollLockNotification>(
       onNotification: (notification) {
-        if (_lockPageScrollForInlineMap == notification.lockParentScroll) {
+        if (_lockPageScrollForInlineMap.value == notification.lockParentScroll) {
           return true;
         }
-        setState(() {
-          _lockPageScrollForInlineMap = notification.lockParentScroll;
-        });
+        _lockPageScrollForInlineMap.value = notification.lockParentScroll;
         return true;
       },
-      child: SingleChildScrollView(
-        physics: lockPageScroll
-            ? const NeverScrollableScrollPhysics()
-            : const AlwaysScrollableScrollPhysics(),
-        padding: context.pageScrollPadding(
-          tokens,
-          horizontalAdjustment:
-              AppPageSpacingPresets.dashboardHorizontalAdjustment,
-        ),
+      child: ValueListenableBuilder<bool>(
+        valueListenable: _lockPageScrollForInlineMap,
+        builder: (context, lockInlineMap, child) {
+          final lockPageScroll =
+              lockInlineMap && AppBreakpoints.isMobile(context);
+          return SingleChildScrollView(
+            physics: lockPageScroll
+                ? const NeverScrollableScrollPhysics()
+                : const AlwaysScrollableScrollPhysics(),
+            padding: context.pageScrollPadding(
+              tokens,
+              horizontalAdjustment:
+                  AppPageSpacingPresets.dashboardHorizontalAdjustment,
+            ),
+            child: child,
+          );
+        },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[

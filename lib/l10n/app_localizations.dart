@@ -1756,6 +1756,18 @@ abstract class AppLocalizations {
   /// **'Store'**
   String get chartSharePdfColumnStore;
 
+  /// PDF table column header for municipality/city in chart share exports.
+  ///
+  /// In en, this message translates to:
+  /// **'Municipality'**
+  String get chartSharePdfColumnMunicipality;
+
+  /// PDF table column header for Brazilian state (UF) in chart share exports.
+  ///
+  /// In en, this message translates to:
+  /// **'State'**
+  String get chartSharePdfColumnState;
+
   /// PDF table column header for user name in chart share exports.
   ///
   /// In en, this message translates to:

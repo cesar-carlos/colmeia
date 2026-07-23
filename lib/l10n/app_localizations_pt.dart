@@ -1034,6 +1034,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get chartSharePdfColumnStore => 'Loja';
 
   @override
+  String get chartSharePdfColumnMunicipality => 'Município';
+
+  @override
+  String get chartSharePdfColumnState => 'Estado';
+
+  @override
   String get chartSharePdfColumnUser => 'Usuário';
 
   @override
@@ -6031,6 +6037,12 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get chartSharePdfColumnStore => 'Loja';
+
+  @override
+  String get chartSharePdfColumnMunicipality => 'Município';
+
+  @override
+  String get chartSharePdfColumnState => 'Estado';
 
   @override
   String get chartSharePdfColumnUser => 'Usuário';

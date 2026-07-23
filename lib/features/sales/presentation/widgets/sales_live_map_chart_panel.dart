@@ -137,7 +137,7 @@ class _SalesLiveMapChartPanelState extends State<SalesLiveMapChartPanel> {
         : ChartShareActions(
             context: context,
             captureKey: _shareKey,
-            metadata: buildSalesLiveMapShareMetadata(
+            metadataBuilder: () => buildSalesLiveMapShareMetadata(
               l10n: l10n,
               title: shareTitle,
               subtitle: widget.subtitle,

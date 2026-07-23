@@ -1,4 +1,5 @@
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
+import 'package:colmeia/features/sales/presentation/state/sales_live_map_map_chrome_fingerprint.dart';
 import 'package:colmeia/features/sales/presentation/state/sales_live_map_presentation_state.dart';
 import 'package:colmeia/features/sales/presentation/view_models/sales_live_map_view_model.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_chart_panel.dart';
@@ -71,28 +72,31 @@ class SalesLiveMapFullscreenChart extends StatelessWidget {
 
 @immutable
 class _SalesLiveMapFullscreenHeaderSlice {
-  const _SalesLiveMapFullscreenHeaderSlice({required this.state});
+  const _SalesLiveMapFullscreenHeaderSlice({
+    required this.state,
+    required this.chrome,
+  });
 
   factory _SalesLiveMapFullscreenHeaderSlice.fromState(
     SalesLiveMapPresentationState state,
   ) {
-    return _SalesLiveMapFullscreenHeaderSlice(state: state);
+    return _SalesLiveMapFullscreenHeaderSlice(
+      state: state,
+      chrome: SalesLiveMapMapChromeFingerprint.from(state),
+    );
   }
 
   final SalesLiveMapPresentationState state;
+  final SalesLiveMapMapChromeFingerprint chrome;
 
   @override
   bool operator ==(Object other) {
     return other is _SalesLiveMapFullscreenHeaderSlice &&
-        identical(other.state.result, state.result) &&
+        other.chrome == chrome &&
         other.state.filter == state.filter &&
         other.state.isLoading == state.isLoading;
   }
 
   @override
-  int get hashCode => Object.hash(
-    identityHashCode(state.result),
-    state.filter,
-    state.isLoading,
-  );
+  int get hashCode => Object.hash(chrome, state.filter, state.isLoading);
 }

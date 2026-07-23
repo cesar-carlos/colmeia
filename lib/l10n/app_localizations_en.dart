@@ -1012,6 +1012,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chartSharePdfColumnStore => 'Store';
 
   @override
+  String get chartSharePdfColumnMunicipality => 'Municipality';
+
+  @override
+  String get chartSharePdfColumnState => 'State';
+
+  @override
   String get chartSharePdfColumnUser => 'User';
 
   @override

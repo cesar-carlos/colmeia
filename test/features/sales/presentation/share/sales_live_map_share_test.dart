@@ -8,12 +8,15 @@ import 'package:flutter_test/flutter_test.dart';
 
 const _samplePoint = AppBrazilStoreSalesPoint(
   id: 'branch-1',
-  name: 'Lucas Centro',
-  uf: 'SP',
-  latitude: -23.55,
-  longitude: -46.63,
-  salesAmount: 15000,
-  salesCount: 42,
+  name: 'Casa do Mel Produtos Naturais',
+  branchName: 'ALCINEZIO ROSA DE MELO LTDA',
+  fantasyName: 'Casa do Mel Produtos Naturais',
+  city: 'Jataí',
+  uf: 'GO',
+  latitude: -17.88,
+  longitude: -51.72,
+  salesAmount: 578.62,
+  salesCount: 8,
 );
 
 void main() {
@@ -40,14 +43,112 @@ void main() {
         metadata.tableData?.headers,
         <String>[
           l10n.chartSharePdfColumnStore,
+          l10n.chartSharePdfColumnMunicipality,
+          l10n.chartSharePdfColumnState,
           l10n.chartSharePdfColumnSalesCount,
           l10n.chartSharePdfColumnAmount,
         ],
       );
-      expect(metadata.tableData?.rows.single.first, 'Lucas Centro');
-      expect(metadata.tableData?.rows.single[1], '42');
+      expect(
+        metadata.tableData?.rows.single,
+        <String>[
+          'ALCINEZIO ROSA DE MELO LTDA',
+          'Jataí',
+          'GO',
+          '8',
+          r'R$ 578,62',
+        ],
+      );
       expect(metadata.chartExportBuilder, isNull);
       expect(metadata.pdfOrientation, ChartSharePdfOrientation.landscape);
+    },
+  );
+
+  test(
+    'share store column prefers registration name like sidebar cards',
+    () {
+      final metadata = buildSalesLiveMapShareMetadata(
+        l10n: l10n,
+        title: 'Live sales map',
+        chartPoints: const <AppBrazilStoreSalesPoint>[
+          AppBrazilStoreSalesPoint(
+            id: 'branch-2',
+            name: 'Casa do Mel',
+            branchName: 'KARINE ENZWEILER LTDA',
+            fantasyName: 'Casa do Mel',
+            city: 'Sorriso',
+            uf: 'mt',
+            latitude: -12.54,
+            longitude: -55.71,
+            salesAmount: 100,
+            salesCount: 2,
+          ),
+        ],
+      );
+
+      expect(metadata.tableData?.rows.single[0], 'KARINE ENZWEILER LTDA');
+      expect(metadata.tableData?.rows.single[1], 'Sorriso');
+      expect(metadata.tableData?.rows.single[2], 'MT');
+    },
+  );
+
+  test('share table rows follow sidebar ranking by revenue then name', () {
+    final metadata = buildSalesLiveMapShareMetadata(
+      l10n: l10n,
+      title: 'Live sales map',
+      chartPoints: const <AppBrazilStoreSalesPoint>[
+        AppBrazilStoreSalesPoint(
+          id: 'low',
+          name: 'Low',
+          branchName: 'LOW BRANCH LTDA',
+          city: 'Cuiaba',
+          uf: 'MT',
+          latitude: -15.6,
+          longitude: -56.1,
+          salesAmount: 10,
+          salesCount: 1,
+        ),
+        AppBrazilStoreSalesPoint(
+          id: 'high',
+          name: 'High',
+          branchName: 'HIGH BRANCH LTDA',
+          city: 'Jatai',
+          uf: 'GO',
+          latitude: -17.8,
+          longitude: -51.7,
+          salesAmount: 500,
+          salesCount: 9,
+        ),
+      ],
+    );
+
+    expect(metadata.tableData?.rows.map((row) => row[0]).toList(), <String>[
+      'HIGH BRANCH LTDA',
+      'LOW BRANCH LTDA',
+    ]);
+  });
+
+  test(
+    'share store column falls back to point name when registration is empty',
+    () {
+      final metadata = buildSalesLiveMapShareMetadata(
+        l10n: l10n,
+        title: 'Live sales map',
+        chartPoints: const <AppBrazilStoreSalesPoint>[
+          AppBrazilStoreSalesPoint(
+            id: 'branch-fallback',
+            name: 'Fallback Store',
+            city: 'Goiania',
+            uf: 'GO',
+            latitude: -16.6,
+            longitude: -49.2,
+            salesAmount: 20,
+            salesCount: 1,
+          ),
+        ],
+      );
+
+      expect(metadata.tableData?.rows.single[0], 'Fallback Store');
     },
   );
 
