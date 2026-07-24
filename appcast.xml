@@ -5,6 +5,12 @@
     <description>Most recent Windows releases for Colmeia</description>
     <language>pt-BR</language>
     <item>
+      <title>Version 1.6.3</title>
+      <pubDate>Fri, 24 Jul 2026 18:50:04 GMT</pubDate>
+      <link>https://github.com/cesar-carlos/colmeia/releases/tag/v1.6.3</link>
+      <sparkle:releaseNotesLink>https://github.com/cesar-carlos/colmeia/releases/tag/v1.6.3</sparkle:releaseNotesLink>
+      <enclosure url="https://github.com/cesar-carlos/colmeia/releases/download/v1.6.3/Colmeia-Setup-1.6.3.exe" sparkle:version="1.6.3+26" sparkle:os="windows" length="18768482" type="application/octet-stream" />
+    </item><item>
       <title>Version 1.6.2</title>
       <pubDate>Tue, 07 Jul 2026 16:41:08 GMT</pubDate>
       <link>https://github.com/cesar-carlos/colmeia/releases/tag/v1.6.2</link>
@@ -28,12 +34,6 @@
       <link>https://github.com/cesar-carlos/colmeia/releases/tag/v1.5.1</link>
       <sparkle:releaseNotesLink>https://github.com/cesar-carlos/colmeia/releases/tag/v1.5.1</sparkle:releaseNotesLink>
       <enclosure url="https://github.com/cesar-carlos/colmeia/releases/download/v1.5.1/Colmeia-Setup-1.5.1.exe" sparkle:version="1.5.1+21" sparkle:os="windows" length="18715915" type="application/octet-stream" />
-    </item><item>
-      <title>Version 1.5.0</title>
-      <pubDate>Tue, 09 Jun 2026 23:50:41 GMT</pubDate>
-      <link>https://github.com/cesar-carlos/colmeia/releases/tag/v1.5.0</link>
-      <sparkle:releaseNotesLink>https://github.com/cesar-carlos/colmeia/releases/tag/v1.5.0</sparkle:releaseNotesLink>
-      <enclosure url="https://github.com/cesar-carlos/colmeia/releases/download/v1.5.0/Colmeia-Setup-1.5.0.exe" sparkle:version="1.5.0+20" sparkle:os="windows" length="18539489" type="application/octet-stream" />
     </item>
   </channel>
 </rss>
