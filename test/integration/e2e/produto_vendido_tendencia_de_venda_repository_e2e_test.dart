@@ -11,6 +11,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_classificacao.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_tendencia_de_venda_repository.dart';
+import 'package:colmeia/features/sales/presentation/utils/sales_trend_date_preset.dart';
 import 'package:flutter_test/flutter_test.dart' hide group;
 import 'package:test_api/scaffolding.dart' show group;
 
@@ -44,12 +45,7 @@ void main() {
               userId: 'user-1',
               agentId: AppEnvironment.e2eAgentId,
               clientToken: AppEnvironment.e2eClientToken,
-              filter: ProdutoVendidoTendenciaDeVendaFilter(
-                periodoAtualInicio: DateTime(2026, 7),
-                periodoAtualFim: DateTime(2026, 7, 21),
-                periodoAnteriorInicio: DateTime(2026, 6, 10),
-                periodoAnteriorFim: DateTime(2026, 6, 30),
-              ),
+              filter: e2eProdutoTendenciaVendaFilter(),
             ),
           );
 
@@ -75,12 +71,20 @@ void main() {
                     'Unexpected HTTP 401 after client login '
                     '— check E2E_* values.',
               );
+              if (shouldLogE2eAcceptedFailureDiagnostic(failure)) {
+                // ignore: avoid_print -- E2E failure diagnostics for local triage.
+                print(
+                  'produto_vendido_tendencia_de_venda_repository_e2e failure: '
+                  '${e2eAgentSqlFailureDiagnostic(failure)}',
+                );
+              }
               expect(
                 isAcceptableE2eAgentSqlRepositoryFailure(failure),
                 isTrue,
                 reason:
                     'Repository e2e should return rows, invalid_policy / '
-                    'missing_permission RPC, or transient bridge HTTP 5xx.',
+                    'missing_permission RPC, or transient bridge HTTP 5xx. '
+                    '${e2eAgentSqlFailureDiagnostic(failure)}',
               );
             },
           );
@@ -106,12 +110,7 @@ void main() {
             userId: 'user-1',
             agentId: AppEnvironment.e2eAgentId,
             clientToken: AppEnvironment.e2eClientToken,
-            filter: ProdutoVendidoTendenciaDeVendaFilter(
-              periodoAtualInicio: DateTime(2026, 7),
-              periodoAtualFim: DateTime(2026, 7, 21),
-              periodoAnteriorInicio: DateTime(2026, 6, 10),
-              periodoAnteriorFim: DateTime(2026, 6, 30),
-            ),
+            filter: e2eProdutoTendenciaVendaFilter(),
           ),
         );
 
@@ -153,12 +152,7 @@ void main() {
               userId: 'user-1',
               agentId: AppEnvironment.e2eAgentId,
               clientToken: AppEnvironment.e2eClientToken,
-              filter: ProdutoVendidoTendenciaDeVendaFilter(
-                periodoAtualInicio: DateTime(2026, 7),
-                periodoAtualFim: DateTime(2026, 7, 21),
-                periodoAnteriorInicio: DateTime(2026, 6, 10),
-                periodoAnteriorFim: DateTime(2026, 6, 30),
-              ),
+              filter: e2eProdutoTendenciaVendaFilter(),
             ),
             actionLabel: 'load_produto_vendido_tendencia_de_venda_use_case',
           );
@@ -206,12 +200,7 @@ void main() {
 
           final repository = getIt<ProdutoVendidoTendenciaDeVendaRepository>();
           const smallPageSize = 5;
-          final summaryFilter = ProdutoVendidoTendenciaDeVendaFilter(
-            periodoAtualInicio: DateTime(2026, 7),
-            periodoAtualFim: DateTime(2026, 7, 21),
-            periodoAnteriorInicio: DateTime(2026, 6, 10),
-            periodoAnteriorFim: DateTime(2026, 6, 30),
-          );
+          final summaryFilter = e2eProdutoTendenciaVendaFilter();
 
           final first = await runE2eAppResult(
             () => repository.loadPageAndSummary(
@@ -320,13 +309,7 @@ void main() {
           }
 
           final repository = getIt<ProdutoVendidoTendenciaDeVendaRepository>();
-          final filter = ProdutoVendidoTendenciaDeVendaFilter(
-            periodoAtualInicio: DateTime(2026, 7),
-            periodoAtualFim: DateTime(2026, 7, 21),
-            periodoAnteriorInicio: DateTime(2026, 6, 10),
-            periodoAnteriorFim: DateTime(2026, 6, 30),
-            pageSize: 10,
-          );
+          final filter = e2eProdutoTendenciaVendaFilter(pageSize: 10);
 
           final result = await runE2eAppResultWithHubRetry(
             () => repository.loadPageAndSummary(
@@ -417,6 +400,29 @@ void checkTrendRowsInvariants(List<ProdutoVendidoTendenciaDeVendaRow> rows) {
       reason: 'unexpected classificacao ${row.classificacao}',
     );
   }
+}
+
+/// Month-to-date atual + aligned anterior window (same preset as the app UI).
+///
+/// Uses [DateTime.now] so E2E targets the live month on fresh databases that
+/// only have current-month movement.
+ProdutoVendidoTendenciaDeVendaFilter e2eProdutoTendenciaVendaFilter({
+  DateTime? anchor,
+  int page = 1,
+  int pageSize = ProdutoVendidoTendenciaDeVendaFilter.defaultPageSize,
+}) {
+  final periodoAtual = salesTrendMonthToDateInclusiveRange(
+    anchor ?? DateTime.now(),
+  );
+  final periodoAnterior = salesTrendAutoPreviousRange(periodoAtual);
+  return ProdutoVendidoTendenciaDeVendaFilter(
+    periodoAtualInicio: periodoAtual.start,
+    periodoAtualFim: periodoAtual.end,
+    periodoAnteriorInicio: periodoAnterior.start,
+    periodoAnteriorFim: periodoAnterior.end,
+    page: page,
+    pageSize: pageSize,
+  );
 }
 
 void checkSummaryInvariants(
