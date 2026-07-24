@@ -39,11 +39,11 @@ jobs:
           python -m unittest discover -s installer/tests -p '*_test.py'
           python -m unittest discover -s tool/tests -p '*_test.py'
 
-      - name: Analyze
-        run: flutter analyze --fatal-warnings --no-fatal-infos
-
       - name: Format
         run: dart format --output=none --set-exit-if-changed lib test
+
+      - name: Analyze
+        run: flutter analyze --fatal-warnings --no-fatal-infos
 
   test:
     needs: analyze

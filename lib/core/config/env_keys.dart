@@ -2,6 +2,11 @@ import 'package:colmeia/core/config/agent_query_transport_policy_mode.dart';
 
 /// Compile-time (`--dart-define`) and dotenv key names used by
 /// `AppEnvironment`.
+///
+/// When adding a new key here, also add a template entry in both
+/// `assets/env/default.env` and `assets/env/.env.example` (active or
+/// commented). CI runs `python tool/validate_env.py`; locally use
+/// `python tool/ci_preflight.py`.
 abstract final class EnvKeys {
   static const String apiBaseUrl = 'API_BASE_URL';
   static const String useFakeBackend = 'USE_FAKE_BACKEND';

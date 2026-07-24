@@ -74,11 +74,16 @@ Com Flutter configurado, os comandos mais comuns sao:
 
 ```bash
 flutter pub get
+python tool/ci_preflight.py
 flutter analyze
 dart format lib test
 flutter test
 flutter run
 ```
+
+`python tool/ci_preflight.py` espelha os gates baratos do job `analyze` do
+Flutter CI (templates de env, format e sync de versao). Antes de push/release,
+prefira esse comando a descobrir a falha so no GitHub.
 
 Guias de release por plataforma: `docs/install/release_guide.md` (Windows/Android),
 `docs/install/android_guide.md`, `docs/install/ios_guide.md`.

@@ -11,12 +11,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
 
+_TOOL_DIR = Path(__file__).resolve().parent
 _INSTALLER_DIR = Path(__file__).resolve().parent.parent / "installer"
 if str(_INSTALLER_DIR) not in sys.path:
     sys.path.insert(0, str(_INSTALLER_DIR))
+if str(_TOOL_DIR) not in sys.path:
+    sys.path.insert(0, str(_TOOL_DIR))
 
 from pubspec_version import read_pubspec_versions
 
+import ci_preflight as ci_preflight_tool
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PUBSPEC_PATH = PROJECT_ROOT / "pubspec.yaml"
@@ -84,10 +88,16 @@ def main() -> None:
     update_pubspec_version(PUBSPEC_PATH, target_version.full)
     run([sys.executable, "installer/update_version.py"])
 
+    if not args.skip_preflight:
+        # Catch the CI analyze failures we hit on v1.6.3 (env templates + format)
+        # before tagging / pushing.
+        run([sys.executable, "tool/ci_preflight.py"])
+
     if not args.skip_tests:
+        flutter = ci_preflight_tool.resolve_flutter_command()
         run(
             [
-                "flutter",
+                flutter,
                 "test",
                 "test/app",
                 "test/core",
@@ -143,6 +153,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--branch", default="main")
     parser.add_argument("--allow-dirty", action="store_true")
     parser.add_argument("--skip-tests", action="store_true")
+    parser.add_argument(
+        "--skip-preflight",
+        action="store_true",
+        help="Skip env/format/version-sync gates (tool/ci_preflight.py).",
+    )
     parser.add_argument("--skip-installer", action="store_true")
     parser.add_argument("--skip-push", action="store_true")
     parser.add_argument("--dry-run", action="store_true")

@@ -173,6 +173,32 @@ python tool/release_windows.py
 Sem `--version`, o script calcula a proxima patch version com base na ultima
 tag `v*.*.*` e incrementa o build atual do `pubspec.yaml`.
 
+O release script roda `python tool/ci_preflight.py` antes dos testes (env
+templates, `dart format`, sync de versao). Use `--skip-preflight` so em
+emergencia.
+
+### Gates locais (evitar falhas do Flutter CI)
+
+Antes de push em `main` ou de criar a tag, rode:
+
+```powershell
+python tool/ci_preflight.py
+```
+
+Isso espelha os gates baratos do job `analyze`:
+
+1. `python tool/validate_env.py` — toda chave em `EnvKeys` precisa existir em
+   `assets/env/default.env` e `assets/env/.env.example`
+2. `dart format --set-exit-if-changed lib test` — se falhar:
+   `dart format lib test`
+3. sync `installer/setup.iss` + `app_version.g.dart` com `pubspec.yaml`
+
+Opcional (mais lento, igual ao CI):
+
+```powershell
+python tool/ci_preflight.py --analyze
+```
+
 ### 1. Atualizar a versao
 
 Edite `pubspec.yaml`:
@@ -195,7 +221,7 @@ Revise o diff esperado em:
 ### 3. Validar localmente
 
 ```powershell
-flutter analyze
+python tool/ci_preflight.py --analyze
 flutter test
 flutter build apk --debug
 python installer/build_installer.py
