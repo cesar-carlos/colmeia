@@ -79,9 +79,16 @@ def main() -> None:
     print(f"Target tag:      {target_version.tag}")
 
     if args.dry_run:
+        print_dry_run_checklist(args, target_version)
         return
 
-    if not args.allow_dirty:
+    if args.allow_dirty:
+        print(
+            "WARNING: --allow-dirty is discouraged. Prefer a clean worktree "
+            "so release commits only contain the version bump.",
+            file=sys.stderr,
+        )
+    else:
         ensure_clean_worktree()
 
     ensure_tag_does_not_exist(target_version.tag)
@@ -89,8 +96,7 @@ def main() -> None:
     run([sys.executable, "installer/update_version.py"])
 
     if not args.skip_preflight:
-        # Catch the CI analyze failures we hit on v1.6.3 (env templates + format)
-        # before tagging / pushing.
+        # Full env validation (including local.env secrets) before tagging.
         run([sys.executable, "tool/ci_preflight.py"])
 
     if not args.skip_tests:
@@ -137,6 +143,59 @@ def main() -> None:
     print(f"Release flow completed for {release_tag}.")
 
 
+def print_dry_run_checklist(
+    args: argparse.Namespace,
+    target_version: ReleaseVersion,
+) -> None:
+    dirty = run(["git", "status", "--short"], capture_output=True).strip()
+    tag_exists = bool(
+        run(["git", "tag", "--list", target_version.tag], capture_output=True).strip(),
+    )
+
+    print("")
+    print("Dry-run checklist (no changes will be made):")
+    print(f"  [ ] Bump pubspec + sync setup.iss / app_version.g.dart -> {target_version.full}")
+    print(
+        "  [ ] Run tool/ci_preflight.py"
+        if not args.skip_preflight
+        else "  [x] Skip preflight (--skip-preflight)",
+    )
+    print(
+        "  [ ] Run flutter test (non-e2e)"
+        if not args.skip_tests
+        else "  [x] Skip tests (--skip-tests)",
+    )
+    print(
+        "  [ ] Build Windows installer"
+        if not args.skip_installer
+        else "  [x] Skip installer (--skip-installer)",
+    )
+    print(f"  [ ] Commit chore: bump version to {target_version.short}")
+    if args.skip_push:
+        print("  [x] Skip push (--skip-push)")
+    else:
+        print(f"  [ ] Push {args.branch} to {args.remote}")
+        print(f"  [ ] Create and push tag {target_version.tag}")
+
+    print("")
+    print("Guards:")
+    if dirty:
+        status = "DIRTY (blocked unless --allow-dirty)"
+        if args.allow_dirty:
+            status = "DIRTY (--allow-dirty set; discouraged)"
+        print(f"  worktree: {status}")
+        for line in dirty.splitlines()[:12]:
+            print(f"    {line}")
+    else:
+        print("  worktree: clean")
+    print(
+        f"  tag {target_version.tag}: "
+        f"{'ALREADY EXISTS (will fail)' if tag_exists else 'available'}",
+    )
+    print("")
+    print("Re-run without --dry-run to execute.")
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Prepare, validate, build, commit, and tag a Windows release.",
@@ -151,7 +210,14 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--remote", default="origin")
     parser.add_argument("--branch", default="main")
-    parser.add_argument("--allow-dirty", action="store_true")
+    parser.add_argument(
+        "--allow-dirty",
+        action="store_true",
+        help=(
+            "Allow releasing with a dirty worktree. Discouraged; prefer "
+            "committing or stashing unrelated changes first."
+        ),
+    )
     parser.add_argument("--skip-tests", action="store_true")
     parser.add_argument(
         "--skip-preflight",
@@ -219,7 +285,7 @@ def ensure_clean_worktree() -> None:
     if output.strip():
         raise SystemExit(
             "Working tree is not clean. Commit or stash changes, or rerun with "
-            "--allow-dirty if that is intentional.",
+            "--allow-dirty if that is intentional (discouraged).",
         )
 
 

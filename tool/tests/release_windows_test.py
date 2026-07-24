@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -67,6 +68,18 @@ class ReleaseWindowsTest(unittest.TestCase):
             "version: 1.1.9+10",
             self.module.PUBSPEC_PATH.read_text(encoding="utf-8"),
         )
+
+    def test_print_dry_run_checklist_mentions_preflight_and_tag(self) -> None:
+        with mock.patch.object(
+            sys,
+            "argv",
+            ["release_windows.py", "--dry-run"],
+        ):
+            args = self.module.parse_args()
+        target = self.module.ReleaseVersion.parse("1.2.3+4")
+        with mock.patch.object(self.module, "run", side_effect=["", ""]):
+            self.module.print_dry_run_checklist(args, target)
+
 
 
 if __name__ == "__main__":

@@ -30,9 +30,20 @@ class CiPreflightTest(unittest.TestCase):
             args = self.module.parse_args()
 
         self.assertFalse(args.analyze)
+        self.assertFalse(args.templates_only)
         self.assertFalse(args.skip_env)
         self.assertFalse(args.skip_format)
         self.assertFalse(args.skip_version_sync)
+
+    def test_templates_only_flag(self) -> None:
+        with mock.patch.object(
+            sys,
+            "argv",
+            ["ci_preflight.py", "--templates-only"],
+        ):
+            args = self.module.parse_args()
+
+        self.assertTrue(args.templates_only)
 
     def test_resolve_sdk_command_prefers_which(self) -> None:
         with mock.patch.object(

@@ -11,6 +11,7 @@ Use before push/release:
 
     python tool/ci_preflight.py
     python tool/ci_preflight.py --analyze
+    python tool/ci_preflight.py --templates-only
 """
 
 from __future__ import annotations
@@ -32,7 +33,12 @@ def main() -> int:
     failures: list[str] = []
 
     if not args.skip_env:
-        failures.extend(_run_step("env templates", _validate_env))
+        failures.extend(
+            _run_step(
+                "env templates",
+                lambda: _validate_env(templates_only=args.templates_only),
+            ),
+        )
     if not args.skip_format:
         failures.extend(_run_step("dart format", _check_dart_format))
     if not args.skip_version_sync:
@@ -66,6 +72,14 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Also run flutter analyze --fatal-warnings --no-fatal-infos.",
     )
+    parser.add_argument(
+        "--templates-only",
+        action="store_true",
+        help=(
+            "Skip active-secret checks in assets/env/local.env. "
+            "Still validates EnvKeys vs default.env / .env.example."
+        ),
+    )
     parser.add_argument("--skip-env", action="store_true")
     parser.add_argument("--skip-format", action="store_true")
     parser.add_argument("--skip-version-sync", action="store_true")
@@ -86,8 +100,11 @@ def _run_step(name: str, fn: Callable[[], None]) -> list[str]:
     return []
 
 
-def _validate_env() -> None:
-    run([sys.executable, "tool/validate_env.py"])
+def _validate_env(*, templates_only: bool) -> None:
+    command = [sys.executable, "tool/validate_env.py"]
+    if templates_only:
+        command.append("--templates-only")
+    run(command)
 
 
 def _check_dart_format() -> None:
@@ -162,12 +179,24 @@ def _resolve_sdk_command(name: str) -> str:
         bat = shutil.which(f"{name}.bat")
         if bat is not None:
             return bat
-        # Common local install when PATH is incomplete for Python subprocesses.
-        candidate = Path.home() / "dev" / "flutter" / "bin" / f"{name}.bat"
-        if candidate.is_file():
-            return str(candidate)
+        for candidate in _windows_flutter_candidates(name):
+            if candidate.is_file():
+                return str(candidate)
 
-    raise SystemExit(f"Command not found: {name}")
+    raise SystemExit(
+        f"Command not found: {name}. On Windows, run "
+        "`tool/env_windows.ps1` in the shell first, or add Flutter to PATH.",
+    )
+
+
+def _windows_flutter_candidates(name: str) -> list[Path]:
+    home = Path.home()
+    return [
+        home / "dev" / "flutter" / "bin" / f"{name}.bat",
+        home / "flutter" / "bin" / f"{name}.bat",
+        Path(r"C:\flutter\bin") / f"{name}.bat",
+        Path(os.environ.get("LOCALAPPDATA", "")) / "flutter" / "bin" / f"{name}.bat",
+    ]
 
 
 def run(

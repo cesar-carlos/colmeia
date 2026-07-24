@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import re
 import sys
 from dataclasses import dataclass
@@ -31,7 +32,10 @@ class EnvLine:
 
 
 def main() -> int:
-    errors = validate_repo()
+    args = parse_args()
+    errors = validate_repo(
+        check_local_env_secrets=not args.templates_only,
+    )
     if errors:
         for error in errors:
             print(f"env validation error: {error}", file=sys.stderr)
@@ -40,7 +44,27 @@ def main() -> int:
     return 0
 
 
-def validate_repo(root: Path = REPO_ROOT) -> list[str]:
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Validate Colmeia env templates and local-env safety.",
+    )
+    parser.add_argument(
+        "--templates-only",
+        action="store_true",
+        help=(
+            "Only check EnvKeys vs default.env / .env.example and file shape. "
+            "Skips active-secret checks in assets/env/local.env "
+            "(useful for local pre-push when E2E secrets are present)."
+        ),
+    )
+    return parser.parse_args()
+
+
+def validate_repo(
+    root: Path = REPO_ROOT,
+    *,
+    check_local_env_secrets: bool = True,
+) -> list[str]:
     env_keys_file = root / ENV_KEYS_FILE.relative_to(REPO_ROOT)
     assets_env_example = root / ASSETS_ENV_EXAMPLE.relative_to(REPO_ROOT)
     assets_default_env = root / ASSETS_DEFAULT_ENV.relative_to(REPO_ROOT)
@@ -54,12 +78,16 @@ def validate_repo(root: Path = REPO_ROOT) -> list[str]:
         return errors
 
     for env_file in (assets_env_example, assets_default_env):
-        template_keys = {line.key for line in parse_env_lines(env_file, include_comments=True)}
+        template_keys = {
+            line.key for line in parse_env_lines(env_file, include_comments=True)
+        }
         missing = sorted(declared_keys - template_keys)
         if missing:
+            relative = env_file.relative_to(root)
+            suggested = "\n".join(f"{key}=" for key in missing)
             errors.append(
-                f"{env_file.relative_to(root)} is missing template keys: "
-                + ", ".join(missing),
+                f"{relative} is missing template keys: {', '.join(missing)}. "
+                f"Add lines such as:\n{suggested}",
             )
 
     for env_file in (
@@ -81,7 +109,7 @@ def validate_repo(root: Path = REPO_ROOT) -> list[str]:
             "it can bundle local secrets into release builds",
         )
 
-    if assets_local_env.exists():
+    if check_local_env_secrets and assets_local_env.exists():
         for line in parse_env_lines(assets_local_env, include_comments=False):
             if line.value and SENSITIVE_KEY_PATTERN.search(line.key):
                 errors.append(
@@ -104,7 +132,10 @@ def parse_env_lines(path: Path, *, include_comments: bool) -> list[EnvLine]:
         return []
 
     lines: list[EnvLine] = []
-    for index, raw_line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+    for index, raw_line in enumerate(
+        path.read_text(encoding="utf-8").splitlines(),
+        start=1,
+    ):
         line = raw_line.strip()
         if not line:
             continue
@@ -128,7 +159,10 @@ def parse_env_lines(path: Path, *, include_comments: bool) -> list[EnvLine]:
 def validate_env_file_shape(path: Path, *, root: Path) -> list[str]:
     errors: list[str] = []
     seen: dict[str, int] = {}
-    for index, raw_line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+    for index, raw_line in enumerate(
+        path.read_text(encoding="utf-8").splitlines(),
+        start=1,
+    ):
         line = raw_line.strip()
         if not line or line.startswith("#"):
             continue

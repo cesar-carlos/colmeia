@@ -182,8 +182,21 @@ emergencia.
 Antes de push em `main` ou de criar a tag, rode:
 
 ```powershell
+# Garante Flutter no PATH para subprocessos Python no Windows
+. .\tool\env_windows.ps1
+
 python tool/ci_preflight.py
 ```
+
+Instale o hook de pre-push (uma vez por clone):
+
+```powershell
+python tool/install_git_hooks.py
+```
+
+O hook roda `python tool/ci_preflight.py --templates-only` ao empurrar
+`main`/`master` ou tags `v*.*.*` (nao bloqueia por secrets ativos em
+`local.env`).
 
 Isso espelha os gates baratos do job `analyze`:
 
@@ -193,11 +206,46 @@ Isso espelha os gates baratos do job `analyze`:
    `dart format lib test`
 3. sync `installer/setup.iss` + `app_version.g.dart` com `pubspec.yaml`
 
+Para checar so templates (ignorando secrets em `local.env`):
+
+```powershell
+python tool/ci_preflight.py --templates-only
+```
+
 Opcional (mais lento, igual ao CI):
 
 ```powershell
 python tool/ci_preflight.py --analyze
 ```
+
+### Branch protection e release gate
+
+- O workflow **Tagged Release** espera Flutter CI verde no commit da tag
+  (`installer/ci_require_flutter_ci.py`) antes de gerar artefatos.
+- Recomendado: proteger `main` no GitHub exigindo os checks `analyze` e
+  `test` do Flutter CI em PRs. Com admin, pode aplicar assim:
+
+```powershell
+gh api -X PUT repos/cesar-carlos/colmeia/branches/main/protection --input - <<'EOF'
+{
+  "required_status_checks": {
+    "strict": true,
+    "checks": [
+      {"context": "analyze"},
+      {"context": "test"}
+    ]
+  },
+  "enforce_admins": false,
+  "required_pull_request_reviews": null,
+  "restrictions": null,
+  "allow_force_pushes": false,
+  "allow_deletions": false
+}
+EOF
+```
+
+Ou via UI: Settings → Branches → Add rule → Require status checks to pass
+(`analyze`, `test`).
 
 ### 1. Atualizar a versao
 

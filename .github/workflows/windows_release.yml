@@ -11,6 +11,7 @@ concurrency:
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
   prepare_release:
@@ -40,6 +41,14 @@ jobs:
             echo "::error::Release tags must point to a commit reachable from origin/main."
             exit 1
           fi
+
+      - name: Require Flutter CI success for tagged commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python installer/ci_require_flutter_ci.py --sha "$GITHUB_SHA" --timeout-seconds 900
 
       - name: Resolve release metadata
         id: metadata

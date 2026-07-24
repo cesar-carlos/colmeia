@@ -42,6 +42,17 @@ class ValidateEnvTest(unittest.TestCase):
         errors = self.module.validate_repo(self.root)
 
         self.assertTrue(any("missing template keys: FOO" in error for error in errors))
+        self.assertTrue(any("FOO=" in error for error in errors))
+
+    def test_templates_only_skips_local_secrets(self) -> None:
+        self._write("assets/env/local.env", "E2E_CLIENT_TOKEN=secret\n")
+
+        errors = self.module.validate_repo(
+            self.root,
+            check_local_env_secrets=False,
+        )
+
+        self.assertEqual([], errors)
 
     def test_pubspec_local_env_asset_fails(self) -> None:
         self._write(
