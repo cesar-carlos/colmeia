@@ -292,6 +292,9 @@ void main() {
       )
       ..registerSingleton<LoadMarcaProdutoOptionsUseCase>(
         loadMarcaProdutoOptionsUseCase,
+      )
+      ..registerSingleton<LoadCadastroFilialPageUseCase>(
+        loadCadastroFilialPageUseCase,
       );
   });
 

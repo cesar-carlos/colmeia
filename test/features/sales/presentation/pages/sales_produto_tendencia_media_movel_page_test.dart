@@ -307,6 +307,9 @@ void main() {
       )
       ..registerSingleton<LoadMediaMovelRowsForShareUseCase>(
         loadRowsForShareUseCase,
+      )
+      ..registerSingleton<LoadCadastroFilialPageUseCase>(
+        loadCadastroFilialPageUseCase,
       );
   });
 
