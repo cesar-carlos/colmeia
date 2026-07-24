@@ -60,7 +60,8 @@ class AgentQueryChartFailurePlaceholderContent extends StatelessWidget {
                     ),
                   ),
                 ),
-              if (technicalBody != null && technicalBody.isNotEmpty) ...<Widget>[
+              if (technicalBody != null &&
+                  technicalBody.isNotEmpty) ...<Widget>[
                 if (onViewAgentFailureDetails != null)
                   SizedBox(height: tokens.gapSm),
                 AgentQueryFailureTechnicalDetails(

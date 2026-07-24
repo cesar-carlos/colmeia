@@ -40,7 +40,9 @@ class HybridAgentQueriesRemoteDataSource
     await _disposeNested(_relayDelegate);
   }
 
-  static Future<void> _disposeNested(AgentQueriesRemoteDataSource? delegate) async {
+  static Future<void> _disposeNested(
+    AgentQueriesRemoteDataSource? delegate,
+  ) async {
     if (delegate is SocketWithRestFallbackAgentQueriesRemoteDataSource) {
       await delegate.dispose();
     }

@@ -27,93 +27,95 @@ void main() {
         missingKeys: _missingSocketSmokeSuiteKeys,
       );
 
-      test('relay path: sql.execute (+ batch) with phase breadcrumbs', () async {
-        if (_shouldSkipSocketSmoke(requireRelay: true)) {
-          return;
-        }
+      test(
+        'relay path: sql.execute (+ batch) with phase breadcrumbs',
+        () async {
+          if (_shouldSkipSocketSmoke(requireRelay: true)) {
+            return;
+          }
 
-        expect(getIt.isRegistered<ConsumerSocketConnection>(), isTrue);
-        expect(getIt.isRegistered<RelayCommandDispatcher>(), isTrue);
+          expect(getIt.isRegistered<ConsumerSocketConnection>(), isTrue);
+          expect(getIt.isRegistered<RelayCommandDispatcher>(), isTrue);
 
-        final connected = await getIt<ConsumerSocketConnection>().connect();
-        expect(connected.socketId, isNotEmpty);
+          final connected = await getIt<ConsumerSocketConnection>().connect();
+          expect(connected.socketId, isNotEmpty);
 
-        final outcomes = <String>[];
-        final outcomesSub = getIt<RelayCommandDispatcher>().outcomes().listen(
-          (outcome) => outcomes.add(_describeRelayOutcome(outcome)),
-        );
-        addTearDown(outcomesSub.cancel);
+          final outcomes = <String>[];
+          final outcomesSub = getIt<RelayCommandDispatcher>().outcomes().listen(
+            (outcome) => outcomes.add(_describeRelayOutcome(outcome)),
+          );
+          addTearDown(outcomesSub.cancel);
 
-        final sw = Stopwatch()..start();
-        final repo = getIt<AgentQueriesRepository>();
-        final single = await runE2eAppResult(
-          () => repo.executeSql(
-            AgentSqlExecuteRequest(
-              agentId: AppEnvironment.e2eAgentId,
-              clientToken: AppEnvironment.e2eClientToken,
-              sql: 'SELECT CodCliente, Nome FROM Cliente ORDER BY CodCliente',
-              bridgeTimeoutMs: 60000,
-              pagination: const AgentSqlPagePagination(page: 1, pageSize: 1),
-              executeOptions: const AgentSqlExecuteOptions(
-                maxRows: 1,
-                preferDbStreaming: false,
+          final sw = Stopwatch()..start();
+          final repo = getIt<AgentQueriesRepository>();
+          final single = await runE2eAppResult(
+            () => repo.executeSql(
+              AgentSqlExecuteRequest(
+                agentId: AppEnvironment.e2eAgentId,
+                clientToken: AppEnvironment.e2eClientToken,
+                sql: 'SELECT CodCliente, Nome FROM Cliente ORDER BY CodCliente',
+                bridgeTimeoutMs: 60000,
+                pagination: const AgentSqlPagePagination(page: 1, pageSize: 1),
+                executeOptions: const AgentSqlExecuteOptions(
+                  maxRows: 1,
+                  preferDbStreaming: false,
+                ),
+                useRelay: true,
               ),
-              useRelay: true,
             ),
-          ),
-          actionLabel: 'socket_relay_smoke_sql_execute',
-        );
-        sw.stop();
+            actionLabel: 'socket_relay_smoke_sql_execute',
+          );
+          sw.stop();
 
-        // ignore: avoid_print -- E2E diagnostics
-        print(
-          'E2E relay unary wallMs=${sw.elapsedMilliseconds} '
-          'outcomes=${outcomes.join(' | ')}',
-        );
+          // ignore: avoid_print -- E2E diagnostics
+          print(
+            'E2E relay unary wallMs=${sw.elapsedMilliseconds} '
+            'outcomes=${outcomes.join(' | ')}',
+          );
 
-        single.fold(
-          (success) {
-            expect(success.rows, isNotEmpty);
-          },
-          (failure) => fail(
-            'socket relay sql.execute smoke failed: '
-            '${_describeFailure(failure)}; outcomes=${outcomes.join(' | ')}',
-          ),
-        );
-
-        final batch = await runE2eAppResult(
-          () => repo.executeSqlBatch(
-            AgentSqlExecuteBatchRequest(
-              agentId: AppEnvironment.e2eAgentId,
-              clientToken: AppEnvironment.e2eClientToken,
-              bridgeTimeoutMs: 60000,
-              options: const AgentSqlExecuteBatchOptions(maxRows: 1),
-              useRelay: true,
-              commands: const <AgentSqlExecuteBatchCommand>[
-                AgentSqlExecuteBatchCommand(
-                  sql:
-                      'SELECT CodCliente FROM Cliente ORDER BY CodCliente',
-                ),
-                AgentSqlExecuteBatchCommand(
-                  sql: 'SELECT Nome FROM Cliente ORDER BY CodCliente',
-                ),
-              ],
+          single.fold(
+            (success) {
+              expect(success.rows, isNotEmpty);
+            },
+            (failure) => fail(
+              'socket relay sql.execute smoke failed: '
+              '${_describeFailure(failure)}; outcomes=${outcomes.join(' | ')}',
             ),
-          ),
-          actionLabel: 'socket_relay_smoke_sql_execute_batch',
-        );
+          );
 
-        batch.fold(
-          (success) {
-            expect(success.items.length, 2);
-            expect(success.items.every((item) => item.ok), isTrue);
-          },
-          (failure) => fail(
-            'socket relay sql.executeBatch smoke failed: '
-            '${_describeFailure(failure)}',
-          ),
-        );
-      });
+          final batch = await runE2eAppResult(
+            () => repo.executeSqlBatch(
+              AgentSqlExecuteBatchRequest(
+                agentId: AppEnvironment.e2eAgentId,
+                clientToken: AppEnvironment.e2eClientToken,
+                bridgeTimeoutMs: 60000,
+                options: const AgentSqlExecuteBatchOptions(maxRows: 1),
+                useRelay: true,
+                commands: const <AgentSqlExecuteBatchCommand>[
+                  AgentSqlExecuteBatchCommand(
+                    sql: 'SELECT CodCliente FROM Cliente ORDER BY CodCliente',
+                  ),
+                  AgentSqlExecuteBatchCommand(
+                    sql: 'SELECT Nome FROM Cliente ORDER BY CodCliente',
+                  ),
+                ],
+              ),
+            ),
+            actionLabel: 'socket_relay_smoke_sql_execute_batch',
+          );
+
+          batch.fold(
+            (success) {
+              expect(success.items.length, 2);
+              expect(success.items.every((item) => item.ok), isTrue);
+            },
+            (failure) => fail(
+              'socket relay sql.executeBatch smoke failed: '
+              '${_describeFailure(failure)}',
+            ),
+          );
+        },
+      );
 
       test(
         'agents:command path: same SQL with useRelay:false (A/B vs relay)',
@@ -133,8 +135,7 @@ void main() {
               AgentSqlExecuteRequest(
                 agentId: AppEnvironment.e2eAgentId,
                 clientToken: AppEnvironment.e2eClientToken,
-                sql:
-                    'SELECT CodCliente, Nome FROM Cliente ORDER BY CodCliente',
+                sql: 'SELECT CodCliente, Nome FROM Cliente ORDER BY CodCliente',
                 bridgeTimeoutMs: 60000,
                 pagination: const AgentSqlPagePagination(page: 1, pageSize: 1),
                 executeOptions: const AgentSqlExecuteOptions(

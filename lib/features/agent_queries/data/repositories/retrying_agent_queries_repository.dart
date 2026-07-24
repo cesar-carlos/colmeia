@@ -126,6 +126,7 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
       attempt++;
     }
   }
+
   @override
   Future<AppResult<AgentSqlBatchExecutionResult>> executeSqlBatch(
     AgentSqlExecuteBatchRequest request, {
@@ -223,6 +224,7 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
     final total = _totalRetryBudget(bridgeTimeoutMs: bridgeTimeoutMs);
     return budget.elapsed + delay < total;
   }
+
   Duration _calculateBackoffDelay(int failedAttempt) {
     final ceiling = AgentQueriesRetryBackoff.ceiling(
       initialDelay: _initialRetryDelay,

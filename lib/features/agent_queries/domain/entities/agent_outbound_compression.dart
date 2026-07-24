@@ -22,8 +22,7 @@ enum AgentOutboundCompression {
 
   /// `gzip` — agent always gzips the response when above the negotiated
   /// threshold.
-  gzip
-  ;
+  gzip;
 
   String get wireValue => switch (this) {
     AgentOutboundCompression.auto => 'auto',

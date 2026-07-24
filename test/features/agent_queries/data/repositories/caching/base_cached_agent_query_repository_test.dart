@@ -157,46 +157,49 @@ void main() {
       expect(fakeDelegate.loadCount, greaterThan(0));
     });
 
-    test('corrupt stored payload is treated as miss and reloads network', () async {
-      final filter = ResumoTotalDiarioVendasFilter(
-        dataVendaInicio: DateTime(2026, 6),
-        dataVendaFim: DateTime(2026, 6, 1, 23, 59, 59, 999, 999),
-      );
-      final storageKey = strategy.storageKey(
-        userId: 'u1',
-        agentId: 'a1',
-        bucketId: '2026-06-01',
-        rangeFilter: filter,
-      );
-      await cachingRepo.factsStore.writePayload(
-        storageKey: storageKey,
-        payload: <int>[1, 2, 3, 4],
-        schemaVersion: strategy.schemaVersion,
-      );
-      fakeDelegate.rows = [
-        ResumoTotalDiarioVendasRow(
-          codEmpresa: 1,
-          codFilial: 1,
-          dataVenda: DateTime(2026, 6),
-          qtdVendas: 7,
-          valorTotalDiarioVenda: 70,
-        ),
-      ];
+    test(
+      'corrupt stored payload is treated as miss and reloads network',
+      () async {
+        final filter = ResumoTotalDiarioVendasFilter(
+          dataVendaInicio: DateTime(2026, 6),
+          dataVendaFim: DateTime(2026, 6, 1, 23, 59, 59, 999, 999),
+        );
+        final storageKey = strategy.storageKey(
+          userId: 'u1',
+          agentId: 'a1',
+          bucketId: '2026-06-01',
+          rangeFilter: filter,
+        );
+        await cachingRepo.factsStore.writePayload(
+          storageKey: storageKey,
+          payload: <int>[1, 2, 3, 4],
+          schemaVersion: strategy.schemaVersion,
+        );
+        fakeDelegate.rows = [
+          ResumoTotalDiarioVendasRow(
+            codEmpresa: 1,
+            codFilial: 1,
+            dataVenda: DateTime(2026, 6),
+            qtdVendas: 7,
+            valorTotalDiarioVenda: 70,
+          ),
+        ];
 
-      final result = await cachingRepo.load(
-        userId: 'u1',
-        agentId: 'a1',
-        filter: filter,
-      );
+        final result = await cachingRepo.load(
+          userId: 'u1',
+          agentId: 'a1',
+          filter: filter,
+        );
 
-      expect(result.getOrNull()?.single.qtdVendas, 7);
-      expect(fakeDelegate.loadCount, greaterThan(0));
-      final cached = await cachingRepo.factsStore.readPayload(
-        storageKey: storageKey,
-        expectedSchemaVersion: strategy.schemaVersion,
-      );
-      expect(cached, isNotNull);
-    });
+        expect(result.getOrNull()?.single.qtdVendas, 7);
+        expect(fakeDelegate.loadCount, greaterThan(0));
+        final cached = await cachingRepo.factsStore.readPayload(
+          storageKey: storageKey,
+          expectedSchemaVersion: strategy.schemaVersion,
+        );
+        expect(cached, isNotNull);
+      },
+    );
 
     test(
       'defaultLoad without batch support coalesces open days into one range load',
@@ -366,7 +369,8 @@ final class _RangeAwareDelegate implements ResumoTotalDiarioVendasRepository {
   }
 }
 
-final class _AlwaysFailingDelegate implements ResumoTotalDiarioVendasRepository {
+final class _AlwaysFailingDelegate
+    implements ResumoTotalDiarioVendasRepository {
   @override
   Future<AppResult<List<ResumoTotalDiarioVendasRow>>> load({
     required String userId,

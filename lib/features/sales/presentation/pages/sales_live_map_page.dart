@@ -353,7 +353,8 @@ class _SalesLiveMapSessionState extends State<_SalesLiveMapSession>
 
     return NotificationListener<SalesLiveMapParentScrollLockNotification>(
       onNotification: (notification) {
-        if (_lockPageScrollForInlineMap.value == notification.lockParentScroll) {
+        if (_lockPageScrollForInlineMap.value ==
+            notification.lockParentScroll) {
           return true;
         }
         _lockPageScrollForInlineMap.value = notification.lockParentScroll;

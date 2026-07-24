@@ -71,8 +71,7 @@ class ClientAgentsPresenceCoordinator {
 
   final Map<String, _PresenceObservation> _lastCatalogObservedByAgentId =
       <String, _PresenceObservation>{};
-  final Map<String, DateTime> _lastHintObservedByAgentId =
-      <String, DateTime>{};
+  final Map<String, DateTime> _lastHintObservedByAgentId = <String, DateTime>{};
   final Map<String, Timer> _hintConfirmTimers = <String, Timer>{};
 
   bool _isDisposed = false;

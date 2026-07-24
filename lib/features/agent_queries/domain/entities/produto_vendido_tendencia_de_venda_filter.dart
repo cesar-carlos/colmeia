@@ -263,8 +263,7 @@ class ProdutoVendidoTendenciaDeVendaFilter {
       anteriorFim.month + 1,
       0,
     ).day;
-    return anteriorFim.day == anteriorLastDay &&
-        atualFim.day > anteriorLastDay;
+    return anteriorFim.day == anteriorLastDay && atualFim.day > anteriorLastDay;
   }
 
   bool _isWholeCalendarMonthWindow(DateTime start, DateTime end) {

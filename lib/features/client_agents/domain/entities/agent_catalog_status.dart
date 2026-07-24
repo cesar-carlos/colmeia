@@ -1,8 +1,7 @@
 enum AgentCatalogStatus {
   active,
   inactive,
-  unknown
-  ;
+  unknown;
 
   static AgentCatalogStatus fromWireValue(String? value) {
     return switch (value?.trim().toLowerCase()) {

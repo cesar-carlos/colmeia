@@ -168,8 +168,7 @@ enum PayloadFrameSignatureVerification {
 
   /// HMAC computed locally does not match `signature.value`. Treat as
   /// tampering or key drift.
-  invalid('signature_invalid')
-  ;
+  invalid('signature_invalid');
 
   const PayloadFrameSignatureVerification(this.code);
 

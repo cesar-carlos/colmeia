@@ -3,8 +3,7 @@ enum AgentAccessRequestStatus {
   approved,
   rejected,
   expired,
-  unknown
-  ;
+  unknown;
 
   static AgentAccessRequestStatus fromWireValue(String? value) {
     return switch (value?.trim().toLowerCase()) {

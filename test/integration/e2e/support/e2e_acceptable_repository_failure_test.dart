@@ -219,8 +219,7 @@ void main() {
         reason: 'result_too_large',
         category: 'sql',
         context: <String, Object?>{
-          AgentSqlRpcFailureUiKey.field:
-              AgentSqlRpcFailureUiKey.resultTooLarge,
+          AgentSqlRpcFailureUiKey.field: AgentSqlRpcFailureUiKey.resultTooLarge,
         },
       );
 
@@ -236,8 +235,7 @@ void main() {
         retryable: false,
         category: 'sql',
         context: <String, Object?>{
-          AgentSqlRpcFailureUiKey.field:
-              AgentSqlRpcFailureUiKey.resultTooLarge,
+          AgentSqlRpcFailureUiKey.field: AgentSqlRpcFailureUiKey.resultTooLarge,
         },
       );
 
@@ -261,25 +259,27 @@ void main() {
   });
 
   group('isKnownE2eAgentSqlStreamCapacityReachedFailure', () {
-    test('returns true when error data code is AGENT_STREAM_CAPACITY_REACHED',
-        () {
-      const failure = RpcFailure(
-        message: 'Relay stream capacity reached',
-        userMessage: 'Wait and try again.',
-        rpcCode: -32000,
-        retryable: true,
-        reason: 'stream_capacity_reached',
-        category: 'transport',
-        context: <String, Object?>{
-          AgentSqlRpcFailureUiKey.errorDataField: <String, Object?>{
-            'code': 'AGENT_STREAM_CAPACITY_REACHED',
+    test(
+      'returns true when error data code is AGENT_STREAM_CAPACITY_REACHED',
+      () {
+        const failure = RpcFailure(
+          message: 'Relay stream capacity reached',
+          userMessage: 'Wait and try again.',
+          rpcCode: -32000,
+          retryable: true,
+          reason: 'stream_capacity_reached',
+          category: 'transport',
+          context: <String, Object?>{
+            AgentSqlRpcFailureUiKey.errorDataField: <String, Object?>{
+              'code': 'AGENT_STREAM_CAPACITY_REACHED',
+            },
           },
-        },
-      );
+        );
 
-      expect(isKnownE2eAgentSqlStreamCapacityReachedFailure(failure), isTrue);
-      expect(isAcceptableE2eAgentSqlRepositoryFailure(failure), isTrue);
-    });
+        expect(isKnownE2eAgentSqlStreamCapacityReachedFailure(failure), isTrue);
+        expect(isAcceptableE2eAgentSqlRepositoryFailure(failure), isTrue);
+      },
+    );
 
     test('returns false for unrelated error data code', () {
       const failure = RpcFailure(

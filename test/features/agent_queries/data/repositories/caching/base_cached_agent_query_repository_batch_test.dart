@@ -227,7 +227,11 @@ void main() {
       verifyNever(() => agentQueries.executeSqlBatch(any()));
       check(delegate.loadCount).equals(1);
 
-      for (final bucketId in <String>['2026-06-01', '2026-06-02', '2026-06-03']) {
+      for (final bucketId in <String>[
+        '2026-06-01',
+        '2026-06-02',
+        '2026-06-03',
+      ]) {
         final storageKey = strategy.storageKey(
           userId: 'u1',
           agentId: 'a1',

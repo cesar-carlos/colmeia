@@ -440,7 +440,9 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
     return executeOnce();
   }
 
-  static bool _isEmptyScreenData(ProdutoVendidoTendenciaDeVendaScreenData data) {
+  static bool _isEmptyScreenData(
+    ProdutoVendidoTendenciaDeVendaScreenData data,
+  ) {
     return data.totalCount == 0 &&
         data.rows.isEmpty &&
         data.summaryRows.isEmpty &&

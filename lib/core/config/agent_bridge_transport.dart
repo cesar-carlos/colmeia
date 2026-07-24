@@ -7,8 +7,7 @@
 /// `docs/Features/socket_consumer_channel_plan.md`.
 enum AgentBridgeTransport {
   rest,
-  socket
-  ;
+  socket;
 
   /// Canonical wire/env value for this transport.
   String get wireValue => switch (this) {

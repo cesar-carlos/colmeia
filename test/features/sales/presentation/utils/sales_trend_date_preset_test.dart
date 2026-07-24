@@ -211,7 +211,9 @@ void main() {
     );
 
     test('maps month-to-date to the same day span in the previous month', () {
-      final current = salesTrendMonthToDateInclusiveRange(DateTime(2026, 7, 21));
+      final current = salesTrendMonthToDateInclusiveRange(
+        DateTime(2026, 7, 21),
+      );
       final previous = salesTrendAutoPreviousRange(current);
 
       check(previous.start).equals(DateTime(2026, 6));

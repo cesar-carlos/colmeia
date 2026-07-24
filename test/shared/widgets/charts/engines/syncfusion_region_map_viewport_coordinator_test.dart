@@ -173,7 +173,10 @@ void main() {
         coordinator.markMapSurfaceDetached();
 
         expect(coordinator.mapSurfaceAttached, isFalse);
-        expect(identical(coordinator.zoomPanBehavior, attachedBehavior), isFalse);
+        expect(
+          identical(coordinator.zoomPanBehavior, attachedBehavior),
+          isFalse,
+        );
         expect(coordinator.zoomPanBehavior.zoomLevel, 3.5);
         expect(coordinator.zoomPanBehavior.focalLatLng?.latitude, -12);
         expect(coordinator.zoomPanBehavior.focalLatLng?.longitude, -48);

@@ -109,9 +109,8 @@ class SalesTrendSharedFilterControls extends StatelessWidget {
               ),
           ],
         ),
-        if (topMoversSortBy != null && onTopMoversSortChanged != null) ...<
-          Widget
-        >[
+        if (topMoversSortBy != null &&
+            onTopMoversSortChanged != null) ...<Widget>[
           SizedBox(height: tokens.contentSpacing),
           Text(
             l10n.salesTrendFilterTopMoversSortTitle,

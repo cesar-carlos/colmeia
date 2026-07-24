@@ -59,11 +59,11 @@ void main() {
         'GatedAgentQueriesRepository',
         'CircuitBreakerAgentQueriesRepository',
         'CachingAgentQueriesRepository',
-      'CoalescingAgentQueriesRepository',
-      'RetryingAgentQueriesRepository',
-      'AdaptiveTimeoutAgentQueriesRepository',
-      'MetricsAgentQueriesRepository',
-      'AgentQueriesRepositoryImpl',
+        'CoalescingAgentQueriesRepository',
+        'RetryingAgentQueriesRepository',
+        'AdaptiveTimeoutAgentQueriesRepository',
+        'MetricsAgentQueriesRepository',
+        'AgentQueriesRepositoryImpl',
       ]);
     },
   );

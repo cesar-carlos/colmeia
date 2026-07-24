@@ -26,8 +26,11 @@ bool salesTrendPeriodsHaveGap(DateTimeRange atual, DateTimeRange anterior) {
   }
 
   if (atualStart.day == 1 &&
-      DateTime(anterior.start.year, anterior.start.month, anterior.start.day)
-              .day ==
+      DateTime(
+            anterior.start.year,
+            anterior.start.month,
+            anterior.start.day,
+          ).day ==
           1) {
     final expectedPrevStart = DateTime(atualStart.year, atualStart.month - 1);
     final antStart = DateTime(

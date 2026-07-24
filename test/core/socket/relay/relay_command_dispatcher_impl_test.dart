@@ -1474,7 +1474,10 @@ void main() {
         await check(future).throws<RelayStreamTerminated>((subject) {
           subject
             ..has((e) => e.code, 'code').equals('stream_error')
-            ..has((e) => e.errorCode, 'errorCode').equals('RELAY_STREAM_TIMEOUT')
+            ..has(
+              (e) => e.errorCode,
+              'errorCode',
+            ).equals('RELAY_STREAM_TIMEOUT')
             ..has((e) => e.terminalStatus, 'terminalStatus').equals('error');
         });
       },

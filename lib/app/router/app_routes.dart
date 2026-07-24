@@ -65,8 +65,7 @@ enum AppRoute {
   settings(
     path: '/settings',
     title: 'Perfil',
-  )
-  ;
+  );
 
   const AppRoute({
     required this.path,

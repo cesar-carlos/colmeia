@@ -143,7 +143,8 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
             clock: clock,
             clientToken: clientToken,
             bridgeTimeoutMs: bridgeTimeoutMs,
-            hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+            hubPresenceOnlineAgentIdsSnapshot:
+                hubPresenceOnlineAgentIdsSnapshot,
             hubConnectedFromApprovedCatalogRow:
                 hubConnectedFromApprovedCatalogRow,
             cancelScope: cancelScope,

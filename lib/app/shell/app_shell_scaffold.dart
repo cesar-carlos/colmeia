@@ -85,7 +85,8 @@ class AppShellScaffold extends StatelessWidget {
 
     return Scaffold(
       appBar: AppShellAppBar(matchedLocation: currentLocation),
-      drawer: showShellNav &&
+      drawer:
+          showShellNav &&
               !shellSectionDrawerSuppressedForLocation(currentLocation)
           ? AppShellDrawer(
               currentLocation: currentLocation,

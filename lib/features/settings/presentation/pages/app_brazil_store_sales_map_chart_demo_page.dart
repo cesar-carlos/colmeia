@@ -254,8 +254,7 @@ AppBrazilStoreSalesMapPreset _lastSelectedMapPreset =
 enum _BrazilStoreSalesDemoVolumePreset {
   p50(50, '50'),
   p200(200, '200'),
-  p500(500, '500')
-  ;
+  p500(500, '500');
 
   const _BrazilStoreSalesDemoVolumePreset(this.pointCount, this.label);
 

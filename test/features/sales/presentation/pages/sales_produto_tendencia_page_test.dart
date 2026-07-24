@@ -257,10 +257,12 @@ void main() {
         filter: any(named: 'filter'),
         clientToken: any(named: 'clientToken'),
         bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot:
-            any(named: 'hubPresenceOnlineAgentIdsSnapshot'),
-        hubConnectedFromApprovedCatalogRow:
-            any(named: 'hubConnectedFromApprovedCatalogRow'),
+        hubPresenceOnlineAgentIdsSnapshot: any(
+          named: 'hubPresenceOnlineAgentIdsSnapshot',
+        ),
+        hubConnectedFromApprovedCatalogRow: any(
+          named: 'hubConnectedFromApprovedCatalogRow',
+        ),
         cancelScope: any(named: 'cancelScope'),
       ),
     ).thenAnswer(

@@ -194,7 +194,8 @@ class SalesProdutoTendenciaController extends SalesTrendControllerBase {
     final nextThreshold = nextThresholdRaw is num
         ? nextThresholdRaw.toDouble()
         : _state.trendThresholdPercent;
-    final nextTopMoversSort = next['topMoversSortBy'] is SalesTrendTopMoversSortBy
+    final nextTopMoversSort =
+        next['topMoversSortBy'] is SalesTrendTopMoversSortBy
         ? next['topMoversSortBy']! as SalesTrendTopMoversSortBy
         : SalesTrendFilterLimits.topMoversSortFromName(
             next['topMoversSortBy'] as String?,

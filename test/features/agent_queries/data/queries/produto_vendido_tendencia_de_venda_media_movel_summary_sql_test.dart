@@ -7,16 +7,19 @@ void main() {
     quantidadeDias: 7,
   );
 
-  test('summary query reuses filtered calendar moving-average CTE pipeline', () {
-    check(sql).contains('WITH BaseVendas AS (');
-    check(sql).contains('Pivotado AS (');
-    check(sql).contains('Resultado AS (');
-    check(sql).contains('Filtrado AS (');
-    check(sql).contains("AND pv.Origem = 'FrenteLoja'");
-    check(sql.contains('Tot AS (')).isFalse();
-    check(sql.contains('Numbered AS (')).isFalse();
-    check(sql.contains('Diario AS (')).isFalse();
-  });
+  test(
+    'summary query reuses filtered calendar moving-average CTE pipeline',
+    () {
+      check(sql).contains('WITH BaseVendas AS (');
+      check(sql).contains('Pivotado AS (');
+      check(sql).contains('Resultado AS (');
+      check(sql).contains('Filtrado AS (');
+      check(sql).contains("AND pv.Origem = 'FrenteLoja'");
+      check(sql.contains('Tot AS (')).isFalse();
+      check(sql.contains('Numbered AS (')).isFalse();
+      check(sql.contains('Diario AS (')).isFalse();
+    },
+  );
 
   test('summary query groups by classificacao and sums impact', () {
     check(sql).contains('COUNT(*) AS QuantidadeProdutos');

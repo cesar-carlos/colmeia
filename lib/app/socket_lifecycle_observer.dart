@@ -211,8 +211,7 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
     }
     final now = DateTime.now();
     final last = _lastUnexpectedReconnectAt;
-    if (last != null &&
-        now.difference(last) < _unexpectedReconnectCooldown) {
+    if (last != null && now.difference(last) < _unexpectedReconnectCooldown) {
       return;
     }
     _lastUnexpectedReconnectAt = now;

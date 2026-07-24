@@ -150,7 +150,9 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
         continue;
       }
       final pending = collector.queue.removeAt(index);
-      collector.coalesceMap.removeWhere((_, value) => identical(value, pending));
+      collector.coalesceMap.removeWhere(
+        (_, value) => identical(value, pending),
+      );
       if (!pending.completer.isCompleted) {
         pending.completer.completeError(error);
       }

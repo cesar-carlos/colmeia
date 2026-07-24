@@ -33,17 +33,20 @@ void main() {
     check(sql.contains('CAST(pv.DataVenda AS DATE)')).isFalse();
   });
 
-  test('screen query applies separate page and summary classificacao filters', () {
-    final filtered = ProdutoVendidoTendenciaDeVendaScreenSql.query(
-      startRow: 1,
-      endRow: 20,
-      pageClassificacao: 'CRESCENDO',
-      summaryClassificacao: 'CAINDO',
-    );
+  test(
+    'screen query applies separate page and summary classificacao filters',
+    () {
+      final filtered = ProdutoVendidoTendenciaDeVendaScreenSql.query(
+        startRow: 1,
+        endRow: 20,
+        pageClassificacao: 'CRESCENDO',
+        summaryClassificacao: 'CAINDO',
+      );
 
-    check(filtered).contains("WHERE Classificacao = N'CRESCENDO'");
-    check(filtered).contains("WHERE Classificacao = N'CAINDO'");
-  });
+      check(filtered).contains("WHERE Classificacao = N'CRESCENDO'");
+      check(filtered).contains("WHERE Classificacao = N'CAINDO'");
+    },
+  );
 
   test('screen query inlines pagination bounds and top movers limit', () {
     check(sql).contains('N.RowNum BETWEEN 1 AND 20');

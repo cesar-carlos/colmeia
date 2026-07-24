@@ -25,31 +25,34 @@ void main() {
   });
 
   group('useMergedSqlBatchPerTarget', () {
-    test('returns true when env and batch loader are set (ignores catalog)', () {
-      final batchLoader = _MockSalesLiveMapBatchLoader();
+    test(
+      'returns true when env and batch loader are set (ignores catalog)',
+      () {
+        final batchLoader = _MockSalesLiveMapBatchLoader();
 
-      expect(
-        policy.useMergedSqlBatchPerTarget(
-          envFlag: true,
-          batchLoader: batchLoader,
-        ),
-        isTrue,
-      );
-      expect(
-        policy.useMergedSqlBatchPerTarget(
-          envFlag: false,
-          batchLoader: batchLoader,
-        ),
-        isFalse,
-      );
-      expect(
-        policy.useMergedSqlBatchPerTarget(
-          envFlag: true,
-          batchLoader: null,
-        ),
-        isFalse,
-      );
-    });
+        expect(
+          policy.useMergedSqlBatchPerTarget(
+            envFlag: true,
+            batchLoader: batchLoader,
+          ),
+          isTrue,
+        );
+        expect(
+          policy.useMergedSqlBatchPerTarget(
+            envFlag: false,
+            batchLoader: batchLoader,
+          ),
+          isFalse,
+        );
+        expect(
+          policy.useMergedSqlBatchPerTarget(
+            envFlag: true,
+            batchLoader: null,
+          ),
+          isFalse,
+        );
+      },
+    );
   });
 
   test('cancelledResult traces and returns cancelled load result', () {

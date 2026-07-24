@@ -207,62 +207,65 @@ void main() {
   test(
     'agrega varias linhas da mesma filial: soma receita e mantem primeiro qtdVendas',
     () async {
-    _stubReport(
-      loadAcrossAgents,
-      _report(
-        plannedTargets: <AgentQueryTarget>[_target('agent-a')],
-        participants:
-            <
-              AgentQueryExecutionParticipant<
-                ResumoTotalVendasMunicipioFilialPeriodoRow
-              >
-            >[
-              _participant(
-                'agent-a',
-                rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
-                  _row(
-                    nomeFilial: 'Cadastro matriz',
-                    nomeFantasiaFilial: 'Fantasia matriz',
-                    totalVenda: 120,
-                    qtdVendas: 2,
-                  ),
-                  _row(
-                    nomeFilial: 'Cadastro matriz',
-                    nomeFantasiaFilial: 'Fantasia matriz',
-                    totalVenda: 80,
-                    qtdVendas: 3,
-                  ),
-                ],
-              ),
-            ],
-      ),
-    );
+      _stubReport(
+        loadAcrossAgents,
+        _report(
+          plannedTargets: <AgentQueryTarget>[_target('agent-a')],
+          participants:
+              <
+                AgentQueryExecutionParticipant<
+                  ResumoTotalVendasMunicipioFilialPeriodoRow
+                >
+              >[
+                _participant(
+                  'agent-a',
+                  rows: <ResumoTotalVendasMunicipioFilialPeriodoRow>[
+                    _row(
+                      nomeFilial: 'Cadastro matriz',
+                      nomeFantasiaFilial: 'Fantasia matriz',
+                      totalVenda: 120,
+                      qtdVendas: 2,
+                    ),
+                    _row(
+                      nomeFilial: 'Cadastro matriz',
+                      nomeFantasiaFilial: 'Fantasia matriz',
+                      totalVenda: 80,
+                      qtdVendas: 3,
+                    ),
+                  ],
+                ),
+              ],
+        ),
+      );
 
-    final result = await useCase(
-      userId: userId,
-      filter: const SalesLiveMapFilter(),
-    );
+      final result = await useCase(
+        userId: userId,
+        filter: const SalesLiveMapFilter(),
+      );
 
-    check(result.points).has((points) => points.length, 'length').equals(1);
-    final point = result.points.single;
-    check(point.fantasyName).equals('Fantasia matriz');
-    check(point.branchName).equals('Cadastro matriz');
-    check(point.companyCode).equals(1);
-    check(point.branchCode).equals(1);
-    check(point.agentName).equals('Agente agent-a');
-    check(point.salesAmount).equals(200);
-    // Period COUNT(DISTINCT) must not be summed across duplicate branch rows.
-    check(point.salesCount).equals(2);
-    check(result.totalRevenue).equals(200);
-    check(result.totalSalesCount).equals(2);
-    check(result.totalBranchCount).equals(1);
-    check(result.mappedBranchCount).equals(1);
-    check(result.mappedMunicipalityCount).equals(1);
-    check(result.branchOptions.single.name).equals('Cadastro matriz');
-    check(result.branchOptions.map((branch) => branch.id).toList()).deepEquals(
-      <String>['agent-a-1-1'],
-    );
-  });
+      check(result.points).has((points) => points.length, 'length').equals(1);
+      final point = result.points.single;
+      check(point.fantasyName).equals('Fantasia matriz');
+      check(point.branchName).equals('Cadastro matriz');
+      check(point.companyCode).equals(1);
+      check(point.branchCode).equals(1);
+      check(point.agentName).equals('Agente agent-a');
+      check(point.salesAmount).equals(200);
+      // Period COUNT(DISTINCT) must not be summed across duplicate branch rows.
+      check(point.salesCount).equals(2);
+      check(result.totalRevenue).equals(200);
+      check(result.totalSalesCount).equals(2);
+      check(result.totalBranchCount).equals(1);
+      check(result.mappedBranchCount).equals(1);
+      check(result.mappedMunicipalityCount).equals(1);
+      check(result.branchOptions.single.name).equals('Cadastro matriz');
+      check(
+        result.branchOptions.map((branch) => branch.id).toList(),
+      ).deepEquals(
+        <String>['agent-a-1-1'],
+      );
+    },
+  );
 
   test(
     'preserva separacao por agente quando empresa e filial coincidem',

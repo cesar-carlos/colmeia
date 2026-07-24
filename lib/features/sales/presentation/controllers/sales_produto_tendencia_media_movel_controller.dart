@@ -489,10 +489,11 @@ class SalesProdutoTendenciaMediaMovelController
       (failure) {
         _setState(
           _state.copyWith(
-            pageResult: const ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
-              items: <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[],
-              totalCount: 0,
-            ),
+            pageResult:
+                const ProdutoVendidoTendenciaDeVendaMediaMovelPageResult(
+                  items: <ProdutoVendidoTendenciaDeVendaMediaMovelRow>[],
+                  totalCount: 0,
+                ),
             detailsLoading: false,
             loadFailure: failure,
           ),

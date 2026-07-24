@@ -114,8 +114,7 @@ class RelayConversationManager {
       if (_isDisposed || !_byAgentId.containsKey(agentId)) {
         conversation.forceEnd(reason: 'obtain_superseded');
         throw const RelayConversationStartFailure(
-          message:
-              'Relay conversation was discarded while start was in flight',
+          message: 'Relay conversation was discarded while start was in flight',
           code: 'obtain_superseded',
         );
       }

@@ -777,21 +777,26 @@ void main() {
       check(failure.context['clientRequestId']).equals('req-1');
     });
 
-    test('maps cancellation to OperationCancelledFailure with cancelled flag', () async {
-      final repo = AgentQueriesRepositoryImpl(
-        _ThrowingDataSource(
-          const SocketDispatchCancelled(message: 'controller disposed'),
-        ),
-      );
+    test(
+      'maps cancellation to OperationCancelledFailure with cancelled flag',
+      () async {
+        final repo = AgentQueriesRepositoryImpl(
+          _ThrowingDataSource(
+            const SocketDispatchCancelled(message: 'controller disposed'),
+          ),
+        );
 
-      final failure = _batchFailureOf(await repo.executeSqlBatch(batchRequest));
+        final failure = _batchFailureOf(
+          await repo.executeSqlBatch(batchRequest),
+        );
 
-      check(failure).isA<OperationCancelledFailure>();
-      check(
-        failure.context[AgentQueriesFailureContext.cancelledField],
-      ).equals(true);
-      check(isCancelledAgentQueryFailure(failure.context)).isTrue();
-    });
+        check(failure).isA<OperationCancelledFailure>();
+        check(
+          failure.context[AgentQueriesFailureContext.cancelledField],
+        ).equals(true);
+        check(isCancelledAgentQueryFailure(failure.context)).isTrue();
+      },
+    );
 
     test(
       'maps RelayDispatcherDisposed to UnknownFailure with cancelled flag',

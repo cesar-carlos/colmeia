@@ -373,7 +373,8 @@ class _SalesLiveMapKpiSlice {
   }
 
   @override
-  int get hashCode => Object.hash(sessionExpired, salesDataPending, fingerprint);
+  int get hashCode =>
+      Object.hash(sessionExpired, salesDataPending, fingerprint);
 }
 
 @immutable

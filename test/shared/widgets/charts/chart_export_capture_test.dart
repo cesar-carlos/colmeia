@@ -1,4 +1,4 @@
-﻿import 'package:colmeia/shared/widgets/charts/app_chart_capture_helper.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_capture_helper.dart';
 import 'package:colmeia/shared/widgets/charts/chart_export_capture.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

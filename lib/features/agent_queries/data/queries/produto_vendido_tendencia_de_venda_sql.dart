@@ -404,25 +404,29 @@ $classificacaoLine
         ? "Diferenca > 0 AND Classificacao <> N'${SalesTrendClassificacao.novo}'"
         : 'Diferenca < 0';
     final orderBy = switch ((gainers, topMoversSortBy)) {
-      (true, SalesTrendTopMoversSortBy.diferenca) => '''
+      (true, SalesTrendTopMoversSortBy.diferenca) =>
+        '''
       Diferenca DESC,
       PercentualTendencia DESC,
       CodEmpresa ASC,
       CodFilial ASC,
       NomeProduto ASC''',
-      (true, SalesTrendTopMoversSortBy.percentual) => '''
+      (true, SalesTrendTopMoversSortBy.percentual) =>
+        '''
       PercentualTendencia DESC,
       Diferenca DESC,
       CodEmpresa ASC,
       CodFilial ASC,
       NomeProduto ASC''',
-      (false, SalesTrendTopMoversSortBy.diferenca) => '''
+      (false, SalesTrendTopMoversSortBy.diferenca) =>
+        '''
       Diferenca ASC,
       PercentualTendencia ASC,
       CodEmpresa ASC,
       CodFilial ASC,
       NomeProduto ASC''',
-      (false, SalesTrendTopMoversSortBy.percentual) => '''
+      (false, SalesTrendTopMoversSortBy.percentual) =>
+        '''
       PercentualTendencia ASC,
       Diferenca ASC,
       CodEmpresa ASC,

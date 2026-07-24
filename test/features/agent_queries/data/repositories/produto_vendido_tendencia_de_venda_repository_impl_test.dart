@@ -61,7 +61,6 @@ void main() {
     );
   }
 
-
   test('returns validation failure when current period is invalid', () async {
     final result = await repository.loadAll(
       userId: 'user-1',
@@ -439,82 +438,85 @@ void main() {
     check(row.classificacao).equals('CRESCENDO');
   });
 
-  test('loadPageAndSummary maps totalCount and partitions RowKind rows', () async {
-    when(
-      () => agentQueriesRepository.executeSql(any()),
-    ).thenAnswer(
-      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
-        AgentSqlExecutionResult(
-          rows: <Map<String, dynamic>>[
-            <String, dynamic>{
-              'RowKind': 'SUMMARY',
-              'Classificacao': 'CRESCENDO',
-              'QuantidadeProdutos': 8,
-              'ImpactoLiquido': '53.0',
-            },
-            <String, dynamic>{
-              'RowKind': 'PAGE',
-              'TotalCount': 57,
-              'CodEmpresa': 1,
-              'CodFilial': 1,
-              'CodProduto': 4051,
-              'NomeProduto': 'BOMBA DE AR',
-              'CodUnidadeMedida': 'PT',
-              'QtdAnterior': '1.0000000',
-              'QtdAtual': '20.0000000',
-              'Diferenca': '19.0000000',
-              'PercentualTendencia': '1900.0000000',
-              'Classificacao': 'CRESCENDO',
-            },
-            <String, dynamic>{
-              'RowKind': 'GAINER',
-              'CodEmpresa': 1,
-              'CodFilial': 1,
-              'CodProduto': 4051,
-              'NomeProduto': 'BOMBA DE AR',
-              'CodUnidadeMedida': 'PT',
-              'QtdAnterior': '1.0000000',
-              'QtdAtual': '20.0000000',
-              'Diferenca': '19.0000000',
-              'PercentualTendencia': '1900.0000000',
-              'Classificacao': 'CRESCENDO',
-            },
-            <String, dynamic>{
-              'RowKind': 'LOSER',
-              'CodEmpresa': 1,
-              'CodFilial': 1,
-              'CodProduto': 9001,
-              'NomeProduto': 'ITEM CAINDO',
-              'CodUnidadeMedida': 'UN',
-              'QtdAnterior': '10.0000000',
-              'QtdAtual': '1.0000000',
-              'Diferenca': '-9.0000000',
-              'PercentualTendencia': '-90.0000000',
-              'Classificacao': 'CAINDO',
-            },
-          ],
-          rowCount: 4,
+  test(
+    'loadPageAndSummary maps totalCount and partitions RowKind rows',
+    () async {
+      when(
+        () => agentQueriesRepository.executeSql(any()),
+      ).thenAnswer(
+        (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(
+            rows: <Map<String, dynamic>>[
+              <String, dynamic>{
+                'RowKind': 'SUMMARY',
+                'Classificacao': 'CRESCENDO',
+                'QuantidadeProdutos': 8,
+                'ImpactoLiquido': '53.0',
+              },
+              <String, dynamic>{
+                'RowKind': 'PAGE',
+                'TotalCount': 57,
+                'CodEmpresa': 1,
+                'CodFilial': 1,
+                'CodProduto': 4051,
+                'NomeProduto': 'BOMBA DE AR',
+                'CodUnidadeMedida': 'PT',
+                'QtdAnterior': '1.0000000',
+                'QtdAtual': '20.0000000',
+                'Diferenca': '19.0000000',
+                'PercentualTendencia': '1900.0000000',
+                'Classificacao': 'CRESCENDO',
+              },
+              <String, dynamic>{
+                'RowKind': 'GAINER',
+                'CodEmpresa': 1,
+                'CodFilial': 1,
+                'CodProduto': 4051,
+                'NomeProduto': 'BOMBA DE AR',
+                'CodUnidadeMedida': 'PT',
+                'QtdAnterior': '1.0000000',
+                'QtdAtual': '20.0000000',
+                'Diferenca': '19.0000000',
+                'PercentualTendencia': '1900.0000000',
+                'Classificacao': 'CRESCENDO',
+              },
+              <String, dynamic>{
+                'RowKind': 'LOSER',
+                'CodEmpresa': 1,
+                'CodFilial': 1,
+                'CodProduto': 9001,
+                'NomeProduto': 'ITEM CAINDO',
+                'CodUnidadeMedida': 'UN',
+                'QtdAnterior': '10.0000000',
+                'QtdAtual': '1.0000000',
+                'Diferenca': '-9.0000000',
+                'PercentualTendencia': '-90.0000000',
+                'Classificacao': 'CAINDO',
+              },
+            ],
+            rowCount: 4,
+          ),
         ),
-      ),
-    );
+      );
 
-    final filter = buildValidFilter();
-    final result = await repository.loadPageAndSummary(
-      userId: 'user-1',
-      agentId: 'agent-1',
-      pageFilter: filter,
-      summaryFilter: filter,
-    );
+      final filter = buildValidFilter();
+      final result = await repository.loadPageAndSummary(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        pageFilter: filter,
+        summaryFilter: filter,
+      );
 
-    check(result.isSuccess()).isTrue();
-    final data = result.getOrThrow();
-    check(data.totalCount).equals(57);
-    check(data.rows.length).equals(1);
-    check(data.rows.single.codProduto).equals(4051);
-    check(data.summaryRows.single.quantidadeProdutos).equals(8);
-    check(data.topGainers.single.codProduto).equals(4051);
-    check(data.topLosers.single.codProduto).equals(9001);
-  });
+      check(result.isSuccess()).isTrue();
+      final data = result.getOrThrow();
+      check(data.totalCount).equals(57);
+      check(data.rows.length).equals(1);
+      check(data.rows.single.codProduto).equals(4051);
+      check(data.summaryRows.single.quantidadeProdutos).equals(8);
+      check(data.topGainers.single.codProduto).equals(4051);
+      check(data.topLosers.single.codProduto).equals(9001);
+    },
+  );
 
   test('loadSummary sends summary SQL and bounded maxRows', () async {
     when(
@@ -688,7 +690,8 @@ void main() {
       check(result.isError()).isTrue();
       check(result.exceptionOrNull()).isA<ValidationFailure>();
       check(result.exceptionOrNull()!.message).equals(
-        ProdutoVendidoTendenciaDeVendaRepositoryImpl.errorScreenUniverseMismatch,
+        ProdutoVendidoTendenciaDeVendaRepositoryImpl
+            .errorScreenUniverseMismatch,
       );
       verifyNever(() => agentQueriesRepository.executeSql(any()));
     },
