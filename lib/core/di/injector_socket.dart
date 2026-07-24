@@ -226,7 +226,8 @@ void registerInjectorSocket(GetIt getIt) {
         () => AppEnvironment.socketRelayBatchEnabled
             ? RelayBatchCommandCoordinator(
                 inner: getIt<RelayCommandDispatcherImpl>(),
-                maxInflightPerAgent: AppEnvironment.socketMaxInflightPerAgent > 0
+                maxInflightPerAgent:
+                    AppEnvironment.socketMaxInflightPerAgent > 0
                     ? AppEnvironment.socketMaxInflightPerAgent
                     : null,
                 onBatchEmission: ({required size, required partialFailure}) =>

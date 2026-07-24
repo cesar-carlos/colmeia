@@ -141,8 +141,9 @@ class AgentSqlExecuteBatchCommand {
     if (order != null && order < 0) {
       return 'executionOrder must be >= 0';
     }
-    final namedParamsError =
-        AgentSqlBridgeLimits.namedParamsUtf8JsonSizeError(namedParams);
+    final namedParamsError = AgentSqlBridgeLimits.namedParamsUtf8JsonSizeError(
+      namedParams,
+    );
     if (namedParamsError != null) {
       return namedParamsError;
     }

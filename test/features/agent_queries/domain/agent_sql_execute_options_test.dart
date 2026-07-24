@@ -30,7 +30,9 @@ void main() {
     });
 
     test('accepts maxRows at hub cap', () {
-      const o = AgentSqlExecuteOptions(maxRows: AgentSqlBridgeLimits.maxRowsMax);
+      const o = AgentSqlExecuteOptions(
+        maxRows: AgentSqlBridgeLimits.maxRowsMax,
+      );
       check(o.validationError()).isNull();
     });
 

@@ -203,8 +203,9 @@ class AgentSqlExecuteRequest {
       return 'pagination cannot be combined with executionMode.preserve';
     }
 
-    final namedParamsError =
-        AgentSqlBridgeLimits.namedParamsUtf8JsonSizeError(namedParams);
+    final namedParamsError = AgentSqlBridgeLimits.namedParamsUtf8JsonSizeError(
+      namedParams,
+    );
     if (namedParamsError != null) {
       return namedParamsError;
     }

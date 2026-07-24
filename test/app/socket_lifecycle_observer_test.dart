@@ -406,7 +406,9 @@ void main() {
       setUp(() {
         stateController =
             StreamController<ConsumerSocketConnectionState>.broadcast();
-        when(() => connection.states()).thenAnswer((_) => stateController.stream);
+        when(
+          () => connection.states(),
+        ).thenAnswer((_) => stateController.stream);
       });
 
       tearDown(() async {

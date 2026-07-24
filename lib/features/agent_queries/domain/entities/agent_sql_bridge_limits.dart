@@ -13,7 +13,9 @@ abstract final class AgentSqlBridgeLimits {
 
   /// Returns a validation error when [namedParams] exceeds the UTF-8 JSON size
   /// cap, or `null` when within limits.
-  static String? namedParamsUtf8JsonSizeError(Map<String, Object?> namedParams) {
+  static String? namedParamsUtf8JsonSizeError(
+    Map<String, Object?> namedParams,
+  ) {
     final byteLength = utf8.encode(jsonEncode(namedParams)).length;
     if (byteLength > namedParamsJsonMaxUtf8Bytes) {
       return 'namedParams JSON must be at most '
