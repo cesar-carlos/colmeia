@@ -1,64 +1,72 @@
-# Hub: aceitar `timeoutMs` no envelope `relay:rpc.request`
+# Hub: accept `timeoutMs` on the `relay:rpc.request` envelope
 
 > **Audience:** `plug_server`  
-> **Status:** aberto — Colmeia ja envia; schema Zod stripa o campo  
-> **Priority:** medium (paridade REST; desbloqueia SQL longo no smoke)
+> **Status:** **resolved** — hub schema and timer honour envelope `timeoutMs`
+> (validated in `plug_server` around commit/support rollout; Colmeia already
+> sends the field)  
+> **Priority:** medium (REST parity; long SQL on relay)
 
-## Problema
+## Current state
 
-No REST / `agents:command`, o body aceita `timeoutMs` e o hub calcula a
-espera com `computeBridgeWaitTimeoutMs`.
+The hub accepts optional `timeoutMs` on `relay:rpc.request` and
+`relay:rpc.request.batch` envelopes. The relay route timer uses
+`computeBridgeWaitTimeoutMs(command, timeoutMs ?? SOCKET_RELAY_REQUEST_TIMEOUT_MS)`,
+matching REST / `agents:command` parity.
 
-No relay, `relayRpcEnvelopeSchema` **nao** declara `timeoutMs`. O timer e
-sempre `SOCKET_RELAY_REQUEST_TIMEOUT_MS` (`rpc_bridge_dispatch_relay.ts`).
+Colmeia sends `timeoutMs` = `bridgeTimeoutMs` on unary, streaming, and batch
+relay emits. The consumer dispatcher timer remains independent.
 
-Resultado: o consumer nao consegue pedir espera por-request no canal
-preferido (Socket/relay). SQL > default do env falha com
-`RELAY_REQUEST_TIMEOUT` mesmo com `bridgeTimeoutMs` alto no client.
+**Validation note:** behaviour was confirmed in `plug_server` (Zod schema +
+`rpc_bridge_dispatch_relay.ts` timer wiring) during the commit/support window
+that closed this handoff. Re-run the acceptance checks below when upgrading
+hub builds.
 
-## Pedido
+## Original problem (historical)
 
-1. Adicionar ao envelope de `relay:rpc.request` e `relay:rpc.request.batch`:
+On **2026-07-22** the relay envelope schema did **not** declare `timeoutMs`.
+Unknown fields were stripped and the wait was always
+`SOCKET_RELAY_REQUEST_TIMEOUT_MS` (`rpc_bridge_dispatch_relay.ts`). SQL longer
+than the env default failed with `RELAY_REQUEST_TIMEOUT` even when the client
+sent a higher `bridgeTimeoutMs`.
+
+## Original request (historical)
+
+1. Add to `relay:rpc.request` and `relay:rpc.request.batch` envelopes:
 
 ```ts
 timeoutMs: z.number().int().positive().max(360_000).optional()
 ```
 
-(teto alinhado a REST: `AGENT_TIMEOUT_MS_LIMIT + 60000`).
+(ceiling aligned with REST: `AGENT_TIMEOUT_MS_LIMIT + 60000`).
 
-2. Propagar ate o timer do route:
+2. Propagate to the route timer:
 
 ```text
 effective = computeBridgeWaitTimeoutMs(command, timeoutMs ?? SOCKET_RELAY_REQUEST_TIMEOUT_MS)
 ```
 
-3. No batch, o mesmo `timeoutMs` do envelope aplica a cada item (ou
-   documentar max por item se preferirem).
+3. On batch, the same envelope `timeoutMs` applies to each item (or document
+   per-item max if preferred).
 
-4. Documentar em `docs/socket/socket_relay_protocol.md` e
-   `docs/socket/socket_client_sdk.md` (secao opt-in do envelope).
+4. Document in `docs/socket/socket_relay_protocol.md` and
+   `docs/socket/socket_client_sdk.md` (envelope opt-in section).
 
-5. Em timeout: manter `error.data.code = RELAY_REQUEST_TIMEOUT` + log
-   `relay_request_timeout` com `conversationId` / `requestId` /
+5. On timeout: keep `error.data.code = RELAY_REQUEST_TIMEOUT` + log
+   `relay_request_timeout` with `conversationId` / `requestId` /
    `clientRequestId`.
 
-## Colmeia (ja pronto)
+## Acceptance criteria
 
-- Envia `timeoutMs` = `bridgeTimeoutMs` em unary / streaming / batch.
-- Timer local do consumer permanece independente (`timeout` do dispatcher).
+1. Envelope with `timeoutMs: 60000` makes the hub wait ~60s (not the env
+   default) before `RELAY_REQUEST_TIMEOUT`.
+2. Without `timeoutMs`, behaviour falls back to the env default.
+3. Socket docs and Zod schema reject invalid values with
+   `VALIDATION_ERROR` / `BAD_REQUEST` on `relay:rpc.accepted`.
 
-## Criterios de aceite
+## References
 
-1. Envelope com `timeoutMs: 60000` faz o hub esperar ~60s (nao o default
-   de env) antes de `RELAY_REQUEST_TIMEOUT`.
-2. Sem `timeoutMs`, comportamento atual (env default) permanece.
-3. Docs socket atualizadas; schema Zod rejeita valores invalidos com
-   `VALIDATION_ERROR` / `BAD_REQUEST` em `relay:rpc.accepted`.
-
-## Referencias
-
-- Schema atual: `src/presentation/socket/consumers/relay_rpc_request.handler.ts`
+- Schema: `src/presentation/socket/consumers/relay_rpc_request.handler.ts`
 - Batch: `src/presentation/socket/consumers/relay_rpc_request_batch.handler.ts`
 - Timer: `src/presentation/socket/hub/relay/rpc_bridge_dispatch_relay.ts`
-- Paridade REST: `computeBridgeWaitTimeoutMs` em `command_transformers.ts`
-- Smoke relacionado: [`relay_request_timeout_socket_smoke_2026_07_22.md`](./relay_request_timeout_socket_smoke_2026_07_22.md)
+- REST parity: `computeBridgeWaitTimeoutMs` in `command_transformers.ts`
+- Related smoke: [`relay_request_timeout_socket_smoke_2026_07_22.md`](./relay_request_timeout_socket_smoke_2026_07_22.md)

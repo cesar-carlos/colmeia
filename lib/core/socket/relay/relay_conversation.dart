@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation_end_reasons.dart';
+import 'package:colmeia/core/socket/relay/relay_conversation_ended_router.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation_state.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
@@ -28,24 +29,29 @@ class RelayConversation {
     Duration startTimeout = const Duration(seconds: 10),
     Duration endTimeout = const Duration(seconds: 5),
     Uuid uuid = const Uuid(),
+    RelayConversationEndedRouter? conversationEndedRouter,
   }) : _connection = connection,
        _agentId = agentId,
        _startTimeout = startTimeout,
        _endTimeout = endTimeout,
-       _uuid = uuid;
+       _uuid = uuid,
+       _conversationEndedRouter = conversationEndedRouter;
 
   final ConsumerSocketConnection _connection;
   final String _agentId;
   final Duration _startTimeout;
   final Duration _endTimeout;
   final Uuid _uuid;
+  final RelayConversationEndedRouter? _conversationEndedRouter;
 
   RelayConversationState _state = const RelayConversationIdle();
   Future<RelayConversationActive>? _inFlightStart;
   Future<void>? _inFlightEnd;
+  Completer<void>? _endAckCompleter;
 
   void Function(Object?)? _conversationStartedHandler;
   void Function(Object?)? _conversationEndedHandler;
+  ConversationEndedCallback? _routerEndedCallback;
 
   String get agentId => _agentId;
   RelayConversationState get state => _state;
@@ -245,28 +251,59 @@ class RelayConversation {
     final endRequestId = _uuid.v4();
     String? hubEndedReason;
     final completer = Completer<void>();
-    void onEnded(Object? raw) {
+    _endAckCompleter = completer;
+
+    void completeAck({String? hubReason}) {
       if (completer.isCompleted) {
         return;
       }
-      final map = _toMap(raw);
-      final endedId = map?['conversationId']?.toString();
-      if (endedId != null && endedId != id) {
-        // Different conversation; not ours.
-        return;
-      }
-      final echoedRequestId = map?['requestId']?.toString();
-      if (echoedRequestId != null &&
-          echoedRequestId.isNotEmpty &&
-          echoedRequestId != endRequestId) {
-        return;
-      }
-      hubEndedReason = map?['reason']?.toString();
+      hubEndedReason = hubReason;
       completer.complete();
     }
 
-    _conversationEndedHandler = onEnded;
-    _connection.raw.on(RelayEventNames.conversationEnded, onEnded);
+    final router = _conversationEndedRouter;
+    if (router != null) {
+      void onEnded({
+        required String conversationId,
+        String? requestId,
+        String? reason,
+      }) {
+        if (conversationId != id) {
+          return;
+        }
+        if (requestId != null &&
+            requestId.isNotEmpty &&
+            requestId != endRequestId) {
+          return;
+        }
+        completeAck(hubReason: reason);
+      }
+
+      _routerEndedCallback = onEnded;
+      router.addListener(onEnded);
+    } else {
+      void onEnded(Object? raw) {
+        if (completer.isCompleted) {
+          return;
+        }
+        final map = _toMap(raw);
+        final endedId = map?['conversationId']?.toString();
+        if (endedId != null && endedId != id) {
+          return;
+        }
+        final echoedRequestId = map?['requestId']?.toString();
+        if (echoedRequestId != null &&
+            echoedRequestId.isNotEmpty &&
+            echoedRequestId != endRequestId) {
+          return;
+        }
+        completeAck(hubReason: map?['reason']?.toString());
+      }
+
+      _conversationEndedHandler = onEnded;
+      _connection.raw.on(RelayEventNames.conversationEnded, onEnded);
+    }
+
     try {
       _connection.raw.emit(
         RelayEventNames.conversationEnd,
@@ -301,6 +338,7 @@ class RelayConversation {
       );
     } finally {
       _detachConversationEndedListener();
+      _endAckCompleter = null;
       _setState(
         RelayConversationEnded(
           agentId: _agentId,
@@ -315,11 +353,17 @@ class RelayConversation {
   }
 
   /// Marks the conversation as terminated due to an external event (socket
-  /// disconnect, app:error). No event is emitted to the hub.
+  /// disconnect, hub `conversation.ended`, app:error). No event is emitted
+  /// to the hub.
   void forceEnd({String? reason}) {
     final id = conversationId;
     _inFlightStart = null;
     _inFlightEnd = null;
+    final endAck = _endAckCompleter;
+    if (endAck != null && !endAck.isCompleted) {
+      endAck.complete();
+    }
+    _endAckCompleter = null;
     _detachConversationStartedListener();
     _detachConversationEndedListener();
     _setState(
@@ -340,6 +384,11 @@ class RelayConversation {
   }
 
   void _detachConversationEndedListener() {
+    final routerCallback = _routerEndedCallback;
+    if (routerCallback != null) {
+      _conversationEndedRouter?.removeListener(routerCallback);
+      _routerEndedCallback = null;
+    }
     final handler = _conversationEndedHandler;
     if (handler != null) {
       _connection.raw.off(RelayEventNames.conversationEnded, handler);

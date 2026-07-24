@@ -105,5 +105,31 @@ void main() {
       });
       check(result).equals(const Duration(milliseconds: 100));
     });
+
+    test('reads top-level retryAfterSeconds', () {
+      final result = extractRetryAfterFromAppError(<String, Object?>{
+        'code': 'SERVICE_UNAVAILABLE',
+        'retryAfterSeconds': 12,
+      });
+      check(result).equals(const Duration(seconds: 12));
+    });
+
+    test('millisecond fields take precedence over seconds', () {
+      final result = extractRetryAfterFromAppError(<String, Object?>{
+        'retryAfterMs': 500,
+        'retryAfterSeconds': 12,
+      });
+      check(result).equals(const Duration(milliseconds: 500));
+    });
+
+    test('reads error.retry_after_seconds', () {
+      final result = extractRetryAfterFromAppError(<String, Object?>{
+        'error': <String, Object?>{
+          'code': 'SERVICE_UNAVAILABLE',
+          'retry_after_seconds': 3,
+        },
+      });
+      check(result).equals(const Duration(seconds: 3));
+    });
   });
 }

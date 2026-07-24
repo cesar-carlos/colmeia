@@ -23,6 +23,7 @@ import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
 import 'package:colmeia/core/socket/relay/relay_batch_command_coordinator.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher_impl.dart';
+import 'package:colmeia/core/socket/relay/relay_conversation_ended_router.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation_manager.dart';
 import 'package:colmeia/core/socket/socket_auth_token_provider.dart';
 import 'package:colmeia/core/socket/socket_command_dispatcher.dart';
@@ -171,6 +172,12 @@ void registerInjectorSocket(GetIt getIt) {
   if (AppEnvironment.socketRelayEnabled &&
       !AppEnvironment.e2eDisableRelayDispatch) {
     getIt
+      ..registerLazySingleton<RelayConversationEndedRouter>(
+        () => RelayConversationEndedRouter(
+          connection: getIt<ConsumerSocketConnection>(),
+        ),
+        dispose: (router) => router.dispose(),
+      )
       ..registerLazySingleton<RelayConversationManager>(
         () => RelayConversationManager(
           connection: getIt<ConsumerSocketConnection>(),
@@ -181,6 +188,7 @@ void registerInjectorSocket(GetIt getIt) {
             milliseconds: AppEnvironment.socketRelayConversationEndTimeoutMs,
           ),
           channelMetrics: getIt<SocketChannelMetrics>(),
+          conversationEndedRouter: getIt<RelayConversationEndedRouter>(),
         ),
         dispose: (manager) => manager.dispose(),
       )
@@ -202,6 +210,7 @@ void registerInjectorSocket(GetIt getIt) {
           concurrencyGate: _resolveConcurrencyGate(getIt),
           channelMetrics: getIt<SocketChannelMetrics>(),
           latencyOracle: _resolveLatencyOracle(getIt),
+          conversationEndedRouter: getIt<RelayConversationEndedRouter>(),
         ),
         // Concrete impl owns the resources; the public interface below
         // is a thin wrapper that just delegates, so disposing the impl
@@ -217,6 +226,9 @@ void registerInjectorSocket(GetIt getIt) {
         () => AppEnvironment.socketRelayBatchEnabled
             ? RelayBatchCommandCoordinator(
                 inner: getIt<RelayCommandDispatcherImpl>(),
+                maxInflightPerAgent: AppEnvironment.socketMaxInflightPerAgent > 0
+                    ? AppEnvironment.socketMaxInflightPerAgent
+                    : null,
                 onBatchEmission: ({required size, required partialFailure}) =>
                     getIt<SocketChannelMetrics>().recordRelayBatchEmission(
                       size: size,
@@ -280,6 +292,8 @@ void registerInjectorSocket(GetIt getIt) {
     );
   }
 
+  // [ConsumerSocketConnectionPool] logs when poolSize > 1 because secondary
+  // is not wired in DI (see env_keys.socketConnectionPoolSize).
   getIt
     ..registerLazySingleton<ConsumerSocketConnectionPool>(
       () => ConsumerSocketConnectionPool(
@@ -328,12 +342,11 @@ PayloadFrameCodec _buildPayloadFrameCodec() {
   final key = AppEnvironment.socketPayloadSigningKey;
   final requireSignature = AppEnvironment.socketPayloadRequireSignature;
   if (requireSignature && key.isEmpty) {
-    AppLogger.warning(
+    throw StateError(
       'SOCKET_PAYLOAD_REQUIRE_SIGNATURE is true but '
-      'SOCKET_PAYLOAD_SIGNING_KEY is empty — strict verification disabled',
-      context: const <String, Object?>{
-        'component': 'injector_socket',
-      },
+      'SOCKET_PAYLOAD_SIGNING_KEY is empty. Strict PayloadFrame verification '
+      'cannot be enabled without a signing key — set the key or disable '
+      'SOCKET_PAYLOAD_REQUIRE_SIGNATURE.',
     );
   }
   if (key.isEmpty) {

@@ -18,12 +18,12 @@ constants.
 | `docs/limits/limites_acesso_e_quotas.md` | Access limits, quotas, rate-limit buckets, and fair-share rules that cap REST, `agents:command`, and relay throughput. |
 | `docs/performance_hub_agent.md` | Hub/agent performance tuning: Socket.IO transport, relay buffer caps, inflight gates, and staging smoke env hints referenced from Colmeia rollout checklists. |
 | `docs/adrs/0008-relay-batch-protocol.md` | ADR for relay JSON-RPC batch (`relay:rpc.request.batch`, v1 shipped **2026-05-28**). |
-| `docs/adrs/0009-relay-unary-fast-path.md` | ADR for relay unary fast-path (`fastPath` opt-in; hub defect on JSON-RPC `id` echo blocks client rollout — see Colmeia [`docs/server_adjustments/relay_unary_fast_path.md`](server_adjustments/relay_unary_fast_path.md)). |
+| `docs/adrs/0009-relay-unary-fast-path.md` | ADR for relay unary fast-path (`fastPath` opt-in; hub echoes client JSON-RPC `id` on fast-path responses — see Colmeia [`docs/server_adjustments/relay_unary_fast_path.md`](server_adjustments/relay_unary_fast_path.md)). |
 | `docs/adrs/0010-request-server-timings.md` | ADR for per-phase `requestServerTimings` on relay, `agents:command`, and REST. |
 | `docs/plug_agente/03_performance_roadmap.md` | Agent-side performance roadmap and expectations for bridge SQL, streaming, and batch semantics. |
 | Colmeia [`docs/bridge_agent_sql_api_options.md`](bridge_agent_sql_api_options.md) | Colmeia-facing bridge SQL summary: `sql.execute` / `sql.executeBatch`, choosing `multi_result` vs semantic batch vs JSON-RPC batch arrays, overview read-only parallelism (`max_parallel_read_only_batch_items`). Payload examples: `plug_server/docs/snippets/agent_command_performance_options.ts`. |
 | Colmeia [`docs/Features/socket/socket_channel_performance_review.md`](Features/socket/socket_channel_performance_review.md) | Client socket/relay performance notes: coalescing, batch, gates, temporary REST latch, obtain single-flight, pool=`1`. |
-| Colmeia [`docs/Features/socket/socket_production_rollout_runbook.md`](Features/socket/socket_production_rollout_runbook.md) | Rollout smoke + troubleshooting (temp REST latch, fastPath id echo). |
+| Colmeia [`docs/Features/socket/socket_production_rollout_runbook.md`](Features/socket/socket_production_rollout_runbook.md) | Rollout smoke + troubleshooting (temp REST latch, relay fast-path). |
 
 ## Socket contract used by Colmeia
 
@@ -63,8 +63,8 @@ constants.
 - Relay unary uses one correlatable JSON-RPC command per `relay:rpc.request`.
   Multi-RPC relay batching uses `relay:rpc.request.batch` when both hub and
   client enable `SOCKET_RELAY_BATCH_ENABLED` (hub v1 shipped **2026-05-28**;
-  Colmeia default remains `false` until staging validation). Do not send
-  JSON-RPC notifications (`id: null`) through relay.
+  `true` in bundled `default.env`). Do not send JSON-RPC notifications
+  (`id: null`) through relay.
 - `client:agent.profile.updated` is treated as PayloadFrame-only by default.
   Raw JSON maps are accepted only when Colmeia is explicitly running in
   `SOCKET_PROFILE_UPDATED_LEGACY_RAW_JSON_ENABLED=true` migration mode.
@@ -161,9 +161,10 @@ Use this checklist when re-validating hub rollouts or local overrides:
    `load_sales_live_map_use_case_e2e_test.dart`,
    `agent_queries_socket_relay_smoke_e2e_test.dart`, and
    `agent_query_across_agents_repositories_e2e_test.dart` (worst-case fan-out).
-4. **Do not enable** `SOCKET_RELAY_FAST_PATH_ENABLED` until the hub echoes the
-   client JSON-RPC `id` on fast-path responses
-   ([`server_adjustments/relay_unary_fast_path.md`](server_adjustments/relay_unary_fast_path.md)).
+4. **Fast-path:** `SOCKET_RELAY_FAST_PATH_ENABLED=true` is the bundled default
+   (hub echoes client JSON-RPC `id` per ADR 0009 — see
+   [`server_adjustments/relay_unary_fast_path.md`](server_adjustments/relay_unary_fast_path.md)).
+   Roll back to `false` only on hubs that still return a hub UUID in `body.id`.
 5. **Optional:** `SOCKET_REQUEST_SERVER_TIMINGS_ENABLED=true` on hub + client
    for phase correlation during staging only.
 6. **Sign-off:** no new `relay_batch_not_supported` / `RATE_LIMITED` spikes;

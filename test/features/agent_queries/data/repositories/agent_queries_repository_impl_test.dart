@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_limits.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
@@ -169,14 +172,9 @@ void main() {
       final request = AgentSqlExecuteRequest(
         agentId: 'agent-1',
         sql: 'SELECT 1',
-        namedParams: <String, Object?>{
-          for (
-            var i = 0;
-            i < AgentSqlExecuteRequest.bridgeMaxNamedParameterCount + 1;
-            i++
-          )
-            'p$i': i,
-        },
+        namedParams: _namedParamsAtUtf8JsonByteLength(
+          AgentSqlBridgeLimits.namedParamsJsonMaxUtf8Bytes + 1,
+        ),
       );
 
       final result = await repository.executeSql(request);
@@ -498,4 +496,41 @@ void main() {
       check(rpcFailure.context[AgentSqlRpcFailureUiKey.field]).isNull();
     },
   );
+}
+
+Map<String, Object?> _namedParamsAtUtf8JsonByteLength(int targetBytes) {
+  if (targetBytes <= 0) {
+    throw ArgumentError.value(targetBytes);
+  }
+
+  var low = 0;
+  var high = targetBytes;
+  while (low < high) {
+    final mid = (low + high + 1) ~/ 2;
+    final size = utf8
+        .encode(jsonEncode(<String, Object?>{'p': 'a' * mid}))
+        .length;
+    if (size <= targetBytes) {
+      low = mid;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  final buffer = StringBuffer('a' * low);
+  var size = utf8
+      .encode(jsonEncode(<String, Object?>{'p': buffer.toString()}))
+      .length;
+  while (size < targetBytes) {
+    buffer.write('a');
+    size = utf8
+        .encode(jsonEncode(<String, Object?>{'p': buffer.toString()}))
+        .length;
+  }
+  var value = buffer.toString();
+  while (size > targetBytes) {
+    value = value.substring(0, value.length - 1);
+    size = utf8.encode(jsonEncode(<String, Object?>{'p': value})).length;
+  }
+  return <String, Object?>{'p': value};
 }

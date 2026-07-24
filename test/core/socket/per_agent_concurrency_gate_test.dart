@@ -165,5 +165,103 @@ void main() {
         gate.release('a');
       },
     );
+
+    group('acquireSlots', () {
+      test('rejects count less than 1', () async {
+        final gate = PerAgentConcurrencyGate(maxInflightPerAgent: 4);
+        await expectLater(
+          () => gate.acquireSlots('a', 0),
+          throwsA(isA<ArgumentError>()),
+        );
+      });
+
+      test('rejects count above maxInflightPerAgent', () async {
+        final gate = PerAgentConcurrencyGate(maxInflightPerAgent: 4);
+        await expectLater(
+          () => gate.acquireSlots('a', 5),
+          throwsA(isA<StateError>()),
+        );
+      });
+
+      test('grants multiple slots atomically when capacity allows', () async {
+        final gate = PerAgentConcurrencyGate();
+        await gate.acquireSlots('a', 8);
+        check(gate.inflightFor('a')).equals(8);
+        gate.releaseSlots('a', 8);
+        check(gate.inflightFor('a')).equals(0);
+      });
+
+      test(
+        'waits until enough capacity exists instead of deadlocking',
+        () async {
+          final gate = PerAgentConcurrencyGate();
+          await gate.acquireSlots('a', 5);
+
+          var batchResolved = false;
+          final batch = gate
+              .acquireSlots('a', 8)
+              .whenComplete(() => batchResolved = true);
+
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          check(batchResolved).isFalse();
+          check(gate.waitingFor('a')).equals(1);
+
+          // Freeing one slot is not enough for an 8-slot waiter.
+          gate.releaseSlots('a', 1);
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          check(batchResolved).isFalse();
+
+          // Free the remaining 4 → 0 inflight → 8-slot batch can grant.
+          gate.releaseSlots('a', 4);
+          await batch;
+          check(batchResolved).isTrue();
+          check(gate.inflightFor('a')).equals(8);
+          gate.releaseSlots('a', 8);
+        },
+      );
+
+      test(
+        'FIFO does not skip a large head waiter for a smaller one',
+        () async {
+          final gate = PerAgentConcurrencyGate(maxInflightPerAgent: 4);
+          await gate.acquireSlots('a', 2);
+
+          var largeDone = false;
+          var smallDone = false;
+          final large = gate
+              .acquireSlots('a', 4)
+              .whenComplete(() => largeDone = true);
+          final small = gate
+              .acquireSlots('a', 1)
+              .whenComplete(() => smallDone = true);
+
+          gate.releaseSlots('a', 2);
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          // Head waiter needs 4; with 0 inflight it should grant and then
+          // the small waiter stays blocked until large releases.
+          await large;
+          check(largeDone).isTrue();
+          check(smallDone).isFalse();
+          gate.releaseSlots('a', 4);
+          await small;
+          check(smallDone).isTrue();
+          gate.release('a');
+        },
+      );
+
+      test('cancelQueuedWaiter fails a multi-slot wait', () async {
+        final gate = PerAgentConcurrencyGate(maxInflightPerAgent: 2);
+        await gate.acquireSlots('a', 2);
+        late Completer<void> queued;
+        final waiting = gate.acquireSlots(
+          'a',
+          2,
+          onQueuedWaiter: (c) => queued = c,
+        );
+        gate.cancelQueuedWaiter('a', queued);
+        await expectLater(waiting, throwsA(isA<GateQueueWaitCancelled>()));
+        gate.releaseSlots('a', 2);
+      });
+    });
   });
 }

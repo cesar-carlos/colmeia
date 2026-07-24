@@ -15,6 +15,7 @@ import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
 import 'package:colmeia/core/socket/relay/relay_batch_item.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation.dart';
+import 'package:colmeia/core/socket/relay/relay_conversation_ended_router.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation_manager.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
@@ -57,6 +58,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
         RelayPayloadFrameCompression.auto,
     int defaultStreamInitialWindow = 32,
     int defaultStreamRefillThreshold = 16,
+    RelayConversationEndedRouter? conversationEndedRouter,
   }) : _connection = connection,
        _conversationManager = conversationManager,
        _codec = codec ?? const PayloadFrameCodec(),
@@ -67,8 +69,24 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
        _defaultCompression = defaultCompression,
        _defaultStreamInitialWindow = defaultStreamInitialWindow,
        _defaultStreamRefillThreshold = defaultStreamRefillThreshold,
+       _conversationEndedRouter = conversationEndedRouter,
        _outcomes = StreamController<RelayRpcOutcome>.broadcast() {
     _stateSub = _connection.states().listen(_onConnectionState);
+    if (_conversationEndedRouter != null) {
+      void handler({
+        required String conversationId,
+        String? requestId,
+        String? reason,
+      }) {
+        _onHubConversationEnded(
+          conversationId: conversationId,
+          reason: reason,
+        );
+      }
+
+      _routerCallback = handler;
+      _conversationEndedRouter.addListener(handler);
+    }
   }
 
   final ConsumerSocketConnection _connection;
@@ -128,6 +146,9 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       _pendingClientIdsByConversationId.remove(conversationId);
     }
   }
+
+  final RelayConversationEndedRouter? _conversationEndedRouter;
+  ConversationEndedCallback? _routerCallback;
 
   StreamSubscription<ConsumerSocketConnectionState>? _stateSub;
   io.Socket? _attachedSocket;
@@ -399,6 +420,16 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
         );
       }
     }
+    final concurrencyCeiling = _concurrencyGate?.maxInflightPerAgent;
+    if (concurrencyCeiling != null && items.length > concurrencyCeiling) {
+      throw RelayRequestRejected(
+        message:
+            'relay batch size ${items.length} exceeds per-agent concurrency '
+            'ceiling $concurrencyCeiling; split the call site or raise '
+            'SOCKET_MAX_INFLIGHT_PER_AGENT',
+        serverCode: 'BATCH_TOO_LARGE',
+      );
+    }
 
     // Register N pendings sharing the same conversation. The first call
     // resolves the conversation; subsequent items piggyback. Any failure
@@ -452,13 +483,21 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     final gate = _concurrencyGate;
     if (gate != null) {
       try {
-        // Acquire one slot per item, matching the hub-side gate behaviour
-        // described in `BATCH_RATE_LIMITED { availableSlots, requestedSlots }`.
+        // Atomic multi-slot reserve: acquiring one slot per item in a loop
+        // deadlocks when batch size > maxInflight (slots held by this batch
+        // never free until emit, but emit waits on the remaining acquires).
+        // Hub still sees N inflight items; we just reserve them together.
+        final slotAgentId = sharedAgentId ?? agentId;
+        await gate.acquireSlots(
+          slotAgentId,
+          pendings.length,
+          onQueuedWaiter: (c) {
+            for (final pending in pendings) {
+              pending.gateQueueWaitCompleter = c;
+            }
+          },
+        );
         for (final pending in pendings) {
-          await gate.acquire(
-            pending.agentId,
-            onQueuedWaiter: (c) => pending.gateQueueWaitCompleter = c,
-          );
           pending
             ..relayPerAgentSlotRelease = (() => gate.release(pending.agentId))
             ..gateQueueWaitCompleter = null;
@@ -633,12 +672,19 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       final message =
           error?['message']?.toString() ??
           'relay:rpc.batch_accepted reported success=false';
+      final details = _toMap(error?['details']) ?? _toMap(map['details']);
       _failBatchByEnvelopeId(
         map,
         RelayRequestRejected(
           message: message,
           serverCode: code,
           retryAfter: extractRetryAfterFromAppError(map),
+          availableSlots: _positiveIntOrNull(
+            details?['availableSlots'] ?? details?['available_slots'],
+          ),
+          requestedSlots: _positiveIntOrNull(
+            details?['requestedSlots'] ?? details?['requested_slots'],
+          ),
         ),
       );
       return;
@@ -772,6 +818,11 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       return;
     }
     _isDisposed = true;
+    final cb = _routerCallback;
+    if (cb != null) {
+      _conversationEndedRouter?.removeListener(cb);
+      _routerCallback = null;
+    }
     await _stateSub?.cancel();
     _stateSub = null;
     _detachListeners();
@@ -973,10 +1024,8 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
 
     final useFastPath =
         allowFastPath && AppEnvironment.socketRelayFastPathEnabled;
-    // Forward-compat: hub Zod schema does not accept timeoutMs yet
-    // (stripped; wait stays SOCKET_RELAY_REQUEST_TIMEOUT_MS). Keep
-    // emitting so the field is ready when the hub ships
-    // docs/plug_server/relay_envelope_timeout_ms.md.
+    // Per-request hub wait via envelope `timeoutMs` (REST parity through
+    // computeBridgeWaitTimeoutMs). See docs/plug_server/relay_envelope_timeout_ms.md.
     final hubTimeoutMs = _normalizeHubTimeoutMs(timeoutMs);
     try {
       _connection.raw.emit(
@@ -1310,6 +1359,14 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       return int.tryParse(raw.trim());
     }
     return null;
+  }
+
+  int? _positiveIntOrNull(Object? raw) {
+    final value = _toIntOrNull(raw);
+    if (value == null || value < 0) {
+      return null;
+    }
+    return value;
   }
 
   void _onAccepted(Object? raw) {
@@ -1891,14 +1948,11 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
         return null;
       }
       // Decoded JSON-RPC body: { jsonrpc, id, result|error, meta? }.
-      // CAVEAT (hub fast-path bug, 2026-05-28): when the hub honours
-      // `fastPath: true` it overwrites the JSON-RPC `id` with its own
-      // server-assigned UUID instead of echoing the client `id` (see
+      // Hub unary fast-path (ADR 0009): when the hub honours
+      // `fastPath: true` it skips `relay:rpc.accepted` but echoes the
+      // client JSON-RPC `id` in the response body (see
       // `docs/server_adjustments/relay_unary_fast_path.md`). Lookup by
-      // this `id` therefore misses every pending in that case, and the
-      // routing falls through to the upper-layer null branch. The fix
-      // belongs to the hub; once it ships, this branch starts matching
-      // again with no client change.
+      // this `id` correlates pending requests on the happy path.
       final id = decoded['id']?.toString();
       if (id == null || id.isEmpty) {
         return null;
@@ -2088,6 +2142,41 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     for (final entry in pending) {
       _failPending(entry.clientRequestId, buildException(entry));
     }
+  }
+
+  /// Fails every pending request on [conversationId] with [RelayConversationLost].
+  /// Idempotent — no-op when no pendings exist for the conversation.
+  void failPendingsForConversation(
+    String conversationId, {
+    required String reason,
+  }) {
+    if (_isDisposed) {
+      return;
+    }
+    final clientIds = _pendingClientIdsByConversationId[conversationId];
+    if (clientIds == null || clientIds.isEmpty) {
+      return;
+    }
+    for (final clientRequestId in List<String>.of(clientIds)) {
+      _failPending(
+        clientRequestId,
+        RelayConversationLost(
+          message: 'Hub terminated relay conversation (reason=$reason)',
+          conversationId: conversationId,
+          clientRequestId: clientRequestId,
+        ),
+      );
+    }
+  }
+
+  void _onHubConversationEnded({
+    required String conversationId,
+    String? reason,
+  }) {
+    failPendingsForConversation(
+      conversationId,
+      reason: reason ?? 'hub_ended',
+    );
   }
 
   String? _extractMethod(Map<String, Object?> body) {

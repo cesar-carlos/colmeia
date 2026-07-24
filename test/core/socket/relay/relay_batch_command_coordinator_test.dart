@@ -386,6 +386,86 @@ void main() {
       check(emissions).isEmpty(); // emission counter is for sendUnary path
     });
 
+    test(
+      'caps maxBatchSize by maxInflightPerAgent so flushes cannot exceed gate',
+      () async {
+        final capped = RelayBatchCommandCoordinator(
+          inner: inner,
+          windowDuration: Duration.zero,
+          maxInflightPerAgent: 8,
+          onBatchEmission: ({required size, required partialFailure}) {
+            emissions.add(size);
+          },
+        );
+        addTearDown(capped.dispose);
+
+        final futures = <Future<Map<String, dynamic>>>[];
+        for (var i = 0; i < 10; i++) {
+          futures.add(
+            capped.sendUnary(
+              agentId: 'agent-1',
+              body: _bodyFor(id: 'rpc-$i'),
+              clientRequestId: 'rpc-$i',
+            ),
+          );
+        }
+        await Future.wait(futures);
+        check(inner.batchCalls.isNotEmpty).isTrue();
+        for (final call in inner.batchCalls) {
+          check(call.items.length <= 8).isTrue();
+        }
+      },
+    );
+
+    test(
+      'RATE_LIMITED with availableSlots splits once and retries',
+      () async {
+        var attempts = 0;
+        inner.onBatch = (agentId, items) async {
+          attempts += 1;
+          if (attempts == 1) {
+            throw const RelayRequestRejected(
+              message: 'requested 4 slots, only 2 available',
+              serverCode: 'RATE_LIMITED',
+              availableSlots: 2,
+              requestedSlots: 4,
+            );
+          }
+          return items
+              .map(
+                (item) => <String, dynamic>{
+                  'response': <String, dynamic>{
+                    'type': 'single',
+                    'success': true,
+                    'item': <String, dynamic>{
+                      'id': item.clientRequestId,
+                      'success': true,
+                    },
+                  },
+                },
+              )
+              .toList(growable: false);
+        };
+
+        final futures = <Future<Map<String, dynamic>>>[];
+        for (var i = 0; i < 4; i++) {
+          futures.add(
+            coordinator.sendUnary(
+              agentId: 'agent-1',
+              body: _bodyFor(id: 'rpc-$i'),
+              clientRequestId: 'rpc-$i',
+            ),
+          );
+        }
+        await Future.wait(futures);
+        // 1 rejected envelope + 2 split chunks.
+        check(attempts).equals(3);
+        check(inner.batchCalls.length).equals(3);
+        check(inner.batchCalls[1].items.length).equals(2);
+        check(inner.batchCalls[2].items.length).equals(2);
+      },
+    );
+
     test('cancel forwards to the inner dispatcher', () async {
       // Cancel a request that is NOT queued in the coordinator — pure
       // passthrough.

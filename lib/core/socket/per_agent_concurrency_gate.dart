@@ -7,7 +7,8 @@ final class GateQueueWaitCancelled implements Exception {
   const GateQueueWaitCancelled();
 }
 
-/// Bounds the number of in-flight `agents:command` dispatches per agent.
+/// Bounds the number of in-flight `agents:command` / relay dispatches per
+/// agent.
 ///
 /// Mirror of the hub's `SOCKET_REST_AGENT_MAX_INFLIGHT` (default 32) but
 /// **conservative on purpose** (default 8 in the app). Without this gate
@@ -16,15 +17,15 @@ final class GateQueueWaitCancelled implements Exception {
 ///
 /// Acquire/release semantics:
 ///
-/// - `acquire(agentId)` returns immediately when the per-agent counter is
-///   below [maxInflightPerAgent]; otherwise the future completes when an
-///   earlier `release(agentId)` frees a slot.
-/// - `release(agentId)` MUST be called exactly once for every `acquire`
-///   that completed (typically inside `finally`).
-/// - The waiter queue is unbounded unless [maxWaitersPerAgent] is set;
-///   callers should pair the gate with a request timeout to avoid
-///   head-of-line blocking forever (`SocketCommandDispatcher` already does
-///   that via the correlator).
+/// - [acquire] / [acquireSlots] return immediately when the per-agent
+///   counter has enough free capacity; otherwise the future completes when
+///   earlier [release] / [releaseSlots] frees room.
+/// - [release] / [releaseSlots] MUST be called for every acquire that
+///   completed (typically inside `finally`), with matching slot counts.
+/// - [acquireSlots] is atomic: either all requested slots are granted together
+///   or the caller waits until they all fit. This prevents relay batch
+///   deadlocks that arise from acquiring one slot per item in a loop.
+/// - The waiter queue is unbounded unless [maxWaitersPerAgent] is set.
 /// - When [maxWaitForSlot] is set, a waiter that stays queued longer than
 ///   that duration completes with [TimeoutException] and is removed from
 ///   the queue (no slot is consumed).
@@ -123,17 +124,39 @@ class PerAgentConcurrencyGate {
     }
   }
 
+  /// Acquires a single slot. Equivalent to [acquireSlots] with `count: 1`.
   Future<void> acquire(
     String agentId, {
     void Function(Completer<void> queuedWaitCompleter)? onQueuedWaiter,
+  }) => acquireSlots(agentId, 1, onQueuedWaiter: onQueuedWaiter);
+
+  /// Atomically reserves [count] slots for [agentId].
+  ///
+  /// Throws [ArgumentError] when [count] is less than 1. Throws [StateError]
+  /// when [count] exceeds [maxInflightPerAgent] (the request can never be
+  /// satisfied) or when the waiter queue is at [maxWaitersPerAgent].
+  Future<void> acquireSlots(
+    String agentId,
+    int count, {
+    void Function(Completer<void> queuedWaitCompleter)? onQueuedWaiter,
   }) async {
+    if (count < 1) {
+      throw ArgumentError.value(count, 'count', 'must be >= 1');
+    }
+    if (count > maxInflightPerAgent) {
+      throw StateError(
+        'PerAgentConcurrencyGate cannot grant $count slots for '
+        'agentId=$agentId (maxInflightPerAgent=$maxInflightPerAgent)',
+      );
+    }
     final current = _inflight[agentId] ?? 0;
-    if (current < maxInflightPerAgent) {
-      final newCount = current + 1;
+    final hasWaiters = _waiters[agentId]?.isNotEmpty ?? false;
+    // Strict FIFO: once anyone is queued, later callers join the queue
+    // even if their smaller count would fit in free capacity. Otherwise a
+    // multi-slot batch waiter can be starved forever by unary acquires.
+    if (!hasWaiters && current + count <= maxInflightPerAgent) {
+      final newCount = current + count;
       _inflight[agentId] = newCount;
-      // O(1): only a direct grant increases the per-agent count, so we
-      // update the session peak here and nowhere else. Release paths and
-      // waiter-inherit paths keep the count stable.
       _updateSessionPeak(newCount);
       return;
     }
@@ -157,52 +180,73 @@ class PerAgentConcurrencyGate {
           completer.completeError(
             TimeoutException(
               'PerAgentConcurrencyGate acquire wait exceeded for '
-              'agentId=$agentId',
+              'agentId=$agentId (slots=$count)',
               waitBudget,
             ),
           );
         }
       });
     }
-    queue.add(_QueuedWaiter(completer: completer, timeoutTimer: timer));
+    queue.add(
+      _QueuedWaiter(
+        completer: completer,
+        timeoutTimer: timer,
+        slotCount: count,
+      ),
+    );
     onQueuedWaiter?.call(completer);
     try {
       await completer.future;
     } finally {
       timer?.cancel();
     }
-    // A waiter inheriting a released slot does not change the per-agent
-    // count (one slot freed, immediately re-granted). No peak update needed.
   }
 
-  void release(String agentId) {
-    final waiters = _waiters[agentId];
-    if (waiters != null && waiters.isNotEmpty) {
-      while (waiters.isNotEmpty) {
-        final next = waiters.removeFirst();
-        final completer = next.completer;
-        next.cancelTimer();
-        if (completer.isCompleted) {
-          continue;
-        }
-        completer.complete();
-        if (waiters.isEmpty) {
-          _waiters.remove(agentId);
-        }
-        // The per-agent inflight count stays the same: one slot released,
-        // one immediately re-granted to the waiter. Session peak is
-        // unchanged — no update needed.
-        return;
-      }
-      _waiters.remove(agentId);
+  /// Releases a single slot. Equivalent to [releaseSlots] with `count: 1`.
+  void release(String agentId) => releaseSlots(agentId, 1);
+
+  /// Releases [count] previously acquired slots for [agentId], then tries
+  /// to grant the next FIFO waiter(s) that fit in the freed capacity.
+  void releaseSlots(String agentId, int count) {
+    if (count < 1) {
+      return;
     }
     final current = _inflight[agentId] ?? 0;
-    if (current <= 1) {
+    final remaining = current - count;
+    if (remaining <= 0) {
       _inflight.remove(agentId);
     } else {
-      _inflight[agentId] = current - 1;
+      _inflight[agentId] = remaining;
     }
-    // Decrementing the per-agent count can never increase the session peak.
+    _grantReadyWaiters(agentId);
+  }
+
+  /// FIFO grant: wake the head waiter only when its full slot count fits.
+  /// Never skip over a larger head waiter to serve a smaller one — that
+  /// would starve multi-slot batch acquires.
+  void _grantReadyWaiters(String agentId) {
+    final waiters = _waiters[agentId];
+    if (waiters == null || waiters.isEmpty) {
+      return;
+    }
+    while (waiters.isNotEmpty) {
+      final next = waiters.first;
+      final current = _inflight[agentId] ?? 0;
+      if (current + next.slotCount > maxInflightPerAgent) {
+        break;
+      }
+      waiters.removeFirst();
+      next.cancelTimer();
+      final newCount = current + next.slotCount;
+      _inflight[agentId] = newCount;
+      _updateSessionPeak(newCount);
+      if (!next.completer.isCompleted) {
+        next.completer.complete();
+      }
+    }
+    if (waiters.isEmpty) {
+      _waiters.remove(agentId);
+    }
   }
 
   void _removeQueuedWaiter(String agentId, Completer<void> target) {
@@ -228,10 +272,15 @@ class PerAgentConcurrencyGate {
 }
 
 class _QueuedWaiter {
-  _QueuedWaiter({required this.completer, this.timeoutTimer});
+  _QueuedWaiter({
+    required this.completer,
+    this.timeoutTimer,
+    this.slotCount = 1,
+  });
 
   final Completer<void> completer;
   final Timer? timeoutTimer;
+  final int slotCount;
 
   void cancelTimer() => timeoutTimer?.cancel();
 }

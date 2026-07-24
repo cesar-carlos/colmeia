@@ -164,6 +164,174 @@ void main() {
           );
         },
       );
+
+      test(
+        'agents:command legacy batch path (useRelay:false)',
+        () async {
+          if (_shouldSkipSocketSmoke(requireRelay: false)) {
+            return;
+          }
+
+          final connected = await getIt<ConsumerSocketConnection>().connect();
+          expect(connected.socketId, isNotEmpty);
+
+          final repo = getIt<AgentQueriesRepository>();
+          final batch = await runE2eAppResult(
+            () => repo.executeSqlBatch(
+              AgentSqlExecuteBatchRequest(
+                agentId: AppEnvironment.e2eAgentId,
+                clientToken: AppEnvironment.e2eClientToken,
+                bridgeTimeoutMs: 60000,
+                options: const AgentSqlExecuteBatchOptions(maxRows: 1),
+                commands: const <AgentSqlExecuteBatchCommand>[
+                  AgentSqlExecuteBatchCommand(
+                    sql: 'SELECT CodCliente FROM Cliente ORDER BY CodCliente',
+                  ),
+                  AgentSqlExecuteBatchCommand(
+                    sql: 'SELECT Nome FROM Cliente ORDER BY CodCliente',
+                  ),
+                ],
+              ),
+            ),
+            actionLabel: 'socket_agents_command_smoke_sql_execute_batch',
+          );
+
+          batch.fold(
+            (success) {
+              expect(success.items.length, 2);
+              expect(success.items.every((item) => item.ok), isTrue);
+            },
+            (failure) => fail(
+              'socket agents:command sql.executeBatch smoke failed: '
+              '${_describeFailure(failure)}',
+            ),
+          );
+        },
+      );
+
+      test(
+        'foreground reconnect recovers ConsumerSocketConnection',
+        () async {
+          if (_shouldSkipSocketSmoke(requireRelay: false)) {
+            return;
+          }
+
+          final connection = getIt<ConsumerSocketConnection>();
+          final first = await connection.connect();
+          expect(first.socketId, isNotEmpty);
+
+          await connection.disconnect(reason: 'e2e_reconnect_probe');
+          final second = await connection.connect();
+          expect(second.socketId, isNotEmpty);
+          expect(connection.isConnected, isTrue);
+        },
+      );
+
+      test(
+        'relay long timeoutMs envelope is honoured for slow SQL',
+        () async {
+          if (_shouldSkipSocketSmoke(requireRelay: true)) {
+            return;
+          }
+
+          final connected = await getIt<ConsumerSocketConnection>().connect();
+          expect(connected.socketId, isNotEmpty);
+
+          final repo = getIt<AgentQueriesRepository>();
+          final result = await runE2eAppResult(
+            () => repo.executeSql(
+              AgentSqlExecuteRequest(
+                agentId: AppEnvironment.e2eAgentId,
+                clientToken: AppEnvironment.e2eClientToken,
+                sql: 'SELECT CodCliente FROM Cliente ORDER BY CodCliente',
+                // Hub default wait is 30s; this proves the client envelope
+                // can raise the bridge wait without client-side premature fail.
+                bridgeTimeoutMs: 120000,
+                pagination: const AgentSqlPagePagination(page: 1, pageSize: 1),
+                executeOptions: const AgentSqlExecuteOptions(
+                  maxRows: 1,
+                  preferDbStreaming: false,
+                ),
+                useRelay: true,
+              ),
+            ),
+            actionLabel: 'socket_relay_smoke_long_timeout_ms',
+          );
+
+          result.fold(
+            (success) {
+              expect(success.rows, isNotEmpty);
+            },
+            (failure) => fail(
+              'socket relay long timeoutMs smoke failed: '
+              '${_describeFailure(failure)}',
+            ),
+          );
+        },
+      );
+
+      test(
+        'relay coordinator respects local gate (batch at/under maxInflight)',
+        () async {
+          if (_shouldSkipSocketSmoke(requireRelay: true)) {
+            return;
+          }
+          if (!AppEnvironment.socketRelayBatchEnabled) {
+            // ignore: avoid_print -- E2E skip hints
+            print(
+              'SKIP relay gate batch smoke: SOCKET_RELAY_BATCH_ENABLED=false',
+            );
+            return;
+          }
+
+          final connected = await getIt<ConsumerSocketConnection>().connect();
+          expect(connected.socketId, isNotEmpty);
+
+          final gate = AppEnvironment.socketMaxInflightPerAgent;
+          final underGateCount = gate > 0 ? gate : 8;
+          final repo = getIt<AgentQueriesRepository>();
+
+          Future<void> runParallelUnaries(int count) async {
+            final futures = List<Future<void>>.generate(count, (index) async {
+              final result = await runE2eAppResult(
+                () => repo.executeSql(
+                  AgentSqlExecuteRequest(
+                    agentId: AppEnvironment.e2eAgentId,
+                    clientToken: AppEnvironment.e2eClientToken,
+                    sql:
+                        'SELECT $index AS n, CodCliente FROM Cliente '
+                        'ORDER BY CodCliente',
+                    bridgeTimeoutMs: 90000,
+                    pagination: const AgentSqlPagePagination(
+                      page: 1,
+                      pageSize: 1,
+                    ),
+                    executeOptions: const AgentSqlExecuteOptions(
+                      maxRows: 1,
+                      preferDbStreaming: false,
+                    ),
+                    useRelay: true,
+                  ),
+                ),
+                actionLabel: 'socket_relay_gate_batch_$index',
+              );
+              result.fold(
+                (success) => expect(success.rows, isNotEmpty),
+                (failure) => fail(
+                  'relay gate parallel unary failed index=$index: '
+                  '${_describeFailure(failure)}',
+                ),
+              );
+            });
+            await Future.wait(futures);
+          }
+
+          // At/under gate: coordinator may coalesce into one wire batch.
+          await runParallelUnaries(underGateCount);
+          // Above gate: must still complete (split/cap) without deadlock.
+          await runParallelUnaries(underGateCount + 1);
+        },
+      );
     },
     tags: <String>['e2e'],
   );

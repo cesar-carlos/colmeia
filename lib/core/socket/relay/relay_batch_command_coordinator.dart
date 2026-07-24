@@ -28,6 +28,7 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
     required RelayCommandDispatcher inner,
     Duration windowDuration = const Duration(milliseconds: 8),
     int maxBatchSize = 32,
+    this.maxInflightPerAgent,
     void Function({required int size, required bool partialFailure})?
     onBatchEmission,
     void Function({required String reason})? onBypass,
@@ -36,18 +37,42 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
          'windowDuration must be >= 0',
        ),
        assert(maxBatchSize >= 1, 'maxBatchSize must be >= 1'),
+       assert(
+         maxInflightPerAgent == null || maxInflightPerAgent > 0,
+         'maxInflightPerAgent must be null or > 0',
+       ),
        _inner = inner,
        _windowDuration = windowDuration,
-       _maxBatchSize = maxBatchSize > 32 ? 32 : maxBatchSize,
+       _maxBatchSize = _resolveMaxBatchSize(
+         requested: maxBatchSize,
+         maxInflightPerAgent: maxInflightPerAgent,
+       ),
        _onBatchEmission = onBatchEmission,
        _onBypass = onBypass;
 
   final RelayCommandDispatcher _inner;
   final Duration _windowDuration;
   final int _maxBatchSize;
+
+  /// Optional local per-agent concurrency ceiling. When set, [_maxBatchSize]
+  /// never exceeds it so a flush cannot ask the gate for more slots than
+  /// it can ever grant.
+  final int? maxInflightPerAgent;
   final void Function({required int size, required bool partialFailure})?
   _onBatchEmission;
   final void Function({required String reason})? _onBypass;
+
+  static int _resolveMaxBatchSize({
+    required int requested,
+    required int? maxInflightPerAgent,
+  }) {
+    final cappedByProtocol = requested > 32 ? 32 : requested;
+    final ceiling = maxInflightPerAgent;
+    if (ceiling == null || ceiling <= 0) {
+      return cappedByProtocol;
+    }
+    return cappedByProtocol < ceiling ? cappedByProtocol : ceiling;
+  }
 
   final Map<String, _RelayBatchCollector> _collectorsByAgent =
       <String, _RelayBatchCollector>{};
@@ -220,31 +245,78 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
     collector.queue.removeRange(0, taken.length);
 
     final items = taken.map((pending) => pending.item).toList(growable: false);
-    List<Map<String, dynamic>> responses;
-    Object? failure;
-    StackTrace? failureStack;
     try {
-      responses = await _inner.sendBatch(
+      final responses = await _sendBatchWithOptionalSplit(
         agentId: collector.agentId,
         items: items,
         compression: collector.compression,
       );
+      _completeTaken(taken, responses);
     } on Object catch (e, s) {
-      failure = e;
-      failureStack = s;
-      responses = const <Map<String, dynamic>>[];
-    }
-
-    if (failure != null) {
       _onBatchEmission?.call(size: taken.length, partialFailure: false);
       for (final pending in taken) {
         if (!pending.completer.isCompleted) {
-          pending.completer.completeError(failure, failureStack);
+          pending.completer.completeError(e, s);
         }
       }
-      return;
     }
+  }
 
+  /// Sends [items] as one batch. On hub `RATE_LIMITED` with
+  /// `availableSlots > 0`, splits once into chunks of that size and
+  /// retries with the same idempotent client request ids. A second
+  /// `RATE_LIMITED` (or zero slots) propagates to the caller.
+  Future<List<Map<String, dynamic>>> _sendBatchWithOptionalSplit({
+    required String agentId,
+    required List<RelayBatchItem> items,
+    required RelayPayloadFrameCompression compression,
+  }) async {
+    try {
+      return await _inner.sendBatch(
+        agentId: agentId,
+        items: items,
+        compression: compression,
+      );
+    } on RelayRequestRejected catch (error) {
+      final available = error.availableSlots;
+      if (error.code != 'RATE_LIMITED' ||
+          available == null ||
+          available <= 0 ||
+          available >= items.length) {
+        rethrow;
+      }
+      AppLogger.warning(
+        'Relay batch envelope RATE_LIMITED — splitting once',
+        context: <String, Object?>{
+          'component': 'RelayBatchCommandCoordinator',
+          'agentId': agentId,
+          'requested': items.length,
+          'availableSlots': available,
+          'requestedSlots': ?error.requestedSlots,
+        },
+      );
+      final responses = <Map<String, dynamic>>[];
+      for (var offset = 0; offset < items.length; offset += available) {
+        final end = offset + available;
+        final chunk = items.sublist(
+          offset,
+          end > items.length ? items.length : end,
+        );
+        final chunkResponses = await _inner.sendBatch(
+          agentId: agentId,
+          items: chunk,
+          compression: compression,
+        );
+        responses.addAll(chunkResponses);
+      }
+      return responses;
+    }
+  }
+
+  void _completeTaken(
+    List<_BatchPending> taken,
+    List<Map<String, dynamic>> responses,
+  ) {
     var partial = false;
     if (responses.length != taken.length) {
       // Shouldn't happen given `sendBatch` resolves in caller order,

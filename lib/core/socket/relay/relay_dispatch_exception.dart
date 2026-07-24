@@ -75,6 +75,8 @@ final class RelayRequestRejected extends RelayDispatchException {
     required super.message,
     required String serverCode,
     this.retryAfter,
+    this.availableSlots,
+    this.requestedSlots,
     super.conversationId,
     super.clientRequestId,
   }) : super(code: serverCode);
@@ -82,6 +84,14 @@ final class RelayRequestRejected extends RelayDispatchException {
   /// Optional hub backoff hint propagated from `retryAfterMs` /
   /// `retry_after_ms` fields on relay rejection payloads.
   final Duration? retryAfter;
+
+  /// Hub per-socket inflight gate hint on batch envelope reject
+  /// (`details.availableSlots`). When positive, callers may split the
+  /// batch and retry once with the same idempotent client request ids.
+  final int? availableSlots;
+
+  /// Hub `details.requestedSlots` for the rejected batch envelope.
+  final int? requestedSlots;
 }
 
 /// Hub closed the request stream with a terminal status other than

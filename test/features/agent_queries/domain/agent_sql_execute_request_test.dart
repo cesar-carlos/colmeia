@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:checks/checks.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_limits.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
@@ -101,25 +104,134 @@ void main() {
       ).equals('pagination cannot be combined with executionMode.preserve');
     });
 
-    test('rejects namedParams larger than bridge cap', () {
-      final tooMany = <String, Object?>{
-        for (
-          var i = 0;
-          i < AgentSqlExecuteRequest.bridgeMaxNamedParameterCount + 1;
-          i++
-        )
-          'p$i': i,
-      };
+    test('rejects bridgeTimeoutMs above hub cap', () {
+      const r = AgentSqlExecuteRequest(
+        agentId: 'a',
+        sql: 'SELECT 1',
+        bridgeTimeoutMs: AgentSqlBridgeLimits.bridgeTimeoutMsMax + 1,
+      );
+      check(r.validationError()).equals(
+        'bridgeTimeoutMs must be <= '
+        '${AgentSqlBridgeLimits.bridgeTimeoutMsMax}',
+      );
+    });
+
+    test('accepts bridgeTimeoutMs at hub cap', () {
+      const r = AgentSqlExecuteRequest(
+        agentId: 'a',
+        sql: 'SELECT 1',
+        bridgeTimeoutMs: AgentSqlBridgeLimits.bridgeTimeoutMsMax,
+      );
+      check(r.validationError()).isNull();
+    });
+
+    test('rejects pageSize above hub cap', () {
+      const r = AgentSqlExecuteRequest(
+        agentId: 'a',
+        sql: 'SELECT 1',
+        pagination: AgentSqlPagePagination(
+          page: 1,
+          pageSize: AgentSqlBridgeLimits.pageSizeMax + 1,
+        ),
+      );
+      check(r.validationError()).equals(
+        'pagination.pageSize must be <= ${AgentSqlBridgeLimits.pageSizeMax}',
+      );
+    });
+
+    test('accepts pageSize at hub cap', () {
+      const r = AgentSqlExecuteRequest(
+        agentId: 'a',
+        sql: 'SELECT 1',
+        pagination: AgentSqlPagePagination(
+          page: 1,
+          pageSize: AgentSqlBridgeLimits.pageSizeMax,
+        ),
+      );
+      check(r.validationError()).isNull();
+    });
+
+    test('rejects namedParams JSON larger than bridge UTF-8 cap', () {
+      final tooLarge = _namedParamsAtUtf8JsonByteLength(
+        AgentSqlBridgeLimits.namedParamsJsonMaxUtf8Bytes + 1,
+      );
       final r = AgentSqlExecuteRequest(
         agentId: 'a',
         sql: 'SELECT 1',
-        namedParams: tooMany,
+        namedParams: tooLarge,
       );
       check(r.validationError()).equals(
-        'namedParams must contain at most '
-        '${AgentSqlExecuteRequest.bridgeMaxNamedParameterCount} '
-        'entries (Agent SQL bridge limit)',
+        'namedParams JSON must be at most '
+        '${AgentSqlBridgeLimits.namedParamsJsonMaxUtf8Bytes} '
+        'UTF-8 bytes (Agent SQL bridge limit)',
       );
     });
+
+    test('accepts namedParams JSON at exact bridge UTF-8 cap', () {
+      final atLimit = _namedParamsAtUtf8JsonByteLength(
+        AgentSqlBridgeLimits.namedParamsJsonMaxUtf8Bytes,
+      );
+      final r = AgentSqlExecuteRequest(
+        agentId: 'a',
+        sql: 'SELECT 1',
+        namedParams: atLimit,
+      );
+      check(r.validationError()).isNull();
+    });
+
+    test('counts multibyte UTF-8 when measuring namedParams JSON size', () {
+      final asciiParams = <String, Object?>{'value': 'a' * 100};
+      final emojiParams = <String, Object?>{'value': '😀' * 100};
+      final asciiBytes = utf8.encode(jsonEncode(asciiParams)).length;
+      final emojiBytes = utf8.encode(jsonEncode(emojiParams)).length;
+
+      check(emojiBytes).isGreaterThan(asciiBytes);
+
+      final overLimit = <String, Object?>{
+        'value':
+            '😀' *
+            ((AgentSqlBridgeLimits.namedParamsJsonMaxUtf8Bytes ~/ 4) + 1),
+      };
+      check(
+        AgentSqlBridgeLimits.namedParamsUtf8JsonSizeError(overLimit),
+      ).isNotNull();
+    });
   });
+}
+
+Map<String, Object?> _namedParamsAtUtf8JsonByteLength(int targetBytes) {
+  if (targetBytes <= 0) {
+    throw ArgumentError.value(targetBytes);
+  }
+
+  var low = 0;
+  var high = targetBytes;
+  while (low < high) {
+    final mid = (low + high + 1) ~/ 2;
+    final size = utf8
+        .encode(jsonEncode(<String, Object?>{'p': 'a' * mid}))
+        .length;
+    if (size <= targetBytes) {
+      low = mid;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  final buffer = StringBuffer('a' * low);
+  var size = utf8
+      .encode(jsonEncode(<String, Object?>{'p': buffer.toString()}))
+      .length;
+  while (size < targetBytes) {
+    buffer.write('a');
+    size = utf8
+        .encode(jsonEncode(<String, Object?>{'p': buffer.toString()}))
+        .length;
+  }
+  var value = buffer.toString();
+  while (size > targetBytes) {
+    value = value.substring(0, value.length - 1);
+    size = utf8.encode(jsonEncode(<String, Object?>{'p': value})).length;
+  }
+  return <String, Object?>{'p': value};
 }

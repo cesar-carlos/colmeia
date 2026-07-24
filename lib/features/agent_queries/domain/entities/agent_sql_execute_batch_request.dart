@@ -1,4 +1,5 @@
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_limits.dart';
 
 const int kAgentSqlExecuteBatchMaxCommands = 32;
 
@@ -64,6 +65,11 @@ class AgentSqlExecuteBatchRequest {
     final bridgeTimeout = bridgeTimeoutMs;
     if (bridgeTimeout != null && bridgeTimeout < 1) {
       return 'bridgeTimeoutMs must be >= 1';
+    }
+    if (bridgeTimeout != null &&
+        bridgeTimeout > AgentSqlBridgeLimits.bridgeTimeoutMsMax) {
+      return 'bridgeTimeoutMs must be <= '
+          '${AgentSqlBridgeLimits.bridgeTimeoutMsMax}';
     }
 
     for (var i = 0; i < commands.length; i++) {
@@ -135,6 +141,11 @@ class AgentSqlExecuteBatchCommand {
     if (order != null && order < 0) {
       return 'executionOrder must be >= 0';
     }
+    final namedParamsError =
+        AgentSqlBridgeLimits.namedParamsUtf8JsonSizeError(namedParams);
+    if (namedParamsError != null) {
+      return namedParamsError;
+    }
     return null;
   }
 }
@@ -157,9 +168,15 @@ class AgentSqlExecuteBatchOptions {
     if (timeout != null && timeout < 1) {
       return 'sqlTimeoutMs must be >= 1';
     }
+    if (timeout != null && timeout > AgentSqlBridgeLimits.sqlTimeoutMsMax) {
+      return 'sqlTimeoutMs must be <= ${AgentSqlBridgeLimits.sqlTimeoutMsMax}';
+    }
     final max = maxRows;
     if (max != null && max < 1) {
       return 'maxRows must be >= 1';
+    }
+    if (max != null && max > AgentSqlBridgeLimits.maxRowsMax) {
+      return 'maxRows must be <= ${AgentSqlBridgeLimits.maxRowsMax}';
     }
     final parallel = maxParallelReadOnlyBatchItems;
     if (parallel != null && parallel < 1) {

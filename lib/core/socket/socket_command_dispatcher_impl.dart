@@ -504,9 +504,19 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
         context: <String, Object?>{
           'component': 'SocketCommandDispatcherImpl',
           'code': error.code,
+          'pendingCount': _correlator.pendingCount,
         },
         error: error,
         stackTrace: stackTrace,
+      );
+      _failUncorrelatableCommandResponse(
+        SocketDispatchDecodeFailure(
+          message:
+              'agents:command_response PayloadFrame decode failed: '
+              '${error.code}',
+          cause: error,
+          stackTrace: stackTrace,
+        ),
       );
       return;
     }
@@ -514,9 +524,15 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     if (map == null) {
       AppLogger.warning(
         'agents:command_response is not a Map',
-        context: const <String, Object?>{
+        context: <String, Object?>{
           'component': 'SocketCommandDispatcherImpl',
+          'pendingCount': _correlator.pendingCount,
         },
+      );
+      _failUncorrelatableCommandResponse(
+        const SocketDispatchDecodeFailure(
+          message: 'agents:command_response is not a Map',
+        ),
       );
       return;
     }
@@ -537,6 +553,11 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
               .length,
           'rawRuntimeType': raw.runtimeType.toString(),
         },
+      );
+      _failUncorrelatableCommandResponse(
+        const SocketDispatchDecodeFailure(
+          message: 'agents:command_response missing rpcId',
+        ),
       );
       return;
     }
@@ -626,6 +647,23 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       case ConsumerSocketConnected():
       case ConsumerSocketConnecting():
         break;
+    }
+  }
+
+  /// Fail-fast for responses that cannot be correlated to a specific rpcId.
+  ///
+  /// Hub contract expects corrupted/uncorrelatable frames to release the
+  /// waiter instead of hanging until the correlator timeout. With a single
+  /// pending request the failure is unambiguous; with multiple pendings we
+  /// fail all to avoid leaving callers blocked on a poisoned channel.
+  void _failUncorrelatableCommandResponse(SocketDispatchException failure) {
+    final soleId = _correlator.solePendingRpcIdWhenUnambiguous;
+    if (soleId != null) {
+      _correlator.failWith(soleId, failure);
+      return;
+    }
+    if (_correlator.pendingCount > 0) {
+      _correlator.failAll(failure);
     }
   }
 

@@ -5,6 +5,7 @@ import 'package:colmeia/core/observability/socket/socket_channel_metrics.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation.dart';
+import 'package:colmeia/core/socket/relay/relay_conversation_ended_router.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 
 /// Tracks one active relay conversation per `agentId`. The dispatcher asks
@@ -25,17 +26,45 @@ class RelayConversationManager {
     Duration startTimeout = const Duration(seconds: 10),
     Duration endTimeout = const Duration(seconds: 5),
     SocketChannelMetrics? channelMetrics,
+    RelayConversationEndedRouter? conversationEndedRouter,
+    this.onHubConversationEnded,
   }) : _connection = connection,
        _startTimeout = startTimeout,
        _endTimeout = endTimeout,
-       _channelMetrics = channelMetrics {
+       _channelMetrics = channelMetrics,
+       _router = conversationEndedRouter {
     _stateSub = _connection.states().listen(_onConnectionState);
+    if (_router != null) {
+      void handler({
+        required String conversationId,
+        String? requestId,
+        String? reason,
+      }) {
+        _onHubEnded(
+          conversationId: conversationId,
+          requestId: requestId,
+          reason: reason,
+        );
+      }
+
+      _routerCallback = handler;
+      _router.addListener(handler);
+    }
   }
 
   final ConsumerSocketConnection _connection;
   final Duration _startTimeout;
   final Duration _endTimeout;
   final SocketChannelMetrics? _channelMetrics;
+  final RelayConversationEndedRouter? _router;
+
+  /// Invoked when the hub terminates a conversation (expired, agent_disconnected,
+  /// consumer_ended) that was still tracked by this manager. Useful for wiring
+  /// the dispatcher's pending-fail logic without the manager depending on it.
+  final void Function(String conversationId, String reason)?
+  onHubConversationEnded;
+
+  ConversationEndedCallback? _routerCallback;
 
   final Map<String, RelayConversation> _byAgentId =
       <String, RelayConversation>{};
@@ -102,6 +131,7 @@ class RelayConversationManager {
       agentId: agentId,
       startTimeout: _startTimeout,
       endTimeout: _endTimeout,
+      conversationEndedRouter: _router,
     );
     _byAgentId[agentId] = conversation;
     // Only the first-time open pays the round-trip; the metric reservoir
@@ -149,6 +179,44 @@ class RelayConversationManager {
     await Future.wait(conversations.map((c) => c.end(reason: reason)));
   }
 
+  /// Handles hub-initiated `relay:conversation.ended` events from the router.
+  /// Finds the conversation by id, force-ends it, and removes it from the map
+  /// so the next [obtain] for that agent opens a fresh conversation.
+  void _onHubEnded({
+    required String conversationId,
+    String? requestId,
+    String? reason,
+  }) {
+    final effectiveReason = reason ?? 'hub_ended';
+
+    String? agentId;
+    for (final entry in _byAgentId.entries) {
+      if (entry.value.conversationId == conversationId) {
+        agentId = entry.key;
+        break;
+      }
+    }
+    if (agentId == null) {
+      // Unknown conversationId — already removed by release() or forceCloseAll.
+      return;
+    }
+    final conversation = _byAgentId.remove(agentId);
+    if (conversation == null) {
+      return;
+    }
+    AppLogger.debug(
+      'Hub terminated relay conversation',
+      context: <String, Object?>{
+        'component': 'RelayConversationManager',
+        'agentId': agentId,
+        'conversationId': conversationId,
+        'reason': effectiveReason,
+      },
+    );
+    conversation.forceEnd(reason: effectiveReason);
+    onHubConversationEnded?.call(conversationId, effectiveReason);
+  }
+
   void _onConnectionState(ConsumerSocketConnectionState state) {
     switch (state) {
       case ConsumerSocketDisconnected():
@@ -189,6 +257,12 @@ class RelayConversationManager {
       return;
     }
     _isDisposed = true;
+    final cb = _routerCallback;
+    if (cb != null) {
+      _router?.removeListener(cb);
+      _routerCallback = null;
+    }
+    // Router is owned by DI; only detach this manager's listener.
     await _stateSub?.cancel();
     _stateSub = null;
     _forceCloseAll(reason: 'manager_disposed');

@@ -1,4 +1,5 @@
 import 'package:checks/checks.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_limits.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -17,6 +18,36 @@ void main() {
     test('rejects sqlTimeoutMs < 1', () {
       const o = AgentSqlExecuteOptions(sqlTimeoutMs: 0);
       check(o.validationError()).equals('sqlTimeoutMs must be >= 1');
+    });
+
+    test('rejects maxRows above hub cap', () {
+      const o = AgentSqlExecuteOptions(
+        maxRows: AgentSqlBridgeLimits.maxRowsMax + 1,
+      );
+      check(o.validationError()).equals(
+        'maxRows must be <= ${AgentSqlBridgeLimits.maxRowsMax}',
+      );
+    });
+
+    test('accepts maxRows at hub cap', () {
+      const o = AgentSqlExecuteOptions(maxRows: AgentSqlBridgeLimits.maxRowsMax);
+      check(o.validationError()).isNull();
+    });
+
+    test('rejects sqlTimeoutMs above hub cap', () {
+      const o = AgentSqlExecuteOptions(
+        sqlTimeoutMs: AgentSqlBridgeLimits.sqlTimeoutMsMax + 1,
+      );
+      check(o.validationError()).equals(
+        'sqlTimeoutMs must be <= ${AgentSqlBridgeLimits.sqlTimeoutMsMax}',
+      );
+    });
+
+    test('accepts sqlTimeoutMs at hub cap', () {
+      const o = AgentSqlExecuteOptions(
+        sqlTimeoutMs: AgentSqlBridgeLimits.sqlTimeoutMsMax,
+      );
+      check(o.validationError()).isNull();
     });
   });
 

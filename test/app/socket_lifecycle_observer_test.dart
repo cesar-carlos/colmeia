@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:checks/checks.dart';
 import 'package:colmeia/app/authentication_gate.dart';
 import 'package:colmeia/app/socket_lifecycle_observer.dart';
@@ -397,5 +399,223 @@ void main() {
         verifyNever(() => connection.pause(reason: any(named: 'reason')));
       },
     );
+
+    group('reconnect exhausted recovery', () {
+      late StreamController<ConsumerSocketConnectionState> stateController;
+
+      setUp(() {
+        stateController =
+            StreamController<ConsumerSocketConnectionState>.broadcast();
+        when(() => connection.states()).thenAnswer((_) => stateController.stream);
+      });
+
+      tearDown(() async {
+        await stateController.close();
+      });
+
+      testWidgets(
+        'non-transient ConsumerSocketError schedules recover when '
+        'authenticated and foreground',
+        (tester) async {
+          authGate.setAuthenticated(value: true);
+          await _pumpObserver(
+            tester,
+            connection: connection,
+            authGate: authGate,
+            transport: AgentBridgeTransport.socket,
+            warmUpAfterLogin: false,
+          );
+          await tester.pump();
+          clearInteractions(connection);
+
+          stateController.add(
+            const ConsumerSocketError(
+              message: 'reconnect attempts exhausted',
+              transient: false,
+            ),
+          );
+          await tester.pump();
+          verifyNever(() => connection.resume());
+
+          await tester.pump(const Duration(seconds: 3));
+          verify(() => connection.resume()).called(1);
+        },
+      );
+
+      testWidgets(
+        'scheduled recover is cancelled when connection becomes connected',
+        (tester) async {
+          authGate.setAuthenticated(value: true);
+          await _pumpObserver(
+            tester,
+            connection: connection,
+            authGate: authGate,
+            transport: AgentBridgeTransport.socket,
+            warmUpAfterLogin: false,
+          );
+          await tester.pump();
+          clearInteractions(connection);
+
+          stateController.add(
+            const ConsumerSocketError(
+              message: 'reconnect attempts exhausted',
+              transient: false,
+            ),
+          );
+          await tester.pump();
+          stateController.add(
+            ConsumerSocketConnected(
+              socketId: 'sock-recovered',
+              handshakeAt: DateTime.utc(2026),
+            ),
+          );
+          await tester.pump();
+
+          await tester.pump(const Duration(seconds: 3));
+          verifyNever(() => connection.resume());
+        },
+      );
+
+      testWidgets(
+        'scheduled recover is cancelled when app pauses',
+        (tester) async {
+          authGate.setAuthenticated(value: true);
+          await _pumpObserver(
+            tester,
+            connection: connection,
+            authGate: authGate,
+            transport: AgentBridgeTransport.socket,
+            warmUpAfterLogin: false,
+          );
+          await tester.pump();
+          clearInteractions(connection);
+
+          stateController.add(
+            const ConsumerSocketError(
+              message: 'reconnect attempts exhausted',
+              transient: false,
+            ),
+          );
+          await tester.pump();
+
+          tester.binding.handleAppLifecycleStateChanged(
+            AppLifecycleState.paused,
+          );
+          await tester.pump();
+
+          await tester.pump(const Duration(seconds: 3));
+          verifyNever(() => connection.resume());
+        },
+      );
+
+      testWidgets(
+        'scheduled recover is cancelled on sign-out',
+        (tester) async {
+          authGate.setAuthenticated(value: true);
+          await _pumpObserver(
+            tester,
+            connection: connection,
+            authGate: authGate,
+            transport: AgentBridgeTransport.socket,
+            warmUpAfterLogin: false,
+          );
+          await tester.pump();
+          clearInteractions(connection);
+
+          stateController.add(
+            const ConsumerSocketError(
+              message: 'reconnect attempts exhausted',
+              transient: false,
+            ),
+          );
+          await tester.pump();
+
+          authGate.setAuthenticated(value: false);
+          await tester.pump();
+
+          await tester.pump(const Duration(seconds: 3));
+          verifyNever(() => connection.resume());
+        },
+      );
+
+      testWidgets(
+        'scheduled recover is cancelled on dispose',
+        (tester) async {
+          authGate.setAuthenticated(value: true);
+          await _pumpObserver(
+            tester,
+            connection: connection,
+            authGate: authGate,
+            transport: AgentBridgeTransport.socket,
+            warmUpAfterLogin: false,
+          );
+          await tester.pump();
+          clearInteractions(connection);
+
+          stateController.add(
+            const ConsumerSocketError(
+              message: 'reconnect attempts exhausted',
+              transient: false,
+            ),
+          );
+          await tester.pump();
+
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+
+          await tester.pump(const Duration(seconds: 3));
+          verifyNever(() => connection.resume());
+        },
+      );
+
+      testWidgets(
+        'transient ConsumerSocketError does not schedule recover',
+        (tester) async {
+          authGate.setAuthenticated(value: true);
+          await _pumpObserver(
+            tester,
+            connection: connection,
+            authGate: authGate,
+            transport: AgentBridgeTransport.socket,
+            warmUpAfterLogin: false,
+          );
+          await tester.pump();
+          clearInteractions(connection);
+
+          stateController.add(
+            const ConsumerSocketError(
+              message: 'retrying',
+              transient: true,
+            ),
+          );
+          await tester.pump();
+
+          await tester.pump(const Duration(seconds: 3));
+          verifyNever(() => connection.resume());
+        },
+      );
+
+      testWidgets(
+        'ConsumerSocketUnauthorized does not schedule recover',
+        (tester) async {
+          authGate.setAuthenticated(value: true);
+          await _pumpObserver(
+            tester,
+            connection: connection,
+            authGate: authGate,
+            transport: AgentBridgeTransport.socket,
+            warmUpAfterLogin: false,
+          );
+          await tester.pump();
+          clearInteractions(connection);
+
+          stateController.add(const ConsumerSocketUnauthorized());
+          await tester.pump();
+
+          await tester.pump(const Duration(seconds: 3));
+          verifyNever(() => connection.resume());
+        },
+      );
+    });
   });
 }

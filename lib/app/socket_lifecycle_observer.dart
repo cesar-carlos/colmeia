@@ -76,6 +76,7 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
 
   StreamSubscription<ConsumerSocketConnectionState>? _connectionStatesSub;
   ConsumerSocketIdleKeepalive? _idleKeepalive;
+  Timer? _recoverTimer;
 
   /// Minimum gap between automatic reconnects triggered by unexpected
   /// server-side disconnects while the app stays in foreground.
@@ -142,6 +143,7 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
 
   @override
   void dispose() {
+    _cancelScheduledRecover();
     unawaited(_idleKeepalive?.dispose() ?? Future<void>.value());
     _idleKeepalive = null;
     unawaited(_connectionStatesSub?.cancel() ?? Future<void>.value());
@@ -160,6 +162,7 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
     switch (state) {
       case AppLifecycleState.paused:
       case AppLifecycleState.detached:
+        _cancelScheduledRecover();
         _idleKeepalive?.stop();
         unawaited(_safePause());
       case AppLifecycleState.resumed:
@@ -180,23 +183,24 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
     }
   }
 
-  /// Reacts to unexpected server-side disconnects by triggering a reconnect.
+  /// Reacts to unexpected server-side disconnects / exhausted reconnects
+  /// by triggering a reconnect.
   ///
   /// Only fires when:
   /// - The disconnect reason is NOT one of the known client-initiated reasons
-  ///   (app pause, sign-out, dispose, explicit disconnect).
+  ///   (app pause, sign-out, dispose, explicit disconnect), OR the state is a
+  ///   non-transient [ConsumerSocketError] (reconnect attempts exhausted).
   /// - The user is currently authenticated.
   /// - The app is in foreground.
   ///
   /// `ConsumerSocketConnection.connect()` is single-flight and owns the
   /// backoff/retry loop internally, so concurrent or redundant calls here
-  /// are safe.
+  /// are safe. Transient [ConsumerSocketError] is ignored because the
+  /// connection layer is already retrying.
   void _onConnectionStateChanged(ConsumerSocketConnectionState state) {
     if (state is ConsumerSocketConnected) {
       _lastUnexpectedReconnectAt = null;
-      return;
-    }
-    if (state is! ConsumerSocketDisconnected) {
+      _cancelScheduledRecover();
       return;
     }
     if (!widget.authGate.isAuthenticated) {
@@ -205,24 +209,61 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
     if (!_isAppInForeground) {
       return;
     }
+
+    if (state is ConsumerSocketError) {
+      if (state.transient) {
+        return;
+      }
+      _scheduleRecover(reason: 'recover_from_reconnect_exhausted');
+      return;
+    }
+
+    if (state is! ConsumerSocketDisconnected) {
+      return;
+    }
     final reason = state.reason;
     if (_isIntentionalDisconnectReason(reason)) {
       return;
     }
+    _scheduleRecover(
+      reason: 'unexpected_disconnect',
+      disconnectReason: reason,
+    );
+  }
+
+  void _scheduleRecover({
+    required String reason,
+    String? disconnectReason,
+  }) {
     final now = DateTime.now();
     final last = _lastUnexpectedReconnectAt;
     if (last != null && now.difference(last) < _unexpectedReconnectCooldown) {
       return;
     }
     _lastUnexpectedReconnectAt = now;
+    _cancelScheduledRecover();
     AppLogger.debug(
-      'SocketLifecycleObserver: unexpected disconnect — scheduling reconnect',
+      'SocketLifecycleObserver: scheduling reconnect',
       context: <String, Object?>{
         'component': 'SocketLifecycleObserver',
-        'disconnectReason': reason,
+        'reason': reason,
+        'disconnectReason': ?disconnectReason,
       },
     );
-    unawaited(_safeResume(reason: 'unexpected_disconnect'));
+    // Defer past any in-flight connect single-flight so we do not race the
+    // same exhausted attempt. Cooldown already bounds how often we fire.
+    _recoverTimer = Timer(_unexpectedReconnectCooldown, () {
+      _recoverTimer = null;
+      if (!mounted || !widget.authGate.isAuthenticated || !_isAppInForeground) {
+        return;
+      }
+      unawaited(_safeResume(reason: reason));
+    });
+  }
+
+  void _cancelScheduledRecover() {
+    _recoverTimer?.cancel();
+    _recoverTimer = null;
   }
 
   void _onAuthChanged() {
@@ -234,6 +275,7 @@ class _SocketLifecycleObserverState extends State<SocketLifecycleObserver>
     if (transitionedToSignedOut) {
       // Sign-out only needs to touch the socket when a live connection is
       // wired (socket bridge and/or relay).
+      _cancelScheduledRecover();
       if (_shouldManageSocket) {
         unawaited(_safePause(reason: 'signed_out'));
       }

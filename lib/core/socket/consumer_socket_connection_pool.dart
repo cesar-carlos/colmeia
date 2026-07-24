@@ -1,3 +1,4 @@
+import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 
 /// Optional multi-socket spike surface. Default Colmeia builds use
@@ -15,7 +16,19 @@ class ConsumerSocketConnectionPool {
     this.poolSize = 1,
   }) : _primary = primary,
        _secondary = secondary,
-       assert(poolSize >= 1, 'poolSize must be >= 1');
+       assert(poolSize >= 1, 'poolSize must be >= 1') {
+    if (poolSize > 1) {
+      AppLogger.warning(
+        'SOCKET_CONNECTION_POOL_SIZE > 1 but secondary connection is not '
+        'wired in DI — all traffic still routes through primary',
+        context: <String, Object?>{
+          'component': 'ConsumerSocketConnectionPool',
+          'poolSize': poolSize,
+          'secondaryWired': false,
+        },
+      );
+    }
+  }
 
   final ConsumerSocketConnection _primary;
   final ConsumerSocketConnection? _secondary;

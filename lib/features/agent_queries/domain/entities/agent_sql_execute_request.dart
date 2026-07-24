@@ -4,6 +4,7 @@ import 'package:colmeia/features/agent_queries/data/repositories/caching_agent_q
 import 'package:colmeia/features/agent_queries/domain/entities/agent_outbound_compression.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart'
     show AgentQueryLoadPolicy;
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_limits.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 
@@ -20,14 +21,15 @@ const String kColmeiaAgentApiVersion = '2.10';
 
 /// Semantic input for a single `sql.execute` call through the bridge.
 ///
-/// The hub/runtime enforces a small cap on **distinct** named parameters per
-/// execute (see [bridgeMaxNamedParameterCount]); [validationError] rejects
-/// larger maps so failures are local instead of bridge `invalid_params`.
+/// The hub/runtime enforces a UTF-8 JSON byte cap on [namedParams] (see
+/// [AgentSqlBridgeLimits.namedParamsJsonMaxUtf8Bytes]); [validationError]
+/// rejects oversized maps so failures are local instead of bridge
+/// `invalid_params`.
 ///
-/// Overview/resumo queries that need more bound values than this cap allow
-/// should keep [namedParams] within the cap and apply extra filters as typed
-/// SQL literals (validated integers or escaped strings), not as extra named
-/// parameters — see `ResumoParcelasSqlDimensionFilters` and
+/// Overview/resumo queries that need many filter values should keep
+/// [namedParams] within the cap and apply extra filters as typed SQL literals
+/// (validated integers or escaped strings), not as extra named parameters —
+/// see `ResumoParcelasSqlDimensionFilters` and
 /// `ResumoVendasDiariasPorVendedorSql` for the established pattern.
 class AgentSqlExecuteRequest {
   const AgentSqlExecuteRequest({
@@ -158,6 +160,10 @@ class AgentSqlExecuteRequest {
     if (timeout != null && timeout < 1) {
       return 'bridgeTimeoutMs must be >= 1';
     }
+    if (timeout != null && timeout > AgentSqlBridgeLimits.bridgeTimeoutMsMax) {
+      return 'bridgeTimeoutMs must be <= '
+          '${AgentSqlBridgeLimits.bridgeTimeoutMsMax}';
+    }
 
     final token = trimmedClientToken;
     if (clientToken != null && (token == null || token.isEmpty)) {
@@ -177,6 +183,10 @@ class AgentSqlExecuteRequest {
       if (pagePagination.pageSize < 1) {
         return 'pagination.pageSize must be >= 1';
       }
+      if (pagePagination.pageSize > AgentSqlBridgeLimits.pageSizeMax) {
+        return 'pagination.pageSize must be <= '
+            '${AgentSqlBridgeLimits.pageSizeMax}';
+      }
     }
     if (pagePagination is AgentSqlCursorPagination) {
       if (pagePagination.cursor.trim().isEmpty) {
@@ -193,16 +203,14 @@ class AgentSqlExecuteRequest {
       return 'pagination cannot be combined with executionMode.preserve';
     }
 
-    if (namedParams.length > bridgeMaxNamedParameterCount) {
-      return 'namedParams must contain at most $bridgeMaxNamedParameterCount '
-          'entries (Agent SQL bridge limit)';
+    final namedParamsError =
+        AgentSqlBridgeLimits.namedParamsUtf8JsonSizeError(namedParams);
+    if (namedParamsError != null) {
+      return namedParamsError;
     }
 
     return null;
   }
-
-  /// Current Agent SQL bridge limit for `namedParams` size.
-  static const int bridgeMaxNamedParameterCount = 5;
 
   AgentSqlExecuteRequest copyWith({
     String? agentId,

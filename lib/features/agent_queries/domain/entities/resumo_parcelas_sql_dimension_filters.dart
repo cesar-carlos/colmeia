@@ -1,7 +1,7 @@
 /// Optional company, branch, and seller filters for parcel-summary SQL.
 ///
-/// The Agent SQL bridge caps **named** parameters (see
-/// `AgentSqlExecuteRequest.bridgeMaxNamedParameterCount`). Optional dimensions are
+/// The Agent SQL bridge caps **named** parameter JSON size (see
+/// `AgentSqlBridgeLimits.namedParamsJsonMaxUtf8Bytes`). Optional dimensions are
 /// inlined as **integer literals** via [literalWhereLines] after
 /// [validationError] passes — never from user-controlled strings.
 ///

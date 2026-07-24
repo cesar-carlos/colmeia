@@ -1,3 +1,5 @@
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_limits.dart';
+
 /// Agent-side execution flags for `sql.execute` (`params.options` in JSON-RPC).
 class AgentSqlExecuteOptions {
   const AgentSqlExecuteOptions({
@@ -27,10 +29,16 @@ class AgentSqlExecuteOptions {
     if (max != null && max < 1) {
       return 'maxRows must be >= 1';
     }
+    if (max != null && max > AgentSqlBridgeLimits.maxRowsMax) {
+      return 'maxRows must be <= ${AgentSqlBridgeLimits.maxRowsMax}';
+    }
 
     final timeout = sqlTimeoutMs;
     if (timeout != null && timeout < 1) {
       return 'sqlTimeoutMs must be >= 1';
+    }
+    if (timeout != null && timeout > AgentSqlBridgeLimits.sqlTimeoutMsMax) {
+      return 'sqlTimeoutMs must be <= ${AgentSqlBridgeLimits.sqlTimeoutMsMax}';
     }
 
     return null;
