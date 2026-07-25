@@ -1536,10 +1536,24 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     if (route == null) {
       return;
     }
+    // Streaming callers treat rpc.response as a terminal (non-streaming
+    // agent answering a streaming request). Mark before enqueue so a
+    // previously queued initial pull cannot emit after this frame.
+    //
+    // Note: a stream-open response that carries `stream_id` is also marked
+    // terminal today — collectors early-return on the JSON-RPC envelope, and
+    // empty DB streams historically raced `rpc:complete` before the hub
+    // opened the route. Prefer fixing empty streams on the agent (unary
+    // success without stream_id) over waiting for a complete that may never
+    // be correlated.
+    final pending = route.pending;
+    if (pending is _PendingStream) {
+      pending.streamTerminalSeen = true;
+    }
     _enqueueRelayFrameWork(
-      route.pending,
+      pending,
       () => _routeFrameAsyncForPending(
-        route.pending,
+        pending,
         route.parseResult,
         eventName: 'rpc.response',
       ),
@@ -1566,10 +1580,14 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     if (route == null) {
       return;
     }
+    final pending = route.pending;
+    if (pending is _PendingStream) {
+      pending.streamTerminalSeen = true;
+    }
     _enqueueRelayFrameWork(
-      route.pending,
+      pending,
       () => _routeFrameAsyncForPending(
-        route.pending,
+        pending,
         route.parseResult,
         eventName: 'rpc.complete',
       ),
@@ -1785,6 +1803,13 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     if (credits <= 0) {
       return;
     }
+    // Terminal already observed (or pending torn down): never pull after
+    // the agent finished — see [_PendingStream.streamTerminalSeen].
+    if (pending.streamTerminalSeen ||
+        pending.controller.isClosed ||
+        !_pendingByClientId.containsKey(pending.clientRequestId)) {
+      return;
+    }
     final requestId = pending.requestId;
     try {
       final encoded = await _codec.encodeJsonAsync(
@@ -1795,6 +1820,13 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
         },
         requestId: requestId ?? pending.clientRequestId,
       );
+      // Re-check after the async encode: a terminal frame may have arrived
+      // while we were framing the pull.
+      if (pending.streamTerminalSeen ||
+          pending.controller.isClosed ||
+          !_pendingByClientId.containsKey(pending.clientRequestId)) {
+        return;
+      }
       final envelope = <String, Object?>{
         'conversationId': pending.conversationId,
         'frame': encoded.frame.toMap(),

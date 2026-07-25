@@ -315,6 +315,79 @@ void main() {
     );
 
     test(
+      'skips initial stream.pull when rpc.complete arrives before pull runs',
+      () async {
+        // Race: accepted enqueues grantPull; complete arrives and marks
+        // terminal before the chain drains. Pull must be suppressed so the
+        // hub/agent stream slot is not re-armed under max_concurrent_streams=1.
+        final dispatcher = buildDispatcher();
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final stream = dispatcher.sendStreaming(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': 'rpc-pull-after-complete',
+              'params': <String, Object?>{
+                'sql': 'SELECT 1',
+                'options': <String, Object?>{'prefer_db_streaming': true},
+              },
+            },
+          },
+          clientRequestId: 'rpc-pull-after-complete',
+        );
+
+        final streamClosed = Completer<void>();
+        final received = <Map<String, dynamic>>[];
+        final sub = stream.listen(
+          received.add,
+          onDone: () {
+            if (!streamClosed.isCompleted) {
+              streamClosed.complete();
+            }
+          },
+        );
+        addTearDown(sub.cancel);
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': 'rpc-pull-after-complete',
+          'requestId': 'srv-pull-after-complete',
+          'success': true,
+        });
+        // Do not flush yet — enqueue complete while grantPull is still queued.
+        wiring.fire(
+          RelayEventNames.rpcComplete,
+          _frame(
+            <String, Object?>{
+              'terminal_status': 'completed',
+              'total_rows': 0,
+              'execution_id': 'exec-fast',
+            },
+            requestId: 'srv-pull-after-complete',
+          ),
+        );
+        await flushRelayFrameRouting();
+
+        check(
+          wiring.emits
+              .where((e) => e.event == RelayEventNames.rpcStreamPull)
+              .length,
+        ).equals(0);
+        check(received.length).equals(1);
+        check(received.single['execution_id']).equals('exec-fast');
+        await streamClosed.future.timeout(const Duration(milliseconds: 100));
+      },
+    );
+
+    test(
       'unhealthy terminal_status surfaces RelayStreamTerminated on the stream',
       () async {
         final dispatcher = buildDispatcher();

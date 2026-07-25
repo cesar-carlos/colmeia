@@ -121,6 +121,14 @@ class _PendingStream extends _PendingRelay {
   /// Included on subsequent pull frames when present.
   String? streamId;
 
+  /// Set synchronously when a terminal frame (`rpc.complete` or streaming
+  /// `rpc.response`) is received, **before** it is enqueued on
+  /// [frameRoutingChain]. Prevents a late initial/refill `stream.pull`
+  /// (queued earlier from `rpc.accepted`) from running after the agent
+  /// already finished — that race can leave hub/agent stream slots busy
+  /// under `max_concurrent_streams=1` and starve the next streaming RPC.
+  bool streamTerminalSeen = false;
+
   /// [Stopwatch.elapsed] when `relay:rpc.accepted` succeeded (streaming only).
   Duration? streamAcceptedAtElapsed;
 

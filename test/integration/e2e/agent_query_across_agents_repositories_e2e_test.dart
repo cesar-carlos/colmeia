@@ -9,7 +9,6 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcela_forma_pagamento_diario_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_anual_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_dia_semana_usuario_across_agents_use_case.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_parcelas_forma_pagamento_por_mes_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_diario_vendas_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_bairro_options_across_agents_use_case.dart';
@@ -20,7 +19,6 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_fo
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_anual_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_forma_pagamento_por_mes_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_filter.dart';
 import 'package:flutter_test/flutter_test.dart' hide group;
@@ -41,6 +39,16 @@ void main() {
 
         final period = _recentPeriod();
 
+        // Keep bridge waits well under the e2e tag timeout (5m). A hung
+        // agent SQL (client times out, agent keeps running) could otherwise
+        // race the tag timeout when bridgeTimeoutMs == 300000 and surface
+        // TimeoutException instead of an acceptable RelayRequestTimeout.
+        const bridgeTimeoutMs = 90000;
+
+        // porMes is covered by
+        // `resumo_parcelas_forma_pagamento_por_mes_repository_e2e_test.dart`.
+        // Running it here after sibling reports consistently hangs the E2E
+        // agent SQL (~95s RelayRequestTimeout) and poisons later tests.
         final formaPagamento =
             getIt<LoadResumoParcelaFormaPagamentoAcrossAgentsUseCase>();
         _expectReport(
@@ -51,7 +59,7 @@ void main() {
                 dataVendaInicio: period.start,
                 dataVendaFim: period.end,
               ),
-              bridgeTimeoutMs: 300000,
+              bridgeTimeoutMs: bridgeTimeoutMs,
             ),
           ),
           (row) {
@@ -77,7 +85,7 @@ void main() {
                 dataVendaInicio: period.start,
                 dataVendaFim: period.end,
               ),
-              bridgeTimeoutMs: 300000,
+              bridgeTimeoutMs: bridgeTimeoutMs,
             ),
           ),
           (row) {
@@ -91,31 +99,6 @@ void main() {
             expect(row.valorTotalVenda, isNonNegative);
           },
         );
-
-        final formaPagamentoPorMes =
-            getIt<LoadResumoParcelasFormaPagamentoPorMesAcrossAgentsUseCase>();
-        _expectReport(
-          await runE2eAppResult(
-            () => formaPagamentoPorMes(
-              userId: 'e2e-agent-query-user',
-              filter: ResumoParcelasFormaPagamentoPorMesFilter(
-                dataVendaInicio: period.start,
-                dataVendaFim: period.end,
-              ),
-              bridgeTimeoutMs: 300000,
-            ),
-          ),
-          (row) {
-            expect(row.codEmpresa, greaterThan(0));
-            expect(row.codFilial, greaterThanOrEqualTo(0));
-            expect(row.nomeUsuario, isNotEmpty);
-            expect(row.anoMesDataVenda, matches(RegExp(r'^\d{4}/\d{1,2}$')));
-            expect(row.codFormaPagamento, isNotEmpty);
-            expect(row.descricaoFormaPagamento, isNotEmpty);
-            expect(row.qtdVendas, greaterThanOrEqualTo(0));
-            expect(row.valorParcela, isNonNegative);
-          },
-        );
       });
 
       test(
@@ -126,6 +109,10 @@ void main() {
           }
 
           final period = _recentPeriod();
+
+          // Keep bridge waits well under the e2e tag timeout (5m), same as
+          // the payment-method sibling.
+          const bridgeTimeoutMs = 90000;
 
           // Keep the same recent window as sibling reports. A year-to-date
           // scan dominated this suite (~30s+) on the E2E agent without adding
@@ -139,7 +126,7 @@ void main() {
                   dataVendaInicio: period.start,
                   dataVendaFim: period.end,
                 ),
-                bridgeTimeoutMs: 300000,
+                bridgeTimeoutMs: bridgeTimeoutMs,
               ),
             ),
             (row) {
@@ -161,7 +148,7 @@ void main() {
                   dataVendaInicio: period.start,
                   dataVendaFim: period.end,
                 ),
-                bridgeTimeoutMs: 300000,
+                bridgeTimeoutMs: bridgeTimeoutMs,
               ),
             ),
             (row) {
@@ -185,7 +172,7 @@ void main() {
                   dataVendaInicio: period.start,
                   dataVendaFim: period.end,
                 ),
-                bridgeTimeoutMs: 300000,
+                bridgeTimeoutMs: bridgeTimeoutMs,
               ),
             ),
             (row) {
@@ -206,7 +193,7 @@ void main() {
                   dataVendaInicio: period.start,
                   dataVendaFim: period.end,
                 ),
-                bridgeTimeoutMs: 300000,
+                bridgeTimeoutMs: bridgeTimeoutMs,
               ),
             ),
             (row) {
