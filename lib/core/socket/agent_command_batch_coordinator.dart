@@ -165,6 +165,22 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
     return false;
   }
 
+  /// Fail-fast every queued (not yet flushed) batch slot.
+  void cancelAllQueued({String reason = 'caller_cancelled'}) {
+    if (_isDisposed) {
+      return;
+    }
+    final rpcIds = <String>[];
+    for (final collector in _collectorsByAgent.values) {
+      for (final pending in collector.queue) {
+        rpcIds.add(pending.rpcId);
+      }
+    }
+    for (final rpcId in rpcIds) {
+      cancelPending(rpcId, reason: reason);
+    }
+  }
+
   /// Forces flush across every agent. Useful for sign-out and dispose.
   ///
   /// Cancels any pending flush timers before dispatching so the timer

@@ -58,6 +58,9 @@ class _FakeSocketCommandDispatcher implements SocketCommandDispatcher {
   void cancel(String rpcId, {String reason = 'cancelled'}) {}
 
   @override
+  void cancelAllPending({String reason = 'caller_cancelled'}) {}
+
+  @override
   Future<void> dispose() async {}
 
   @override

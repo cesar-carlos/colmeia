@@ -60,5 +60,13 @@ abstract interface class SocketCommandDispatcher {
   /// for future `sql.cancel` integration on streaming requests.
   void cancel(String rpcId, {String reason});
 
+  /// Fail-fast every in-flight `agents:command` waiter (leaders and
+  /// coalesced followers). Used by E2E teardown and sign-out so the next
+  /// SQL call is not blocked by abandoned client waiters.
+  ///
+  /// Does **not** abort agent-side unary work; streaming abort still goes
+  /// through `sql.cancel` on the relay dispatcher.
+  void cancelAllPending({String reason = 'caller_cancelled'});
+
   Future<void> dispose();
 }

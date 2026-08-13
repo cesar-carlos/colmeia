@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/socket/agent_sql_open_stream.dart';
 import 'package:colmeia/core/socket/relay/relay_batch_item.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
@@ -207,6 +208,25 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
       });
     }
     _inner.cancel(clientRequestId, reason: reason);
+  }
+
+  @override
+  List<AgentSqlOpenStream> cancelAllPending({
+    String reason = 'caller_cancelled',
+  }) {
+    if (_isDisposed) {
+      return const <AgentSqlOpenStream>[];
+    }
+    final queuedIds = <String>[];
+    for (final collector in _collectorsByAgent.values) {
+      for (final pending in collector.queue) {
+        queuedIds.add(pending.item.clientRequestId);
+      }
+    }
+    for (final clientRequestId in queuedIds) {
+      cancel(clientRequestId, reason: reason);
+    }
+    return _inner.cancelAllPending(reason: reason);
   }
 
   @override

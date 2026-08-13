@@ -145,5 +145,38 @@ void main() {
       dispatcher.cancel('never-registered');
       verifyNever(() => correlator.failWith(any(), any()));
     });
+
+    test('cancelAllPending fail-fasts every tracked rpcId', () async {
+      final pendingA = Completer<Map<String, dynamic>>();
+      final pendingB = Completer<Map<String, dynamic>>();
+      when(
+        () => correlator.register('rpc-a', timeout: any(named: 'timeout')),
+      ).thenAnswer((_) => pendingA.future);
+      when(
+        () => correlator.register('rpc-b', timeout: any(named: 'timeout')),
+      ).thenAnswer((_) => pendingB.future);
+      when(() => correlator.failWith(any(), any())).thenReturn(null);
+
+      final futureA = dispatcher.sendAgentsCommand(
+        agentId: 'agent-1',
+        body: _body(rpcId: 'rpc-a'),
+        rpcId: 'rpc-a',
+        coalesce: false,
+      );
+      final futureB = dispatcher.sendAgentsCommand(
+        agentId: 'agent-1',
+        body: _body(rpcId: 'rpc-b'),
+        rpcId: 'rpc-b',
+        coalesce: false,
+      );
+      unawaited(futureA.catchError((Object _) => <String, dynamic>{}));
+      unawaited(futureB.catchError((Object _) => <String, dynamic>{}));
+      await Future<void>.delayed(Duration.zero);
+
+      dispatcher.cancelAllPending(reason: 'e2e_teardown');
+
+      verify(() => correlator.failWith('rpc-a', any())).called(1);
+      verify(() => correlator.failWith('rpc-b', any())).called(1);
+    });
   });
 }

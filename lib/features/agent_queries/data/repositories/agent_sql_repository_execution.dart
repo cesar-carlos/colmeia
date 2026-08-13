@@ -81,11 +81,17 @@ abstract final class AgentSqlRepositoryExecution {
       if (error is! FormatException && error is! ArgumentError) {
         Error.throwWithStackTrace(error, stackTrace);
       }
+      final rows = executionResult.rows;
+      final firstRowKeys = rows.isEmpty
+          ? const <String>[]
+          : List<String>.of(rows.first.keys, growable: false);
       AppLogger.error(
         unexpectedRowsLogMessage ?? 'Unexpected row shape for $operation',
         context: <String, Object?>{
           'operation': operation,
           'agentId': agentId,
+          'rowCount': executionResult.rowCount,
+          'firstRowKeys': firstRowKeys,
         },
         error: error,
         stackTrace: stackTrace,
@@ -104,6 +110,8 @@ abstract final class AgentSqlRepositoryExecution {
           context: <String, Object?>{
             'operation': operation,
             'agentId': agentId,
+            'rowCount': executionResult.rowCount,
+            'firstRowKeys': firstRowKeys,
             AgentSqlRpcFailureUiKey.field: ?unexpectedRowsUiKey,
           },
         ),

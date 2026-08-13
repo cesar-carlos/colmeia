@@ -20,6 +20,7 @@ import 'package:colmeia/core/socket/relay/relay_conversation_manager.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation_pre_warmer.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_failure_codes.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:colmeia/features/auth/data/models/auth_session_model.dart';
@@ -33,6 +34,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:logger/logger.dart';
 import 'package:result_dart/result_dart.dart';
 
+import 'e2e_agent_sql_cancel.dart';
 import 'e2e_in_memory_app_cache_store.dart';
 import 'e2e_refreshing_auth_interceptor.dart';
 import 'e2e_stub_client_agents_for_agent_queries.dart';
@@ -275,6 +277,7 @@ List<String> missingE2eRepositoryKeys() {
 }
 
 Future<void> e2eTeardownDependencies() async {
+  await e2eCancelAbandonedAgentSql();
   await resetDependenciesForTesting();
 }
 
@@ -294,6 +297,12 @@ void registerE2eAgentQueriesSuiteHooks({
     }
     await e2eSetupDependencies();
     didRunHubSetup[0] = true;
+  });
+  tearDown(() async {
+    if (!didRunHubSetup[0]) {
+      return;
+    }
+    await e2eCancelAbandonedAgentSql();
   });
   tearDownAll(() async {
     if (!didRunHubSetup[0]) {
@@ -854,11 +863,19 @@ bool isKnownE2eAgentSqlCircuitBreakerOpenFailure(AppFailure failure) {
   return state == 'open';
 }
 
+/// Cooperative cancel from E2E tearDown / client timeout racing the test body.
+bool isKnownE2eAgentSqlCancelledFailure(AppFailure failure) {
+  if (failure is OperationCancelledFailure) {
+    return true;
+  }
+  return failure.context[AgentQueriesFailureContext.cancelledField] == true;
+}
+
 /// Known policy rejection, missing table permission RPC, transient bridge
 /// HTTP 5xx or socket/relay transport overload, HTTP 403 forbidden on agent
 /// SQL, queue saturation, ODBC connect timeout on the agent, circuit breaker
-/// open after hub overload, or plug agent disconnected at dispatch
-/// (environment / hub access).
+/// open after hub overload, plug agent disconnected at dispatch
+/// (environment / hub access), or cooperative cancel from E2E tearDown.
 bool isAcceptableE2eAgentSqlRepositoryFailure(AppFailure failure) {
   return isKnownInvalidPolicyFailure(failure) ||
       isKnownAgentSqlMissingPermissionFailure(failure) ||
@@ -872,15 +889,24 @@ bool isAcceptableE2eAgentSqlRepositoryFailure(AppFailure failure) {
       isKnownE2eAgentSqlDatabaseConnectionFailure(failure) ||
       isKnownE2eAgentSqlResultTooLargeFailure(failure) ||
       isKnownE2eAgentSqlStreamCapacityReachedFailure(failure) ||
-      isKnownE2eAgentDisconnectedAtDispatchFailure(failure);
+      isKnownE2eAgentDisconnectedAtDispatchFailure(failure) ||
+      isKnownE2eAgentSqlCancelledFailure(failure);
 }
 
 String e2eAgentSqlFailureDiagnostic(AppFailure failure) {
   final context = failure.context;
   final parts = <String>[
     'type=${failure.runtimeType}',
-    'message=${failure.displayMessage}',
+    'message=${failure.message}',
   ];
+  final userMessage = failure.userMessage;
+  if (userMessage != null && userMessage != failure.message) {
+    parts.add('userMessage=$userMessage');
+  }
+  final operation = context['operation'];
+  if (operation != null) {
+    parts.add('operation=$operation');
+  }
   final httpStatus = context['httpStatusCode'];
   if (httpStatus != null) {
     parts.add('httpStatus=$httpStatus');
@@ -894,6 +920,20 @@ String e2eAgentSqlFailureDiagnostic(AppFailure failure) {
   final uiKey = context[AgentSqlRpcFailureUiKey.field];
   if (uiKey != null) {
     parts.add('uiKey=$uiKey');
+  }
+  if (failure.cause != null) {
+    parts.add(
+      'cause=${failure.cause.runtimeType}:'
+      '${_e2eDiagnosticValue(failure.cause)}',
+    );
+  }
+  final firstRowKeys = context['firstRowKeys'];
+  if (firstRowKeys != null) {
+    parts.add('firstRowKeys=$firstRowKeys');
+  }
+  final mappedRowCount = context['rowCount'];
+  if (mappedRowCount != null) {
+    parts.add('rowCount=$mappedRowCount');
   }
   final responseBody =
       context[DioHttpFailureContext.responseBodyField] ??
@@ -958,6 +998,7 @@ Map<String, String> _processEnvironmentOverrides() {
     EnvKeys.socketPayloadSigningKey,
     EnvKeys.socketPayloadSigningKeyId,
     EnvKeys.socketPayloadRequireSignature,
+    EnvKeys.socketRequestServerTimingsEnabled,
     EnvKeys.e2eAgentId,
     EnvKeys.e2eClientToken,
     EnvKeys.e2eClientEmail,
@@ -974,6 +1015,10 @@ Map<String, String> _processEnvironmentOverrides() {
       overrides[name] = value;
     }
   }
+  overrides.putIfAbsent(
+    EnvKeys.socketRequestServerTimingsEnabled,
+    () => 'true',
+  );
   return overrides;
 }
 

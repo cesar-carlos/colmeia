@@ -119,6 +119,14 @@ void _registerSingleAgentQueryRepositories(GetIt getIt) {
     ),
   );
 
+  _registerSingle<MargemProdutoRepository, LoadMargemProdutoPageUseCase>(
+    getIt,
+    repo: () => MargemProdutoRepositoryImpl(getIt<AgentQueriesRepository>()),
+    useCase: () => LoadMargemProdutoPageUseCase(
+      getIt<MargemProdutoRepository>(),
+    ),
+  );
+
   _registerSingle<
     ResumoProdutoVendaRepository,
     LoadResumoProdutoVendaPageUseCase

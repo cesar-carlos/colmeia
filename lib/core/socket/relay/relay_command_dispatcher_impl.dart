@@ -5,6 +5,7 @@ import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/observability/socket/server_timings.dart';
 import 'package:colmeia/core/observability/socket/socket_channel_metrics.dart';
 import 'package:colmeia/core/socket/agent_latency_oracle.dart';
+import 'package:colmeia/core/socket/agent_sql_open_stream.dart';
 import 'package:colmeia/core/socket/consumer_socket_app_error_codes.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
@@ -810,6 +811,33 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
         clientRequestId: clientRequestId,
       ),
     );
+  }
+
+  @override
+  List<AgentSqlOpenStream> cancelAllPending({
+    String reason = 'caller_cancelled',
+  }) {
+    if (_isDisposed) {
+      return const <AgentSqlOpenStream>[];
+    }
+    final streams = <AgentSqlOpenStream>[];
+    final ids = _pendingByClientId.keys.toList(growable: false);
+    for (final pending in _pendingByClientId.values) {
+      if (pending is! _PendingStream) {
+        continue;
+      }
+      final streamId = pending.streamId?.trim();
+      if (streamId == null || streamId.isEmpty) {
+        continue;
+      }
+      streams.add(
+        AgentSqlOpenStream(agentId: pending.agentId, streamId: streamId),
+      );
+    }
+    for (final clientRequestId in ids) {
+      cancel(clientRequestId, reason: reason);
+    }
+    return streams;
   }
 
   @override

@@ -3726,6 +3726,46 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesCardProdutoRankLucroTitle => 'Ranking de produtos';
 
   @override
+  String get salesCardMargemProdutoTitle => 'Margem produto';
+
+  @override
+  String get salesMargemProdutoIntroSubtitle =>
+      'Preço de lista versus custo de reposição da filial selecionada.';
+
+  @override
+  String get salesMargemProdutoColumnProduto => 'Produto';
+
+  @override
+  String get salesMargemProdutoColumnCusto => 'Custo reposição';
+
+  @override
+  String get salesMargemProdutoColumnPreco => 'Preço de venda';
+
+  @override
+  String get salesMargemProdutoColumnMarkup => 'Markup %';
+
+  @override
+  String get salesMargemProdutoColumnMargem => 'Margem bruta %';
+
+  @override
+  String get salesMargemProdutoColumnGrupo => 'Grupo';
+
+  @override
+  String get salesMargemProdutoColumnMarca => 'Marca';
+
+  @override
+  String get salesMargemProdutoEntityLabel => 'produtos';
+
+  @override
+  String get salesMargemProdutoEmpty => 'Nenhum produto nesta filial.';
+
+  @override
+  String get salesMargemProdutoNoBranchEmpty => 'Nenhuma filial neste agente.';
+
+  @override
+  String get salesMargemProdutoFilterFilial => 'Filial';
+
+  @override
   String get salesCardRankingProdutosFaturamentoTitle =>
       'Ranking por faturamento';
 
@@ -8777,6 +8817,46 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesCardProdutoRankLucroTitle => 'Ranking de produtos';
+
+  @override
+  String get salesCardMargemProdutoTitle => 'Margem produto';
+
+  @override
+  String get salesMargemProdutoIntroSubtitle =>
+      'Preço de lista versus custo de reposição da filial selecionada.';
+
+  @override
+  String get salesMargemProdutoColumnProduto => 'Produto';
+
+  @override
+  String get salesMargemProdutoColumnCusto => 'Custo reposição';
+
+  @override
+  String get salesMargemProdutoColumnPreco => 'Preço de venda';
+
+  @override
+  String get salesMargemProdutoColumnMarkup => 'Markup %';
+
+  @override
+  String get salesMargemProdutoColumnMargem => 'Margem bruta %';
+
+  @override
+  String get salesMargemProdutoColumnGrupo => 'Grupo';
+
+  @override
+  String get salesMargemProdutoColumnMarca => 'Marca';
+
+  @override
+  String get salesMargemProdutoEntityLabel => 'produtos';
+
+  @override
+  String get salesMargemProdutoEmpty => 'Nenhum produto nesta filial.';
+
+  @override
+  String get salesMargemProdutoNoBranchEmpty => 'Nenhuma filial neste agente.';
+
+  @override
+  String get salesMargemProdutoFilterFilial => 'Filial';
 
   @override
   String get salesCardRankingProdutosFaturamentoTitle =>

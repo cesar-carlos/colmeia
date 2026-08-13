@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
@@ -37,7 +38,8 @@ class AgentQueryExecutor<Row> {
   /// production this guard should never fire — it exists exclusively to
   /// keep the executor from trusting upstream timeouts blindly.
   AgentQueryExecutor({
-    this.mergeAllConcurrency = 8,
+    this.mergeAllConcurrency =
+        AppEnvironment.defaultAgentQueryMergeAllConcurrency,
     this.raceTotalTimeout = const Duration(minutes: 2),
   }) : assert(
          mergeAllConcurrency > 0,

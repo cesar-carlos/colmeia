@@ -21,9 +21,9 @@ class ClientApprovedAgentsRelayPreWarmLoader {
        _loadApprovedAgentsUseCase = loadApprovedAgentsUseCase,
        _pageSize = pageSize;
 
-  /// Mirrors `mergeAllConcurrency = 8` from the across-agent executors so
-  /// the pre-warm sweep covers exactly the first cross-agent wave. Kept in
-  /// sync with [RelayConversationPreWarmer]'s defensive cap.
+  /// Covers at least the first across-agent wave
+  /// (`AGENT_QUERY_MERGE_ALL_CONCURRENCY`, default 4) while staying at or
+  /// below per-agent socket inflight (`SOCKET_MAX_INFLIGHT_PER_AGENT`, 8).
   static const int defaultPageSize = 8;
 
   final AuthSessionAccessor _sessionAccessor;

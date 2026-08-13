@@ -30,7 +30,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shellNavSalesLabel => 'Sales';
 
   @override
-  String get shellNavSalesSubtitle => 'Orders, revenue, and commercial KPIs';
+  String get shellNavSalesSubtitle =>
+      'Orders, revenue, and commercial indicators';
 
   @override
   String get shellNavReturnsLabel => 'Returns';
@@ -3246,21 +3247,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesHubTitle => 'Sales';
 
   @override
-  String get salesHubSubtitle =>
-      'Access and manage commercial information by category.';
+  String get salesHubSubtitle => 'Browse commercial information by category.';
 
   @override
   String get shellNavSalesMonitoringLabel => 'Track sales';
 
   @override
-  String get shellNavSalesMonitoringSubtitle => 'Map and filter-based refresh';
+  String get shellNavSalesMonitoringSubtitle => 'Map and update by filters';
 
   @override
   String get salesLiveMapTitle => 'Track sales';
 
   @override
   String get salesLiveMapSubtitle =>
-      'Brazil map with sales by branch and filter-based refresh.';
+      'Brazil map with sales by branch and updates by filters.';
 
   @override
   String get salesLiveMapSessionExpiredTitle => 'Session expired';
@@ -3674,6 +3674,47 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesCardProdutoRankLucroTitle => 'Product ranking';
 
   @override
+  String get salesCardMargemProdutoTitle => 'Product margin';
+
+  @override
+  String get salesMargemProdutoIntroSubtitle =>
+      'List price versus replacement cost for the selected branch.';
+
+  @override
+  String get salesMargemProdutoColumnProduto => 'Product';
+
+  @override
+  String get salesMargemProdutoColumnCusto => 'Replacement cost';
+
+  @override
+  String get salesMargemProdutoColumnPreco => 'Sale price';
+
+  @override
+  String get salesMargemProdutoColumnMarkup => 'Markup %';
+
+  @override
+  String get salesMargemProdutoColumnMargem => 'Gross margin %';
+
+  @override
+  String get salesMargemProdutoColumnGrupo => 'Group';
+
+  @override
+  String get salesMargemProdutoColumnMarca => 'Brand';
+
+  @override
+  String get salesMargemProdutoEntityLabel => 'products';
+
+  @override
+  String get salesMargemProdutoEmpty => 'No products for this branch.';
+
+  @override
+  String get salesMargemProdutoNoBranchEmpty =>
+      'No branch is available on this agent.';
+
+  @override
+  String get salesMargemProdutoFilterFilial => 'Branch';
+
+  @override
   String get salesCardRankingProdutosFaturamentoTitle => 'Revenue ranking';
 
   @override
@@ -3759,10 +3800,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Other products, DIVERSOS aggregate slice';
 
   @override
-  String get salesCardMonthlyPnlTitle => 'Monthly P&L';
+  String get salesCardMonthlyPnlTitle => 'Monthly results';
 
   @override
-  String get salesCardResumoTotalDiarioVendasTitle => 'Daily sales totals';
+  String get salesCardResumoTotalDiarioVendasTitle => 'Daily sales';
 
   @override
   String get salesAutoRefreshOff => 'Off';

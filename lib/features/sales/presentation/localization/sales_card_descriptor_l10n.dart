@@ -7,6 +7,7 @@ extension SalesCardDescriptorL10n on SalesCardDescriptor {
       'produto_rank_lucro' => l10n.salesCardProdutoRankLucroTitle,
       'ranking_produtos_faturamento' =>
         l10n.salesCardRankingProdutosFaturamentoTitle,
+      'margem_produto' => l10n.salesCardMargemProdutoTitle,
       'monthly_pnl' => l10n.salesCardMonthlyPnlTitle,
       'resumo_total_diario_vendas' =>
         l10n.salesCardResumoTotalDiarioVendasTitle,

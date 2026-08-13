@@ -144,7 +144,7 @@ abstract class AppLocalizations {
   /// No description provided for @shellNavSalesSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Orders, revenue, and commercial KPIs'**
+  /// **'Orders, revenue, and commercial indicators'**
   String get shellNavSalesSubtitle;
 
   /// No description provided for @shellNavReturnsLabel.
@@ -5351,7 +5351,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesHubSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Access and manage commercial information by category.'**
+  /// **'Browse commercial information by category.'**
   String get salesHubSubtitle;
 
   /// No description provided for @shellNavSalesMonitoringLabel.
@@ -5363,7 +5363,7 @@ abstract class AppLocalizations {
   /// No description provided for @shellNavSalesMonitoringSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Map and filter-based refresh'**
+  /// **'Map and update by filters'**
   String get shellNavSalesMonitoringSubtitle;
 
   /// No description provided for @salesLiveMapTitle.
@@ -5375,7 +5375,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesLiveMapSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Brazil map with sales by branch and filter-based refresh.'**
+  /// **'Brazil map with sales by branch and updates by filters.'**
   String get salesLiveMapSubtitle;
 
   /// No description provided for @salesLiveMapSessionExpiredTitle.
@@ -6065,6 +6065,84 @@ abstract class AppLocalizations {
   /// **'Product ranking'**
   String get salesCardProdutoRankLucroTitle;
 
+  /// No description provided for @salesCardMargemProdutoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Product margin'**
+  String get salesCardMargemProdutoTitle;
+
+  /// No description provided for @salesMargemProdutoIntroSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'List price versus replacement cost for the selected branch.'**
+  String get salesMargemProdutoIntroSubtitle;
+
+  /// No description provided for @salesMargemProdutoColumnProduto.
+  ///
+  /// In en, this message translates to:
+  /// **'Product'**
+  String get salesMargemProdutoColumnProduto;
+
+  /// No description provided for @salesMargemProdutoColumnCusto.
+  ///
+  /// In en, this message translates to:
+  /// **'Replacement cost'**
+  String get salesMargemProdutoColumnCusto;
+
+  /// No description provided for @salesMargemProdutoColumnPreco.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale price'**
+  String get salesMargemProdutoColumnPreco;
+
+  /// No description provided for @salesMargemProdutoColumnMarkup.
+  ///
+  /// In en, this message translates to:
+  /// **'Markup %'**
+  String get salesMargemProdutoColumnMarkup;
+
+  /// No description provided for @salesMargemProdutoColumnMargem.
+  ///
+  /// In en, this message translates to:
+  /// **'Gross margin %'**
+  String get salesMargemProdutoColumnMargem;
+
+  /// No description provided for @salesMargemProdutoColumnGrupo.
+  ///
+  /// In en, this message translates to:
+  /// **'Group'**
+  String get salesMargemProdutoColumnGrupo;
+
+  /// No description provided for @salesMargemProdutoColumnMarca.
+  ///
+  /// In en, this message translates to:
+  /// **'Brand'**
+  String get salesMargemProdutoColumnMarca;
+
+  /// No description provided for @salesMargemProdutoEntityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'products'**
+  String get salesMargemProdutoEntityLabel;
+
+  /// No description provided for @salesMargemProdutoEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No products for this branch.'**
+  String get salesMargemProdutoEmpty;
+
+  /// No description provided for @salesMargemProdutoNoBranchEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No branch is available on this agent.'**
+  String get salesMargemProdutoNoBranchEmpty;
+
+  /// No description provided for @salesMargemProdutoFilterFilial.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch'**
+  String get salesMargemProdutoFilterFilial;
+
   /// No description provided for @salesCardRankingProdutosFaturamentoTitle.
   ///
   /// In en, this message translates to:
@@ -6203,13 +6281,13 @@ abstract class AppLocalizations {
   /// No description provided for @salesCardMonthlyPnlTitle.
   ///
   /// In en, this message translates to:
-  /// **'Monthly P&L'**
+  /// **'Monthly results'**
   String get salesCardMonthlyPnlTitle;
 
   /// No description provided for @salesCardResumoTotalDiarioVendasTitle.
   ///
   /// In en, this message translates to:
-  /// **'Daily sales totals'**
+  /// **'Daily sales'**
   String get salesCardResumoTotalDiarioVendasTitle;
 
   /// No description provided for @salesAutoRefreshOff.

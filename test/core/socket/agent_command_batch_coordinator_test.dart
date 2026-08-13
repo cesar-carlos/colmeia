@@ -569,6 +569,40 @@ void main() {
     );
   });
 
+  group('cancelAllQueued', () {
+    test('fail-fasts queued items without flushing a batch', () async {
+      final c = AgentCommandBatchCoordinator(
+        directSender: direct,
+        windowDuration: const Duration(seconds: 10),
+      );
+      addTearDown(c.dispose);
+
+      final first = c.send(
+        agentId: 'agent-1',
+        body: _body(),
+        rpcId: 'rpc-1',
+      );
+      final second = c.send(
+        agentId: 'agent-1',
+        body: _body(rpcId: 'rpc-2'),
+        rpcId: 'rpc-2',
+      );
+      final capturedFirst = expectLater(
+        first,
+        throwsA(isA<SocketDispatchCancelled>()),
+      );
+      final capturedSecond = expectLater(
+        second,
+        throwsA(isA<SocketDispatchCancelled>()),
+      );
+
+      c.cancelAllQueued(reason: 'e2e_teardown');
+      await capturedFirst;
+      await capturedSecond;
+      check(direct.calls).isEmpty();
+    });
+  });
+
   group('dispose', () {
     test('fails pending requests with SocketDispatchDisconnected', () async {
       // Use a long window so the timer never fires before dispose.

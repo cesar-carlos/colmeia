@@ -27,6 +27,8 @@
 # Socket + relay hits the real hub with longer tail latency than REST-only;
 # the default 30s test timeout caused false failures (tearDown disposed relay
 # while work was still in flight). Tag timeout keeps VM E2E stable.
+# Isolate heavy across-agent reports in dedicated files — stacking mergeAll
+# queries on one agent poisons the next call on the socket channel.
 # If relay RPCs hang against your hub, set E2E_DISABLE_RELAY_DISPATCH=true
 # (see AppEnvironment.e2eDisableRelayDispatch and assets/env/.env.example).
 tags:

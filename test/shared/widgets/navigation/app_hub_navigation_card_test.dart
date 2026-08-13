@@ -94,6 +94,36 @@ void main() {
     );
   });
 
+  test('resolveAppHubNavigationTooltipTriggerMode uses hover on desktop', () {
+    expect(
+      resolveAppHubNavigationTooltipTriggerMode(TargetPlatform.windows),
+      isNull,
+    );
+    expect(
+      resolveAppHubNavigationTooltipTriggerMode(TargetPlatform.macOS),
+      isNull,
+    );
+    expect(
+      resolveAppHubNavigationTooltipTriggerMode(TargetPlatform.linux),
+      isNull,
+    );
+  });
+
+  test('resolveAppHubNavigationTooltipTriggerMode uses long-press on touch', () {
+    expect(
+      resolveAppHubNavigationTooltipTriggerMode(TargetPlatform.android),
+      TooltipTriggerMode.longPress,
+    );
+    expect(
+      resolveAppHubNavigationTooltipTriggerMode(TargetPlatform.iOS),
+      TooltipTriggerMode.longPress,
+    );
+    expect(
+      resolveAppHubNavigationTooltipTriggerMode(TargetPlatform.fuchsia),
+      TooltipTriggerMode.longPress,
+    );
+  });
+
   testWidgets(
     'overview density fits three label lines at text scale 1.3',
     (tester) async {

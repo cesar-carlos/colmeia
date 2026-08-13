@@ -5,6 +5,7 @@ import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_margem_produto_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_produto_rank_lucro_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_screen_use_case.dart';
@@ -23,6 +24,7 @@ import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_c
 import 'package:colmeia/features/sales/presentation/pages/sales_daily_totals_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_hub_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_live_map_page.dart';
+import 'package:colmeia/features/sales/presentation/pages/sales_margem_produto_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_monthly_pnl_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_produto_rank_lucro_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_produto_tendencia_media_movel_page.dart';
@@ -96,6 +98,19 @@ List<RouteBase> buildSalesRoutes() {
                 resolveSalesAgentClientTokenUseCase,
             loadRankingProdutosFaturamentoUseCase:
                 getIt<LoadRankingProdutosFaturamentoUseCase>(),
+            relayCancelScopeBinder: _wireSalesAgentSqlRelayCancel,
+          );
+        }
+
+        if (cardId == 'margem_produto') {
+          return SalesMargemProdutoPage(
+            sessionService: sessionService,
+            loadSalesAvailableAgentsUseCase: loadSalesAvailableAgentsUseCase,
+            resolveSalesAgentClientTokenUseCase:
+                resolveSalesAgentClientTokenUseCase,
+            loadCadastroFilialPageUseCase:
+                getIt<LoadCadastroFilialPageUseCase>(),
+            loadMargemProdutoPageUseCase: getIt<LoadMargemProdutoPageUseCase>(),
             relayCancelScopeBinder: _wireSalesAgentSqlRelayCancel,
           );
         }

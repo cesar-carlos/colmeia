@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/di/injector_agent_queries.dart';
 import 'package:colmeia/core/socket/agent_command_sender.dart';
+import 'package:colmeia/core/socket/agent_sql_open_stream.dart';
 import 'package:colmeia/core/socket/relay/relay_batch_item.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
@@ -76,6 +77,11 @@ class _FakeRelayCommandDispatcher implements RelayCommandDispatcher {
 
   @override
   void cancel(String clientRequestId, {String reason = 'caller_cancelled'}) {}
+
+  @override
+  List<AgentSqlOpenStream> cancelAllPending({
+    String reason = 'caller_cancelled',
+  }) => const <AgentSqlOpenStream>[];
 
   @override
   Future<Map<String, dynamic>> sendUnary({

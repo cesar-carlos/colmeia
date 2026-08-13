@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:checks/checks.dart';
+import 'package:colmeia/core/socket/agent_sql_open_stream.dart';
 import 'package:colmeia/core/socket/relay/relay_batch_command_coordinator.dart';
 import 'package:colmeia/core/socket/relay/relay_batch_item.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
@@ -107,6 +108,14 @@ class _RecordingRelayDispatcher implements RelayCommandDispatcher {
   @override
   void cancel(String clientRequestId, {String reason = 'caller_cancelled'}) {
     cancelledIds.add(clientRequestId);
+  }
+
+  @override
+  List<AgentSqlOpenStream> cancelAllPending({
+    String reason = 'caller_cancelled',
+  }) {
+    cancelledIds.add('all:$reason');
+    return const <AgentSqlOpenStream>[];
   }
 
   @override
@@ -495,6 +504,25 @@ void main() {
         check(inner.batchCalls).isEmpty();
       },
     );
+
+    test('cancelAllPending drains the queue then forwards to inner', () async {
+      final future = coordinator.sendUnary(
+        agentId: 'agent-1',
+        body: _bodyFor(id: 'rpc-all'),
+        clientRequestId: 'rpc-all',
+      );
+      final assertion = expectLater(
+        future,
+        throwsA(isA<RelayRequestCancelled>()),
+      );
+
+      final streams = coordinator.cancelAllPending(reason: 'e2e_teardown');
+      await assertion;
+      check(streams).isEmpty();
+      check(inner.cancelledIds).contains('all:e2e_teardown');
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      check(inner.batchCalls).isEmpty();
+    });
   });
 
   group('dispose', () {

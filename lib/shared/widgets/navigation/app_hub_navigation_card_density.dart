@@ -34,9 +34,6 @@ const double kAppHubNavigationNarrowLabelFontSizeDefault = 10.5;
 /// Narrow-label font size for chart-nav grid tiles.
 const double kAppHubNavigationNarrowLabelFontSizeChartNav = 11.5;
 
-/// Viewport width at which the sales hub uses four columns instead of two.
-const double kAppHubNavigationSalesHubWideBreakpoint = 600;
-
 extension AppHubNavigationCardDensityGridMetrics
     on AppHubNavigationCardDensity {
   double get gridMinCardWidth => kAppHubNavigationCardMinWidth;

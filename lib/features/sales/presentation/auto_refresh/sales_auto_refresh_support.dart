@@ -74,6 +74,7 @@ abstract final class SalesAutoRefreshCardIds {
   static const String produtoRankLucro = 'produto_rank_lucro';
   static const String rankingProdutosFaturamento =
       'ranking_produtos_faturamento';
+  static const String margemProduto = 'margem_produto';
   static const String produtoTendencia = 'produto_tendencia_venda';
   static const String produtoTendenciaMediaMovel =
       'produto_tendencia_venda_media_movel';

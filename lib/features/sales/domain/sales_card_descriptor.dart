@@ -22,6 +22,10 @@ const List<SalesCardDescriptor> allSalesCards = <SalesCardDescriptor>[
     icon: Icons.payments_outlined,
   ),
   SalesCardDescriptor(
+    id: 'margem_produto',
+    icon: Icons.percent_rounded,
+  ),
+  SalesCardDescriptor(
     id: 'monthly_pnl',
     icon: Icons.show_chart_rounded,
   ),

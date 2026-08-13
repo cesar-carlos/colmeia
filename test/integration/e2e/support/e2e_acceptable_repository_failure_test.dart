@@ -1,6 +1,7 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_failure_codes.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -361,6 +362,38 @@ void main() {
         isKnownE2eAgentSqlAgentAccessDeniedFailure(failure),
         isFalse,
       );
+      expect(isAcceptableE2eAgentSqlRepositoryFailure(failure), isFalse);
+    });
+  });
+
+  group('isKnownE2eAgentSqlCancelledFailure', () {
+    test('returns true for OperationCancelledFailure', () {
+      const failure = OperationCancelledFailure();
+
+      expect(isKnownE2eAgentSqlCancelledFailure(failure), isTrue);
+      expect(isAcceptableE2eAgentSqlRepositoryFailure(failure), isTrue);
+    });
+
+    test('returns true when cancelled context flag is set', () {
+      const failure = NetworkFailure(
+        message: 'cancelled',
+        userMessage: 'u',
+        context: <String, Object?>{
+          AgentQueriesFailureContext.cancelledField: true,
+        },
+      );
+
+      expect(isKnownE2eAgentSqlCancelledFailure(failure), isTrue);
+      expect(isAcceptableE2eAgentSqlRepositoryFailure(failure), isTrue);
+    });
+
+    test('returns false for unrelated NetworkFailure', () {
+      const failure = NetworkFailure(
+        message: 'other',
+        userMessage: 'u',
+      );
+
+      expect(isKnownE2eAgentSqlCancelledFailure(failure), isFalse);
       expect(isAcceptableE2eAgentSqlRepositoryFailure(failure), isFalse);
     });
   });

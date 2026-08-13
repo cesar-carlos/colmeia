@@ -142,6 +142,7 @@ Iterable<File> _unaryReportExceptionFiles() sync* {
     'resumo_produto_venda_lucratividade_mensal_repository_impl.dart',
     'resumo_produto_venda_lucratividade_repository_impl.dart',
     'resumo_produto_venda_repository_impl.dart',
+    'margem_produto_repository_impl.dart',
     'produto_vendido_tendencia_de_venda_repository_impl.dart',
     'produto_vendido_tendencia_de_venda_media_movel_repository_impl.dart',
     'resumo_total_diario_vendas_repository_impl.dart',

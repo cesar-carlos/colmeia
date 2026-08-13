@@ -7,7 +7,7 @@ import 'package:colmeia/shared/widgets/navigation/app_hub_navigation_card_metric
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-/// Resolves the tooltip body shown on long-press for hub navigation cards.
+/// Resolves the tooltip body shown for hub navigation cards.
 String resolveAppHubNavigationTooltipMessage({
   required String label,
   String? subtitle,
@@ -23,14 +23,26 @@ String resolveAppHubNavigationTooltipMessage({
   return '$label\n$resolvedSubtitle';
 }
 
+/// Hover on desktop (including desktop web); long-press on touch platforms.
+TooltipTriggerMode? resolveAppHubNavigationTooltipTriggerMode(
+  TargetPlatform platform,
+) {
+  return switch (platform) {
+    TargetPlatform.android ||
+    TargetPlatform.iOS ||
+    TargetPlatform.fuchsia => TooltipTriggerMode.longPress,
+    _ => null,
+  };
+}
+
 /// Tappable card for hub-style navigation grids (icon + short label).
 class AppHubNavigationCard extends StatelessWidget {
   const AppHubNavigationCard({
     required this.icon,
     required this.label,
     required this.onTap,
+    required this.density,
     super.key,
-    this.density = AppHubNavigationCardDensity.standard,
     this.aspectRatio = kAppHubNavigationStandardCardAspectRatio,
     this.labelStyle,
     this.showReadyBadge = false,
@@ -58,17 +70,8 @@ class AppHubNavigationCard extends StatelessWidget {
     tooltipMessage: tooltipMessage,
   );
 
-  TooltipTriggerMode? get _tooltipTriggerMode {
-    if (kIsWeb) {
-      return TooltipTriggerMode.longPress;
-    }
-    return switch (defaultTargetPlatform) {
-      TargetPlatform.android ||
-      TargetPlatform.iOS ||
-      TargetPlatform.fuchsia => TooltipTriggerMode.longPress,
-      _ => null,
-    };
-  }
+  TooltipTriggerMode? get _tooltipTriggerMode =>
+      resolveAppHubNavigationTooltipTriggerMode(defaultTargetPlatform);
 
   bool get _readyBadgeOnIcon =>
       showReadyBadge && density == AppHubNavigationCardDensity.chartNav;

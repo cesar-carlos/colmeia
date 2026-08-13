@@ -97,6 +97,10 @@ void main() {
         check(failure.message).equals('bad row');
         check(failure.context['operation']).equals('testOperation');
         check(failure.context['agentId']).equals('agent-1');
+        check(failure.context['rowCount']).equals(1);
+        check(
+          failure.context['firstRowKeys'],
+        ).isA<List<String>>().deepEquals(<String>['value']);
       },
     );
   });

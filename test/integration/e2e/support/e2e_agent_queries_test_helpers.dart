@@ -15,7 +15,7 @@ const String _sessionFailureReason =
 const String _acceptableFailureSuffix =
     'should return rows, invalid_policy / '
     'missing_permission RPC, transient bridge HTTP 5xx / socket / relay '
-    'transport overload, or circuit breaker open.';
+    'transport overload, circuit breaker open, or cooperative cancel.';
 
 bool shouldSkipE2eRepositoryTest(String testLabel) {
   final missingKeys = missingE2eRepositoryKeys();
@@ -51,6 +51,8 @@ void expectAcceptableAgentQueriesE2eFailure(
   expect(
     isAcceptableE2eAgentSqlRepositoryFailure(failure),
     isTrue,
-    reason: '$failureScope $_acceptableFailureSuffix',
+    reason:
+        '$failureScope $_acceptableFailureSuffix '
+        '${e2eAgentSqlFailureDiagnostic(failure)}',
   );
 }

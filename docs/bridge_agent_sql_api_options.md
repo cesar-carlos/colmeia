@@ -156,6 +156,7 @@ Allowed values:
   `ResumoProdutoVendaLucratividadeMensalRepositoryImpl`,
   `ResumoProdutoVendaLucratividadeRepositoryImpl`,
   `ResumoProdutoVendaRepositoryImpl`,
+  `MargemProdutoRepositoryImpl`,
   `ProdutoVendidoTendenciaDeVendaRepositoryImpl` (`loadPage` / `loadSummary`),
   `ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl`
   (`loadPage` / `loadSummary`), `ResumoTotalDiarioVendasRepositoryImpl`, and
@@ -180,12 +181,13 @@ Allowed values:
   their screen batch paths (`sql.executeBatch`) also set `skipTransportCache`.
 - Daily sales totals (`ResumoTotalDiarioVendas`), live-map period aggregates
   (`ResumoTotalVendasMunicipioFilialPeriodo`), period product profitability
-  (`ResumoProdutoVendaLucratividade`), and paged product sales
-  (`ResumoProdutoVenda`) follow unary + `skipTransportCache`. Period
+  (`ResumoProdutoVendaLucratividade`), paged product sales
+  (`ResumoProdutoVenda`), and the paged product-margin catalog
+  (`MargemProduto`) follow unary + `skipTransportCache`. Period
   profitability also retries once on empty success; the paged product sales
-  path does not, because a legitimate empty page is a `TotalCount = 0`
-  sentinel row. The live-map merged `sql.executeBatch` path also sets
-  `skipTransportCache`.
+  and product-margin catalog paths do not, because a legitimate empty page is
+  a `TotalCount = 0` sentinel row. The live-map merged `sql.executeBatch`
+  path also sets `skipTransportCache`.
 - Overview read-only `sql.executeBatch` calls set
   `options.max_parallel_read_only_batch_items: 4`.
 - Local performance knobs:

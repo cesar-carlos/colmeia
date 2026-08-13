@@ -4,44 +4,34 @@ library;
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart' show SessionFailure;
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_bairro_options_across_agents_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_municipio_options_across_agents_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_vendas_diarias_por_vendedor_vendedor_options_across_agents_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas_diarias_por_vendedor_filter_options_across_agents_repository.dart';
 import 'package:flutter_test/flutter_test.dart' hide group;
 import 'package:test_api/scaffolding.dart' show group;
 
+import 'support/e2e_across_agents_report.dart';
 import 'support/e2e_dependency_bootstrap.dart';
 
-/// Exercises [ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepository.loadAllOptions]
-/// (one `sql.executeBatch` per agent) against the live bridge.
+/// Exercises [ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepository]
+/// and the dedicated option use cases against the live bridge.
 void main() {
   group(
     'ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepository (e2e)',
     () {
       registerE2eAgentQueriesSuiteHooks();
 
-      late DateTime periodStart;
-      late DateTime periodEnd;
-
-      setUp(() {
-        final today = DateTime.now();
-        periodEnd = DateTime(today.year, today.month, today.day);
-        periodStart = periodEnd.subtract(const Duration(days: 90));
-      });
-
       test(
         'loadAllOptions returns merged vendedor, bairro and municipio',
         () async {
-          final missingKeys = missingE2eRepositoryKeys();
-          if (missingKeys.isNotEmpty) {
-            /// E2E: explain skip when repository keys are not configured.
-            // ignore: avoid_print
-            print(
-              'SKIP resumo_vendas_diarias_filter_options_across_agents_e2e: '
-              'missing ${missingKeys.join(', ')}. '
-              'Set them in assets/env/local.env, process env, or --dart-define.',
-            );
+          if (skipE2eWhenMissingRepositoryKeys(
+            'resumo_vendas_diarias_filter_options_across_agents_e2e',
+          )) {
             return;
           }
 
+          final period = e2eKnownSalesPeriod();
           final repository =
               getIt<
                 ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepository
@@ -50,8 +40,8 @@ void main() {
           final result = await runE2eAppResultWithHubRetry(
             () => repository.loadAllOptions(
               userId: 'user-1',
-              dataVendaInicio: periodStart,
-              dataVendaFim: periodEnd,
+              dataVendaInicio: period.start,
+              dataVendaFim: period.end,
               selectedAgentIds: {AppEnvironment.e2eAgentId},
             ),
             actionLabel: 'resumo_vendas_diarias_opts_batch_across',
@@ -89,6 +79,87 @@ void main() {
           );
         },
       );
+
+      test('load vendedor options through the across-agent use case', () async {
+        if (skipE2eWhenMissingRepositoryKeys(
+          'agent_query_across_vendedor_options',
+        )) {
+          return;
+        }
+
+        final period = e2eKnownSalesPeriod();
+        final useCase =
+            getIt<
+              LoadResumoVendasDiariasPorVendedorVendedorOptionsAcrossAgentsUseCase
+            >();
+        expectE2eAcrossAgentsList(
+          await runE2eAcrossAgentsResult(
+            () => useCase(
+              userId: e2eAcrossAgentsUserId,
+              dataVendaInicio: period.start,
+              dataVendaFim: period.end,
+              limit: 5,
+              bridgeTimeoutMs: e2eAcrossAgentsBridgeTimeoutMs,
+            ),
+          ),
+          (option) {
+            expect(option.codVendedor, greaterThan(0));
+            expect(option.nomeVendedor, isNotEmpty);
+          },
+        );
+      });
+
+      test('load bairro options through the across-agent use case', () async {
+        if (skipE2eWhenMissingRepositoryKeys(
+          'agent_query_across_bairro_options',
+        )) {
+          return;
+        }
+
+        final period = e2eKnownSalesPeriod();
+        final useCase =
+            getIt<
+              LoadResumoVendasDiariasPorVendedorBairroOptionsAcrossAgentsUseCase
+            >();
+        expectE2eAcrossAgentsList(
+          await runE2eAcrossAgentsResult(
+            () => useCase(
+              userId: e2eAcrossAgentsUserId,
+              dataVendaInicio: period.start,
+              dataVendaFim: period.end,
+              limit: 5,
+              bridgeTimeoutMs: e2eAcrossAgentsBridgeTimeoutMs,
+            ),
+          ),
+          (option) => expect(option.value, isNotEmpty),
+        );
+      });
+
+      test('load municipio options through the across-agent use case', () async {
+        if (skipE2eWhenMissingRepositoryKeys(
+          'agent_query_across_municipio_options',
+        )) {
+          return;
+        }
+
+        final period = e2eKnownSalesPeriod();
+        final useCase =
+            getIt<
+              LoadResumoVendasDiariasPorVendedorMunicipioOptionsAcrossAgentsUseCase
+            >();
+        expectE2eAcrossAgentsList(
+          await runE2eAcrossAgentsResult(
+            () => useCase(
+              userId: e2eAcrossAgentsUserId,
+              dataVendaInicio: period.start,
+              dataVendaFim: period.end,
+              limit: 5,
+              bridgeTimeoutMs: e2eAcrossAgentsBridgeTimeoutMs,
+            ),
+          ),
+          (option) => expect(option.value, isNotEmpty),
+        );
+      });
     },
     tags: <String>['e2e'],
   );

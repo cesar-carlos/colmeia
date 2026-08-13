@@ -159,6 +159,12 @@ class SocketCommandCoalescer {
     return _leaderClientCompleterByRpcId.remove(rpcId);
   }
 
+  /// Client-facing rpcIds still waiting (leaders and coalesced followers).
+  Iterable<String> get pendingClientRpcIds => <String>[
+    ..._leaderClientCompleterByRpcId.keys,
+    ..._awaiterByRpcId.keys,
+  ];
+
   /// Drops in-flight keys and fails follower Completers (socket drop).
   void failFollowersAndClearInflight(Object error) {
     _inflightByKey.clear();

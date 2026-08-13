@@ -26,6 +26,7 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_fornece
 import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_marca_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_grupo_produto_options_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_marca_produto_options_use_case.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_margem_produto_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_municipios_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_produto_rank_lucro_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_media_movel_page_use_case.dart';
@@ -104,6 +105,7 @@ import 'package:colmeia/features/agent_queries/data/repositories/fornecedor_opti
 import 'package:colmeia/features/agent_queries/data/repositories/grupo_marca_produto_options_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/grupo_produto_options_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/marca_produto_options_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/margem_produto_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/metrics_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/municipio_list_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/produto_vendido_produto_rank_lucro_repository_impl.dart';
@@ -174,6 +176,7 @@ import 'package:colmeia/features/agent_queries/domain/repositories/fornecedor_op
 import 'package:colmeia/features/agent_queries/domain/repositories/grupo_marca_produto_options_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/grupo_produto_options_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/marca_produto_options_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/margem_produto_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/municipio_list_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_produto_rank_lucro_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_tendencia_de_venda_media_movel_repository.dart';

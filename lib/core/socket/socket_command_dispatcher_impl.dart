@@ -437,6 +437,20 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
   }
 
   @override
+  void cancelAllPending({String reason = 'caller_cancelled'}) {
+    if (_isDisposed) {
+      return;
+    }
+    final ids = <String>{
+      ..._meta.keys,
+      ..._coalescer.pendingClientRpcIds,
+    };
+    for (final rpcId in ids) {
+      cancel(rpcId, reason: reason);
+    }
+  }
+
+  @override
   Future<void> dispose() async {
     if (_isDisposed) {
       return;

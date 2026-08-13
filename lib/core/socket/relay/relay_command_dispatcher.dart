@@ -1,3 +1,4 @@
+import 'package:colmeia/core/socket/agent_sql_open_stream.dart';
 import 'package:colmeia/core/socket/relay/relay_batch_item.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart'
     show RelayRequestCancelled;
@@ -133,6 +134,16 @@ abstract interface class RelayCommandDispatcher {
   /// Does **not** notify the hub (same limitation as cancelling a
   /// [sendStreaming] subscription).
   void cancel(String clientRequestId, {String reason = 'caller_cancelled'});
+
+  /// Fail-fast every in-flight unary/streaming waiter and return open
+  /// stream ids so the caller can emit hub `sql.cancel`.
+  ///
+  /// Used by E2E teardown and navigation-away so the next SQL call is
+  /// not queued behind abandoned streams. Unary agent work is still
+  /// best-effort only (see `sql_cancel_contract_colmeia_map.md`).
+  List<AgentSqlOpenStream> cancelAllPending({
+    String reason = 'caller_cancelled',
+  });
 
   /// Broadcast stream of outcomes (success or failure). Subscribers from
   /// the presence layer / metrics see exactly one event per `sendUnary`
