@@ -109,20 +109,23 @@ void main() {
     );
   });
 
-  test('resolveAppHubNavigationTooltipTriggerMode uses long-press on touch', () {
-    expect(
-      resolveAppHubNavigationTooltipTriggerMode(TargetPlatform.android),
-      TooltipTriggerMode.longPress,
-    );
-    expect(
-      resolveAppHubNavigationTooltipTriggerMode(TargetPlatform.iOS),
-      TooltipTriggerMode.longPress,
-    );
-    expect(
-      resolveAppHubNavigationTooltipTriggerMode(TargetPlatform.fuchsia),
-      TooltipTriggerMode.longPress,
-    );
-  });
+  test(
+    'resolveAppHubNavigationTooltipTriggerMode uses long-press on touch',
+    () {
+      expect(
+        resolveAppHubNavigationTooltipTriggerMode(TargetPlatform.android),
+        TooltipTriggerMode.longPress,
+      );
+      expect(
+        resolveAppHubNavigationTooltipTriggerMode(TargetPlatform.iOS),
+        TooltipTriggerMode.longPress,
+      );
+      expect(
+        resolveAppHubNavigationTooltipTriggerMode(TargetPlatform.fuchsia),
+        TooltipTriggerMode.longPress,
+      );
+    },
+  );
 
   testWidgets(
     'overview density fits three label lines at text scale 1.3',
