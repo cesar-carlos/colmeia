@@ -784,8 +784,9 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
 
   String? _rpcIdFromPayloadFrameHeaders(Object? raw) {
     return switch (PayloadFrame.parseHeaders(raw)) {
-      PayloadFrameHeadersParseSuccess(:final headers) =>
-        _coerceRpcId(headers.requestId),
+      PayloadFrameHeadersParseSuccess(:final headers) => _coerceRpcId(
+        headers.requestId,
+      ),
       PayloadFrameParseFailure() => null,
     };
   }

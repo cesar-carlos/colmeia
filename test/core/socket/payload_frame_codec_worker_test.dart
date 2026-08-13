@@ -30,7 +30,9 @@ void main() {
         fail('expected Map, got $decoded');
       }
       check(decoded['ok']).equals(true);
-      final encoded = await worker.jsonEncodeUtf8(<String, Object?>{'ok': true});
+      final encoded = await worker.jsonEncodeUtf8(<String, Object?>{
+        'ok': true,
+      });
       check(jsonDecode(utf8.decode(encoded))).isA<Map<Object?, Object?>>();
     });
 

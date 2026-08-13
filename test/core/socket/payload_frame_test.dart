@@ -241,8 +241,7 @@ void main() {
       };
       final headers = switch (PayloadFrame.parseHeaders(wire)) {
         PayloadFrameHeadersParseSuccess(:final headers) => headers,
-        PayloadFrameParseFailure(:final message) =>
-          throw StateError(message),
+        PayloadFrameParseFailure(:final message) => throw StateError(message),
       };
       final materialized = PayloadFrame.materialize(headers);
       final detailed = PayloadFrame.parseDetailed(wire);
