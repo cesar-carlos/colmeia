@@ -13,8 +13,8 @@ class MargemProdutoFilter {
   const MargemProdutoFilter({
     required this.codEmpresa,
     required this.codFilial,
-    this.sortBy = MargemProdutoSortBy.margemLucroProduto,
-    this.sortDirection = ResumoProdutoVendaSortDirection.descending,
+    this.sortBy = MargemProdutoSortBy.nomeProduto,
+    this.sortDirection = ResumoProdutoVendaSortDirection.ascending,
     this.page = 1,
     this.pageSize = defaultPageSize,
   });

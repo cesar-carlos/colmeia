@@ -20,7 +20,7 @@ import 'package:share_plus/share_plus.dart';
 const Duration _kFrameWaitTimeout = Duration(seconds: 1);
 const Duration _kDedicatedExportTimeout = Duration(seconds: 8);
 const Duration _kRasterizeTimeout = Duration(seconds: 20);
-const Duration _kPdfBuildTimeout = Duration(seconds: 30);
+const Duration _kPdfBuildTimeout = Duration(seconds: 60);
 const Duration _kShareSheetTimeout = Duration(seconds: 90);
 
 /// Captures the chart behind [key], builds a PDF, and opens the share sheet.
@@ -235,7 +235,7 @@ Future<ChartPngCapture?> captureChartFromExportBuilder({
       return null;
     }
 
-    return _rasterizeBoundaryToPng(
+    return await _rasterizeBoundaryToPng(
       renderObject,
       devicePixelRatio: resolvedDevicePixelRatio,
       pixelRatio: pixelRatio,

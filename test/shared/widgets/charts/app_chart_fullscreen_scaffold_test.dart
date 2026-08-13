@@ -1,5 +1,3 @@
-import 'dart:async' show unawaited;
-
 import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_scaffold.dart';
@@ -87,22 +85,19 @@ void main() {
             return Scaffold(
               body: Center(
                 child: TextButton(
+                  child: const Text('Open'),
                   onPressed: () {
-                    unawaited(
-                      Navigator.of(context).push<void>(
-                        MaterialPageRoute<void>(
-                          builder: (context) =>
-                              const AppChartFullscreenScaffold(
-                                title: 'Chart',
-                                child: SizedBox.expand(
-                                  child: ColoredBox(color: Color(0xFFE0E0E0)),
-                                ),
-                              ),
+                    Navigator.of(context).push<void>(
+                      MaterialPageRoute<void>(
+                        builder: (context) => const AppChartFullscreenScaffold(
+                          title: 'Chart',
+                          child: SizedBox.expand(
+                            child: ColoredBox(color: Color(0xFFE0E0E0)),
+                          ),
                         ),
                       ),
                     );
                   },
-                  child: const Text('Open'),
                 ),
               ),
             );

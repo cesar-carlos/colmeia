@@ -3720,6 +3720,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesMargemProdutoFilterFilial => 'Branch';
 
   @override
+  String get salesMargemProdutoFullscreenTooltip => 'Open table fullscreen';
+
+  @override
   String get salesCardRankingProdutosFaturamentoTitle => 'Revenue ranking';
 
   @override

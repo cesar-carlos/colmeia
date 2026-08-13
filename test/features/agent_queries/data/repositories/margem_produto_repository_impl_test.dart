@@ -105,7 +105,8 @@ void main() {
 
     check(captured.sql).equals(
       MargemProdutoSql.pagedQuery(
-        sortBy: MargemProdutoSortBy.margemLucroProduto,
+        sortBy: MargemProdutoSortBy.nomeProduto,
+        sortDirection: ResumoProdutoVendaSortDirection.ascending,
       ),
     );
     check(captured.namedParams['codEmpresa']).equals(1);
@@ -144,7 +145,7 @@ void main() {
         codEmpresa: 1,
         codFilial: 1,
         sortBy: MargemProdutoSortBy.custoReposicao,
-        sortDirection: ResumoProdutoVendaSortDirection.ascending,
+        sortDirection: ResumoProdutoVendaSortDirection.descending,
       ),
     );
 
@@ -157,10 +158,10 @@ void main() {
     check(captured.sql).equals(
       MargemProdutoSql.pagedQuery(
         sortBy: MargemProdutoSortBy.custoReposicao,
-        sortDirection: ResumoProdutoVendaSortDirection.ascending,
+        sortDirection: ResumoProdutoVendaSortDirection.descending,
       ),
     );
-    check(captured.sql).contains('m.CustoReposicao ASC');
+    check(captured.sql).contains('m.CustoReposicao DESC');
   });
 
   test('maps rows with CodProduto to entities', () async {

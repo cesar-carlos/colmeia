@@ -184,14 +184,14 @@ class _BrazilMapPointInteractionHandler {
             group: group,
             metric: _selectedMetric,
             initialStoreId: initialStoreId,
-            onDismiss: () => unawaited(Navigator.of(sheetContext).maybePop()),
-            onClose: () => unawaited(Navigator.of(sheetContext).maybePop()),
+            onDismiss: () => Navigator.of(sheetContext).maybePop(),
+            onClose: () => Navigator.of(sheetContext).maybePop(),
             onClearSelection: () {
               clearSelectedMarkerDetail();
-              unawaited(Navigator.of(sheetContext).maybePop());
+              Navigator.of(sheetContext).maybePop();
             },
             onSelectBranch: (point) {
-              unawaited(Navigator.of(sheetContext).maybePop());
+              Navigator.of(sheetContext).maybePop();
               handleMarkerBranchAction(point: point, index: markerIndex);
             },
             selectBranchLabelBuilder: (_) => AppLocalizations.of(

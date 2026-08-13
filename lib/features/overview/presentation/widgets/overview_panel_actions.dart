@@ -71,17 +71,18 @@ class OverviewPanelActions extends StatelessWidget {
             semanticsLabel: (detailsSemanticsLabel ?? detailsLabel)!.trim(),
           ),
         if (onManageAgents != null)
-          (!showRetryButton
-              ? AppPrimaryButton(
-                  label: primaryLabel ?? manageAgentsLabel,
-                  icon: const Icon(Icons.hub_rounded),
-                  onPressed: onManageAgents,
-                )
-              : AppSecondaryButton(
-                  label: manageAgentsLabel,
-                  icon: const Icon(Icons.hub_outlined),
-                  onPressed: onManageAgents,
-                )),
+          if (!showRetryButton)
+            AppPrimaryButton(
+              label: primaryLabel ?? manageAgentsLabel,
+              icon: const Icon(Icons.hub_rounded),
+              onPressed: onManageAgents,
+            )
+          else
+            AppSecondaryButton(
+              label: manageAgentsLabel,
+              icon: const Icon(Icons.hub_outlined),
+              onPressed: onManageAgents,
+            ),
       ],
     );
   }

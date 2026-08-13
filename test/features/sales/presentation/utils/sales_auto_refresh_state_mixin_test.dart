@@ -292,11 +292,9 @@ void main() {
       await tester.pump();
       await _pumpAndAdvance(tester, const Duration(minutes: 4));
 
-      unawaited(
-        Navigator.of(_harnessState(tester).context).push<void>(
-          MaterialPageRoute<void>(
-            builder: (_) => const Scaffold(body: Text('next')),
-          ),
+      Navigator.of(_harnessState(tester).context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => const Scaffold(body: Text('next')),
         ),
       );
       await tester.pumpAndSettle();
@@ -352,11 +350,9 @@ void main() {
       await tester.pump();
       await _pumpAndAdvance(tester, const Duration(minutes: 4));
 
-      unawaited(
-        Navigator.of(_harnessState(tester).context).push<void>(
-          MaterialPageRoute<void>(
-            builder: (_) => const Scaffold(body: Text('next')),
-          ),
+      Navigator.of(_harnessState(tester).context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => const Scaffold(body: Text('next')),
         ),
       );
       await tester.pumpAndSettle();

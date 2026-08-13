@@ -267,13 +267,11 @@ class _SalesProdutoTendenciaMediaMovelPageState
       if (targetContext == null) {
         return;
       }
-      unawaited(
-        Scrollable.ensureVisible(
-          targetContext,
-          duration: const Duration(milliseconds: 350),
-          curve: Curves.easeOutCubic,
-          alignment: 0.05,
-        ),
+      Scrollable.ensureVisible(
+        targetContext,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOutCubic,
+        alignment: 0.05,
       );
     });
   }

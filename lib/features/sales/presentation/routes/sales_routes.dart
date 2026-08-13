@@ -13,6 +13,7 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_produto
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_ranking_produtos_faturamento_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
+import 'package:colmeia/features/sales/application/load_margem_produto_rows_for_share_use_case.dart';
 import 'package:colmeia/features/sales/application/load_media_movel_rows_for_share_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
@@ -111,6 +112,8 @@ List<RouteBase> buildSalesRoutes() {
             loadCadastroFilialPageUseCase:
                 getIt<LoadCadastroFilialPageUseCase>(),
             loadMargemProdutoPageUseCase: getIt<LoadMargemProdutoPageUseCase>(),
+            loadRowsForShareUseCase:
+                getIt<LoadMargemProdutoRowsForShareUseCase>(),
             relayCancelScopeBinder: _wireSalesAgentSqlRelayCancel,
           );
         }

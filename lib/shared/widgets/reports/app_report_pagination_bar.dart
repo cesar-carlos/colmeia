@@ -68,6 +68,7 @@ class AppReportPaginationBar extends StatelessWidget {
           onPageChanged?.call(page);
         }
       },
+      enabled: !isLoading,
     );
   }
 }

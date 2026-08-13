@@ -389,9 +389,21 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
   List<GridColumn> _buildGridColumns(List<AppReportColumn<T>> visible) {
     final theme = Theme.of(context);
     final density = widget.style.density;
+    // Hash only the style fields that affect column rendering so the cache
+    // survives rebuilds where only unrelated fields (e.g. gridHeight) changed.
+    final styleSignature = Object.hash(
+      widget.style.allowSorting,
+      widget.style.uppercaseHeaderLabels,
+      widget.style.headerLetterSpacing,
+      widget.style.headerBackgroundColor,
+      widget.style.headerDividerColor,
+      widget.style.headerTextStyle,
+      widget.style.headerRowHeight,
+      widget.style.variant,
+    );
     final signature = Object.hash(
       identityHashCode(visible),
-      identityHashCode(widget.style),
+      styleSignature,
       density,
       theme.brightness,
       identityHashCode(theme.colorScheme),

@@ -402,7 +402,7 @@ class AgentQueryExecutor<Row> {
       final result = await loadTarget(target);
       stopwatch.stop();
 
-      return result.fold(
+      return await result.fold(
         (loadedRows) => (
           participant: AgentQueryExecutionParticipant<Row>(
             agentId: target.agentId,

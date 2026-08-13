@@ -6149,6 +6149,12 @@ abstract class AppLocalizations {
   /// **'Branch'**
   String get salesMargemProdutoFilterFilial;
 
+  /// No description provided for @salesMargemProdutoFullscreenTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Open table fullscreen'**
+  String get salesMargemProdutoFullscreenTooltip;
+
   /// No description provided for @salesCardRankingProdutosFaturamentoTitle.
   ///
   /// In en, this message translates to:

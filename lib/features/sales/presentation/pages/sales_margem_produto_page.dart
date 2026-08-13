@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
+import 'package:colmeia/app/router/app_chart_share_actions.dart';
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
@@ -20,36 +22,38 @@ import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_af
 import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
 import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_error_panel_factory.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:colmeia/features/sales/application/load_margem_produto_rows_for_share_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_agent_auto_refresh_mixin.dart';
+import 'package:colmeia/features/sales/presentation/share/sales_chart_share_export_filter.dart';
+import 'package:colmeia/features/sales/presentation/share/sales_margem_produto_share.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_actions_row.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_margem_produto_columns.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_margem_produto_filters_sheet.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_margem_produto_fullscreen.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_margem_produto_sort.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
+import 'package:colmeia/shared/widgets/charts/app_chart_header_trailing.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_guard.dart';
+import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
+import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_events.dart';
-import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_query.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_style.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:result_dart/result_dart.dart';
-
-const double _kMargemProdutoChromeHeight = 176;
-const double _kMargemProdutoGridMinHeight = 240;
-const double _kMargemProdutoGridMaxHeight = 720;
-const double _kMargemProdutoDataRowHeight = 48;
-const double _kMargemProdutoHeaderRowHeight = 40;
 
 class SalesMargemProdutoPage extends StatefulWidget {
   const SalesMargemProdutoPage({
@@ -58,6 +62,7 @@ class SalesMargemProdutoPage extends StatefulWidget {
     required this.resolveSalesAgentClientTokenUseCase,
     required this.loadCadastroFilialPageUseCase,
     required this.loadMargemProdutoPageUseCase,
+    required this.loadRowsForShareUseCase,
     this.relayCancelScopeBinder,
     super.key,
   });
@@ -67,6 +72,7 @@ class SalesMargemProdutoPage extends StatefulWidget {
   final ResolveSalesAgentClientTokenUseCase resolveSalesAgentClientTokenUseCase;
   final LoadCadastroFilialPageUseCase loadCadastroFilialPageUseCase;
   final LoadMargemProdutoPageUseCase loadMargemProdutoPageUseCase;
+  final LoadMargemProdutoRowsForShareUseCase loadRowsForShareUseCase;
   final AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder;
 
   @override
@@ -84,6 +90,12 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
   late final LoadAvailableAgentsForSales _loadAgentsUseCase;
   late final LoadCadastroFilialPageUseCase _loadCadastroFilial;
   late final LoadMargemProdutoPageUseCase _loadMargemProduto;
+  late final LoadMargemProdutoRowsForShareUseCase _loadRowsForShare;
+  final GlobalKey _shareKey = GlobalKey();
+  final ValueNotifier<SalesMargemProdutoGridSnapshot> _gridView =
+      ValueNotifier<SalesMargemProdutoGridSnapshot>(
+        SalesMargemProdutoGridSnapshot.initial(),
+      );
 
   String? _selectedAgentId;
   List<DashboardAgentOption> _availableAgents = <DashboardAgentOption>[];
@@ -101,13 +113,11 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       SalesMargemProdutoSort.defaultSortDirection;
   int _page = 1;
   int _pageSize = SalesMargemProdutoSort.defaultPageSize;
-  AppReportQuery _query = const AppReportQuery(
-    sorts: <AppReportSortDescriptor>[
-      AppReportSortDescriptor(
-        columnKey: SalesMargemProdutoSort.columnMargem,
-        direction: AppReportSortDirection.descending,
-      ),
-    ],
+  AppReportQuery _query = SalesMargemProdutoSort.queryFor(
+    sortBy: SalesMargemProdutoSort.defaultSortBy,
+    sortDirection: SalesMargemProdutoSort.defaultSortDirection,
+    page: 1,
+    pageSize: SalesMargemProdutoSort.defaultPageSize,
   );
 
   List<MargemProdutoRow> _rows = const <MargemProdutoRow>[];
@@ -124,6 +134,8 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
   AgentQueriesCancelScope? _sqlCancelScope;
 
   bool get _pageLoading => _filiaisLoading || _catalogLoading;
+
+  bool get _canShare => !_pageLoading && _totalCount > 0;
 
   Future<String?> _resolveClientToken({
     required String userId,
@@ -146,6 +158,19 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
     return resolved;
   }
 
+  // Stable identity across builds; required for AppReportGrid column-cache hits.
+  late List<AppReportColumn<MargemProdutoRow>> _columns;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _columns = buildSalesMargemProdutoColumns(
+      labels: SalesMargemProdutoColumnLabels.fromL10n(
+        AppLocalizations.of(context),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -154,6 +179,7 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
     _loadAgentsUseCase = widget.loadSalesAvailableAgentsUseCase;
     _loadCadastroFilial = widget.loadCadastroFilialPageUseCase;
     _loadMargemProduto = widget.loadMargemProdutoPageUseCase;
+    _loadRowsForShare = widget.loadRowsForShareUseCase;
     _selectedAgentId = _sessionService.selectedAgentId;
 
     final restored = SalesMargemProdutoSort.restore(
@@ -174,11 +200,36 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_loadAgents());
     });
+    _publishGridView();
+  }
+
+  @override
+  void setState(VoidCallback fn) {
+    super.setState(fn);
+    _publishGridView();
+  }
+
+  void _publishGridView() {
+    if (!mounted) {
+      return;
+    }
+    _gridView.value = SalesMargemProdutoGridSnapshot(
+      rows: _rows,
+      pageInfo: SalesMargemProdutoSort.pageInfo(
+        page: _page,
+        pageSize: _pageSize,
+        totalCount: _totalCount,
+      ),
+      query: _query,
+      isLoading: _pageLoading && _loadFailure == null,
+      loadFailure: _loadFailure,
+    );
   }
 
   @override
   void dispose() {
     _sqlCancelScope?.cancelAll();
+    _gridView.dispose();
     super.dispose();
   }
 
@@ -496,6 +547,188 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
         : exception.toString();
   }
 
+  String _selectedAgentName(AppLocalizations l10n) {
+    final selectedBranch = _availableAgents
+        .cast<DashboardAgentOption?>()
+        .firstWhere(
+          (agent) => agent?.agentId == _selectedAgentId,
+          orElse: () => null,
+        );
+    return selectedBranch?.name ?? l10n.salesBranchPickerEmpty;
+  }
+
+  String _selectedFilialDisplayName(AppLocalizations l10n) {
+    if (_selectedFilial == null) {
+      return l10n.salesBranchPickerEmpty;
+    }
+    return salesMargemProdutoFilialLabel(_selectedFilial!);
+  }
+
+  ChartShareExportHeaderContext _shareExportHeaderContext(
+    AppLocalizations l10n,
+  ) {
+    return buildSalesSingleAgentChartShareExportHeaderContext(
+      l10n: l10n,
+      agentName: _selectedAgentName(l10n),
+      parameters: <ChartShareExportHeaderParameter>[
+        ChartShareExportHeaderParameter(
+          label: l10n.salesMargemProdutoFilterFilial,
+          value: _selectedFilialDisplayName(l10n),
+        ),
+      ],
+    );
+  }
+
+  Widget _catalogHeaderTrailing(AppLocalizations l10n) {
+    return AppChartHeaderTrailing(
+      onOpenFullscreen: _rows.isEmpty ? null : _openFullscreen,
+      openFullscreenTooltip: l10n.salesMargemProdutoFullscreenTooltip,
+      onShare: _canShare ? () => unawaited(_shareCatalog()) : null,
+      shareProgressKey: _shareKey,
+      shareEnabled: !_pageLoading,
+    );
+  }
+
+  void _openFullscreen() {
+    if (_rows.isEmpty) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    unawaited(
+      context.pushChartFullscreen<void>(
+        extra: AppChartFullscreenRouteExtra(
+          title: l10n.salesCardMargemProdutoTitle,
+          subtitle: l10n.salesMargemProdutoIntroSubtitle,
+          filterSummary:
+              '${_selectedAgentName(l10n)} · '
+              '${_selectedFilialDisplayName(l10n)}',
+          chartSemanticsLabel: l10n.salesCardMargemProdutoTitle,
+          headerTrailing:
+              ValueListenableBuilder<SalesMargemProdutoGridSnapshot>(
+                valueListenable: _gridView,
+                builder: (context, snapshot, _) {
+                  final canShare =
+                      !snapshot.isLoading && snapshot.pageInfo.totalRows > 0;
+                  return AppChartHeaderTrailing(
+                    onShare: canShare ? () => unawaited(_shareCatalog()) : null,
+                    shareProgressKey: _shareKey,
+                    shareEnabled: !snapshot.isLoading,
+                  );
+                },
+              ),
+          chartBuilder: (fullscreenContext) {
+            return ValueListenableBuilder<SalesMargemProdutoGridSnapshot>(
+              valueListenable: _gridView,
+              builder: (context, snapshot, _) {
+                return SalesMargemProdutoFullscreen(
+                  snapshot: snapshot,
+                  onQueryChanged: _onQueryChanged,
+                  onRefresh: _loadCatalog,
+                  agentId: _selectedAgentId,
+                  retryCountdownLabel: agentQueryRetryCountdownLabel(
+                    AppLocalizations.of(fullscreenContext),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showShareMessage(String message) {
+    if (!mounted || message.trim().isEmpty) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  Future<void> _shareCatalog() async {
+    if (!_canShare) {
+      return;
+    }
+    if (!ChartShareGuard.tryAcquire(_shareKey)) {
+      return;
+    }
+
+    var transferredToCapture = false;
+    try {
+      final l10n = AppLocalizations.of(context);
+      final auth = context.read<AuthController>();
+      final userId = auth.session?.userId;
+      final agentId = _selectedAgentId?.trim();
+      final filial = _selectedFilial;
+      if (userId == null ||
+          agentId == null ||
+          agentId.isEmpty ||
+          filial == null) {
+        return;
+      }
+
+      final clientToken = await _resolveClientToken(
+        userId: userId,
+        agentId: agentId,
+      );
+      if (!mounted) {
+        return;
+      }
+      if (clientToken == null) {
+        _showShareMessage(l10n.agentSqlErrorAuthenticationFailed);
+        return;
+      }
+
+      final totalCount = _totalCount;
+      final result = await _loadRowsForShare(
+        userId: userId,
+        agentId: agentId,
+        filter: MargemProdutoFilter(
+          codEmpresa: filial.codEmpresa,
+          codFilial: filial.codFilial,
+          sortBy: _sortBy,
+          sortDirection: _sortDirection,
+        ),
+        totalCount: totalCount,
+        clientToken: clientToken,
+      );
+      if (!mounted) {
+        return;
+      }
+
+      await result.fold(
+        (rows) async {
+          ChartShareGuard.release(_shareKey);
+          transferredToCapture = true;
+          await shareChartCapture(
+            context,
+            buildSalesMargemProdutoShareMetadata(
+              l10n: l10n,
+              rows: rows,
+              exportHeaderContext: _shareExportHeaderContext(l10n),
+            ).toShareRequest(_shareKey),
+          );
+        },
+        (failure) async {
+          final message =
+              failure is ValidationFailure &&
+                  failure.message == 'share_export_row_limit_exceeded'
+              ? l10n.chartShareExportRowLimitExceeded(
+                  ChartSharePdfLimits.maxTableRows,
+                  totalCount,
+                )
+              : _failureMessage(failure, l10n);
+          _showShareMessage(message);
+        },
+      );
+    } finally {
+      if (!transferredToCapture) {
+        ChartShareGuard.release(_shareKey);
+      }
+    }
+  }
+
   Future<void> _persistFilters() {
     return _sessionService.persistCardFilters(
       SalesMargemProdutoSort.cardId,
@@ -607,20 +840,8 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tokens = context.appTokens;
-    final selectedBranch = _availableAgents
-        .cast<DashboardAgentOption?>()
-        .firstWhere(
-          (agent) => agent?.agentId == _selectedAgentId,
-          orElse: () => null,
-        );
-    final selectedBranchName =
-        selectedBranch?.name ?? l10n.salesBranchPickerEmpty;
-    final selectedFilialName = _selectedFilial == null
-        ? l10n.salesBranchPickerEmpty
-        : salesMargemProdutoFilialLabel(_selectedFilial!);
-    final columns = buildSalesMargemProdutoColumns(
-      labels: SalesMargemProdutoColumnLabels.fromL10n(l10n),
-    );
+    final selectedBranchName = _selectedAgentName(l10n);
+    final selectedFilialName = _selectedFilialDisplayName(l10n);
     final pageInfo = SalesMargemProdutoSort.pageInfo(
       page: _page,
       pageSize: _pageSize,
@@ -666,17 +887,18 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
     } else {
       reportSurface = LayoutBuilder(
         builder: (context, constraints) {
-          final gridHeight =
-              (constraints.maxHeight - _kMargemProdutoChromeHeight).clamp(
-                _kMargemProdutoGridMinHeight,
-                _kMargemProdutoGridMaxHeight,
-              );
+          final gridHeight = resolveSalesMargemProdutoGridHeight(
+            maxHeight: constraints.maxHeight,
+            chromeHeight: kSalesMargemProdutoPageChromeHeight,
+            maxGridHeight: kSalesMargemProdutoPageGridMaxHeight,
+          );
           return AppReportViewer<MargemProdutoRow>(
             title: l10n.salesCardMargemProdutoTitle,
             contextChips: _selectedFilial == null
                 ? null
                 : <String>[selectedFilialName],
-            columns: columns,
+            headerTrailing: _catalogHeaderTrailing(l10n),
+            columns: _columns,
             rows: _rows,
             pageInfo: pageInfo,
             query: _query,
@@ -689,13 +911,13 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
                   entityLabel: l10n.salesMargemProdutoEntityLabel,
                   gridHeight: gridHeight,
                   frozenColumnsCount: 0,
-                  dataRowHeight: _kMargemProdutoDataRowHeight,
+                  dataRowHeight: kSalesMargemProdutoDataRowHeight,
                 ).copyWith(
                   trustServerRowOrder: true,
                   showRefreshAction: true,
                   enablePullToRefresh: false,
                   availablePageSizes: SalesMargemProdutoSort.allowedPageSizes,
-                  headerRowHeight: _kMargemProdutoHeaderRowHeight,
+                  headerRowHeight: kSalesMargemProdutoHeaderRowHeight,
                 ),
             isLoading: _pageLoading && _loadFailure == null,
             loadErrorPanel: _loadFailure == null

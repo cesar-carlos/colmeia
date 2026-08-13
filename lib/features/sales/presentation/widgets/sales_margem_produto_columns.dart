@@ -66,7 +66,6 @@ List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
       key: SalesMargemProdutoSort.columnProduto,
       label: labels.produto,
       valueGetter: (row) => row.nomeProduto,
-      sortable: false,
       minWidth: 220,
     ),
     AppReportColumn<MargemProdutoRow>(

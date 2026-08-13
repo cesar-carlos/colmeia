@@ -25,21 +25,21 @@ void main() {
       final mapped = SalesMargemProdutoSort.fromSorts(
         const <AppReportSortDescriptor>[
           AppReportSortDescriptor(
-            columnKey: SalesMargemProdutoSort.columnProduto,
-            direction: AppReportSortDirection.ascending,
+            columnKey: SalesMargemProdutoSort.columnPrecoVenda,
+            direction: AppReportSortDirection.descending,
           ),
         ],
       );
 
-      check(mapped.$1).equals(MargemProdutoSortBy.margemLucroProduto);
-      check(mapped.$2).equals(ResumoProdutoVendaSortDirection.descending);
+      check(mapped.$1).equals(MargemProdutoSortBy.nomeProduto);
+      check(mapped.$2).equals(ResumoProdutoVendaSortDirection.ascending);
     });
 
     test('prefers the first whitelist hit when mixed keys are present', () {
       final mapped = SalesMargemProdutoSort.fromSorts(
         const <AppReportSortDescriptor>[
           AppReportSortDescriptor(
-            columnKey: SalesMargemProdutoSort.columnProduto,
+            columnKey: SalesMargemProdutoSort.columnPrecoVenda,
             direction: AppReportSortDirection.ascending,
           ),
           AppReportSortDescriptor(
@@ -88,20 +88,33 @@ void main() {
   group('SalesMargemProdutoSort.restore', () {
     test('sanitizes persisted filters against the SQL whitelist', () {
       final restored = SalesMargemProdutoSort.restore(<String, Object?>{
-        'sortBy': 'nomeProduto',
+        'sortBy': 'codProduto',
         'sortDirection': 'sideways',
         'pageSize': 500,
         'codEmpresa': 2,
         'codFilial': 0,
       });
 
-      check(restored.sortBy).equals(MargemProdutoSortBy.margemLucroProduto);
+      check(restored.sortBy).equals(MargemProdutoSortBy.nomeProduto);
       check(
         restored.sortDirection,
-      ).equals(ResumoProdutoVendaSortDirection.descending);
+      ).equals(ResumoProdutoVendaSortDirection.ascending);
       check(restored.pageSize).equals(20);
       check(restored.codEmpresa).equals(2);
       check(restored.codFilial).equals(0);
+    });
+
+    test('accepts a persisted product-name sort', () {
+      final restored = SalesMargemProdutoSort.restore(<String, Object?>{
+        'sortBy': 'nomeProduto',
+        'sortDirection': 'ascending',
+        'pageSize': 20,
+      });
+
+      check(restored.sortBy).equals(MargemProdutoSortBy.nomeProduto);
+      check(
+        restored.sortDirection,
+      ).equals(ResumoProdutoVendaSortDirection.ascending);
     });
 
     test('accepts a valid persisted sort and page size', () {

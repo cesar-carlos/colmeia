@@ -3771,6 +3771,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesMargemProdutoFilterFilial => 'Filial';
 
   @override
+  String get salesMargemProdutoFullscreenTooltip =>
+      'Abrir tabela em tela cheia';
+
+  @override
   String get salesCardRankingProdutosFaturamentoTitle =>
       'Ranking por faturamento';
 
@@ -8867,6 +8871,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesMargemProdutoFilterFilial => 'Filial';
+
+  @override
+  String get salesMargemProdutoFullscreenTooltip =>
+      'Abrir tabela em tela cheia';
 
   @override
   String get salesCardRankingProdutosFaturamentoTitle =>

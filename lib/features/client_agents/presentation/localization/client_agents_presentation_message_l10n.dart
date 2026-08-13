@@ -275,21 +275,25 @@ String _localizeApprovalPollingProgress(
   final myAgentsTab = l10n.clientAgentsTabMyAgents;
   final parts = <String>[
     if (approvedCount > 0)
-      approvedCount == 1
-          ? l10n.clientAgentsPollApprovedSingle(myAgentsTab)
-          : l10n.clientAgentsPollApprovedPlural(approvedCount, myAgentsTab),
+      if (approvedCount == 1)
+        l10n.clientAgentsPollApprovedSingle(myAgentsTab)
+      else
+        l10n.clientAgentsPollApprovedPlural(approvedCount, myAgentsTab),
     if (deniedCount > 0)
-      deniedCount == 1
-          ? l10n.clientAgentsPollDeniedSingle
-          : l10n.clientAgentsPollDeniedPlural(deniedCount),
+      if (deniedCount == 1)
+        l10n.clientAgentsPollDeniedSingle
+      else
+        l10n.clientAgentsPollDeniedPlural(deniedCount),
     if (timedOutCount > 0)
-      timedOutCount == 1
-          ? l10n.clientAgentsPollTimeoutSingle
-          : l10n.clientAgentsPollTimeoutPlural(timedOutCount),
+      if (timedOutCount == 1)
+        l10n.clientAgentsPollTimeoutSingle
+      else
+        l10n.clientAgentsPollTimeoutPlural(timedOutCount),
     if (remainingCount > 0)
-      remainingCount == 1
-          ? l10n.clientAgentsPollRemainingSingle
-          : l10n.clientAgentsPollRemainingPlural(remainingCount),
+      if (remainingCount == 1)
+        l10n.clientAgentsPollRemainingSingle
+      else
+        l10n.clientAgentsPollRemainingPlural(remainingCount),
   ];
   return parts.join(' ');
 }

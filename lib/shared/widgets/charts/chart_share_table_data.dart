@@ -47,18 +47,19 @@ class ChartShareTableData {
       headers: headers,
       rows: <List<String>>[
         for (var index = 0; index < items.length; index++)
-          hasSalesCount
-              ? <String>[
-                  '${index + 1}',
-                  items[index].name,
-                  salesCounts[index],
-                  items[index].amount,
-                ]
-              : <String>[
-                  '${index + 1}',
-                  items[index].name,
-                  items[index].amount,
-                ],
+          if (hasSalesCount)
+            <String>[
+              '${index + 1}',
+              items[index].name,
+              salesCounts[index],
+              items[index].amount,
+            ]
+          else
+            <String>[
+              '${index + 1}',
+              items[index].name,
+              items[index].amount,
+            ],
       ],
     );
   }
@@ -82,13 +83,14 @@ class ChartShareTableData {
           : <String>[labelHeader, valueHeader],
       rows: <List<String>>[
         for (var index = 0; index < rowList.length; index++)
-          hasSecondary
-              ? <String>[
-                  rowList[index].label,
-                  rowList[index].value,
-                  secondaryList[index],
-                ]
-              : <String>[rowList[index].label, rowList[index].value],
+          if (hasSecondary)
+            <String>[
+              rowList[index].label,
+              rowList[index].value,
+              secondaryList[index],
+            ]
+          else
+            <String>[rowList[index].label, rowList[index].value],
       ],
     );
   }

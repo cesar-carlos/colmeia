@@ -6,13 +6,13 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test(
-    'default pageSize is 20 and sort is margemLucroProduto descending',
+    'default pageSize is 20 and sort is nomeProduto ascending',
     () {
       const filter = MargemProdutoFilter(codEmpresa: 1, codFilial: 1);
-      check(filter.sortBy).equals(MargemProdutoSortBy.margemLucroProduto);
+      check(filter.sortBy).equals(MargemProdutoSortBy.nomeProduto);
       check(
         filter.sortDirection,
-      ).equals(ResumoProdutoVendaSortDirection.descending);
+      ).equals(ResumoProdutoVendaSortDirection.ascending);
       check(filter.pageSize).equals(20);
       check(filter.startRow).equals(1);
       check(filter.endRow).equals(20);

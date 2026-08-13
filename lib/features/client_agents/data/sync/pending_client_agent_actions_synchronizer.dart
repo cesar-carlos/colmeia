@@ -328,7 +328,7 @@ class PendingClientAgentActionsSynchronizer {
           outcome: outcome,
         );
       }
-    } on Object catch (error, _) {
+    } on Object catch (error) {
       AppLogger.warning(
         'Bulk removeAccess failed; falling back to per-id DELETE',
         context: <String, Object?>{

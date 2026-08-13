@@ -5,6 +5,8 @@ import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_by.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_sort_direction.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/margem_produto_repository.dart';
 import 'package:flutter_test/flutter_test.dart' hide group;
 import 'package:test_api/scaffolding.dart' show group;
@@ -154,6 +156,57 @@ void main() {
       );
 
       test(
+        'loadPage default nomeProduto ASC does not decrease down the page',
+        () async {
+          if (shouldSkipE2eRepositoryTest(
+            'margem_produto_repository_e2e (sort name ASC)',
+          )) {
+            return;
+          }
+
+          final repository = getIt<MargemProdutoRepository>();
+          final result = await runE2eAppResult(
+            () => repository.loadPage(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              filter: const MargemProdutoFilter(
+                codEmpresa: 1,
+                codFilial: 1,
+              ),
+            ),
+          );
+
+          result.fold(
+            (page) {
+              checkPageInvariants(
+                page.items,
+                page.totalCount,
+                MargemProdutoFilter.defaultPageSize,
+              );
+              if (page.items.length >= 2) {
+                for (var i = 0; i < page.items.length - 1; i++) {
+                  expect(
+                    page.items[i].nomeProduto.compareTo(
+                      page.items[i + 1].nomeProduto,
+                    ),
+                    lessThanOrEqualTo(0),
+                    reason: 'nomeProduto ASC should not decrease down the page',
+                  );
+                }
+              }
+            },
+            (failure) {
+              expectAcceptableAgentQueriesE2eFailure(
+                failure,
+                failureScope: 'Repository e2e',
+              );
+            },
+          );
+        },
+      );
+
+      test(
         'loadPage margemLucroProduto DESC does not increase down the page',
         () async {
           if (shouldSkipE2eRepositoryTest(
@@ -171,6 +224,8 @@ void main() {
               filter: const MargemProdutoFilter(
                 codEmpresa: 1,
                 codFilial: 1,
+                sortBy: MargemProdutoSortBy.margemLucroProduto,
+                sortDirection: ResumoProdutoVendaSortDirection.descending,
               ),
             ),
           );

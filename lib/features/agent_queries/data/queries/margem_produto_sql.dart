@@ -36,8 +36,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_ve
 abstract final class MargemProdutoSql {
   static String pagedQuery({
     required MargemProdutoSortBy sortBy,
-    ResumoProdutoVendaSortDirection sortDirection =
-        ResumoProdutoVendaSortDirection.descending,
+    required ResumoProdutoVendaSortDirection sortDirection,
   }) {
     final dir = switch (sortDirection) {
       ResumoProdutoVendaSortDirection.ascending => 'ASC',
@@ -45,6 +44,9 @@ abstract final class MargemProdutoSql {
     };
 
     final rowNumberOrderBy = switch (sortBy) {
+      MargemProdutoSortBy.nomeProduto =>
+        '\n            m.NomeProduto $dir,'
+            '\n            m.CodProduto ASC',
       MargemProdutoSortBy.custoReposicao =>
         '\n            m.CustoReposicao $dir,'
             '\n            m.CodProduto ASC',
@@ -104,6 +106,7 @@ abstract final class MargemProdutoSql {
         cp.CodEmpresa = prm.CodEmpresa
         AND cp.CodFilial = prm.CodFilial
         AND cp.CodProduto = p.CodProduto
+      WHERE p.Ativo = 'S'
     ),
     Tot AS (
       SELECT COUNT(*) AS TotalCount FROM MargemProduto

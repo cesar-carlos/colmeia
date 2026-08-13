@@ -4,7 +4,8 @@ import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_query.dart';
 
 /// Maps AppReportViewer sort/pagination onto the MargemProduto SQL
-/// whitelist (`custoReposicao`, `percentualMarkup`, `margemLucroProduto`).
+/// whitelist (`nomeProduto`, `custoReposicao`, `percentualMarkup`,
+/// `margemLucroProduto`).
 abstract final class SalesMargemProdutoSort {
   static const String cardId = 'margem_produto';
 
@@ -24,12 +25,13 @@ abstract final class SalesMargemProdutoSort {
   static const String persistCodFilialKey = 'codFilial';
 
   static const MargemProdutoSortBy defaultSortBy =
-      MargemProdutoSortBy.margemLucroProduto;
+      MargemProdutoSortBy.nomeProduto;
   static const ResumoProdutoVendaSortDirection defaultSortDirection =
-      ResumoProdutoVendaSortDirection.descending;
+      ResumoProdutoVendaSortDirection.ascending;
 
   static MargemProdutoSortBy? tryParseColumnKey(String columnKey) {
     return switch (columnKey) {
+      columnProduto => MargemProdutoSortBy.nomeProduto,
       columnCustoReposicao => MargemProdutoSortBy.custoReposicao,
       columnMarkup => MargemProdutoSortBy.percentualMarkup,
       columnMargem => MargemProdutoSortBy.margemLucroProduto,
@@ -39,6 +41,7 @@ abstract final class SalesMargemProdutoSort {
 
   static String columnKeyFor(MargemProdutoSortBy sortBy) {
     return switch (sortBy) {
+      MargemProdutoSortBy.nomeProduto => columnProduto,
       MargemProdutoSortBy.custoReposicao => columnCustoReposicao,
       MargemProdutoSortBy.percentualMarkup => columnMarkup,
       MargemProdutoSortBy.margemLucroProduto => columnMargem,
@@ -47,6 +50,7 @@ abstract final class SalesMargemProdutoSort {
 
   static MargemProdutoSortBy parseSortBy(String? raw) {
     return switch (raw) {
+      'nomeProduto' => MargemProdutoSortBy.nomeProduto,
       'custoReposicao' => MargemProdutoSortBy.custoReposicao,
       'percentualMarkup' => MargemProdutoSortBy.percentualMarkup,
       'margemLucroProduto' => MargemProdutoSortBy.margemLucroProduto,

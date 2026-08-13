@@ -489,7 +489,10 @@ class _PaginationControls extends StatelessWidget {
           prevButton,
           Expanded(
             child: Text(
-              l10n.reportPaginationPageOf(currentPage, totalPages),
+              l10n.reportPaginationPageOf(
+                totalPages < 1 ? 0 : currentPage,
+                totalPages,
+              ),
               textAlign: TextAlign.center,
               style: typography.caption.copyWith(
                 color: scheme.onSurface,

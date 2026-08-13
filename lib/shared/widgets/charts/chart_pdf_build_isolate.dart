@@ -61,6 +61,7 @@ Future<Uint8List> buildChartPdfInIsolate(ChartPdfBuildPayload payload) async {
   final doc = pw.Document()
     ..addPage(
       pw.MultiPage(
+        maxPages: ChartSharePdfLimits.maxPdfPages,
         pageFormat: pageFormat,
         header: (ctx) => _buildHeader(
           title: payload.title,

@@ -5,9 +5,23 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_ve
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('default sort places MargemLucroProduto DESC then CodProduto ASC', () {
+  test('nomeProduto sort places NomeProduto then CodProduto ASC', () {
+    final sql = MargemProdutoSql.pagedQuery(
+      sortBy: MargemProdutoSortBy.nomeProduto,
+      sortDirection: ResumoProdutoVendaSortDirection.ascending,
+    );
+    final numbered = sql.split('Numbered AS (').last;
+    final nome = numbered.indexOf('m.NomeProduto ASC');
+    final produto = numbered.indexOf('m.CodProduto ASC');
+    check(nome).isGreaterOrEqual(0);
+    check(produto).isGreaterOrEqual(0);
+    check(nome).isLessThan(produto);
+  });
+
+  test('margemLucroProduto sort places MargemLucroProduto then CodProduto', () {
     final sql = MargemProdutoSql.pagedQuery(
       sortBy: MargemProdutoSortBy.margemLucroProduto,
+      sortDirection: ResumoProdutoVendaSortDirection.descending,
     );
     final numbered = sql.split('Numbered AS (').last;
     final margem = numbered.indexOf('m.MargemLucroProduto DESC');
@@ -20,6 +34,7 @@ void main() {
   test('custoReposicao sortBy places CustoReposicao in ROW_NUMBER', () {
     final sql = MargemProdutoSql.pagedQuery(
       sortBy: MargemProdutoSortBy.custoReposicao,
+      sortDirection: ResumoProdutoVendaSortDirection.descending,
     );
     final numbered = sql.split('Numbered AS (').last;
     check(numbered).contains('m.CustoReposicao DESC');
@@ -31,6 +46,7 @@ void main() {
     () {
       final sql = MargemProdutoSql.pagedQuery(
         sortBy: MargemProdutoSortBy.percentualMarkup,
+        sortDirection: ResumoProdutoVendaSortDirection.descending,
       );
       final numbered = sql.split('Numbered AS (').last;
       check(numbered).contains('m.PercentualMarkupCustoCompraProduto DESC');
@@ -47,7 +63,10 @@ void main() {
 
   test('CodProduto ASC tie-breaker is always present', () {
     for (final sortBy in MargemProdutoSortBy.values) {
-      final sql = MargemProdutoSql.pagedQuery(sortBy: sortBy);
+      final sql = MargemProdutoSql.pagedQuery(
+        sortBy: sortBy,
+        sortDirection: ResumoProdutoVendaSortDirection.descending,
+      );
       check(sql).contains('m.CodProduto ASC');
     }
   });
@@ -55,6 +74,7 @@ void main() {
   test('binds empresa, filial, and page window once each', () {
     final sql = MargemProdutoSql.pagedQuery(
       sortBy: MargemProdutoSortBy.margemLucroProduto,
+      sortDirection: ResumoProdutoVendaSortDirection.descending,
     );
     check(_count(sql, ':codEmpresa')).equals(1);
     check(_count(sql, ':codFilial')).equals(1);
@@ -65,6 +85,7 @@ void main() {
   test('does not send DECLARE or block comments', () {
     final sql = MargemProdutoSql.pagedQuery(
       sortBy: MargemProdutoSortBy.margemLucroProduto,
+      sortDirection: ResumoProdutoVendaSortDirection.descending,
     );
     check(sql.contains('DECLARE')).isFalse();
     check(sql.contains('/*')).isFalse();
@@ -73,6 +94,7 @@ void main() {
   test('uses Tot LEFT JOIN Numbered page window', () {
     final sql = MargemProdutoSql.pagedQuery(
       sortBy: MargemProdutoSortBy.margemLucroProduto,
+      sortDirection: ResumoProdutoVendaSortDirection.descending,
     );
     check(sql).contains('SELECT COUNT(*) AS TotalCount FROM MargemProduto');
     check(sql).contains(

@@ -1,4 +1,3 @@
-import 'dart:async' show unawaited;
 import 'dart:math' as math;
 
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -85,7 +84,7 @@ class AppChartFullscreenScaffold extends StatelessWidget {
       bindings: <ShortcutActivator, VoidCallback>{
         const SingleActivator(LogicalKeyboardKey.escape): () {
           if (Navigator.of(context).canPop()) {
-            unawaited(Navigator.of(context).maybePop());
+            Navigator.of(context).maybePop();
           }
         },
       },
@@ -96,8 +95,7 @@ class AppChartFullscreenScaffold extends StatelessWidget {
             automaticallyImplyLeading: false,
             leading: Navigator.of(context).canPop()
                 ? IconButton(
-                    onPressed: () =>
-                        unawaited(Navigator.of(context).maybePop()),
+                    onPressed: () => Navigator.of(context).maybePop(),
                     tooltip: l10n.chartCloseFullscreenTooltip,
                     icon: const Icon(Icons.close),
                   )

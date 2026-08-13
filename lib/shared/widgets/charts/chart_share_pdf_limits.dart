@@ -7,6 +7,11 @@ abstract final class ChartSharePdfLimits {
 
   /// Target row count per PDF table chunk; larger tables paginate across pages.
   static const int tableRowsPerPage = 500;
+
+  /// Upper bound for PDF MultiPage generation. The pdf package defaults to 20,
+  /// which debug-mode asserts when a wrapping landscape table spans more
+  /// pages — below [maxTableRows] at typical row heights.
+  static const int maxPdfPages = 300;
 }
 
 /// Splits [rows] into chunks of at most [rowsPerPage] for PDF pagination.
