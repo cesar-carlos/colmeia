@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/socket/payload_frame.dart';
 import 'package:colmeia/core/socket/payload_frame_codec.dart';
+import 'package:colmeia/core/socket/payload_frame_codec_worker.dart';
 import 'package:colmeia/core/socket/payload_frame_signer.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -194,6 +195,81 @@ void main() {
         check(encoded.frame.compressedSize).equals(encoded.encoded.length);
       },
     );
+  });
+
+  group('PayloadFrameCodec persistent worker', () {
+    Map<String, Object?> gzipRows() {
+      return <String, Object?>{
+        'rows': List<Map<String, Object?>>.generate(
+          200,
+          (i) => <String, Object?>{
+            'id': i,
+            'name': 'agent-$i',
+            'tag': 'sample-payload-row-${i % 7}',
+          },
+        ),
+      };
+    }
+
+    test('decodeJsonAsync offloads gzip through the worker', () async {
+      final worker = PayloadFrameCodecWorker();
+      addTearDown(worker.dispose);
+      final codec = PayloadFrameCodec(
+        gzipDecodeIsolateThresholdBytes: 0,
+        worker: worker,
+      );
+      final value = gzipRows();
+      final encoded = codec.encodeJson(value);
+      check(encoded.frame.cmp).equals(PayloadFrame.compressionGzip);
+      final decoded = await codec.decodeJsonAsync(encoded.frame);
+      check(jsonEncode(decoded)).equals(jsonEncode(value));
+      check(worker.jobsSubmitted).isGreaterOrEqual(1);
+      check(worker.isAlive).isTrue();
+    });
+
+    test('two large gzip frames reuse the same worker', () async {
+      final worker = PayloadFrameCodecWorker();
+      addTearDown(worker.dispose);
+      final codec = PayloadFrameCodec(
+        gzipDecodeIsolateThresholdBytes: 0,
+        worker: worker,
+      );
+      final value = gzipRows();
+      final encoded = codec.encodeJson(value);
+      await codec.decodeJsonAsync(encoded.frame);
+      await codec.decodeJsonAsync(encoded.frame);
+      check(worker.jobsSubmitted).equals(2);
+      check(worker.isAlive).isTrue();
+    });
+
+    test('workerIsolatesEnabled: false does not submit jobs', () async {
+      final worker = PayloadFrameCodecWorker();
+      addTearDown(worker.dispose);
+      final codec = PayloadFrameCodec(
+        workerIsolatesEnabled: false,
+        gzipDecodeIsolateThresholdBytes: 0,
+        gzipEncodeIsolateThresholdBytes: 0,
+        worker: worker,
+      );
+      final value = gzipRows();
+      final encoded = await codec.encodeJsonAsync(value);
+      await codec.decodeJsonAsync(encoded.frame);
+      check(worker.jobsSubmitted).equals(0);
+    });
+
+    test('decodeJsonAsync still works after the worker is disposed', () async {
+      final worker = PayloadFrameCodecWorker();
+      final codec = PayloadFrameCodec(
+        gzipDecodeIsolateThresholdBytes: 0,
+        worker: worker,
+      );
+      await worker.ensureStarted();
+      worker.dispose();
+      final value = gzipRows();
+      final encoded = codec.encodeJson(value);
+      final decoded = await codec.decodeJsonAsync(encoded.frame);
+      check(jsonEncode(decoded)).equals(jsonEncode(value));
+    });
   });
 
   group('PayloadFrameCodec.encodeJson — signing', () {

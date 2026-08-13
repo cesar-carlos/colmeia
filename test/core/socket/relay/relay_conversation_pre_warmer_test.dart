@@ -49,12 +49,14 @@ void main() {
   RelayConversationPreWarmer build({
     required RelayPreWarmAgentIdsLoader loader,
     int maxAgents = 8,
+    int maxConcurrentStarts = 2,
   }) {
     return RelayConversationPreWarmer(
       connection: connection,
       conversationManager: manager,
       loadAgentIds: loader,
       maxAgents: maxAgents,
+      maxConcurrentStarts: maxConcurrentStarts,
     );
   }
 
@@ -249,6 +251,91 @@ void main() {
       () => build(loader: () async => const <String>[], maxAgents: -1),
     ).throws<ArgumentError>();
   });
+
+  test('throws ArgumentError when maxConcurrentStarts is not positive', () {
+    check(
+      () => build(
+        loader: () async => const <String>[],
+        maxConcurrentStarts: 0,
+      ),
+    ).throws<ArgumentError>();
+  });
+
+  test(
+    'does not start more than maxConcurrentStarts obtains at once',
+    () async {
+      final started = <String>[];
+      final gates = <String, Completer<RelayConversation>>{
+        'agent-a': Completer<RelayConversation>(),
+        'agent-b': Completer<RelayConversation>(),
+        'agent-c': Completer<RelayConversation>(),
+      };
+      when(() => manager.obtain(any())).thenAnswer((invocation) {
+        final id = invocation.positionalArguments[0] as String;
+        started.add(id);
+        return gates[id]!.future;
+      });
+
+      final preWarmer = build(
+        loader: () async => <String>['agent-a', 'agent-b', 'agent-c'],
+      );
+
+      states.add(_connected());
+      await pumpEventQueue();
+
+      check(started).deepEquals(<String>['agent-a', 'agent-b']);
+      verifyNever(() => manager.obtain('agent-c'));
+
+      gates['agent-a']!.complete(fakeConversation);
+      await pumpEventQueue();
+
+      check(started).deepEquals(<String>['agent-a', 'agent-b']);
+      verifyNever(() => manager.obtain('agent-c'));
+
+      gates['agent-b']!.complete(fakeConversation);
+      await pumpEventQueue();
+
+      check(started).deepEquals(<String>['agent-a', 'agent-b', 'agent-c']);
+      verify(() => manager.obtain('agent-c')).called(1);
+
+      gates['agent-c']!.complete(fakeConversation);
+      await pumpEventQueue();
+      await preWarmer.dispose();
+    },
+  );
+
+  test(
+    'aborts remaining obtain waves when the socket disconnects mid-sweep',
+    () async {
+      final firstWave = Completer<RelayConversation>();
+      when(() => manager.obtain('agent-a')).thenAnswer((_) => firstWave.future);
+      when(() => manager.obtain('agent-b')).thenAnswer((_) => firstWave.future);
+      when(
+        () => manager.obtain('agent-c'),
+      ).thenAnswer((_) async => fakeConversation);
+
+      final preWarmer = build(
+        loader: () async => <String>['agent-a', 'agent-b', 'agent-c'],
+      );
+
+      states.add(_connected());
+      await pumpEventQueue();
+
+      verify(() => manager.obtain('agent-a')).called(1);
+      verify(() => manager.obtain('agent-b')).called(1);
+      verifyNever(() => manager.obtain('agent-c'));
+
+      states.add(const ConsumerSocketDisconnected(reason: 'transport_close'));
+      await pumpEventQueue();
+
+      firstWave.complete(fakeConversation);
+      await pumpEventQueue();
+
+      verifyNever(() => manager.obtain('agent-c'));
+
+      await preWarmer.dispose();
+    },
+  );
 
   // Regression for the disconnect-during-sweep race: when the socket drops
   // while the loader is still in-flight, the sweep must short-circuit

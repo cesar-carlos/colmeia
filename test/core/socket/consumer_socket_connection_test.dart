@@ -277,6 +277,41 @@ void main() {
     });
 
     test(
+      'successful connection cancels handshake timeout (no reconnect)',
+      () async {
+        final tokens = _FakeTokenProvider(token: 'tok');
+        final factory = _InteractiveFactory();
+        final conn = _build(
+          tokenProvider: tokens,
+          factory: factory,
+          handshakeTimeout: const Duration(milliseconds: 40),
+        );
+        addTearDown(() async {
+          await conn.dispose();
+          await tokens.dispose();
+        });
+
+        final future = conn.connect();
+        await Future<void>.delayed(Duration.zero);
+        factory.fire('connection:ready', <String, Object?>{
+          'id': 'socket-1',
+          'message': 'ready',
+          'user': <String, Object?>{},
+        });
+        await future;
+
+        check(conn.isConnected).isTrue();
+        check(factory.calls.length).equals(1);
+
+        await Future<void>.delayed(const Duration(milliseconds: 80));
+
+        check(conn.isConnected).isTrue();
+        check(factory.calls.length).equals(1);
+        check(conn.state).isA<ConsumerSocketConnected>();
+      },
+    );
+
+    test(
       'successful connection keeps remote disconnect listener active',
       () async {
         final tokens = _FakeTokenProvider(token: 'tok');

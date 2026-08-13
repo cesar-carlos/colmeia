@@ -149,7 +149,7 @@ void main() {
           'source': 'http',
         });
         wiring.fire(ClientAgentProfileUpdatedListener.eventName, frame);
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         await sink.close();
 
         final list = await emitted;
@@ -177,7 +177,7 @@ void main() {
           'changed_fields': <String>['name'],
         },
       );
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       await sink.close();
 
       check(await emitted).isEmpty();
@@ -197,7 +197,7 @@ void main() {
             'changed_fields': <String>['name'],
           },
         );
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         await sink.close();
 
         final list = await emitted;
@@ -219,7 +219,7 @@ void main() {
           'changed_fields': <String>['phone'],
         }),
       );
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       await sink.close();
 
       check(await emitted).isEmpty();
@@ -243,7 +243,7 @@ void main() {
           'payload': base64Encode(<int>[123, 125]),
         },
       );
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       await sink.close();
 
       check(await emitted).isEmpty();

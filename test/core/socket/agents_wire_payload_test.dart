@@ -44,6 +44,24 @@ void main() {
       ).throws<PayloadFrameDecodeException>();
     });
 
+    test('async decode round-trips gzip PayloadFrame', () async {
+      final rows = List<Map<String, Object?>>.generate(
+        200,
+        (i) => <String, Object?>{
+          'id': i,
+          'name': 'agent-$i',
+          'tag': 'sample-payload-row-${i % 7}',
+        },
+      );
+      final encoded = const PayloadFrameCodec().encodeJson(<String, Object?>{
+        'success': true,
+        'rows': rows,
+      });
+      check(encoded.frame.cmp).equals(PayloadFrame.compressionGzip);
+      final decoded = await decodeAgentsWirePayloadAsync(encoded.frame.toMap());
+      check(decoded).isA<Map<Object?, Object?>>();
+    });
+
     test('round-trips gzip PayloadFrame', () {
       final rows = List<Map<String, Object?>>.generate(
         200,

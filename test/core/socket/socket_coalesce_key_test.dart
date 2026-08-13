@@ -32,6 +32,7 @@ void main() {
       final b = SocketCoalesceKey.compute(agentId: 'x', body: body());
       check(a).isNotNull();
       check(a).equals(b);
+      check(a!).length.equals(16);
     });
 
     test('rpcId differences are ignored', () {

@@ -7,8 +7,11 @@ import 'package:colmeia/core/socket/socket_command_dispatcher_impl.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/core/socket/socket_request_correlator.dart';
 import 'package:flutter_test/flutter_test.dart';
+
 import 'package:mocktail/mocktail.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
+
+import 'agents_command_routing_test_utils.dart';
 
 class _MockConnection extends Mock implements ConsumerSocketConnection {}
 
@@ -93,6 +96,10 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       check(commandResponseHandler).isNotNull();
 
+      final expectation = expectLater(
+        future,
+        throwsA(isA<SocketDispatchLegacyStreamingUnsupported>()),
+      );
       commandResponseHandler!(
         <String, dynamic>{
           'rpcId': rpcId,
@@ -110,11 +117,8 @@ void main() {
           },
         },
       );
-
-      await expectLater(
-        future,
-        throwsA(isA<SocketDispatchLegacyStreamingUnsupported>()),
-      );
+      await flushAgentsCommandRouting();
+      await expectation;
     },
   );
 
@@ -143,6 +147,10 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       check(commandResponseHandler).isNotNull();
 
+      final expectation = expectLater(
+        future,
+        throwsA(isA<SocketDispatchLegacyStreamingUnsupported>()),
+      );
       commandResponseHandler!(
         <String, dynamic>{
           'rpcId': rpcId,
@@ -162,11 +170,8 @@ void main() {
           },
         },
       );
-
-      await expectLater(
-        future,
-        throwsA(isA<SocketDispatchLegacyStreamingUnsupported>()),
-      );
+      await flushAgentsCommandRouting();
+      await expectation;
     },
   );
 
@@ -217,6 +222,7 @@ void main() {
       };
 
       commandResponseHandler!(expected);
+      await flushAgentsCommandRouting();
 
       final got = await future;
       check(got).equals(expected);
@@ -272,6 +278,7 @@ void main() {
       };
 
       commandResponseHandler!(bridgeOnly);
+      await flushAgentsCommandRouting();
 
       final got = await future;
       check(got).equals(bridgeOnly);
@@ -326,6 +333,7 @@ void main() {
       };
 
       commandResponseHandler!(<Object?>[inner]);
+      await flushAgentsCommandRouting();
 
       final got = await future;
       check(got).equals(inner);
@@ -363,6 +371,7 @@ void main() {
 
       final flat = <String, dynamic>{'success': true, 'error': null};
       commandResponseHandler!(flat);
+      await flushAgentsCommandRouting();
 
       final got = await future;
       check(got).equals(flat);
@@ -397,6 +406,10 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       check(commandResponseHandler).isNotNull();
 
+      final expectation = expectLater(
+        future,
+        throwsA(isA<SocketDispatchAppError>()),
+      );
       commandResponseHandler!(
         <String, dynamic>{
           'success': false,
@@ -406,8 +419,8 @@ void main() {
           },
         },
       );
-
-      await expectLater(future, throwsA(isA<SocketDispatchAppError>()));
+      await flushAgentsCommandRouting();
+      await expectation;
     },
   );
 
@@ -436,6 +449,18 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       check(commandResponseHandler).isNotNull();
 
+      final expectation = expectLater(
+        future,
+        throwsA(
+          isA<SocketDispatchAppError>()
+              .having((e) => e.code, 'code', 'SERVICE_UNAVAILABLE')
+              .having(
+                (e) => e.retryAfter,
+                'retryAfter',
+                const Duration(milliseconds: 800),
+              ),
+        ),
+      );
       commandResponseHandler!(
         <String, dynamic>{
           'success': false,
@@ -448,19 +473,8 @@ void main() {
           },
         },
       );
-
-      await expectLater(
-        future,
-        throwsA(
-          isA<SocketDispatchAppError>()
-              .having((e) => e.code, 'code', 'SERVICE_UNAVAILABLE')
-              .having(
-                (e) => e.retryAfter,
-                'retryAfter',
-                const Duration(milliseconds: 800),
-              ),
-        ),
-      );
+      await flushAgentsCommandRouting();
+      await expectation;
     },
   );
 }

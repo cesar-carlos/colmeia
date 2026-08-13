@@ -599,6 +599,11 @@ single-flight per `agentId`.
 | PR5 | Sales map batch + wave limit | Done | `LoadSalesLiveMapUseCase`, `AgentQueryTargetOrdering` |
 | PR6 | Push dedup §5.10 | Done | `PushEventDeduper`, profile listener, `ClientAgentsController` |
 | PR7 | mergeAll default, catalog cache TTL, same-agent grouping | Done | `AgentQueryExecutor`, `CachingAgentQueriesRepository`, coordinator |
+| A | Handshake timer cancel, FNV coalesce key, pre-warm stagger | Done | `consumer_socket_connection.dart`, `socket_coalesce_key.dart`, `relay_conversation_pre_warmer.dart` |
+| B | Async `agents:command` / presence decode + wall-clock | Done | `socket_command_dispatcher_impl.dart`, `ClientAgentProfileUpdatedListener`, `SocketChannelMetrics` |
+| C | Relay fast-path one decode per frame | Done | `relay_command_dispatcher_impl.dart` (`preDecodedBody`) |
+| D | Lazy PayloadFrame headers (no `base64Decode` on route) | Done | `payload_frame.dart` (`parseHeaders` / `materialize`) |
+| E | Persistent codec isolate worker | Done | `payload_frame_codec_worker.dart`, `PayloadFrameCodec`, `injector_socket.dart` |
 
 **Baseline before transport rollout (§7):** capture `SocketMetricsListener` log
 `Socket session metrics export` after a 15–30 min session; compare

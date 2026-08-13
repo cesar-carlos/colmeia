@@ -97,24 +97,17 @@ class PayloadFrame {
     };
   }
 
-  /// Decodes an inbound envelope without validating its semantic limits — that
-  /// belongs to `PayloadFrameCodec.decodeJson`. Returns `null` when [raw] is
-  /// not a valid JSON map structure.
+  /// Parses envelope metadata without decoding [payload] bytes.
   ///
-  /// [raw] may be a `Map`, a JSON-encoded `String`, a `Uint8List` of UTF-8
-  /// JSON bytes, or already a [PayloadFrame] (no-op).
-  static PayloadFrame? tryParse(Object? raw) {
-    return switch (parseDetailed(raw)) {
-      PayloadFrameParseSuccess(:final frame) => frame,
-      PayloadFrameParseFailure() => null,
-    };
-  }
-
-  /// Decodes an inbound envelope and returns a stable diagnostic when the
-  /// shape is not a valid PayloadFrame.
-  static PayloadFrameParseResult parseDetailed(Object? raw) {
+  /// The `payload` field is kept as the wire value (`String` base64 or
+  /// `List<int>`). Call [materialize] (or [parseDetailed]) before codec
+  /// decode. Use this on socket handlers that only need `requestId` /
+  /// `traceId` to route.
+  static PayloadFrameHeadersParseResult parseHeaders(Object? raw) {
     if (raw is PayloadFrame) {
-      return PayloadFrameParseSuccess(raw);
+      return PayloadFrameHeadersParseSuccess(
+        PayloadFrameHeaders.fromFrame(raw),
+      );
     }
     final mapResult = _toMapDetailed(raw);
     final mapFailure = mapResult.failure;
@@ -129,19 +122,20 @@ class PayloadFrame {
         'PayloadFrame contains unknown root key "$unknownKey"',
       );
     }
-    final payload = _decodePayloadField(map['payload']);
-    if (payload == null) {
-      if (!map.containsKey('payload')) {
-        return const PayloadFrameParseFailure(
-          PayloadFrameParseFailureCodes.missingPayload,
-          'PayloadFrame is missing payload',
-        );
-      }
+    if (!map.containsKey('payload')) {
+      return const PayloadFrameParseFailure(
+        PayloadFrameParseFailureCodes.missingPayload,
+        'PayloadFrame is missing payload',
+      );
+    }
+    final rawPayload = map['payload'];
+    if (!_isRawPayloadField(rawPayload)) {
       return const PayloadFrameParseFailure(
         PayloadFrameParseFailureCodes.invalidPayloadBase64,
         'PayloadFrame payload is not valid base64 or bytes',
       );
     }
+    final payloadField = rawPayload!;
     final originalSize = _asInt(map['originalSize']);
     final compressedSize = _asInt(map['compressedSize']);
     if (originalSize == null || originalSize < 0) {
@@ -191,20 +185,73 @@ class PayloadFrame {
           (signatureResult as _PayloadFrameSignatureParseSuccess).signature;
     }
 
-    return PayloadFrameParseSuccess(
-      PayloadFrame(
+    return PayloadFrameHeadersParseSuccess(
+      PayloadFrameHeaders(
         schemaVersion: schemaVersion,
         enc: enc,
         cmp: cmp,
         contentType: contentType,
         originalSize: originalSize,
         compressedSize: compressedSize,
-        payload: payload,
+        rawPayload: payloadField,
         requestId: map['requestId']?.toString(),
         traceId: map['traceId']?.toString(),
         signature: signature,
       ),
     );
+  }
+
+  /// Decodes the wire payload field into a [PayloadFrame]. Invalid base64
+  /// fails here rather than in [parseHeaders].
+  static PayloadFrameParseResult materialize(PayloadFrameHeaders headers) {
+    final payload = _decodePayloadField(headers.rawPayload);
+    if (payload == null) {
+      return const PayloadFrameParseFailure(
+        PayloadFrameParseFailureCodes.invalidPayloadBase64,
+        'PayloadFrame payload is not valid base64 or bytes',
+      );
+    }
+    return PayloadFrameParseSuccess(
+      PayloadFrame(
+        schemaVersion: headers.schemaVersion,
+        enc: headers.enc,
+        cmp: headers.cmp,
+        contentType: headers.contentType,
+        originalSize: headers.originalSize,
+        compressedSize: headers.compressedSize,
+        payload: payload,
+        requestId: headers.requestId,
+        traceId: headers.traceId,
+        signature: headers.signature,
+      ),
+    );
+  }
+
+  /// Decodes an inbound envelope without validating its semantic limits — that
+  /// belongs to `PayloadFrameCodec.decodeJson`. Returns `null` when [raw] is
+  /// not a valid JSON map structure.
+  ///
+  /// [raw] may be a `Map`, a JSON-encoded `String`, a `Uint8List` of UTF-8
+  /// JSON bytes, or already a [PayloadFrame] (no-op).
+  static PayloadFrame? tryParse(Object? raw) {
+    return switch (parseDetailed(raw)) {
+      PayloadFrameParseSuccess(:final frame) => frame,
+      PayloadFrameParseFailure() => null,
+    };
+  }
+
+  /// Eager parse: [parseHeaders] plus [materialize]. Socket handlers that
+  /// only need `requestId` should call [parseHeaders] instead.
+  static PayloadFrameParseResult parseDetailed(Object? raw) {
+    if (raw is PayloadFrame) {
+      return PayloadFrameParseSuccess(raw);
+    }
+    switch (parseHeaders(raw)) {
+      case PayloadFrameHeadersParseSuccess(:final headers):
+        return materialize(headers);
+      case final PayloadFrameParseFailure failure:
+        return failure;
+    }
   }
 
   static ({
@@ -285,6 +332,10 @@ class PayloadFrame {
     );
   }
 
+  static bool _isRawPayloadField(Object? raw) {
+    return raw is String || raw is List<int>;
+  }
+
   static Uint8List? _decodePayloadField(Object? raw) {
     if (raw is Uint8List) {
       return raw;
@@ -326,8 +377,59 @@ class PayloadFrame {
   }
 }
 
+/// Envelope metadata without decoded payload bytes. Produced by
+/// [PayloadFrame.parseHeaders]; turn into a [PayloadFrame] via
+/// [PayloadFrame.materialize].
+final class PayloadFrameHeaders {
+  const PayloadFrameHeaders({
+    required this.schemaVersion,
+    required this.enc,
+    required this.cmp,
+    required this.contentType,
+    required this.originalSize,
+    required this.compressedSize,
+    required this.rawPayload,
+    this.requestId,
+    this.traceId,
+    this.signature,
+  });
+
+  factory PayloadFrameHeaders.fromFrame(PayloadFrame frame) {
+    return PayloadFrameHeaders(
+      schemaVersion: frame.schemaVersion,
+      enc: frame.enc,
+      cmp: frame.cmp,
+      contentType: frame.contentType,
+      originalSize: frame.originalSize,
+      compressedSize: frame.compressedSize,
+      rawPayload: frame.payload,
+      requestId: frame.requestId,
+      traceId: frame.traceId,
+      signature: frame.signature,
+    );
+  }
+
+  final String schemaVersion;
+  final String enc;
+  final String cmp;
+  final String contentType;
+  final int originalSize;
+  final int compressedSize;
+
+  /// Wire `payload` field: base64 [String] or raw [List<int>] bytes.
+  final Object rawPayload;
+
+  final String? requestId;
+  final String? traceId;
+  final PayloadFrameSignature? signature;
+}
+
 sealed class PayloadFrameParseResult {
   const PayloadFrameParseResult();
+}
+
+sealed class PayloadFrameHeadersParseResult {
+  const PayloadFrameHeadersParseResult();
 }
 
 final class PayloadFrameParseSuccess extends PayloadFrameParseResult {
@@ -336,7 +438,15 @@ final class PayloadFrameParseSuccess extends PayloadFrameParseResult {
   final PayloadFrame frame;
 }
 
-final class PayloadFrameParseFailure extends PayloadFrameParseResult {
+final class PayloadFrameHeadersParseSuccess
+    extends PayloadFrameHeadersParseResult {
+  const PayloadFrameHeadersParseSuccess(this.headers);
+
+  final PayloadFrameHeaders headers;
+}
+
+final class PayloadFrameParseFailure
+    implements PayloadFrameParseResult, PayloadFrameHeadersParseResult {
   const PayloadFrameParseFailure(this.code, this.message);
 
   final String code;

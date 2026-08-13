@@ -447,6 +447,7 @@ void main() {
           'item': <String, dynamic>{'id': 'rpc-B', 'success': true},
         },
       });
+      await pumpEventQueue();
 
       final response = await second;
       check(response['rpcId']).equals('rpc-B');

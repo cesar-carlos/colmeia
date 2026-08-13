@@ -174,6 +174,87 @@ void main() {
     });
   });
 
+  group('PayloadFrame.parseHeaders', () {
+    test(
+      'extracts requestId from a large base64 payload without materializing '
+      'bytes',
+      () {
+        final huge = base64Encode(Uint8List(64 * 1024));
+        final result = PayloadFrame.parseHeaders(<String, Object?>{
+          'schemaVersion': '1.0',
+          'enc': 'json',
+          'cmp': 'none',
+          'contentType': 'application/json',
+          'originalSize': 64 * 1024,
+          'compressedSize': 64 * 1024,
+          'payload': huge,
+          'requestId': 'req-huge',
+          'traceId': 'trace-huge',
+        });
+        check(result).isA<PayloadFrameHeadersParseSuccess>();
+        final headers = (result as PayloadFrameHeadersParseSuccess).headers;
+        check(headers.requestId).equals('req-huge');
+        check(headers.traceId).equals('trace-huge');
+        check(headers.rawPayload).equals(huge);
+        check(headers.rawPayload).isA<String>();
+      },
+    );
+
+    test(
+      'accepts invalid base64; parseDetailed still fails that envelope',
+      () {
+        final raw = <String, Object?>{
+          'schemaVersion': '1.0',
+          'enc': 'json',
+          'cmp': 'none',
+          'contentType': 'application/json',
+          'originalSize': 2,
+          'compressedSize': 2,
+          'payload': '!!',
+          'requestId': 'req-bad',
+        };
+        final headersResult = PayloadFrame.parseHeaders(raw);
+        check(headersResult).isA<PayloadFrameHeadersParseSuccess>();
+        check(
+          (headersResult as PayloadFrameHeadersParseSuccess).headers.requestId,
+        ).equals('req-bad');
+
+        final detailed = PayloadFrame.parseDetailed(raw);
+        check(detailed).isA<PayloadFrameParseFailure>();
+        check(
+          (detailed as PayloadFrameParseFailure).code,
+        ).equals(PayloadFrameParseFailureCodes.invalidPayloadBase64);
+      },
+    );
+
+    test('parseDetailed remains a headers+materialize round-trip', () {
+      final bytes = utf8.encode('{"x":1}');
+      final wire = <String, Object?>{
+        'schemaVersion': '1.0',
+        'enc': 'json',
+        'cmp': 'none',
+        'contentType': 'application/json',
+        'originalSize': bytes.length,
+        'compressedSize': bytes.length,
+        'payload': base64Encode(bytes),
+        'requestId': 'req-1',
+      };
+      final headers = switch (PayloadFrame.parseHeaders(wire)) {
+        PayloadFrameHeadersParseSuccess(:final headers) => headers,
+        PayloadFrameParseFailure(:final message) =>
+          throw StateError(message),
+      };
+      final materialized = PayloadFrame.materialize(headers);
+      final detailed = PayloadFrame.parseDetailed(wire);
+      check(materialized).isA<PayloadFrameParseSuccess>();
+      check(detailed).isA<PayloadFrameParseSuccess>();
+      check(
+        (materialized as PayloadFrameParseSuccess).frame.payload,
+      ).deepEquals((detailed as PayloadFrameParseSuccess).frame.payload);
+      check(detailed.frame.requestId).equals('req-1');
+    });
+  });
+
   group('PayloadFrame.parseDetailed', () {
     String failureCode(Object? raw) {
       final result = PayloadFrame.parseDetailed(raw);

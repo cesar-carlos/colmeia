@@ -23,6 +23,9 @@ void main() {
       check(snap.gateAcquireWaitTimeoutTotal).equals(0);
       check(snap.relayStreamingUnhandledErrorTotal).equals(0);
       check(snap.relayPayloadDecodeWallClockMs).equals(HistogramSnapshot.empty);
+      check(
+        snap.agentsCommandPayloadDecodeWallClockMs,
+      ).equals(HistogramSnapshot.empty);
       check(snap.relayAcceptToFirstChunkMs).equals(HistogramSnapshot.empty);
       check(snap.relayGzipDecodeIsolateTotal).equals(0);
       check(snap.relayJsonDecodeIsolateTotal).equals(0);

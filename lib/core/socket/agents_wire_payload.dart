@@ -27,6 +27,48 @@ Object? decodeAgentsWirePayload(
   return raw;
 }
 
+/// Same as [decodeAgentsWirePayload], but gzip/JSON inflation may run off
+/// the calling isolate via [PayloadFrameCodec.decodeJsonAsync].
+Future<Object?> decodeAgentsWirePayloadAsync(
+  Object? raw, {
+  PayloadFrameCodec codec = const PayloadFrameCodec(),
+  bool acceptLegacyRawJson = true,
+}) async {
+  switch (PayloadFrame.parseHeaders(raw)) {
+    case PayloadFrameHeadersParseSuccess(:final headers):
+      switch (PayloadFrame.materialize(headers)) {
+        case PayloadFrameParseSuccess(:final frame):
+          return codec.decodeJsonAsync(frame);
+        case final PayloadFrameParseFailure failure:
+          if (_looksLikePayloadFrame(raw)) {
+            throw PayloadFrameDecodeException(failure.code, failure.message);
+          }
+      }
+    case final PayloadFrameParseFailure failure:
+      if (_looksLikePayloadFrame(raw)) {
+        throw PayloadFrameDecodeException(failure.code, failure.message);
+      }
+  }
+  if (!acceptLegacyRawJson) {
+    return null;
+  }
+  return raw;
+}
+
+/// Same as [decodeAgentsWirePayloadMap], using [decodeAgentsWirePayloadAsync].
+Future<Map<String, dynamic>?> decodeAgentsWirePayloadMapAsync(
+  Object? raw, {
+  PayloadFrameCodec codec = const PayloadFrameCodec(),
+  bool acceptLegacyRawJson = true,
+}) async {
+  final decoded = await decodeAgentsWirePayloadAsync(
+    raw,
+    codec: codec,
+    acceptLegacyRawJson: acceptLegacyRawJson,
+  );
+  return socketToStringKeyedMap(decoded);
+}
+
 /// Same as [decodeAgentsWirePayload], but returns a string-keyed map or
 /// `null` when the logical payload is not an object.
 Map<String, dynamic>? decodeAgentsWirePayloadMap(

@@ -491,14 +491,28 @@ class ConsumerSocketConnection {
       })
       ..connect();
 
-    final outcome = await Future.any<_ConnectOutcome>(<Future<_ConnectOutcome>>[
-      readyCompleter.future.then(
-        (state) => _ConnectSuccess(connectedState: state),
-      ),
-      errorCompleter.future,
-      _timeoutFuture(),
-      abortSignal,
-    ]);
+    final timeoutCompleter = Completer<_ConnectOutcome>();
+    final handshakeTimer = Timer(_handshakeTimeout, () {
+      if (!timeoutCompleter.isCompleted) {
+        timeoutCompleter.complete(
+          const _ConnectTransientFailure(error: 'handshake_timeout'),
+        );
+      }
+    });
+
+    final _ConnectOutcome outcome;
+    try {
+      outcome = await Future.any<_ConnectOutcome>(<Future<_ConnectOutcome>>[
+        readyCompleter.future.then(
+          (state) => _ConnectSuccess(connectedState: state),
+        ),
+        errorCompleter.future,
+        timeoutCompleter.future,
+        abortSignal,
+      ]);
+    } finally {
+      handshakeTimer.cancel();
+    }
 
     if (attemptGeneration != _connectGeneration) {
       _disposeSocket(socket);
@@ -656,13 +670,6 @@ class ConsumerSocketConnection {
 
   Map<String, dynamic>? _toStringKeyedMap(Object? raw) =>
       socketToStringKeyedMap(raw);
-
-  Future<_ConnectOutcome> _timeoutFuture() {
-    return Future<_ConnectOutcome>.delayed(
-      _handshakeTimeout,
-      () => const _ConnectTransientFailure(error: 'handshake_timeout'),
-    );
-  }
 
   bool _isAuthFailure(Object? err) {
     if (err == null) {

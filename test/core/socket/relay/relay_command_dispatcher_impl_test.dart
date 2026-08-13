@@ -29,6 +29,25 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
+import 'relay_frame_routing_test_utils.dart';
+
+class _CountingPayloadFrameCodec extends PayloadFrameCodec {
+  int decodeJsonCount = 0;
+  int decodeJsonAsyncCount = 0;
+
+  @override
+  Object? decodeJson(PayloadFrame frame) {
+    decodeJsonCount += 1;
+    return super.decodeJson(frame);
+  }
+
+  @override
+  Future<Object?> decodeJsonAsync(PayloadFrame frame) async {
+    decodeJsonAsyncCount += 1;
+    return super.decodeJsonAsync(frame);
+  }
+}
+
 class _MockConnection extends Mock implements ConsumerSocketConnection {}
 
 class _MockSocket extends Mock implements io.Socket {}
@@ -161,6 +180,7 @@ void main() {
     PerAgentConcurrencyGate? concurrencyGate,
     SocketChannelMetrics? channelMetrics,
     AgentLatencyOracle? latencyOracle,
+    PayloadFrameCodec? codec,
   }) async {
     final dispatcher = RelayCommandDispatcherImpl(
       connection: connection,
@@ -169,6 +189,7 @@ void main() {
       concurrencyGate: concurrencyGate,
       channelMetrics: channelMetrics,
       latencyOracle: latencyOracle,
+      codec: codec,
     );
     return dispatcher;
   }
@@ -850,6 +871,65 @@ void main() {
           expectLater(f1, throwsA(isA<RelayRequestTimeout>())),
           expectLater(f2, throwsA(isA<RelayRequestTimeout>())),
         ]);
+      },
+    );
+
+    test(
+      'hub fastPath echoing client JSON-RPC id correlates two unary '
+      'pendings without rpc.accepted (one decode per frame)',
+      () async {
+        final codec = _CountingPayloadFrameCodec();
+        final dispatcher = await dispatcherFor(codec: codec);
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final f1 = dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'jsonrpc': '2.0',
+            'method': 'sql.execute',
+            'id': 'client-rpc-a',
+            'params': <String, Object?>{'sql': 'SELECT 1'},
+          },
+          clientRequestId: 'client-rpc-a',
+        );
+        final f2 = dispatcher.sendUnary(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'jsonrpc': '2.0',
+            'method': 'sql.execute',
+            'id': 'client-rpc-b',
+            'params': <String, Object?>{'sql': 'SELECT 2'},
+          },
+          clientRequestId: 'client-rpc-b',
+        );
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        wiring.fire(
+          RelayEventNames.rpcResponse,
+          _buildResponseFrameWithoutRequestId(<String, Object?>{
+            'jsonrpc': '2.0',
+            'id': 'client-rpc-a',
+            'result': <String, Object?>{'rows': <Object?>[]},
+          }),
+        );
+        wiring.fire(
+          RelayEventNames.rpcResponse,
+          _buildResponseFrameWithoutRequestId(<String, Object?>{
+            'jsonrpc': '2.0',
+            'id': 'client-rpc-b',
+            'result': <String, Object?>{'rows': <Object?>[]},
+          }),
+        );
+        await flushRelayFrameRouting();
+
+        final r1 = await f1;
+        final r2 = await f2;
+        check(r1['id']).equals('client-rpc-a');
+        check(r2['id']).equals('client-rpc-b');
+        check(codec.decodeJsonCount + codec.decodeJsonAsyncCount).equals(2);
       },
     );
 

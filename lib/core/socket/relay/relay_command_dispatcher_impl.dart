@@ -110,7 +110,8 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       <String, _PendingRelay>{};
 
   /// Reverse index from server-assigned `requestId` to `client_request_id`.
-  /// Populated only after `relay:rpc.accepted`.
+  /// Populated after `relay:rpc.accepted`, and also after a fast-path body
+  /// `id` lookup so a following `rpc.complete` can use the O(1) map.
   final Map<String, String> _clientIdByRequestId = <String, String>{};
 
   /// Client request ids belonging to the most recently emitted batch per
@@ -154,6 +155,10 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
   StreamSubscription<ConsumerSocketConnectionState>? _stateSub;
   io.Socket? _attachedSocket;
   bool _isDisposed = false;
+
+  /// Serializes fast-path frames that still need an async body decode
+  /// before a pending can be identified.
+  Future<void> _unresolvedFrameChain = Future<void>.value();
 
   @override
   Stream<RelayRpcOutcome> outcomes() => _outcomes.stream;
@@ -1560,72 +1565,145 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
   }
 
   void _onResponseFrame(Object? raw) {
-    final route = _pendingRouteFromFrame(raw);
-    if (route == null) {
-      return;
-    }
-    // Streaming callers treat rpc.response as a terminal (non-streaming
-    // agent answering a streaming request). Mark before enqueue so a
-    // previously queued initial pull cannot emit after this frame.
-    //
-    // Note: a stream-open response that carries `stream_id` is also marked
-    // terminal today — collectors early-return on the JSON-RPC envelope, and
-    // empty DB streams historically raced `rpc:complete` before the hub
-    // opened the route. Prefer fixing empty streams on the agent (unary
-    // success without stream_id) over waiting for a complete that may never
-    // be correlated.
-    final pending = route.pending;
-    if (pending is _PendingStream) {
-      pending.streamTerminalSeen = true;
-    }
-    _enqueueRelayFrameWork(
-      pending,
-      () => _routeFrameAsyncForPending(
-        pending,
-        route.parseResult,
-        eventName: 'rpc.response',
-      ),
+    _routeOrEnqueueRelayFrame(
+      raw,
+      eventName: 'rpc.response',
+      markStreamTerminal: true,
     );
   }
 
   void _onChunkFrame(Object? raw) {
+    _routeOrEnqueueRelayFrame(raw, eventName: 'rpc.chunk');
+  }
+
+  void _onCompleteFrame(Object? raw) {
+    _routeOrEnqueueRelayFrame(
+      raw,
+      eventName: 'rpc.complete',
+      markStreamTerminal: true,
+    );
+  }
+
+  void _routeOrEnqueueRelayFrame(
+    Object? raw, {
+    required String eventName,
+    bool markStreamTerminal = false,
+  }) {
     final route = _pendingRouteFromFrame(raw);
-    if (route == null) {
+    if (route != null) {
+      final pending = route.pending;
+      // Streaming callers treat rpc.response as a terminal (non-streaming
+      // agent answering a streaming request). Mark before enqueue so a
+      // previously queued initial pull cannot emit after this frame.
+      if (markStreamTerminal && pending is _PendingStream) {
+        pending.streamTerminalSeen = true;
+      }
+      _enqueueRelayFrameWork(
+        pending,
+        () => _routeFrameAsyncForPending(
+          pending,
+          parseResult: route.parseResult,
+          headers: route.headers,
+          eventName: eventName,
+          preDecodedBody: route.preDecodedBody,
+        ),
+      );
       return;
     }
-    _enqueueRelayFrameWork(
-      route.pending,
-      () => _routeFrameAsyncForPending(
-        route.pending,
-        route.parseResult,
-        eventName: 'rpc.chunk',
+    _enqueueUnresolvedRelayFrameWork(
+      () => _routeUnresolvedFrameFromBodyAsync(
+        raw,
+        eventName: eventName,
+        markStreamTerminal: markStreamTerminal,
       ),
     );
   }
 
-  void _onCompleteFrame(Object? raw) {
-    final route = _pendingRouteFromFrame(raw);
-    if (route == null) {
+  void _enqueueUnresolvedRelayFrameWork(Future<void> Function() work) {
+    _unresolvedFrameChain = _unresolvedFrameChain.then<void>((_) async {
+      if (_isDisposed) {
+        return;
+      }
+      try {
+        await work();
+      } on Object catch (e, s) {
+        AppLogger.warning(
+          'relay unresolved frame async work failed',
+          context: <String, Object?>{
+            'component': 'RelayCommandDispatcherImpl',
+            'error': e.toString(),
+          },
+          error: e,
+          stackTrace: s,
+        );
+      }
+    });
+  }
+
+  Future<void> _routeUnresolvedFrameFromBodyAsync(
+    Object? raw, {
+    required String eventName,
+    required bool markStreamTerminal,
+  }) async {
+    final headersResult = PayloadFrame.parseHeaders(raw);
+    final PayloadFrameHeaders headers;
+    switch (headersResult) {
+      case PayloadFrameHeadersParseSuccess(headers: final parsedHeaders):
+        headers = parsedHeaders;
+      case PayloadFrameParseFailure():
+        return;
+    }
+    if (_canSyncDecodeBodyForRoutingHeaders(headers)) {
       return;
     }
-    final pending = route.pending;
-    if (pending is _PendingStream) {
+    final materialized = PayloadFrame.materialize(headers);
+    final PayloadFrame frame;
+    switch (materialized) {
+      case PayloadFrameParseSuccess(frame: final parsedFrame):
+        frame = parsedFrame;
+      case final PayloadFrameParseFailure failure:
+        _channelMetrics?.recordRelayDecodeFailure(code: failure.code);
+        return;
+    }
+    final decodeSw = Stopwatch()..start();
+    Object? decoded;
+    try {
+      decoded = await _codec.decodeJsonAsync(frame);
+    } on PayloadFrameDecodeException catch (e) {
+      decodeSw.stop();
+      _channelMetrics?.recordRelayPayloadDecodeWallClock(
+        elapsed: decodeSw.elapsed,
+      );
+      _channelMetrics?.recordRelayDecodeFailure(code: e.code);
+      return;
+    }
+    decodeSw.stop();
+    _recordRelayDecodeMetrics(decodeSw, frame);
+    final pending = _pendingFromDecodedBodyValue(decoded);
+    if (pending == null) {
+      return;
+    }
+    _rememberRequestIdMapping(headers.requestId, pending.clientRequestId);
+    if (markStreamTerminal && pending is _PendingStream) {
       pending.streamTerminalSeen = true;
     }
     _enqueueRelayFrameWork(
       pending,
       () => _routeFrameAsyncForPending(
         pending,
-        route.parseResult,
-        eventName: 'rpc.complete',
+        parseResult: PayloadFrameParseSuccess(frame),
+        eventName: eventName,
+        preDecodedBody: decoded,
       ),
     );
   }
 
   Future<void> _routeFrameAsyncForPending(
-    _PendingRelay pending,
-    PayloadFrameParseResult parseResult, {
+    _PendingRelay pending, {
     required String eventName,
+    PayloadFrameParseResult? parseResult,
+    PayloadFrameHeaders? headers,
+    Object? preDecodedBody,
   }) async {
     if (_isDisposed) {
       return;
@@ -1633,58 +1711,78 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     if (!_pendingByClientId.containsKey(pending.clientRequestId)) {
       return;
     }
-    final PayloadFrame frame;
-    switch (parseResult) {
-      case PayloadFrameParseSuccess(frame: final parsedFrame):
-        frame = parsedFrame;
-      case final PayloadFrameParseFailure failure:
-        _channelMetrics?.recordRelayDecodeFailure(code: failure.code);
-        _failPending(
-          pending.clientRequestId,
-          RelayDecodeFailure(
-            message:
-                'received $eventName without a valid PayloadFrame envelope: '
-                '${failure.message}',
-            code: failure.code,
-            conversationId: pending.conversationId,
-            clientRequestId: pending.clientRequestId,
-          ),
-        );
-        return;
-    }
-
-    final decodeSw = Stopwatch()..start();
-    Object? decoded;
-    try {
-      decoded = await _codec.decodeJsonAsync(frame);
-    } on PayloadFrameDecodeException catch (e, s) {
-      decodeSw.stop();
-      _channelMetrics?.recordRelayPayloadDecodeWallClock(
-        elapsed: decodeSw.elapsed,
-      );
-      _channelMetrics?.recordRelayDecodeFailure(code: e.code);
+    if (parseResult is PayloadFrameParseFailure) {
+      _channelMetrics?.recordRelayDecodeFailure(code: parseResult.code);
       _failPending(
         pending.clientRequestId,
         RelayDecodeFailure(
-          message: 'failed to decode $eventName: ${e.message}',
-          code: e.code,
+          message:
+              'received $eventName without a valid PayloadFrame envelope: '
+              '${parseResult.message}',
+          code: parseResult.code,
           conversationId: pending.conversationId,
           clientRequestId: pending.clientRequestId,
-          cause: e,
-          stackTrace: s,
         ),
       );
       return;
     }
-    decodeSw.stop();
-    _channelMetrics?.recordRelayPayloadDecodeWallClock(
-      elapsed: decodeSw.elapsed,
-    );
-    if (_codec.usesWorkerIsolateForGzipDecode(frame)) {
-      _channelMetrics?.recordRelayPayloadGzipDecodeIsolate();
+    final PayloadFrame frame;
+    switch (parseResult) {
+      case PayloadFrameParseSuccess(frame: final parsedFrame):
+        frame = parsedFrame;
+      case PayloadFrameParseFailure():
+        return;
+      case null:
+        final resolvedHeaders = headers;
+        if (resolvedHeaders == null) {
+          return;
+        }
+        switch (PayloadFrame.materialize(resolvedHeaders)) {
+          case PayloadFrameParseSuccess(frame: final parsedFrame):
+            frame = parsedFrame;
+          case final PayloadFrameParseFailure failure:
+            _channelMetrics?.recordRelayDecodeFailure(code: failure.code);
+            _failPending(
+              pending.clientRequestId,
+              RelayDecodeFailure(
+                message:
+                    'received $eventName without a valid PayloadFrame envelope: '
+                    '${failure.message}',
+                code: failure.code,
+                conversationId: pending.conversationId,
+                clientRequestId: pending.clientRequestId,
+              ),
+            );
+            return;
+        }
     }
-    if (_codec.usesWorkerIsolateForJsonDecode(frame)) {
-      _channelMetrics?.recordRelayPayloadJsonDecodeIsolate();
+
+    var decoded = preDecodedBody;
+    if (decoded == null) {
+      final decodeSw = Stopwatch()..start();
+      try {
+        decoded = await _codec.decodeJsonAsync(frame);
+      } on PayloadFrameDecodeException catch (e, s) {
+        decodeSw.stop();
+        _channelMetrics?.recordRelayPayloadDecodeWallClock(
+          elapsed: decodeSw.elapsed,
+        );
+        _channelMetrics?.recordRelayDecodeFailure(code: e.code);
+        _failPending(
+          pending.clientRequestId,
+          RelayDecodeFailure(
+            message: 'failed to decode $eventName: ${e.message}',
+            code: e.code,
+            conversationId: pending.conversationId,
+            clientRequestId: pending.clientRequestId,
+            cause: e,
+            stackTrace: s,
+          ),
+        );
+        return;
+      }
+      decodeSw.stop();
+      _recordRelayDecodeMetrics(decodeSw, frame);
     }
 
     if (decoded is! Map) {
@@ -1921,11 +2019,11 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
   }
 
   _PendingRelayFrameRoute? _pendingRouteFromFrame(Object? raw) {
-    final parseResult = PayloadFrame.parseDetailed(raw);
-    final PayloadFrame frame;
-    switch (parseResult) {
-      case PayloadFrameParseSuccess(frame: final parsedFrame):
-        frame = parsedFrame;
+    final headersResult = PayloadFrame.parseHeaders(raw);
+    final PayloadFrameHeaders headers;
+    switch (headersResult) {
+      case PayloadFrameHeadersParseSuccess(headers: final parsedHeaders):
+        headers = parsedHeaders;
       case final PayloadFrameParseFailure failure:
         AppLogger.warning(
           'relay frame parse failed before routing',
@@ -1945,7 +2043,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
               );
     }
     String? clientRequestId;
-    final requestId = frame.requestId;
+    final requestId = headers.requestId;
     if (requestId != null && requestId.isNotEmpty) {
       clientRequestId = _clientIdByRequestId[requestId];
     }
@@ -1955,73 +2053,111 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
           ? null
           : _PendingRelayFrameRoute(
               pending: pending,
-              parseResult: parseResult,
+              headers: headers,
             );
     }
     final pendingFromRaw = _pendingFromRawCorrelation(raw);
     if (pendingFromRaw != null) {
       return _PendingRelayFrameRoute(
         pending: pendingFromRaw,
-        parseResult: parseResult,
+        headers: headers,
       );
     }
-    // Fast-path fallback: when neither the envelope `requestId` → client
-    // map nor the solo-conversation match resolves a pending, the hub
-    // most likely skipped `relay:rpc.accepted` (hub item 3 fast-path).
-    // Without that hop we never populated `_clientIdByRequestId` for
-    // this envelope `requestId`, and there can be more than one pending
-    // on the conversation, so solo-conversation also misses.
-    //
-    // Recover by decoding the JSON-RPC body in this PayloadFrame to read
-    // its `id` field — that field carries our `clientRequestId` because
-    // the dispatcher mirrors it onto the JSON-RPC envelope on send.
-    // Sync decode is cheap for the small unary responses fast-path is
-    // designed for (< 1 KiB typical); we cache the mapping so any
-    // sibling frames (`rpc.complete` after `rpc.response`) hit the
-    // fast O(1) lookup above on second visit.
+    if (!_canSyncDecodeBodyForRoutingHeaders(headers)) {
+      return null;
+    }
+    final materialized = PayloadFrame.materialize(headers);
+    final PayloadFrame frame;
+    switch (materialized) {
+      case PayloadFrameParseSuccess(frame: final parsedFrame):
+        frame = parsedFrame;
+      case PayloadFrameParseFailure():
+        return null;
+    }
     final pendingFromBody = _pendingFromSyncDecodedBody(frame);
     if (pendingFromBody != null) {
-      if (requestId != null && requestId.isNotEmpty) {
-        _clientIdByRequestId.putIfAbsent(
-          requestId,
-          () => pendingFromBody.clientRequestId,
-        );
-      }
+      _rememberRequestIdMapping(
+        requestId,
+        pendingFromBody.pending.clientRequestId,
+      );
       return _PendingRelayFrameRoute(
-        pending: pendingFromBody,
-        parseResult: parseResult,
+        pending: pendingFromBody.pending,
+        parseResult: PayloadFrameParseSuccess(frame),
+        preDecodedBody: pendingFromBody.decoded,
       );
     }
     return null;
   }
 
+  bool _canSyncDecodeBodyForRouting(PayloadFrame frame) {
+    return frame.cmp == PayloadFrame.compressionNone;
+  }
+
+  bool _canSyncDecodeBodyForRoutingHeaders(PayloadFrameHeaders headers) {
+    return headers.cmp == PayloadFrame.compressionNone;
+  }
+
+  void _recordRelayDecodeMetrics(Stopwatch decodeSw, PayloadFrame frame) {
+    _channelMetrics?.recordRelayPayloadDecodeWallClock(
+      elapsed: decodeSw.elapsed,
+    );
+    if (_codec.usesWorkerIsolateForGzipDecode(frame)) {
+      _channelMetrics?.recordRelayPayloadGzipDecodeIsolate();
+    }
+    if (_codec.usesWorkerIsolateForJsonDecode(frame)) {
+      _channelMetrics?.recordRelayPayloadJsonDecodeIsolate();
+    }
+  }
+
+  void _rememberRequestIdMapping(String? requestId, String clientRequestId) {
+    if (requestId == null || requestId.isEmpty) {
+      return;
+    }
+    _clientIdByRequestId.putIfAbsent(requestId, () => clientRequestId);
+  }
+
+  _PendingRelay? _pendingFromDecodedBodyValue(Object? decoded) {
+    if (decoded is! Map) {
+      return null;
+    }
+    // Decoded JSON-RPC body: { jsonrpc, id, result|error, meta? }.
+    // Hub unary fast-path (ADR 0009): when the hub honours
+    // `fastPath: true` it skips `relay:rpc.accepted` but echoes the
+    // client JSON-RPC `id` in the response body.
+    final id = decoded['id']?.toString();
+    if (id == null || id.isEmpty) {
+      return null;
+    }
+    return _pendingByClientId[id];
+  }
+
   /// Last-resort routing path: decode the PayloadFrame body **sync** and
   /// look up the JSON-RPC `id` in [_pendingByClientId]. Used only when
-  /// every earlier lookup missed, so the cost is bounded to fast-path
-  /// (or other future cases where the hub does not send a prior
-  /// `relay:rpc.accepted`). Errors and unrecognised shapes return
-  /// `null` quietly — the upper layer will discard the frame.
-  _PendingRelay? _pendingFromSyncDecodedBody(PayloadFrame frame) {
+  /// every earlier lookup missed and the frame is uncompressed, so the
+  /// cost is bounded to small unary fast-path responses. Errors and
+  /// unrecognised shapes return `null` quietly — the upper layer will
+  /// discard the frame.
+  ({_PendingRelay pending, Object? decoded})? _pendingFromSyncDecodedBody(
+    PayloadFrame frame,
+  ) {
+    if (!_canSyncDecodeBodyForRouting(frame)) {
+      return null;
+    }
+    final decodeSw = Stopwatch()..start();
     try {
       final decoded = _codec.decodeJson(frame);
-      if (decoded is! Map) {
+      decodeSw.stop();
+      _recordRelayDecodeMetrics(decodeSw, frame);
+      final pending = _pendingFromDecodedBodyValue(decoded);
+      if (pending == null) {
         return null;
       }
-      // Decoded JSON-RPC body: { jsonrpc, id, result|error, meta? }.
-      // Hub unary fast-path (ADR 0009): when the hub honours
-      // `fastPath: true` it skips `relay:rpc.accepted` but echoes the
-      // client JSON-RPC `id` in the response body (see
-      // `docs/server_adjustments/relay_unary_fast_path.md`). Lookup by
-      // this `id` correlates pending requests on the happy path.
-      final id = decoded['id']?.toString();
-      if (id == null || id.isEmpty) {
-        return null;
-      }
-      return _pendingByClientId[id];
+      return (pending: pending, decoded: decoded);
     } on Object {
-      // Sync decode raises `PayloadFrameDecodeException` on invalid
-      // frames; we MUST NOT propagate from a routing call (the caller
-      // returns null on failure and reports via metrics).
+      decodeSw.stop();
+      _channelMetrics?.recordRelayPayloadDecodeWallClock(
+        elapsed: decodeSw.elapsed,
+      );
       return null;
     }
   }

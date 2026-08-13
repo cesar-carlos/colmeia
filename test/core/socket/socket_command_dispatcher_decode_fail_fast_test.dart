@@ -10,6 +10,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
+import 'agents_command_routing_test_utils.dart';
+
 class _MockConnection extends Mock implements ConsumerSocketConnection {}
 
 class _MockSocket extends Mock implements io.Socket {}
@@ -124,9 +126,7 @@ void main() {
           );
           await attachHandler();
 
-          commandResponseHandler!(_malformedPayloadFrame);
-
-          await expectLater(
+          final expectation = expectLater(
             future,
             throwsA(
               isA<SocketDispatchDecodeFailure>().having(
@@ -136,6 +136,9 @@ void main() {
               ),
             ),
           );
+          commandResponseHandler!(_malformedPayloadFrame);
+          await flushAgentsCommandRouting();
+          await expectation;
         },
       );
 
@@ -159,16 +162,17 @@ void main() {
           await attachHandler();
           await waitForPendingCount(2);
 
-          commandResponseHandler!(_malformedPayloadFrame);
-
-          await expectLater(
+          final e1 = expectLater(
             f1,
             throwsA(isA<SocketDispatchDecodeFailure>()),
           );
-          await expectLater(
+          final e2 = expectLater(
             f2,
             throwsA(isA<SocketDispatchDecodeFailure>()),
           );
+          commandResponseHandler!(_malformedPayloadFrame);
+          await flushAgentsCommandRouting();
+          await Future.wait<void>(<Future<void>>[e1, e2]);
         },
       );
     });
@@ -186,9 +190,7 @@ void main() {
           );
           await attachHandler();
 
-          commandResponseHandler!('not-a-map');
-
-          await expectLater(
+          final expectation = expectLater(
             future,
             throwsA(
               isA<SocketDispatchDecodeFailure>().having(
@@ -198,6 +200,9 @@ void main() {
               ),
             ),
           );
+          commandResponseHandler!('not-a-map');
+          await flushAgentsCommandRouting();
+          await expectation;
         },
       );
 
@@ -221,16 +226,17 @@ void main() {
           await attachHandler();
           await waitForPendingCount(2);
 
-          commandResponseHandler!('not-a-map');
-
-          await expectLater(
+          final e1 = expectLater(
             f1,
             throwsA(isA<SocketDispatchDecodeFailure>()),
           );
-          await expectLater(
+          final e2 = expectLater(
             f2,
             throwsA(isA<SocketDispatchDecodeFailure>()),
           );
+          commandResponseHandler!('not-a-map');
+          await flushAgentsCommandRouting();
+          await Future.wait<void>(<Future<void>>[e1, e2]);
         },
       );
     });
@@ -248,11 +254,7 @@ void main() {
           );
           await attachHandler();
 
-          commandResponseHandler!(
-            <String, dynamic>{'uncorrelatable': true},
-          );
-
-          await expectLater(
+          final expectation = expectLater(
             future,
             throwsA(
               isA<SocketDispatchDecodeFailure>().having(
@@ -262,6 +264,11 @@ void main() {
               ),
             ),
           );
+          commandResponseHandler!(
+            <String, dynamic>{'uncorrelatable': true},
+          );
+          await flushAgentsCommandRouting();
+          await expectation;
         },
       );
 
@@ -285,18 +292,19 @@ void main() {
           await attachHandler();
           await waitForPendingCount(2);
 
-          commandResponseHandler!(
-            <String, dynamic>{'uncorrelatable': true},
-          );
-
-          await expectLater(
+          final e1 = expectLater(
             f1,
             throwsA(isA<SocketDispatchDecodeFailure>()),
           );
-          await expectLater(
+          final e2 = expectLater(
             f2,
             throwsA(isA<SocketDispatchDecodeFailure>()),
           );
+          commandResponseHandler!(
+            <String, dynamic>{'uncorrelatable': true},
+          );
+          await flushAgentsCommandRouting();
+          await Future.wait<void>(<Future<void>>[e1, e2]);
         },
       );
     });
@@ -305,6 +313,7 @@ void main() {
       await attachHandler();
 
       commandResponseHandler!(_malformedPayloadFrame);
+      await flushAgentsCommandRouting();
 
       check(correlator.pendingCount).equals(0);
     });

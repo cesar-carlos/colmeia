@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/config/connection_ready_compat_mode.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
@@ -18,6 +21,7 @@ import 'package:colmeia/core/socket/consumer_socket_connection_pool.dart';
 import 'package:colmeia/core/socket/direct_agent_command_sender.dart';
 import 'package:colmeia/core/socket/payload_frame.dart';
 import 'package:colmeia/core/socket/payload_frame_codec.dart';
+import 'package:colmeia/core/socket/payload_frame_codec_worker.dart';
 import 'package:colmeia/core/socket/payload_frame_signer.dart';
 import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
 import 'package:colmeia/core/socket/relay/relay_batch_command_coordinator.dart';
@@ -55,13 +59,26 @@ void registerInjectorSocket(GetIt getIt) {
     ..registerLazySingleton<SocketIoClientFactory>(
       () => const DefaultSocketIoClientFactory(),
     )
-    ..registerLazySingleton<ConnectionReadyDecoder>(_buildReadyDecoder)
-    // Single PayloadFrameCodec shared across the relay dispatcher and
-    // the connection:ready decoder. When `SOCKET_PAYLOAD_SIGNING_KEY`
-    // is set we also build a signer so every outbound frame is HMAC'd
-    // — the hub validates with `PAYLOAD_SIGNING_KEY`, so the two MUST
-    // agree byte-for-byte (UTF-8) for verification to succeed.
-    ..registerLazySingleton<PayloadFrameCodec>(_buildPayloadFrameCodec)
+    ..registerLazySingleton<ConnectionReadyDecoder>(_buildReadyDecoder);
+
+  if (AppEnvironment.socketPayloadWorkerIsolatesEnabled) {
+    getIt.registerLazySingleton<PayloadFrameCodecWorker>(
+      () {
+        final key = AppEnvironment.socketPayloadSigningKey;
+        final keyId = AppEnvironment.socketPayloadSigningKeyId;
+        return PayloadFrameCodecWorker(
+          hmacKey: key.isEmpty ? null : Uint8List.fromList(utf8.encode(key)),
+          hmacKeyId: keyId.isEmpty ? null : keyId,
+        );
+      },
+      dispose: (worker) => worker.dispose(),
+    );
+  }
+
+  getIt
+    ..registerLazySingleton<PayloadFrameCodec>(
+      () => _buildPayloadFrameCodec(getIt),
+    )
     ..registerLazySingleton<ConsumerSocketConnection>(
       () => ConsumerSocketConnection(
         urlResolver: getIt<AppSocketUrlResolver>(),
@@ -122,6 +139,8 @@ void registerInjectorSocket(GetIt getIt) {
         onCoalesced: () => getIt<SocketChannelMetrics>().recordCoalesced(),
         onServerTimings: (timings) =>
             getIt<SocketChannelMetrics>().recordServerTimings(timings),
+        onPayloadDecode: (elapsed) => getIt<SocketChannelMetrics>()
+            .recordAgentsCommandPayloadDecodeWallClock(elapsed: elapsed),
       ),
       dispose: (dispatcher) => dispatcher.dispose(),
     )
@@ -331,7 +350,7 @@ AgentLatencyOracle? _resolveLatencyOracle(GetIt getIt) {
 /// strict mode rejects unsigned frames with `signature_required`,
 /// while the default (permissive) tolerates unsigned ones — matching
 /// the hub's own opt-in policy controlled by `PAYLOAD_SIGN_OUTBOUND`.
-PayloadFrameCodec _buildPayloadFrameCodec() {
+PayloadFrameCodec _buildPayloadFrameCodec(GetIt getIt) {
   final worker = AppEnvironment.socketPayloadWorkerIsolatesEnabled;
   final gzipDecodeThreshold =
       AppEnvironment.socketPayloadGzipDecodeIsolateThresholdBytes;
@@ -339,6 +358,9 @@ PayloadFrameCodec _buildPayloadFrameCodec() {
       AppEnvironment.socketPayloadGzipEncodeIsolateThresholdBytes;
   final jsonDecodeThreshold =
       AppEnvironment.socketPayloadJsonDecodeIsolateThresholdBytes;
+  final codecWorker = getIt.isRegistered<PayloadFrameCodecWorker>()
+      ? getIt<PayloadFrameCodecWorker>()
+      : null;
 
   final key = AppEnvironment.socketPayloadSigningKey;
   final requireSignature = AppEnvironment.socketPayloadRequireSignature;
@@ -356,6 +378,7 @@ PayloadFrameCodec _buildPayloadFrameCodec() {
       gzipDecodeIsolateThresholdBytes: gzipDecodeThreshold,
       gzipEncodeIsolateThresholdBytes: gzipEncodeThreshold,
       jsonDecodeIsolateThresholdBytes: jsonDecodeThreshold,
+      worker: codecWorker,
     );
   }
   final keyId = AppEnvironment.socketPayloadSigningKeyId;
@@ -365,6 +388,7 @@ PayloadFrameCodec _buildPayloadFrameCodec() {
     gzipDecodeIsolateThresholdBytes: gzipDecodeThreshold,
     gzipEncodeIsolateThresholdBytes: gzipEncodeThreshold,
     jsonDecodeIsolateThresholdBytes: jsonDecodeThreshold,
+    worker: codecWorker,
     signer: Hmac256PayloadFrameSigner.fromUtf8Key(
       key: key,
       keyId: normalizedKeyId,

@@ -27,6 +27,9 @@ class SocketChannelMetrics {
       _batchSizeDistribution = _ReservoirHistogram(reservoirSize),
       _batchBypassByReason = <String, int>{},
       _relayPayloadDecodeWallClockMs = _ReservoirHistogram(reservoirSize),
+      _agentsCommandPayloadDecodeWallClockMs = _ReservoirHistogram(
+        reservoirSize,
+      ),
       _relayPayloadEncodeWallClockMs = _ReservoirHistogram(reservoirSize),
       _relayAcceptToFirstChunkMs = _ReservoirHistogram(reservoirSize),
       _relayRequestToAcceptedMs = _ReservoirHistogram(reservoirSize),
@@ -59,6 +62,7 @@ class SocketChannelMetrics {
   int _gateAcquireWaitTimeoutTotal = 0;
   int _relayStreamingUnhandledErrorTotal = 0;
   final _ReservoirHistogram _relayPayloadDecodeWallClockMs;
+  final _ReservoirHistogram _agentsCommandPayloadDecodeWallClockMs;
   final _ReservoirHistogram _relayPayloadEncodeWallClockMs;
   final _ReservoirHistogram _relayAcceptToFirstChunkMs;
   final _ReservoirHistogram _relayRequestToAcceptedMs;
@@ -167,6 +171,11 @@ class SocketChannelMetrics {
   /// Wall time spent in `decodeJsonAsync` for one relay frame.
   void recordRelayPayloadDecodeWallClock({required Duration elapsed}) {
     _relayPayloadDecodeWallClockMs.add(elapsed.inMicroseconds / 1000.0);
+  }
+
+  /// Wall time spent decoding one `agents:command_response` PayloadFrame.
+  void recordAgentsCommandPayloadDecodeWallClock({required Duration elapsed}) {
+    _agentsCommandPayloadDecodeWallClockMs.add(elapsed.inMicroseconds / 1000.0);
   }
 
   /// Wall time spent in `encodeJsonAsync` for one relay request frame.
@@ -320,6 +329,8 @@ class SocketChannelMetrics {
       gateAcquireWaitTimeoutTotal: _gateAcquireWaitTimeoutTotal,
       relayStreamingUnhandledErrorTotal: _relayStreamingUnhandledErrorTotal,
       relayPayloadDecodeWallClockMs: _relayPayloadDecodeWallClockMs.snapshot(),
+      agentsCommandPayloadDecodeWallClockMs:
+          _agentsCommandPayloadDecodeWallClockMs.snapshot(),
       relayPayloadEncodeWallClockMs: _relayPayloadEncodeWallClockMs.snapshot(),
       relayAcceptToFirstChunkMs: _relayAcceptToFirstChunkMs.snapshot(),
       relayRequestToAcceptedMs: _relayRequestToAcceptedMs.snapshot(),
@@ -374,6 +385,7 @@ class SocketChannelMetrics {
     _relayAcceptedInFlightTotal = 0;
     _relayDecodeFailureByCode.clear();
     _relayPayloadDecodeWallClockMs.clear();
+    _agentsCommandPayloadDecodeWallClockMs.clear();
     _relayPayloadEncodeWallClockMs.clear();
     _relayAcceptToFirstChunkMs.clear();
     _relayRequestToAcceptedMs.clear();

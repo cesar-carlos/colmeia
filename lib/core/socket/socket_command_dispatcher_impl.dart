@@ -10,6 +10,7 @@ import 'package:colmeia/core/socket/consumer_socket_app_error_codes.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/core/socket/consumer_socket_terminal_exception.dart';
+import 'package:colmeia/core/socket/payload_frame.dart';
 import 'package:colmeia/core/socket/payload_frame_codec.dart';
 import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
 import 'package:colmeia/core/socket/socket_app_error_retry_after.dart';
@@ -46,6 +47,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     bool coalescingEnabled = true,
     void Function()? onCoalesced,
     void Function(ServerTimings)? onServerTimings,
+    void Function(Duration elapsed)? onPayloadDecode,
   }) : _connection = connection,
        _correlator = correlator,
        _concurrencyGate = concurrencyGate,
@@ -55,6 +57,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
        _coalescingEnabled = coalescingEnabled,
        _coalescer = SocketCommandCoalescer(onCoalesced: onCoalesced),
        _onServerTimings = onServerTimings,
+       _onPayloadDecode = onPayloadDecode,
        _outcomes = StreamController<AgentCommandOutcome>.broadcast() {
     _stateSub = _connection.states().listen(_onConnectionState);
   }
@@ -68,11 +71,13 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
   final bool _coalescingEnabled;
   final SocketCommandCoalescer _coalescer;
   final void Function(ServerTimings)? _onServerTimings;
+  final void Function(Duration elapsed)? _onPayloadDecode;
   final StreamController<AgentCommandOutcome> _outcomes;
 
   StreamSubscription<ConsumerSocketConnectionState>? _stateSub;
   io.Socket? _attachedSocket;
   bool _isDisposed = false;
+  Future<void> _responseRoutingChain = Future<void>.value();
 
   /// Per-pending metadata used to enrich outcomes after the correlator
   /// resolves. Captures `method` so metrics and presence consumers can
@@ -505,13 +510,40 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
   }
 
   void _onCommandResponse(Object? raw) {
+    _enqueueCommandResponseWork(() => _routeCommandResponseAsync(raw));
+  }
+
+  void _enqueueCommandResponseWork(Future<void> Function() work) {
+    _responseRoutingChain = _responseRoutingChain.then<void>((_) async {
+      if (_isDisposed) {
+        return;
+      }
+      try {
+        await work();
+      } on Object catch (error, stackTrace) {
+        AppLogger.warning(
+          'agents:command_response async routing failed',
+          context: const <String, Object?>{
+            'component': 'SocketCommandDispatcherImpl',
+          },
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
+    });
+  }
+
+  Future<void> _routeCommandResponseAsync(Object? raw) async {
     final normalizedRaw = _normalizeCommandResponseRaw(raw);
     Map<String, dynamic>? decodedMap;
     try {
-      decodedMap = decodeAgentsWirePayloadMap(
+      final decodeSw = Stopwatch()..start();
+      decodedMap = await decodeAgentsWirePayloadMapAsync(
         normalizedRaw,
         codec: _payloadFrameCodec,
       );
+      decodeSw.stop();
+      _onPayloadDecode?.call(decodeSw.elapsed);
     } on PayloadFrameDecodeException catch (error, stackTrace) {
       AppLogger.warning(
         'agents:command_response PayloadFrame decode failed',
@@ -551,6 +583,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       return;
     }
     var rpcId = _extractRpcId(map);
+    rpcId ??= _rpcIdFromPayloadFrameHeaders(normalizedRaw);
     rpcId ??= _disambiguateSqlExecuteBatchRpcId(map);
     if (rpcId == null && _failFlatTopLevelBridgeIfPossible(map)) {
       return;
@@ -747,6 +780,14 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       }
     }
     return null;
+  }
+
+  String? _rpcIdFromPayloadFrameHeaders(Object? raw) {
+    return switch (PayloadFrame.parseHeaders(raw)) {
+      PayloadFrameHeadersParseSuccess(:final headers) =>
+        _coerceRpcId(headers.requestId),
+      PayloadFrameParseFailure() => null,
+    };
   }
 
   static String? _coerceRpcId(Object? candidate) {

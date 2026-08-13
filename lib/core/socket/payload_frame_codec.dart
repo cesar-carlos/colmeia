@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:colmeia/core/socket/payload_frame.dart';
+import 'package:colmeia/core/socket/payload_frame_codec_worker.dart';
 import 'package:colmeia/core/socket/payload_frame_signer.dart';
 import 'package:flutter/foundation.dart' show compute;
 
@@ -75,6 +76,7 @@ class PayloadFrameCodec {
     this.signer,
     this.verifier,
     this.requireSignature = false,
+    this.worker,
   });
 
   /// When non-null, [encodeJson] populates `frame.signature` by running
@@ -107,6 +109,10 @@ class PayloadFrameCodec {
   /// `signature_required`. Use this on builds connecting to hubs that
   /// run with `PAYLOAD_SIGN_OUTBOUND=true` and trust nothing else.
   final bool requireSignature;
+
+  /// Persistent isolate used by async encode/decode above the configured
+  /// thresholds. Null keeps the `compute()` / sync fallbacks.
+  final PayloadFrameCodecWorker? worker;
 
   /// 4096 bytes - same value as the snippet bundled with the hub docs.
   static const int defaultCompressionThresholdBytes = 4096;
@@ -220,7 +226,7 @@ class PayloadFrameCodec {
     String? traceId,
     PayloadFrameSignature? signature,
   }) async {
-    final encoded = Uint8List.fromList(utf8.encode(jsonEncode(data)));
+    final encoded = await _encodeJsonUtf8MaybeOffload(data);
     if (encoded.length > maxPayloadBytes) {
       throw PayloadFrameDecodeException(
         'payload_too_large',
@@ -234,7 +240,7 @@ class PayloadFrameCodec {
       final Uint8List compressed;
       if (workerIsolatesEnabled &&
           encoded.length >= gzipEncodeIsolateThresholdBytes) {
-        compressed = await compute(_payloadFrameCodecGzipEncode, encoded);
+        compressed = await _gzipEncodeOffload(encoded);
       } else {
         compressed = Uint8List.fromList(gzip.encode(encoded));
       }
@@ -244,7 +250,7 @@ class PayloadFrameCodec {
       }
     }
 
-    return _finishEncode(
+    return _finishEncodeAsync(
       encoded: encoded,
       wire: wire,
       cmp: cmp,
@@ -297,6 +303,37 @@ class PayloadFrameCodec {
     );
   }
 
+  Future<PayloadFrameEncodeResult> _finishEncodeAsync({
+    required Uint8List encoded,
+    required Uint8List wire,
+    required String cmp,
+    String? requestId,
+    String? traceId,
+    PayloadFrameSignature? signature,
+  }) async {
+    final resolvedSignature =
+        signature ??
+        await _signWireMaybeOffload(
+          encoded: encoded,
+          wire: wire,
+          cmp: cmp,
+          requestId: requestId,
+          traceId: traceId,
+        );
+    return PayloadFrameEncodeResult(
+      frame: PayloadFrame(
+        payload: wire,
+        originalSize: encoded.length,
+        compressedSize: wire.length,
+        cmp: cmp,
+        requestId: requestId,
+        traceId: traceId,
+        signature: resolvedSignature,
+      ),
+      encoded: encoded,
+    );
+  }
+
   bool _shouldUseCompressed(Uint8List encoded, Uint8List compressed) {
     if (compressed.isEmpty) {
       return false;
@@ -332,12 +369,13 @@ class PayloadFrameCodec {
   /// isolate when `cmp == gzip` and the compressed payload length is at
   /// least [gzipDecodeIsolateThresholdBytes].
   Future<Object?> decodeJsonAsync(PayloadFrame frame) async {
-    _assertFrameDecodePreconditions(frame);
+    _assertFrameDecodePreconditions(frame, verifySignature: false);
+    await _verifySignatureIfConfiguredAsync(frame);
     final jsonBytes = await _materializeJsonBytesAsync(frame);
     if (workerIsolatesEnabled &&
         jsonBytes.length >= jsonDecodeIsolateThresholdBytes) {
       try {
-        return await compute(_payloadFrameCodecJsonDecodeUtf8, jsonBytes);
+        return await _jsonDecodeUtf8Offload(jsonBytes);
       } on FormatException catch (e) {
         throw PayloadFrameDecodeException('json_decode_failed', e.message);
       }
@@ -345,7 +383,10 @@ class PayloadFrameCodec {
     return _jsonDecodeUtf8(jsonBytes);
   }
 
-  void _assertFrameDecodePreconditions(PayloadFrame frame) {
+  void _assertFrameDecodePreconditions(
+    PayloadFrame frame, {
+    bool verifySignature = true,
+  }) {
     if (frame.schemaVersion != PayloadFrame.supportedSchemaVersion) {
       throw PayloadFrameDecodeException(
         'unsupported_schema_version',
@@ -400,7 +441,9 @@ class PayloadFrameCodec {
         );
       }
     }
-    _verifySignatureIfConfigured(frame);
+    if (verifySignature) {
+      _verifySignatureIfConfigured(frame);
+    }
   }
 
   Uint8List _materializeJsonBytesSync(PayloadFrame frame) {
@@ -461,7 +504,7 @@ class PayloadFrameCodec {
     if (workerIsolatesEnabled &&
         frame.payload.length >= gzipDecodeIsolateThresholdBytes) {
       try {
-        jsonBytes = await compute(_payloadFrameCodecGzipDecode, frame.payload);
+        jsonBytes = await _gzipDecodeOffload(frame.payload);
       } on FormatException catch (e) {
         throw PayloadFrameDecodeException(
           'gzip_decode_failed',
@@ -505,6 +548,217 @@ class PayloadFrameCodec {
     }
   }
 
+  Future<Uint8List> _encodeJsonUtf8MaybeOffload(Object? data) async {
+    if (workerIsolatesEnabled &&
+        worker != null &&
+        _estimateJsonUtf8Bytes(data) >= gzipEncodeIsolateThresholdBytes) {
+      try {
+        return await worker!.jsonEncodeUtf8(data);
+      } on PayloadFrameCodecWorkerUnavailable {
+        // Fall through to the calling isolate.
+      }
+    }
+    return Uint8List.fromList(utf8.encode(jsonEncode(data)));
+  }
+
+  Future<Uint8List> _gzipEncodeOffload(Uint8List rawJsonUtf8) async {
+    final activeWorker = worker;
+    if (activeWorker != null) {
+      try {
+        return await activeWorker.gzipEncode(rawJsonUtf8);
+      } on PayloadFrameCodecWorkerUnavailable {
+        // Fall through to compute().
+      }
+    }
+    return compute(_payloadFrameCodecGzipEncode, rawJsonUtf8);
+  }
+
+  Future<Uint8List> _gzipDecodeOffload(Uint8List compressed) async {
+    final activeWorker = worker;
+    if (activeWorker != null) {
+      try {
+        return await activeWorker.gzipDecode(compressed);
+      } on PayloadFrameCodecWorkerUnavailable {
+        // Fall through to compute().
+      }
+    }
+    return compute(_payloadFrameCodecGzipDecode, compressed);
+  }
+
+  Future<Object?> _jsonDecodeUtf8Offload(Uint8List jsonBytes) async {
+    final activeWorker = worker;
+    if (activeWorker != null) {
+      try {
+        return await activeWorker.jsonDecodeUtf8(jsonBytes);
+      } on PayloadFrameCodecWorkerUnavailable {
+        // Fall through to compute().
+      }
+    }
+    return compute(_payloadFrameCodecJsonDecodeUtf8, jsonBytes);
+  }
+
+  Future<PayloadFrameSignature?> _signWireMaybeOffload({
+    required Uint8List encoded,
+    required Uint8List wire,
+    required String cmp,
+    String? requestId,
+    String? traceId,
+  }) async {
+    final activeSigner = signer;
+    if (activeSigner == null) {
+      return null;
+    }
+    final metadata = PayloadFrameSignatureMetadata(
+      schemaVersion: PayloadFrame.supportedSchemaVersion,
+      enc: PayloadFrame.supportedEncoding,
+      cmp: cmp,
+      contentType: PayloadFrame.supportedContentType,
+      originalSize: encoded.length,
+      compressedSize: wire.length,
+      traceId: traceId,
+      requestId: requestId,
+    );
+    final activeWorker = worker;
+    if (activeWorker != null &&
+        workerIsolatesEnabled &&
+        wire.length >= gzipEncodeIsolateThresholdBytes) {
+      try {
+        return await activeWorker.hmacSign(
+          metadata: metadata,
+          binaryPayload: wire,
+        );
+      } on PayloadFrameCodecWorkerUnavailable {
+        // Fall through to the calling isolate.
+      }
+    }
+    return activeSigner.sign(metadata: metadata, binaryPayload: wire);
+  }
+
+  Future<void> _verifySignatureIfConfiguredAsync(PayloadFrame frame) async {
+    final activeVerifier = verifier;
+    if (activeVerifier == null) {
+      if (requireSignature) {
+        throw const PayloadFrameDecodeException(
+          'signature_required',
+          'requireSignature is true but no verifier is configured',
+        );
+      }
+      return;
+    }
+    final activeWorker = worker;
+    if (activeWorker != null &&
+        workerIsolatesEnabled &&
+        frame.payload.length >= gzipDecodeIsolateThresholdBytes) {
+      try {
+        final outcome = await activeWorker.hmacVerify(
+          metadata: PayloadFrameSignatureMetadata(
+            schemaVersion: frame.schemaVersion,
+            enc: frame.enc,
+            cmp: frame.cmp,
+            contentType: frame.contentType,
+            originalSize: frame.originalSize,
+            compressedSize: frame.compressedSize,
+            traceId: frame.traceId,
+            requestId: frame.requestId,
+          ),
+          binaryPayload: frame.payload,
+          signature: frame.signature,
+        );
+        _throwIfSignatureRejected(frame, outcome);
+        return;
+      } on PayloadFrameCodecWorkerUnavailable {
+        // Fall through to the calling isolate.
+      }
+    }
+    _verifySignatureIfConfigured(frame);
+  }
+
+  void _throwIfSignatureRejected(
+    PayloadFrame frame,
+    PayloadFrameSignatureVerification outcome,
+  ) {
+    switch (outcome) {
+      case PayloadFrameSignatureVerification.valid:
+        return;
+      case PayloadFrameSignatureVerification.absent:
+        if (requireSignature) {
+          throw const PayloadFrameDecodeException(
+            'signature_required',
+            'PayloadFrame is unsigned but requireSignature is true',
+          );
+        }
+        return;
+      case PayloadFrameSignatureVerification.unsupportedAlgorithm:
+        throw PayloadFrameDecodeException(
+          outcome.code,
+          'expected ${PayloadFrameSignature.algorithmHmacSha256}, '
+          'got ${frame.signature?.algorithm}',
+        );
+      case PayloadFrameSignatureVerification.malformed:
+        throw PayloadFrameDecodeException(
+          outcome.code,
+          'signature value is empty or not valid base64',
+        );
+      case PayloadFrameSignatureVerification.keyIdMismatch:
+        throw PayloadFrameDecodeException(
+          outcome.code,
+          'signature key_id does not match the configured expectation',
+        );
+      case PayloadFrameSignatureVerification.invalid:
+        throw PayloadFrameDecodeException(
+          outcome.code,
+          'HMAC mismatch — possible tampering or key drift',
+        );
+    }
+  }
+
+  int _estimateJsonUtf8Bytes(Object? data) {
+    final budget = gzipEncodeIsolateThresholdBytes;
+    var total = 0;
+    void walk(Object? value) {
+      if (total >= budget) {
+        return;
+      }
+      if (value == null) {
+        total += 4;
+        return;
+      }
+      if (value is String) {
+        total += value.length + 2;
+        return;
+      }
+      if (value is num || value is bool) {
+        total += 8;
+        return;
+      }
+      if (value is Iterable && value is! Map) {
+        total += 2;
+        for (final Object? item in value) {
+          walk(item);
+          if (total >= budget) {
+            return;
+          }
+        }
+        return;
+      }
+      if (value is Map) {
+        total += 2;
+        for (final entry in value.entries) {
+          total += entry.key.toString().length + 3;
+          walk(entry.value);
+          if (total >= budget) {
+            return;
+          }
+        }
+        return;
+      }
+      total += 16;
+    }
+
+    walk(data);
+    return total;
+  }
+
   /// Runs the configured [verifier] against [frame] and turns any
   /// rejection into a [PayloadFrameDecodeException] using the stable
   /// codes from [PayloadFrameSignatureVerification]. No-op when no
@@ -535,42 +789,7 @@ class PayloadFrameCodec {
       binaryPayload: frame.payload,
       signature: frame.signature,
     );
-    switch (outcome) {
-      case PayloadFrameSignatureVerification.valid:
-        return;
-      case PayloadFrameSignatureVerification.absent:
-        // Strict builds (defence in depth against MITM on the wire)
-        // refuse unsigned frames; permissive builds still accept them
-        // — this matches the hub's own opt-in model.
-        if (requireSignature) {
-          throw const PayloadFrameDecodeException(
-            'signature_required',
-            'PayloadFrame is unsigned but requireSignature is true',
-          );
-        }
-        return;
-      case PayloadFrameSignatureVerification.unsupportedAlgorithm:
-        throw PayloadFrameDecodeException(
-          outcome.code,
-          'expected ${PayloadFrameSignature.algorithmHmacSha256}, '
-          'got ${frame.signature?.algorithm}',
-        );
-      case PayloadFrameSignatureVerification.malformed:
-        throw PayloadFrameDecodeException(
-          outcome.code,
-          'signature value is empty or not valid base64',
-        );
-      case PayloadFrameSignatureVerification.keyIdMismatch:
-        throw PayloadFrameDecodeException(
-          outcome.code,
-          'signature key_id does not match the configured expectation',
-        );
-      case PayloadFrameSignatureVerification.invalid:
-        throw PayloadFrameDecodeException(
-          outcome.code,
-          'HMAC mismatch — possible tampering or key drift',
-        );
-    }
+    _throwIfSignatureRejected(frame, outcome);
   }
 }
 

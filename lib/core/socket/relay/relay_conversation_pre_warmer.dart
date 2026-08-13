@@ -36,10 +36,15 @@ class RelayConversationPreWarmer {
     required RelayConversationManager conversationManager,
     required RelayPreWarmAgentIdsLoader loadAgentIds,
     int maxAgents = _defaultMaxAgents,
+    int maxConcurrentStarts = _defaultMaxConcurrentStarts,
   }) : _connection = connection,
        _conversationManager = conversationManager,
        _loadAgentIds = loadAgentIds,
-       _maxAgents = _checkPositive(maxAgents) {
+       _maxAgents = _checkPositive(maxAgents, 'maxAgents'),
+       _maxConcurrentStarts = _checkPositive(
+         maxConcurrentStarts,
+         'maxConcurrentStarts',
+       ) {
     _stateSub = _connection.states().listen(_onConnectionState);
   }
 
@@ -48,21 +53,26 @@ class RelayConversationPreWarmer {
   /// extra warming benefit on the first wave.
   static const int _defaultMaxAgents = 8;
 
-  static int _checkPositive(int maxAgents) {
-    if (maxAgents <= 0) {
+  /// Caps how many `relay:conversation.start` round-trips fire at once so a
+  /// reconnect does not stampede the hub.
+  static const int _defaultMaxConcurrentStarts = 2;
+
+  static int _checkPositive(int value, String name) {
+    if (value <= 0) {
       throw ArgumentError.value(
-        maxAgents,
-        'maxAgents',
+        value,
+        name,
         'must be positive',
       );
     }
-    return maxAgents;
+    return value;
   }
 
   final ConsumerSocketConnection _connection;
   final RelayConversationManager _conversationManager;
   final RelayPreWarmAgentIdsLoader _loadAgentIds;
   final int _maxAgents;
+  final int _maxConcurrentStarts;
 
   // ignore: cancel_subscriptions — cancelled by dispose().
   StreamSubscription<ConsumerSocketConnectionState>? _stateSub;
@@ -140,9 +150,17 @@ class RelayConversationPreWarmer {
       },
     );
 
-    await Future.wait<void>(
-      ids.map((id) => _openSilently(id, sweepGeneration)),
-    );
+    for (var start = 0; start < ids.length; start += _maxConcurrentStarts) {
+      if (_isStale(sweepGeneration)) {
+        return;
+      }
+      final end = start + _maxConcurrentStarts > ids.length
+          ? ids.length
+          : start + _maxConcurrentStarts;
+      await Future.wait<void>(
+        ids.sublist(start, end).map((id) => _openSilently(id, sweepGeneration)),
+      );
+    }
   }
 
   Future<void> _openSilently(String agentId, int sweepGeneration) async {

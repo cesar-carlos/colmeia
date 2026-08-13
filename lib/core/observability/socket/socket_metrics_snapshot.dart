@@ -21,6 +21,7 @@ class SocketMetricsSnapshot {
     this.gateAcquireWaitTimeoutTotal = 0,
     this.relayStreamingUnhandledErrorTotal = 0,
     this.relayPayloadDecodeWallClockMs = HistogramSnapshot.empty,
+    this.agentsCommandPayloadDecodeWallClockMs = HistogramSnapshot.empty,
     this.relayPayloadEncodeWallClockMs = HistogramSnapshot.empty,
     this.relayAcceptToFirstChunkMs = HistogramSnapshot.empty,
     this.relayRequestToAcceptedMs = HistogramSnapshot.empty,
@@ -97,6 +98,10 @@ class SocketMetricsSnapshot {
   /// Wall-clock time for `PayloadFrameCodec.decodeJsonAsync` on relay
   /// `rpc.response` / `rpc.chunk` / `rpc.complete` (ms, reservoir).
   final HistogramSnapshot relayPayloadDecodeWallClockMs;
+
+  /// Wall-clock time for `agents:command_response` PayloadFrame decode
+  /// (ms, reservoir).
+  final HistogramSnapshot agentsCommandPayloadDecodeWallClockMs;
 
   /// Wall-clock time for `PayloadFrameCodec.encodeJsonAsync` on relay
   /// `rpc.request` (ms, reservoir). Pairs with the decode counterpart
@@ -200,6 +205,8 @@ class SocketMetricsSnapshot {
       'gateAcquireWaitTimeoutTotal': gateAcquireWaitTimeoutTotal,
       'relayStreamingUnhandledErrorTotal': relayStreamingUnhandledErrorTotal,
       'relayPayloadDecodeWallClockMs': relayPayloadDecodeWallClockMs.toJson(),
+      'agentsCommandPayloadDecodeWallClockMs':
+          agentsCommandPayloadDecodeWallClockMs.toJson(),
       'relayPayloadEncodeWallClockMs': relayPayloadEncodeWallClockMs.toJson(),
       'relayAcceptToFirstChunkMs': relayAcceptToFirstChunkMs.toJson(),
       'relayRequestToAcceptedMs': relayRequestToAcceptedMs.toJson(),

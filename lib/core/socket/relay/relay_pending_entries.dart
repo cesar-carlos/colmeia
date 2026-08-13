@@ -3,11 +3,18 @@ part of 'relay_command_dispatcher_impl.dart';
 final class _PendingRelayFrameRoute {
   const _PendingRelayFrameRoute({
     required this.pending,
-    required this.parseResult,
+    this.parseResult,
+    this.headers,
+    this.preDecodedBody,
   });
 
   final _PendingRelay pending;
-  final PayloadFrameParseResult parseResult;
+  final PayloadFrameParseResult? parseResult;
+  final PayloadFrameHeaders? headers;
+
+  /// Body already decoded while correlating a fast-path frame. When set,
+  /// the dispatcher must not decode the frame body again.
+  final Object? preDecodedBody;
 }
 
 /// Common state shared by both unitary and streaming pendings.

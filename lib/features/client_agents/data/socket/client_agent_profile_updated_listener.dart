@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/payload_frame.dart';
@@ -93,8 +95,12 @@ class ClientAgentProfileUpdatedListener {
   }
 
   void _onEvent(Object? raw) {
+    unawaited(_onEventAsync(raw));
+  }
+
+  Future<void> _onEventAsync(Object? raw) async {
     try {
-      final logical = _decodeLogical(raw);
+      final logical = await _decodeLogical(raw);
       if (logical == null) {
         return;
       }
@@ -152,11 +158,11 @@ class ClientAgentProfileUpdatedListener {
   /// 1. PayloadFrame envelope (current hub) - decoded via [PayloadFrameCodec].
   /// 2. Raw JSON map (older hub builds) - used as-is only in legacy mode.
   /// 3. Anything else - returns `null` (caller logs + drops).
-  Map<String, Object?>? _decodeLogical(Object? raw) {
+  Future<Map<String, Object?>?> _decodeLogical(Object? raw) async {
     switch (PayloadFrame.parseDetailed(raw)) {
       case PayloadFrameParseSuccess(:final frame):
         try {
-          final decoded = _codec.decodeJson(frame);
+          final decoded = await _codec.decodeJsonAsync(frame);
           return socketToStringKeyedMap(decoded);
         } on PayloadFrameDecodeException catch (error, stackTrace) {
           AppLogger.warning(
