@@ -144,4 +144,41 @@ void main() {
 
     expect(pageSize, 20);
   });
+
+  testWidgets('should show page-of label instead of page numbers on mobile', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        locale: const Locale('pt'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: MediaQuery(
+          data: const MediaQueryData(size: Size(400, 800)),
+          child: Scaffold(
+            body: AppTablePaginationFooter(
+              currentPage: 1,
+              totalPages: 49,
+              pageSize: 20,
+              rangeStart: 1,
+              rangeEnd: 20,
+              totalItems: 973,
+              entityLabel: 'produtos',
+              pageSizeOptions: const <int>[10, 20, 50],
+              onPageSizeChanged: (_) {},
+              onPrevious: () {},
+              onNext: () {},
+              onPageSelected: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    expect(find.text('Página 1 de 49'), findsOneWidget);
+    expect(find.text('2'), findsNothing);
+    expect(find.text('49'), findsNothing);
+  });
 }

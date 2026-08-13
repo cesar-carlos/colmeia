@@ -1,9 +1,9 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
-import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_row.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_margem_produto_sort.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class SalesMargemProdutoColumnLabels {
@@ -13,8 +13,6 @@ class SalesMargemProdutoColumnLabels {
     required this.preco,
     required this.markup,
     required this.margem,
-    required this.grupo,
-    required this.marca,
   });
 
   factory SalesMargemProdutoColumnLabels.fromL10n(AppLocalizations l10n) {
@@ -24,8 +22,6 @@ class SalesMargemProdutoColumnLabels {
       preco: l10n.salesMargemProdutoColumnPreco,
       markup: l10n.salesMargemProdutoColumnMarkup,
       margem: l10n.salesMargemProdutoColumnMargem,
-      grupo: l10n.salesMargemProdutoColumnGrupo,
-      marca: l10n.salesMargemProdutoColumnMarca,
     );
   }
 
@@ -34,8 +30,6 @@ class SalesMargemProdutoColumnLabels {
   final String preco;
   final String markup;
   final String margem;
-  final String grupo;
-  final String marca;
 }
 
 final NumberFormat _percentFormat = NumberFormat('#,##0.0', 'pt_BR');
@@ -54,11 +48,14 @@ String formatSalesMargemProdutoPercent(Object? value) {
   return '${_percentFormat.format(value)}%';
 }
 
-String salesMargemProdutoOptionalText(Object? value) {
-  if (value is! String) {
-    return '';
+Color? salesMargemProdutoSignedPercentColor(
+  ColorScheme scheme,
+  Object? value,
+) {
+  if (value is! num) {
+    return null;
   }
-  return value.trim();
+  return value >= 0 ? scheme.tertiary : scheme.error;
 }
 
 List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
@@ -69,7 +66,6 @@ List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
       key: SalesMargemProdutoSort.columnProduto,
       label: labels.produto,
       valueGetter: (row) => row.nomeProduto,
-      pinned: true,
       sortable: false,
       minWidth: 220,
     ),
@@ -97,6 +93,10 @@ List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
       formatter: formatSalesMargemProdutoPercent,
       numeric: true,
       minWidth: 112,
+      valueColor: (context, value) => salesMargemProdutoSignedPercentColor(
+        Theme.of(context).colorScheme,
+        value,
+      ),
     ),
     AppReportColumn<MargemProdutoRow>(
       key: SalesMargemProdutoSort.columnMargem,
@@ -105,24 +105,10 @@ List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
       formatter: formatSalesMargemProdutoPercent,
       numeric: true,
       minWidth: 128,
-    ),
-    AppReportColumn<MargemProdutoRow>(
-      key: SalesMargemProdutoSort.columnGrupo,
-      label: labels.grupo,
-      valueGetter: (row) => row.nomeGrupoProduto,
-      formatter: salesMargemProdutoOptionalText,
-      sortable: false,
-      minWidth: 140,
-      hideBelowBreakpoint: AppBreakpoints.reportColumnHideNarrow,
-    ),
-    AppReportColumn<MargemProdutoRow>(
-      key: SalesMargemProdutoSort.columnMarca,
-      label: labels.marca,
-      valueGetter: (row) => row.nomeMarca,
-      formatter: salesMargemProdutoOptionalText,
-      sortable: false,
-      minWidth: 140,
-      hideBelowBreakpoint: AppBreakpoints.reportColumnHideNarrow,
+      valueColor: (context, value) => salesMargemProdutoSignedPercentColor(
+        Theme.of(context).colorScheme,
+        value,
+      ),
     ),
   ];
 }

@@ -586,29 +586,33 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
                   emptyMessage: widget.emptyMessage,
                   emptyAction: _buildEmptyClearFiltersAction(),
                 ),
+                if (showPagination)
+                  AppSkeleton(
+                    enabled: widget.isLoading,
+                    loadingSemanticsLabel:
+                        l10n.reportLoadingPaginationSemantics,
+                    child: AppReportPaginationBar(
+                      pageInfo: widget.pageInfo!,
+                      onPageChanged: (page) {
+                        widget.events.onPageChanged?.call(page);
+                        _emitQueryChanged(page: page);
+                      },
+                      onPageSizeChanged: (size) {
+                        widget.events.onPageSizeChanged?.call(size);
+                        _emitQueryChanged(page: 1, pageSize: size);
+                      },
+                      availablePageSizes: style.resolvedPageSizes,
+                      isLoading: widget.isLoading,
+                      entityLabel: style.entityLabel,
+                      itemsPerPageLabel: style.itemsPerPageLabel,
+                      showingLabelPrefix: style.showingLabelPrefix,
+                      showingLabelMiddle: style.showingLabelMiddle,
+                    ),
+                  ),
               ],
             ),
           ),
         ),
-        if (showPagination) ...<Widget>[
-          SizedBox(height: tokens.sectionSpacing),
-          _ReportViewerPaginationSection(
-            pageInfo: widget.pageInfo!,
-            style: style,
-            isLoading: widget.isLoading,
-            cardColor: reportCardColor,
-            cardBorder: reportCardBorder,
-            horizontalPadding: isMinimal ? tokens.gapMd : tokens.contentSpacing,
-            onPageChanged: (page) {
-              widget.events.onPageChanged?.call(page);
-              _emitQueryChanged(page: page);
-            },
-            onPageSizeChanged: (size) {
-              widget.events.onPageSizeChanged?.call(size);
-              _emitQueryChanged(page: 1, pageSize: size);
-            },
-          ),
-        ],
       ],
     );
 
@@ -636,56 +640,6 @@ class _ReportEmptyClearFiltersAction extends StatelessWidget {
       icon: const Icon(Icons.filter_alt_off_rounded, size: 18),
       label: Text(AppLocalizations.of(context).reportEmptyClearFiltersAction),
       onPressed: onPressed,
-    );
-  }
-}
-
-/// Pagination footer section: skeleton + card chrome around
-/// [AppReportPaginationBar].
-class _ReportViewerPaginationSection extends StatelessWidget {
-  const _ReportViewerPaginationSection({
-    required this.pageInfo,
-    required this.style,
-    required this.isLoading,
-    required this.cardColor,
-    required this.cardBorder,
-    required this.horizontalPadding,
-    required this.onPageChanged,
-    required this.onPageSizeChanged,
-  });
-
-  final AppReportPageInfo pageInfo;
-  final AppReportViewerStyle style;
-  final bool isLoading;
-  final Color cardColor;
-  final BorderSide cardBorder;
-  final double horizontalPadding;
-  final ValueChanged<int> onPageChanged;
-  final ValueChanged<int> onPageSizeChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppSkeleton(
-      enabled: isLoading,
-      loadingSemanticsLabel: AppLocalizations.of(
-        context,
-      ).reportLoadingPaginationSemantics,
-      child: AppSectionCard(
-        color: cardColor,
-        borderSide: cardBorder,
-        padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-        child: AppReportPaginationBar(
-          pageInfo: pageInfo,
-          onPageChanged: onPageChanged,
-          onPageSizeChanged: onPageSizeChanged,
-          availablePageSizes: style.resolvedPageSizes,
-          isLoading: isLoading,
-          entityLabel: style.entityLabel,
-          itemsPerPageLabel: style.itemsPerPageLabel,
-          showingLabelPrefix: style.showingLabelPrefix,
-          showingLabelMiddle: style.showingLabelMiddle,
-        ),
-      ),
     );
   }
 }

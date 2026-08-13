@@ -1494,6 +1494,13 @@
       "page": {"type": "int"}
     }
   },
+  "reportPaginationPageOf": "Page {current} of {total}",
+  "@reportPaginationPageOf": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
   "appLoading": "Loading…",
   "appLoadingDataSemantics": "Loading data...",
   "appRefreshAction": "Update",
@@ -2165,7 +2172,7 @@
   "salesProdutoTendenciaTopLosersTitle": "Top 15 losers",
   "salesProdutoTendenciaTopLosersSubtitle": "Largest quantity decreases in the selected period.",
   "salesProdutoTendenciaDetailsTitle": "Detailed rows",
-  "salesProdutoTendenciaDetailsSubtitle": "Paginated detail with product, classification, and group.",
+  "salesProdutoTendenciaDetailsSubtitle": "Paginated detail with product, classification, and trend.",
   "salesProdutoTendenciaDetailsHorizontalScrollCaption": "Swipe sideways to see all columns.",
   "salesProdutoTendenciaFiltersAppliedSnackbar": "Filters applied. Refreshing data.",
   "salesProdutoTendenciaLoadingTrendSemantics": "Loading sales trend…",
@@ -2280,7 +2287,7 @@
   "salesProdutoTendenciaMediaMovelChartNavImpactLabel": "By impact",
   "salesProdutoTendenciaMediaMovelSummaryByImpactSubtitle": "Net quantity impact of each classification across the full filtered result.",
   "salesProdutoTendenciaMediaMovelDetailsTitle": "Detailed rows",
-  "salesProdutoTendenciaMediaMovelDetailsSubtitle": "Paginated detail with product, averages, group, and trend classification.",
+  "salesProdutoTendenciaMediaMovelDetailsSubtitle": "Paginated detail with product, averages, and trend classification.",
   "salesProdutoTendenciaMediaMovelDetailsHorizontalScrollCaption": "Swipe sideways to see all columns.",
   "salesProdutoTendenciaMediaMovelDetailsEntityLabel": "rows",
   "salesProdutoTendenciaMediaMovelShareRowLimitExceeded": "Cannot export more than {maxRows} rows. The current result has {totalCount} rows.",

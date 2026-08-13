@@ -54,7 +54,6 @@ class AppReportPaginationBar extends StatelessWidget {
       itemsPerPageLabel: itemsPerPageLabel ?? 'Linhas por página:',
       showingLabelPrefix: showingLabelPrefix,
       showingLabelMiddle: showingLabelMiddle,
-      style: const AppTablePaginationFooterStyle(showTopBorder: false),
       onPageSizeChanged: isLoading
           ? null
           : (size) => onPageSizeChanged?.call(size),

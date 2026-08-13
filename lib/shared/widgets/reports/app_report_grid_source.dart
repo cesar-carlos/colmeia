@@ -338,7 +338,10 @@ class AppReportGridSource<T> extends DataGridSource {
                 vertical: tokens.gapSm,
               ),
               child: buildText(
-                col?.textStyle ?? dataTextStyle,
+                _resolvePlainCellTextStyle(
+                  base: col?.textStyle ?? dataTextStyle,
+                  valueColor: col?.valueColor?.call(_context, cell.value),
+                ),
               ),
             );
           })
@@ -510,6 +513,19 @@ class AppReportGridSource<T> extends DataGridSource {
       columnKey: '',
       groupKey: summaryValue,
       itemCount: 0,
+    );
+  }
+
+  static TextStyle? _resolvePlainCellTextStyle({
+    required TextStyle? base,
+    required Color? valueColor,
+  }) {
+    if (valueColor == null) {
+      return base;
+    }
+    return (base ?? const TextStyle()).copyWith(
+      color: valueColor,
+      fontWeight: FontWeight.w700,
     );
   }
 }

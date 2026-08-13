@@ -4484,6 +4484,12 @@ abstract class AppLocalizations {
   /// **'Page {page}'**
   String reportPaginationPageNumber(int page);
 
+  /// No description provided for @reportPaginationPageOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Page {current} of {total}'**
+  String reportPaginationPageOf(int current, int total);
+
   /// No description provided for @appLoading.
   ///
   /// In en, this message translates to:
@@ -7107,7 +7113,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesProdutoTendenciaDetailsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Paginated detail with product, classification, and group.'**
+  /// **'Paginated detail with product, classification, and trend.'**
   String get salesProdutoTendenciaDetailsSubtitle;
 
   /// No description provided for @salesProdutoTendenciaDetailsHorizontalScrollCaption.
@@ -7492,7 +7498,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesProdutoTendenciaMediaMovelDetailsSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Paginated detail with product, averages, group, and trend classification.'**
+  /// **'Paginated detail with product, averages, and trend classification.'**
   String get salesProdutoTendenciaMediaMovelDetailsSubtitle;
 
   /// No description provided for @salesProdutoTendenciaMediaMovelDetailsHorizontalScrollCaption.

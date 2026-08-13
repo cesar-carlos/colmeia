@@ -153,12 +153,12 @@ class AppReportViewerStyle {
       showSummaryBar: false,
       filterLayout: AppReportFilterLayout.inline,
       entityLabel: entityLabel,
-      uppercaseHeaderLabels: true,
-      headerLetterSpacing: 0.35,
+      headerLetterSpacing: 0.2,
       headerTextStyle: const TextStyle(
         fontSize: 11,
-        height: 1.2,
-        fontWeight: FontWeight.w800,
+        height: 1.3,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.2,
       ),
       dataTextStyle: const TextStyle(
         fontSize: 14,

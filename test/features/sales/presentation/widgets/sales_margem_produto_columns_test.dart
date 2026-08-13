@@ -1,8 +1,8 @@
 import 'package:checks/checks.dart';
-import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_row.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_margem_produto_columns.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_margem_produto_sort.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _labels = SalesMargemProdutoColumnLabels(
@@ -11,15 +11,13 @@ const _labels = SalesMargemProdutoColumnLabels(
   preco: 'Sale price',
   markup: 'Markup %',
   margem: 'Gross margin %',
-  grupo: 'Group',
-  marca: 'Brand',
 );
 
 void main() {
   group('buildSalesMargemProdutoColumns', () {
     final columns = buildSalesMargemProdutoColumns(labels: _labels);
 
-    test('exposes product frozen and the three SQL-sortable metrics', () {
+    test('exposes unpinned product and the three SQL-sortable metrics', () {
       check(
         columns.map((column) => column.key).toList(),
       ).deepEquals(<String>[
@@ -28,8 +26,6 @@ void main() {
         SalesMargemProdutoSort.columnPrecoVenda,
         SalesMargemProdutoSort.columnMarkup,
         SalesMargemProdutoSort.columnMargem,
-        SalesMargemProdutoSort.columnGrupo,
-        SalesMargemProdutoSort.columnMarca,
       ]);
 
       final byKey = <String, bool>{
@@ -40,25 +36,22 @@ void main() {
       check(byKey[SalesMargemProdutoSort.columnPrecoVenda]).equals(false);
       check(byKey[SalesMargemProdutoSort.columnMarkup]).equals(true);
       check(byKey[SalesMargemProdutoSort.columnMargem]).equals(true);
-      check(byKey[SalesMargemProdutoSort.columnGrupo]).equals(false);
-      check(byKey[SalesMargemProdutoSort.columnMarca]).equals(false);
 
       final produto = columns.firstWhere(
         (column) => column.key == SalesMargemProdutoSort.columnProduto,
       );
-      check(produto.pinned).equals(true);
+      check(produto.pinned).equals(false);
     });
 
-    test('hides group and brand below the narrow report breakpoint', () {
-      for (final key in <String>[
-        SalesMargemProdutoSort.columnGrupo,
-        SalesMargemProdutoSort.columnMarca,
-      ]) {
-        final column = columns.firstWhere((item) => item.key == key);
-        check(
-          column.hideBelowBreakpoint,
-        ).equals(AppBreakpoints.reportColumnHideNarrow);
-      }
+    test('tints only markup and margin percent columns', () {
+      final byKey = <String, bool>{
+        for (final column in columns) column.key: column.valueColor != null,
+      };
+      check(byKey[SalesMargemProdutoSort.columnProduto]).equals(false);
+      check(byKey[SalesMargemProdutoSort.columnCustoReposicao]).equals(false);
+      check(byKey[SalesMargemProdutoSort.columnPrecoVenda]).equals(false);
+      check(byKey[SalesMargemProdutoSort.columnMarkup]).equals(true);
+      check(byKey[SalesMargemProdutoSort.columnMargem]).equals(true);
     });
 
     test('formats currency and percent values', () {
@@ -94,10 +87,33 @@ void main() {
       check(valueOf(SalesMargemProdutoSort.columnPrecoVenda)).equals(9);
       check(valueOf(SalesMargemProdutoSort.columnMarkup)).equals(100);
       check(valueOf(SalesMargemProdutoSort.columnMargem)).equals(50);
+    });
+  });
+
+  group('salesMargemProdutoSignedPercentColor', () {
+    const scheme = ColorScheme.light(
+      tertiary: Color(0xFF006D3B),
+      error: Color(0xFFBA1A1A),
+    );
+
+    test('should use tertiary for non-negative values', () {
       check(
-        valueOf(SalesMargemProdutoSort.columnGrupo),
-      ).equals('Alimentos');
-      check(valueOf(SalesMargemProdutoSort.columnMarca)).equals('Casa');
+        salesMargemProdutoSignedPercentColor(scheme, 12.5),
+      ).equals(scheme.tertiary);
+      check(
+        salesMargemProdutoSignedPercentColor(scheme, 0),
+      ).equals(scheme.tertiary);
+    });
+
+    test('should use error for negative values', () {
+      check(
+        salesMargemProdutoSignedPercentColor(scheme, -3.2),
+      ).equals(scheme.error);
+    });
+
+    test('should ignore non-numeric values', () {
+      check(salesMargemProdutoSignedPercentColor(scheme, null)).isNull();
+      check(salesMargemProdutoSignedPercentColor(scheme, '12')).isNull();
     });
   });
 }

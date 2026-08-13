@@ -2778,6 +2778,11 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String reportPaginationPageOf(int current, int total) {
+    return 'Página $current de $total';
+  }
+
+  @override
   String get appLoading => 'Carregando…';
 
   @override
@@ -4373,7 +4378,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesProdutoTendenciaDetailsSubtitle =>
-      'Lista páginada com produto, classificação e grupo.';
+      'Lista paginada com produto, classificação e tendência.';
 
   @override
   String get salesProdutoTendenciaDetailsHorizontalScrollCaption =>
@@ -4638,7 +4643,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesProdutoTendenciaMediaMovelDetailsSubtitle =>
-      'Lista páginada com produto, médias, grupo e classificação de tendência.';
+      'Lista paginada com produto, médias e classificação de tendência.';
 
   @override
   String get salesProdutoTendenciaMediaMovelDetailsHorizontalScrollCaption =>
@@ -7871,6 +7876,11 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   }
 
   @override
+  String reportPaginationPageOf(int current, int total) {
+    return 'Página $current de $total';
+  }
+
+  @override
   String get appLoading => 'Carregando…';
 
   @override
@@ -9466,7 +9476,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesProdutoTendenciaDetailsSubtitle =>
-      'Lista páginada com produto, classificação e grupo.';
+      'Lista paginada com produto, classificação e tendência.';
 
   @override
   String get salesProdutoTendenciaDetailsHorizontalScrollCaption =>
@@ -9731,7 +9741,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesProdutoTendenciaMediaMovelDetailsSubtitle =>
-      'Lista páginada com produto, médias, grupo e classificação de tendência.';
+      'Lista paginada com produto, médias e classificação de tendência.';
 
   @override
   String get salesProdutoTendenciaMediaMovelDetailsHorizontalScrollCaption =>

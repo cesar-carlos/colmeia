@@ -2738,6 +2738,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String reportPaginationPageOf(int current, int total) {
+    return 'Page $current of $total';
+  }
+
+  @override
   String get appLoading => 'Loading…';
 
   @override
@@ -4314,7 +4319,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesProdutoTendenciaDetailsSubtitle =>
-      'Paginated detail with product, classification, and group.';
+      'Paginated detail with product, classification, and trend.';
 
   @override
   String get salesProdutoTendenciaDetailsHorizontalScrollCaption =>
@@ -4578,7 +4583,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesProdutoTendenciaMediaMovelDetailsSubtitle =>
-      'Paginated detail with product, averages, group, and trend classification.';
+      'Paginated detail with product, averages, and trend classification.';
 
   @override
   String get salesProdutoTendenciaMediaMovelDetailsHorizontalScrollCaption =>

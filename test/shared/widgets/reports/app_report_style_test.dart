@@ -31,7 +31,9 @@ void main() {
       // leaves the explicit color overrides null and opts into zebra striping.
       expect(style.headerBackgroundColor, isNull);
       expect(style.headerDividerColor, isNull);
-      expect(style.headerTextStyle?.fontWeight, FontWeight.w800);
+      expect(style.headerTextStyle?.fontWeight, FontWeight.w700);
+      expect(style.uppercaseHeaderLabels, isFalse);
+      expect(style.headerLetterSpacing, 0.2);
       expect(style.dataTextStyle?.fontSize, 14);
       expect(style.alternateRowColor, isNull);
       expect(style.zebraRows, isTrue);

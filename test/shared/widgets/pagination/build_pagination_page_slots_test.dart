@@ -36,4 +36,11 @@ void main() {
       <int?>[1, 2, 3, 4, 5],
     );
   });
+
+  test('uses the same control size for arrows and page numbers', () {
+    const style = AppTablePaginationFooterStyle();
+    expect(style.iconButtonSize, kAppTablePaginationControlSize);
+    expect(style.pageNumberMinSize, kAppTablePaginationControlSize);
+    expect(style.iconButtonSize, style.pageNumberMinSize);
+  });
 }

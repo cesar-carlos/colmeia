@@ -1241,6 +1241,13 @@
       "page": {"type": "int"}
     }
   },
+  "reportPaginationPageOf": "Página {current} de {total}",
+  "@reportPaginationPageOf": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
   "appLoading": "Carregando…",
   "appLoadingDataSemantics": "Carregando dados...",
   "appRefreshAction": "Atualizar",
@@ -1910,7 +1917,7 @@
   "salesProdutoTendenciaTopLosersTitle": "Top 15 quedas",
   "salesProdutoTendenciaTopLosersSubtitle": "Maiores quedas em quantidade no período selecionado.",
   "salesProdutoTendenciaDetailsTitle": "Detalhes",
-  "salesProdutoTendenciaDetailsSubtitle": "Lista páginada com produto, classificação e grupo.",
+  "salesProdutoTendenciaDetailsSubtitle": "Lista paginada com produto, classificação e tendência.",
   "salesProdutoTendenciaDetailsHorizontalScrollCaption": "Deslize para o lado para ver todas as colunas.",
   "salesProdutoTendenciaFiltersAppliedSnackbar": "Filtros aplicados. Atualizando dados.",
   "salesProdutoTendenciaLoadingTrendSemantics": "Carregando tendência de vendas…",
@@ -2025,7 +2032,7 @@
   "salesProdutoTendenciaMediaMovelChartNavImpactLabel": "Por impacto",
   "salesProdutoTendenciaMediaMovelSummaryByImpactSubtitle": "Impacto líquido em quantidade de cada classificação em todo o resultado filtrado.",
   "salesProdutoTendenciaMediaMovelDetailsTitle": "Detalhes",
-  "salesProdutoTendenciaMediaMovelDetailsSubtitle": "Lista páginada com produto, médias, grupo e classificação de tendência.",
+  "salesProdutoTendenciaMediaMovelDetailsSubtitle": "Lista paginada com produto, médias e classificação de tendência.",
   "salesProdutoTendenciaMediaMovelDetailsHorizontalScrollCaption": "Deslize para o lado para ver todas as colunas.",
   "salesProdutoTendenciaMediaMovelDetailsEntityLabel": "linhas",
   "salesProdutoTendenciaMediaMovelShareRowLimitExceeded": "Não é possível exportar mais de {maxRows} registros. O resultado atual tem {totalCount} registros.",

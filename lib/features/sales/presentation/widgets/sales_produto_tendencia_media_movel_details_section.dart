@@ -203,20 +203,14 @@ class SalesProdutoTendenciaMediaMovelDetailsSection extends StatelessWidget {
 class _SalesProdutoTendenciaMediaMovelDetailsTableLayout {
   static const double _product = 320;
   static const double _classification = 180;
-  static const double _group = 180;
   static const double _numeric = 132;
 
   static double product(AppThemeTokens tokens) => _product;
   static double classification(AppThemeTokens tokens) => _classification;
-  static double group(AppThemeTokens tokens) => _group;
   static double numeric(AppThemeTokens tokens) => _numeric;
 
   static double minScrollContentWidth(AppThemeTokens tokens) {
-    return _product +
-        _classification +
-        _group +
-        (_numeric * 4) +
-        (tokens.gapSm * 2);
+    return _product + _classification + (_numeric * 4) + (tokens.gapSm * 2);
   }
 }
 
@@ -266,15 +260,6 @@ class SalesProdutoTendenciaMediaMovelDetailsTableHeader
                     ),
                 child: Text(
                   l10n.salesProdutoTendenciaMediaMovelColClassificacao,
-                  style: labelStyle,
-                ),
-              ),
-              SizedBox(
-                width: _SalesProdutoTendenciaMediaMovelDetailsTableLayout.group(
-                  tokens,
-                ),
-                child: Text(
-                  l10n.salesProdutoTendenciaMediaMovelColGrupo,
                   style: labelStyle,
                 ),
               ),
@@ -383,16 +368,6 @@ class SalesProdutoTendenciaMediaMovelDetailsRow extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodySmall,
-              ),
-            ),
-            SizedBox(
-              width: _SalesProdutoTendenciaMediaMovelDetailsTableLayout.group(
-                tokens,
-              ),
-              child: Text(
-                row.nomeGrupoProduto ?? '-',
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
             SizedBox(

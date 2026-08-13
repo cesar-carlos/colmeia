@@ -45,9 +45,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:result_dart/result_dart.dart';
 
-const double _kMargemProdutoChromeHeight = 200;
+const double _kMargemProdutoChromeHeight = 176;
 const double _kMargemProdutoGridMinHeight = 240;
 const double _kMargemProdutoGridMaxHeight = 720;
+const double _kMargemProdutoDataRowHeight = 48;
+const double _kMargemProdutoHeaderRowHeight = 40;
 
 class SalesMargemProdutoPage extends StatefulWidget {
   const SalesMargemProdutoPage({
@@ -686,11 +688,14 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
                 AppReportViewerStyle.numericalDetailing(
                   entityLabel: l10n.salesMargemProdutoEntityLabel,
                   gridHeight: gridHeight,
+                  frozenColumnsCount: 0,
+                  dataRowHeight: _kMargemProdutoDataRowHeight,
                 ).copyWith(
                   trustServerRowOrder: true,
                   showRefreshAction: true,
                   enablePullToRefresh: false,
                   availablePageSizes: SalesMargemProdutoSort.allowedPageSizes,
+                  headerRowHeight: _kMargemProdutoHeaderRowHeight,
                 ),
             isLoading: _pageLoading && _loadFailure == null,
             loadErrorPanel: _loadFailure == null

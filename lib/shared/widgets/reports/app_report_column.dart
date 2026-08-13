@@ -47,6 +47,7 @@ class AppReportColumn<T> {
     this.aggregations = const <AppReportAggregation>[],
     this.cellStyle = AppReportCellStyle.plain,
     this.textStyle,
+    this.valueColor,
     this.headerTextStyle,
     this.numeric = false,
   });
@@ -126,6 +127,10 @@ class AppReportColumn<T> {
 
   /// Text style applied to data cells. Falls back to the theme default.
   final TextStyle? textStyle;
+
+  /// Optional tint for the default cell text. Ignored when [cellBuilder] is
+  /// provided. Return null to keep the column [textStyle].
+  final Color? Function(BuildContext context, Object? value)? valueColor;
 
   /// Text style applied to the header cell. Falls back to the theme default.
   final TextStyle? headerTextStyle;

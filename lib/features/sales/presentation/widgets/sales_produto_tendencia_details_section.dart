@@ -85,15 +85,6 @@ class SalesProdutoTendenciaDetailsSection extends StatelessWidget {
             ),
             SizedBox(height: tokens.gapXs),
           ],
-          if (rows.isNotEmpty) ...<Widget>[
-            SizedBox(height: tokens.gapXs),
-            Text(
-              l10n.salesProdutoTendenciaDetailsHorizontalScrollCaption,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
           SizedBox(height: tokens.contentSpacing),
           if (loading && rows.isEmpty)
             AppSkeleton(
@@ -128,27 +119,46 @@ class SalesProdutoTendenciaDetailsSection extends StatelessWidget {
                         showPeriodQuantityColumns: _showPeriodQuantityColumns,
                       );
                   final outer = constraints.maxWidth;
+                  final hasHorizontalOverflow =
+                      outer.isFinite && outer > 0 && minTable > outer;
                   final contentWidth = outer.isFinite && outer > 0
                       ? math.max(outer, minTable)
                       : minTable;
-                  return AppCompactDataGridScrollTable(
-                    contentWidth: contentWidth,
-                    itemCount: rows.length,
-                    semanticsHint: l10n
-                        .salesProdutoTendenciaDetailsHorizontalScrollCaption,
-                    header: SalesProdutoTendenciaDetailsTableHeader(
-                      l10n: l10n,
-                      showPeriodQuantityColumns: _showPeriodQuantityColumns,
-                    ),
-                    itemBuilder: (context, index) {
-                      final row = rows[index];
-                      return SalesProdutoTendenciaDetailsRow(
-                        row: row,
-                        l10n: l10n,
-                        classLabel: classLabelBuilder(row.classificacao),
-                        showPeriodQuantityColumns: _showPeriodQuantityColumns,
-                      );
-                    },
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      if (hasHorizontalOverflow) ...<Widget>[
+                        Text(
+                          l10n.salesProdutoTendenciaDetailsHorizontalScrollCaption,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        SizedBox(height: tokens.gapXs),
+                      ],
+                      AppCompactDataGridScrollTable(
+                        contentWidth: contentWidth,
+                        itemCount: rows.length,
+                        semanticsHint: hasHorizontalOverflow
+                            ? l10n.salesProdutoTendenciaDetailsHorizontalScrollCaption
+                            : null,
+                        showHorizontalFade: hasHorizontalOverflow,
+                        header: SalesProdutoTendenciaDetailsTableHeader(
+                          l10n: l10n,
+                          showPeriodQuantityColumns: _showPeriodQuantityColumns,
+                        ),
+                        itemBuilder: (context, index) {
+                          final row = rows[index];
+                          return SalesProdutoTendenciaDetailsRow(
+                            row: row,
+                            l10n: l10n,
+                            classLabel: classLabelBuilder(row.classificacao),
+                            showPeriodQuantityColumns:
+                                _showPeriodQuantityColumns,
+                          );
+                        },
+                      ),
+                    ],
                   );
                 },
               ),
@@ -189,26 +199,21 @@ class SalesProdutoTendenciaDetailsSection extends StatelessWidget {
 
 /// Minimum column widths for the trend details grid so labels stay on one line
 /// when the viewport is narrow; the table scrolls horizontally as a unit.
+///
+/// Product uses leftover width inside the row; these mins keep numeric headers
+/// readable and force horizontal overflow on typical compact viewports.
 abstract final class SalesProdutoTendenciaDetailsTableLayout {
-  static double _product(AppThemeTokens t) => math.max(220, t.gapMd * 18);
-  static double _classificacao(AppThemeTokens t) => math.max(120, t.gapMd * 10);
-  static double _grupo(AppThemeTokens t) => math.max(132, t.gapMd * 11);
-  static double _qtd(AppThemeTokens t) => math.max(96, t.gapMd * 8);
-  static double _delta(AppThemeTokens t) => math.max(104, t.gapMd * 9);
-  static double _percentual(AppThemeTokens t) => math.max(104, t.gapMd * 9);
+  static const double productMinWidth = 280;
+  static const double classificacaoWidth = 148;
+  static const double qtdWidth = 120;
+  static const double deltaWidth = 120;
+  static const double percentualWidth = 120;
 
-  static double minWidth(
-    AppThemeTokens t, {
-    bool showPeriodQuantityColumns = false,
-  }) {
+  static double minWidth({bool showPeriodQuantityColumns = false}) {
     var width =
-        _product(t) +
-        _classificacao(t) +
-        _grupo(t) +
-        _delta(t) +
-        _percentual(t);
+        productMinWidth + classificacaoWidth + deltaWidth + percentualWidth;
     if (showPeriodQuantityColumns) {
-      width += _qtd(t) * 2;
+      width += qtdWidth * 2;
     }
     return width;
   }
@@ -218,7 +223,7 @@ abstract final class SalesProdutoTendenciaDetailsTableLayout {
     AppThemeTokens t, {
     bool showPeriodQuantityColumns = false,
   }) =>
-      minWidth(t, showPeriodQuantityColumns: showPeriodQuantityColumns) +
+      minWidth(showPeriodQuantityColumns: showPeriodQuantityColumns) +
       2 * t.gapSm;
 }
 
@@ -256,32 +261,29 @@ class SalesProdutoTendenciaDetailsTableHeader extends StatelessWidget {
           padding: appDataGridRowPadding(tokens),
           child: Row(
             children: <Widget>[
-              SizedBox(
-                width: SalesProdutoTendenciaDetailsTableLayout._product(tokens),
-                child: Text(
-                  l10n.salesProdutoTendenciaColProduct,
-                  style: labelStyle,
+              Expanded(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    minWidth:
+                        SalesProdutoTendenciaDetailsTableLayout.productMinWidth,
+                  ),
+                  child: Text(
+                    l10n.salesProdutoTendenciaColProduct,
+                    style: labelStyle,
+                  ),
                 ),
               ),
               SizedBox(
-                width: SalesProdutoTendenciaDetailsTableLayout._classificacao(
-                  tokens,
-                ),
+                width:
+                    SalesProdutoTendenciaDetailsTableLayout.classificacaoWidth,
                 child: Text(
                   l10n.salesProdutoTendenciaColClassificacao,
                   style: labelStyle,
                 ),
               ),
-              SizedBox(
-                width: SalesProdutoTendenciaDetailsTableLayout._grupo(tokens),
-                child: Text(
-                  l10n.salesProdutoTendenciaColGrupo,
-                  style: labelStyle,
-                ),
-              ),
               if (showPeriodQuantityColumns) ...<Widget>[
                 SizedBox(
-                  width: SalesProdutoTendenciaDetailsTableLayout._qtd(tokens),
+                  width: SalesProdutoTendenciaDetailsTableLayout.qtdWidth,
                   child: Text(
                     l10n.salesProdutoTendenciaColQtdAnterior,
                     style: periodHeaderStyle,
@@ -289,7 +291,7 @@ class SalesProdutoTendenciaDetailsTableHeader extends StatelessWidget {
                   ),
                 ),
                 SizedBox(
-                  width: SalesProdutoTendenciaDetailsTableLayout._qtd(tokens),
+                  width: SalesProdutoTendenciaDetailsTableLayout.qtdWidth,
                   child: Text(
                     l10n.salesProdutoTendenciaColQtdAtual,
                     style: periodHeaderStyle,
@@ -298,7 +300,7 @@ class SalesProdutoTendenciaDetailsTableHeader extends StatelessWidget {
                 ),
               ],
               SizedBox(
-                width: SalesProdutoTendenciaDetailsTableLayout._delta(tokens),
+                width: SalesProdutoTendenciaDetailsTableLayout.deltaWidth,
                 child: Text(
                   l10n.salesProdutoTendenciaColDiferenca,
                   style: endLabelStyle,
@@ -306,9 +308,7 @@ class SalesProdutoTendenciaDetailsTableHeader extends StatelessWidget {
                 ),
               ),
               SizedBox(
-                width: SalesProdutoTendenciaDetailsTableLayout._percentual(
-                  tokens,
-                ),
+                width: SalesProdutoTendenciaDetailsTableLayout.percentualWidth,
                 child: Text(
                   l10n.salesProdutoTendenciaColPercentual,
                   style: endLabelStyle,
@@ -351,18 +351,21 @@ class SalesProdutoTendenciaDetailsRow extends StatelessWidget {
         padding: appDataGridRowPadding(tokens),
         child: Row(
           children: <Widget>[
-            SizedBox(
-              width: SalesProdutoTendenciaDetailsTableLayout._product(tokens),
-              child: Text(
-                row.nomeProduto,
-                softWrap: true,
-                maxLines: 4,
+            Expanded(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minWidth:
+                      SalesProdutoTendenciaDetailsTableLayout.productMinWidth,
+                ),
+                child: Text(
+                  row.nomeProduto,
+                  softWrap: true,
+                  maxLines: 4,
+                ),
               ),
             ),
             SizedBox(
-              width: SalesProdutoTendenciaDetailsTableLayout._classificacao(
-                tokens,
-              ),
+              width: SalesProdutoTendenciaDetailsTableLayout.classificacaoWidth,
               child: Text(
                 classLabel,
                 softWrap: true,
@@ -370,19 +373,9 @@ class SalesProdutoTendenciaDetailsRow extends StatelessWidget {
                 style: theme.textTheme.bodySmall,
               ),
             ),
-            SizedBox(
-              width: SalesProdutoTendenciaDetailsTableLayout._grupo(tokens),
-              child: Text(
-                (row.nomeGrupoProduto?.trim().isNotEmpty ?? false)
-                    ? row.nomeGrupoProduto!
-                    : l10n.salesProdutoTendenciaFilterAllOption,
-                softWrap: true,
-                maxLines: 4,
-              ),
-            ),
             if (showPeriodQuantityColumns) ...<Widget>[
               SizedBox(
-                width: SalesProdutoTendenciaDetailsTableLayout._qtd(tokens),
+                width: SalesProdutoTendenciaDetailsTableLayout.qtdWidth,
                 child: Text(
                   numberFmt.format(row.qtdAnterior.round()),
                   textAlign: TextAlign.end,
@@ -395,7 +388,7 @@ class SalesProdutoTendenciaDetailsRow extends StatelessWidget {
                 ),
               ),
               SizedBox(
-                width: SalesProdutoTendenciaDetailsTableLayout._qtd(tokens),
+                width: SalesProdutoTendenciaDetailsTableLayout.qtdWidth,
                 child: Text(
                   numberFmt.format(row.qtdAtual.round()),
                   textAlign: TextAlign.end,
@@ -409,7 +402,7 @@ class SalesProdutoTendenciaDetailsRow extends StatelessWidget {
               ),
             ],
             SizedBox(
-              width: SalesProdutoTendenciaDetailsTableLayout._delta(tokens),
+              width: SalesProdutoTendenciaDetailsTableLayout.deltaWidth,
               child: Text(
                 numberFmt.format(row.diferenca.round()),
                 textAlign: TextAlign.end,
@@ -421,9 +414,7 @@ class SalesProdutoTendenciaDetailsRow extends StatelessWidget {
               ),
             ),
             SizedBox(
-              width: SalesProdutoTendenciaDetailsTableLayout._percentual(
-                tokens,
-              ),
+              width: SalesProdutoTendenciaDetailsTableLayout.percentualWidth,
               child: Text(
                 percentText,
                 textAlign: TextAlign.end,

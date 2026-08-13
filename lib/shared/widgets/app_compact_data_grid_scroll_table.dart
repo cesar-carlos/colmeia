@@ -55,6 +55,9 @@ class _AppCompactDataGridScrollTableState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.appTokens;
+    final bottomTrackSlot = chartHorizontalScrollBottomTrackSlotHeight(
+      context,
+    );
     final rowDividerColor = theme.colorScheme.outlineVariant.withValues(
       alpha: 0.35,
     );
@@ -110,6 +113,7 @@ class _AppCompactDataGridScrollTableState
             color: headerDividerColor,
           ),
           body,
+          if (bottomTrackSlot > 0) SizedBox(height: bottomTrackSlot),
         ],
       ),
     );
@@ -117,6 +121,7 @@ class _AppCompactDataGridScrollTableState
     Widget scrollable = Scrollbar(
       controller: _horizontalController,
       thumbVisibility: chartHorizontalScrollScrollbarThumbVisible(context),
+      trackVisibility: chartHorizontalScrollScrollbarThumbVisible(context),
       child: SingleChildScrollView(
         controller: _horizontalController,
         scrollDirection: Axis.horizontal,

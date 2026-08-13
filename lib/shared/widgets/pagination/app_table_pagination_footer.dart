@@ -44,10 +44,13 @@ List<int?> buildPaginationPageSlots({
 /// Fixed width for the page-size menu trigger (compact numeric labels only).
 const double _kCompactPageSizeMenuWidth = 64;
 
+/// Shared edge length for arrows, page numbers and the page-size trigger.
+const double kAppTablePaginationControlSize = 32;
+
 class AppTablePaginationFooterStyle {
   const AppTablePaginationFooterStyle({
-    this.iconButtonSize = 36,
-    this.pageNumberMinSize = 32,
+    this.iconButtonSize = kAppTablePaginationControlSize,
+    this.pageNumberMinSize = kAppTablePaginationControlSize,
     this.cornerRadius = 8,
     this.showTopBorder = true,
   });
@@ -125,7 +128,10 @@ class AppTablePaginationFooter extends StatelessWidget {
       decoration: BoxDecoration(
         border: style.showTopBorder ? Border(top: borderSide) : null,
       ),
-      padding: EdgeInsets.symmetric(vertical: tokens.gapXs),
+      padding: EdgeInsets.symmetric(
+        vertical: tokens.gapXs,
+        horizontal: tokens.gapSm,
+      ),
       child: isMobile
           ? Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -146,20 +152,18 @@ class AppTablePaginationFooter extends StatelessWidget {
                   totalItems: totalItems,
                   entityLabel: entityLabel,
                 ),
-                SizedBox(height: tokens.gapSm),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: _PaginationControls(
-                    style: style,
-                    scheme: scheme,
-                    tokens: tokens,
-                    currentPage: currentPage,
-                    totalPages: totalPages,
-                    onPrevious: enabled ? onPrevious : null,
-                    onNext: enabled ? onNext : null,
-                    onPageSelected: onPageSelected,
-                    enabled: enabled,
-                  ),
+                SizedBox(height: tokens.gapXs),
+                _PaginationControls(
+                  style: style,
+                  scheme: scheme,
+                  tokens: tokens,
+                  currentPage: currentPage,
+                  totalPages: totalPages,
+                  onPrevious: enabled ? onPrevious : null,
+                  onNext: enabled ? onNext : null,
+                  onPageSelected: onPageSelected,
+                  enabled: enabled,
+                  compact: true,
                 ),
               ],
             )
@@ -183,6 +187,7 @@ class AppTablePaginationFooter extends StatelessWidget {
                     entityLabel: entityLabel,
                   ),
                 ),
+                SizedBox(width: tokens.gapMd),
                 _PaginationControls(
                   style: style,
                   scheme: scheme,
@@ -199,7 +204,7 @@ class AppTablePaginationFooter extends StatelessWidget {
     );
 
     return Material(
-      color: scheme.surface,
+      color: Colors.transparent,
       child: decorated,
     );
   }
@@ -264,6 +269,7 @@ class _SummaryRow extends StatelessWidget {
                 value: pageSize,
                 options: pageSizeOptions!,
                 onChanged: onPageSizeChanged!,
+                height: kAppTablePaginationControlSize,
               ),
             ],
           )
@@ -320,11 +326,13 @@ class _PageSizeMenu extends StatelessWidget {
     required this.value,
     required this.options,
     required this.onChanged,
+    required this.height,
   });
 
   final int value;
   final List<int> options;
   final ValueChanged<int> onChanged;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
@@ -392,18 +400,19 @@ class _PageSizeMenu extends StatelessWidget {
               borderRadius: borderRadius,
               child: SizedBox(
                 width: _kCompactPageSizeMenuWidth,
+                height: height,
                 child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: tokens.gapSm,
-                    vertical: tokens.gapXs,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: tokens.gapSm),
                   child: Row(
                     children: <Widget>[
                       Expanded(
-                        child: Text(
-                          '$value',
-                          style: labelStyle,
-                          overflow: TextOverflow.ellipsis,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            '$value',
+                            style: labelStyle,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ),
                       Icon(
@@ -434,6 +443,7 @@ class _PaginationControls extends StatelessWidget {
     required this.onNext,
     required this.onPageSelected,
     this.enabled = true,
+    this.compact = false,
   });
 
   final AppTablePaginationFooterStyle style;
@@ -445,25 +455,64 @@ class _PaginationControls extends StatelessWidget {
   final VoidCallback? onNext;
   final ValueChanged<int> onPageSelected;
   final bool enabled;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final typography = Theme.of(context).appTypography;
     final l10n = AppLocalizations.of(context);
+    final chipRadius = tokens.formFieldRadius;
+
+    final canPrev = enabled && currentPage > 1 && totalPages > 0;
+    final canNext = enabled && currentPage < totalPages && totalPages > 0;
+
+    final prevButton = _PaginationIconButton(
+      tooltip: l10n.reportPaginationPrevious,
+      icon: Icons.chevron_left_rounded,
+      onPressed: canPrev ? onPrevious : null,
+      size: style.iconButtonSize,
+      cornerRadius: chipRadius,
+      scheme: scheme,
+    );
+    final nextButton = _PaginationIconButton(
+      tooltip: l10n.reportPaginationNext,
+      icon: Icons.chevron_right_rounded,
+      onPressed: canNext ? onNext : null,
+      size: style.iconButtonSize,
+      cornerRadius: chipRadius,
+      scheme: scheme,
+    );
+
+    if (compact) {
+      return Row(
+        children: <Widget>[
+          prevButton,
+          Expanded(
+            child: Text(
+              l10n.reportPaginationPageOf(currentPage, totalPages),
+              textAlign: TextAlign.center,
+              style: typography.caption.copyWith(
+                color: scheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          nextButton,
+        ],
+      );
+    }
+
     final slots = buildPaginationPageSlots(
       currentPage: currentPage,
       totalPages: totalPages,
     );
-
-    final canPrev = enabled && currentPage > 1 && totalPages > 0;
-    final canNext = enabled && currentPage < totalPages && totalPages > 0;
 
     final pageChunks = <Widget>[];
     for (final slot in slots) {
       if (slot == null) {
         pageChunks.add(
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: tokens.gapXs),
+            padding: EdgeInsets.symmetric(horizontal: tokens.gapSm),
             child: Text(
               '...',
               style: typography.body.copyWith(
@@ -478,13 +527,14 @@ class _PaginationControls extends StatelessWidget {
             page: slot,
             selected: slot == currentPage,
             minSize: style.pageNumberMinSize,
-            cornerRadius: style.cornerRadius,
+            cornerRadius: chipRadius,
             scheme: scheme,
+            horizontalPadding: tokens.gapSm,
             onTap: enabled ? () => onPageSelected(slot) : null,
           ),
         );
       }
-      pageChunks.add(SizedBox(width: tokens.gapXs));
+      pageChunks.add(SizedBox(width: tokens.gapSm));
     }
     if (pageChunks.isNotEmpty) {
       pageChunks.removeLast();
@@ -493,24 +543,11 @@ class _PaginationControls extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        _PaginationIconButton(
-          tooltip: l10n.reportPaginationPrevious,
-          icon: Icons.chevron_left_rounded,
-          onPressed: canPrev ? onPrevious : null,
-          size: style.iconButtonSize,
-          cornerRadius: style.cornerRadius,
-          scheme: scheme,
-        ),
-        SizedBox(width: tokens.gapXs),
+        prevButton,
+        SizedBox(width: tokens.gapSm),
         ...pageChunks,
-        _PaginationIconButton(
-          tooltip: l10n.reportPaginationNext,
-          icon: Icons.chevron_right_rounded,
-          onPressed: canNext ? onNext : null,
-          size: style.iconButtonSize,
-          cornerRadius: style.cornerRadius,
-          scheme: scheme,
-        ),
+        SizedBox(width: tokens.gapSm),
+        nextButton,
       ],
     );
   }
@@ -542,9 +579,9 @@ class _PaginationIconButton extends StatelessWidget {
         width: size,
         height: size,
         child: Material(
-          color: enabled
-              ? scheme.surfaceContainerLow
-              : scheme.surfaceContainerHighest.withValues(alpha: 0.48),
+          color: scheme.surfaceContainerLow.withValues(
+            alpha: enabled ? 1 : 0.48,
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(cornerRadius),
             side: BorderSide(
@@ -586,6 +623,7 @@ class _PageNumberCell extends StatelessWidget {
     required this.minSize,
     required this.cornerRadius,
     required this.scheme,
+    required this.horizontalPadding,
     required this.onTap,
   });
 
@@ -594,6 +632,7 @@ class _PageNumberCell extends StatelessWidget {
   final double minSize;
   final double cornerRadius;
   final ColorScheme scheme;
+  final double horizontalPadding;
   final VoidCallback? onTap;
 
   @override
@@ -609,7 +648,7 @@ class _PageNumberCell extends StatelessWidget {
     );
     final borderColor = selected
         ? scheme.primary.withValues(alpha: 0.22)
-        : scheme.outlineVariant.withValues(alpha: enabled ? 0.56 : 0.4);
+        : scheme.outlineVariant.withValues(alpha: enabled ? 0.72 : 0.4);
 
     return Semantics(
       button: true,
@@ -617,9 +656,7 @@ class _PageNumberCell extends StatelessWidget {
       enabled: enabled,
       label: AppLocalizations.of(context).reportPaginationPageNumber(page),
       child: Material(
-        color: selected
-            ? scheme.primaryContainer
-            : scheme.surfaceContainerLowest,
+        color: selected ? scheme.primaryContainer : scheme.surfaceContainerLow,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(cornerRadius),
           side: BorderSide(color: borderColor),
@@ -640,9 +677,13 @@ class _PageNumberCell extends StatelessWidget {
             constraints: BoxConstraints(
               minWidth: minSize,
               minHeight: minSize,
+              maxHeight: minSize,
             ),
-            child: Center(
-              child: Text(label, style: textStyle),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: Center(
+                child: Text(label, style: textStyle),
+              ),
             ),
           ),
         ),
