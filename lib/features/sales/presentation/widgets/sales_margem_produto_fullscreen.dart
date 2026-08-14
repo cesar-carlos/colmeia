@@ -89,6 +89,7 @@ class SalesMargemProdutoGridSnapshot {
         query.page == other.query.page &&
         query.pageSize == other.query.pageSize &&
         listEquals(query.sorts, other.query.sorts) &&
+        query.searchTerm == other.query.searchTerm &&
         isLoading == other.isLoading &&
         identical(loadFailure, other.loadFailure);
   }
@@ -102,6 +103,7 @@ class SalesMargemProdutoGridSnapshot {
     pageInfo.totalPages,
     query.page,
     query.pageSize,
+    query.searchTerm,
     Object.hashAll(query.sorts),
     isLoading,
     identityHashCode(loadFailure),
@@ -187,6 +189,8 @@ class _SalesMargemProdutoFullscreenState
                 trustServerRowOrder: true,
                 showRefreshAction: true,
                 enablePullToRefresh: false,
+                showSearchBar: true,
+                searchDebounce: SalesMargemProdutoSort.searchDebounce,
                 availablePageSizes: SalesMargemProdutoSort.allowedPageSizes,
                 headerRowHeight: kSalesMargemProdutoHeaderRowHeight,
               ),
@@ -207,6 +211,7 @@ class _SalesMargemProdutoFullscreenState
                 ),
           onRetry: () => unawaited(widget.onRefresh()),
           emptyMessage: l10n.salesMargemProdutoEmpty,
+          searchHintText: l10n.salesMargemProdutoSearchHint,
         );
       },
     );

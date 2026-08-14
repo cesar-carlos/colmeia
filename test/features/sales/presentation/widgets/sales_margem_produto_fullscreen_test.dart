@@ -98,5 +98,21 @@ void main() {
 
       expect(first == second, isFalse);
     });
+
+    test('notifies when the search term changes', () {
+      final first = SalesMargemProdutoGridSnapshot.initial();
+      final second = SalesMargemProdutoGridSnapshot(
+        rows: first.rows,
+        pageInfo: first.pageInfo,
+        query: SalesMargemProdutoSort.queryFor(
+          page: 1,
+          pageSize: SalesMargemProdutoSort.defaultPageSize,
+          searchTerm: 'Mel',
+        ),
+        isLoading: first.isLoading,
+      );
+
+      expect(first == second, isFalse);
+    });
   });
 }

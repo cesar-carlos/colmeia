@@ -3739,6 +3739,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesMargemProdutoFilterFilial => 'Branch';
 
   @override
+  String get salesMargemProdutoFilterSearch => 'Product name';
+
+  @override
+  String get salesMargemProdutoSearchHint => 'Search by product name';
+
+  @override
   String get salesMargemProdutoFullscreenTooltip => 'Open table fullscreen';
 
   @override

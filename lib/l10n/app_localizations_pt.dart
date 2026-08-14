@@ -3790,6 +3790,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesMargemProdutoFilterFilial => 'Filial';
 
   @override
+  String get salesMargemProdutoFilterSearch => 'Nome do produto';
+
+  @override
+  String get salesMargemProdutoSearchHint => 'Buscar por nome do produto';
+
+  @override
   String get salesMargemProdutoFullscreenTooltip =>
       'Abrir tabela em tela cheia';
 
@@ -8909,6 +8915,12 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesMargemProdutoFilterFilial => 'Filial';
+
+  @override
+  String get salesMargemProdutoFilterSearch => 'Nome do produto';
+
+  @override
+  String get salesMargemProdutoSearchHint => 'Buscar por nome do produto';
 
   @override
   String get salesMargemProdutoFullscreenTooltip =>

@@ -21,12 +21,22 @@ void main() {
     check(numbered.contains('m.MargemLucroProduto DESC')).isFalse();
   });
 
-  test('binds empresa, filial, and page window once each', () {
+  test('binds empresa, filial, name pattern, and page window once each', () {
     final sql = MargemProdutoSql.pagedQuery();
     check(_count(sql, ':codEmpresa')).equals(1);
     check(_count(sql, ':codFilial')).equals(1);
+    check(_count(sql, ':nomeProdutoPattern')).equals(1);
     check(_count(sql, ':startRow')).equals(1);
     check(_count(sql, ':endRow')).equals(1);
+  });
+
+  test('filters NomeProduto with optional LIKE before counting', () {
+    final sql = MargemProdutoSql.pagedQuery();
+    check(sql).contains('prm.NomeProdutoPattern IS NULL');
+    check(sql).contains(
+      'UPPER(TRIM(p.Nome)) LIKE UPPER(prm.NomeProdutoPattern)',
+    );
+    check(sql).contains('SELECT COUNT(*) AS TotalCount FROM MargemProduto');
   });
 
   test('does not send DECLARE or block comments', () {

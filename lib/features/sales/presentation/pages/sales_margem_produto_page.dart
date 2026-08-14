@@ -195,6 +195,7 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
     _query = SalesMargemProdutoSort.queryFor(
       page: 1,
       pageSize: _pageSize,
+      searchTerm: restored.searchTerm,
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -519,6 +520,9 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       filter: MargemProdutoFilter(
         codEmpresa: filial.codEmpresa,
         codFilial: filial.codFilial,
+        searchTerm: SalesMargemProdutoSort.normalizeSearchTerm(
+          _query.searchTerm,
+        ),
         page: _page,
         pageSize: _pageSize,
       ),
@@ -594,17 +598,30 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
   }
 
   ChartShareExportHeaderContext _shareExportHeaderContext(
-    AppLocalizations l10n,
-  ) {
+    AppLocalizations l10n, {
+    String? searchTerm,
+  }) {
+    final parameters = <ChartShareExportHeaderParameter>[
+      ChartShareExportHeaderParameter(
+        label: l10n.salesMargemProdutoFilterFilial,
+        value: _selectedFilialDisplayName(l10n),
+      ),
+    ];
+    final normalizedSearch = SalesMargemProdutoSort.normalizeSearchTerm(
+      searchTerm,
+    );
+    if (normalizedSearch != null) {
+      parameters.add(
+        ChartShareExportHeaderParameter(
+          label: l10n.salesMargemProdutoFilterSearch,
+          value: normalizedSearch,
+        ),
+      );
+    }
     return buildSalesSingleAgentChartShareExportHeaderContext(
       l10n: l10n,
       agentName: _selectedAgentName(l10n),
-      parameters: <ChartShareExportHeaderParameter>[
-        ChartShareExportHeaderParameter(
-          label: l10n.salesMargemProdutoFilterFilial,
-          value: _selectedFilialDisplayName(l10n),
-        ),
-      ],
+      parameters: parameters,
     );
   }
 
@@ -704,7 +721,13 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       _shareCancelScope = _replaceCancelScope(_shareCancelScope);
       final shareScope = _shareCancelScope!;
       final totalCount = _totalCount;
-      final exportHeaderContext = _shareExportHeaderContext(l10n);
+      final searchTerm = SalesMargemProdutoSort.normalizeSearchTerm(
+        _query.searchTerm,
+      );
+      final exportHeaderContext = _shareExportHeaderContext(
+        l10n,
+        searchTerm: searchTerm,
+      );
 
       final clientToken = await _resolveClientToken(
         userId: userId,
@@ -724,6 +747,7 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
         filter: MargemProdutoFilter(
           codEmpresa: filial.codEmpresa,
           codFilial: filial.codFilial,
+          searchTerm: searchTerm,
         ),
         totalCount: totalCount,
         clientToken: clientToken,
@@ -776,6 +800,7 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       SalesMargemProdutoSort.cardId,
       SalesMargemProdutoSort.persistMap(
         pageSize: _pageSize,
+        searchTerm: _query.searchTerm,
         codEmpresa: _selectedFilial?.codEmpresa ?? _preferredCodEmpresa,
         codFilial: _selectedFilial?.codFilial ?? _preferredCodFilial,
       ),
@@ -837,7 +862,33 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
   }
 
   void _onQueryChanged(AppReportQuery next) {
+    final nextSearch = SalesMargemProdutoSort.normalizeSearchTerm(
+      next.searchTerm,
+    );
+    final currentSearch = SalesMargemProdutoSort.normalizeSearchTerm(
+      _query.searchTerm,
+    );
+    if (nextSearch != currentSearch) {
+      _applySearch(nextSearch, previous: next);
+      return;
+    }
     _applyPaging(page: next.page, pageSize: next.pageSize, previous: next);
+  }
+
+  void _applySearch(String? searchTerm, {AppReportQuery? previous}) {
+    _shareCancelScope?.cancelAll();
+    setState(() {
+      _page = 1;
+      _query = SalesMargemProdutoSort.queryFor(
+        page: 1,
+        pageSize: _pageSize,
+        searchTerm: searchTerm,
+        clearSearchTerm: searchTerm == null,
+        previous: previous ?? _query,
+      );
+    });
+    unawaited(_persistFilters());
+    unawaited(_loadCatalog(clearVisibleCatalog: true));
   }
 
   void _applyPaging({
@@ -976,6 +1027,8 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
                   trustServerRowOrder: true,
                   showRefreshAction: true,
                   enablePullToRefresh: false,
+                  showSearchBar: true,
+                  searchDebounce: SalesMargemProdutoSort.searchDebounce,
                   availablePageSizes: SalesMargemProdutoSort.allowedPageSizes,
                   headerRowHeight: kSalesMargemProdutoHeaderRowHeight,
                 ),
@@ -996,6 +1049,7 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
                   ),
             onRetry: () => unawaited(_loadCatalog()),
             emptyMessage: l10n.salesMargemProdutoEmpty,
+            searchHintText: l10n.salesMargemProdutoSearchHint,
           );
         },
       );

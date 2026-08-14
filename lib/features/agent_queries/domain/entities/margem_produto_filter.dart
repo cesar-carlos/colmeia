@@ -5,10 +5,14 @@
 ///
 /// **Ordering:** the SQL always numbers rows by `NomeProduto ASC`, then
 /// `CodProduto ASC`. That fixed key keeps page windows stable.
+///
+/// **Search:** optional [searchTerm] is a case-insensitive contains match
+/// on `Produto.Nome`. Blank values are ignored.
 class MargemProdutoFilter {
   const MargemProdutoFilter({
     required this.codEmpresa,
     required this.codFilial,
+    this.searchTerm,
     this.page = 1,
     this.pageSize = defaultPageSize,
   });
@@ -21,8 +25,19 @@ class MargemProdutoFilter {
   final int codEmpresa;
   final int codFilial;
 
+  /// Optional free-text contains match on product name.
+  final String? searchTerm;
+
   final int page;
   final int pageSize;
+
+  String? get normalizedSearchTerm {
+    final normalized = searchTerm?.trim();
+    if (normalized == null || normalized.isEmpty) {
+      return null;
+    }
+    return normalized;
+  }
 
   int get offset => (page - 1) * pageSize;
 

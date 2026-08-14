@@ -1926,6 +1926,8 @@
   "salesMargemProdutoEmpty": "No products for this branch.",
   "salesMargemProdutoNoBranchEmpty": "No branch is available on this agent.",
   "salesMargemProdutoFilterFilial": "Branch",
+  "salesMargemProdutoFilterSearch": "Product name",
+  "salesMargemProdutoSearchHint": "Search by product name",
   "salesMargemProdutoFullscreenTooltip": "Open table fullscreen",
   "salesCardRankingProdutosFaturamentoTitle": "Revenue ranking",
   "salesRankingProdutosFaturamentoChartTitle": "Top products by revenue",

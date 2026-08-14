@@ -499,122 +499,122 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
           ),
           SizedBox(height: tokens.sectionSpacing),
         ],
-        AppSkeleton(
-          enabled: widget.isLoading,
-          loadingSemanticsLabel: l10n.reportLoadingTableSemantics,
-          child: AppSectionCard(
-            color: reportCardColor,
-            borderSide: reportCardBorder,
-            padding: reportCardPadding,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                if (showInlineFilters) ...<Widget>[
-                  AppReportInlineFiltersBar(
-                    filters: widget.filters!,
-                    initialValues:
-                        widget.filterValues ??
-                        widget.query?.filters ??
-                        <String, Object?>{},
-                    isLoading: widget.isLoading,
-                    debounceDuration: style.searchDebounce,
-                    showAdvancedFiltersButton: showAdvancedInlineFilters,
-                    onOpenAdvancedFilters: _showAdvancedFiltersSheet,
-                    onFiltersChanged: (values) {
-                      widget.events.onFiltersApplied?.call(values);
-                      _emitQueryChanged(filters: values, page: 1);
-                    },
-                  ),
-                  SizedBox(height: tokens.gapMd),
-                ],
-                AppReportToolbar<T>(
-                  style: style,
-                  events: AppReportEvents<T>(
-                    onSearchChanged: (term) {
-                      widget.events.onSearchChanged?.call(term);
-                      _emitQueryChanged(searchTerm: term, page: 1);
-                    },
-                    onDensityChanged: _onDensityChanged,
-                    onGroupChanged: _onGroupChanged,
-                    onGroupStateChanged: _onGroupStateChanged,
-                    onColumnVisibilityChanged: _onColumnVisibilityChanged,
-                    onExportRequested: widget.events.onExportRequested,
-                    onPrintRequested: widget.events.onPrintRequested,
-                    onRefresh: widget.events.onRefresh,
-                  ),
-                  columns: widget.columns,
-                  groupableColumns: groupableColumns,
-                  visibleColumnKeys: _visibleColumnKeys,
-                  currentDensity: _density,
-                  currentGroups: _groups,
+        AppSectionCard(
+          color: reportCardColor,
+          borderSide: reportCardBorder,
+          padding: reportCardPadding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              if (showInlineFilters) ...<Widget>[
+                AppReportInlineFiltersBar(
+                  filters: widget.filters!,
+                  initialValues:
+                      widget.filterValues ??
+                      widget.query?.filters ??
+                      <String, Object?>{},
                   isLoading: widget.isLoading,
-                  groupController: _groupController,
-                  searchTerm: widget.query?.searchTerm,
-                  searchHintText: widget.searchHintText,
-                  selectedRowCount: widget.selectedRows?.length ?? 0,
-                  onOpenFiltersSheet:
-                      style.filterLayout == AppReportFilterLayout.sheet &&
-                          showFilters
-                      ? _showAdvancedFiltersSheet
-                      : null,
-                  activeFilterCount: _activeFilterCount,
-                  onClearSelection: widget.events.onRowSelection != null
-                      ? () =>
-                            widget.events.onRowSelection?.call(List<T>.empty())
-                      : null,
+                  debounceDuration: style.searchDebounce,
+                  showAdvancedFiltersButton: showAdvancedInlineFilters,
+                  onOpenAdvancedFilters: _showAdvancedFiltersSheet,
+                  onFiltersChanged: (values) {
+                    widget.events.onFiltersApplied?.call(values);
+                    _emitQueryChanged(filters: values, page: 1);
+                  },
                 ),
-                AppReportGrid<T>(
-                  columns: _visibleColumns,
-                  rows: widget.rows,
-                  currentGroups: _groups,
-                  selectedRows: widget.selectedRows ?? List<T>.empty(),
-                  groupController: _groupController,
-                  style: style.copyWith(density: _density),
-                  isLoading: widget.isLoading,
-                  events: AppReportEvents<T>(
-                    onSortChanged: _onSortChanged,
-                    onRowTap: _onRowTap,
-                    onRowDoubleTap: widget.events.onRowDoubleTap,
-                    onRowLongPress: widget.events.onRowLongPress,
-                    onRowSelection: widget.events.onRowSelection,
-                    onGroupExpanded: (event) {
-                      _onGroupToggle(event);
-                      widget.events.onGroupExpanded?.call(event);
-                    },
-                    onGroupCollapsed: (event) {
-                      _onGroupToggle(event);
-                      widget.events.onGroupCollapsed?.call(event);
-                    },
-                  ),
-                  currentSorts: _sorts,
-                  emptyMessage: widget.emptyMessage,
-                  emptyAction: _buildEmptyClearFiltersAction(),
-                ),
-                if (showPagination)
-                  AppSkeleton(
-                    enabled: widget.isLoading,
-                    loadingSemanticsLabel:
-                        l10n.reportLoadingPaginationSemantics,
-                    child: AppReportPaginationBar(
-                      pageInfo: widget.pageInfo!,
-                      onPageChanged: (page) {
-                        widget.events.onPageChanged?.call(page);
-                        _emitQueryChanged(page: page);
-                      },
-                      onPageSizeChanged: (size) {
-                        widget.events.onPageSizeChanged?.call(size);
-                        _emitQueryChanged(page: 1, pageSize: size);
-                      },
-                      availablePageSizes: style.resolvedPageSizes,
-                      isLoading: widget.isLoading,
-                      entityLabel: style.entityLabel,
-                      itemsPerPageLabel: style.itemsPerPageLabel,
-                      showingLabelPrefix: style.showingLabelPrefix,
-                      showingLabelMiddle: style.showingLabelMiddle,
-                    ),
-                  ),
+                SizedBox(height: tokens.gapMd),
               ],
-            ),
+              AppReportToolbar<T>(
+                style: style,
+                events: AppReportEvents<T>(
+                  onSearchChanged: (term) {
+                    widget.events.onSearchChanged?.call(term);
+                    _emitQueryChanged(searchTerm: term, page: 1);
+                  },
+                  onDensityChanged: _onDensityChanged,
+                  onGroupChanged: _onGroupChanged,
+                  onGroupStateChanged: _onGroupStateChanged,
+                  onColumnVisibilityChanged: _onColumnVisibilityChanged,
+                  onExportRequested: widget.events.onExportRequested,
+                  onPrintRequested: widget.events.onPrintRequested,
+                  onRefresh: widget.events.onRefresh,
+                ),
+                columns: widget.columns,
+                groupableColumns: groupableColumns,
+                visibleColumnKeys: _visibleColumnKeys,
+                currentDensity: _density,
+                currentGroups: _groups,
+                isLoading: widget.isLoading,
+                groupController: _groupController,
+                searchTerm: widget.query?.searchTerm,
+                searchHintText: widget.searchHintText,
+                selectedRowCount: widget.selectedRows?.length ?? 0,
+                onOpenFiltersSheet:
+                    style.filterLayout == AppReportFilterLayout.sheet &&
+                        showFilters
+                    ? _showAdvancedFiltersSheet
+                    : null,
+                activeFilterCount: _activeFilterCount,
+                onClearSelection: widget.events.onRowSelection != null
+                    ? () => widget.events.onRowSelection?.call(List<T>.empty())
+                    : null,
+              ),
+              ExcludeFocus(
+                child: AppSkeleton(
+                  enabled: widget.isLoading,
+                  loadingSemanticsLabel: l10n.reportLoadingTableSemantics,
+                  child: AppReportGrid<T>(
+                    columns: _visibleColumns,
+                    rows: widget.rows,
+                    currentGroups: _groups,
+                    selectedRows: widget.selectedRows ?? List<T>.empty(),
+                    groupController: _groupController,
+                    style: style.copyWith(density: _density),
+                    isLoading: widget.isLoading,
+                    events: AppReportEvents<T>(
+                      onSortChanged: _onSortChanged,
+                      onRowTap: _onRowTap,
+                      onRowDoubleTap: widget.events.onRowDoubleTap,
+                      onRowLongPress: widget.events.onRowLongPress,
+                      onRowSelection: widget.events.onRowSelection,
+                      onGroupExpanded: (event) {
+                        _onGroupToggle(event);
+                        widget.events.onGroupExpanded?.call(event);
+                      },
+                      onGroupCollapsed: (event) {
+                        _onGroupToggle(event);
+                        widget.events.onGroupCollapsed?.call(event);
+                      },
+                    ),
+                    currentSorts: _sorts,
+                    emptyMessage: widget.emptyMessage,
+                    emptyAction: _buildEmptyClearFiltersAction(),
+                  ),
+                ),
+              ),
+              if (showPagination)
+                AppSkeleton(
+                  enabled: widget.isLoading,
+                  loadingSemanticsLabel: l10n.reportLoadingPaginationSemantics,
+                  child: AppReportPaginationBar(
+                    pageInfo: widget.pageInfo!,
+                    onPageChanged: (page) {
+                      widget.events.onPageChanged?.call(page);
+                      _emitQueryChanged(page: page);
+                    },
+                    onPageSizeChanged: (size) {
+                      widget.events.onPageSizeChanged?.call(size);
+                      _emitQueryChanged(page: 1, pageSize: size);
+                    },
+                    availablePageSizes: style.resolvedPageSizes,
+                    isLoading: widget.isLoading,
+                    entityLabel: style.entityLabel,
+                    itemsPerPageLabel: style.itemsPerPageLabel,
+                    showingLabelPrefix: style.showingLabelPrefix,
+                    showingLabelMiddle: style.showingLabelMiddle,
+                  ),
+                ),
+            ],
           ),
         ),
       ],

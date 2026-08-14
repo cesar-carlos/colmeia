@@ -16,10 +16,13 @@ abstract final class SalesMargemProdutoSort {
 
   static const List<int> allowedPageSizes = <int>[10, 20, 50];
   static const int defaultPageSize = 20;
+  // Agent SQL is too expensive to run per keystroke.
+  static const Duration searchDebounce = Duration(milliseconds: 400);
 
   static const String persistPageSizeKey = 'pageSize';
   static const String persistCodEmpresaKey = 'codEmpresa';
   static const String persistCodFilialKey = 'codFilial';
+  static const String persistSearchTermKey = 'searchTerm';
 
   static int sanitizePageSize(Object? raw) {
     final parsed = restoreInt(raw);
@@ -37,23 +40,42 @@ abstract final class SalesMargemProdutoSort {
     return parsed;
   }
 
+  static String? normalizeSearchTerm(Object? raw) {
+    if (raw is! String) {
+      return null;
+    }
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+    return trimmed;
+  }
+
   static AppReportQuery queryFor({
     required int page,
     required int pageSize,
+    String? searchTerm,
+    bool clearSearchTerm = false,
     AppReportQuery? previous,
   }) {
     final sanitizedPageSize = sanitizePageSize(pageSize);
     final sanitizedPage = sanitizePage(page);
+    final normalizedSearch = clearSearchTerm
+        ? null
+        : normalizeSearchTerm(searchTerm);
     if (previous == null) {
       return AppReportQuery(
         page: sanitizedPage,
         pageSize: sanitizedPageSize,
+        searchTerm: normalizedSearch,
       );
     }
     return previous.copyWith(
       sorts: const <AppReportSortDescriptor>[],
       page: sanitizedPage,
       pageSize: sanitizedPageSize,
+      searchTerm: normalizedSearch,
+      clearSearchTerm: clearSearchTerm,
     );
   }
 
@@ -81,6 +103,7 @@ abstract final class SalesMargemProdutoSort {
     final filial = restoreInt(raw[persistCodFilialKey]);
     return SalesMargemProdutoPersistedFilters(
       pageSize: sanitizePageSize(raw[persistPageSizeKey]),
+      searchTerm: normalizeSearchTerm(raw[persistSearchTermKey]),
       codEmpresa: empresa != null && empresa >= 1 ? empresa : null,
       codFilial: filial != null && filial >= 0 ? filial : null,
     );
@@ -88,11 +111,13 @@ abstract final class SalesMargemProdutoSort {
 
   static Map<String, Object?> persistMap({
     required int pageSize,
+    String? searchTerm,
     int? codEmpresa,
     int? codFilial,
   }) {
     return <String, Object?>{
       persistPageSizeKey: sanitizePageSize(pageSize),
+      persistSearchTermKey: normalizeSearchTerm(searchTerm),
       persistCodEmpresaKey: codEmpresa,
       persistCodFilialKey: codFilial,
     };
@@ -115,11 +140,13 @@ abstract final class SalesMargemProdutoSort {
 class SalesMargemProdutoPersistedFilters {
   const SalesMargemProdutoPersistedFilters({
     required this.pageSize,
+    this.searchTerm,
     this.codEmpresa,
     this.codFilial,
   });
 
   final int pageSize;
+  final String? searchTerm;
   final int? codEmpresa;
   final int? codFilial;
 }

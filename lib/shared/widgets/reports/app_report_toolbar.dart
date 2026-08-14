@@ -69,12 +69,9 @@ class AppReportToolbar<T> extends StatefulWidget {
   State<AppReportToolbar<T>> createState() => _AppReportToolbarState<T>();
 }
 
-/// Search field width on wide layouts, by toolbar mode.
-const double _compactToolbarSearchWidth = 220;
-const double _fullToolbarSearchWidth = 260;
-
 class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
   late final TextEditingController _searchController;
+  late final FocusNode _searchFocusNode;
   Timer? _searchDebounceTimer;
 
   @override
@@ -83,20 +80,36 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
     _searchController = TextEditingController(
       text: widget.searchTerm ?? '',
     );
+    _searchFocusNode = FocusNode(debugLabel: 'AppReportToolbar.search');
   }
 
   @override
   void didUpdateWidget(covariant AppReportToolbar<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.searchTerm != widget.searchTerm &&
+    final hadFocus = _searchFocusNode.hasFocus;
+    if (!hadFocus &&
+        oldWidget.searchTerm != widget.searchTerm &&
         widget.searchTerm != _searchController.text) {
-      _searchController.text = widget.searchTerm ?? '';
+      final next = widget.searchTerm ?? '';
+      _searchController.value = TextEditingValue(
+        text: next,
+        selection: TextSelection.collapsed(offset: next.length),
+      );
+    }
+    if (hadFocus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _searchFocusNode.hasFocus) {
+          return;
+        }
+        _searchFocusNode.requestFocus();
+      });
     }
   }
 
   @override
   void dispose() {
     _searchDebounceTimer?.cancel();
+    _searchFocusNode.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -171,9 +184,187 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
 
     Widget buildContent(BoxConstraints constraints) {
       final isCompact = constraints.maxWidth < AppBreakpoints.mobile;
-      final searchWidth = compactToolbar
-          ? (isCompact ? constraints.maxWidth : _compactToolbarSearchWidth)
-          : (isCompact ? constraints.maxWidth : _fullToolbarSearchWidth);
+      final actionSpacing = compactToolbar ? tokens.gapXs : tokens.gapSm;
+      final searchField = AppTextField(
+        controller: _searchController,
+        focusNode: _searchFocusNode,
+        hintText: widget.searchHintText ?? l10n.reportSearchHint,
+        prefixIcon: Icons.search_rounded,
+        density: AppTextFieldDensity.compact,
+        textInputAction: TextInputAction.search,
+        // Avoid rebuilding the whole AppTextField every keystroke:
+        // a tiny ValueListenableBuilder watches just the text value
+        // and toggles the suffix clear icon in isolation.
+        suffix: _SearchClearButton(
+          controller: _searchController,
+          onCleared: () {
+            _searchDebounceTimer?.cancel();
+            widget.events.onSearchChanged?.call('');
+          },
+        ),
+        onChanged: _emitSearchChanged,
+      );
+      final actionChildren = <Widget>[
+        if (showSelectionStatus)
+          _ToolbarPill(
+            icon: Icons.checklist_rounded,
+            label: l10n.reportSelectionPill(widget.selectedRowCount),
+            tooltip: l10n.reportSelectionPillTooltip,
+            onRemove: widget.isLoading ? null : widget.onClearSelection,
+          ),
+        ...activeGroups.map((group) {
+          final label = groupLabels[group.columnKey] ?? group.columnKey;
+          return _ToolbarPill(
+            icon: Icons.layers_outlined,
+            label: l10n.reportGroupedPill(label),
+            tooltip: l10n.reportGroupedPillTooltip(label),
+            onRemove: widget.isLoading
+                ? null
+                : () {
+                    final updatedGroups = activeGroups
+                        .where((entry) => entry != group)
+                        .toList(growable: false);
+                    widget.events.onGroupChanged?.call(updatedGroups);
+                  },
+          );
+        }),
+        if (canOpenFiltersSheet)
+          _FilterSheetButton(
+            onPressed: widget.isLoading ? null : widget.onOpenFiltersSheet,
+            activeCount: widget.activeFilterCount,
+            compact: compactToolbar,
+          ),
+        if (style.showDensityToggle)
+          _DensityToggle(
+            current: widget.currentDensity,
+            onChanged: widget.events.onDensityChanged,
+          ),
+        if (style.showGroupingChooser)
+          _GroupButton<T>(
+            enabled: canGroup,
+            currentGroups: activeGroups,
+            groupableColumns: widget.groupableColumns,
+            onChanged: widget.events.onGroupChanged,
+            compact: compactToolbar,
+          ),
+        if (activeGroups.isNotEmpty)
+          _GroupStateButton(
+            icon: Icons.unfold_more_rounded,
+            tooltip: l10n.reportExpandGroupsTooltip,
+            onPressed: widget.isLoading
+                ? null
+                : () {
+                    widget.events.onGroupStateChanged?.call(
+                      activeGroups
+                          .map((group) => group.copyWith(expanded: true))
+                          .toList(growable: false),
+                    );
+                    widget.groupController?.expandAll();
+                  },
+          ),
+        if (activeGroups.isNotEmpty)
+          _GroupStateButton(
+            icon: Icons.unfold_less_rounded,
+            tooltip: l10n.reportCollapseGroupsTooltip,
+            onPressed: widget.isLoading
+                ? null
+                : () {
+                    widget.events.onGroupStateChanged?.call(
+                      activeGroups
+                          .map((group) => group.copyWith(expanded: false))
+                          .toList(growable: false),
+                    );
+                    widget.groupController?.collapseAll();
+                  },
+          ),
+        if (activeGroups.length > 1)
+          _GroupLevelButton(
+            currentGroups: activeGroups,
+            levelCount: activeGroups.length,
+            controller: widget.groupController,
+            enabled: !widget.isLoading,
+            onGroupStateChanged: widget.events.onGroupStateChanged,
+          ),
+        if (style.showColumnChooser)
+          _ColumnChooserButton<T>(
+            enabled: canChooseColumns,
+            columns: widget.columns,
+            visibleColumnKeys: widget.visibleColumnKeys,
+            compact: compactToolbar,
+            onVisibilityChanged: widget.events.onColumnVisibilityChanged,
+          ),
+        if (style.showExportActions)
+          _ExportButton(
+            enabled: canExport,
+            selectedRowCount: widget.selectedRowCount,
+            onExportRequested: (request) =>
+                widget.events.onExportRequested?.call(request),
+            compact: compactToolbar,
+          ),
+        if (style.showPrintAction)
+          Tooltip(
+            message: l10n.reportPrintLabel,
+            child: compactToolbar
+                ? AppFlatButton(
+                    onPressed: canPrint ? widget.events.onPrintRequested : null,
+                    fillWidth: false,
+                    child: const Icon(Icons.print_outlined, size: 18),
+                  )
+                : AppSecondaryButton(
+                    onPressed: canPrint ? widget.events.onPrintRequested : null,
+                    label: l10n.reportPrintLabel,
+                    icon: const Icon(Icons.print_outlined, size: 18),
+                  ),
+          ),
+        if (style.showRefreshAction)
+          Tooltip(
+            message: l10n.reportRefreshTooltip,
+            child: AppFlatButton(
+              onPressed: canRefresh
+                  ? () => widget.events.onRefresh?.call()
+                  : null,
+              fillWidth: false,
+              child: widget.isLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.refresh_rounded, size: 20),
+            ),
+          ),
+      ];
+      final actionWrap = Wrap(
+        spacing: actionSpacing,
+        runSpacing: actionSpacing,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: actionChildren,
+      );
+      final Widget toolbarControls;
+      if (!style.showSearchBar) {
+        toolbarControls = actionWrap;
+      } else if (isCompact) {
+        toolbarControls = Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            searchField,
+            if (actionChildren.isNotEmpty) ...<Widget>[
+              SizedBox(height: actionSpacing),
+              actionWrap,
+            ],
+          ],
+        );
+      } else {
+        toolbarControls = Row(
+          children: <Widget>[
+            Expanded(child: searchField),
+            if (actionChildren.isNotEmpty) ...<Widget>[
+              SizedBox(width: actionSpacing),
+              actionWrap,
+            ],
+          ],
+        );
+      }
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -191,170 +382,7 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
                 ),
               ),
             ),
-          Wrap(
-            spacing: compactToolbar ? tokens.gapXs : tokens.gapSm,
-            runSpacing: compactToolbar ? tokens.gapXs : tokens.gapSm,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: <Widget>[
-              if (style.showSearchBar)
-                SizedBox(
-                  width: searchWidth,
-                  child: AppTextField(
-                    controller: _searchController,
-                    enabled: !widget.isLoading,
-                    hintText: widget.searchHintText ?? l10n.reportSearchHint,
-                    prefixIcon: Icons.search_rounded,
-                    density: AppTextFieldDensity.compact,
-                    // Avoid rebuilding the whole AppTextField every keystroke:
-                    // a tiny ValueListenableBuilder watches just the text value
-                    // and toggles the suffix clear icon in isolation.
-                    suffix: _SearchClearButton(
-                      controller: _searchController,
-                      isLoading: widget.isLoading,
-                      onCleared: () {
-                        _searchDebounceTimer?.cancel();
-                        widget.events.onSearchChanged?.call('');
-                      },
-                    ),
-                    onChanged: _emitSearchChanged,
-                  ),
-                ),
-              if (showSelectionStatus)
-                _ToolbarPill(
-                  icon: Icons.checklist_rounded,
-                  label: l10n.reportSelectionPill(widget.selectedRowCount),
-                  tooltip: l10n.reportSelectionPillTooltip,
-                  onRemove: widget.isLoading ? null : widget.onClearSelection,
-                ),
-              ...activeGroups.map((group) {
-                final label = groupLabels[group.columnKey] ?? group.columnKey;
-                return _ToolbarPill(
-                  icon: Icons.layers_outlined,
-                  label: l10n.reportGroupedPill(label),
-                  tooltip: l10n.reportGroupedPillTooltip(label),
-                  onRemove: widget.isLoading
-                      ? null
-                      : () {
-                          final updatedGroups = activeGroups
-                              .where((entry) => entry != group)
-                              .toList(growable: false);
-                          widget.events.onGroupChanged?.call(updatedGroups);
-                        },
-                );
-              }),
-              if (canOpenFiltersSheet)
-                _FilterSheetButton(
-                  onPressed: widget.isLoading
-                      ? null
-                      : widget.onOpenFiltersSheet,
-                  activeCount: widget.activeFilterCount,
-                  compact: compactToolbar,
-                ),
-              if (style.showDensityToggle)
-                _DensityToggle(
-                  current: widget.currentDensity,
-                  onChanged: widget.events.onDensityChanged,
-                ),
-              if (style.showGroupingChooser)
-                _GroupButton<T>(
-                  enabled: canGroup,
-                  currentGroups: activeGroups,
-                  groupableColumns: widget.groupableColumns,
-                  onChanged: widget.events.onGroupChanged,
-                  compact: compactToolbar,
-                ),
-              if (activeGroups.isNotEmpty)
-                _GroupStateButton(
-                  icon: Icons.unfold_more_rounded,
-                  tooltip: l10n.reportExpandGroupsTooltip,
-                  onPressed: widget.isLoading
-                      ? null
-                      : () {
-                          widget.events.onGroupStateChanged?.call(
-                            activeGroups
-                                .map((group) => group.copyWith(expanded: true))
-                                .toList(growable: false),
-                          );
-                          widget.groupController?.expandAll();
-                        },
-                ),
-              if (activeGroups.isNotEmpty)
-                _GroupStateButton(
-                  icon: Icons.unfold_less_rounded,
-                  tooltip: l10n.reportCollapseGroupsTooltip,
-                  onPressed: widget.isLoading
-                      ? null
-                      : () {
-                          widget.events.onGroupStateChanged?.call(
-                            activeGroups
-                                .map((group) => group.copyWith(expanded: false))
-                                .toList(growable: false),
-                          );
-                          widget.groupController?.collapseAll();
-                        },
-                ),
-              if (activeGroups.length > 1)
-                _GroupLevelButton(
-                  currentGroups: activeGroups,
-                  levelCount: activeGroups.length,
-                  controller: widget.groupController,
-                  enabled: !widget.isLoading,
-                  onGroupStateChanged: widget.events.onGroupStateChanged,
-                ),
-              if (style.showColumnChooser)
-                _ColumnChooserButton<T>(
-                  enabled: canChooseColumns,
-                  columns: widget.columns,
-                  visibleColumnKeys: widget.visibleColumnKeys,
-                  compact: compactToolbar,
-                  onVisibilityChanged: widget.events.onColumnVisibilityChanged,
-                ),
-              if (style.showExportActions)
-                _ExportButton(
-                  enabled: canExport,
-                  selectedRowCount: widget.selectedRowCount,
-                  onExportRequested: (request) =>
-                      widget.events.onExportRequested?.call(request),
-                  compact: compactToolbar,
-                ),
-              if (style.showPrintAction)
-                Tooltip(
-                  message: l10n.reportPrintLabel,
-                  child: compactToolbar
-                      ? AppFlatButton(
-                          onPressed: canPrint
-                              ? widget.events.onPrintRequested
-                              : null,
-                          fillWidth: false,
-                          child: const Icon(Icons.print_outlined, size: 18),
-                        )
-                      : AppSecondaryButton(
-                          onPressed: canPrint
-                              ? widget.events.onPrintRequested
-                              : null,
-                          label: l10n.reportPrintLabel,
-                          icon: const Icon(Icons.print_outlined, size: 18),
-                        ),
-                ),
-              if (style.showRefreshAction)
-                Tooltip(
-                  message: l10n.reportRefreshTooltip,
-                  child: AppFlatButton(
-                    onPressed: canRefresh
-                        ? () => widget.events.onRefresh?.call()
-                        : null,
-                    fillWidth: false,
-                    child: widget.isLoading
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.refresh_rounded, size: 20),
-                  ),
-                ),
-            ],
-          ),
+          toolbarControls,
         ],
       );
     }
@@ -1035,12 +1063,10 @@ class _ExportMenuItem extends StatelessWidget {
 class _SearchClearButton extends StatelessWidget {
   const _SearchClearButton({
     required this.controller,
-    required this.isLoading,
     required this.onCleared,
   });
 
   final TextEditingController controller;
-  final bool isLoading;
   final VoidCallback onCleared;
 
   @override
@@ -1054,12 +1080,10 @@ class _SearchClearButton extends StatelessWidget {
         return IconButton(
           icon: const Icon(Icons.close_rounded, size: 18),
           tooltip: AppLocalizations.of(context).reportClearSearchTooltip,
-          onPressed: isLoading
-              ? null
-              : () {
-                  controller.clear();
-                  onCleared();
-                },
+          onPressed: () {
+            controller.clear();
+            onCleared();
+          },
         );
       },
     );

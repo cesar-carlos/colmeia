@@ -1666,6 +1666,8 @@
   "salesMargemProdutoEmpty": "Nenhum produto nesta filial.",
   "salesMargemProdutoNoBranchEmpty": "Nenhuma filial neste agente.",
   "salesMargemProdutoFilterFilial": "Filial",
+  "salesMargemProdutoFilterSearch": "Nome do produto",
+  "salesMargemProdutoSearchHint": "Buscar por nome do produto",
   "salesMargemProdutoFullscreenTooltip": "Abrir tabela em tela cheia",
   "salesCardRankingProdutosFaturamentoTitle": "Ranking por faturamento",
   "salesRankingProdutosFaturamentoChartTitle": "Top produtos por faturamento",

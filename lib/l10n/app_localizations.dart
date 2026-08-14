@@ -6173,6 +6173,18 @@ abstract class AppLocalizations {
   /// **'Branch'**
   String get salesMargemProdutoFilterFilial;
 
+  /// No description provided for @salesMargemProdutoFilterSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Product name'**
+  String get salesMargemProdutoFilterSearch;
+
+  /// No description provided for @salesMargemProdutoSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by product name'**
+  String get salesMargemProdutoSearchHint;
+
   /// No description provided for @salesMargemProdutoFullscreenTooltip.
   ///
   /// In en, this message translates to:

@@ -107,6 +107,7 @@ void main() {
     check(captured.sql).equals(MargemProdutoSql.pagedQuery());
     check(captured.namedParams['codEmpresa']).equals(1);
     check(captured.namedParams['codFilial']).equals(2);
+    check(captured.namedParams['nomeProdutoPattern']).isNull();
     check(captured.namedParams['startRow']).equals(11);
     check(captured.namedParams['endRow']).equals(20);
     check(captured.executeOptions?.maxRows).equals(35);
@@ -152,6 +153,75 @@ void main() {
     check(captured.sql).equals(MargemProdutoSql.pagedQuery());
     check(captured.sql).contains('m.NomeProduto ASC');
     check(captured.sql).contains('m.CodProduto ASC');
+  });
+
+  test('binds a contains LIKE pattern for product name search', () async {
+    when(
+      () => agentQueriesRepository.executeSql(any()),
+    ).thenAnswer(
+      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(
+          rows: <Map<String, dynamic>>[
+            <String, dynamic>{'TotalCount': 0},
+          ],
+          rowCount: 1,
+        ),
+      ),
+    );
+
+    await repository.loadPage(
+      userId: 'user-1',
+      agentId: 'agent-1',
+      filter: const MargemProdutoFilter(
+        codEmpresa: 1,
+        codFilial: 1,
+        searchTerm: '  a%b_c[d  ',
+      ),
+    );
+
+    final captured =
+        verify(
+              () => agentQueriesRepository.executeSql(captureAny()),
+            ).captured.single
+            as AgentSqlExecuteRequest;
+
+    check(captured.namedParams['nomeProdutoPattern']).equals(
+      '%a[%]b[_]c[[]d%',
+    );
+    check(captured.sql).contains('prm.NomeProdutoPattern IS NULL');
+  });
+
+  test('blank product name search binds a null pattern', () async {
+    when(
+      () => agentQueriesRepository.executeSql(any()),
+    ).thenAnswer(
+      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(
+          rows: <Map<String, dynamic>>[
+            <String, dynamic>{'TotalCount': 0},
+          ],
+          rowCount: 1,
+        ),
+      ),
+    );
+
+    await repository.loadPage(
+      userId: 'user-1',
+      agentId: 'agent-1',
+      filter: const MargemProdutoFilter(
+        codEmpresa: 1,
+        codFilial: 1,
+        searchTerm: '   ',
+      ),
+    );
+
+    final captured =
+        verify(
+              () => agentQueriesRepository.executeSql(captureAny()),
+            ).captured.single
+            as AgentSqlExecuteRequest;
+
+    check(captured.namedParams['nomeProdutoPattern']).isNull();
   });
 
   test('maps rows with CodProduto to entities', () async {

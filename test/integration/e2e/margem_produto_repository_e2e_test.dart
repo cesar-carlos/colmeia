@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart' hide group;
 import 'package:test_api/scaffolding.dart' show group;
 
 import 'support/e2e_agent_queries_test_helpers.dart';
+import 'support/e2e_name_filter_helpers.dart';
 
 void main() {
   group(
@@ -271,9 +272,9 @@ void main() {
                 );
                 final last = page1.items.last;
                 final firstRow = page2.items.first;
-                final nameOrder = last.nomeProduto.compareTo(
-                  firstRow.nomeProduto,
-                );
+                final nameOrder = foldNomeProdutoForOrder(
+                  last.nomeProduto,
+                ).compareTo(foldNomeProdutoForOrder(firstRow.nomeProduto));
                 expect(
                   nameOrder,
                   lessThanOrEqualTo(0),
@@ -298,6 +299,88 @@ void main() {
           );
         },
       );
+
+      test(
+        'loadPage contains search matches NomeProduto and does not raise total',
+        () async {
+          if (shouldSkipE2eRepositoryTest(
+            'margem_produto_repository_e2e (name contains)',
+          )) {
+            return;
+          }
+
+          final repository = getIt<MargemProdutoRepository>();
+          const baselineFilter = MargemProdutoFilter(
+            codEmpresa: 1,
+            codFilial: 1,
+          );
+          final baseline = await runE2eAppResult(
+            () => repository.loadPage(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              filter: baselineFilter,
+            ),
+          );
+
+          if (baseline.isError()) {
+            expectAcceptableAgentQueriesE2eFailure(
+              baseline.exceptionOrNull()!,
+              failureScope: 'Repository e2e',
+            );
+            return;
+          }
+
+          final page1 = baseline.getOrThrow();
+          checkPageInvariants(
+            page1.items,
+            page1.totalCount,
+            MargemProdutoFilter.defaultPageSize,
+          );
+          if (page1.items.isEmpty) {
+            return;
+          }
+
+          final filterToken = buildContainsToken(page1.items.first.nomeProduto);
+          final filtered = await runE2eAppResultWithHubRetry(
+            () => repository.loadPage(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              filter: MargemProdutoFilter(
+                codEmpresa: 1,
+                codFilial: 1,
+                searchTerm: filterToken,
+              ),
+            ),
+            actionLabel: 'margem_produto_loadPage_name_contains',
+          );
+
+          filtered.fold(
+            (page) {
+              expect(page.totalCount, lessThanOrEqualTo(page1.totalCount));
+              checkPageInvariants(
+                page.items,
+                page.totalCount,
+                MargemProdutoFilter.defaultPageSize,
+              );
+              for (final row in page.items) {
+                expect(
+                  row.nomeProduto.toUpperCase(),
+                  contains(filterToken.toUpperCase()),
+                );
+              }
+              expectNomeProdutoAscending(page.items);
+            },
+            (failure) {
+              expectAcceptableAgentQueriesE2eFailure(
+                failure,
+                failureScope: 'Repository e2e',
+              );
+            },
+          );
+        },
+      );
     },
     tags: <String>['e2e'],
   );
@@ -308,11 +391,15 @@ void expectNomeProdutoAscending(List<MargemProdutoRow> items) {
     return;
   }
   for (var i = 0; i < items.length - 1; i++) {
-    final nameOrder = items[i].nomeProduto.compareTo(items[i + 1].nomeProduto);
+    final nameOrder = foldNomeProdutoForOrder(
+      items[i].nomeProduto,
+    ).compareTo(foldNomeProdutoForOrder(items[i + 1].nomeProduto));
     expect(
       nameOrder,
       lessThanOrEqualTo(0),
-      reason: 'nomeProduto ASC should not decrease down the page',
+      reason:
+          'nomeProduto ASC should not decrease down the page: '
+          '"${items[i].nomeProduto}" then "${items[i + 1].nomeProduto}"',
     );
     if (nameOrder == 0) {
       expect(
@@ -322,6 +409,25 @@ void expectNomeProdutoAscending(List<MargemProdutoRow> items) {
       );
     }
   }
+}
+
+/// SQL Anywhere name order is typically accent-insensitive; Dart code-unit
+/// order is not. Fold PT-BR diacritics before comparing E2E page order.
+String foldNomeProdutoForOrder(String value) {
+  return value
+      .toUpperCase()
+      .replaceAll('Ç', 'C')
+      .replaceAll('Á', 'A')
+      .replaceAll('À', 'A')
+      .replaceAll('Â', 'A')
+      .replaceAll('Ã', 'A')
+      .replaceAll('É', 'E')
+      .replaceAll('Ê', 'E')
+      .replaceAll('Í', 'I')
+      .replaceAll('Ó', 'O')
+      .replaceAll('Ô', 'O')
+      .replaceAll('Õ', 'O')
+      .replaceAll('Ú', 'U');
 }
 
 void checkPageInvariants(

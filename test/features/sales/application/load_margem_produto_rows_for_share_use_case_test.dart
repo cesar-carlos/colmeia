@@ -135,6 +135,7 @@ void main() {
     expect(captured.endRow, 3);
     expect(captured.codEmpresa, 1);
     expect(captured.codFilial, 2);
+    expect(captured.searchTerm, isNull);
   });
 
   test('keeps pageSize constant so later pages do not overlap', () async {
@@ -208,6 +209,70 @@ void main() {
     expect(captured[1].pageSize, MargemProdutoFilter.maxPageSize);
     expect(captured[1].startRow, 501);
     expect(captured[1].endRow, 1000);
+  });
+
+  test('forwards searchTerm on every export page', () async {
+    const searchFilter = MargemProdutoFilter(
+      codEmpresa: 1,
+      codFilial: 2,
+      searchTerm: 'Mel',
+    );
+    when(
+      () => repository.loadPage(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        filter: any(named: 'filter'),
+        clientToken: any(named: 'clientToken'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        hubPresenceOnlineAgentIdsSnapshot: any(
+          named: 'hubPresenceOnlineAgentIdsSnapshot',
+        ),
+        hubConnectedFromApprovedCatalogRow: any(
+          named: 'hubConnectedFromApprovedCatalogRow',
+        ),
+      ),
+    ).thenAnswer((invocation) async {
+      final pageFilter =
+          invocation.namedArguments[#filter] as MargemProdutoFilter;
+      final lastRow = pageFilter.endRow < 600 ? pageFilter.endRow : 600;
+      final items = <MargemProdutoRow>[
+        for (var index = pageFilter.startRow; index <= lastRow; index++)
+          _row(index),
+      ];
+      return Success(
+        MargemProdutoPageResult(items: items, totalCount: 600),
+      );
+    });
+
+    final result = await useCase(
+      userId: 'u',
+      agentId: 'a',
+      filter: searchFilter,
+      totalCount: 600,
+      clientToken: 'token',
+    );
+
+    expect(result.isSuccess(), isTrue);
+    final captured = verify(
+      () => repository.loadPage(
+        userId: 'u',
+        agentId: 'a',
+        filter: captureAny(named: 'filter'),
+        clientToken: 'token',
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        hubPresenceOnlineAgentIdsSnapshot: any(
+          named: 'hubPresenceOnlineAgentIdsSnapshot',
+        ),
+        hubConnectedFromApprovedCatalogRow: any(
+          named: 'hubConnectedFromApprovedCatalogRow',
+        ),
+      ),
+    ).captured.cast<MargemProdutoFilter>();
+    expect(captured, hasLength(2));
+    expect(captured[0].searchTerm, 'Mel');
+    expect(captured[1].searchTerm, 'Mel');
+    expect(captured[0].pageSize, MargemProdutoFilter.maxPageSize);
+    expect(captured[1].pageSize, MargemProdutoFilter.maxPageSize);
   });
 
   test(

@@ -15,16 +15,18 @@ void main() {
   });
 
   group('SalesMargemProdutoSort.restore', () {
-    test('restores page size and branch codes and ignores sort keys', () {
+    test('restores page size, search term, and branch codes', () {
       final restored = SalesMargemProdutoSort.restore(<String, Object?>{
         'sortBy': 'custoReposicao',
         'sortDirection': 'descending',
         'pageSize': 50,
+        'searchTerm': '  Mel  ',
         'codEmpresa': 2,
         'codFilial': 0,
       });
 
       check(restored.pageSize).equals(50);
+      check(restored.searchTerm).equals('Mel');
       check(restored.codEmpresa).equals(2);
       check(restored.codFilial).equals(0);
     });
@@ -46,12 +48,21 @@ void main() {
       check(restored.codEmpresa).isNull();
       check(restored.codFilial).isNull();
     });
+
+    test('drops blank search terms', () {
+      final restored = SalesMargemProdutoSort.restore(<String, Object?>{
+        'searchTerm': '  ',
+      });
+
+      check(restored.searchTerm).isNull();
+    });
   });
 
   group('SalesMargemProdutoSort.persistMap', () {
     test('does not persist sort keys', () {
       final persisted = SalesMargemProdutoSort.persistMap(
         pageSize: 10,
+        searchTerm: '  Mel  ',
         codEmpresa: 1,
         codFilial: 3,
       );
@@ -59,6 +70,7 @@ void main() {
       check(persisted.containsKey('sortBy')).isFalse();
       check(persisted.containsKey('sortDirection')).isFalse();
       check(persisted['pageSize']).equals(10);
+      check(persisted['searchTerm']).equals('Mel');
       check(persisted['codEmpresa']).equals(1);
       check(persisted['codFilial']).equals(3);
     });
@@ -83,6 +95,45 @@ void main() {
       check(query.page).equals(1);
       check(query.pageSize).equals(50);
       check(query.sorts).isEmpty();
+    });
+
+    test('keeps previous searchTerm when paging', () {
+      final query = SalesMargemProdutoSort.queryFor(
+        page: 2,
+        pageSize: 20,
+        previous: SalesMargemProdutoSort.queryFor(
+          page: 1,
+          pageSize: 20,
+          searchTerm: 'Mel',
+        ),
+      );
+
+      check(query.page).equals(2);
+      check(query.searchTerm).equals('Mel');
+    });
+
+    test('clears searchTerm when requested', () {
+      final query = SalesMargemProdutoSort.queryFor(
+        page: 1,
+        pageSize: 20,
+        clearSearchTerm: true,
+        previous: SalesMargemProdutoSort.queryFor(
+          page: 2,
+          pageSize: 20,
+          searchTerm: 'Mel',
+        ),
+      );
+
+      check(query.searchTerm).isNull();
+      check(query.page).equals(1);
+    });
+  });
+
+  group('SalesMargemProdutoSort.searchDebounce', () {
+    test('waits after the last keystroke before catalog SQL', () {
+      check(
+        SalesMargemProdutoSort.searchDebounce,
+      ).equals(const Duration(milliseconds: 400));
     });
   });
 

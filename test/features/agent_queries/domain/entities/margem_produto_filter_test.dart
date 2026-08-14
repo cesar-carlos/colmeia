@@ -63,4 +63,20 @@ void main() {
     const filter = MargemProdutoFilter(codEmpresa: 1, codFilial: -1);
     check(filter.validationError()).equals('codFilial must be >= 0');
   });
+
+  test('normalizedSearchTerm trims and treats blank as null', () {
+    const blank = MargemProdutoFilter(
+      codEmpresa: 1,
+      codFilial: 1,
+      searchTerm: '  ',
+    );
+    const padded = MargemProdutoFilter(
+      codEmpresa: 1,
+      codFilial: 1,
+      searchTerm: '  Mel  ',
+    );
+    check(blank.normalizedSearchTerm).isNull();
+    check(padded.normalizedSearchTerm).equals('Mel');
+    check(padded.validationError()).isNull();
+  });
 }

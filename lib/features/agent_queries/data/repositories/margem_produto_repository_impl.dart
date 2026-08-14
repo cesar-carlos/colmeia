@@ -6,6 +6,7 @@ import 'package:colmeia/features/agent_queries/data/agent_queries_sql_row_map_re
 import 'package:colmeia/features/agent_queries/data/models/margem_produto_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/queries/margem_produto_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repository_execution.dart';
+import 'package:colmeia/features/agent_queries/data/resumo_vendas_diarias_suggestion_sql_params.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
@@ -98,6 +99,10 @@ class MargemProdutoRepositoryImpl implements MargemProdutoRepository {
         namedParams: <String, Object?>{
           'codEmpresa': filter.codEmpresa,
           'codFilial': filter.codFilial,
+          'nomeProdutoPattern':
+              ResumoVendasDiariasSuggestionSqlParams.buildSearchPattern(
+                filter.normalizedSearchTerm,
+              ),
           'startRow': filter.startRow,
           'endRow': filter.endRow,
         },

@@ -20,9 +20,15 @@
 ///
 /// ## Parameters and pagination
 ///
-/// Named params: `:codEmpresa`, `:codFilial`, `:startRow`, `:endRow`
-/// (four binds). Each named param appears **once** — SQL Anywhere ODBC
-/// expands every `:name` to a positional `?`.
+/// Named params: `:codEmpresa`, `:codFilial`, `:nomeProdutoPattern`,
+/// `:startRow`, `:endRow` (five binds). Each named param appears **once**
+/// — SQL Anywhere ODBC expands every `:name` to a positional `?`.
+///
+/// `:nomeProdutoPattern` is a contains literal (e.g. `%mel%`) from
+/// `ResumoVendasDiariasSuggestionSqlParams.buildSearchPattern`, or `NULL`
+/// to skip the name filter. The `LIKE` runs in `MargemProduto` before
+/// `Tot` and `ROW_NUMBER`, so `totalCount` and page windows share the
+/// same filtered catalog.
 ///
 /// **Ordering:** fixed `NomeProduto ASC`, then `CodProduto ASC` as the
 /// stable page key. `ROW_NUMBER` must stay deterministic or page 2 can
@@ -37,7 +43,8 @@ abstract final class MargemProdutoSql {
     WITH Parametros AS (
       SELECT
         CAST(:codEmpresa AS INTEGER) AS CodEmpresa,
-        CAST(:codFilial AS INTEGER) AS CodFilial
+        CAST(:codFilial AS INTEGER) AS CodFilial,
+        CAST(:nomeProdutoPattern AS VARCHAR(255)) AS NomeProdutoPattern
     ),
     MargemProduto AS (
       SELECT
@@ -82,6 +89,10 @@ abstract final class MargemProdutoSql {
         AND cp.CodFilial = prm.CodFilial
         AND cp.CodProduto = p.CodProduto
       WHERE p.Ativo = 'S'
+        AND (
+          prm.NomeProdutoPattern IS NULL
+          OR UPPER(TRIM(p.Nome)) LIKE UPPER(prm.NomeProdutoPattern)
+        )
     ),
     Tot AS (
       SELECT COUNT(*) AS TotalCount FROM MargemProduto

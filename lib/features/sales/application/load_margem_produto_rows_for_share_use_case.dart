@@ -51,6 +51,7 @@ class LoadMargemProdutoRowsForShareUseCase {
       final pageFilter = MargemProdutoFilter(
         codEmpresa: filter.codEmpresa,
         codFilial: filter.codFilial,
+        searchTerm: filter.searchTerm,
         page: page,
         pageSize: pageSize,
       );
