@@ -30,26 +30,29 @@ void main() {
   });
 
   group('nextSingleColumnSort', () {
-    test('should start from initialDirection when the column is not active', () {
-      expect(
-        nextSingleColumnSort(
-          columnKey: 'margem',
-          currentSorts: const <AppReportSortDescriptor>[
+    test(
+      'should start from initialDirection when the column is not active',
+      () {
+        expect(
+          nextSingleColumnSort(
+            columnKey: 'margem',
+            currentSorts: const <AppReportSortDescriptor>[
+              AppReportSortDescriptor(
+                columnKey: 'nomeProduto',
+                direction: AppReportSortDirection.ascending,
+              ),
+            ],
+            initialDirection: AppReportSortDirection.descending,
+          ),
+          const <AppReportSortDescriptor>[
             AppReportSortDescriptor(
-              columnKey: 'nomeProduto',
-              direction: AppReportSortDirection.ascending,
+              columnKey: 'margem',
+              direction: AppReportSortDirection.descending,
             ),
           ],
-          initialDirection: AppReportSortDirection.descending,
-        ),
-        const <AppReportSortDescriptor>[
-          AppReportSortDescriptor(
-            columnKey: 'margem',
-            direction: AppReportSortDirection.descending,
-          ),
-        ],
-      );
-    });
+        );
+      },
+    );
 
     test('should toggle ascending to descending on the active column', () {
       expect(
