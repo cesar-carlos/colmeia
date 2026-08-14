@@ -13,6 +13,19 @@ import 'package:result_dart/result_dart.dart';
 class _MockAgentQueriesRepository extends Mock
     implements AgentQueriesRepository {}
 
+const _emptyCatalogSuccess = Success<AgentSqlExecutionResult, AppFailure>(
+  AgentSqlExecutionResult(
+    rows: <Map<String, dynamic>>[
+      <String, dynamic>{'TotalCount': 0},
+    ],
+    rowCount: 1,
+  ),
+);
+
+const _emptyPayloadSuccess = Success<AgentSqlExecutionResult, AppFailure>(
+  AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+);
+
 void main() {
   late _MockAgentQueriesRepository agentQueriesRepository;
   late CadastroFilialRepositoryImpl repository;
@@ -28,7 +41,10 @@ void main() {
 
   setUp(() {
     agentQueriesRepository = _MockAgentQueriesRepository();
-    repository = CadastroFilialRepositoryImpl(agentQueriesRepository);
+    repository = CadastroFilialRepositoryImpl(
+      agentQueriesRepository,
+      emptySuccessRetryDelay: Duration.zero,
+    );
   });
 
   test('returns validation failure when filter is invalid', () async {
@@ -73,9 +89,7 @@ void main() {
     when(
       () => agentQueriesRepository.executeSql(any()),
     ).thenAnswer(
-      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
-        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
-      ),
+      (_) async => _emptyCatalogSuccess,
     );
 
     await repository.loadPage(
@@ -109,15 +123,16 @@ void main() {
     check(captured.clientToken).equals('tok');
     check(captured.bridgeTimeoutMs).equals(5000);
     check(captured.useRelay).isTrue();
+    check(captured.relayMode).equals(AgentSqlRelayMode.unary);
+    check(captured.executeOptions?.preferDbStreaming).equals(false);
+    check(captured.skipTransportCache).isTrue();
   });
 
   test('map catalog filter uses slim SQL projection', () async {
     when(
       () => agentQueriesRepository.executeSql(any()),
     ).thenAnswer(
-      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
-        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
-      ),
+      (_) async => _emptyCatalogSuccess,
     );
 
     await repository.loadPage(
@@ -140,13 +155,42 @@ void main() {
     check(captured.sql).not((it) => it.contains('f.CNPJ'));
   });
 
+  test(
+    'branch options filter uses identity-only SQL without Municipio',
+    () async {
+      when(
+        () => agentQueriesRepository.executeSql(any()),
+      ).thenAnswer(
+        (_) async => _emptyCatalogSuccess,
+      );
+
+      await repository.loadPage(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        filter: const CadastroFilialFilter(branchOptionsProjection: true),
+      );
+
+      final captured =
+          verify(
+                () => agentQueriesRepository.executeSql(captureAny()),
+              ).captured.single
+              as AgentSqlExecuteRequest;
+
+      check(captured.sql).equals(
+        CadastroFilialSql.query(
+          projection: CadastroFilialSqlProjection.branchOptions,
+        ),
+      );
+      check(captured.sql).not((it) => it.contains('LEFT JOIN Municipio'));
+      check(captured.executeOptions?.preferDbStreaming).equals(false);
+    },
+  );
+
   test('builds exact selected-branch SQL for one branch', () async {
     when(
       () => agentQueriesRepository.executeSql(any()),
     ).thenAnswer(
-      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
-        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
-      ),
+      (_) async => _emptyCatalogSuccess,
     );
 
     await repository.loadPage(
@@ -178,9 +222,7 @@ void main() {
     when(
       () => agentQueriesRepository.executeSql(any()),
     ).thenAnswer(
-      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
-        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
-      ),
+      (_) async => _emptyCatalogSuccess,
     );
 
     await repository.loadPage(
@@ -220,9 +262,7 @@ void main() {
     when(
       () => agentQueriesRepository.executeSql(any()),
     ).thenAnswer(
-      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
-        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
-      ),
+      (_) async => _emptyCatalogSuccess,
     );
 
     await repository.loadPage(
@@ -261,9 +301,7 @@ void main() {
       when(
         () => agentQueriesRepository.executeSql(any()),
       ).thenAnswer(
-        (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
-          AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
-        ),
+        (_) async => _emptyCatalogSuccess,
       );
 
       await repository.loadPage(
@@ -325,4 +363,121 @@ void main() {
     check(row.cep).equals('78005123');
     check(row.nomeMunicipio).equals('Cuiaba');
   });
+
+  test('empty CTE payload retries and maps the second response', () async {
+    var calls = 0;
+    when(() => agentQueriesRepository.executeSql(any())).thenAnswer((
+      _,
+    ) async {
+      calls += 1;
+      if (calls == 1) {
+        return _emptyPayloadSuccess;
+      }
+      return const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(
+          rows: <Map<String, dynamic>>[
+            <String, dynamic>{
+              'TotalCount': 1,
+              'CodEmpresa': 1,
+              'CodFilial': 2,
+              'NomeFilial': 'Filial',
+            },
+          ],
+          rowCount: 1,
+        ),
+      );
+    });
+
+    final result = await repository.loadPage(
+      userId: 'user-1',
+      agentId: 'agent-1',
+      filter: const CadastroFilialFilter(),
+    );
+
+    check(result.isSuccess()).isTrue();
+    check(result.getOrThrow().items.single.codFilial).equals(2);
+    verify(() => agentQueriesRepository.executeSql(any())).called(2);
+  });
+
+  test(
+    'empty CTE payload twice falls back to simple Filial SELECT for pickers',
+    () async {
+      var calls = 0;
+      when(() => agentQueriesRepository.executeSql(any())).thenAnswer((
+        _,
+      ) async {
+        calls += 1;
+        if (calls <= 2) {
+          return _emptyPayloadSuccess;
+        }
+        return const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(
+            rows: <Map<String, dynamic>>[
+              <String, dynamic>{
+                'CodEmpresa': 1,
+                'CodFilial': 7,
+                'NomeFilial': 'Loja',
+              },
+            ],
+            rowCount: 1,
+          ),
+        );
+      });
+
+      final result = await repository.loadPage(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        filter: const CadastroFilialFilter(branchOptionsProjection: true),
+      );
+
+      check(result.isSuccess()).isTrue();
+      check(result.getOrThrow().items.single.codFilial).equals(7);
+      final captured = verify(
+        () => agentQueriesRepository.executeSql(captureAny()),
+      ).captured;
+      check(captured.length).equals(3);
+      final fallback = captured[2] as AgentSqlExecuteRequest;
+      check(fallback.sql).contains('SELECT TOP');
+      check(fallback.sql).not((it) => it.contains('ROW_NUMBER'));
+      check(fallback.namedParams).isEmpty();
+    },
+  );
+
+  test(
+    'empty CTE payload twice on registration is a failure not empty catalog',
+    () async {
+      when(
+        () => agentQueriesRepository.executeSql(any()),
+      ).thenAnswer((_) async => _emptyPayloadSuccess);
+
+      final result = await repository.loadPage(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        filter: const CadastroFilialFilter(),
+      );
+
+      check(result.isError()).isTrue();
+      check(result.exceptionOrNull()).isA<UnknownFailure>();
+      verify(() => agentQueriesRepository.executeSql(any())).called(2);
+    },
+  );
+
+  test(
+    'empty CTE payload twice plus empty simple SELECT is a failure not empty catalog',
+    () async {
+      when(
+        () => agentQueriesRepository.executeSql(any()),
+      ).thenAnswer((_) async => _emptyPayloadSuccess);
+
+      final result = await repository.loadPage(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        filter: const CadastroFilialFilter(branchOptionsProjection: true),
+      );
+
+      check(result.isError()).isTrue();
+      check(result.exceptionOrNull()).isA<UnknownFailure>();
+      verify(() => agentQueriesRepository.executeSql(any())).called(3);
+    },
+  );
 }

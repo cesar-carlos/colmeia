@@ -6,8 +6,6 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_filter.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_by.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_sort_direction.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -31,7 +29,10 @@ void main() {
 
   setUp(() {
     agentQueriesRepository = _MockAgentQueriesRepository();
-    repository = MargemProdutoRepositoryImpl(agentQueriesRepository);
+    repository = MargemProdutoRepositoryImpl(
+      agentQueriesRepository,
+      emptySuccessRetryDelay: Duration.zero,
+    );
   });
 
   test('returns validation failure when filter is invalid', () async {
@@ -103,12 +104,7 @@ void main() {
             ).captured.single
             as AgentSqlExecuteRequest;
 
-    check(captured.sql).equals(
-      MargemProdutoSql.pagedQuery(
-        sortBy: MargemProdutoSortBy.nomeProduto,
-        sortDirection: ResumoProdutoVendaSortDirection.ascending,
-      ),
-    );
+    check(captured.sql).equals(MargemProdutoSql.pagedQuery());
     check(captured.namedParams['codEmpresa']).equals(1);
     check(captured.namedParams['codFilial']).equals(2);
     check(captured.namedParams['startRow']).equals(11);
@@ -124,7 +120,7 @@ void main() {
     check(captured.skipTransportCache).isTrue();
   });
 
-  test('execute uses ROW_NUMBER order from filter.sortBy', () async {
+  test('execute uses fixed NomeProduto ROW_NUMBER SQL', () async {
     when(
       () => agentQueriesRepository.executeSql(any()),
     ).thenAnswer(
@@ -144,8 +140,6 @@ void main() {
       filter: const MargemProdutoFilter(
         codEmpresa: 1,
         codFilial: 1,
-        sortBy: MargemProdutoSortBy.custoReposicao,
-        sortDirection: ResumoProdutoVendaSortDirection.descending,
       ),
     );
 
@@ -155,13 +149,9 @@ void main() {
             ).captured.single
             as AgentSqlExecuteRequest;
 
-    check(captured.sql).equals(
-      MargemProdutoSql.pagedQuery(
-        sortBy: MargemProdutoSortBy.custoReposicao,
-        sortDirection: ResumoProdutoVendaSortDirection.descending,
-      ),
-    );
-    check(captured.sql).contains('m.CustoReposicao DESC');
+    check(captured.sql).equals(MargemProdutoSql.pagedQuery());
+    check(captured.sql).contains('m.NomeProduto ASC');
+    check(captured.sql).contains('m.CodProduto ASC');
   });
 
   test('maps rows with CodProduto to entities', () async {
@@ -216,5 +206,68 @@ void main() {
     check(row.margemLucroProduto).equals(60);
     check(row.markupSobreCustoPercent).equals(150);
     check(row.margemLucroBrutoPercent).equals(60);
+  });
+
+  test('empty payload retries and maps the second response', () async {
+    var calls = 0;
+    when(() => agentQueriesRepository.executeSql(any())).thenAnswer((
+      _,
+    ) async {
+      calls += 1;
+      if (calls == 1) {
+        return const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+        );
+      }
+      return const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(
+          rows: <Map<String, dynamic>>[
+            <String, dynamic>{
+              'TotalCount': 1,
+              'CodEmpresa': 1,
+              'CodFilial': 2,
+              'NomeFilial': 'Loja Centro',
+              'CodProduto': 10,
+              'NomeProduto': 'Mel',
+              'CustoReposicao': 1.0,
+              'PrecoVendaProduto': 2.0,
+              'PercentualMarkupCustoCompraProduto': 100.0,
+              'MargemLucroProduto': 50.0,
+            },
+          ],
+          rowCount: 1,
+        ),
+      );
+    });
+
+    final result = await repository.loadPage(
+      userId: 'user-1',
+      agentId: 'agent-1',
+      filter: const MargemProdutoFilter(codEmpresa: 1, codFilial: 2),
+    );
+
+    check(result.isSuccess()).isTrue();
+    check(result.getOrThrow().items.single.codProduto).equals(10);
+    verify(() => agentQueriesRepository.executeSql(any())).called(2);
+  });
+
+  test('empty payload twice is a failure not empty catalog', () async {
+    when(
+      () => agentQueriesRepository.executeSql(any()),
+    ).thenAnswer(
+      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+      ),
+    );
+
+    final result = await repository.loadPage(
+      userId: 'user-1',
+      agentId: 'agent-1',
+      filter: const MargemProdutoFilter(codEmpresa: 1, codFilial: 2),
+    );
+
+    check(result.isError()).isTrue();
+    check(result.exceptionOrNull()).isA<UnknownFailure>();
+    verify(() => agentQueriesRepository.executeSql(any())).called(2);
   });
 }

@@ -976,6 +976,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get chartShareExportIncompleteCatalog =>
+      'Could not load the full catalog for sharing. Try again.';
+
+  @override
   String chartSharePdfTableRowsTruncated(int shownRows, int totalRows) {
     return 'PDF table shows $shownRows of $totalRows rows.';
   }
@@ -2740,6 +2744,21 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String reportPaginationPageOf(int current, int total) {
     return 'Page $current of $total';
+  }
+
+  @override
+  String reportColumnSortedAscending(String label) {
+    return '$label, sorted ascending';
+  }
+
+  @override
+  String reportColumnSortedDescending(String label) {
+    return '$label, sorted descending';
+  }
+
+  @override
+  String reportColumnSortHint(String label) {
+    return '$label, tap to sort';
   }
 
   @override

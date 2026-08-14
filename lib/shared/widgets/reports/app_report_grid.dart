@@ -220,13 +220,16 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
       }
       if (_hasSfDataGrid) {
         final keys = _visibleColumns.map((c) => c.key).toSet();
-        await _source.applyExternalSortDescriptors(
-          widget.currentSorts,
-          keys,
-          reorderRows: !widget.style.trustServerRowOrder,
-        );
-        if (!mounted) {
-          return;
+        // Server-ordered grids own the sort affordance; do not push sorts into
+        // Syncfusion (local reorder on mount was crashing this catalog).
+        if (!widget.style.trustServerRowOrder) {
+          await _source.applyExternalSortDescriptors(
+            widget.currentSorts,
+            keys,
+          );
+          if (!mounted) {
+            return;
+          }
         }
         _source.applyExternalGroupDescriptors(widget.currentGroups, keys);
         _syncGroupExpansionFromParent();
@@ -393,6 +396,7 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
     // survives rebuilds where only unrelated fields (e.g. gridHeight) changed.
     final styleSignature = Object.hash(
       widget.style.allowSorting,
+      widget.style.trustServerRowOrder,
       widget.style.uppercaseHeaderLabels,
       widget.style.headerLetterSpacing,
       widget.style.headerBackgroundColor,
@@ -401,10 +405,18 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
       widget.style.headerRowHeight,
       widget.style.variant,
     );
+    final sortsSignature = Object.hashAll(
+      widget.currentSorts.map(
+        (sort) => Object.hash(sort.columnKey, sort.direction),
+      ),
+    );
+    final locale = Localizations.localeOf(context);
     final signature = Object.hash(
       identityHashCode(visible),
       styleSignature,
+      sortsSignature,
       density,
+      locale,
       theme.brightness,
       identityHashCode(theme.colorScheme),
       identityHashCode(theme.appTypography),
@@ -416,7 +428,6 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
 
     final tokens = theme.extension<AppThemeTokens>()!;
     final typography = theme.appTypography;
-    final headerHeight = widget.style.resolvedHeaderRowHeight(density);
     final headerBackgroundColor =
         widget.style.headerBackgroundColor ??
         (widget.style.variant == AppReportViewerVariant.minimal
@@ -432,8 +443,23 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
           fontWeight: FontWeight.w700,
         );
 
+    final handleServerSort =
+        widget.style.trustServerRowOrder && widget.style.allowSorting;
+    final l10n = AppLocalizations.of(context);
     final result = visible
         .map((col) {
+          final sortDirection = handleServerSort && col.sortable
+              ? _sortDirectionFor(col.key)
+              : null;
+          final sortSemanticLabel = handleServerSort && col.sortable
+              ? switch (sortDirection) {
+                  AppReportSortDirection.ascending =>
+                    l10n.reportColumnSortedAscending(col.label),
+                  AppReportSortDirection.descending =>
+                    l10n.reportColumnSortedDescending(col.label),
+                  null => l10n.reportColumnSortHint(col.label),
+                }
+              : null;
           final labelWidget = col.headerBuilder != null
               ? col.headerBuilder!(context, col.label)
               : _ReportGridColumnHeader(
@@ -441,7 +467,6 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
                       ? col.label.toUpperCase()
                       : col.label,
                   alignment: _sfAlignment(col.effectiveAlignment),
-                  height: headerHeight,
                   horizontalPadding: tokens.gapMd,
                   backgroundColor: headerBackgroundColor,
                   dividerColor: headerDividerColor,
@@ -451,6 +476,12 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
                             widget.style.headerLetterSpacing ??
                             defaultHeaderTextStyle.letterSpacing,
                       ),
+                  sortDirection: sortDirection,
+                  showSortHint: handleServerSort && col.sortable,
+                  semanticLabel: sortSemanticLabel,
+                  onSortTap: handleServerSort && col.sortable
+                      ? () => _emitServerSort(col)
+                      : null,
                 );
 
           return GridColumn(
@@ -460,7 +491,10 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
             columnWidthMode: col.width != null
                 ? ColumnWidthMode.none
                 : ColumnWidthMode.fill,
-            allowSorting: widget.style.allowSorting && col.sortable,
+            allowSorting:
+                widget.style.allowSorting &&
+                col.sortable &&
+                !widget.style.trustServerRowOrder,
             label: labelWidget,
           );
         })
@@ -468,6 +502,31 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
     _cachedGridColumns = result;
     _cachedGridColumnsSignature = signature;
     return result;
+  }
+
+  AppReportSortDirection? _sortDirectionFor(String columnKey) {
+    for (final sort in widget.currentSorts) {
+      if (sort.columnKey == columnKey) {
+        return sort.direction;
+      }
+    }
+    return null;
+  }
+
+  void _emitServerSort(AppReportColumn<T> column) {
+    final onSortChanged = widget.events.onSortChanged;
+    if (onSortChanged == null) {
+      return;
+    }
+    onSortChanged(
+      nextSingleColumnSort(
+        columnKey: column.key,
+        currentSorts: widget.currentSorts,
+        initialDirection: column.numeric
+            ? AppReportSortDirection.descending
+            : AppReportSortDirection.ascending,
+      ),
+    );
   }
 
   List<GridTableSummaryRow> _buildSummaryRows(
@@ -615,7 +674,8 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
       tableSummaryRows: _buildSummaryRows(visible),
       allowExpandCollapseGroup: widget.currentGroups.isNotEmpty,
       groupCaptionTitleFormat: '{ColumnName}|{Key}|{ItemsCount}',
-      allowSorting: widget.style.allowSorting,
+      allowSorting:
+          widget.style.allowSorting && !widget.style.trustServerRowOrder,
       allowMultiColumnSorting: widget.style.allowMultiSort,
       allowColumnsResizing: true,
       showSortNumbers: widget.style.allowMultiSort,
@@ -710,41 +770,101 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
 }
 
 /// Default header cell for a report grid column: background, bottom divider
-/// and an aligned, optionally-uppercased label.
+/// and an aligned, optionally-uppercased label with an optional sort mark.
 class _ReportGridColumnHeader extends StatelessWidget {
   const _ReportGridColumnHeader({
     required this.label,
     required this.alignment,
-    required this.height,
     required this.horizontalPadding,
     required this.backgroundColor,
     required this.dividerColor,
     required this.textStyle,
+    this.sortDirection,
+    this.showSortHint = false,
+    this.semanticLabel,
+    this.onSortTap,
   });
 
   final String label;
   final Alignment alignment;
-  final double height;
   final double horizontalPadding;
   final Color backgroundColor;
   final Color dividerColor;
   final TextStyle textStyle;
+  final AppReportSortDirection? sortDirection;
+  final bool showSortHint;
+  final String? semanticLabel;
+  final VoidCallback? onSortTap;
+
+  static const double _sortIconSize = 16;
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
+    final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
+    final isActive = sortDirection != null;
+    final iconColor = isActive
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurfaceVariant;
+    final labelStyle = isActive
+        ? textStyle.copyWith(
+            color: theme.colorScheme.primary,
+            fontWeight: FontWeight.w800,
+          )
+        : textStyle;
+    final header = DecoratedBox(
       decoration: BoxDecoration(
         color: backgroundColor,
         border: Border(bottom: BorderSide(color: dividerColor)),
       ),
-      child: Container(
-        alignment: alignment,
+      child: Padding(
         padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-        height: height,
-        child: Text(
-          label,
-          style: textStyle,
-          overflow: TextOverflow.ellipsis,
+        child: Align(
+          alignment: alignment,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Flexible(
+                child: Text(
+                  label,
+                  style: labelStyle,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                ),
+              ),
+              if (showSortHint) ...<Widget>[
+                SizedBox(width: tokens.gapXs),
+                Icon(
+                  isActive
+                      ? (sortDirection == AppReportSortDirection.ascending
+                            ? Icons.arrow_upward_rounded
+                            : Icons.arrow_downward_rounded)
+                      : Icons.unfold_more_rounded,
+                  size: _sortIconSize,
+                  color: iconColor,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (onSortTap == null) {
+      return header;
+    }
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onSortTap,
+        child: Semantics(
+          button: true,
+          selected: isActive,
+          label: semanticLabel ?? label,
+          onTap: onSortTap,
+          child: header,
         ),
       ),
     );

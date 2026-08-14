@@ -1,6 +1,3 @@
-import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_by.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_sort_direction.dart';
-
 /// Paged product-margin catalog (`MargemProduto`) with total count in one
 /// `sql.execute` round-trip.
 ///
@@ -27,37 +24,15 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_ve
 /// (four binds). Each named param appears **once** — SQL Anywhere ODBC
 /// expands every `:name` to a positional `?`.
 ///
-/// **Ordering:** primary column from [MargemProdutoSortBy] with
-/// [ResumoProdutoVendaSortDirection]; stable tie-breaker `CodProduto ASC`.
+/// **Ordering:** fixed `NomeProduto ASC`, then `CodProduto ASC` as the
+/// stable page key. `ROW_NUMBER` must stay deterministic or page 2 can
+/// overlap or skip rows.
 ///
 /// Pagination: `Parametros` → `MargemProduto` → `Tot` → `Numbered`
 /// (`ROW_NUMBER`) → `Tot LEFT JOIN Numbered` on
 /// `Rn BETWEEN :startRow AND :endRow`.
 abstract final class MargemProdutoSql {
-  static String pagedQuery({
-    required MargemProdutoSortBy sortBy,
-    required ResumoProdutoVendaSortDirection sortDirection,
-  }) {
-    final dir = switch (sortDirection) {
-      ResumoProdutoVendaSortDirection.ascending => 'ASC',
-      ResumoProdutoVendaSortDirection.descending => 'DESC',
-    };
-
-    final rowNumberOrderBy = switch (sortBy) {
-      MargemProdutoSortBy.nomeProduto =>
-        '\n            m.NomeProduto $dir,'
-            '\n            m.CodProduto ASC',
-      MargemProdutoSortBy.custoReposicao =>
-        '\n            m.CustoReposicao $dir,'
-            '\n            m.CodProduto ASC',
-      MargemProdutoSortBy.percentualMarkup =>
-        '\n            m.PercentualMarkupCustoCompraProduto $dir,'
-            '\n            m.CodProduto ASC',
-      MargemProdutoSortBy.margemLucroProduto =>
-        '\n            m.MargemLucroProduto $dir,'
-            '\n            m.CodProduto ASC',
-    };
-
+  static String pagedQuery() {
     return '''
     WITH Parametros AS (
       SELECT
@@ -71,7 +46,7 @@ abstract final class MargemProdutoSql {
         f.Nome AS NomeFilial,
         f.NomeFantasia AS NomeFantasiaFilial,
         p.CodProduto,
-        p.Nome AS NomeProduto,
+        TRIM(p.Nome) AS NomeProduto,
         p.CodUnidadeMedida,
         und.Descricao AS DescricaoUnidadeMedida,
         p.CodGrupoProduto,
@@ -116,7 +91,8 @@ abstract final class MargemProdutoSql {
         m.*,
         ROW_NUMBER() OVER (
           ORDER BY
-            $rowNumberOrderBy
+            m.NomeProduto ASC,
+            m.CodProduto ASC
         ) AS Rn
       FROM MargemProduto m
     )

@@ -8,6 +8,7 @@ class CadastroFilialFilter {
     this.page = 1,
     this.pageSize = defaultPageSize,
     this.mapCatalogProjection = false,
+    this.branchOptionsProjection = false,
   });
 
   static const int defaultPageSize = 20;
@@ -35,6 +36,12 @@ class CadastroFilialFilter {
 
   /// When true, SQL omits CNPJ/CodMunicipio columns unused by the sales map.
   final bool mapCatalogProjection;
+
+  /// When true, SQL selects only company/branch identity and names.
+  ///
+  /// Skips the `Municipio` join and address columns so pickers keep working on
+  /// agents whose `Filial` schema does not expose those extras.
+  final bool branchOptionsProjection;
 
   bool get hasSelectedBranches => selectedBranches.isNotEmpty;
 
@@ -73,6 +80,7 @@ class CadastroFilialFilter {
     int? page,
     int? pageSize,
     bool? mapCatalogProjection,
+    bool? branchOptionsProjection,
   }) {
     return CadastroFilialFilter(
       codEmpresa: codEmpresa ?? this.codEmpresa,
@@ -89,6 +97,8 @@ class CadastroFilialFilter {
       page: page ?? this.page,
       pageSize: pageSize ?? this.pageSize,
       mapCatalogProjection: mapCatalogProjection ?? this.mapCatalogProjection,
+      branchOptionsProjection:
+          branchOptionsProjection ?? this.branchOptionsProjection,
     );
   }
 

@@ -136,6 +136,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
   late List<AppReportSortDescriptor> _sorts;
   late List<AppReportGroupDescriptor> _groups;
   late final AppReportGroupController _groupController;
+  AppReportQuery? _emittedQuery;
 
   bool get _hasLoadError =>
       widget.loadErrorPanel != null || _hasLegacyErrorMessage;
@@ -150,12 +151,14 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
     super.initState();
     _groupController = AppReportGroupController();
     _initFromQuery();
+    _emittedQuery = widget.query;
   }
 
   @override
   void didUpdateWidget(covariant AppReportViewer<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.query != widget.query && widget.query != null) {
+      _emittedQuery = widget.query;
       _applyExternalQuery(widget.query!);
     }
     if (oldWidget.columns != widget.columns) {
@@ -300,7 +303,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
     int? pageSize,
     String? searchTerm,
   }) {
-    final current = widget.query ?? const AppReportQuery();
+    final current = _emittedQuery ?? widget.query ?? const AppReportQuery();
     final normalizedSearchTerm = searchTerm?.trim();
     final updated = current.copyWith(
       sorts: sorts ?? _sorts,
@@ -314,6 +317,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
       clearSearchTerm:
           normalizedSearchTerm != null && normalizedSearchTerm.isEmpty,
     );
+    _emittedQuery = updated;
     widget.events.onQueryChanged?.call(updated);
   }
 

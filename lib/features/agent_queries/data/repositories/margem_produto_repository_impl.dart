@@ -1,4 +1,5 @@
 import 'package:colmeia/core/config/app_environment.dart';
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_sql_row_map_reader.dart';
@@ -11,8 +12,10 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_executi
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/margem_produto_repository.dart';
+import 'package:result_dart/result_dart.dart';
 
 /// Paged product-margin catalog (`MargemProduto`).
 ///
@@ -20,11 +23,14 @@ import 'package:colmeia/features/agent_queries/domain/repositories/margem_produt
 ///
 /// Uses relay **unary** with `preferDbStreaming: false`. E2E SQL Anywhere
 /// streaming returned empty success for CTE page shapes; unary returns the
-/// page slice. Skips the short transport cache. Empty-success retry is not
-/// used here because a legitimate empty page is a `TotalCount = 0` sentinel
-/// row, not an empty payload.
+/// page slice. Skips the short transport cache. A raw empty payload is a
+/// transport glitch, not an empty catalog — we retry once. A legitimate empty
+/// page is a `TotalCount = 0` sentinel row.
 class MargemProdutoRepositoryImpl implements MargemProdutoRepository {
-  MargemProdutoRepositoryImpl(this._agentQueriesRepository);
+  MargemProdutoRepositoryImpl(
+    this._agentQueriesRepository, {
+    this.emptySuccessRetryDelay = const Duration(seconds: 2),
+  });
 
   /// Upper bound for the agent-side SQL timeout (`options.timeout_ms`).
   /// The effective value is derived as 90 % of the active bridge timeout,
@@ -45,6 +51,7 @@ class MargemProdutoRepositoryImpl implements MargemProdutoRepository {
   static const String _operation = 'loadMargemProdutoPage';
 
   final AgentQueriesRepository _agentQueriesRepository;
+  final Duration emptySuccessRetryDelay;
 
   @override
   Future<AppResult<MargemProdutoPageResult>> loadPage({
@@ -55,6 +62,7 @@ class MargemProdutoRepositoryImpl implements MargemProdutoRepository {
     int? bridgeTimeoutMs,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {
@@ -67,53 +75,93 @@ class MargemProdutoRepositoryImpl implements MargemProdutoRepository {
       );
     }
 
+    final trimmedAgentId = agentId.trim();
     final effectiveBridgeMs =
         bridgeTimeoutMs ?? AppEnvironment.agentSqlBridgeMediumTimeoutMs;
     final effectiveSqlMs = (effectiveBridgeMs * 0.9).round().clamp(
       _minSqlTimeoutMs,
       _defaultSqlTimeoutMs,
     );
+    var emptyRawPayload = false;
 
-    final request = AgentSqlExecuteRequest(
-      agentId: agentId,
-      requestingUserId: userId,
-      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
-      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
-      sql: MargemProdutoSql.pagedQuery(
-        sortBy: filter.sortBy,
-        sortDirection: filter.sortDirection,
-      ),
-      clientToken: clientToken,
-      bridgeTimeoutMs: effectiveBridgeMs,
-      namedParams: <String, Object?>{
-        'codEmpresa': filter.codEmpresa,
-        'codFilial': filter.codFilial,
-        'startRow': filter.startRow,
-        'endRow': filter.endRow,
+    Future<AppResult<MargemProdutoPageResult>> executeOnce() {
+      emptyRawPayload = false;
+      final request = AgentSqlExecuteRequest(
+        agentId: agentId,
+        requestingUserId: userId,
+        hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+        hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
+        // Fixed SQL order: NomeProduto ASC, CodProduto ASC (stable paging).
+        sql: MargemProdutoSql.pagedQuery(),
+        clientToken: clientToken,
+        bridgeTimeoutMs: effectiveBridgeMs,
+        namedParams: <String, Object?>{
+          'codEmpresa': filter.codEmpresa,
+          'codFilial': filter.codFilial,
+          'startRow': filter.startRow,
+          'endRow': filter.endRow,
+        },
+        executeOptions: AgentSqlExecuteOptions(
+          executionMode: AgentSqlExecutionMode.preserve,
+          maxRows: filter.pageSize + _maxRowsPageBuffer,
+          sqlTimeoutMs: effectiveSqlMs,
+          preferDbStreaming: false,
+        ),
+        useRelay: true,
+        // Explicit unary: documented streaming exception for this CTE page.
+        // ignore: avoid_redundant_argument_values
+        relayMode: AgentSqlRelayMode.unary,
+        skipTransportCache: true,
+      );
+
+      return AgentSqlRepositoryExecution.execute<MargemProdutoPageResult>(
+        agentQueriesRepository: _agentQueriesRepository,
+        request: request,
+        operation: _operation,
+        agentId: trimmedAgentId,
+        unexpectedRowsLogMessage: 'Unexpected row shape for $_operation',
+        mapExecution: (executionResult) {
+          emptyRawPayload = executionResult.rows.isEmpty;
+          return _mapPagedExecution(
+            executionResult,
+            agentId: trimmedAgentId,
+            sqlMaxRowsCap: filter.pageSize + _maxRowsPageBuffer,
+          );
+        },
+        cancelScope: cancelScope,
+      );
+    }
+
+    final first = await executeOnce();
+    if (first.isError() || !emptyRawPayload) {
+      return first;
+    }
+
+    AppLogger.info(
+      'Retrying empty unary success for $_operation',
+      context: <String, Object?>{
+        'operation': _operation,
+        'agentId': trimmedAgentId,
+        'retryDelayMs': emptySuccessRetryDelay.inMilliseconds,
       },
-      executeOptions: AgentSqlExecuteOptions(
-        executionMode: AgentSqlExecutionMode.preserve,
-        maxRows: filter.pageSize + _maxRowsPageBuffer,
-        sqlTimeoutMs: effectiveSqlMs,
-        preferDbStreaming: false,
-      ),
-      useRelay: true,
-      // Explicit unary: documented streaming exception for this CTE page.
-      // ignore: avoid_redundant_argument_values
-      relayMode: AgentSqlRelayMode.unary,
-      skipTransportCache: true,
     );
+    await Future<void>.delayed(emptySuccessRetryDelay);
+    final second = await executeOnce();
+    if (second.isError() || !emptyRawPayload) {
+      return second;
+    }
 
-    return AgentSqlRepositoryExecution.execute<MargemProdutoPageResult>(
-      agentQueriesRepository: _agentQueriesRepository,
-      request: request,
-      operation: _operation,
-      agentId: agentId.trim(),
-      unexpectedRowsLogMessage: 'Unexpected row shape for $_operation',
-      mapExecution: (executionResult) => _mapPagedExecution(
-        executionResult,
-        agentId: agentId.trim(),
-        sqlMaxRowsCap: filter.pageSize + _maxRowsPageBuffer,
+    return Failure<MargemProdutoPageResult, AppFailure>(
+      UnknownFailure(
+        message:
+            'Margem produto execute returned empty payload '
+            '(missing TotalCount sentinel)',
+        userMessage:
+            AgentSqlRepositoryExecution.defaultUnexpectedRowsUserMessage,
+        context: <String, Object?>{
+          'operation': _operation,
+          'agentId': trimmedAgentId,
+        },
       ),
     );
   }

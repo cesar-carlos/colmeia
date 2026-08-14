@@ -75,8 +75,6 @@ void main() {
             totalCount: 40,
           ),
           query: SalesMargemProdutoSort.queryFor(
-            sortBy: SalesMargemProdutoSort.defaultSortBy,
-            sortDirection: SalesMargemProdutoSort.defaultSortDirection,
             page: 2,
             pageSize: 20,
           ),

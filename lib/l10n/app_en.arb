@@ -474,6 +474,10 @@
       "totalCount": {"type": "int"}
     }
   },
+  "chartShareExportIncompleteCatalog": "Could not load the full catalog for sharing. Try again.",
+  "@chartShareExportIncompleteCatalog": {
+    "description": "SnackBar when a paged share export returns fewer rows than the catalog total."
+  },
   "chartSharePdfTableRowsTruncated": "PDF table shows {shownRows} of {totalRows} rows.",
   "@chartSharePdfTableRowsTruncated": {
     "description": "Notice appended to chart share PDF when the table is truncated to the row limit.",
@@ -1499,6 +1503,27 @@
     "placeholders": {
       "current": {"type": "int"},
       "total": {"type": "int"}
+    }
+  },
+  "reportColumnSortedAscending": "{label}, sorted ascending",
+  "@reportColumnSortedAscending": {
+    "description": "Semantics label for a report column currently sorted ascending.",
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "reportColumnSortedDescending": "{label}, sorted descending",
+  "@reportColumnSortedDescending": {
+    "description": "Semantics label for a report column currently sorted descending.",
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "reportColumnSortHint": "{label}, tap to sort",
+  "@reportColumnSortHint": {
+    "description": "Semantics label for a sortable report column that is not the active sort.",
+    "placeholders": {
+      "label": {"type": "String"}
     }
   },
   "appLoading": "Loading…",

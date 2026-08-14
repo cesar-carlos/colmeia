@@ -55,9 +55,51 @@ void main() {
       expect(sql, contains('NomeFilial'));
       expect(sql, contains('Endereco'));
       expect(sql, contains('NomeMunicipio'));
+      expect(sql, contains('LEFT JOIN Municipio m ON'));
       expect(sql, isNot(contains('f.CNPJ')));
       expect(sql, isNot(contains('AS CodMunicipio')));
       expect(sql, isNot(contains('N.CodMunicipio')));
+    });
+
+    test(
+      'branchOptions projection omits Municipio join and address columns',
+      () {
+        final sql = CadastroFilialSql.query(
+          projection: CadastroFilialSqlProjection.branchOptions,
+        );
+
+        expect(sql, contains('FROM Filial f'));
+        expect(sql, contains('f.Nome AS NomeFilial'));
+        expect(sql, contains('f.NomeFantasia AS NomeFantasia'));
+        expect(sql, isNot(contains('LEFT JOIN Municipio')));
+        expect(sql, isNot(contains('f.CNPJ')));
+        expect(sql, isNot(contains('f.CEP')));
+        expect(sql, isNot(contains('f.Logradouro')));
+        expect(sql, isNot(contains('CodMunicipio')));
+      },
+    );
+
+    test('projectionFor prefers branchOptions over mapCatalog', () {
+      const filter = CadastroFilialFilter(
+        mapCatalogProjection: true,
+        branchOptionsProjection: true,
+      );
+
+      expect(
+        CadastroFilialSql.projectionFor(filter),
+        CadastroFilialSqlProjection.branchOptions,
+      );
+    });
+
+    test('branchOptionsSimpleQuery is a TOP select without CTE', () {
+      final sql = CadastroFilialSql.branchOptionsSimpleQuery();
+
+      expect(sql, contains('SELECT TOP 500'));
+      expect(sql, contains('FROM Filial f'));
+      expect(sql, contains('f.Nome AS NomeFilial'));
+      expect(sql, isNot(contains('ROW_NUMBER')));
+      expect(sql, isNot(contains('LEFT JOIN Municipio')));
+      expect(sql, isNot(contains(':startRow')));
     });
   });
 }

@@ -281,9 +281,9 @@ class AppReportViewerStyle {
   /// [alternateRowColor] is set, which takes precedence.
   final bool zebraRows;
 
-  /// When true, the report grid updates sort indicators from the viewer query
-  /// but does not reorder rows locally — use when the API already returns rows
-  /// in the requested order.
+  /// When true, row order comes from the backend (`ORDER BY` / `ROW_NUMBER`).
+  /// The grid draws its own sort affordance and emits sort changes without
+  /// running Syncfusion's local reorder (which would fight the server page).
   final bool trustServerRowOrder;
 
   List<int> get resolvedPageSizes =>

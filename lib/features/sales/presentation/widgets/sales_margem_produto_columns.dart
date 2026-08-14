@@ -66,6 +66,7 @@ List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
       key: SalesMargemProdutoSort.columnProduto,
       label: labels.produto,
       valueGetter: (row) => row.nomeProduto,
+      sortable: false,
       minWidth: 220,
     ),
     AppReportColumn<MargemProdutoRow>(
@@ -74,6 +75,7 @@ List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
       valueGetter: (row) => row.custoReposicao,
       formatter: formatSalesMargemProdutoCurrency,
       numeric: true,
+      sortable: false,
       minWidth: 128,
     ),
     AppReportColumn<MargemProdutoRow>(
@@ -91,6 +93,7 @@ List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
       valueGetter: (row) => row.percentualMarkupCustoCompraProduto,
       formatter: formatSalesMargemProdutoPercent,
       numeric: true,
+      sortable: false,
       minWidth: 112,
       valueColor: (context, value) => salesMargemProdutoSignedPercentColor(
         Theme.of(context).colorScheme,
@@ -103,6 +106,7 @@ List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
       valueGetter: (row) => row.margemLucroProduto,
       formatter: formatSalesMargemProdutoPercent,
       numeric: true,
+      sortable: false,
       minWidth: 128,
       valueColor: (context, value) => salesMargemProdutoSignedPercentColor(
         Theme.of(context).colorScheme,

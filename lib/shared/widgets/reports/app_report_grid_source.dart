@@ -148,10 +148,8 @@ class AppReportGridSource<T> extends DataGridSource {
   /// Aligns Syncfusion [sortedColumns] with app-level [sorts] without
   /// notifying [onSortChanged] (avoids feedback loops).
   ///
-  /// Always runs through [sort] so Syncfusion updates column-header sort
-  /// arrows in addition to row order. When [reorderRows] is false (server-
-  /// sorted data), rows may briefly appear in client-sorted order until the
-  /// next server response arrives, but this is imperceptible in practice.
+  /// When [reorderRows] is false, only header indicators refresh — row order
+  /// stays as built from the last [rows] list (server `ORDER BY`).
   Future<void> applyExternalSortDescriptors(
     List<AppReportSortDescriptor> sorts,
     Set<String> visibleColumnKeys, {
@@ -187,7 +185,11 @@ class AppReportGridSource<T> extends DataGridSource {
           ),
         );
       }
-      await sort();
+      if (reorderRows) {
+        await sort();
+      } else {
+        notifyListeners();
+      }
     } finally {
       _suppressSortCallback = false;
     }

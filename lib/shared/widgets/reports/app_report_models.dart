@@ -36,6 +36,37 @@ class AppReportSortDescriptor {
   int get hashCode => Object.hash(columnKey, direction);
 }
 
+/// Next single-column sort after a header tap (server-ordered grids).
+///
+/// Toggles ASC/DESC when [columnKey] is already the active sort; otherwise
+/// starts from [initialDirection]. Replaces the sort list — multi-column
+/// order is not accumulated here.
+List<AppReportSortDescriptor> nextSingleColumnSort({
+  required String columnKey,
+  required List<AppReportSortDescriptor> currentSorts,
+  AppReportSortDirection initialDirection = AppReportSortDirection.ascending,
+}) {
+  for (final sort in currentSorts) {
+    if (sort.columnKey != columnKey) {
+      continue;
+    }
+    return <AppReportSortDescriptor>[
+      AppReportSortDescriptor(
+        columnKey: columnKey,
+        direction: sort.direction == AppReportSortDirection.ascending
+            ? AppReportSortDirection.descending
+            : AppReportSortDirection.ascending,
+      ),
+    ];
+  }
+  return <AppReportSortDescriptor>[
+    AppReportSortDescriptor(
+      columnKey: columnKey,
+      direction: initialDirection,
+    ),
+  ];
+}
+
 // ---------------------------------------------------------------------------
 // Grouping
 // ---------------------------------------------------------------------------

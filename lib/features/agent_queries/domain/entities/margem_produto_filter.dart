@@ -1,20 +1,14 @@
-import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_by.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_sort_direction.dart';
-
 /// Filters and pagination for the product-margin catalog `sql.execute` query.
 ///
 /// **Branch scope:** [codEmpresa] and [codFilial] are required. Replacement
 /// cost is stored per company/branch in `CustoProduto`.
 ///
-/// **Ordenação:** [sortBy] sets the primary `ROW_NUMBER` column;
-/// [sortDirection] sets ASC/DESC. `CodProduto ASC` is always the stable
-/// tie-breaker.
+/// **Ordering:** the SQL always numbers rows by `NomeProduto ASC`, then
+/// `CodProduto ASC`. That fixed key keeps page windows stable.
 class MargemProdutoFilter {
   const MargemProdutoFilter({
     required this.codEmpresa,
     required this.codFilial,
-    this.sortBy = MargemProdutoSortBy.nomeProduto,
-    this.sortDirection = ResumoProdutoVendaSortDirection.ascending,
     this.page = 1,
     this.pageSize = defaultPageSize,
   });
@@ -26,13 +20,6 @@ class MargemProdutoFilter {
 
   final int codEmpresa;
   final int codFilial;
-
-  /// Primary sort column in `ROW_NUMBER() OVER`.
-  final MargemProdutoSortBy sortBy;
-
-  /// ASC or DESC for [sortBy]; `CodProduto ASC` follows as a stable
-  /// tie-breaker in the SQL.
-  final ResumoProdutoVendaSortDirection sortDirection;
 
   final int page;
   final int pageSize;

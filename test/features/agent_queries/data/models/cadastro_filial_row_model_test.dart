@@ -52,5 +52,30 @@ void main() {
       check(entity.cep).isNull();
       check(entity.nomeMunicipio).isNull();
     });
+
+    test('fromMap falls back to fantasy name when NomeFilial is empty', () {
+      final model = CadastroFilialRowModel.fromMap(
+        <String, dynamic>{
+          'CodEmpresa': 1,
+          'CodFilial': 2,
+          'NomeFilial': '  ',
+          'NomeFantasia': ' Loja Centro ',
+        },
+      );
+
+      check(model.toEntity().nomeFilial).equals('Loja Centro');
+    });
+
+    test('fromMap falls back to company/branch codes when names are empty', () {
+      final model = CadastroFilialRowModel.fromMap(
+        <String, dynamic>{
+          'CodEmpresa': 1,
+          'CodFilial': 0,
+          'NomeFilial': '',
+        },
+      );
+
+      check(model.toEntity().nomeFilial).equals('1/0');
+    });
   });
 }

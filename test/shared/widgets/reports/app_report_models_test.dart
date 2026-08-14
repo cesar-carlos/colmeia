@@ -28,4 +28,67 @@ void main() {
       expect(AppReportExportFormat.csv.supportsMetadataSections, isFalse);
     });
   });
+
+  group('nextSingleColumnSort', () {
+    test('should start from initialDirection when the column is not active', () {
+      expect(
+        nextSingleColumnSort(
+          columnKey: 'margem',
+          currentSorts: const <AppReportSortDescriptor>[
+            AppReportSortDescriptor(
+              columnKey: 'nomeProduto',
+              direction: AppReportSortDirection.ascending,
+            ),
+          ],
+          initialDirection: AppReportSortDirection.descending,
+        ),
+        const <AppReportSortDescriptor>[
+          AppReportSortDescriptor(
+            columnKey: 'margem',
+            direction: AppReportSortDirection.descending,
+          ),
+        ],
+      );
+    });
+
+    test('should toggle ascending to descending on the active column', () {
+      expect(
+        nextSingleColumnSort(
+          columnKey: 'nomeProduto',
+          currentSorts: const <AppReportSortDescriptor>[
+            AppReportSortDescriptor(
+              columnKey: 'nomeProduto',
+              direction: AppReportSortDirection.ascending,
+            ),
+          ],
+        ),
+        const <AppReportSortDescriptor>[
+          AppReportSortDescriptor(
+            columnKey: 'nomeProduto',
+            direction: AppReportSortDirection.descending,
+          ),
+        ],
+      );
+    });
+
+    test('should toggle descending to ascending on the active column', () {
+      expect(
+        nextSingleColumnSort(
+          columnKey: 'nomeProduto',
+          currentSorts: const <AppReportSortDescriptor>[
+            AppReportSortDescriptor(
+              columnKey: 'nomeProduto',
+              direction: AppReportSortDirection.descending,
+            ),
+          ],
+        ),
+        const <AppReportSortDescriptor>[
+          AppReportSortDescriptor(
+            columnKey: 'nomeProduto',
+            direction: AppReportSortDirection.ascending,
+          ),
+        ],
+      );
+    });
+  });
 }

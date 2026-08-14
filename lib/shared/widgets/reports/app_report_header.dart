@@ -76,7 +76,7 @@ class AppReportHeader extends StatelessWidget {
                 titleSection,
                 SizedBox(height: tokens.gapMd),
                 Align(
-                  alignment: Alignment.centerLeft,
+                  alignment: Alignment.centerRight,
                   child: actionSection,
                 ),
               ] else
@@ -86,7 +86,7 @@ class AppReportHeader extends StatelessWidget {
                     Expanded(child: titleSection),
                     if (actionSection != null) ...<Widget>[
                       SizedBox(width: tokens.gapMd),
-                      Flexible(child: actionSection),
+                      actionSection,
                     ],
                   ],
                 ),

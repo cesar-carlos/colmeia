@@ -55,4 +55,21 @@ void main() {
 
     check(selected).isNull();
   });
+
+  test('find returns the exact pair and ignores a lone mismatch', () {
+    final found = salesMargemProdutoFindFilial(
+      items: const <CadastroFilialRow>[lojaA],
+      codEmpresa: 1,
+      codFilial: 2,
+    );
+
+    check(found).isNull();
+    check(
+      salesMargemProdutoFindFilial(
+        items: const <CadastroFilialRow>[lojaA, lojaB],
+        codEmpresa: 1,
+        codFilial: 2,
+      ),
+    ).equals(lojaB);
+  });
 }

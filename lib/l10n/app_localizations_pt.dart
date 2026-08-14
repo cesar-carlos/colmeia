@@ -997,6 +997,10 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get chartShareExportIncompleteCatalog =>
+      'Não foi possível carregar o catálogo completo para compartilhar. Tente novamente.';
+
+  @override
   String chartSharePdfTableRowsTruncated(int shownRows, int totalRows) {
     return 'A tabela do PDF mostra $shownRows de $totalRows registros.';
   }
@@ -2780,6 +2784,21 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String reportPaginationPageOf(int current, int total) {
     return 'Página $current de $total';
+  }
+
+  @override
+  String reportColumnSortedAscending(String label) {
+    return '$label, ordenado crescente';
+  }
+
+  @override
+  String reportColumnSortedDescending(String label) {
+    return '$label, ordenado decrescente';
+  }
+
+  @override
+  String reportColumnSortHint(String label) {
+    return '$label, toque para ordenar';
   }
 
   @override
@@ -6099,6 +6118,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   }
 
   @override
+  String get chartShareExportIncompleteCatalog =>
+      'Não foi possível carregar o catálogo completo para compartilhar. Tente novamente.';
+
+  @override
   String chartSharePdfTableRowsTruncated(int shownRows, int totalRows) {
     return 'A tabela do PDF mostra $shownRows de $totalRows registros.';
   }
@@ -7882,6 +7905,21 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String reportPaginationPageOf(int current, int total) {
     return 'Página $current de $total';
+  }
+
+  @override
+  String reportColumnSortedAscending(String label) {
+    return '$label, ordenado crescente';
+  }
+
+  @override
+  String reportColumnSortedDescending(String label) {
+    return '$label, ordenado decrescente';
+  }
+
+  @override
+  String reportColumnSortHint(String label) {
+    return '$label, toque para ordenar';
   }
 
   @override

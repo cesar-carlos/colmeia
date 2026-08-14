@@ -5,8 +5,6 @@ import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_row.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_by.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_sort_direction.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/margem_produto_repository.dart';
 import 'package:flutter_test/flutter_test.dart' hide group;
 import 'package:test_api/scaffolding.dart' show group;
@@ -185,15 +183,7 @@ void main() {
                 MargemProdutoFilter.defaultPageSize,
               );
               if (page.items.length >= 2) {
-                for (var i = 0; i < page.items.length - 1; i++) {
-                  expect(
-                    page.items[i].nomeProduto.compareTo(
-                      page.items[i + 1].nomeProduto,
-                    ),
-                    lessThanOrEqualTo(0),
-                    reason: 'nomeProduto ASC should not decrease down the page',
-                  );
-                }
+                expectNomeProdutoAscending(page.items);
               }
             },
             (failure) {
@@ -207,16 +197,47 @@ void main() {
       );
 
       test(
-        'loadPage margemLucroProduto DESC does not increase down the page',
+        'loadPage page 2 continues NomeProduto order without overlap',
         () async {
           if (shouldSkipE2eRepositoryTest(
-            'margem_produto_repository_e2e (sort DESC)',
+            'margem_produto_repository_e2e (name page 2)',
           )) {
             return;
           }
 
           final repository = getIt<MargemProdutoRepository>();
-          final result = await runE2eAppResult(
+          const smallPageSize = 10;
+          const filterPage1 = MargemProdutoFilter(
+            codEmpresa: 1,
+            codFilial: 1,
+            pageSize: smallPageSize,
+          );
+
+          final first = await runE2eAppResult(
+            () => repository.loadPage(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              filter: filterPage1,
+            ),
+          );
+
+          if (first.isError()) {
+            expectAcceptableAgentQueriesE2eFailure(
+              first.exceptionOrNull()!,
+              failureScope: 'Repository e2e',
+            );
+            return;
+          }
+
+          final page1 = first.getOrThrow();
+          checkPageInvariants(page1.items, page1.totalCount, smallPageSize);
+          expectNomeProdutoAscending(page1.items);
+          if (page1.totalCount <= smallPageSize) {
+            return;
+          }
+
+          final second = await runE2eAppResultWithHubRetry(
             () => repository.loadPage(
               userId: 'user-1',
               agentId: AppEnvironment.e2eAgentId,
@@ -224,26 +245,46 @@ void main() {
               filter: const MargemProdutoFilter(
                 codEmpresa: 1,
                 codFilial: 1,
-                sortBy: MargemProdutoSortBy.margemLucroProduto,
-                sortDirection: ResumoProdutoVendaSortDirection.descending,
+                page: 2,
+                pageSize: smallPageSize,
               ),
             ),
+            actionLabel: 'margem_produto_loadPage_name_page2',
           );
 
-          result.fold(
-            (page) {
+          second.fold(
+            (page2) {
+              expect(page2.totalCount, page1.totalCount);
               checkPageInvariants(
-                page.items,
-                page.totalCount,
-                MargemProdutoFilter.defaultPageSize,
+                page2.items,
+                page2.totalCount,
+                smallPageSize,
               );
-              if (page.items.length >= 2) {
-                for (var i = 0; i < page.items.length - 1; i++) {
+              expectNomeProdutoAscending(page2.items);
+              if (page1.items.isNotEmpty && page2.items.isNotEmpty) {
+                final keys1 = page1.items.map((row) => row.codProduto).toSet();
+                expect(
+                  page2.items.where((row) => keys1.contains(row.codProduto)),
+                  isEmpty,
+                  reason:
+                      'Page 2 rows should not repeat CodProduto keys from page 1',
+                );
+                final last = page1.items.last;
+                final firstRow = page2.items.first;
+                final nameOrder = last.nomeProduto.compareTo(
+                  firstRow.nomeProduto,
+                );
+                expect(
+                  nameOrder,
+                  lessThanOrEqualTo(0),
+                  reason: 'Page 2 should continue NomeProduto ASC after page 1',
+                );
+                if (nameOrder == 0) {
                   expect(
-                    page.items[i].margemLucroProduto,
-                    greaterThanOrEqualTo(page.items[i + 1].margemLucroProduto),
+                    last.codProduto,
+                    lessThan(firstRow.codProduto),
                     reason:
-                        'margemLucroProduto DESC should not increase down the page',
+                        'equal NomeProduto should keep CodProduto ASC across pages',
                   );
                 }
               }
@@ -260,6 +301,27 @@ void main() {
     },
     tags: <String>['e2e'],
   );
+}
+
+void expectNomeProdutoAscending(List<MargemProdutoRow> items) {
+  if (items.length < 2) {
+    return;
+  }
+  for (var i = 0; i < items.length - 1; i++) {
+    final nameOrder = items[i].nomeProduto.compareTo(items[i + 1].nomeProduto);
+    expect(
+      nameOrder,
+      lessThanOrEqualTo(0),
+      reason: 'nomeProduto ASC should not decrease down the page',
+    );
+    if (nameOrder == 0) {
+      expect(
+        items[i].codProduto,
+        lessThan(items[i + 1].codProduto),
+        reason: 'equal NomeProduto should keep CodProduto ASC',
+      );
+    }
+  }
 }
 
 void checkPageInvariants(

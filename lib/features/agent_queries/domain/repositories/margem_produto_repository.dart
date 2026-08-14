@@ -1,6 +1,7 @@
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_page_result.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 
 // Single entry point for now; batch/cancel may extend this interface later.
 // ignore: one_member_abstracts
@@ -13,5 +14,6 @@ abstract interface class MargemProdutoRepository {
     int? bridgeTimeoutMs,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
   });
 }

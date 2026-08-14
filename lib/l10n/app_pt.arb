@@ -427,6 +427,7 @@
       "totalCount": {"type": "int"}
     }
   },
+  "chartShareExportIncompleteCatalog": "Não foi possível carregar o catálogo completo para compartilhar. Tente novamente.",
   "chartSharePdfTableRowsTruncated": "A tabela do PDF mostra {shownRows} de {totalRows} registros.",
   "@chartSharePdfTableRowsTruncated": {
     "placeholders": {
@@ -1246,6 +1247,24 @@
     "placeholders": {
       "current": {"type": "int"},
       "total": {"type": "int"}
+    }
+  },
+  "reportColumnSortedAscending": "{label}, ordenado crescente",
+  "@reportColumnSortedAscending": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "reportColumnSortedDescending": "{label}, ordenado decrescente",
+  "@reportColumnSortedDescending": {
+    "placeholders": {
+      "label": {"type": "String"}
+    }
+  },
+  "reportColumnSortHint": "{label}, toque para ordenar",
+  "@reportColumnSortHint": {
+    "placeholders": {
+      "label": {"type": "String"}
     }
   },
   "appLoading": "Carregando…",

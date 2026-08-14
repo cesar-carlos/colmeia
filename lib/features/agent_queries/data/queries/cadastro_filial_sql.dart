@@ -2,7 +2,9 @@ import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_f
 
 /// Paged branch registration query with total count in one `sql.execute`.
 ///
-/// Reads `Filial` and left-joins `Municipio` for municipality metadata.
+/// Reads `Filial`. Full and map-catalog projections left-join `Municipio`
+/// for municipality metadata; [CadastroFilialSqlProjection.branchOptions]
+/// skips that join.
 /// Pagination is bound through named params `:startRow` and `:endRow`.
 /// Company / branch predicates are validated in Dart and inlined into the SQL
 /// to support exact multi-branch subsets without exhausting the bridge named
@@ -10,6 +12,8 @@ import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_f
 ///
 /// Use [CadastroFilialSqlProjection.mapCatalog] for the live sales map catalog
 /// (omits `CNPJ` and `CodMunicipio`; keeps address fields for geocoding).
+/// Use [CadastroFilialSqlProjection.branchOptions] for pickers that only need
+/// company/branch identity and names — no `Municipio` join or address columns.
 abstract final class CadastroFilialSql {
   static String query({
     Iterable<CadastroFilialBranchRef> branches =
@@ -28,20 +32,29 @@ abstract final class CadastroFilialSql {
       codFilial: codFilial,
     );
     final searchPredicate = _searchPredicate(searchTerm);
-    final baseColumns = projection == CadastroFilialSqlProjection.mapCatalog
-        ? _baseColumnsMapCatalog
-        : _baseColumnsRegistration;
-    final outerColumns = projection == CadastroFilialSqlProjection.mapCatalog
-        ? _outerColumnsMapCatalog
-        : _outerColumnsRegistration;
+    final baseColumns = switch (projection) {
+      CadastroFilialSqlProjection.registration => _baseColumnsRegistration,
+      CadastroFilialSqlProjection.mapCatalog => _baseColumnsMapCatalog,
+      CadastroFilialSqlProjection.branchOptions => _baseColumnsBranchOptions,
+    };
+    final outerColumns = switch (projection) {
+      CadastroFilialSqlProjection.registration => _outerColumnsRegistration,
+      CadastroFilialSqlProjection.mapCatalog => _outerColumnsMapCatalog,
+      CadastroFilialSqlProjection.branchOptions => _outerColumnsBranchOptions,
+    };
+    final municipioJoin =
+        projection == CadastroFilialSqlProjection.branchOptions
+        ? ''
+        : '''
+      LEFT JOIN Municipio m ON
+        m.CodMunicipio = f.CodMunicipio
+''';
     return '''
     WITH Base AS (
       SELECT
 $baseColumns
       FROM Filial f
-      LEFT JOIN Municipio m ON
-        m.CodMunicipio = f.CodMunicipio
-      WHERE 1 = 1
+$municipioJoin      WHERE 1 = 1
 $branchPredicate
 $searchPredicate
     ),
@@ -61,6 +74,52 @@ $outerColumns
     FROM Tot
     LEFT JOIN Numbered N ON N.Rn BETWEEN :startRow AND :endRow
     ORDER BY COALESCE(N.Rn, 2147483647)
+  ''';
+  }
+
+  static CadastroFilialSqlProjection projectionFor(
+    CadastroFilialFilter filter,
+  ) {
+    if (filter.branchOptionsProjection) {
+      return CadastroFilialSqlProjection.branchOptions;
+    }
+    if (filter.mapCatalogProjection) {
+      return CadastroFilialSqlProjection.mapCatalog;
+    }
+    return CadastroFilialSqlProjection.registration;
+  }
+
+  /// Non-CTE picker query. Used when the paged CTE comes back as an empty
+  /// payload (missing `TotalCount` sentinel) so we can still read `Filial`.
+  ///
+  /// [maxRows] is inlined; the caller must pass a validated page size.
+  static String branchOptionsSimpleQuery({
+    Iterable<CadastroFilialBranchRef> branches =
+        const <CadastroFilialBranchRef>[],
+    bool hasSelectedBranches = false,
+    int? codEmpresa,
+    int? codFilial,
+    String? searchTerm,
+    int maxRows = CadastroFilialFilter.maxPageSize,
+  }) {
+    final branchPredicate = _branchPredicate(
+      branches: branches,
+      hasSelectedBranches: hasSelectedBranches,
+      codEmpresa: codEmpresa,
+      codFilial: codFilial,
+    );
+    final searchPredicate = _searchPredicate(searchTerm);
+    return '''
+    SELECT TOP $maxRows
+      f.CodEmpresa,
+      f.CodFilial,
+      f.Nome AS NomeFilial,
+      f.NomeFantasia AS NomeFantasia
+    FROM Filial f
+    WHERE 1 = 1
+$branchPredicate
+$searchPredicate
+    ORDER BY f.CodEmpresa, f.CodFilial
   ''';
   }
 
@@ -94,6 +153,13 @@ $outerColumns
         TRIM(m.UF) AS UFMunicipio
 ''';
 
+  static const String _baseColumnsBranchOptions = '''
+        f.CodEmpresa,
+        f.CodFilial,
+        f.Nome AS NomeFilial,
+        f.NomeFantasia AS NomeFantasia
+''';
+
   static const String _outerColumnsRegistration = '''
       N.CodEmpresa,
       N.CodFilial,
@@ -122,6 +188,13 @@ $outerColumns
       N.NomeMunicipio,
       N.CodigoIBGE,
       N.UFMunicipio,
+''';
+
+  static const String _outerColumnsBranchOptions = '''
+      N.CodEmpresa,
+      N.CodFilial,
+      N.NomeFilial,
+      N.NomeFantasia,
 ''';
 
   static String _searchPredicate(String? searchTerm) {
@@ -203,4 +276,8 @@ enum CadastroFilialSqlProjection {
 
   /// Live sales map catalog: omits CNPJ and CodMunicipio; keeps address for geocoding.
   mapCatalog,
+
+  /// Picker / filter options: company, branch, and names only. No `Municipio`
+  /// join and no address columns — those extras fail on some agent schemas.
+  branchOptions,
 }

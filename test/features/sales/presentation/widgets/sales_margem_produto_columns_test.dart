@@ -17,7 +17,7 @@ void main() {
   group('buildSalesMargemProdutoColumns', () {
     final columns = buildSalesMargemProdutoColumns(labels: _labels);
 
-    test('exposes unpinned product and the four SQL-sortable columns', () {
+    test('exposes unpinned product and non-sortable metric columns', () {
       check(
         columns.map((column) => column.key).toList(),
       ).deepEquals(<String>[
@@ -31,11 +31,11 @@ void main() {
       final byKey = <String, bool>{
         for (final column in columns) column.key: column.sortable,
       };
-      check(byKey[SalesMargemProdutoSort.columnProduto]).equals(true);
-      check(byKey[SalesMargemProdutoSort.columnCustoReposicao]).equals(true);
+      check(byKey[SalesMargemProdutoSort.columnProduto]).equals(false);
+      check(byKey[SalesMargemProdutoSort.columnCustoReposicao]).equals(false);
       check(byKey[SalesMargemProdutoSort.columnPrecoVenda]).equals(false);
-      check(byKey[SalesMargemProdutoSort.columnMarkup]).equals(true);
-      check(byKey[SalesMargemProdutoSort.columnMargem]).equals(true);
+      check(byKey[SalesMargemProdutoSort.columnMarkup]).equals(false);
+      check(byKey[SalesMargemProdutoSort.columnMargem]).equals(false);
 
       final produto = columns.firstWhere(
         (column) => column.key == SalesMargemProdutoSort.columnProduto,

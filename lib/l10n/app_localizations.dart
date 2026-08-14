@@ -1690,6 +1690,12 @@ abstract class AppLocalizations {
   /// **'Cannot export more than {maxRows} rows. The current result has {totalCount} rows.'**
   String chartShareExportRowLimitExceeded(int maxRows, int totalCount);
 
+  /// SnackBar when a paged share export returns fewer rows than the catalog total.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the full catalog for sharing. Try again.'**
+  String get chartShareExportIncompleteCatalog;
+
   /// Notice appended to chart share PDF when the table is truncated to the row limit.
   ///
   /// In en, this message translates to:
@@ -4489,6 +4495,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Page {current} of {total}'**
   String reportPaginationPageOf(int current, int total);
+
+  /// Semantics label for a report column currently sorted ascending.
+  ///
+  /// In en, this message translates to:
+  /// **'{label}, sorted ascending'**
+  String reportColumnSortedAscending(String label);
+
+  /// Semantics label for a report column currently sorted descending.
+  ///
+  /// In en, this message translates to:
+  /// **'{label}, sorted descending'**
+  String reportColumnSortedDescending(String label);
+
+  /// Semantics label for a sortable report column that is not the active sort.
+  ///
+  /// In en, this message translates to:
+  /// **'{label}, tap to sort'**
+  String reportColumnSortHint(String label);
 
   /// No description provided for @appLoading.
   ///

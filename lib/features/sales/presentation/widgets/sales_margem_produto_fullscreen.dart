@@ -65,8 +65,6 @@ class SalesMargemProdutoGridSnapshot {
         totalCount: 0,
       ),
       query: SalesMargemProdutoSort.queryFor(
-        sortBy: SalesMargemProdutoSort.defaultSortBy,
-        sortDirection: SalesMargemProdutoSort.defaultSortDirection,
         page: 1,
         pageSize: SalesMargemProdutoSort.defaultPageSize,
       ),
@@ -115,6 +113,8 @@ class SalesMargemProdutoFullscreen extends StatefulWidget {
     required this.snapshot,
     required this.onQueryChanged,
     required this.onRefresh,
+    this.onPageChanged,
+    this.onPageSizeChanged,
     this.agentId,
     this.retryCountdownLabel,
     super.key,
@@ -122,6 +122,8 @@ class SalesMargemProdutoFullscreen extends StatefulWidget {
 
   final SalesMargemProdutoGridSnapshot snapshot;
   final ValueChanged<AppReportQuery> onQueryChanged;
+  final ValueChanged<int>? onPageChanged;
+  final ValueChanged<int>? onPageSizeChanged;
   final Future<void> Function() onRefresh;
   final String? agentId;
   final String? retryCountdownLabel;
@@ -135,10 +137,16 @@ class _SalesMargemProdutoFullscreenState
     extends State<SalesMargemProdutoFullscreen> {
   // Stable identity across rebuilds; required for AppReportGrid column-cache hits.
   late List<AppReportColumn<MargemProdutoRow>> _columns;
+  Locale? _columnsLocale;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final locale = Localizations.localeOf(context);
+    if (_columnsLocale == locale) {
+      return;
+    }
+    _columnsLocale = locale;
     _columns = buildSalesMargemProdutoColumns(
       labels: SalesMargemProdutoColumnLabels.fromL10n(
         AppLocalizations.of(context),
@@ -164,6 +172,8 @@ class _SalesMargemProdutoFullscreenState
           query: widget.snapshot.query,
           events: AppReportEvents<MargemProdutoRow>(
             onQueryChanged: widget.onQueryChanged,
+            onPageChanged: widget.onPageChanged,
+            onPageSizeChanged: widget.onPageSizeChanged,
             onRefresh: widget.onRefresh,
           ),
           style:
@@ -173,6 +183,7 @@ class _SalesMargemProdutoFullscreenState
                 frozenColumnsCount: 0,
                 dataRowHeight: kSalesMargemProdutoDataRowHeight,
               ).copyWith(
+                allowSorting: false,
                 trustServerRowOrder: true,
                 showRefreshAction: true,
                 enablePullToRefresh: false,

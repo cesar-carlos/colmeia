@@ -14,8 +14,6 @@ import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_f
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_row.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_by.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_sort_direction.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_support_context.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after_host.dart';
@@ -108,14 +106,9 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
   int? _preferredCodEmpresa;
   int? _preferredCodFilial;
 
-  MargemProdutoSortBy _sortBy = SalesMargemProdutoSort.defaultSortBy;
-  ResumoProdutoVendaSortDirection _sortDirection =
-      SalesMargemProdutoSort.defaultSortDirection;
   int _page = 1;
   int _pageSize = SalesMargemProdutoSort.defaultPageSize;
   AppReportQuery _query = SalesMargemProdutoSort.queryFor(
-    sortBy: SalesMargemProdutoSort.defaultSortBy,
-    sortDirection: SalesMargemProdutoSort.defaultSortDirection,
     page: 1,
     pageSize: SalesMargemProdutoSort.defaultPageSize,
   );
@@ -131,11 +124,16 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
 
   int _filiaisGeneration = 0;
   int _sqlLoadGeneration = 0;
+  AgentQueriesCancelScope? _filiaisCancelScope;
   AgentQueriesCancelScope? _sqlCancelScope;
+  AgentQueriesCancelScope? _shareCancelScope;
 
   bool get _pageLoading => _filiaisLoading || _catalogLoading;
 
-  bool get _canShare => !_pageLoading && _totalCount > 0;
+  bool get _canOpenFullscreen => !_pageLoading && _rows.isNotEmpty;
+
+  bool get _canShare =>
+      !_pageLoading && _totalCount > 0 && _selectedFilial != null;
 
   Future<String?> _resolveClientToken({
     required String userId,
@@ -160,10 +158,16 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
 
   // Stable identity across builds; required for AppReportGrid column-cache hits.
   late List<AppReportColumn<MargemProdutoRow>> _columns;
+  Locale? _columnsLocale;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    final locale = Localizations.localeOf(context);
+    if (_columnsLocale == locale) {
+      return;
+    }
+    _columnsLocale = locale;
     _columns = buildSalesMargemProdutoColumns(
       labels: SalesMargemProdutoColumnLabels.fromL10n(
         AppLocalizations.of(context),
@@ -185,14 +189,10 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
     final restored = SalesMargemProdutoSort.restore(
       _sessionService.restoreCardFilters(SalesMargemProdutoSort.cardId),
     );
-    _sortBy = restored.sortBy;
-    _sortDirection = restored.sortDirection;
     _pageSize = restored.pageSize;
     _preferredCodEmpresa = restored.codEmpresa;
     _preferredCodFilial = restored.codFilial;
     _query = SalesMargemProdutoSort.queryFor(
-      sortBy: _sortBy,
-      sortDirection: _sortDirection,
       page: 1,
       pageSize: _pageSize,
     );
@@ -226,9 +226,20 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
     );
   }
 
+  AgentQueriesCancelScope _replaceCancelScope(
+    AgentQueriesCancelScope? previous,
+  ) {
+    previous?.cancelAll();
+    final next = AgentQueriesCancelScope();
+    widget.relayCancelScopeBinder?.call(next);
+    return next;
+  }
+
   @override
   void dispose() {
+    _filiaisCancelScope?.cancelAll();
     _sqlCancelScope?.cancelAll();
+    _shareCancelScope?.cancelAll();
     _gridView.dispose();
     super.dispose();
   }
@@ -296,8 +307,21 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
   }) async {
     final auth = context.read<AuthController>();
     final userId = auth.session?.userId;
+    final l10n = AppLocalizations.of(context);
     if (userId == null) {
-      return const Success(<CadastroFilialRow>[]);
+      return Failure<List<CadastroFilialRow>, AppFailure>(
+        SessionFailure(
+          message: 'Missing user session for cadastro filial lookup',
+          userMessage: l10n.agentSqlErrorAuthenticationFailed,
+          context: const <String, Object?>{
+            'operation': 'loadCadastroFilialPage',
+          },
+        ),
+      );
+    }
+
+    if (cancelScope != null) {
+      widget.relayCancelScopeBinder?.call(cancelScope);
     }
 
     final clientToken = await _resolveClientToken(
@@ -305,7 +329,16 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       agentId: agentId,
     );
     if (clientToken == null) {
-      return const Success(<CadastroFilialRow>[]);
+      return Failure<List<CadastroFilialRow>, AppFailure>(
+        SessionFailure(
+          message: 'Missing client token for cadastro filial lookup',
+          userMessage: l10n.agentSqlErrorAuthenticationFailed,
+          context: <String, Object?>{
+            'operation': 'loadCadastroFilialPage',
+            'agentId': agentId,
+          },
+        ),
+      );
     }
 
     final result = await _loadCadastroFilial(
@@ -313,6 +346,7 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       agentId: agentId,
       filter: const CadastroFilialFilter(
         pageSize: CadastroFilialFilter.maxPageSize,
+        branchOptionsProjection: true,
       ),
       clientToken: clientToken,
       cancelScope: cancelScope,
@@ -329,6 +363,10 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
   Future<void> _loadFiliaisThenCatalog() async {
     markAutoRefreshCancelled();
     final generation = ++_filiaisGeneration;
+    final catalogGenerationAtStart = ++_sqlLoadGeneration;
+    _filiaisCancelScope = _replaceCancelScope(_filiaisCancelScope);
+    _sqlCancelScope?.cancelAll();
+    _shareCancelScope?.cancelAll();
     final agentId = _selectedAgentId?.trim();
     if (agentId == null || agentId.isEmpty) {
       if (!mounted) {
@@ -348,51 +386,20 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       return;
     }
 
-    _sqlCancelScope?.cancelAll();
-    final sqlScope = AgentQueriesCancelScope();
-    _sqlCancelScope = sqlScope;
-    widget.relayCancelScopeBinder?.call(sqlScope);
-
     setState(() {
       _filiaisLoading = true;
+      _catalogLoading = true;
       _filiaisFailure = null;
       _error = null;
       _loadFailure = null;
+      _rows = const <MargemProdutoRow>[];
+      _totalCount = 0;
     });
 
-    final auth = context.read<AuthController>();
-    final userId = auth.session?.userId;
-    if (userId == null) {
-      if (!mounted || generation != _filiaisGeneration) {
-        return;
-      }
-      setState(() {
-        _filiaisLoading = false;
-      });
-      return;
-    }
-
-    final clientToken = await _resolveClientToken(
-      userId: userId,
-      agentId: agentId,
+    final result = await _fetchFiliais(
+      agentId,
+      cancelScope: _filiaisCancelScope,
     );
-    if (!mounted || generation != _filiaisGeneration) {
-      return;
-    }
-    if (clientToken == null) {
-      setState(() {
-        _filiaisLoading = false;
-        _filiais = const <CadastroFilialRow>[];
-        _selectedFilial = null;
-        _rows = const <MargemProdutoRow>[];
-        _totalCount = 0;
-        _error = AppLocalizations.of(context).agentSqlErrorAuthenticationFailed;
-      });
-      markAutoRefreshCancelled();
-      return;
-    }
-
-    final result = await _fetchFiliais(agentId, cancelScope: sqlScope);
     if (!mounted || generation != _filiaisGeneration) {
       return;
     }
@@ -404,6 +411,7 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
         _filiais = const <CadastroFilialRow>[];
         _selectedFilial = null;
         _filiaisLoading = false;
+        _catalogLoading = false;
         _filiaisFailure = failure;
         _rows = const <MargemProdutoRow>[];
         _totalCount = 0;
@@ -424,21 +432,27 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       _filiaisLoading = false;
       _filiaisFailure = null;
       _error = null;
-    });
-    if (selected == null) {
-      setState(() {
+      if (selected == null) {
         _catalogLoading = false;
         _rows = const <MargemProdutoRow>[];
         _totalCount = 0;
-      });
+      }
+    });
+    if (selected == null) {
+      return;
+    }
+    if (_sqlLoadGeneration != catalogGenerationAtStart) {
       return;
     }
     await _loadCatalog();
   }
 
-  Future<void> _loadCatalog() async {
+  Future<void> _loadCatalog({bool clearVisibleCatalog = false}) async {
     markAutoRefreshCancelled();
     final generation = ++_sqlLoadGeneration;
+    _sqlCancelScope = _replaceCancelScope(_sqlCancelScope);
+    final sqlScope = _sqlCancelScope!;
+
     final auth = context.read<AuthController>();
     final userId = auth.session?.userId;
     final agentId = _selectedAgentId?.trim();
@@ -448,6 +462,10 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       _catalogLoading = true;
       _error = null;
       _loadFailure = null;
+      if (clearVisibleCatalog) {
+        _rows = const <MargemProdutoRow>[];
+        _totalCount = 0;
+      }
     });
 
     if (userId == null ||
@@ -473,12 +491,24 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       return;
     }
     if (clientToken == null) {
+      final failure = SessionFailure(
+        message: 'Missing client token for margem produto lookup',
+        userMessage: AppLocalizations.of(
+          context,
+        ).agentSqlErrorAuthenticationFailed,
+        context: <String, Object?>{
+          'operation': 'loadMargemProdutoPage',
+          'agentId': agentId,
+        },
+      );
       setState(() {
         _catalogLoading = false;
         _rows = const <MargemProdutoRow>[];
         _totalCount = 0;
-        _error = AppLocalizations.of(context).agentSqlErrorAuthenticationFailed;
+        _loadFailure = failure;
+        _error = null;
       });
+      onAgentQueryLoadFailure(failure);
       markAutoRefreshCancelled();
       return;
     }
@@ -489,12 +519,11 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       filter: MargemProdutoFilter(
         codEmpresa: filial.codEmpresa,
         codFilial: filial.codFilial,
-        sortBy: _sortBy,
-        sortDirection: _sortDirection,
         page: _page,
         pageSize: _pageSize,
       ),
       clientToken: clientToken,
+      cancelScope: sqlScope,
     );
 
     if (!mounted || generation != _sqlLoadGeneration) {
@@ -507,14 +536,14 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
             ? 0
             : (pageResult.totalCount / _pageSize).ceil();
         if (totalPages > 0 && _page > totalPages) {
-          _page = totalPages;
-          _query = SalesMargemProdutoSort.queryFor(
-            sortBy: _sortBy,
-            sortDirection: _sortDirection,
-            page: _page,
-            pageSize: _pageSize,
-            previous: _query,
-          );
+          setState(() {
+            _page = totalPages;
+            _query = SalesMargemProdutoSort.queryFor(
+              page: _page,
+              pageSize: _pageSize,
+              previous: _query,
+            );
+          });
           unawaited(_loadCatalog());
           return;
         }
@@ -581,7 +610,7 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
 
   Widget _catalogHeaderTrailing(AppLocalizations l10n) {
     return AppChartHeaderTrailing(
-      onOpenFullscreen: _rows.isEmpty ? null : _openFullscreen,
+      onOpenFullscreen: _canOpenFullscreen ? _openFullscreen : null,
       openFullscreenTooltip: l10n.salesMargemProdutoFullscreenTooltip,
       onShare: _canShare ? () => unawaited(_shareCatalog()) : null,
       shareProgressKey: _shareKey,
@@ -590,7 +619,7 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
   }
 
   void _openFullscreen() {
-    if (_rows.isEmpty) {
+    if (!_canOpenFullscreen) {
       return;
     }
     final l10n = AppLocalizations.of(context);
@@ -623,6 +652,8 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
                 return SalesMargemProdutoFullscreen(
                   snapshot: snapshot,
                   onQueryChanged: _onQueryChanged,
+                  onPageChanged: _onPageChanged,
+                  onPageSizeChanged: _onPageSizeChanged,
                   onRefresh: _loadCatalog,
                   agentId: _selectedAgentId,
                   retryCountdownLabel: agentQueryRetryCountdownLabel(
@@ -661,18 +692,25 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       final userId = auth.session?.userId;
       final agentId = _selectedAgentId?.trim();
       final filial = _selectedFilial;
-      if (userId == null ||
-          agentId == null ||
-          agentId.isEmpty ||
-          filial == null) {
+      if (userId == null || agentId == null || agentId.isEmpty) {
+        _showShareMessage(l10n.agentSqlErrorAuthenticationFailed);
         return;
       }
+      if (filial == null) {
+        _showShareMessage(l10n.salesMargemProdutoNoBranchEmpty);
+        return;
+      }
+
+      _shareCancelScope = _replaceCancelScope(_shareCancelScope);
+      final shareScope = _shareCancelScope!;
+      final totalCount = _totalCount;
+      final exportHeaderContext = _shareExportHeaderContext(l10n);
 
       final clientToken = await _resolveClientToken(
         userId: userId,
         agentId: agentId,
       );
-      if (!mounted) {
+      if (!mounted || shareScope.isCancelled) {
         return;
       }
       if (clientToken == null) {
@@ -680,20 +718,18 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
         return;
       }
 
-      final totalCount = _totalCount;
       final result = await _loadRowsForShare(
         userId: userId,
         agentId: agentId,
         filter: MargemProdutoFilter(
           codEmpresa: filial.codEmpresa,
           codFilial: filial.codFilial,
-          sortBy: _sortBy,
-          sortDirection: _sortDirection,
         ),
         totalCount: totalCount,
         clientToken: clientToken,
+        cancelScope: shareScope,
       );
-      if (!mounted) {
+      if (!mounted || shareScope.isCancelled) {
         return;
       }
 
@@ -706,11 +742,14 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
             buildSalesMargemProdutoShareMetadata(
               l10n: l10n,
               rows: rows,
-              exportHeaderContext: _shareExportHeaderContext(l10n),
+              exportHeaderContext: exportHeaderContext,
             ).toShareRequest(_shareKey),
           );
         },
         (failure) async {
+          if (shouldSuppressAgentQueryFailureUi(failure)) {
+            return;
+          }
           final message =
               failure is ValidationFailure &&
                   failure.message == 'share_export_row_limit_exceeded'
@@ -718,6 +757,9 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
                   ChartSharePdfLimits.maxTableRows,
                   totalCount,
                 )
+              : failure is ValidationFailure &&
+                    failure.message == 'share_export_incomplete_catalog'
+              ? l10n.chartShareExportIncompleteCatalog
               : _failureMessage(failure, l10n);
           _showShareMessage(message);
         },
@@ -733,8 +775,6 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
     return _sessionService.persistCardFilters(
       SalesMargemProdutoSort.cardId,
       SalesMargemProdutoSort.persistMap(
-        sortBy: _sortBy,
-        sortDirection: _sortDirection,
         pageSize: _pageSize,
         codEmpresa: _selectedFilial?.codEmpresa ?? _preferredCodEmpresa,
         codFilial: _selectedFilial?.codFilial ?? _preferredCodFilial,
@@ -743,6 +783,7 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
   }
 
   void _onFiltersChanged(Map<String, Object?> next) {
+    _shareCancelScope?.cancelAll();
     final nextAgentId = (next['agentId'] as String?)?.trim();
     final normalizedAgentId = nextAgentId == null || nextAgentId.isEmpty
         ? null
@@ -756,56 +797,71 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       _preferredCodFilial = nextFilial;
       _page = 1;
       _query = SalesMargemProdutoSort.queryFor(
-        sortBy: _sortBy,
-        sortDirection: _sortDirection,
         page: 1,
         pageSize: _pageSize,
         previous: _query,
       );
+      if (agentChanged) {
+        _filiais = const <CadastroFilialRow>[];
+        _selectedFilial = null;
+      }
     });
     unawaited(_sessionService.setSelectedAgentId(normalizedAgentId));
-    unawaited(_persistFilters());
     if (agentChanged) {
+      unawaited(_persistFilters());
       unawaited(_loadFiliaisThenCatalog());
       return;
     }
-    final matched = salesMargemProdutoMatchFilial(
+    final matched = salesMargemProdutoFindFilial(
       items: _filiais,
       codEmpresa: nextEmpresa,
       codFilial: nextFilial,
     );
+    if (matched == null) {
+      setState(() => _selectedFilial = null);
+      unawaited(_persistFilters());
+      unawaited(_loadFiliaisThenCatalog());
+      return;
+    }
     setState(() => _selectedFilial = matched);
-    unawaited(_loadCatalog());
+    unawaited(_persistFilters());
+    unawaited(_loadCatalog(clearVisibleCatalog: true));
+  }
+
+  void _onPageSizeChanged(int size) {
+    _applyPaging(page: 1, pageSize: size, previous: _query);
+  }
+
+  void _onPageChanged(int page) {
+    _applyPaging(page: page, pageSize: _pageSize, previous: _query);
   }
 
   void _onQueryChanged(AppReportQuery next) {
-    final (sortBy, sortDirection) = SalesMargemProdutoSort.fromSorts(
-      next.sorts,
-    );
-    final pageSize = SalesMargemProdutoSort.sanitizePageSize(next.pageSize);
-    final sortsChanged = sortBy != _sortBy || sortDirection != _sortDirection;
-    final pageSizeChanged = pageSize != _pageSize;
-    final page = (sortsChanged || pageSizeChanged)
+    _applyPaging(page: next.page, pageSize: next.pageSize, previous: next);
+  }
+
+  void _applyPaging({
+    required int page,
+    required int pageSize,
+    AppReportQuery? previous,
+  }) {
+    final sanitizedSize = SalesMargemProdutoSort.sanitizePageSize(pageSize);
+    final pageSizeChanged = sanitizedSize != _pageSize;
+    final sanitizedPage = pageSizeChanged
         ? 1
-        : SalesMargemProdutoSort.sanitizePage(next.page);
-    final needsReload = sortsChanged || pageSizeChanged || page != _page;
-    if (!needsReload) {
+        : SalesMargemProdutoSort.sanitizePage(page);
+    if (!pageSizeChanged && sanitizedPage == _page) {
       return;
     }
 
-    final sanitized = SalesMargemProdutoSort.queryFor(
-      sortBy: sortBy,
-      sortDirection: sortDirection,
-      page: page,
-      pageSize: pageSize,
-      previous: next,
-    );
     setState(() {
-      _sortBy = sortBy;
-      _sortDirection = sortDirection;
-      _pageSize = pageSize;
-      _page = page;
-      _query = sanitized;
+      _pageSize = sanitizedSize;
+      _page = sanitizedPage;
+      _query = SalesMargemProdutoSort.queryFor(
+        page: sanitizedPage,
+        pageSize: sanitizedSize,
+        previous: previous ?? _query,
+      );
     });
     unawaited(_persistFilters());
     unawaited(_loadCatalog());
@@ -875,6 +931,7 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       reportSurface = AppInlineErrorPanel(
         tone: AppInlinePanelTone.informational,
         message: l10n.salesMargemProdutoNoBranchEmpty,
+        onRetry: () => unawaited(_loadFiliaisThenCatalog()),
       );
     } else if (_error != null &&
         _error!.trim().isNotEmpty &&
@@ -904,6 +961,8 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
             query: _query,
             events: AppReportEvents<MargemProdutoRow>(
               onQueryChanged: _onQueryChanged,
+              onPageChanged: _onPageChanged,
+              onPageSizeChanged: _onPageSizeChanged,
               onRefresh: _loadCatalog,
             ),
             style:
@@ -913,6 +972,7 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
                   frozenColumnsCount: 0,
                   dataRowHeight: kSalesMargemProdutoDataRowHeight,
                 ).copyWith(
+                  allowSorting: false,
                   trustServerRowOrder: true,
                   showRefreshAction: true,
                   enablePullToRefresh: false,

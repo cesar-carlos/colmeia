@@ -19,19 +19,18 @@ class CadastroFilialRowModel {
   });
 
   factory CadastroFilialRowModel.fromMap(Map<String, dynamic> map) {
+    final codEmpresa = AgentQueriesSqlRowMapReader.readRequiredInt(
+      map,
+      AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('CodEmpresa'),
+    );
+    final codFilial = AgentQueriesSqlRowMapReader.readRequiredInt(
+      map,
+      AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('CodFilial'),
+    );
     return CadastroFilialRowModel(
-      codEmpresa: AgentQueriesSqlRowMapReader.readRequiredInt(
-        map,
-        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('CodEmpresa'),
-      ),
-      codFilial: AgentQueriesSqlRowMapReader.readRequiredInt(
-        map,
-        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('CodFilial'),
-      ),
-      nomeFilial: AgentQueriesSqlRowMapReader.readRequiredNonEmptyString(
-        map,
-        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('NomeFilial'),
-      ),
+      codEmpresa: codEmpresa,
+      codFilial: codFilial,
+      nomeFilial: _readDisplayName(map, codEmpresa, codFilial),
       nomeFantasia: AgentQueriesSqlRowMapReader.readOptionalTrimmedString(
         map,
         AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('NomeFantasia'),
@@ -107,6 +106,28 @@ class CadastroFilialRowModel {
       codigoIbge: codigoIbge,
       ufMunicipio: ufMunicipio,
     );
+  }
+
+  static String _readDisplayName(
+    Map<String, dynamic> map,
+    int codEmpresa,
+    int codFilial,
+  ) {
+    final nome = AgentQueriesSqlRowMapReader.readOptionalTrimmedString(
+      map,
+      AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('NomeFilial'),
+    );
+    if (nome != null) {
+      return nome;
+    }
+    final fantasia = AgentQueriesSqlRowMapReader.readOptionalTrimmedString(
+      map,
+      AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('NomeFantasia'),
+    );
+    if (fantasia != null) {
+      return fantasia;
+    }
+    return '$codEmpresa/$codFilial';
   }
 
   static String? _digitsOnly(String? value) {

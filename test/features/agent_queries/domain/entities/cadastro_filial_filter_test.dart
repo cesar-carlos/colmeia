@@ -65,5 +65,14 @@ void main() {
         filter.filterScopeSignature,
       ).equals('branches=agent-a:1:2,agent-b:3:4');
     });
+
+    test('copyWith keeps branchOptionsProjection', () {
+      const filter = CadastroFilialFilter(branchOptionsProjection: true);
+
+      check(filter.copyWith(pageSize: 10).branchOptionsProjection).isTrue();
+      check(
+        filter.copyWith(branchOptionsProjection: false).branchOptionsProjection,
+      ).isFalse();
+    });
   });
 }

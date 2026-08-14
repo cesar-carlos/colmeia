@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_filters_sheet_scaffold.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_single_agent_picker_control.dart';
@@ -17,7 +18,10 @@ import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:flutter/material.dart';
 
 typedef SalesMargemProdutoFiliaisLoader =
-    Future<AppResult<List<CadastroFilialRow>>> Function(String agentId);
+    Future<AppResult<List<CadastroFilialRow>>> Function(
+      String agentId, {
+      AgentQueriesCancelScope? cancelScope,
+    });
 
 String salesMargemProdutoFilialKey({
   required int codEmpresa,
@@ -35,6 +39,22 @@ String salesMargemProdutoFilialLabel(CadastroFilialRow row) {
   return '${row.codEmpresa}/${row.codFilial}';
 }
 
+CadastroFilialRow? salesMargemProdutoFindFilial({
+  required List<CadastroFilialRow> items,
+  int? codEmpresa,
+  int? codFilial,
+}) {
+  if (codEmpresa == null || codFilial == null) {
+    return null;
+  }
+  for (final row in items) {
+    if (row.codEmpresa == codEmpresa && row.codFilial == codFilial) {
+      return row;
+    }
+  }
+  return null;
+}
+
 CadastroFilialRow? salesMargemProdutoMatchFilial({
   required List<CadastroFilialRow> items,
   int? codEmpresa,
@@ -43,18 +63,12 @@ CadastroFilialRow? salesMargemProdutoMatchFilial({
   if (items.isEmpty) {
     return null;
   }
-  if (items.length == 1) {
-    return items.first;
-  }
-  if (codEmpresa == null || codFilial == null) {
-    return items.first;
-  }
-  for (final row in items) {
-    if (row.codEmpresa == codEmpresa && row.codFilial == codFilial) {
-      return row;
-    }
-  }
-  return items.first;
+  return salesMargemProdutoFindFilial(
+        items: items,
+        codEmpresa: codEmpresa,
+        codFilial: codFilial,
+      ) ??
+      items.first;
 }
 
 class SalesMargemProdutoFiltersSheet extends StatefulWidget {
@@ -92,6 +106,7 @@ class _SalesMargemProdutoFiltersSheetState
   bool _filiaisLoading = false;
   AppFailure? _filiaisFailure;
   int _filiaisGeneration = 0;
+  AgentQueriesCancelScope? _filiaisCancelScope;
 
   @override
   void initState() {
@@ -103,6 +118,21 @@ class _SalesMargemProdutoFiltersSheetState
       codEmpresa: widget.initialCodEmpresa,
       codFilial: widget.initialCodFilial,
     );
+    final agentId = _selectedAgentId?.trim();
+    if (agentId != null && agentId.isNotEmpty && _filiais.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        unawaited(_reloadFiliais(agentId));
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _filiaisCancelScope?.cancelAll();
+    super.dispose();
   }
 
   Future<void> _onAgentChanged(String agentId) async {
@@ -117,12 +147,18 @@ class _SalesMargemProdutoFiltersSheetState
 
   Future<void> _reloadFiliais(String agentId) async {
     final generation = ++_filiaisGeneration;
+    _filiaisCancelScope?.cancelAll();
+    final cancelScope = AgentQueriesCancelScope();
+    _filiaisCancelScope = cancelScope;
     setState(() {
       _filiaisLoading = true;
       _filiaisFailure = null;
     });
 
-    final result = await widget.loadFiliais(agentId);
+    final result = await widget.loadFiliais(
+      agentId,
+      cancelScope: cancelScope,
+    );
     if (!mounted || generation != _filiaisGeneration) {
       return;
     }
@@ -171,7 +207,13 @@ class _SalesMargemProdutoFiltersSheetState
 
   void _clear() {
     setState(() {
-      _selectedFilial = _filiais.isEmpty ? null : _filiais.first;
+      _selectedFilial =
+          salesMargemProdutoFindFilial(
+            items: _filiais,
+            codEmpresa: widget.initialCodEmpresa,
+            codFilial: widget.initialCodFilial,
+          ) ??
+          (_filiais.isEmpty ? null : _filiais.first);
     });
   }
 
@@ -270,6 +312,9 @@ class _SalesMargemProdutoFiltersSheetState
               AppInlineErrorPanel(
                 tone: AppInlinePanelTone.informational,
                 message: l10n.salesMargemProdutoNoBranchEmpty,
+                onRetry: _selectedAgentId == null
+                    ? null
+                    : () => unawaited(_reloadFiliais(_selectedAgentId!)),
               )
             else if (showFilialDropdown)
               AppSectionCard(
