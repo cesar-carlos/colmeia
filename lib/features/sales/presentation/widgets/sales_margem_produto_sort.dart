@@ -20,8 +20,6 @@ abstract final class SalesMargemProdutoSort {
   static const Duration searchDebounce = Duration(milliseconds: 400);
 
   static const String persistPageSizeKey = 'pageSize';
-  static const String persistCodEmpresaKey = 'codEmpresa';
-  static const String persistCodFilialKey = 'codFilial';
   static const String persistSearchTermKey = 'searchTerm';
 
   static int sanitizePageSize(Object? raw) {
@@ -99,27 +97,19 @@ abstract final class SalesMargemProdutoSort {
   static SalesMargemProdutoPersistedFilters restore(
     Map<String, Object?> raw,
   ) {
-    final empresa = restoreInt(raw[persistCodEmpresaKey]);
-    final filial = restoreInt(raw[persistCodFilialKey]);
     return SalesMargemProdutoPersistedFilters(
       pageSize: sanitizePageSize(raw[persistPageSizeKey]),
       searchTerm: normalizeSearchTerm(raw[persistSearchTermKey]),
-      codEmpresa: empresa != null && empresa >= 1 ? empresa : null,
-      codFilial: filial != null && filial >= 0 ? filial : null,
     );
   }
 
   static Map<String, Object?> persistMap({
     required int pageSize,
     String? searchTerm,
-    int? codEmpresa,
-    int? codFilial,
   }) {
     return <String, Object?>{
       persistPageSizeKey: sanitizePageSize(pageSize),
       persistSearchTermKey: normalizeSearchTerm(searchTerm),
-      persistCodEmpresaKey: codEmpresa,
-      persistCodFilialKey: codFilial,
     };
   }
 
@@ -141,12 +131,8 @@ class SalesMargemProdutoPersistedFilters {
   const SalesMargemProdutoPersistedFilters({
     required this.pageSize,
     this.searchTerm,
-    this.codEmpresa,
-    this.codFilial,
   });
 
   final int pageSize;
   final String? searchTerm;
-  final int? codEmpresa;
-  final int? codFilial;
 }

@@ -1,17 +1,16 @@
 /// Filters and pagination for the product-margin catalog `sql.execute` query.
 ///
-/// **Branch scope:** [codEmpresa] and [codFilial] are required. Replacement
-/// cost is stored per company/branch in `CustoProduto`.
+/// **Branch scope:** company and branch are fixed at [fixedCodEmpresa] and
+/// [fixedCodFilial]. Replacement cost lives per company/branch in
+/// `CustoProduto`; this catalog always reads that one pair.
 ///
 /// **Ordering:** the SQL always numbers rows by `NomeProduto ASC`, then
 /// `CodProduto ASC`. That fixed key keeps page windows stable.
 ///
-/// **Search:** optional [searchTerm] is a case-insensitive contains match
-/// on `Produto.Nome`. Blank values are ignored.
+/// **Search:** optional [searchTerm] is a case- and accent-insensitive
+/// contains match on `Produto.Nome`. Blank values are ignored.
 class MargemProdutoFilter {
   const MargemProdutoFilter({
-    required this.codEmpresa,
-    required this.codFilial,
     this.searchTerm,
     this.page = 1,
     this.pageSize = defaultPageSize,
@@ -22,8 +21,11 @@ class MargemProdutoFilter {
   /// Upper bound for page size (agent `max_rows` and payload safety).
   static const int maxPageSize = 500;
 
-  final int codEmpresa;
-  final int codFilial;
+  static const int fixedCodEmpresa = 1;
+  static const int fixedCodFilial = 1;
+
+  int get codEmpresa => fixedCodEmpresa;
+  int get codFilial => fixedCodFilial;
 
   /// Optional free-text contains match on product name.
   final String? searchTerm;
@@ -48,12 +50,6 @@ class MargemProdutoFilter {
   int get endRow => offset + pageSize;
 
   String? validationError() {
-    if (codEmpresa < 1) {
-      return 'codEmpresa must be >= 1';
-    }
-    if (codFilial < 0) {
-      return 'codFilial must be >= 0';
-    }
     if (page < 1) {
       return 'page must be >= 1';
     }

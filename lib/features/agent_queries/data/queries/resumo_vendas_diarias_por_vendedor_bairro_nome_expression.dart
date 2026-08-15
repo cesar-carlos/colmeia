@@ -1,3 +1,5 @@
+import 'package:colmeia/features/agent_queries/data/queries/agent_queries_sql_accent_fold.dart';
+
 /// Shared SQL to derive a canonical bairro label (`NomeBairro`): trim,
 /// punctuation to spaces, repeated `REPLACE('  ', ' ')` to collapse long space
 /// runs, per-character `REPLACE` to strip accents (portable), then `UPPER`.
@@ -11,50 +13,6 @@
 /// versions) and SAP SQL Anywhere — both support `REPLACE` and `N'…'` string
 /// literals.
 abstract final class ResumoVendasDiariasPorVendedorBairroNomeExpression {
-  static const String _translateFromAccents =
-      'áàâãäåæçéèêëíìîïñóòôõöúùûüýÿ'
-      'ÁÀÂÃÄÅÆÇÉÈÊËÍÌÎÏÑÓÒÔÕÖÚÙÛÜÝŸ';
-
-  static const String _translateToAscii =
-      'aaaaaaa'
-      'c'
-      'eeee'
-      'iiii'
-      'n'
-      'ooooo'
-      'uuuu'
-      'yy'
-      'AAAAAAA'
-      'C'
-      'EEEE'
-      'IIII'
-      'N'
-      'OOOOO'
-      'UUUU'
-      'YY';
-
-  /// Escapes a single character for use inside an `N'…'` literal in T-SQL /
-  /// SQL Anywhere (double internal single quotes).
-  static String _nCharLiteralContent(String singleChar) {
-    return singleChar.replaceAll("'", "''");
-  }
-
-  static String _wrapAccentReplaceChain(String innerSql) {
-    final fromRunes = _translateFromAccents.runes.toList();
-    final toRunes = _translateToAscii.runes.toList();
-    assert(
-      fromRunes.length == toRunes.length,
-      'accent from/to must have equal length',
-    );
-    var result = innerSql;
-    for (var i = 0; i < fromRunes.length; i++) {
-      final from = _nCharLiteralContent(String.fromCharCode(fromRunes[i]));
-      final to = _nCharLiteralContent(String.fromCharCode(toRunes[i]));
-      result = "REPLACE($result, N'$from', N'$to')";
-    }
-    return result;
-  }
-
   /// [sourceSql] must be a single scalar expression, e.g.
   /// `COALESCE(Bairro, '')` or `COALESCE(:bairro, '')`.
   static String nomeBairroSql(String sourceSql) {
@@ -80,7 +38,7 @@ abstract final class ResumoVendasDiariasPorVendedorBairroNomeExpression {
         '  ', ' '),
         '  ', ' ')
       ''';
-    inner = _wrapAccentReplaceChain(inner);
+    inner = AgentQueriesSqlAccentFold.replaceAccents(inner);
     return 'UPPER($inner)';
   }
 

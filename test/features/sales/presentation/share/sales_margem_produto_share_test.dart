@@ -4,7 +4,6 @@ import 'package:colmeia/features/sales/presentation/share/sales_margem_produto_s
 import 'package:colmeia/features/sales/presentation/widgets/sales_margem_produto_columns.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/chart_pdf_exporter.dart';
-import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
 import 'package:flutter/material.dart';
@@ -66,12 +65,6 @@ void main() {
       exportHeaderContext: buildSalesSingleAgentChartShareExportHeaderContext(
         l10n: l10n,
         agentName: 'Agente Centro',
-        parameters: <ChartShareExportHeaderParameter>[
-          ChartShareExportHeaderParameter(
-            label: l10n.salesMargemProdutoFilterFilial,
-            value: 'Lucas Centro',
-          ),
-        ],
       ),
     );
 
@@ -110,7 +103,7 @@ void main() {
       formatSalesMargemProdutoPercent(50),
     );
     expect(metadata.filterSummary, contains('Agente Centro'));
-    expect(metadata.filterSummary, contains('Lucas Centro'));
+    expect(metadata.filterSummary, isNot(contains('Lucas Centro')));
   });
 
   test('share metadata truncates table rows over limit', () {
@@ -161,12 +154,6 @@ void main() {
         exportHeaderContext: buildSalesSingleAgentChartShareExportHeaderContext(
           l10n: l10n,
           agentName: 'Agente Centro',
-          parameters: <ChartShareExportHeaderParameter>[
-            ChartShareExportHeaderParameter(
-              label: l10n.salesMargemProdutoFilterFilial,
-              value: 'Lucas Centro',
-            ),
-          ],
         ),
       );
 

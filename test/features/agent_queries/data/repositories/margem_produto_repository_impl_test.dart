@@ -6,6 +6,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -25,6 +26,7 @@ void main() {
         sql: 'SELECT 1',
       ),
     );
+    registerFallbackValue(AgentQueriesCancelScope());
   });
 
   setUp(() {
@@ -39,7 +41,7 @@ void main() {
     final result = await repository.loadPage(
       userId: 'user-1',
       agentId: 'agent-1',
-      filter: const MargemProdutoFilter(codEmpresa: 0, codFilial: 1),
+      filter: const MargemProdutoFilter(page: 0),
     );
 
     check(result.isError()).isTrue();
@@ -64,7 +66,7 @@ void main() {
     final result = await repository.loadPage(
       userId: 'user-1',
       agentId: 'agent-1',
-      filter: const MargemProdutoFilter(codEmpresa: 1, codFilial: 1),
+      filter: const MargemProdutoFilter(),
     );
 
     check(result.isSuccess()).isTrue();
@@ -91,8 +93,6 @@ void main() {
       userId: 'user-1',
       agentId: 'agent-1',
       filter: const MargemProdutoFilter(
-        codEmpresa: 1,
-        codFilial: 2,
         page: 2,
         pageSize: 10,
       ),
@@ -106,7 +106,7 @@ void main() {
 
     check(captured.sql).equals(MargemProdutoSql.pagedQuery());
     check(captured.namedParams['codEmpresa']).equals(1);
-    check(captured.namedParams['codFilial']).equals(2);
+    check(captured.namedParams['codFilial']).equals(1);
     check(captured.namedParams['nomeProdutoPattern']).isNull();
     check(captured.namedParams['startRow']).equals(11);
     check(captured.namedParams['endRow']).equals(20);
@@ -138,10 +138,7 @@ void main() {
     await repository.loadPage(
       userId: 'user-1',
       agentId: 'agent-1',
-      filter: const MargemProdutoFilter(
-        codEmpresa: 1,
-        codFilial: 1,
-      ),
+      filter: const MargemProdutoFilter(),
     );
 
     final captured =
@@ -173,8 +170,6 @@ void main() {
       userId: 'user-1',
       agentId: 'agent-1',
       filter: const MargemProdutoFilter(
-        codEmpresa: 1,
-        codFilial: 1,
         searchTerm: '  a%b_c[d  ',
       ),
     );
@@ -209,8 +204,6 @@ void main() {
       userId: 'user-1',
       agentId: 'agent-1',
       filter: const MargemProdutoFilter(
-        codEmpresa: 1,
-        codFilial: 1,
         searchTerm: '   ',
       ),
     );
@@ -259,7 +252,7 @@ void main() {
     final result = await repository.loadPage(
       userId: 'user-1',
       agentId: 'agent-1',
-      filter: const MargemProdutoFilter(codEmpresa: 1, codFilial: 2),
+      filter: const MargemProdutoFilter(),
     );
 
     check(result.isSuccess()).isTrue();
@@ -313,13 +306,47 @@ void main() {
     final result = await repository.loadPage(
       userId: 'user-1',
       agentId: 'agent-1',
-      filter: const MargemProdutoFilter(codEmpresa: 1, codFilial: 2),
+      filter: const MargemProdutoFilter(),
     );
 
     check(result.isSuccess()).isTrue();
     check(result.getOrThrow().items.single.codProduto).equals(10);
     verify(() => agentQueriesRepository.executeSql(any())).called(2);
   });
+
+  test(
+    'does not retry empty payload when cancel scope is already cancelled',
+    () async {
+      final cancelScope = AgentQueriesCancelScope();
+      when(
+        () => agentQueriesRepository.executeSql(
+          any(),
+          cancelScope: any(named: 'cancelScope'),
+        ),
+      ).thenAnswer((_) async {
+        cancelScope.cancelAll();
+        return const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+        );
+      });
+
+      final result = await repository.loadPage(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        filter: const MargemProdutoFilter(),
+        cancelScope: cancelScope,
+      );
+
+      check(result.isError()).isTrue();
+      check(result.exceptionOrNull()).isA<OperationCancelledFailure>();
+      verify(
+        () => agentQueriesRepository.executeSql(
+          any(),
+          cancelScope: any(named: 'cancelScope'),
+        ),
+      ).called(1);
+    },
+  );
 
   test('empty payload twice is a failure not empty catalog', () async {
     when(
@@ -333,7 +360,7 @@ void main() {
     final result = await repository.loadPage(
       userId: 'user-1',
       agentId: 'agent-1',
-      filter: const MargemProdutoFilter(codEmpresa: 1, codFilial: 2),
+      filter: const MargemProdutoFilter(),
     );
 
     check(result.isError()).isTrue();

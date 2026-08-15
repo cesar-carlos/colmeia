@@ -15,7 +15,7 @@ void main() {
   });
 
   group('SalesMargemProdutoSort.restore', () {
-    test('restores page size, search term, and branch codes', () {
+    test('restores page size and search term', () {
       final restored = SalesMargemProdutoSort.restore(<String, Object?>{
         'sortBy': 'custoReposicao',
         'sortDirection': 'descending',
@@ -27,8 +27,6 @@ void main() {
 
       check(restored.pageSize).equals(50);
       check(restored.searchTerm).equals('Mel');
-      check(restored.codEmpresa).equals(2);
-      check(restored.codFilial).equals(0);
     });
 
     test('sanitizes invalid page size', () {
@@ -37,16 +35,6 @@ void main() {
       });
 
       check(restored.pageSize).equals(20);
-    });
-
-    test('drops invalid company codes', () {
-      final restored = SalesMargemProdutoSort.restore(<String, Object?>{
-        'codEmpresa': 0,
-        'codFilial': -1,
-      });
-
-      check(restored.codEmpresa).isNull();
-      check(restored.codFilial).isNull();
     });
 
     test('drops blank search terms', () {
@@ -63,16 +51,14 @@ void main() {
       final persisted = SalesMargemProdutoSort.persistMap(
         pageSize: 10,
         searchTerm: '  Mel  ',
-        codEmpresa: 1,
-        codFilial: 3,
       );
 
       check(persisted.containsKey('sortBy')).isFalse();
       check(persisted.containsKey('sortDirection')).isFalse();
+      check(persisted.containsKey('codEmpresa')).isFalse();
+      check(persisted.containsKey('codFilial')).isFalse();
       check(persisted['pageSize']).equals(10);
       check(persisted['searchTerm']).equals('Mel');
-      check(persisted['codEmpresa']).equals(1);
-      check(persisted['codFilial']).equals(3);
     });
   });
 

@@ -1,8 +1,11 @@
+import 'package:colmeia/features/agent_queries/data/queries/agent_queries_sql_accent_fold.dart';
+
 /// Paged product-margin catalog (`MargemProduto`) with total count in one
 /// `sql.execute` round-trip.
 ///
-/// List price vs replacement cost for every `Produto`, scoped to one
-/// company/branch. Not a period-sales aggregate (see
+/// List price vs replacement cost for every `Produto`, scoped to company
+/// `1` / branch `1` (`MargemProdutoFilter.fixedCodEmpresa` /
+/// `fixedCodFilial`). Not a period-sales aggregate (see
 /// `ResumoProdutoVendaLucratividade` for that).
 ///
 /// ---
@@ -28,7 +31,8 @@
 /// `ResumoVendasDiariasSuggestionSqlParams.buildSearchPattern`, or `NULL`
 /// to skip the name filter. The `LIKE` runs in `MargemProduto` before
 /// `Tot` and `ROW_NUMBER`, so `totalCount` and page windows share the
-/// same filtered catalog.
+/// same filtered catalog. Both sides of the `LIKE` are accent-folded and
+/// uppercased (`AgentQueriesSqlAccentFold`), so `cafe` matches `Café`.
 ///
 /// **Ordering:** fixed `NomeProduto ASC`, then `CodProduto ASC` as the
 /// stable page key. `ROW_NUMBER` must stay deterministic or page 2 can
@@ -39,6 +43,10 @@
 /// `Rn BETWEEN :startRow AND :endRow`.
 abstract final class MargemProdutoSql {
   static String pagedQuery() {
+    final nomeFolded = AgentQueriesSqlAccentFold.foldUpper('TRIM(p.Nome)');
+    final patternFolded = AgentQueriesSqlAccentFold.foldUpper(
+      'prm.NomeProdutoPattern',
+    );
     return '''
     WITH Parametros AS (
       SELECT
@@ -91,7 +99,7 @@ abstract final class MargemProdutoSql {
       WHERE p.Ativo = 'S'
         AND (
           prm.NomeProdutoPattern IS NULL
-          OR UPPER(TRIM(p.Nome)) LIKE UPPER(prm.NomeProdutoPattern)
+          OR $nomeFolded LIKE $patternFolded
         )
     ),
     Tot AS (

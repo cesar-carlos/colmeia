@@ -97,8 +97,8 @@ class MargemProdutoRepositoryImpl implements MargemProdutoRepository {
         clientToken: clientToken,
         bridgeTimeoutMs: effectiveBridgeMs,
         namedParams: <String, Object?>{
-          'codEmpresa': filter.codEmpresa,
-          'codFilial': filter.codFilial,
+          'codEmpresa': MargemProdutoFilter.fixedCodEmpresa,
+          'codFilial': MargemProdutoFilter.fixedCodFilial,
           'nomeProdutoPattern':
               ResumoVendasDiariasSuggestionSqlParams.buildSearchPattern(
                 filter.normalizedSearchTerm,
@@ -141,6 +141,11 @@ class MargemProdutoRepositoryImpl implements MargemProdutoRepository {
     if (first.isError() || !emptyRawPayload) {
       return first;
     }
+    if (cancelScope?.isCancelled ?? false) {
+      return const Failure<MargemProdutoPageResult, AppFailure>(
+        OperationCancelledFailure(),
+      );
+    }
 
     AppLogger.info(
       'Retrying empty unary success for $_operation',
@@ -151,6 +156,11 @@ class MargemProdutoRepositoryImpl implements MargemProdutoRepository {
       },
     );
     await Future<void>.delayed(emptySuccessRetryDelay);
+    if (cancelScope?.isCancelled ?? false) {
+      return const Failure<MargemProdutoPageResult, AppFailure>(
+        OperationCancelledFailure(),
+      );
+    }
     final second = await executeOnce();
     if (second.isError() || !emptyRawPayload) {
       return second;

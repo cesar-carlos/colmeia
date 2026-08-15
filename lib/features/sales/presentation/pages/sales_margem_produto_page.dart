@@ -5,13 +5,9 @@ import 'package:colmeia/app/router/app_chart_share_actions.dart';
 import 'package:colmeia/app/router/app_navigation.dart';
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
-import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
-import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_page_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_margem_produto_page_use_case.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_filter.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_row.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
@@ -51,14 +47,12 @@ import 'package:colmeia/shared/widgets/reports/app_report_style.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_viewer.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:result_dart/result_dart.dart';
 
 class SalesMargemProdutoPage extends StatefulWidget {
   const SalesMargemProdutoPage({
     required this.sessionService,
     required this.loadSalesAvailableAgentsUseCase,
     required this.resolveSalesAgentClientTokenUseCase,
-    required this.loadCadastroFilialPageUseCase,
     required this.loadMargemProdutoPageUseCase,
     required this.loadRowsForShareUseCase,
     this.relayCancelScopeBinder,
@@ -68,7 +62,6 @@ class SalesMargemProdutoPage extends StatefulWidget {
   final SalesSessionService sessionService;
   final LoadAvailableAgentsForSales loadSalesAvailableAgentsUseCase;
   final ResolveSalesAgentClientTokenUseCase resolveSalesAgentClientTokenUseCase;
-  final LoadCadastroFilialPageUseCase loadCadastroFilialPageUseCase;
   final LoadMargemProdutoPageUseCase loadMargemProdutoPageUseCase;
   final LoadMargemProdutoRowsForShareUseCase loadRowsForShareUseCase;
   final AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder;
@@ -86,7 +79,6 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
   late final SalesSessionService _sessionService;
   late final ResolveSalesAgentClientTokenUseCase _resolveClientTokenUseCase;
   late final LoadAvailableAgentsForSales _loadAgentsUseCase;
-  late final LoadCadastroFilialPageUseCase _loadCadastroFilial;
   late final LoadMargemProdutoPageUseCase _loadMargemProduto;
   late final LoadMargemProdutoRowsForShareUseCase _loadRowsForShare;
   final GlobalKey _shareKey = GlobalKey();
@@ -101,11 +93,6 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
   String? _cachedClientTokenAgentId;
   String? _cachedClientToken;
 
-  List<CadastroFilialRow> _filiais = const <CadastroFilialRow>[];
-  CadastroFilialRow? _selectedFilial;
-  int? _preferredCodEmpresa;
-  int? _preferredCodFilial;
-
   int _page = 1;
   int _pageSize = SalesMargemProdutoSort.defaultPageSize;
   AppReportQuery _query = SalesMargemProdutoSort.queryFor(
@@ -116,24 +103,19 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
   List<MargemProdutoRow> _rows = const <MargemProdutoRow>[];
   int _totalCount = 0;
 
-  bool _filiaisLoading = false;
   bool _catalogLoading = false;
   String? _error;
   AppFailure? _loadFailure;
-  AppFailure? _filiaisFailure;
 
-  int _filiaisGeneration = 0;
   int _sqlLoadGeneration = 0;
-  AgentQueriesCancelScope? _filiaisCancelScope;
   AgentQueriesCancelScope? _sqlCancelScope;
   AgentQueriesCancelScope? _shareCancelScope;
 
-  bool get _pageLoading => _filiaisLoading || _catalogLoading;
+  bool get _pageLoading => _catalogLoading;
 
   bool get _canOpenFullscreen => !_pageLoading && _rows.isNotEmpty;
 
-  bool get _canShare =>
-      !_pageLoading && _totalCount > 0 && _selectedFilial != null;
+  bool get _canShare => !_pageLoading && _totalCount > 0;
 
   Future<String?> _resolveClientToken({
     required String userId,
@@ -181,7 +163,6 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
     _sessionService = widget.sessionService;
     _resolveClientTokenUseCase = widget.resolveSalesAgentClientTokenUseCase;
     _loadAgentsUseCase = widget.loadSalesAvailableAgentsUseCase;
-    _loadCadastroFilial = widget.loadCadastroFilialPageUseCase;
     _loadMargemProduto = widget.loadMargemProdutoPageUseCase;
     _loadRowsForShare = widget.loadRowsForShareUseCase;
     _selectedAgentId = _sessionService.selectedAgentId;
@@ -190,8 +171,6 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       _sessionService.restoreCardFilters(SalesMargemProdutoSort.cardId),
     );
     _pageSize = restored.pageSize;
-    _preferredCodEmpresa = restored.codEmpresa;
-    _preferredCodFilial = restored.codFilial;
     _query = SalesMargemProdutoSort.queryFor(
       page: 1,
       pageSize: _pageSize,
@@ -238,7 +217,6 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
 
   @override
   void dispose() {
-    _filiaisCancelScope?.cancelAll();
     _sqlCancelScope?.cancelAll();
     _shareCancelScope?.cancelAll();
     _gridView.dispose();
@@ -273,7 +251,7 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
     if (nextSelection != _sessionService.selectedAgentId) {
       unawaited(_sessionService.setSelectedAgentId(nextSelection));
     }
-    unawaited(_loadFiliaisThenCatalog());
+    unawaited(_loadCatalog());
   }
 
   Future<void> _reload() => reloadWithAutoRefresh();
@@ -294,159 +272,7 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
   bool get autoRefreshPageLoading => _pageLoading;
 
   @override
-  Future<void> performAutoRefreshReload() async {
-    if (_selectedFilial == null) {
-      await _loadFiliaisThenCatalog();
-      return;
-    }
-    await _loadCatalog();
-  }
-
-  Future<AppResult<List<CadastroFilialRow>>> _fetchFiliais(
-    String agentId, {
-    AgentQueriesCancelScope? cancelScope,
-  }) async {
-    final auth = context.read<AuthController>();
-    final userId = auth.session?.userId;
-    final l10n = AppLocalizations.of(context);
-    if (userId == null) {
-      return Failure<List<CadastroFilialRow>, AppFailure>(
-        SessionFailure(
-          message: 'Missing user session for cadastro filial lookup',
-          userMessage: l10n.agentSqlErrorAuthenticationFailed,
-          context: const <String, Object?>{
-            'operation': 'loadCadastroFilialPage',
-          },
-        ),
-      );
-    }
-
-    if (cancelScope != null) {
-      widget.relayCancelScopeBinder?.call(cancelScope);
-    }
-
-    final clientToken = await _resolveClientToken(
-      userId: userId,
-      agentId: agentId,
-    );
-    if (clientToken == null) {
-      return Failure<List<CadastroFilialRow>, AppFailure>(
-        SessionFailure(
-          message: 'Missing client token for cadastro filial lookup',
-          userMessage: l10n.agentSqlErrorAuthenticationFailed,
-          context: <String, Object?>{
-            'operation': 'loadCadastroFilialPage',
-            'agentId': agentId,
-          },
-        ),
-      );
-    }
-
-    final result = await _loadCadastroFilial(
-      userId: userId,
-      agentId: agentId,
-      filter: const CadastroFilialFilter(
-        pageSize: CadastroFilialFilter.maxPageSize,
-        branchOptionsProjection: true,
-      ),
-      clientToken: clientToken,
-      cancelScope: cancelScope,
-    );
-    final page = result.getOrNull();
-    if (page != null) {
-      return Success<List<CadastroFilialRow>, AppFailure>(page.items);
-    }
-    return Failure<List<CadastroFilialRow>, AppFailure>(
-      result.exceptionOrNull()!,
-    );
-  }
-
-  Future<void> _loadFiliaisThenCatalog() async {
-    markAutoRefreshCancelled();
-    final generation = ++_filiaisGeneration;
-    final catalogGenerationAtStart = ++_sqlLoadGeneration;
-    _filiaisCancelScope = _replaceCancelScope(_filiaisCancelScope);
-    _sqlCancelScope?.cancelAll();
-    _shareCancelScope?.cancelAll();
-    final agentId = _selectedAgentId?.trim();
-    if (agentId == null || agentId.isEmpty) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _filiais = const <CadastroFilialRow>[];
-        _selectedFilial = null;
-        _filiaisLoading = false;
-        _catalogLoading = false;
-        _rows = const <MargemProdutoRow>[];
-        _totalCount = 0;
-        _error = null;
-        _loadFailure = null;
-        _filiaisFailure = null;
-      });
-      return;
-    }
-
-    setState(() {
-      _filiaisLoading = true;
-      _catalogLoading = true;
-      _filiaisFailure = null;
-      _error = null;
-      _loadFailure = null;
-      _rows = const <MargemProdutoRow>[];
-      _totalCount = 0;
-    });
-
-    final result = await _fetchFiliais(
-      agentId,
-      cancelScope: _filiaisCancelScope,
-    );
-    if (!mounted || generation != _filiaisGeneration) {
-      return;
-    }
-
-    final items = result.getOrNull();
-    if (items == null) {
-      final failure = result.exceptionOrNull()!;
-      setState(() {
-        _filiais = const <CadastroFilialRow>[];
-        _selectedFilial = null;
-        _filiaisLoading = false;
-        _catalogLoading = false;
-        _filiaisFailure = failure;
-        _rows = const <MargemProdutoRow>[];
-        _totalCount = 0;
-      });
-      onAgentQueryLoadFailure(failure);
-      markAutoRefreshFailure();
-      return;
-    }
-
-    final selected = salesMargemProdutoMatchFilial(
-      items: items,
-      codEmpresa: _preferredCodEmpresa,
-      codFilial: _preferredCodFilial,
-    );
-    setState(() {
-      _filiais = items;
-      _selectedFilial = selected;
-      _filiaisLoading = false;
-      _filiaisFailure = null;
-      _error = null;
-      if (selected == null) {
-        _catalogLoading = false;
-        _rows = const <MargemProdutoRow>[];
-        _totalCount = 0;
-      }
-    });
-    if (selected == null) {
-      return;
-    }
-    if (_sqlLoadGeneration != catalogGenerationAtStart) {
-      return;
-    }
-    await _loadCatalog();
-  }
+  Future<void> performAutoRefreshReload() => _loadCatalog();
 
   Future<void> _loadCatalog({bool clearVisibleCatalog = false}) async {
     markAutoRefreshCancelled();
@@ -457,7 +283,6 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
     final auth = context.read<AuthController>();
     final userId = auth.session?.userId;
     final agentId = _selectedAgentId?.trim();
-    final filial = _selectedFilial;
 
     setState(() {
       _catalogLoading = true;
@@ -469,10 +294,7 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       }
     });
 
-    if (userId == null ||
-        agentId == null ||
-        agentId.isEmpty ||
-        filial == null) {
+    if (userId == null || agentId == null || agentId.isEmpty) {
       if (!mounted || generation != _sqlLoadGeneration) {
         return;
       }
@@ -518,8 +340,6 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       userId: userId,
       agentId: agentId,
       filter: MargemProdutoFilter(
-        codEmpresa: filial.codEmpresa,
-        codFilial: filial.codFilial,
         searchTerm: SalesMargemProdutoSort.normalizeSearchTerm(
           _query.searchTerm,
         ),
@@ -590,23 +410,11 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
     return selectedBranch?.name ?? l10n.salesBranchPickerEmpty;
   }
 
-  String _selectedFilialDisplayName(AppLocalizations l10n) {
-    if (_selectedFilial == null) {
-      return l10n.salesBranchPickerEmpty;
-    }
-    return salesMargemProdutoFilialLabel(_selectedFilial!);
-  }
-
   ChartShareExportHeaderContext _shareExportHeaderContext(
     AppLocalizations l10n, {
     String? searchTerm,
   }) {
-    final parameters = <ChartShareExportHeaderParameter>[
-      ChartShareExportHeaderParameter(
-        label: l10n.salesMargemProdutoFilterFilial,
-        value: _selectedFilialDisplayName(l10n),
-      ),
-    ];
+    final parameters = <ChartShareExportHeaderParameter>[];
     final normalizedSearch = SalesMargemProdutoSort.normalizeSearchTerm(
       searchTerm,
     );
@@ -645,9 +453,7 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
         extra: AppChartFullscreenRouteExtra(
           title: l10n.salesCardMargemProdutoTitle,
           subtitle: l10n.salesMargemProdutoIntroSubtitle,
-          filterSummary:
-              '${_selectedAgentName(l10n)} · '
-              '${_selectedFilialDisplayName(l10n)}',
+          filterSummary: _selectedAgentName(l10n),
           chartSemanticsLabel: l10n.salesCardMargemProdutoTitle,
           headerTrailing:
               ValueListenableBuilder<SalesMargemProdutoGridSnapshot>(
@@ -708,13 +514,8 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       final auth = context.read<AuthController>();
       final userId = auth.session?.userId;
       final agentId = _selectedAgentId?.trim();
-      final filial = _selectedFilial;
       if (userId == null || agentId == null || agentId.isEmpty) {
         _showShareMessage(l10n.agentSqlErrorAuthenticationFailed);
-        return;
-      }
-      if (filial == null) {
-        _showShareMessage(l10n.salesMargemProdutoNoBranchEmpty);
         return;
       }
 
@@ -744,11 +545,7 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       final result = await _loadRowsForShare(
         userId: userId,
         agentId: agentId,
-        filter: MargemProdutoFilter(
-          codEmpresa: filial.codEmpresa,
-          codFilial: filial.codFilial,
-          searchTerm: searchTerm,
-        ),
+        filter: MargemProdutoFilter(searchTerm: searchTerm),
         totalCount: totalCount,
         clientToken: clientToken,
         cancelScope: shareScope,
@@ -801,8 +598,6 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       SalesMargemProdutoSort.persistMap(
         pageSize: _pageSize,
         searchTerm: _query.searchTerm,
-        codEmpresa: _selectedFilial?.codEmpresa ?? _preferredCodEmpresa,
-        codFilial: _selectedFilial?.codFilial ?? _preferredCodFilial,
       ),
     );
   }
@@ -813,42 +608,19 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
     final normalizedAgentId = nextAgentId == null || nextAgentId.isEmpty
         ? null
         : nextAgentId;
-    final nextEmpresa = SalesMargemProdutoSort.restoreInt(next['codEmpresa']);
-    final nextFilial = SalesMargemProdutoSort.restoreInt(next['codFilial']);
-    final agentChanged = normalizedAgentId != _selectedAgentId;
+    if (normalizedAgentId == _selectedAgentId) {
+      return;
+    }
     setState(() {
       _selectedAgentId = normalizedAgentId;
-      _preferredCodEmpresa = nextEmpresa;
-      _preferredCodFilial = nextFilial;
       _page = 1;
       _query = SalesMargemProdutoSort.queryFor(
         page: 1,
         pageSize: _pageSize,
         previous: _query,
       );
-      if (agentChanged) {
-        _filiais = const <CadastroFilialRow>[];
-        _selectedFilial = null;
-      }
     });
     unawaited(_sessionService.setSelectedAgentId(normalizedAgentId));
-    if (agentChanged) {
-      unawaited(_persistFilters());
-      unawaited(_loadFiliaisThenCatalog());
-      return;
-    }
-    final matched = salesMargemProdutoFindFilial(
-      items: _filiais,
-      codEmpresa: nextEmpresa,
-      codFilial: nextFilial,
-    );
-    if (matched == null) {
-      setState(() => _selectedFilial = null);
-      unawaited(_persistFilters());
-      unawaited(_loadFiliaisThenCatalog());
-      return;
-    }
-    setState(() => _selectedFilial = matched);
     unawaited(_persistFilters());
     unawaited(_loadCatalog(clearVisibleCatalog: true));
   }
@@ -872,7 +644,12 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       _applySearch(nextSearch, previous: next);
       return;
     }
-    _applyPaging(page: next.page, pageSize: next.pageSize, previous: next);
+    final nextPage = SalesMargemProdutoSort.sanitizePage(next.page);
+    final nextPageSize = SalesMargemProdutoSort.sanitizePageSize(next.pageSize);
+    if (nextPage == _page && nextPageSize == _pageSize) {
+      return;
+    }
+    _applyPaging(page: nextPage, pageSize: nextPageSize, previous: next);
   }
 
   void _applySearch(String? searchTerm, {AppReportQuery? previous}) {
@@ -932,11 +709,6 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
           l10n: AppLocalizations.of(context),
           availableAgents: _availableAgents,
           initialSelectedAgentId: _selectedAgentId,
-          initialFiliais: _filiais,
-          initialCodEmpresa:
-              _selectedFilial?.codEmpresa ?? _preferredCodEmpresa,
-          initialCodFilial: _selectedFilial?.codFilial ?? _preferredCodFilial,
-          loadFiliais: _fetchFiliais,
           onApply: _onFiltersChanged,
         );
       },
@@ -948,7 +720,6 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
     final l10n = AppLocalizations.of(context);
     final tokens = context.appTokens;
     final selectedBranchName = _selectedAgentName(l10n);
-    final selectedFilialName = _selectedFilialDisplayName(l10n);
     final pageInfo = SalesMargemProdutoSort.pageInfo(
       page: _page,
       pageSize: _pageSize,
@@ -962,32 +733,9 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
         title: l10n.salesBranchRequiredTitle,
         message: l10n.salesBranchRequiredMessage,
       );
-    } else if (_filiaisFailure != null) {
-      reportSurface = AgentQueryErrorPanelFactory.fromFailure(
-        _filiaisFailure!,
-        l10n,
-        onRetry: () => unawaited(_loadFiliaisThenCatalog()),
-        retryCountdownLabel: agentQueryRetryCountdownLabel(l10n),
-        supportContext: AgentQueryFailureSupportContext.environment(
-          extra: <String, String>{
-            'agentId': ?_selectedAgentId,
-            'screen': 'sales_margem_produto',
-          },
-        ),
-      );
-    } else if (!_filiaisLoading &&
-        _filiais.isEmpty &&
-        _error == null &&
-        _loadFailure == null) {
-      reportSurface = AppInlineErrorPanel(
-        tone: AppInlinePanelTone.informational,
-        message: l10n.salesMargemProdutoNoBranchEmpty,
-        onRetry: () => unawaited(_loadFiliaisThenCatalog()),
-      );
     } else if (_error != null &&
         _error!.trim().isNotEmpty &&
-        _loadFailure == null &&
-        _filiaisFailure == null) {
+        _loadFailure == null) {
       reportSurface = AppInlineErrorPanel(
         message: _error!,
         onRetry: () => unawaited(_reload()),
@@ -1002,9 +750,6 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
           );
           return AppReportViewer<MargemProdutoRow>(
             title: l10n.salesCardMargemProdutoTitle,
-            contextChips: _selectedFilial == null
-                ? null
-                : <String>[selectedFilialName],
             headerTrailing: _catalogHeaderTrailing(l10n),
             columns: _columns,
             rows: _rows,
@@ -1079,12 +824,7 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
                 label: l10n.salesBranchFilterLabel,
                 value: selectedBranchName,
               ),
-              SalesCardFilterSummaryItem(
-                label: l10n.salesMargemProdutoFilterFilial,
-                value: selectedFilialName,
-              ),
             ],
-            enabled: !_pageLoading,
           ),
           SizedBox(height: tokens.gapMd),
           SalesAutoRefreshActionsRow(

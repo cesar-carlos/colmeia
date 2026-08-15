@@ -33,10 +33,21 @@ void main() {
   test('filters NomeProduto with optional LIKE before counting', () {
     final sql = MargemProdutoSql.pagedQuery();
     check(sql).contains('prm.NomeProdutoPattern IS NULL');
-    check(sql).contains(
-      'UPPER(TRIM(p.Nome)) LIKE UPPER(prm.NomeProdutoPattern)',
-    );
+    check(sql).contains('LIKE');
+    check(sql).contains('REPLACE(');
+    check(sql).contains("N'á'");
+    check(sql).contains('TRIM(p.Nome)');
+    check(sql).contains('prm.NomeProdutoPattern');
     check(sql).contains('SELECT COUNT(*) AS TotalCount FROM MargemProduto');
+  });
+
+  test('accent-folds both sides of the product-name LIKE', () {
+    final sql = MargemProdutoSql.pagedQuery();
+    check(
+      sql.contains('UPPER(TRIM(p.Nome)) LIKE UPPER(prm.NomeProdutoPattern)'),
+    ).isFalse();
+    check(_count(sql, "N'ç'")).isGreaterOrEqual(1);
+    check(_count(sql, ':nomeProdutoPattern')).equals(1);
   });
 
   test('does not send DECLARE or block comments', () {

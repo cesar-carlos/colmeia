@@ -3754,7 +3754,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesMargemProdutoIntroSubtitle =>
-      'Preço de lista versus custo de reposição da filial selecionada.';
+      'Preço de lista versus custo de reposição.';
 
   @override
   String get salesMargemProdutoColumnProduto => 'Produto';
@@ -3782,12 +3782,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesMargemProdutoEmpty => 'Nenhum produto nesta filial.';
-
-  @override
-  String get salesMargemProdutoNoBranchEmpty => 'Nenhuma filial neste agente.';
-
-  @override
-  String get salesMargemProdutoFilterFilial => 'Filial';
 
   @override
   String get salesMargemProdutoFilterSearch => 'Nome do produto';
@@ -8881,7 +8875,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesMargemProdutoIntroSubtitle =>
-      'Preço de lista versus custo de reposição da filial selecionada.';
+      'Preço de lista versus custo de reposição.';
 
   @override
   String get salesMargemProdutoColumnProduto => 'Produto';
@@ -8909,12 +8903,6 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesMargemProdutoEmpty => 'Nenhum produto nesta filial.';
-
-  @override
-  String get salesMargemProdutoNoBranchEmpty => 'Nenhuma filial neste agente.';
-
-  @override
-  String get salesMargemProdutoFilterFilial => 'Filial';
 
   @override
   String get salesMargemProdutoFilterSearch => 'Nome do produto';

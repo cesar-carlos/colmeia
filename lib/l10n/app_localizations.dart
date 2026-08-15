@@ -6104,7 +6104,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesMargemProdutoIntroSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'List price versus replacement cost for the selected branch.'**
+  /// **'List price versus replacement cost.'**
   String get salesMargemProdutoIntroSubtitle;
 
   /// No description provided for @salesMargemProdutoColumnProduto.
@@ -6160,18 +6160,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No products for this branch.'**
   String get salesMargemProdutoEmpty;
-
-  /// No description provided for @salesMargemProdutoNoBranchEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'No branch is available on this agent.'**
-  String get salesMargemProdutoNoBranchEmpty;
-
-  /// No description provided for @salesMargemProdutoFilterFilial.
-  ///
-  /// In en, this message translates to:
-  /// **'Branch'**
-  String get salesMargemProdutoFilterFilial;
 
   /// No description provided for @salesMargemProdutoFilterSearch.
   ///

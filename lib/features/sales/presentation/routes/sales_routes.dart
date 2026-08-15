@@ -109,8 +109,6 @@ List<RouteBase> buildSalesRoutes() {
             loadSalesAvailableAgentsUseCase: loadSalesAvailableAgentsUseCase,
             resolveSalesAgentClientTokenUseCase:
                 resolveSalesAgentClientTokenUseCase,
-            loadCadastroFilialPageUseCase:
-                getIt<LoadCadastroFilialPageUseCase>(),
             loadMargemProdutoPageUseCase: getIt<LoadMargemProdutoPageUseCase>(),
             loadRowsForShareUseCase:
                 getIt<LoadMargemProdutoRowsForShareUseCase>(),

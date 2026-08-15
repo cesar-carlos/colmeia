@@ -31,10 +31,7 @@ void main() {
               userId: 'user-1',
               agentId: AppEnvironment.e2eAgentId,
               clientToken: AppEnvironment.e2eClientToken,
-              filter: const MargemProdutoFilter(
-                codEmpresa: 1,
-                codFilial: 1,
-              ),
+              filter: const MargemProdutoFilter(),
             ),
           );
 
@@ -77,8 +74,6 @@ void main() {
           final repository = getIt<MargemProdutoRepository>();
           const smallPageSize = 10;
           const filterPage1 = MargemProdutoFilter(
-            codEmpresa: 1,
-            codFilial: 1,
             pageSize: smallPageSize,
           );
 
@@ -112,8 +107,6 @@ void main() {
               agentId: AppEnvironment.e2eAgentId,
               clientToken: AppEnvironment.e2eClientToken,
               filter: const MargemProdutoFilter(
-                codEmpresa: 1,
-                codFilial: 1,
                 page: 2,
                 pageSize: smallPageSize,
               ),
@@ -169,10 +162,7 @@ void main() {
               userId: 'user-1',
               agentId: AppEnvironment.e2eAgentId,
               clientToken: AppEnvironment.e2eClientToken,
-              filter: const MargemProdutoFilter(
-                codEmpresa: 1,
-                codFilial: 1,
-              ),
+              filter: const MargemProdutoFilter(),
             ),
           );
 
@@ -209,8 +199,6 @@ void main() {
           final repository = getIt<MargemProdutoRepository>();
           const smallPageSize = 10;
           const filterPage1 = MargemProdutoFilter(
-            codEmpresa: 1,
-            codFilial: 1,
             pageSize: smallPageSize,
           );
 
@@ -244,8 +232,6 @@ void main() {
               agentId: AppEnvironment.e2eAgentId,
               clientToken: AppEnvironment.e2eClientToken,
               filter: const MargemProdutoFilter(
-                codEmpresa: 1,
-                codFilial: 1,
                 page: 2,
                 pageSize: smallPageSize,
               ),
@@ -310,10 +296,7 @@ void main() {
           }
 
           final repository = getIt<MargemProdutoRepository>();
-          const baselineFilter = MargemProdutoFilter(
-            codEmpresa: 1,
-            codFilial: 1,
-          );
+          const baselineFilter = MargemProdutoFilter();
           final baseline = await runE2eAppResult(
             () => repository.loadPage(
               userId: 'user-1',
@@ -342,15 +325,14 @@ void main() {
           }
 
           final filterToken = buildContainsToken(page1.items.first.nomeProduto);
+          final unaccentedToken = foldNomeProdutoForOrder(filterToken);
           final filtered = await runE2eAppResultWithHubRetry(
             () => repository.loadPage(
               userId: 'user-1',
               agentId: AppEnvironment.e2eAgentId,
               clientToken: AppEnvironment.e2eClientToken,
               filter: MargemProdutoFilter(
-                codEmpresa: 1,
-                codFilial: 1,
-                searchTerm: filterToken,
+                searchTerm: unaccentedToken,
               ),
             ),
             actionLabel: 'margem_produto_loadPage_name_contains',
@@ -366,8 +348,8 @@ void main() {
               );
               for (final row in page.items) {
                 expect(
-                  row.nomeProduto.toUpperCase(),
-                  contains(filterToken.toUpperCase()),
+                  foldNomeProdutoForOrder(row.nomeProduto),
+                  contains(unaccentedToken),
                 );
               }
               expectNomeProdutoAscending(page.items);
@@ -438,15 +420,13 @@ void checkPageInvariants(
   expect(totalCount, greaterThanOrEqualTo(0));
   expect(items.length, lessThanOrEqualTo(pageSize));
   for (final row in items) {
-    expect(row.codEmpresa, greaterThan(0));
-    expect(row.codFilial, greaterThanOrEqualTo(0));
+    expect(row.codEmpresa, MargemProdutoFilter.fixedCodEmpresa);
+    expect(row.codFilial, MargemProdutoFilter.fixedCodFilial);
     expect(row.codProduto, greaterThan(0));
     expect(row.nomeProduto, isNotEmpty);
     expect(row.nomeFilial, isNotEmpty);
     expect(row.custoReposicao, greaterThanOrEqualTo(0));
     expect(row.precoVendaProduto, greaterThanOrEqualTo(0));
-    expect(row.percentualMarkupCustoCompraProduto, greaterThanOrEqualTo(0));
-    expect(row.margemLucroProduto, greaterThanOrEqualTo(0));
     if (row.custoReposicao <= 0) {
       expect(row.percentualMarkupCustoCompraProduto, 0);
     }

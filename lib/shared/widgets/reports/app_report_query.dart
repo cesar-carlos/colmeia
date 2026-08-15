@@ -31,6 +31,13 @@ class AppReportQuery {
   final String? searchTerm;
   final AppReportDensity density;
 
+  /// True when [term] matches [searchTerm] after trim. Null and blank are equal.
+  bool isSameSearchTerm(String? term) {
+    final next = term?.trim() ?? '';
+    final current = searchTerm?.trim() ?? '';
+    return next == current;
+  }
+
   AppReportQuery copyWith({
     Map<String, Object?>? filters,
     List<AppReportSortDescriptor>? sorts,

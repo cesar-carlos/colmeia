@@ -3702,7 +3702,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesMargemProdutoIntroSubtitle =>
-      'List price versus replacement cost for the selected branch.';
+      'List price versus replacement cost.';
 
   @override
   String get salesMargemProdutoColumnProduto => 'Product';
@@ -3730,13 +3730,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesMargemProdutoEmpty => 'No products for this branch.';
-
-  @override
-  String get salesMargemProdutoNoBranchEmpty =>
-      'No branch is available on this agent.';
-
-  @override
-  String get salesMargemProdutoFilterFilial => 'Branch';
 
   @override
   String get salesMargemProdutoFilterSearch => 'Product name';

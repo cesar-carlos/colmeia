@@ -28,10 +28,7 @@ void main() {
   late _MockRepository repository;
   late LoadMargemProdutoRowsForShareUseCase useCase;
 
-  const filter = MargemProdutoFilter(
-    codEmpresa: 1,
-    codFilial: 2,
-  );
+  const filter = MargemProdutoFilter();
 
   setUpAll(() {
     registerFallbackValue(filter);
@@ -134,7 +131,7 @@ void main() {
     expect(captured.startRow, 1);
     expect(captured.endRow, 3);
     expect(captured.codEmpresa, 1);
-    expect(captured.codFilial, 2);
+    expect(captured.codFilial, 1);
     expect(captured.searchTerm, isNull);
   });
 
@@ -213,8 +210,6 @@ void main() {
 
   test('forwards searchTerm on every export page', () async {
     const searchFilter = MargemProdutoFilter(
-      codEmpresa: 1,
-      codFilial: 2,
       searchTerm: 'Mel',
     );
     when(

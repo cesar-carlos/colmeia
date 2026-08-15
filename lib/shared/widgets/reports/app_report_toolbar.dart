@@ -192,6 +192,10 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
         prefixIcon: Icons.search_rounded,
         density: AppTextFieldDensity.compact,
         textInputAction: TextInputAction.search,
+        onFieldSubmitted: (term) {
+          _searchDebounceTimer?.cancel();
+          widget.events.onSearchChanged?.call(term);
+        },
         // Avoid rebuilding the whole AppTextField every keystroke:
         // a tiny ValueListenableBuilder watches just the text value
         // and toggles the suffix clear icon in isolation.

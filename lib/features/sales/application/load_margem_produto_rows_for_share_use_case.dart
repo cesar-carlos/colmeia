@@ -49,8 +49,6 @@ class LoadMargemProdutoRowsForShareUseCase {
     var page = 1;
     while (collected.length < totalCount) {
       final pageFilter = MargemProdutoFilter(
-        codEmpresa: filter.codEmpresa,
-        codFilial: filter.codFilial,
         searchTerm: filter.searchTerm,
         page: page,
         pageSize: pageSize,

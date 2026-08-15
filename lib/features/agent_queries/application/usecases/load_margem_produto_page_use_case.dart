@@ -5,9 +5,9 @@ import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel
 import 'package:colmeia/features/agent_queries/domain/repositories/margem_produto_repository.dart';
 
 /// Loads one page of the product-margin catalog. [MargemProdutoFilter]
-/// carries company/branch, optional product-name contains search, and
-/// pagination; SQL always numbers rows by `NomeProduto ASC`, then
-/// `CodProduto ASC`.
+/// carries optional product-name contains search and pagination; company
+/// and branch are fixed at `1`/`1`. SQL always numbers rows by
+/// `NomeProduto ASC`, then `CodProduto ASC`.
 class LoadMargemProdutoPageUseCase {
   LoadMargemProdutoPageUseCase(this._repository);
 

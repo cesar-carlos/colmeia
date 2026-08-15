@@ -529,6 +529,11 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
                 events: AppReportEvents<T>(
                   onSearchChanged: (term) {
                     widget.events.onSearchChanged?.call(term);
+                    final current =
+                        _emittedQuery ?? widget.query ?? const AppReportQuery();
+                    if (current.isSameSearchTerm(term)) {
+                      return;
+                    }
                     _emitQueryChanged(searchTerm: term, page: 1);
                   },
                   onDensityChanged: _onDensityChanged,
