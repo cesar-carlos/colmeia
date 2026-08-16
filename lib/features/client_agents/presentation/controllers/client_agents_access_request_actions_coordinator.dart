@@ -48,14 +48,10 @@ abstract interface class ClientAgentsAccessRequestActionsHost {
 /// Owns retry and discard flows for client access requests.
 class ClientAgentsAccessRequestActionsCoordinator {
   ClientAgentsAccessRequestActionsCoordinator({
-    required ClientAgentsAccessRequestActionsHost host,
-    required RetryClientAccessRequestUseCase retryClientAccessRequestUseCase,
-    required DiscardQueuedClientAgentRequestAccessUseCase
-    discardQueuedClientAgentRequestAccessUseCase,
-  }) : _host = host,
-       _retryClientAccessRequestUseCase = retryClientAccessRequestUseCase,
-       _discardQueuedClientAgentRequestAccessUseCase =
-           discardQueuedClientAgentRequestAccessUseCase;
+    required this._host,
+    required this._retryClientAccessRequestUseCase,
+    required this._discardQueuedClientAgentRequestAccessUseCase,
+  });
 
   final ClientAgentsAccessRequestActionsHost _host;
   final RetryClientAccessRequestUseCase _retryClientAccessRequestUseCase;

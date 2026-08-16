@@ -16,11 +16,9 @@ class AppBrazilStoreSalesMarkerGroup {
   const AppBrazilStoreSalesMarkerGroup({
     required this.points,
     this.aggregation = AppBrazilStoreSalesMarkerAggregation.stores,
-    double? latitude,
-    double? longitude,
-  }) : _latitude = latitude,
-       _longitude = longitude,
-       assert(points.length > 0, 'points must not be empty');
+    this._latitude,
+    this._longitude,
+  }) : assert(points.length > 0, 'points must not be empty');
 
   final List<AppBrazilStoreSalesPoint> points;
   final AppBrazilStoreSalesMarkerAggregation aggregation;

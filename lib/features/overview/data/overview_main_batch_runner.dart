@@ -19,16 +19,12 @@ import 'package:colmeia/features/overview/data/overview_sql_batch_item_rows_mapp
 /// per-user ranking) for a single agent target.
 final class OverviewMainBatchRunner {
   OverviewMainBatchRunner({
-    required AgentQueriesRepository agentQueriesRepository,
-    int maxParallelReadOnlyBatchItems = 4,
-    int sqlTimeoutMs = OverviewBatchLoadConfig.sqlTimeoutMs,
-    int maxRows = OverviewBatchLoadConfig.maxRows,
+    required this._agentQueriesRepository,
+    this._maxParallelReadOnlyBatchItems = 4,
+    this._sqlTimeoutMs = OverviewBatchLoadConfig.sqlTimeoutMs,
+    this._maxRows = OverviewBatchLoadConfig.maxRows,
     AgentQueryTransportPolicy? transportPolicy,
-  }) : _agentQueriesRepository = agentQueriesRepository,
-       _maxParallelReadOnlyBatchItems = maxParallelReadOnlyBatchItems,
-       _sqlTimeoutMs = sqlTimeoutMs,
-       _maxRows = maxRows,
-       _transportPolicy =
+  }) : _transportPolicy =
            transportPolicy ??
            AgentQueryTransportPolicy(
              mode: AppEnvironment.agentQueryTransportPolicyMode,

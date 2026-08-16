@@ -27,8 +27,8 @@ class CurrentUserContextController extends ChangeNotifier {
     LoadCurrentUserContextUseCase? loadCurrentUserContextUseCase,
     PersistActiveStoreUseCase? persistActiveStoreUseCase,
     ClearActiveStoreUseCase? clearActiveStoreUseCase,
-    OverviewShellCache? overviewShellCache,
-    AgentQueryTargetWarmUpCoordinator? agentQueryTargetWarmUpCoordinator,
+    this._overviewShellCache,
+    this._agentQueryTargetWarmUpCoordinator,
     CurrentUserScope? userScope,
     String? activeStoreId,
   }) : assert(
@@ -43,8 +43,6 @@ class CurrentUserContextController extends ChangeNotifier {
        _loadCurrentUserContextUseCase = loadCurrentUserContextUseCase,
        _persistActiveStoreUseCase = persistActiveStoreUseCase,
        _clearActiveStoreUseCase = clearActiveStoreUseCase,
-       _overviewShellCache = overviewShellCache,
-       _agentQueryTargetWarmUpCoordinator = agentQueryTargetWarmUpCoordinator,
        _userScope = userScope ?? _placeholderUserScope,
        _activeStoreId =
            activeStoreId ?? UserContextPlaceholders.loadingStoreId {

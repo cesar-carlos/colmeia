@@ -15,12 +15,10 @@ import 'package:colmeia/features/client_agents/domain/repositories/client_agent_
 
 class ClientAgentCatalogRepositoryImpl implements ClientAgentCatalogRepository {
   ClientAgentCatalogRepositoryImpl({
-    required ClientAgentsRemoteDataSource remoteDataSource,
-    required ClientAgentsLocalDataSource localDataSource,
-    required ClientAgentsRepositoryCacheSupport cacheSupport,
-  }) : _remoteDataSource = remoteDataSource,
-       _localDataSource = localDataSource,
-       _cacheSupport = cacheSupport;
+    required this._remoteDataSource,
+    required this._localDataSource,
+    required this._cacheSupport,
+  });
 
   final ClientAgentsRemoteDataSource _remoteDataSource;
   final ClientAgentsLocalDataSource _localDataSource;

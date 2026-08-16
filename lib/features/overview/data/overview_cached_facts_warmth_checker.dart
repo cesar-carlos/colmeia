@@ -11,16 +11,11 @@ import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diar
 /// cases instead of a cold-start merged batch.
 final class OverviewCachedFactsWarmthChecker {
   OverviewCachedFactsWarmthChecker({
-    required AgentQueryFactsStore factsStore,
-    ResumoTotalDiarioVendasCacheStrategy dailyStrategy =
-        const ResumoTotalDiarioVendasCacheStrategy(),
-    ResumoParcelasMensalCacheStrategy monthlyStrategy =
-        const ResumoParcelasMensalCacheStrategy(),
+    required this._factsStore,
+    this._dailyStrategy = const ResumoTotalDiarioVendasCacheStrategy(),
+    this._monthlyStrategy = const ResumoParcelasMensalCacheStrategy(),
     DateTime Function()? clock,
-  }) : _factsStore = factsStore,
-       _dailyStrategy = dailyStrategy,
-       _monthlyStrategy = monthlyStrategy,
-       _clock = clock ?? DateTime.now;
+  }) : _clock = clock ?? DateTime.now;
 
   final AgentQueryFactsStore _factsStore;
   final ResumoTotalDiarioVendasCacheStrategy _dailyStrategy;

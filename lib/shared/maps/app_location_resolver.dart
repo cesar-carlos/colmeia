@@ -21,17 +21,12 @@ abstract interface class AppLocationGeocoder {
 
 class AppLocationResolver {
   AppLocationResolver({
-    required AppLocationGeocodeCache cache,
-    AppLocationGeocoder? geocoder,
-    List<AppLocationGeocoder> geocoders = const <AppLocationGeocoder>[],
-    AppLocationResolutionObserver observer =
-        const AppLocationResolutionObserver(),
-    DateTime Function()? now,
-  }) : _cache = cache,
-       _geocoder = geocoder,
-       _geocoders = geocoders,
-       _observer = observer,
-       _now = now;
+    required this._cache,
+    this._geocoder,
+    this._geocoders = const <AppLocationGeocoder>[],
+    this._observer = const AppLocationResolutionObserver(),
+    this._now,
+  });
 
   final AppLocationGeocodeCache _cache;
   final AppLocationGeocoder? _geocoder;
@@ -169,8 +164,7 @@ class AppLocationResolver {
           NetworkFailure(
             message:
                 'Location geocoding provider failed while resolving ${input.type.name}.',
-            userMessage:
-                'Nao foi possivel consultar a geolocalizacao agora. Tente novamente.',
+            userMessage: 'Nao foi possivel consultar a geolocalizacao agora. Tente novamente.',
             retryAfter: geocoderResult.retryAfter,
             context: <String, Object?>{
               'operation': 'AppLocationResolver.resolve',
@@ -206,8 +200,7 @@ class AppLocationResolver {
           UnknownFailure(
             message:
                 'Geocoding for ${input.type.name} is not supported on this platform.',
-            userMessage:
-                'A geolocalizacao por endereco nao esta disponivel nesta plataforma.',
+            userMessage: 'A geolocalizacao por endereco nao esta disponivel nesta plataforma.',
             context: <String, Object?>{
               'operation': 'AppLocationResolver.resolve',
               ..._observerContextForInput(

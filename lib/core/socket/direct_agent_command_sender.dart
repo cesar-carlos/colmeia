@@ -5,8 +5,7 @@ import 'package:colmeia/core/socket/socket_command_dispatcher.dart';
 /// call to [SocketCommandDispatcher.sendAgentsCommand] with coalescing
 /// enabled. Used when batching is disabled (`SOCKET_BATCH_ENABLED=false`).
 class DirectAgentCommandSender implements AgentCommandSender {
-  const DirectAgentCommandSender({required SocketCommandDispatcher dispatcher})
-    : _dispatcher = dispatcher;
+  const DirectAgentCommandSender({required this._dispatcher});
 
   final SocketCommandDispatcher _dispatcher;
 

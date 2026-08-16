@@ -51,6 +51,7 @@ class AppCheckboxField extends StatelessWidget {
       label: semanticLabel ?? label,
       checked: value,
       enabled: enabled,
+      onTap: enabled ? () => onChanged(!value) : null,
       child: MergeSemantics(
         child: ExcludeSemantics(
           child: Material(

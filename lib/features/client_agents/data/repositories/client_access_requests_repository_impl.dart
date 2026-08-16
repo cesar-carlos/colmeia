@@ -21,14 +21,11 @@ import 'package:result_dart/result_dart.dart';
 class ClientAccessRequestsRepositoryImpl
     implements ClientAccessRequestsRepository {
   ClientAccessRequestsRepositoryImpl({
-    required ClientAgentsRemoteDataSource remoteDataSource,
-    required ClientAgentsLocalDataSource localDataSource,
-    required ClientAgentsRepositoryCacheSupport cacheSupport,
-    required PendingClientAgentActionsSynchronizer synchronizer,
-  }) : _remoteDataSource = remoteDataSource,
-       _localDataSource = localDataSource,
-       _cacheSupport = cacheSupport,
-       _synchronizer = synchronizer;
+    required this._remoteDataSource,
+    required this._localDataSource,
+    required this._cacheSupport,
+    required this._synchronizer,
+  });
 
   final ClientAgentsRemoteDataSource _remoteDataSource;
   final ClientAgentsLocalDataSource _localDataSource;

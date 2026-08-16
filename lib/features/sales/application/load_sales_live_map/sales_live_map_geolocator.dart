@@ -44,16 +44,12 @@ class SalesLiveMapGeolocationResult {
 /// or the report aggregator.
 class SalesLiveMapGeolocator {
   SalesLiveMapGeolocator({
-    required SalesLiveMapBranchLocationCache locationCache,
-    required SalesLiveMapPointResolver pointResolver,
-    required SalesLiveMapPointFactory pointFactory,
-    required SalesLiveMapDiagnosticsLogger diagnosticsLogger,
-    required int maxConcurrency,
-  }) : _locationCache = locationCache,
-       _pointResolver = pointResolver,
-       _pointFactory = pointFactory,
-       _diagnosticsLogger = diagnosticsLogger,
-       _maxConcurrency = maxConcurrency;
+    required this._locationCache,
+    required this._pointResolver,
+    required this._pointFactory,
+    required this._diagnosticsLogger,
+    required this._maxConcurrency,
+  });
 
   final SalesLiveMapBranchLocationCache _locationCache;
   final SalesLiveMapPointResolver _pointResolver;

@@ -35,20 +35,14 @@ import 'package:colmeia/features/overview/data/overview_sql_batch_item_rows_mapp
 /// including cached-section merge and fact persistence.
 final class OverviewSectionBatchRunner {
   OverviewSectionBatchRunner({
-    required AgentQueriesRepository agentQueriesRepository,
-    OverviewCachedSectionLoader? cachedSectionLoader,
-    OverviewBatchFactsPersister? factsPersister,
-    int maxParallelReadOnlyBatchItems = 4,
-    int sqlTimeoutMs = OverviewBatchLoadConfig.sqlTimeoutMs,
-    int maxRows = OverviewBatchLoadConfig.maxRows,
+    required this._agentQueriesRepository,
+    this._cachedSectionLoader,
+    this._factsPersister,
+    this._maxParallelReadOnlyBatchItems = 4,
+    this._sqlTimeoutMs = OverviewBatchLoadConfig.sqlTimeoutMs,
+    this._maxRows = OverviewBatchLoadConfig.maxRows,
     AgentQueryTransportPolicy? transportPolicy,
-  }) : _agentQueriesRepository = agentQueriesRepository,
-       _cachedSectionLoader = cachedSectionLoader,
-       _factsPersister = factsPersister,
-       _maxParallelReadOnlyBatchItems = maxParallelReadOnlyBatchItems,
-       _sqlTimeoutMs = sqlTimeoutMs,
-       _maxRows = maxRows,
-       _transportPolicy =
+  }) : _transportPolicy =
            transportPolicy ??
            AgentQueryTransportPolicy(
              mode: AppEnvironment.agentQueryTransportPolicyMode,

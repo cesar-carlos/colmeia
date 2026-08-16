@@ -47,6 +47,7 @@ class AppSwitchField extends StatelessWidget {
       label: semanticLabel ?? label,
       enabled: enabled,
       toggled: value,
+      onTap: enabled ? () => onChanged(!value) : null,
       child: MergeSemantics(
         child: ExcludeSemantics(
           child: Material(

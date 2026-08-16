@@ -5,12 +5,11 @@ import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 
 /// Notified when a wire response targets an [rpcId] that no longer has a
 /// pending registration (typically the client timeout fired first).
-typedef SocketCorrelatorOrphanWireCallback =
-    void Function({
-      required String rpcId,
-      required String operation,
-      required int responseFieldCount,
-    });
+typedef SocketCorrelatorOrphanWireCallback = void Function({
+  required String rpcId,
+  required String operation,
+  required int responseFieldCount,
+});
 
 /// Maps `rpcId` → pending [Completer]. Owns timers and a periodic stale
 /// sweep as defense-in-depth (e.g., when a [Timer] is delayed by an OS
@@ -22,10 +21,9 @@ typedef SocketCorrelatorOrphanWireCallback =
 /// See `docs/Features/socket_command_dispatcher_design.md` §4.
 class SocketRequestCorrelator {
   SocketRequestCorrelator({
-    Duration sweepInterval = const Duration(minutes: 1),
-    SocketCorrelatorOrphanWireCallback? onOrphanWireResponse,
-  }) : _sweepInterval = sweepInterval,
-       _onOrphanWireResponse = onOrphanWireResponse {
+    this._sweepInterval = const Duration(minutes: 1),
+    this._onOrphanWireResponse,
+  }) {
     _sweepTimer = Timer.periodic(_sweepInterval, (_) => _sweepStale());
   }
 

@@ -23,14 +23,10 @@ import 'package:uuid/uuid.dart';
 class SocketAgentQueriesRemoteDataSource
     implements AgentQueriesRemoteDataSource {
   SocketAgentQueriesRemoteDataSource({
-    required AgentCommandSender sender,
-    AgentSqlExecuteRequestToBridgeBody bodyMapper =
-        const AgentSqlExecuteRequestToBridgeBody(),
-    AgentSqlExecuteBatchRequestToBridgeBody batchBodyMapper =
-        const AgentSqlExecuteBatchRequestToBridgeBody(),
-  }) : _sender = sender,
-       _bodyMapper = bodyMapper,
-       _batchBodyMapper = batchBodyMapper;
+    required this._sender,
+    this._bodyMapper = const AgentSqlExecuteRequestToBridgeBody(),
+    this._batchBodyMapper = const AgentSqlExecuteBatchRequestToBridgeBody(),
+  });
 
   final AgentCommandSender _sender;
   final AgentSqlExecuteRequestToBridgeBody _bodyMapper;

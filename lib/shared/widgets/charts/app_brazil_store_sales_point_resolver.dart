@@ -55,8 +55,8 @@ class AppBrazilStoreSalesPointSource {
 
 class AppBrazilStoreSalesPointResolver {
   const AppBrazilStoreSalesPointResolver({
-    required AppLocationResolver locationResolver,
-  }) : _locationResolver = locationResolver;
+    required this._locationResolver,
+  });
 
   final AppLocationResolver _locationResolver;
 

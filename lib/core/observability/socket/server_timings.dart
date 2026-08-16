@@ -11,8 +11,8 @@
 class ServerTimings {
   const ServerTimings({
     required this.schemaVersion,
-    required Map<String, double> phasesMs,
-  }) : _phasesMs = phasesMs;
+    required this._phasesMs,
+  });
 
   /// Best-effort parser. Returns `null` when the input is structurally
   /// invalid (not a map, missing or non-numeric `phasesMs`); never throws.

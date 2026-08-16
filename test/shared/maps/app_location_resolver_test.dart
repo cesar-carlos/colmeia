@@ -718,10 +718,10 @@ class _FakeCacheStore implements AppCacheStore {
 
 class _FakeGeocoder implements AppLocationGeocoder {
   _FakeGeocoder({
-    AppLocationGeocoderResult? result,
+    this._result,
     this.providerId = 'fake',
     this.resultBuilder,
-  }) : _result = result;
+  });
 
   final AppLocationGeocoderResult? _result;
   final Future<AppLocationGeocoderResult> Function(

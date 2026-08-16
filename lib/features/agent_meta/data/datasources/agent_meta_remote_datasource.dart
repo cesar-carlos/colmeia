@@ -149,9 +149,9 @@ class ApiAgentMetaRemoteDataSource extends _BridgeAgentMetaRemoteDataSource {
 /// `agents:command` that [ApiAgentMetaRemoteDataSource] posts to REST.
 class SocketAgentMetaRemoteDataSource extends _BridgeAgentMetaRemoteDataSource {
   SocketAgentMetaRemoteDataSource({
-    required AgentCommandSender sender,
+    required this._sender,
     super.uuid,
-  }) : _sender = sender;
+  });
 
   final AgentCommandSender _sender;
 
@@ -180,13 +180,11 @@ class SocketAgentMetaRemoteDataSource extends _BridgeAgentMetaRemoteDataSource {
 class SocketWithRestFallbackAgentMetaRemoteDataSource
     implements AgentMetaRemoteDataSource {
   SocketWithRestFallbackAgentMetaRemoteDataSource({
-    required AgentMetaRemoteDataSource socketDelegate,
-    required AgentMetaRemoteDataSource restDelegate,
-    void Function(SocketDispatchException trigger)? onFallback,
+    required this._socketDelegate,
+    required this._restDelegate,
+    this._onFallback,
     AuthSessionEvents? sessionEvents,
-  }) : _socketDelegate = socketDelegate,
-       _restDelegate = restDelegate,
-       _onFallback = onFallback {
+  }) {
     final events = sessionEvents;
     if (events != null) {
       _sessionEventsSub = events.stream.listen(

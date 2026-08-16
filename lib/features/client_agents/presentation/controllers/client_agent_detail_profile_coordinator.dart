@@ -26,12 +26,10 @@ abstract interface class ClientAgentDetailProfileHost {
 
 class ClientAgentDetailProfileCoordinator {
   ClientAgentDetailProfileCoordinator({
-    required ClientAgentDetailProfileHost host,
-    required UpdateClientAgentProfileUseCase updateClientAgentProfileUseCase,
-    required String Function() idempotencyKeyGenerator,
-  }) : _host = host,
-       _updateClientAgentProfileUseCase = updateClientAgentProfileUseCase,
-       _idempotencyKeyGenerator = idempotencyKeyGenerator;
+    required this._host,
+    required this._updateClientAgentProfileUseCase,
+    required this._idempotencyKeyGenerator,
+  });
 
   final ClientAgentDetailProfileHost _host;
   final UpdateClientAgentProfileUseCase _updateClientAgentProfileUseCase;

@@ -10,14 +10,11 @@ import 'package:flutter/foundation.dart';
 
 class RegistrationStatusPageController extends ChangeNotifier {
   RegistrationStatusPageController({
-    required ReadRegistrationStatusUseCase readRegistrationStatusUseCase,
-    required RetryClientRegistrationUseCase retryClientRegistrationUseCase,
-    required AuthRegistrationPreferencesService preferencesService,
+    required this._readRegistrationStatusUseCase,
+    required this._retryClientRegistrationUseCase,
+    required this._preferencesService,
     String? initialToken,
-  }) : _readRegistrationStatusUseCase = readRegistrationStatusUseCase,
-       _retryClientRegistrationUseCase = retryClientRegistrationUseCase,
-       _preferencesService = preferencesService,
-       _token = initialToken?.trim() ?? '';
+  }) : _token = initialToken?.trim() ?? '';
 
   static const Duration _minPollDelay = Duration(seconds: 2);
   static const Duration _maxPollDelay = Duration(seconds: 30);

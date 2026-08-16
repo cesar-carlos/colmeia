@@ -5,71 +5,66 @@ publish_to: "none"
 version: 1.6.5+28
 
 environment:
-  sdk: ^3.11.0
+  sdk: ^3.13.0
 
 dependencies:
   auto_updater: ^1.0.0
   brasil_fields: ^1.18.0
   crypto: ^3.0.7
   cupertino_icons: ^1.0.9
-  dio: ^5.9.2
+  dio: ^5.11.0
 
   flutter:
     sdk: flutter
 
   flutter_dotenv: ^6.0.0
+  # 11.0.0 requires material_ui; FormBuilderTextField then fails at runtime with
+  # "No Material widget found" under package:flutter/material.dart MaterialApp.
   flutter_form_builder: ^10.3.0+2
 
   flutter_localizations:
     sdk: flutter
 
-  flutter_secure_storage: ^10.3.1
+  flutter_secure_storage: ^11.0.0
 
   flutter_web_plugins:
     sdk: flutter
 
   form_builder_validators: ^11.3.0
-  geocoding: ^4.0.0
+  geocoding: ^5.0.0
   get_it: ^9.2.1
-  go_router: ^17.3.0
-  google_fonts: ^8.0.2
+  go_router: ^17.5.0
+  google_fonts: ^8.2.1
   hive_ce: ^2.19.3
-  image: ^4.8.0
-  image_picker: ^1.2.1
+  image: ^4.9.1
+  image_picker: ^1.2.3
   intl: ^0.20.2
   logger: ^2.7.0
-  package_info_plus: ^10.1.0
+  package_info_plus: ^10.2.1
   path: ^1.9.1
-  path_provider: ^2.1.5
-  pdf: ^3.11.3
-  printing: ^5.14.3
+  path_provider: ^2.1.6
+  pdf: ^3.13.0
+  printing: ^5.15.0
   provider: ^6.1.5+1
   result_dart: ^2.2.0
-  sentry_flutter: 9.19.0
-  share_plus: ^13.1.0
+  sentry_flutter: ^9.27.0
+  share_plus: ^13.3.0
   shared_preferences: ^2.5.5
   skeletonizer: ^2.1.3
-  socket_io_client: ^3.1.5
-  syncfusion_flutter_charts: ^33.2.12
-  syncfusion_flutter_datagrid: ^33.2.12
-  syncfusion_flutter_datepicker: ^33.2.12
-  syncfusion_flutter_gauges: ^33.2.12
-  syncfusion_flutter_maps: ^33.2.12
-  syncfusion_flutter_treemap: ^33.2.12
-  syncfusion_flutter_xlsio: ^33.2.12
-  uuid: ^4.5.3
-  zard: ^1.1.2
-
-dependency_overrides:
-  objective_c:
-    git:
-      url: https://github.com/dart-lang/native.git
-      path: pkgs/objective_c
-      ref: 998ed88f0014f6e75ef3adec5bc6c21a80bf598b
+  socket_io_client: ^3.1.6
+  syncfusion_flutter_charts: ^34.2.3
+  syncfusion_flutter_datagrid: ^34.2.3
+  syncfusion_flutter_datepicker: ^34.2.3
+  syncfusion_flutter_gauges: ^34.2.3
+  syncfusion_flutter_maps: ^34.2.3
+  syncfusion_flutter_treemap: ^34.2.3
+  syncfusion_flutter_xlsio: ^34.2.3
+  uuid: ^4.6.0
+  zard: ^1.4.0
 
 dev_dependencies:
-  analyzer: ^10.0.1
-  build_runner: ^2.15.0
+  analyzer: ^12.1.0
+  build_runner: ^2.15.1
   checks: ^0.3.1
   fake_async: ^1.3.1
   flutter_launcher_icons: ^0.14.4
@@ -79,7 +74,7 @@ dev_dependencies:
 
   mocktail: ^1.0.5
   test_api: ^0.7.9
-  very_good_analysis: ^10.2.0
+  very_good_analysis: ^10.3.0
 
 flutter_launcher_icons:
   image_path: assets/icons/colmeia-512.png
@@ -87,7 +82,7 @@ flutter_launcher_icons:
   ios: true
   remove_alpha_ios: true
   background_color_ios: "#FFF8F0"
-  min_sdk_android: 21
+  min_sdk_android: 24
   adaptive_icon_background: "#FFB300"
   adaptive_icon_foreground: assets/icons/colmeia-512.png
   web:

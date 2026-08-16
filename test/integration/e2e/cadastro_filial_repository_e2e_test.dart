@@ -52,14 +52,15 @@ void main() {
               isNot(isA<SessionFailure>()),
               reason:
                   'Unexpected HTTP 401 after client login '
-                  'Ã¢â‚¬â€ check E2E_* values.',
+                  '— check E2E_* values.',
             );
             expect(
               isAcceptableE2eAgentSqlRepositoryFailure(failure),
               isTrue,
               reason:
                   'Repository e2e should return rows, invalid_policy / '
-                  'missing_permission RPC, or transient bridge HTTP 5xx.',
+                  'missing_permission RPC, or transient bridge HTTP 5xx. '
+                  '${e2eAgentSqlFailureDiagnostic(failure)}',
             );
             return;
           }
@@ -122,14 +123,15 @@ void main() {
               isNot(isA<SessionFailure>()),
               reason:
                   'Unexpected HTTP 401 after client login '
-                  'Ã¢â‚¬â€ check E2E_* values.',
+                  '— check E2E_* values.',
             );
             expect(
               isAcceptableE2eAgentSqlRepositoryFailure(failure),
               isTrue,
               reason:
                   'Repository e2e should return rows, invalid_policy / '
-                  'missing_permission RPC, or transient bridge HTTP 5xx.',
+                  'missing_permission RPC, or transient bridge HTTP 5xx. '
+                  '${e2eAgentSqlFailureDiagnostic(failure)}',
             );
             return;
           }

@@ -48,29 +48,18 @@ part 'relay_pending_entries.dart';
 /// - [_PendingStream] — chunked request (`sendStreaming`) with auto-pull.
 class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
   RelayCommandDispatcherImpl({
-    required ConsumerSocketConnection connection,
-    required RelayConversationManager conversationManager,
+    required this._connection,
+    required this._conversationManager,
     PayloadFrameCodec? codec,
-    PerAgentConcurrencyGate? concurrencyGate,
-    SocketChannelMetrics? channelMetrics,
-    AgentLatencyOracle? latencyOracle,
-    Duration defaultTimeout = const Duration(seconds: 30),
-    RelayPayloadFrameCompression defaultCompression =
-        RelayPayloadFrameCompression.auto,
-    int defaultStreamInitialWindow = 32,
-    int defaultStreamRefillThreshold = 16,
-    RelayConversationEndedRouter? conversationEndedRouter,
-  }) : _connection = connection,
-       _conversationManager = conversationManager,
-       _codec = codec ?? const PayloadFrameCodec(),
-       _concurrencyGate = concurrencyGate,
-       _channelMetrics = channelMetrics,
-       _latencyOracle = latencyOracle,
-       _defaultTimeout = defaultTimeout,
-       _defaultCompression = defaultCompression,
-       _defaultStreamInitialWindow = defaultStreamInitialWindow,
-       _defaultStreamRefillThreshold = defaultStreamRefillThreshold,
-       _conversationEndedRouter = conversationEndedRouter,
+    this._concurrencyGate,
+    this._channelMetrics,
+    this._latencyOracle,
+    this._defaultTimeout = const Duration(seconds: 30),
+    this._defaultCompression = RelayPayloadFrameCompression.auto,
+    this._defaultStreamInitialWindow = 32,
+    this._defaultStreamRefillThreshold = 16,
+    this._conversationEndedRouter,
+  }) : _codec = codec ?? const PayloadFrameCodec(),
        _outcomes = StreamController<RelayRpcOutcome>.broadcast() {
     _stateSub = _connection.states().listen(_onConnectionState);
     if (_conversationEndedRouter != null) {

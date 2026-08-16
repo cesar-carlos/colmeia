@@ -51,6 +51,48 @@ void main() {
     expect(total, closeTo(availableWidth, 0.01));
   });
 
+  test(
+    'should keep short catalog columns readable when a name column is long',
+    () {
+      const headers = <String>[
+        'Código',
+        'Nome produto',
+        'Custo reposição',
+        'Preço de venda',
+        '% Markup',
+      ];
+      const rows = <List<String>>[
+        <String>[
+          '514',
+          'MACA PERUANA VITAMINA C+ZINCO 60 CAPS',
+          r'R$ 47,90',
+          r'R$ 119,80',
+          '1.082,9%',
+        ],
+      ];
+
+      final weights = chartPdfTableColumnFlexWeights(
+        headers: headers,
+        rows: rows,
+      );
+      final naiveTotal = weights.fold<double>(
+        0,
+        (sum, weight) => sum + weight,
+      );
+      final shares = chartPdfTableColumnShares(headers: headers, rows: rows);
+      final minShare = chartPdfTableMinColumnShare(headers.length);
+
+      expect(shares.length, 5);
+      expect(shares.reduce((a, b) => a + b), closeTo(1, 0.001));
+      expect(shares[0], greaterThan(weights[0] / naiveTotal));
+      expect(shares[4], greaterThan(weights[4] / naiveTotal));
+      expect(shares[0], greaterThanOrEqualTo(minShare));
+      expect(shares[4], greaterThanOrEqualTo(minShare));
+      expect(shares[1], greaterThan(shares[0]));
+      expect(shares[1], lessThan(0.40));
+    },
+  );
+
   test('ChartPdfLayoutMetrics allocates more image height in landscape', () {
     final portrait = ChartPdfLayoutMetrics.forOrientation(
       ChartSharePdfOrientation.portrait,

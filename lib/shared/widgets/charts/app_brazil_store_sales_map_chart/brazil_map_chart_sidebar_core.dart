@@ -309,24 +309,16 @@ class BrazilMapChartDesktopBranchSidebarState
                         ),
                       ),
                       if (widget.allowCollapse)
-                        Tooltip(
-                          message:
-                              l10n.brazilStoreSalesMapSidebarCollapseTooltip,
-                          child: InkWell(
-                            key: const ValueKey<String>(
-                              'brazil-store-sales-map-sidebar-collapse',
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            onTap: widget.onToggleCollapsed,
-                            child: Padding(
-                              padding: EdgeInsets.all(tokens.gapXs * 0.6),
-                              child: Icon(
-                                Icons.chevron_left_rounded,
-                                size: 18,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
+                        AppBrazilStoreSalesMapWindowsSafeOverlayIconButton(
+                          key: const ValueKey<String>(
+                            'brazil-store-sales-map-sidebar-collapse',
                           ),
+                          icon: Icons.chevron_left_rounded,
+                          dimension: 32,
+                          iconSize: 18,
+                          onPressed: widget.onToggleCollapsed,
+                          tooltipMessage:
+                              l10n.brazilStoreSalesMapSidebarCollapseTooltip,
                         ),
                     ],
                   ),

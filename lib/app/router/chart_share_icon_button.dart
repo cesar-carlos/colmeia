@@ -5,6 +5,7 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_action_icon.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_guard.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// Share action for fullscreen chart scaffolds (header trailing slot).
@@ -50,34 +51,38 @@ class ChartShareIconButton extends StatefulWidget {
 
 class _ChartShareIconButtonState extends State<ChartShareIconButton> {
   bool _generating = false;
+  ValueListenable<int>? _shareListenable;
 
   @override
   void initState() {
     super.initState();
-    ChartShareGuard.listenableFor(
-      widget.captureKey,
-    ).addListener(_onShareProgressChanged);
+    _attachShareListener(widget.captureKey);
   }
 
   @override
   void didUpdateWidget(covariant ChartShareIconButton oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.captureKey != widget.captureKey) {
-      ChartShareGuard.listenableFor(
-        oldWidget.captureKey,
-      ).removeListener(_onShareProgressChanged);
-      ChartShareGuard.listenableFor(
-        widget.captureKey,
-      ).addListener(_onShareProgressChanged);
+      _detachShareListener(oldWidget.captureKey);
+      _attachShareListener(widget.captureKey);
     }
   }
 
   @override
   void dispose() {
-    ChartShareGuard.listenableFor(
-      widget.captureKey,
-    ).removeListener(_onShareProgressChanged);
+    _detachShareListener(widget.captureKey);
     super.dispose();
+  }
+
+  void _attachShareListener(Object key) {
+    _shareListenable = ChartShareGuard.listenableFor(key);
+    _shareListenable!.addListener(_onShareProgressChanged);
+  }
+
+  void _detachShareListener(Object key) {
+    _shareListenable?.removeListener(_onShareProgressChanged);
+    _shareListenable = null;
+    ChartShareGuard.releaseListenable(key);
   }
 
   void _onShareProgressChanged() {

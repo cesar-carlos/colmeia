@@ -11,6 +11,9 @@ class AppFormBuilderTextField extends StatelessWidget {
     super.key,
     this.label,
     this.hintText,
+    this.helperText,
+    this.prefixIcon,
+    this.prefix,
     this.initialValue,
     this.validator,
     this.inputFormatters,
@@ -25,6 +28,9 @@ class AppFormBuilderTextField extends StatelessWidget {
   final String name;
   final String? label;
   final String? hintText;
+  final String? helperText;
+  final IconData? prefixIcon;
+  final Widget? prefix;
   final String? initialValue;
   final String? Function(String?)? validator;
   final List<TextInputFormatter>? inputFormatters;
@@ -56,6 +62,8 @@ class AppFormBuilderTextField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         hintText: hintText,
+        helperText: helperText,
+        prefixIcon: prefix ?? (prefixIcon == null ? null : Icon(prefixIcon)),
         contentPadding: EdgeInsets.symmetric(
           horizontal: horizontal,
           vertical: vertical,

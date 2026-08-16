@@ -496,16 +496,21 @@ class _ToolbarPill extends StatelessWidget {
               ),
               if (onRemove != null) ...<Widget>[
                 SizedBox(width: tokens.gapXs),
-                InkWell(
-                  onTap: onRemove,
-                  borderRadius: BorderRadius.circular(999),
-                  child: Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: Icon(
-                      Icons.close_rounded,
-                      size: 16,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                IconButton(
+                  onPressed: onRemove,
+                  tooltip: MaterialLocalizations.of(
+                    context,
+                  ).deleteButtonTooltip,
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  iconSize: 16,
+                  icon: Icon(
+                    Icons.close_rounded,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],

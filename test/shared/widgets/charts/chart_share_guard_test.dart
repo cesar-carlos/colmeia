@@ -36,4 +36,19 @@ void main() {
     expect(firstNotifications, 2);
     expect(secondNotifications, 0);
   });
+
+  test('releaseListenable drops unused notifiers', () {
+    final key = Object();
+    void listener() {}
+
+    final first = ChartShareGuard.listenableFor(key)..addListener(listener);
+    ChartShareGuard.releaseListenable(key);
+    expect(identical(ChartShareGuard.listenableFor(key), first), isTrue);
+
+    first.removeListener(listener);
+    ChartShareGuard.releaseListenable(key);
+    final second = ChartShareGuard.listenableFor(key);
+    expect(identical(first, second), isFalse);
+    ChartShareGuard.releaseListenable(key);
+  });
 }

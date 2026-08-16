@@ -24,18 +24,13 @@ import 'package:uuid/uuid.dart';
 /// happily open both, but ownership tracking would split).
 class RelayConversation {
   RelayConversation({
-    required ConsumerSocketConnection connection,
-    required String agentId,
-    Duration startTimeout = const Duration(seconds: 10),
-    Duration endTimeout = const Duration(seconds: 5),
-    Uuid uuid = const Uuid(),
-    RelayConversationEndedRouter? conversationEndedRouter,
-  }) : _connection = connection,
-       _agentId = agentId,
-       _startTimeout = startTimeout,
-       _endTimeout = endTimeout,
-       _uuid = uuid,
-       _conversationEndedRouter = conversationEndedRouter;
+    required this._connection,
+    required this._agentId,
+    this._startTimeout = const Duration(seconds: 10),
+    this._endTimeout = const Duration(seconds: 5),
+    this._uuid = const Uuid(),
+    this._conversationEndedRouter,
+  });
 
   final ConsumerSocketConnection _connection;
   final String _agentId;

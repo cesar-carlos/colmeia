@@ -60,22 +60,15 @@ abstract interface class ClientAgentsApprovalPollingHost {
 /// progress feedback until every id is approved, denied, or timed out.
 class ClientAgentsApprovalPollingCoordinator {
   ClientAgentsApprovalPollingCoordinator({
-    required ClientAgentsApprovalPollingHost host,
-    required LoadClientAccessRequestsUseCase loadAccessRequestsUseCase,
-    required LoadClientAgentDetailUseCase loadClientAgentDetailUseCase,
-    required LoadClientAccessStatusUseCase loadClientAccessStatusUseCase,
-    required LoadClientApprovedAgentsUseCase loadApprovedAgentsUseCase,
-    Duration pollingInterval = const Duration(seconds: 10),
-    Duration pollingTimeout = const Duration(minutes: 3),
-    int probeConcurrency = 4,
-  }) : _host = host,
-       _loadAccessRequestsUseCase = loadAccessRequestsUseCase,
-       _loadClientAgentDetailUseCase = loadClientAgentDetailUseCase,
-       _loadClientAccessStatusUseCase = loadClientAccessStatusUseCase,
-       _loadApprovedAgentsUseCase = loadApprovedAgentsUseCase,
-       _pollingInterval = pollingInterval,
-       _pollingTimeout = pollingTimeout,
-       _probeConcurrency = probeConcurrency;
+    required this._host,
+    required this._loadAccessRequestsUseCase,
+    required this._loadClientAgentDetailUseCase,
+    required this._loadClientAccessStatusUseCase,
+    required this._loadApprovedAgentsUseCase,
+    this._pollingInterval = const Duration(seconds: 10),
+    this._pollingTimeout = const Duration(minutes: 3),
+    this._probeConcurrency = 4,
+  });
 
   final ClientAgentsApprovalPollingHost _host;
   final LoadClientAccessRequestsUseCase _loadAccessRequestsUseCase;

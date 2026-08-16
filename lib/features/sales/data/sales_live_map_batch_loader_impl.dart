@@ -30,14 +30,13 @@ export 'package:colmeia/features/sales/data/sales_live_map_batch_load_config.dar
 
 class SalesLiveMapBatchLoaderImpl implements SalesLiveMapBatchLoader {
   SalesLiveMapBatchLoaderImpl({
-    required AgentQueryPlanBuilder planBuilder,
+    required this._planBuilder,
     required AgentQueriesRepository agentQueriesRepository,
     int? maxParallelReadOnlyBatchItems,
     int? targetWaveConcurrency,
     AgentQueryTransportPolicy? transportPolicy,
     SalesLiveMapBatchTargetRunner? targetRunner,
-  }) : _planBuilder = planBuilder,
-       _targetWaveConcurrency =
+  }) : _targetWaveConcurrency =
            targetWaveConcurrency ?? AppEnvironment.salesLiveMapMergeWaveSize,
        _targetRunner =
            targetRunner ??

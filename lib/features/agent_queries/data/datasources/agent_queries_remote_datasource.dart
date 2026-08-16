@@ -27,16 +27,11 @@ abstract interface class AgentQueriesRemoteDataSource {
 
 class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
   ApiAgentQueriesRemoteDataSource({
-    required Dio dio,
-    AgentSqlExecuteRequestToBridgeBody bodyMapper =
-        const AgentSqlExecuteRequestToBridgeBody(),
-    AgentSqlExecuteBatchRequestToBridgeBody batchBodyMapper =
-        const AgentSqlExecuteBatchRequestToBridgeBody(),
-    void Function(ServerTimings)? onServerTimings,
-  }) : _dio = dio,
-       _bodyMapper = bodyMapper,
-       _batchBodyMapper = batchBodyMapper,
-       _onServerTimings = onServerTimings;
+    required this._dio,
+    this._bodyMapper = const AgentSqlExecuteRequestToBridgeBody(),
+    this._batchBodyMapper = const AgentSqlExecuteBatchRequestToBridgeBody(),
+    this._onServerTimings,
+  });
 
   final Dio _dio;
   final AgentSqlExecuteRequestToBridgeBody _bodyMapper;

@@ -5,8 +5,13 @@ class CadastroFilialPageResult {
   const CadastroFilialPageResult({
     required this.items,
     required this.totalCount,
+    this.fetchedPageSize,
   });
 
   final List<CadastroFilialRow> items;
   final int totalCount;
+
+  /// Actual page size used for this fetch. Set when the repository shrinks
+  /// a `SELECT TOP` fallback below the requested filter page size.
+  final int? fetchedPageSize;
 }

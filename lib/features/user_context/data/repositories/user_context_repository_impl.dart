@@ -10,10 +10,9 @@ import 'package:result_dart/result_dart.dart';
 
 class UserContextRepositoryImpl implements UserContextRepository {
   UserContextRepositoryImpl({
-    required UserContextLocalDataSource localDataSource,
-    required UserContextRemoteDataSource remoteDataSource,
-  }) : _localDataSource = localDataSource,
-       _remoteDataSource = remoteDataSource;
+    required this._localDataSource,
+    required this._remoteDataSource,
+  });
 
   final UserContextLocalDataSource _localDataSource;
   final UserContextRemoteDataSource _remoteDataSource;

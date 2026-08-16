@@ -274,9 +274,8 @@ void main() {
 
 class _RecordingSectionsRepository implements OverviewRepository {
   _RecordingSectionsRepository({
-    List<Stream<AppResult<OverviewProgressiveSnapshot>>> streams =
-        const <Stream<AppResult<OverviewProgressiveSnapshot>>>[],
-  }) : _streams = streams;
+    this._streams = const <Stream<AppResult<OverviewProgressiveSnapshot>>>[],
+  });
 
   final List<Stream<AppResult<OverviewProgressiveSnapshot>>> _streams;
   int progressiveCallCount = 0;

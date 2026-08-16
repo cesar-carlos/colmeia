@@ -26,14 +26,11 @@ import 'package:colmeia/features/client_agents/domain/events/agent_presence_even
 /// - `dispose()` — idempotent; releases the socket listener.
 class ClientAgentProfileUpdatedListener {
   ClientAgentProfileUpdatedListener({
-    required ConsumerSocketConnection connection,
-    required Sink<AgentPresenceEvent> sink,
+    required this._connection,
+    required this._sink,
     PayloadFrameCodec? codec,
-    bool acceptLegacyRawJson = false,
-  }) : _connection = connection,
-       _sink = sink,
-       _acceptLegacyRawJson = acceptLegacyRawJson,
-       _codec = codec ?? const PayloadFrameCodec() {
+    this._acceptLegacyRawJson = false,
+  }) : _codec = codec ?? const PayloadFrameCodec() {
     _eventHandler = _onEvent;
   }
 

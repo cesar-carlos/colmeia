@@ -13,9 +13,7 @@ import 'package:colmeia/core/socket/payload_frame_signer.dart';
 /// idempotent. If spawn fails, jobs throw [PayloadFrameCodecWorkerUnavailable]
 /// so the codec can fall back to `compute()` / sync.
 class PayloadFrameCodecWorker {
-  PayloadFrameCodecWorker({Uint8List? hmacKey, String? hmacKeyId})
-    : _hmacKey = hmacKey,
-      _hmacKeyId = hmacKeyId;
+  PayloadFrameCodecWorker({this._hmacKey, this._hmacKeyId});
 
   final Uint8List? _hmacKey;
   final String? _hmacKeyId;

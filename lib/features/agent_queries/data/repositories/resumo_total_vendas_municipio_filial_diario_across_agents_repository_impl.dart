@@ -14,15 +14,11 @@ import 'package:colmeia/features/agent_queries/domain/repositories/resumo_total_
 class ResumoTotalVendasMunicipioFilialDiarioAcrossAgentsRepositoryImpl
     implements ResumoTotalVendasMunicipioFilialDiarioAcrossAgentsRepository {
   ResumoTotalVendasMunicipioFilialDiarioAcrossAgentsRepositoryImpl({
-    required AgentQueryTargetResolver targetResolver,
-    required AgentQueryPlanBuilder planBuilder,
-    required AgentQueryExecutor<ResumoTotalVendasMunicipioFilialDiarioRow>
-    executor,
-    required LoadResumoTotalVendasMunicipioFilialDiarioUseCase loadResumo,
-  }) : _targetResolver = targetResolver,
-       _planBuilder = planBuilder,
-       _executor = executor,
-       _loadResumo = loadResumo;
+    required this._targetResolver,
+    required this._planBuilder,
+    required this._executor,
+    required this._loadResumo,
+  });
 
   final AgentQueryTargetResolver _targetResolver;
   final AgentQueryPlanBuilder _planBuilder;

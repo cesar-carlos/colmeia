@@ -42,10 +42,9 @@ import 'package:flutter/foundation.dart';
 /// flag pattern.
 class RetryAfterGate extends ChangeNotifier {
   RetryAfterGate({
-    Duration tickInterval = const Duration(seconds: 1),
+    this._tickInterval = const Duration(seconds: 1),
     DateTime Function()? clock,
-  }) : _tickInterval = tickInterval,
-       _clock = clock ?? DateTime.now;
+  }) : _clock = clock ?? DateTime.now;
 
   /// Granularity of countdown updates surfaced via [notifyListeners]. The
   /// default is 1s — enough to drive a "Retry in 12s" label without

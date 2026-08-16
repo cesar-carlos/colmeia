@@ -24,33 +24,16 @@ class ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepositoryImpl
     implements
         ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepository {
   ResumoVendasDiariasPorVendedorFilterOptionsAcrossAgentsRepositoryImpl({
-    required AgentQueryTargetResolver targetResolver,
-    required AgentQueryPlanBuilder planBuilder,
-    required AgentQueryExecutor<ResumoVendasDiariasPorVendedorVendedorOption>
-    vendedorExecutor,
-    required AgentQueryExecutor<ResumoVendasDiariasPorVendedorTextOption>
-    textExecutor,
-    required AgentQueryExecutor<
-      ResumoVendasDiariasPorVendedorFilterOptionsPerAgentBatch
-    >
-    allOptionsBatchExecutor,
-    required ResumoVendasDiariasPorVendedorFilterOptionsRepository
-    filterOptionsRepository,
-    required LoadResumoVendasDiariasPorVendedorVendedorOptionsUseCase
-    loadVendedorOptions,
-    required LoadResumoVendasDiariasPorVendedorBairroOptionsUseCase
-    loadBairroOptions,
-    required LoadResumoVendasDiariasPorVendedorMunicipioOptionsUseCase
-    loadMunicipioOptions,
-  }) : _targetResolver = targetResolver,
-       _planBuilder = planBuilder,
-       _vendedorExecutor = vendedorExecutor,
-       _textExecutor = textExecutor,
-       _allOptionsBatchExecutor = allOptionsBatchExecutor,
-       _filterOptionsRepository = filterOptionsRepository,
-       _loadVendedorOptions = loadVendedorOptions,
-       _loadBairroOptions = loadBairroOptions,
-       _loadMunicipioOptions = loadMunicipioOptions;
+    required this._targetResolver,
+    required this._planBuilder,
+    required this._vendedorExecutor,
+    required this._textExecutor,
+    required this._allOptionsBatchExecutor,
+    required this._filterOptionsRepository,
+    required this._loadVendedorOptions,
+    required this._loadBairroOptions,
+    required this._loadMunicipioOptions,
+  });
 
   final AgentQueryTargetResolver _targetResolver;
   final AgentQueryPlanBuilder _planBuilder;

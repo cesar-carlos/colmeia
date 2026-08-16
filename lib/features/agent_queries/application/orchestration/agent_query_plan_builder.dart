@@ -10,9 +10,8 @@ import 'package:result_dart/result_dart.dart';
 
 class AgentQueryPlanBuilder {
   const AgentQueryPlanBuilder({
-    AgentSqlExecutionEligibilityPolicy sqlPresencePolicy =
-        const AgentSqlExecutionEligibilityPolicy(),
-  }) : _sqlPresencePolicy = sqlPresencePolicy;
+    this._sqlPresencePolicy = const AgentSqlExecutionEligibilityPolicy(),
+  });
 
   static const int defaultBridgeTimeoutMs = 120000;
   static const int defaultRaceMaxSources = 4;

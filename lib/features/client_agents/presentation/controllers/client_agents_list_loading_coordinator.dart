@@ -74,14 +74,11 @@ abstract interface class ClientAgentsListLoadingHost {
 /// actions) and the refresh-token guard that drops stale responses.
 class ClientAgentsListLoadingCoordinator {
   ClientAgentsListLoadingCoordinator({
-    required ClientAgentsListLoadingHost host,
-    required LoadClientApprovedAgentsUseCase loadApprovedAgentsUseCase,
-    required LoadClientAccessRequestsUseCase loadAccessRequestsUseCase,
-    required ReadPendingClientAgentActionsUseCase readPendingActionsUseCase,
-  }) : _host = host,
-       _loadApprovedAgentsUseCase = loadApprovedAgentsUseCase,
-       _loadAccessRequestsUseCase = loadAccessRequestsUseCase,
-       _readPendingActionsUseCase = readPendingActionsUseCase;
+    required this._host,
+    required this._loadApprovedAgentsUseCase,
+    required this._loadAccessRequestsUseCase,
+    required this._readPendingActionsUseCase,
+  });
 
   final ClientAgentsListLoadingHost _host;
   final LoadClientApprovedAgentsUseCase _loadApprovedAgentsUseCase;

@@ -11,8 +11,8 @@ import 'package:result_dart/result_dart.dart';
 
 class ClientRegistrationRepositoryImpl implements ClientRegistrationRepository {
   ClientRegistrationRepositoryImpl({
-    required AuthRemoteDataSource remoteDataSource,
-  }) : _remoteDataSource = remoteDataSource;
+    required this._remoteDataSource,
+  });
 
   final AuthRemoteDataSource _remoteDataSource;
 

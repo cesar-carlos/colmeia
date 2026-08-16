@@ -30,19 +30,13 @@ import 'package:result_dart/result_dart.dart';
 
 class OverviewRepositoryImpl implements OverviewRepository {
   OverviewRepositoryImpl({
-    required OverviewBatchLoader batchLoader,
-    AgentQueryFactsStore? factsStore,
-    AgentQueryFactsPrefetchCoordinator? factsPrefetchCoordinator,
+    required this._batchLoader,
+    this._factsStore,
+    this._factsPrefetchCoordinator,
     DateTime Function()? now,
-    OverviewBatchAssembler assembler = const OverviewBatchAssembler(),
-    OverviewBatchSectionMapper sectionMapper =
-        const OverviewBatchSectionMapper(),
-  }) : _batchLoader = batchLoader,
-       _factsStore = factsStore,
-       _factsPrefetchCoordinator = factsPrefetchCoordinator,
-       _now = now ?? DateTime.now,
-       _assembler = assembler,
-       _sectionMapper = sectionMapper;
+    this._assembler = const OverviewBatchAssembler(),
+    this._sectionMapper = const OverviewBatchSectionMapper(),
+  }) : _now = now ?? DateTime.now;
 
   final OverviewBatchLoader _batchLoader;
   final AgentQueryFactsStore? _factsStore;

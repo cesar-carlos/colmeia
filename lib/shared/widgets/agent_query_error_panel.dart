@@ -1,5 +1,6 @@
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/agent_query_error_presentation.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:flutter/material.dart';
@@ -63,11 +64,9 @@ class AgentQueryErrorPanel extends StatelessWidget {
         spacing: tokens.gapSm,
         runSpacing: tokens.gapSm,
         children: <Widget>[
-          FilledButton(
+          AppPrimaryButton(
             onPressed: retryEnabled ? onRetry : null,
-            child: Text(
-              onCooldown ? retryCountdownLabel! : l10n.appInlineErrorRetry,
-            ),
+            label: onCooldown ? retryCountdownLabel! : l10n.appInlineErrorRetry,
           ),
           ...secondaryActions,
         ],

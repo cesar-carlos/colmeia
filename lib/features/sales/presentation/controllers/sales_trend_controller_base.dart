@@ -13,15 +13,13 @@ import 'package:flutter/material.dart';
 /// Shared SQL-load infrastructure for product trend controllers.
 abstract class SalesTrendControllerBase extends ChangeNotifier {
   SalesTrendControllerBase({
-    required SalesSessionService sessionService,
+    required this._sessionService,
     required LoadAvailableAgentsForSales loadSalesAvailableAgentsUseCase,
     required ResolveSalesAgentClientTokenUseCase
     resolveSalesAgentClientTokenUseCase,
-    AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder,
-  }) : _sessionService = sessionService,
-       _loadAgentsUseCase = loadSalesAvailableAgentsUseCase,
-       _resolveClientTokenUseCase = resolveSalesAgentClientTokenUseCase,
-       _relayCancelScopeBinder = relayCancelScopeBinder;
+    this._relayCancelScopeBinder,
+  }) : _loadAgentsUseCase = loadSalesAvailableAgentsUseCase,
+       _resolveClientTokenUseCase = resolveSalesAgentClientTokenUseCase;
 
   static const List<int> pageSizeOptions = <int>[10, 20, 50, 100];
 

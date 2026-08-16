@@ -20,10 +20,9 @@ import 'package:result_dart/result_dart.dart';
 /// dashboard refresh — `saveToken` keeps the cache hot for that path.
 class RemoteAgentClientTokenRepository implements AgentClientTokenRepository {
   RemoteAgentClientTokenRepository({
-    required ClientAgentTokenRemoteDataSource remoteDataSource,
-    required LocalAgentClientTokenStore localStore,
-  }) : _remoteDataSource = remoteDataSource,
-       _localStore = localStore;
+    required this._remoteDataSource,
+    required this._localStore,
+  });
 
   static const int _readManyHydrationConcurrency = 6;
   static const Duration _readManyFreshCacheTtl = Duration(minutes: 1);
@@ -157,8 +156,7 @@ class RemoteAgentClientTokenRepository implements AgentClientTokenRepository {
       return Failure<ClientAgentTokenSnapshot, AppFailure>(
         ValidationFailure(
           message: validationError,
-          userMessage:
-              'O token excede o limite permitido pelo servidor (512 caracteres).',
+          userMessage: 'O token excede o limite permitido pelo servidor (512 caracteres).',
           context: <String, Object?>{
             'operation': 'saveClientAgentToken',
             'agentId': trimmedAgentId,

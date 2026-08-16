@@ -8,6 +8,7 @@ import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_form_builder_date_picker_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_form_builder_dropdown_field.dart';
+import 'package:colmeia/shared/widgets/forms/app_form_builder_text_field.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -240,6 +241,7 @@ class _FilterField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = theme.extension<AppThemeTokens>()!;
     final typography = theme.appTypography;
     final l10n = AppLocalizations.of(context);
     final helperText = descriptor.required
@@ -256,17 +258,15 @@ class _FilterField extends StatelessWidget {
     switch (descriptor.type) {
       case AppReportFilterType.text:
       case AppReportFilterType.search:
-        return FormBuilderTextField(
+        return AppFormBuilderTextField(
           name: descriptor.name,
           initialValue: initialValue as String?,
-          decoration: InputDecoration(
-            labelText: descriptor.label,
-            hintText: descriptor.hint,
-            helperText: helperText,
-            prefixIcon: descriptor.type == AppReportFilterType.search
-                ? const Icon(Icons.search_rounded)
-                : null,
-          ),
+          label: descriptor.label,
+          hintText: descriptor.hint,
+          helperText: helperText,
+          prefixIcon: descriptor.type == AppReportFilterType.search
+              ? Icons.search_rounded
+              : null,
           validator: requiredValidator,
         );
 
@@ -360,33 +360,29 @@ class _FilterField extends StatelessWidget {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: tokens.gapXs),
             Row(
               children: <Widget>[
                 Expanded(
-                  child: FormBuilderTextField(
+                  child: AppFormBuilderTextField(
                     name: '${descriptor.name}_min',
                     initialValue: initialValues['${descriptor.name}_min']
                         ?.toString(),
-                    decoration: InputDecoration(
-                      labelText: l10n.reportFilterRangeFrom,
-                      hintText: descriptor.minValue?.toString(),
-                    ),
+                    label: l10n.reportFilterRangeFrom,
+                    hintText: descriptor.minValue?.toString(),
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: tokens.gapSm),
                 Expanded(
-                  child: FormBuilderTextField(
+                  child: AppFormBuilderTextField(
                     name: '${descriptor.name}_max',
                     initialValue: initialValues['${descriptor.name}_max']
                         ?.toString(),
-                    decoration: InputDecoration(
-                      labelText: l10n.reportFilterRangeTo,
-                      hintText: descriptor.maxValue?.toString(),
-                    ),
+                    label: l10n.reportFilterRangeTo,
+                    hintText: descriptor.maxValue?.toString(),
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),

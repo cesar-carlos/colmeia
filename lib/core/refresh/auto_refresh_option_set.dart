@@ -29,9 +29,9 @@ class AutoRefreshOptionSet {
   }
 
   const AutoRefreshOptionSet._({
-    required List<AutoRefreshOption> values,
+    required this._values,
     required this.defaultOption,
-  }) : _values = values;
+  });
 
   final List<AutoRefreshOption> _values;
   final AutoRefreshOption? defaultOption;

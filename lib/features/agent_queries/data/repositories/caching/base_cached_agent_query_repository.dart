@@ -42,20 +42,15 @@ typedef AgentQuerySingleLoad<Filter, Row> =
 abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
     implements AgentQueryCacheControl {
   BaseCachedAgentQueryRepository({
-    required AgentQuerySingleLoad<Filter, Row> delegateLoad,
-    required AgentQueryFactsStore factsStore,
-    required AgentQueryCacheStrategy<Filter, Row> strategy,
-    AgentQueriesRepository? agentQueriesRepository,
-    AgentQueryFactsBucketBatchSupport<Filter, Row>? bucketBatchSupport,
+    required this._delegateLoad,
+    required this._factsStore,
+    required this._strategy,
+    this._agentQueriesRepository,
+    this._bucketBatchSupport,
     DateTime Function()? clock,
     int? bucketLoadConcurrency,
     bool? useExecuteBatchForBuckets,
-  }) : _delegateLoad = delegateLoad,
-       _factsStore = factsStore,
-       _strategy = strategy,
-       _agentQueriesRepository = agentQueriesRepository,
-       _bucketBatchSupport = bucketBatchSupport,
-       _clock = clock ?? DateTime.now,
+  }) : _clock = clock ?? DateTime.now,
        _bucketLoadConcurrency =
            bucketLoadConcurrency ??
            AppEnvironment.agentQueryFactsBucketLoadConcurrency,

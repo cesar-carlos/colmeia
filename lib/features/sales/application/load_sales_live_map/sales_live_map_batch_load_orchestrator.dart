@@ -21,20 +21,14 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dar
 /// [SalesLiveMapBatchLoader].
 class SalesLiveMapBatchLoadOrchestrator {
   SalesLiveMapBatchLoadOrchestrator({
-    required SalesLiveMapBatchLoader batchLoader,
-    required SalesLiveMapReportMapper reportMapper,
-    required SalesLiveMapCatalogPersister catalogPersister,
-    required SalesLiveMapDiagnosticsLogger diagnosticsLogger,
-    required SalesLiveMapRefreshMetricsRecorder metricsRecorder,
-    required SalesLiveMapProgressiveEmitPolicy emitPolicy,
-    required int bridgeTimeoutMs,
-  }) : _batchLoader = batchLoader,
-       _reportMapper = reportMapper,
-       _catalogPersister = catalogPersister,
-       _diagnosticsLogger = diagnosticsLogger,
-       _metricsRecorder = metricsRecorder,
-       _emitPolicy = emitPolicy,
-       _bridgeTimeoutMs = bridgeTimeoutMs;
+    required this._batchLoader,
+    required this._reportMapper,
+    required this._catalogPersister,
+    required this._diagnosticsLogger,
+    required this._metricsRecorder,
+    required this._emitPolicy,
+    required this._bridgeTimeoutMs,
+  });
 
   final SalesLiveMapBatchLoader _batchLoader;
   final SalesLiveMapReportMapper _reportMapper;

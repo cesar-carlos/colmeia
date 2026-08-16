@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:colmeia/shared/design_system/app_colors.dart';
+import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
@@ -195,6 +196,7 @@ class _LegendItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typography = Theme.of(context).appTypography;
+    final tokens = Theme.of(context).extension<AppThemeTokens>();
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
@@ -206,7 +208,7 @@ class _LegendItem extends StatelessWidget {
             borderRadius: BorderRadius.circular(999),
           ),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: tokens?.gapSm ?? 8),
         Text(label, style: textStyle ?? typography.caption),
       ],
     );

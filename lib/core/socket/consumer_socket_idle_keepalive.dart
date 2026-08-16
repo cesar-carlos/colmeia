@@ -16,12 +16,11 @@ import 'package:uuid/uuid.dart';
 /// Disabled when [interval] is `Duration.zero` or negative.
 class ConsumerSocketIdleKeepalive {
   ConsumerSocketIdleKeepalive({
-    required ConsumerSocketConnection connection,
+    required this._connection,
     required this.interval,
     this.eventName = defaultEventName,
-    Uuid uuid = const Uuid(),
-  }) : _connection = connection,
-       _uuid = uuid;
+    this._uuid = const Uuid(),
+  });
 
   /// Reserved custom event used only as an idle touch (subscribe/unsubscribe).
   static const String defaultEventName = 'client:custom.colmeia.idle.keepalive';

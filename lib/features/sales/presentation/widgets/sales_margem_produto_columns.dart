@@ -8,29 +8,38 @@ import 'package:intl/intl.dart';
 
 class SalesMargemProdutoColumnLabels {
   const SalesMargemProdutoColumnLabels({
+    required this.codigo,
     required this.produto,
     required this.custo,
     required this.preco,
     required this.markup,
-    required this.margem,
   });
 
   factory SalesMargemProdutoColumnLabels.fromL10n(AppLocalizations l10n) {
     return SalesMargemProdutoColumnLabels(
+      codigo: l10n.salesMargemProdutoColumnCodigo,
       produto: l10n.salesMargemProdutoColumnProduto,
       custo: l10n.salesMargemProdutoColumnCusto,
       preco: l10n.salesMargemProdutoColumnPreco,
       markup: l10n.salesMargemProdutoColumnMarkup,
-      margem: l10n.salesMargemProdutoColumnMargem,
     );
   }
 
+  final String codigo;
   final String produto;
   final String custo;
   final String preco;
   final String markup;
-  final String margem;
 }
+
+/// Compact ID column: out of fill mode so leftover width goes to the name.
+const double _codigoColumnWidth = 80;
+
+/// Product name is the only fill column; keep a readable floor on small screens.
+const double _produtoColumnMinWidth = 260;
+
+const double _currencyColumnWidth = 128;
+const double _markupColumnWidth = 104;
 
 final NumberFormat _percentFormat = NumberFormat('#,##0.0', 'pt_BR');
 
@@ -63,11 +72,19 @@ List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
 }) {
   return <AppReportColumn<MargemProdutoRow>>[
     AppReportColumn<MargemProdutoRow>(
+      key: SalesMargemProdutoSort.columnCodigo,
+      label: labels.codigo,
+      valueGetter: (row) => row.codProduto,
+      numeric: true,
+      sortable: false,
+      width: _codigoColumnWidth,
+    ),
+    AppReportColumn<MargemProdutoRow>(
       key: SalesMargemProdutoSort.columnProduto,
       label: labels.produto,
       valueGetter: (row) => row.nomeProduto,
       sortable: false,
-      minWidth: 220,
+      minWidth: _produtoColumnMinWidth,
     ),
     AppReportColumn<MargemProdutoRow>(
       key: SalesMargemProdutoSort.columnCustoReposicao,
@@ -76,7 +93,8 @@ List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
       formatter: formatSalesMargemProdutoCurrency,
       numeric: true,
       sortable: false,
-      minWidth: 128,
+      width: _currencyColumnWidth,
+      minWidth: _currencyColumnWidth,
     ),
     AppReportColumn<MargemProdutoRow>(
       key: SalesMargemProdutoSort.columnPrecoVenda,
@@ -85,7 +103,8 @@ List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
       formatter: formatSalesMargemProdutoCurrency,
       numeric: true,
       sortable: false,
-      minWidth: 128,
+      width: _currencyColumnWidth,
+      minWidth: _currencyColumnWidth,
     ),
     AppReportColumn<MargemProdutoRow>(
       key: SalesMargemProdutoSort.columnMarkup,
@@ -94,20 +113,8 @@ List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
       formatter: formatSalesMargemProdutoPercent,
       numeric: true,
       sortable: false,
-      minWidth: 112,
-      valueColor: (context, value) => salesMargemProdutoSignedPercentColor(
-        Theme.of(context).colorScheme,
-        value,
-      ),
-    ),
-    AppReportColumn<MargemProdutoRow>(
-      key: SalesMargemProdutoSort.columnMargem,
-      label: labels.margem,
-      valueGetter: (row) => row.margemLucroProduto,
-      formatter: formatSalesMargemProdutoPercent,
-      numeric: true,
-      sortable: false,
-      minWidth: 128,
+      width: _markupColumnWidth,
+      minWidth: _markupColumnWidth,
       valueColor: (context, value) => salesMargemProdutoSignedPercentColor(
         Theme.of(context).colorScheme,
         value,

@@ -18,10 +18,9 @@ const String _kOperation = 'LoadSalesLiveMapUseCase';
 /// be unit-tested without spinning up the full use case.
 class SalesLiveMapRefreshMetricsRecorder {
   const SalesLiveMapRefreshMetricsRecorder({
-    required SalesLiveMapRefreshMetrics metrics,
-    required SalesLiveMapDiagnosticsLogger diagnosticsLogger,
-  }) : _metrics = metrics,
-       _diagnosticsLogger = diagnosticsLogger;
+    required this._metrics,
+    required this._diagnosticsLogger,
+  });
 
   final SalesLiveMapRefreshMetrics _metrics;
   final SalesLiveMapDiagnosticsLogger _diagnosticsLogger;

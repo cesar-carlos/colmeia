@@ -8,8 +8,8 @@ import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_r
 /// Best-effort: failures are logged at debug level and never surface to UI.
 class AgentQueryTargetWarmUpCoordinator {
   AgentQueryTargetWarmUpCoordinator({
-    required AgentQueryTargetResolver targetResolver,
-  }) : _targetResolver = targetResolver;
+    required this._targetResolver,
+  });
 
   final AgentQueryTargetResolver _targetResolver;
 

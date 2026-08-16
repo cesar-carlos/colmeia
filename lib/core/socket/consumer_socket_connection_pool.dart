@@ -11,12 +11,10 @@ import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 /// enabled. See `docs/Features/socket/socket_channel_performance_review.md`.
 class ConsumerSocketConnectionPool {
   ConsumerSocketConnectionPool({
-    required ConsumerSocketConnection primary,
-    ConsumerSocketConnection? secondary,
+    required this._primary,
+    this._secondary,
     this.poolSize = 1,
-  }) : _primary = primary,
-       _secondary = secondary,
-       assert(poolSize >= 1, 'poolSize must be >= 1') {
+  }) : assert(poolSize >= 1, 'poolSize must be >= 1') {
     if (poolSize > 1) {
       AppLogger.warning(
         'SOCKET_CONNECTION_POOL_SIZE > 1 but secondary connection is not '

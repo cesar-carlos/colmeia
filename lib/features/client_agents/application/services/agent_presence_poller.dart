@@ -29,12 +29,10 @@ import 'package:colmeia/features/client_agents/domain/repositories/client_agents
 ///   porque ele é compartilhado com `SocketAgentPresenceStream`).
 class AgentPresencePoller {
   AgentPresencePoller({
-    required ClientAgentsRepository clientAgentsRepository,
-    required Sink<AgentPresenceEvent> sink,
-    Duration interval = defaultInterval,
-  }) : _clientAgentsRepository = clientAgentsRepository,
-       _sink = sink,
-       _interval = interval;
+    required this._clientAgentsRepository,
+    required this._sink,
+    this._interval = defaultInterval,
+  });
 
   /// 30 s — same value the design doc proposes for "active screen,
   /// socket disconnected".

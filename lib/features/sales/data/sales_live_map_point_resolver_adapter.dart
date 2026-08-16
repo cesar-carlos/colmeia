@@ -5,8 +5,8 @@ import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_point_resol
 
 class SalesLiveMapPointResolverAdapter implements SalesLiveMapPointResolver {
   const SalesLiveMapPointResolverAdapter({
-    required AppBrazilStoreSalesPointResolver delegate,
-  }) : _delegate = delegate;
+    required this._delegate,
+  });
 
   final AppBrazilStoreSalesPointResolver _delegate;
 

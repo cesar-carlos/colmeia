@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
@@ -499,15 +500,13 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
           ),
           SizedBox(height: tokens.sectionSpacing),
         ],
-        AppSectionCard(
+        _ReportViewerTableCard(
           color: reportCardColor,
           borderSide: reportCardBorder,
           padding: reportCardPadding,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              if (showInlineFilters) ...<Widget>[
-                AppReportInlineFiltersBar(
+          filtersToolbarGap: tokens.gapMd,
+          inlineFilters: showInlineFilters
+              ? AppReportInlineFiltersBar(
                   filters: widget.filters!,
                   initialValues:
                       widget.filterValues ??
@@ -521,84 +520,82 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
                     widget.events.onFiltersApplied?.call(values);
                     _emitQueryChanged(filters: values, page: 1);
                   },
-                ),
-                SizedBox(height: tokens.gapMd),
-              ],
-              AppReportToolbar<T>(
-                style: style,
-                events: AppReportEvents<T>(
-                  onSearchChanged: (term) {
-                    widget.events.onSearchChanged?.call(term);
-                    final current =
-                        _emittedQuery ?? widget.query ?? const AppReportQuery();
-                    if (current.isSameSearchTerm(term)) {
-                      return;
-                    }
-                    _emitQueryChanged(searchTerm: term, page: 1);
-                  },
-                  onDensityChanged: _onDensityChanged,
-                  onGroupChanged: _onGroupChanged,
-                  onGroupStateChanged: _onGroupStateChanged,
-                  onColumnVisibilityChanged: _onColumnVisibilityChanged,
-                  onExportRequested: widget.events.onExportRequested,
-                  onPrintRequested: widget.events.onPrintRequested,
-                  onRefresh: widget.events.onRefresh,
-                ),
-                columns: widget.columns,
-                groupableColumns: groupableColumns,
-                visibleColumnKeys: _visibleColumnKeys,
-                currentDensity: _density,
+                )
+              : null,
+          toolbar: AppReportToolbar<T>(
+            style: style,
+            events: AppReportEvents<T>(
+              onSearchChanged: (term) {
+                widget.events.onSearchChanged?.call(term);
+                final current =
+                    _emittedQuery ?? widget.query ?? const AppReportQuery();
+                if (current.isSameSearchTerm(term)) {
+                  return;
+                }
+                _emitQueryChanged(searchTerm: term, page: 1);
+              },
+              onDensityChanged: _onDensityChanged,
+              onGroupChanged: _onGroupChanged,
+              onGroupStateChanged: _onGroupStateChanged,
+              onColumnVisibilityChanged: _onColumnVisibilityChanged,
+              onExportRequested: widget.events.onExportRequested,
+              onPrintRequested: widget.events.onPrintRequested,
+              onRefresh: widget.events.onRefresh,
+            ),
+            columns: widget.columns,
+            groupableColumns: groupableColumns,
+            visibleColumnKeys: _visibleColumnKeys,
+            currentDensity: _density,
+            currentGroups: _groups,
+            isLoading: widget.isLoading,
+            groupController: _groupController,
+            searchTerm: widget.query?.searchTerm,
+            searchHintText: widget.searchHintText,
+            selectedRowCount: widget.selectedRows?.length ?? 0,
+            onOpenFiltersSheet:
+                style.filterLayout == AppReportFilterLayout.sheet && showFilters
+                ? _showAdvancedFiltersSheet
+                : null,
+            activeFilterCount: _activeFilterCount,
+            onClearSelection: widget.events.onRowSelection != null
+                ? () => widget.events.onRowSelection?.call(List<T>.empty())
+                : null,
+          ),
+          grid: ExcludeFocus(
+            child: AppSkeleton(
+              enabled: widget.isLoading,
+              loadingSemanticsLabel: l10n.reportLoadingTableSemantics,
+              child: AppReportGrid<T>(
+                columns: _visibleColumns,
+                rows: widget.rows,
                 currentGroups: _groups,
-                isLoading: widget.isLoading,
+                selectedRows: widget.selectedRows ?? List<T>.empty(),
                 groupController: _groupController,
-                searchTerm: widget.query?.searchTerm,
-                searchHintText: widget.searchHintText,
-                selectedRowCount: widget.selectedRows?.length ?? 0,
-                onOpenFiltersSheet:
-                    style.filterLayout == AppReportFilterLayout.sheet &&
-                        showFilters
-                    ? _showAdvancedFiltersSheet
-                    : null,
-                activeFilterCount: _activeFilterCount,
-                onClearSelection: widget.events.onRowSelection != null
-                    ? () => widget.events.onRowSelection?.call(List<T>.empty())
-                    : null,
-              ),
-              ExcludeFocus(
-                child: AppSkeleton(
-                  enabled: widget.isLoading,
-                  loadingSemanticsLabel: l10n.reportLoadingTableSemantics,
-                  child: AppReportGrid<T>(
-                    columns: _visibleColumns,
-                    rows: widget.rows,
-                    currentGroups: _groups,
-                    selectedRows: widget.selectedRows ?? List<T>.empty(),
-                    groupController: _groupController,
-                    style: style.copyWith(density: _density),
-                    isLoading: widget.isLoading,
-                    events: AppReportEvents<T>(
-                      onSortChanged: _onSortChanged,
-                      onRowTap: _onRowTap,
-                      onRowDoubleTap: widget.events.onRowDoubleTap,
-                      onRowLongPress: widget.events.onRowLongPress,
-                      onRowSelection: widget.events.onRowSelection,
-                      onGroupExpanded: (event) {
-                        _onGroupToggle(event);
-                        widget.events.onGroupExpanded?.call(event);
-                      },
-                      onGroupCollapsed: (event) {
-                        _onGroupToggle(event);
-                        widget.events.onGroupCollapsed?.call(event);
-                      },
-                    ),
-                    currentSorts: _sorts,
-                    emptyMessage: widget.emptyMessage,
-                    emptyAction: _buildEmptyClearFiltersAction(),
-                  ),
+                style: style.copyWith(density: _density),
+                isLoading: widget.isLoading,
+                events: AppReportEvents<T>(
+                  onSortChanged: _onSortChanged,
+                  onRowTap: _onRowTap,
+                  onRowDoubleTap: widget.events.onRowDoubleTap,
+                  onRowLongPress: widget.events.onRowLongPress,
+                  onRowSelection: widget.events.onRowSelection,
+                  onGroupExpanded: (event) {
+                    _onGroupToggle(event);
+                    widget.events.onGroupExpanded?.call(event);
+                  },
+                  onGroupCollapsed: (event) {
+                    _onGroupToggle(event);
+                    widget.events.onGroupCollapsed?.call(event);
+                  },
                 ),
+                currentSorts: _sorts,
+                emptyMessage: widget.emptyMessage,
+                emptyAction: _buildEmptyClearFiltersAction(),
               ),
-              if (showPagination)
-                AppSkeleton(
+            ),
+          ),
+          pagination: showPagination
+              ? AppSkeleton(
                   enabled: widget.isLoading,
                   loadingSemanticsLabel: l10n.reportLoadingPaginationSemantics,
                   child: AppReportPaginationBar(
@@ -618,9 +615,8 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
                     showingLabelPrefix: style.showingLabelPrefix,
                     showingLabelMiddle: style.showingLabelMiddle,
                   ),
-                ),
-            ],
-          ),
+                )
+              : null,
         ),
       ],
     );
@@ -636,6 +632,49 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
   }
 }
 
+class _ReportViewerTableCard extends StatelessWidget {
+  const _ReportViewerTableCard({
+    required this.color,
+    required this.borderSide,
+    required this.padding,
+    required this.filtersToolbarGap,
+    required this.toolbar,
+    required this.grid,
+    this.inlineFilters,
+    this.pagination,
+  });
+
+  final Color color;
+  final BorderSide borderSide;
+  final EdgeInsetsGeometry padding;
+  final double filtersToolbarGap;
+  final Widget? inlineFilters;
+  final Widget toolbar;
+  final Widget grid;
+  final Widget? pagination;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppSectionCard(
+      color: color,
+      borderSide: borderSide,
+      padding: padding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          if (inlineFilters != null) ...<Widget>[
+            inlineFilters!,
+            SizedBox(height: filtersToolbarGap),
+          ],
+          toolbar,
+          grid,
+          ?pagination,
+        ],
+      ),
+    );
+  }
+}
+
 /// "Limpar filtros" CTA shown inside the grid empty state when the current
 /// filters produced no rows.
 class _ReportEmptyClearFiltersAction extends StatelessWidget {
@@ -645,10 +684,10 @@ class _ReportEmptyClearFiltersAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return OutlinedButton.icon(
-      icon: const Icon(Icons.filter_alt_off_rounded, size: 18),
-      label: Text(AppLocalizations.of(context).reportEmptyClearFiltersAction),
+    return AppSecondaryButton(
       onPressed: onPressed,
+      icon: const Icon(Icons.filter_alt_off_rounded, size: 18),
+      label: AppLocalizations.of(context).reportEmptyClearFiltersAction,
     );
   }
 }

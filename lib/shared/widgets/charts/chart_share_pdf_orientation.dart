@@ -49,6 +49,25 @@ class ChartPdfLayoutMetrics {
   final double headerBottomGap;
 }
 
+/// Combined floor for every column's minimum share of the table width.
+///
+/// Five catalog columns then start at 15% each, leaving 25% to follow
+/// content length so a long name column cannot starve `Código` or `% Markup`.
+const double kChartPdfTableMinColumnShareBudget = 0.75;
+
+/// Cap on the per-column floor so 2–3 column tables stay content-weighted.
+const double kChartPdfTableMinColumnShareCap = 0.16;
+
+double chartPdfTableMinColumnShare(int columnCount) {
+  if (columnCount <= 0) {
+    return 0;
+  }
+  return math.min(
+    kChartPdfTableMinColumnShareCap,
+    kChartPdfTableMinColumnShareBudget / columnCount,
+  );
+}
+
 /// Proportional flex weights for chart share tables from header and cell text.
 List<double> chartPdfTableColumnFlexWeights({
   required List<String> headers,
@@ -77,27 +96,54 @@ List<double> chartPdfTableColumnFlexWeights({
       .toList(growable: false);
 }
 
+/// Width shares after applying a readable floor to short columns.
+List<double> chartPdfTableColumnShares({
+  required List<String> headers,
+  required List<List<String>> rows,
+}) {
+  final weights = chartPdfTableColumnFlexWeights(
+    headers: headers,
+    rows: rows,
+  );
+  final columnCount = weights.length;
+  if (columnCount == 0) {
+    return const <double>[];
+  }
+  if (columnCount == 1) {
+    return const <double>[1];
+  }
+
+  final totalWeight = weights.fold<double>(0, (sum, weight) => sum + weight);
+  if (totalWeight <= 0) {
+    return List<double>.filled(columnCount, 1 / columnCount);
+  }
+
+  final minShare = chartPdfTableMinColumnShare(columnCount);
+  final remaining = 1 - minShare * columnCount;
+  if (remaining <= 0) {
+    return List<double>.filled(columnCount, 1 / columnCount);
+  }
+
+  return List<double>.generate(
+    columnCount,
+    (index) => minShare + remaining * (weights[index] / totalWeight),
+    growable: false,
+  );
+}
+
 Map<int, pw.TableColumnWidth> chartPdfTableColumnWidths({
   required List<String> headers,
   required List<List<String>> rows,
   required double availableWidth,
 }) {
-  final flexWeights = chartPdfTableColumnFlexWeights(
-    headers: headers,
-    rows: rows,
-  );
-  if (flexWeights.isEmpty) {
+  final shares = chartPdfTableColumnShares(headers: headers, rows: rows);
+  if (shares.isEmpty) {
     return const <int, pw.TableColumnWidth>{};
   }
 
-  final totalWeight = flexWeights.fold<double>(
-    0,
-    (sum, weight) => sum + weight,
-  );
   final result = <int, pw.TableColumnWidth>{};
-  for (var index = 0; index < flexWeights.length; index++) {
-    final share = flexWeights[index] / totalWeight;
-    result[index] = pw.FixedColumnWidth(availableWidth * share);
+  for (var index = 0; index < shares.length; index++) {
+    result[index] = pw.FixedColumnWidth(availableWidth * shares[index]);
   }
   return result;
 }

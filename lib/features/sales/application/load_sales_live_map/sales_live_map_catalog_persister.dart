@@ -8,10 +8,9 @@ import 'package:colmeia/features/sales/application/sales_live_map_catalog_scope.
 /// Writes branch catalog pages through the in-memory and disk caches.
 class SalesLiveMapCatalogPersister {
   const SalesLiveMapCatalogPersister({
-    required SalesLiveMapInMemoryCatalogCache memoryCache,
-    required SalesLiveMapCatalogCache diskCache,
-  }) : _memoryCache = memoryCache,
-       _diskCache = diskCache;
+    required this._memoryCache,
+    required this._diskCache,
+  });
 
   final SalesLiveMapInMemoryCatalogCache _memoryCache;
   final SalesLiveMapCatalogCache _diskCache;

@@ -1,5 +1,7 @@
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
+import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
 import 'package:flutter/material.dart';
 
@@ -118,16 +120,18 @@ class _AppReportColumnChooserSheetState<T>
               child: Row(
                 children: <Widget>[
                   Expanded(
-                    child: OutlinedButton(
+                    child: AppSecondaryButton(
+                      fillWidth: true,
                       onPressed: () => Navigator.of(context).pop(),
-                      child: Text(l10n.reportColumnChooserCancel),
+                      label: l10n.reportColumnChooserCancel,
                     ),
                   ),
                   SizedBox(width: tokens.gapMd),
                   Expanded(
-                    child: FilledButton(
+                    child: AppPrimaryButton(
+                      fillWidth: true,
                       onPressed: () => Navigator.of(context).pop(_visible),
-                      child: Text(l10n.reportColumnChooserApply),
+                      label: l10n.reportColumnChooserApply,
                     ),
                   ),
                 ],

@@ -37,8 +37,8 @@ class ClientAgentDetailController extends ChangeNotifier
         ClientAgentDetailProfileHost,
         ClientAgentDetailConnectionHost {
   ClientAgentDetailController({
-    required AuthController authController,
-    required LoadClientAgentDetailUseCase loadClientAgentDetailUseCase,
+    required this._authController,
+    required this._loadClientAgentDetailUseCase,
     required UpdateClientAgentProfileUseCase updateClientAgentProfileUseCase,
     required GetClientAgentTokenUseCase getClientAgentTokenUseCase,
     required SaveClientAgentTokenUseCase saveClientAgentTokenUseCase,
@@ -49,13 +49,10 @@ class ClientAgentDetailController extends ChangeNotifier
     required LoadClientTokenPolicyUseCase loadClientTokenPolicyUseCase,
     required DiscoverAgentRpcMethodsUseCase discoverAgentRpcMethodsUseCase,
     AgentRpcCapabilitiesRegistry? agentRpcCapabilitiesRegistry,
-    AgentQueryTargetResolutionInvalidator? targetResolutionInvalidator,
+    this._targetResolutionInvalidator,
     String Function()? idempotencyKeyGenerator,
     RetryAfterGate? retryAfterGate,
-  }) : _authController = authController,
-       _loadClientAgentDetailUseCase = loadClientAgentDetailUseCase,
-       _targetResolutionInvalidator = targetResolutionInvalidator,
-       _retryAfterGate = retryAfterGate ?? RetryAfterGate(),
+  }) : _retryAfterGate = retryAfterGate ?? RetryAfterGate(),
        _ownsRetryAfterGate = retryAfterGate == null {
     _agentMeta = ClientAgentDetailAgentMetaCoordinator(
       host: this,

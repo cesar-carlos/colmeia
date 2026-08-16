@@ -104,6 +104,7 @@ class _StackedRadioOption<T extends Object?> extends StatelessWidget {
       enabled: enabled,
       inMutuallyExclusiveGroup: true,
       label: option.label,
+      onTap: enabled ? () => onChanged(option.value) : null,
       child: ExcludeSemantics(
         child: Material(
           color: Colors.transparent,
@@ -221,6 +222,7 @@ class _CompactRadioOption<T extends Object?> extends StatelessWidget {
       enabled: enabled,
       inMutuallyExclusiveGroup: true,
       label: option.label,
+      onTap: enabled ? () => onChanged(option.value) : null,
       child: ExcludeSemantics(
         child: Material(
           color: Colors.transparent,

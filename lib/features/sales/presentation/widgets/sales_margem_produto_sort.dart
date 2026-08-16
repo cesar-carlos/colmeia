@@ -8,11 +8,11 @@ import 'package:colmeia/shared/widgets/reports/app_report_query.dart';
 abstract final class SalesMargemProdutoSort {
   static const String cardId = 'margem_produto';
 
+  static const String columnCodigo = 'codProduto';
   static const String columnProduto = 'nomeProduto';
   static const String columnCustoReposicao = 'custoReposicao';
   static const String columnPrecoVenda = 'precoVendaProduto';
   static const String columnMarkup = 'percentualMarkup';
-  static const String columnMargem = 'margemLucroProduto';
 
   static const List<int> allowedPageSizes = <int>[10, 20, 50];
   static const int defaultPageSize = 20;

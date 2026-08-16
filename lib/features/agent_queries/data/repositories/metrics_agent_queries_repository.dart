@@ -29,11 +29,10 @@ import 'package:result_dart/result_dart.dart';
 /// - Displayed in developer/debug screens
 class MetricsAgentQueriesRepository implements AgentQueriesRepository {
   MetricsAgentQueriesRepository({
-    required AgentQueriesRepository delegate,
-    Duration metricsLogInterval = const Duration(minutes: 5),
+    required this._delegate,
+    this._metricsLogInterval = const Duration(minutes: 5),
     bool enablePeriodicLogging = true,
-  }) : _delegate = delegate,
-       _metricsLogInterval = metricsLogInterval {
+  }) {
     if (enablePeriodicLogging) {
       _schedulePeriodicLog();
     }

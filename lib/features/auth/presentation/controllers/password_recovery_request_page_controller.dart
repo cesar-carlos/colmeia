@@ -3,8 +3,8 @@ import 'package:flutter/foundation.dart';
 
 class PasswordRecoveryRequestPageController extends ChangeNotifier {
   PasswordRecoveryRequestPageController({
-    required RequestPasswordRecoveryUseCase requestPasswordRecoveryUseCase,
-  }) : _requestPasswordRecoveryUseCase = requestPasswordRecoveryUseCase;
+    required this._requestPasswordRecoveryUseCase,
+  });
 
   final RequestPasswordRecoveryUseCase _requestPasswordRecoveryUseCase;
 

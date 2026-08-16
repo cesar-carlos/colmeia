@@ -55,21 +55,17 @@ class AppTagChip extends StatelessWidget {
           ),
           if (onRemove != null) ...<Widget>[
             SizedBox(width: tokens.gapXs),
-            Semantics(
-              button: true,
-              label: removeSemanticsLabel ?? 'Remove $label',
-              child: InkWell(
-                onTap: onRemove,
-                borderRadius: BorderRadius.circular(999),
-                child: Padding(
-                  padding: const EdgeInsets.all(2),
-                  child: Icon(
-                    Icons.close_rounded,
-                    size: 14,
-                    color: resolvedForeground,
-                  ),
-                ),
-              ),
+            IconButton(
+              onPressed: onRemove,
+              tooltip:
+                  removeSemanticsLabel ??
+                  MaterialLocalizations.of(context).deleteButtonTooltip,
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              iconSize: 14,
+              color: resolvedForeground,
+              icon: const Icon(Icons.close_rounded),
             ),
           ],
         ],

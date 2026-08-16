@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -3757,7 +3758,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Preço de lista versus custo de reposição.';
 
   @override
-  String get salesMargemProdutoColumnProduto => 'Produto';
+  String get salesMargemProdutoColumnCodigo => 'Código';
+
+  @override
+  String get salesMargemProdutoColumnProduto => 'Nome produto';
 
   @override
   String get salesMargemProdutoColumnCusto => 'Custo reposição';
@@ -3766,10 +3770,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesMargemProdutoColumnPreco => 'Preço de venda';
 
   @override
-  String get salesMargemProdutoColumnMarkup => 'Markup %';
-
-  @override
-  String get salesMargemProdutoColumnMargem => 'Margem bruta %';
+  String get salesMargemProdutoColumnMarkup => '% Markup';
 
   @override
   String get salesMargemProdutoColumnGrupo => 'Grupo';
@@ -8878,7 +8879,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Preço de lista versus custo de reposição.';
 
   @override
-  String get salesMargemProdutoColumnProduto => 'Produto';
+  String get salesMargemProdutoColumnCodigo => 'Código';
+
+  @override
+  String get salesMargemProdutoColumnProduto => 'Nome produto';
 
   @override
   String get salesMargemProdutoColumnCusto => 'Custo reposição';
@@ -8887,10 +8891,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesMargemProdutoColumnPreco => 'Preço de venda';
 
   @override
-  String get salesMargemProdutoColumnMarkup => 'Markup %';
-
-  @override
-  String get salesMargemProdutoColumnMargem => 'Margem bruta %';
+  String get salesMargemProdutoColumnMarkup => '% Markup';
 
   @override
   String get salesMargemProdutoColumnGrupo => 'Grupo';

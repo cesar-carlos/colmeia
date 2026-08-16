@@ -26,10 +26,9 @@ import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel
 class HybridAgentQueriesRemoteDataSource
     implements AgentQueriesRemoteDataSource {
   HybridAgentQueriesRemoteDataSource({
-    required AgentQueriesRemoteDataSource baseDelegate,
-    AgentQueriesRemoteDataSource? relayDelegate,
-  }) : _baseDelegate = baseDelegate,
-       _relayDelegate = relayDelegate;
+    required this._baseDelegate,
+    this._relayDelegate,
+  });
 
   final AgentQueriesRemoteDataSource _baseDelegate;
   final AgentQueriesRemoteDataSource? _relayDelegate;

@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -3705,7 +3706,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'List price versus replacement cost.';
 
   @override
-  String get salesMargemProdutoColumnProduto => 'Product';
+  String get salesMargemProdutoColumnCodigo => 'Code';
+
+  @override
+  String get salesMargemProdutoColumnProduto => 'Product name';
 
   @override
   String get salesMargemProdutoColumnCusto => 'Replacement cost';
@@ -3714,10 +3718,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesMargemProdutoColumnPreco => 'Sale price';
 
   @override
-  String get salesMargemProdutoColumnMarkup => 'Markup %';
-
-  @override
-  String get salesMargemProdutoColumnMargem => 'Gross margin %';
+  String get salesMargemProdutoColumnMarkup => '% Markup';
 
   @override
   String get salesMargemProdutoColumnGrupo => 'Group';

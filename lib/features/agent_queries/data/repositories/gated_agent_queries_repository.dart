@@ -13,10 +13,9 @@ import 'package:result_dart/result_dart.dart';
 /// Runs hub-presence eligibility before delegating to the real bridge repository.
 class GatedAgentQueriesRepository implements AgentQueriesRepository {
   GatedAgentQueriesRepository({
-    required AgentQueriesRepository delegate,
-    required AgentSqlExecutionEligibilityPort eligibility,
-  }) : _delegate = delegate,
-       _eligibility = eligibility;
+    required this._delegate,
+    required this._eligibility,
+  });
 
   final AgentQueriesRepository _delegate;
   final AgentSqlExecutionEligibilityPort _eligibility;

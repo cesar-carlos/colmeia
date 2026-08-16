@@ -52,12 +52,10 @@ class SalesLiveMapCatalogLookupResult {
 /// downstream metrics would inherit the wider scope's counters.
 class SalesLiveMapCatalogLookup {
   const SalesLiveMapCatalogLookup({
-    required SalesLiveMapInMemoryCatalogCache memoryCache,
-    required SalesLiveMapCatalogCache diskCache,
-    required LoadCadastroFilialAcrossAgentsUseCase loadCadastroAcrossAgents,
-  }) : _memoryCache = memoryCache,
-       _diskCache = diskCache,
-       _loadCadastroAcrossAgents = loadCadastroAcrossAgents;
+    required this._memoryCache,
+    required this._diskCache,
+    required this._loadCadastroAcrossAgents,
+  });
 
   final SalesLiveMapInMemoryCatalogCache _memoryCache;
   final SalesLiveMapCatalogCache _diskCache;

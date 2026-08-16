@@ -26,10 +26,9 @@ import 'package:colmeia/core/socket/socket_command_dispatcher.dart';
 /// - [dispose] is an alias for `cancelAll(reason: 'token_disposed')`.
 class SocketCommandCancelToken {
   SocketCommandCancelToken({
-    required SocketCommandDispatcher dispatcher,
-    String defaultReason = 'caller_cancelled',
-  }) : _dispatcher = dispatcher,
-       _defaultReason = defaultReason;
+    required this._dispatcher,
+    this._defaultReason = 'caller_cancelled',
+  });
 
   final SocketCommandDispatcher _dispatcher;
   final String _defaultReason;

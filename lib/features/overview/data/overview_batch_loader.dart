@@ -42,21 +42,19 @@ export 'package:colmeia/features/overview/data/overview_batch_load_result.dart';
 
 class OverviewBatchLoader {
   OverviewBatchLoader({
-    required AgentQueryTargetResolver targetResolver,
-    required AgentQueryPlanBuilder planBuilder,
+    required this._targetResolver,
+    required this._planBuilder,
     required AgentQueriesRepository agentQueriesRepository,
     OverviewBatchFactsPersister? factsPersister,
     LoadResumoTotalDiarioVendasUseCase? loadDaily,
     LoadResumoParcelasMensalUseCase? loadMonthly,
     LoadResumoParcelasDiaSemanaUseCase? loadWeekday,
     LoadResumoProdutoVendaLucratividadeUseCase? loadLucratividade,
-    OverviewCachedFactsWarmthChecker? factsWarmthChecker,
+    this._factsWarmthChecker,
     int maxParallelReadOnlyBatchItems = 4,
     int? targetWaveConcurrency,
     AgentQueryTransportPolicy? transportPolicy,
-  }) : _targetResolver = targetResolver,
-       _planBuilder = planBuilder,
-       _agentQueriesRepository = agentQueriesRepository,
+  }) : _agentQueriesRepository = agentQueriesRepository,
        _maxParallelReadOnlyBatchItems = maxParallelReadOnlyBatchItems,
        _cachedSectionLoader = OverviewCachedSectionLoader(
          loadDaily: loadDaily,
@@ -64,7 +62,6 @@ class OverviewBatchLoader {
          loadWeekday: loadWeekday,
          loadLucratividade: loadLucratividade,
        ),
-       _factsWarmthChecker = factsWarmthChecker,
        _targetWaveConcurrency =
            targetWaveConcurrency ??
            AppEnvironment.overviewTargetWaveConcurrency,

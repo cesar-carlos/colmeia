@@ -29,18 +29,13 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 /// See `docs/Features/socket_channel_performance_review.md` §5.8.
 class SocketMetricsListener {
   SocketMetricsListener({
-    required ConsumerSocketConnection connection,
-    required SocketCommandDispatcher dispatcher,
-    required SocketChannelMetrics metrics,
-    AgentLatencyOracle? latencyOracle,
-    RelayCommandDispatcher? relayDispatcher,
-    PerAgentConcurrencyGate? concurrencyGate,
-  }) : _connection = connection,
-       _dispatcher = dispatcher,
-       _metrics = metrics,
-       _latencyOracle = latencyOracle,
-       _relayDispatcher = relayDispatcher,
-       _concurrencyGate = concurrencyGate;
+    required this._connection,
+    required this._dispatcher,
+    required this._metrics,
+    this._latencyOracle,
+    this._relayDispatcher,
+    this._concurrencyGate,
+  });
 
   final ConsumerSocketConnection _connection;
   final SocketCommandDispatcher _dispatcher;

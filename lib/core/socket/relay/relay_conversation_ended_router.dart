@@ -7,12 +7,11 @@ import 'package:colmeia/core/socket/relay/relay_event_names.dart';
 import 'package:colmeia/core/socket/socket_wire_utils.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
-typedef ConversationEndedCallback =
-    void Function({
-      required String conversationId,
-      String? requestId,
-      String? reason,
-    });
+typedef ConversationEndedCallback = void Function({
+  required String conversationId,
+  String? requestId,
+  String? reason,
+});
 
 /// Routes hub-initiated `relay:conversation.ended` events to all registered
 /// listeners through a single permanent raw-socket handler.
@@ -26,8 +25,8 @@ typedef ConversationEndedCallback =
 /// tears down and re-attached when [ConsumerSocketConnected] is observed.
 class RelayConversationEndedRouter {
   RelayConversationEndedRouter({
-    required ConsumerSocketConnection connection,
-  }) : _connection = connection {
+    required this._connection,
+  }) {
     _stateSub = _connection.states().listen(_onConnectionState);
     // Attach immediately if the socket is already up at construction time,
     // which happens when the router is resolved lazily after first connect.

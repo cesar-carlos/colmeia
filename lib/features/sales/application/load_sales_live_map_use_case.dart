@@ -52,21 +52,19 @@ class LoadSalesLiveMapUseCase {
     SalesLiveMapDiagnosticsLogger? diagnosticsLogger,
     SalesLiveMapInMemoryCatalogCache? branchCatalogCache,
     SalesLiveMapBranchLocationCache? branchLocationCache,
-    SalesLiveMapBatchLoader? batchLoader,
-    DateTime Function()? now,
+    this._batchLoader,
+    this._now,
     SalesLiveMapCatalogScopeResolver? catalogScopeResolver,
     SalesLiveMapProgressiveEmitPolicy? emitPolicy,
     SalesLiveMapReportMapper? reportMapper,
-    SalesLiveMapBatchLoadOrchestrator? batchLoadOrchestrator,
-    SalesLiveMapParallelLoadOrchestrator? parallelLoadOrchestrator,
+    this._batchLoadOrchestrator,
+    this._parallelLoadOrchestrator,
   }) : _refreshMetrics = refreshMetrics ?? SalesLiveMapRefreshMetrics(),
-       _batchLoader = batchLoader,
        _pointFactory = pointFactory ?? const SalesLiveMapPointFactory(),
        _branchAggregator =
            branchAggregator ?? const SalesLiveMapBranchAggregator(),
        _diagnosticsLogger =
            diagnosticsLogger ?? const SalesLiveMapDiagnosticsLogger(),
-       _now = now,
        _branchCatalogCache =
            branchCatalogCache ??
            SalesLiveMapInMemoryCatalogCache(
@@ -86,9 +84,7 @@ class LoadSalesLiveMapUseCase {
            SalesLiveMapProgressiveEmitPolicy(
              diagnosticsLogger:
                  diagnosticsLogger ?? const SalesLiveMapDiagnosticsLogger(),
-           ),
-       _batchLoadOrchestrator = batchLoadOrchestrator,
-       _parallelLoadOrchestrator = parallelLoadOrchestrator {
+           ) {
     _metricsRecorder = SalesLiveMapRefreshMetricsRecorder(
       metrics: _refreshMetrics,
       diagnosticsLogger: _diagnosticsLogger,

@@ -1,9 +1,8 @@
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 
-typedef OverviewRelayCancelScopeBinder =
-    void Function(
-      AgentQueriesCancelScope cancelScope,
-    );
+typedef OverviewRelayCancelScopeBinder = void Function(
+  AgentQueriesCancelScope cancelScope,
+);
 
 /// Encapsulates the per-load mutable state of the overview controller:
 /// monotonic generation counter (for stale-response detection), the
@@ -15,8 +14,7 @@ typedef OverviewRelayCancelScopeBinder =
 /// place and removes the temptation to mutate them piecemeal from inside
 /// the controller's load methods.
 class OverviewLoadSession {
-  OverviewLoadSession({OverviewRelayCancelScopeBinder? relayCancelScopeBinder})
-    : _relayCancelScopeBinder = relayCancelScopeBinder;
+  OverviewLoadSession({this._relayCancelScopeBinder});
 
   final OverviewRelayCancelScopeBinder? _relayCancelScopeBinder;
 

@@ -16,12 +16,10 @@ abstract interface class ClientAgentDetailAgentMetaHost {
 /// Owns `rpc.discover` hydration and capability gating for the detail screen.
 class ClientAgentDetailAgentMetaCoordinator {
   ClientAgentDetailAgentMetaCoordinator({
-    required ClientAgentDetailAgentMetaHost host,
-    required DiscoverAgentRpcMethodsUseCase discoverAgentRpcMethodsUseCase,
-    AgentRpcCapabilitiesRegistry? agentRpcCapabilitiesRegistry,
-  }) : _host = host,
-       _discoverAgentRpcMethodsUseCase = discoverAgentRpcMethodsUseCase,
-       _agentRpcCapabilitiesRegistry = agentRpcCapabilitiesRegistry;
+    required this._host,
+    required this._discoverAgentRpcMethodsUseCase,
+    this._agentRpcCapabilitiesRegistry,
+  });
 
   final ClientAgentDetailAgentMetaHost _host;
   final DiscoverAgentRpcMethodsUseCase _discoverAgentRpcMethodsUseCase;

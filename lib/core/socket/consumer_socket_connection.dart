@@ -33,26 +33,17 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 /// Detailed contract: `docs/Features/consumer_socket_connection_design.md`.
 class ConsumerSocketConnection {
   ConsumerSocketConnection({
-    required AppSocketUrlResolver urlResolver,
-    required SocketAuthTokenProvider tokenProvider,
-    required SocketIoClientFactory factory,
-    required ConnectionReadyDecoder readyDecoder,
-    Duration handshakeTimeout = const Duration(seconds: 10),
-    int maxReconnectAttempts = 5,
-    Duration reconnectInitialDelay = const Duration(seconds: 1),
-    Duration reconnectMaxDelay = const Duration(seconds: 30),
+    required this._urlResolver,
+    required this._tokenProvider,
+    required this._factory,
+    required this._readyDecoder,
+    this._handshakeTimeout = const Duration(seconds: 10),
+    this._maxReconnectAttempts = 5,
+    this._reconnectInitialDelay = const Duration(seconds: 1),
+    this._reconnectMaxDelay = const Duration(seconds: 30),
     math.Random? random,
-    void Function(String code, String message)? onTerminalHubAppError,
-  }) : _urlResolver = urlResolver,
-       _tokenProvider = tokenProvider,
-       _factory = factory,
-       _readyDecoder = readyDecoder,
-       _handshakeTimeout = handshakeTimeout,
-       _maxReconnectAttempts = maxReconnectAttempts,
-       _reconnectInitialDelay = reconnectInitialDelay,
-       _reconnectMaxDelay = reconnectMaxDelay,
-       _random = random ?? math.Random(),
-       _onTerminalHubAppError = onTerminalHubAppError {
+    this._onTerminalHubAppError,
+  }) : _random = random ?? math.Random() {
     _sessionInvalidationSub = _tokenProvider.sessionInvalidations().listen(
       (_) => unawaited(disconnect(reason: 'session_invalidated')),
     );

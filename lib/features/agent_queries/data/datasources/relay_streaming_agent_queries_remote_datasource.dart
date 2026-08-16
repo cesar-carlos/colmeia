@@ -17,14 +17,10 @@ import 'package:uuid/uuid.dart';
 class RelayStreamingAgentQueriesRemoteDataSource
     implements AgentQueriesStreamingRemoteDataSource {
   RelayStreamingAgentQueriesRemoteDataSource({
-    required RelayCommandDispatcher dispatcher,
-    AgentSqlExecuteRequestToBridgeBody bodyMapper =
-        const AgentSqlExecuteRequestToBridgeBody(),
-    RelayPayloadFrameCompression compression =
-        RelayPayloadFrameCompression.auto,
-  }) : _dispatcher = dispatcher,
-       _bodyMapper = bodyMapper,
-       _compression = compression;
+    required this._dispatcher,
+    this._bodyMapper = const AgentSqlExecuteRequestToBridgeBody(),
+    this._compression = RelayPayloadFrameCompression.auto,
+  });
 
   final RelayCommandDispatcher _dispatcher;
   final AgentSqlExecuteRequestToBridgeBody _bodyMapper;
@@ -38,8 +34,7 @@ class RelayStreamingAgentQueriesRemoteDataSource
   }) async* {
     if (cancelScope?.isCancelled ?? false) {
       throw const RelayRequestCancelled(
-        message:
-            'streamSqlExecute skipped: AgentQueriesCancelScope already cancelled',
+        message: 'streamSqlExecute skipped: AgentQueriesCancelScope already cancelled',
       );
     }
     final clientRequestId = request.transportRpcId ?? _uuid.v4();

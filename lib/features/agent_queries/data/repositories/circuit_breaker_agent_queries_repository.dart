@@ -33,12 +33,10 @@ import 'package:result_dart/result_dart.dart';
 /// the breaker since they indicate client-side issues, not hub overload.
 class CircuitBreakerAgentQueriesRepository implements AgentQueriesRepository {
   CircuitBreakerAgentQueriesRepository({
-    required AgentQueriesRepository delegate,
-    int failureThreshold = 5,
-    Duration cooldownPeriod = const Duration(seconds: 30),
-  }) : _delegate = delegate,
-       _failureThreshold = failureThreshold,
-       _cooldownPeriod = cooldownPeriod;
+    required this._delegate,
+    this._failureThreshold = 5,
+    this._cooldownPeriod = const Duration(seconds: 30),
+  });
 
   final AgentQueriesRepository _delegate;
   final int _failureThreshold;

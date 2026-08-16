@@ -40,12 +40,10 @@ class AppBrazilMunicipalityCentroid {
 
 class AppBrazilMunicipalityCentroidIndex {
   AppBrazilMunicipalityCentroidIndex._({
-    required Map<String, AppBrazilMunicipalityCentroid> byIbgeCode,
-    required Map<String, AppBrazilMunicipalityCentroid> byCityUf,
-    required Map<String, AppBrazilMunicipalityCentroid> capitalByUf,
-  }) : _byIbgeCode = byIbgeCode,
-       _byCityUf = byCityUf,
-       _capitalByUf = capitalByUf;
+    required this._byIbgeCode,
+    required this._byCityUf,
+    required this._capitalByUf,
+  });
 
   factory AppBrazilMunicipalityCentroidIndex.parse(String content) {
     final lines = content

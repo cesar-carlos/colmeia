@@ -4,13 +4,20 @@ import 'package:colmeia/shared/maps/app_location_resolver.dart';
 import 'package:flutter/services.dart';
 import 'package:geocoding/geocoding.dart' as geocoding;
 
-typedef AppAddressLocationsLookup =
-    Future<List<geocoding.Location>> Function(String query);
+typedef AppAddressLocationsLookup = Future<List<geocoding.Location>> Function(
+  String query,
+);
+
+typedef AppGeocodingFactory = geocoding.Geocoding Function();
 
 class AppGeocodingPluginGeocoder implements AppLocationGeocoder {
   AppGeocodingPluginGeocoder({
     AppAddressLocationsLookup? lookupLocations,
-  }) : _lookupLocations = lookupLocations ?? geocoding.locationFromAddress;
+    AppGeocodingFactory? createGeocoding,
+  }) : _lookupLocations =
+           lookupLocations ??
+           ((query) => (createGeocoding ?? geocoding.Geocoding.new)()
+               .locationFromAddress(query));
 
   final AppAddressLocationsLookup _lookupLocations;
 
@@ -90,8 +97,6 @@ class AppGeocodingPluginGeocoder implements AppLocationGeocoder {
       return AppLocationGeocoderResult.transientFailure(
         message: error.message ?? error.code,
       );
-    } on geocoding.NoResultFoundException {
-      return const AppLocationGeocoderResult.notFound();
     }
   }
 

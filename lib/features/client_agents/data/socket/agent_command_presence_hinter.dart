@@ -20,10 +20,9 @@ import 'package:colmeia/features/client_agents/domain/events/agent_presence_even
 /// subscription. Both are safe to call out of order.
 class AgentCommandPresenceHinter {
   AgentCommandPresenceHinter({
-    required SocketCommandDispatcher dispatcher,
-    required Sink<AgentPresenceEvent> sink,
-  }) : _dispatcher = dispatcher,
-       _sink = sink;
+    required this._dispatcher,
+    required this._sink,
+  });
 
   final SocketCommandDispatcher _dispatcher;
   final Sink<AgentPresenceEvent> _sink;

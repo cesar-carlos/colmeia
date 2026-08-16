@@ -155,6 +155,17 @@ final List<String> activeIds = users
 
 ## Modern Dart
 
+### Primary Constructors
+
+- Dart 3.13 enables primary constructors by default
+- Use them on **new**, small types: `class const Foo(final int x);` or
+  `this._dep` initializing formals for private injected fields
+- Do not migrate a type that already has multiple generative constructors in
+  the same step; those must redirect to a single primary constructor
+- For existing `_field = param` constructors, use
+  `dart fix --apply --code=prefer_initializing_formals` rather than a
+  hand-written rewrite of the class header
+
 ### Pattern Matching
 
 - Use patterns quando simplificarem leitura e eliminarem casts

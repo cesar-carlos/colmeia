@@ -444,11 +444,30 @@ void main() {
   );
 
   test(
-    'empty CTE payload twice on registration is a failure not empty catalog',
+    'empty CTE payload twice falls back to simple Filial SELECT for registration',
     () async {
-      when(
-        () => agentQueriesRepository.executeSql(any()),
-      ).thenAnswer((_) async => _emptyPayloadSuccess);
+      var calls = 0;
+      when(() => agentQueriesRepository.executeSql(any())).thenAnswer((
+        _,
+      ) async {
+        calls += 1;
+        if (calls <= 2) {
+          return _emptyPayloadSuccess;
+        }
+        return const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(
+            rows: <Map<String, dynamic>>[
+              <String, dynamic>{
+                'TotalCount': 1,
+                'CodEmpresa': 1,
+                'CodFilial': 4,
+                'NomeFilial': 'Matriz',
+              },
+            ],
+            rowCount: 1,
+          ),
+        );
+      });
 
       final result = await repository.loadPage(
         userId: 'user-1',
@@ -456,9 +475,68 @@ void main() {
         filter: const CadastroFilialFilter(),
       );
 
-      check(result.isError()).isTrue();
-      check(result.exceptionOrNull()).isA<UnknownFailure>();
-      verify(() => agentQueriesRepository.executeSql(any())).called(2);
+      check(result.isSuccess()).isTrue();
+      check(result.getOrThrow().items.single.codFilial).equals(4);
+      check(result.getOrThrow().totalCount).equals(1);
+      final captured = verify(
+        () => agentQueriesRepository.executeSql(captureAny()),
+      ).captured;
+      check(captured.length).equals(3);
+      final fallback = captured[2] as AgentSqlExecuteRequest;
+      check(fallback.sql).contains('SELECT TOP');
+      check(fallback.sql).contains('LEFT JOIN Municipio');
+      check(fallback.sql).not((it) => it.contains('ROW_NUMBER'));
+      check(fallback.namedParams).isEmpty();
+    },
+  );
+
+  test(
+    'empty CTE payload twice plus empty large simple SELECT retries default page size',
+    () async {
+      var calls = 0;
+      when(() => agentQueriesRepository.executeSql(any())).thenAnswer((
+        _,
+      ) async {
+        calls += 1;
+        if (calls <= 3) {
+          return _emptyPayloadSuccess;
+        }
+        return const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(
+            rows: <Map<String, dynamic>>[
+              <String, dynamic>{
+                'TotalCount': 2,
+                'CodEmpresa': 1,
+                'CodFilial': 1,
+                'NomeFilial': 'Matriz',
+              },
+            ],
+            rowCount: 1,
+          ),
+        );
+      });
+
+      final result = await repository.loadPage(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        filter: const CadastroFilialFilter(
+          pageSize: CadastroFilialFilter.maxPageSize,
+        ),
+      );
+
+      check(result.isSuccess()).isTrue();
+      check(result.getOrThrow().items.single.codFilial).equals(1);
+      check(result.getOrThrow().fetchedPageSize).equals(
+        CadastroFilialFilter.defaultPageSize,
+      );
+      final captured = verify(
+        () => agentQueriesRepository.executeSql(captureAny()),
+      ).captured;
+      check(captured.length).equals(4);
+      final largeSimple = captured[2] as AgentSqlExecuteRequest;
+      final smallSimple = captured[3] as AgentSqlExecuteRequest;
+      check(largeSimple.sql).contains('SELECT TOP 500');
+      check(smallSimple.sql).contains('SELECT TOP 20');
     },
   );
 
@@ -472,7 +550,7 @@ void main() {
       final result = await repository.loadPage(
         userId: 'user-1',
         agentId: 'agent-1',
-        filter: const CadastroFilialFilter(branchOptionsProjection: true),
+        filter: const CadastroFilialFilter(),
       );
 
       check(result.isError()).isTrue();

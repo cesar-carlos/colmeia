@@ -30,14 +30,11 @@ import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries
 /// and combined LRU budget as single-query cache entries.
 class CachingAgentQueriesRepository implements AgentQueriesRepository {
   CachingAgentQueriesRepository({
-    required AgentQueriesRepository delegate,
-    Duration cacheTtl = defaultCacheTtl,
-    Duration? catalogCacheTtl,
-    int maxCacheSize = 500,
-  }) : _delegate = delegate,
-       _cacheTtl = cacheTtl,
-       _catalogCacheTtl = catalogCacheTtl,
-       _maxCacheSize = maxCacheSize;
+    required this._delegate,
+    this._cacheTtl = defaultCacheTtl,
+    this._catalogCacheTtl,
+    this._maxCacheSize = 500,
+  });
 
   static const Duration defaultCacheTtl = Duration(seconds: 3);
 

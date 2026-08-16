@@ -12,12 +12,10 @@ import 'package:uuid/uuid.dart';
 /// `docs/Features/socket/sql_cancel_contract_colmeia_map.md`.
 class AgentSqlCancelEmitter {
   AgentSqlCancelEmitter({
-    required AgentCommandSender sender,
-    Uuid uuid = const Uuid(),
-    Duration timeout = const Duration(seconds: 5),
-  }) : _sender = sender,
-       _uuid = uuid,
-       _timeout = timeout;
+    required this._sender,
+    this._uuid = const Uuid(),
+    this._timeout = const Duration(seconds: 5),
+  });
 
   final AgentCommandSender _sender;
   final Uuid _uuid;

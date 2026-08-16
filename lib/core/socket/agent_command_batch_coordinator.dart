@@ -25,14 +25,13 @@ import 'package:uuid/uuid.dart';
 /// same window share a single batch slot **and** the same Future.
 class AgentCommandBatchCoordinator implements AgentCommandSender {
   AgentCommandBatchCoordinator({
-    required AgentCommandSender directSender,
+    required this._directSender,
     Duration windowDuration = const Duration(milliseconds: 8),
     int maxBatchSize = 32,
     int minBatchSize = 1,
-    Duration defaultTimeout = const Duration(seconds: 20),
-    void Function({required int size, required bool partialFailure})?
-    onBatchEmission,
-    void Function({required String reason})? onBypass,
+    this._defaultTimeout = const Duration(seconds: 20),
+    this._onBatchEmission,
+    this._onBypass,
   }) : assert(
          windowDuration >= Duration.zero,
          'windowDuration must be >= 0',
@@ -43,14 +42,10 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
          minBatchSize <= maxBatchSize,
          'minBatchSize must be <= maxBatchSize',
        ),
-       _directSender = directSender,
        _windowDuration = windowDuration,
        // Hard-cap to the hub's documented limit even if the env passes more.
        _maxBatchSize = maxBatchSize > 32 ? 32 : maxBatchSize,
-       _minBatchSize = minBatchSize,
-       _defaultTimeout = defaultTimeout,
-       _onBatchEmission = onBatchEmission,
-       _onBypass = onBypass;
+       _minBatchSize = minBatchSize;
 
   final AgentCommandSender _directSender;
   final Duration _windowDuration;

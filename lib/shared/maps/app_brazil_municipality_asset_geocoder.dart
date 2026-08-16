@@ -5,8 +5,8 @@ import 'package:colmeia/shared/maps/app_location_resolver.dart';
 
 class AppBrazilMunicipalityAssetGeocoder implements AppLocationGeocoder {
   const AppBrazilMunicipalityAssetGeocoder({
-    Future<AppBrazilMunicipalityCentroidIndex> Function()? indexLoader,
-  }) : _indexLoader = indexLoader;
+    this._indexLoader,
+  });
 
   final Future<AppBrazilMunicipalityCentroidIndex> Function()? _indexLoader;
 

@@ -216,7 +216,7 @@ class _AppDropdownFieldState<T> extends State<AppDropdownField<T>> {
                                     if (hasBoundedWidth)
                                       Expanded(child: label)
                                     else
-                                      Flexible(child: label),
+                                      label,
                                     SizedBox(width: tokens.gapSm),
                                     AnimatedRotation(
                                       duration: const Duration(
@@ -762,17 +762,18 @@ class _MultiSelectChip extends StatelessWidget {
             ),
             if (onRemove != null) ...<Widget>[
               SizedBox(width: tokens.gapXs),
-              InkWell(
-                onTap: enabled ? onRemove : null,
-                borderRadius: BorderRadius.circular(999),
-                child: Padding(
-                  padding: const EdgeInsets.all(2),
-                  child: Icon(
-                    Icons.close_rounded,
-                    size: 14,
-                    color: scheme.onPrimary,
-                  ),
+              IconButton(
+                onPressed: enabled ? onRemove : null,
+                tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 32,
+                  minHeight: 32,
                 ),
+                iconSize: 14,
+                color: scheme.onPrimary,
+                icon: const Icon(Icons.close_rounded),
               ),
             ],
           ],

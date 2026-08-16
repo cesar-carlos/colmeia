@@ -6107,10 +6107,16 @@ abstract class AppLocalizations {
   /// **'List price versus replacement cost.'**
   String get salesMargemProdutoIntroSubtitle;
 
+  /// No description provided for @salesMargemProdutoColumnCodigo.
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get salesMargemProdutoColumnCodigo;
+
   /// No description provided for @salesMargemProdutoColumnProduto.
   ///
   /// In en, this message translates to:
-  /// **'Product'**
+  /// **'Product name'**
   String get salesMargemProdutoColumnProduto;
 
   /// No description provided for @salesMargemProdutoColumnCusto.
@@ -6128,14 +6134,8 @@ abstract class AppLocalizations {
   /// No description provided for @salesMargemProdutoColumnMarkup.
   ///
   /// In en, this message translates to:
-  /// **'Markup %'**
+  /// **'% Markup'**
   String get salesMargemProdutoColumnMarkup;
-
-  /// No description provided for @salesMargemProdutoColumnMargem.
-  ///
-  /// In en, this message translates to:
-  /// **'Gross margin %'**
-  String get salesMargemProdutoColumnMargem;
 
   /// No description provided for @salesMargemProdutoColumnGrupo.
   ///

@@ -14,14 +14,11 @@ import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcel
 class ResumoParcelaFormaPagamentoAcrossAgentsRepositoryImplV2
     implements ResumoParcelaFormaPagamentoAcrossAgentsRepositoryV2 {
   ResumoParcelaFormaPagamentoAcrossAgentsRepositoryImplV2({
-    required AgentQueryTargetResolver targetResolver,
-    required AgentQueryPlanBuilder planBuilder,
-    required AgentQueryExecutor<ResumoParcelaFormaPagamentoRowV2> executor,
-    required LoadResumoParcelaFormaPagamentoUseCaseV2 loadResumo,
-  }) : _targetResolver = targetResolver,
-       _planBuilder = planBuilder,
-       _executor = executor,
-       _loadResumo = loadResumo;
+    required this._targetResolver,
+    required this._planBuilder,
+    required this._executor,
+    required this._loadResumo,
+  });
 
   final AgentQueryTargetResolver _targetResolver;
   final AgentQueryPlanBuilder _planBuilder;

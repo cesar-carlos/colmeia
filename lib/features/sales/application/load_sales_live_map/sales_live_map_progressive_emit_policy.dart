@@ -11,8 +11,8 @@ import 'package:colmeia/features/sales/application/sales_live_map_reload_reason.
 /// paths: cancellation handling, completion metrics and load-mode flags.
 class SalesLiveMapProgressiveEmitPolicy {
   const SalesLiveMapProgressiveEmitPolicy({
-    required SalesLiveMapDiagnosticsLogger diagnosticsLogger,
-  }) : _diagnosticsLogger = diagnosticsLogger;
+    required this._diagnosticsLogger,
+  });
 
   final SalesLiveMapDiagnosticsLogger _diagnosticsLogger;
 

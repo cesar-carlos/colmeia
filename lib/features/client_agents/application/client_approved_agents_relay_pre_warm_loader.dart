@@ -14,12 +14,10 @@ import 'package:colmeia/features/client_agents/domain/entities/paginated_query.d
 ///   only references as a defensive upper bound.
 class ClientApprovedAgentsRelayPreWarmLoader {
   const ClientApprovedAgentsRelayPreWarmLoader({
-    required AuthSessionAccessor sessionAccessor,
-    required LoadClientApprovedAgentsUseCase loadApprovedAgentsUseCase,
-    int pageSize = defaultPageSize,
-  }) : _sessionAccessor = sessionAccessor,
-       _loadApprovedAgentsUseCase = loadApprovedAgentsUseCase,
-       _pageSize = pageSize;
+    required this._sessionAccessor,
+    required this._loadApprovedAgentsUseCase,
+    this._pageSize = defaultPageSize,
+  });
 
   /// Covers at least the first across-agent wave
   /// (`AGENT_QUERY_MERGE_ALL_CONCURRENCY`, default 4) while staying at or

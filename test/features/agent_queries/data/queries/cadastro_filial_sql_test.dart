@@ -97,8 +97,23 @@ void main() {
       expect(sql, contains('SELECT TOP 500'));
       expect(sql, contains('FROM Filial f'));
       expect(sql, contains('f.Nome AS NomeFilial'));
+      expect(sql, contains('AS TotalCount'));
       expect(sql, isNot(contains('ROW_NUMBER')));
       expect(sql, isNot(contains('LEFT JOIN Municipio')));
+      expect(sql, isNot(contains(':startRow')));
+    });
+
+    test('simpleQuery registration keeps Municipio join without CTE', () {
+      final sql = CadastroFilialSql.simpleQuery(
+        maxRows: 20,
+        startRow: 21,
+      );
+
+      expect(sql, contains('SELECT TOP 20 START AT 21'));
+      expect(sql, contains('LEFT JOIN Municipio m ON'));
+      expect(sql, contains('AS TotalCount'));
+      expect(sql, contains('f.CNPJ'));
+      expect(sql, isNot(contains('ROW_NUMBER')));
       expect(sql, isNot(contains(':startRow')));
     });
   });

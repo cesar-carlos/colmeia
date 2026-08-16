@@ -7,13 +7,10 @@ import 'package:colmeia/features/client_agents/domain/services/agent_connection_
 class AgentSqlExecutionEligibilityChecker
     implements AgentSqlExecutionEligibilityPort {
   AgentSqlExecutionEligibilityChecker({
-    required ClientAgentsRepository clientAgentsRepository,
-    AgentSqlExecutionEligibilityPolicy policy =
-        const AgentSqlExecutionEligibilityPolicy(),
-    Duration onlineAgentIdsCacheTtl = const Duration(seconds: 2),
-  }) : _clientAgentsRepository = clientAgentsRepository,
-       _policy = policy,
-       _onlineAgentIdsCacheTtl = onlineAgentIdsCacheTtl;
+    required this._clientAgentsRepository,
+    this._policy = const AgentSqlExecutionEligibilityPolicy(),
+    this._onlineAgentIdsCacheTtl = const Duration(seconds: 2),
+  });
 
   final ClientAgentsRepository _clientAgentsRepository;
   final AgentSqlExecutionEligibilityPolicy _policy;

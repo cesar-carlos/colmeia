@@ -44,14 +44,11 @@ final class OverviewCachedSections {
 /// same agent (reduces per-agent inflight on the bridge).
 final class OverviewCachedSectionLoader {
   OverviewCachedSectionLoader({
-    LoadResumoTotalDiarioVendasUseCase? loadDaily,
-    LoadResumoParcelasMensalUseCase? loadMonthly,
-    LoadResumoParcelasDiaSemanaUseCase? loadWeekday,
-    LoadResumoProdutoVendaLucratividadeUseCase? loadLucratividade,
-  }) : _loadDaily = loadDaily,
-       _loadMonthly = loadMonthly,
-       _loadWeekday = loadWeekday,
-       _loadLucratividade = loadLucratividade;
+    this._loadDaily,
+    this._loadMonthly,
+    this._loadWeekday,
+    this._loadLucratividade,
+  });
 
   final LoadResumoTotalDiarioVendasUseCase? _loadDaily;
   final LoadResumoParcelasMensalUseCase? _loadMonthly;

@@ -37,16 +37,13 @@ class OverviewController extends ChangeNotifier
     implements OverviewLoadOrchestrationHost {
   OverviewController(
     LoadOverviewUseCase loadOverviewUseCase, {
-    LoadOverviewSectionsUseCase? loadSectionsUseCase,
+    this._loadSectionsUseCase,
     RetryAfterGate? retryAfterGate,
-    AgentRpcCapabilitiesRegistry? agentRpcCapabilitiesRegistry,
+    this._agentRpcCapabilitiesRegistry,
     AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder,
-    OverviewShellCache? shellCache,
-  }) : _loadSectionsUseCase = loadSectionsUseCase,
-       _retryAfterGate = retryAfterGate ?? RetryAfterGate(),
+    this._shellCache,
+  }) : _retryAfterGate = retryAfterGate ?? RetryAfterGate(),
        _ownsRetryAfterGate = retryAfterGate == null,
-       _agentRpcCapabilitiesRegistry = agentRpcCapabilitiesRegistry,
-       _shellCache = shellCache,
        _session = OverviewLoadSession(
          relayCancelScopeBinder: relayCancelScopeBinder,
        ),

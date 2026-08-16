@@ -22,17 +22,11 @@ import 'package:uuid/uuid.dart';
 class RelayAgentQueriesRemoteDataSource
     implements AgentQueriesRemoteDataSource {
   RelayAgentQueriesRemoteDataSource({
-    required RelayCommandDispatcher dispatcher,
-    AgentSqlExecuteRequestToBridgeBody bodyMapper =
-        const AgentSqlExecuteRequestToBridgeBody(),
-    AgentSqlExecuteBatchRequestToBridgeBody batchBodyMapper =
-        const AgentSqlExecuteBatchRequestToBridgeBody(),
-    RelayPayloadFrameCompression compression =
-        RelayPayloadFrameCompression.auto,
-  }) : _dispatcher = dispatcher,
-       _bodyMapper = bodyMapper,
-       _batchBodyMapper = batchBodyMapper,
-       _compression = compression;
+    required this._dispatcher,
+    this._bodyMapper = const AgentSqlExecuteRequestToBridgeBody(),
+    this._batchBodyMapper = const AgentSqlExecuteBatchRequestToBridgeBody(),
+    this._compression = RelayPayloadFrameCompression.auto,
+  });
 
   final RelayCommandDispatcher _dispatcher;
   final AgentSqlExecuteRequestToBridgeBody _bodyMapper;
@@ -48,8 +42,7 @@ class RelayAgentQueriesRemoteDataSource
     if (cancelScope?.isCancelled ?? false) {
       return Future.error(
         const RelayRequestCancelled(
-          message:
-              'postSqlExecute skipped: AgentQueriesCancelScope already cancelled',
+          message: 'postSqlExecute skipped: AgentQueriesCancelScope already cancelled',
         ),
       );
     }
@@ -88,8 +81,7 @@ class RelayAgentQueriesRemoteDataSource
     if (cancelScope?.isCancelled ?? false) {
       return Future.error(
         const RelayRequestCancelled(
-          message:
-              'postSqlExecuteBatch skipped: AgentQueriesCancelScope already cancelled',
+          message: 'postSqlExecuteBatch skipped: AgentQueriesCancelScope already cancelled',
         ),
       );
     }

@@ -34,22 +34,14 @@ abstract interface class ClientAgentDetailConnectionHost {
 
 class ClientAgentDetailConnectionCoordinator {
   ClientAgentDetailConnectionCoordinator({
-    required ClientAgentDetailConnectionHost host,
-    required GetClientAgentTokenUseCase getClientAgentTokenUseCase,
-    required SaveClientAgentTokenUseCase saveClientAgentTokenUseCase,
-    required RemoveClientAgentTokenUseCase removeClientAgentTokenUseCase,
-    required RefreshAgentProfileUseCase refreshAgentProfileUseCase,
-    required PersistClientAgentProfileSnapshotUseCase
-    persistClientAgentProfileSnapshotUseCase,
-    required LoadClientTokenPolicyUseCase loadClientTokenPolicyUseCase,
-  }) : _host = host,
-       _getClientAgentTokenUseCase = getClientAgentTokenUseCase,
-       _saveClientAgentTokenUseCase = saveClientAgentTokenUseCase,
-       _removeClientAgentTokenUseCase = removeClientAgentTokenUseCase,
-       _refreshAgentProfileUseCase = refreshAgentProfileUseCase,
-       _persistClientAgentProfileSnapshotUseCase =
-           persistClientAgentProfileSnapshotUseCase,
-       _loadClientTokenPolicyUseCase = loadClientTokenPolicyUseCase;
+    required this._host,
+    required this._getClientAgentTokenUseCase,
+    required this._saveClientAgentTokenUseCase,
+    required this._removeClientAgentTokenUseCase,
+    required this._refreshAgentProfileUseCase,
+    required this._persistClientAgentProfileSnapshotUseCase,
+    required this._loadClientTokenPolicyUseCase,
+  });
 
   final ClientAgentDetailConnectionHost _host;
   final GetClientAgentTokenUseCase _getClientAgentTokenUseCase;

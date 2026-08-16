@@ -20,16 +20,12 @@ import 'package:result_dart/result_dart.dart';
 class CadastroFilialAcrossAgentsRepositoryImpl
     implements CadastroFilialAcrossAgentsRepository {
   CadastroFilialAcrossAgentsRepositoryImpl({
-    required AgentQueryTargetResolver targetResolver,
-    required AgentQueryPlanBuilder planBuilder,
-    required AgentQueryExecutor<CadastroFilialRow> executor,
-    required LoadCadastroFilialPageUseCase loadCadastroFilial,
-    DateTime Function()? now,
-  }) : _targetResolver = targetResolver,
-       _planBuilder = planBuilder,
-       _executor = executor,
-       _loadCadastroFilial = loadCadastroFilial,
-       _now = now;
+    required this._targetResolver,
+    required this._planBuilder,
+    required this._executor,
+    required this._loadCadastroFilial,
+    this._now,
+  });
 
   final AgentQueryTargetResolver _targetResolver;
   final AgentQueryPlanBuilder _planBuilder;
@@ -196,11 +192,12 @@ class CadastroFilialAcrossAgentsRepositoryImpl
     var page = 1;
     int? totalCount;
     var paginationStalled = false;
+    var chunkSize = CadastroFilialFilter.maxPageSize;
 
     while (page <= _maxAllPagesPerAgent) {
       final pageFilter = filter.copyWith(
         page: page,
-        pageSize: CadastroFilialFilter.maxPageSize,
+        pageSize: chunkSize,
       );
       final result = await _loadCadastroFilial(
         userId: userId,
@@ -220,6 +217,7 @@ class CadastroFilialAcrossAgentsRepositoryImpl
       }
 
       totalCount ??= loaded.totalCount;
+      chunkSize = loaded.fetchedPageSize ?? chunkSize;
       var newRowCount = 0;
       for (final row in loaded.items) {
         if (!seenRowKeys.add(_rowKey(row.codEmpresa, row.codFilial))) {
@@ -247,8 +245,7 @@ class CadastroFilialAcrossAgentsRepositoryImpl
         break;
       }
 
-      if (rows.length >= loaded.totalCount ||
-          loaded.items.length < CadastroFilialFilter.maxPageSize) {
+      if (rows.length >= loaded.totalCount || loaded.items.length < chunkSize) {
         break;
       }
       page += 1;

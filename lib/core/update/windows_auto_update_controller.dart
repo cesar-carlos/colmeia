@@ -13,16 +13,12 @@ import 'package:flutter/foundation.dart';
 
 class WindowsAutoUpdateController extends ChangeNotifier with UpdaterListener {
   WindowsAutoUpdateController({
-    required AutoUpdaterClient autoUpdaterClient,
-    required AppcastProbeClient appcastProbeClient,
-    required String Function() feedUrlResolver,
-    required AppUserPreferencesStore preferencesStore,
+    required this._autoUpdaterClient,
+    required this._appcastProbeClient,
+    required this._feedUrlResolver,
+    required this._preferencesStore,
     bool Function()? supportsNativeUpdates,
-  }) : _autoUpdaterClient = autoUpdaterClient,
-       _appcastProbeClient = appcastProbeClient,
-       _feedUrlResolver = feedUrlResolver,
-       _preferencesStore = preferencesStore,
-       _supportsNativeUpdates =
+  }) : _supportsNativeUpdates =
            supportsNativeUpdates ?? _defaultSupportsNativeUpdates;
 
   static const int scheduledCheckIntervalInSeconds = 3600;

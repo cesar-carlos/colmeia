@@ -28,12 +28,10 @@ abstract interface class SocketAuthTokenProvider {
 /// Default implementation backed by the existing auth coordinators.
 class SessionSocketAuthTokenProvider implements SocketAuthTokenProvider {
   SessionSocketAuthTokenProvider({
-    required AuthSessionAccessor sessionAccessor,
-    required AuthRefreshCoordinator refreshCoordinator,
-    required AuthSessionEvents sessionEvents,
-  }) : _sessionAccessor = sessionAccessor,
-       _refreshCoordinator = refreshCoordinator,
-       _sessionEvents = sessionEvents;
+    required this._sessionAccessor,
+    required this._refreshCoordinator,
+    required this._sessionEvents,
+  });
 
   final AuthSessionAccessor _sessionAccessor;
   final AuthRefreshCoordinator _refreshCoordinator;

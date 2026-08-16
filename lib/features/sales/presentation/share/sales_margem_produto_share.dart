@@ -4,7 +4,6 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
-import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 
 ChartShareMetadata buildSalesMargemProdutoShareMetadata({
@@ -26,7 +25,6 @@ ChartShareMetadata buildSalesMargemProdutoShareMetadata({
   return ChartShareMetadata(
     title: l10n.salesCardMargemProdutoTitle,
     subtitle: l10n.salesMargemProdutoIntroSubtitle,
-    pdfOrientation: ChartSharePdfOrientation.landscape,
     includeChartImage: false,
     filterSummary: buildChartSharePdfFilterSummary(
       exportHeaderContext: exportHeaderContext,

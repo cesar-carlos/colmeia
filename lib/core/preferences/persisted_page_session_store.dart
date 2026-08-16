@@ -5,10 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Small helper to persist page/session state snapshots in SharedPreferences.
 class PersistedPageSessionStore {
   PersistedPageSessionStore({
-    required SharedPreferences prefs,
-    required String namespace,
-  }) : _prefs = prefs,
-       _namespace = namespace;
+    required this._prefs,
+    required this._namespace,
+  });
 
   final SharedPreferences _prefs;
   final String _namespace;

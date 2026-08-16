@@ -16,16 +16,12 @@ import 'package:flutter/foundation.dart';
 
 class AuthController extends ChangeNotifier implements AuthenticationGate {
   AuthController({
-    required LoginUseCase loginUseCase,
-    required LogoutUseCase logoutUseCase,
-    required RestoreSessionUseCase restoreSessionUseCase,
-    required AuthSessionEvents authSessionEvents,
-    required AuthRegistrationPreferencesService registrationPreferencesService,
-  }) : _loginUseCase = loginUseCase,
-       _logoutUseCase = logoutUseCase,
-       _restoreSessionUseCase = restoreSessionUseCase,
-       _authSessionEvents = authSessionEvents,
-       _registrationPreferencesService = registrationPreferencesService {
+    required this._loginUseCase,
+    required this._logoutUseCase,
+    required this._restoreSessionUseCase,
+    required this._authSessionEvents,
+    required this._registrationPreferencesService,
+  }) {
     _authSessionEventsSubscription = _authSessionEvents.stream.listen(
       _handleAuthSessionEvent,
     );

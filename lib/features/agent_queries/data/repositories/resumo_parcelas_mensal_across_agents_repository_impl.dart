@@ -15,14 +15,11 @@ import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcel
 class ResumoParcelasMensalAcrossAgentsRepositoryImpl
     implements ResumoParcelasMensalAcrossAgentsRepository {
   ResumoParcelasMensalAcrossAgentsRepositoryImpl({
-    required AgentQueryTargetResolver targetResolver,
-    required AgentQueryPlanBuilder planBuilder,
-    required AgentQueryExecutor<ResumoParcelasMensalRow> executor,
-    required LoadResumoParcelasMensalUseCase loadResumo,
-  }) : _targetResolver = targetResolver,
-       _planBuilder = planBuilder,
-       _executor = executor,
-       _loadResumo = loadResumo;
+    required this._targetResolver,
+    required this._planBuilder,
+    required this._executor,
+    required this._loadResumo,
+  });
 
   final AgentQueryTargetResolver _targetResolver;
   final AgentQueryPlanBuilder _planBuilder;

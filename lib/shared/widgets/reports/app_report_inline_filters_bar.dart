@@ -406,31 +406,35 @@ class _InlineFilterField extends StatelessWidget {
         ? '${_fmtDate(current.start)} – ${_fmtDate(current.end)}'
         : l10n.reportInlineFiltersSelectPeriod;
 
-    return GestureDetector(
-      onTap: isLoading
-          ? null
-          : () async {
-              final picked = await showDateRangePicker(
-                context: context,
-                firstDate: DateTime(2000),
-                lastDate: DateTime(2100),
-                initialDateRange: current,
-                builder: (ctx, child) => Theme(data: theme, child: child!),
-              );
-              if (picked != null) {
-                final updated = Map<String, Object?>.from(currentValues)
-                  ..[descriptor.name] = picked;
-                onChanged(updated);
-              }
-            },
-      child: _CompactDateButton(
-        tokens: tokens,
-        icon: Icons.date_range_rounded,
-        label: label,
-        hasValue: current != null,
-        width: 210,
-        typography: typography,
-        theme: theme,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isLoading
+            ? null
+            : () async {
+                final picked = await showDateRangePicker(
+                  context: context,
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                  initialDateRange: current,
+                  builder: (ctx, child) => Theme(data: theme, child: child!),
+                );
+                if (picked != null) {
+                  final updated = Map<String, Object?>.from(currentValues)
+                    ..[descriptor.name] = picked;
+                  onChanged(updated);
+                }
+              },
+        borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+        child: _CompactDateButton(
+          tokens: tokens,
+          icon: Icons.date_range_rounded,
+          label: label,
+          hasValue: current != null,
+          width: 210,
+          typography: typography,
+          theme: theme,
+        ),
       ),
     );
   }
@@ -445,30 +449,34 @@ class _InlineFilterField extends StatelessWidget {
         ? _fmtDate(current)
         : l10n.reportInlineFiltersSelectDate;
 
-    return GestureDetector(
-      onTap: isLoading
-          ? null
-          : () async {
-              final picked = await showDatePicker(
-                context: context,
-                firstDate: DateTime(2000),
-                lastDate: DateTime(2100),
-                initialDate: current ?? DateTime.now(),
-              );
-              if (picked != null) {
-                final updated = Map<String, Object?>.from(currentValues)
-                  ..[descriptor.name] = picked;
-                onChanged(updated);
-              }
-            },
-      child: _CompactDateButton(
-        tokens: tokens,
-        icon: Icons.calendar_today_rounded,
-        label: label,
-        hasValue: current != null,
-        width: 160,
-        typography: typography,
-        theme: theme,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isLoading
+            ? null
+            : () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                  initialDate: current ?? DateTime.now(),
+                );
+                if (picked != null) {
+                  final updated = Map<String, Object?>.from(currentValues)
+                    ..[descriptor.name] = picked;
+                  onChanged(updated);
+                }
+              },
+        borderRadius: BorderRadius.circular(tokens.formFieldRadius),
+        child: _CompactDateButton(
+          tokens: tokens,
+          icon: Icons.calendar_today_rounded,
+          label: label,
+          hasValue: current != null,
+          width: 160,
+          typography: typography,
+          theme: theme,
+        ),
       ),
     );
   }
@@ -518,7 +526,7 @@ class _CompactDateButton extends StatelessWidget {
       child: Row(
         children: <Widget>[
           Icon(icon, size: 16, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 8),
+          SizedBox(width: tokens.gapSm),
           Expanded(
             child: Text(
               label,

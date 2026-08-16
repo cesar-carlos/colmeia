@@ -16,19 +16,19 @@ import 'package:colmeia/features/overview/presentation/controllers/overview_load
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/foundation.dart';
 
-typedef OverviewChartFailureMessageBuilder =
-    String Function(AppFailure failure);
+typedef OverviewChartFailureMessageBuilder = String Function(
+  AppFailure failure,
+);
 
 class OverviewChartDetailController extends ChangeNotifier {
   OverviewChartDetailController({
     required String chartId,
-    required LoadOverviewSectionsUseCase loadOverviewSectionsUseCase,
+    required this._loadOverviewSectionsUseCase,
     required OverviewShellCache shellCache,
     DashboardFilter? initialFilter,
     RetryAfterGate? retryAfterGate,
     OverviewRelayCancelScopeBinder? relayCancelScopeBinder,
   }) : _chartId = chartId,
-       _loadOverviewSectionsUseCase = loadOverviewSectionsUseCase,
        _shellCache = shellCache,
        _retryAfterGate = retryAfterGate ?? RetryAfterGate(),
        _ownsRetryAfterGate = retryAfterGate == null,

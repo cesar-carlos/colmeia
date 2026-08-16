@@ -7,16 +7,12 @@ import 'package:dio/dio.dart';
 
 class AuthInterceptor extends QueuedInterceptor {
   AuthInterceptor({
-    required Dio dio,
-    required AuthSessionAccessor sessionAccessor,
-    required AuthRefreshCoordinator refreshCoordinator,
-    Duration proactiveRefreshWindow = defaultProactiveRefreshWindow,
+    required this._dio,
+    required this._sessionAccessor,
+    required this._refreshCoordinator,
+    this._proactiveRefreshWindow = defaultProactiveRefreshWindow,
     DateTime Function()? clock,
-  }) : _dio = dio,
-       _sessionAccessor = sessionAccessor,
-       _refreshCoordinator = refreshCoordinator,
-       _proactiveRefreshWindow = proactiveRefreshWindow,
-       _clock = clock ?? DateTime.now;
+  }) : _clock = clock ?? DateTime.now;
 
   /// Default 30 s — wide enough to absorb mobile clock drift / NTP
   /// jitter and small enough not to refresh tokens that still have

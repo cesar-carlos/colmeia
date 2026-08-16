@@ -26,7 +26,7 @@ class SentryAppLogSink implements AppLogSink {
   /// `bootstrap.dart`) leaves this `null`, falling back to the
   /// process-wide hub via the public top-level helpers
   /// (`Sentry.captureException`, etc.).
-  SentryAppLogSink({Hub? hub}) : _hub = hub;
+  SentryAppLogSink({this._hub});
 
   final Hub? _hub;
 

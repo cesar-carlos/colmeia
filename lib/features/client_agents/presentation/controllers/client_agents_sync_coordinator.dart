@@ -71,12 +71,10 @@ abstract interface class ClientAgentsSyncHost {
 /// auto-sync scheduler that fires after enqueue when the gate is open.
 class ClientAgentsSyncCoordinator {
   ClientAgentsSyncCoordinator({
-    required ClientAgentsSyncHost host,
-    required SyncPendingClientAgentActionsUseCase syncPendingActionsUseCase,
+    required this._host,
+    required this._syncPendingActionsUseCase,
     RetryAfterGate? syncRetryAfterGate,
-  }) : _host = host,
-       _syncPendingActionsUseCase = syncPendingActionsUseCase,
-       _syncRetryAfterGate = syncRetryAfterGate ?? RetryAfterGate(),
+  }) : _syncRetryAfterGate = syncRetryAfterGate ?? RetryAfterGate(),
        _ownsSyncRetryAfterGate = syncRetryAfterGate == null {
     _syncRetryAfterGate.addListener(_handleSyncRetryAfterGateChanged);
   }

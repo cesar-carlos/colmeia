@@ -179,24 +179,23 @@ class AppMetricStatCard extends StatelessWidget {
         ? style.borderRadius!.resolve(direction)
         : BorderRadius.circular(tokens.cardRadius);
 
+    final resolvedPadding =
+        style.cardPadding ?? EdgeInsets.all(tokens.contentSpacing);
+    final isTappable = onTap != null;
     Widget child = AppSectionCard(
       color: _resolvedCardColor(colors),
-      padding: style.cardPadding,
+      padding: isTappable ? EdgeInsets.zero : style.cardPadding,
       borderRadius: style.borderRadius,
       borderSide: style.borderSide,
       decoration: style.cardDecoration,
-      child: body,
+      child: isTappable
+          ? InkWell(
+              onTap: onTap,
+              borderRadius: inkWellBorderRadius,
+              child: Padding(padding: resolvedPadding, child: body),
+            )
+          : body,
     );
-    if (onTap != null) {
-      child = Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: inkWellBorderRadius,
-          child: child,
-        ),
-      );
-    }
     final resolvedTooltipMessage = tooltipMessage;
     if (resolvedTooltipMessage != null &&
         resolvedTooltipMessage.trim().isNotEmpty) {
@@ -328,7 +327,9 @@ class _MetricStatClassicLayout extends StatelessWidget {
                 children: <Widget>[
                   card.leading,
                   SizedBox(width: leadingSpacing),
-                  resolvedTrend ?? const SizedBox.shrink(),
+                  Flexible(
+                    child: resolvedTrend ?? const SizedBox.shrink(),
+                  ),
                 ],
               )
             : Row(

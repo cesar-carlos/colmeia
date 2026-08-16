@@ -89,28 +89,32 @@ class BrazilMapChartDesktopBranchSidebarCollapsedOverlay
           key: const ValueKey<String>(
             'brazil-store-sales-map-sidebar-collapsed',
           ),
-          child: AppSectionCard(
-            color: colorScheme.surface.withValues(alpha: 0.94),
-            borderRadius: BorderRadius.circular(
-              BrazilMapLayoutConstants.floatingMapOverlaySurfaceRadius,
-            ),
-            borderSide: BorderSide(
-              color: appColors.secondary.withValues(alpha: 0.12),
-            ),
-            padding: EdgeInsets.zero,
-            child: Tooltip(
-              message: l10n.brazilStoreSalesMapSidebarExpandTooltip,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(
-                  BrazilMapLayoutConstants.floatingMapOverlaySurfaceRadius,
-                ),
-                onTap: onExpand,
-                child: Padding(
-                  padding: EdgeInsets.all(tokens.gapSm),
-                  child: Icon(
-                    Icons.chevron_right_rounded,
-                    color: appColors.secondary,
-                    size: 18,
+          child: Semantics(
+            button: true,
+            label: l10n.brazilStoreSalesMapSidebarExpandTooltip,
+            child: AppSectionCard(
+              color: colorScheme.surface.withValues(alpha: 0.94),
+              borderRadius: BorderRadius.circular(
+                BrazilMapLayoutConstants.floatingMapOverlaySurfaceRadius,
+              ),
+              borderSide: BorderSide(
+                color: appColors.secondary.withValues(alpha: 0.12),
+              ),
+              padding: EdgeInsets.zero,
+              child: Tooltip(
+                message: l10n.brazilStoreSalesMapSidebarExpandTooltip,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(
+                    BrazilMapLayoutConstants.floatingMapOverlaySurfaceRadius,
+                  ),
+                  onTap: onExpand,
+                  child: Padding(
+                    padding: EdgeInsets.all(tokens.gapSm),
+                    child: Icon(
+                      Icons.chevron_right_rounded,
+                      color: appColors.secondary,
+                      size: 18,
+                    ),
                   ),
                 ),
               ),

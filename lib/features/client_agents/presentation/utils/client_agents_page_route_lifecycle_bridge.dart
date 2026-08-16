@@ -1,10 +1,11 @@
-typedef ClientAgentsScreenVisibilitySetter =
-    void Function({required bool isVisible});
+typedef ClientAgentsScreenVisibilitySetter = void Function({
+  required bool isVisible,
+});
 
 class ClientAgentsPageRouteLifecycleBridge {
   const ClientAgentsPageRouteLifecycleBridge({
-    required ClientAgentsScreenVisibilitySetter setScreenVisible,
-  }) : _setScreenVisible = setScreenVisible;
+    required this._setScreenVisible,
+  });
 
   final ClientAgentsScreenVisibilitySetter _setScreenVisible;
 

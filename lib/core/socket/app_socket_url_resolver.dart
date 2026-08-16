@@ -10,10 +10,9 @@ import 'package:colmeia/core/network/app_dio_client.dart';
 /// See `docs/Features/consumer_socket_connection_design.md` §3.
 class AppSocketUrlResolver {
   AppSocketUrlResolver({
-    required String rawApiBaseUrl,
-    String namespace = '/consumers',
-  }) : _rawApiBaseUrl = rawApiBaseUrl,
-       _namespace = namespace;
+    required this._rawApiBaseUrl,
+    this._namespace = '/consumers',
+  });
 
   final String _rawApiBaseUrl;
   final String _namespace;

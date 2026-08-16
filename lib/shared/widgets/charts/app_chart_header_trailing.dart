@@ -72,6 +72,7 @@ class _AppChartHeaderTrailingState extends State<AppChartHeaderTrailing> {
     }
     _shareListenable!.removeListener(_onShareProgressChanged);
     _shareListenable = null;
+    ChartShareGuard.releaseListenable(key);
   }
 
   void _onShareProgressChanged() {

@@ -6,12 +6,10 @@ import 'package:flutter/foundation.dart';
 
 class ClientAccountSettingsController extends ChangeNotifier {
   ClientAccountSettingsController({
-    required UpdateCurrentUserProfileUseCase updateCurrentUserProfileUseCase,
-    required UploadClientThumbnailUseCase uploadClientThumbnailUseCase,
-    required ChangePasswordUseCase changePasswordUseCase,
-  }) : _updateCurrentUserProfileUseCase = updateCurrentUserProfileUseCase,
-       _uploadClientThumbnailUseCase = uploadClientThumbnailUseCase,
-       _changePasswordUseCase = changePasswordUseCase;
+    required this._updateCurrentUserProfileUseCase,
+    required this._uploadClientThumbnailUseCase,
+    required this._changePasswordUseCase,
+  });
 
   final UpdateCurrentUserProfileUseCase _updateCurrentUserProfileUseCase;
   final UploadClientThumbnailUseCase _uploadClientThumbnailUseCase;

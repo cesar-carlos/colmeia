@@ -20,15 +20,12 @@ import 'package:result_dart/result_dart.dart';
 class AgentQueryTargetResolverImpl
     implements AgentQueryTargetResolver, AgentQueryTargetResolutionInvalidator {
   AgentQueryTargetResolverImpl({
-    required ClientAgentsRepository clientAgentsRepository,
-    required AgentClientTokenReader clientTokenReader,
-    required AgentQueryTargetResolutionCache resolutionCache,
+    required this._clientAgentsRepository,
+    required this._clientTokenReader,
+    required this._resolutionCache,
     AgentSqlExecutionEligibilityPolicy policy =
         const AgentSqlExecutionEligibilityPolicy(),
-  }) : _clientAgentsRepository = clientAgentsRepository,
-       _clientTokenReader = clientTokenReader,
-       _resolutionCache = resolutionCache,
-       _presencePolicy = policy;
+  }) : _presencePolicy = policy;
 
   final ClientAgentsRepository _clientAgentsRepository;
   final AgentClientTokenReader _clientTokenReader;

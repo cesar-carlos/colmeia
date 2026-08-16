@@ -21,13 +21,12 @@ class AppReportGridSource<T> extends DataGridSource {
   AppReportGridSource({
     required List<T> rows,
     required List<AppReportColumn<T>> visibleColumns,
-    required BuildContext context,
+    required this._context,
     this.onSortChanged,
     this.alternateRowColor,
     this.dataTextStyle,
   }) : _rows = List<T>.from(rows),
-       _columns = List<AppReportColumn<T>>.from(visibleColumns),
-       _context = context {
+       _columns = List<AppReportColumn<T>>.from(visibleColumns) {
     _buildRows();
   }
 

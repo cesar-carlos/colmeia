@@ -107,6 +107,9 @@ class _AppTabViewState extends State<AppTabView> {
   }
 
   int _clampIndex(int index) {
+    if (widget.items.isEmpty) {
+      return 0;
+    }
     return index.clamp(0, widget.items.length - 1);
   }
 
@@ -136,7 +139,12 @@ class _AppTabViewState extends State<AppTabView> {
     return ValueListenableBuilder<int>(
       valueListenable: _selectedIndex,
       builder: (context, selectedIndex, _) {
-        final selectedItem = widget.items[selectedIndex];
+        if (widget.items.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final safeIndex = _clampIndex(selectedIndex);
+        final selectedItem = widget.items[safeIndex];
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -146,7 +154,6 @@ class _AppTabViewState extends State<AppTabView> {
               child: Row(
                 children: List<Widget>.generate(widget.items.length, (index) {
                   final item = widget.items[index];
-                  final isSelected = index == selectedIndex;
 
                   return Padding(
                     padding: EdgeInsets.only(
@@ -157,7 +164,7 @@ class _AppTabViewState extends State<AppTabView> {
                     child: _AppTabViewTrigger(
                       label: item.label,
                       semanticLabel: item.semanticLabel,
-                      isSelected: isSelected,
+                      isSelected: index == safeIndex,
                       onPressed: () => _handleTabChange(index),
                     ),
                   );
@@ -179,7 +186,7 @@ class _AppTabViewState extends State<AppTabView> {
                 switchInCurve: Curves.easeOutCubic,
                 switchOutCurve: Curves.easeInCubic,
                 child: KeyedSubtree(
-                  key: ValueKey<String>(selectedItem.label),
+                  key: ValueKey<int>(safeIndex),
                   child: selectedItem.child,
                 ),
               ),

@@ -11,10 +11,9 @@ import 'package:flutter/foundation.dart';
 
 class RegisterPageController extends ChangeNotifier {
   RegisterPageController({
-    required RegisterUseCase registerUseCase,
-    required AuthRegistrationPreferencesService preferencesService,
-  }) : _registerUseCase = registerUseCase,
-       _preferencesService = preferencesService;
+    required this._registerUseCase,
+    required this._preferencesService,
+  });
 
   final RegisterUseCase _registerUseCase;
   final AuthRegistrationPreferencesService _preferencesService;

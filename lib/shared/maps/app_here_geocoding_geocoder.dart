@@ -6,12 +6,10 @@ import 'package:dio/dio.dart';
 
 class AppHereGeocodingGeocoder implements AppLocationGeocoder {
   AppHereGeocodingGeocoder({
-    required Dio dio,
-    required String apiKey,
-    String endpointUrl = _defaultEndpointUrl,
-  }) : _dio = dio,
-       _apiKey = apiKey,
-       _endpointUrl = endpointUrl;
+    required this._dio,
+    required this._apiKey,
+    this._endpointUrl = _defaultEndpointUrl,
+  });
 
   static const String _defaultEndpointUrl =
       'https://geocode.search.hereapi.com/v1/geocode';

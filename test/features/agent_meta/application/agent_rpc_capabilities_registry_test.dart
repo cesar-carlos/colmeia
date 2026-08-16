@@ -186,11 +186,10 @@ class _ProgrammableMetaRepository implements AgentMetaRepository {
   _ProgrammableMetaRepository({
     Map<String, AgentRpcDescriptor>? discoverByAgentId,
     Map<String, AppFailure>? failureByAgentId,
-    Future<AppResult<AgentRpcDescriptor>>? Function(String)? discoverFuture,
+    this._discoverFuture,
   }) : _discoverByAgentId =
            discoverByAgentId ?? const <String, AgentRpcDescriptor>{},
-       _failureByAgentId = failureByAgentId ?? const <String, AppFailure>{},
-       _discoverFuture = discoverFuture;
+       _failureByAgentId = failureByAgentId ?? const <String, AppFailure>{};
 
   final Map<String, AgentRpcDescriptor> _discoverByAgentId;
   final Map<String, AppFailure> _failureByAgentId;

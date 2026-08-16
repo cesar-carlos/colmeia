@@ -8,10 +8,9 @@ import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel
 class RoutingRelayAgentQueriesRemoteDataSource
     implements AgentQueriesRemoteDataSource {
   RoutingRelayAgentQueriesRemoteDataSource({
-    required AgentQueriesRemoteDataSource unaryDelegate,
-    required AgentQueriesRemoteDataSource streamingDelegate,
-  }) : _unaryDelegate = unaryDelegate,
-       _streamingDelegate = streamingDelegate;
+    required this._unaryDelegate,
+    required this._streamingDelegate,
+  });
 
   final AgentQueriesRemoteDataSource _unaryDelegate;
   final AgentQueriesRemoteDataSource _streamingDelegate;

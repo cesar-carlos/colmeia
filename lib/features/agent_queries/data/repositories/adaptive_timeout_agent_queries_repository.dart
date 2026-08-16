@@ -34,14 +34,11 @@ import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries
 /// defaults for null RPC timeouts.
 class AdaptiveTimeoutAgentQueriesRepository implements AgentQueriesRepository {
   AdaptiveTimeoutAgentQueriesRepository({
-    required AgentQueriesRepository delegate,
-    double safetyMultiplier = 3.0,
-    Duration minTimeout = const Duration(seconds: 10),
-    Duration maxTimeout = const Duration(seconds: 180),
-  }) : _delegate = delegate,
-       _safetyMultiplier = safetyMultiplier,
-       _minTimeout = minTimeout,
-       _maxTimeout = maxTimeout;
+    required this._delegate,
+    this._safetyMultiplier = 3.0,
+    this._minTimeout = const Duration(seconds: 10),
+    this._maxTimeout = const Duration(seconds: 180),
+  });
 
   final AgentQueriesRepository _delegate;
   final double _safetyMultiplier;

@@ -46,18 +46,13 @@ abstract interface class ClientAgentsPresenceHost {
 /// a no-op, preserving the legacy `Refresh`-only UX.
 class ClientAgentsPresenceCoordinator {
   ClientAgentsPresenceCoordinator({
-    required ClientAgentsPresenceHost host,
-    required LoadClientAgentDetailUseCase loadClientAgentDetailUseCase,
-    required Duration hintConfirmDelay,
-    ObserveAgentPresenceUseCase? observeAgentPresenceUseCase,
-    AgentPresencePoller? agentPresencePoller,
-    ConsumerSocketConnection? consumerSocketConnection,
-  }) : _host = host,
-       _loadClientAgentDetailUseCase = loadClientAgentDetailUseCase,
-       _hintConfirmDelay = hintConfirmDelay,
-       _observeAgentPresenceUseCase = observeAgentPresenceUseCase,
-       _agentPresencePoller = agentPresencePoller,
-       _consumerSocketConnection = consumerSocketConnection;
+    required this._host,
+    required this._loadClientAgentDetailUseCase,
+    required this._hintConfirmDelay,
+    this._observeAgentPresenceUseCase,
+    this._agentPresencePoller,
+    this._consumerSocketConnection,
+  });
 
   final ClientAgentsPresenceHost _host;
   final LoadClientAgentDetailUseCase _loadClientAgentDetailUseCase;

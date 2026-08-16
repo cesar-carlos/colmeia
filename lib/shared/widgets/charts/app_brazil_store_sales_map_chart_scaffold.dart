@@ -102,107 +102,20 @@ class _BrazilMapChartScaffold extends StatelessWidget {
               )
             : mapAreaHeight;
         Widget buildRegionMap(double height) {
-          return state._wrapRegionMapForTouchGestures(
-            RepaintBoundary(
-              child: AppRegionMapChart<AppBrazilStoreSalesStateBucket>(
-                mapDefinition:
-                    AppBrazilMapStaticData.resolveBrazilUfMapDefinition(),
-                items: snapshot.buckets,
-                metrics: state._buildMetrics(l10n),
-                selectedMetricKey: state._selectedMetric.key,
-                selectedRegionKey: selectedRegionKey,
-                regionKeyBuilder: (bucket) => bucket.uf,
-                regionLabelBuilder: (bucket) => stateLabels.labelFor(
-                  bucket,
-                  compact: usesCompactStateLabels,
-                ),
-                scopeOptions: chart.style.showRegionFilter
-                    ? AppBrazilStoreSalesMapLocalizations.regionScopeOptions(
-                        l10n,
-                      )
-                    : const <AppMapScopeOption>[],
-                activeScopeKey: state._activeRegionKey,
-                preferredViewport: preferredViewport,
-                resetViewport: resetViewport,
-                onResetViewport: state._handleResetViewport,
-                lifecycleRecoveryRequestId: chart.lifecycleRecoveryRequestId,
-                points: snapshot.mapPoints,
-                markerStyle: AppMapMarkerStyle(
-                  size: chart.style.markerMinSize,
-                  color: state._markerPresenter.markerColor(context),
-                  strokeColor: state._markerPresenter.markerStrokeColor(
-                    context,
-                  ),
-                ),
-                markerBuilder: (context, point, index) {
-                  return ValueListenableBuilder<BrazilMapMarkerSelection>(
-                    valueListenable: state._markerSelection,
-                    builder: (context, selection, _) {
-                      return state._markerPresenter.buildMarker(
-                        context,
-                        point,
-                        index,
-                        selection,
-                        usesCompactBranchSheet: usesCompactBranchSheet,
-                      );
-                    },
-                  );
-                },
-                markerTooltipBuilder: state._useWindowsSafeMarkerDetails
-                    ? null
-                    : state._markerPresenter.buildMarkerTooltip,
-                onMetricChanged: state._showsFloatingMetricSelector
-                    ? null
-                    : state._handleMetricChanged,
-                onScopeChanged: state._showsFloatingScopeSelector
-                    ? null
-                    : chart.style.showRegionFilter
-                    ? state._handleScopeChanged
-                    : null,
-                onRegionTapEvent: state._handleStateTap,
-                onPointTap: state._pointInteraction.handlePointTap,
-                onViewportChanged: state._handleRegionMapViewportChanged,
-                viewportController: state._viewportController,
-                preset: chart.style.enableZoomPan
-                    ? AppChartPreset.explorable
-                    : AppChartPreset.standard,
-                style: AppRegionMapChartStyle(
-                  height: height,
-                  chartPadding: usesCompactMapChrome
-                      ? EdgeInsets.all(tokens.gapSm)
-                      : null,
-                  showLegend: state._effectiveShowLegend,
-                  showTooltip:
-                      chart.style.showTooltip &&
-                      !state._useWindowsSafeMarkerDetails,
-                  showShapeTooltip: false,
-                  showDataLabels: chart.style.showDataLabels,
-                  showMetricSelector:
-                      chart.style.showMetricSelector &&
-                      !state._showsFloatingMetricSelector,
-                  enableZoomPan: chart.style.enableZoomPan,
-                  scopeRootLabel: l10n.brazilStoreSalesMapCountryLabel,
-                  lowValueColor:
-                      chart.style.lowValueColor ?? state._lowColor(context),
-                  highValueColor:
-                      chart.style.highValueColor ?? state._highColor(context),
-                  dataLabelTextStyle: stateDataLabelTextStyle,
-                  metricSelectorPadding: usesCompactMapChrome
-                      ? EdgeInsets.zero
-                      : null,
-                  legendNumberFormat: state._legendFormat,
-                  emptyStateMessage: state._resolvedEmptyStateMessage(l10n),
-                  metricGroupLabel: l10n.brazilStoreSalesMapMetricGroupLabel,
-                  scopeGroupLabel: l10n.brazilStoreSalesMapRegionGroupLabel,
-                  mapLoadingMessage: l10n.brazilStoreSalesMapLoadingMessage,
-                  showGroupLabels:
-                      !state._usesCleanFullscreenChrome &&
-                      !usesCompactMapChrome,
-                ),
-                isRefreshing: chart.isRefreshing,
-                isLoading: state._isBrazilMapShapeSourceLoading,
-              ),
-            ),
+          return _BrazilMapChartRegionMap(
+            state: state,
+            snapshot: snapshot,
+            height: height,
+            l10n: l10n,
+            tokens: tokens,
+            selectedRegionKey: selectedRegionKey,
+            preferredViewport: preferredViewport,
+            resetViewport: resetViewport,
+            usesCompactBranchSheet: usesCompactBranchSheet,
+            usesCompactStateLabels: usesCompactStateLabels,
+            usesCompactMapChrome: usesCompactMapChrome,
+            stateLabels: stateLabels,
+            stateDataLabelTextStyle: stateDataLabelTextStyle,
           );
         }
 
@@ -280,6 +193,139 @@ class _BrazilMapChartScaffold extends StatelessWidget {
           child: mapContent,
         );
       },
+    );
+  }
+}
+
+class _BrazilMapChartRegionMap extends StatelessWidget {
+  const _BrazilMapChartRegionMap({
+    required this.state,
+    required this.snapshot,
+    required this.height,
+    required this.l10n,
+    required this.tokens,
+    required this.selectedRegionKey,
+    required this.preferredViewport,
+    required this.resetViewport,
+    required this.usesCompactBranchSheet,
+    required this.usesCompactStateLabels,
+    required this.usesCompactMapChrome,
+    required this.stateLabels,
+    required this.stateDataLabelTextStyle,
+  });
+
+  final _AppBrazilStoreSalesMapChartState state;
+  final BrazilMapChartVisualSnapshot snapshot;
+  final double height;
+  final AppLocalizations l10n;
+  final AppThemeTokens tokens;
+  final String? selectedRegionKey;
+  final AppMapViewport? preferredViewport;
+  final AppMapViewport resetViewport;
+  final bool usesCompactBranchSheet;
+  final bool usesCompactStateLabels;
+  final bool usesCompactMapChrome;
+  final BrazilMapChartStateLabelResolver stateLabels;
+  final TextStyle? stateDataLabelTextStyle;
+
+  AppBrazilStoreSalesMapChart get chart => state.widget;
+
+  @override
+  Widget build(BuildContext context) {
+    return state._wrapRegionMapForTouchGestures(
+      RepaintBoundary(
+        child: AppRegionMapChart<AppBrazilStoreSalesStateBucket>(
+          mapDefinition: AppBrazilMapStaticData.resolveBrazilUfMapDefinition(),
+          items: snapshot.buckets,
+          metrics: state._buildMetrics(l10n),
+          selectedMetricKey: state._selectedMetric.key,
+          selectedRegionKey: selectedRegionKey,
+          regionKeyBuilder: (bucket) => bucket.uf,
+          regionLabelBuilder: (bucket) => stateLabels.labelFor(
+            bucket,
+            compact: usesCompactStateLabels,
+          ),
+          scopeOptions: chart.style.showRegionFilter
+              ? AppBrazilStoreSalesMapLocalizations.regionScopeOptions(l10n)
+              : const <AppMapScopeOption>[],
+          activeScopeKey: state._activeRegionKey,
+          preferredViewport: preferredViewport,
+          resetViewport: resetViewport,
+          onResetViewport: state._handleResetViewport,
+          lifecycleRecoveryRequestId: chart.lifecycleRecoveryRequestId,
+          points: snapshot.mapPoints,
+          markerStyle: AppMapMarkerStyle(
+            size: chart.style.markerMinSize,
+            color: state._markerPresenter.markerColor(context),
+            strokeColor: state._markerPresenter.markerStrokeColor(context),
+          ),
+          markerBuilder: (context, point, index) {
+            return ValueListenableBuilder<BrazilMapMarkerSelection>(
+              valueListenable: state._markerSelection,
+              builder: (context, selection, _) {
+                return state._markerPresenter.buildMarker(
+                  context,
+                  point,
+                  index,
+                  selection,
+                  usesCompactBranchSheet: usesCompactBranchSheet,
+                );
+              },
+            );
+          },
+          markerTooltipBuilder: state._useWindowsSafeMarkerDetails
+              ? null
+              : state._markerPresenter.buildMarkerTooltip,
+          onMetricChanged: state._showsFloatingMetricSelector
+              ? null
+              : state._handleMetricChanged,
+          onScopeChanged: state._showsFloatingScopeSelector
+              ? null
+              : chart.style.showRegionFilter
+              ? state._handleScopeChanged
+              : null,
+          onRegionTapEvent: state._handleStateTap,
+          onPointTap: state._pointInteraction.handlePointTap,
+          onViewportChanged: state._handleRegionMapViewportChanged,
+          viewportController: state._viewportController,
+          preset: chart.style.enableZoomPan
+              ? AppChartPreset.explorable
+              : AppChartPreset.standard,
+          style: AppRegionMapChartStyle(
+            height: height,
+            chartPadding: usesCompactMapChrome
+                ? EdgeInsets.all(tokens.gapSm)
+                : null,
+            showLegend: state._effectiveShowLegend,
+            showTooltip:
+                chart.style.showTooltip && !state._useWindowsSafeMarkerDetails,
+            showShapeTooltip: false,
+            showDataLabels: chart.style.showDataLabels,
+            showMetricSelector:
+                chart.style.showMetricSelector &&
+                !state._showsFloatingMetricSelector,
+            enableZoomPan: chart.style.enableZoomPan,
+            scopeRootLabel: l10n.brazilStoreSalesMapCountryLabel,
+            lowValueColor:
+                chart.style.lowValueColor ?? state._lowColor(context),
+            highValueColor:
+                chart.style.highValueColor ?? state._highColor(context),
+            dataLabelTextStyle: stateDataLabelTextStyle,
+            metricSelectorPadding: usesCompactMapChrome
+                ? EdgeInsets.zero
+                : null,
+            legendNumberFormat: state._legendFormat,
+            emptyStateMessage: state._resolvedEmptyStateMessage(l10n),
+            metricGroupLabel: l10n.brazilStoreSalesMapMetricGroupLabel,
+            scopeGroupLabel: l10n.brazilStoreSalesMapRegionGroupLabel,
+            mapLoadingMessage: l10n.brazilStoreSalesMapLoadingMessage,
+            showGroupLabels:
+                !state._usesCleanFullscreenChrome && !usesCompactMapChrome,
+          ),
+          isRefreshing: chart.isRefreshing,
+          isLoading: state._isBrazilMapShapeSourceLoading,
+        ),
+      ),
     );
   }
 }

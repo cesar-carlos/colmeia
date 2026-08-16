@@ -22,17 +22,13 @@ import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 /// any reconnect requires fresh `conversationId`s.
 class RelayConversationManager {
   RelayConversationManager({
-    required ConsumerSocketConnection connection,
-    Duration startTimeout = const Duration(seconds: 10),
-    Duration endTimeout = const Duration(seconds: 5),
-    SocketChannelMetrics? channelMetrics,
+    required this._connection,
+    this._startTimeout = const Duration(seconds: 10),
+    this._endTimeout = const Duration(seconds: 5),
+    this._channelMetrics,
     RelayConversationEndedRouter? conversationEndedRouter,
     this.onHubConversationEnded,
-  }) : _connection = connection,
-       _startTimeout = startTimeout,
-       _endTimeout = endTimeout,
-       _channelMetrics = channelMetrics,
-       _router = conversationEndedRouter {
+  }) : _router = conversationEndedRouter {
     _stateSub = _connection.states().listen(_onConnectionState);
     if (_router != null) {
       void handler({

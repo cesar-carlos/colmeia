@@ -39,7 +39,7 @@ void main() {
     l10n = lookupAppLocalizations(const Locale('pt', 'BR'));
   });
 
-  test('share metadata formats catalog columns in landscape', () {
+  test('share metadata formats catalog columns in portrait', () {
     final rows = <MargemProdutoRow>[
       _row(
         codProduto: 1,
@@ -71,36 +71,33 @@ void main() {
     expect(metadata.title, l10n.salesCardMargemProdutoTitle);
     expect(metadata.subject, l10n.salesCardMargemProdutoTitle);
     expect(metadata.subtitle, l10n.salesMargemProdutoIntroSubtitle);
-    expect(metadata.pdfOrientation, ChartSharePdfOrientation.landscape);
+    expect(metadata.pdfOrientation, ChartSharePdfOrientation.portrait);
     expect(metadata.chartExportBuilder, isNull);
     expect(metadata.includeChartImage, isFalse);
     expect(
       metadata.tableData?.headers,
       <String>[
+        l10n.salesMargemProdutoColumnCodigo,
         l10n.salesMargemProdutoColumnProduto,
         l10n.salesMargemProdutoColumnCusto,
         l10n.salesMargemProdutoColumnPreco,
         l10n.salesMargemProdutoColumnMarkup,
-        l10n.salesMargemProdutoColumnMargem,
       ],
     );
     expect(metadata.tableData?.rows.length, 2);
-    expect(metadata.tableData?.rows.first[0], 'Mel');
+    expect(metadata.tableData?.rows.first[0], '1');
+    expect(metadata.tableData?.rows.first[1], 'Mel');
     expect(
-      metadata.tableData?.rows.first[1],
+      metadata.tableData?.rows.first[2],
       formatSalesMargemProdutoCurrency(4.5),
     );
     expect(
-      metadata.tableData?.rows.first[2],
+      metadata.tableData?.rows.first[3],
       formatSalesMargemProdutoCurrency(9),
     );
     expect(
-      metadata.tableData?.rows.first[3],
-      formatSalesMargemProdutoPercent(100),
-    );
-    expect(
       metadata.tableData?.rows.first[4],
-      formatSalesMargemProdutoPercent(50),
+      formatSalesMargemProdutoPercent(100),
     );
     expect(metadata.filterSummary, contains('Agente Centro'));
     expect(metadata.filterSummary, isNot(contains('Lucas Centro')));
@@ -134,7 +131,7 @@ void main() {
   });
 
   test(
-    'share metadata builds a landscape PDF for a wrapping catalog',
+    'share metadata builds a portrait PDF for a wrapping catalog',
     () async {
       final rows = List<MargemProdutoRow>.generate(
         185,

@@ -10,12 +10,10 @@ import 'package:dio/dio.dart';
 
 class AuthRefreshCoordinator {
   AuthRefreshCoordinator({
-    required Dio refreshDio,
-    required AuthSessionAccessor sessionAccessor,
-    required AuthSessionEvents sessionEvents,
-  }) : _refreshDio = refreshDio,
-       _sessionAccessor = sessionAccessor,
-       _sessionEvents = sessionEvents;
+    required this._refreshDio,
+    required this._sessionAccessor,
+    required this._sessionEvents,
+  });
 
   final Dio _refreshDio;
   final AuthSessionAccessor _sessionAccessor;

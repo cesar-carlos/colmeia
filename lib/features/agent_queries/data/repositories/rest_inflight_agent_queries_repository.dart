@@ -15,10 +15,9 @@ import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries
 /// factory omits this decorator when the resolved cap is `0`.
 class RestInflightAgentQueriesRepository implements AgentQueriesRepository {
   RestInflightAgentQueriesRepository({
-    required AgentQueriesRepository delegate,
-    required PerAgentConcurrencyGate gate,
-  }) : _delegate = delegate,
-       _gate = gate;
+    required this._delegate,
+    required this._gate,
+  });
 
   final AgentQueriesRepository _delegate;
   final PerAgentConcurrencyGate _gate;

@@ -26,13 +26,12 @@ import 'package:colmeia/core/socket/relay/relay_rpc_outcome.dart';
 /// `outcomes`, `dispose`) forward to the inner dispatcher unchanged.
 class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
   RelayBatchCommandCoordinator({
-    required RelayCommandDispatcher inner,
+    required this._inner,
     Duration windowDuration = const Duration(milliseconds: 8),
     int maxBatchSize = 32,
     this.maxInflightPerAgent,
-    void Function({required int size, required bool partialFailure})?
-    onBatchEmission,
-    void Function({required String reason})? onBypass,
+    this._onBatchEmission,
+    this._onBypass,
   }) : assert(
          windowDuration >= Duration.zero,
          'windowDuration must be >= 0',
@@ -42,14 +41,11 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
          maxInflightPerAgent == null || maxInflightPerAgent > 0,
          'maxInflightPerAgent must be null or > 0',
        ),
-       _inner = inner,
        _windowDuration = windowDuration,
        _maxBatchSize = _resolveMaxBatchSize(
          requested: maxBatchSize,
          maxInflightPerAgent: maxInflightPerAgent,
-       ),
-       _onBatchEmission = onBatchEmission,
-       _onBypass = onBypass;
+       );
 
   final RelayCommandDispatcher _inner;
   final Duration _windowDuration;

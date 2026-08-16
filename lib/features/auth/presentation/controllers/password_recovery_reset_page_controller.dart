@@ -5,13 +5,10 @@ import 'package:flutter/foundation.dart';
 
 class PasswordRecoveryResetPageController extends ChangeNotifier {
   PasswordRecoveryResetPageController({
-    required ReadPasswordRecoveryStatusUseCase
-    readPasswordRecoveryStatusUseCase,
-    required ResetPasswordUseCase resetPasswordUseCase,
+    required this._readPasswordRecoveryStatusUseCase,
+    required this._resetPasswordUseCase,
     String? initialToken,
-  }) : _readPasswordRecoveryStatusUseCase = readPasswordRecoveryStatusUseCase,
-       _resetPasswordUseCase = resetPasswordUseCase,
-       _token = initialToken?.trim() ?? '';
+  }) : _token = initialToken?.trim() ?? '';
 
   final ReadPasswordRecoveryStatusUseCase _readPasswordRecoveryStatusUseCase;
   final ResetPasswordUseCase _resetPasswordUseCase;

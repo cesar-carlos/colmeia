@@ -89,10 +89,63 @@ $outerColumns
     return CadastroFilialSqlProjection.registration;
   }
 
-  /// Non-CTE picker query. Used when the paged CTE comes back as an empty
-  /// payload (missing `TotalCount` sentinel) so we can still read `Filial`.
+  /// Non-CTE query used when the paged CTE comes back as an empty payload
+  /// (missing `TotalCount` sentinel). Some SQL Anywhere agents drop the
+  /// `Tot LEFT JOIN Numbered` shape even with unary + `preferDbStreaming:
+  /// false`; a `SELECT TOP` still reads `Filial`.
   ///
-  /// [maxRows] is inlined; the caller must pass a validated page size.
+  /// [maxRows] and [startRow] are inlined; the caller must pass a validated
+  /// page size and 1-based start index.
+  static String simpleQuery({
+    Iterable<CadastroFilialBranchRef> branches =
+        const <CadastroFilialBranchRef>[],
+    bool hasSelectedBranches = false,
+    int? codEmpresa,
+    int? codFilial,
+    String? searchTerm,
+    int maxRows = CadastroFilialFilter.maxPageSize,
+    int startRow = 1,
+    CadastroFilialSqlProjection projection =
+        CadastroFilialSqlProjection.registration,
+  }) {
+    final branchPredicate = _branchPredicate(
+      branches: branches,
+      hasSelectedBranches: hasSelectedBranches,
+      codEmpresa: codEmpresa,
+      codFilial: codFilial,
+    );
+    final searchPredicate = _searchPredicate(searchTerm);
+    final baseColumns = switch (projection) {
+      CadastroFilialSqlProjection.registration => _baseColumnsRegistration,
+      CadastroFilialSqlProjection.mapCatalog => _baseColumnsMapCatalog,
+      CadastroFilialSqlProjection.branchOptions => _baseColumnsBranchOptions,
+    };
+    final municipioJoin =
+        projection == CadastroFilialSqlProjection.branchOptions
+        ? ''
+        : '''
+      LEFT JOIN Municipio m ON
+        m.CodMunicipio = f.CodMunicipio
+''';
+    final topClause = startRow > 1
+        ? 'SELECT TOP $maxRows START AT $startRow'
+        : 'SELECT TOP $maxRows';
+    return '''
+    $topClause
+      (SELECT COUNT(*) FROM Filial f WHERE 1 = 1
+$branchPredicate
+$searchPredicate) AS TotalCount,
+$baseColumns
+      FROM Filial f
+$municipioJoin      WHERE 1 = 1
+$branchPredicate
+$searchPredicate
+    ORDER BY f.CodEmpresa, f.CodFilial
+  ''';
+  }
+
+  /// Picker-only alias of [simpleQuery] with
+  /// [CadastroFilialSqlProjection.branchOptions].
   static String branchOptionsSimpleQuery({
     Iterable<CadastroFilialBranchRef> branches =
         const <CadastroFilialBranchRef>[],
@@ -102,25 +155,15 @@ $outerColumns
     String? searchTerm,
     int maxRows = CadastroFilialFilter.maxPageSize,
   }) {
-    final branchPredicate = _branchPredicate(
+    return simpleQuery(
       branches: branches,
       hasSelectedBranches: hasSelectedBranches,
       codEmpresa: codEmpresa,
       codFilial: codFilial,
+      searchTerm: searchTerm,
+      maxRows: maxRows,
+      projection: CadastroFilialSqlProjection.branchOptions,
     );
-    final searchPredicate = _searchPredicate(searchTerm);
-    return '''
-    SELECT TOP $maxRows
-      f.CodEmpresa,
-      f.CodFilial,
-      f.Nome AS NomeFilial,
-      f.NomeFantasia AS NomeFantasia
-    FROM Filial f
-    WHERE 1 = 1
-$branchPredicate
-$searchPredicate
-    ORDER BY f.CodEmpresa, f.CodFilial
-  ''';
   }
 
   static const String _baseColumnsRegistration = '''

@@ -6,52 +6,85 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _labels = SalesMargemProdutoColumnLabels(
-  produto: 'Product',
+  codigo: 'Code',
+  produto: 'Product name',
   custo: 'Replacement cost',
   preco: 'Sale price',
-  markup: 'Markup %',
-  margem: 'Gross margin %',
+  markup: '% Markup',
 );
 
 void main() {
   group('buildSalesMargemProdutoColumns', () {
     final columns = buildSalesMargemProdutoColumns(labels: _labels);
 
-    test('exposes unpinned product and non-sortable metric columns', () {
+    test('exposes unpinned code, product and non-sortable metric columns', () {
       check(
         columns.map((column) => column.key).toList(),
       ).deepEquals(<String>[
+        SalesMargemProdutoSort.columnCodigo,
         SalesMargemProdutoSort.columnProduto,
         SalesMargemProdutoSort.columnCustoReposicao,
         SalesMargemProdutoSort.columnPrecoVenda,
         SalesMargemProdutoSort.columnMarkup,
-        SalesMargemProdutoSort.columnMargem,
       ]);
 
       final byKey = <String, bool>{
         for (final column in columns) column.key: column.sortable,
       };
+      check(byKey[SalesMargemProdutoSort.columnCodigo]).equals(false);
       check(byKey[SalesMargemProdutoSort.columnProduto]).equals(false);
       check(byKey[SalesMargemProdutoSort.columnCustoReposicao]).equals(false);
       check(byKey[SalesMargemProdutoSort.columnPrecoVenda]).equals(false);
       check(byKey[SalesMargemProdutoSort.columnMarkup]).equals(false);
-      check(byKey[SalesMargemProdutoSort.columnMargem]).equals(false);
+
+      final codigo = columns.firstWhere(
+        (column) => column.key == SalesMargemProdutoSort.columnCodigo,
+      );
+      check(codigo.pinned).equals(false);
+      check(codigo.numeric).equals(true);
+      check(codigo.width).equals(80);
+      check(codigo.minWidth).equals(80);
 
       final produto = columns.firstWhere(
         (column) => column.key == SalesMargemProdutoSort.columnProduto,
       );
       check(produto.pinned).equals(false);
+      check(produto.width).isNull();
+      check(produto.minWidth).equals(260);
+
+      check(
+        columns
+            .firstWhere(
+              (column) =>
+                  column.key == SalesMargemProdutoSort.columnCustoReposicao,
+            )
+            .width,
+      ).isNotNull();
+      check(
+        columns
+            .firstWhere(
+              (column) => column.key == SalesMargemProdutoSort.columnPrecoVenda,
+            )
+            .width,
+      ).isNotNull();
+      check(
+        columns
+            .firstWhere(
+              (column) => column.key == SalesMargemProdutoSort.columnMarkup,
+            )
+            .width,
+      ).isNotNull();
     });
 
-    test('tints only markup and margin percent columns', () {
+    test('tints only the markup percent column', () {
       final byKey = <String, bool>{
         for (final column in columns) column.key: column.valueColor != null,
       };
+      check(byKey[SalesMargemProdutoSort.columnCodigo]).equals(false);
       check(byKey[SalesMargemProdutoSort.columnProduto]).equals(false);
       check(byKey[SalesMargemProdutoSort.columnCustoReposicao]).equals(false);
       check(byKey[SalesMargemProdutoSort.columnPrecoVenda]).equals(false);
       check(byKey[SalesMargemProdutoSort.columnMarkup]).equals(true);
-      check(byKey[SalesMargemProdutoSort.columnMargem]).equals(true);
     });
 
     test('formats currency and percent values', () {
@@ -82,11 +115,11 @@ void main() {
             .valueGetter(row);
       }
 
+      check(valueOf(SalesMargemProdutoSort.columnCodigo)).equals(10);
       check(valueOf(SalesMargemProdutoSort.columnProduto)).equals('Mel');
       check(valueOf(SalesMargemProdutoSort.columnCustoReposicao)).equals(4.5);
       check(valueOf(SalesMargemProdutoSort.columnPrecoVenda)).equals(9);
       check(valueOf(SalesMargemProdutoSort.columnMarkup)).equals(100);
-      check(valueOf(SalesMargemProdutoSort.columnMargem)).equals(50);
     });
   });
 

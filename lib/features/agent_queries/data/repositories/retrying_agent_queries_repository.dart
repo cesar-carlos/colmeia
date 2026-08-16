@@ -29,17 +29,13 @@ import 'package:uuid/uuid.dart';
 ///   `StorageFailure` have `isTransient=false` and are never retried
 class RetryingAgentQueriesRepository implements AgentQueriesRepository {
   RetryingAgentQueriesRepository({
-    required AgentQueriesRepository delegate,
-    int maxAttempts = 3,
-    Duration initialRetryDelay = const Duration(milliseconds: 200),
-    Duration defaultTotalRetryBudget = const Duration(minutes: 9),
+    required this._delegate,
+    this._maxAttempts = 3,
+    this._initialRetryDelay = const Duration(milliseconds: 200),
+    this._defaultTotalRetryBudget = const Duration(minutes: 9),
     math.Random? random,
     Uuid? uuid,
-  }) : _delegate = delegate,
-       _maxAttempts = maxAttempts,
-       _initialRetryDelay = initialRetryDelay,
-       _defaultTotalRetryBudget = defaultTotalRetryBudget,
-       _random = random ?? math.Random(),
+  }) : _random = random ?? math.Random(),
        _uuid = uuid ?? const Uuid();
 
   final AgentQueriesRepository _delegate;

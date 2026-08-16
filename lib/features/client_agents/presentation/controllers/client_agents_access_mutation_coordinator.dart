@@ -69,24 +69,15 @@ abstract interface class ClientAgentsAccessMutationHost {
 /// serializes calls through its mutation queue.
 class ClientAgentsAccessMutationCoordinator {
   ClientAgentsAccessMutationCoordinator({
-    required ClientAgentsAccessMutationHost host,
-    required LoadClientApprovedAgentsUseCase loadApprovedAgentsUseCase,
-    required QueueClientAgentRequestAccessUseCase queueRequestAccessUseCase,
-    required QueueClientAgentRemoveAccessUseCase queueRemoveAccessUseCase,
-    required ProbeClientApprovedAgentUseCase probeClientApprovedAgentUseCase,
-    required DiscardQueuedClientAgentRequestAccessUseCase
-    discardQueuedClientAgentRequestAccessUseCase,
-    required ReadPendingClientAgentActionsUseCase readPendingActionsUseCase,
-    int probeConcurrency = 4,
-  }) : _host = host,
-       _loadApprovedAgentsUseCase = loadApprovedAgentsUseCase,
-       _queueRequestAccessUseCase = queueRequestAccessUseCase,
-       _queueRemoveAccessUseCase = queueRemoveAccessUseCase,
-       _probeClientApprovedAgentUseCase = probeClientApprovedAgentUseCase,
-       _discardQueuedClientAgentRequestAccessUseCase =
-           discardQueuedClientAgentRequestAccessUseCase,
-       _readPendingActionsUseCase = readPendingActionsUseCase,
-       _probeConcurrency = probeConcurrency;
+    required this._host,
+    required this._loadApprovedAgentsUseCase,
+    required this._queueRequestAccessUseCase,
+    required this._queueRemoveAccessUseCase,
+    required this._probeClientApprovedAgentUseCase,
+    required this._discardQueuedClientAgentRequestAccessUseCase,
+    required this._readPendingActionsUseCase,
+    this._probeConcurrency = 4,
+  });
 
   final ClientAgentsAccessMutationHost _host;
   final LoadClientApprovedAgentsUseCase _loadApprovedAgentsUseCase;

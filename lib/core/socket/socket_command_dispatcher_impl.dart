@@ -38,26 +38,18 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 /// See `docs/Features/socket_command_dispatcher_design.md` §5.
 class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
   SocketCommandDispatcherImpl({
-    required ConsumerSocketConnection connection,
-    required SocketRequestCorrelator correlator,
-    PerAgentConcurrencyGate? concurrencyGate,
-    AgentLatencyOracle? latencyOracle,
+    required this._connection,
+    required this._correlator,
+    this._concurrencyGate,
+    this._latencyOracle,
     PayloadFrameCodec? payloadFrameCodec,
-    Duration defaultTimeout = const Duration(seconds: 20),
-    bool coalescingEnabled = true,
+    this._defaultTimeout = const Duration(seconds: 20),
+    this._coalescingEnabled = true,
     void Function()? onCoalesced,
-    void Function(ServerTimings)? onServerTimings,
-    void Function(Duration elapsed)? onPayloadDecode,
-  }) : _connection = connection,
-       _correlator = correlator,
-       _concurrencyGate = concurrencyGate,
-       _latencyOracle = latencyOracle,
-       _payloadFrameCodec = payloadFrameCodec ?? const PayloadFrameCodec(),
-       _defaultTimeout = defaultTimeout,
-       _coalescingEnabled = coalescingEnabled,
+    this._onServerTimings,
+    this._onPayloadDecode,
+  }) : _payloadFrameCodec = payloadFrameCodec ?? const PayloadFrameCodec(),
        _coalescer = SocketCommandCoalescer(onCoalesced: onCoalesced),
-       _onServerTimings = onServerTimings,
-       _onPayloadDecode = onPayloadDecode,
        _outcomes = StreamController<AgentCommandOutcome>.broadcast() {
     _stateSub = _connection.states().listen(_onConnectionState);
   }
@@ -958,8 +950,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       );
     }
     return const SocketDispatchDecodeFailure(
-      message:
-          'agents:command_response flat bridge failure without structured error',
+      message: 'agents:command_response flat bridge failure without structured error',
     );
   }
 

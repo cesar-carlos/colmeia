@@ -20,13 +20,11 @@ import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel
 /// so prefetch does not amplify hub pressure during cooldown.
 final class AgentQueryFactsPrefetchCoordinator {
   AgentQueryFactsPrefetchCoordinator({
-    required LoadResumoTotalDiarioVendasUseCase loadDaily,
-    required LoadResumoParcelasMensalUseCase loadMonthly,
+    required this._loadDaily,
+    required this._loadMonthly,
     RetryAfterGate? retryAfterGate,
     int maxConcurrentAgents = 2,
-  }) : _loadDaily = loadDaily,
-       _loadMonthly = loadMonthly,
-       _retryAfterGate = retryAfterGate ?? RetryAfterGate(),
+  }) : _retryAfterGate = retryAfterGate ?? RetryAfterGate(),
        _maxConcurrentAgents = maxConcurrentAgents.clamp(1, 4);
 
   final LoadResumoTotalDiarioVendasUseCase _loadDaily;

@@ -39,14 +39,11 @@ abstract interface class ClientAgentsTokenDraftHost {
 /// pairs request-access submissions with token writes and server flushes.
 class ClientAgentsTokenDraftCoordinator {
   ClientAgentsTokenDraftCoordinator({
-    required ClientAgentsTokenDraftHost host,
-    required ClientAgentTokenDraftStore clientTokenDraftStore,
-    required GetClientAgentTokenUseCase getClientAgentTokenUseCase,
-    required SaveClientAgentTokenUseCase saveClientAgentTokenUseCase,
-  }) : _host = host,
-       _clientTokenDraftStore = clientTokenDraftStore,
-       _getClientAgentTokenUseCase = getClientAgentTokenUseCase,
-       _saveClientAgentTokenUseCase = saveClientAgentTokenUseCase;
+    required this._host,
+    required this._clientTokenDraftStore,
+    required this._getClientAgentTokenUseCase,
+    required this._saveClientAgentTokenUseCase,
+  });
 
   final ClientAgentsTokenDraftHost _host;
   final ClientAgentTokenDraftStore _clientTokenDraftStore;

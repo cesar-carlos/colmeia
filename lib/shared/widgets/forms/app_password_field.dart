@@ -58,7 +58,7 @@ class AppPasswordField extends StatelessWidget {
       density: density,
       semanticsLabel: semanticsLabel,
       suffix: IconButton(
-        onPressed: onToggleObscure,
+        onPressed: enabled ? onToggleObscure : null,
         icon: Icon(
           obscureText
               ? Icons.visibility_outlined

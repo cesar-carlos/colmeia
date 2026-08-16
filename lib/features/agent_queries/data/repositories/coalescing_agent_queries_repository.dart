@@ -20,8 +20,8 @@ import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries
 /// same [AgentQueriesCancelScope.traceId] so distinct UI loads never share work.
 class CoalescingAgentQueriesRepository implements AgentQueriesRepository {
   CoalescingAgentQueriesRepository({
-    required AgentQueriesRepository delegate,
-  }) : _delegate = delegate;
+    required this._delegate,
+  });
 
   final AgentQueriesRepository _delegate;
 

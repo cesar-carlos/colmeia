@@ -91,13 +91,14 @@ class AppSectionCardWithHeading extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Expanded(
-                  child:
-                      titleWidget ??
-                      Text(
-                        title!,
-                        style: resolvedTitleStyle,
-                        textAlign: style.titleTextAlign,
-                      ),
+                  child: hasTitle
+                      ? (titleWidget ??
+                            Text(
+                              title!,
+                              style: resolvedTitleStyle,
+                              textAlign: style.titleTextAlign,
+                            ))
+                      : const SizedBox.shrink(),
                 ),
                 if (headingTrailing != null) ...<Widget>[
                   SizedBox(width: tokens.gapMd),

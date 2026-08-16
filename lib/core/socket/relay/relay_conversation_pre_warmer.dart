@@ -32,15 +32,12 @@ typedef RelayPreWarmAgentIdsLoader = Future<List<String>> Function();
 ///   leave orphan `conversationId`s on the hub.
 class RelayConversationPreWarmer {
   RelayConversationPreWarmer({
-    required ConsumerSocketConnection connection,
-    required RelayConversationManager conversationManager,
-    required RelayPreWarmAgentIdsLoader loadAgentIds,
+    required this._connection,
+    required this._conversationManager,
+    required this._loadAgentIds,
     int maxAgents = _defaultMaxAgents,
     int maxConcurrentStarts = _defaultMaxConcurrentStarts,
-  }) : _connection = connection,
-       _conversationManager = conversationManager,
-       _loadAgentIds = loadAgentIds,
-       _maxAgents = _checkPositive(maxAgents, 'maxAgents'),
+  }) : _maxAgents = _checkPositive(maxAgents, 'maxAgents'),
        _maxConcurrentStarts = _checkPositive(
          maxConcurrentStarts,
          'maxConcurrentStarts',

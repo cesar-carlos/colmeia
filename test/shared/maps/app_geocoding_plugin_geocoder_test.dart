@@ -48,8 +48,7 @@ void main() {
 
     test('returns notFound when plugin reports no result', () async {
       final geocoder = AppGeocodingPluginGeocoder(
-        lookupLocations: (_) async =>
-            throw const geocoding.NoResultFoundException(),
+        lookupLocations: (_) async => const <geocoding.Location>[],
       );
 
       final result = await geocoder.resolve(

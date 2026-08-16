@@ -6,12 +6,22 @@ import 'package:flutter/foundation.dart';
 /// while capture and PDF generation are in flight.
 abstract final class ChartShareGuard {
   static final Set<Object> _activeKeys = <Object>{};
-  static final Map<Object, ValueNotifier<int>> _keyNotifiers =
-      <Object, ValueNotifier<int>>{};
+  static final Map<Object, _ChartShareProgressNotifier> _keyNotifiers =
+      <Object, _ChartShareProgressNotifier>{};
 
   /// Notifies only listeners for [key] when that key's busy state changes.
   static ValueListenable<int> listenableFor(Object key) {
-    return _keyNotifiers.putIfAbsent(key, () => ValueNotifier<int>(0));
+    return _keyNotifiers.putIfAbsent(key, _ChartShareProgressNotifier.new);
+  }
+
+  /// Drops the notifier for [key] when it has no remaining listeners.
+  static void releaseListenable(Object key) {
+    final notifier = _keyNotifiers[key];
+    if (notifier == null || notifier.isListenedTo) {
+      return;
+    }
+    _keyNotifiers.remove(key);
+    notifier.dispose();
   }
 
   static bool isInProgress(Object key) => _activeKeys.contains(key);
@@ -37,4 +47,10 @@ abstract final class ChartShareGuard {
       notifier.value++;
     }
   }
+}
+
+final class _ChartShareProgressNotifier extends ValueNotifier<int> {
+  _ChartShareProgressNotifier() : super(0);
+
+  bool get isListenedTo => hasListeners;
 }

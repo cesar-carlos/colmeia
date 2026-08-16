@@ -1,6 +1,7 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:flutter/material.dart';
 
@@ -92,9 +93,9 @@ class AppInlineErrorPanel extends StatelessWidget {
           actions!,
         ] else if (onRetry != null) ...<Widget>[
           SizedBox(height: tokens.gapMd),
-          FilledButton(
+          AppPrimaryButton(
             onPressed: onRetry,
-            child: Text(retryLabel),
+            label: retryLabel,
           ),
         ],
         if (footer != null) ...<Widget>[

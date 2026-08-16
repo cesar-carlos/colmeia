@@ -14,17 +14,13 @@ final class E2eAuthSessionHolder {
 /// when the hub issues short-lived access tokens (e.g. ~15 min).
 final class E2eRefreshingAuthInterceptor extends QueuedInterceptor {
   E2eRefreshingAuthInterceptor({
-    required Dio dio,
-    required AuthRemoteDataSource refreshAuthApi,
-    required E2eAuthSessionHolder sessionHolder,
-    Duration proactiveRefreshWindow =
+    required this._dio,
+    required this._refreshAuthApi,
+    required this._sessionHolder,
+    this._proactiveRefreshWindow =
         AuthInterceptor.defaultProactiveRefreshWindow,
     DateTime Function()? clock,
-  }) : _dio = dio,
-       _refreshAuthApi = refreshAuthApi,
-       _sessionHolder = sessionHolder,
-       _proactiveRefreshWindow = proactiveRefreshWindow,
-       _clock = clock ?? DateTime.now;
+  }) : _clock = clock ?? DateTime.now;
 
   final Dio _dio;
   final AuthRemoteDataSource _refreshAuthApi;

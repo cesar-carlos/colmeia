@@ -88,10 +88,9 @@ abstract interface class OverviewLoadOrchestrationHost {
 /// progressive paths, failure handling and retry-after arming.
 class OverviewLoadOrchestrationCoordinator {
   OverviewLoadOrchestrationCoordinator({
-    required OverviewLoadOrchestrationHost host,
-    required LoadOverviewUseCase loadOverviewUseCase,
-  }) : _host = host,
-       _loadOverviewUseCase = loadOverviewUseCase;
+    required this._host,
+    required this._loadOverviewUseCase,
+  });
 
   final OverviewLoadOrchestrationHost _host;
   final LoadOverviewUseCase _loadOverviewUseCase;

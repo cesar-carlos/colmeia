@@ -107,10 +107,18 @@ class _AppReportDetailSheet<T> extends StatelessWidget {
                           SizedBox(height: tokens.gapSm),
                           Align(
                             alignment: Alignment.centerRight,
-                            child: AppFlatButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              fillWidth: false,
-                              child: const Icon(Icons.close_rounded),
+                            child: Tooltip(
+                              message: MaterialLocalizations.of(
+                                context,
+                              ).closeButtonTooltip,
+                              child: AppFlatButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                fillWidth: false,
+                                semanticsLabel: MaterialLocalizations.of(
+                                  context,
+                                ).closeButtonTooltip,
+                                child: const Icon(Icons.close_rounded),
+                              ),
                             ),
                           ),
                         ],
@@ -122,10 +130,18 @@ class _AppReportDetailSheet<T> extends StatelessWidget {
                       children: <Widget>[
                         Expanded(child: heading),
                         SizedBox(width: tokens.gapMd),
-                        AppFlatButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          fillWidth: false,
-                          child: const Icon(Icons.close_rounded),
+                        Tooltip(
+                          message: MaterialLocalizations.of(
+                            context,
+                          ).closeButtonTooltip,
+                          child: AppFlatButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            fillWidth: false,
+                            semanticsLabel: MaterialLocalizations.of(
+                              context,
+                            ).closeButtonTooltip,
+                            child: const Icon(Icons.close_rounded),
+                          ),
                         ),
                       ],
                     );

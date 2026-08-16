@@ -26,21 +26,14 @@ import 'package:result_dart/result_dart.dart';
 /// through their dedicated across-agents use cases.
 class SalesLiveMapParallelLoadOrchestrator {
   SalesLiveMapParallelLoadOrchestrator({
-    required LoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase
-    loadSalesAcrossAgents,
-    required SalesLiveMapCatalogLookup catalogLookup,
-    required SalesLiveMapReportMapper reportMapper,
-    required SalesLiveMapDiagnosticsLogger diagnosticsLogger,
-    required SalesLiveMapRefreshMetricsRecorder metricsRecorder,
-    required SalesLiveMapProgressiveEmitPolicy emitPolicy,
-    required int bridgeTimeoutMs,
-  }) : _loadSalesAcrossAgents = loadSalesAcrossAgents,
-       _catalogLookup = catalogLookup,
-       _reportMapper = reportMapper,
-       _diagnosticsLogger = diagnosticsLogger,
-       _metricsRecorder = metricsRecorder,
-       _emitPolicy = emitPolicy,
-       _bridgeTimeoutMs = bridgeTimeoutMs;
+    required this._loadSalesAcrossAgents,
+    required this._catalogLookup,
+    required this._reportMapper,
+    required this._diagnosticsLogger,
+    required this._metricsRecorder,
+    required this._emitPolicy,
+    required this._bridgeTimeoutMs,
+  });
 
   final LoadResumoTotalVendasMunicipioFilialPeriodoAcrossAgentsUseCase
   _loadSalesAcrossAgents;

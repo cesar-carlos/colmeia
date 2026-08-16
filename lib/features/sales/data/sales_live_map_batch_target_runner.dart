@@ -23,11 +23,10 @@ import 'package:colmeia/features/sales/data/sales_live_map_batch_target_result.d
 /// agent target in the sales live map load path.
 final class SalesLiveMapBatchTargetRunner {
   SalesLiveMapBatchTargetRunner({
-    required AgentQueriesRepository agentQueriesRepository,
+    required this._agentQueriesRepository,
     int? maxParallelReadOnlyBatchItems,
     AgentQueryTransportPolicy? transportPolicy,
-  }) : _agentQueriesRepository = agentQueriesRepository,
-       _maxParallelReadOnlyBatchItems =
+  }) : _maxParallelReadOnlyBatchItems =
            maxParallelReadOnlyBatchItems ??
            AppEnvironment.agentSqlOverviewBatchMaxParallelReadOnlyItems,
        _transportPolicy =

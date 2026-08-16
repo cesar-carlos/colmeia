@@ -34,18 +34,16 @@ enum SalesLiveMapFilterMutationOutcome {
 
 class SalesLiveMapController extends ChangeNotifier {
   SalesLiveMapController({
-    required SalesSessionService sessionService,
+    required this._sessionService,
     required LoadAvailableAgentsForSales loadSalesAvailableAgentsUseCase,
     required LoadSalesLiveMapUseCase loadSalesLiveMapUseCase,
     RetryAfterGate? retryAfterGate,
-    AgentQueriesRelayCancelScopeBinder? relayCancelScopeBinder,
+    this._relayCancelScopeBinder,
     SalesLiveMapProgressiveStreamHandler? progressiveStreamHandler,
-  }) : _sessionService = sessionService,
-       _loadAgentsUseCase = loadSalesAvailableAgentsUseCase,
+  }) : _loadAgentsUseCase = loadSalesAvailableAgentsUseCase,
        _loadLiveMap = loadSalesLiveMapUseCase,
        _retryAfterGate = retryAfterGate ?? RetryAfterGate(),
        _ownsRetryAfterGate = retryAfterGate == null,
-       _relayCancelScopeBinder = relayCancelScopeBinder,
        _progressiveStreamHandler =
            progressiveStreamHandler ??
            const SalesLiveMapProgressiveStreamHandler() {

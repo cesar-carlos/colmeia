@@ -49,20 +49,25 @@ class AppBrazilStoreSalesMapWindowsSafeOverlayIconButton
       final colors = Theme.of(context).colorScheme;
       final resolvedIconSize = iconSize ?? dimension * 0.56;
       final isDisabled = onPressed == null;
-      return Material(
-        color: Colors.transparent,
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onPressed,
-          child: SizedBox(
-            width: dimension,
-            height: dimension,
-            child: Icon(
-              icon,
-              size: resolvedIconSize,
-              color: isDisabled
-                  ? colors.onSurface.withValues(alpha: 0.38)
-                  : colors.onSurface,
+      return Semantics(
+        button: true,
+        enabled: !isDisabled,
+        label: tooltipMessage,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onPressed,
+            child: SizedBox(
+              width: dimension,
+              height: dimension,
+              child: Icon(
+                icon,
+                size: resolvedIconSize,
+                color: isDisabled
+                    ? colors.onSurface.withValues(alpha: 0.38)
+                    : colors.onSurface,
+              ),
             ),
           ),
         ),

@@ -18,16 +18,12 @@ typedef OverviewPrefetchNotifyListeners = void Function();
 /// Warms shell cache for chart sections not included in the home load.
 final class OverviewSectionPrefetchCoordinator {
   OverviewSectionPrefetchCoordinator({
-    required OverviewPrefetchSession prefetchSession,
-    required OverviewPrefetchGateCheck isOnRetryCooldown,
-    required OverviewPrefetchGateCheck isLoading,
-    required OverviewPrefetchNotifyListeners notifyListeners,
-    required bool Function() isNarrowViewport,
-  }) : _prefetchSession = prefetchSession,
-       _isOnRetryCooldown = isOnRetryCooldown,
-       _isLoading = isLoading,
-       _notifyListeners = notifyListeners,
-       _isNarrowViewport = isNarrowViewport;
+    required this._prefetchSession,
+    required this._isOnRetryCooldown,
+    required this._isLoading,
+    required this._notifyListeners,
+    required this._isNarrowViewport,
+  });
 
   static const List<OverviewProgressiveSection> prefetchSectionsWide =
       <OverviewProgressiveSection>[

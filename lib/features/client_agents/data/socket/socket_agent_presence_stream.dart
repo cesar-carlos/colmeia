@@ -36,9 +36,8 @@ class SocketAgentPresenceStream implements AgentPresenceStream {
   /// stream.bind(catalogListener: listener, commandHinter: hinter);
   /// ```
   SocketAgentPresenceStream.deferred({
-    required ConsumerSocketConnection connection,
-  }) : _connection = connection,
-       _controller = StreamController<AgentPresenceEvent>.broadcast() {
+    required this._connection,
+  }) : _controller = StreamController<AgentPresenceEvent>.broadcast() {
     _stateSub = _connection.states().listen(_onConnectionState);
   }
 

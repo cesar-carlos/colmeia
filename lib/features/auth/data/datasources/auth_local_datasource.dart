@@ -3,8 +3,8 @@ import 'package:colmeia/features/auth/data/models/auth_session_model.dart';
 
 class AuthLocalDataSource {
   AuthLocalDataSource({
-    required SessionStorage sessionStorage,
-  }) : _sessionStorage = sessionStorage;
+    required this._sessionStorage,
+  });
 
   static const String _sessionKey = 'auth_session';
 

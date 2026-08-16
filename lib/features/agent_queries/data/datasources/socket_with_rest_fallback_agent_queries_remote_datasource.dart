@@ -29,22 +29,15 @@ import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel
 class SocketWithRestFallbackAgentQueriesRemoteDataSource
     implements AgentQueriesRemoteDataSource {
   SocketWithRestFallbackAgentQueriesRemoteDataSource({
-    required AgentQueriesRemoteDataSource socketDelegate,
-    required AgentQueriesRemoteDataSource restDelegate,
-    void Function(SocketDispatchException trigger)? onFallback,
-    void Function({required String reason, required Object trigger})?
-    onTemporaryFallback,
+    required this._socketDelegate,
+    required this._restDelegate,
+    this._onFallback,
+    this._onTemporaryFallback,
     AuthSessionEvents? sessionEvents,
-    int transientFailureThreshold = 5,
-    Duration temporaryLatchCooldown = const Duration(seconds: 60),
+    this._transientFailureThreshold = 5,
+    this._temporaryLatchCooldown = const Duration(seconds: 60),
     DateTime Function()? clock,
-  }) : _socketDelegate = socketDelegate,
-       _restDelegate = restDelegate,
-       _onFallback = onFallback,
-       _onTemporaryFallback = onTemporaryFallback,
-       _transientFailureThreshold = transientFailureThreshold,
-       _temporaryLatchCooldown = temporaryLatchCooldown,
-       _clock = clock ?? DateTime.now {
+  }) : _clock = clock ?? DateTime.now {
     final events = sessionEvents;
     if (events != null) {
       _sessionEventsSub = events.stream.listen(

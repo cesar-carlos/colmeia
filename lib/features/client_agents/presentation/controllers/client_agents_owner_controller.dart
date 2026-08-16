@@ -18,20 +18,14 @@ import 'package:result_dart/result_dart.dart' show Unit;
 
 class ClientAgentsOwnerController extends ChangeNotifier {
   ClientAgentsOwnerController({
-    required AuthController authController,
-    required LoadManagedAgentsUseCase loadManagedAgentsUseCase,
-    required LoadOwnerAccessRequestsUseCase loadOwnerAccessRequestsUseCase,
-    required ApproveOwnerAccessRequestUseCase approveOwnerAccessRequestUseCase,
-    required RejectOwnerAccessRequestUseCase rejectOwnerAccessRequestUseCase,
-    required LoadOwnerApprovedClientsUseCase loadOwnerApprovedClientsUseCase,
-    required RevokeOwnerClientAccessUseCase revokeOwnerClientAccessUseCase,
-  }) : _authController = authController,
-       _loadManagedAgentsUseCase = loadManagedAgentsUseCase,
-       _loadOwnerAccessRequestsUseCase = loadOwnerAccessRequestsUseCase,
-       _approveOwnerAccessRequestUseCase = approveOwnerAccessRequestUseCase,
-       _rejectOwnerAccessRequestUseCase = rejectOwnerAccessRequestUseCase,
-       _loadOwnerApprovedClientsUseCase = loadOwnerApprovedClientsUseCase,
-       _revokeOwnerClientAccessUseCase = revokeOwnerClientAccessUseCase;
+    required this._authController,
+    required this._loadManagedAgentsUseCase,
+    required this._loadOwnerAccessRequestsUseCase,
+    required this._approveOwnerAccessRequestUseCase,
+    required this._rejectOwnerAccessRequestUseCase,
+    required this._loadOwnerApprovedClientsUseCase,
+    required this._revokeOwnerClientAccessUseCase,
+  });
 
   final AuthController _authController;
   final LoadManagedAgentsUseCase _loadManagedAgentsUseCase;

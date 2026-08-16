@@ -159,9 +159,11 @@ class AppReportIconActionCell extends StatelessWidget {
             ? theme.colorScheme.primary
             : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5));
 
+    final message = tooltip?.trim();
     final button = Semantics(
       button: true,
       enabled: enabled,
+      label: (message != null && message.isNotEmpty) ? message : null,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -189,7 +191,6 @@ class AppReportIconActionCell extends StatelessWidget {
       ),
     );
 
-    final message = tooltip;
     if (message == null || message.isEmpty) {
       return button;
     }

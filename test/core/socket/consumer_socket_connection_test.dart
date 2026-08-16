@@ -15,10 +15,8 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 /// Fake provider that does not require AuthSessionAccessor / Dio plumbing.
 class _FakeTokenProvider implements SocketAuthTokenProvider {
   _FakeTokenProvider({
-    String? token,
-    String? refreshToken,
-  }) : _token = token,
-       _refreshToken = refreshToken,
+    this._token,
+  }) : _refreshToken = null,
        _events = StreamController<void>.broadcast();
 
   String? _token;

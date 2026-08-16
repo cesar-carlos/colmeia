@@ -59,8 +59,9 @@ class AppDestructiveButton extends StatelessWidget {
         2;
     final radius = resolveAppActionButtonRadius(tokens);
     final scheme = theme.colorScheme;
-    final fillColor = scheme.error;
-    final onFillColor = scheme.onError;
+    final isDark = theme.brightness == Brightness.dark;
+    final fillColor = isDark ? scheme.errorContainer : scheme.error;
+    final onFillColor = isDark ? scheme.onErrorContainer : scheme.onError;
     final labelStyle = resolveAppActionButtonTextStyle(theme);
 
     var resolvedStyle =
@@ -101,7 +102,7 @@ class AppDestructiveButton extends StatelessWidget {
             size: loadingSize,
             strokeWidth: loadingStroke,
           )
-        : _buildIdleContent(context, gapSm);
+        : _buildIdleContent(gapSm, onFillColor);
 
     return wrapAppActionButtonSemantics(
       child: FilledButton(
@@ -116,13 +117,11 @@ class AppDestructiveButton extends StatelessWidget {
     );
   }
 
-  Widget _buildIdleContent(BuildContext context, double iconTextGap) {
+  Widget _buildIdleContent(double iconTextGap, Color onFill) {
     if (child != null) {
       return child!;
     }
 
-    final scheme = Theme.of(context).colorScheme;
-    final onFill = scheme.onError;
     final text = Text(label!);
     if (icon == null) {
       return text;

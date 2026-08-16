@@ -25,10 +25,9 @@ import 'package:result_dart/result_dart.dart';
 /// Uses relay **unary** with `preferDbStreaming: false`. The CTE page shape
 /// (`Tot LEFT JOIN Numbered`) must return a `TotalCount` sentinel even when
 /// `Filial` is empty. A raw empty payload is a transport glitch, not "no
-/// branch" — we retry once, and pickers then fall back to a simple
-/// `SELECT TOP n FROM Filial`. A raw empty payload after that fallback is
-/// still a transport glitch — not an empty `Filial` table (that case is a
-/// `TotalCount = 0` sentinel on the CTE).
+/// branch" — we retry once, then fall back to a non-CTE `SELECT TOP`. A raw
+/// empty payload after that fallback is still a transport glitch — not an
+/// empty `Filial` table (that case is a `TotalCount = 0` sentinel on the CTE).
 class CadastroFilialRepositoryImpl implements CadastroFilialRepository {
   CadastroFilialRepositoryImpl(
     this._agentQueriesRepository, {
@@ -67,22 +66,27 @@ class CadastroFilialRepositoryImpl implements CadastroFilialRepository {
     var emptyRawPayload = false;
 
     Future<AppResult<CadastroFilialPageResult>> executeOnce({
-      required bool useSimpleBranchOptions,
+      required bool useSimpleQuery,
+      int? simpleMaxRows,
     }) {
       emptyRawPayload = false;
+      final projection = CadastroFilialSql.projectionFor(filter);
+      final resolvedSimpleMaxRows = simpleMaxRows ?? filter.pageSize;
       final request = AgentSqlExecuteRequest(
         agentId: agentId,
         requestingUserId: userId,
         hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
         hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
-        sql: useSimpleBranchOptions
-            ? CadastroFilialSql.branchOptionsSimpleQuery(
+        sql: useSimpleQuery
+            ? CadastroFilialSql.simpleQuery(
                 branches: selectedBranches,
                 hasSelectedBranches: filter.hasSelectedBranches,
                 codEmpresa: filter.codEmpresa,
                 codFilial: filter.codFilial,
                 searchTerm: filter.normalizedSearchTerm,
-                maxRows: filter.pageSize,
+                maxRows: resolvedSimpleMaxRows,
+                startRow: filter.startRow,
+                projection: projection,
               )
             : CadastroFilialSql.query(
                 branches: selectedBranches,
@@ -90,12 +94,12 @@ class CadastroFilialRepositoryImpl implements CadastroFilialRepository {
                 codEmpresa: filter.codEmpresa,
                 codFilial: filter.codFilial,
                 searchTerm: filter.normalizedSearchTerm,
-                projection: CadastroFilialSql.projectionFor(filter),
+                projection: projection,
               ),
         clientToken: clientToken,
         bridgeTimeoutMs:
             bridgeTimeoutMs ?? AppEnvironment.agentSqlBridgeTimeoutMs,
-        namedParams: useSimpleBranchOptions
+        namedParams: useSimpleQuery
             ? const <String, Object?>{}
             : <String, Object?>{
                 'startRow': filter.startRow,
@@ -122,8 +126,13 @@ class CadastroFilialRepositoryImpl implements CadastroFilialRepository {
         unexpectedRowsLogMessage: 'Unexpected row shape for $_operation',
         mapExecution: (executionResult) {
           emptyRawPayload = executionResult.rows.isEmpty;
-          if (useSimpleBranchOptions) {
-            return _mapSimpleExecution(executionResult);
+          final fetchedPageSize = useSimpleQuery ? resolvedSimpleMaxRows : null;
+          if (useSimpleQuery) {
+            return _mapSimpleExecution(
+              executionResult,
+              agentId: trimmedAgentId,
+              fetchedPageSize: fetchedPageSize,
+            );
           }
           return _mapPagedExecution(
             executionResult,
@@ -134,7 +143,7 @@ class CadastroFilialRepositoryImpl implements CadastroFilialRepository {
       );
     }
 
-    final first = await executeOnce(useSimpleBranchOptions: false);
+    final first = await executeOnce(useSimpleQuery: false);
     if (first.isError() || !emptyRawPayload) {
       return first;
     }
@@ -148,31 +157,48 @@ class CadastroFilialRepositoryImpl implements CadastroFilialRepository {
       },
     );
     await Future<void>.delayed(emptySuccessRetryDelay);
-    final second = await executeOnce(useSimpleBranchOptions: false);
+    final second = await executeOnce(useSimpleQuery: false);
     if (second.isError() || !emptyRawPayload) {
       return second;
     }
 
-    if (filter.branchOptionsProjection) {
+    AppLogger.info(
+      'Falling back to simple Filial SELECT for $_operation',
+      context: <String, Object?>{
+        'operation': _operation,
+        'agentId': trimmedAgentId,
+        'projection': CadastroFilialSql.projectionFor(filter).name,
+        'pageSize': filter.pageSize,
+      },
+    );
+    var fallback = await executeOnce(useSimpleQuery: true);
+    if (fallback.isError() || !emptyRawPayload) {
+      return fallback;
+    }
+    if (filter.pageSize > CadastroFilialFilter.defaultPageSize) {
       AppLogger.info(
-        'Falling back to simple Filial SELECT for $_operation',
+        'Retrying simple Filial SELECT with default page size for $_operation',
         context: <String, Object?>{
           'operation': _operation,
           'agentId': trimmedAgentId,
+          'pageSize': CadastroFilialFilter.defaultPageSize,
         },
       );
-      final fallback = await executeOnce(useSimpleBranchOptions: true);
+      fallback = await executeOnce(
+        useSimpleQuery: true,
+        simpleMaxRows: CadastroFilialFilter.defaultPageSize,
+      );
       if (fallback.isError() || !emptyRawPayload) {
         return fallback;
       }
-      AppLogger.warning(
-        'Simple Filial SELECT also returned empty payload for $_operation',
-        context: <String, Object?>{
-          'operation': _operation,
-          'agentId': trimmedAgentId,
-        },
-      );
     }
+    AppLogger.warning(
+      'Simple Filial SELECT also returned empty payload for $_operation',
+      context: <String, Object?>{
+        'operation': _operation,
+        'agentId': trimmedAgentId,
+      },
+    );
 
     return _emptyPayloadFailure(trimmedAgentId);
   }
@@ -196,11 +222,13 @@ class CadastroFilialRepositoryImpl implements CadastroFilialRepository {
   CadastroFilialPageResult _mapPagedExecution(
     AgentSqlExecutionResult executionResult, {
     required String agentId,
+    int? fetchedPageSize,
   }) {
     if (executionResult.rows.isEmpty) {
-      return const CadastroFilialPageResult(
-        items: <CadastroFilialRow>[],
+      return CadastroFilialPageResult(
+        items: const <CadastroFilialRow>[],
         totalCount: 0,
+        fetchedPageSize: fetchedPageSize,
       );
     }
 
@@ -223,16 +251,31 @@ class CadastroFilialRepositoryImpl implements CadastroFilialRepository {
       );
     }
 
-    return CadastroFilialPageResult(items: items, totalCount: totalCount);
+    return CadastroFilialPageResult(
+      items: items,
+      totalCount: totalCount,
+      fetchedPageSize: fetchedPageSize,
+    );
   }
 
   CadastroFilialPageResult _mapSimpleExecution(
-    AgentSqlExecutionResult executionResult,
-  ) {
+    AgentSqlExecutionResult executionResult, {
+    required String agentId,
+    int? fetchedPageSize,
+  }) {
     if (executionResult.rows.isEmpty) {
-      return const CadastroFilialPageResult(
-        items: <CadastroFilialRow>[],
+      return CadastroFilialPageResult(
+        items: const <CadastroFilialRow>[],
         totalCount: 0,
+        fetchedPageSize: fetchedPageSize,
+      );
+    }
+
+    if (_rowHasTotalCount(executionResult.rows.first)) {
+      return _mapPagedExecution(
+        executionResult,
+        agentId: agentId,
+        fetchedPageSize: fetchedPageSize,
       );
     }
 
@@ -240,13 +283,25 @@ class CadastroFilialRepositoryImpl implements CadastroFilialRepository {
         .where(_rowHasBranchKey)
         .map((row) => CadastroFilialRowModel.fromMap(row).toEntity())
         .toList(growable: false);
-    return CadastroFilialPageResult(items: items, totalCount: items.length);
+    return CadastroFilialPageResult(
+      items: items,
+      totalCount: items.length,
+      fetchedPageSize: fetchedPageSize,
+    );
   }
 
   static bool _rowHasBranchKey(Map<String, dynamic> row) {
     final raw = AgentQueriesSqlRowMapReader.lookupFirst(
       row,
       AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('CodEmpresa'),
+    );
+    return raw != null;
+  }
+
+  static bool _rowHasTotalCount(Map<String, dynamic> row) {
+    final raw = AgentQueriesSqlRowMapReader.lookupFirst(
+      row,
+      AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('TotalCount'),
     );
     return raw != null;
   }

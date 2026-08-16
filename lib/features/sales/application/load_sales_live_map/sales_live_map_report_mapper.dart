@@ -19,14 +19,11 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dar
 /// branch aggregates with geolocation in staged waves.
 class SalesLiveMapReportMapper {
   SalesLiveMapReportMapper({
-    required SalesLiveMapBranchAggregator branchAggregator,
-    required SalesLiveMapDiagnosticsLogger diagnosticsLogger,
-    required SalesLiveMapGeolocator geolocator,
-    required SalesLiveMapProgressiveEmitPolicy emitPolicy,
-  }) : _branchAggregator = branchAggregator,
-       _diagnosticsLogger = diagnosticsLogger,
-       _geolocator = geolocator,
-       _emitPolicy = emitPolicy;
+    required this._branchAggregator,
+    required this._diagnosticsLogger,
+    required this._geolocator,
+    required this._emitPolicy,
+  });
 
   final SalesLiveMapBranchAggregator _branchAggregator;
   final SalesLiveMapDiagnosticsLogger _diagnosticsLogger;

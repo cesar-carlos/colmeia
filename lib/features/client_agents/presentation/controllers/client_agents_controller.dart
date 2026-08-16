@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/errors/retry_after_gate.dart';
@@ -51,7 +52,7 @@ class ClientAgentsController extends ChangeNotifier
         ClientAgentsListLoadingHost,
         ClientAgentsAccessRequestActionsHost {
   ClientAgentsController({
-    required AuthController authController,
+    required this._authController,
     required ClientAgentTokenDraftStore clientTokenDraftStore,
     required LoadClientApprovedAgentsUseCase loadApprovedAgentsUseCase,
     required LoadClientAccessRequestsUseCase loadAccessRequestsUseCase,
@@ -70,13 +71,11 @@ class ClientAgentsController extends ChangeNotifier
     ObserveAgentPresenceUseCase? observeAgentPresenceUseCase,
     AgentPresencePoller? agentPresencePoller,
     ConsumerSocketConnection? consumerSocketConnection,
-    AgentQueryTargetResolutionInvalidator? targetResolutionInvalidator,
+    this._targetResolutionInvalidator,
     Duration hintConfirmDelay = const Duration(seconds: 5),
     RetryAfterGate? syncRetryAfterGate,
     RetryAfterGate? requestAccessRetryAfterGate,
-  }) : _authController = authController,
-       _loadClientAgentDetailUseCase = loadClientAgentDetailUseCase,
-       _targetResolutionInvalidator = targetResolutionInvalidator,
+  }) : _loadClientAgentDetailUseCase = loadClientAgentDetailUseCase,
        _requestAccessRetryAfterGate =
            requestAccessRetryAfterGate ?? RetryAfterGate(),
        _ownsRequestAccessRetryAfterGate = requestAccessRetryAfterGate == null {

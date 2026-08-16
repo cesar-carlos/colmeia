@@ -16,14 +16,11 @@ import 'package:result_dart/result_dart.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({
-    required AuthLocalDataSource localDataSource,
-    required AuthRemoteDataSource remoteDataSource,
-    required AppCacheStore appCacheStore,
-    AuthSessionEvents? sessionEvents,
-  }) : _localDataSource = localDataSource,
-       _remoteDataSource = remoteDataSource,
-       _appCacheStore = appCacheStore,
-       _sessionEvents = sessionEvents;
+    required this._localDataSource,
+    required this._remoteDataSource,
+    required this._appCacheStore,
+    this._sessionEvents,
+  });
 
   final AuthLocalDataSource _localDataSource;
   final AuthRemoteDataSource _remoteDataSource;

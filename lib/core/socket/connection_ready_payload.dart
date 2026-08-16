@@ -29,8 +29,9 @@ abstract interface class ConnectionReadyDecoder {
   ConnectionReadyPayload? decode(Object? raw);
 }
 
-typedef PayloadFrameParseFailureCallback =
-    void Function(PayloadFrameParseFailure failure);
+typedef PayloadFrameParseFailureCallback = void Function(
+  PayloadFrameParseFailure failure,
+);
 
 /// Shared logic that turns a logical `connection:ready` map into a
 /// [ConnectionReadyPayload]. Both the legacy raw-JSON decoder and the
@@ -103,9 +104,8 @@ class JsonOnlyConnectionReadyDecoder implements ConnectionReadyDecoder {
 class PayloadFrameConnectionReadyDecoder implements ConnectionReadyDecoder {
   PayloadFrameConnectionReadyDecoder({
     PayloadFrameCodec? codec,
-    PayloadFrameParseFailureCallback? onParseFailure,
-  }) : _codec = codec ?? const PayloadFrameCodec(),
-       _onParseFailure = onParseFailure;
+    this._onParseFailure,
+  }) : _codec = codec ?? const PayloadFrameCodec();
 
   final PayloadFrameCodec _codec;
   final PayloadFrameParseFailureCallback? _onParseFailure;
@@ -145,10 +145,9 @@ class PayloadFrameConnectionReadyDecoder implements ConnectionReadyDecoder {
 class CompatConnectionReadyDecoder implements ConnectionReadyDecoder {
   CompatConnectionReadyDecoder({
     PayloadFrameCodec? codec,
-    void Function(ConnectionReadyShape shape)? onShape,
+    this._onShape,
   }) : _payloadFrameDecoder = PayloadFrameConnectionReadyDecoder(codec: codec),
-       _rawJsonDecoder = const JsonOnlyConnectionReadyDecoder(),
-       _onShape = onShape;
+       _rawJsonDecoder = const JsonOnlyConnectionReadyDecoder();
 
   final PayloadFrameConnectionReadyDecoder _payloadFrameDecoder;
   final JsonOnlyConnectionReadyDecoder _rawJsonDecoder;

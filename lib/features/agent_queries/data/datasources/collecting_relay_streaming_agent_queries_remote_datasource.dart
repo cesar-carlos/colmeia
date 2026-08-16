@@ -34,15 +34,11 @@ import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel
 class CollectingRelayStreamingAgentQueriesRemoteDataSource
     implements AgentQueriesRemoteDataSource {
   CollectingRelayStreamingAgentQueriesRemoteDataSource({
-    required AgentQueriesStreamingRemoteDataSource streamingDelegate,
-    AgentQueriesRemoteDataSource? batchDelegate,
-    StreamingSqlExecuteCollector collector =
-        const BridgeShapedSqlExecuteCollector(),
+    required this._streamingDelegate,
+    this._batchDelegate,
+    this._collector = const BridgeShapedSqlExecuteCollector(),
     int maxConcurrentPerAgent = 4,
-  }) : _streamingDelegate = streamingDelegate,
-       _batchDelegate = batchDelegate,
-       _collector = collector,
-       _maxConcurrentPerAgent = maxConcurrentPerAgent < 1
+  }) : _maxConcurrentPerAgent = maxConcurrentPerAgent < 1
            ? 1
            : maxConcurrentPerAgent;
 
@@ -104,10 +100,9 @@ class CollectingRelayStreamingAgentQueriesRemoteDataSource
 
 class _PerAgentStreamingQueue {
   _PerAgentStreamingQueue({
-    required int maxConcurrent,
-    required void Function() onIdle,
-  }) : _maxConcurrent = maxConcurrent,
-       _onIdle = onIdle;
+    required this._maxConcurrent,
+    required this._onIdle,
+  });
 
   final int _maxConcurrent;
   final void Function() _onIdle;

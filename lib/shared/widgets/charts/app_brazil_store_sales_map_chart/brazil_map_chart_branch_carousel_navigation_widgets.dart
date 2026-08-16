@@ -1,4 +1,4 @@
-﻿import 'package:colmeia/core/formatters/app_br_formatters.dart';
+import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
@@ -34,32 +34,36 @@ class BrazilMapChartBranchCarouselNavigation extends StatelessWidget {
     final branchCount = points.length;
     final showBranchPicker = branchCount >= 10;
 
-    final pickerTooltip = defaultTargetPlatform == TargetPlatform.windows
-        ? ''
-        : l10n.brazilStoreSalesMapChooseBranchMenuTooltip;
+    final pickerTooltip = l10n.brazilStoreSalesMapChooseBranchMenuTooltip;
 
     return Row(
       children: [
         if (showBranchPicker) ...[
-          PopupMenuButton<int>(
-            key: const ValueKey<String>(
-              'brazil-store-sales-branch-card-picker',
-            ),
-            tooltip: pickerTooltip,
-            onSelected: onSelectIndex,
-            itemBuilder: (context) => [
-              for (var index = 0; index < points.length; index++)
-                PopupMenuItem<int>(
-                  value: index,
-                  child: Text(
-                    '${brazilMapChartFormatSalesCount(context, index + 1)}. '
-                    '${brazilMapBranchDisplayNameUi(context, points[index])}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+          Semantics(
+            button: true,
+            label: pickerTooltip,
+            child: PopupMenuButton<int>(
+              key: const ValueKey<String>(
+                'brazil-store-sales-branch-card-picker',
+              ),
+              tooltip: defaultTargetPlatform == TargetPlatform.windows
+                  ? ''
+                  : pickerTooltip,
+              onSelected: onSelectIndex,
+              itemBuilder: (context) => [
+                for (var index = 0; index < points.length; index++)
+                  PopupMenuItem<int>(
+                    value: index,
+                    child: Text(
+                      '${brazilMapChartFormatSalesCount(context, index + 1)}. '
+                      '${brazilMapBranchDisplayNameUi(context, points[index])}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-            ],
-            icon: const Icon(Icons.list_alt_outlined),
+              ],
+              icon: const Icon(Icons.list_alt_outlined),
+            ),
           ),
           SizedBox(width: tokens.gapXs),
         ],

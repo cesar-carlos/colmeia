@@ -17,10 +17,9 @@ class LoadAvailableAgentsForSales {
 
   LoadAvailableAgentsForSales.fromTargetResolver(
     this._targetResolver, {
-    AgentQueryTargetResolutionCache? resolutionCache,
+    this._resolutionCache,
   }) : _repository = null,
-       _clientTokenReader = null,
-       _resolutionCache = resolutionCache;
+       _clientTokenReader = null;
 
   static const int _pageSize = 100;
 

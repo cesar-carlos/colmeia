@@ -6,10 +6,10 @@ class AgentQueryExecutionParticipant<Row> {
     required this.displayName,
     required this.rows,
     required this.elapsedMs,
-    int? sourceRowCount,
+    this._sourceRowCount,
     this.failure,
     this.wasDiscardedByRace = false,
-  }) : _sourceRowCount = sourceRowCount;
+  });
 
   final String agentId;
   final String displayName;

@@ -10,8 +10,7 @@ import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 /// own client Completer so cancel can target a follower without aborting
 /// the shared hub request.
 class SocketCommandCoalescer {
-  SocketCommandCoalescer({void Function()? onCoalesced})
-    : _onCoalesced = onCoalesced;
+  SocketCommandCoalescer({this._onCoalesced});
 
   final void Function()? _onCoalesced;
 
