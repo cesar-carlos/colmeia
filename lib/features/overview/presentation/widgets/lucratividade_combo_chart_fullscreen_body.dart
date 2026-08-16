@@ -9,17 +9,16 @@ import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart' show TooltipArgs;
 
-typedef LucratividadeComboStyleBuilder =
-    AppComboChartStyle Function(
-      AppThemeTokens tokens, {
-      required AppLocalizations l10n,
-      required bool usePercentPrimaryAxis,
-      required bool useMarkupAxisFormat,
-      required Color barColor,
-      double? heightOverride,
-      bool fastChartAnimation,
-      String? Function(TooltipArgs args)? tooltipBodyResolver,
-    });
+typedef LucratividadeComboStyleBuilder = AppComboChartStyle Function(
+  AppThemeTokens tokens, {
+  required AppLocalizations l10n,
+  required bool usePercentPrimaryAxis,
+  required bool useMarkupAxisFormat,
+  required Color barColor,
+  double? heightOverride,
+  bool fastChartAnimation,
+  String? Function(TooltipArgs args)? tooltipBodyResolver,
+});
 
 /// Offscreen fullscreen surface with independent display/metric state.
 Widget buildLucratividadeComboFullscreenBody<T>({

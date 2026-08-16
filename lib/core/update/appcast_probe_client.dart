@@ -41,8 +41,9 @@ class AppcastProbeResult {
   final bool hasReleases;
 }
 
-typedef AppcastProbeClient =
-    Future<AppcastProbeResult> Function({required String feedUrl});
+typedef AppcastProbeClient = Future<AppcastProbeResult> Function({
+  required String feedUrl,
+});
 
 final class DioAppcastProbeClient {
   DioAppcastProbeClient({Dio? dio})
@@ -123,15 +124,13 @@ final class DioAppcastProbeClient {
         ),
         _ => const AppcastProbeResult.failure(
           failureKind: AppcastProbeFailureKind.network,
-          details:
-              'Nao foi possivel acessar o feed oficial. Verifique sua conexao e tente novamente.',
+          details: 'Nao foi possivel acessar o feed oficial. Verifique sua conexao e tente novamente.',
         ),
       };
     } on Object catch (_) {
       return const AppcastProbeResult.failure(
         failureKind: AppcastProbeFailureKind.network,
-        details:
-            'Nao foi possivel acessar o feed oficial. Verifique sua conexao e tente novamente.',
+        details: 'Nao foi possivel acessar o feed oficial. Verifique sua conexao e tente novamente.',
       );
     }
   }

@@ -13,13 +13,12 @@ import 'package:colmeia/shared/widgets/feedback/app_data_stale_banner.dart';
 import 'package:flutter/material.dart';
 import 'package:result_dart/result_dart.dart';
 
-typedef AppRegionMapFiltersBuilder<TFilters> =
-    Widget Function(
-      BuildContext context,
-      TFilters filters,
-      ValueChanged<TFilters> onFiltersChanged,
-      ({bool isLoading}) state,
-    );
+typedef AppRegionMapFiltersBuilder<TFilters> = Widget Function(
+  BuildContext context,
+  TFilters filters,
+  ValueChanged<TFilters> onFiltersChanged,
+  ({bool isLoading}) state,
+);
 
 class AppRegionMapExplorer<TItem, TFilters> extends StatefulWidget {
   const AppRegionMapExplorer({

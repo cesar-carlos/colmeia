@@ -174,8 +174,7 @@ class AppComparisonBarChartDemoPage extends StatelessWidget {
         SizedBox(height: tokens.sectionSpacing),
         AppComparisonBarChart<_SkewedPayment>(
           title: '9. Piso visual + avisos (A11y)',
-          subtitle:
-              'Valor miudo vs grandes totais; icone de info e semantica do app.',
+          subtitle: 'Valor miudo vs grandes totais; icone de info e semantica do app.',
           items: _skewedPaymentSamples,
           labelBuilder: (item) => item.label,
           valueBuilder: (item) => item.amount,

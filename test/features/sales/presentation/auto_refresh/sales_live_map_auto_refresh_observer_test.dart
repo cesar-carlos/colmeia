@@ -67,8 +67,10 @@ void main() {
             readCurrentAutoRefreshTime: () => now,
             readAutoRefreshReloadInProgress: () => true,
             refreshAutoRefreshScheduling: () => schedulingRefreshCount += 1,
-            recordAutoRefreshSuccessfulReload:
-                (_, {required scheduleNextCycle}) {},
+            recordAutoRefreshSuccessfulReload: (
+              _, {
+              required scheduleNextCycle,
+            }) {},
             onCloseFullscreenRequested: () {},
           )..onControllerChanged(
             const SalesLiveMapPresentationState(),

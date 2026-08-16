@@ -93,16 +93,15 @@ void main() {
             targetResolver: targetResolver,
             planBuilder: planBuilder,
             executor: executor,
-            loadRowsForTarget:
-                ({
-                  required userId,
-                  required agentId,
-                  required filter,
-                  clientToken,
-                  bridgeTimeoutMs,
-                  hubPresenceOnlineAgentIdsSnapshot,
-                  hubConnectedFromApprovedCatalogRow,
-                }) async => throw StateError('loadRowsForTarget'),
+            loadRowsForTarget: ({
+              required userId,
+              required agentId,
+              required filter,
+              clientToken,
+              bridgeTimeoutMs,
+              hubPresenceOnlineAgentIdsSnapshot,
+              hubConnectedFromApprovedCatalogRow,
+            }) async => throw StateError('loadRowsForTarget'),
           );
 
       check(result.isError()).isTrue();

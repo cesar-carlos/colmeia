@@ -3,8 +3,10 @@ import 'package:colmeia/shared/widgets/refresh/app_second_ticker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-typedef AutoRefreshCountdownLabelBuilder =
-    String Function(Duration remaining, {required bool isBackingOff});
+typedef AutoRefreshCountdownLabelBuilder = String Function(
+  Duration remaining, {
+  required bool isBackingOff,
+});
 
 class AutoRefreshCountdownText extends StatefulWidget {
   const AutoRefreshCountdownText({

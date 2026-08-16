@@ -794,11 +794,9 @@ void main() {
         points: points,
       );
 
-      final previewHandle =
-          tester.state(
-                find.byType(AppBrazilStoreSalesMapChart),
-              )
-              as AppBrazilStoreSalesMapChartPreviewTestHandle;
+      final previewHandle = tester.state(
+        find.byType(AppBrazilStoreSalesMapChart),
+      ) as AppBrazilStoreSalesMapChartPreviewTestHandle;
       final snapshotDataBefore = previewHandle.snapshotDataIdentityForTesting;
       final mapPointsBefore = previewHandle.snapshotMapPointsIdentityForTesting;
 
@@ -1173,11 +1171,9 @@ void main() {
           ),
         );
 
-        final chartState =
-            tester.state<State<AppBrazilStoreSalesMapChart>>(
-                  find.byType(AppBrazilStoreSalesMapChart),
-                )
-                as AppBrazilStoreSalesMapChartPreviewTestHandle;
+        final chartState = tester.state<State<AppBrazilStoreSalesMapChart>>(
+          find.byType(AppBrazilStoreSalesMapChart),
+        ) as AppBrazilStoreSalesMapChartPreviewTestHandle;
         final regionMap = tester
             .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
               find.byWidgetPredicate(
@@ -1361,11 +1357,9 @@ void main() {
         ),
       );
 
-      final chartState =
-          tester.state<State<AppBrazilStoreSalesMapChart>>(
-                find.byType(AppBrazilStoreSalesMapChart),
-              )
-              as AppBrazilStoreSalesMapChartPreviewTestHandle;
+      final chartState = tester.state<State<AppBrazilStoreSalesMapChart>>(
+        find.byType(AppBrazilStoreSalesMapChart),
+      ) as AppBrazilStoreSalesMapChartPreviewTestHandle;
       final identityBeforeTap = chartState.snapshotDataIdentityForTesting;
 
       final regionMap = tester
@@ -1445,11 +1439,9 @@ void main() {
         ),
       );
 
-      final chartState =
-          tester.state<State<AppBrazilStoreSalesMapChart>>(
-                find.byType(AppBrazilStoreSalesMapChart),
-              )
-              as AppBrazilStoreSalesMapChartPreviewTestHandle;
+      final chartState = tester.state<State<AppBrazilStoreSalesMapChart>>(
+        find.byType(AppBrazilStoreSalesMapChart),
+      ) as AppBrazilStoreSalesMapChartPreviewTestHandle;
       final regionMap = tester
           .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(
             find.byWidgetPredicate(
@@ -1513,11 +1505,9 @@ void main() {
         ),
       );
 
-      final chartState =
-          tester.state<State<AppBrazilStoreSalesMapChart>>(
-                find.byType(AppBrazilStoreSalesMapChart),
-              )
-              as AppBrazilStoreSalesMapChartPreviewTestHandle;
+      final chartState = tester.state<State<AppBrazilStoreSalesMapChart>>(
+        find.byType(AppBrazilStoreSalesMapChart),
+      ) as AppBrazilStoreSalesMapChartPreviewTestHandle;
       final identityBeforeTap = chartState.snapshotDataIdentityForTesting;
       final mapPointsBeforeTap = chartState.snapshotMapPointsIdentityForTesting;
       final regionMap = tester
@@ -1605,11 +1595,9 @@ void main() {
       });
       expect(markerIndex, greaterThanOrEqualTo(0));
 
-      final chartState =
-          tester.state<State<AppBrazilStoreSalesMapChart>>(
-                find.byType(AppBrazilStoreSalesMapChart),
-              )
-              as AppBrazilStoreSalesMapChartPreviewTestHandle;
+      final chartState = tester.state<State<AppBrazilStoreSalesMapChart>>(
+        find.byType(AppBrazilStoreSalesMapChart),
+      ) as AppBrazilStoreSalesMapChartPreviewTestHandle;
 
       regionMap.onPointTap?.call(
         AppMapPointTapEvent(
@@ -1663,11 +1651,9 @@ void main() {
         style: style,
       );
 
-      final chartState =
-          tester.state<State<AppBrazilStoreSalesMapChart>>(
-                find.byType(AppBrazilStoreSalesMapChart),
-              )
-              as AppBrazilStoreSalesMapChartPreviewTestHandle;
+      final chartState = tester.state<State<AppBrazilStoreSalesMapChart>>(
+        find.byType(AppBrazilStoreSalesMapChart),
+      ) as AppBrazilStoreSalesMapChartPreviewTestHandle;
       final identityBeforeSelection = chartState.snapshotDataIdentityForTesting;
 
       await _pumpMap(
@@ -1725,11 +1711,9 @@ void main() {
           ),
         );
 
-        final chartState =
-            tester.state<State<AppBrazilStoreSalesMapChart>>(
-                  find.byType(AppBrazilStoreSalesMapChart),
-                )
-                as AppBrazilStoreSalesMapChartPreviewTestHandle;
+        final chartState = tester.state<State<AppBrazilStoreSalesMapChart>>(
+          find.byType(AppBrazilStoreSalesMapChart),
+        ) as AppBrazilStoreSalesMapChartPreviewTestHandle;
         final identityBeforeZoom = chartState.snapshotDataIdentityForTesting;
         final regionMap = tester
             .widget<AppRegionMapChart<AppBrazilStoreSalesStateBucket>>(

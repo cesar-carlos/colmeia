@@ -125,7 +125,6 @@ class AgentQueriesCancelScope {
 }
 
 /// Binds [AgentQueriesCancelScope] to relay transport (DI / presentation edge).
-typedef AgentQueriesRelayCancelScopeBinder =
-    void Function(
-      AgentQueriesCancelScope scope,
-    );
+typedef AgentQueriesRelayCancelScopeBinder = void Function(
+  AgentQueriesCancelScope scope,
+);

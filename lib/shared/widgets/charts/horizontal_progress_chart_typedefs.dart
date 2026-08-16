@@ -9,14 +9,24 @@ typedef AppHorizontalProgressBarValueBuilder<T> = double Function(T item);
 /// Per-row denominator; falls back to chart `maxValue` when omitted.
 typedef AppHorizontalProgressMaxValueBuilder<T> = double Function(T item);
 
-typedef AppHorizontalProgressValueLabelBuilder<T> =
-    String Function(T item, double displayValue, double rowMaxValue);
+typedef AppHorizontalProgressValueLabelBuilder<T> = String Function(
+  T item,
+  double displayValue,
+  double rowMaxValue,
+);
 
-typedef AppHorizontalProgressRowLeadingBuilder<T> =
-    Widget? Function(BuildContext context, T item);
+typedef AppHorizontalProgressRowLeadingBuilder<T> = Widget? Function(
+  BuildContext context,
+  T item,
+);
 
-typedef AppHorizontalProgressTooltipBuilder<T> =
-    String? Function(T item, double displayValue, double rowMaxValue);
+typedef AppHorizontalProgressTooltipBuilder<T> = String? Function(
+  T item,
+  double displayValue,
+  double rowMaxValue,
+);
 
-typedef AppHorizontalProgressDividerBuilder =
-    Widget Function(BuildContext context, int index);
+typedef AppHorizontalProgressDividerBuilder = Widget Function(
+  BuildContext context,
+  int index,
+);

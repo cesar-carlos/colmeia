@@ -151,8 +151,7 @@ void main() {
                 options: const AgentSqlExecuteBatchOptions(maxRows: 1),
                 commands: const <AgentSqlExecuteBatchCommand>[
                   AgentSqlExecuteBatchCommand(
-                    sql:
-                        'SELECT TOP 1 CodCliente FROM Cliente ORDER BY CodCliente',
+                    sql: 'SELECT TOP 1 CodCliente FROM Cliente ORDER BY CodCliente',
                   ),
                   AgentSqlExecuteBatchCommand(
                     sql: 'SELECT TOP 1 Nome FROM Cliente ORDER BY CodCliente',

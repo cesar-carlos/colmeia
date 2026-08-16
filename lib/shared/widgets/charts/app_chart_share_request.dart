@@ -61,5 +61,7 @@ class AppChartShareRequest {
 ///
 /// The [context] is the chart's own context, so callers do not need to capture
 /// one separately.
-typedef AppChartShareRequestCallback =
-    void Function(BuildContext context, AppChartShareRequest request);
+typedef AppChartShareRequestCallback = void Function(
+  BuildContext context,
+  AppChartShareRequest request,
+);

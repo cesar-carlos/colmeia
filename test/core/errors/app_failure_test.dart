@@ -94,8 +94,7 @@ void main() {
           response: Response<String>(
             requestOptions: RequestOptions(path: '/api/v1/agents/commands'),
             statusCode: 403,
-            data:
-                'You do not have access to agent 3183a9f2-429b-46d6-a339-3580e5e5cb31',
+            data: 'You do not have access to agent 3183a9f2-429b-46d6-a339-3580e5e5cb31',
           ),
           type: DioExceptionType.badResponse,
         ),

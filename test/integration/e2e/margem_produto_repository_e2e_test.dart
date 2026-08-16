@@ -132,8 +132,7 @@ void main() {
                 expect(
                   overlap,
                   isEmpty,
-                  reason:
-                      'Page 2 rows should not repeat CodProduto keys from page 1',
+                  reason: 'Page 2 rows should not repeat CodProduto keys from page 1',
                 );
               }
             },
@@ -253,8 +252,7 @@ void main() {
                 expect(
                   page2.items.where((row) => keys1.contains(row.codProduto)),
                   isEmpty,
-                  reason:
-                      'Page 2 rows should not repeat CodProduto keys from page 1',
+                  reason: 'Page 2 rows should not repeat CodProduto keys from page 1',
                 );
                 final last = page1.items.last;
                 final firstRow = page2.items.first;
@@ -270,8 +268,7 @@ void main() {
                   expect(
                     last.codProduto,
                     lessThan(firstRow.codProduto),
-                    reason:
-                        'equal NomeProduto should keep CodProduto ASC across pages',
+                    reason: 'equal NomeProduto should keep CodProduto ASC across pages',
                   );
                 }
               }

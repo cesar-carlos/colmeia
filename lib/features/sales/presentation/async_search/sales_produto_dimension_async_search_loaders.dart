@@ -9,10 +9,9 @@ typedef SalesAgentIdProvider = String? Function();
 
 typedef SalesClientTokenResolver = Future<String?> Function(String agentId);
 
-typedef SalesProdutoDimensionLoaderFactory =
-    AppAsyncSearchLoader<int> Function(
-      SalesAgentIdProvider agentIdProvider,
-    );
+typedef SalesProdutoDimensionLoaderFactory = AppAsyncSearchLoader<int> Function(
+  SalesAgentIdProvider agentIdProvider,
+);
 
 AppAsyncSearchLoader<int> createSalesGrupoProdutoAsyncSearchLoader({
   required LoadGrupoProdutoOptionsUseCase useCase,

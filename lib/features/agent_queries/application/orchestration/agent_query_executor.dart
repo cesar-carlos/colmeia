@@ -13,8 +13,9 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_query_plan.
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_target.dart';
 import 'package:result_dart/result_dart.dart';
 
-typedef AgentQueryTargetLoader<Row> =
-    Future<AppResult<List<Row>>> Function(AgentQueryTarget target);
+typedef AgentQueryTargetLoader<Row> = Future<AppResult<List<Row>>> Function(
+  AgentQueryTarget target,
+);
 
 typedef AgentQueryLoadedRowsTargetLoader<Row> =
     Future<AppResult<AgentQueryLoadedRows<Row>>> Function(

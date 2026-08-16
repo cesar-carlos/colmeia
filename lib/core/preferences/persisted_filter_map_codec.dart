@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
-typedef PersistedFilterRule =
-    void Function(
-      PersistedFilterMapDraft draft,
-      Map<String, Object?> source,
-    );
+typedef PersistedFilterRule = void Function(
+  PersistedFilterMapDraft draft,
+  Map<String, Object?> source,
+);
 
 /// Helpers to normalize filter maps when persisting/restoring page state.
 class PersistedFilterMapCodec {

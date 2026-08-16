@@ -47,14 +47,14 @@ class AppAsyncSearchLoadResult<T> {
   final String? errorMessage;
 }
 
-typedef AppAsyncSearchLoader<T> =
-    Future<AppAsyncSearchLoadResult<T>> Function(AppAsyncSearchQuery query);
+typedef AppAsyncSearchLoader<T> = Future<AppAsyncSearchLoadResult<T>> Function(
+  AppAsyncSearchQuery query,
+);
 
-typedef AppAsyncSearchChanged<T> =
-    void Function(
-      T? value, {
-      String? label,
-    });
+typedef AppAsyncSearchChanged<T> = void Function(
+  T? value, {
+  String? label,
+});
 
 class AppAsyncSearchField<T> extends StatefulWidget {
   const AppAsyncSearchField({

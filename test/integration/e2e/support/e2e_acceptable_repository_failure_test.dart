@@ -326,8 +326,7 @@ void main() {
     test('accepts AGENT_ACCESS_DENIED payload after context merge', () {
       const failure = AuthorizationFailure(
         message: 'overview failed',
-        userMessage:
-            'You do not have access to agent 3183a9f2-429b-46d6-a339-3580e5e5cb31',
+        userMessage: 'You do not have access to agent 3183a9f2-429b-46d6-a339-3580e5e5cb31',
         context: <String, Object?>{
           'operation': 'loadOverview',
           'httpStatusCode': 403,
