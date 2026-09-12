@@ -3,6 +3,14 @@
   "dart.lineLength": 80,
   "dart.flutterSdkPath": null,
   "dart.enableSdkFormatter": true,
+  // Flutter tools look up vswhere via PROGRAMFILES(X86). Cursor's spawned
+  // processes on this machine do not inherit that Windows-injected variable.
+  "dart.env": {
+    "PROGRAMFILES(X86)": "C:\\Program Files (x86)"
+  },
+  "terminal.integrated.env.windows": {
+    "PROGRAMFILES(X86)": "C:\\Program Files (x86)"
+  },
 
   // Editor settings
   "editor.rulers": [80],
