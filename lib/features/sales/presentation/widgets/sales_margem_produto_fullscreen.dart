@@ -19,9 +19,9 @@ import 'package:flutter/material.dart';
 const double kSalesMargemProdutoDataRowHeight = 56;
 const double kSalesMargemProdutoHeaderRowHeight = 40;
 const double kSalesMargemProdutoGridMinHeight = 240;
-const double kSalesMargemProdutoPageChromeHeight = 176;
+const double kSalesMargemProdutoPageChromeHeight = 144;
 const double kSalesMargemProdutoPageGridMaxHeight = 720;
-const double kSalesMargemProdutoFullscreenChromeHeight = 168;
+const double kSalesMargemProdutoFullscreenChromeHeight = 136;
 
 /// Fits the catalog grid into [maxHeight] after reserving viewer chrome.
 ///
@@ -182,17 +182,17 @@ class _SalesMargemProdutoFullscreenState
               AppReportViewerStyle.numericalDetailing(
                 entityLabel: l10n.salesMargemProdutoEntityLabel,
                 gridHeight: gridHeight,
-                frozenColumnsCount: 0,
                 dataRowHeight: kSalesMargemProdutoDataRowHeight,
               ).copyWith(
-                allowSorting: false,
+                allowSorting: true,
                 trustServerRowOrder: true,
-                showRefreshAction: true,
+                showRefreshAction: false,
                 enablePullToRefresh: false,
                 showSearchBar: true,
                 searchDebounce: SalesMargemProdutoSort.searchDebounce,
                 availablePageSizes: SalesMargemProdutoSort.allowedPageSizes,
                 headerRowHeight: kSalesMargemProdutoHeaderRowHeight,
+                contentPadding: EdgeInsets.zero,
               ),
           isLoading: widget.snapshot.isLoading,
           loadErrorPanel: loadFailure == null
@@ -210,7 +210,13 @@ class _SalesMargemProdutoFullscreenState
                   ),
                 ),
           onRetry: () => unawaited(widget.onRefresh()),
-          emptyMessage: l10n.salesMargemProdutoEmpty,
+          emptyMessage:
+              SalesMargemProdutoSort.normalizeSearchTerm(
+                    widget.snapshot.query.searchTerm,
+                  ) ==
+                  null
+              ? l10n.salesMargemProdutoEmpty
+              : l10n.salesMargemProdutoEmptySearch,
           searchHintText: l10n.salesMargemProdutoSearchHint,
         );
       },

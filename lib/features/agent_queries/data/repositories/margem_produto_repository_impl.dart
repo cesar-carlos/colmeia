@@ -92,8 +92,11 @@ class MargemProdutoRepositoryImpl implements MargemProdutoRepository {
         requestingUserId: userId,
         hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
         hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
-        // Fixed SQL order: NomeProduto ASC, CodProduto ASC (stable paging).
-        sql: MargemProdutoSql.pagedQuery(),
+        // ROW_NUMBER uses filter.sortBy / sortDirection (whitelist).
+        sql: MargemProdutoSql.pagedQuery(
+          sortBy: filter.sortBy,
+          sortDirection: filter.sortDirection,
+        ),
         clientToken: clientToken,
         bridgeTimeoutMs: effectiveBridgeMs,
         namedParams: <String, Object?>{

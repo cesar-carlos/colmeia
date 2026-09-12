@@ -3727,16 +3727,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesMargemProdutoColumnMarca => 'Brand';
 
   @override
+  String get salesMargemProdutoColumnMargem => '% Margin';
+
+  @override
   String get salesMargemProdutoEntityLabel => 'products';
 
   @override
   String get salesMargemProdutoEmpty => 'No products for this branch.';
 
   @override
+  String get salesMargemProdutoEmptySearch => 'No products match this search.';
+
+  @override
   String get salesMargemProdutoFilterSearch => 'Product name';
 
   @override
-  String get salesMargemProdutoSearchHint => 'Search by product name';
+  String get salesMargemProdutoSearchHint =>
+      'Search by name, code, group or brand';
 
   @override
   String get salesMargemProdutoFullscreenTooltip => 'Open table fullscreen';

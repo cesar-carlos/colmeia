@@ -5,6 +5,8 @@ import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_by.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_direction.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/margem_produto_repository.dart';
 import 'package:flutter_test/flutter_test.dart' hide group;
 import 'package:test_api/scaffolding.dart' show group;
@@ -256,9 +258,9 @@ void main() {
                 );
                 final last = page1.items.last;
                 final firstRow = page2.items.first;
-                final nameOrder = foldNomeProdutoForOrder(
+                final nameOrder = foldNomeProdutoForSortOrder(
                   last.nomeProduto,
-                ).compareTo(foldNomeProdutoForOrder(firstRow.nomeProduto));
+                ).compareTo(foldNomeProdutoForSortOrder(firstRow.nomeProduto));
                 expect(
                   nameOrder,
                   lessThanOrEqualTo(0),
@@ -345,11 +347,125 @@ void main() {
               );
               for (final row in page.items) {
                 expect(
-                  foldNomeProdutoForOrder(row.nomeProduto),
-                  contains(unaccentedToken),
+                  _matchesContainsSearch(row, unaccentedToken, filterToken),
+                  isTrue,
+                  reason: 'filtered rows must match name, code, group or brand',
                 );
               }
               expectNomeProdutoAscending(page.items);
+            },
+            (failure) {
+              expectAcceptableAgentQueriesE2eFailure(
+                failure,
+                failureScope: 'Repository e2e',
+              );
+            },
+          );
+        },
+      );
+
+      test(
+        'loadPage contains search matches CodProduto when page 1 has items',
+        () async {
+          if (shouldSkipE2eRepositoryTest(
+            'margem_produto_repository_e2e (code contains)',
+          )) {
+            return;
+          }
+
+          final repository = getIt<MargemProdutoRepository>();
+          const baselineFilter = MargemProdutoFilter();
+          final baseline = await runE2eAppResult(
+            () => repository.loadPage(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              filter: baselineFilter,
+            ),
+          );
+
+          if (baseline.isError()) {
+            expectAcceptableAgentQueriesE2eFailure(
+              baseline.exceptionOrNull()!,
+              failureScope: 'Repository e2e',
+            );
+            return;
+          }
+
+          final page1 = baseline.getOrThrow();
+          if (page1.items.isEmpty) {
+            return;
+          }
+
+          final codeToken = '${page1.items.first.codProduto}';
+          final filtered = await runE2eAppResultWithHubRetry(
+            () => repository.loadPage(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              filter: MargemProdutoFilter(searchTerm: codeToken),
+            ),
+            actionLabel: 'margem_produto_loadPage_code_contains',
+          );
+
+          filtered.fold(
+            (page) {
+              expect(page.totalCount, lessThanOrEqualTo(page1.totalCount));
+              checkPageInvariants(
+                page.items,
+                page.totalCount,
+                MargemProdutoFilter.defaultPageSize,
+              );
+              expect(page.items, isNotEmpty);
+              for (final row in page.items) {
+                expect(
+                  _matchesContainsSearch(row, codeToken, codeToken),
+                  isTrue,
+                  reason: 'code search must match code, name, group or brand',
+                );
+              }
+            },
+            (failure) {
+              expectAcceptableAgentQueriesE2eFailure(
+                failure,
+                failureScope: 'Repository e2e',
+              );
+            },
+          );
+        },
+      );
+
+      test(
+        'loadPage markup DESC is monotonic on the first page',
+        () async {
+          if (shouldSkipE2eRepositoryTest(
+            'margem_produto_repository_e2e (markup desc)',
+          )) {
+            return;
+          }
+
+          final repository = getIt<MargemProdutoRepository>();
+          const filter = MargemProdutoFilter(
+            sortBy: MargemProdutoSortBy.percentualMarkup,
+            sortDirection: MargemProdutoSortDirection.descending,
+          );
+          final result = await runE2eAppResult(
+            () => repository.loadPage(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              filter: filter,
+            ),
+          );
+
+          result.fold(
+            (page) {
+              checkPageInvariants(
+                page.items,
+                page.totalCount,
+                MargemProdutoFilter.defaultPageSize,
+              );
+              expectMarkupDescending(page.items);
             },
             (failure) {
               expectAcceptableAgentQueriesE2eFailure(
@@ -365,14 +481,65 @@ void main() {
   );
 }
 
+bool _matchesContainsSearch(
+  MargemProdutoRow row,
+  String foldedNeedle,
+  String rawNeedle,
+) {
+  final needle = foldedNeedle.toUpperCase();
+  return foldNomeProdutoForOrder(row.nomeProduto).contains(needle) ||
+      foldNomeProdutoForOrder(row.nomeGrupoProduto ?? '').contains(needle) ||
+      foldNomeProdutoForOrder(row.nomeMarca ?? '').contains(needle) ||
+      '${row.codProduto}'.contains(rawNeedle);
+}
+
+void expectMarkupDescending(List<MargemProdutoRow> items) {
+  if (items.length < 2) {
+    return;
+  }
+  for (var i = 0; i < items.length - 1; i++) {
+    final current = items[i];
+    final next = items[i + 1];
+    expect(
+      current.percentualMarkupCustoCompraProduto,
+      greaterThanOrEqualTo(next.percentualMarkupCustoCompraProduto),
+      reason:
+          'markup DESC should not increase down the page: '
+          '${current.percentualMarkupCustoCompraProduto} then '
+          '${next.percentualMarkupCustoCompraProduto}',
+    );
+    if (current.percentualMarkupCustoCompraProduto !=
+        next.percentualMarkupCustoCompraProduto) {
+      continue;
+    }
+    final nameOrder = foldNomeProdutoForSortOrder(
+      current.nomeProduto,
+    ).compareTo(foldNomeProdutoForSortOrder(next.nomeProduto));
+    expect(
+      nameOrder,
+      lessThanOrEqualTo(0),
+      reason:
+          'equal markup should keep NomeProduto ASC: '
+          '"${current.nomeProduto}" then "${next.nomeProduto}"',
+    );
+    if (nameOrder == 0) {
+      expect(
+        current.codProduto,
+        lessThan(next.codProduto),
+        reason: 'equal markup and name should keep CodProduto ASC',
+      );
+    }
+  }
+}
+
 void expectNomeProdutoAscending(List<MargemProdutoRow> items) {
   if (items.length < 2) {
     return;
   }
   for (var i = 0; i < items.length - 1; i++) {
-    final nameOrder = foldNomeProdutoForOrder(
+    final nameOrder = foldNomeProdutoForSortOrder(
       items[i].nomeProduto,
-    ).compareTo(foldNomeProdutoForOrder(items[i + 1].nomeProduto));
+    ).compareTo(foldNomeProdutoForSortOrder(items[i + 1].nomeProduto));
     expect(
       nameOrder,
       lessThanOrEqualTo(0),
@@ -390,8 +557,8 @@ void expectNomeProdutoAscending(List<MargemProdutoRow> items) {
   }
 }
 
-/// SQL Anywhere name order is typically accent-insensitive; Dart code-unit
-/// order is not. Fold PT-BR diacritics before comparing E2E page order.
+/// SQL Anywhere name `LIKE` is accent-insensitive; Dart code-unit order is
+/// not. Fold PT-BR diacritics before comparing contains matches.
 String foldNomeProdutoForOrder(String value) {
   return value
       .toUpperCase()
@@ -407,6 +574,15 @@ String foldNomeProdutoForOrder(String value) {
       .replaceAll('Ô', 'O')
       .replaceAll('Õ', 'O')
       .replaceAll('Ú', 'U');
+}
+
+/// Dictionary-style ORDER BY also treats punctuation as ignorable. Strip
+/// punctuation but keep spaces so `A/B` folds to `AB` without joining words.
+String foldNomeProdutoForSortOrder(String value) {
+  return foldNomeProdutoForOrder(value)
+      .replaceAll(RegExp('[^A-Z0-9 ]+'), '')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
 }
 
 void checkPageInvariants(

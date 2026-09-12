@@ -1,9 +1,11 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/features/agent_queries/data/queries/margem_produto_sql.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_by.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_direction.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('ROW_NUMBER orders by NomeProduto then CodProduto ASC', () {
+  test('ROW_NUMBER default orders by NomeProduto then CodProduto ASC', () {
     final sql = MargemProdutoSql.pagedQuery();
     final numbered = sql.split('Numbered AS (').last;
     final nome = numbered.indexOf('m.NomeProduto ASC');
@@ -13,12 +15,30 @@ void main() {
     check(nome).isLessThan(produto);
   });
 
-  test('does not expose other sort columns in ROW_NUMBER', () {
+  test('does not expose other sort columns in default ROW_NUMBER', () {
     final numbered = MargemProdutoSql.pagedQuery().split('Numbered AS (').last;
     check(numbered.contains('m.CustoReposicao')).isFalse();
     check(numbered.contains('m.PrecoVendaProduto')).isFalse();
     check(numbered.contains('m.PercentualMarkupCustoCompraProduto')).isFalse();
     check(numbered.contains('m.MargemLucroProduto DESC')).isFalse();
+  });
+
+  test('ROW_NUMBER can order by markup DESC with name tie-breakers', () {
+    final sql = MargemProdutoSql.pagedQuery(
+      sortBy: MargemProdutoSortBy.percentualMarkup,
+      sortDirection: MargemProdutoSortDirection.descending,
+    );
+    final numbered = sql.split('Numbered AS (').last;
+    final markup = numbered.indexOf(
+      'm.PercentualMarkupCustoCompraProduto DESC',
+    );
+    final nome = numbered.indexOf('m.NomeProduto ASC');
+    final codigo = numbered.indexOf('m.CodProduto ASC');
+    check(markup).isGreaterOrEqual(0);
+    check(nome).isGreaterOrEqual(0);
+    check(codigo).isGreaterOrEqual(0);
+    check(markup).isLessThan(nome);
+    check(nome).isLessThan(codigo);
   });
 
   test('binds empresa, filial, name pattern, and page window once each', () {
@@ -30,16 +50,24 @@ void main() {
     check(_count(sql, ':endRow')).equals(1);
   });
 
-  test('filters NomeProduto with optional LIKE before counting', () {
-    final sql = MargemProdutoSql.pagedQuery();
-    check(sql).contains('prm.NomeProdutoPattern IS NULL');
-    check(sql).contains('LIKE');
-    check(sql).contains('REPLACE(');
-    check(sql).contains("N'á'");
-    check(sql).contains('TRIM(p.Nome)');
-    check(sql).contains('prm.NomeProdutoPattern');
-    check(sql).contains('SELECT COUNT(*) AS TotalCount FROM MargemProduto');
-  });
+  test(
+    'filters name, code, group and brand with optional LIKE before counting',
+    () {
+      final sql = MargemProdutoSql.pagedQuery();
+      check(sql).contains('prm.NomeProdutoPattern IS NULL');
+      check(sql).contains('LIKE');
+      check(sql).contains('REPLACE(');
+      check(sql).contains("N'á'");
+      check(sql).contains('TRIM(p.Nome)');
+      check(sql).contains(
+        'CAST(p.CodProduto AS VARCHAR(20)) LIKE prm.NomeProdutoPattern',
+      );
+      check(sql).contains("COALESCE(gp.Nome, '')");
+      check(sql).contains("COALESCE(mc.Nome, '')");
+      check(sql).contains('prm.NomeProdutoPattern');
+      check(sql).contains('SELECT COUNT(*) AS TotalCount FROM MargemProduto');
+    },
+  );
 
   test('accent-folds both sides of the product-name LIKE', () {
     final sql = MargemProdutoSql.pagedQuery();

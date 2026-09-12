@@ -56,6 +56,7 @@ class AppReportViewerStyle {
     this.alternateRowColor,
     this.zebraRows = false,
     this.trustServerRowOrder = false,
+    this.contentPadding,
   });
 
   factory AppReportViewerStyle.standard({
@@ -135,7 +136,8 @@ class AppReportViewerStyle {
 
   /// Dense dashboard table: zebra rows, minimal chrome, optional first column
   /// frozen. Prefer passing JSON/CSV actions via the viewer `headerTrailing`
-  /// and set [showExportActions] to false to avoid duplicating export.
+  /// and set [showExportActions] to false to avoid duplicating export. When the
+  /// viewer has no title, `headerTrailing` sits next to the search field.
   factory AppReportViewerStyle.numericalDetailing({
     String entityLabel = 'linhas',
     bool showExportActions = false,
@@ -286,6 +288,11 @@ class AppReportViewerStyle {
   /// running Syncfusion's local reorder (which would fight the server page).
   final bool trustServerRowOrder;
 
+  /// Padding around the viewer [ListView]. When null, the viewer uses
+  /// `context.pageScrollPadding`. Pass [EdgeInsets.zero] when the parent page
+  /// already applies that padding.
+  final EdgeInsetsGeometry? contentPadding;
+
   List<int> get resolvedPageSizes =>
       availablePageSizes ?? const <int>[5, 10, 20, 50];
 
@@ -364,6 +371,7 @@ class AppReportViewerStyle {
     Color? alternateRowColor,
     bool? zebraRows,
     bool? trustServerRowOrder,
+    EdgeInsetsGeometry? contentPadding,
   }) {
     return AppReportViewerStyle(
       gridHeight: gridHeight ?? this.gridHeight,
@@ -416,6 +424,7 @@ class AppReportViewerStyle {
       alternateRowColor: alternateRowColor ?? this.alternateRowColor,
       zebraRows: zebraRows ?? this.zebraRows,
       trustServerRowOrder: trustServerRowOrder ?? this.trustServerRowOrder,
+      contentPadding: contentPadding ?? this.contentPadding,
     );
   }
 }

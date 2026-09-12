@@ -52,6 +52,8 @@ class LoadMargemProdutoRowsForShareUseCase {
         searchTerm: filter.searchTerm,
         page: page,
         pageSize: pageSize,
+        sortBy: filter.sortBy,
+        sortDirection: filter.sortDirection,
       );
       final expectedCount = (totalCount - collected.length).clamp(1, pageSize);
 

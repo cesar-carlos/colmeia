@@ -2,6 +2,8 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_by.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_direction.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/margem_produto_repository.dart';
 import 'package:colmeia/features/sales/application/load_margem_produto_rows_for_share_use_case.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -133,6 +135,67 @@ void main() {
     expect(captured.codEmpresa, 1);
     expect(captured.codFilial, 1);
     expect(captured.searchTerm, isNull);
+    expect(captured.sortBy, MargemProdutoSortBy.nomeProduto);
+    expect(captured.sortDirection, MargemProdutoSortDirection.ascending);
+  });
+
+  test('copies sort from the source filter onto each share page', () async {
+    when(
+      () => repository.loadPage(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        filter: any(named: 'filter'),
+        clientToken: any(named: 'clientToken'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        hubPresenceOnlineAgentIdsSnapshot: any(
+          named: 'hubPresenceOnlineAgentIdsSnapshot',
+        ),
+        hubConnectedFromApprovedCatalogRow: any(
+          named: 'hubConnectedFromApprovedCatalogRow',
+        ),
+      ),
+    ).thenAnswer(
+      (_) async => Success(
+        MargemProdutoPageResult(
+          items: <MargemProdutoRow>[_row(1)],
+          totalCount: 1,
+        ),
+      ),
+    );
+
+    const sortedFilter = MargemProdutoFilter(
+      searchTerm: 'Mel',
+      sortBy: MargemProdutoSortBy.percentualMarkup,
+      sortDirection: MargemProdutoSortDirection.descending,
+    );
+    await useCase(
+      userId: 'u',
+      agentId: 'a',
+      filter: sortedFilter,
+      totalCount: 1,
+      clientToken: 'token',
+    );
+
+    final captured =
+        verify(
+              () => repository.loadPage(
+                userId: 'u',
+                agentId: 'a',
+                filter: captureAny(named: 'filter'),
+                clientToken: 'token',
+                bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+                hubPresenceOnlineAgentIdsSnapshot: any(
+                  named: 'hubPresenceOnlineAgentIdsSnapshot',
+                ),
+                hubConnectedFromApprovedCatalogRow: any(
+                  named: 'hubConnectedFromApprovedCatalogRow',
+                ),
+              ),
+            ).captured.single
+            as MargemProdutoFilter;
+    expect(captured.searchTerm, 'Mel');
+    expect(captured.sortBy, MargemProdutoSortBy.percentualMarkup);
+    expect(captured.sortDirection, MargemProdutoSortDirection.descending);
   });
 
   test('keeps pageSize constant so later pages do not overlap', () async {

@@ -37,6 +37,7 @@ void main() {
       expect(style.dataTextStyle?.fontSize, 14);
       expect(style.alternateRowColor, isNull);
       expect(style.zebraRows, isTrue);
+      expect(style.contentPadding, isNull);
     });
   });
 }

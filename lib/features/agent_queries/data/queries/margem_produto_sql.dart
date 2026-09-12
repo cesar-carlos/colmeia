@@ -1,4 +1,6 @@
 import 'package:colmeia/features/agent_queries/data/queries/agent_queries_sql_accent_fold.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_by.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_direction.dart';
 
 /// Paged product-margin catalog (`MargemProduto`) with total count in one
 /// `sql.execute` round-trip.
@@ -29,23 +31,38 @@ import 'package:colmeia/features/agent_queries/data/queries/agent_queries_sql_ac
 ///
 /// `:nomeProdutoPattern` is a contains literal (e.g. `%mel%`) from
 /// `ResumoVendasDiariasSuggestionSqlParams.buildSearchPattern`, or `NULL`
-/// to skip the name filter. The `LIKE` runs in `MargemProduto` before
-/// `Tot` and `ROW_NUMBER`, so `totalCount` and page windows share the
-/// same filtered catalog. Both sides of the `LIKE` are accent-folded and
-/// uppercased (`AgentQueriesSqlAccentFold`), so `cafe` matches `Café`.
+/// to skip the filter. The `LIKE` runs in `MargemProduto` before `Tot` and
+/// `ROW_NUMBER`, so `totalCount` and page windows share the same filtered
+/// catalog. Match is on product name (accent-folded), `CAST(CodProduto)`,
+/// group name, or brand name. Both sides of name `LIKE` are accent-folded
+/// and uppercased (`AgentQueriesSqlAccentFold`), so `cafe` matches `Café`.
 ///
-/// **Ordering:** fixed `NomeProduto ASC`, then `CodProduto ASC` as the
-/// stable page key. `ROW_NUMBER` must stay deterministic or page 2 can
-/// overlap or skip rows.
+/// **Ordering:** `ROW_NUMBER` uses a Dart whitelist ([MargemProdutoSortBy]).
+/// Default is `NomeProduto ASC`, then `CodProduto ASC`. `ROW_NUMBER` must
+/// stay deterministic or page 2 can overlap or skip rows.
 ///
 /// Pagination: `Parametros` → `MargemProduto` → `Tot` → `Numbered`
 /// (`ROW_NUMBER`) → `Tot LEFT JOIN Numbered` on
 /// `Rn BETWEEN :startRow AND :endRow`.
 abstract final class MargemProdutoSql {
-  static String pagedQuery() {
+  static String pagedQuery({
+    MargemProdutoSortBy sortBy = MargemProdutoSortBy.nomeProduto,
+    MargemProdutoSortDirection sortDirection =
+        MargemProdutoSortDirection.ascending,
+  }) {
     final nomeFolded = AgentQueriesSqlAccentFold.foldUpper('TRIM(p.Nome)');
+    final grupoFolded = AgentQueriesSqlAccentFold.foldUpper(
+      "COALESCE(gp.Nome, '')",
+    );
+    final marcaFolded = AgentQueriesSqlAccentFold.foldUpper(
+      "COALESCE(mc.Nome, '')",
+    );
     final patternFolded = AgentQueriesSqlAccentFold.foldUpper(
       'prm.NomeProdutoPattern',
+    );
+    final rowNumberOrderBy = _rowNumberOrderBy(
+      sortBy: sortBy,
+      sortDirection: sortDirection,
     );
     return '''
     WITH Parametros AS (
@@ -100,6 +117,9 @@ abstract final class MargemProdutoSql {
         AND (
           prm.NomeProdutoPattern IS NULL
           OR $nomeFolded LIKE $patternFolded
+          OR CAST(p.CodProduto AS VARCHAR(20)) LIKE prm.NomeProdutoPattern
+          OR $grupoFolded LIKE $patternFolded
+          OR $marcaFolded LIKE $patternFolded
         )
     ),
     Tot AS (
@@ -110,8 +130,7 @@ abstract final class MargemProdutoSql {
         m.*,
         ROW_NUMBER() OVER (
           ORDER BY
-            m.NomeProduto ASC,
-            m.CodProduto ASC
+            $rowNumberOrderBy
         ) AS Rn
       FROM MargemProduto m
     )
@@ -138,5 +157,34 @@ abstract final class MargemProdutoSql {
     LEFT JOIN Numbered N ON N.Rn BETWEEN :startRow AND :endRow
     ORDER BY COALESCE(N.Rn, 2147483647)
   ''';
+  }
+
+  static String _rowNumberOrderBy({
+    required MargemProdutoSortBy sortBy,
+    required MargemProdutoSortDirection sortDirection,
+  }) {
+    final dir = switch (sortDirection) {
+      MargemProdutoSortDirection.ascending => 'ASC',
+      MargemProdutoSortDirection.descending => 'DESC',
+    };
+    final primary = switch (sortBy) {
+      MargemProdutoSortBy.codProduto => 'm.CodProduto',
+      MargemProdutoSortBy.nomeProduto => 'm.NomeProduto',
+      MargemProdutoSortBy.nomeGrupoProduto => 'm.NomeGrupoProduto',
+      MargemProdutoSortBy.nomeMarca => 'm.NomeMarca',
+      MargemProdutoSortBy.custoReposicao => 'm.CustoReposicao',
+      MargemProdutoSortBy.precoVendaProduto => 'm.PrecoVendaProduto',
+      MargemProdutoSortBy.percentualMarkup =>
+        'm.PercentualMarkupCustoCompraProduto',
+      MargemProdutoSortBy.margemLucro => 'm.MargemLucroProduto',
+    };
+    final tiebreakers = switch (sortBy) {
+      MargemProdutoSortBy.codProduto => 'm.NomeProduto ASC',
+      MargemProdutoSortBy.nomeProduto => 'm.CodProduto ASC',
+      _ => 'm.NomeProduto ASC,\n            m.CodProduto ASC',
+    };
+    return '''
+            $primary $dir,
+            $tiebreakers''';
   }
 }

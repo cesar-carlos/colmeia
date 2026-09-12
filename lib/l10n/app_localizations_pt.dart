@@ -3779,16 +3779,24 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesMargemProdutoColumnMarca => 'Marca';
 
   @override
+  String get salesMargemProdutoColumnMargem => '% Margem';
+
+  @override
   String get salesMargemProdutoEntityLabel => 'produtos';
 
   @override
   String get salesMargemProdutoEmpty => 'Nenhum produto nesta filial.';
 
   @override
+  String get salesMargemProdutoEmptySearch =>
+      'Nenhum produto corresponde a esta busca.';
+
+  @override
   String get salesMargemProdutoFilterSearch => 'Nome do produto';
 
   @override
-  String get salesMargemProdutoSearchHint => 'Buscar por nome do produto';
+  String get salesMargemProdutoSearchHint =>
+      'Buscar por nome, código, grupo ou marca';
 
   @override
   String get salesMargemProdutoFullscreenTooltip =>
@@ -9022,16 +9030,24 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesMargemProdutoColumnMarca => 'Marca';
 
   @override
+  String get salesMargemProdutoColumnMargem => '% Margem';
+
+  @override
   String get salesMargemProdutoEntityLabel => 'produtos';
 
   @override
   String get salesMargemProdutoEmpty => 'Nenhum produto nesta filial.';
 
   @override
+  String get salesMargemProdutoEmptySearch =>
+      'Nenhum produto corresponde a esta busca.';
+
+  @override
   String get salesMargemProdutoFilterSearch => 'Nome do produto';
 
   @override
-  String get salesMargemProdutoSearchHint => 'Buscar por nome do produto';
+  String get salesMargemProdutoSearchHint =>
+      'Buscar por nome, código, grupo ou marca';
 
   @override
   String get salesMargemProdutoFullscreenTooltip =>

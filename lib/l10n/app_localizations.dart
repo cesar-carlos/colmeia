@@ -6149,6 +6149,12 @@ abstract class AppLocalizations {
   /// **'Brand'**
   String get salesMargemProdutoColumnMarca;
 
+  /// No description provided for @salesMargemProdutoColumnMargem.
+  ///
+  /// In en, this message translates to:
+  /// **'% Margin'**
+  String get salesMargemProdutoColumnMargem;
+
   /// No description provided for @salesMargemProdutoEntityLabel.
   ///
   /// In en, this message translates to:
@@ -6161,6 +6167,12 @@ abstract class AppLocalizations {
   /// **'No products for this branch.'**
   String get salesMargemProdutoEmpty;
 
+  /// No description provided for @salesMargemProdutoEmptySearch.
+  ///
+  /// In en, this message translates to:
+  /// **'No products match this search.'**
+  String get salesMargemProdutoEmptySearch;
+
   /// No description provided for @salesMargemProdutoFilterSearch.
   ///
   /// In en, this message translates to:
@@ -6170,7 +6182,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesMargemProdutoSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Search by product name'**
+  /// **'Search by name, code, group or brand'**
   String get salesMargemProdutoSearchHint;
 
   /// No description provided for @salesMargemProdutoFullscreenTooltip.

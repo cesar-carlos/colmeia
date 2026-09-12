@@ -44,6 +44,7 @@ class AppReportToolbar<T> extends StatefulWidget {
     this.onOpenFiltersSheet,
     this.activeFilterCount = 0,
     this.searchHintText,
+    this.trailing,
   });
 
   /// Optional override for the search field hint. When null a generic localized
@@ -64,6 +65,9 @@ class AppReportToolbar<T> extends StatefulWidget {
   final VoidCallback? onClearSelection;
   final VoidCallback? onOpenFiltersSheet;
   final int activeFilterCount;
+
+  /// Optional actions rendered next to the search field (share, fullscreen).
+  final Widget? trailing;
 
   @override
   State<AppReportToolbar<T>> createState() => _AppReportToolbarState<T>();
@@ -165,6 +169,8 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
         widget.onOpenFiltersSheet != null;
     final showSelectionStatus = widget.selectedRowCount > 0;
 
+    final trailing = widget.trailing;
+    final hasTrailing = trailing != null;
     final hasAnyAction =
         canOpenFiltersSheet ||
         style.showRefreshAction ||
@@ -174,7 +180,8 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
         style.showColumnChooser ||
         (style.showGroupingChooser && widget.groupableColumns.isNotEmpty) ||
         activeGroups.isNotEmpty ||
-        showSelectionStatus;
+        showSelectionStatus ||
+        hasTrailing;
 
     if (!style.showSearchBar && !hasAnyAction) {
       return const SizedBox.shrink();
@@ -344,14 +351,39 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: actionChildren,
       );
+      final searchRow = trailing == null
+          ? searchField
+          : Row(
+              children: <Widget>[
+                Expanded(child: searchField),
+                SizedBox(width: actionSpacing),
+                trailing,
+              ],
+            );
+
       final Widget toolbarControls;
       if (!style.showSearchBar) {
-        toolbarControls = actionWrap;
+        if (trailing == null) {
+          toolbarControls = actionWrap;
+        } else if (actionChildren.isEmpty) {
+          toolbarControls = Align(
+            alignment: Alignment.centerRight,
+            child: trailing,
+          );
+        } else {
+          toolbarControls = Row(
+            children: <Widget>[
+              trailing,
+              SizedBox(width: actionSpacing),
+              Expanded(child: actionWrap),
+            ],
+          );
+        }
       } else if (isCompact) {
         toolbarControls = Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            searchField,
+            searchRow,
             if (actionChildren.isNotEmpty) ...<Widget>[
               SizedBox(height: actionSpacing),
               actionWrap,
@@ -362,6 +394,10 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
         toolbarControls = Row(
           children: <Widget>[
             Expanded(child: searchField),
+            if (trailing != null) ...<Widget>[
+              SizedBox(width: actionSpacing),
+              trailing,
+            ],
             if (actionChildren.isNotEmpty) ...<Widget>[
               SizedBox(width: actionSpacing),
               actionWrap,

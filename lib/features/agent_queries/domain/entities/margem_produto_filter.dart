@@ -1,19 +1,25 @@
+import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_by.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_direction.dart';
+
 /// Filters and pagination for the product-margin catalog `sql.execute` query.
 ///
 /// **Branch scope:** company and branch are fixed at [fixedCodEmpresa] and
 /// [fixedCodFilial]. Replacement cost lives per company/branch in
 /// `CustoProduto`; this catalog always reads that one pair.
 ///
-/// **Ordering:** the SQL always numbers rows by `NomeProduto ASC`, then
-/// `CodProduto ASC`. That fixed key keeps page windows stable.
+/// **Ordering:** [sortBy] / [sortDirection] drive `ROW_NUMBER`. Default is
+/// `NomeProduto ASC`, then `CodProduto ASC` as the stable page key.
 ///
 /// **Search:** optional [searchTerm] is a case- and accent-insensitive
-/// contains match on `Produto.Nome`. Blank values are ignored.
+/// contains match on product name, group name, or brand name, and a
+/// contains match on `CAST(CodProduto)`. Blank values are ignored.
 class MargemProdutoFilter {
   const MargemProdutoFilter({
     this.searchTerm,
     this.page = 1,
     this.pageSize = defaultPageSize,
+    this.sortBy = MargemProdutoSortBy.nomeProduto,
+    this.sortDirection = MargemProdutoSortDirection.ascending,
   });
 
   static const int defaultPageSize = 20;
@@ -27,11 +33,13 @@ class MargemProdutoFilter {
   int get codEmpresa => fixedCodEmpresa;
   int get codFilial => fixedCodFilial;
 
-  /// Optional free-text contains match on product name.
+  /// Optional free-text contains match on name, code, group, or brand.
   final String? searchTerm;
 
   final int page;
   final int pageSize;
+  final MargemProdutoSortBy sortBy;
+  final MargemProdutoSortDirection sortDirection;
 
   String? get normalizedSearchTerm {
     final normalized = searchTerm?.trim();

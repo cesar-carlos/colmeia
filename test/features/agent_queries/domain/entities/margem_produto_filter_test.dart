@@ -1,5 +1,7 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_by.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_direction.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -11,6 +13,8 @@ void main() {
     check(filter.startRow).equals(1);
     check(filter.endRow).equals(20);
     check(filter.validationError()).isNull();
+    check(filter.sortBy).equals(MargemProdutoSortBy.nomeProduto);
+    check(filter.sortDirection).equals(MargemProdutoSortDirection.ascending);
   });
 
   test('startRow and endRow for page 2', () {

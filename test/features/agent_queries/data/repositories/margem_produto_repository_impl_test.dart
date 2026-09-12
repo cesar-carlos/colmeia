@@ -7,6 +7,8 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_by.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_direction.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -154,6 +156,48 @@ void main() {
     check(captured.sql).contains('m.NomeProduto ASC');
     check(captured.sql).contains('m.CodProduto ASC');
   });
+
+  test(
+    'execute uses markup DESC ROW_NUMBER when the filter asks for it',
+    () async {
+      when(
+        () => agentQueriesRepository.executeSql(any()),
+      ).thenAnswer(
+        (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(
+            rows: <Map<String, dynamic>>[
+              <String, dynamic>{'TotalCount': 0},
+            ],
+            rowCount: 1,
+          ),
+        ),
+      );
+
+      const filter = MargemProdutoFilter(
+        sortBy: MargemProdutoSortBy.percentualMarkup,
+        sortDirection: MargemProdutoSortDirection.descending,
+      );
+      await repository.loadPage(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        filter: filter,
+      );
+
+      final captured =
+          verify(
+                () => agentQueriesRepository.executeSql(captureAny()),
+              ).captured.single
+              as AgentSqlExecuteRequest;
+
+      check(captured.sql).equals(
+        MargemProdutoSql.pagedQuery(
+          sortBy: filter.sortBy,
+          sortDirection: filter.sortDirection,
+        ),
+      );
+      check(captured.sql).contains('m.PercentualMarkupCustoCompraProduto DESC');
+    },
+  );
 
   test('binds a contains LIKE pattern for product name search', () async {
     when(

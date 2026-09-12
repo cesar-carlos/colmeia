@@ -42,6 +42,7 @@ import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_events.dart';
+import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_query.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_style.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_viewer.dart';
@@ -175,6 +176,10 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       page: 1,
       pageSize: _pageSize,
       searchTerm: restored.searchTerm,
+      sorts: SalesMargemProdutoSort.descriptorsFor(
+        sortBy: restored.sortBy,
+        sortDirection: restored.sortDirection,
+      ),
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -345,6 +350,8 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
         ),
         page: _page,
         pageSize: _pageSize,
+        sortBy: SalesMargemProdutoSort.sortByFromQuery(_query),
+        sortDirection: SalesMargemProdutoSort.sortDirectionFromQuery(_query),
       ),
       clientToken: clientToken,
       cancelScope: sqlScope,
@@ -545,7 +552,11 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       final result = await _loadRowsForShare(
         userId: userId,
         agentId: agentId,
-        filter: MargemProdutoFilter(searchTerm: searchTerm),
+        filter: MargemProdutoFilter(
+          searchTerm: searchTerm,
+          sortBy: SalesMargemProdutoSort.sortByFromQuery(_query),
+          sortDirection: SalesMargemProdutoSort.sortDirectionFromQuery(_query),
+        ),
         totalCount: totalCount,
         clientToken: clientToken,
         cancelScope: shareScope,
@@ -598,6 +609,8 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       SalesMargemProdutoSort.persistMap(
         pageSize: _pageSize,
         searchTerm: _query.searchTerm,
+        sortBy: SalesMargemProdutoSort.sortByFromQuery(_query),
+        sortDirection: SalesMargemProdutoSort.sortDirectionFromQuery(_query),
       ),
     );
   }
@@ -644,6 +657,13 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       _applySearch(nextSearch, previous: next);
       return;
     }
+    if (!SalesMargemProdutoSort.sortsEqual(next.sorts, _query.sorts)) {
+      _applySort(
+        SalesMargemProdutoSort.sanitizeSorts(next.sorts),
+        previous: next,
+      );
+      return;
+    }
     final nextPage = SalesMargemProdutoSort.sanitizePage(next.page);
     final nextPageSize = SalesMargemProdutoSort.sanitizePageSize(next.pageSize);
     if (nextPage == _page && nextPageSize == _pageSize) {
@@ -661,6 +681,24 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
         pageSize: _pageSize,
         searchTerm: searchTerm,
         clearSearchTerm: searchTerm == null,
+        previous: previous ?? _query,
+      );
+    });
+    unawaited(_persistFilters());
+    unawaited(_loadCatalog(clearVisibleCatalog: true));
+  }
+
+  void _applySort(
+    List<AppReportSortDescriptor> sorts, {
+    AppReportQuery? previous,
+  }) {
+    _shareCancelScope?.cancelAll();
+    setState(() {
+      _page = 1;
+      _query = SalesMargemProdutoSort.queryFor(
+        page: 1,
+        pageSize: _pageSize,
+        sorts: sorts,
         previous: previous ?? _query,
       );
     });
@@ -749,7 +787,6 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
             maxGridHeight: kSalesMargemProdutoPageGridMaxHeight,
           );
           return AppReportViewer<MargemProdutoRow>(
-            title: l10n.salesCardMargemProdutoTitle,
             headerTrailing: _catalogHeaderTrailing(l10n),
             columns: _columns,
             rows: _rows,
@@ -765,17 +802,17 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
                 AppReportViewerStyle.numericalDetailing(
                   entityLabel: l10n.salesMargemProdutoEntityLabel,
                   gridHeight: gridHeight,
-                  frozenColumnsCount: 0,
                   dataRowHeight: kSalesMargemProdutoDataRowHeight,
                 ).copyWith(
-                  allowSorting: false,
+                  allowSorting: true,
                   trustServerRowOrder: true,
-                  showRefreshAction: true,
+                  showRefreshAction: false,
                   enablePullToRefresh: false,
                   showSearchBar: true,
                   searchDebounce: SalesMargemProdutoSort.searchDebounce,
                   availablePageSizes: SalesMargemProdutoSort.allowedPageSizes,
                   headerRowHeight: kSalesMargemProdutoHeaderRowHeight,
+                  contentPadding: EdgeInsets.zero,
                 ),
             isLoading: _pageLoading && _loadFailure == null,
             loadErrorPanel: _loadFailure == null
@@ -793,7 +830,13 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
                     ),
                   ),
             onRetry: () => unawaited(_loadCatalog()),
-            emptyMessage: l10n.salesMargemProdutoEmpty,
+            emptyMessage:
+                SalesMargemProdutoSort.normalizeSearchTerm(
+                      _query.searchTerm,
+                    ) ==
+                    null
+                ? l10n.salesMargemProdutoEmpty
+                : l10n.salesMargemProdutoEmptySearch,
             searchHintText: l10n.salesMargemProdutoSearchHint,
           );
         },
@@ -825,17 +868,16 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
                 value: selectedBranchName,
               ),
             ],
-          ),
-          SizedBox(height: tokens.gapMd),
-          SalesAutoRefreshActionsRow(
-            value: autoRefreshOption,
-            onChanged: setAutoRefreshOption,
-            onRefreshNow: () => unawaited(_reload()),
-            enabled: canScheduleAutoRefresh,
-            lastUpdatedAt: autoRefreshLastUpdatedAt,
-            isPaused: autoRefreshIsPaused,
-            pauseReason: autoRefreshPauseReason,
-            l10n: l10n,
+            footer: SalesAutoRefreshActionsRow(
+              value: autoRefreshOption,
+              onChanged: setAutoRefreshOption,
+              onRefreshNow: () => unawaited(_reload()),
+              enabled: canScheduleAutoRefresh,
+              lastUpdatedAt: autoRefreshLastUpdatedAt,
+              isPaused: autoRefreshIsPaused,
+              pauseReason: autoRefreshPauseReason,
+              l10n: l10n,
+            ),
           ),
           SizedBox(height: tokens.sectionSpacing),
           Expanded(child: reportSurface),

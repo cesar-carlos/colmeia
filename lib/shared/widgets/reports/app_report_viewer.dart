@@ -89,6 +89,10 @@ class AppReportViewer<T> extends StatefulWidget {
   final List<String>? contextChips;
 
   /// Widget placed in the trailing position of the header row (e.g. a link).
+  ///
+  /// When the viewer has no title, subtitle, chips or [headerActions], this is
+  /// rendered next to the toolbar search field instead of a separate header
+  /// card.
   final Widget? headerTrailing;
 
   /// Small actions rendered with the title row (e.g. JSON/CSV).
@@ -423,8 +427,9 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
     final showHeader =
         widget.title != null ||
         widget.subtitle != null ||
-        widget.headerTrailing != null ||
+        widget.headerActions.isNotEmpty ||
         (widget.contextChips?.isNotEmpty ?? false);
+    final toolbarTrailing = showHeader ? null : widget.headerTrailing;
     final showFilters =
         style.showFiltersPanel && (widget.filters?.isNotEmpty ?? false);
     final showInlineFilters =
@@ -476,7 +481,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
     );
 
     final body = ListView(
-      padding: context.pageScrollPadding(tokens),
+      padding: style.contentPadding ?? context.pageScrollPadding(tokens),
       physics: style.enablePullToRefresh
           ? const AlwaysScrollableScrollPhysics()
           : null,
@@ -594,6 +599,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
             onClearSelection: widget.events.onRowSelection != null
                 ? () => widget.events.onRowSelection?.call(List<T>.empty())
                 : null,
+            trailing: toolbarTrailing,
           ),
           grid: ExcludeFocus(
             child: AppSkeleton(

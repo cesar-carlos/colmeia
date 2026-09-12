@@ -16,6 +16,8 @@ MargemProdutoRow _row({
   required double preco,
   required double markup,
   required double margem,
+  String? grupo,
+  String? marca,
 }) {
   return MargemProdutoRow(
     codEmpresa: 1,
@@ -27,6 +29,8 @@ MargemProdutoRow _row({
     precoVendaProduto: preco,
     percentualMarkupCustoCompraProduto: markup,
     margemLucroProduto: margem,
+    nomeGrupoProduto: grupo,
+    nomeMarca: marca,
   );
 }
 
@@ -39,7 +43,7 @@ void main() {
     l10n = lookupAppLocalizations(const Locale('pt', 'BR'));
   });
 
-  test('share metadata formats catalog columns in portrait', () {
+  test('share metadata formats catalog columns in landscape', () {
     final rows = <MargemProdutoRow>[
       _row(
         codProduto: 1,
@@ -48,6 +52,8 @@ void main() {
         preco: 9,
         markup: 100,
         margem: 50,
+        grupo: 'Alimentos',
+        marca: 'Casa',
       ),
       _row(
         codProduto: 2,
@@ -71,7 +77,7 @@ void main() {
     expect(metadata.title, l10n.salesCardMargemProdutoTitle);
     expect(metadata.subject, l10n.salesCardMargemProdutoTitle);
     expect(metadata.subtitle, l10n.salesMargemProdutoIntroSubtitle);
-    expect(metadata.pdfOrientation, ChartSharePdfOrientation.portrait);
+    expect(metadata.pdfOrientation, ChartSharePdfOrientation.landscape);
     expect(metadata.chartExportBuilder, isNull);
     expect(metadata.includeChartImage, isFalse);
     expect(
@@ -79,25 +85,34 @@ void main() {
       <String>[
         l10n.salesMargemProdutoColumnCodigo,
         l10n.salesMargemProdutoColumnProduto,
+        l10n.salesMargemProdutoColumnGrupo,
+        l10n.salesMargemProdutoColumnMarca,
         l10n.salesMargemProdutoColumnCusto,
         l10n.salesMargemProdutoColumnPreco,
         l10n.salesMargemProdutoColumnMarkup,
+        l10n.salesMargemProdutoColumnMargem,
       ],
     );
     expect(metadata.tableData?.rows.length, 2);
     expect(metadata.tableData?.rows.first[0], '1');
     expect(metadata.tableData?.rows.first[1], 'Mel');
+    expect(metadata.tableData?.rows.first[2], 'Alimentos');
+    expect(metadata.tableData?.rows.first[3], 'Casa');
     expect(
-      metadata.tableData?.rows.first[2],
+      metadata.tableData?.rows.first[4],
       formatSalesMargemProdutoCurrency(4.5),
     );
     expect(
-      metadata.tableData?.rows.first[3],
+      metadata.tableData?.rows.first[5],
       formatSalesMargemProdutoCurrency(9),
     );
     expect(
-      metadata.tableData?.rows.first[4],
+      metadata.tableData?.rows.first[6],
       formatSalesMargemProdutoPercent(100),
+    );
+    expect(
+      metadata.tableData?.rows.first[7],
+      formatSalesMargemProdutoPercent(50),
     );
     expect(metadata.filterSummary, contains('Agente Centro'));
     expect(metadata.filterSummary, isNot(contains('Lucas Centro')));
@@ -131,7 +146,7 @@ void main() {
   });
 
   test(
-    'share metadata builds a portrait PDF for a wrapping catalog',
+    'share metadata builds a landscape PDF for a wrapping catalog',
     () async {
       final rows = List<MargemProdutoRow>.generate(
         185,
