@@ -146,6 +146,7 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
     int? timeoutMs,
     int? initialWindowSize,
     int? refillThreshold,
+    void Function(String streamId)? onStreamOpened,
     RelayPayloadFrameCompression compression =
         RelayPayloadFrameCompression.auto,
   }) {
@@ -159,6 +160,7 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
       timeoutMs: timeoutMs,
       initialWindowSize: initialWindowSize,
       refillThreshold: refillThreshold,
+      onStreamOpened: onStreamOpened,
       compression: compression,
     );
   }

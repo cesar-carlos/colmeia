@@ -92,6 +92,7 @@ class _RecordingRelayDispatcher implements RelayCommandDispatcher {
     int? timeoutMs,
     int? initialWindowSize,
     int? refillThreshold,
+    void Function(String streamId)? onStreamOpened,
     RelayPayloadFrameCompression compression =
         RelayPayloadFrameCompression.auto,
   }) {
@@ -100,6 +101,7 @@ class _RecordingRelayDispatcher implements RelayCommandDispatcher {
         agentId: agentId,
         body: body,
         clientRequestId: clientRequestId,
+        onStreamOpened: onStreamOpened,
       ),
     );
     return Stream<Map<String, dynamic>>.fromIterable(<Map<String, dynamic>>[
@@ -151,10 +153,12 @@ class _StreamingCall {
     required this.agentId,
     required this.body,
     required this.clientRequestId,
+    required this.onStreamOpened,
   });
   final String agentId;
   final Map<String, Object?> body;
   final String clientRequestId;
+  final void Function(String streamId)? onStreamOpened;
 }
 
 Map<String, Object?> _bodyFor({
@@ -415,14 +419,20 @@ void main() {
 
   group('passthrough surfaces', () {
     test('sendStreaming bypasses batching entirely', () async {
+      final opened = <String>[];
+      void onStreamOpened(String streamId) => opened.add(streamId);
       final stream = coordinator.sendStreaming(
         agentId: 'agent-1',
         body: _bodyFor(id: 'rpc-stream'),
         clientRequestId: 'rpc-stream',
+        onStreamOpened: onStreamOpened,
       );
       final received = await stream.toList();
       check(received.length).equals(1);
       check(inner.streamingCalls.length).equals(1);
+      check(
+        identical(inner.streamingCalls.single.onStreamOpened, onStreamOpened),
+      ).isTrue();
       check(inner.batchCalls).isEmpty();
     });
 

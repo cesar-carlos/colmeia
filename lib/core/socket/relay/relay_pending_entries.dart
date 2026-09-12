@@ -107,6 +107,7 @@ class _PendingStream extends _PendingRelay {
     required this.controller,
     required this.initialWindow,
     required this.refillThreshold,
+    this.onStreamOpened,
   });
 
   final StreamController<Map<String, dynamic>> controller;
@@ -119,6 +120,12 @@ class _PendingStream extends _PendingRelay {
   /// drops to or below this value the dispatcher tops the window back to
   /// [initialWindow] with a single `relay:rpc.stream.pull`.
   final int refillThreshold;
+
+  /// Called once when a pull acknowledgement or data chunk first exposes the
+  /// remote stream id. Kept on the pending so the dispatcher can surface the
+  /// control-plane id before data-plane delivery begins.
+  final void Function(String streamId)? onStreamOpened;
+  bool streamOpenedNotified = false;
 
   /// Outstanding credits the hub still has authorised to send. Decremented
   /// per chunk received and replenished when `_grantPull` succeeds.

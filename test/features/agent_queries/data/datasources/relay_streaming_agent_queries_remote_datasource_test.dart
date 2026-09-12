@@ -10,6 +10,7 @@ import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/relay_streaming_agent_queries_remote_datasource.dart';
+import 'package:colmeia/features/agent_queries/data/streaming_sql_execute_collector.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -78,6 +79,7 @@ void main() {
           clientRequestId: any(named: 'clientRequestId'),
           timeout: any(named: 'timeout'),
           timeoutMs: any(named: 'timeoutMs'),
+          onStreamOpened: any(named: 'onStreamOpened'),
           compression: any(named: 'compression'),
         ),
       ).thenAnswer((_) => controller.stream);
@@ -110,6 +112,179 @@ void main() {
       check(streams.length).equals(1);
       check(streams.single.streamId).equals('stream-42');
       check(streams.single.agentId).equals('agent-1');
+    });
+
+    test('registers the stream id received before the first chunk', () async {
+      final dispatcher = _MockRelayDispatcher();
+      final controller = StreamController<Map<String, dynamic>>();
+      addTearDown(controller.close);
+      when(
+        () => dispatcher.sendStreaming(
+          agentId: any(named: 'agentId'),
+          body: any(named: 'body'),
+          clientRequestId: any(named: 'clientRequestId'),
+          timeout: any(named: 'timeout'),
+          timeoutMs: any(named: 'timeoutMs'),
+          onStreamOpened: any(named: 'onStreamOpened'),
+          compression: any(named: 'compression'),
+        ),
+      ).thenAnswer((invocation) {
+        final onStreamOpened =
+            invocation.namedArguments[#onStreamOpened]
+                as void Function(String)?;
+        onStreamOpened?.call('stream-before-chunk');
+        return controller.stream;
+      });
+      final scope = AgentQueriesCancelScope();
+      final streams = <AgentStreamingSqlCancelTarget>[];
+      scope.streamingSqlCancelHandler = streams.addAll;
+      final datasource = RelayStreamingAgentQueriesRemoteDataSource(
+        dispatcher: dispatcher,
+      );
+
+      final sub = datasource
+          .streamSqlExecute(
+            const AgentSqlExecuteRequest(agentId: 'agent-1', sql: 'SELECT 1'),
+            cancelScope: scope,
+          )
+          .listen((_) {});
+      await Future<void>.delayed(Duration.zero);
+
+      scope.cancelAll();
+      await sub.cancel();
+
+      check(streams.length).equals(1);
+      check(streams.single.streamId).equals('stream-before-chunk');
+    });
+
+    test(
+      'cancelling a subscription releases its known remote stream',
+      () async {
+        final dispatcher = _MockRelayDispatcher();
+        final controller = StreamController<Map<String, dynamic>>();
+        addTearDown(controller.close);
+        when(
+          () => dispatcher.sendStreaming(
+            agentId: any(named: 'agentId'),
+            body: any(named: 'body'),
+            clientRequestId: any(named: 'clientRequestId'),
+            timeout: any(named: 'timeout'),
+            timeoutMs: any(named: 'timeoutMs'),
+            onStreamOpened: any(named: 'onStreamOpened'),
+            compression: any(named: 'compression'),
+          ),
+        ).thenAnswer((invocation) {
+          final onStreamOpened =
+              invocation.namedArguments[#onStreamOpened]
+                  as void Function(String)?;
+          onStreamOpened?.call('stream-abandoned');
+          return controller.stream;
+        });
+        final scope = AgentQueriesCancelScope();
+        final streams = <AgentStreamingSqlCancelTarget>[];
+        scope.streamingSqlCancelHandler = streams.addAll;
+        final datasource = RelayStreamingAgentQueriesRemoteDataSource(
+          dispatcher: dispatcher,
+        );
+
+        final sub = datasource
+            .streamSqlExecute(
+              const AgentSqlExecuteRequest(agentId: 'agent-1', sql: 'SELECT 1'),
+              cancelScope: scope,
+            )
+            .listen((_) {});
+        await Future<void>.delayed(Duration.zero);
+        await sub.cancel();
+
+        check(streams.length).equals(1);
+        check(streams.single.streamId).equals('stream-abandoned');
+      },
+    );
+
+    test(
+      'normal completion removes the stream from the cancel scope',
+      () async {
+        final dispatcher = _MockRelayDispatcher();
+        when(
+          () => dispatcher.sendStreaming(
+            agentId: any(named: 'agentId'),
+            body: any(named: 'body'),
+            clientRequestId: any(named: 'clientRequestId'),
+            timeout: any(named: 'timeout'),
+            timeoutMs: any(named: 'timeoutMs'),
+            onStreamOpened: any(named: 'onStreamOpened'),
+            compression: any(named: 'compression'),
+          ),
+        ).thenAnswer((invocation) {
+          final onStreamOpened =
+              invocation.namedArguments[#onStreamOpened]
+                  as void Function(String)?;
+          onStreamOpened?.call('stream-completed');
+          return const Stream<Map<String, dynamic>>.empty();
+        });
+        final scope = AgentQueriesCancelScope();
+        final streams = <AgentStreamingSqlCancelTarget>[];
+        scope.streamingSqlCancelHandler = streams.addAll;
+        final datasource = RelayStreamingAgentQueriesRemoteDataSource(
+          dispatcher: dispatcher,
+        );
+
+        await datasource
+            .streamSqlExecute(
+              const AgentSqlExecuteRequest(agentId: 'agent-1', sql: 'SELECT 1'),
+              cancelScope: scope,
+            )
+            .toList();
+        scope.cancelAll();
+
+        check(streams).isEmpty();
+      },
+    );
+
+    test('buffer cap failure releases the known remote stream', () async {
+      final dispatcher = _MockRelayDispatcher();
+      final controller = StreamController<Map<String, dynamic>>();
+      addTearDown(controller.close);
+      when(
+        () => dispatcher.sendStreaming(
+          agentId: any(named: 'agentId'),
+          body: any(named: 'body'),
+          clientRequestId: any(named: 'clientRequestId'),
+          timeout: any(named: 'timeout'),
+          timeoutMs: any(named: 'timeoutMs'),
+          onStreamOpened: any(named: 'onStreamOpened'),
+          compression: any(named: 'compression'),
+        ),
+      ).thenAnswer((_) => controller.stream);
+      final scope = AgentQueriesCancelScope();
+      final streams = <AgentStreamingSqlCancelTarget>[];
+      scope.streamingSqlCancelHandler = streams.addAll;
+      final datasource = RelayStreamingAgentQueriesRemoteDataSource(
+        dispatcher: dispatcher,
+      );
+      final result = const BridgeShapedSqlExecuteCollector(maxBufferedRows: 1)
+          .collect(
+            datasource.streamSqlExecute(
+              const AgentSqlExecuteRequest(agentId: 'agent-1', sql: 'SELECT 1'),
+              cancelScope: scope,
+            ),
+            cancelScope: scope,
+          );
+      final overflow = expectLater(result, throwsA(isA<FormatException>()));
+      await Future<void>.delayed(Duration.zero);
+
+      controller.add(<String, dynamic>{
+        'stream_id': 'stream-overflow',
+        'rows': <Object?>[
+          <String, Object?>{'value': 1},
+          <String, Object?>{'value': 2},
+        ],
+      });
+
+      await overflow;
+      await Future<void>.delayed(Duration.zero);
+      check(streams.length).equals(1);
+      check(streams.single.streamId).equals('stream-overflow');
     });
 
     test('forwards bridgeTimeoutMs + 5s as the relay timeout', () async {

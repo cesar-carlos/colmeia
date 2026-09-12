@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/config/connection_ready_compat_mode.dart';
+import 'package:colmeia/core/config/env_keys.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/network/auth_refresh_coordinator.dart';
 import 'package:colmeia/core/network/auth_session_accessor.dart';
@@ -42,6 +43,15 @@ import 'package:get_it/get_it.dart';
 /// `AGENT_BRIDGE_TRANSPORT=rest` (default) never instantiate the socket
 /// stack at startup.
 void registerInjectorSocket(GetIt getIt) {
+  final requestedPoolSize = AppEnvironment.socketConnectionPoolSize;
+  if (requestedPoolSize > 1) {
+    throw StateError(
+      '${EnvKeys.socketConnectionPoolSize}=$requestedPoolSize is not supported: '
+      'production DI wires exactly one ConsumerSocketConnection. Configure 1 '
+      'until a fully routed multi-connection implementation exists.',
+    );
+  }
+
   getIt
     ..registerLazySingleton<SocketAuthTokenProvider>(
       () => SessionSocketAuthTokenProvider(
@@ -318,7 +328,7 @@ void registerInjectorSocket(GetIt getIt) {
     ..registerLazySingleton<ConsumerSocketConnectionPool>(
       () => ConsumerSocketConnectionPool(
         primary: getIt<ConsumerSocketConnection>(),
-        poolSize: AppEnvironment.socketConnectionPoolSize,
+        poolSize: requestedPoolSize,
       ),
     )
     ..registerLazySingleton<AgentSqlCancelEmitter>(

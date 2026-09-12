@@ -136,6 +136,7 @@ class _FakeRelayCommandDispatcher implements RelayCommandDispatcher {
     int? timeoutMs,
     int? initialWindowSize,
     int? refillThreshold,
+    void Function(String streamId)? onStreamOpened,
     RelayPayloadFrameCompression compression =
         RelayPayloadFrameCompression.auto,
   }) {

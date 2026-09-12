@@ -11,11 +11,32 @@ void main() {
       envString: '''
 SOCKET_PAYLOAD_REQUIRE_SIGNATURE=false
 SOCKET_PAYLOAD_SIGNING_KEY=
+SOCKET_CONNECTION_POOL_SIZE=1
 ''',
     );
   });
 
   group('registerInjectorSocket PayloadFrameCodec bootstrap', () {
+    test('rejects an unsupported multi-connection pool configuration', () {
+      dotenv.loadFromString(
+        envString: '''
+SOCKET_CONNECTION_POOL_SIZE=2
+''',
+      );
+
+      final getIt = GetIt.asNewInstance();
+      expect(
+        () => registerInjectorSocket(getIt),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            contains('SOCKET_CONNECTION_POOL_SIZE=2 is not supported'),
+          ),
+        ),
+      );
+    });
+
     test(
       'throws StateError when require signature is true with empty key',
       () {

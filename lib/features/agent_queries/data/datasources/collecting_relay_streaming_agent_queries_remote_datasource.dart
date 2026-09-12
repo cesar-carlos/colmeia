@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 
+import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_streaming_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/streaming_sql_execute_collector.dart';
@@ -55,6 +56,13 @@ class CollectingRelayStreamingAgentQueriesRemoteDataSource
     AgentSqlExecuteRequest request, {
     AgentQueriesCancelScope? cancelScope,
   }) {
+    if (cancelScope?.isCancelled ?? false) {
+      return Future<Map<String, dynamic>>.error(
+        const RelayRequestCancelled(
+          message: 'postSqlExecute skipped: AgentQueriesCancelScope already cancelled',
+        ),
+      );
+    }
     final agentId = request.trimmedAgentId;
     late final _PerAgentStreamingQueue queue;
     queue = _queuesByAgentId.putIfAbsent(
@@ -76,6 +84,7 @@ class CollectingRelayStreamingAgentQueriesRemoteDataSource
         ),
         cancelScope: cancelScope,
       ),
+      cancelScope: cancelScope,
     );
   }
 
@@ -106,35 +115,59 @@ class _PerAgentStreamingQueue {
 
   final int _maxConcurrent;
   final void Function() _onIdle;
-  final Queue<Future<void> Function()> _pending =
-      Queue<Future<void> Function()>();
+  final Queue<_QueuedStreamingTask> _pending = Queue<_QueuedStreamingTask>();
   int _active = 0;
 
-  Future<T> run<T>(Future<T> Function() work) {
+  Future<T> run<T>(
+    Future<T> Function() work, {
+    AgentQueriesCancelScope? cancelScope,
+  }) {
+    if (cancelScope?.isCancelled ?? false) {
+      return Future<T>.error(
+        const RelayRequestCancelled(
+          message: 'Streaming task skipped: AgentQueriesCancelScope already cancelled',
+        ),
+      );
+    }
     final completer = Completer<T>();
 
-    Future<void> task() async {
-      try {
-        completer.complete(await work());
-      } on Object catch (error, stackTrace) {
-        completer.completeError(error, stackTrace);
-      }
-    }
+    final task = _QueuedStreamingTask(
+      run: () async {
+        try {
+          completer.complete(await work());
+        } on Object catch (error, stackTrace) {
+          completer.completeError(error, stackTrace);
+        }
+      },
+      cancel: () {
+        if (!completer.isCompleted) {
+          completer.completeError(
+            const RelayRequestCancelled(
+              message: 'Streaming task cancelled while waiting for a slot',
+            ),
+          );
+        }
+      },
+    );
 
     if (_active < _maxConcurrent) {
       _start(task);
     } else {
       _pending.add(task);
+      task.cancelRegistration = cancelScope?.registerLocalCancellation(
+        () => _cancelQueued(task),
+      );
     }
     return completer.future;
   }
 
-  void _start(Future<void> Function() task) {
+  void _start(_QueuedStreamingTask task) {
+    task.detachCancellation();
     _active += 1;
     unawaited(
       (() async {
         try {
-          await task();
+          await task.run();
         } finally {
           _active -= 1;
           _drain();
@@ -150,5 +183,28 @@ class _PerAgentStreamingQueue {
     if (_active == 0 && _pending.isEmpty) {
       _onIdle();
     }
+  }
+
+  void _cancelQueued(_QueuedStreamingTask task) {
+    if (!_pending.remove(task)) {
+      return;
+    }
+    task.detachCancellation();
+    task.cancel();
+    _drain();
+  }
+}
+
+class _QueuedStreamingTask {
+  _QueuedStreamingTask({required this.run, required this.cancel});
+
+  final Future<void> Function() run;
+  final void Function() cancel;
+  void Function()? cancelRegistration;
+
+  void detachCancellation() {
+    final registration = cancelRegistration;
+    cancelRegistration = null;
+    registration?.call();
   }
 }

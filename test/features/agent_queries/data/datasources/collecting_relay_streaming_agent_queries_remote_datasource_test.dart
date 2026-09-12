@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:checks/checks.dart';
+import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_streaming_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/collecting_relay_streaming_agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -287,6 +289,55 @@ void main() {
         );
 
         check(streamSqlExecuteCalls).equals(2);
+      },
+    );
+
+    test(
+      'cancels a queued scope immediately without starting its stream',
+      () async {
+        final delegate = _MockStreamingDatasource();
+        final releaseFirst = Completer<void>();
+        var streamCalls = 0;
+        when(() => delegate.streamSqlExecute(any())).thenAnswer((_) {
+          streamCalls += 1;
+          final call = streamCalls;
+          return (() async* {
+            if (call == 1) {
+              await releaseFirst.future;
+            }
+            yield <String, dynamic>{
+              'request_id': 'r$call',
+              'total_rows': 0,
+            };
+          })();
+        });
+        final adapter = CollectingRelayStreamingAgentQueriesRemoteDataSource(
+          streamingDelegate: delegate,
+          maxConcurrentPerAgent: 1,
+        );
+        final first = adapter.postSqlExecute(
+          const AgentSqlExecuteRequest(agentId: 'same-agent', sql: 'q1'),
+        );
+        await _pumpUntil(() => streamCalls == 1);
+
+        final scope = AgentQueriesCancelScope();
+        final queued = adapter.postSqlExecute(
+          const AgentSqlExecuteRequest(agentId: 'same-agent', sql: 'q2'),
+          cancelScope: scope,
+        );
+        final queuedCancelled = expectLater(
+          queued,
+          throwsA(isA<RelayRequestCancelled>()),
+        );
+
+        scope.cancelAll();
+        await queuedCancelled;
+        check(streamCalls).equals(1);
+
+        releaseFirst.complete();
+        await first;
+        await Future<void>.delayed(Duration.zero);
+        check(streamCalls).equals(1);
       },
     );
 

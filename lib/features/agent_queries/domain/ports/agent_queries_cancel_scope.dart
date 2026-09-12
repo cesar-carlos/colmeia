@@ -31,9 +31,9 @@ class AgentQueriesCancelScope {
   final Set<String> _pendingRelayClientRequestIds = <String>{};
   final Set<String> _pendingSocketRpcIds = <String>{};
   final Set<void Function()> _pendingRestCancellations = <void Function()>{};
-  final Set<String> _pendingStreamingKeys = <String>{};
-  final List<AgentStreamingSqlCancelTarget> _streamingCancelTargets =
-      <AgentStreamingSqlCancelTarget>[];
+  final Map<String, AgentStreamingSqlCancelTarget> _streamingCancelTargets =
+      <String, AgentStreamingSqlCancelTarget>{};
+  final Set<void Function()> _localCancellationHandlers = <void Function()>{};
 
   /// Fail-fast pending relay RPCs ([RelayCommandDispatcher.cancel]).
   void Function(Iterable<String> clientRequestIds)? relayCancelHandler;
@@ -79,15 +79,50 @@ class AgentQueriesCancelScope {
     _pendingRestCancellations.remove(cancelRequest);
   }
 
-  /// Registers a hub stream id once known (first relay chunk).
+  /// Registers a hub stream id once known. Repeated observations of the same
+  /// agent/stream pair are idempotent.
   void trackStreamingSql(AgentStreamingSqlCancelTarget target) {
     if (_cancelled) {
       return;
     }
-    final key = '${target.agentId}|${target.streamId}';
-    if (_pendingStreamingKeys.add(key)) {
-      _streamingCancelTargets.add(target);
+    _streamingCancelTargets.putIfAbsent(_streamingKey(target), () => target);
+  }
+
+  /// Removes a stream that completed normally, so a later scope cancellation
+  /// never sends a stale `sql.cancel` for already-finished work.
+  void untrackStreamingSql(AgentStreamingSqlCancelTarget target) {
+    _streamingCancelTargets.remove(_streamingKey(target));
+  }
+
+  /// Cancels exactly one tracked stream, at most once. This is used when the
+  /// consumer aborts a stream due to a local collector/protocol failure.
+  void cancelStreamingSql(AgentStreamingSqlCancelTarget target) {
+    final tracked = _streamingCancelTargets.remove(_streamingKey(target));
+    if (tracked == null) {
+      return;
     }
+    streamingSqlCancelHandler?.call(<AgentStreamingSqlCancelTarget>[tracked]);
+  }
+
+  /// Registers local work that has not reached a transport yet (for example,
+  /// an item waiting in a per-agent queue). Returns an idempotent disposer.
+  ///
+  /// If the scope is already cancelled, [onCancel] runs immediately and the
+  /// returned disposer is a no-op.
+  void Function() registerLocalCancellation(void Function() onCancel) {
+    if (_cancelled) {
+      onCancel();
+      return _noop;
+    }
+    _localCancellationHandlers.add(onCancel);
+    var removed = false;
+    return () {
+      if (removed) {
+        return;
+      }
+      removed = true;
+      _localCancellationHandlers.remove(onCancel);
+    };
   }
 
   void cancelAll() {
@@ -108,20 +143,37 @@ class AgentQueriesCancelScope {
     _pendingSocketRpcIds.clear();
     _pendingRestCancellations.clear();
     final streams = List<AgentStreamingSqlCancelTarget>.of(
-      _streamingCancelTargets,
+      _streamingCancelTargets.values,
       growable: false,
     );
     _streamingCancelTargets.clear();
-    _pendingStreamingKeys.clear();
+    final localCancellations = List<void Function()>.of(
+      _localCancellationHandlers,
+      growable: false,
+    );
+    _localCancellationHandlers.clear();
+
+    // Start the remote stream cancellation before releasing the relay slot.
+    // The emitter is best-effort and asynchronous, but starts its own send
+    // synchronously; releasing the slot immediately after lets that send pass
+    // through a shared per-agent gate instead of racing a replacement query.
+    streamingSqlCancelHandler?.call(streams);
+    for (final cancelLocal in localCancellations) {
+      cancelLocal();
+    }
     relayCancelHandler?.call(relayIds);
     socketRpcCancelHandler?.call(socketIds);
     for (final cancelRequest in restCancellations) {
       cancelRequest();
     }
-    streamingSqlCancelHandler?.call(streams);
   }
 
   bool get isCancelled => _cancelled;
+
+  static String _streamingKey(AgentStreamingSqlCancelTarget target) =>
+      '${target.agentId}|${target.streamId}';
+
+  static void _noop() {}
 }
 
 /// Binds [AgentQueriesCancelScope] to relay transport (DI / presentation edge).

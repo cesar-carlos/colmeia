@@ -22,7 +22,8 @@ import 'package:uuid/uuid.dart';
 ///
 /// Coalescing inside the collector reuses the canonical key from
 /// `SocketCoalesceKey`, ensuring that two identical pendings within the
-/// same window share a single batch slot **and** the same Future.
+/// same window share a single batch slot. Each caller still owns an
+/// independent Future so it can cancel its local interest safely.
 class AgentCommandBatchCoordinator implements AgentCommandSender {
   AgentCommandBatchCoordinator({
     required this._directSender,
@@ -93,25 +94,33 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
     );
 
     // Coalesce identical pendings within the same collector window so we
-    // do not waste a batch slot on a duplicate. Returns the existing
-    // Future when the dedupe match is still alive.
+    // do not waste a batch slot on a duplicate. The wire item is shared,
+    // but each caller receives its own cancellable completer.
     if (coalesceKey != null) {
       final existing = collector.coalesceMap[coalesceKey];
-      if (existing != null && !existing.completer.isCompleted) {
-        return existing.completer.future;
+      if (existing != null && !existing.isDispatched) {
+        final subscriber = existing.addSubscriber(
+          rpcId: rpcId,
+          timeout: timeout ?? _defaultTimeout,
+        );
+        collector.pendingByRpcId[rpcId] = existing;
+        return subscriber.completer.future;
       }
     }
 
-    final completer = Completer<Map<String, dynamic>>();
     final pending = _PendingRpc(
       rpcId: rpcId,
       bridgeTimeoutMs: _readBridgeTimeoutMs(body),
       command: _extractCommand(body),
-      completer: completer,
       timeout: timeout ?? _defaultTimeout,
       enqueuedAt: DateTime.now(),
     );
+    final subscriber = pending.addSubscriber(
+      rpcId: rpcId,
+      timeout: timeout ?? _defaultTimeout,
+    );
     collector.queue.add(pending);
+    collector.pendingByRpcId[rpcId] = pending;
     if (coalesceKey != null) {
       collector.coalesceMap[coalesceKey] = pending;
     }
@@ -127,11 +136,15 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
       });
     }
 
-    return completer.future;
+    return subscriber.completer.future;
   }
 
-  /// Removes a queued (not yet flushed) RPC from the collector window.
-  /// Returns `true` when [rpcId] was found and cancelled.
+  /// Cancels one logical caller, whether its batch item is still queued or
+  /// has already been emitted. A dispatched batch keeps running for sibling
+  /// items, but this caller's late response is discarded locally.
+  ///
+  /// Returns `true` when [rpcId] belongs to this coordinator. Callers use the
+  /// value to decide whether they must fall through to the direct dispatcher.
   bool cancelPending(String rpcId, {String reason = 'caller_cancelled'}) {
     if (_isDisposed) {
       return false;
@@ -140,20 +153,23 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
       message: 'Request cancelled by caller (reason=$reason)',
     );
     for (final collector in _collectorsByAgent.values) {
-      final index = collector.queue.indexWhere((p) => p.rpcId == rpcId);
-      if (index < 0) {
+      final pending = collector.pendingByRpcId.remove(rpcId);
+      if (pending == null) {
         continue;
       }
-      final pending = collector.queue.removeAt(index);
-      collector.coalesceMap.removeWhere(
-        (_, value) => identical(value, pending),
-      );
-      if (!pending.completer.isCompleted) {
-        pending.completer.completeError(error);
+      final subscriber = pending.removeSubscriber(rpcId);
+      if (subscriber != null && !subscriber.completer.isCompleted) {
+        subscriber.completer.completeError(error);
       }
-      if (collector.queue.isEmpty) {
-        collector.flushTimer?.cancel();
-        collector.flushTimer = null;
+      if (pending.subscribers.isEmpty && !pending.isDispatched) {
+        collector.queue.remove(pending);
+        collector.coalesceMap.removeWhere(
+          (_, value) => identical(value, pending),
+        );
+        if (collector.queue.isEmpty) {
+          collector.flushTimer?.cancel();
+          collector.flushTimer = null;
+        }
       }
       return true;
     }
@@ -168,7 +184,7 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
     final rpcIds = <String>[];
     for (final collector in _collectorsByAgent.values) {
       for (final pending in collector.queue) {
-        rpcIds.add(pending.rpcId);
+        rpcIds.addAll(pending.subscribers.keys);
       }
     }
     for (final rpcId in rpcIds) {
@@ -204,16 +220,18 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
     for (final collector in collectors) {
       collector.flushTimer?.cancel();
       collector.coalesceMap.clear();
-      for (final pending in collector.queue) {
-        if (!pending.completer.isCompleted) {
-          pending.completer.completeError(
-            const SocketDispatchDisconnected(
-              message: 'BatchCoordinator disposed',
-            ),
-          );
-        }
+      final pending = Set<_PendingRpc>.of(collector.pendingByRpcId.values);
+      for (final entry in pending) {
+        _failPending(
+          collector,
+          entry,
+          const SocketDispatchDisconnected(
+            message: 'BatchCoordinator disposed',
+          ),
+        );
       }
       collector.queue.clear();
+      collector.pendingByRpcId.clear();
     }
   }
 
@@ -225,6 +243,9 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
     }
     final taken = collector.queue.take(_maxBatchSize).toList(growable: false);
     collector.queue.removeRange(0, taken.length);
+    for (final pending in taken) {
+      pending.isDispatched = true;
+    }
     // Clear the coalesce map for everything we are about to dispatch.
     final coalesceKeysToDrop = <String>[];
     collector.coalesceMap.forEach((key, pending) {
@@ -236,15 +257,24 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
 
     if (taken.length < _minBatchSize) {
       for (final pending in taken) {
-        await _dispatchAsSingle(agentId: collector.agentId, pending: pending);
+        await _dispatchAsSingle(
+          collector: collector,
+          agentId: collector.agentId,
+          pending: pending,
+        );
       }
       return;
     }
 
-    await _dispatchBatch(agentId: collector.agentId, items: taken);
+    await _dispatchBatch(
+      collector: collector,
+      agentId: collector.agentId,
+      items: taken,
+    );
   }
 
   Future<void> _dispatchAsSingle({
+    required _AgentBatchCollector collector,
     required String agentId,
     required _PendingRpc pending,
   }) async {
@@ -258,19 +288,16 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
         agentId: agentId,
         body: body,
         rpcId: pending.rpcId,
-        timeout: pending.timeout,
+        timeout: pending.dispatchTimeout,
       );
-      if (!pending.completer.isCompleted) {
-        pending.completer.complete(response);
-      }
+      _completePending(collector, pending, response);
     } on Object catch (error, stack) {
-      if (!pending.completer.isCompleted) {
-        pending.completer.completeError(error, stack);
-      }
+      _failPending(collector, pending, error, stack);
     }
   }
 
   Future<void> _dispatchBatch({
+    required _AgentBatchCollector collector,
     required String agentId,
     required List<_PendingRpc> items,
   }) async {
@@ -309,9 +336,7 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
     if (failure != null) {
       // Total failure: every pending receives the same error.
       for (final pending in items) {
-        if (!pending.completer.isCompleted) {
-          pending.completer.completeError(failure, failureStack);
-        }
+        _failPending(collector, pending, failure, failureStack);
       }
       _onBatchEmission?.call(size: items.length, partialFailure: false);
       return;
@@ -319,6 +344,7 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
 
     final partialFailure = _distributeBatchResponse(
       agentId: agentId,
+      collector: collector,
       taken: items,
       batchResponse: response!,
     );
@@ -332,12 +358,17 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
   /// not present in the response.
   bool _distributeBatchResponse({
     required String agentId,
+    required _AgentBatchCollector collector,
     required List<_PendingRpc> taken,
     required Map<String, dynamic> batchResponse,
   }) {
     final response = batchResponse['response'];
     if (response is! Map) {
-      _failAll(taken, _decodeFailure('response field missing/invalid'));
+      _failAll(
+        collector,
+        taken,
+        _decodeFailure('response field missing/invalid'),
+      );
       return true;
     }
     final type = response['type'];
@@ -345,11 +376,12 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
     if (type == 'batch') {
       final items = response['items'];
       if (items is! List) {
-        _failAll(taken, _decodeFailure('batch items missing'));
+        _failAll(collector, taken, _decodeFailure('batch items missing'));
         return true;
       }
       return _distributeBatchItems(
         agentId: agentId,
+        collector: collector,
         byId: <String, _PendingRpc>{for (final p in taken) p.rpcId: p},
         items: items,
         commonRequestId: batchResponse['requestId']?.toString(),
@@ -360,18 +392,20 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
       // Defensive fallback: hub may collapse a 1-item batch into a single
       // response. Pass it through unchanged.
       final only = taken.single;
-      if (!only.completer.isCompleted) {
-        only.completer.complete(batchResponse);
-      }
-      return false;
+      return _completePending(collector, only, batchResponse);
     }
 
-    _failAll(taken, _decodeFailure('unexpected response type: $type'));
+    _failAll(
+      collector,
+      taken,
+      _decodeFailure('unexpected response type: $type'),
+    );
     return true;
   }
 
   bool _distributeBatchItems({
     required String agentId,
+    required _AgentBatchCollector collector,
     required Map<String, _PendingRpc> byId,
     required List<dynamic> items,
     required String? commonRequestId,
@@ -401,50 +435,29 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
       // Enforce individual timeout: if the item's own deadline elapsed while
       // waiting in the batch window, fail it instead of completing with stale
       // data. This restores the semantics the caller configured via `timeout`.
-      final deadline = pending.enqueuedAt.add(pending.timeout);
-      if (now.isAfter(deadline)) {
-        sawError = true;
-        AppLogger.debug(
-          'Batch item individual timeout expired at distribution',
-          context: <String, Object?>{
-            'component': 'AgentCommandBatchCoordinator',
-            'rpcId': id,
-            'timeoutMs': pending.timeout.inMilliseconds,
-          },
-        );
-        if (!pending.completer.isCompleted) {
-          pending.completer.completeError(
-            SocketDispatchTimeout(
-              message:
-                  'Batch item timed out waiting for batch response '
-                  '(rpcId=$id, timeout=${pending.timeout.inSeconds}s)',
-            ),
-          );
-        }
-        continue;
-      }
       if (raw['error'] != null) {
         sawError = true;
       }
-      if (!pending.completer.isCompleted) {
-        pending.completer.complete(
-          _synthesizeSingleEnvelope(
-            agentId: agentId,
-            requestId: commonRequestId,
-            item: raw,
-          ),
-        );
-      }
+      sawError =
+          _completePending(
+            collector,
+            pending,
+            _synthesizeSingleEnvelope(
+              agentId: agentId,
+              requestId: commonRequestId,
+              item: raw,
+            ),
+            now: now,
+          ) ||
+          sawError;
     }
     for (final pending in unmatched.values) {
       sawError = true;
-      if (!pending.completer.isCompleted) {
-        pending.completer.completeError(
-          _decodeFailure(
-            'batch response did not include id=${pending.rpcId}',
-          ),
-        );
-      }
+      _failPending(
+        collector,
+        pending,
+        _decodeFailure('batch response did not include id=${pending.rpcId}'),
+      );
     }
     return sawError;
   }
@@ -469,12 +482,67 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
     };
   }
 
-  void _failAll(List<_PendingRpc> pending, Object error) {
+  void _failAll(
+    _AgentBatchCollector collector,
+    List<_PendingRpc> pending,
+    Object error,
+  ) {
     for (final p in pending) {
-      if (!p.completer.isCompleted) {
-        p.completer.completeError(error);
+      _failPending(collector, p, error);
+    }
+  }
+
+  /// Completes every still-interested logical caller. Returns true when an
+  /// individual caller timed out while its shared batch item was in flight.
+  bool _completePending(
+    _AgentBatchCollector collector,
+    _PendingRpc pending,
+    Map<String, dynamic> response, {
+    DateTime? now,
+  }) {
+    final completedAt = now ?? DateTime.now();
+    var timedOut = false;
+    for (final subscriber in pending.subscribers.values.toList()) {
+      collector.pendingByRpcId.remove(subscriber.rpcId);
+      if (subscriber.completer.isCompleted) {
+        continue;
+      }
+      final deadline = subscriber.enqueuedAt.add(subscriber.timeout);
+      if (completedAt.isAfter(deadline)) {
+        timedOut = true;
+        subscriber.completer.completeError(
+          SocketDispatchTimeout(
+            message:
+                'Batch item timed out waiting for batch response '
+                '(rpcId=${subscriber.rpcId}, '
+                'timeout=${subscriber.timeout.inSeconds}s)',
+          ),
+        );
+      } else {
+        subscriber.completer.complete(response);
       }
     }
+    pending.subscribers.clear();
+    return timedOut;
+  }
+
+  void _failPending(
+    _AgentBatchCollector collector,
+    _PendingRpc pending,
+    Object error, [
+    StackTrace? stackTrace,
+  ]) {
+    for (final subscriber in pending.subscribers.values.toList()) {
+      collector.pendingByRpcId.remove(subscriber.rpcId);
+      if (!subscriber.completer.isCompleted) {
+        if (stackTrace == null) {
+          subscriber.completer.completeError(error);
+        } else {
+          subscriber.completer.completeError(error, stackTrace);
+        }
+      }
+    }
+    pending.subscribers.clear();
   }
 
   SocketDispatchDecodeFailure _decodeFailure(String message) {
@@ -549,8 +617,8 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
   Duration _resolveBatchTimeout(List<_PendingRpc> items) {
     var max = _defaultTimeout;
     for (final p in items) {
-      if (p.timeout > max) {
-        max = p.timeout;
+      if (p.dispatchTimeout > max) {
+        max = p.dispatchTimeout;
       }
     }
     return max;
@@ -587,7 +655,6 @@ class _PendingRpc {
     required this.rpcId,
     required this.bridgeTimeoutMs,
     required this.command,
-    required this.completer,
     required this.timeout,
     required this.enqueuedAt,
   });
@@ -595,9 +662,47 @@ class _PendingRpc {
   final String rpcId;
   final int? bridgeTimeoutMs;
   final Map<String, Object?> command;
-  final Completer<Map<String, dynamic>> completer;
   final Duration timeout;
   final DateTime enqueuedAt;
+  final Map<String, _BatchSubscriber> subscribers =
+      <String, _BatchSubscriber>{};
+  bool isDispatched = false;
+  Duration _dispatchTimeout = Duration.zero;
+
+  Duration get dispatchTimeout =>
+      _dispatchTimeout > timeout ? _dispatchTimeout : timeout;
+
+  _BatchSubscriber addSubscriber({
+    required String rpcId,
+    required Duration timeout,
+  }) {
+    final subscriber = _BatchSubscriber(
+      rpcId: rpcId,
+      timeout: timeout,
+      enqueuedAt: DateTime.now(),
+    );
+    subscribers[rpcId] = subscriber;
+    if (timeout > _dispatchTimeout) {
+      _dispatchTimeout = timeout;
+    }
+    return subscriber;
+  }
+
+  _BatchSubscriber? removeSubscriber(String rpcId) => subscribers.remove(rpcId);
+}
+
+class _BatchSubscriber {
+  _BatchSubscriber({
+    required this.rpcId,
+    required this.timeout,
+    required this.enqueuedAt,
+  });
+
+  final String rpcId;
+  final Duration timeout;
+  final DateTime enqueuedAt;
+  final Completer<Map<String, dynamic>> completer =
+      Completer<Map<String, dynamic>>();
 }
 
 class _AgentBatchCollector {
@@ -605,5 +710,6 @@ class _AgentBatchCollector {
   final String agentId;
   final List<_PendingRpc> queue = <_PendingRpc>[];
   final Map<String, _PendingRpc> coalesceMap = <String, _PendingRpc>{};
+  final Map<String, _PendingRpc> pendingByRpcId = <String, _PendingRpc>{};
   Timer? flushTimer;
 }

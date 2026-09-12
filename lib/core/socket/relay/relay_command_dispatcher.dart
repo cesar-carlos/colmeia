@@ -82,6 +82,11 @@ abstract interface class RelayCommandDispatcher {
   /// releases its local concurrency slot. Callers that have an agent
   /// `streamId` can still use the existing SQL cancellation scope to stop
   /// the remote query.
+  ///
+  /// When provided, [onStreamOpened] is called once as soon as the hub assigns
+  /// a stream id, including when it arrives in a pull acknowledgement before
+  /// the first data chunk. Callback failures are isolated from transport
+  /// processing.
   Stream<Map<String, dynamic>> sendStreaming({
     required String agentId,
     required Map<String, Object?> body,
@@ -90,6 +95,7 @@ abstract interface class RelayCommandDispatcher {
     int? timeoutMs,
     int? initialWindowSize,
     int? refillThreshold,
+    void Function(String streamId)? onStreamOpened,
     RelayPayloadFrameCompression compression =
         RelayPayloadFrameCompression.auto,
   });

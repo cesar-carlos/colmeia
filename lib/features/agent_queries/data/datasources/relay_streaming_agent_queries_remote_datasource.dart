@@ -39,51 +39,62 @@ class RelayStreamingAgentQueriesRemoteDataSource
     }
     final clientRequestId = request.transportRpcId ?? _uuid.v4();
     cancelScope?.trackRelayPending(clientRequestId);
+    AgentStreamingSqlCancelTarget? streamTarget;
+    var completedNormally = false;
+
+    void trackStreamId(String streamId) {
+      final normalized = streamId.trim();
+      if (normalized.isEmpty || streamTarget != null) {
+        return;
+      }
+      final target = AgentStreamingSqlCancelTarget(
+        agentId: request.trimmedAgentId,
+        streamId: normalized,
+        clientToken: request.trimmedClientToken,
+      );
+      streamTarget = target;
+      cancelScope?.trackStreamingSql(target);
+    }
+
     try {
       final body = _bodyMapper.buildRelayCommand(
         request: request,
         rpcId: clientRequestId,
         traceId: cancelScope?.traceId,
       );
-      yield* _trackStreamingIds(
-        cancelScope: cancelScope,
+      final stream = _sendStreaming(
         agentId: request.trimmedAgentId,
-        clientToken: request.trimmedClientToken,
-        stream: _dispatcher.sendStreaming(
-          agentId: request.trimmedAgentId,
-          body: body,
-          clientRequestId: clientRequestId,
-          timeout: agentSqlTransportDispatchTimeout(
-            bridgeTimeoutMs: request.bridgeTimeoutMs,
-          ),
-          timeoutMs: request.bridgeTimeoutMs,
-          compression: _resolveCompression(request.payloadFrameCompression),
+        body: body,
+        clientRequestId: clientRequestId,
+        timeout: agentSqlTransportDispatchTimeout(
+          bridgeTimeoutMs: request.bridgeTimeoutMs,
         ),
+        timeoutMs: request.bridgeTimeoutMs,
+        onStreamOpened: cancelScope == null ? null : trackStreamId,
+        compression: _resolveCompression(request.payloadFrameCompression),
       );
+      yield* stream.map((chunk) {
+        final streamId = _readStreamId(chunk);
+        if (streamId != null) {
+          trackStreamId(streamId);
+        }
+        return chunk;
+      });
+      completedNormally = true;
     } finally {
+      final target = streamTarget;
+      if (target != null) {
+        if (completedNormally) {
+          cancelScope?.untrackStreamingSql(target);
+        } else {
+          // A collector/protocol failure or subscription cancellation only
+          // stops local pulls. Ask the hub to stop SQL work as well whenever
+          // we already know the remote stream id.
+          cancelScope?.cancelStreamingSql(target);
+        }
+      }
       cancelScope?.untrackRelayPending(clientRequestId);
     }
-  }
-
-  Stream<Map<String, dynamic>> _trackStreamingIds({
-    required Stream<Map<String, dynamic>> stream,
-    required String agentId,
-    AgentQueriesCancelScope? cancelScope,
-    String? clientToken,
-  }) {
-    return stream.map((chunk) {
-      final streamId = _readStreamId(chunk);
-      if (streamId != null) {
-        cancelScope?.trackStreamingSql(
-          AgentStreamingSqlCancelTarget(
-            agentId: agentId,
-            streamId: streamId,
-            clientToken: clientToken,
-          ),
-        );
-      }
-      return chunk;
-    });
   }
 
   String? _readStreamId(Map<String, dynamic> chunk) {
@@ -93,6 +104,36 @@ class RelayStreamingAgentQueriesRemoteDataSource
     }
     final trimmed = raw.trim();
     return trimmed.isEmpty ? null : trimmed;
+  }
+
+  Stream<Map<String, dynamic>> _sendStreaming({
+    required String agentId,
+    required Map<String, Object?> body,
+    required String clientRequestId,
+    required Duration timeout,
+    required int? timeoutMs,
+    required RelayPayloadFrameCompression compression,
+    void Function(String streamId)? onStreamOpened,
+  }) {
+    if (onStreamOpened == null) {
+      return _dispatcher.sendStreaming(
+        agentId: agentId,
+        body: body,
+        clientRequestId: clientRequestId,
+        timeout: timeout,
+        timeoutMs: timeoutMs,
+        compression: compression,
+      );
+    }
+    return _dispatcher.sendStreaming(
+      agentId: agentId,
+      body: body,
+      clientRequestId: clientRequestId,
+      timeout: timeout,
+      timeoutMs: timeoutMs,
+      onStreamOpened: onStreamOpened,
+      compression: compression,
+    );
   }
 
   RelayPayloadFrameCompression _resolveCompression(

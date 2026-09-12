@@ -700,13 +700,14 @@ void main() {
     );
 
     test(
-      'streamId from pull_response is included in subsequent pull frames',
+      'streamId from pull_response opens the stream before chunks arrive',
       () async {
         final dispatcher = buildDispatcher();
         addTearDown(dispatcher.dispose);
 
         await openConversation();
 
+        final openedStreamIds = <String>[];
         final stream = dispatcher.sendStreaming(
           agentId: 'agent-1',
           body: <String, Object?>{
@@ -717,6 +718,7 @@ void main() {
             },
           },
           clientRequestId: 'rpc-stream-id',
+          onStreamOpened: openedStreamIds.add,
         );
         final sub = stream.listen((_) {});
         addTearDown(sub.cancel);
@@ -739,6 +741,7 @@ void main() {
           'success': true,
           'windowSize': 4,
         });
+        check(openedStreamIds).deepEquals(<String>['stream-from-ack']);
 
         for (var i = 0; i < 2; i++) {
           wiring.fire(

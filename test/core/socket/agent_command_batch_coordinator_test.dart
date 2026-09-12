@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/socket/agent_command_batch_coordinator.dart';
 import 'package:colmeia/core/socket/agent_command_sender.dart';
@@ -65,6 +67,30 @@ class _RecordingSender implements AgentCommandSender {
       };
     }
     return <String, dynamic>{};
+  }
+}
+
+class _DelayedSender implements AgentCommandSender {
+  final List<_Send> calls = <_Send>[];
+  final Completer<Map<String, dynamic>> response =
+      Completer<Map<String, dynamic>>();
+
+  @override
+  Future<Map<String, dynamic>> send({
+    required String agentId,
+    required Map<String, Object?> body,
+    required String rpcId,
+    Duration? timeout,
+  }) {
+    calls.add(
+      _Send(
+        agentId: agentId,
+        body: body,
+        rpcId: rpcId,
+        timeout: timeout,
+      ),
+    );
+    return response.future;
   }
 }
 
@@ -603,6 +629,85 @@ void main() {
     });
   });
 
+  group('logical caller cancellation', () {
+    test(
+      'cancels one caller after a batch emits without affecting its sibling',
+      () async {
+        final delayed = _DelayedSender();
+        final c = AgentCommandBatchCoordinator(
+          directSender: delayed,
+          maxBatchSize: 2,
+          windowDuration: const Duration(seconds: 10),
+        );
+        addTearDown(c.dispose);
+
+        final first = c.send(
+          agentId: 'agent-1',
+          body: _body(rpcId: 'rpc-A'),
+          rpcId: 'rpc-A',
+        );
+        final second = c.send(
+          agentId: 'agent-1',
+          body: _body(
+            rpcId: 'rpc-B',
+            params: const <String, Object?>{'sql': 'SELECT 2'},
+          ),
+          rpcId: 'rpc-B',
+        );
+        await _pumpUntil(() => delayed.calls.length == 1);
+        final firstCancelled = expectLater(
+          first,
+          throwsA(isA<SocketDispatchCancelled>()),
+        );
+
+        check(c.cancelPending('rpc-A')).isTrue();
+        delayed.response.complete(_batchResponse(<String>['rpc-A', 'rpc-B']));
+
+        await firstCancelled;
+        final response = await second;
+        final item = (response['response']! as Map)['item']! as Map;
+        check(item['id']).equals('rpc-B');
+      },
+    );
+
+    test(
+      'cancels only the follower of a coalesced batch item after emit',
+      () async {
+        final delayed = _DelayedSender();
+        final c = AgentCommandBatchCoordinator(
+          directSender: delayed,
+          windowDuration: const Duration(seconds: 10),
+        );
+        addTearDown(c.dispose);
+
+        final leader = c.send(
+          agentId: 'agent-1',
+          body: _body(rpcId: 'rpc-leader'),
+          rpcId: 'rpc-leader',
+        );
+        final follower = c.send(
+          agentId: 'agent-1',
+          body: _body(rpcId: 'rpc-follower'),
+          rpcId: 'rpc-follower',
+        );
+        unawaited(c.flushAll());
+        await _pumpUntil(() => delayed.calls.length == 1);
+        final followerCancelled = expectLater(
+          follower,
+          throwsA(isA<SocketDispatchCancelled>()),
+        );
+
+        check(c.cancelPending('rpc-follower')).isTrue();
+        delayed.response.complete(_batchResponse(<String>['rpc-leader']));
+
+        await followerCancelled;
+        final response = await leader;
+        final item = (response['response']! as Map)['item']! as Map;
+        check(item['id']).equals('rpc-leader');
+      },
+    );
+  });
+
   group('dispose', () {
     test('fails pending requests with SocketDispatchDisconnected', () async {
       // Use a long window so the timer never fires before dispose.
@@ -630,4 +735,33 @@ class _BatchEmission {
   _BatchEmission({required this.size, required this.partialFailure});
   final int size;
   final bool partialFailure;
+}
+
+Map<String, dynamic> _batchResponse(List<String> ids) {
+  return <String, dynamic>{
+    'mode': 'bridge',
+    'agentId': 'agent-1',
+    'requestId': 'req-agent-1',
+    'response': <String, dynamic>{
+      'type': 'batch',
+      'items': <Map<String, dynamic>>[
+        for (final id in ids)
+          <String, dynamic>{
+            'id': id,
+            'success': true,
+            'result': <String, dynamic>{'rows': <Object?>[]},
+          },
+      ],
+    },
+  };
+}
+
+Future<void> _pumpUntil(bool Function() condition) async {
+  for (var i = 0; i < 20; i++) {
+    if (condition()) {
+      return;
+    }
+    await Future<void>.delayed(Duration.zero);
+  }
+  fail('condition was not met before pump limit');
 }

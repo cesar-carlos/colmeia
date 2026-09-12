@@ -32,6 +32,41 @@ void main() {
     expect(streams.first.streamId, 's1');
   });
 
+  test(
+    'cancelAll starts stream cancellation before local transport cleanup',
+    () {
+      final scope = AgentQueriesCancelScope();
+      final calls = <String>[];
+
+      void relayCancelHandler(Iterable<String> _) {
+        calls.add('relay');
+      }
+
+      void socketCancelHandler(Iterable<String> _) {
+        calls.add('socket');
+      }
+
+      void streamCancelHandler(Iterable<AgentStreamingSqlCancelTarget> _) {
+        calls.add('stream');
+      }
+
+      scope
+        ..relayCancelHandler = relayCancelHandler
+        ..socketRpcCancelHandler = socketCancelHandler
+        ..streamingSqlCancelHandler = streamCancelHandler
+        ..trackRestPending(() => calls.add('rest'))
+        ..registerLocalCancellation(() => calls.add('local'))
+        ..trackRelayPending('relay-1')
+        ..trackSocketPending('socket-1')
+        ..trackStreamingSql(
+          const AgentStreamingSqlCancelTarget(agentId: 'a', streamId: 's'),
+        )
+        ..cancelAll();
+
+      expect(calls, <String>['stream', 'local', 'relay', 'socket', 'rest']);
+    },
+  );
+
   test('relay cancel does not pass socket ids and vice versa', () {
     final scope = AgentQueriesCancelScope();
     final relayIds = <String>[];
@@ -63,5 +98,35 @@ void main() {
       ..cancelAll();
 
     expect(streams, hasLength(1));
+  });
+
+  test('normal stream completion removes its cancellation target', () {
+    final scope = AgentQueriesCancelScope();
+    final streams = <AgentStreamingSqlCancelTarget>[];
+    const target = AgentStreamingSqlCancelTarget(agentId: 'a', streamId: 's');
+
+    scope
+      ..streamingSqlCancelHandler = streams.addAll
+      ..trackStreamingSql(target)
+      ..untrackStreamingSql(target)
+      ..cancelAll();
+
+    expect(streams, isEmpty);
+  });
+
+  test('targeted stream cancellation emits once and removes the target', () {
+    final scope = AgentQueriesCancelScope();
+    final streams = <AgentStreamingSqlCancelTarget>[];
+    const target = AgentStreamingSqlCancelTarget(agentId: 'a', streamId: 's');
+
+    scope
+      ..streamingSqlCancelHandler = streams.addAll
+      ..trackStreamingSql(target)
+      ..cancelStreamingSql(target)
+      ..cancelStreamingSql(target)
+      ..cancelAll();
+
+    expect(streams, hasLength(1));
+    expect(streams.single.streamId, 's');
   });
 }

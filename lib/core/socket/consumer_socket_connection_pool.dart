@@ -4,9 +4,10 @@ import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 /// Optional multi-socket spike surface. Default Colmeia builds use
 /// [poolSize] `1` and route everything through [primary].
 ///
-/// A second connection (`secondary`) is **not wired in DI today** — even
-/// when `SOCKET_CONNECTION_POOL_SIZE > 1`, callers must inject the optional
-/// secondary connection explicitly. Production keeps `poolSize == 1`.
+/// A second connection (`secondary`) is **not wired in DI today**. Production
+/// rejects `SOCKET_CONNECTION_POOL_SIZE > 1` during bootstrap; callers that
+/// explicitly construct this class may still provide an optional secondary
+/// connection for isolated experiments.
 /// Ops must keep sticky sessions if a multi-connection experiment is ever
 /// enabled. See `docs/Features/socket/socket_channel_performance_review.md`.
 class ConsumerSocketConnectionPool {

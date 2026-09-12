@@ -239,6 +239,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     int? timeoutMs,
     int? initialWindowSize,
     int? refillThreshold,
+    void Function(String streamId)? onStreamOpened,
     RelayPayloadFrameCompression compression =
         RelayPayloadFrameCompression.auto,
   }) {
@@ -294,6 +295,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
                     controller: controller,
                     initialWindow: window,
                     refillThreshold: threshold,
+                    onStreamOpened: onStreamOpened,
                   );
                 },
           );
@@ -1297,7 +1299,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     }
     final streamId = _extractStreamId(map);
     if (streamId != null) {
-      pending.streamId = streamId;
+      _captureStreamId(pending, <String, dynamic>{'stream_id': streamId});
     }
     final granted =
         _toIntOrNull(map['windowSize']) ?? _toIntOrNull(map['window_size']);
@@ -2017,6 +2019,23 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     final streamId = _extractStreamId(logical);
     if (streamId != null) {
       pending.streamId = streamId;
+      if (!pending.streamOpenedNotified) {
+        pending.streamOpenedNotified = true;
+        try {
+          pending.onStreamOpened?.call(streamId);
+        } on Object catch (error, stackTrace) {
+          AppLogger.warning(
+            'relay stream-open callback failed',
+            context: <String, Object?>{
+              'component': 'RelayCommandDispatcherImpl',
+              'clientRequestId': pending.clientRequestId,
+              'streamId': streamId,
+            },
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
+      }
     }
   }
 
