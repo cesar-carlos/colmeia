@@ -15,6 +15,7 @@ void main() {
     check(filter.page).equals(1);
     check(filter.pageSize).equals(NotasEntradaFilter.defaultPageSize);
     check(filter.normalizedSearchTerm).isNull();
+    check(filter.codFornecedor).isNull();
     check(filter.startRow).equals(1);
     check(filter.endRow).equals(NotasEntradaFilter.defaultPageSize);
     check(filter.validationError()).isNull();
@@ -106,5 +107,30 @@ void main() {
 
     final next = filter.copyWith(searchTerm: 'Apiário');
     check(next.normalizedSearchTerm).equals('Apiário');
+  });
+
+  test('accepts a positive supplier code and can clear it', () {
+    final filter = NotasEntradaFilter(
+      referenceDate: DateTime(2026, 9, 12),
+      codFornecedor: 12,
+    );
+
+    check(filter.codFornecedor).equals(12);
+    check(filter.validationError()).isNull();
+
+    final cleared = filter.copyWith(clearCodFornecedor: true);
+    check(cleared.codFornecedor).isNull();
+    check(cleared.dataLancamentoInicio).equals(filter.dataLancamentoInicio);
+
+    final next = filter.copyWith(codFornecedor: 8);
+    check(next.codFornecedor).equals(8);
+  });
+
+  test('rejects a non-positive supplier code', () {
+    final filter = NotasEntradaFilter(codFornecedor: 0);
+
+    check(filter.validationError()).equals(
+      'codFornecedor must be greater than zero',
+    );
   });
 }

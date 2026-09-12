@@ -4090,6 +4090,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesNotasEntradaColumnCodFornecedor => 'Supplier code';
 
   @override
+  String get salesNotasEntradaColumnQtdNotas => 'Invoices';
+
+  @override
+  String get salesNotasEntradaColumnTicketMedio => 'Avg. ticket';
+
+  @override
   String get salesNotasEntradaHorizontalScrollCaption =>
       'Swipe sideways to see all columns.';
 
@@ -4110,6 +4116,38 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get salesNotasEntradaEmptySearch =>
       'No incoming invoices match this supplier search.';
+
+  @override
+  String get salesNotasEntradaViewNotes => 'Invoices';
+
+  @override
+  String get salesNotasEntradaViewBySupplier => 'By supplier';
+
+  @override
+  String get salesNotasEntradaSummarySubtitle =>
+      'Purchase totals by supplier in the selected period.';
+
+  @override
+  String get salesNotasEntradaSummaryEmpty =>
+      'No suppliers were found for the selected period.';
+
+  @override
+  String get salesNotasEntradaSummaryEmptySearch =>
+      'No suppliers match this search.';
+
+  @override
+  String get salesNotasEntradaSummaryEntityLabel => 'suppliers';
+
+  @override
+  String get salesNotasEntradaTotalsAmountLabel => 'Period total';
+
+  @override
+  String get salesNotasEntradaTotalsSemantics =>
+      'Purchase total for the current filters, not the visible page.';
+
+  @override
+  String get salesNotasEntradaClearSupplierScopeTooltip =>
+      'Clear supplier filter';
 
   @override
   String get salesMonthlyPnlPageSubtitle =>

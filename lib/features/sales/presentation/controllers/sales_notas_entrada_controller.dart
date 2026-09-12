@@ -3,14 +3,20 @@ import 'dart:async';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_query_failure_classification.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/nota_entrada_resumo_fornecedor_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/nota_entrada_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/notas_entrada_filter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/notas_entrada_page_result.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/notas_entrada_resumo_fornecedor_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/notas_entrada_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/notas_entrada_resumo_fornecedor_repository.dart';
+import 'package:colmeia/features/sales/application/load_notas_entrada_resumo_fornecedor_rows_for_share_use_case.dart';
 import 'package:colmeia/features/sales/application/load_notas_entrada_rows_for_share_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
+import 'package:colmeia/features/sales/presentation/sales_notas_entrada_view.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_notas_entrada_search.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
@@ -24,7 +30,9 @@ class SalesNotasEntradaController extends ChangeNotifier {
     required LoadAvailableAgentsForSales loadSalesAvailableAgentsUseCase,
     required ResolveSalesAgentClientTokenUseCase resolveSalesAgentClientToken,
     required this._notasEntradaRepository,
+    required this._resumoFornecedorRepository,
     this._loadRowsForShare,
+    this._loadSummaryRowsForShare,
     this._relayCancelScopeBinder,
     DateTime? referenceDate,
   }) : _loadAgentsUseCase = loadSalesAvailableAgentsUseCase,
@@ -38,6 +46,7 @@ class SalesNotasEntradaController extends ChangeNotifier {
     _dataLancamentoFim = restored.range.end;
     _pageSize = restored.pageSize;
     _searchTerm = restored.searchTerm;
+    _view = restored.view;
     _selectedAgentId = _sessionService.selectedAgentId;
   }
 
@@ -50,7 +59,10 @@ class SalesNotasEntradaController extends ChangeNotifier {
   final LoadAvailableAgentsForSales _loadAgentsUseCase;
   final ResolveSalesAgentClientTokenUseCase _resolveClientToken;
   final NotasEntradaRepository _notasEntradaRepository;
+  final NotasEntradaResumoFornecedorRepository _resumoFornecedorRepository;
   final LoadNotasEntradaRowsForShareUseCase? _loadRowsForShare;
+  final LoadNotasEntradaResumoFornecedorRowsForShareUseCase?
+  _loadSummaryRowsForShare;
   final AgentQueriesRelayCancelScopeBinder? _relayCancelScopeBinder;
 
   String? _boundUserId;
@@ -59,10 +71,21 @@ class SalesNotasEntradaController extends ChangeNotifier {
   DateTime _dataLancamentoInicio = DateTime(2000);
   DateTime _dataLancamentoFim = DateTime(2000);
   List<NotaEntradaRow> _rows = const <NotaEntradaRow>[];
-  int _page = 1;
+  List<NotaEntradaResumoFornecedorRow> _summaryRows =
+      const <NotaEntradaResumoFornecedorRow>[];
+  int _notesPage = 1;
+  int _summaryPage = 1;
   int _pageSize = NotasEntradaFilter.defaultPageSize;
-  int _totalCount = 0;
+  int _notesTotalCount = 0;
+  int _summaryTotalCount = 0;
+  double _notesTotalValorCompra = 0;
+  double _summaryTotalValorCompra = 0;
+  int? _notesLoadedFingerprint;
+  int? _summaryLoadedFingerprint;
+  SalesNotasEntradaView _view = SalesNotasEntradaView.notes;
   String? _searchTerm;
+  int? _codFornecedor;
+  String? _supplierScopeName;
   AppFailure? _loadFailure;
   bool _isLoading = false;
   bool _missingClientToken = false;
@@ -75,26 +98,68 @@ class SalesNotasEntradaController extends ChangeNotifier {
   List<DashboardAgentOption> get availableAgents => _availableAgents;
   DateTime get dataLancamentoInicio => _dataLancamentoInicio;
   DateTime get dataLancamentoFim => _dataLancamentoFim;
+  SalesNotasEntradaView get view => _view;
   List<NotaEntradaRow> get rows => _rows;
+  List<NotaEntradaResumoFornecedorRow> get summaryRows => _summaryRows;
   AppFailure? get loadFailure => _loadFailure;
   bool get isLoading => _isLoading;
   bool get missingClientToken => _missingClientToken;
-  int get page => _page;
+  int get page => switch (_view) {
+    SalesNotasEntradaView.notes => _notesPage,
+    SalesNotasEntradaView.bySupplier => _summaryPage,
+  };
   int get pageSize => _pageSize;
-  int get totalCount => _totalCount;
+  int get totalCount => switch (_view) {
+    SalesNotasEntradaView.notes => _notesTotalCount,
+    SalesNotasEntradaView.bySupplier => _summaryTotalCount,
+  };
+  double get totalValorCompra => switch (_view) {
+    SalesNotasEntradaView.notes => _notesTotalValorCompra,
+    SalesNotasEntradaView.bySupplier => _summaryTotalValorCompra,
+  };
   String? get searchTerm => _searchTerm;
-  int get totalPages => _totalCount <= 0 ? 0 : (_totalCount / _pageSize).ceil();
-  int get rangeStart => _rows.isEmpty ? 0 : ((_page - 1) * _pageSize) + 1;
-  int get rangeEnd => _rows.isEmpty ? 0 : rangeStart + _rows.length - 1;
-  bool get hasPreviousPage => _page > 1;
-  bool get hasNextPage => totalPages > 0 && _page < totalPages;
-  bool get canShare => !_isLoading && _totalCount > 0;
-  bool get canOpenFullscreen => !_isLoading && _rows.isNotEmpty;
+  String? get supplierScopeName {
+    if (_codFornecedor == null) {
+      return null;
+    }
+    final name = _supplierScopeName?.trim();
+    if (name == null || name.isEmpty) {
+      return '$_codFornecedor';
+    }
+    return name;
+  }
+
+  int get totalPages => _totalPagesFor(totalCount);
+  int get rangeStart {
+    final visibleCount = switch (_view) {
+      SalesNotasEntradaView.notes => _rows.length,
+      SalesNotasEntradaView.bySupplier => _summaryRows.length,
+    };
+    return visibleCount == 0 ? 0 : ((page - 1) * _pageSize) + 1;
+  }
+
+  int get rangeEnd {
+    final visibleCount = switch (_view) {
+      SalesNotasEntradaView.notes => _rows.length,
+      SalesNotasEntradaView.bySupplier => _summaryRows.length,
+    };
+    return visibleCount == 0 ? 0 : rangeStart + visibleCount - 1;
+  }
+
+  bool get hasPreviousPage => page > 1;
+  bool get hasNextPage => totalPages > 0 && page < totalPages;
+  bool get canShare => !_isLoading && totalCount > 0;
+  bool get canOpenFullscreen =>
+      !_isLoading &&
+      switch (_view) {
+        SalesNotasEntradaView.notes => _rows.isNotEmpty,
+        SalesNotasEntradaView.bySupplier => _summaryRows.isNotEmpty,
+      };
 
   /// True only for the first page of a new query, so paging can keep
   /// the visible rows instead of replacing them with a skeleton.
   bool get showsLoadingSkeleton =>
-      _isLoading && _rows.isEmpty && _loadFailure == null;
+      _isLoading && _activeRowsAreEmpty && _loadFailure == null;
 
   DashboardAgentOption? get selectedAgent {
     final selectedId = _selectedAgentId;
@@ -119,9 +184,9 @@ class SalesNotasEntradaController extends ChangeNotifier {
     _cancelScope?.cancelAll();
     _shareCancelScope?.cancelAll();
     _availableAgents = const <DashboardAgentOption>[];
-    _rows = const <NotaEntradaRow>[];
-    _page = 1;
-    _totalCount = 0;
+    _codFornecedor = null;
+    _supplierScopeName = null;
+    _invalidateBothViews(clearRows: true);
     _loadFailure = null;
     _missingClientToken = false;
     _isLoading = userId != null;
@@ -182,7 +247,7 @@ class SalesNotasEntradaController extends ChangeNotifier {
         : normalizedAgentId;
     _dataLancamentoInicio = orderedStart;
     _dataLancamentoFim = orderedEnd;
-    _page = 1;
+    _invalidateBothViews(clearRows: true);
     _loadFailure = null;
     _missingClientToken = selectedAgent?.missingLocalClientToken ?? false;
     unawaited(_sessionService.setSelectedAgentId(_selectedAgentId));
@@ -190,8 +255,6 @@ class SalesNotasEntradaController extends ChangeNotifier {
     _shareCancelScope?.cancelAll();
 
     if (_selectedAgentId == null || _missingClientToken) {
-      _rows = const <NotaEntradaRow>[];
-      _totalCount = 0;
       _isLoading = false;
       _notifyListenersIfAlive();
       return;
@@ -200,7 +263,7 @@ class SalesNotasEntradaController extends ChangeNotifier {
     await _loadPage(clearVisibleRows: true);
   }
 
-  Future<void> reload() => _loadPage(clearVisibleRows: _rows.isEmpty);
+  Future<void> reload() => _loadPage(clearVisibleRows: _activeRowsAreEmpty);
 
   Future<void> applySearch(String? raw) async {
     final next = SalesNotasEntradaSearch.normalize(raw);
@@ -208,21 +271,69 @@ class SalesNotasEntradaController extends ChangeNotifier {
       return;
     }
     _searchTerm = next;
-    _page = 1;
+    _codFornecedor = null;
+    _supplierScopeName = null;
+    _invalidateBothViews(clearRows: true);
     _shareCancelScope?.cancelAll();
     unawaited(_persistFilters());
     await _loadPage(clearVisibleRows: true);
   }
 
+  Future<void> selectView(SalesNotasEntradaView next) async {
+    if (next == _view) {
+      return;
+    }
+    _view = next;
+    _loadFailure = null;
+    unawaited(_persistFilters());
+    _shareCancelScope?.cancelAll();
+    if (_isActiveViewFresh) {
+      _notifyListenersIfAlive();
+      return;
+    }
+    await _loadPage(clearVisibleRows: true);
+  }
+
+  Future<void> openSupplierNotes(NotaEntradaResumoFornecedorRow row) async {
+    if (_isLoading || row.codFornecedor <= 0) {
+      return;
+    }
+    _codFornecedor = row.codFornecedor;
+    final name = row.nomeFornecedor.trim();
+    _supplierScopeName = name.isEmpty ? '${row.codFornecedor}' : name;
+    _view = SalesNotasEntradaView.notes;
+    _invalidateBothViews(clearRows: true);
+    _loadFailure = null;
+    unawaited(_persistFilters());
+    _shareCancelScope?.cancelAll();
+    await _loadPage(clearVisibleRows: true);
+  }
+
+  Future<void> clearSupplierScope() async {
+    if (_codFornecedor == null) {
+      return;
+    }
+    _codFornecedor = null;
+    _supplierScopeName = null;
+    _invalidateBothViews(clearRows: true);
+    _shareCancelScope?.cancelAll();
+    await _loadPage(clearVisibleRows: true);
+  }
+
   Future<void> showPage(int page) async {
     final nextPage = NotasEntradaFilter.sanitizePage(page);
-    if (nextPage == _page || _isLoading) {
+    if (nextPage == this.page || _isLoading) {
       return;
     }
     if (totalPages > 0 && nextPage > totalPages) {
       return;
     }
-    _page = nextPage;
+    switch (_view) {
+      case SalesNotasEntradaView.notes:
+        _notesPage = nextPage;
+      case SalesNotasEntradaView.bySupplier:
+        _summaryPage = nextPage;
+    }
     await _loadPage(clearVisibleRows: false);
   }
 
@@ -232,7 +343,7 @@ class SalesNotasEntradaController extends ChangeNotifier {
       return;
     }
     _pageSize = nextSize;
-    _page = 1;
+    _invalidateBothViews(clearRows: true);
     _shareCancelScope?.cancelAll();
     unawaited(_persistFilters());
     await _loadPage(clearVisibleRows: true);
@@ -253,12 +364,12 @@ class SalesNotasEntradaController extends ChangeNotifier {
 
     final generation = ++_loadGeneration;
     final scope = _replaceCancelScope();
+    final loadingView = _view;
     _isLoading = true;
     _loadFailure = null;
     _missingClientToken = false;
     if (clearVisibleRows) {
-      _rows = const <NotaEntradaRow>[];
-      _totalCount = 0;
+      _clearActiveRows(loadingView);
     }
     _notifyListenersIfAlive();
 
@@ -276,35 +387,65 @@ class SalesNotasEntradaController extends ChangeNotifier {
       return;
     }
 
-    final result = await _notasEntradaRepository.loadPage(
-      userId: userId,
-      agentId: agentId,
-      clientToken: clientToken,
-      filter: NotasEntradaFilter(
-        dataLancamentoInicio: _dataLancamentoInicio,
-        dataLancamentoFim: _dataLancamentoFim,
-        searchTerm: _searchTerm,
-        page: _page,
-        pageSize: _pageSize,
-      ),
-      cancelScope: scope,
+    final filter = NotasEntradaFilter(
+      dataLancamentoInicio: _dataLancamentoInicio,
+      dataLancamentoFim: _dataLancamentoFim,
+      searchTerm: _searchTerm,
+      codFornecedor: _codFornecedor,
+      page: switch (loadingView) {
+        SalesNotasEntradaView.notes => _notesPage,
+        SalesNotasEntradaView.bySupplier => _summaryPage,
+      },
+      pageSize: _pageSize,
     );
-    if (_isStale(userId, generation: generation)) {
-      return;
+
+    var reloadClampedPage = false;
+    switch (loadingView) {
+      case SalesNotasEntradaView.notes:
+        final result = await _notasEntradaRepository.loadPage(
+          userId: userId,
+          agentId: agentId,
+          clientToken: clientToken,
+          filter: filter,
+          cancelScope: scope,
+        );
+        if (_isStale(userId, generation: generation)) {
+          return;
+        }
+        reloadClampedPage = _applyNotesResult(result);
+      case SalesNotasEntradaView.bySupplier:
+        final result = await _resumoFornecedorRepository.loadPage(
+          userId: userId,
+          agentId: agentId,
+          clientToken: clientToken,
+          filter: filter,
+          cancelScope: scope,
+        );
+        if (_isStale(userId, generation: generation)) {
+          return;
+        }
+        reloadClampedPage = _applySummaryResult(result);
     }
 
+    _isLoading = false;
+    _notifyListenersIfAlive();
+    if (reloadClampedPage) {
+      await _loadPage(clearVisibleRows: false);
+    }
+  }
+
+  bool _applyNotesResult(AppResult<NotasEntradaPageResult> result) {
     var reloadClampedPage = false;
     result.fold(
       (page) {
         _rows = List<NotaEntradaRow>.unmodifiable(page.items);
-        final reportedTotal = page.totalCount < 0 ? 0 : page.totalCount;
-        _totalCount = reportedTotal < _rows.length
-            ? _rows.length
-            : reportedTotal;
+        _notesTotalCount = _sanitizedTotal(page.totalCount, _rows.length);
+        _notesTotalValorCompra = _sanitizedAmount(page.totalValorCompra);
+        _notesLoadedFingerprint = _scopeFingerprint;
         _loadFailure = null;
-        final maxPage = totalPages;
-        if (maxPage > 0 && _page > maxPage) {
-          _page = maxPage;
+        final maxPage = _totalPagesFor(_notesTotalCount);
+        if (maxPage > 0 && _notesPage > maxPage) {
+          _notesPage = maxPage;
           reloadClampedPage = true;
         }
       },
@@ -314,23 +455,95 @@ class SalesNotasEntradaController extends ChangeNotifier {
         }
       },
     );
-    _isLoading = false;
-    _notifyListenersIfAlive();
-    if (reloadClampedPage) {
-      await _loadPage(clearVisibleRows: false);
-    }
+    return reloadClampedPage;
+  }
+
+  bool _applySummaryResult(
+    AppResult<NotasEntradaResumoFornecedorPageResult> result,
+  ) {
+    var reloadClampedPage = false;
+    result.fold(
+      (page) {
+        _summaryRows = List<NotaEntradaResumoFornecedorRow>.unmodifiable(
+          page.items,
+        );
+        _summaryTotalCount = _sanitizedTotal(
+          page.totalCount,
+          _summaryRows.length,
+        );
+        _summaryTotalValorCompra = _sanitizedAmount(page.totalValorCompra);
+        _summaryLoadedFingerprint = _scopeFingerprint;
+        _loadFailure = null;
+        final maxPage = _totalPagesFor(_summaryTotalCount);
+        if (maxPage > 0 && _summaryPage > maxPage) {
+          _summaryPage = maxPage;
+          reloadClampedPage = true;
+        }
+      },
+      (failure) {
+        if (!shouldSuppressAgentQueryFailureUi(failure)) {
+          _loadFailure = failure;
+        }
+      },
+    );
+    return reloadClampedPage;
   }
 
   Future<AppResult<List<NotaEntradaRow>>> loadRowsForShare() async {
     final useCase = _loadRowsForShare;
+    final prepared = await _prepareShare(
+      useCaseAvailable: useCase != null,
+    );
+    AppFailure? failure;
+    _ShareLoadContext? context;
+    prepared.fold(
+      (value) => context = value,
+      (err) => failure = err,
+    );
+    if (failure != null) {
+      return Failure(failure!);
+    }
+    return useCase!(
+      userId: context!.userId,
+      agentId: context!.agentId,
+      clientToken: context!.clientToken,
+      filter: context!.filter,
+      totalCount: _notesTotalCount,
+      cancelScope: context!.cancelScope,
+    );
+  }
+
+  Future<AppResult<List<NotaEntradaResumoFornecedorRow>>>
+  loadSummaryRowsForShare() async {
+    final useCase = _loadSummaryRowsForShare;
+    final prepared = await _prepareShare(
+      useCaseAvailable: useCase != null,
+    );
+    AppFailure? failure;
+    _ShareLoadContext? context;
+    prepared.fold(
+      (value) => context = value,
+      (err) => failure = err,
+    );
+    if (failure != null) {
+      return Failure(failure!);
+    }
+    return useCase!(
+      userId: context!.userId,
+      agentId: context!.agentId,
+      clientToken: context!.clientToken,
+      filter: context!.filter,
+      totalCount: _summaryTotalCount,
+      cancelScope: context!.cancelScope,
+    );
+  }
+
+  Future<AppResult<_ShareLoadContext>> _prepareShare({
+    required bool useCaseAvailable,
+  }) async {
     final userId = _boundUserId;
     final agentId = _selectedAgentId;
-    if (useCase == null) {
-      return const Failure(
-        ValidationFailure(message: 'share_export_unavailable'),
-      );
-    }
-    if (userId == null || agentId == null) {
+    if (!useCaseAvailable || userId == null || agentId == null) {
       return const Failure(
         ValidationFailure(message: 'share_export_unavailable'),
       );
@@ -352,17 +565,19 @@ class SalesNotasEntradaController extends ChangeNotifier {
       );
     }
 
-    return useCase(
-      userId: userId,
-      agentId: agentId,
-      clientToken: clientToken,
-      filter: NotasEntradaFilter(
-        dataLancamentoInicio: _dataLancamentoInicio,
-        dataLancamentoFim: _dataLancamentoFim,
-        searchTerm: _searchTerm,
+    return Success(
+      _ShareLoadContext(
+        userId: userId,
+        agentId: agentId,
+        clientToken: clientToken,
+        cancelScope: shareScope,
+        filter: NotasEntradaFilter(
+          dataLancamentoInicio: _dataLancamentoInicio,
+          dataLancamentoFim: _dataLancamentoFim,
+          searchTerm: _searchTerm,
+          codFornecedor: _codFornecedor,
+        ),
       ),
-      totalCount: _totalCount,
-      cancelScope: shareScope,
     );
   }
 
@@ -388,6 +603,7 @@ class SalesNotasEntradaController extends ChangeNotifier {
       _dataLancamentoFimKey: _dataLancamentoFim.millisecondsSinceEpoch,
       _pageSizeKey: _pageSize,
       SalesNotasEntradaSearch.persistSearchTermKey: _searchTerm,
+      SalesNotasEntradaView.persistKey: _view.name,
     });
   }
 
@@ -402,6 +618,68 @@ class SalesNotasEntradaController extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  int get _scopeFingerprint => Object.hash(
+    _selectedAgentId,
+    _dataLancamentoInicio,
+    _dataLancamentoFim,
+    _searchTerm,
+    _codFornecedor,
+    _pageSize,
+  );
+
+  bool get _isActiveViewFresh => switch (_view) {
+    SalesNotasEntradaView.notes => _notesLoadedFingerprint == _scopeFingerprint,
+    SalesNotasEntradaView.bySupplier =>
+      _summaryLoadedFingerprint == _scopeFingerprint,
+  };
+
+  bool get _activeRowsAreEmpty => switch (_view) {
+    SalesNotasEntradaView.notes => _rows.isEmpty,
+    SalesNotasEntradaView.bySupplier => _summaryRows.isEmpty,
+  };
+
+  void _invalidateBothViews({required bool clearRows}) {
+    _notesPage = 1;
+    _summaryPage = 1;
+    _notesLoadedFingerprint = null;
+    _summaryLoadedFingerprint = null;
+    if (clearRows) {
+      _rows = const <NotaEntradaRow>[];
+      _summaryRows = const <NotaEntradaResumoFornecedorRow>[];
+      _notesTotalCount = 0;
+      _summaryTotalCount = 0;
+      _notesTotalValorCompra = 0;
+      _summaryTotalValorCompra = 0;
+    }
+  }
+
+  void _clearActiveRows(SalesNotasEntradaView view) {
+    switch (view) {
+      case SalesNotasEntradaView.notes:
+        _rows = const <NotaEntradaRow>[];
+        _notesTotalCount = 0;
+        _notesTotalValorCompra = 0;
+      case SalesNotasEntradaView.bySupplier:
+        _summaryRows = const <NotaEntradaResumoFornecedorRow>[];
+        _summaryTotalCount = 0;
+        _summaryTotalValorCompra = 0;
+    }
+  }
+
+  static int _sanitizedTotal(int reportedTotal, int rowCount) {
+    final total = reportedTotal < 0 ? 0 : reportedTotal;
+    return total < rowCount ? rowCount : total;
+  }
+
+  static double _sanitizedAmount(double reportedTotal) {
+    if (reportedTotal.isNaN || reportedTotal < 0) {
+      return 0;
+    }
+    return reportedTotal;
+  }
+
+  int _totalPagesFor(int count) => count <= 0 ? 0 : (count / _pageSize).ceil();
 
   @override
   void dispose() {
@@ -428,6 +706,9 @@ class SalesNotasEntradaController extends ChangeNotifier {
       pageSize: _restorePageSize(persisted[_pageSizeKey]),
       searchTerm: SalesNotasEntradaSearch.normalize(
         persisted[SalesNotasEntradaSearch.persistSearchTermKey],
+      ),
+      view: SalesNotasEntradaView.fromPersisted(
+        persisted[SalesNotasEntradaView.persistKey],
       ),
     );
   }
@@ -482,10 +763,28 @@ class _RestoredNotasEntradaState {
   const _RestoredNotasEntradaState({
     required this.range,
     required this.pageSize,
+    required this.view,
     this.searchTerm,
   });
 
   final _NotasEntradaDateRange range;
   final int pageSize;
+  final SalesNotasEntradaView view;
   final String? searchTerm;
+}
+
+class _ShareLoadContext {
+  const _ShareLoadContext({
+    required this.userId,
+    required this.agentId,
+    required this.clientToken,
+    required this.cancelScope,
+    required this.filter,
+  });
+
+  final String userId;
+  final String agentId;
+  final String clientToken;
+  final AgentQueriesCancelScope cancelScope;
+  final NotasEntradaFilter filter;
 }

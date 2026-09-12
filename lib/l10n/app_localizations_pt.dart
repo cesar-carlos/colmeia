@@ -4150,6 +4150,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesNotasEntradaColumnCodFornecedor => 'Cód. fornecedor';
 
   @override
+  String get salesNotasEntradaColumnQtdNotas => 'Qtd. notas';
+
+  @override
+  String get salesNotasEntradaColumnTicketMedio => 'Ticket médio';
+
+  @override
   String get salesNotasEntradaHorizontalScrollCaption =>
       'Deslize para o lado para ver todas as colunas.';
 
@@ -4170,6 +4176,38 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get salesNotasEntradaEmptySearch =>
       'Nenhuma nota de entrada corresponde a esta busca de fornecedor.';
+
+  @override
+  String get salesNotasEntradaViewNotes => 'Notas';
+
+  @override
+  String get salesNotasEntradaViewBySupplier => 'Por fornecedor';
+
+  @override
+  String get salesNotasEntradaSummarySubtitle =>
+      'Totais de compra por fornecedor no período selecionado.';
+
+  @override
+  String get salesNotasEntradaSummaryEmpty =>
+      'Nenhum fornecedor foi encontrado para o período selecionado.';
+
+  @override
+  String get salesNotasEntradaSummaryEmptySearch =>
+      'Nenhum fornecedor corresponde a esta busca.';
+
+  @override
+  String get salesNotasEntradaSummaryEntityLabel => 'fornecedores';
+
+  @override
+  String get salesNotasEntradaTotalsAmountLabel => 'Valor total do período';
+
+  @override
+  String get salesNotasEntradaTotalsSemantics =>
+      'Valor total do período com os filtros atuais, não da página visível.';
+
+  @override
+  String get salesNotasEntradaClearSupplierScopeTooltip =>
+      'Limpar filtro de fornecedor';
 
   @override
   String get salesMonthlyPnlPageSubtitle =>
@@ -9355,6 +9393,12 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesNotasEntradaColumnCodFornecedor => 'Cód. fornecedor';
 
   @override
+  String get salesNotasEntradaColumnQtdNotas => 'Qtd. notas';
+
+  @override
+  String get salesNotasEntradaColumnTicketMedio => 'Ticket médio';
+
+  @override
   String get salesNotasEntradaHorizontalScrollCaption =>
       'Deslize para o lado para ver todas as colunas.';
 
@@ -9375,6 +9419,38 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get salesNotasEntradaEmptySearch =>
       'Nenhuma nota de entrada corresponde a esta busca de fornecedor.';
+
+  @override
+  String get salesNotasEntradaViewNotes => 'Notas';
+
+  @override
+  String get salesNotasEntradaViewBySupplier => 'Por fornecedor';
+
+  @override
+  String get salesNotasEntradaSummarySubtitle =>
+      'Totais de compra por fornecedor no período selecionado.';
+
+  @override
+  String get salesNotasEntradaSummaryEmpty =>
+      'Nenhum fornecedor foi encontrado para o período selecionado.';
+
+  @override
+  String get salesNotasEntradaSummaryEmptySearch =>
+      'Nenhum fornecedor corresponde a esta busca.';
+
+  @override
+  String get salesNotasEntradaSummaryEntityLabel => 'fornecedores';
+
+  @override
+  String get salesNotasEntradaTotalsAmountLabel => 'Valor total do período';
+
+  @override
+  String get salesNotasEntradaTotalsSemantics =>
+      'Valor total do período com os filtros atuais, não da página visível.';
+
+  @override
+  String get salesNotasEntradaClearSupplierScopeTooltip =>
+      'Limpar filtro de fornecedor';
 
   @override
   String get salesMonthlyPnlPageSubtitle =>

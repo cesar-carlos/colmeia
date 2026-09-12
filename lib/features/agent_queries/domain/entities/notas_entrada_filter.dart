@@ -10,12 +10,15 @@
 ///
 /// **Search:** optional [searchTerm] is a case- and accent-insensitive
 /// contains match on supplier name, plus a contains match on supplier code
-/// and tax id. Blank values are ignored.
+/// and tax id. Blank values are ignored. Optional [codFornecedor] is an
+/// equality recut on `Compra.CodFornecedor` and is independent of the
+/// contains search.
 class NotasEntradaFilter {
   factory NotasEntradaFilter({
     DateTime? dataLancamentoInicio,
     DateTime? dataLancamentoFim,
     String? searchTerm,
+    int? codFornecedor,
     int codEmpresa = defaultCodEmpresa,
     int codFilial = defaultCodFilial,
     int page = 1,
@@ -27,6 +30,7 @@ class NotasEntradaFilter {
         dataLancamentoInicio: dataLancamentoInicio,
         dataLancamentoFim: dataLancamentoFim,
         searchTerm: searchTerm,
+        codFornecedor: codFornecedor,
         codEmpresa: codEmpresa,
         codFilial: codFilial,
         page: page,
@@ -43,6 +47,7 @@ class NotasEntradaFilter {
         reference.day,
       ),
       searchTerm: searchTerm,
+      codFornecedor: codFornecedor,
       codEmpresa: codEmpresa,
       codFilial: codFilial,
       page: page,
@@ -58,6 +63,7 @@ class NotasEntradaFilter {
     required this.page,
     required this.pageSize,
     this.searchTerm,
+    this.codFornecedor,
   });
 
   static const int defaultPageSize = 50;
@@ -69,6 +75,7 @@ class NotasEntradaFilter {
   final DateTime? dataLancamentoInicio;
   final DateTime? dataLancamentoFim;
   final String? searchTerm;
+  final int? codFornecedor;
   final int codEmpresa;
   final int codFilial;
   final int page;
@@ -95,6 +102,8 @@ class NotasEntradaFilter {
     DateTime? dataLancamentoFim,
     String? searchTerm,
     bool clearSearchTerm = false,
+    int? codFornecedor,
+    bool clearCodFornecedor = false,
     int? codEmpresa,
     int? codFilial,
     int? page,
@@ -104,6 +113,9 @@ class NotasEntradaFilter {
       dataLancamentoInicio: dataLancamentoInicio ?? this.dataLancamentoInicio,
       dataLancamentoFim: dataLancamentoFim ?? this.dataLancamentoFim,
       searchTerm: clearSearchTerm ? null : (searchTerm ?? this.searchTerm),
+      codFornecedor: clearCodFornecedor
+          ? null
+          : (codFornecedor ?? this.codFornecedor),
       codEmpresa: codEmpresa ?? this.codEmpresa,
       codFilial: codFilial ?? this.codFilial,
       page: page ?? this.page,
@@ -126,6 +138,10 @@ class NotasEntradaFilter {
     }
     if (codFilial < 0) {
       return 'codFilial must be greater than or equal to zero';
+    }
+    final supplierCode = codFornecedor;
+    if (supplierCode != null && supplierCode <= 0) {
+      return 'codFornecedor must be greater than zero';
     }
     if (page < 1) {
       return 'page must be >= 1';

@@ -13,12 +13,13 @@ import 'package:colmeia/features/agent_queries/presentation/localization/agent_q
 import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_error_panel_factory.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_notas_entrada_controller.dart';
+import 'package:colmeia/features/sales/presentation/sales_notas_entrada_view.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_notas_entrada_share.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_notas_entrada_filters_sheet.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_notas_entrada_fullscreen.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_notas_entrada_pagination_footer.dart';
-import 'package:colmeia/features/sales/presentation/widgets/sales_notas_entrada_table.dart';
+import 'package:colmeia/features/sales/presentation/widgets/sales_notas_entrada_report_card.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
@@ -108,14 +109,18 @@ class _SalesNotasEntradaPageState extends State<SalesNotasEntradaPage>
     }
     final controller = _controller;
     _gridView.value = SalesNotasEntradaGridSnapshot(
-      rows: controller.rows,
+      view: controller.view,
+      notesRows: controller.rows,
+      summaryRows: controller.summaryRows,
       page: controller.page,
       pageSize: controller.pageSize,
       totalCount: controller.totalCount,
+      totalValorCompra: controller.totalValorCompra,
       rangeStart: controller.rangeStart,
       rangeEnd: controller.rangeEnd,
       totalPages: controller.totalPages,
       searchTerm: controller.searchTerm,
+      supplierScopeName: controller.supplierScopeName,
       isLoading: controller.isLoading,
       loadFailure: controller.loadFailure,
       selectedAgentId: controller.selectedAgentId,
@@ -175,6 +180,7 @@ class _SalesNotasEntradaPageState extends State<SalesNotasEntradaPage>
     try {
       final l10n = AppLocalizations.of(context);
       final totalCount = controller.totalCount;
+      final totalValorCompra = controller.totalValorCompra;
       final exportHeaderContext =
           buildSalesNotasEntradaShareExportHeaderContext(
             l10n: l10n,
@@ -185,49 +191,79 @@ class _SalesNotasEntradaPageState extends State<SalesNotasEntradaPage>
             searchTerm: controller.searchTerm,
           );
 
-      final result = await controller.loadRowsForShare();
-      if (!mounted) {
-        return;
-      }
-
-      await result.fold(
-        (rows) async {
-          ChartShareGuard.release(_shareKey);
-          transferredToCapture = true;
-          await shareChartCapture(
-            context,
-            buildSalesNotasEntradaShareMetadata(
-              l10n: l10n,
-              rows: rows,
-              exportHeaderContext: exportHeaderContext,
-            ).toShareRequest(_shareKey),
-          );
-        },
-        (failure) async {
-          if (shouldSuppressAgentQueryFailureUi(failure)) {
+      switch (controller.view) {
+        case SalesNotasEntradaView.notes:
+          final result = await controller.loadRowsForShare();
+          if (!mounted) {
             return;
           }
-          final message =
-              failure is ValidationFailure &&
-                  failure.message == 'share_export_row_limit_exceeded'
-              ? l10n.chartShareExportRowLimitExceeded(
-                  ChartSharePdfLimits.maxTableRows,
-                  totalCount,
-                )
-              : failure is ValidationFailure &&
-                    failure.message == 'share_export_incomplete_catalog'
-              ? l10n.chartShareExportIncompleteCatalog
-              : failure is SessionFailure
-              ? l10n.agentSqlErrorAuthenticationFailed
-              : agentQueryFailureUserMessage(failure, l10n);
-          _showShareMessage(message);
-        },
-      );
+          await result.fold(
+            (rows) async {
+              ChartShareGuard.release(_shareKey);
+              transferredToCapture = true;
+              await shareChartCapture(
+                context,
+                buildSalesNotasEntradaShareMetadata(
+                  l10n: l10n,
+                  rows: rows,
+                  totalValorCompra: totalValorCompra,
+                  exportHeaderContext: exportHeaderContext,
+                ).toShareRequest(_shareKey),
+              );
+            },
+            (failure) async => _showShareFailure(failure, l10n, totalCount),
+          );
+        case SalesNotasEntradaView.bySupplier:
+          final result = await controller.loadSummaryRowsForShare();
+          if (!mounted) {
+            return;
+          }
+          await result.fold(
+            (rows) async {
+              ChartShareGuard.release(_shareKey);
+              transferredToCapture = true;
+              await shareChartCapture(
+                context,
+                buildSalesNotasEntradaResumoShareMetadata(
+                  l10n: l10n,
+                  rows: rows,
+                  totalValorCompra: totalValorCompra,
+                  exportHeaderContext: exportHeaderContext,
+                ).toShareRequest(_shareKey),
+              );
+            },
+            (failure) async => _showShareFailure(failure, l10n, totalCount),
+          );
+      }
     } finally {
       if (!transferredToCapture) {
         ChartShareGuard.release(_shareKey);
       }
     }
+  }
+
+  void _showShareFailure(
+    AppFailure failure,
+    AppLocalizations l10n,
+    int totalCount,
+  ) {
+    if (shouldSuppressAgentQueryFailureUi(failure)) {
+      return;
+    }
+    final message =
+        failure is ValidationFailure &&
+            failure.message == 'share_export_row_limit_exceeded'
+        ? l10n.chartShareExportRowLimitExceeded(
+            ChartSharePdfLimits.maxTableRows,
+            totalCount,
+          )
+        : failure is ValidationFailure &&
+              failure.message == 'share_export_incomplete_catalog'
+        ? l10n.chartShareExportIncompleteCatalog
+        : failure is SessionFailure
+        ? l10n.agentSqlErrorAuthenticationFailed
+        : agentQueryFailureUserMessage(failure, l10n);
+    _showShareMessage(message);
   }
 
   void _openFullscreen() {
@@ -266,10 +302,16 @@ class _SalesNotasEntradaPageState extends State<SalesNotasEntradaPage>
                   snapshot: snapshot,
                   onSearchChanged: (term) =>
                       unawaited(_controller.applySearch(term)),
+                  onViewChanged: (view) =>
+                      unawaited(_controller.selectView(view)),
                   onPageSelected: (page) =>
                       unawaited(_controller.showPage(page)),
                   onPageSizeChanged: (pageSize) =>
                       unawaited(_controller.setPageSize(pageSize)),
+                  onClearSupplierScope: () =>
+                      unawaited(_controller.clearSupplierScope()),
+                  onSupplierSelected: (row) =>
+                      unawaited(_controller.openSupplierNotes(row)),
                   loadErrorPanel: snapshot.loadFailure == null
                       ? null
                       : AgentQueryErrorPanelFactory.fromFailure(
@@ -406,12 +448,19 @@ class _NotasEntradaReportSurface extends StatelessWidget {
     }
 
     final selectedAgentId = controller.selectedAgentId!;
-    return SalesNotasEntradaTable(
+    return SalesNotasEntradaReportCard(
       l10n: l10n,
-      rows: controller.rows,
+      view: controller.view,
+      notesRows: controller.rows,
+      summaryRows: controller.summaryRows,
+      totalValorCompra: controller.totalValorCompra,
       isLoading: controller.isLoading,
       searchTerm: controller.searchTerm,
+      supplierScopeName: controller.supplierScopeName,
       onSearchChanged: (term) => unawaited(controller.applySearch(term)),
+      onViewChanged: (view) => unawaited(controller.selectView(view)),
+      onClearSupplierScope: () => unawaited(controller.clearSupplierScope()),
+      onSupplierSelected: (row) => unawaited(controller.openSupplierNotes(row)),
       headerTrailing: headerTrailing,
       loadErrorPanel: controller.loadFailure == null
           ? null
@@ -434,7 +483,11 @@ class _NotasEntradaReportSurface extends StatelessWidget {
         rangeStart: controller.rangeStart,
         rangeEnd: controller.rangeEnd,
         totalItems: controller.totalCount,
-        entityLabel: l10n.salesNotasEntradaEntityLabel,
+        entityLabel: switch (controller.view) {
+          SalesNotasEntradaView.notes => l10n.salesNotasEntradaEntityLabel,
+          SalesNotasEntradaView.bySupplier =>
+            l10n.salesNotasEntradaSummaryEntityLabel,
+        },
         enabled: !controller.isLoading,
         onPageSelected: (page) => unawaited(controller.showPage(page)),
         onPageSizeChanged: (pageSize) =>

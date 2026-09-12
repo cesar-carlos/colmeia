@@ -1,30 +1,22 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/nota_entrada_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/nota_entrada_resumo_fornecedor_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/notas_entrada_filter.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/notas_entrada_page_result.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/notas_entrada_resumo_fornecedor_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
-import 'package:colmeia/features/agent_queries/domain/repositories/notas_entrada_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/notas_entrada_resumo_fornecedor_repository.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:result_dart/result_dart.dart';
 
-/// Loads every catalog row for PDF share, respecting the repository page cap.
-///
-/// The page size stays constant across requests so `ROW_NUMBER` windows stay
-/// contiguous (`page 2` of 500 starts at row 501). Shrinking the last page
-/// would re-window earlier rows and export duplicates.
-///
-/// Returns a validation failure when paging cannot reconstruct the advertised
-/// totalCount (short page, changing total, or extra rows). A partial catalog
-/// is never exported as success.
-class LoadNotasEntradaRowsForShareUseCase {
-  LoadNotasEntradaRowsForShareUseCase(this._repository);
+/// Loads every supplier-total row for PDF share, respecting the page cap.
+class LoadNotasEntradaResumoFornecedorRowsForShareUseCase {
+  LoadNotasEntradaResumoFornecedorRowsForShareUseCase(this._repository);
 
-  final NotasEntradaRepository _repository;
+  final NotasEntradaResumoFornecedorRepository _repository;
 
   static const int maxExportRowCount = ChartSharePdfLimits.maxTableRows;
 
-  Future<AppResult<List<NotaEntradaRow>>> call({
+  Future<AppResult<List<NotaEntradaResumoFornecedorRow>>> call({
     required String userId,
     required String agentId,
     required NotasEntradaFilter filter,
@@ -36,7 +28,7 @@ class LoadNotasEntradaRowsForShareUseCase {
     AgentQueriesCancelScope? cancelScope,
   }) async {
     if (totalCount <= 0) {
-      return const Success(<NotaEntradaRow>[]);
+      return const Success(<NotaEntradaResumoFornecedorRow>[]);
     }
     if (totalCount > maxExportRowCount) {
       return const Failure(
@@ -45,7 +37,7 @@ class LoadNotasEntradaRowsForShareUseCase {
     }
 
     final pageSize = totalCount.clamp(1, NotasEntradaFilter.maxPageSize);
-    final collected = <NotaEntradaRow>[];
+    final collected = <NotaEntradaResumoFornecedorRow>[];
     var page = 1;
     while (collected.length < totalCount) {
       final pageFilter = filter.copyWith(page: page, pageSize: pageSize);
@@ -63,8 +55,8 @@ class LoadNotasEntradaRowsForShareUseCase {
       );
 
       AppFailure? failure;
-      var pageResult = const NotasEntradaPageResult(
-        items: <NotaEntradaRow>[],
+      var pageResult = const NotasEntradaResumoFornecedorPageResult(
+        items: <NotaEntradaResumoFornecedorRow>[],
         totalCount: 0,
         totalValorCompra: 0,
       );
@@ -90,6 +82,8 @@ class LoadNotasEntradaRowsForShareUseCase {
         ValidationFailure(message: 'share_export_incomplete_catalog'),
       );
     }
-    return Success(List<NotaEntradaRow>.unmodifiable(collected));
+    return Success(
+      List<NotaEntradaResumoFornecedorRow>.unmodifiable(collected),
+    );
   }
 }

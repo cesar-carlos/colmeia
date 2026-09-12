@@ -1,9 +1,8 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/data/queries/notas_entrada_sql.dart';
-import 'package:colmeia/features/agent_queries/data/repositories/notas_entrada_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/notas_entrada_resumo_fornecedor_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/resumo_vendas_diarias_suggestion_sql_params.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/notas_entrada_filter.dart';
@@ -17,7 +16,7 @@ class _MockAgentQueriesRepository extends Mock
 
 void main() {
   late _MockAgentQueriesRepository agentQueriesRepository;
-  late NotasEntradaRepositoryImpl repository;
+  late NotasEntradaResumoFornecedorRepositoryImpl repository;
 
   setUpAll(() {
     registerFallbackValue(
@@ -27,7 +26,9 @@ void main() {
 
   setUp(() {
     agentQueriesRepository = _MockAgentQueriesRepository();
-    repository = NotasEntradaRepositoryImpl(agentQueriesRepository);
+    repository = NotasEntradaResumoFornecedorRepositoryImpl(
+      agentQueriesRepository,
+    );
   });
 
   test(
@@ -45,7 +46,7 @@ void main() {
     },
   );
 
-  test('sends scope, dates, and the numbered page window', () async {
+  test('sends the grouped query with the numbered page window', () async {
     when(() => agentQueriesRepository.executeSql(any())).thenAnswer(
       (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
         AgentSqlExecutionResult(
@@ -74,7 +75,7 @@ void main() {
             ).captured.single
             as AgentSqlExecuteRequest;
     check(captured.sql).equals(
-      NotasEntradaSql.pagedQuery(
+      NotasEntradaSql.pagedSupplierSummaryQuery(
         hasDataLancamentoInicio: true,
         hasDataLancamentoFim: true,
       ),
@@ -89,27 +90,18 @@ void main() {
       ResumoVendasDiariasSuggestionSqlParams.matchAllLikePattern,
     );
     check(captured.namedParams.containsKey('codFornecedor')).isFalse();
-    check(captured.namedParams.containsKey('limit')).isFalse();
     check(captured.executeOptions?.maxRows).equals(25);
-    check(captured.executeOptions?.executionMode).equals(
-      AgentSqlExecutionMode.preserve,
-    );
-    check(captured.executeOptions?.preferDbStreaming).equals(false);
     check(captured.useRelay).isTrue();
     check(captured.relayMode).equals(AgentSqlRelayMode.unary);
     check(captured.skipTransportCache).isTrue();
   });
 
-  test('maps a numbered page and the catalog total', () async {
+  test('maps a numbered supplier page and the group total', () async {
     when(() => agentQueriesRepository.executeSql(any())).thenAnswer(
       (_) async => Success<AgentSqlExecutionResult, AppFailure>(
         AgentSqlExecutionResult(
           rows: <Map<String, dynamic>>[
-            _row(
-              compraId: 80,
-              dataLancamento: '2026-02-03T10:00:00',
-              totalCount: 86,
-            ),
+            _row(codFornecedor: 9, totalCount: 12),
           ],
           rowCount: 1,
         ),
@@ -128,9 +120,12 @@ void main() {
     check(result.isSuccess()).isTrue();
     final page = result.getOrThrow();
     check(page.items.length).equals(1);
-    check(page.items.single.compraId).equals(80);
-    check(page.totalCount).equals(86);
-    check(page.totalValorCompra).equals(1250.5);
+    check(page.items.single.codFornecedor).equals(9);
+    check(page.items.single.qtdNotas).equals(4);
+    check(page.items.single.ticketMedio).equals(11.4375);
+    check(page.items.single.valorTotalCompra).equals(45.75);
+    check(page.totalCount).equals(12);
+    check(page.totalValorCompra).equals(980.25);
   });
 
   test('maps an empty numbered page from a total-only row', () async {
@@ -158,40 +153,6 @@ void main() {
     check(result.getOrThrow().items).isEmpty();
     check(result.getOrThrow().totalCount).equals(0);
     check(result.getOrThrow().totalValorCompra).equals(0);
-    verify(() => agentQueriesRepository.executeSql(any())).called(1);
-  });
-
-  test('omits an unspecified date parameter and predicate', () async {
-    when(() => agentQueriesRepository.executeSql(any())).thenAnswer(
-      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
-        AgentSqlExecutionResult(
-          rows: <Map<String, dynamic>>[],
-          rowCount: 0,
-        ),
-      ),
-    );
-
-    await repository.loadPage(
-      userId: 'user-1',
-      agentId: 'agent-1',
-      filter: NotasEntradaFilter(
-        dataLancamentoInicio: DateTime(2026, 2),
-      ),
-    );
-
-    final captured =
-        verify(
-              () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured.single
-            as AgentSqlExecuteRequest;
-    check(captured.namedParams.containsKey('dataLancamentoInicio')).isTrue();
-    check(captured.namedParams.containsKey('dataLancamentoFim')).isFalse();
-    check(captured.sql).equals(
-      NotasEntradaSql.pagedQuery(
-        hasDataLancamentoInicio: true,
-        hasDataLancamentoFim: false,
-      ),
-    );
   });
 
   test('binds the supplier search pattern once', () async {
@@ -220,10 +181,9 @@ void main() {
             ).captured.single
             as AgentSqlExecuteRequest;
     check(captured.namedParams['nomeFornecedorPattern']).equals('%Mel%');
-    check(captured.sql).contains(':nomeFornecedorPattern');
   });
 
-  test('binds CodFornecedor equality on the numbered catalog query', () async {
+  test('binds CodFornecedor equality on the grouped query', () async {
     when(() => agentQueriesRepository.executeSql(any())).thenAnswer(
       (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
         AgentSqlExecutionResult(
@@ -249,7 +209,7 @@ void main() {
             ).captured.single
             as AgentSqlExecuteRequest;
     check(captured.sql).equals(
-      NotasEntradaSql.pagedQuery(
+      NotasEntradaSql.pagedSupplierSummaryQuery(
         hasDataLancamentoInicio: true,
         hasDataLancamentoFim: true,
         hasCodFornecedor: true,
@@ -260,25 +220,19 @@ void main() {
 }
 
 Map<String, dynamic> _row({
-  required int compraId,
-  required String dataLancamento,
+  required int codFornecedor,
   required int totalCount,
 }) {
   return <String, dynamic>{
     'TotalCount': totalCount,
-    'TotalValorCompra': 1250.5,
-    'CompraId': compraId,
+    'TotalValorCompra': 980.25,
     'CodEmpresa': 1,
     'CodFilial': 1,
     'NomeFilial': 'Matriz',
-    'CodTipoOperacaoCompra': 2,
-    'DescricaoTipoOperacaoCompra': 'Compra',
-    'NumeroDocumento': '100',
-    'DataEmissao': '2026-02-01',
-    'DataEntrada': '2026-02-02',
-    'DataLancamento': dataLancamento,
-    'CodFornecedor': 7,
+    'CodFornecedor': codFornecedor,
     'NomeFornecedor': 'Fornecedor',
+    'QtdNotas': 4,
+    'TicketMedio': 11.4375,
     'ValorTotalCompra': 45.75,
   };
 }

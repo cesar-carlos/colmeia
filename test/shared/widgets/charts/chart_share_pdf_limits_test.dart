@@ -46,6 +46,33 @@ void main() {
   });
 
   test(
+    'applyChartShareTableRowLimit preserves footer rows when truncating',
+    () {
+      final tableData = ChartShareTableData(
+        headers: const <String>['A', 'Amount'],
+        rows: List<List<String>>.generate(
+          3,
+          (index) => <String>['$index', '${index * 10}'],
+          growable: false,
+        ),
+        footerRows: const <List<String>>[
+          <String>['Total:', r'R$ 30,00'],
+        ],
+      );
+
+      final result = applyChartShareTableRowLimit(
+        tableData: tableData,
+        maxRows: 2,
+        truncationNoticeBuilder: (shownRows, totalRows) =>
+            'shown $shownRows of $totalRows',
+      );
+
+      expect(result.tableData.rows, hasLength(2));
+      expect(result.tableData.footerRows, tableData.footerRows);
+    },
+  );
+
+  test(
     'paginateChartShareTableRows returns single chunk when under page size',
     () {
       final rows = List<List<String>>.generate(

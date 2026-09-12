@@ -1,3 +1,4 @@
+import 'package:colmeia/features/agent_queries/domain/entities/nota_entrada_resumo_fornecedor_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/nota_entrada_row.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_chart_share_export_filter.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_notas_entrada_columns.dart';
@@ -43,6 +44,7 @@ ChartShareExportHeaderContext buildSalesNotasEntradaShareExportHeaderContext({
 ChartShareMetadata buildSalesNotasEntradaShareMetadata({
   required AppLocalizations l10n,
   required List<NotaEntradaRow> rows,
+  required double totalValorCompra,
   ChartShareExportHeaderContext? exportHeaderContext,
 }) {
   final labels = SalesNotasEntradaColumnLabels.fromL10n(l10n);
@@ -85,6 +87,82 @@ ChartShareMetadata buildSalesNotasEntradaShareMetadata({
       exportHeaderContext: exportHeaderContext,
       truncationNotice: tableLimit.truncationNotice,
     ),
-    tableData: tableLimit.tableData,
+    tableData: _withAmountFooter(
+      l10n: l10n,
+      tableData: tableLimit.tableData,
+      totalValorCompra: totalValorCompra,
+    ),
+  );
+}
+
+ChartShareMetadata buildSalesNotasEntradaResumoShareMetadata({
+  required AppLocalizations l10n,
+  required List<NotaEntradaResumoFornecedorRow> rows,
+  required double totalValorCompra,
+  ChartShareExportHeaderContext? exportHeaderContext,
+}) {
+  final labels = SalesNotasEntradaColumnLabels.fromL10n(l10n);
+  final tableLimit = applyChartShareTableRowLimit(
+    tableData: ChartShareTableData(
+      headers: <String>[
+        labels.codFornecedor,
+        labels.fornecedor,
+        labels.cnpjCpf,
+        labels.qtdNotas,
+        labels.ticketMedio,
+        labels.valorTotal,
+      ],
+      rows: <List<String>>[
+        for (final row in rows)
+          <String>[
+            '${row.codFornecedor}',
+            row.nomeFornecedor,
+            formatSalesNotasEntradaTaxId(row.cnpjCpfFornecedor),
+            '${row.qtdNotas}',
+            formatSalesNotasEntradaCurrency(row.ticketMedio),
+            formatSalesNotasEntradaCurrency(row.valorTotalCompra),
+          ],
+      ],
+    ),
+    truncationNoticeBuilder: (shownRows, totalRows) =>
+        l10n.chartSharePdfTableRowsTruncated(shownRows, totalRows),
+  );
+
+  return ChartShareMetadata(
+    title: l10n.salesCardNotasEntradaTitle,
+    subtitle: l10n.salesNotasEntradaSummarySubtitle,
+    includeChartImage: false,
+    pdfOrientation: ChartSharePdfOrientation.landscape,
+    filterSummary: buildChartSharePdfFilterSummary(
+      exportHeaderContext: exportHeaderContext,
+      truncationNotice: tableLimit.truncationNotice,
+    ),
+    tableData: _withAmountFooter(
+      l10n: l10n,
+      tableData: tableLimit.tableData,
+      totalValorCompra: totalValorCompra,
+    ),
+  );
+}
+
+ChartShareTableData _withAmountFooter({
+  required AppLocalizations l10n,
+  required ChartShareTableData tableData,
+  required double totalValorCompra,
+}) {
+  if (tableData.isEmpty) {
+    return tableData;
+  }
+
+  return ChartShareTableData(
+    headers: tableData.headers,
+    rows: tableData.rows,
+    footerRows: <List<String>>[
+      buildChartShareTableAmountFooterRow(
+        columnCount: tableData.headers.length,
+        label: '${l10n.salesNotasEntradaTotalsAmountLabel}:',
+        amount: formatSalesNotasEntradaCurrency(totalValorCompra),
+      ),
+    ],
   );
 }

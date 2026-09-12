@@ -17,6 +17,7 @@ class ChartPdfBuildPayload {
     this.filterSummary,
     this.tableHeaders = const <String>[],
     this.tableRows = const <List<String>>[],
+    this.tableFooterRows = const <List<String>>[],
     this.chartImagePngBytes,
     this.pageNumberLabelTemplate,
     this.pdfOrientation = ChartSharePdfOrientation.portrait,
@@ -27,6 +28,7 @@ class ChartPdfBuildPayload {
   final String? filterSummary;
   final List<String> tableHeaders;
   final List<List<String>> tableRows;
+  final List<List<String>> tableFooterRows;
   final Uint8List? chartImagePngBytes;
   final Uint8List? headerFontBytes;
   final Uint8List? bodyFontBytes;
@@ -90,6 +92,7 @@ Future<Uint8List> buildChartPdfInIsolate(ChartPdfBuildPayload payload) async {
             ..._buildPaginatedTables(
               headers: payload.tableHeaders,
               rows: payload.tableRows,
+              footerRows: payload.tableFooterRows,
               headerFont: headerFont,
               bodyFont: bodyFont,
               pageFormat: pageFormat,
@@ -198,6 +201,7 @@ pw.Widget _buildFooter(
 List<pw.Widget> _buildPaginatedTables({
   required List<String> headers,
   required List<List<String>> rows,
+  required List<List<String>> footerRows,
   required pw.Font headerFont,
   required pw.Font bodyFont,
   required PdfPageFormat pageFormat,
@@ -208,6 +212,20 @@ List<pw.Widget> _buildPaginatedTables({
     return const <pw.Widget>[];
   }
 
+  final normalizedFooterRows = _normalizedTableFooterRows(
+    footerRows: footerRows,
+    columnCount: headers.length,
+  );
+  final columnWidths = chartPdfTableColumnWidths(
+    headers: headers,
+    rows: <List<String>>[...rows, ...normalizedFooterRows],
+    availableWidth: pageFormat.availableWidth,
+  );
+  final alignments = resolveChartPdfTableAlignments(
+    headers: headers,
+    rows: rows,
+  );
+
   return <pw.Widget>[
     for (var index = 0; index < rowChunks.length; index++) ...<pw.Widget>[
       if (index > 0) pw.SizedBox(height: sectionGap),
@@ -216,8 +234,17 @@ List<pw.Widget> _buildPaginatedTables({
         rows: rowChunks[index],
         headerFont: headerFont,
         bodyFont: bodyFont,
-        pageFormat: pageFormat,
+        cellAlignments: alignments.cellAlignments,
+        headerAlignments: alignments.headerAlignments,
+        columnWidths: columnWidths,
       ),
+      if (index == rowChunks.length - 1 && normalizedFooterRows.isNotEmpty)
+        _buildTableFooter(
+          footerRows: normalizedFooterRows,
+          headerFont: headerFont,
+          bodyFont: bodyFont,
+          columnWidths: columnWidths,
+        ),
     ],
   ];
 }
@@ -227,12 +254,10 @@ pw.Widget _buildTable({
   required List<List<String>> rows,
   required pw.Font headerFont,
   required pw.Font bodyFont,
-  required PdfPageFormat pageFormat,
+  required Map<int, pw.Alignment> cellAlignments,
+  required Map<int, pw.Alignment> headerAlignments,
+  required Map<int, pw.TableColumnWidth> columnWidths,
 }) {
-  final alignments = resolveChartPdfTableAlignments(
-    headers: headers,
-    rows: rows,
-  );
   final zebra = chartPdfTableZebraRowDecorations();
 
   return pw.TableHelper.fromTextArray(
@@ -244,12 +269,67 @@ pw.Widget _buildTable({
     rowDecoration: zebra.rowDecoration,
     oddRowDecoration: zebra.oddRowDecoration,
     cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-    cellAlignments: alignments.cellAlignments,
-    headerAlignments: alignments.headerAlignments,
-    columnWidths: chartPdfTableColumnWidths(
-      headers: headers,
-      rows: rows,
-      availableWidth: pageFormat.availableWidth,
-    ),
+    cellAlignments: cellAlignments,
+    headerAlignments: headerAlignments,
+    columnWidths: columnWidths,
   );
+}
+
+pw.Widget _buildTableFooter({
+  required List<List<String>> footerRows,
+  required pw.Font headerFont,
+  required pw.Font bodyFont,
+  required Map<int, pw.TableColumnWidth> columnWidths,
+}) {
+  return pw.Table(
+    columnWidths: columnWidths,
+    children: <pw.TableRow>[
+      for (final row in footerRows)
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(
+            border: pw.Border(
+              top: pw.BorderSide(color: PdfColors.grey400, width: 0.8),
+            ),
+          ),
+          children: <pw.Widget>[
+            for (var index = 0; index < row.length; index++)
+              pw.Padding(
+                padding: const pw.EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 5,
+                ),
+                child: pw.Align(
+                  alignment: index == row.length - 1
+                      ? pw.Alignment.centerRight
+                      : pw.Alignment.centerLeft,
+                  child: pw.Text(
+                    row[index],
+                    style: pw.TextStyle(
+                      font: index == row.length - 1 ? headerFont : bodyFont,
+                      fontSize: 9,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+    ],
+  );
+}
+
+List<List<String>> _normalizedTableFooterRows({
+  required List<List<String>> footerRows,
+  required int columnCount,
+}) {
+  if (columnCount <= 0 || footerRows.isEmpty) {
+    return const <List<String>>[];
+  }
+
+  return <List<String>>[
+    for (final row in footerRows)
+      <String>[
+        for (var index = 0; index < columnCount; index++)
+          if (index < row.length) row[index] else '',
+      ],
+  ];
 }

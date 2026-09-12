@@ -2,17 +2,21 @@ import 'dart:async';
 
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/nota_entrada_resumo_fornecedor_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/nota_entrada_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/notas_entrada_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/notas_entrada_page_result.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/notas_entrada_resumo_fornecedor_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/notas_entrada_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/notas_entrada_resumo_fornecedor_repository.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:colmeia/features/sales/application/ports/sales_preferences_port.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_notas_entrada_controller.dart';
+import 'package:colmeia/features/sales/presentation/sales_notas_entrada_view.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -29,11 +33,15 @@ class _MockAgentClientTokenReader extends Mock
 class _MockNotasEntradaRepository extends Mock
     implements NotasEntradaRepository {}
 
+class _MockResumoFornecedorRepository extends Mock
+    implements NotasEntradaResumoFornecedorRepository {}
+
 void main() {
   late _MockSalesPreferences preferences;
   late _MockLoadAvailableAgentsForSales loadAgents;
   late _MockAgentClientTokenReader tokenReader;
   late _MockNotasEntradaRepository repository;
+  late _MockResumoFornecedorRepository summaryRepository;
   late SalesNotasEntradaController controller;
 
   setUpAll(() {
@@ -48,6 +56,7 @@ void main() {
     loadAgents = _MockLoadAvailableAgentsForSales();
     tokenReader = _MockAgentClientTokenReader();
     repository = _MockNotasEntradaRepository();
+    summaryRepository = _MockResumoFornecedorRepository();
 
     when(
       () => preferences.restoreCardFilters(SalesNotasEntradaController.cardId),
@@ -89,6 +98,7 @@ void main() {
         tokenReader,
       ),
       notasEntradaRepository: repository,
+      resumoFornecedorRepository: summaryRepository,
       referenceDate: DateTime(2026, 9, 12),
     );
   });
@@ -102,6 +112,7 @@ void main() {
     expect(controller.page, 1);
     expect(controller.pageSize, 50);
     expect(controller.totalCount, 86);
+    expect(controller.totalValorCompra, 1250.5);
     expect(controller.rangeStart, 1);
     expect(controller.rangeEnd, 1);
     expect(controller.hasPreviousPage, isFalse);
@@ -257,6 +268,7 @@ void main() {
         tokenReader,
       ),
       notasEntradaRepository: repository,
+      resumoFornecedorRepository: summaryRepository,
       referenceDate: DateTime(2026, 9, 12),
     );
     addTearDown(restored.dispose);
@@ -286,12 +298,305 @@ void main() {
     expect(controller.rows, isEmpty);
     expect(controller.isLoading, isFalse);
   });
+
+  test('loads supplier totals only after switching the report view', () async {
+    when(
+      () => summaryRepository.loadPage(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        filter: any(named: 'filter'),
+        clientToken: 'token-1',
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    ).thenAnswer(
+      (_) async => Success<NotasEntradaResumoFornecedorPageResult, AppFailure>(
+        _summaryPage(),
+      ),
+    );
+
+    await controller.bindUser('user-1');
+    clearInteractions(repository);
+    clearInteractions(summaryRepository);
+
+    await controller.selectView(SalesNotasEntradaView.bySupplier);
+
+    expect(controller.view, SalesNotasEntradaView.bySupplier);
+    expect(controller.summaryRows.single.codFornecedor, 8);
+    expect(controller.page, 1);
+    expect(controller.totalCount, 4);
+    expect(controller.totalValorCompra, 980.25);
+    verify(
+      () => summaryRepository.loadPage(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        filter: any(named: 'filter'),
+        clientToken: 'token-1',
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    ).called(1);
+    verifyNever(
+      () => repository.loadPage(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        filter: any(named: 'filter'),
+        clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    );
+
+    clearInteractions(repository);
+    clearInteractions(summaryRepository);
+    await controller.selectView(SalesNotasEntradaView.notes);
+
+    expect(controller.view, SalesNotasEntradaView.notes);
+    expect(controller.rows.single.numeroDocumento, 'NF-001');
+    expect(controller.totalValorCompra, 1250.5);
+    verifyNever(
+      () => repository.loadPage(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        filter: any(named: 'filter'),
+        clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    );
+    verifyNever(
+      () => summaryRepository.loadPage(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        filter: any(named: 'filter'),
+        clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    );
+  });
+
+  test('resets both views and reloads only the active one on search', () async {
+    when(
+      () => summaryRepository.loadPage(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        filter: any(named: 'filter'),
+        clientToken: 'token-1',
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    ).thenAnswer(
+      (_) async => Success<NotasEntradaResumoFornecedorPageResult, AppFailure>(
+        _summaryPage(),
+      ),
+    );
+
+    await controller.bindUser('user-1');
+    await controller.selectView(SalesNotasEntradaView.bySupplier);
+    clearInteractions(repository);
+    clearInteractions(summaryRepository);
+
+    await controller.applySearch('Mel');
+
+    expect(controller.view, SalesNotasEntradaView.bySupplier);
+    expect(controller.page, 1);
+    final filter =
+        verify(
+              () => summaryRepository.loadPage(
+                userId: 'user-1',
+                agentId: 'agent-1',
+                filter: captureAny(named: 'filter'),
+                clientToken: 'token-1',
+                cancelScope: any(named: 'cancelScope'),
+              ),
+            ).captured.single
+            as NotasEntradaFilter;
+    expect(filter.searchTerm, 'Mel');
+    expect(filter.page, 1);
+    verifyNever(
+      () => repository.loadPage(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        filter: any(named: 'filter'),
+        clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    );
+  });
+
+  test('restores a persisted supplier-summary view', () {
+    when(
+      () => preferences.restoreCardFilters(SalesNotasEntradaController.cardId),
+    ).thenReturn(const <String, Object?>{
+      'view': 'bySupplier',
+    });
+    final restored = SalesNotasEntradaController(
+      sessionService: SalesSessionService(preferences),
+      loadSalesAvailableAgentsUseCase: loadAgents,
+      resolveSalesAgentClientToken: ResolveSalesAgentClientTokenUseCase(
+        tokenReader,
+      ),
+      notasEntradaRepository: repository,
+      resumoFornecedorRepository: summaryRepository,
+      referenceDate: DateTime(2026, 9, 12),
+    );
+    addTearDown(restored.dispose);
+
+    expect(restored.view, SalesNotasEntradaView.bySupplier);
+  });
+
+  test(
+    'openSupplierNotes recuts notes by supplier code and switches view',
+    () async {
+      when(
+        () => summaryRepository.loadPage(
+          userId: 'user-1',
+          agentId: 'agent-1',
+          filter: any(named: 'filter'),
+          clientToken: 'token-1',
+          cancelScope: any(named: 'cancelScope'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            Success<NotasEntradaResumoFornecedorPageResult, AppFailure>(
+              _summaryPage(),
+            ),
+      );
+
+      await controller.bindUser('user-1');
+      await controller.selectView(SalesNotasEntradaView.bySupplier);
+      clearInteractions(repository);
+      clearInteractions(summaryRepository);
+      clearInteractions(preferences);
+
+      await controller.openSupplierNotes(controller.summaryRows.single);
+
+      expect(controller.view, SalesNotasEntradaView.notes);
+      expect(controller.supplierScopeName, 'Fornecedor Exemplo');
+      final filter =
+          verify(
+                () => repository.loadPage(
+                  userId: 'user-1',
+                  agentId: 'agent-1',
+                  filter: captureAny(named: 'filter'),
+                  clientToken: 'token-1',
+                  cancelScope: any(named: 'cancelScope'),
+                ),
+              ).captured.single
+              as NotasEntradaFilter;
+      expect(filter.codFornecedor, 8);
+      expect(filter.page, 1);
+      verifyNever(
+        () => summaryRepository.loadPage(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+          filter: any(named: 'filter'),
+          clientToken: any(named: 'clientToken'),
+          cancelScope: any(named: 'cancelScope'),
+        ),
+      );
+      final persisted =
+          verify(
+                () => preferences.persistCardFilters(
+                  SalesNotasEntradaController.cardId,
+                  captureAny(),
+                ),
+              ).captured.single
+              as Map<String, Object?>;
+      expect(persisted.containsKey('codFornecedor'), isFalse);
+      expect(persisted[SalesNotasEntradaView.persistKey], 'notes');
+    },
+  );
+
+  test('clearSupplierScope stays on the current view', () async {
+    when(
+      () => summaryRepository.loadPage(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        filter: any(named: 'filter'),
+        clientToken: 'token-1',
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    ).thenAnswer(
+      (_) async => Success<NotasEntradaResumoFornecedorPageResult, AppFailure>(
+        _summaryPage(),
+      ),
+    );
+
+    await controller.bindUser('user-1');
+    await controller.selectView(SalesNotasEntradaView.bySupplier);
+    await controller.openSupplierNotes(controller.summaryRows.single);
+    await controller.selectView(SalesNotasEntradaView.bySupplier);
+    clearInteractions(repository);
+    clearInteractions(summaryRepository);
+
+    await controller.clearSupplierScope();
+
+    expect(controller.view, SalesNotasEntradaView.bySupplier);
+    expect(controller.supplierScopeName, isNull);
+    final filter =
+        verify(
+              () => summaryRepository.loadPage(
+                userId: 'user-1',
+                agentId: 'agent-1',
+                filter: captureAny(named: 'filter'),
+                clientToken: 'token-1',
+                cancelScope: any(named: 'cancelScope'),
+              ),
+            ).captured.single
+            as NotasEntradaFilter;
+    expect(filter.codFornecedor, isNull);
+    verifyNever(
+      () => repository.loadPage(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        filter: any(named: 'filter'),
+        clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    );
+  });
+
+  test('applySearch clears the supplier code recut', () async {
+    when(
+      () => summaryRepository.loadPage(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        filter: any(named: 'filter'),
+        clientToken: 'token-1',
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    ).thenAnswer(
+      (_) async => Success<NotasEntradaResumoFornecedorPageResult, AppFailure>(
+        _summaryPage(),
+      ),
+    );
+
+    await controller.bindUser('user-1');
+    await controller.selectView(SalesNotasEntradaView.bySupplier);
+    await controller.openSupplierNotes(controller.summaryRows.single);
+    clearInteractions(repository);
+
+    await controller.applySearch('Mel');
+
+    expect(controller.view, SalesNotasEntradaView.notes);
+    expect(controller.supplierScopeName, isNull);
+    final filter =
+        verify(
+              () => repository.loadPage(
+                userId: 'user-1',
+                agentId: 'agent-1',
+                filter: captureAny(named: 'filter'),
+                clientToken: 'token-1',
+                cancelScope: any(named: 'cancelScope'),
+              ),
+            ).captured.single
+            as NotasEntradaFilter;
+    expect(filter.codFornecedor, isNull);
+    expect(filter.searchTerm, 'Mel');
+  });
 }
 
 NotasEntradaPageResult _firstPage() {
   return NotasEntradaPageResult(
     items: <NotaEntradaRow>[_row(compraId: 2, document: 'NF-001')],
     totalCount: 86,
+    totalValorCompra: 1250.5,
   );
 }
 
@@ -299,6 +604,7 @@ NotasEntradaPageResult _secondPage() {
   return NotasEntradaPageResult(
     items: <NotaEntradaRow>[_row(compraId: 1, document: 'NF-002')],
     totalCount: 86,
+    totalValorCompra: 1250.5,
   );
 }
 
@@ -315,5 +621,24 @@ NotaEntradaRow _row({required int compraId, required String document}) {
     codFornecedor: 8,
     nomeFornecedor: 'Fornecedor Exemplo',
     valorTotalCompra: 100,
+  );
+}
+
+NotasEntradaResumoFornecedorPageResult _summaryPage() {
+  return const NotasEntradaResumoFornecedorPageResult(
+    items: <NotaEntradaResumoFornecedorRow>[
+      NotaEntradaResumoFornecedorRow(
+        codEmpresa: 1,
+        codFilial: 1,
+        nomeFilial: 'Filial Centro',
+        codFornecedor: 8,
+        nomeFornecedor: 'Fornecedor Exemplo',
+        qtdNotas: 2,
+        ticketMedio: 125,
+        valorTotalCompra: 250,
+      ),
+    ],
+    totalCount: 4,
+    totalValorCompra: 980.25,
   );
 }

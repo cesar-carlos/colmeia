@@ -130,6 +130,11 @@ void _registerSingleAgentQueryRepositories(GetIt getIt) {
   getIt.registerLazySingleton<NotasEntradaRepository>(
     () => NotasEntradaRepositoryImpl(getIt<AgentQueriesRepository>()),
   );
+  getIt.registerLazySingleton<NotasEntradaResumoFornecedorRepository>(
+    () => NotasEntradaResumoFornecedorRepositoryImpl(
+      getIt<AgentQueriesRepository>(),
+    ),
+  );
 
   _registerSingle<
     ResumoProdutoVendaRepository,

@@ -13,6 +13,7 @@ class AppCompactDataGridScrollTable extends StatefulWidget {
     required this.itemCount,
     required this.itemBuilder,
     super.key,
+    this.footer,
     this.semanticsHint,
     this.showHorizontalFade = true,
   });
@@ -21,6 +22,7 @@ class AppCompactDataGridScrollTable extends StatefulWidget {
   final double contentWidth;
   final int itemCount;
   final Widget Function(BuildContext context, int index) itemBuilder;
+  final Widget? footer;
   final String? semanticsHint;
   final bool showHorizontalFade;
 
@@ -113,6 +115,7 @@ class _AppCompactDataGridScrollTableState
             color: headerDividerColor,
           ),
           body,
+          ?widget.footer,
           if (bottomTrackSlot > 0) SizedBox(height: bottomTrackSlot),
         ],
       ),

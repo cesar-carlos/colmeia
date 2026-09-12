@@ -1,34 +1,32 @@
 import 'package:colmeia/core/errors/app_failure.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/nota_entrada_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/nota_entrada_resumo_fornecedor_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/notas_entrada_filter.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/notas_entrada_page_result.dart';
-import 'package:colmeia/features/agent_queries/domain/repositories/notas_entrada_repository.dart';
-import 'package:colmeia/features/sales/application/load_notas_entrada_rows_for_share_use_case.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/notas_entrada_resumo_fornecedor_page_result.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/notas_entrada_resumo_fornecedor_repository.dart';
+import 'package:colmeia/features/sales/application/load_notas_entrada_resumo_fornecedor_rows_for_share_use_case.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:result_dart/result_dart.dart';
 
-class _MockRepository extends Mock implements NotasEntradaRepository {}
+class _MockRepository extends Mock
+    implements NotasEntradaResumoFornecedorRepository {}
 
-NotaEntradaRow _row(int compraId) {
-  return NotaEntradaRow(
-    compraId: compraId,
+NotaEntradaResumoFornecedorRow _row(int code) {
+  return NotaEntradaResumoFornecedorRow(
     codEmpresa: 1,
     codFilial: 1,
     nomeFilial: 'Loja',
-    codTipoOperacaoCompra: 1,
-    descricaoTipoOperacaoCompra: 'Compra',
-    numeroDocumento: 'NF-$compraId',
-    dataLancamento: DateTime(2026, 9),
-    codFornecedor: 8,
-    nomeFornecedor: 'Fornecedor $compraId',
+    codFornecedor: code,
+    nomeFornecedor: 'Fornecedor $code',
+    qtdNotas: 2,
+    ticketMedio: 5,
     valorTotalCompra: 10,
   );
 }
 
 void main() {
   late _MockRepository repository;
-  late LoadNotasEntradaRowsForShareUseCase useCase;
+  late LoadNotasEntradaResumoFornecedorRowsForShareUseCase useCase;
 
   final filter = NotasEntradaFilter(
     dataLancamentoInicio: DateTime(2026, 9),
@@ -42,7 +40,7 @@ void main() {
 
   setUp(() {
     repository = _MockRepository();
-    useCase = LoadNotasEntradaRowsForShareUseCase(repository);
+    useCase = LoadNotasEntradaResumoFornecedorRowsForShareUseCase(repository);
   });
 
   test('returns empty list when totalCount is zero', () async {
@@ -69,7 +67,10 @@ void main() {
       userId: 'u',
       agentId: 'a',
       filter: filter,
-      totalCount: LoadNotasEntradaRowsForShareUseCase.maxExportRowCount + 1,
+      totalCount:
+          LoadNotasEntradaResumoFornecedorRowsForShareUseCase
+              .maxExportRowCount +
+          1,
     );
 
     expect(result.isError(), isTrue);
@@ -101,12 +102,12 @@ void main() {
       final lastRow = pageFilter.endRow < totalCount
           ? pageFilter.endRow
           : totalCount;
-      final items = <NotaEntradaRow>[
+      final items = <NotaEntradaResumoFornecedorRow>[
         for (var index = pageFilter.startRow; index <= lastRow; index++)
           _row(index),
       ];
       return Success(
-        NotasEntradaPageResult(
+        NotasEntradaResumoFornecedorPageResult(
           items: items,
           totalCount: totalCount,
           totalValorCompra: 1250.5,
@@ -141,67 +142,7 @@ void main() {
     ).captured.cast<NotasEntradaFilter>();
     expect(captured, hasLength(2));
     expect(captured[0].searchTerm, 'Mel');
-    expect(captured[1].searchTerm, 'Mel');
-    expect(captured[0].dataLancamentoInicio, DateTime(2026, 9));
-    expect(captured[0].pageSize, NotasEntradaFilter.maxPageSize);
     expect(captured[1].page, 2);
     expect(captured[1].startRow, 501);
-  });
-
-  test('fails when a later page is shorter than the window', () async {
-    var callCount = 0;
-    when(
-      () => repository.loadPage(
-        userId: any(named: 'userId'),
-        agentId: any(named: 'agentId'),
-        filter: any(named: 'filter'),
-        clientToken: any(named: 'clientToken'),
-        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
-        hubPresenceOnlineAgentIdsSnapshot: any(
-          named: 'hubPresenceOnlineAgentIdsSnapshot',
-        ),
-        hubConnectedFromApprovedCatalogRow: any(
-          named: 'hubConnectedFromApprovedCatalogRow',
-        ),
-      ),
-    ).thenAnswer((_) async {
-      callCount++;
-      if (callCount == 1) {
-        return Success(
-          NotasEntradaPageResult(
-            items: List<NotaEntradaRow>.generate(
-              NotasEntradaFilter.maxPageSize,
-              (index) => _row(index + 1),
-            ),
-            totalCount: 600,
-            totalValorCompra: 1250.5,
-          ),
-        );
-      }
-      return Success(
-        NotasEntradaPageResult(
-          items: List<NotaEntradaRow>.generate(
-            50,
-            (index) => _row(index + NotasEntradaFilter.maxPageSize + 1),
-          ),
-          totalCount: 600,
-          totalValorCompra: 1250.5,
-        ),
-      );
-    });
-
-    final result = await useCase(
-      userId: 'u',
-      agentId: 'a',
-      filter: filter,
-      totalCount: 600,
-      clientToken: 'token',
-    );
-
-    expect(result.isError(), isTrue);
-    expect(
-      (result.exceptionOrNull()! as ValidationFailure).message,
-      'share_export_incomplete_catalog',
-    );
   });
 }

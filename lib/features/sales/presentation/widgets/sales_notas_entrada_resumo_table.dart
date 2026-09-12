@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:colmeia/features/agent_queries/domain/entities/nota_entrada_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/nota_entrada_resumo_fornecedor_row.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_notas_entrada_columns.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_notas_entrada_totals_footer.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -9,17 +9,19 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_compact_data_grid_scroll_table.dart';
 import 'package:flutter/material.dart';
 
-class SalesNotasEntradaNotesGrid extends StatelessWidget {
-  const SalesNotasEntradaNotesGrid({
+class SalesNotasEntradaResumoGrid extends StatelessWidget {
+  const SalesNotasEntradaResumoGrid({
     required this.l10n,
     required this.rows,
     required this.totalValorCompra,
     super.key,
+    this.onSupplierSelected,
   });
 
   final AppLocalizations l10n;
-  final List<NotaEntradaRow> rows;
+  final List<NotaEntradaResumoFornecedorRow> rows;
   final double totalValorCompra;
+  final ValueChanged<NotaEntradaResumoFornecedorRow>? onSupplierSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -29,9 +31,10 @@ class SalesNotasEntradaNotesGrid extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final minTable = SalesNotasEntradaTableLayout.minScrollContentWidth(
-          tokens,
-        );
+        final minTable =
+            SalesNotasEntradaResumoTableLayout.minScrollContentWidth(
+              tokens,
+            );
         final outer = constraints.maxWidth;
         final hasHorizontalOverflow =
             outer.isFinite && outer > 0 && minTable > outer;
@@ -57,12 +60,17 @@ class SalesNotasEntradaNotesGrid extends StatelessWidget {
                   ? l10n.salesNotasEntradaHorizontalScrollCaption
                   : null,
               showHorizontalFade: hasHorizontalOverflow,
-              header: SalesNotasEntradaTableHeader(labels: labels),
-              footer: SalesNotasEntradaNotesTotalsFooter(
+              header: SalesNotasEntradaResumoTableHeader(labels: labels),
+              footer: SalesNotasEntradaResumoTotalsFooter(
                 totalValorCompra: totalValorCompra,
               ),
               itemBuilder: (context, index) {
-                return SalesNotasEntradaTableRow(row: rows[index]);
+                return SalesNotasEntradaResumoTableRow(
+                  row: rows[index],
+                  onTap: onSupplierSelected == null
+                      ? null
+                      : () => onSupplierSelected!(rows[index]),
+                );
               },
             ),
           ],
@@ -72,8 +80,8 @@ class SalesNotasEntradaNotesGrid extends StatelessWidget {
   }
 }
 
-class SalesNotasEntradaTableHeader extends StatelessWidget {
-  const SalesNotasEntradaTableHeader({required this.labels, super.key});
+class SalesNotasEntradaResumoTableHeader extends StatelessWidget {
+  const SalesNotasEntradaResumoTableHeader({required this.labels, super.key});
 
   final SalesNotasEntradaColumnLabels labels;
 
@@ -97,40 +105,41 @@ class SalesNotasEntradaTableHeader extends StatelessWidget {
           padding: appDataGridRowPadding(tokens),
           child: Row(
             children: <Widget>[
-              _FixedCell(
-                width: SalesNotasEntradaTableLayout.documentoWidth,
-                child: Text(labels.documento, style: labelStyle),
-              ),
-              _FixedCell(
-                width: SalesNotasEntradaTableLayout.dateWidth,
-                child: Text(labels.emissao, style: labelStyle),
-              ),
-              _FixedCell(
-                width: SalesNotasEntradaTableLayout.dateWidth,
-                child: Text(labels.entrada, style: labelStyle),
-              ),
-              _FixedCell(
-                width: SalesNotasEntradaTableLayout.lancamentoWidth,
-                child: Text(labels.lancamento, style: labelStyle),
-              ),
-              _FixedCell(
-                width: SalesNotasEntradaTableLayout.codFornecedorWidth,
+              SizedBox(
+                width: SalesNotasEntradaResumoTableLayout.codFornecedorWidth,
                 child: Text(labels.codFornecedor, style: labelStyle),
               ),
               Expanded(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(
-                    minWidth: SalesNotasEntradaTableLayout.fornecedorMinWidth,
+                    minWidth:
+                        SalesNotasEntradaResumoTableLayout.fornecedorMinWidth,
                   ),
                   child: Text(labels.fornecedor, style: labelStyle),
                 ),
               ),
-              _FixedCell(
-                width: SalesNotasEntradaTableLayout.cnpjWidth,
+              SizedBox(
+                width: SalesNotasEntradaResumoTableLayout.cnpjWidth,
                 child: Text(labels.cnpjCpf, style: labelStyle),
               ),
-              _FixedCell(
-                width: SalesNotasEntradaTableLayout.valorWidth,
+              SizedBox(
+                width: SalesNotasEntradaResumoTableLayout.qtdNotasWidth,
+                child: Text(
+                  labels.qtdNotas,
+                  style: endLabelStyle,
+                  textAlign: TextAlign.end,
+                ),
+              ),
+              SizedBox(
+                width: SalesNotasEntradaResumoTableLayout.ticketMedioWidth,
+                child: Text(
+                  labels.ticketMedio,
+                  style: endLabelStyle,
+                  textAlign: TextAlign.end,
+                ),
+              ),
+              SizedBox(
+                width: SalesNotasEntradaResumoTableLayout.valorWidth,
                 child: Text(
                   labels.valorTotal,
                   style: endLabelStyle,
@@ -145,10 +154,15 @@ class SalesNotasEntradaTableHeader extends StatelessWidget {
   }
 }
 
-class SalesNotasEntradaTableRow extends StatelessWidget {
-  const SalesNotasEntradaTableRow({required this.row, super.key});
+class SalesNotasEntradaResumoTableRow extends StatelessWidget {
+  const SalesNotasEntradaResumoTableRow({
+    required this.row,
+    super.key,
+    this.onTap,
+  });
 
-  final NotaEntradaRow row;
+  final NotaEntradaResumoFornecedorRow row;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -157,55 +171,14 @@ class SalesNotasEntradaTableRow extends StatelessWidget {
     const tabularFigures = <FontFeature>[FontFeature.tabularFigures()];
     final bodyStyle = theme.textTheme.bodyMedium;
     final tabularStyle = bodyStyle?.copyWith(fontFeatures: tabularFigures);
-    final mutedTabularStyle = theme.textTheme.bodySmall?.copyWith(
-      fontFeatures: tabularFigures,
-      color: theme.colorScheme.onSurfaceVariant,
-    );
-
-    return ConstrainedBox(
+    final content = ConstrainedBox(
       constraints: const BoxConstraints(minHeight: kAppCompactDataRowHeight),
       child: Padding(
         padding: appDataGridRowPadding(tokens),
         child: Row(
           children: <Widget>[
-            _FixedCell(
-              width: SalesNotasEntradaTableLayout.documentoWidth,
-              child: Text(
-                row.numeroDocumento,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: tabularStyle,
-              ),
-            ),
-            _FixedCell(
-              width: SalesNotasEntradaTableLayout.dateWidth,
-              child: Text(
-                formatSalesNotasEntradaDate(row.dataEmissao),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: mutedTabularStyle,
-              ),
-            ),
-            _FixedCell(
-              width: SalesNotasEntradaTableLayout.dateWidth,
-              child: Text(
-                formatSalesNotasEntradaDate(row.dataEntrada),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: mutedTabularStyle,
-              ),
-            ),
-            _FixedCell(
-              width: SalesNotasEntradaTableLayout.lancamentoWidth,
-              child: Text(
-                formatSalesNotasEntradaLaunchDate(row.dataLancamento),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: mutedTabularStyle,
-              ),
-            ),
-            _FixedCell(
-              width: SalesNotasEntradaTableLayout.codFornecedorWidth,
+            SizedBox(
+              width: SalesNotasEntradaResumoTableLayout.codFornecedorWidth,
               child: Text(
                 '${row.codFornecedor}',
                 maxLines: 1,
@@ -216,7 +189,8 @@ class SalesNotasEntradaTableRow extends StatelessWidget {
             Expanded(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(
-                  minWidth: SalesNotasEntradaTableLayout.fornecedorMinWidth,
+                  minWidth:
+                      SalesNotasEntradaResumoTableLayout.fornecedorMinWidth,
                 ),
                 child: Text(
                   row.nomeFornecedor,
@@ -225,8 +199,8 @@ class SalesNotasEntradaTableRow extends StatelessWidget {
                 ),
               ),
             ),
-            _FixedCell(
-              width: SalesNotasEntradaTableLayout.cnpjWidth,
+            SizedBox(
+              width: SalesNotasEntradaResumoTableLayout.cnpjWidth,
               child: Text(
                 formatSalesNotasEntradaTaxId(row.cnpjCpfFornecedor),
                 maxLines: 1,
@@ -234,8 +208,28 @@ class SalesNotasEntradaTableRow extends StatelessWidget {
                 style: tabularStyle,
               ),
             ),
-            _FixedCell(
-              width: SalesNotasEntradaTableLayout.valorWidth,
+            SizedBox(
+              width: SalesNotasEntradaResumoTableLayout.qtdNotasWidth,
+              child: Text(
+                '${row.qtdNotas}',
+                textAlign: TextAlign.end,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tabularStyle,
+              ),
+            ),
+            SizedBox(
+              width: SalesNotasEntradaResumoTableLayout.ticketMedioWidth,
+              child: Text(
+                formatSalesNotasEntradaCurrency(row.ticketMedio),
+                textAlign: TextAlign.end,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tabularStyle,
+              ),
+            ),
+            SizedBox(
+              width: SalesNotasEntradaResumoTableLayout.valorWidth,
               child: Text(
                 formatSalesNotasEntradaCurrency(row.valorTotalCompra),
                 textAlign: TextAlign.end,
@@ -248,17 +242,16 @@ class SalesNotasEntradaTableRow extends StatelessWidget {
         ),
       ),
     );
-  }
-}
+    if (onTap == null) {
+      return content;
+    }
 
-class _FixedCell extends StatelessWidget {
-  const _FixedCell({required this.width, required this.child});
-
-  final double width;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(width: width, child: child);
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTap: onTap,
+        child: Semantics(button: true, child: content),
+      ),
+    );
   }
 }

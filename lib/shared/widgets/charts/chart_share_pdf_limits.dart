@@ -64,6 +64,7 @@ ChartShareTableLimitResult applyChartShareTableRowLimit({
           .take(maxRows)
           .map((row) => List<String>.of(row, growable: false))
           .toList(growable: false),
+      footerRows: tableData.footerRows,
     ),
     truncationNotice: truncationNoticeBuilder(maxRows, tableData.rows.length),
   );

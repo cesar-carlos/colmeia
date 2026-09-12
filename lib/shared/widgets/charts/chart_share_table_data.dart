@@ -6,6 +6,7 @@ class ChartShareTableData {
   const ChartShareTableData({
     required this.headers,
     required this.rows,
+    this.footerRows = const <List<String>>[],
   });
 
   factory ChartShareTableData.fromDonutSegments({
@@ -120,5 +121,29 @@ class ChartShareTableData {
   final List<String> headers;
   final List<List<String>> rows;
 
+  /// Totals rendered under the last table chunk, aligned to [headers].
+  final List<List<String>> footerRows;
+
   bool get isEmpty => headers.isEmpty || rows.isEmpty;
+
+  bool get hasFooter => footerRows.isNotEmpty;
+}
+
+/// Spreadsheet-style totals row: [label] in the first column, [amount] in the last.
+List<String> buildChartShareTableAmountFooterRow({
+  required int columnCount,
+  required String label,
+  required String amount,
+}) {
+  if (columnCount <= 0) {
+    return const <String>[];
+  }
+  if (columnCount == 1) {
+    return <String>[amount];
+  }
+
+  return <String>[
+    for (var index = 0; index < columnCount; index++)
+      if (index == 0) label else if (index == columnCount - 1) amount else '',
+  ];
 }

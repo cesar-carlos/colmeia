@@ -8,10 +8,12 @@ import 'package:colmeia/features/agent_queries/domain/ports/agent_query_target_r
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/margem_produto_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/notas_entrada_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/notas_entrada_resumo_fornecedor_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_tendencia_de_venda_media_movel_repository.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:colmeia/features/sales/application/load_margem_produto_rows_for_share_use_case.dart';
 import 'package:colmeia/features/sales/application/load_media_movel_rows_for_share_use_case.dart';
+import 'package:colmeia/features/sales/application/load_notas_entrada_resumo_fornecedor_rows_for_share_use_case.dart';
 import 'package:colmeia/features/sales/application/load_notas_entrada_rows_for_share_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map/sales_live_map_branch_location_cache.dart';
@@ -84,6 +86,11 @@ void registerInjectorSales(GetIt getIt) {
     ..registerFactory<LoadNotasEntradaRowsForShareUseCase>(
       () => LoadNotasEntradaRowsForShareUseCase(
         getIt<NotasEntradaRepository>(),
+      ),
+    )
+    ..registerFactory<LoadNotasEntradaResumoFornecedorRowsForShareUseCase>(
+      () => LoadNotasEntradaResumoFornecedorRowsForShareUseCase(
+        getIt<NotasEntradaResumoFornecedorRepository>(),
       ),
     )
     ..registerLazySingleton<SalesLiveMapCatalogDiskCache>(

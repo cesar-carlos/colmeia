@@ -83,6 +83,31 @@ void main() {
     expect(table.headers, <String>['Month', 'Sales', 'Amount']);
     expect(table.rows.single, <String>['2026/01', '10', r'R$ 100']);
   });
+
+  test('buildChartShareTableAmountFooterRow places amount in last column', () {
+    expect(
+      buildChartShareTableAmountFooterRow(
+        columnCount: 4,
+        label: 'Total:',
+        amount: r'R$ 10,00',
+      ),
+      <String>['Total:', '', '', r'R$ 10,00'],
+    );
+  });
+
+  test(
+    'buildChartShareTableAmountFooterRow uses only amount for one column',
+    () {
+      expect(
+        buildChartShareTableAmountFooterRow(
+          columnCount: 1,
+          label: 'Total:',
+          amount: r'R$ 10,00',
+        ),
+        <String>[r'R$ 10,00'],
+      );
+    },
+  );
 }
 
 class _Row {

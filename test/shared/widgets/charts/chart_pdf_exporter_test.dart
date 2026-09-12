@@ -116,4 +116,24 @@ void main() {
     expect(bytes, isNotEmpty);
     expect(String.fromCharCodes(bytes.take(4)), '%PDF');
   });
+
+  test('build keeps table footer after paginated rows', () async {
+    final bytes = await ChartPdfExporter.build(
+      title: 'Table with totals',
+      pdfOrientation: ChartSharePdfOrientation.landscape,
+      tableData: const ChartShareTableData(
+        headers: <String>['Name', 'Amount'],
+        rows: <List<String>>[
+          <String>['A', r'R$ 10,00'],
+          <String>['B', r'R$ 5,00'],
+        ],
+        footerRows: <List<String>>[
+          <String>['Total:', r'R$ 15,00'],
+        ],
+      ),
+    );
+
+    expect(bytes, isNotEmpty);
+    expect(String.fromCharCodes(bytes.take(4)), '%PDF');
+  });
 }

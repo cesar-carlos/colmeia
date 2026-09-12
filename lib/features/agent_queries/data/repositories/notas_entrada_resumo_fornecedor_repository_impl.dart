@@ -2,7 +2,7 @@ import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/agent_queries_sql_row_map_reader.dart';
-import 'package:colmeia/features/agent_queries/data/models/nota_entrada_row_model.dart';
+import 'package:colmeia/features/agent_queries/data/models/nota_entrada_resumo_fornecedor_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/notas_entrada_sql_page_totals.dart';
 import 'package:colmeia/features/agent_queries/data/notas_entrada_sql_params.dart';
 import 'package:colmeia/features/agent_queries/data/queries/notas_entrada_sql.dart';
@@ -10,25 +10,26 @@ import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repos
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/nota_entrada_row.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/nota_entrada_resumo_fornecedor_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/notas_entrada_filter.dart';
-import 'package:colmeia/features/agent_queries/domain/entities/notas_entrada_page_result.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/notas_entrada_resumo_fornecedor_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
-import 'package:colmeia/features/agent_queries/domain/repositories/notas_entrada_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/notas_entrada_resumo_fornecedor_repository.dart';
 
-/// Numbered, non-cancelled entrada notes for one company and branch.
-class NotasEntradaRepositoryImpl implements NotasEntradaRepository {
-  NotasEntradaRepositoryImpl(this._agentQueriesRepository);
+/// Numbered supplier totals for non-cancelled entrada notes.
+class NotasEntradaResumoFornecedorRepositoryImpl
+    implements NotasEntradaResumoFornecedorRepository {
+  NotasEntradaResumoFornecedorRepositoryImpl(this._agentQueriesRepository);
 
   static const int _defaultSqlTimeoutMs = 170000;
   static const int _minSqlTimeoutMs = 5000;
-  static const String _operation = 'loadNotasEntradaPage';
+  static const String _operation = 'loadNotasEntradaResumoFornecedorPage';
 
   final AgentQueriesRepository _agentQueriesRepository;
 
   @override
-  Future<AppResult<NotasEntradaPageResult>> loadPage({
+  Future<AppResult<NotasEntradaResumoFornecedorPageResult>> loadPage({
     required String userId,
     required String agentId,
     required NotasEntradaFilter filter,
@@ -40,7 +41,9 @@ class NotasEntradaRepositoryImpl implements NotasEntradaRepository {
   }) async {
     final validationError = filter.validationError();
     if (validationError != null) {
-      return AgentSqlRepositoryExecution.invalidFilters<NotasEntradaPageResult>(
+      return AgentSqlRepositoryExecution.invalidFilters<
+        NotasEntradaResumoFornecedorPageResult
+      >(
         message: validationError,
         operation: _operation,
         agentId: agentId.trim(),
@@ -59,7 +62,7 @@ class NotasEntradaRepositoryImpl implements NotasEntradaRepository {
       requestingUserId: userId,
       hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
       hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
-      sql: NotasEntradaSql.pagedQuery(
+      sql: NotasEntradaSql.pagedSupplierSummaryQuery(
         hasDataLancamentoInicio: filter.dataLancamentoInicio != null,
         hasDataLancamentoFim: filter.dataLancamentoFim != null,
         hasCodFornecedor: filter.codFornecedor != null,
@@ -81,7 +84,9 @@ class NotasEntradaRepositoryImpl implements NotasEntradaRepository {
       skipTransportCache: true,
     );
 
-    return AgentSqlRepositoryExecution.execute<NotasEntradaPageResult>(
+    return AgentSqlRepositoryExecution.execute<
+      NotasEntradaResumoFornecedorPageResult
+    >(
       agentQueriesRepository: _agentQueriesRepository,
       request: request,
       operation: _operation,
@@ -96,14 +101,14 @@ class NotasEntradaRepositoryImpl implements NotasEntradaRepository {
     );
   }
 
-  NotasEntradaPageResult _mapPagedExecution(
+  NotasEntradaResumoFornecedorPageResult _mapPagedExecution(
     AgentSqlExecutionResult executionResult, {
     required String agentId,
     required int sqlMaxRowsCap,
   }) {
     if (executionResult.rows.isEmpty) {
-      return const NotasEntradaPageResult(
-        items: <NotaEntradaRow>[],
+      return const NotasEntradaResumoFornecedorPageResult(
+        items: <NotaEntradaResumoFornecedorRow>[],
         totalCount: NotasEntradaSqlPageTotals.emptyCount,
         totalValorCompra: NotasEntradaSqlPageTotals.emptyValorCompra,
       );
@@ -123,11 +128,13 @@ class NotasEntradaRepositoryImpl implements NotasEntradaRepository {
 
     final totalsRow = executionResult.rows.first;
     final items = executionResult.rows
-        .where(_rowHasCompraKey)
-        .map((row) => NotaEntradaRowModel.fromMap(row).toEntity())
+        .where(_rowHasFornecedorKey)
+        .map(
+          (row) => NotaEntradaResumoFornecedorRowModel.fromMap(row).toEntity(),
+        )
         .toList(growable: false);
 
-    return NotasEntradaPageResult(
+    return NotasEntradaResumoFornecedorPageResult(
       items: items,
       totalCount: NotasEntradaSqlPageTotals.readTotalCount(totalsRow),
       totalValorCompra: NotasEntradaSqlPageTotals.readTotalValorCompra(
@@ -136,10 +143,10 @@ class NotasEntradaRepositoryImpl implements NotasEntradaRepository {
     );
   }
 
-  static bool _rowHasCompraKey(Map<String, dynamic> row) {
+  static bool _rowHasFornecedorKey(Map<String, dynamic> row) {
     final raw = AgentQueriesSqlRowMapReader.lookupFirst(
       row,
-      AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('CompraId'),
+      AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('CodFornecedor'),
     );
     return raw != null;
   }

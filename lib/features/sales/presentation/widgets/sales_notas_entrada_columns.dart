@@ -11,6 +11,8 @@ class SalesNotasEntradaColumnLabels {
     required this.codFornecedor,
     required this.fornecedor,
     required this.cnpjCpf,
+    required this.qtdNotas,
+    required this.ticketMedio,
     required this.valorTotal,
   });
 
@@ -23,6 +25,8 @@ class SalesNotasEntradaColumnLabels {
       codFornecedor: l10n.salesNotasEntradaColumnCodFornecedor,
       fornecedor: l10n.salesNotasEntradaColumnFornecedor,
       cnpjCpf: l10n.salesNotasEntradaColumnCnpjCpf,
+      qtdNotas: l10n.salesNotasEntradaColumnQtdNotas,
+      ticketMedio: l10n.salesNotasEntradaColumnTicketMedio,
       valorTotal: l10n.salesNotasEntradaColumnValorTotal,
     );
   }
@@ -34,6 +38,8 @@ class SalesNotasEntradaColumnLabels {
   final String codFornecedor;
   final String fornecedor;
   final String cnpjCpf;
+  final String qtdNotas;
+  final String ticketMedio;
   final String valorTotal;
 }
 
@@ -60,6 +66,29 @@ abstract final class SalesNotasEntradaTableLayout {
   }
 
   /// Row padding uses [AppThemeTokens.gapSm] on each horizontal side.
+  static double minScrollContentWidth(AppThemeTokens tokens) =>
+      minWidth() + 2 * tokens.gapSm;
+}
+
+abstract final class SalesNotasEntradaResumoTableLayout {
+  static const double codFornecedorWidth =
+      SalesNotasEntradaTableLayout.codFornecedorWidth;
+  static const double fornecedorMinWidth =
+      SalesNotasEntradaTableLayout.fornecedorMinWidth;
+  static const double cnpjWidth = SalesNotasEntradaTableLayout.cnpjWidth;
+  static const double qtdNotasWidth = 104;
+  static const double ticketMedioWidth = 136;
+  static const double valorWidth = SalesNotasEntradaTableLayout.valorWidth;
+
+  static double minWidth() {
+    return codFornecedorWidth +
+        fornecedorMinWidth +
+        cnpjWidth +
+        qtdNotasWidth +
+        ticketMedioWidth +
+        valorWidth;
+  }
+
   static double minScrollContentWidth(AppThemeTokens tokens) =>
       minWidth() + 2 * tokens.gapSm;
 }

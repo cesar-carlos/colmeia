@@ -6739,6 +6739,18 @@ abstract class AppLocalizations {
   /// **'Supplier code'**
   String get salesNotasEntradaColumnCodFornecedor;
 
+  /// No description provided for @salesNotasEntradaColumnQtdNotas.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoices'**
+  String get salesNotasEntradaColumnQtdNotas;
+
+  /// No description provided for @salesNotasEntradaColumnTicketMedio.
+  ///
+  /// In en, this message translates to:
+  /// **'Avg. ticket'**
+  String get salesNotasEntradaColumnTicketMedio;
+
   /// No description provided for @salesNotasEntradaHorizontalScrollCaption.
   ///
   /// In en, this message translates to:
@@ -6774,6 +6786,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No incoming invoices match this supplier search.'**
   String get salesNotasEntradaEmptySearch;
+
+  /// No description provided for @salesNotasEntradaViewNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoices'**
+  String get salesNotasEntradaViewNotes;
+
+  /// No description provided for @salesNotasEntradaViewBySupplier.
+  ///
+  /// In en, this message translates to:
+  /// **'By supplier'**
+  String get salesNotasEntradaViewBySupplier;
+
+  /// No description provided for @salesNotasEntradaSummarySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase totals by supplier in the selected period.'**
+  String get salesNotasEntradaSummarySubtitle;
+
+  /// No description provided for @salesNotasEntradaSummaryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No suppliers were found for the selected period.'**
+  String get salesNotasEntradaSummaryEmpty;
+
+  /// No description provided for @salesNotasEntradaSummaryEmptySearch.
+  ///
+  /// In en, this message translates to:
+  /// **'No suppliers match this search.'**
+  String get salesNotasEntradaSummaryEmptySearch;
+
+  /// No description provided for @salesNotasEntradaSummaryEntityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'suppliers'**
+  String get salesNotasEntradaSummaryEntityLabel;
+
+  /// No description provided for @salesNotasEntradaTotalsAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Period total'**
+  String get salesNotasEntradaTotalsAmountLabel;
+
+  /// No description provided for @salesNotasEntradaTotalsSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase total for the current filters, not the visible page.'**
+  String get salesNotasEntradaTotalsSemantics;
+
+  /// No description provided for @salesNotasEntradaClearSupplierScopeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear supplier filter'**
+  String get salesNotasEntradaClearSupplierScopeTooltip;
 
   /// No description provided for @salesMonthlyPnlPageSubtitle.
   ///

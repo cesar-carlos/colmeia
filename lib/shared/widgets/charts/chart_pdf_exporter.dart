@@ -32,6 +32,9 @@ abstract final class ChartPdfExporter {
       filterSummary: filterSummary,
       tableHeaders: hasTable ? tableData.headers : const <String>[],
       tableRows: hasTable ? tableData.rows : const <List<String>>[],
+      tableFooterRows: hasTable && tableData.hasFooter
+          ? tableData.footerRows
+          : const <List<String>>[],
       chartImagePngBytes: chartImagePngBytes,
       headerFontBytes: headerFontBytes,
       bodyFontBytes: bodyFontBytes,

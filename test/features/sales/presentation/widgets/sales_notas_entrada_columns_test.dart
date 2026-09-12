@@ -41,5 +41,13 @@ void main() {
           SalesNotasEntradaTableLayout.valorWidth,
     );
     check(SalesNotasEntradaTableLayout.minWidth()).isGreaterThan(1100);
+    check(SalesNotasEntradaResumoTableLayout.minWidth()).equals(
+      SalesNotasEntradaResumoTableLayout.codFornecedorWidth +
+          SalesNotasEntradaResumoTableLayout.fornecedorMinWidth +
+          SalesNotasEntradaResumoTableLayout.cnpjWidth +
+          SalesNotasEntradaResumoTableLayout.qtdNotasWidth +
+          SalesNotasEntradaResumoTableLayout.ticketMedioWidth +
+          SalesNotasEntradaResumoTableLayout.valorWidth,
+    );
   });
 }
