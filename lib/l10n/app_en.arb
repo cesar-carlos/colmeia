@@ -2078,6 +2078,38 @@
   },
   "salesCardProdutoTendenciaTitle": "Sales trend",
   "salesCardProdutoTendenciaMediaMovelTitle": "Sales trend (moving average)",
+  "salesCardNotasEntradaTitle": "Incoming invoices",
+  "salesNotasEntradaIntroSubtitle": "Look up purchases by branch and posting date.",
+  "salesNotasEntradaReportSubtitle": "Non-cancelled purchases posted in the selected period.",
+  "salesNotasEntradaEmpty": "No incoming invoices were found for the selected period.",
+  "salesNotasEntradaLaunchPeriodLabel": "Posting period",
+  "salesNotasEntradaLaunchDateLabel": "Posting date",
+  "salesNotasEntradaLaunchDatePickerTitle": "Select posting period",
+  "salesNotasEntradaFiltersDescription": "Select the branch and posting period.",
+  "salesNotasEntradaEntityLabel": "incoming invoices",
+  "salesNotasEntradaColumnDocumento": "Document",
+  "salesNotasEntradaColumnLancamento": "Posted",
+  "salesNotasEntradaColumnFornecedor": "Supplier",
+  "salesNotasEntradaColumnValorTotal": "Total",
+  "salesNotasEntradaColumnEntrada": "Receipt",
+  "salesNotasEntradaColumnEmissao": "Issue",
+  "salesNotasEntradaColumnOperacao": "Operation",
+  "salesNotasEntradaColumnFilial": "Branch",
+  "salesNotasEntradaColumnCnpjCpf": "Tax ID",
+  "salesNotasEntradaColumnCodFornecedor": "Supplier code",
+  "salesNotasEntradaHorizontalScrollCaption": "Swipe sideways to see all columns.",
+  "salesNotasEntradaPaginationNotice": "Results may contain more rows. Use pagination to load next pages (current size: {pageSize}).",
+  "@salesNotasEntradaPaginationNotice": {
+    "placeholders": {
+      "pageSize": {
+        "type": "String"
+      }
+    }
+  },
+  "salesNotasEntradaSearchHint": "Search by supplier",
+  "salesNotasEntradaFilterSearch": "Supplier",
+  "salesNotasEntradaFullscreenTooltip": "Open table fullscreen",
+  "salesNotasEntradaEmptySearch": "No incoming invoices match this supplier search.",
   "salesMonthlyPnlPageSubtitle": "Sales value, profit, and merchandise cost by month for the selected branch. The window ends in the reference month.",
   "salesMonthlyPnlFilterAnchorMonth": "Reference month",
   "salesMonthlyPnlChartTitle": "Monthly P&L",

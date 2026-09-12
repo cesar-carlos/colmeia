@@ -43,7 +43,16 @@ void main() {
       check(descriptor.icon).equals(Icons.calendar_view_day_outlined);
     });
 
-    test('should expose seven unique hub card ids', () {
+    test('contains incoming-invoices card descriptor', () {
+      final descriptor = allSalesCards.firstWhere(
+        (card) => card.id == 'notas_entrada',
+      );
+
+      check(descriptor.route).equals('/sales/notas_entrada');
+      check(descriptor.icon).equals(Icons.receipt_long_outlined);
+    });
+
+    test('should expose eight unique hub card ids', () {
       final ids = allSalesCards.map((card) => card.id).toList();
 
       check(ids).deepEquals(<String>[
@@ -54,6 +63,7 @@ void main() {
         'resumo_total_diario_vendas',
         'produto_tendencia_venda',
         'produto_tendencia_venda_media_movel',
+        'notas_entrada',
       ]);
     });
   });

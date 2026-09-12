@@ -41,4 +41,8 @@ const List<SalesCardDescriptor> allSalesCards = <SalesCardDescriptor>[
     id: 'produto_tendencia_venda_media_movel',
     icon: Icons.insights_rounded,
   ),
+  SalesCardDescriptor(
+    id: 'notas_entrada',
+    icon: Icons.receipt_long_outlined,
+  ),
 ];

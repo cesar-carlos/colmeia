@@ -6625,6 +6625,156 @@ abstract class AppLocalizations {
   /// **'Sales trend (moving average)'**
   String get salesCardProdutoTendenciaMediaMovelTitle;
 
+  /// No description provided for @salesCardNotasEntradaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming invoices'**
+  String get salesCardNotasEntradaTitle;
+
+  /// No description provided for @salesNotasEntradaIntroSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Look up purchases by branch and posting date.'**
+  String get salesNotasEntradaIntroSubtitle;
+
+  /// No description provided for @salesNotasEntradaReportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Non-cancelled purchases posted in the selected period.'**
+  String get salesNotasEntradaReportSubtitle;
+
+  /// No description provided for @salesNotasEntradaEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No incoming invoices were found for the selected period.'**
+  String get salesNotasEntradaEmpty;
+
+  /// No description provided for @salesNotasEntradaLaunchPeriodLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Posting period'**
+  String get salesNotasEntradaLaunchPeriodLabel;
+
+  /// No description provided for @salesNotasEntradaLaunchDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Posting date'**
+  String get salesNotasEntradaLaunchDateLabel;
+
+  /// No description provided for @salesNotasEntradaLaunchDatePickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select posting period'**
+  String get salesNotasEntradaLaunchDatePickerTitle;
+
+  /// No description provided for @salesNotasEntradaFiltersDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the branch and posting period.'**
+  String get salesNotasEntradaFiltersDescription;
+
+  /// No description provided for @salesNotasEntradaEntityLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'incoming invoices'**
+  String get salesNotasEntradaEntityLabel;
+
+  /// No description provided for @salesNotasEntradaColumnDocumento.
+  ///
+  /// In en, this message translates to:
+  /// **'Document'**
+  String get salesNotasEntradaColumnDocumento;
+
+  /// No description provided for @salesNotasEntradaColumnLancamento.
+  ///
+  /// In en, this message translates to:
+  /// **'Posted'**
+  String get salesNotasEntradaColumnLancamento;
+
+  /// No description provided for @salesNotasEntradaColumnFornecedor.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier'**
+  String get salesNotasEntradaColumnFornecedor;
+
+  /// No description provided for @salesNotasEntradaColumnValorTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get salesNotasEntradaColumnValorTotal;
+
+  /// No description provided for @salesNotasEntradaColumnEntrada.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt'**
+  String get salesNotasEntradaColumnEntrada;
+
+  /// No description provided for @salesNotasEntradaColumnEmissao.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue'**
+  String get salesNotasEntradaColumnEmissao;
+
+  /// No description provided for @salesNotasEntradaColumnOperacao.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation'**
+  String get salesNotasEntradaColumnOperacao;
+
+  /// No description provided for @salesNotasEntradaColumnFilial.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch'**
+  String get salesNotasEntradaColumnFilial;
+
+  /// No description provided for @salesNotasEntradaColumnCnpjCpf.
+  ///
+  /// In en, this message translates to:
+  /// **'Tax ID'**
+  String get salesNotasEntradaColumnCnpjCpf;
+
+  /// No description provided for @salesNotasEntradaColumnCodFornecedor.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier code'**
+  String get salesNotasEntradaColumnCodFornecedor;
+
+  /// No description provided for @salesNotasEntradaHorizontalScrollCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe sideways to see all columns.'**
+  String get salesNotasEntradaHorizontalScrollCaption;
+
+  /// No description provided for @salesNotasEntradaPaginationNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Results may contain more rows. Use pagination to load next pages (current size: {pageSize}).'**
+  String salesNotasEntradaPaginationNotice(String pageSize);
+
+  /// No description provided for @salesNotasEntradaSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by supplier'**
+  String get salesNotasEntradaSearchHint;
+
+  /// No description provided for @salesNotasEntradaFilterSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Supplier'**
+  String get salesNotasEntradaFilterSearch;
+
+  /// No description provided for @salesNotasEntradaFullscreenTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Open table fullscreen'**
+  String get salesNotasEntradaFullscreenTooltip;
+
+  /// No description provided for @salesNotasEntradaEmptySearch.
+  ///
+  /// In en, this message translates to:
+  /// **'No incoming invoices match this supplier search.'**
+  String get salesNotasEntradaEmptySearch;
+
   /// No description provided for @salesMonthlyPnlPageSubtitle.
   ///
   /// In en, this message translates to:

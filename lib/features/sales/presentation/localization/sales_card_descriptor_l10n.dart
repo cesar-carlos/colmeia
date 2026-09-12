@@ -14,6 +14,7 @@ extension SalesCardDescriptorL10n on SalesCardDescriptor {
       'produto_tendencia_venda' => l10n.salesCardProdutoTendenciaTitle,
       'produto_tendencia_venda_media_movel' =>
         l10n.salesCardProdutoTendenciaMediaMovelTitle,
+      'notas_entrada' => l10n.salesCardNotasEntradaTitle,
       _ => id,
     };
   }

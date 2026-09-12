@@ -64,6 +64,7 @@ class AppReportViewer<T> extends StatefulWidget {
     this.selectedRows,
     this.summaryItems,
     this.pageInfo,
+    this.paginationFooter,
     this.query,
     this.events = const AppReportEvents(),
     this.style = const AppReportViewerStyle(),
@@ -107,6 +108,14 @@ class AppReportViewer<T> extends StatefulWidget {
 
   /// Pagination info. When null the pagination bar is hidden.
   final AppReportPageInfo? pageInfo;
+
+  /// Optional pagination control rendered below the grid.
+  ///
+  /// Use this for pagination strategies that cannot supply a truthful
+  /// [AppReportPageInfo], such as cursor/keyset navigation where the total
+  /// row count is intentionally unknown. When supplied, it replaces the
+  /// standard numbered pagination bar.
+  final Widget? paginationFooter;
 
   /// External query state. When provided the viewer reads initial visible
   /// columns, density and sort from this object.
@@ -425,6 +434,31 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
     final showSummary =
         style.showSummaryBar && (widget.summaryItems?.isNotEmpty ?? false);
     final showPagination = style.showPagination && widget.pageInfo != null;
+    final pagination =
+        widget.paginationFooter ??
+        (showPagination
+            ? AppSkeleton(
+                enabled: widget.isLoading,
+                loadingSemanticsLabel: l10n.reportLoadingPaginationSemantics,
+                child: AppReportPaginationBar(
+                  pageInfo: widget.pageInfo!,
+                  onPageChanged: (page) {
+                    widget.events.onPageChanged?.call(page);
+                    _emitQueryChanged(page: page);
+                  },
+                  onPageSizeChanged: (size) {
+                    widget.events.onPageSizeChanged?.call(size);
+                    _emitQueryChanged(page: 1, pageSize: size);
+                  },
+                  availablePageSizes: style.resolvedPageSizes,
+                  isLoading: widget.isLoading,
+                  entityLabel: style.entityLabel,
+                  itemsPerPageLabel: style.itemsPerPageLabel,
+                  showingLabelPrefix: style.showingLabelPrefix,
+                  showingLabelMiddle: style.showingLabelMiddle,
+                ),
+              )
+            : null);
     final showAdvancedInlineFilters =
         showInlineFilters &&
         (widget.filters?.any((f) => !f.type.supportsInlineLayout) ?? false);
@@ -594,29 +628,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
               ),
             ),
           ),
-          pagination: showPagination
-              ? AppSkeleton(
-                  enabled: widget.isLoading,
-                  loadingSemanticsLabel: l10n.reportLoadingPaginationSemantics,
-                  child: AppReportPaginationBar(
-                    pageInfo: widget.pageInfo!,
-                    onPageChanged: (page) {
-                      widget.events.onPageChanged?.call(page);
-                      _emitQueryChanged(page: page);
-                    },
-                    onPageSizeChanged: (size) {
-                      widget.events.onPageSizeChanged?.call(size);
-                      _emitQueryChanged(page: 1, pageSize: size);
-                    },
-                    availablePageSizes: style.resolvedPageSizes,
-                    isLoading: widget.isLoading,
-                    entityLabel: style.entityLabel,
-                    itemsPerPageLabel: style.itemsPerPageLabel,
-                    showingLabelPrefix: style.showingLabelPrefix,
-                    showingLabelMiddle: style.showingLabelMiddle,
-                  ),
-                )
-              : null,
+          pagination: pagination,
         ),
       ],
     );

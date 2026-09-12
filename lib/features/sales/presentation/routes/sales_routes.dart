@@ -13,8 +13,10 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_produto
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_ranking_produtos_faturamento_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/notas_entrada_repository.dart';
 import 'package:colmeia/features/sales/application/load_margem_produto_rows_for_share_use_case.dart';
 import 'package:colmeia/features/sales/application/load_media_movel_rows_for_share_use_case.dart';
+import 'package:colmeia/features/sales/application/load_notas_entrada_rows_for_share_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.dart';
 import 'package:colmeia/features/sales/application/load_sales_monthly_pnl_screen_batch_use_case.dart';
@@ -22,11 +24,13 @@ import 'package:colmeia/features/sales/application/resolve_sales_agent_client_to
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
+import 'package:colmeia/features/sales/presentation/controllers/sales_notas_entrada_controller.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_daily_totals_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_hub_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_live_map_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_margem_produto_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_monthly_pnl_page.dart';
+import 'package:colmeia/features/sales/presentation/pages/sales_notas_entrada_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_produto_rank_lucro_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_produto_tendencia_media_movel_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_produto_tendencia_page.dart';
@@ -181,6 +185,20 @@ List<RouteBase> buildSalesRoutes() {
                 getIt<LoadCadastroFilialPageUseCase>(),
             loadRowsForShareUseCase: getIt<LoadMediaMovelRowsForShareUseCase>(),
             relayCancelScopeBinder: _wireSalesAgentSqlRelayCancel,
+          );
+        }
+
+        if (cardId == 'notas_entrada') {
+          return ChangeNotifierProvider<SalesNotasEntradaController>(
+            create: (_) => SalesNotasEntradaController(
+              sessionService: sessionService,
+              loadSalesAvailableAgentsUseCase: loadSalesAvailableAgentsUseCase,
+              resolveSalesAgentClientToken: resolveSalesAgentClientTokenUseCase,
+              notasEntradaRepository: getIt<NotasEntradaRepository>(),
+              loadRowsForShare: getIt<LoadNotasEntradaRowsForShareUseCase>(),
+              relayCancelScopeBinder: _wireSalesAgentSqlRelayCancel,
+            ),
+            child: const SalesNotasEntradaPage(),
           );
         }
 

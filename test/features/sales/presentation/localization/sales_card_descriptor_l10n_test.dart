@@ -47,6 +47,10 @@ void main() {
       _card('produto_tendencia_venda_media_movel').resolvedTitle(en),
       en.salesCardProdutoTendenciaMediaMovelTitle,
     );
+    expect(
+      _card('notas_entrada').resolvedTitle(en),
+      en.salesCardNotasEntradaTitle,
+    );
   });
 
   test('should keep Portuguese titles aligned with the hub catalog', () {
@@ -71,6 +75,10 @@ void main() {
     expect(
       _card('produto_tendencia_venda_media_movel').resolvedTitle(pt),
       'Tendência de vendas (média móvel)',
+    );
+    expect(
+      _card('notas_entrada').resolvedTitle(pt),
+      pt.salesCardNotasEntradaTitle,
     );
   });
 

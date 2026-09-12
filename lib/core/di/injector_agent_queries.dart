@@ -108,6 +108,7 @@ import 'package:colmeia/features/agent_queries/data/repositories/marca_produto_o
 import 'package:colmeia/features/agent_queries/data/repositories/margem_produto_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/metrics_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/municipio_list_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/notas_entrada_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/produto_vendido_produto_rank_lucro_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/produto_vendido_tendencia_de_venda_media_movel_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/produto_vendido_tendencia_de_venda_repository_impl.dart';
@@ -178,6 +179,7 @@ import 'package:colmeia/features/agent_queries/domain/repositories/grupo_produto
 import 'package:colmeia/features/agent_queries/domain/repositories/marca_produto_options_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/margem_produto_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/municipio_list_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/notas_entrada_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_produto_rank_lucro_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_tendencia_de_venda_media_movel_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_tendencia_de_venda_repository.dart';

@@ -4088,6 +4088,90 @@ class AppLocalizationsPt extends AppLocalizations {
       'Tendência de vendas (média móvel)';
 
   @override
+  String get salesCardNotasEntradaTitle => 'Notas de entrada';
+
+  @override
+  String get salesNotasEntradaIntroSubtitle =>
+      'Consulte compras por filial e período de lançamento.';
+
+  @override
+  String get salesNotasEntradaReportSubtitle =>
+      'Compras não canceladas lançadas no período selecionado.';
+
+  @override
+  String get salesNotasEntradaEmpty =>
+      'Nenhuma nota de entrada foi encontrada para o período selecionado.';
+
+  @override
+  String get salesNotasEntradaLaunchPeriodLabel => 'Período de lançamento';
+
+  @override
+  String get salesNotasEntradaLaunchDateLabel => 'Data de lançamento';
+
+  @override
+  String get salesNotasEntradaLaunchDatePickerTitle =>
+      'Selecionar período de lançamento';
+
+  @override
+  String get salesNotasEntradaFiltersDescription =>
+      'Selecione a filial e o período de lançamento.';
+
+  @override
+  String get salesNotasEntradaEntityLabel => 'notas de entrada';
+
+  @override
+  String get salesNotasEntradaColumnDocumento => 'Documento';
+
+  @override
+  String get salesNotasEntradaColumnLancamento => 'Lançamento';
+
+  @override
+  String get salesNotasEntradaColumnFornecedor => 'Fornecedor';
+
+  @override
+  String get salesNotasEntradaColumnValorTotal => 'Valor total';
+
+  @override
+  String get salesNotasEntradaColumnEntrada => 'Entrada';
+
+  @override
+  String get salesNotasEntradaColumnEmissao => 'Emissão';
+
+  @override
+  String get salesNotasEntradaColumnOperacao => 'Operação';
+
+  @override
+  String get salesNotasEntradaColumnFilial => 'Filial';
+
+  @override
+  String get salesNotasEntradaColumnCnpjCpf => 'CNPJ/CPF';
+
+  @override
+  String get salesNotasEntradaColumnCodFornecedor => 'Cód. fornecedor';
+
+  @override
+  String get salesNotasEntradaHorizontalScrollCaption =>
+      'Deslize para o lado para ver todas as colunas.';
+
+  @override
+  String salesNotasEntradaPaginationNotice(String pageSize) {
+    return 'Pode haver mais linhas no resultado. Use a páginação para carregar as próximas páginas (tamanho atual: $pageSize).';
+  }
+
+  @override
+  String get salesNotasEntradaSearchHint => 'Buscar por fornecedor';
+
+  @override
+  String get salesNotasEntradaFilterSearch => 'Fornecedor';
+
+  @override
+  String get salesNotasEntradaFullscreenTooltip => 'Abrir tabela em tela cheia';
+
+  @override
+  String get salesNotasEntradaEmptySearch =>
+      'Nenhuma nota de entrada corresponde a esta busca de fornecedor.';
+
+  @override
   String get salesMonthlyPnlPageSubtitle =>
       'Venda, lucro e custo da mercadoria por mês na filial selecionada. A janela termina no mes de referência.';
 
@@ -9207,6 +9291,90 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get salesCardProdutoTendenciaMediaMovelTitle =>
       'Tendência de vendas (média móvel)';
+
+  @override
+  String get salesCardNotasEntradaTitle => 'Notas de entrada';
+
+  @override
+  String get salesNotasEntradaIntroSubtitle =>
+      'Consulte compras por filial e período de lançamento.';
+
+  @override
+  String get salesNotasEntradaReportSubtitle =>
+      'Compras não canceladas lançadas no período selecionado.';
+
+  @override
+  String get salesNotasEntradaEmpty =>
+      'Nenhuma nota de entrada foi encontrada para o período selecionado.';
+
+  @override
+  String get salesNotasEntradaLaunchPeriodLabel => 'Período de lançamento';
+
+  @override
+  String get salesNotasEntradaLaunchDateLabel => 'Data de lançamento';
+
+  @override
+  String get salesNotasEntradaLaunchDatePickerTitle =>
+      'Selecionar período de lançamento';
+
+  @override
+  String get salesNotasEntradaFiltersDescription =>
+      'Selecione a filial e o período de lançamento.';
+
+  @override
+  String get salesNotasEntradaEntityLabel => 'notas de entrada';
+
+  @override
+  String get salesNotasEntradaColumnDocumento => 'Documento';
+
+  @override
+  String get salesNotasEntradaColumnLancamento => 'Lançamento';
+
+  @override
+  String get salesNotasEntradaColumnFornecedor => 'Fornecedor';
+
+  @override
+  String get salesNotasEntradaColumnValorTotal => 'Valor total';
+
+  @override
+  String get salesNotasEntradaColumnEntrada => 'Entrada';
+
+  @override
+  String get salesNotasEntradaColumnEmissao => 'Emissão';
+
+  @override
+  String get salesNotasEntradaColumnOperacao => 'Operação';
+
+  @override
+  String get salesNotasEntradaColumnFilial => 'Filial';
+
+  @override
+  String get salesNotasEntradaColumnCnpjCpf => 'CNPJ/CPF';
+
+  @override
+  String get salesNotasEntradaColumnCodFornecedor => 'Cód. fornecedor';
+
+  @override
+  String get salesNotasEntradaHorizontalScrollCaption =>
+      'Deslize para o lado para ver todas as colunas.';
+
+  @override
+  String salesNotasEntradaPaginationNotice(String pageSize) {
+    return 'Pode haver mais linhas no resultado. Use a páginação para carregar as próximas páginas (tamanho atual: $pageSize).';
+  }
+
+  @override
+  String get salesNotasEntradaSearchHint => 'Buscar por fornecedor';
+
+  @override
+  String get salesNotasEntradaFilterSearch => 'Fornecedor';
+
+  @override
+  String get salesNotasEntradaFullscreenTooltip => 'Abrir tabela em tela cheia';
+
+  @override
+  String get salesNotasEntradaEmptySearch =>
+      'Nenhuma nota de entrada corresponde a esta busca de fornecedor.';
 
   @override
   String get salesMonthlyPnlPageSubtitle =>

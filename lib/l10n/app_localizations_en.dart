@@ -4029,6 +4029,89 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sales trend (moving average)';
 
   @override
+  String get salesCardNotasEntradaTitle => 'Incoming invoices';
+
+  @override
+  String get salesNotasEntradaIntroSubtitle =>
+      'Look up purchases by branch and posting date.';
+
+  @override
+  String get salesNotasEntradaReportSubtitle =>
+      'Non-cancelled purchases posted in the selected period.';
+
+  @override
+  String get salesNotasEntradaEmpty =>
+      'No incoming invoices were found for the selected period.';
+
+  @override
+  String get salesNotasEntradaLaunchPeriodLabel => 'Posting period';
+
+  @override
+  String get salesNotasEntradaLaunchDateLabel => 'Posting date';
+
+  @override
+  String get salesNotasEntradaLaunchDatePickerTitle => 'Select posting period';
+
+  @override
+  String get salesNotasEntradaFiltersDescription =>
+      'Select the branch and posting period.';
+
+  @override
+  String get salesNotasEntradaEntityLabel => 'incoming invoices';
+
+  @override
+  String get salesNotasEntradaColumnDocumento => 'Document';
+
+  @override
+  String get salesNotasEntradaColumnLancamento => 'Posted';
+
+  @override
+  String get salesNotasEntradaColumnFornecedor => 'Supplier';
+
+  @override
+  String get salesNotasEntradaColumnValorTotal => 'Total';
+
+  @override
+  String get salesNotasEntradaColumnEntrada => 'Receipt';
+
+  @override
+  String get salesNotasEntradaColumnEmissao => 'Issue';
+
+  @override
+  String get salesNotasEntradaColumnOperacao => 'Operation';
+
+  @override
+  String get salesNotasEntradaColumnFilial => 'Branch';
+
+  @override
+  String get salesNotasEntradaColumnCnpjCpf => 'Tax ID';
+
+  @override
+  String get salesNotasEntradaColumnCodFornecedor => 'Supplier code';
+
+  @override
+  String get salesNotasEntradaHorizontalScrollCaption =>
+      'Swipe sideways to see all columns.';
+
+  @override
+  String salesNotasEntradaPaginationNotice(String pageSize) {
+    return 'Results may contain more rows. Use pagination to load next pages (current size: $pageSize).';
+  }
+
+  @override
+  String get salesNotasEntradaSearchHint => 'Search by supplier';
+
+  @override
+  String get salesNotasEntradaFilterSearch => 'Supplier';
+
+  @override
+  String get salesNotasEntradaFullscreenTooltip => 'Open table fullscreen';
+
+  @override
+  String get salesNotasEntradaEmptySearch =>
+      'No incoming invoices match this supplier search.';
+
+  @override
   String get salesMonthlyPnlPageSubtitle =>
       'Sales value, profit, and merchandise cost by month for the selected branch. The window ends in the reference month.';
 

@@ -1817,6 +1817,38 @@
   },
   "salesCardProdutoTendenciaTitle": "Tendência de vendas",
   "salesCardProdutoTendenciaMediaMovelTitle": "Tendência de vendas (média móvel)",
+  "salesCardNotasEntradaTitle": "Notas de entrada",
+  "salesNotasEntradaIntroSubtitle": "Consulte compras por filial e período de lançamento.",
+  "salesNotasEntradaReportSubtitle": "Compras não canceladas lançadas no período selecionado.",
+  "salesNotasEntradaEmpty": "Nenhuma nota de entrada foi encontrada para o período selecionado.",
+  "salesNotasEntradaLaunchPeriodLabel": "Período de lançamento",
+  "salesNotasEntradaLaunchDateLabel": "Data de lançamento",
+  "salesNotasEntradaLaunchDatePickerTitle": "Selecionar período de lançamento",
+  "salesNotasEntradaFiltersDescription": "Selecione a filial e o período de lançamento.",
+  "salesNotasEntradaEntityLabel": "notas de entrada",
+  "salesNotasEntradaColumnDocumento": "Documento",
+  "salesNotasEntradaColumnLancamento": "Lançamento",
+  "salesNotasEntradaColumnFornecedor": "Fornecedor",
+  "salesNotasEntradaColumnValorTotal": "Valor total",
+  "salesNotasEntradaColumnEntrada": "Entrada",
+  "salesNotasEntradaColumnEmissao": "Emissão",
+  "salesNotasEntradaColumnOperacao": "Operação",
+  "salesNotasEntradaColumnFilial": "Filial",
+  "salesNotasEntradaColumnCnpjCpf": "CNPJ/CPF",
+  "salesNotasEntradaColumnCodFornecedor": "Cód. fornecedor",
+  "salesNotasEntradaHorizontalScrollCaption": "Deslize para o lado para ver todas as colunas.",
+  "salesNotasEntradaPaginationNotice": "Pode haver mais linhas no resultado. Use a páginação para carregar as próximas páginas (tamanho atual: {pageSize}).",
+  "@salesNotasEntradaPaginationNotice": {
+    "placeholders": {
+      "pageSize": {
+        "type": "String"
+      }
+    }
+  },
+  "salesNotasEntradaSearchHint": "Buscar por fornecedor",
+  "salesNotasEntradaFilterSearch": "Fornecedor",
+  "salesNotasEntradaFullscreenTooltip": "Abrir tabela em tela cheia",
+  "salesNotasEntradaEmptySearch": "Nenhuma nota de entrada corresponde a esta busca de fornecedor.",
   "salesMonthlyPnlPageSubtitle": "Venda, lucro e custo da mercadoria por mês na filial selecionada. A janela termina no mes de referência.",
   "salesMonthlyPnlFilterAnchorMonth": "Mes de referência",
   "salesMonthlyPnlChartTitle": "Resultado mensal",
