@@ -1,3 +1,5 @@
+import 'package:colmeia/core/socket/relay/relay_rpc_body.dart';
+
 /// Mirrors hub `isRelayStreamingCapableCommand` in
 /// `relay_command_validation.ts`.
 ///
@@ -5,7 +7,7 @@
 /// need `relay:rpc.accepted` before `relay:rpc.stream.pull`. Hub rejects the
 /// combination with `accepted { success: false }` (`BAD_REQUEST`).
 bool isRelayStreamingCapableRpcBody(Map<String, Object?> body) {
-  final command = _resolveRpcCommand(body);
+  final command = resolveRelayRpcBody(body);
   if (command == null) {
     return false;
   }
@@ -26,16 +28,4 @@ bool isRelayStreamingCapableRpcBody(Map<String, Object?> body) {
   }
   return options['prefer_db_streaming'] == true ||
       options['multi_result'] == true;
-}
-
-Map<dynamic, dynamic>? _resolveRpcCommand(Map<String, Object?> body) {
-  final directMethod = body['method'];
-  if (directMethod is String && directMethod.isNotEmpty) {
-    return body;
-  }
-  final nested = body['command'];
-  if (nested is Map) {
-    return nested;
-  }
-  return null;
 }

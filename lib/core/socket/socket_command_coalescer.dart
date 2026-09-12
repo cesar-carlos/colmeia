@@ -164,6 +164,11 @@ class SocketCommandCoalescer {
     ..._awaiterByRpcId.keys,
   ];
 
+  /// Follower ids still attached to an in-flight leader. Kept separate from
+  /// [pendingClientRpcIds] so dispatcher-wide cancellation can detach
+  /// followers before deciding whether the shared leader should be aborted.
+  Iterable<String> get pendingFollowerRpcIds => _awaiterByRpcId.keys;
+
   /// Drops in-flight keys and fails follower Completers (socket drop).
   void failFollowersAndClearInflight(Object error) {
     _inflightByKey.clear();

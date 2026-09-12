@@ -76,6 +76,12 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
   /// pivot per JSON-RPC method without re-parsing the body.
   final Map<String, _PendingMeta> _meta = <String, _PendingMeta>{};
 
+  /// Dispatches that have connected but are still waiting for a per-agent
+  /// slot. They are tracked separately because the correlator only sees a
+  /// request after the slot is granted and the command is emitted.
+  final Map<String, _PreDispatch> _preDispatchByRpcId =
+      <String, _PreDispatch>{};
+
   static const String _eventCommandResponse = 'agents:command_response';
   static const String _eventAppError = 'app:error';
 
@@ -128,10 +134,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       },
     );
     if (followerFuture != null) {
-      return followerFuture.whenComplete(() {
-        final meta = _meta.remove(rpcId);
-        meta?.stopwatch.stop();
-      });
+      return _trackFollowerOutcome(followerFuture, rpcId);
     }
     final hubFuture = _dispatchAgentsCommand(
       agentId: agentId,
@@ -197,135 +200,205 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
 
     _ensureListenersAttached();
 
-    // Per-agent concurrency gate: bounds how many in-flight RPCs run for
-    // the same agent. The wait happens AFTER connect() (no point queuing
-    // if we cannot reach the hub) and BEFORE register/emit so the
-    // correlator timeout window starts only when we actually emit.
-    final gate = _concurrencyGate;
-    if (gate != null) {
-      try {
-        await gate.acquire(agentId);
-      } on TimeoutException catch (e, s) {
-        _emitTransient(
-          agentId: agentId,
-          rpcId: rpcId,
-          elapsed: Duration.zero,
-          reasonCode: 'gate_acquire_timeout',
-          cause: e,
-        );
-        throw SocketDispatchTimeout(
-          message: 'Per-agent concurrency gate acquire timed out: $e',
-          cause: e,
-          stackTrace: s,
-        );
-      } on Object catch (e, s) {
-        _emitTransient(
-          agentId: agentId,
-          rpcId: rpcId,
-          elapsed: Duration.zero,
-          reasonCode: 'gate_acquire_failed',
-          cause: e,
-        );
-        throw SocketDispatchDisconnected(
-          message: 'Per-agent concurrency gate acquire failed: $e',
-          cause: e,
-          stackTrace: s,
-        );
-      }
-    }
-
-    final method = _extractMethod(body);
-    final effectiveTimeout = _resolveTimeout(
-      explicitTimeout: timeout,
-      agentId: agentId,
-      method: method,
-    );
-    final stopwatch = Stopwatch()..start();
-    _meta[rpcId] = _PendingMeta(
-      agentId: agentId,
-      stopwatch: stopwatch,
-      method: method,
-    );
-
-    Future<Map<String, dynamic>> pending;
-    try {
-      pending = _correlator.register(rpcId, timeout: effectiveTimeout);
-    } on SocketDispatchDuplicateId catch (e) {
-      _meta.remove(rpcId);
-      gate?.release(agentId);
+    if (_preDispatchByRpcId.containsKey(rpcId) || _meta.containsKey(rpcId)) {
+      final exception = SocketDispatchDuplicateId(
+        message: 'Request already pending: $rpcId',
+      );
       _emitTransient(
         agentId: agentId,
         rpcId: rpcId,
         elapsed: Duration.zero,
         reasonCode: 'duplicate_id',
-        method: method,
-        cause: e,
+        method: _extractMethod(body),
+        cause: exception,
       );
-      rethrow;
-    } on Object {
-      _meta.remove(rpcId);
-      gate?.release(agentId);
-      rethrow;
+      throw exception;
     }
 
-    try {
-      // Hub item 4 (`requestServerTimings`): augment the outbound body
-      // with the opt-in flag so the hub attaches `serverTimings` to the
-      // response. Shallow-copy preserves caller immutability.
-      final emitBody = AppEnvironment.socketRequestServerTimingsEnabled
-          ? <String, Object?>{...body, 'requestServerTimings': true}
-          : body;
-      _connection.raw.emit('agents:command', emitBody);
-    } on Object catch (e, s) {
-      _correlator.failWith(rpcId, e, s);
-      _meta.remove(rpcId);
-      gate?.release(agentId);
-      _emitTransient(
-        agentId: agentId,
-        rpcId: rpcId,
-        elapsed: stopwatch.elapsed,
-        reasonCode: 'emit_failed',
-        method: method,
-        cause: e,
-      );
-      throw SocketDispatchDisconnected(
-        message: 'emit failed: $e',
-        cause: e,
-        stackTrace: s,
-      );
-    }
+    final preDispatch = _PreDispatch(
+      agentId: agentId,
+      method: _extractMethod(body),
+      stopwatch: Stopwatch()..start(),
+    );
+    _preDispatchByRpcId[rpcId] = preDispatch;
+    final gate = _concurrencyGate;
+    var gateSlotAcquired = false;
+    var preDispatchTransferred = false;
 
     try {
-      final response = await pending;
-      stopwatch.stop();
-      _emitOutcomeFromResponse(
-        agentId: agentId,
-        rpcId: rpcId,
-        elapsed: stopwatch.elapsed,
-        response: response,
-        method: method,
-      );
-      // Hub item 4: parse `serverTimings` from the response envelope and
-      // push to the metrics sink via the optional callback. Silent when
-      // the consumer did not opt in or the field is missing.
-      final serverTimings = ServerTimings.tryParseFromEnvelope(response);
-      if (serverTimings != null) {
-        _onServerTimings?.call(serverTimings);
+      // Per-agent concurrency gate: bounds how many in-flight RPCs run for
+      // the same agent. The wait happens AFTER connect() (no point queuing
+      // if we cannot reach the hub) and BEFORE register/emit so the
+      // correlator timeout window starts only when we actually emit.
+      if (gate != null) {
+        try {
+          await gate.acquire(
+            agentId,
+            onQueuedWaiter: (waiter) {
+              preDispatch.gateQueueWaitCompleter = waiter;
+            },
+          );
+          gateSlotAcquired = true;
+        } on GateQueueWaitCancelled {
+          final exception =
+              preDispatch.exception ??
+              const SocketDispatchCancelled(
+                message:
+                    'Request cancelled before a concurrency slot was granted',
+              );
+          _emitPreDispatchException(
+            rpcId: rpcId,
+            preDispatch: preDispatch,
+            exception: exception,
+          );
+          throw exception;
+        } on TimeoutException catch (e, s) {
+          final exception = SocketDispatchTimeout(
+            message: 'Per-agent concurrency gate acquire timed out: $e',
+            cause: e,
+            stackTrace: s,
+          );
+          _emitPreDispatchException(
+            rpcId: rpcId,
+            preDispatch: preDispatch,
+            exception: exception,
+          );
+          throw exception;
+        } on Object catch (e, s) {
+          final exception = SocketDispatchDisconnected(
+            message: 'Per-agent concurrency gate acquire failed: $e',
+            cause: e,
+            stackTrace: s,
+          );
+          _emitPreDispatchException(
+            rpcId: rpcId,
+            preDispatch: preDispatch,
+            exception: exception,
+          );
+          throw exception;
+        }
       }
-      return response;
-    } on SocketDispatchException catch (e) {
-      stopwatch.stop();
-      _emitOutcomeFromException(
+
+      final preDispatchException = preDispatch.exception;
+      if (preDispatchException != null) {
+        _emitPreDispatchException(
+          rpcId: rpcId,
+          preDispatch: preDispatch,
+          exception: preDispatchException,
+        );
+        throw preDispatchException;
+      }
+
+      _preDispatchByRpcId.remove(rpcId);
+      preDispatch.stopwatch.stop();
+      final method = preDispatch.method;
+      final effectiveTimeout = _resolveTimeout(
+        explicitTimeout: timeout,
         agentId: agentId,
-        rpcId: rpcId,
-        elapsed: stopwatch.elapsed,
-        exception: e,
         method: method,
       );
-      rethrow;
+      final stopwatch = Stopwatch()..start();
+      final meta = _PendingMeta(
+        agentId: agentId,
+        stopwatch: stopwatch,
+        method: method,
+        shouldEmitOutcome: !preDispatch.shouldSuppressOutcome,
+      );
+      _meta[rpcId] = meta;
+      preDispatchTransferred = true;
+
+      Future<Map<String, dynamic>> pending;
+      try {
+        pending = _correlator.register(rpcId, timeout: effectiveTimeout);
+      } on SocketDispatchDuplicateId catch (e) {
+        _meta.remove(rpcId);
+        gate?.release(agentId);
+        _emitTransient(
+          agentId: agentId,
+          rpcId: rpcId,
+          elapsed: Duration.zero,
+          reasonCode: 'duplicate_id',
+          method: method,
+          cause: e,
+        );
+        rethrow;
+      } on Object {
+        _meta.remove(rpcId);
+        gate?.release(agentId);
+        rethrow;
+      }
+
+      try {
+        // Hub item 4 (`requestServerTimings`): augment the outbound body
+        // with the opt-in flag so the hub attaches `serverTimings` to the
+        // response. Shallow-copy preserves caller immutability.
+        final emitBody = AppEnvironment.socketRequestServerTimingsEnabled
+            ? <String, Object?>{...body, 'requestServerTimings': true}
+            : body;
+        _connection.raw.emit('agents:command', emitBody);
+      } on Object catch (e, s) {
+        _correlator.failWith(rpcId, e, s);
+        _meta.remove(rpcId);
+        gate?.release(agentId);
+        _emitTransient(
+          agentId: agentId,
+          rpcId: rpcId,
+          elapsed: stopwatch.elapsed,
+          reasonCode: 'emit_failed',
+          method: method,
+          cause: e,
+        );
+        throw SocketDispatchDisconnected(
+          message: 'emit failed: $e',
+          cause: e,
+          stackTrace: s,
+        );
+      }
+
+      try {
+        final response = await pending;
+        stopwatch.stop();
+        if (meta.shouldEmitOutcome) {
+          _emitOutcomeFromResponse(
+            agentId: agentId,
+            rpcId: rpcId,
+            elapsed: stopwatch.elapsed,
+            response: response,
+            method: method,
+          );
+        }
+        // Hub item 4: parse `serverTimings` from the response envelope and
+        // push to the metrics sink via the optional callback. Silent when
+        // the consumer did not opt in or the field is missing.
+        final serverTimings = ServerTimings.tryParseFromEnvelope(response);
+        if (serverTimings != null) {
+          _onServerTimings?.call(serverTimings);
+        }
+        return response;
+      } on SocketDispatchException catch (e) {
+        stopwatch.stop();
+        if (meta.shouldEmitOutcome) {
+          _emitOutcomeFromException(
+            agentId: agentId,
+            rpcId: rpcId,
+            elapsed: stopwatch.elapsed,
+            exception: e,
+            method: method,
+          );
+        }
+        rethrow;
+      } finally {
+        _meta.remove(rpcId);
+        gate?.release(agentId);
+      }
     } finally {
-      _meta.remove(rpcId);
-      gate?.release(agentId);
+      if (!preDispatchTransferred) {
+        _preDispatchByRpcId.remove(rpcId);
+        preDispatch.stopwatch.stop();
+        if (gateSlotAcquired) {
+          gate?.release(agentId);
+        }
+      }
     }
   }
 
@@ -371,65 +444,67 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     if (_isDisposed) {
       return;
     }
+    final cancelled = SocketDispatchCancelled(
+      message: 'Request cancelled by caller (reason=$reason)',
+    );
     final followerCompleter = _coalescer.takeFollower(rpcId);
     if (followerCompleter != null) {
-      final metaFollower = _meta.remove(rpcId);
-      if (metaFollower != null) {
-        metaFollower.stopwatch.stop();
-        _emitTransient(
-          agentId: metaFollower.agentId,
-          rpcId: rpcId,
-          elapsed: metaFollower.stopwatch.elapsed,
-          reasonCode: 'cancelled',
-          method: metaFollower.method,
-        );
-      }
       if (!followerCompleter.isCompleted) {
-        followerCompleter.completeError(
-          SocketDispatchCancelled(
-            message: 'Request cancelled by caller (reason=$reason)',
-          ),
-        );
+        followerCompleter.completeError(cancelled);
       }
       return;
     }
+    final preDispatch = _preDispatchByRpcId[rpcId];
     final meta = _meta[rpcId];
-    if (meta == null) {
+    if (preDispatch == null && meta == null) {
       return;
     }
     final leaderCoalesceKey = _coalescer.leaderKeyForRpcId(rpcId);
     final hasFollowers =
         leaderCoalesceKey != null &&
         _coalescer.hasFollowersForKey(leaderCoalesceKey);
-    final cancelled = SocketDispatchCancelled(
-      message: 'Request cancelled by caller (reason=$reason)',
-    );
     if (hasFollowers) {
-      _meta.remove(rpcId);
-      meta.stopwatch.stop();
+      if (preDispatch?.shouldSuppressOutcome == true ||
+          meta?.shouldEmitOutcome == false) {
+        return;
+      }
+      final elapsed = preDispatch?.stopwatch.elapsed ?? meta!.stopwatch.elapsed;
+      preDispatch?.shouldSuppressOutcome = true;
+      if (preDispatch != null) {
+        preDispatch.stopwatch.stop();
+      }
+      if (meta != null) {
+        meta.shouldEmitOutcome = false;
+        meta.stopwatch.stop();
+      }
       final leaderClient = _coalescer.takeLeaderClientCompleter(rpcId);
       if (leaderClient != null && !leaderClient.isCompleted) {
         leaderClient.completeError(cancelled);
       }
       _emitTransient(
-        agentId: meta.agentId,
+        agentId: preDispatch?.agentId ?? meta!.agentId,
         rpcId: rpcId,
-        elapsed: meta.stopwatch.elapsed,
+        elapsed: elapsed,
         reasonCode: 'cancelled',
-        method: meta.method,
+        method: preDispatch?.method ?? meta!.method,
       );
       return;
     }
+    if (preDispatch != null) {
+      preDispatch.exception = cancelled;
+      final waiter = preDispatch.gateQueueWaitCompleter;
+      if (waiter != null) {
+        _concurrencyGate?.cancelQueuedWaiter(preDispatch.agentId, waiter);
+      }
+      return;
+    }
+    if (meta!.cancellationRequested) {
+      return;
+    }
+    meta.cancellationRequested = true;
     _correlator.failWith(
       rpcId,
       cancelled,
-    );
-    _emitTransient(
-      agentId: meta.agentId,
-      rpcId: rpcId,
-      elapsed: meta.stopwatch.elapsed,
-      reasonCode: 'cancelled',
-      method: meta.method,
     );
   }
 
@@ -438,12 +513,86 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     if (_isDisposed) {
       return;
     }
+    final followerIds = _coalescer.pendingFollowerRpcIds.toList(
+      growable: false,
+    );
+    for (final rpcId in followerIds) {
+      cancel(rpcId, reason: reason);
+    }
     final ids = <String>{
+      ..._preDispatchByRpcId.keys,
       ..._meta.keys,
       ..._coalescer.pendingClientRpcIds,
     };
     for (final rpcId in ids) {
       cancel(rpcId, reason: reason);
+    }
+  }
+
+  Future<Map<String, dynamic>> _trackFollowerOutcome(
+    Future<Map<String, dynamic>> future,
+    String rpcId,
+  ) async {
+    try {
+      final response = await future;
+      final meta = _meta.remove(rpcId);
+      if (meta != null) {
+        meta.stopwatch.stop();
+        _emitOutcomeFromResponse(
+          agentId: meta.agentId,
+          rpcId: rpcId,
+          elapsed: meta.stopwatch.elapsed,
+          response: response,
+          method: meta.method,
+        );
+      }
+      return response;
+    } on SocketDispatchException catch (exception) {
+      final meta = _meta.remove(rpcId);
+      if (meta != null) {
+        meta.stopwatch.stop();
+        _emitOutcomeFromException(
+          agentId: meta.agentId,
+          rpcId: rpcId,
+          elapsed: meta.stopwatch.elapsed,
+          exception: exception,
+          method: meta.method,
+        );
+      }
+      rethrow;
+    } finally {
+      final meta = _meta.remove(rpcId);
+      meta?.stopwatch.stop();
+    }
+  }
+
+  void _emitPreDispatchException({
+    required String rpcId,
+    required _PreDispatch preDispatch,
+    required SocketDispatchException exception,
+  }) {
+    if (preDispatch.shouldSuppressOutcome || preDispatch.outcomeEmitted) {
+      return;
+    }
+    preDispatch.outcomeEmitted = true;
+    preDispatch.stopwatch.stop();
+    _emitOutcomeFromException(
+      agentId: preDispatch.agentId,
+      rpcId: rpcId,
+      elapsed: preDispatch.stopwatch.elapsed,
+      exception: exception,
+      method: preDispatch.method,
+    );
+  }
+
+  void _failPreDispatches(SocketDispatchException exception) {
+    final preDispatches = _preDispatchByRpcId.values.toList(growable: false);
+    for (final preDispatch in preDispatches) {
+      preDispatch.exception ??= exception;
+      final waiter = preDispatch.gateQueueWaitCompleter;
+      if (waiter != null) {
+        _concurrencyGate?.cancelQueuedWaiter(preDispatch.agentId, waiter);
+      }
     }
   }
 
@@ -453,6 +602,9 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       return;
     }
     _isDisposed = true;
+    _failPreDispatches(
+      const SocketDispatchDisconnected(message: 'Dispatcher disposed'),
+    );
     await _stateSub?.cancel();
     _stateSub = null;
     _detachListeners();
@@ -462,6 +614,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       await _outcomes.close();
     }
     _meta.clear();
+    _preDispatchByRpcId.clear();
   }
 
   // ----- Internals -----
@@ -673,6 +826,11 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       case ConsumerSocketError():
       case ConsumerSocketUnauthorized():
         _detachListeners();
+        _failPreDispatches(
+          const SocketDispatchDisconnected(
+            message: 'Socket transitioned away from connected',
+          ),
+        );
         _coalescer.failFollowersAndClearInflight(
           const SocketDispatchDisconnected(
             message: 'Socket transitioned away from connected',
@@ -1248,10 +1406,29 @@ class _PendingMeta {
     required this.agentId,
     required this.stopwatch,
     required this.method,
+    this.shouldEmitOutcome = true,
   });
   final String agentId;
   final Stopwatch stopwatch;
   final String? method;
+  bool shouldEmitOutcome;
+  bool cancellationRequested = false;
+}
+
+class _PreDispatch {
+  _PreDispatch({
+    required this.agentId,
+    required this.method,
+    required this.stopwatch,
+  });
+
+  final String agentId;
+  final String? method;
+  final Stopwatch stopwatch;
+  Completer<void>? gateQueueWaitCompleter;
+  SocketDispatchException? exception;
+  bool shouldSuppressOutcome = false;
+  bool outcomeEmitted = false;
 }
 
 enum _RpcErrorClass { offline, auth, transient }

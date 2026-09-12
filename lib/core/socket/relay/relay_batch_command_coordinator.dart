@@ -6,6 +6,7 @@ import 'package:colmeia/core/socket/relay/relay_batch_item.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
+import 'package:colmeia/core/socket/relay/relay_rpc_body.dart';
 import 'package:colmeia/core/socket/relay/relay_rpc_outcome.dart';
 
 /// Coalesces concurrent unary `sendUnary` calls per `agentId` into a
@@ -20,7 +21,7 @@ import 'package:colmeia/core/socket/relay/relay_rpc_outcome.dart';
 /// - streaming-capable (`prefer_db_streaming`, `multi_result`,
 ///   `sql.executeBatch`);
 /// - `sql.cancel` (latency-critical);
-/// - unrecognised body shape (no `command.method`).
+/// - unrecognised body shape (no direct or legacy RPC method).
 ///
 /// Other channel surfaces (`sendStreaming`, `sendBatch`, `cancel`,
 /// `outcomes`, `dispose`) forward to the inner dispatcher unchanged.
@@ -369,8 +370,8 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
   /// Returns the bypass label (metric-friendly) or `null` when the body
   /// is eligible for the relay batch envelope.
   String? _bypassReason(Map<String, Object?> body) {
-    final command = body['command'];
-    if (command is! Map) {
+    final command = resolveRelayRpcBody(body);
+    if (command == null) {
       return 'unknown_method';
     }
     final method = command['method']?.toString();

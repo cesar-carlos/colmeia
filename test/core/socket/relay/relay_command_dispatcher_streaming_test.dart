@@ -12,6 +12,7 @@ import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/core/socket/payload_frame.dart';
 import 'package:colmeia/core/socket/payload_frame_codec.dart';
+import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher_impl.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation_manager.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
@@ -167,6 +168,7 @@ void main() {
     Duration defaultTimeout = const Duration(milliseconds: 500),
     int initialWindow = 4,
     int refillThreshold = 2,
+    PerAgentConcurrencyGate? concurrencyGate,
   }) {
     return RelayCommandDispatcherImpl(
       connection: connection,
@@ -174,10 +176,99 @@ void main() {
       defaultTimeout: defaultTimeout,
       defaultStreamInitialWindow: initialWindow,
       defaultStreamRefillThreshold: refillThreshold,
+      concurrencyGate: concurrencyGate,
     );
   }
 
   group('RelayCommandDispatcherImpl.sendStreaming', () {
+    test(
+      'subscription cancellation stops pulls, ignores later chunks, and releases its gate slot',
+      () async {
+        final gate = PerAgentConcurrencyGate(maxInflightPerAgent: 1);
+        final dispatcher = buildDispatcher(
+          concurrencyGate: gate,
+          initialWindow: 2,
+          refillThreshold: 1,
+        );
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+
+        final stream = dispatcher.sendStreaming(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'method': 'sql.execute',
+            'id': 'rpc-cancel-stream',
+            'params': <String, Object?>{'sql': 'SELECT 1'},
+          },
+          clientRequestId: 'rpc-cancel-stream',
+        );
+        final sub = stream.listen((_) {});
+
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+          'conversationId': 'conv-agent-1',
+          'clientRequestId': 'rpc-cancel-stream',
+          'requestId': 'srv-cancel-stream',
+          'success': true,
+        });
+        await flushRelayFrameRouting();
+
+        check(gate.inflightFor('agent-1')).equals(1);
+        check(
+          wiring.emits
+              .where((emit) => emit.event == RelayEventNames.rpcStreamPull)
+              .length,
+        ).equals(1);
+
+        await sub.cancel();
+        await flushRelayFrameRouting();
+
+        check(gate.inflightFor('agent-1')).equals(0);
+        wiring.fire(
+          RelayEventNames.rpcChunk,
+          _frame(
+            <String, Object?>{
+              'stream_id': 'stream-cancelled',
+              'rows': <Object?>[
+                <String, Object?>{'id': 1},
+              ],
+            },
+            requestId: 'srv-cancel-stream',
+          ),
+        );
+        await flushRelayFrameRouting();
+
+        check(
+          wiring.emits
+              .where((emit) => emit.event == RelayEventNames.rpcStreamPull)
+              .length,
+        ).equals(1);
+
+        final nextStream = dispatcher.sendStreaming(
+          agentId: 'agent-1',
+          body: <String, Object?>{
+            'method': 'sql.execute',
+            'id': 'rpc-after-cancel',
+            'params': <String, Object?>{'sql': 'SELECT 2'},
+          },
+          clientRequestId: 'rpc-after-cancel',
+        );
+        final nextSub = nextStream.listen((_) {});
+        addTearDown(nextSub.cancel);
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        check(gate.inflightFor('agent-1')).equals(1);
+        check(
+          wiring.emits
+              .where((emit) => emit.event == RelayEventNames.rpcRequest)
+              .length,
+        ).equals(2);
+      },
+    );
+
     test(
       'emits relay:rpc.request once + initial pull on accept + chunks land in '
       'the stream + complete closes normally',

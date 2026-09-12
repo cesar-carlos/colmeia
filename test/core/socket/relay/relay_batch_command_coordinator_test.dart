@@ -8,6 +8,8 @@ import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
 import 'package:colmeia/core/socket/relay/relay_rpc_outcome.dart';
+import 'package:colmeia/features/agent_queries/data/agent_sql_execute_request_to_bridge_body.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Records every call the coordinator forwards to the inner dispatcher
@@ -161,15 +163,22 @@ Map<String, Object?> _bodyFor({
   Map<String, Object?>? options,
 }) {
   return <String, Object?>{
-    'command': <String, Object?>{
-      'jsonrpc': '2.0',
-      'method': method,
-      'id': id,
-      'params': <String, Object?>{
-        'sql': 'SELECT 1',
-        'options': ?options,
-      },
+    'jsonrpc': '2.0',
+    'method': method,
+    'id': id,
+    'params': <String, Object?>{
+      'sql': 'SELECT 1',
+      'options': ?options,
     },
+  };
+}
+
+Map<String, Object?> _legacyBodyFor({
+  String method = 'sql.execute',
+  String id = 'rpc-legacy',
+}) {
+  return <String, Object?>{
+    'command': _bodyFor(method: method, id: id),
   };
 }
 
@@ -218,6 +227,31 @@ void main() {
   });
 
   group('batching behaviour', () {
+    test(
+      'batches the direct JSON-RPC body produced by the SQL mapper',
+      () async {
+        const mapper = AgentSqlExecuteRequestToBridgeBody();
+        const request = AgentSqlExecuteRequest(
+          agentId: 'agent-1',
+          sql: 'SELECT 1',
+        );
+        final body = mapper.buildRelayCommand(
+          request: request,
+          rpcId: 'rpc-mapped',
+        );
+
+        await coordinator.sendUnary(
+          agentId: 'agent-1',
+          body: body,
+          clientRequestId: 'rpc-mapped',
+        );
+
+        check(inner.batchCalls.length).equals(1);
+        check(inner.batchCalls.single.items.single.body).deepEquals(body);
+        check(inner.unaryCalls).isEmpty();
+      },
+    );
+
     test(
       'two concurrent unaries to the same agent flush as one batch',
       () async {
@@ -365,6 +399,17 @@ void main() {
       );
       check(inner.unaryCalls.length).equals(1);
       check(bypassReasons).contains('unknown_method');
+    });
+
+    test('legacy command envelope remains batch eligible', () async {
+      await coordinator.sendUnary(
+        agentId: 'agent-1',
+        body: _legacyBodyFor(),
+        clientRequestId: 'rpc-legacy',
+      );
+
+      check(inner.batchCalls.length).equals(1);
+      check(inner.unaryCalls).isEmpty();
     });
   });
 

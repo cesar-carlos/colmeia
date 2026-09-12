@@ -1,14 +1,10 @@
-// Test-only: arrange-then-act statements (`dispatcher.sendAgentsCommand`
-// then `dispatcher.cancel`) read more clearly as separate lines than as
-// cascades on the dispatcher.
-// ignore_for_file: cascade_invocations
-
 import 'dart:async';
 
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/socket/agent_command_outcome.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
+import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
 import 'package:colmeia/core/socket/socket_command_dispatcher_impl.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/core/socket/socket_request_correlator.dart';
@@ -84,32 +80,22 @@ void main() {
       'forwards a SocketDispatchCancelled to the correlator and emits a '
       'transient outcome with reasonCode=cancelled',
       () async {
-        // Mock register to return a future the dispatcher will await
-        // forever. We do not settle it: the test verifies the cancel
-        // call surface (correlator.failWith + outcome emission), not
-        // the future propagation (covered by integration with the real
-        // correlator in `socket_request_correlator_test.dart`).
         final pending = Completer<Map<String, dynamic>>();
         when(
           () => correlator.register(any(), timeout: any(named: 'timeout')),
         ).thenAnswer((_) => pending.future);
-        when(() => correlator.failWith(any(), any())).thenReturn(null);
+        when(() => correlator.failWith(any(), any())).thenAnswer((invocation) {
+          pending.completeError(invocation.positionalArguments[1] as Object);
+        });
 
         final outcomes = <AgentCommandOutcome>[];
         final outcomesSub = dispatcher.outcomes().listen(outcomes.add);
 
-        // Fire-and-track: we never await the wrapper future because
-        // the mock pending never settles (and the test does not need
-        // it to — propagation has its own coverage).
         final future = dispatcher.sendAgentsCommand(
           agentId: 'agent-1',
           body: _body(rpcId: 'rpc-cancel'),
           rpcId: 'rpc-cancel',
         );
-        // Pre-attach a no-op so the eventual implicit close from
-        // teardown does not fire an unhandled async error.
-        // ignore: unawaited_futures
-        future.catchError((Object _) => <String, dynamic>{});
         await Future<void>.delayed(Duration.zero);
 
         dispatcher.cancel('rpc-cancel', reason: 'route_left');
@@ -128,14 +114,13 @@ void main() {
         check(cancelException.code).equals('cancelled');
         check(cancelException.message).contains('route_left');
 
-        // Outcome stream got the transient with reasonCode=cancelled.
-        await Future<void>.delayed(Duration.zero);
+        await check(future).throws<SocketDispatchCancelled>();
         await outcomesSub.cancel();
         final transients = outcomes
             .whereType<AgentCommandFailedTransient>()
             .toList();
-        check(transients.length).isGreaterOrEqual(1);
-        check(transients.last.reasonCode).equals('cancelled');
+        check(transients.length).equals(1);
+        check(transients.single.reasonCode).equals('cancelled');
       },
     );
 
@@ -145,6 +130,170 @@ void main() {
       dispatcher.cancel('never-registered');
       verifyNever(() => correlator.failWith(any(), any()));
     });
+
+    test(
+      'cancels a non-coalesced request while it waits for a gate slot',
+      () async {
+        final gate = PerAgentConcurrencyGate(maxInflightPerAgent: 1);
+        await gate.acquire('agent-1');
+        await dispatcher.dispose();
+        dispatcher = SocketCommandDispatcherImpl(
+          connection: connection,
+          correlator: correlator,
+          concurrencyGate: gate,
+        );
+        final outcomes = <AgentCommandOutcome>[];
+        final outcomesSub = dispatcher.outcomes().listen(outcomes.add);
+
+        final future = dispatcher.sendAgentsCommand(
+          agentId: 'agent-1',
+          body: _body(rpcId: 'rpc-queued'),
+          rpcId: 'rpc-queued',
+          coalesce: false,
+        );
+        final assertion = expectLater(
+          future,
+          throwsA(isA<SocketDispatchCancelled>()),
+        );
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        check(gate.waitingFor('agent-1')).equals(1);
+
+        dispatcher.cancel('rpc-queued', reason: 'route_left');
+
+        await assertion;
+        await Future<void>.delayed(Duration.zero);
+        verifyNever(
+          () => correlator.register(any(), timeout: any(named: 'timeout')),
+        );
+        verifyNever(() => rawSocket.emit('agents:command', any<dynamic>()));
+        check(gate.waitingFor('agent-1')).equals(0);
+        check(gate.inflightFor('agent-1')).equals(1);
+        final cancelled = outcomes
+            .whereType<AgentCommandFailedTransient>()
+            .where((outcome) => outcome.rpcId == 'rpc-queued')
+            .toList();
+        check(cancelled.length).equals(1);
+        check(cancelled.single.reasonCode).equals('cancelled');
+
+        await outcomesSub.cancel();
+        gate.release('agent-1');
+      },
+    );
+
+    test(
+      'cancels only the leader client while a queued coalesced follower remains',
+      () async {
+        final gate = PerAgentConcurrencyGate(maxInflightPerAgent: 1);
+        await gate.acquire('agent-1');
+        final pending = Completer<Map<String, dynamic>>();
+        when(
+          () => correlator.register(any(), timeout: any(named: 'timeout')),
+        ).thenAnswer((_) => pending.future);
+        await dispatcher.dispose();
+        dispatcher = SocketCommandDispatcherImpl(
+          connection: connection,
+          correlator: correlator,
+          concurrencyGate: gate,
+        );
+        final outcomes = <AgentCommandOutcome>[];
+        final outcomesSub = dispatcher.outcomes().listen(outcomes.add);
+
+        final leader = dispatcher.sendAgentsCommand(
+          agentId: 'agent-1',
+          body: _body(rpcId: 'rpc-leader'),
+          rpcId: 'rpc-leader',
+        );
+        final follower = dispatcher.sendAgentsCommand(
+          agentId: 'agent-1',
+          body: _body(rpcId: 'rpc-follower'),
+          rpcId: 'rpc-follower',
+        );
+        final leaderAssertion = expectLater(
+          leader,
+          throwsA(isA<SocketDispatchCancelled>()),
+        );
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        check(gate.waitingFor('agent-1')).equals(1);
+
+        dispatcher.cancel('rpc-leader');
+
+        await leaderAssertion;
+        verifyNever(() => correlator.failWith(any(), any()));
+        check(gate.waitingFor('agent-1')).equals(1);
+
+        gate.release('agent-1');
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        verify(
+          () => correlator.register(
+            'rpc-leader',
+            timeout: any(named: 'timeout'),
+          ),
+        ).called(1);
+        verify(() => rawSocket.emit('agents:command', any<dynamic>()))
+            .called(1);
+
+        pending.complete(<String, dynamic>{
+          'response': <String, dynamic>{
+            'type': 'single',
+            'item': <String, dynamic>{'id': 'rpc-leader', 'success': true},
+          },
+        });
+        await follower;
+        await Future<void>.delayed(Duration.zero);
+
+        final leaderOutcomes = outcomes
+            .where((outcome) => outcome.rpcId == 'rpc-leader')
+            .toList();
+        final followerOutcomes = outcomes
+            .where((outcome) => outcome.rpcId == 'rpc-follower')
+            .toList();
+        check(leaderOutcomes.length).equals(1);
+        check(leaderOutcomes.single).isA<AgentCommandFailedTransient>();
+        check(followerOutcomes.length).equals(1);
+        check(followerOutcomes.single).isA<AgentCommandSuccess>();
+
+        await outcomesSub.cancel();
+      },
+    );
+
+    test(
+      'cancelAllPending cancels a request waiting for a gate slot',
+      () async {
+        final gate = PerAgentConcurrencyGate(maxInflightPerAgent: 1);
+        await gate.acquire('agent-1');
+        await dispatcher.dispose();
+        dispatcher = SocketCommandDispatcherImpl(
+          connection: connection,
+          correlator: correlator,
+          concurrencyGate: gate,
+        );
+        final future = dispatcher.sendAgentsCommand(
+          agentId: 'agent-1',
+          body: _body(rpcId: 'rpc-cancel-all'),
+          rpcId: 'rpc-cancel-all',
+          coalesce: false,
+        );
+        final assertion = expectLater(
+          future,
+          throwsA(isA<SocketDispatchCancelled>()),
+        );
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+
+        dispatcher.cancelAllPending(reason: 'e2e_teardown');
+
+        await assertion;
+        verifyNever(
+          () => correlator.register(any(), timeout: any(named: 'timeout')),
+        );
+        verifyNever(() => rawSocket.emit('agents:command', any<dynamic>()));
+        check(gate.waitingFor('agent-1')).equals(0);
+        gate.release('agent-1');
+      },
+    );
 
     test('cancelAllPending fail-fasts every tracked rpcId', () async {
       final pendingA = Completer<Map<String, dynamic>>();

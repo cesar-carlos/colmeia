@@ -78,8 +78,10 @@ abstract interface class RelayCommandDispatcher {
   ///
   /// Cancelling the returned subscription does **not** notify the hub
   /// (the relay protocol has no client-side cancel today). The dispatcher
-  /// drops further chunks and lets the request settle; combined with the
-  /// existing [timeout], this prevents leaks.
+  /// cancels its local pending request, stops automatic pull refills, and
+  /// releases its local concurrency slot. Callers that have an agent
+  /// `streamId` can still use the existing SQL cancellation scope to stop
+  /// the remote query.
   Stream<Map<String, dynamic>> sendStreaming({
     required String agentId,
     required Map<String, Object?> body,

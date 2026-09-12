@@ -20,6 +20,7 @@ import 'package:colmeia/core/socket/relay/relay_conversation_ended_router.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation_manager.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
+import 'package:colmeia/core/socket/relay/relay_rpc_body.dart';
 import 'package:colmeia/core/socket/relay/relay_rpc_outcome.dart';
 import 'package:colmeia/core/socket/relay/relay_streaming_capable_command.dart';
 import 'package:colmeia/core/socket/socket_app_error_retry_after.dart';
@@ -241,7 +242,17 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     RelayPayloadFrameCompression compression =
         RelayPayloadFrameCompression.auto,
   }) {
-    final controller = StreamController<Map<String, dynamic>>();
+    var subscriptionCancelled = false;
+    late final StreamController<Map<String, dynamic>> controller;
+    controller = StreamController<Map<String, dynamic>>(
+      onCancel: () {
+        subscriptionCancelled = true;
+        cancel(
+          clientRequestId,
+          reason: 'stream_subscription_cancelled',
+        );
+      },
+    );
 
     void reportUnhandledStreamError(Object error, StackTrace stack) {
       _channelMetrics?.recordRelayStreamingUnhandledError();
@@ -286,6 +297,17 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
                   );
                 },
           );
+          if (subscriptionCancelled) {
+            _failPending(
+              clientRequestId,
+              RelayRequestCancelled(
+                message: 'Relay stream subscription cancelled before emit',
+                conversationId: pending.conversationId,
+                clientRequestId: clientRequestId,
+              ),
+            );
+            return;
+          }
         } on RelayDispatchException catch (e) {
           if (!controller.isClosed) {
             controller.addError(e);
@@ -2365,16 +2387,10 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
   }
 
   String? _extractMethod(Map<String, Object?> body) {
-    final directMethod = body['method'];
-    if (directMethod is String && directMethod.isNotEmpty) {
-      return directMethod;
-    }
-    final command = body['command'];
-    if (command is Map) {
-      final method = command['method'];
-      if (method is String && method.isNotEmpty) {
-        return method;
-      }
+    final command = resolveRelayRpcBody(body);
+    final method = command?['method'];
+    if (method is String && method.isNotEmpty) {
+      return method;
     }
     return null;
   }

@@ -262,6 +262,50 @@ void main() {
         await expectLater(waiting, throwsA(isA<GateQueueWaitCancelled>()));
         gate.releaseSlots('a', 2);
       });
+
+      test(
+        'cancelling the head waiter immediately grants a smaller FIFO follower',
+        () async {
+          final gate = PerAgentConcurrencyGate(maxInflightPerAgent: 4);
+          await gate.acquireSlots('a', 2);
+          late Completer<void> largeWaiter;
+          final large = gate.acquireSlots(
+            'a',
+            3,
+            onQueuedWaiter: (waiter) => largeWaiter = waiter,
+          );
+          final small = gate.acquire('a');
+
+          gate.cancelQueuedWaiter('a', largeWaiter);
+
+          await expectLater(
+            large,
+            throwsA(isA<GateQueueWaitCancelled>()),
+          );
+          await small.timeout(const Duration(milliseconds: 100));
+          check(gate.inflightFor('a')).equals(3);
+          gate.releaseSlots('a', 3);
+        },
+      );
+
+      test(
+        'timing out the head waiter immediately grants a smaller FIFO follower',
+        () async {
+          final gate = PerAgentConcurrencyGate(
+            maxInflightPerAgent: 4,
+            maxWaitForSlot: const Duration(milliseconds: 100),
+          );
+          await gate.acquireSlots('a', 2);
+          final large = gate.acquireSlots('a', 3);
+          await Future<void>.delayed(const Duration(milliseconds: 30));
+          final small = gate.acquire('a');
+
+          await expectLater(large, throwsA(isA<TimeoutException>()));
+          await small.timeout(const Duration(milliseconds: 100));
+          check(gate.inflightFor('a')).equals(3);
+          gate.releaseSlots('a', 3);
+        },
+      );
     });
   });
 }

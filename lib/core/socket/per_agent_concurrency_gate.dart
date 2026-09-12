@@ -118,9 +118,12 @@ class PerAgentConcurrencyGate {
   /// Removes a queued [acquire] waiter without granting a slot. Used when
   /// the owning request is cancelled before [acquire] completes.
   void cancelQueuedWaiter(String agentId, Completer<void> waiter) {
-    _removeQueuedWaiter(agentId, waiter);
+    final removed = _removeQueuedWaiter(agentId, waiter);
     if (!waiter.isCompleted) {
       waiter.completeError(const GateQueueWaitCancelled());
+    }
+    if (removed) {
+      _grantReadyWaiters(agentId);
     }
   }
 
@@ -174,7 +177,7 @@ class PerAgentConcurrencyGate {
     Timer? timer;
     if (waitBudget != null) {
       timer = Timer(waitBudget, () {
-        _removeQueuedWaiter(agentId, completer);
+        final removed = _removeQueuedWaiter(agentId, completer);
         if (!completer.isCompleted) {
           onAcquireWaitTimeout?.call();
           completer.completeError(
@@ -184,6 +187,9 @@ class PerAgentConcurrencyGate {
               waitBudget,
             ),
           );
+        }
+        if (removed) {
+          _grantReadyWaiters(agentId);
         }
       });
     }
@@ -249,16 +255,18 @@ class PerAgentConcurrencyGate {
     }
   }
 
-  void _removeQueuedWaiter(String agentId, Completer<void> target) {
+  bool _removeQueuedWaiter(String agentId, Completer<void> target) {
     final q = _waiters[agentId];
     if (q == null) {
-      return;
+      return false;
     }
+    var removed = false;
     final retained = Queue<_QueuedWaiter>();
     while (q.isNotEmpty) {
       final w = q.removeFirst();
       if (identical(w.completer, target)) {
         w.cancelTimer();
+        removed = true;
       } else {
         retained.add(w);
       }
@@ -268,6 +276,7 @@ class PerAgentConcurrencyGate {
     } else {
       _waiters[agentId] = retained;
     }
+    return removed;
   }
 }
 
