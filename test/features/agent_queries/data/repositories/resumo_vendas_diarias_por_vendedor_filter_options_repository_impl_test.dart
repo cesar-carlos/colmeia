@@ -222,33 +222,36 @@ void main() {
     );
   });
 
-  test('trims searchTerm and treats whitespace-only as match-all varchar', () async {
-    when(
-      () => agentQueriesRepository.executeSql(any()),
-    ).thenAnswer(
-      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
-        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
-      ),
-    );
+  test(
+    'trims searchTerm and treats whitespace-only as match-all varchar',
+    () async {
+      when(
+        () => agentQueriesRepository.executeSql(any()),
+      ).thenAnswer(
+        (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+        ),
+      );
 
-    await repository.loadMunicipioOptions(
-      userId: 'user-1',
-      agentId: 'agent-1',
-      dataVendaInicio: dataInicio,
-      dataVendaFim: dataFim,
-      searchTerm: '   ',
-    );
+      await repository.loadMunicipioOptions(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        dataVendaInicio: dataInicio,
+        dataVendaFim: dataFim,
+        searchTerm: '   ',
+      );
 
-    final captured =
-        verify(
-              () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured.single
-            as AgentSqlExecuteRequest;
-    check(captured.namedParams['searchPattern']).equals(
-      ResumoVendasDiariasSuggestionSqlParams.matchAllLikePattern,
-    );
-    check(captured.namedParams['searchPattern']).isA<String>();
-  });
+      final captured =
+          verify(
+                () => agentQueriesRepository.executeSql(captureAny()),
+              ).captured.single
+              as AgentSqlExecuteRequest;
+      check(captured.namedParams['searchPattern']).equals(
+        ResumoVendasDiariasSuggestionSqlParams.matchAllLikePattern,
+      );
+      check(captured.namedParams['searchPattern']).isA<String>();
+    },
+  );
 
   test('returns UnknownFailure when row shape is invalid', () async {
     when(

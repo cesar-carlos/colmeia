@@ -119,30 +119,33 @@ void main() {
     },
   );
 
-  test('normalizes blank searchTerm as match-all varchar searchPattern', () async {
-    when(
-      () => agentQueriesRepository.executeSql(any()),
-    ).thenAnswer(
-      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
-        AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
-      ),
-    );
+  test(
+    'normalizes blank searchTerm as match-all varchar searchPattern',
+    () async {
+      when(
+        () => agentQueriesRepository.executeSql(any()),
+      ).thenAnswer(
+        (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(rows: <Map<String, dynamic>>[], rowCount: 0),
+        ),
+      );
 
-    await repository.loadPage(
-      userId: 'user-1',
-      agentId: 'agent-1',
-      filter: const FornecedorOptionsFilter(searchTerm: '   '),
-    );
+      await repository.loadPage(
+        userId: 'user-1',
+        agentId: 'agent-1',
+        filter: const FornecedorOptionsFilter(searchTerm: '   '),
+      );
 
-    final captured =
-        verify(
-              () => agentQueriesRepository.executeSql(captureAny()),
-            ).captured.single
-            as AgentSqlExecuteRequest;
-    check(captured.namedParams['searchPattern']).equals(
-      ResumoVendasDiariasSuggestionSqlParams.matchAllLikePattern,
-    );
-  });
+      final captured =
+          verify(
+                () => agentQueriesRepository.executeSql(captureAny()),
+              ).captured.single
+              as AgentSqlExecuteRequest;
+      check(captured.namedParams['searchPattern']).equals(
+        ResumoVendasDiariasSuggestionSqlParams.matchAllLikePattern,
+      );
+    },
+  );
 
   test('escapes LIKE metacharacters in searchPattern', () async {
     when(
