@@ -7,6 +7,11 @@ import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_metri
 ///
 /// Shares one filtered universe CTE through `Resultado`, then returns tagged
 /// rows (`SUMMARY` / `PAGE` / `GAINER` / `LOSER`) via `UNION ALL`.
+///
+/// Union numeric columns use `DOUBLE PRECISION`, not bare `DOUBLE`. SQL
+/// Anywhere accepts `DOUBLE`; SQL Server treats it as an incomplete
+/// `DOUBLE PRECISION` and raises native error 102 (`Incorrect syntax near
+/// ')'`).
 abstract final class ProdutoVendidoTendenciaDeVendaScreenSql {
   static const String rowKindSummary = 'SUMMARY';
   static const String rowKindPage = 'PAGE';
@@ -251,7 +256,7 @@ $loserOrder
       CAST('$rowKindSummary' AS VARCHAR(16)) AS RowKind,
       S.Classificacao,
       S.QuantidadeProdutos,
-      CAST(S.ImpactoLiquido AS DOUBLE) AS ImpactoLiquido,
+      CAST(S.ImpactoLiquido AS DOUBLE PRECISION) AS ImpactoLiquido,
       CAST(NULL AS INTEGER) AS TotalCount,
       CAST(NULL AS INTEGER) AS CodEmpresa,
       CAST(NULL AS INTEGER) AS CodFilial,
@@ -262,10 +267,10 @@ $loserOrder
       CAST(NULL AS VARCHAR(200)) AS NomeGrupoProduto,
       CAST(NULL AS INTEGER) AS CodMarca,
       CAST(NULL AS VARCHAR(200)) AS NomeMarca,
-      CAST(NULL AS DOUBLE) AS QtdAnterior,
-      CAST(NULL AS DOUBLE) AS QtdAtual,
-      CAST(NULL AS DOUBLE) AS Diferenca,
-      CAST(NULL AS DOUBLE) AS PercentualTendencia,
+      CAST(NULL AS DOUBLE PRECISION) AS QtdAnterior,
+      CAST(NULL AS DOUBLE PRECISION) AS QtdAtual,
+      CAST(NULL AS DOUBLE PRECISION) AS Diferenca,
+      CAST(NULL AS DOUBLE PRECISION) AS PercentualTendencia,
       CAST(0 AS INTEGER) AS SortOrder,
       CAST(0 AS INTEGER) AS PageOrder
     FROM SummaryAgg S
@@ -274,7 +279,7 @@ $loserOrder
       CAST('$rowKindPage' AS VARCHAR(16)) AS RowKind,
       P.Classificacao,
       CAST(NULL AS INTEGER) AS QuantidadeProdutos,
-      CAST(NULL AS DOUBLE) AS ImpactoLiquido,
+      CAST(NULL AS DOUBLE PRECISION) AS ImpactoLiquido,
       P.TotalCount,
       P.CodEmpresa,
       P.CodFilial,
@@ -285,10 +290,10 @@ $loserOrder
       P.NomeGrupoProduto,
       P.CodMarca,
       P.NomeMarca,
-      CAST(P.QtdAnterior AS DOUBLE) AS QtdAnterior,
-      CAST(P.QtdAtual AS DOUBLE) AS QtdAtual,
-      CAST(P.Diferenca AS DOUBLE) AS Diferenca,
-      CAST(P.PercentualTendencia AS DOUBLE) AS PercentualTendencia,
+      CAST(P.QtdAnterior AS DOUBLE PRECISION) AS QtdAnterior,
+      CAST(P.QtdAtual AS DOUBLE PRECISION) AS QtdAtual,
+      CAST(P.Diferenca AS DOUBLE PRECISION) AS Diferenca,
+      CAST(P.PercentualTendencia AS DOUBLE PRECISION) AS PercentualTendencia,
       CAST(1 AS INTEGER) AS SortOrder,
       P.PageOrder
     FROM PageSlice P
@@ -297,7 +302,7 @@ $loserOrder
       CAST('$rowKindGainer' AS VARCHAR(16)) AS RowKind,
       G.Classificacao,
       CAST(NULL AS INTEGER) AS QuantidadeProdutos,
-      CAST(NULL AS DOUBLE) AS ImpactoLiquido,
+      CAST(NULL AS DOUBLE PRECISION) AS ImpactoLiquido,
       CAST(NULL AS INTEGER) AS TotalCount,
       G.CodEmpresa,
       G.CodFilial,
@@ -308,10 +313,10 @@ $loserOrder
       G.NomeGrupoProduto,
       G.CodMarca,
       G.NomeMarca,
-      CAST(G.QtdAnterior AS DOUBLE) AS QtdAnterior,
-      CAST(G.QtdAtual AS DOUBLE) AS QtdAtual,
-      CAST(G.Diferenca AS DOUBLE) AS Diferenca,
-      CAST(G.PercentualTendencia AS DOUBLE) AS PercentualTendencia,
+      CAST(G.QtdAnterior AS DOUBLE PRECISION) AS QtdAnterior,
+      CAST(G.QtdAtual AS DOUBLE PRECISION) AS QtdAtual,
+      CAST(G.Diferenca AS DOUBLE PRECISION) AS Diferenca,
+      CAST(G.PercentualTendencia AS DOUBLE PRECISION) AS PercentualTendencia,
       CAST(2 AS INTEGER) AS SortOrder,
       CAST(0 AS INTEGER) AS PageOrder
     FROM GainerTop G
@@ -320,7 +325,7 @@ $loserOrder
       CAST('$rowKindLoser' AS VARCHAR(16)) AS RowKind,
       L.Classificacao,
       CAST(NULL AS INTEGER) AS QuantidadeProdutos,
-      CAST(NULL AS DOUBLE) AS ImpactoLiquido,
+      CAST(NULL AS DOUBLE PRECISION) AS ImpactoLiquido,
       CAST(NULL AS INTEGER) AS TotalCount,
       L.CodEmpresa,
       L.CodFilial,
@@ -331,10 +336,10 @@ $loserOrder
       L.NomeGrupoProduto,
       L.CodMarca,
       L.NomeMarca,
-      CAST(L.QtdAnterior AS DOUBLE) AS QtdAnterior,
-      CAST(L.QtdAtual AS DOUBLE) AS QtdAtual,
-      CAST(L.Diferenca AS DOUBLE) AS Diferenca,
-      CAST(L.PercentualTendencia AS DOUBLE) AS PercentualTendencia,
+      CAST(L.QtdAnterior AS DOUBLE PRECISION) AS QtdAnterior,
+      CAST(L.QtdAtual AS DOUBLE PRECISION) AS QtdAtual,
+      CAST(L.Diferenca AS DOUBLE PRECISION) AS Diferenca,
+      CAST(L.PercentualTendencia AS DOUBLE PRECISION) AS PercentualTendencia,
       CAST(3 AS INTEGER) AS SortOrder,
       CAST(0 AS INTEGER) AS PageOrder
     FROM LoserTop L

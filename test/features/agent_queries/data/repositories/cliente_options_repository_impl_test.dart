@@ -2,6 +2,7 @@ import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/data/queries/cliente_options_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/cliente_options_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/resumo_vendas_diarias_suggestion_sql_params.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cliente_options_filter.dart';
@@ -131,7 +132,7 @@ void main() {
     },
   );
 
-  test('blank searchTerm sends null searchPattern', () async {
+  test('blank searchTerm sends match-all varchar searchPattern', () async {
     when(
       () => agentQueriesRepository.executeSql(any()),
     ).thenAnswer(
@@ -154,7 +155,9 @@ void main() {
               () => agentQueriesRepository.executeSql(captureAny()),
             ).captured.single
             as AgentSqlExecuteRequest;
-    check(captured.namedParams['searchPattern']).isNull();
+    check(captured.namedParams['searchPattern']).equals(
+      ResumoVendasDiariasSuggestionSqlParams.matchAllLikePattern,
+    );
   });
 
   test('searchTerm escapes LIKE metacharacters', () async {

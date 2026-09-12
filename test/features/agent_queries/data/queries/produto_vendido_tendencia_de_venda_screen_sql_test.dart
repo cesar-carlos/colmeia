@@ -48,6 +48,16 @@ void main() {
     },
   );
 
+  test(
+    'screen query casts union numerics as DOUBLE PRECISION for SQL Server',
+    () {
+      check(sql).contains('AS DOUBLE PRECISION');
+      check(
+        RegExp(r'AS DOUBLE(?!\s+PRECISION)').hasMatch(sql),
+      ).isFalse();
+    },
+  );
+
   test('screen query inlines pagination bounds and top movers limit', () {
     check(sql).contains('N.RowNum BETWEEN 1 AND 20');
     check(sql).contains('SELECT TOP 15');

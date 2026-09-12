@@ -25,25 +25,58 @@
 /// ## Query parameters
 ///
 /// Named params: `:limit`, `:searchPattern` (two binds — well within the
-/// five-bind bridge cap).
+/// five-bind bridge cap). Each name appears once, materialized in
+/// `Parametros`, because SQL Anywhere **and** SQL Server Native Client treat
+/// repeated `:name` tokens as extra positional binds.
 ///
-/// `:searchPattern` is used only once — Sybase SQL Anywhere ODBC treats each
-/// named-parameter occurrence as a separate positional bind, so never repeat
-/// a named parameter in the same SQL statement.
+/// Do **not** use `SELECT TOP (:limit)` with `LIKE COALESCE(:searchPattern,
+/// '%')`. SQL Server ODBC binds `'%'` into `TOP`, which raises native error
+/// 245 (`varchar '%' to int`). Cap rows with `ROW_NUMBER`. Empty search
+/// binds `'%'` as varchar (never JSON `null`).
+///
+/// `:searchPattern` is always a varchar prefix literal from
+/// `ResumoVendasDiariasSuggestionSqlParams.buildPrefixSearchPattern`
+/// (`'%'` when the box is empty — never JSON `null`).
 abstract final class ResumoVendasDiariasPorVendedorVendedorOptionsSql {
   static const String query = '''
-      SELECT TOP (:limit)
-        v.CodVendedor,
-        COALESCE(
-          NULLIF(LTRIM(RTRIM(v.Nome)), ''),
-          'Vendedor nao informado'
-        ) AS NomeVendedor
-      FROM Vendedor v
-      WHERE v.CodVendedor IS NOT NULL
-        AND COALESCE(
-          NULLIF(LTRIM(RTRIM(v.Nome)), ''),
-          'Vendedor nao informado'
-        ) LIKE COALESCE(:searchPattern, '%')
-      ORDER BY NomeVendedor, v.CodVendedor
-    ''';
+    WITH Parametros AS (
+      SELECT
+        CAST(:limit AS INTEGER) AS MaxRows,
+        CAST(:searchPattern AS VARCHAR(255)) AS SearchPattern
+    ),
+    Base AS (
+      SELECT
+        s.CodVendedor,
+        s.NomeVendedor
+      FROM (
+        SELECT
+          v.CodVendedor,
+          COALESCE(
+            NULLIF(LTRIM(RTRIM(v.Nome)), ''),
+            'Vendedor nao informado'
+          ) AS NomeVendedor
+        FROM Vendedor v
+        WHERE v.CodVendedor IS NOT NULL
+      ) s
+      CROSS JOIN Parametros p
+      WHERE p.SearchPattern IS NULL
+        OR s.NomeVendedor LIKE p.SearchPattern
+    ),
+    Numbered AS (
+      SELECT
+        b.CodVendedor,
+        b.NomeVendedor,
+        ROW_NUMBER() OVER (
+          ORDER BY b.NomeVendedor, b.CodVendedor
+        ) AS Rn
+      FROM Base b
+    )
+    SELECT
+      n.CodVendedor,
+      n.NomeVendedor
+    FROM Numbered n
+    CROSS JOIN Parametros p
+    WHERE n.Rn <= p.MaxRows
+    ORDER BY n.Rn
+  ''';
 }

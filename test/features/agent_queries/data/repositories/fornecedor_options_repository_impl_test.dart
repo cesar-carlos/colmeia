@@ -119,7 +119,7 @@ void main() {
     },
   );
 
-  test('normalizes blank searchTerm as null searchPattern', () async {
+  test('normalizes blank searchTerm as match-all varchar searchPattern', () async {
     when(
       () => agentQueriesRepository.executeSql(any()),
     ).thenAnswer(
@@ -139,7 +139,9 @@ void main() {
               () => agentQueriesRepository.executeSql(captureAny()),
             ).captured.single
             as AgentSqlExecuteRequest;
-    check(captured.namedParams['searchPattern']).isNull();
+    check(captured.namedParams['searchPattern']).equals(
+      ResumoVendasDiariasSuggestionSqlParams.matchAllLikePattern,
+    );
   });
 
   test('escapes LIKE metacharacters in searchPattern', () async {

@@ -344,11 +344,11 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
       limit,
     );
     return <String, Object?>{
+      'limit': effectiveLimit,
       'searchPattern':
           ResumoVendasDiariasSuggestionSqlParams.buildPrefixSearchPattern(
             searchTerm,
           ),
-      'limit': effectiveLimit,
     };
   }
 
@@ -360,11 +360,11 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
       limit,
     );
     return <String, Object?>{
+      'limit': effectiveLimit,
       'searchPattern':
           ResumoVendasDiariasSuggestionSqlParams.buildPrefixSearchPattern(
             searchTerm,
           ),
-      'limit': effectiveLimit,
     };
   }
 
@@ -376,11 +376,11 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
       limit,
     );
     return <String, Object?>{
+      'limit': effectiveLimit,
       'searchPattern':
           ResumoVendasDiariasSuggestionSqlParams.buildPrefixSearchPattern(
             searchTerm,
           ),
-      'limit': effectiveLimit,
     };
   }
 
@@ -429,11 +429,11 @@ class ResumoVendasDiariasPorVendedorFilterOptionsRepositoryImpl
           <String, Object?>{
             'dataVendaInicio': AgentQueriesSqlLocalDate.format(dataVendaInicio),
             'dataVendaFim': AgentQueriesSqlLocalDate.format(dataVendaFim),
+            'limit': effectiveLimit,
             'searchPattern':
                 ResumoVendasDiariasSuggestionSqlParams.buildSearchPattern(
                   searchTerm,
                 ),
-            'limit': effectiveLimit,
           },
       executeOptions: const AgentSqlExecuteOptions(
         executionMode: AgentSqlExecutionMode.preserve,

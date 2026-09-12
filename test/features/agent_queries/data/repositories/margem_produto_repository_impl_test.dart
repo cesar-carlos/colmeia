@@ -2,6 +2,7 @@ import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/data/queries/margem_produto_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/margem_produto_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/resumo_vendas_diarias_suggestion_sql_params.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
@@ -107,7 +108,9 @@ void main() {
     check(captured.sql).equals(MargemProdutoSql.pagedQuery());
     check(captured.namedParams['codEmpresa']).equals(1);
     check(captured.namedParams['codFilial']).equals(1);
-    check(captured.namedParams['nomeProdutoPattern']).isNull();
+    check(captured.namedParams['nomeProdutoPattern']).equals(
+      ResumoVendasDiariasSuggestionSqlParams.matchAllLikePattern,
+    );
     check(captured.namedParams['startRow']).equals(11);
     check(captured.namedParams['endRow']).equals(20);
     check(captured.executeOptions?.maxRows).equals(35);
@@ -186,7 +189,7 @@ void main() {
     check(captured.sql).contains('prm.NomeProdutoPattern IS NULL');
   });
 
-  test('blank product name search binds a null pattern', () async {
+  test('blank product name search binds match-all varchar pattern', () async {
     when(
       () => agentQueriesRepository.executeSql(any()),
     ).thenAnswer(
@@ -214,7 +217,9 @@ void main() {
             ).captured.single
             as AgentSqlExecuteRequest;
 
-    check(captured.namedParams['nomeProdutoPattern']).isNull();
+    check(captured.namedParams['nomeProdutoPattern']).equals(
+      ResumoVendasDiariasSuggestionSqlParams.matchAllLikePattern,
+    );
   });
 
   test('maps rows with CodProduto to entities', () async {

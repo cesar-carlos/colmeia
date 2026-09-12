@@ -2,7 +2,7 @@
 abstract final class ResumoVendasDiariasSuggestionSqlParams {
   static const int defaultLimit = 20;
 
-  /// Upper bound for `TOP (:limit)` on suggestion queries.
+  /// Upper bound for suggestion fetch size (`ROW_NUMBER` / `:limit`).
   ///
   /// Applies to single-agent calls and per-agent fetches in merge flows.
   static const int maxSuggestionFetchLimit = 100;
@@ -46,6 +46,14 @@ abstract final class ResumoVendasDiariasSuggestionSqlParams {
     return multiplied;
   }
 
+  /// Match-all `LIKE` pattern sent when the search box is empty.
+  ///
+  /// The JSON bind must stay a varchar string. SQL Server Native Client infers
+  /// ODBC types from JSON; a `null` `searchPattern` next to integer `:limit`
+  /// (especially `TOP (:limit)` + `LIKE COALESCE(:searchPattern, '%')`) binds
+  /// the `'%'` literal into `TOP` and raises native error 245.
+  static const String matchAllLikePattern = '%';
+
   /// Escapes `%`, `_`, and `[` for SQL Server / SAP SQL Anywhere `LIKE`.
   static String _escapeForLike(String trimmed) {
     return trimmed
@@ -55,13 +63,15 @@ abstract final class ResumoVendasDiariasSuggestionSqlParams {
   }
 
   /// SQL `LIKE` pattern with leading and trailing `%` (substring match).
-  static String? buildSearchPattern(String? searchTerm) {
+  ///
+  /// Always a [String] so the wire value is varchar, never JSON `null`.
+  static String buildSearchPattern(String? searchTerm) {
     if (searchTerm == null) {
-      return null;
+      return matchAllLikePattern;
     }
     final trimmed = searchTerm.trim();
     if (trimmed.isEmpty) {
-      return null;
+      return matchAllLikePattern;
     }
     final escaped = _escapeForLike(trimmed);
     return '%$escaped%';
@@ -90,14 +100,15 @@ abstract final class ResumoVendasDiariasSuggestionSqlParams {
   /// Prefix `LIKE` pattern (`term%`) for large catalogs (e.g. municipio list).
   ///
   /// Favors index seeks on `Nome`-like columns; use [buildSearchPattern] when
-  /// substring matching is required (smaller option lists).
-  static String? buildPrefixSearchPattern(String? searchTerm) {
+  /// substring matching is required (smaller option lists). Always a [String]
+  /// so the wire value is varchar, never JSON `null`.
+  static String buildPrefixSearchPattern(String? searchTerm) {
     if (searchTerm == null) {
-      return null;
+      return matchAllLikePattern;
     }
     final trimmed = searchTerm.trim();
     if (trimmed.isEmpty) {
-      return null;
+      return matchAllLikePattern;
     }
     final escaped = _escapeForLike(trimmed);
     return '$escaped%';

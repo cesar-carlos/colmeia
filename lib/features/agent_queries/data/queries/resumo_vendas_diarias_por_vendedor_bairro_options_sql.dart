@@ -4,11 +4,13 @@ abstract final class ResumoVendasDiariasPorVendedorBairroOptionsSql {
   /// Distinct normalized bairro labels from `Cliente` and `Fornecedor`, not
   /// from sales rows. Normalization (trim, punctuation, accents, upper)
   /// collapses spelling variants so `DISTINCT` reduces payload. Search pattern
-  /// and `TOP (:limit)` apply after `LEN(NomeBairro) > 3`.
+  /// and `ROW_NUMBER` / `:limit` apply after `LEN(NomeBairro) > 3`.
   ///
-  /// `Base` excludes null/blank `Bairro` before normalization. `:searchPattern`
-  /// should be a prefix pattern from `buildPrefixSearchPattern` (suggestion
-  /// params).
+  /// `Origem` excludes null/blank `Bairro` before normalization.
+  /// `:searchPattern` is a varchar prefix from `buildPrefixSearchPattern`,
+  /// bound once in `Parametros`. Empty search is `'%'` (never JSON `null`).
+  /// Do not `COALESCE(:searchPattern, '%')` next to a bound limit (SQL Server
+  /// ODBC 245).
   ///
   /// Does not use period filters; callers still validate the date range for UX
   /// consistency with other suggestion queries.
@@ -18,9 +20,12 @@ abstract final class ResumoVendasDiariasPorVendedorBairroOptionsSql {
           "COALESCE(BairroOriginal, '')",
         );
     return '''
-      SELECT TOP (:limit)
-        NomeBairro
-      FROM (
+      WITH Parametros AS (
+        SELECT
+          CAST(:limit AS INTEGER) AS MaxRows,
+          CAST(:searchPattern AS VARCHAR(255)) AS SearchPattern
+      ),
+      Base AS (
         SELECT DISTINCT NomeBairro
         FROM (
           SELECT
@@ -35,12 +40,30 @@ abstract final class ResumoVendasDiariasPorVendedorBairroOptionsSql {
             FROM Fornecedor forn
             WHERE forn.Bairro IS NOT NULL
               AND LTRIM(RTRIM(forn.Bairro)) <> ''
-          ) Base
+          ) Origem
         ) N
-      ) R
-      WHERE LEN(NomeBairro) > 3
-        AND NomeBairro LIKE COALESCE(:searchPattern, '%')
-      ORDER BY NomeBairro
+      ),
+      Filtered AS (
+        SELECT b.NomeBairro
+        FROM Base b
+        CROSS JOIN Parametros p
+        WHERE LEN(b.NomeBairro) > 3
+          AND (
+            p.SearchPattern IS NULL
+            OR b.NomeBairro LIKE p.SearchPattern
+          )
+      ),
+      Numbered AS (
+        SELECT
+          f.NomeBairro,
+          ROW_NUMBER() OVER (ORDER BY f.NomeBairro) AS Rn
+        FROM Filtered f
+      )
+      SELECT n.NomeBairro
+      FROM Numbered n
+      CROSS JOIN Parametros p
+      WHERE n.Rn <= p.MaxRows
+      ORDER BY n.Rn
     ''';
   }
 }

@@ -84,11 +84,14 @@ void main() {
                 () => agentQueriesRepository.executeSql(captureAny()),
               ).captured.single
               as AgentSqlExecuteRequest;
-      check(captured.namedParams.keys.toSet()).deepEquals(<String>{
-        'searchPattern',
+      check(captured.namedParams.keys.toList()).deepEquals(<String>[
         'limit',
-      });
-      check(captured.namedParams['searchPattern']).isNull();
+        'searchPattern',
+      ]);
+      check(captured.namedParams['searchPattern']).equals(
+        ResumoVendasDiariasSuggestionSqlParams.matchAllLikePattern,
+      );
+      check(captured.namedParams['searchPattern']).isA<String>();
       check(captured.namedParams['limit']).equals(20);
       check(captured.bridgeTimeoutMs).equals(120000);
       check(captured.useRelay).isTrue();
@@ -149,10 +152,10 @@ void main() {
                 () => agentQueriesRepository.executeSql(captureAny()),
               ).captured.single
               as AgentSqlExecuteRequest;
-      check(captured.namedParams.keys.toSet()).deepEquals(<String>{
-        'searchPattern',
+      check(captured.namedParams.keys.toList()).deepEquals(<String>[
         'limit',
-      });
+        'searchPattern',
+      ]);
       check(captured.sql).equals(
         ResumoVendasDiariasPorVendedorBairroOptionsSql.query,
       );
@@ -182,10 +185,10 @@ void main() {
                 () => agentQueriesRepository.executeSql(captureAny()),
               ).captured.single
               as AgentSqlExecuteRequest;
-      check(captured.namedParams.keys.toSet()).deepEquals(<String>{
-        'searchPattern',
+      check(captured.namedParams.keys.toList()).deepEquals(<String>[
         'limit',
-      });
+        'searchPattern',
+      ]);
       check(captured.sql).equals(
         ResumoVendasDiariasPorVendedorMunicipioOptionsSql.query,
       );
@@ -219,7 +222,7 @@ void main() {
     );
   });
 
-  test('trims searchTerm and treats whitespace-only as null pattern', () async {
+  test('trims searchTerm and treats whitespace-only as match-all varchar', () async {
     when(
       () => agentQueriesRepository.executeSql(any()),
     ).thenAnswer(
@@ -241,7 +244,10 @@ void main() {
               () => agentQueriesRepository.executeSql(captureAny()),
             ).captured.single
             as AgentSqlExecuteRequest;
-    check(captured.namedParams['searchPattern']).isNull();
+    check(captured.namedParams['searchPattern']).equals(
+      ResumoVendasDiariasSuggestionSqlParams.matchAllLikePattern,
+    );
+    check(captured.namedParams['searchPattern']).isA<String>();
   });
 
   test('returns UnknownFailure when row shape is invalid', () async {

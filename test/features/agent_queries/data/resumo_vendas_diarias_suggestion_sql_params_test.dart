@@ -60,13 +60,13 @@ void main() {
   });
 
   group('buildSearchPattern', () {
-    test('returns null for null or blank', () {
+    test('returns match-all varchar for null or blank', () {
       check(
         ResumoVendasDiariasSuggestionSqlParams.buildSearchPattern(null),
-      ).isNull();
+      ).equals(ResumoVendasDiariasSuggestionSqlParams.matchAllLikePattern);
       check(
         ResumoVendasDiariasSuggestionSqlParams.buildSearchPattern('  '),
-      ).isNull();
+      ).equals(ResumoVendasDiariasSuggestionSqlParams.matchAllLikePattern);
     });
 
     test('wraps trimmed term with percent wildcards', () {
@@ -106,13 +106,13 @@ void main() {
   });
 
   group('buildPrefixSearchPattern', () {
-    test('returns null for null or blank', () {
+    test('returns match-all varchar for null or blank', () {
       check(
         ResumoVendasDiariasSuggestionSqlParams.buildPrefixSearchPattern(null),
-      ).isNull();
+      ).equals(ResumoVendasDiariasSuggestionSqlParams.matchAllLikePattern);
       check(
         ResumoVendasDiariasSuggestionSqlParams.buildPrefixSearchPattern('  '),
-      ).isNull();
+      ).equals(ResumoVendasDiariasSuggestionSqlParams.matchAllLikePattern);
     });
 
     test('uses trailing percent only', () {
