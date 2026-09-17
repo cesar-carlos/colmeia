@@ -12,7 +12,8 @@ import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_so
 ///
 /// **Search:** optional [searchTerm] is a case- and accent-insensitive
 /// contains match on product name, group name, or brand name, and a
-/// contains match on `CAST(CodProduto)`. Blank values are ignored.
+/// contains match on `CAST(CodProduto)`. Blank values are ignored and omit
+/// the `LIKE` predicate so unfiltered page loads skip accent-fold scans.
 class MargemProdutoFilter {
   const MargemProdutoFilter({
     this.searchTerm,

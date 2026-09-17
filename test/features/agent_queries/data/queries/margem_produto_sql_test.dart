@@ -5,6 +5,15 @@ import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_so
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('does not coalesce missing cost or join UnidadeMedida', () {
+    final sql = MargemProdutoSql.pagedQuery();
+    check(sql.contains('COALESCE(cp.CustoCompra')).isFalse();
+    check(sql.contains('cp.CustoCompra AS CustoReposicao')).isTrue();
+    check(sql.contains('WHEN cp.CustoCompra IS NULL THEN NULL')).isTrue();
+    check(sql.contains('UnidadeMedida')).isFalse();
+    check(sql.contains('CodUnidadeMedida')).isFalse();
+  });
+
   test('ROW_NUMBER default orders by NomeProduto then CodProduto ASC', () {
     final sql = MargemProdutoSql.pagedQuery();
     final numbered = sql.split('Numbered AS (').last;
@@ -41,20 +50,29 @@ void main() {
     check(nome).isLessThan(codigo);
   });
 
-  test('binds empresa, filial, name pattern, and page window once each', () {
+  test('unfiltered page binds empresa, filial, and page window once each', () {
     final sql = MargemProdutoSql.pagedQuery();
     check(_count(sql, ':codEmpresa')).equals(1);
     check(_count(sql, ':codFilial')).equals(1);
-    check(_count(sql, ':nomeProdutoPattern')).equals(1);
+    check(_count(sql, ':nomeProdutoPattern')).equals(0);
     check(_count(sql, ':startRow')).equals(1);
     check(_count(sql, ':endRow')).equals(1);
   });
 
+  test('unfiltered page omits accent-folded LIKE', () {
+    final sql = MargemProdutoSql.pagedQuery();
+    check(sql.contains('LIKE')).isFalse();
+    check(sql.contains('REPLACE(')).isFalse();
+    check(
+      sql.contains('SELECT COUNT(*) AS TotalCount FROM MargemProduto'),
+    ).isTrue();
+  });
+
   test(
-    'filters name, code, group and brand with optional LIKE before counting',
+    'search page filters name, code, group and brand with LIKE before counting',
     () {
-      final sql = MargemProdutoSql.pagedQuery();
-      check(sql).contains('prm.NomeProdutoPattern IS NULL');
+      final sql = MargemProdutoSql.pagedQuery(applySearch: true);
+      check(_count(sql, ':nomeProdutoPattern')).equals(1);
       check(sql).contains('LIKE');
       check(sql).contains('REPLACE(');
       check(sql).contains("N'á'");
@@ -70,7 +88,7 @@ void main() {
   );
 
   test('accent-folds both sides of the product-name LIKE', () {
-    final sql = MargemProdutoSql.pagedQuery();
+    final sql = MargemProdutoSql.pagedQuery(applySearch: true);
     check(
       sql.contains('UPPER(TRIM(p.Nome)) LIKE UPPER(prm.NomeProdutoPattern)'),
     ).isFalse();

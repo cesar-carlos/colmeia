@@ -501,8 +501,10 @@ void expectMarkupDescending(List<MargemProdutoRow> items) {
     final current = items[i];
     final next = items[i + 1];
     expect(
-      current.percentualMarkupCustoCompraProduto,
-      greaterThanOrEqualTo(next.percentualMarkupCustoCompraProduto),
+      _markupSortKey(current.percentualMarkupCustoCompraProduto),
+      greaterThanOrEqualTo(
+        _markupSortKey(next.percentualMarkupCustoCompraProduto),
+      ),
       reason:
           'markup DESC should not increase down the page: '
           '${current.percentualMarkupCustoCompraProduto} then '
@@ -531,6 +533,8 @@ void expectMarkupDescending(List<MargemProdutoRow> items) {
     }
   }
 }
+
+double _markupSortKey(double? value) => value ?? double.negativeInfinity;
 
 void expectNomeProdutoAscending(List<MargemProdutoRow> items) {
   if (items.length < 2) {
@@ -598,13 +602,22 @@ void checkPageInvariants(
     expect(row.codProduto, greaterThan(0));
     expect(row.nomeProduto, isNotEmpty);
     expect(row.nomeFilial, isNotEmpty);
-    expect(row.custoReposicao, greaterThanOrEqualTo(0));
-    expect(row.precoVendaProduto, greaterThanOrEqualTo(0));
-    if (row.custoReposicao <= 0) {
-      expect(row.percentualMarkupCustoCompraProduto, 0);
+    if (row.custoReposicao == null) {
+      expect(row.percentualMarkupCustoCompraProduto, isNull);
+      expect(row.margemLucroProduto, isNull);
+    } else {
+      expect(row.custoReposicao, greaterThanOrEqualTo(0));
+      if (row.custoReposicao! <= 0) {
+        expect(row.percentualMarkupCustoCompraProduto, 0);
+      }
     }
+    expect(row.precoVendaProduto, greaterThanOrEqualTo(0));
     if (row.precoVendaProduto <= 0) {
-      expect(row.margemLucroProduto, 0);
+      if (row.custoReposicao == null) {
+        expect(row.margemLucroProduto, isNull);
+      } else {
+        expect(row.margemLucroProduto, 0);
+      }
     }
   }
 }

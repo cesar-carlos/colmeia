@@ -20,6 +20,7 @@ void main() {
       'NomeFornecedor': 'Fornecedor Teste',
       'NomeFantasiaFornecedor': 'Teste',
       'CnpjCpfFornecedor': null,
+      'ChaveAcesso': '35260314200166000187550010000001001234567890',
       'ValorTotalCompra': '125.50',
     }).toEntity();
 
@@ -32,7 +33,28 @@ void main() {
     check(row.dataLancamento).equals(DateTime(2026, 3, 6, 9, 15));
     check(row.nomeFantasiaFilial).isNull();
     check(row.cnpjCpfFornecedor).isNull();
+    check(row.chaveAcesso).equals(
+      '35260314200166000187550010000001001234567890',
+    );
     check(row.valorTotalCompra).equals(125.5);
+  });
+
+  test('maps a missing NF-e access key as null', () {
+    final row = NotaEntradaRowModel.fromMap(<String, dynamic>{
+      'CompraId': 42,
+      'CodEmpresa': 1,
+      'CodFilial': 1,
+      'NomeFilial': 'Matriz',
+      'CodTipoOperacaoCompra': 5,
+      'DescricaoTipoOperacaoCompra': 'Compra',
+      'NumeroDocumento': 'NF-1',
+      'DataLancamento': '2026-03-06T09:15:00',
+      'CodFornecedor': 9,
+      'NomeFornecedor': 'Fornecedor',
+      'ValorTotalCompra': 10,
+    }).toEntity();
+
+    check(row.chaveAcesso).isNull();
   });
 
   test('rejects an invalid required launch date', () {

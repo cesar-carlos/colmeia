@@ -84,6 +84,8 @@ class MargemProdutoRepositoryImpl implements MargemProdutoRepository {
       _defaultSqlTimeoutMs,
     );
     var emptyRawPayload = false;
+    final searchTerm = filter.normalizedSearchTerm;
+    final applySearch = searchTerm != null;
 
     Future<AppResult<MargemProdutoPageResult>> executeOnce() {
       emptyRawPayload = false;
@@ -96,16 +98,18 @@ class MargemProdutoRepositoryImpl implements MargemProdutoRepository {
         sql: MargemProdutoSql.pagedQuery(
           sortBy: filter.sortBy,
           sortDirection: filter.sortDirection,
+          applySearch: applySearch,
         ),
         clientToken: clientToken,
         bridgeTimeoutMs: effectiveBridgeMs,
         namedParams: <String, Object?>{
           'codEmpresa': MargemProdutoFilter.fixedCodEmpresa,
           'codFilial': MargemProdutoFilter.fixedCodFilial,
-          'nomeProdutoPattern':
-              ResumoVendasDiariasSuggestionSqlParams.buildSearchPattern(
-                filter.normalizedSearchTerm,
-              ),
+          if (applySearch)
+            'nomeProdutoPattern':
+                ResumoVendasDiariasSuggestionSqlParams.buildSearchPattern(
+                  searchTerm,
+                ),
           'startRow': filter.startRow,
           'endRow': filter.endRow,
         },

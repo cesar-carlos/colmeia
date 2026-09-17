@@ -85,34 +85,36 @@ void main() {
       <String>[
         l10n.salesMargemProdutoColumnCodigo,
         l10n.salesMargemProdutoColumnProduto,
-        l10n.salesMargemProdutoColumnGrupo,
-        l10n.salesMargemProdutoColumnMarca,
         l10n.salesMargemProdutoColumnCusto,
         l10n.salesMargemProdutoColumnPreco,
         l10n.salesMargemProdutoColumnMarkup,
         l10n.salesMargemProdutoColumnMargem,
+        l10n.salesMargemProdutoColumnGrupo,
       ],
     );
     expect(metadata.tableData?.rows.length, 2);
     expect(metadata.tableData?.rows.first[0], '1');
     expect(metadata.tableData?.rows.first[1], 'Mel');
-    expect(metadata.tableData?.rows.first[2], 'Alimentos');
-    expect(metadata.tableData?.rows.first[3], 'Casa');
     expect(
-      metadata.tableData?.rows.first[4],
+      metadata.tableData?.rows.first[2],
       formatSalesMargemProdutoCurrency(4.5),
     );
     expect(
-      metadata.tableData?.rows.first[5],
+      metadata.tableData?.rows.first[3],
       formatSalesMargemProdutoCurrency(9),
     );
     expect(
-      metadata.tableData?.rows.first[6],
+      metadata.tableData?.rows.first[4],
       formatSalesMargemProdutoPercent(100),
     );
     expect(
-      metadata.tableData?.rows.first[7],
+      metadata.tableData?.rows.first[5],
       formatSalesMargemProdutoPercent(50),
+    );
+    expect(metadata.tableData?.rows.first[6], 'Alimentos');
+    expect(
+      metadata.tableData?.rows[1][6],
+      kSalesMargemProdutoMissingGlyph,
     );
     expect(metadata.filterSummary, contains('Agente Centro'));
     expect(metadata.filterSummary, isNot(contains('Lucas Centro')));

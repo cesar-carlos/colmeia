@@ -6176,7 +6176,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesMargemProdutoFilterSearch.
   ///
   /// In en, this message translates to:
-  /// **'Product name'**
+  /// **'Name, code, group or brand'**
   String get salesMargemProdutoFilterSearch;
 
   /// No description provided for @salesMargemProdutoSearchHint.
@@ -6696,6 +6696,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Document'**
   String get salesNotasEntradaColumnDocumento;
+
+  /// No description provided for @salesNotasEntradaColumnChaveAcesso.
+  ///
+  /// In en, this message translates to:
+  /// **'Access key'**
+  String get salesNotasEntradaColumnChaveAcesso;
+
+  /// Tooltip for copying the NF-e access key from an incoming-invoice grid cell.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy access key'**
+  String get salesNotasEntradaCopyChaveAcessoTooltip;
+
+  /// No description provided for @salesNotasEntradaCopiedSnackbar.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied to clipboard'**
+  String get salesNotasEntradaCopiedSnackbar;
+
+  /// Semantics label when an incoming invoice has no NF-e access key.
+  ///
+  /// In en, this message translates to:
+  /// **'No access key'**
+  String get salesNotasEntradaChaveAcessoMissing;
 
   /// No description provided for @salesNotasEntradaColumnLancamento.
   ///

@@ -125,6 +125,43 @@ abstract final class AgentQueriesSqlRowMapReader {
     );
   }
 
+  /// `NULL`, absent key, or empty string yields `null`.
+  ///
+  /// Throws [FormatException] when a value is present and not parseable as
+  /// double (non-empty string that is not a number, or an unsupported type).
+  static double? readOptionalDoubleStrict(
+    Map<String, dynamic> map,
+    List<String> keys,
+  ) {
+    final value = lookupFirst(map, keys);
+    if (value == null) {
+      return null;
+    }
+    if (value is double) {
+      return value;
+    }
+    if (value is num) {
+      return value.toDouble();
+    }
+    if (value is String) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) {
+        return null;
+      }
+      final parsed = double.tryParse(trimmed.replaceAll(',', '.'));
+      if (parsed != null) {
+        return parsed;
+      }
+      throw FormatException(
+        'Invalid or non-numeric "${keys.first}" in agent SQL row',
+      );
+    }
+    throw FormatException(
+      'Invalid type for "${keys.first}" in agent SQL row '
+      '(expected num, string, or null)',
+    );
+  }
+
   static String readRequiredNonEmptyString(
     Map<String, dynamic> map,
     List<String> keys,

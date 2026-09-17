@@ -1926,7 +1926,7 @@
   "salesMargemProdutoEntityLabel": "products",
   "salesMargemProdutoEmpty": "No products for this branch.",
   "salesMargemProdutoEmptySearch": "No products match this search.",
-  "salesMargemProdutoFilterSearch": "Product name",
+  "salesMargemProdutoFilterSearch": "Name, code, group or brand",
   "salesMargemProdutoSearchHint": "Search by name, code, group or brand",
   "salesMargemProdutoFullscreenTooltip": "Open table fullscreen",
   "salesCardRankingProdutosFaturamentoTitle": "Revenue ranking",
@@ -2090,6 +2090,16 @@
   "salesNotasEntradaFiltersDescription": "Select the branch and posting period.",
   "salesNotasEntradaEntityLabel": "incoming invoices",
   "salesNotasEntradaColumnDocumento": "Document",
+  "salesNotasEntradaColumnChaveAcesso": "Access key",
+  "salesNotasEntradaCopyChaveAcessoTooltip": "Copy access key",
+  "@salesNotasEntradaCopyChaveAcessoTooltip": {
+    "description": "Tooltip for copying the NF-e access key from an incoming-invoice grid cell."
+  },
+  "salesNotasEntradaCopiedSnackbar": "Copied to clipboard",
+  "salesNotasEntradaChaveAcessoMissing": "No access key",
+  "@salesNotasEntradaChaveAcessoMissing": {
+    "description": "Semantics label when an incoming invoice has no NF-e access key."
+  },
   "salesNotasEntradaColumnLancamento": "Posted",
   "salesNotasEntradaColumnFornecedor": "Supplier",
   "salesNotasEntradaColumnValorTotal": "Total",

@@ -115,4 +115,18 @@ void main() {
       expect(first == second, isFalse);
     });
   });
+
+  group('salesMargemProdutoReportViewerStyle', () {
+    test('keeps the numerical detailing header height', () {
+      final style = salesMargemProdutoReportViewerStyle(
+        entityLabel: 'products',
+        gridHeight: 400,
+      );
+
+      expect(style.headerRowHeight, 48);
+      expect(style.allowSorting, isTrue);
+      expect(style.trustServerRowOrder, isTrue);
+      expect(style.showSearchBar, isTrue);
+    });
+  });
 }

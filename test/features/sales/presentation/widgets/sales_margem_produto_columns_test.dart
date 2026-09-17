@@ -11,7 +11,6 @@ const _labels = SalesMargemProdutoColumnLabels(
   codigo: 'Code',
   produto: 'Product name',
   grupo: 'Group',
-  marca: 'Brand',
   custo: 'Replacement cost',
   preco: 'Sale price',
   markup: '% Markup',
@@ -28,12 +27,11 @@ void main() {
       ).deepEquals(<String>[
         SalesMargemProdutoSort.columnCodigo,
         SalesMargemProdutoSort.columnProduto,
-        SalesMargemProdutoSort.columnGrupo,
-        SalesMargemProdutoSort.columnMarca,
         SalesMargemProdutoSort.columnCustoReposicao,
         SalesMargemProdutoSort.columnPrecoVenda,
         SalesMargemProdutoSort.columnMarkup,
         SalesMargemProdutoSort.columnMargem,
+        SalesMargemProdutoSort.columnGrupo,
       ]);
 
       for (final column in columns) {
@@ -45,15 +43,15 @@ void main() {
       );
       check(codigo.pinned).equals(true);
       check(codigo.numeric).equals(true);
-      check(codigo.width).equals(80);
-      check(codigo.minWidth).equals(80);
+      check(codigo.width).equals(104);
+      check(codigo.minWidth).equals(104);
 
       final produto = columns.firstWhere(
         (column) => column.key == SalesMargemProdutoSort.columnProduto,
       );
       check(produto.pinned).equals(false);
       check(produto.width).isNull();
-      check(produto.minWidth).equals(260);
+      check(produto.minWidth).equals(220);
 
       check(
         columns
@@ -61,14 +59,7 @@ void main() {
               (column) => column.key == SalesMargemProdutoSort.columnGrupo,
             )
             .hideBelowBreakpoint,
-      ).equals(AppBreakpoints.reportColumnHideMedium);
-      check(
-        columns
-            .firstWhere(
-              (column) => column.key == SalesMargemProdutoSort.columnMarca,
-            )
-            .hideBelowBreakpoint,
-      ).equals(AppBreakpoints.reportColumnHideMedium);
+      ).equals(AppBreakpoints.reportColumnHideWide);
     });
 
     test('tints markup and margin percent columns', () {
@@ -78,7 +69,6 @@ void main() {
       check(byKey[SalesMargemProdutoSort.columnCodigo]).equals(false);
       check(byKey[SalesMargemProdutoSort.columnProduto]).equals(false);
       check(byKey[SalesMargemProdutoSort.columnGrupo]).equals(false);
-      check(byKey[SalesMargemProdutoSort.columnMarca]).equals(false);
       check(byKey[SalesMargemProdutoSort.columnCustoReposicao]).equals(false);
       check(byKey[SalesMargemProdutoSort.columnPrecoVenda]).equals(false);
       check(byKey[SalesMargemProdutoSort.columnMarkup]).equals(true);
@@ -88,8 +78,18 @@ void main() {
     test('formats currency and percent values', () {
       check(formatSalesMargemProdutoCurrency(12.5)).contains('12,50');
       check(formatSalesMargemProdutoPercent(33.3)).equals('33,3%');
-      check(formatSalesMargemProdutoCurrency(null)).equals('');
-      check(formatSalesMargemProdutoPercent(null)).equals('');
+      check(
+        formatSalesMargemProdutoCurrency(null),
+      ).equals(kSalesMargemProdutoMissingGlyph);
+      check(
+        formatSalesMargemProdutoPercent(null),
+      ).equals(kSalesMargemProdutoMissingGlyph);
+      check(
+        formatSalesMargemProdutoOptionalText(null),
+      ).equals(kSalesMargemProdutoMissingGlyph);
+      check(
+        formatSalesMargemProdutoOptionalText('  '),
+      ).equals(kSalesMargemProdutoMissingGlyph);
     });
 
     test('reads metric fields from the row', () {
@@ -116,11 +116,45 @@ void main() {
       check(valueOf(SalesMargemProdutoSort.columnCodigo)).equals(10);
       check(valueOf(SalesMargemProdutoSort.columnProduto)).equals('Mel');
       check(valueOf(SalesMargemProdutoSort.columnGrupo)).equals('Alimentos');
-      check(valueOf(SalesMargemProdutoSort.columnMarca)).equals('Casa');
       check(valueOf(SalesMargemProdutoSort.columnCustoReposicao)).equals(4.5);
       check(valueOf(SalesMargemProdutoSort.columnPrecoVenda)).equals(9);
       check(valueOf(SalesMargemProdutoSort.columnMarkup)).equals(100);
       check(valueOf(SalesMargemProdutoSort.columnMargem)).equals(50);
+    });
+
+    test('uses a missing glyph for empty cost, percents and group', () {
+      const row = MargemProdutoRow(
+        codEmpresa: 1,
+        codFilial: 2,
+        nomeFilial: 'Loja',
+        codProduto: 10,
+        nomeProduto: 'Mel',
+        precoVendaProduto: 9,
+      );
+
+      Object? valueOf(String key) {
+        return columns
+            .firstWhere((column) => column.key == key)
+            .valueGetter(row);
+      }
+
+      String displayOf(String key) {
+        final column = columns.firstWhere((column) => column.key == key);
+        return column.formatValue(column.valueGetter(row));
+      }
+
+      check(
+        valueOf(SalesMargemProdutoSort.columnCustoReposicao),
+      ).equals(kSalesMargemProdutoMissingGlyph);
+      check(
+        valueOf(SalesMargemProdutoSort.columnMarkup),
+      ).equals(kSalesMargemProdutoMissingGlyph);
+      check(
+        valueOf(SalesMargemProdutoSort.columnMargem),
+      ).equals(kSalesMargemProdutoMissingGlyph);
+      check(
+        displayOf(SalesMargemProdutoSort.columnGrupo),
+      ).equals(kSalesMargemProdutoMissingGlyph);
     });
   });
 

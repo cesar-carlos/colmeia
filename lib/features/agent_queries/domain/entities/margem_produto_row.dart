@@ -7,13 +7,11 @@ class MargemProdutoRow {
     required this.nomeFilial,
     required this.codProduto,
     required this.nomeProduto,
-    required this.custoReposicao,
     required this.precoVendaProduto,
-    required this.percentualMarkupCustoCompraProduto,
-    required this.margemLucroProduto,
+    this.custoReposicao,
+    this.percentualMarkupCustoCompraProduto,
+    this.margemLucroProduto,
     this.nomeFantasiaFilial,
-    this.codUnidadeMedida,
-    this.descricaoUnidadeMedida,
     this.codGrupoProduto,
     this.nomeGrupoProduto,
     this.codMarca,
@@ -26,46 +24,57 @@ class MargemProdutoRow {
   final String? nomeFantasiaFilial;
   final int codProduto;
   final String nomeProduto;
-
-  /// `Produto.CodUnidadeMedida` is a varchar unit code (`UN`, `P`), not an
-  /// integer FK.
-  final String? codUnidadeMedida;
-  final String? descricaoUnidadeMedida;
   final int? codGrupoProduto;
   final String? nomeGrupoProduto;
   final int? codMarca;
   final String? nomeMarca;
 
-  /// `CustoProduto.CustoCompra` for the requested branch (`0` when missing).
-  final double custoReposicao;
+  /// `CustoProduto.CustoCompra` for the requested branch (`null` when missing).
+  final double? custoReposicao;
 
   /// `Produto.PrecoVenda` (`0` when missing).
   final double precoVendaProduto;
 
   /// Markup on replacement cost from SQL:
-  /// `(PrecoVenda - Custo) / Custo * 100` when both are positive, else `0`.
-  final double percentualMarkupCustoCompraProduto;
+  /// `null` when cost is missing; `(PrecoVenda - Custo) / Custo * 100` when
+  /// both are positive; otherwise `0`.
+  final double? percentualMarkupCustoCompraProduto;
 
   /// Gross margin from SQL:
-  /// `(PrecoVenda - Custo) / PrecoVenda * 100` when sale price is positive,
-  /// else `0`.
-  final double margemLucroProduto;
+  /// `null` when cost is missing; `(PrecoVenda - Custo) / PrecoVenda * 100`
+  /// when sale price is positive; otherwise `0`.
+  final double? margemLucroProduto;
 
   /// Absolute list-price profit: `precoVendaProduto - custoReposicao`.
-  double get lucro => precoVendaProduto - custoReposicao;
+  double? get lucro {
+    final cost = custoReposicao;
+    if (cost == null) {
+      return null;
+    }
+    return precoVendaProduto - cost;
+  }
 
   /// Dart recomputation of markup, used to cross-check the SQL column.
-  double get markupSobreCustoPercent {
-    if (custoReposicao > 0 && precoVendaProduto > 0) {
-      return (lucro / custoReposicao) * 100;
+  double? get markupSobreCustoPercent {
+    final cost = custoReposicao;
+    final profit = lucro;
+    if (cost == null || profit == null) {
+      return null;
+    }
+    if (cost > 0 && precoVendaProduto > 0) {
+      return (profit / cost) * 100;
     }
     return 0;
   }
 
   /// Dart recomputation of gross margin, used to cross-check the SQL column.
-  double get margemLucroBrutoPercent {
+  double? get margemLucroBrutoPercent {
+    final profit = lucro;
+    if (profit == null) {
+      return null;
+    }
     if (precoVendaProduto > 0) {
-      return (lucro / precoVendaProduto) * 100;
+      return (profit / precoVendaProduto) * 100;
     }
     return 0;
   }

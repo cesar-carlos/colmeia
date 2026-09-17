@@ -8,6 +8,7 @@ import 'package:colmeia/features/agent_queries/data/queries/agent_queries_sql_ac
 /// | --- | --- | --- |
 /// | `cc` | `Compra.Compra` | purchase, launch date, branch, supplier and total |
 /// | `dem` | `Compra.DadosEntradaMercadoria` | document number, issue and entry dates |
+/// | `dnfe` | `Compra.DadosNotaFiscalEletronica` | NF-e access key (`ChaveAcesso`); notes catalog only |
 /// | `toc` | `Compra.TipoOperacaoCompra` | purchase-operation description |
 /// | `f` | `Fornecedor` | supplier identity |
 /// | `fl` | `Filial` | branch names |
@@ -31,8 +32,9 @@ import 'package:colmeia/features/agent_queries/data/queries/agent_queries_sql_ac
 /// The final selected calendar day is inclusive.
 ///
 /// [pagedQuery] numbers note rows by `DataLancamento DESC`, then
-/// `CompraId DESC`. [pagedSupplierSummaryQuery] groups that same `Base` by
-/// supplier identity and numbers pages by `ValorTotalCompra DESC`, then
+/// `CompraId DESC`, and left-joins NF-e data for `ChaveAcesso`.
+/// [pagedSupplierSummaryQuery] groups `Base` without that join (one row per
+/// supplier) and numbers pages by `ValorTotalCompra DESC`, then
 /// `CodFornecedor ASC`.
 abstract final class NotasEntradaSql {
   static String pagedQuery({
@@ -45,6 +47,7 @@ ${_parametrosAndBaseCte(
       hasDataLancamentoInicio: hasDataLancamentoInicio,
       hasDataLancamentoFim: hasDataLancamentoFim,
       hasCodFornecedor: hasCodFornecedor,
+      includeNfeAccessKey: true,
     )},
 ${_totCte('Base')},
 Numbered AS (
@@ -68,6 +71,7 @@ SELECT
   N.CodTipoOperacaoCompra,
   N.DescricaoTipoOperacaoCompra,
   N.NumeroDocumento,
+  N.ChaveAcesso,
   N.DataEmissao,
   N.DataEntrada,
   N.DataLancamento,
@@ -164,6 +168,7 @@ Tot AS (
     required bool hasDataLancamentoInicio,
     required bool hasDataLancamentoFim,
     required bool hasCodFornecedor,
+    bool includeNfeAccessKey = false,
   }) {
     final parametrosDates = StringBuffer();
     if (hasDataLancamentoInicio) {
@@ -202,6 +207,15 @@ Tot AS (
     final patternFolded = AgentQueriesSqlAccentFold.foldUpper(
       'prm.NomeFornecedorPattern',
     );
+    final chaveAcessoSelect = includeNfeAccessKey
+        ? '''
+    dnfe.ChaveAcesso,'''
+        : '';
+    final nfeJoin = includeNfeAccessKey
+        ? '''
+  LEFT JOIN Compra.DadosNotaFiscalEletronica dnfe ON
+    dnfe.CompraID = cc.Id'''
+        : '';
 
     return '''
 WITH Parametros AS (
@@ -219,7 +233,7 @@ Base AS (
     fl.NomeFantasia AS NomeFantasiaFilial,
     cc.CodTipoOperacaoCompra,
     toc.Descricao AS DescricaoTipoOperacaoCompra,
-    dem.NumeroDocumento,
+    dem.NumeroDocumento,$chaveAcessoSelect
     dem.DataEmissao,
     dem.DataEntrada,
     cc.DataInclusao AS DataLancamento,
@@ -230,7 +244,7 @@ Base AS (
     cc.ValorTotalCompra
   FROM Compra.Compra cc
   CROSS JOIN Parametros prm
-  INNER JOIN Compra.DadosEntradaMercadoria dem ON dem.CompraID = cc.Id
+  INNER JOIN Compra.DadosEntradaMercadoria dem ON dem.CompraID = cc.Id$nfeJoin
   INNER JOIN Compra.TipoOperacaoCompra toc ON
     toc.CodEmpresa = cc.CodEmpresa
     AND toc.CodTipoOperacaoCompra = cc.CodTipoOperacaoCompra

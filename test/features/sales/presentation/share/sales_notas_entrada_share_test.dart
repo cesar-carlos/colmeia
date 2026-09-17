@@ -17,6 +17,7 @@ NotaEntradaRow _row() {
     codTipoOperacaoCompra: 1,
     descricaoTipoOperacaoCompra: 'Compra',
     numeroDocumento: 'NF-100',
+    chaveAcesso: '35260314200166000187550010000001001234567890',
     dataEmissao: DateTime(2026, 9),
     dataEntrada: DateTime(2026, 9, 2),
     dataLancamento: DateTime(2026, 9, 3),
@@ -61,15 +62,18 @@ void main() {
         l10n.salesNotasEntradaColumnDocumento,
         l10n.salesNotasEntradaColumnEmissao,
         l10n.salesNotasEntradaColumnEntrada,
-        l10n.salesNotasEntradaColumnLancamento,
-        l10n.salesNotasEntradaColumnCodFornecedor,
+        l10n.salesNotasEntradaColumnChaveAcesso,
         l10n.salesNotasEntradaColumnFornecedor,
         l10n.salesNotasEntradaColumnCnpjCpf,
         l10n.salesNotasEntradaColumnValorTotal,
       ],
     );
     expect(metadata.tableData?.rows.single[0], 'NF-100');
-    expect(metadata.tableData?.rows.single[5], 'Casa do Mel');
+    expect(
+      metadata.tableData?.rows.single[3],
+      '3526 0314 2001 6600 0187 5500 1000 0001 0012 3456 7890',
+    );
+    expect(metadata.tableData?.rows.single[4], 'Casa do Mel');
     expect(
       metadata.tableData?.rows.single.last,
       formatSalesNotasEntradaCurrency(150.5),

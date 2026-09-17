@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -5,9 +7,9 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 class SalesNotasEntradaColumnLabels {
   const SalesNotasEntradaColumnLabels({
     required this.documento,
+    required this.chaveAcesso,
     required this.emissao,
     required this.entrada,
-    required this.lancamento,
     required this.codFornecedor,
     required this.fornecedor,
     required this.cnpjCpf,
@@ -19,9 +21,9 @@ class SalesNotasEntradaColumnLabels {
   factory SalesNotasEntradaColumnLabels.fromL10n(AppLocalizations l10n) {
     return SalesNotasEntradaColumnLabels(
       documento: l10n.salesNotasEntradaColumnDocumento,
+      chaveAcesso: l10n.salesNotasEntradaColumnChaveAcesso,
       emissao: l10n.salesNotasEntradaColumnEmissao,
       entrada: l10n.salesNotasEntradaColumnEntrada,
-      lancamento: l10n.salesNotasEntradaColumnLancamento,
       codFornecedor: l10n.salesNotasEntradaColumnCodFornecedor,
       fornecedor: l10n.salesNotasEntradaColumnFornecedor,
       cnpjCpf: l10n.salesNotasEntradaColumnCnpjCpf,
@@ -32,9 +34,9 @@ class SalesNotasEntradaColumnLabels {
   }
 
   final String documento;
+  final String chaveAcesso;
   final String emissao;
   final String entrada;
-  final String lancamento;
   final String codFornecedor;
   final String fornecedor;
   final String cnpjCpf;
@@ -48,26 +50,43 @@ class SalesNotasEntradaColumnLabels {
 abstract final class SalesNotasEntradaTableLayout {
   static const double documentoWidth = 112;
   static const double dateWidth = 120;
-  static const double lancamentoWidth = 136;
   static const double codFornecedorWidth = 112;
   static const double fornecedorMinWidth = 320;
   static const double cnpjWidth = 168;
   static const double valorWidth = 136;
 
-  static double minWidth() {
+  static const double chaveAcessoCopyIconSize = 16;
+  static const double chaveAcessoCopyButtonSize = 28;
+  static const double chaveAcessoCopyGap = 4;
+  static const double chaveAcessoCopySlotWidth =
+      chaveAcessoCopyButtonSize + chaveAcessoCopyGap;
+  static const double chaveAcessoFullWidth = 520;
+  static const double chaveAcessoCompactWidth = 240;
+  static const Duration chaveAcessoCopiedFeedbackDuration = Duration(
+    seconds: 2,
+  );
+
+  static double chaveAcessoWidth({required bool compactChave}) {
+    return compactChave ? chaveAcessoCompactWidth : chaveAcessoFullWidth;
+  }
+
+  static double minWidth({required bool compactChave}) {
     return documentoWidth +
         dateWidth +
         dateWidth +
-        lancamentoWidth +
-        codFornecedorWidth +
+        chaveAcessoWidth(compactChave: compactChave) +
         fornecedorMinWidth +
         cnpjWidth +
         valorWidth;
   }
 
   /// Row padding uses [AppThemeTokens.gapSm] on each horizontal side.
-  static double minScrollContentWidth(AppThemeTokens tokens) =>
-      minWidth() + 2 * tokens.gapSm;
+  static double minScrollContentWidth(
+    AppThemeTokens tokens, {
+    required bool compactChave,
+  }) {
+    return minWidth(compactChave: compactChave) + 2 * tokens.gapSm;
+  }
 }
 
 abstract final class SalesNotasEntradaResumoTableLayout {
@@ -134,4 +153,70 @@ String formatSalesNotasEntradaTaxId(Object? value) {
     return trimmed;
   }
   return trimmed;
+}
+
+const String _chaveAcessoMissingGlyph = '—';
+const String _chaveAcessoCompactEllipsis = '…';
+const int _chaveAcessoGroupedDigitCount = 44;
+const int _chaveAcessoGroupSize = 4;
+const int _chaveAcessoCompactHeadDigits = 8;
+const int _chaveAcessoCompactTailDigits = 8;
+
+String? salesNotasEntradaChaveAcessoClipboardText(String? value) {
+  final digits = _chaveAcessoDigits(value);
+  if (digits.isEmpty) {
+    return null;
+  }
+  return digits;
+}
+
+String formatSalesNotasEntradaChaveAcesso(
+  String? value, {
+  required bool compact,
+}) {
+  final trimmed = value?.trim() ?? '';
+  if (trimmed.isEmpty) {
+    return _chaveAcessoMissingGlyph;
+  }
+  final digits = _chaveAcessoDigits(trimmed);
+  if (digits.length != _chaveAcessoGroupedDigitCount) {
+    if (compact &&
+        digits.length >=
+            _chaveAcessoCompactHeadDigits + _chaveAcessoCompactTailDigits) {
+      return '${digits.substring(0, _chaveAcessoCompactHeadDigits)}'
+          '$_chaveAcessoCompactEllipsis'
+          '${digits.substring(digits.length - _chaveAcessoCompactTailDigits)}';
+    }
+    return trimmed;
+  }
+  if (compact) {
+    final head = _groupChaveAcessoDigits(
+      digits.substring(0, _chaveAcessoCompactHeadDigits),
+    );
+    final tail = _groupChaveAcessoDigits(
+      digits.substring(digits.length - _chaveAcessoCompactTailDigits),
+    );
+    return '$head $_chaveAcessoCompactEllipsis $tail';
+  }
+  return _groupChaveAcessoDigits(digits);
+}
+
+String _chaveAcessoDigits(String? value) {
+  final trimmed = value?.trim() ?? '';
+  if (trimmed.isEmpty) {
+    return '';
+  }
+  return AppBrFormatters.digitsOnly(trimmed).replaceAll(RegExp('[^0-9]'), '');
+}
+
+String _groupChaveAcessoDigits(String digits) {
+  final buffer = StringBuffer();
+  for (var index = 0; index < digits.length; index += _chaveAcessoGroupSize) {
+    if (index > 0) {
+      buffer.write(' ');
+    }
+    final end = math.min(index + _chaveAcessoGroupSize, digits.length);
+    buffer.write(digits.substring(index, end));
+  }
+  return buffer.toString();
 }

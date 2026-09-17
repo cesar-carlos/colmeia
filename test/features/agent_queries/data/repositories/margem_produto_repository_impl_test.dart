@@ -2,7 +2,6 @@ import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/data/queries/margem_produto_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/margem_produto_repository_impl.dart';
-import 'package:colmeia/features/agent_queries/data/resumo_vendas_diarias_suggestion_sql_params.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
@@ -110,9 +109,8 @@ void main() {
     check(captured.sql).equals(MargemProdutoSql.pagedQuery());
     check(captured.namedParams['codEmpresa']).equals(1);
     check(captured.namedParams['codFilial']).equals(1);
-    check(captured.namedParams['nomeProdutoPattern']).equals(
-      ResumoVendasDiariasSuggestionSqlParams.matchAllLikePattern,
-    );
+    check(captured.namedParams.containsKey('nomeProdutoPattern')).isFalse();
+    check(captured.sql.contains('LIKE')).isFalse();
     check(captured.namedParams['startRow']).equals(11);
     check(captured.namedParams['endRow']).equals(20);
     check(captured.executeOptions?.maxRows).equals(35);
@@ -227,13 +225,15 @@ void main() {
             ).captured.single
             as AgentSqlExecuteRequest;
 
+    check(captured.sql).equals(MargemProdutoSql.pagedQuery(applySearch: true));
     check(captured.namedParams['nomeProdutoPattern']).equals(
       '%a[%]b[_]c[[]d%',
     );
-    check(captured.sql).contains('prm.NomeProdutoPattern IS NULL');
+    check(captured.sql).contains('LIKE');
+    check(captured.sql).contains('REPLACE(');
   });
 
-  test('blank product name search binds match-all varchar pattern', () async {
+  test('blank product name search omits LIKE pattern bind', () async {
     when(
       () => agentQueriesRepository.executeSql(any()),
     ).thenAnswer(
@@ -261,9 +261,9 @@ void main() {
             ).captured.single
             as AgentSqlExecuteRequest;
 
-    check(captured.namedParams['nomeProdutoPattern']).equals(
-      ResumoVendasDiariasSuggestionSqlParams.matchAllLikePattern,
-    );
+    check(captured.sql).equals(MargemProdutoSql.pagedQuery());
+    check(captured.namedParams.containsKey('nomeProdutoPattern')).isFalse();
+    check(captured.sql.contains('LIKE')).isFalse();
   });
 
   test('maps rows with CodProduto to entities', () async {
@@ -281,8 +281,6 @@ void main() {
               'NomeFantasiaFilial': 'Centro',
               'CodProduto': 99,
               'NomeProduto': 'Mel 500g',
-              'CodUnidadeMedida': 'UN',
-              'DescricaoUnidadeMedida': 'UN',
               'CodGrupoProduto': 5,
               'NomeGrupoProduto': 'Mel',
               'CodMarca': 7,
@@ -310,7 +308,6 @@ void main() {
     final row = page.items.single;
     check(row.codProduto).equals(99);
     check(row.nomeProduto).equals('Mel 500g');
-    check(row.codUnidadeMedida).equals('UN');
     check(row.nomeFilial).equals('Loja Centro');
     check(row.custoReposicao).equals(10);
     check(row.precoVendaProduto).equals(25);
@@ -318,6 +315,48 @@ void main() {
     check(row.margemLucroProduto).equals(60);
     check(row.markupSobreCustoPercent).equals(150);
     check(row.margemLucroBrutoPercent).equals(60);
+  });
+
+  test('maps missing replacement cost as null metrics', () async {
+    when(
+      () => agentQueriesRepository.executeSql(any()),
+    ).thenAnswer(
+      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(
+          rows: <Map<String, dynamic>>[
+            <String, dynamic>{
+              'TotalCount': 1,
+              'CodEmpresa': 1,
+              'CodFilial': 2,
+              'NomeFilial': 'Loja Centro',
+              'CodProduto': 99,
+              'NomeProduto': 'Mel 500g',
+              'CustoReposicao': null,
+              'PrecoVendaProduto': 25.0,
+              'PercentualMarkupCustoCompraProduto': null,
+              'MargemLucroProduto': null,
+            },
+          ],
+          rowCount: 1,
+        ),
+      ),
+    );
+
+    final result = await repository.loadPage(
+      userId: 'user-1',
+      agentId: 'agent-1',
+      filter: const MargemProdutoFilter(),
+    );
+
+    check(result.isSuccess()).isTrue();
+    final row = result.getOrThrow().items.single;
+    check(row.custoReposicao).isNull();
+    check(row.percentualMarkupCustoCompraProduto).isNull();
+    check(row.margemLucroProduto).isNull();
+    check(row.lucro).isNull();
+    check(row.markupSobreCustoPercent).isNull();
+    check(row.margemLucroBrutoPercent).isNull();
+    check(row.precoVendaProduto).equals(25);
   });
 
   test('empty payload retries and maps the second response', () async {

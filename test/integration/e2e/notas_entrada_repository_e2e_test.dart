@@ -47,6 +47,10 @@ void main() {
               expect(row.codFilial, 1);
               expect(row.nomeFilial, isNotEmpty);
               expect(row.numeroDocumento, isNotEmpty);
+              expect(
+                row.chaveAcesso == null || row.chaveAcesso!.isNotEmpty,
+                isTrue,
+              );
               expect(row.dataLancamento, isNotNull);
               expect(row.nomeFornecedor, isNotEmpty);
               pageSum += row.valorTotalCompra;

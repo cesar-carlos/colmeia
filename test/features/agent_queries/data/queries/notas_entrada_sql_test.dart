@@ -49,6 +49,11 @@ void main() {
     check(sql).contains('ROW_NUMBER() OVER');
     check(sql).contains('b.DataLancamento DESC');
     check(sql).contains('b.CompraId DESC');
+    check(sql).contains('N.NumeroDocumento');
+    check(sql).contains('N.ChaveAcesso');
+    check(sql).contains('LEFT JOIN Compra.DadosNotaFiscalEletronica dnfe ON');
+    check(sql).contains('dnfe.CompraID = cc.Id');
+    check(sql).contains('dnfe.ChaveAcesso');
     check(sql).contains('N.Rn BETWEEN :startRow AND :endRow');
     check(sql).not((it) => it.contains('SELECT TOP'));
   });
@@ -92,6 +97,8 @@ void main() {
     check(sql).contains('b.NomeFornecedor');
     check(sql).contains('b.NomeFantasiaFornecedor');
     check(sql).contains('b.CnpjCpfFornecedor');
+    check(sql).not((it) => it.contains('ChaveAcesso'));
+    check(sql).not((it) => it.contains('DadosNotaFiscalEletronica'));
     check(sql).contains('COUNT(*) AS TotalCount');
     check(sql).contains(
       'CAST(COALESCE(SUM(ValorTotalCompra), 0) AS DOUBLE PRECISION) AS TotalValorCompra',

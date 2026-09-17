@@ -30,17 +30,31 @@ void main() {
   });
 
   test('reserves enough width to overflow compact viewports', () {
-    check(SalesNotasEntradaTableLayout.minWidth()).equals(
+    check(
+      SalesNotasEntradaTableLayout.minWidth(compactChave: false),
+    ).equals(
       SalesNotasEntradaTableLayout.documentoWidth +
           SalesNotasEntradaTableLayout.dateWidth +
           SalesNotasEntradaTableLayout.dateWidth +
-          SalesNotasEntradaTableLayout.lancamentoWidth +
-          SalesNotasEntradaTableLayout.codFornecedorWidth +
+          SalesNotasEntradaTableLayout.chaveAcessoFullWidth +
           SalesNotasEntradaTableLayout.fornecedorMinWidth +
           SalesNotasEntradaTableLayout.cnpjWidth +
           SalesNotasEntradaTableLayout.valorWidth,
     );
-    check(SalesNotasEntradaTableLayout.minWidth()).isGreaterThan(1100);
+    check(
+      SalesNotasEntradaTableLayout.minWidth(compactChave: true),
+    ).equals(
+      SalesNotasEntradaTableLayout.documentoWidth +
+          SalesNotasEntradaTableLayout.dateWidth +
+          SalesNotasEntradaTableLayout.dateWidth +
+          SalesNotasEntradaTableLayout.chaveAcessoCompactWidth +
+          SalesNotasEntradaTableLayout.fornecedorMinWidth +
+          SalesNotasEntradaTableLayout.cnpjWidth +
+          SalesNotasEntradaTableLayout.valorWidth,
+    );
+    check(
+      SalesNotasEntradaTableLayout.minWidth(compactChave: false),
+    ).isGreaterThan(1100);
     check(SalesNotasEntradaResumoTableLayout.minWidth()).equals(
       SalesNotasEntradaResumoTableLayout.codFornecedorWidth +
           SalesNotasEntradaResumoTableLayout.fornecedorMinWidth +
@@ -49,5 +63,34 @@ void main() {
           SalesNotasEntradaResumoTableLayout.ticketMedioWidth +
           SalesNotasEntradaResumoTableLayout.valorWidth,
     );
+  });
+
+  test('groups a 44-digit NF-e access key and copies digits only', () {
+    const raw = '3526 0314 2001 6600 0187 5500 1000 0001 0012 3456 7890';
+    const digits = '35260314200166000187550010000001001234567890';
+    check(
+      formatSalesNotasEntradaChaveAcesso(raw, compact: false),
+    ).equals('3526 0314 2001 6600 0187 5500 1000 0001 0012 3456 7890');
+    check(
+      formatSalesNotasEntradaChaveAcesso(raw, compact: true),
+    ).equals('3526 0314 … 3456 7890');
+    check(salesNotasEntradaChaveAcessoClipboardText(raw)).equals(digits);
+  });
+
+  test('keeps an irregular access key ungrouped', () {
+    check(
+      formatSalesNotasEntradaChaveAcesso('NFE-123', compact: false),
+    ).equals('NFE-123');
+    check(
+      formatSalesNotasEntradaChaveAcesso('1234567890123456', compact: true),
+    ).equals('12345678…90123456');
+    check(salesNotasEntradaChaveAcessoClipboardText('NFE-123')).equals('123');
+  });
+
+  test('shows an em dash when the access key is missing', () {
+    check(formatSalesNotasEntradaChaveAcesso(null, compact: false)).equals('—');
+    check(formatSalesNotasEntradaChaveAcesso('  ', compact: true)).equals('—');
+    check(salesNotasEntradaChaveAcessoClipboardText(null)).isNull();
+    check(salesNotasEntradaChaveAcessoClipboardText('   ')).isNull();
   });
 }

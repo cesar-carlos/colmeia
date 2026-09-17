@@ -17,6 +17,7 @@ class NotaEntradaRow {
     this.dataEntrada,
     this.nomeFantasiaFornecedor,
     this.cnpjCpfFornecedor,
+    this.chaveAcesso,
   });
 
   /// `Compra.Compra.Id`, exposed for a stable list key and keyset cursor.
@@ -36,4 +37,7 @@ class NotaEntradaRow {
   final String? nomeFantasiaFornecedor;
   final String? cnpjCpfFornecedor;
   final double valorTotalCompra;
+
+  /// `Compra.DadosNotaFiscalEletronica.ChaveAcesso` when an NF-e exists.
+  final String? chaveAcesso;
 }

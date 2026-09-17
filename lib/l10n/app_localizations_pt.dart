@@ -3792,7 +3792,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Nenhum produto corresponde a esta busca.';
 
   @override
-  String get salesMargemProdutoFilterSearch => 'Nome do produto';
+  String get salesMargemProdutoFilterSearch => 'Nome, código, grupo ou marca';
 
   @override
   String get salesMargemProdutoSearchHint =>
@@ -4129,6 +4129,20 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesNotasEntradaColumnDocumento => 'Documento';
+
+  @override
+  String get salesNotasEntradaColumnChaveAcesso => 'Chave de acesso';
+
+  @override
+  String get salesNotasEntradaCopyChaveAcessoTooltip =>
+      'Copiar chave de acesso';
+
+  @override
+  String get salesNotasEntradaCopiedSnackbar =>
+      'Copiado para a area de transferencia';
+
+  @override
+  String get salesNotasEntradaChaveAcessoMissing => 'Sem chave de acesso';
 
   @override
   String get salesNotasEntradaColumnLancamento => 'Lançamento';
@@ -9043,7 +9057,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Nenhum produto corresponde a esta busca.';
 
   @override
-  String get salesMargemProdutoFilterSearch => 'Nome do produto';
+  String get salesMargemProdutoFilterSearch => 'Nome, código, grupo ou marca';
 
   @override
   String get salesMargemProdutoSearchHint =>
@@ -9380,6 +9394,20 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesNotasEntradaColumnDocumento => 'Documento';
+
+  @override
+  String get salesNotasEntradaColumnChaveAcesso => 'Chave de acesso';
+
+  @override
+  String get salesNotasEntradaCopyChaveAcessoTooltip =>
+      'Copiar chave de acesso';
+
+  @override
+  String get salesNotasEntradaCopiedSnackbar =>
+      'Copiado para a area de transferencia';
+
+  @override
+  String get salesNotasEntradaChaveAcessoMissing => 'Sem chave de acesso';
 
   @override
   String get salesNotasEntradaColumnLancamento => 'Lançamento';

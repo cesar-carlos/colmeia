@@ -8,21 +8,26 @@ import 'package:flutter/material.dart';
 class SalesNotasEntradaNotesTotalsFooter extends StatelessWidget {
   const SalesNotasEntradaNotesTotalsFooter({
     required this.totalValorCompra,
+    required this.compactChave,
     super.key,
   });
 
   final double totalValorCompra;
+  final bool compactChave;
 
   @override
   Widget build(BuildContext context) {
     return _TotalsFooterShell(
       totalValorCompra: totalValorCompra,
-      leading: const <Widget>[
-        SizedBox(width: SalesNotasEntradaTableLayout.documentoWidth),
-        SizedBox(width: SalesNotasEntradaTableLayout.dateWidth),
-        SizedBox(width: SalesNotasEntradaTableLayout.dateWidth),
-        SizedBox(width: SalesNotasEntradaTableLayout.lancamentoWidth),
-        SizedBox(width: SalesNotasEntradaTableLayout.codFornecedorWidth),
+      leading: <Widget>[
+        const SizedBox(width: SalesNotasEntradaTableLayout.documentoWidth),
+        const SizedBox(width: SalesNotasEntradaTableLayout.dateWidth),
+        const SizedBox(width: SalesNotasEntradaTableLayout.dateWidth),
+        SizedBox(
+          width: SalesNotasEntradaTableLayout.chaveAcessoWidth(
+            compactChave: compactChave,
+          ),
+        ),
       ],
       trailing: const <Widget>[
         SizedBox(width: SalesNotasEntradaTableLayout.cnpjWidth),

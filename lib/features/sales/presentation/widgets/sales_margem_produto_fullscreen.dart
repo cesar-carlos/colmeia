@@ -17,7 +17,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 const double kSalesMargemProdutoDataRowHeight = 56;
-const double kSalesMargemProdutoHeaderRowHeight = 40;
 const double kSalesMargemProdutoGridMinHeight = 240;
 const double kSalesMargemProdutoPageChromeHeight = 144;
 const double kSalesMargemProdutoPageGridMaxHeight = 720;
@@ -44,6 +43,26 @@ double resolveSalesMargemProdutoGridHeight({
     return remaining.clamp(minHeight, upper);
   }
   return remaining.clamp(0.0, upper);
+}
+
+AppReportViewerStyle salesMargemProdutoReportViewerStyle({
+  required String entityLabel,
+  required double gridHeight,
+}) {
+  return AppReportViewerStyle.numericalDetailing(
+    entityLabel: entityLabel,
+    gridHeight: gridHeight,
+    dataRowHeight: kSalesMargemProdutoDataRowHeight,
+  ).copyWith(
+    allowSorting: true,
+    trustServerRowOrder: true,
+    showRefreshAction: false,
+    enablePullToRefresh: false,
+    showSearchBar: true,
+    searchDebounce: SalesMargemProdutoSort.searchDebounce,
+    availablePageSizes: SalesMargemProdutoSort.allowedPageSizes,
+    contentPadding: EdgeInsets.zero,
+  );
 }
 
 @immutable
@@ -178,22 +197,10 @@ class _SalesMargemProdutoFullscreenState
             onPageSizeChanged: widget.onPageSizeChanged,
             onRefresh: widget.onRefresh,
           ),
-          style:
-              AppReportViewerStyle.numericalDetailing(
-                entityLabel: l10n.salesMargemProdutoEntityLabel,
-                gridHeight: gridHeight,
-                dataRowHeight: kSalesMargemProdutoDataRowHeight,
-              ).copyWith(
-                allowSorting: true,
-                trustServerRowOrder: true,
-                showRefreshAction: false,
-                enablePullToRefresh: false,
-                showSearchBar: true,
-                searchDebounce: SalesMargemProdutoSort.searchDebounce,
-                availablePageSizes: SalesMargemProdutoSort.allowedPageSizes,
-                headerRowHeight: kSalesMargemProdutoHeaderRowHeight,
-                contentPadding: EdgeInsets.zero,
-              ),
+          style: salesMargemProdutoReportViewerStyle(
+            entityLabel: l10n.salesMargemProdutoEntityLabel,
+            gridHeight: gridHeight,
+          ),
           isLoading: widget.snapshot.isLoading,
           loadErrorPanel: loadFailure == null
               ? null

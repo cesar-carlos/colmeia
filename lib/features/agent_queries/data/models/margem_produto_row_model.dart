@@ -8,13 +8,11 @@ class MargemProdutoRowModel {
     required this.nomeFilial,
     required this.codProduto,
     required this.nomeProduto,
-    required this.custoReposicao,
     required this.precoVendaProduto,
-    required this.percentualMarkupCustoCompraProduto,
-    required this.margemLucroProduto,
+    this.custoReposicao,
+    this.percentualMarkupCustoCompraProduto,
+    this.margemLucroProduto,
     this.nomeFantasiaFilial,
-    this.codUnidadeMedida,
-    this.descricaoUnidadeMedida,
     this.codGrupoProduto,
     this.nomeGrupoProduto,
     this.codMarca,
@@ -50,17 +48,6 @@ class MargemProdutoRowModel {
         map,
         AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('NomeProduto'),
       ),
-      codUnidadeMedida: AgentQueriesSqlRowMapReader.readOptionalTrimmedString(
-        map,
-        AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('CodUnidadeMedida'),
-      ),
-      descricaoUnidadeMedida:
-          AgentQueriesSqlRowMapReader.readOptionalTrimmedStringStrict(
-            map,
-            AgentQueriesSqlRowMapReader.keysCodEmpresaStyle(
-              'DescricaoUnidadeMedida',
-            ),
-          ),
       codGrupoProduto: AgentQueriesSqlRowMapReader.readOptionalIntStrict(
         map,
         AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('CodGrupoProduto'),
@@ -78,7 +65,7 @@ class MargemProdutoRowModel {
         map,
         AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('NomeMarca'),
       ),
-      custoReposicao: AgentQueriesSqlRowMapReader.readRequiredDouble(
+      custoReposicao: AgentQueriesSqlRowMapReader.readOptionalDoubleStrict(
         map,
         AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('CustoReposicao'),
       ),
@@ -87,13 +74,13 @@ class MargemProdutoRowModel {
         AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('PrecoVendaProduto'),
       ),
       percentualMarkupCustoCompraProduto:
-          AgentQueriesSqlRowMapReader.readRequiredDouble(
+          AgentQueriesSqlRowMapReader.readOptionalDoubleStrict(
             map,
             AgentQueriesSqlRowMapReader.keysCodEmpresaStyle(
               'PercentualMarkupCustoCompraProduto',
             ),
           ),
-      margemLucroProduto: AgentQueriesSqlRowMapReader.readRequiredDouble(
+      margemLucroProduto: AgentQueriesSqlRowMapReader.readOptionalDoubleStrict(
         map,
         AgentQueriesSqlRowMapReader.keysCodEmpresaStyle('MargemLucroProduto'),
       ),
@@ -106,16 +93,14 @@ class MargemProdutoRowModel {
   final String? nomeFantasiaFilial;
   final int codProduto;
   final String nomeProduto;
-  final String? codUnidadeMedida;
-  final String? descricaoUnidadeMedida;
   final int? codGrupoProduto;
   final String? nomeGrupoProduto;
   final int? codMarca;
   final String? nomeMarca;
-  final double custoReposicao;
+  final double? custoReposicao;
   final double precoVendaProduto;
-  final double percentualMarkupCustoCompraProduto;
-  final double margemLucroProduto;
+  final double? percentualMarkupCustoCompraProduto;
+  final double? margemLucroProduto;
 
   MargemProdutoRow toEntity() {
     return MargemProdutoRow(
@@ -125,8 +110,6 @@ class MargemProdutoRowModel {
       nomeFantasiaFilial: nomeFantasiaFilial,
       codProduto: codProduto,
       nomeProduto: nomeProduto,
-      codUnidadeMedida: codUnidadeMedida,
-      descricaoUnidadeMedida: descricaoUnidadeMedida,
       codGrupoProduto: codGrupoProduto,
       nomeGrupoProduto: nomeGrupoProduto,
       codMarca: codMarca,

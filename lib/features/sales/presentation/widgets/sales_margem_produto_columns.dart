@@ -12,7 +12,6 @@ class SalesMargemProdutoColumnLabels {
     required this.codigo,
     required this.produto,
     required this.grupo,
-    required this.marca,
     required this.custo,
     required this.preco,
     required this.markup,
@@ -24,7 +23,6 @@ class SalesMargemProdutoColumnLabels {
       codigo: l10n.salesMargemProdutoColumnCodigo,
       produto: l10n.salesMargemProdutoColumnProduto,
       grupo: l10n.salesMargemProdutoColumnGrupo,
-      marca: l10n.salesMargemProdutoColumnMarca,
       custo: l10n.salesMargemProdutoColumnCusto,
       preco: l10n.salesMargemProdutoColumnPreco,
       markup: l10n.salesMargemProdutoColumnMarkup,
@@ -35,7 +33,6 @@ class SalesMargemProdutoColumnLabels {
   final String codigo;
   final String produto;
   final String grupo;
-  final String marca;
   final String custo;
   final String preco;
   final String markup;
@@ -43,27 +40,49 @@ class SalesMargemProdutoColumnLabels {
 }
 
 /// Compact ID column: out of fill mode so leftover width goes to the name.
-const double _codigoColumnWidth = 80;
+const double _codigoColumnWidth = 104;
 
 /// Product name is the only fill column; keep a readable floor on small screens.
-const double _produtoColumnMinWidth = 260;
+const double _produtoColumnMinWidth = 220;
 
 const double _textColumnWidth = 140;
 const double _currencyColumnWidth = 128;
 const double _percentColumnWidth = 104;
 
+const String kSalesMargemProdutoMissingGlyph = '—';
+
 final NumberFormat _percentFormat = NumberFormat('#,##0.0', 'pt_BR');
 
+Object salesMargemProdutoDisplayOrMissing(num? value) {
+  return value ?? kSalesMargemProdutoMissingGlyph;
+}
+
+String formatSalesMargemProdutoOptionalText(Object? value) {
+  if (value is String) {
+    final trimmed = value.trim();
+    if (trimmed.isNotEmpty) {
+      return trimmed;
+    }
+  }
+  return kSalesMargemProdutoMissingGlyph;
+}
+
 String formatSalesMargemProdutoCurrency(Object? value) {
+  if (value is String) {
+    return value;
+  }
   if (value is! num) {
-    return '';
+    return kSalesMargemProdutoMissingGlyph;
   }
   return AppBrFormatters.currencyFormat.format(value);
 }
 
 String formatSalesMargemProdutoPercent(Object? value) {
+  if (value is String) {
+    return value;
+  }
   if (value is! num) {
-    return '';
+    return kSalesMargemProdutoMissingGlyph;
   }
   return '${_percentFormat.format(value)}%';
 }
@@ -89,6 +108,7 @@ List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
       numeric: true,
       pinned: true,
       width: _codigoColumnWidth,
+      minWidth: _codigoColumnWidth,
     ),
     AppReportColumn<MargemProdutoRow>(
       key: SalesMargemProdutoSort.columnProduto,
@@ -97,25 +117,10 @@ List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
       minWidth: _produtoColumnMinWidth,
     ),
     AppReportColumn<MargemProdutoRow>(
-      key: SalesMargemProdutoSort.columnGrupo,
-      label: labels.grupo,
-      valueGetter: (row) => row.nomeGrupoProduto,
-      width: _textColumnWidth,
-      minWidth: _textColumnWidth,
-      hideBelowBreakpoint: AppBreakpoints.reportColumnHideMedium,
-    ),
-    AppReportColumn<MargemProdutoRow>(
-      key: SalesMargemProdutoSort.columnMarca,
-      label: labels.marca,
-      valueGetter: (row) => row.nomeMarca,
-      width: _textColumnWidth,
-      minWidth: _textColumnWidth,
-      hideBelowBreakpoint: AppBreakpoints.reportColumnHideMedium,
-    ),
-    AppReportColumn<MargemProdutoRow>(
       key: SalesMargemProdutoSort.columnCustoReposicao,
       label: labels.custo,
-      valueGetter: (row) => row.custoReposicao,
+      valueGetter: (row) =>
+          salesMargemProdutoDisplayOrMissing(row.custoReposicao),
       formatter: formatSalesMargemProdutoCurrency,
       numeric: true,
       width: _currencyColumnWidth,
@@ -133,7 +138,9 @@ List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
     AppReportColumn<MargemProdutoRow>(
       key: SalesMargemProdutoSort.columnMarkup,
       label: labels.markup,
-      valueGetter: (row) => row.percentualMarkupCustoCompraProduto,
+      valueGetter: (row) => salesMargemProdutoDisplayOrMissing(
+        row.percentualMarkupCustoCompraProduto,
+      ),
       formatter: formatSalesMargemProdutoPercent,
       numeric: true,
       width: _percentColumnWidth,
@@ -146,7 +153,8 @@ List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
     AppReportColumn<MargemProdutoRow>(
       key: SalesMargemProdutoSort.columnMargem,
       label: labels.margem,
-      valueGetter: (row) => row.margemLucroProduto,
+      valueGetter: (row) =>
+          salesMargemProdutoDisplayOrMissing(row.margemLucroProduto),
       formatter: formatSalesMargemProdutoPercent,
       numeric: true,
       width: _percentColumnWidth,
@@ -155,6 +163,15 @@ List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
         Theme.of(context).colorScheme,
         value,
       ),
+    ),
+    AppReportColumn<MargemProdutoRow>(
+      key: SalesMargemProdutoSort.columnGrupo,
+      label: labels.grupo,
+      valueGetter: (row) =>
+          formatSalesMargemProdutoOptionalText(row.nomeGrupoProduto),
+      width: _textColumnWidth,
+      minWidth: _textColumnWidth,
+      hideBelowBreakpoint: AppBreakpoints.reportColumnHideWide,
     ),
   ];
 }

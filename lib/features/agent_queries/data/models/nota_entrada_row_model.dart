@@ -19,6 +19,7 @@ class NotaEntradaRowModel {
     this.dataEntrada,
     this.nomeFantasiaFornecedor,
     this.cnpjCpfFornecedor,
+    this.chaveAcesso,
   });
 
   factory NotaEntradaRowModel.fromMap(Map<String, dynamic> map) {
@@ -41,6 +42,7 @@ class NotaEntradaRowModel {
       nomeFornecedor: _requiredString(map, 'NomeFornecedor'),
       nomeFantasiaFornecedor: _optionalString(map, 'NomeFantasiaFornecedor'),
       cnpjCpfFornecedor: _optionalString(map, 'CnpjCpfFornecedor'),
+      chaveAcesso: _optionalString(map, 'ChaveAcesso'),
       valorTotalCompra: AgentQueriesSqlRowMapReader.readRequiredDouble(
         map,
         _keys('ValorTotalCompra'),
@@ -63,6 +65,7 @@ class NotaEntradaRowModel {
   final String nomeFornecedor;
   final String? nomeFantasiaFornecedor;
   final String? cnpjCpfFornecedor;
+  final String? chaveAcesso;
   final double valorTotalCompra;
 
   NotaEntradaRow toEntity() {
@@ -82,6 +85,7 @@ class NotaEntradaRowModel {
       nomeFornecedor: nomeFornecedor,
       nomeFantasiaFornecedor: nomeFantasiaFornecedor,
       cnpjCpfFornecedor: cnpjCpfFornecedor,
+      chaveAcesso: chaveAcesso,
       valorTotalCompra: valorTotalCompra,
     );
   }

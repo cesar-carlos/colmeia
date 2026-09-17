@@ -3739,7 +3739,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesMargemProdutoEmptySearch => 'No products match this search.';
 
   @override
-  String get salesMargemProdutoFilterSearch => 'Product name';
+  String get salesMargemProdutoFilterSearch => 'Name, code, group or brand';
 
   @override
   String get salesMargemProdutoSearchHint =>
@@ -4068,6 +4068,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get salesNotasEntradaColumnDocumento => 'Document';
+
+  @override
+  String get salesNotasEntradaColumnChaveAcesso => 'Access key';
+
+  @override
+  String get salesNotasEntradaCopyChaveAcessoTooltip => 'Copy access key';
+
+  @override
+  String get salesNotasEntradaCopiedSnackbar => 'Copied to clipboard';
+
+  @override
+  String get salesNotasEntradaChaveAcessoMissing => 'No access key';
 
   @override
   String get salesNotasEntradaColumnLancamento => 'Posted';
