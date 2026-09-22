@@ -240,6 +240,7 @@ void registerInjectorSocket(GetIt getIt) {
           channelMetrics: getIt<SocketChannelMetrics>(),
           latencyOracle: _resolveLatencyOracle(getIt),
           conversationEndedRouter: getIt<RelayConversationEndedRouter>(),
+          batchCapabilitiesProvider: getIt<ConsumerSocketConnection>(),
         ),
         // Concrete impl owns the resources; the public interface below
         // is a thin wrapper that just delegates, so disposing the impl
@@ -255,6 +256,7 @@ void registerInjectorSocket(GetIt getIt) {
         () => AppEnvironment.socketRelayBatchEnabled
             ? RelayBatchCommandCoordinator(
                 inner: getIt<RelayCommandDispatcherImpl>(),
+                batchCapabilitiesProvider: getIt<ConsumerSocketConnection>(),
                 maxInflightPerAgent:
                     AppEnvironment.socketMaxInflightPerAgent > 0
                     ? AppEnvironment.socketMaxInflightPerAgent
@@ -322,8 +324,9 @@ void registerInjectorSocket(GetIt getIt) {
     );
   }
 
-  // [ConsumerSocketConnectionPool] logs when poolSize > 1 because secondary
-  // is not wired in DI (see env_keys.socketConnectionPoolSize).
+  // [requestedPoolSize] has already been validated as one. Multi-connection
+  // experiments must construct ConsumerSocketConnectionPool outside production
+  // DI with an explicitly supplied secondary connection.
   getIt
     ..registerLazySingleton<ConsumerSocketConnectionPool>(
       () => ConsumerSocketConnectionPool(

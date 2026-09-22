@@ -120,8 +120,9 @@ aplicar **por wave** de queries:
 > **5.5** per-agent inflight gate, adaptive timeout oracle (opt-in),
 > **temporary REST latch** after consecutive socket/relay transport timeouts
 > (`SocketWithRestFallbackAgentQueriesRemoteDataSource`), and
-> **single-flight `RelayConversationManager.obtain`**. Connection pool stays
-> `poolSize == 1` (not wired for multi-socket). PayloadFrame worker isolates
+> **single-flight `RelayConversationManager.obtain`**. Production DI enforces
+> a single consumer connection: `SOCKET_CONNECTION_POOL_SIZE > 1` fails
+> bootstrap instead of silently routing through one socket. PayloadFrame worker isolates
 > default **on** (`SOCKET_PAYLOAD_WORKER_ISOLATES_ENABLED`, gzip/json thresholds
 > 16 KiB class). Hub `fastPath` JSON-RPC `id` echo remains a hub concern
 > (see § fast-path caveat below and
@@ -574,19 +575,23 @@ Audit against PR2 baseline and roadmap phases. **Do not duplicate policy from
 | 5.9 | Async gzip encode/decode | Done | `PayloadFrameCodec` isolate thresholds |
 | PR2 | Relay cancel fail-fast | Done | `RelayCommandDispatcher.cancel` |
 | Phase 3 | Shared latency budget | Done | `AgentLatencyBudget` → oracle + adaptive timeout repo |
-| Phase 4 | Relay batch | Guard only | `RelayBatchProtocolGuard`, `relay_batch_future_spec.md`; hub TBD |
-| Phase 5 | Socket pool spike | Done (minimal) | `ConsumerSocketConnectionPool`, `SOCKET_CONNECTION_POOL_SIZE` |
+| Phase 4 | Relay batch | Done (gated) | `RelayBatchCommandCoordinator`, `RelayBatchProtocolGuard`, `relay_batch_future_spec.md` |
+| Phase 5 | Socket pool spike | Single connection enforced | `ConsumerSocketConnectionPool`, `SOCKET_CONNECTION_POOL_SIZE=1` |
 | Phase 6 | Transport policy matrix | Done (env) | `AgentQueryTransportPolicy`, `AGENT_QUERY_TRANSPORT_POLICY` |
 
-**Gaps / hub-dependent**: relay JSON-RPC batch on plug_server; optional second
-socket connection factory when `SOCKET_CONNECTION_POOL_SIZE > 1` (**not wired** —
-production stays on a single `ConsumerSocketConnection`); unary
-`sql.cancel` semantics on the agent. Hub `fastPath` must echo the client
-JSON-RPC `id` (see `docs/server_adjustments/relay_unary_fast_path.md`).
+**Gaps / hub-dependent**: agent-side unary `sql.cancel` semantics and a fully
+routed multi-connection design, should product ever justify it. Production
+intentionally rejects `SOCKET_CONNECTION_POOL_SIZE > 1`; the pool class may be
+constructed manually only for isolated experiments. Hub `fastPath` must echo
+the client JSON-RPC `id` (see
+`docs/server_adjustments/relay_unary_fast_path.md`).
 
-**Client reliability (2026-07):** temporary REST latch after 3 consecutive
+**Client reliability (2026-09):** temporary REST latch after 3 consecutive
 socket/relay transport timeouts; `RelayConversationManager.obtain` is
-single-flight per `agentId`.
+single-flight per `agentId`; pre-dispatch and queued-stream cancellation release
+their local capacity immediately; and a relay stream with a known `stream_id`
+attempts best-effort `sql.cancel` when abandoned. See
+[`sql_cancel_contract_colmeia_map.md`](sql_cancel_contract_colmeia_map.md).
 
 ### Performance follow-up (Colmeia-only plan)
 

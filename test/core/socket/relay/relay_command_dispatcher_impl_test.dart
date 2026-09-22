@@ -181,6 +181,7 @@ void main() {
     SocketChannelMetrics? channelMetrics,
     AgentLatencyOracle? latencyOracle,
     PayloadFrameCodec? codec,
+    bool? fastPathEnabled,
   }) async {
     final dispatcher = RelayCommandDispatcherImpl(
       connection: connection,
@@ -190,6 +191,7 @@ void main() {
       channelMetrics: channelMetrics,
       latencyOracle: latencyOracle,
       codec: codec,
+      fastPathEnabled: fastPathEnabled,
     );
     return dispatcher;
   }
@@ -2134,6 +2136,42 @@ void main() {
   });
 
   group('RelayCommandDispatcherImpl.sendBatch', () {
+    test(
+      'emits fastPath for an eligible batch when the client opt-in is on',
+      () async {
+        final dispatcher = await dispatcherFor(fastPathEnabled: true);
+        addTearDown(dispatcher.dispose);
+
+        await openConversation();
+        final future = dispatcher.sendBatch(
+          agentId: 'agent-1',
+          items: <RelayBatchItem>[
+            const RelayBatchItem(
+              clientRequestId: 'rpc-fast-batch',
+              body: <String, Object?>{
+                'jsonrpc': '2.0',
+                'method': 'sql.execute',
+                'id': 'rpc-fast-batch',
+              },
+            ),
+          ],
+        );
+        final cancelled = expectLater(
+          future,
+          throwsA(isA<RelayRequestCancelled>()),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        final emit = wiring.emits.singleWhere(
+          (entry) => entry.event == RelayEventNames.rpcRequestBatch,
+        );
+        check((emit.data! as Map<String, Object?>)['fastPath']).equals(true);
+
+        dispatcher.cancel('rpc-fast-batch');
+        await cancelled;
+      },
+    );
+
     test(
       'emits `relay:rpc.request.batch` with one envelope per call',
       () async {

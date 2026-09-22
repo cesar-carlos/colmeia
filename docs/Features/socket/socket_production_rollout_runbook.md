@@ -20,6 +20,7 @@ listed here.
 | Capability                                                                   | Implementation                         | Default behavior                              |
 | ---------------------------------------------------------------------------- | -------------------------------------- | --------------------------------------------- |
 | `/consumers` namespace, single connection                                    | `ConsumerSocketConnection`             | Disconnected until `connect()`                |
+| Production connection topology                                                | `registerInjectorSocket`               | Exactly one connection; pool size above 1 fails bootstrap |
 | Handshake `connection:ready` (`PayloadFrame`; raw JSON legacy override only) | `PayloadFrameConnectionReadyDecoder`   | `payload_frame_only`                          |
 | Auth via JWT (`auth: { token }`) + single-flight refresh on 401/403          | `SessionSocketAuthTokenProvider`       | Reuses `AuthRefreshCoordinator`               |
 | Reconnect with exponential backoff + full jitter                             | `SocketReconnectBackoff`               | 5 attempts, 1 s → 30 s                        |
@@ -105,6 +106,19 @@ sets `X-Hub-Instance-Id`, which we already log on every Dio response.
 Multiple distinct values across consecutive REST calls within a single
 session = sticky session NOT effective, do **not** flip
 `AGENT_BRIDGE_TRANSPORT=socket` until fixed.
+
+### 1.3 Client connection topology
+
+Set `SOCKET_CONNECTION_POOL_SIZE=1` for every production deployment. The
+infrastructure registration rejects larger values because production DI routes
+one `ConsumerSocketConnection` only. This is intentional: a value above one
+must fail fast rather than create the appearance of multi-socket capacity while
+traffic still has a single route.
+
+`ConsumerSocketConnectionPool` can be constructed with an explicit secondary
+connection in isolated tests or experiments. That surface is not a production
+environment switch and still requires sticky-session validation for every
+connection.
 
 ---
 
@@ -208,6 +222,12 @@ much higher than 30 s of grep.
      `success: false` with `RATE_LIMITED` — the dispatcher honors it
      by failing the stream and surfacing a `Retry-After` countdown
      in the UI (overview "Reload" button shows "Retry in Ns").
+   - Start another long streaming query and leave the screen before the first
+     data chunk. The local stream must stop receiving pulls and the next
+     same-agent request must obtain capacity. If the hub has already assigned
+     `stream_id` (from a pull response or a chunk), inspect hub/agent audit
+     telemetry for the best-effort `sql.cancel` attempt. A successful client
+     attempt is not proof that the target agent can abort database work.
 
 4. **Pause/resume cycle**:
    - Send the app to background for ~10 s.

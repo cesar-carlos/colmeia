@@ -14,8 +14,14 @@
 > **cancelamento**, **edge cases** e **plano de testes** para o coordenador
 > de batch JSON-RPC nativo.
 >
-> Nenhum código de produção foi escrito ainda. Os blocos `dart` são
-> **esqueletos normativos**.
+> **Status:** delivered. This document preserves the original design rationale,
+> including historical proposal snippets. The current contract is implemented
+> by `lib/core/socket/agent_command_batch_coordinator.dart` through
+> `AgentCommandSender.send(...)`; when a historical snippet conflicts with the
+> implementation, the implementation and
+> [`../../bridge_agent_sql_api_options.md`](../../bridge_agent_sql_api_options.md)
+> take precedence. The cancellation contract is maintained in
+> [`sql_cancel_contract_colmeia_map.md`](sql_cancel_contract_colmeia_map.md).
 
 ---
 
@@ -60,7 +66,7 @@ Tabela normativa para o caller decidir `batchEligible: true|false`:
 | `sql.executeBatch`                                           | **Não**                            | Já é batch semântico no agente. Compor com JSON-RPC batch acrescenta confusão.            |
 | `agent.getProfile`, `client_token.getPolicy`, `rpc.discover` | **Sim**                            | Pequenos, ideais para piggyback.                                                          |
 | `sql.cancel`                                                 | **Não**                            | Tempo-crítico; envio imediato sem janela de espera.                                       |
-| Caminho `relay:*` (Fase 2)                                   | **Não**                            | Relay aceita só **um** RPC por `relay:rpc.request`.                                       |
+| Caminho `relay:*`                                             | **Não neste coordenador**           | Relay uses its own `RelayBatchCommandCoordinator`; see `relay_batch_future_spec.md`.     |
 | Notification (`id: null`)                                    | **Não suportado pelo coordenador** | Sem correlação para distribuir resposta.                                                  |
 
 **Regra dura**: o coordenador **rejeita** submissions com `id: null` ou
@@ -615,17 +621,16 @@ class SocketAgentQueriesRemoteDataSource
 O coalescing vive **abaixo** do coordenador, no `SocketCommandDispatcher`.
 Quando duas submissions com o **mesmo** `(agentId, method, params)` chegam:
 
-- Cenário A — **mesma janela do batch**: as duas vão para o coletor.
-  Bom seria detectar duplicidade aqui também (eficiência). **Decisão:**
-  acrescentar dedupe **dentro** do coletor por chave estável; o segundo
-  caller compartilha o completer do primeiro.
+- Cenário A — **mesma janela do batch**: the collector deduplicates by the
+  canonical stable key. The requests share one wire item, but every logical
+  caller owns an independent completer so it may cancel its local interest.
 
 ```dart
 // dentro de submit() — antes de enfileirar:
 final coalesceKey = _coalesceKey(agentId, rpcCommand);
 final existing = collector.coalesceMap[coalesceKey];
-if (existing != null && !existing.completer.isCompleted) {
-  return existing.completer.future;
+if (existing != null && !existing.isDispatched) {
+  return existing.addSubscriber(...).completer.future;
 }
 ```
 
@@ -657,26 +662,18 @@ método registrar?
 
 ### 7.4 Cancelamento (P2)
 
-`SocketCommandCancelToken.cancel()` precisa:
+`AgentCommandBatchCoordinator.cancelPending(rpcId)` is the current control
+surface. It cancels one logical caller rather than the shared wire item:
 
-1. Se a submission **ainda não foi flush**: remover o `_PendingRpc` do
-   coletor; completar com erro de cancelamento.
-2. Se já foi flush: **manter** no `byId` (resposta ainda chega), mas
-   ignorar o resultado quando completar (caller não está esperando mais).
+1. Before flush, cancellation removes the subscriber; if it was the final
+   subscriber, the queued item is removed as well.
+2. After flush, cancellation completes only that subscriber with
+   `SocketDispatchCancelled`. The physical batch continues for siblings and a
+   late response is ignored locally.
 
-Esqueleto da extensão:
-
-```dart
-// Em submit():
-cancelToken?.onCancel(() {
-  collector.queue.remove(pending);
-  if (!pending.completer.isCompleted) {
-    pending.completer.completeError(
-      SocketDispatchCancelled(message: 'Cancelled before flush'),
-    );
-  }
-});
-```
+`AgentQueriesCancelScope` calls this coordinator method before falling back to
+`SocketCommandDispatcher.cancel`, so an item ID inside a batch is never treated
+as the batch envelope ID.
 
 ### 7.5 Métricas (P0)
 
@@ -703,7 +700,7 @@ Acrescentar ao `SocketChannelMetrics`:
 | 2   | Submit com `id != rpcId`                                             | `ArgumentError` síncrono.                                                                                                                                                                         |
 | 3   | Fila cheia no momento do submit                                      | Cancela timer; flush imediato; agendamento de próximo timer só no próximo submit.                                                                                                                 |
 | 4   | Timer dispara com fila vazia                                         | No-op (defensivo, embora o set do timer só aconteça com fila não-vazia).                                                                                                                          |
-| 5   | `dispose()` durante batch in-flight                                  | Pendentes do coletor (ainda não flushados) recebem `SocketDispatchDisconnected`. Os já flushados continuam aguardando o dispatcher; quando ele falha (próximo `disconnect`), também recebem erro. |
+| 5   | `dispose()` durante batch in-flight                                  | All logical subscribers managed by the coordinator receive `SocketDispatchDisconnected`; late wire responses are ignored. |
 | 6   | Resposta com `type: 'single'` para batch de 1 item                   | Aceito (defensivo): completa o único pendente com a resposta tal qual.                                                                                                                            |
 | 7   | Resposta com `type: 'batch'` mas `items` vazio                       | Todos os pendentes falham com `SocketDispatchDecodeFailure`.                                                                                                                                      |
 | 8   | `items[i].id` desconhecido (não bate com nenhum pendente)            | Log `warning`; descarta. Métricas registram `late_or_duplicate`.                                                                                                                                  |
@@ -711,7 +708,7 @@ Acrescentar ao `SocketChannelMetrics`:
 | 10  | Erro de despacho (timeout / disconnect)                              | Todos os pendentes do batch recebem o **mesmo** erro.                                                                                                                                             |
 | 11  | Falha parcial (`items[i].error`)                                     | Cada item falho recebe seu erro JSON-RPC; demais sucesso. **Sem fail-fast**.                                                                                                                      |
 | 12  | Batch ultrapassa rate-limit do hub (`429`)                           | Hub responde com `app:error` global → `_failAll`. Próximas submissões respeitam backoff via dispatcher.                                                                                           |
-| 13  | Coalescing dentro do batch (mesmo SQL+params duplicado em 2 submits) | Segundo submit compartilha o completer do primeiro; batch envia 1 só item. Métrica `coalesced_total`.                                                                                             |
+| 13  | Coalescing dentro do batch (mesmo SQL+params duplicado em 2 submits) | The batch sends one item while each submit receives an independent completer and can cancel independently. Métrica `coalesced_total`.                                                            |
 | 14  | Submit com `batchEligible: true` mas `multi_result: true`            | Bypass automático: vai pelo dispatcher unitário.                                                                                                                                                  |
 | 15  | Submit em **dois agentes diferentes** "ao mesmo tempo"               | Dois coletores independentes; duas emissões paralelas (respeitando o gate por agente).                                                                                                            |
 

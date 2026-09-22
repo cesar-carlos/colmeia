@@ -11,8 +11,11 @@
 > **timeout/idempotência**, **mapeamento de erros** e o
 > **`Stream<AgentCommandOutcome>`** consumido pela presença em tempo real.
 >
-> Nenhum código de produção foi escrito ainda. Os blocos `dart` são
-> **esqueletos normativos**.
+> **Status:** delivered. The Dart snippets retain design history; the current
+> interface and cancellation semantics live in
+> `lib/core/socket/socket_command_dispatcher.dart` and
+> `lib/core/socket/socket_command_dispatcher_impl.dart`. For streaming SQL,
+> also read [`sql_cancel_contract_colmeia_map.md`](sql_cancel_contract_colmeia_map.md).
 
 ---
 

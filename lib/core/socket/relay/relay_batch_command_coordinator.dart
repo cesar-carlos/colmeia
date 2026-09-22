@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/agent_sql_open_stream.dart';
+import 'package:colmeia/core/socket/relay/relay_batch_capabilities.dart';
 import 'package:colmeia/core/socket/relay/relay_batch_item.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
@@ -31,6 +32,7 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
     Duration windowDuration = const Duration(milliseconds: 8),
     int maxBatchSize = 32,
     this.maxInflightPerAgent,
+    this.batchCapabilitiesProvider,
     this._onBatchEmission,
     this._onBypass,
   }) : assert(
@@ -56,6 +58,7 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
   /// never exceeds it so a flush cannot ask the gate for more slots than
   /// it can ever grant.
   final int? maxInflightPerAgent;
+  final RelayBatchCapabilitiesProvider? batchCapabilitiesProvider;
   final void Function({required int size, required bool partialFailure})?
   _onBatchEmission;
   final void Function({required String reason})? _onBypass;
@@ -75,6 +78,9 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
   final Map<String, _RelayBatchCollector> _collectorsByAgent =
       <String, _RelayBatchCollector>{};
   bool _isDisposed = false;
+  bool _hubRejectedBatch = false;
+  int? _discoveredHubMaxBatchSize;
+  String? _observedBatchSessionId;
 
   @override
   Future<Map<String, dynamic>> sendUnary({
@@ -93,14 +99,25 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
     }
     final bypass = _bypassReason(body);
     if (bypass != null) {
-      _onBypass?.call(reason: bypass);
-      return _inner.sendUnary(
+      return _forwardUnary(
         agentId: agentId,
         body: body,
         clientRequestId: clientRequestId,
         timeout: timeout,
         timeoutMs: timeoutMs,
         compression: compression,
+        reason: bypass,
+      );
+    }
+    if (!_canBatch()) {
+      return _forwardUnary(
+        agentId: agentId,
+        body: body,
+        clientRequestId: clientRequestId,
+        timeout: timeout,
+        timeoutMs: timeoutMs,
+        compression: compression,
+        reason: 'hub_batch_disabled',
       );
     }
 
@@ -124,7 +141,7 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
       ),
     );
 
-    if (collector.queue.length >= _maxBatchSize) {
+    if (collector.queue.length >= _effectiveMaxBatchSize) {
       collector.flushTimer?.cancel();
       collector.flushTimer = null;
       unawaited(_flushCollector(collector));
@@ -260,7 +277,9 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
     if (collector.queue.isEmpty) {
       return;
     }
-    final taken = collector.queue.take(_maxBatchSize).toList(growable: false);
+    final taken = collector.queue
+        .take(_effectiveMaxBatchSize)
+        .toList(growable: false);
     collector.queue.removeRange(0, taken.length);
 
     final items = taken.map((pending) => pending.item).toList(growable: false);
@@ -290,13 +309,47 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
     required List<RelayBatchItem> items,
     required RelayPayloadFrameCompression compression,
   }) async {
+    final batchSessionId = batchCapabilitiesProvider?.relayBatchSessionId;
     try {
+      if (!_canBatch()) {
+        return await _sendItemsAsUnary(
+          agentId: agentId,
+          items: items,
+          compression: compression,
+        );
+      }
       return await _inner.sendBatch(
         agentId: agentId,
         items: items,
         compression: compression,
       );
     } on RelayRequestRejected catch (error) {
+      if (error.code == 'RELAY_BATCH_DISABLED') {
+        if (_canRememberLimitForSession(batchSessionId)) {
+          _hubRejectedBatch = true;
+        }
+        _onBypass?.call(reason: 'hub_batch_disabled');
+        return _sendItemsAsUnary(
+          agentId: agentId,
+          items: items,
+          compression: compression,
+        );
+      }
+      final maxItems = error.maxItems;
+      if (error.code == 'BATCH_TOO_LARGE' &&
+          maxItems != null &&
+          maxItems > 0 &&
+          maxItems < items.length) {
+        if (_canRememberLimitForSession(batchSessionId)) {
+          _discoveredHubMaxBatchSize = maxItems;
+        }
+        return _sendItemsInChunks(
+          agentId: agentId,
+          items: items,
+          compression: compression,
+          chunkSize: maxItems,
+        );
+      }
       final available = error.availableSlots;
       if (error.code != 'RATE_LIMITED' ||
           available == null ||
@@ -314,22 +367,120 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
           'requestedSlots': ?error.requestedSlots,
         },
       );
-      final responses = <Map<String, dynamic>>[];
-      for (var offset = 0; offset < items.length; offset += available) {
-        final end = offset + available;
-        final chunk = items.sublist(
-          offset,
-          end > items.length ? items.length : end,
-        );
-        final chunkResponses = await _inner.sendBatch(
-          agentId: agentId,
-          items: chunk,
-          compression: compression,
-        );
-        responses.addAll(chunkResponses);
-      }
-      return responses;
+      return _sendItemsInChunks(
+        agentId: agentId,
+        items: items,
+        compression: compression,
+        chunkSize: available,
+      );
     }
+  }
+
+  Future<List<Map<String, dynamic>>> _sendItemsInChunks({
+    required String agentId,
+    required List<RelayBatchItem> items,
+    required RelayPayloadFrameCompression compression,
+    required int chunkSize,
+  }) async {
+    final responses = <Map<String, dynamic>>[];
+    for (var offset = 0; offset < items.length; offset += chunkSize) {
+      final end = offset + chunkSize;
+      final chunk = items.sublist(
+        offset,
+        end > items.length ? items.length : end,
+      );
+      final chunkResponses = await _inner.sendBatch(
+        agentId: agentId,
+        items: chunk,
+        compression: compression,
+      );
+      responses.addAll(chunkResponses);
+    }
+    return responses;
+  }
+
+  Future<List<Map<String, dynamic>>> _sendItemsAsUnary({
+    required String agentId,
+    required List<RelayBatchItem> items,
+    required RelayPayloadFrameCompression compression,
+  }) {
+    return Future.wait<Map<String, dynamic>>(
+      items.map(
+        (item) => _inner.sendUnary(
+          agentId: agentId,
+          body: item.body,
+          clientRequestId: item.clientRequestId,
+          timeout: item.timeout,
+          timeoutMs: item.timeoutMs,
+          compression: compression,
+        ),
+      ),
+    );
+  }
+
+  Future<Map<String, dynamic>> _forwardUnary({
+    required String agentId,
+    required Map<String, Object?> body,
+    required String clientRequestId,
+    required Duration? timeout,
+    required int? timeoutMs,
+    required RelayPayloadFrameCompression compression,
+    required String reason,
+  }) {
+    _onBypass?.call(reason: reason);
+    return _inner.sendUnary(
+      agentId: agentId,
+      body: body,
+      clientRequestId: clientRequestId,
+      timeout: timeout,
+      timeoutMs: timeoutMs,
+      compression: compression,
+    );
+  }
+
+  bool _canBatch() {
+    _syncBatchSession();
+    final capabilities = batchCapabilitiesProvider?.relayBatchCapabilities;
+    if (capabilities?.enabled == false) {
+      return false;
+    }
+    return !_hubRejectedBatch;
+  }
+
+  int get _effectiveMaxBatchSize {
+    _syncBatchSession();
+    var size = _maxBatchSize;
+    final advertised = batchCapabilitiesProvider?.relayBatchCapabilities;
+    final advertisedMax = advertised?.maxItems;
+    if (advertisedMax != null && advertisedMax < size) {
+      size = advertisedMax;
+    }
+    final discovered = _discoveredHubMaxBatchSize;
+    if (discovered != null && discovered < size) {
+      size = discovered;
+    }
+    return size;
+  }
+
+  void _syncBatchSession() {
+    final sessionId = batchCapabilitiesProvider?.relayBatchSessionId;
+    if (sessionId == _observedBatchSessionId) {
+      return;
+    }
+    _observedBatchSessionId = sessionId;
+    _hubRejectedBatch = false;
+    _discoveredHubMaxBatchSize = null;
+  }
+
+  bool _canRememberLimitForSession(String? requestSessionId) {
+    final currentSessionId = batchCapabilitiesProvider?.relayBatchSessionId;
+    if (requestSessionId != null && currentSessionId != requestSessionId) {
+      return false;
+    }
+    // The first batch can connect the socket. Record the newly established
+    // session before latching a rejection, or the next call would clear it.
+    _syncBatchSession();
+    return true;
   }
 
   void _completeTaken(

@@ -37,13 +37,10 @@ abstract interface class RelayCommandDispatcher {
   /// Throws subtypes of `RelayDispatchException`; never throws raw
   /// `StateError` for transport problems.
   ///
-  /// [timeoutMs] is forwarded on the `relay:rpc.request` envelope for
-  /// forward-compat with REST-style per-request waits. The hub schema
-  /// does **not** honor it yet (field is stripped; wait stays
-  /// `SOCKET_RELAY_REQUEST_TIMEOUT_MS`) — see
-  /// `docs/plug_server/relay_envelope_timeout_ms.md`. [timeout] is the
-  /// consumer-side pending deadline; prefer the caller's
-  /// `bridgeTimeoutMs` (not `bridgeTimeoutMs + buffer`) for both.
+  /// [timeoutMs] controls the hub's per-request wait on the
+  /// `relay:rpc.request` envelope. [timeout] is the consumer-side pending
+  /// deadline; prefer the caller's `bridgeTimeoutMs` (not
+  /// `bridgeTimeoutMs + buffer`) for both.
   Future<Map<String, dynamic>> sendUnary({
     required String agentId,
     required Map<String, Object?> body,
@@ -123,8 +120,9 @@ abstract interface class RelayCommandDispatcher {
   /// - Each item MUST declare a JSON-RPC `id`; the wire format rejects
   ///   notifications (`id: null`).
   /// - Duplicate `id`s fail the whole envelope with `BATCH_DUPLICATE_ID`.
-  /// - Per-item `requestServerTimings`/`fastPath` are NOT propagated by
-  ///   the hub in v1.
+  /// - Envelope `requestServerTimings` and `fastPath` propagate to every
+  ///   item. The hub still emits one `relay:rpc.batch_accepted` envelope,
+  ///   never per-item `relay:rpc.accepted` events.
   Future<List<Map<String, dynamic>>> sendBatch({
     required String agentId,
     required List<RelayBatchItem> items,

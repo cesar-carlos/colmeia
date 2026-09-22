@@ -10,7 +10,8 @@ import 'package:uuid/uuid.dart';
 /// `agentId` into a single JSON-RPC batch (`command: [...]`, max 32) and
 /// distributes the per-item responses back to the original callers.
 ///
-/// Detailed contract: `docs/Features/agent_command_batch_coordinator_design.md`.
+/// Detailed contract:
+/// `docs/Features/socket/agent_command_batch_coordinator_design.md`.
 ///
 /// Eligibility rules (auto-bypass to [_directSender]):
 ///

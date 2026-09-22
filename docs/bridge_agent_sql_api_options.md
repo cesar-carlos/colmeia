@@ -109,8 +109,8 @@ Two different batch mechanisms apply on socket builds. Do not conflate them.
 
 | Mechanism | Env flag | Transport event | What gets batched |
 | --- | --- | --- | --- |
-| **`agents:command` JSON-RPC batch** | `SOCKET_BATCH_ENABLED` (default `true` in bundled `default.env`) | `agents:command` with `command: [rpc, …]` (max 32) | Independent `sql.execute` / other JSON-RPC objects addressed to the **same** `agentId` within the coordinator window (`SOCKET_BATCH_WINDOW_MS`, default 8 ms). Implemented by `AgentCommandBatchCoordinator`. Does **not** apply to `useRelay: true` SQL. |
-| **Relay JSON-RPC batch** | `SOCKET_RELAY_BATCH_ENABLED` (default `true` in bundled `default.env`; code fallback `false`) | `relay:rpc.request.batch` (hub v1 shipped **2026-05-28**, ADR 0008) | Multiple JSON-RPC commands in one relay emit per conversation. Implemented by `RelayBatchCommandCoordinator` + `RelayCommandDispatcherImpl.sendBatch`. Gated by `RelayBatchProtocolGuard` when `itemCount > 1`. |
+| **`agents:command` JSON-RPC batch** | `SOCKET_BATCH_ENABLED` (default `true` in bundled `default.env`) | `agents:command` with `command: [rpc, …]` (max 32) | Independent `sql.execute` / other JSON-RPC objects addressed to the **same** `agentId` within the coordinator window (`SOCKET_BATCH_WINDOW_MS`, default 8 ms). `AgentCommandBatchCoordinator` keeps one cancellable local future per caller even when callers share a wire item. Does **not** apply to `useRelay: true` SQL. |
+| **Relay JSON-RPC batch** | `SOCKET_RELAY_BATCH_ENABLED` (default `true` in bundled `default.env`; code fallback `false`) | `relay:rpc.request.batch` (hub v1 shipped **2026-05-28**, ADR 0008) | Eligible unary JSON-RPC commands for one agent share a relay envelope. The connected hub advertises `relay.batch.enabled/maxItems` in `connection:ready`; the coordinator bypasses to unary when disabled and honors the announced cap. Streaming, `sql.executeBatch`, `sql.cancel`, `multi_result`, and `prefer_db_streaming` bypass it. `RelayBatchProtocolGuard` rejects explicit multi-item batches when the flag is off. |
 
 **When to use which**
 
@@ -124,9 +124,26 @@ Two different batch mechanisms apply on socket builds. Do not conflate them.
 - REST transport ignores both socket batch flags; REST may still send JSON-RPC
   batch arrays on `POST /api/v1/agents/commands` per hub limits.
 
-**v1 hub limitations (relay batch):** envelope-level `requestServerTimings` and
-`fastPath` are accepted in schema but not propagated per batch item; see
-`plug_server/docs/adrs/0008-relay-batch-protocol.md`.
+**Relay batch metadata:** envelope-level `requestServerTimings` and `fastPath`
+propagate per batch item. Colmeia emits `fastPath` for eligible batches when
+`SOCKET_RELAY_FAST_PATH_ENABLED=true`; the hub may still disable it through its
+own operational kill switch. See `plug_server/docs/socket/socket_relay_protocol.md`.
+
+### Cancellation and response ownership in `agents:command` batch
+
+Batch coalescing does not make callers share cancellation ownership. Each
+logical caller has its own local result:
+
+- before flush, cancelling the last caller for an item removes that item from
+  the queued batch;
+- after flush, the caller receives a local cancellation while the physical
+  batch continues for its siblings; a late response for that caller is safely
+  discarded;
+- `sql.cancel` bypasses batching so it is not delayed behind a coordinator
+  window.
+
+See [`Features/socket/sql_cancel_contract_colmeia_map.md`](Features/socket/sql_cancel_contract_colmeia_map.md)
+for the cancellation scope order, streaming lifecycle, and QA expectations.
 
 ## `payloadFrameCompression`
 
@@ -202,12 +219,16 @@ Allowed values:
     comparator before increasing further.
   - `AGENT_SQL_REST_MAX_INFLIGHT_PER_AGENT` defaults to `8` on REST (per-agent
     cap on concurrent `POST .../agents/commands`); set `0` to disable.
-  - Hub-mirrored opt-ins: `SOCKET_RELAY_BATCH_ENABLED` (`true` in bundled
+- Hub-mirrored opt-ins: `SOCKET_RELAY_BATCH_ENABLED` (`true` in bundled
     `default.env`; code fallback `false`), `SOCKET_RELAY_FAST_PATH_ENABLED`,
     `SOCKET_REQUEST_SERVER_TIMINGS_ENABLED` (both default `false`).
     See [`plug_server_docs_index_for_colmeia.md`](plug_server_docs_index_for_colmeia.md)
     ("Colmeia ↔ hub feature flags" and **Staging validation checklist**).
     Committed staging overlay (no secrets): `assets/env/staging.env`.
+  - `SOCKET_CONNECTION_POOL_SIZE` must remain `1` in production. Values above
+    one fail socket infrastructure registration because production DI routes a
+    single `ConsumerSocketConnection`; the optional secondary pool surface is
+    for explicitly constructed experiments only, not a rollout tuning knob.
 - **SQL cache counters (diagnostics):** `CachingAgentQueriesRepository` exposes
   `cacheHits`, `cacheMisses`, `batchCacheHits`, `batchCacheMisses`, and
   `cacheSize` for tests and ad-hoc inspection. Production observability should

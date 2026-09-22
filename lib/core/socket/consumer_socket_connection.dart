@@ -7,6 +7,7 @@ import 'package:colmeia/core/socket/connection_ready_payload.dart';
 import 'package:colmeia/core/socket/consumer_socket_app_error_codes.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/core/socket/consumer_socket_terminal_exception.dart';
+import 'package:colmeia/core/socket/relay/relay_batch_capabilities.dart';
 import 'package:colmeia/core/socket/socket_app_error_retry_after.dart';
 import 'package:colmeia/core/socket/socket_auth_token_provider.dart';
 import 'package:colmeia/core/socket/socket_io_client_factory.dart';
@@ -31,7 +32,7 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 /// 8. `pause()` / `resume()` hooks for the app lifecycle (mobile economy).
 ///
 /// Detailed contract: `docs/Features/consumer_socket_connection_design.md`.
-class ConsumerSocketConnection {
+class ConsumerSocketConnection implements RelayBatchCapabilitiesProvider {
   ConsumerSocketConnection({
     required this._urlResolver,
     required this._tokenProvider,
@@ -71,6 +72,7 @@ class ConsumerSocketConnection {
   Future<ConsumerSocketConnected>? _inFlightConnect;
   Completer<_ConnectOutcome>? _connectAbortCompleter;
   bool _isDisposed = false;
+  ConnectionReadyPayload? _readyPayload;
 
   /// Bumped on every intentional teardown so in-flight [ _connectOnce]
   /// attempts from a superseded cycle cannot clobber [_socket] or [_state].
@@ -86,6 +88,16 @@ class ConsumerSocketConnection {
   ConsumerSocketConnectionState get state => _state;
 
   bool get isConnected => _state is ConsumerSocketConnected;
+
+  @override
+  RelayBatchCapabilities? get relayBatchCapabilities =>
+      isConnected ? _readyPayload?.relayBatchCapabilities : null;
+
+  @override
+  String? get relayBatchSessionId {
+    final state = _state;
+    return state is ConsumerSocketConnected ? state.socketId : null;
+  }
 
   Stream<ConsumerSocketConnectionState> states() => _states.stream;
 
@@ -136,6 +148,7 @@ class ConsumerSocketConnection {
     _connectGeneration += 1;
     final resolvedReason = reason ?? 'disconnect';
     _intentionalDisconnectReason = resolvedReason;
+    _readyPayload = null;
     _cancelInFlightConnect(resolvedReason);
     final socket = _socket;
     _socket = null;
@@ -396,6 +409,7 @@ class ConsumerSocketConnection {
           return;
         }
         if (!readyCompleter.isCompleted) {
+          _readyPayload = decoded;
           readyCompleter.complete(
             ConsumerSocketConnected(
               socketId: decoded.socketId,
@@ -466,6 +480,7 @@ class ConsumerSocketConnection {
         // If the disconnect happens after we already moved to `connected`,
         // tear down the native socket and emit a clean disconnected state.
         if (_state is! ConsumerSocketConnecting) {
+          _readyPayload = null;
           if (identical(_socket, socket)) {
             _disposeSocket(socket);
             _socket = null;

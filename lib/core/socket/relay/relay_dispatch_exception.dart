@@ -77,6 +77,7 @@ final class RelayRequestRejected extends RelayDispatchException {
     this.retryAfter,
     this.availableSlots,
     this.requestedSlots,
+    this.maxItems,
     super.conversationId,
     super.clientRequestId,
   }) : super(code: serverCode);
@@ -92,6 +93,9 @@ final class RelayRequestRejected extends RelayDispatchException {
 
   /// Hub `details.requestedSlots` for the rejected batch envelope.
   final int? requestedSlots;
+
+  /// Hub `details.maxItems` for a `BATCH_TOO_LARGE` rejection.
+  final int? maxItems;
 }
 
 /// Hub closed the request stream with a terminal status other than

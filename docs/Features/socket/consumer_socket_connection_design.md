@@ -12,9 +12,11 @@
 > da conexão única do app Colmeia ao namespace `/consumers` do hub
 > `plug_server`.
 >
-> Nenhum código de produção foi escrito ainda. Os blocos `dart` são
-> **esqueletos normativos** — a implementação deve seguir literalmente
-> as assinaturas e contratos descritos.
+> **Status:** delivered. The Dart snippets retain the original design history;
+> the current implementation lives in
+> `lib/core/socket/consumer_socket_connection.dart`. When a historical example
+> conflicts with the implementation or the current relay documents, use the
+> implementation and the linked contract summaries as the source of truth.
 
 ---
 
@@ -921,11 +923,15 @@ janela cheia, preservando o `stream_id`.
 | `dispatcher.dispose()` mid-stream                    | `addError(RelayDispatcherDisposed)` + `close()`.                                            |
 | `relay:rpc.chunk` num caller unitário                | Conta para diagnóstico (`receivedChunkCount`) e ignora — o `complete` ainda fecha o futuro. |
 
-**Não fazemos cancel ao hub.** O protocolo relay atual não tem ack
-de cancel; cancelar a subscription apenas para de drenar localmente.
-O timeout existente (`SOCKET_RELAY_REQUEST_TIMEOUT_MS`) mais o
-`forceEnd` da conversação no socket drop garantem que pendings não
-vazam.
+**Dispatcher-level cancellation does not notify the hub.** The relay protocol
+has no client-side cancellation event; cancelling a dispatcher subscription
+only stops local draining. At the agent-query layer,
+`RelayStreamingAgentQueriesRemoteDataSource` registers a known `stream_id`
+from a pull response or first chunk and asks the cancellation scope to send
+best-effort `sql.cancel` when that stream is abandoned. The timeout
+(`SOCKET_RELAY_REQUEST_TIMEOUT_MS`) and conversation cleanup still prevent
+local pending entries from leaking. See
+[`sql_cancel_contract_colmeia_map.md`](sql_cancel_contract_colmeia_map.md).
 
 **PR-L+ p3 (entregue).** A camada de dados ganhou a opção 2 do
 trio acima — port irmão **`AgentQueriesStreamingRemoteDataSource`**

@@ -316,11 +316,10 @@ abstract final class EnvKeys {
   static const String socketRequestServerTimingsEnabled =
       'SOCKET_REQUEST_SERVER_TIMINGS_ENABLED';
 
-  /// Experimental multi-socket spike (`1` = single connection, default).
-  ///
-  /// Values greater than `1` log a warning at pool registration: the
-  /// secondary socket is not wired in DI today, so traffic still uses
-  /// `ConsumerSocketConnectionPool.primary` only.
+  /// Production socket DI accepts only `1` (the single consumer connection).
+  /// Values greater than `1` fail infrastructure registration. Explicit tests
+  /// may still construct `ConsumerSocketConnectionPool` with a secondary
+  /// connection without using this production setting.
   static const String socketConnectionPoolSize = 'SOCKET_CONNECTION_POOL_SIZE';
 
   /// `legacy` | `auto` | `prefer_relay` — see [AgentQueryTransportPolicyMode].

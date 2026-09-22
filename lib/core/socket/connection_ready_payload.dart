@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:colmeia/core/socket/payload_frame.dart';
 import 'package:colmeia/core/socket/payload_frame_codec.dart';
+import 'package:colmeia/core/socket/relay/relay_batch_capabilities.dart';
 
 /// Logical payload carried by the `connection:ready` event after handshake.
 ///
@@ -14,12 +15,14 @@ class ConnectionReadyPayload {
     required this.message,
     required this.userClaims,
     this.hubInstanceId,
+    this.relayBatchCapabilities,
   });
 
   final String socketId;
   final String message;
   final Map<String, Object?> userClaims;
   final String? hubInstanceId;
+  final RelayBatchCapabilities? relayBatchCapabilities;
 }
 
 /// Port: returns `null` when the input cannot be interpreted. Callers
@@ -54,6 +57,29 @@ ConnectionReadyPayload? _buildFromLogicalMap(Map<String, Object?> logical) {
                 )
               : const <String, Object?>{}),
     hubInstanceId: logical['hub_instance_id']?.toString(),
+    relayBatchCapabilities: _relayBatchCapabilitiesFrom(logical['relay']),
+  );
+}
+
+RelayBatchCapabilities? _relayBatchCapabilitiesFrom(Object? rawRelay) {
+  if (rawRelay is! Map) {
+    return null;
+  }
+  final rawBatch = rawRelay['batch'];
+  if (rawBatch is! Map) {
+    return null;
+  }
+  final enabled = rawBatch['enabled'];
+  final maxItems = rawBatch['maxItems'];
+  if (enabled is! bool || maxItems is! int) {
+    return null;
+  }
+  if (maxItems < 1 || maxItems > RelayBatchCapabilities.protocolMaxItems) {
+    return null;
+  }
+  return RelayBatchCapabilities(
+    enabled: enabled,
+    maxItems: maxItems,
   );
 }
 

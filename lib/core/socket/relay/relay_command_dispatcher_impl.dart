@@ -13,6 +13,7 @@ import 'package:colmeia/core/socket/consumer_socket_terminal_exception.dart';
 import 'package:colmeia/core/socket/payload_frame.dart';
 import 'package:colmeia/core/socket/payload_frame_codec.dart';
 import 'package:colmeia/core/socket/per_agent_concurrency_gate.dart';
+import 'package:colmeia/core/socket/relay/relay_batch_capabilities.dart';
 import 'package:colmeia/core/socket/relay/relay_batch_item.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation.dart';
@@ -60,7 +61,11 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     this._defaultStreamInitialWindow = 32,
     this._defaultStreamRefillThreshold = 16,
     this._conversationEndedRouter,
+    this.batchCapabilitiesProvider,
+    bool? fastPathEnabled,
   }) : _codec = codec ?? const PayloadFrameCodec(),
+       _fastPathEnabled =
+           fastPathEnabled ?? AppEnvironment.socketRelayFastPathEnabled,
        _outcomes = StreamController<RelayRpcOutcome>.broadcast() {
     _stateSub = _connection.states().listen(_onConnectionState);
     if (_conversationEndedRouter != null) {
@@ -90,6 +95,8 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
   final RelayPayloadFrameCompression _defaultCompression;
   final int _defaultStreamInitialWindow;
   final int _defaultStreamRefillThreshold;
+  final RelayBatchCapabilitiesProvider? batchCapabilitiesProvider;
+  final bool _fastPathEnabled;
   final StreamController<RelayRpcOutcome> _outcomes;
 
   /// Pending requests keyed by `client_request_id`. The `requestId` (server
@@ -406,12 +413,14 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
         serverCode: 'BATCH_EMPTY',
       );
     }
-    if (items.length > _maxBatchItems) {
+    final maxBatchItems = _effectiveMaxBatchItems;
+    if (items.length > maxBatchItems) {
       throw RelayRequestRejected(
         message:
-            'relay batch is capped at $_maxBatchItems items '
+            'relay batch is capped at $maxBatchItems items '
             '(got ${items.length}); split the call site.',
         serverCode: 'BATCH_TOO_LARGE',
+        maxItems: maxBatchItems,
       );
     }
     // Defensive duplicate detection — the hub fails the whole envelope
@@ -599,6 +608,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
                   .wireValue,
           if (AppEnvironment.socketRequestServerTimingsEnabled)
             'requestServerTimings': true,
+          if (_shouldUseBatchFastPath(items)) 'fastPath': true,
           'timeoutMs': ?hubTimeoutMs,
         },
       );
@@ -641,7 +651,26 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
   /// Hub-side cap on items per `relay:rpc.request.batch` envelope (v1).
   /// Mirrored client-side so callers see the same failure shape without a
   /// round-trip. Source: hub doc `adrs/0008-relay-batch-protocol.md`.
-  static const int _maxBatchItems = 32;
+  static const int _maxBatchItems = RelayBatchCapabilities.protocolMaxItems;
+
+  int get _effectiveMaxBatchItems {
+    final advertised = batchCapabilitiesProvider?.relayBatchCapabilities;
+    if (advertised == null) {
+      return _maxBatchItems;
+    }
+    return advertised.maxItems < _maxBatchItems
+        ? advertised.maxItems
+        : _maxBatchItems;
+  }
+
+  bool _shouldUseBatchFastPath(List<RelayBatchItem> items) {
+    if (!_fastPathEnabled) {
+      return false;
+    }
+    return items.every(
+      (item) => !isRelayStreamingCapableRpcBody(item.body),
+    );
+  }
 
   Duration _resolveBatchTimeout(List<RelayBatchItem> items) {
     Duration? max;
@@ -703,6 +732,9 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
           ),
           requestedSlots: _positiveIntOrNull(
             details?['requestedSlots'] ?? details?['requested_slots'],
+          ),
+          maxItems: _positiveIntOrNull(
+            details?['maxItems'] ?? details?['max_items'],
           ),
         ),
       );
@@ -1068,8 +1100,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       return;
     }
 
-    final useFastPath =
-        allowFastPath && AppEnvironment.socketRelayFastPathEnabled;
+    final useFastPath = allowFastPath && _fastPathEnabled;
     // Per-request hub wait via envelope `timeoutMs` (REST parity through
     // computeBridgeWaitTimeoutMs). See docs/plug_server/relay_envelope_timeout_ms.md.
     final hubTimeoutMs = _normalizeHubTimeoutMs(timeoutMs);

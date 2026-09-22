@@ -17,6 +17,9 @@ void main() {
         'message': 'Consumer socket connected successfully',
         'user': <String, Object?>{'sub': 'u-1', 'role': 'client'},
         'hub_instance_id': 'hub-a',
+        'relay': <String, Object?>{
+          'batch': <String, Object?>{'enabled': true, 'maxItems': 4},
+        },
       };
       final result = decoder.decode(raw);
       check(result).isNotNull();
@@ -24,6 +27,9 @@ void main() {
       check(result.message).equals('Consumer socket connected successfully');
       check(result.userClaims['sub']).equals('u-1');
       check(result.hubInstanceId).equals('hub-a');
+      check(result.relayBatchCapabilities).isNotNull();
+      check(result.relayBatchCapabilities!.enabled).isTrue();
+      check(result.relayBatchCapabilities!.maxItems).equals(4);
     });
 
     test('decodes a dynamic Map (key not String)', () {
@@ -45,6 +51,22 @@ void main() {
       check(result).isNotNull();
       check(result!.socketId).equals('sock-789');
     });
+
+    test(
+      'ignores an invalid batch capability without rejecting the handshake',
+      () {
+        final result = decoder.decode(<String, Object?>{
+          'id': 'sock-invalid-cap',
+          'message': 'connected',
+          'relay': <String, Object?>{
+            'batch': <String, Object?>{'enabled': true, 'maxItems': 33},
+          },
+        });
+
+        check(result).isNotNull();
+        check(result!.relayBatchCapabilities).isNull();
+      },
+    );
 
     test('returns null when id is missing or empty', () {
       check(decoder.decode(<String, Object?>{'message': 'no id'})).isNull();
@@ -88,6 +110,22 @@ void main() {
       check(result.message).equals('connected');
       check(result.userClaims['sub']).equals('u-1');
       check(result.hubInstanceId).equals('hub-pf-a');
+    });
+
+    test('decodes advertised batch capability in a PayloadFrame', () {
+      final encoded = codec.encodeJson(<String, Object?>{
+        'id': 'sock-pf-batch',
+        'message': 'connected',
+        'relay': <String, Object?>{
+          'batch': <String, Object?>{'enabled': false, 'maxItems': 2},
+        },
+      });
+
+      final result = decoder.decode(encoded.frame.toMap());
+      check(result).isNotNull();
+      check(result!.relayBatchCapabilities).isNotNull();
+      check(result.relayBatchCapabilities!.enabled).isFalse();
+      check(result.relayBatchCapabilities!.maxItems).equals(2);
     });
 
     test('decodes the plug_server connection:ready fixture', () {

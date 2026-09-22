@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/socket/agent_sql_open_stream.dart';
+import 'package:colmeia/core/socket/relay/relay_batch_capabilities.dart';
 import 'package:colmeia/core/socket/relay/relay_batch_command_coordinator.dart';
 import 'package:colmeia/core/socket/relay/relay_batch_item.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
@@ -159,6 +160,19 @@ class _StreamingCall {
   final Map<String, Object?> body;
   final String clientRequestId;
   final void Function(String streamId)? onStreamOpened;
+}
+
+class _MutableRelayBatchCapabilities implements RelayBatchCapabilitiesProvider {
+  _MutableRelayBatchCapabilities(this.value);
+
+  RelayBatchCapabilities? value;
+  String? sessionId = 'socket-1';
+
+  @override
+  RelayBatchCapabilities? get relayBatchCapabilities => value;
+
+  @override
+  String? get relayBatchSessionId => sessionId;
 }
 
 Map<String, Object?> _bodyFor({
@@ -352,6 +366,30 @@ void main() {
   });
 
   group('automatic bypass', () {
+    test(
+      'uses unary when the connected hub advertises batch as disabled',
+      () async {
+        final capabilities = _MutableRelayBatchCapabilities(
+          const RelayBatchCapabilities(enabled: false, maxItems: 4),
+        );
+        final scoped = RelayBatchCommandCoordinator(
+          inner: inner,
+          batchCapabilitiesProvider: capabilities,
+          windowDuration: Duration.zero,
+        );
+        addTearDown(scoped.dispose);
+
+        await scoped.sendUnary(
+          agentId: 'agent-1',
+          body: _bodyFor(id: 'rpc-disabled'),
+          clientRequestId: 'rpc-disabled',
+        );
+
+        check(inner.unaryCalls.length).equals(1);
+        check(inner.batchCalls).isEmpty();
+      },
+    );
+
     test('sql.executeBatch bypasses the coordinator', () async {
       await coordinator.sendUnary(
         agentId: 'agent-1',
@@ -418,6 +456,183 @@ void main() {
   });
 
   group('passthrough surfaces', () {
+    test(
+      'limits automatic envelopes to the hub-advertised batch capacity',
+      () async {
+        final capabilities = _MutableRelayBatchCapabilities(
+          const RelayBatchCapabilities(enabled: true, maxItems: 2),
+        );
+        final scoped = RelayBatchCommandCoordinator(
+          inner: inner,
+          batchCapabilitiesProvider: capabilities,
+          windowDuration: const Duration(milliseconds: 5),
+          maxBatchSize: 4,
+        );
+        addTearDown(scoped.dispose);
+
+        final futures = <Future<Map<String, dynamic>>>[
+          for (var index = 0; index < 3; index += 1)
+            scoped.sendUnary(
+              agentId: 'agent-1',
+              body: _bodyFor(id: 'rpc-cap-$index'),
+              clientRequestId: 'rpc-cap-$index',
+            ),
+        ];
+        await Future.wait(futures);
+
+        check(inner.batchCalls.map((call) => call.items.length)).deepEquals(
+          <int>[2, 1],
+        );
+      },
+    );
+
+    test('falls back to unary after a legacy hub rejects batch', () async {
+      var batchAttempts = 0;
+      inner.onBatch = (_, _) async {
+        batchAttempts += 1;
+        throw const RelayRequestRejected(
+          message: 'batch disabled on legacy hub',
+          serverCode: 'RELAY_BATCH_DISABLED',
+        );
+      };
+      final scoped = RelayBatchCommandCoordinator(
+        inner: inner,
+        windowDuration: Duration.zero,
+      );
+      addTearDown(scoped.dispose);
+
+      await scoped.sendUnary(
+        agentId: 'agent-1',
+        body: _bodyFor(id: 'rpc-first'),
+        clientRequestId: 'rpc-first',
+      );
+      await scoped.sendUnary(
+        agentId: 'agent-1',
+        body: _bodyFor(id: 'rpc-second'),
+        clientRequestId: 'rpc-second',
+      );
+
+      check(batchAttempts).equals(1);
+      check(inner.unaryCalls.map((call) => call.clientRequestId)).deepEquals(
+        <String>['rpc-first', 'rpc-second'],
+      );
+    });
+
+    test('retries batch after reconnecting to a new hub session', () async {
+      final capabilities = _MutableRelayBatchCapabilities(null);
+      inner.onBatch = (_, _) async => throw const RelayRequestRejected(
+        message: 'batch disabled on legacy hub',
+        serverCode: 'RELAY_BATCH_DISABLED',
+      );
+      final scoped = RelayBatchCommandCoordinator(
+        inner: inner,
+        batchCapabilitiesProvider: capabilities,
+        windowDuration: Duration.zero,
+      );
+      addTearDown(scoped.dispose);
+
+      await scoped.sendUnary(
+        agentId: 'agent-1',
+        body: _bodyFor(id: 'rpc-old'),
+        clientRequestId: 'rpc-old',
+      );
+      check(inner.batchCalls.length).equals(1);
+      check(inner.unaryCalls.length).equals(1);
+
+      capabilities.sessionId = 'socket-2';
+      inner.onBatch = null;
+      await scoped.sendUnary(
+        agentId: 'agent-1',
+        body: _bodyFor(id: 'rpc-new'),
+        clientRequestId: 'rpc-new',
+      );
+
+      check(inner.batchCalls.length).equals(2);
+      check(inner.unaryCalls.length).equals(1);
+    });
+
+    test('latches a batch rejection on the first connected session', () async {
+      final capabilities = _MutableRelayBatchCapabilities(null)
+        ..sessionId = null;
+      inner.onBatch = (_, _) async {
+        capabilities.sessionId = 'socket-first';
+        throw const RelayRequestRejected(
+          message: 'batch disabled on hub',
+          serverCode: 'RELAY_BATCH_DISABLED',
+        );
+      };
+      final scoped = RelayBatchCommandCoordinator(
+        inner: inner,
+        batchCapabilitiesProvider: capabilities,
+        windowDuration: Duration.zero,
+      );
+      addTearDown(scoped.dispose);
+
+      await scoped.sendUnary(
+        agentId: 'agent-1',
+        body: _bodyFor(id: 'rpc-first-connect'),
+        clientRequestId: 'rpc-first-connect',
+      );
+      await scoped.sendUnary(
+        agentId: 'agent-1',
+        body: _bodyFor(id: 'rpc-next'),
+        clientRequestId: 'rpc-next',
+      );
+
+      check(inner.batchCalls.length).equals(1);
+      check(inner.unaryCalls.length).equals(2);
+    });
+
+    test(
+      'retries BATCH_TOO_LARGE once using the hub-provided capacity',
+      () async {
+        var attempts = 0;
+        inner.onBatch = (_, items) async {
+          attempts += 1;
+          if (attempts == 1) {
+            throw const RelayRequestRejected(
+              message: 'hub max is 2',
+              serverCode: 'BATCH_TOO_LARGE',
+              maxItems: 2,
+            );
+          }
+          return items
+              .map(
+                (item) => <String, dynamic>{
+                  'response': <String, dynamic>{
+                    'type': 'single',
+                    'success': true,
+                    'item': <String, dynamic>{
+                      'id': item.clientRequestId,
+                      'success': true,
+                    },
+                  },
+                },
+              )
+              .toList(growable: false);
+        };
+        final scoped = RelayBatchCommandCoordinator(
+          inner: inner,
+          windowDuration: const Duration(milliseconds: 5),
+          maxBatchSize: 4,
+        );
+        addTearDown(scoped.dispose);
+
+        await Future.wait(<Future<Map<String, dynamic>>>[
+          for (var index = 0; index < 4; index += 1)
+            scoped.sendUnary(
+              agentId: 'agent-1',
+              body: _bodyFor(id: 'rpc-split-$index'),
+              clientRequestId: 'rpc-split-$index',
+            ),
+        ]);
+
+        check(inner.batchCalls.map((call) => call.items.length)).deepEquals(
+          <int>[4, 2, 2],
+        );
+      },
+    );
+
     test('sendStreaming bypasses batching entirely', () async {
       final opened = <String>[];
       void onStreamOpened(String streamId) => opened.add(streamId);

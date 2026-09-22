@@ -740,7 +740,7 @@ abstract final class AppEnvironment {
         fallback: false,
       );
 
-  /// Hub opt-in: relay unary fast-path. See
+  /// Client opt-in for the hub-supported relay fast-path. See
   /// `docs/server_adjustments/relay_unary_fast_path.md`.
   static bool get socketRelayFastPathEnabled =>
       AppEnvironmentResolution.resolveBool(
@@ -751,7 +751,7 @@ abstract final class AppEnvironment {
         fallback: false,
       );
 
-  /// Hub opt-in: per-phase server-side timings on responses. See
+  /// Client opt-in for per-phase server-side timings on responses. See
   /// `docs/server_adjustments/server_side_phase_diagnostics.md`.
   static bool get socketRequestServerTimingsEnabled =>
       AppEnvironmentResolution.resolveBool(
@@ -762,7 +762,9 @@ abstract final class AppEnvironment {
         fallback: false,
       );
 
-  /// Experimental socket pool size (1 = single connection). Default 1.
+  /// Configured socket pool size. Production DI accepts only `1`; a value
+  /// above it is rejected during socket infrastructure registration. The
+  /// parser still preserves the bounded value for explicit pool experiments.
   static int get socketConnectionPoolSize =>
       AppEnvironmentResolution.resolveInt(
         fromDefine: const String.fromEnvironment(
