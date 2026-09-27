@@ -18,7 +18,6 @@ abstract final class SalesMargemProdutoSort {
   static const String columnCustoReposicao = 'custoReposicao';
   static const String columnPrecoVenda = 'precoVendaProduto';
   static const String columnMarkup = 'percentualMarkup';
-  static const String columnMargem = 'margemLucro';
 
   static const List<int> allowedPageSizes = <int>[10, 20, 50];
   static const int defaultPageSize = 20;
@@ -74,7 +73,7 @@ abstract final class SalesMargemProdutoSort {
       MargemProdutoSortBy.custoReposicao => columnCustoReposicao,
       MargemProdutoSortBy.precoVendaProduto => columnPrecoVenda,
       MargemProdutoSortBy.percentualMarkup => columnMarkup,
-      MargemProdutoSortBy.margemLucro => columnMargem,
+      MargemProdutoSortBy.margemLucro => columnProduto,
     };
   }
 
@@ -87,7 +86,6 @@ abstract final class SalesMargemProdutoSort {
       columnCustoReposicao => MargemProdutoSortBy.custoReposicao,
       columnPrecoVenda => MargemProdutoSortBy.precoVendaProduto,
       columnMarkup => MargemProdutoSortBy.percentualMarkup,
-      columnMargem => MargemProdutoSortBy.margemLucro,
       _ => MargemProdutoSortBy.nomeProduto,
     };
   }
@@ -205,16 +203,23 @@ abstract final class SalesMargemProdutoSort {
 
   static MargemProdutoSortBy restoreSortBy(Object? raw) {
     if (raw is MargemProdutoSortBy) {
-      return raw;
+      return _visibleSortBy(raw);
     }
     if (raw is String) {
       for (final value in MargemProdutoSortBy.values) {
         if (value.name == raw.trim()) {
-          return value;
+          return _visibleSortBy(value);
         }
       }
     }
     return MargemProdutoSortBy.nomeProduto;
+  }
+
+  static MargemProdutoSortBy _visibleSortBy(MargemProdutoSortBy sortBy) {
+    return switch (sortBy) {
+      MargemProdutoSortBy.margemLucro => MargemProdutoSortBy.nomeProduto,
+      _ => sortBy,
+    };
   }
 
   static MargemProdutoSortDirection restoreSortDirection(Object? raw) {
@@ -251,7 +256,7 @@ abstract final class SalesMargemProdutoSort {
     return <String, Object?>{
       persistPageSizeKey: sanitizePageSize(pageSize),
       persistSearchTermKey: normalizeSearchTerm(searchTerm),
-      persistSortByKey: sortBy.name,
+      persistSortByKey: _visibleSortBy(sortBy).name,
       persistSortDirectionKey: sortDirection.name,
     };
   }

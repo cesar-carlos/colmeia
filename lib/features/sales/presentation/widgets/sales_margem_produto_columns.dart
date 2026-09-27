@@ -15,7 +15,6 @@ class SalesMargemProdutoColumnLabels {
     required this.custo,
     required this.preco,
     required this.markup,
-    required this.margem,
   });
 
   factory SalesMargemProdutoColumnLabels.fromL10n(AppLocalizations l10n) {
@@ -26,7 +25,6 @@ class SalesMargemProdutoColumnLabels {
       custo: l10n.salesMargemProdutoColumnCusto,
       preco: l10n.salesMargemProdutoColumnPreco,
       markup: l10n.salesMargemProdutoColumnMarkup,
-      margem: l10n.salesMargemProdutoColumnMargem,
     );
   }
 
@@ -36,7 +34,6 @@ class SalesMargemProdutoColumnLabels {
   final String custo;
   final String preco;
   final String markup;
-  final String margem;
 }
 
 /// Compact ID column: out of fill mode so leftover width goes to the name.
@@ -141,20 +138,6 @@ List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
       valueGetter: (row) => salesMargemProdutoDisplayOrMissing(
         row.percentualMarkupCustoCompraProduto,
       ),
-      formatter: formatSalesMargemProdutoPercent,
-      numeric: true,
-      width: _percentColumnWidth,
-      minWidth: _percentColumnWidth,
-      valueColor: (context, value) => salesMargemProdutoSignedPercentColor(
-        Theme.of(context).colorScheme,
-        value,
-      ),
-    ),
-    AppReportColumn<MargemProdutoRow>(
-      key: SalesMargemProdutoSort.columnMargem,
-      label: labels.margem,
-      valueGetter: (row) =>
-          salesMargemProdutoDisplayOrMissing(row.margemLucroProduto),
       formatter: formatSalesMargemProdutoPercent,
       numeric: true,
       width: _percentColumnWidth,

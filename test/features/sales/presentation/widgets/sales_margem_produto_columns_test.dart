@@ -14,7 +14,6 @@ const _labels = SalesMargemProdutoColumnLabels(
   custo: 'Replacement cost',
   preco: 'Sale price',
   markup: '% Markup',
-  margem: '% Margin',
 );
 
 void main() {
@@ -30,7 +29,6 @@ void main() {
         SalesMargemProdutoSort.columnCustoReposicao,
         SalesMargemProdutoSort.columnPrecoVenda,
         SalesMargemProdutoSort.columnMarkup,
-        SalesMargemProdutoSort.columnMargem,
         SalesMargemProdutoSort.columnGrupo,
       ]);
 
@@ -62,7 +60,7 @@ void main() {
       ).equals(AppBreakpoints.reportColumnHideWide);
     });
 
-    test('tints markup and margin percent columns', () {
+    test('tints the markup percent column', () {
       final byKey = <String, bool>{
         for (final column in columns) column.key: column.valueColor != null,
       };
@@ -72,7 +70,6 @@ void main() {
       check(byKey[SalesMargemProdutoSort.columnCustoReposicao]).equals(false);
       check(byKey[SalesMargemProdutoSort.columnPrecoVenda]).equals(false);
       check(byKey[SalesMargemProdutoSort.columnMarkup]).equals(true);
-      check(byKey[SalesMargemProdutoSort.columnMargem]).equals(true);
     });
 
     test('formats currency and percent values', () {
@@ -119,7 +116,6 @@ void main() {
       check(valueOf(SalesMargemProdutoSort.columnCustoReposicao)).equals(4.5);
       check(valueOf(SalesMargemProdutoSort.columnPrecoVenda)).equals(9);
       check(valueOf(SalesMargemProdutoSort.columnMarkup)).equals(100);
-      check(valueOf(SalesMargemProdutoSort.columnMargem)).equals(50);
     });
 
     test('uses a missing glyph for empty cost, percents and group', () {
@@ -148,9 +144,6 @@ void main() {
       ).equals(kSalesMargemProdutoMissingGlyph);
       check(
         valueOf(SalesMargemProdutoSort.columnMarkup),
-      ).equals(kSalesMargemProdutoMissingGlyph);
-      check(
-        valueOf(SalesMargemProdutoSort.columnMargem),
       ).equals(kSalesMargemProdutoMissingGlyph);
       check(
         displayOf(SalesMargemProdutoSort.columnGrupo),
@@ -194,7 +187,7 @@ void main() {
       ).equals(MargemProdutoSortBy.percentualMarkup);
       check(
         SalesMargemProdutoSort.columnKeyFor(MargemProdutoSortBy.margemLucro),
-      ).equals(SalesMargemProdutoSort.columnMargem);
+      ).equals(SalesMargemProdutoSort.columnProduto);
     });
 
     test('should default unknown column keys to product name', () {

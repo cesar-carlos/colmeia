@@ -28,6 +28,7 @@ class SalesNotasEntradaReportCard extends StatelessWidget {
     this.supplierScopeName,
     this.onClearSupplierScope,
     this.onSupplierSelected,
+    this.onOpenItems,
     this.headerTrailing,
     this.loadErrorPanel,
   });
@@ -44,6 +45,7 @@ class SalesNotasEntradaReportCard extends StatelessWidget {
   final ValueChanged<SalesNotasEntradaView> onViewChanged;
   final VoidCallback? onClearSupplierScope;
   final ValueChanged<NotaEntradaResumoFornecedorRow>? onSupplierSelected;
+  final ValueChanged<NotaEntradaRow>? onOpenItems;
   final Widget paginationFooter;
   final Widget? headerTrailing;
   final Widget? loadErrorPanel;
@@ -111,6 +113,7 @@ class SalesNotasEntradaReportCard extends StatelessWidget {
                   l10n: l10n,
                   rows: notesRows,
                   totalValorCompra: totalValorCompra,
+                  onOpenItems: isLoading ? null : onOpenItems,
                 ),
                 SalesNotasEntradaView.bySupplier => SalesNotasEntradaResumoGrid(
                   l10n: l10n,

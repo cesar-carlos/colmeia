@@ -40,11 +40,15 @@ enum AppRoute {
   ),
   sales(
     path: '/sales',
-    title: 'Vendas',
+    title: 'Relatórios',
   ),
   salesCard(
     path: '/sales/:cardId',
-    title: 'Vendas',
+    title: 'Relatórios',
+  ),
+  salesNotasEntradaItens(
+    path: '/sales/notas-entrada/:compraId',
+    title: 'Relatórios',
   ),
   salesMonitoring(
     path: '/sales-monitoring',
@@ -95,6 +99,7 @@ enum AppRoute {
       case AppRoute.dashboardChart:
         return AppRoute.dashboard;
       case AppRoute.salesCard:
+      case AppRoute.salesNotasEntradaItens:
         return AppRoute.sales;
       case AppRoute.salesMonitoring:
         return this;
@@ -137,7 +142,8 @@ enum AppRoute {
         return Icons.space_dashboard_rounded;
       case AppRoute.sales:
       case AppRoute.salesCard:
-        return Icons.point_of_sale_rounded;
+      case AppRoute.salesNotasEntradaItens:
+        return Icons.assessment_rounded;
       case AppRoute.salesMonitoring:
         return Icons.map_rounded;
       case AppRoute.chartFullscreen:
@@ -167,7 +173,8 @@ enum AppRoute {
         return Icons.space_dashboard_outlined;
       case AppRoute.sales:
       case AppRoute.salesCard:
-        return Icons.point_of_sale_outlined;
+      case AppRoute.salesNotasEntradaItens:
+        return Icons.assessment_outlined;
       case AppRoute.salesMonitoring:
         return Icons.map_outlined;
       case AppRoute.chartFullscreen:
@@ -240,6 +247,7 @@ enum AppRoute {
         return UserPermission.viewDashboard;
       case AppRoute.sales:
       case AppRoute.salesCard:
+      case AppRoute.salesNotasEntradaItens:
       case AppRoute.salesMonitoring:
         return UserPermission.viewSales;
       case AppRoute.unmatched:

@@ -112,4 +112,11 @@ abstract final class AgentQueriesBoundedResultMaxRows {
 
   /// Top gainers/losers (`TOP 15` each) for explicit-period trend screens.
   static const int produtoVendidoTendenciaDeVendaTopMovers = 15;
+
+  /// Line items of one entrada note (`Compra.ItemCompra` for a CompraId).
+  ///
+  /// Keep this well below the heavy-report range. On the E2E SQL Anywhere
+  /// agent, `max_rows` around 1600+ for joined report shapes returned an empty
+  /// success payload while the same SQL in the database client returned rows.
+  static const int notasEntradaItens = 400;
 }

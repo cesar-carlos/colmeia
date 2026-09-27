@@ -28,11 +28,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shellNavSettingsSubtitle => 'Account and preferences';
 
   @override
-  String get shellNavSalesLabel => 'Sales';
+  String get shellNavSalesLabel => 'Reports';
 
   @override
-  String get shellNavSalesSubtitle =>
-      'Orders, revenue, and commercial indicators';
+  String get shellNavSalesSubtitle => 'Queries and commercial indicators';
 
   @override
   String get shellNavReturnsLabel => 'Returns';
@@ -102,7 +101,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get userPermissionManageAgents => 'Agent management';
 
   @override
-  String get userPermissionViewSales => 'Sales (module access)';
+  String get userPermissionViewSales => 'Reports (module access)';
 
   @override
   String get userPermissionViewReturns => 'Returns (module access)';
@@ -3269,9 +3268,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Loading profitability by branch chart…';
 
   @override
-  String get salesHubTitle => 'Sales';
-
-  @override
   String get salesHubSubtitle => 'Browse commercial information by category.';
 
   @override
@@ -3727,9 +3723,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesMargemProdutoColumnMarca => 'Brand';
 
   @override
-  String get salesMargemProdutoColumnMargem => '% Margin';
-
-  @override
   String get salesMargemProdutoEntityLabel => 'products';
 
   @override
@@ -4167,6 +4160,121 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get salesNotasEntradaClearSupplierScopeTooltip =>
       'Clear supplier filter';
+
+  @override
+  String salesNotasEntradaOpenItemsSemantics(String documento) {
+    return 'View items for document $documento';
+  }
+
+  @override
+  String salesNotasEntradaItensTitle(String documento) {
+    return 'Document $documento';
+  }
+
+  @override
+  String salesNotasEntradaItensTitleById(String compraId) {
+    return 'Purchase $compraId';
+  }
+
+  @override
+  String salesNotasEntradaItensSubtitle(
+    String fornecedor,
+    String emissao,
+    String entrada,
+  ) {
+    return '$fornecedor. Issued $emissao. Received $entrada.';
+  }
+
+  @override
+  String salesNotasEntradaItensSubtitleFallback(String compraId) {
+    return 'Line items for purchase $compraId.';
+  }
+
+  @override
+  String get salesNotasEntradaItensEmpty =>
+      'No line items were found for this invoice.';
+
+  @override
+  String get salesNotasEntradaItensEmptySearch =>
+      'No line items match this search.';
+
+  @override
+  String get salesNotasEntradaItensSearchHint => 'Search by product or code';
+
+  @override
+  String salesNotasEntradaItensCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String salesNotasEntradaItensCountFiltered(int shown, int total) {
+    return '$shown of $total items';
+  }
+
+  @override
+  String get salesNotasEntradaItensNoteTotalLabel => 'Invoice total';
+
+  @override
+  String get salesNotasEntradaItensInvalidCompra =>
+      'The invoice could not be identified to load its items.';
+
+  @override
+  String salesNotasEntradaItensTruncated(int maxRows) {
+    return 'The item list was limited to $maxRows rows. The total includes only the loaded rows.';
+  }
+
+  @override
+  String get salesNotasEntradaItensCancelledBanner =>
+      'This purchase is cancelled.';
+
+  @override
+  String salesNotasEntradaItensTotalMismatch(String itens, String nota) {
+    return 'The line-item total ($itens) differs from the invoice total ($nota).';
+  }
+
+  @override
+  String get salesNotasEntradaItensColumnProduto => 'Product code';
+
+  @override
+  String get salesNotasEntradaItensColumnNome => 'Product';
+
+  @override
+  String get salesNotasEntradaItensColumnUnidade => 'UND';
+
+  @override
+  String get salesNotasEntradaItensColumnQuantidade => 'Qty';
+
+  @override
+  String get salesNotasEntradaItensColumnValorUnitario => 'Unit price';
+
+  @override
+  String get salesNotasEntradaItensColumnSubtotal => 'Subtotal';
+
+  @override
+  String get salesNotasEntradaItensColumnDescontoItem => 'Item discount';
+
+  @override
+  String get salesNotasEntradaItensColumnDescontoTotal => 'Total discount';
+
+  @override
+  String get salesNotasEntradaItensColumnDescontoProporcional =>
+      'Proportional discount';
+
+  @override
+  String get salesNotasEntradaItensColumnValorTotal => 'Total';
+
+  @override
+  String get salesNotasEntradaItensTotalsAmountLabel => 'Items total';
+
+  @override
+  String get salesNotasEntradaItensTotalsSemantics =>
+      'Sum of the loaded line-item totals.';
 
   @override
   String get salesMonthlyPnlPageSubtitle =>

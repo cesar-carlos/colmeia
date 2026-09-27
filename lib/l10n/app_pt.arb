@@ -6,8 +6,8 @@
   "shellNavAgentsSubtitle": "Fontes de dados e acessos",
   "shellNavSettingsLabel": "Perfil",
   "shellNavSettingsSubtitle": "Conta e preferências",
-  "shellNavSalesLabel": "Vendas",
-  "shellNavSalesSubtitle": "Pedidos, receita e indicadores comerciais",
+  "shellNavSalesLabel": "Relatórios",
+  "shellNavSalesSubtitle": "Consultas e indicadores comerciais",
   "shellNavReturnsLabel": "Devoluções",
   "shellNavReturnsSubtitle": "Devoluções, trocas e notas de crédito",
   "shellNavFinanceLabel": "Financeiro",
@@ -34,7 +34,7 @@
   },
   "userPermissionViewDashboard": "Visão geral",
   "userPermissionManageAgents": "Gestão de agentes",
-  "userPermissionViewSales": "Vendas (acesso ao módulo)",
+  "userPermissionViewSales": "Relatórios (acesso ao módulo)",
   "userPermissionViewReturns": "Devoluções (acesso ao módulo)",
   "userPermissionViewFinance": "Financeiro (acesso ao módulo)",
   "userPermissionViewPurchases": "Compras (acesso ao módulo)",
@@ -1427,7 +1427,6 @@
   "overviewLucratividadeEmpty": "Sem dados de lucratividade para este período.",
   "overviewLucratividadeMultiAgentHint": "Nenhuma filial aprovada está disponível para carregar a lucratividade. Adicione ou conecte uma filial primeiro.",
   "overviewLoadingLucratividadeSemantics": "Carregando gráfico de lucratividade por filial…",
-  "salesHubTitle": "Vendas",
   "shellNavSalesMonitoringLabel": "Acompanhar vendas",
   "shellNavSalesMonitoringSubtitle": "Mapa e atualização por filtros",
   "salesLiveMapTitle": "Acompanhar vendas",
@@ -1662,7 +1661,6 @@
   "salesMargemProdutoColumnMarkup": "% Markup",
   "salesMargemProdutoColumnGrupo": "Grupo",
   "salesMargemProdutoColumnMarca": "Marca",
-  "salesMargemProdutoColumnMargem": "% Margem",
   "salesMargemProdutoEntityLabel": "produtos",
   "salesMargemProdutoEmpty": "Nenhum produto nesta filial.",
   "salesMargemProdutoEmptySearch": "Nenhum produto corresponde a esta busca.",
@@ -1866,6 +1864,82 @@
   "salesNotasEntradaTotalsAmountLabel": "Valor total do período",
   "salesNotasEntradaTotalsSemantics": "Valor total do período com os filtros atuais, não da página visível.",
   "salesNotasEntradaClearSupplierScopeTooltip": "Limpar filtro de fornecedor",
+  "salesNotasEntradaOpenItemsSemantics": "Ver itens do documento {documento}",
+  "@salesNotasEntradaOpenItemsSemantics": {
+    "placeholders": {
+      "documento": {"type": "String"}
+    }
+  },
+  "salesNotasEntradaItensTitle": "Documento {documento}",
+  "@salesNotasEntradaItensTitle": {
+    "placeholders": {
+      "documento": {"type": "String"}
+    }
+  },
+  "salesNotasEntradaItensTitleById": "Compra {compraId}",
+  "@salesNotasEntradaItensTitleById": {
+    "placeholders": {
+      "compraId": {"type": "String"}
+    }
+  },
+  "salesNotasEntradaItensSubtitle": "{fornecedor}. Emissão {emissao}. Entrada {entrada}.",
+  "@salesNotasEntradaItensSubtitle": {
+    "placeholders": {
+      "fornecedor": {"type": "String"},
+      "emissao": {"type": "String"},
+      "entrada": {"type": "String"}
+    }
+  },
+  "salesNotasEntradaItensSubtitleFallback": "Itens da compra {compraId}.",
+  "@salesNotasEntradaItensSubtitleFallback": {
+    "placeholders": {
+      "compraId": {"type": "String"}
+    }
+  },
+  "salesNotasEntradaItensEmpty": "Nenhum item foi encontrado para esta nota.",
+  "salesNotasEntradaItensEmptySearch": "Nenhum item corresponde a esta busca.",
+  "salesNotasEntradaItensSearchHint": "Buscar por produto ou código",
+  "salesNotasEntradaItensCount": "{count, plural, =1{1 item} other{{count} itens}}",
+  "@salesNotasEntradaItensCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "salesNotasEntradaItensCountFiltered": "{shown} de {total} itens",
+  "@salesNotasEntradaItensCountFiltered": {
+    "placeholders": {
+      "shown": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "salesNotasEntradaItensNoteTotalLabel": "Total da nota",
+  "salesNotasEntradaItensInvalidCompra": "Não foi possível identificar a nota para carregar os itens.",
+  "salesNotasEntradaItensTruncated": "A lista de itens foi limitada a {maxRows} linhas. O total considera apenas as linhas carregadas.",
+  "@salesNotasEntradaItensTruncated": {
+    "placeholders": {
+      "maxRows": {"type": "int"}
+    }
+  },
+  "salesNotasEntradaItensCancelledBanner": "Esta compra está cancelada.",
+  "salesNotasEntradaItensTotalMismatch": "O total dos itens ({itens}) difere do total da nota ({nota}).",
+  "@salesNotasEntradaItensTotalMismatch": {
+    "placeholders": {
+      "itens": {"type": "String"},
+      "nota": {"type": "String"}
+    }
+  },
+  "salesNotasEntradaItensColumnProduto": "Cód. produto",
+  "salesNotasEntradaItensColumnNome": "Produto",
+  "salesNotasEntradaItensColumnUnidade": "UND",
+  "salesNotasEntradaItensColumnQuantidade": "Qtd.",
+  "salesNotasEntradaItensColumnValorUnitario": "Valor unitário",
+  "salesNotasEntradaItensColumnSubtotal": "Subtotal",
+  "salesNotasEntradaItensColumnDescontoItem": "Desc. item",
+  "salesNotasEntradaItensColumnDescontoTotal": "Desc. total",
+  "salesNotasEntradaItensColumnDescontoProporcional": "Desc. proporcional",
+  "salesNotasEntradaItensColumnValorTotal": "Valor total",
+  "salesNotasEntradaItensTotalsAmountLabel": "Valor total dos itens",
+  "salesNotasEntradaItensTotalsSemantics": "Soma do valor total dos itens carregados.",
   "salesMonthlyPnlPageSubtitle": "Venda, lucro e custo da mercadoria por mês na filial selecionada. A janela termina no mes de referência.",
   "salesMonthlyPnlFilterAnchorMonth": "Mes de referência",
   "salesMonthlyPnlChartTitle": "Resultado mensal",

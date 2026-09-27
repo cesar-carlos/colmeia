@@ -108,6 +108,7 @@ class SalesNotasEntradaFullscreen extends StatelessWidget {
     required this.onPageSizeChanged,
     this.onClearSupplierScope,
     this.onSupplierSelected,
+    this.onOpenItems,
     this.loadErrorPanel,
     super.key,
   });
@@ -119,6 +120,7 @@ class SalesNotasEntradaFullscreen extends StatelessWidget {
   final ValueChanged<int> onPageSizeChanged;
   final VoidCallback? onClearSupplierScope;
   final ValueChanged<NotaEntradaResumoFornecedorRow>? onSupplierSelected;
+  final ValueChanged<NotaEntradaRow>? onOpenItems;
   final Widget? loadErrorPanel;
 
   @override
@@ -137,6 +139,7 @@ class SalesNotasEntradaFullscreen extends StatelessWidget {
       onViewChanged: onViewChanged,
       onClearSupplierScope: onClearSupplierScope,
       onSupplierSelected: onSupplierSelected,
+      onOpenItems: onOpenItems,
       loadErrorPanel: loadErrorPanel,
       paginationFooter: SalesNotasEntradaPaginationFooter(
         currentPage: snapshot.page,

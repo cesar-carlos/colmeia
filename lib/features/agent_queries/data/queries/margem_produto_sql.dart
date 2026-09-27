@@ -1,4 +1,5 @@
 import 'package:colmeia/features/agent_queries/data/queries/agent_queries_sql_accent_fold.dart';
+import 'package:colmeia/features/agent_queries/data/queries/agent_queries_sql_dictionary_sort.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_by.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_direction.dart';
 
@@ -40,8 +41,11 @@ import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_so
 /// (`AgentQueriesSqlAccentFold`), so `cafe` matches `Café`.
 ///
 /// **Ordering:** `ROW_NUMBER` uses a Dart whitelist ([MargemProdutoSortBy]).
-/// Default is `NomeProduto ASC`, then `CodProduto ASC`. `ROW_NUMBER` must
-/// stay deterministic or page 2 can overlap or skip rows.
+/// Default is dictionary-style `NomeProduto ASC` (punctuation stripped,
+/// accents folded, `UPPER`), then `CodProduto ASC`. Name, group, and brand
+/// columns use [AgentQueriesSqlDictionarySort] so `( NAO VENDER )` sorts with
+/// letters, not before `*`. `ROW_NUMBER` must stay deterministic or page 2
+/// can overlap or skip rows.
 ///
 /// Pagination: `Parametros` → `MargemProduto` → `Tot` → `Numbered`
 /// (`ROW_NUMBER`) → `Tot LEFT JOIN Numbered` on
@@ -78,10 +82,16 @@ abstract final class MargemProdutoSql {
         f.NomeFantasia AS NomeFantasiaFilial,
         p.CodProduto,
         TRIM(p.Nome) AS NomeProduto,
+        ${AgentQueriesSqlDictionarySort.foldUpperStripPunctuation('TRIM(p.Nome)')}
+          AS NomeProdutoSortKey,
         p.CodGrupoProduto,
         gp.Nome AS NomeGrupoProduto,
+        ${AgentQueriesSqlDictionarySort.foldUpperStripPunctuation("COALESCE(gp.Nome, '')")}
+          AS NomeGrupoProdutoSortKey,
         p.CodMarca,
         mc.Nome AS NomeMarca,
+        ${AgentQueriesSqlDictionarySort.foldUpperStripPunctuation("COALESCE(mc.Nome, '')")}
+          AS NomeMarcaSortKey,
         cp.CustoCompra AS CustoReposicao,
         COALESCE(p.PrecoVenda, 0.00) AS PrecoVendaProduto,
         CASE
@@ -180,9 +190,9 @@ abstract final class MargemProdutoSql {
     };
     final primary = switch (sortBy) {
       MargemProdutoSortBy.codProduto => 'm.CodProduto',
-      MargemProdutoSortBy.nomeProduto => 'm.NomeProduto',
-      MargemProdutoSortBy.nomeGrupoProduto => 'm.NomeGrupoProduto',
-      MargemProdutoSortBy.nomeMarca => 'm.NomeMarca',
+      MargemProdutoSortBy.nomeProduto => 'm.NomeProdutoSortKey',
+      MargemProdutoSortBy.nomeGrupoProduto => 'm.NomeGrupoProdutoSortKey',
+      MargemProdutoSortBy.nomeMarca => 'm.NomeMarcaSortKey',
       MargemProdutoSortBy.custoReposicao => 'm.CustoReposicao',
       MargemProdutoSortBy.precoVendaProduto => 'm.PrecoVendaProduto',
       MargemProdutoSortBy.percentualMarkup =>
@@ -190,9 +200,9 @@ abstract final class MargemProdutoSql {
       MargemProdutoSortBy.margemLucro => 'm.MargemLucroProduto',
     };
     final tiebreakers = switch (sortBy) {
-      MargemProdutoSortBy.codProduto => 'm.NomeProduto ASC',
+      MargemProdutoSortBy.codProduto => 'm.NomeProdutoSortKey ASC',
       MargemProdutoSortBy.nomeProduto => 'm.CodProduto ASC',
-      _ => 'm.NomeProduto ASC,\n            m.CodProduto ASC',
+      _ => 'm.NomeProdutoSortKey ASC,\n            m.CodProduto ASC',
     };
     return '''
             $primary $dir,

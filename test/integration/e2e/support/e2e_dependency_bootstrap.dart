@@ -36,6 +36,7 @@ import 'package:result_dart/result_dart.dart';
 
 import 'e2e_agent_sql_cancel.dart';
 import 'e2e_in_memory_app_cache_store.dart';
+import 'e2e_omit_sales_origem.dart';
 import 'e2e_refreshing_auth_interceptor.dart';
 import 'e2e_stub_client_agents_for_agent_queries.dart';
 
@@ -138,6 +139,7 @@ Future<void> _e2eSetupDependenciesBody() async {
     _registerE2eSocketStack(sessionHolder);
   }
   registerInjectorAgentQueries(getIt);
+  await installE2eOmitSalesOrigemRepository();
   _e2eRegisterRelayConversationPreWarmerIfAvailable();
   await _e2eWarmConsumerSocketAfterQueriesRegistered();
 

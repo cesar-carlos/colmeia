@@ -13,6 +13,7 @@ import 'package:colmeia/features/agent_queries/application/usecases/load_produto
 import 'package:colmeia/features/agent_queries/application/usecases/load_produto_vendido_tendencia_de_venda_use_case.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_ranking_produtos_faturamento_use_case.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/notas_entrada_itens_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/notas_entrada_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/notas_entrada_resumo_fornecedor_repository.dart';
 import 'package:colmeia/features/sales/application/load_margem_produto_rows_for_share_use_case.dart';
@@ -27,16 +28,19 @@ import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_live_map_controller.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_notas_entrada_controller.dart';
+import 'package:colmeia/features/sales/presentation/controllers/sales_notas_entrada_itens_controller.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_daily_totals_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_hub_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_live_map_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_margem_produto_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_monthly_pnl_page.dart';
+import 'package:colmeia/features/sales/presentation/pages/sales_notas_entrada_itens_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_notas_entrada_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_produto_rank_lucro_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_produto_tendencia_media_movel_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_produto_tendencia_page.dart';
 import 'package:colmeia/features/sales/presentation/pages/sales_ranking_produtos_faturamento_page.dart';
+import 'package:colmeia/features/sales/presentation/sales_notas_entrada_itens_route_extra.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_under_construction_page.dart';
 import 'package:go_router/go_router.dart';
@@ -72,6 +76,29 @@ List<RouteBase> buildSalesRoutes() {
             ),
             child: const SalesLiveMapPage(),
           ),
+    ),
+    GoRoute(
+      name: AppRoute.salesNotasEntradaItens.name,
+      path: AppRoute.salesNotasEntradaItens.path,
+      builder: (context, state) {
+        final extra = SalesNotasEntradaItensRouteExtra.tryParse(state.extra);
+        final pathCompraId = int.tryParse(
+          state.pathParameters['compraId'] ?? '',
+        );
+        final compraId = extra?.note.compraId ?? pathCompraId ?? 0;
+        return ChangeNotifierProvider<SalesNotasEntradaItensController>(
+          create: (_) => SalesNotasEntradaItensController(
+            sessionService: sessionService,
+            resolveSalesAgentClientToken: resolveSalesAgentClientTokenUseCase,
+            repository: getIt<NotasEntradaItensRepository>(),
+            relayCancelScopeBinder: _wireSalesAgentSqlRelayCancel,
+            compraId: compraId,
+            initialAgentId: extra?.agentId,
+            note: extra?.note,
+          ),
+          child: const SalesNotasEntradaItensPage(),
+        );
+      },
     ),
     GoRoute(
       name: AppRoute.salesCard.name,

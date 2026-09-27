@@ -167,6 +167,7 @@ class CurrentUserContextController extends ChangeNotifier {
         return true;
       case AppRoute.sales:
       case AppRoute.salesCard:
+      case AppRoute.salesNotasEntradaItens:
       case AppRoute.salesMonitoring:
         return hasPermission(UserPermission.viewSales);
     }

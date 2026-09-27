@@ -19,11 +19,13 @@ class SalesNotasEntradaNotesGrid extends StatelessWidget {
     required this.rows,
     required this.totalValorCompra,
     super.key,
+    this.onOpenItems,
   });
 
   final AppLocalizations l10n;
   final List<NotaEntradaRow> rows;
   final double totalValorCompra;
+  final ValueChanged<NotaEntradaRow>? onOpenItems;
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +78,13 @@ class SalesNotasEntradaNotesGrid extends StatelessWidget {
                 return SalesNotasEntradaTableRow(
                   row: rows[index],
                   compactChave: compactChave,
+                  onOpenItems: onOpenItems == null
+                      ? null
+                      : () => onOpenItems!(rows[index]),
+                  openItemsSemanticsLabel: l10n
+                      .salesNotasEntradaOpenItemsSemantics(
+                        rows[index].numeroDocumento,
+                      ),
                 );
               },
             ),
@@ -177,10 +186,14 @@ class SalesNotasEntradaTableRow extends StatelessWidget {
     required this.row,
     required this.compactChave,
     super.key,
+    this.onOpenItems,
+    this.openItemsSemanticsLabel,
   });
 
   final NotaEntradaRow row;
   final bool compactChave;
+  final VoidCallback? onOpenItems;
+  final String? openItemsSemanticsLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -200,14 +213,11 @@ class SalesNotasEntradaTableRow extends StatelessWidget {
         padding: appDataGridRowPadding(tokens),
         child: Row(
           children: <Widget>[
-            _FixedCell(
-              width: SalesNotasEntradaTableLayout.documentoWidth,
-              child: Text(
-                row.numeroDocumento,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: tabularStyle,
-              ),
+            _DocumentoCell(
+              documento: row.numeroDocumento,
+              style: tabularStyle,
+              onOpenItems: onOpenItems,
+              semanticsLabel: openItemsSemanticsLabel,
             ),
             _FixedCell(
               width: SalesNotasEntradaTableLayout.dateWidth,
@@ -264,6 +274,64 @@ class SalesNotasEntradaTableRow extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DocumentoCell extends StatelessWidget {
+  const _DocumentoCell({
+    required this.documento,
+    required this.style,
+    this.onOpenItems,
+    this.semanticsLabel,
+  });
+
+  final String documento;
+  final TextStyle? style;
+  final VoidCallback? onOpenItems;
+  final String? semanticsLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final text = Text(
+      documento,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: onOpenItems == null
+          ? style
+          : style?.copyWith(
+              color: theme.colorScheme.primary,
+              decoration: TextDecoration.underline,
+              decorationColor: theme.colorScheme.primary,
+            ),
+    );
+    if (onOpenItems == null) {
+      return _FixedCell(
+        width: SalesNotasEntradaTableLayout.documentoWidth,
+        child: text,
+      );
+    }
+
+    final tooltip = semanticsLabel ?? documento;
+    return _FixedCell(
+      width: SalesNotasEntradaTableLayout.documentoWidth,
+      child: Tooltip(
+        message: tooltip,
+        excludeFromSemantics: true,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: onOpenItems,
+            mouseCursor: SystemMouseCursors.click,
+            child: Semantics(
+              button: true,
+              label: semanticsLabel,
+              child: text,
+            ),
+          ),
         ),
       ),
     );

@@ -56,6 +56,18 @@ void main() {
       ).equals(MargemProdutoSortDirection.ascending);
     });
 
+    test('maps removed margin sort onto product name', () {
+      final restored = SalesMargemProdutoSort.restore(<String, Object?>{
+        'sortBy': 'margemLucro',
+        'sortDirection': 'descending',
+      });
+
+      check(restored.sortBy).equals(MargemProdutoSortBy.nomeProduto);
+      check(
+        restored.sortDirection,
+      ).equals(MargemProdutoSortDirection.descending);
+    });
+
     test('drops blank search terms', () {
       final restored = SalesMargemProdutoSort.restore(<String, Object?>{
         'searchTerm': '  ',
@@ -80,6 +92,16 @@ void main() {
       check(persisted.containsKey('codFilial')).isFalse();
       check(persisted['pageSize']).equals(10);
       check(persisted['searchTerm']).equals('Mel');
+    });
+
+    test('persists product name instead of the removed margin sort', () {
+      final persisted = SalesMargemProdutoSort.persistMap(
+        pageSize: 20,
+        sortBy: MargemProdutoSortBy.margemLucro,
+        sortDirection: MargemProdutoSortDirection.ascending,
+      );
+
+      check(persisted['sortBy']).equals('nomeProduto');
     });
   });
 

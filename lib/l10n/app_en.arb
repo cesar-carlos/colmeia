@@ -6,8 +6,8 @@
   "shellNavAgentsSubtitle": "Data sources and access",
   "shellNavSettingsLabel": "Profile",
   "shellNavSettingsSubtitle": "Account and preferences",
-  "shellNavSalesLabel": "Sales",
-  "shellNavSalesSubtitle": "Orders, revenue, and commercial indicators",
+  "shellNavSalesLabel": "Reports",
+  "shellNavSalesSubtitle": "Queries and commercial indicators",
   "shellNavReturnsLabel": "Returns",
   "shellNavReturnsSubtitle": "Returns, exchanges, and credit notes",
   "shellNavFinanceLabel": "Finance",
@@ -34,7 +34,7 @@
   },
   "userPermissionViewDashboard": "Overview",
   "userPermissionManageAgents": "Agent management",
-  "userPermissionViewSales": "Sales (module access)",
+  "userPermissionViewSales": "Reports (module access)",
   "userPermissionViewReturns": "Returns (module access)",
   "userPermissionViewFinance": "Finance (module access)",
   "userPermissionViewPurchases": "Purchases (module access)",
@@ -1687,7 +1687,6 @@
   "overviewLucratividadeEmpty": "No profitability data for this period.",
   "overviewLucratividadeMultiAgentHint": "No approved branches are available to load profitability. Add or connect a branch first.",
   "overviewLoadingLucratividadeSemantics": "Loading profitability by branch chart…",
-  "salesHubTitle": "Sales",
   "salesHubSubtitle": "Browse commercial information by category.",
   "shellNavSalesMonitoringLabel": "Track sales",
   "shellNavSalesMonitoringSubtitle": "Map and update by filters",
@@ -1922,7 +1921,6 @@
   "salesMargemProdutoColumnMarkup": "% Markup",
   "salesMargemProdutoColumnGrupo": "Group",
   "salesMargemProdutoColumnMarca": "Brand",
-  "salesMargemProdutoColumnMargem": "% Margin",
   "salesMargemProdutoEntityLabel": "products",
   "salesMargemProdutoEmpty": "No products for this branch.",
   "salesMargemProdutoEmptySearch": "No products match this search.",
@@ -2133,6 +2131,82 @@
   "salesNotasEntradaTotalsAmountLabel": "Period total",
   "salesNotasEntradaTotalsSemantics": "Purchase total for the current filters, not the visible page.",
   "salesNotasEntradaClearSupplierScopeTooltip": "Clear supplier filter",
+  "salesNotasEntradaOpenItemsSemantics": "View items for document {documento}",
+  "@salesNotasEntradaOpenItemsSemantics": {
+    "placeholders": {
+      "documento": {"type": "String"}
+    }
+  },
+  "salesNotasEntradaItensTitle": "Document {documento}",
+  "@salesNotasEntradaItensTitle": {
+    "placeholders": {
+      "documento": {"type": "String"}
+    }
+  },
+  "salesNotasEntradaItensTitleById": "Purchase {compraId}",
+  "@salesNotasEntradaItensTitleById": {
+    "placeholders": {
+      "compraId": {"type": "String"}
+    }
+  },
+  "salesNotasEntradaItensSubtitle": "{fornecedor}. Issued {emissao}. Received {entrada}.",
+  "@salesNotasEntradaItensSubtitle": {
+    "placeholders": {
+      "fornecedor": {"type": "String"},
+      "emissao": {"type": "String"},
+      "entrada": {"type": "String"}
+    }
+  },
+  "salesNotasEntradaItensSubtitleFallback": "Line items for purchase {compraId}.",
+  "@salesNotasEntradaItensSubtitleFallback": {
+    "placeholders": {
+      "compraId": {"type": "String"}
+    }
+  },
+  "salesNotasEntradaItensEmpty": "No line items were found for this invoice.",
+  "salesNotasEntradaItensEmptySearch": "No line items match this search.",
+  "salesNotasEntradaItensSearchHint": "Search by product or code",
+  "salesNotasEntradaItensCount": "{count, plural, =1{1 item} other{{count} items}}",
+  "@salesNotasEntradaItensCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "salesNotasEntradaItensCountFiltered": "{shown} of {total} items",
+  "@salesNotasEntradaItensCountFiltered": {
+    "placeholders": {
+      "shown": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "salesNotasEntradaItensNoteTotalLabel": "Invoice total",
+  "salesNotasEntradaItensInvalidCompra": "The invoice could not be identified to load its items.",
+  "salesNotasEntradaItensTruncated": "The item list was limited to {maxRows} rows. The total includes only the loaded rows.",
+  "@salesNotasEntradaItensTruncated": {
+    "placeholders": {
+      "maxRows": {"type": "int"}
+    }
+  },
+  "salesNotasEntradaItensCancelledBanner": "This purchase is cancelled.",
+  "salesNotasEntradaItensTotalMismatch": "The line-item total ({itens}) differs from the invoice total ({nota}).",
+  "@salesNotasEntradaItensTotalMismatch": {
+    "placeholders": {
+      "itens": {"type": "String"},
+      "nota": {"type": "String"}
+    }
+  },
+  "salesNotasEntradaItensColumnProduto": "Product code",
+  "salesNotasEntradaItensColumnNome": "Product",
+  "salesNotasEntradaItensColumnUnidade": "UND",
+  "salesNotasEntradaItensColumnQuantidade": "Qty",
+  "salesNotasEntradaItensColumnValorUnitario": "Unit price",
+  "salesNotasEntradaItensColumnSubtotal": "Subtotal",
+  "salesNotasEntradaItensColumnDescontoItem": "Item discount",
+  "salesNotasEntradaItensColumnDescontoTotal": "Total discount",
+  "salesNotasEntradaItensColumnDescontoProporcional": "Proportional discount",
+  "salesNotasEntradaItensColumnValorTotal": "Total",
+  "salesNotasEntradaItensTotalsAmountLabel": "Items total",
+  "salesNotasEntradaItensTotalsSemantics": "Sum of the loaded line-item totals.",
   "salesMonthlyPnlPageSubtitle": "Sales value, profit, and merchandise cost by month for the selected branch. The window ends in the reference month.",
   "salesMonthlyPnlFilterAnchorMonth": "Reference month",
   "salesMonthlyPnlChartTitle": "Monthly P&L",

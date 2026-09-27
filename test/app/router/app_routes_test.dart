@@ -68,8 +68,29 @@ void main() {
       );
     });
 
+    test(
+      'should resolve incoming-note items without stealing the card path',
+      () {
+        check(
+          AppRoute.fromLocation('/sales/notas-entrada/1289'),
+        ).equals(AppRoute.salesNotasEntradaItens);
+        check(
+          AppRoute.fromLocation('/sales/notas_entrada'),
+        ).equals(AppRoute.salesCard);
+        check(AppRoute.salesNotasEntradaItens.shellRootRoute).equals(
+          AppRoute.sales,
+        );
+        check(AppRoute.salesNotasEntradaItens.requiredPermission).equals(
+          UserPermission.viewSales,
+        );
+      },
+    );
+
     test('should resolve shell root route for shell details and roots', () {
       check(AppRoute.salesCard.shellRootRoute).equals(AppRoute.sales);
+      check(
+        AppRoute.salesNotasEntradaItens.shellRootRoute,
+      ).equals(AppRoute.sales);
       check(AppRoute.dashboardStore.shellRootRoute).equals(AppRoute.dashboard);
       check(AppRoute.agentsDetail.shellRootRoute).equals(AppRoute.agents);
       check(AppRoute.sales.shellRootRoute).equals(AppRoute.sales);

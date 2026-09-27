@@ -28,7 +28,7 @@ class SalesHubPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           AppShellPageIntro(
-            title: l10n.salesHubTitle,
+            title: l10n.shellNavSalesLabel,
             subtitle: l10n.salesHubSubtitle,
           ),
           SizedBox(height: tokens.sectionSpacing),

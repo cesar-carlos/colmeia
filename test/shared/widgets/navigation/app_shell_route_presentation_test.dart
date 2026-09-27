@@ -107,11 +107,11 @@ void main() {
     test('should switch outline vs filled for sales', () {
       expect(
         appShellRouteIcon(AppRoute.sales, selected: false),
-        Icons.point_of_sale_outlined,
+        Icons.assessment_outlined,
       );
       expect(
         appShellRouteIcon(AppRoute.sales, selected: true),
-        Icons.point_of_sale_rounded,
+        Icons.assessment_rounded,
       );
       expect(
         appShellRouteIcon(AppRoute.salesMonitoring, selected: false),

@@ -88,7 +88,6 @@ void main() {
         l10n.salesMargemProdutoColumnCusto,
         l10n.salesMargemProdutoColumnPreco,
         l10n.salesMargemProdutoColumnMarkup,
-        l10n.salesMargemProdutoColumnMargem,
         l10n.salesMargemProdutoColumnGrupo,
       ],
     );
@@ -107,13 +106,9 @@ void main() {
       metadata.tableData?.rows.first[4],
       formatSalesMargemProdutoPercent(100),
     );
+    expect(metadata.tableData?.rows.first[5], 'Alimentos');
     expect(
-      metadata.tableData?.rows.first[5],
-      formatSalesMargemProdutoPercent(50),
-    );
-    expect(metadata.tableData?.rows.first[6], 'Alimentos');
-    expect(
-      metadata.tableData?.rows[1][6],
+      metadata.tableData?.rows[1][5],
       kSalesMargemProdutoMissingGlyph,
     );
     expect(metadata.filterSummary, contains('Agente Centro'));

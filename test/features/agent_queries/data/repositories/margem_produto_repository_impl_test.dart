@@ -151,7 +151,7 @@ void main() {
             as AgentSqlExecuteRequest;
 
     check(captured.sql).equals(MargemProdutoSql.pagedQuery());
-    check(captured.sql).contains('m.NomeProduto ASC');
+    check(captured.sql).contains('m.NomeProdutoSortKey ASC');
     check(captured.sql).contains('m.CodProduto ASC');
   });
 

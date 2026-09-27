@@ -13,6 +13,7 @@ import 'package:colmeia/features/agent_queries/presentation/localization/agent_q
 import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_error_panel_factory.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/sales/presentation/controllers/sales_notas_entrada_controller.dart';
+import 'package:colmeia/features/sales/presentation/sales_notas_entrada_itens_navigation.dart';
 import 'package:colmeia/features/sales/presentation/sales_notas_entrada_view.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_notas_entrada_share.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_trigger.dart';
@@ -312,6 +313,11 @@ class _SalesNotasEntradaPageState extends State<SalesNotasEntradaPage>
                       unawaited(_controller.clearSupplierScope()),
                   onSupplierSelected: (row) =>
                       unawaited(_controller.openSupplierNotes(row)),
+                  onOpenItems: (row) => pushSalesNotasEntradaItens(
+                    fullscreenContext,
+                    row: row,
+                    agentId: snapshot.selectedAgentId,
+                  ),
                   loadErrorPanel: snapshot.loadFailure == null
                       ? null
                       : AgentQueryErrorPanelFactory.fromFailure(
@@ -461,6 +467,11 @@ class _NotasEntradaReportSurface extends StatelessWidget {
       onViewChanged: (view) => unawaited(controller.selectView(view)),
       onClearSupplierScope: () => unawaited(controller.clearSupplierScope()),
       onSupplierSelected: (row) => unawaited(controller.openSupplierNotes(row)),
+      onOpenItems: (row) => pushSalesNotasEntradaItens(
+        context,
+        row: row,
+        agentId: controller.selectedAgentId,
+      ),
       headerTrailing: headerTrailing,
       loadErrorPanel: controller.loadFailure == null
           ? null

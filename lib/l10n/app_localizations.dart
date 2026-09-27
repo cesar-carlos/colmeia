@@ -138,13 +138,13 @@ abstract class AppLocalizations {
   /// No description provided for @shellNavSalesLabel.
   ///
   /// In en, this message translates to:
-  /// **'Sales'**
+  /// **'Reports'**
   String get shellNavSalesLabel;
 
   /// No description provided for @shellNavSalesSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Orders, revenue, and commercial indicators'**
+  /// **'Queries and commercial indicators'**
   String get shellNavSalesSubtitle;
 
   /// No description provided for @shellNavReturnsLabel.
@@ -276,7 +276,7 @@ abstract class AppLocalizations {
   /// No description provided for @userPermissionViewSales.
   ///
   /// In en, this message translates to:
-  /// **'Sales (module access)'**
+  /// **'Reports (module access)'**
   String get userPermissionViewSales;
 
   /// No description provided for @userPermissionViewReturns.
@@ -5372,12 +5372,6 @@ abstract class AppLocalizations {
   /// **'Loading profitability by branch chart…'**
   String get overviewLoadingLucratividadeSemantics;
 
-  /// No description provided for @salesHubTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Sales'**
-  String get salesHubTitle;
-
   /// No description provided for @salesHubSubtitle.
   ///
   /// In en, this message translates to:
@@ -6149,12 +6143,6 @@ abstract class AppLocalizations {
   /// **'Brand'**
   String get salesMargemProdutoColumnMarca;
 
-  /// No description provided for @salesMargemProdutoColumnMargem.
-  ///
-  /// In en, this message translates to:
-  /// **'% Margin'**
-  String get salesMargemProdutoColumnMargem;
-
   /// No description provided for @salesMargemProdutoEntityLabel.
   ///
   /// In en, this message translates to:
@@ -6876,6 +6864,172 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear supplier filter'**
   String get salesNotasEntradaClearSupplierScopeTooltip;
+
+  /// No description provided for @salesNotasEntradaOpenItemsSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'View items for document {documento}'**
+  String salesNotasEntradaOpenItemsSemantics(String documento);
+
+  /// No description provided for @salesNotasEntradaItensTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Document {documento}'**
+  String salesNotasEntradaItensTitle(String documento);
+
+  /// No description provided for @salesNotasEntradaItensTitleById.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase {compraId}'**
+  String salesNotasEntradaItensTitleById(String compraId);
+
+  /// No description provided for @salesNotasEntradaItensSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{fornecedor}. Issued {emissao}. Received {entrada}.'**
+  String salesNotasEntradaItensSubtitle(
+    String fornecedor,
+    String emissao,
+    String entrada,
+  );
+
+  /// No description provided for @salesNotasEntradaItensSubtitleFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Line items for purchase {compraId}.'**
+  String salesNotasEntradaItensSubtitleFallback(String compraId);
+
+  /// No description provided for @salesNotasEntradaItensEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No line items were found for this invoice.'**
+  String get salesNotasEntradaItensEmpty;
+
+  /// No description provided for @salesNotasEntradaItensEmptySearch.
+  ///
+  /// In en, this message translates to:
+  /// **'No line items match this search.'**
+  String get salesNotasEntradaItensEmptySearch;
+
+  /// No description provided for @salesNotasEntradaItensSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by product or code'**
+  String get salesNotasEntradaItensSearchHint;
+
+  /// No description provided for @salesNotasEntradaItensCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item} other{{count} items}}'**
+  String salesNotasEntradaItensCount(int count);
+
+  /// No description provided for @salesNotasEntradaItensCountFiltered.
+  ///
+  /// In en, this message translates to:
+  /// **'{shown} of {total} items'**
+  String salesNotasEntradaItensCountFiltered(int shown, int total);
+
+  /// No description provided for @salesNotasEntradaItensNoteTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice total'**
+  String get salesNotasEntradaItensNoteTotalLabel;
+
+  /// No description provided for @salesNotasEntradaItensInvalidCompra.
+  ///
+  /// In en, this message translates to:
+  /// **'The invoice could not be identified to load its items.'**
+  String get salesNotasEntradaItensInvalidCompra;
+
+  /// No description provided for @salesNotasEntradaItensTruncated.
+  ///
+  /// In en, this message translates to:
+  /// **'The item list was limited to {maxRows} rows. The total includes only the loaded rows.'**
+  String salesNotasEntradaItensTruncated(int maxRows);
+
+  /// No description provided for @salesNotasEntradaItensCancelledBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'This purchase is cancelled.'**
+  String get salesNotasEntradaItensCancelledBanner;
+
+  /// No description provided for @salesNotasEntradaItensTotalMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'The line-item total ({itens}) differs from the invoice total ({nota}).'**
+  String salesNotasEntradaItensTotalMismatch(String itens, String nota);
+
+  /// No description provided for @salesNotasEntradaItensColumnProduto.
+  ///
+  /// In en, this message translates to:
+  /// **'Product code'**
+  String get salesNotasEntradaItensColumnProduto;
+
+  /// No description provided for @salesNotasEntradaItensColumnNome.
+  ///
+  /// In en, this message translates to:
+  /// **'Product'**
+  String get salesNotasEntradaItensColumnNome;
+
+  /// No description provided for @salesNotasEntradaItensColumnUnidade.
+  ///
+  /// In en, this message translates to:
+  /// **'UND'**
+  String get salesNotasEntradaItensColumnUnidade;
+
+  /// No description provided for @salesNotasEntradaItensColumnQuantidade.
+  ///
+  /// In en, this message translates to:
+  /// **'Qty'**
+  String get salesNotasEntradaItensColumnQuantidade;
+
+  /// No description provided for @salesNotasEntradaItensColumnValorUnitario.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit price'**
+  String get salesNotasEntradaItensColumnValorUnitario;
+
+  /// No description provided for @salesNotasEntradaItensColumnSubtotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Subtotal'**
+  String get salesNotasEntradaItensColumnSubtotal;
+
+  /// No description provided for @salesNotasEntradaItensColumnDescontoItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Item discount'**
+  String get salesNotasEntradaItensColumnDescontoItem;
+
+  /// No description provided for @salesNotasEntradaItensColumnDescontoTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total discount'**
+  String get salesNotasEntradaItensColumnDescontoTotal;
+
+  /// No description provided for @salesNotasEntradaItensColumnDescontoProporcional.
+  ///
+  /// In en, this message translates to:
+  /// **'Proportional discount'**
+  String get salesNotasEntradaItensColumnDescontoProporcional;
+
+  /// No description provided for @salesNotasEntradaItensColumnValorTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get salesNotasEntradaItensColumnValorTotal;
+
+  /// No description provided for @salesNotasEntradaItensTotalsAmountLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Items total'**
+  String get salesNotasEntradaItensTotalsAmountLabel;
+
+  /// No description provided for @salesNotasEntradaItensTotalsSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'Sum of the loaded line-item totals.'**
+  String get salesNotasEntradaItensTotalsSemantics;
 
   /// No description provided for @salesMonthlyPnlPageSubtitle.
   ///

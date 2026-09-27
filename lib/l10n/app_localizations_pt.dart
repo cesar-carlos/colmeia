@@ -28,11 +28,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get shellNavSettingsSubtitle => 'Conta e preferências';
 
   @override
-  String get shellNavSalesLabel => 'Vendas';
+  String get shellNavSalesLabel => 'Relatórios';
 
   @override
-  String get shellNavSalesSubtitle =>
-      'Pedidos, receita e indicadores comerciais';
+  String get shellNavSalesSubtitle => 'Consultas e indicadores comerciais';
 
   @override
   String get shellNavReturnsLabel => 'Devoluções';
@@ -103,7 +102,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get userPermissionManageAgents => 'Gestão de agentes';
 
   @override
-  String get userPermissionViewSales => 'Vendas (acesso ao módulo)';
+  String get userPermissionViewSales => 'Relatórios (acesso ao módulo)';
 
   @override
   String get userPermissionViewReturns => 'Devoluções (acesso ao módulo)';
@@ -3317,9 +3316,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Carregando gráfico de lucratividade por filial…';
 
   @override
-  String get salesHubTitle => 'Vendas';
-
-  @override
   String get salesHubSubtitle =>
       'Acesse e gerencie informações comerciais por categoria.';
 
@@ -3779,9 +3775,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesMargemProdutoColumnMarca => 'Marca';
 
   @override
-  String get salesMargemProdutoColumnMargem => '% Margem';
-
-  @override
   String get salesMargemProdutoEntityLabel => 'produtos';
 
   @override
@@ -4230,6 +4223,121 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get salesNotasEntradaClearSupplierScopeTooltip =>
       'Limpar filtro de fornecedor';
+
+  @override
+  String salesNotasEntradaOpenItemsSemantics(String documento) {
+    return 'Ver itens do documento $documento';
+  }
+
+  @override
+  String salesNotasEntradaItensTitle(String documento) {
+    return 'Documento $documento';
+  }
+
+  @override
+  String salesNotasEntradaItensTitleById(String compraId) {
+    return 'Compra $compraId';
+  }
+
+  @override
+  String salesNotasEntradaItensSubtitle(
+    String fornecedor,
+    String emissao,
+    String entrada,
+  ) {
+    return '$fornecedor. Emissão $emissao. Entrada $entrada.';
+  }
+
+  @override
+  String salesNotasEntradaItensSubtitleFallback(String compraId) {
+    return 'Itens da compra $compraId.';
+  }
+
+  @override
+  String get salesNotasEntradaItensEmpty =>
+      'Nenhum item foi encontrado para esta nota.';
+
+  @override
+  String get salesNotasEntradaItensEmptySearch =>
+      'Nenhum item corresponde a esta busca.';
+
+  @override
+  String get salesNotasEntradaItensSearchHint => 'Buscar por produto ou código';
+
+  @override
+  String salesNotasEntradaItensCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count itens',
+      one: '1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String salesNotasEntradaItensCountFiltered(int shown, int total) {
+    return '$shown de $total itens';
+  }
+
+  @override
+  String get salesNotasEntradaItensNoteTotalLabel => 'Total da nota';
+
+  @override
+  String get salesNotasEntradaItensInvalidCompra =>
+      'Não foi possível identificar a nota para carregar os itens.';
+
+  @override
+  String salesNotasEntradaItensTruncated(int maxRows) {
+    return 'A lista de itens foi limitada a $maxRows linhas. O total considera apenas as linhas carregadas.';
+  }
+
+  @override
+  String get salesNotasEntradaItensCancelledBanner =>
+      'Esta compra está cancelada.';
+
+  @override
+  String salesNotasEntradaItensTotalMismatch(String itens, String nota) {
+    return 'O total dos itens ($itens) difere do total da nota ($nota).';
+  }
+
+  @override
+  String get salesNotasEntradaItensColumnProduto => 'Cód. produto';
+
+  @override
+  String get salesNotasEntradaItensColumnNome => 'Produto';
+
+  @override
+  String get salesNotasEntradaItensColumnUnidade => 'UND';
+
+  @override
+  String get salesNotasEntradaItensColumnQuantidade => 'Qtd.';
+
+  @override
+  String get salesNotasEntradaItensColumnValorUnitario => 'Valor unitário';
+
+  @override
+  String get salesNotasEntradaItensColumnSubtotal => 'Subtotal';
+
+  @override
+  String get salesNotasEntradaItensColumnDescontoItem => 'Desc. item';
+
+  @override
+  String get salesNotasEntradaItensColumnDescontoTotal => 'Desc. total';
+
+  @override
+  String get salesNotasEntradaItensColumnDescontoProporcional =>
+      'Desc. proporcional';
+
+  @override
+  String get salesNotasEntradaItensColumnValorTotal => 'Valor total';
+
+  @override
+  String get salesNotasEntradaItensTotalsAmountLabel => 'Valor total dos itens';
+
+  @override
+  String get salesNotasEntradaItensTotalsSemantics =>
+      'Soma do valor total dos itens carregados.';
 
   @override
   String get salesMonthlyPnlPageSubtitle =>
@@ -5293,11 +5401,10 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get shellNavSettingsSubtitle => 'Conta e preferências';
 
   @override
-  String get shellNavSalesLabel => 'Vendas';
+  String get shellNavSalesLabel => 'Relatórios';
 
   @override
-  String get shellNavSalesSubtitle =>
-      'Pedidos, receita e indicadores comerciais';
+  String get shellNavSalesSubtitle => 'Consultas e indicadores comerciais';
 
   @override
   String get shellNavReturnsLabel => 'Devoluções';
@@ -5368,7 +5475,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get userPermissionManageAgents => 'Gestão de agentes';
 
   @override
-  String get userPermissionViewSales => 'Vendas (acesso ao módulo)';
+  String get userPermissionViewSales => 'Relatórios (acesso ao módulo)';
 
   @override
   String get userPermissionViewReturns => 'Devoluções (acesso ao módulo)';
@@ -8582,9 +8689,6 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
       'Carregando gráfico de lucratividade por filial…';
 
   @override
-  String get salesHubTitle => 'Vendas';
-
-  @override
   String get salesHubSubtitle =>
       'Acesse e gerencie informações comerciais por categoria.';
 
@@ -9044,9 +9148,6 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesMargemProdutoColumnMarca => 'Marca';
 
   @override
-  String get salesMargemProdutoColumnMargem => '% Margem';
-
-  @override
   String get salesMargemProdutoEntityLabel => 'produtos';
 
   @override
@@ -9495,6 +9596,121 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   @override
   String get salesNotasEntradaClearSupplierScopeTooltip =>
       'Limpar filtro de fornecedor';
+
+  @override
+  String salesNotasEntradaOpenItemsSemantics(String documento) {
+    return 'Ver itens do documento $documento';
+  }
+
+  @override
+  String salesNotasEntradaItensTitle(String documento) {
+    return 'Documento $documento';
+  }
+
+  @override
+  String salesNotasEntradaItensTitleById(String compraId) {
+    return 'Compra $compraId';
+  }
+
+  @override
+  String salesNotasEntradaItensSubtitle(
+    String fornecedor,
+    String emissao,
+    String entrada,
+  ) {
+    return '$fornecedor. Emissão $emissao. Entrada $entrada.';
+  }
+
+  @override
+  String salesNotasEntradaItensSubtitleFallback(String compraId) {
+    return 'Itens da compra $compraId.';
+  }
+
+  @override
+  String get salesNotasEntradaItensEmpty =>
+      'Nenhum item foi encontrado para esta nota.';
+
+  @override
+  String get salesNotasEntradaItensEmptySearch =>
+      'Nenhum item corresponde a esta busca.';
+
+  @override
+  String get salesNotasEntradaItensSearchHint => 'Buscar por produto ou código';
+
+  @override
+  String salesNotasEntradaItensCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count itens',
+      one: '1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String salesNotasEntradaItensCountFiltered(int shown, int total) {
+    return '$shown de $total itens';
+  }
+
+  @override
+  String get salesNotasEntradaItensNoteTotalLabel => 'Total da nota';
+
+  @override
+  String get salesNotasEntradaItensInvalidCompra =>
+      'Não foi possível identificar a nota para carregar os itens.';
+
+  @override
+  String salesNotasEntradaItensTruncated(int maxRows) {
+    return 'A lista de itens foi limitada a $maxRows linhas. O total considera apenas as linhas carregadas.';
+  }
+
+  @override
+  String get salesNotasEntradaItensCancelledBanner =>
+      'Esta compra está cancelada.';
+
+  @override
+  String salesNotasEntradaItensTotalMismatch(String itens, String nota) {
+    return 'O total dos itens ($itens) difere do total da nota ($nota).';
+  }
+
+  @override
+  String get salesNotasEntradaItensColumnProduto => 'Cód. produto';
+
+  @override
+  String get salesNotasEntradaItensColumnNome => 'Produto';
+
+  @override
+  String get salesNotasEntradaItensColumnUnidade => 'UND';
+
+  @override
+  String get salesNotasEntradaItensColumnQuantidade => 'Qtd.';
+
+  @override
+  String get salesNotasEntradaItensColumnValorUnitario => 'Valor unitário';
+
+  @override
+  String get salesNotasEntradaItensColumnSubtotal => 'Subtotal';
+
+  @override
+  String get salesNotasEntradaItensColumnDescontoItem => 'Desc. item';
+
+  @override
+  String get salesNotasEntradaItensColumnDescontoTotal => 'Desc. total';
+
+  @override
+  String get salesNotasEntradaItensColumnDescontoProporcional =>
+      'Desc. proporcional';
+
+  @override
+  String get salesNotasEntradaItensColumnValorTotal => 'Valor total';
+
+  @override
+  String get salesNotasEntradaItensTotalsAmountLabel => 'Valor total dos itens';
+
+  @override
+  String get salesNotasEntradaItensTotalsSemantics =>
+      'Soma do valor total dos itens carregados.';
 
   @override
   String get salesMonthlyPnlPageSubtitle =>

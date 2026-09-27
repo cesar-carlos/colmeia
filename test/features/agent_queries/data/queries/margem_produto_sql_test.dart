@@ -1,4 +1,5 @@
 import 'package:checks/checks.dart';
+import 'package:colmeia/features/agent_queries/data/queries/agent_queries_sql_dictionary_sort.dart';
 import 'package:colmeia/features/agent_queries/data/queries/margem_produto_sql.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_by.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_direction.dart';
@@ -14,15 +15,28 @@ void main() {
     check(sql.contains('CodUnidadeMedida')).isFalse();
   });
 
-  test('ROW_NUMBER default orders by NomeProduto then CodProduto ASC', () {
+  test('projects dictionary sort keys from product, group and brand names', () {
     final sql = MargemProdutoSql.pagedQuery();
-    final numbered = sql.split('Numbered AS (').last;
-    final nome = numbered.indexOf('m.NomeProduto ASC');
-    final produto = numbered.indexOf('m.CodProduto ASC');
-    check(nome).isGreaterOrEqual(0);
-    check(produto).isGreaterOrEqual(0);
-    check(nome).isLessThan(produto);
+    check(sql).contains('AS NomeProdutoSortKey');
+    check(sql).contains('AS NomeGrupoProdutoSortKey');
+    check(sql).contains('AS NomeMarcaSortKey');
+    check(sql).contains(
+      AgentQueriesSqlDictionarySort.foldUpperStripPunctuation('TRIM(p.Nome)'),
+    );
   });
+
+  test(
+    'ROW_NUMBER default orders by dictionary NomeProduto then CodProduto ASC',
+    () {
+      final sql = MargemProdutoSql.pagedQuery();
+      final numbered = sql.split('Numbered AS (').last;
+      final nome = numbered.indexOf('m.NomeProdutoSortKey ASC');
+      final produto = numbered.indexOf('m.CodProduto ASC');
+      check(nome).isGreaterOrEqual(0);
+      check(produto).isGreaterOrEqual(0);
+      check(nome).isLessThan(produto);
+    },
+  );
 
   test('does not expose other sort columns in default ROW_NUMBER', () {
     final numbered = MargemProdutoSql.pagedQuery().split('Numbered AS (').last;
@@ -41,7 +55,7 @@ void main() {
     final markup = numbered.indexOf(
       'm.PercentualMarkupCustoCompraProduto DESC',
     );
-    final nome = numbered.indexOf('m.NomeProduto ASC');
+    final nome = numbered.indexOf('m.NomeProdutoSortKey ASC');
     final codigo = numbered.indexOf('m.CodProduto ASC');
     check(markup).isGreaterOrEqual(0);
     check(nome).isGreaterOrEqual(0);
@@ -62,7 +76,6 @@ void main() {
   test('unfiltered page omits accent-folded LIKE', () {
     final sql = MargemProdutoSql.pagedQuery();
     check(sql.contains('LIKE')).isFalse();
-    check(sql.contains('REPLACE(')).isFalse();
     check(
       sql.contains('SELECT COUNT(*) AS TotalCount FROM MargemProduto'),
     ).isTrue();
