@@ -104,6 +104,7 @@ List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
       valueGetter: (row) => row.codProduto,
       numeric: true,
       pinned: true,
+      sortable: false,
       width: _codigoColumnWidth,
       minWidth: _codigoColumnWidth,
     ),
@@ -111,6 +112,7 @@ List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
       key: SalesMargemProdutoSort.columnProduto,
       label: labels.produto,
       valueGetter: (row) => row.nomeProduto,
+      sortable: false,
       minWidth: _produtoColumnMinWidth,
     ),
     AppReportColumn<MargemProdutoRow>(
@@ -120,6 +122,7 @@ List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
           salesMargemProdutoDisplayOrMissing(row.custoReposicao),
       formatter: formatSalesMargemProdutoCurrency,
       numeric: true,
+      sortable: false,
       width: _currencyColumnWidth,
       minWidth: _currencyColumnWidth,
     ),
@@ -129,6 +132,7 @@ List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
       valueGetter: (row) => row.precoVendaProduto,
       formatter: formatSalesMargemProdutoCurrency,
       numeric: true,
+      sortable: false,
       width: _currencyColumnWidth,
       minWidth: _currencyColumnWidth,
     ),
@@ -140,6 +144,7 @@ List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
       ),
       formatter: formatSalesMargemProdutoPercent,
       numeric: true,
+      sortable: false,
       width: _percentColumnWidth,
       minWidth: _percentColumnWidth,
       valueColor: (context, value) => salesMargemProdutoSignedPercentColor(
@@ -152,6 +157,7 @@ List<AppReportColumn<MargemProdutoRow>> buildSalesMargemProdutoColumns({
       label: labels.grupo,
       valueGetter: (row) =>
           formatSalesMargemProdutoOptionalText(row.nomeGrupoProduto),
+      sortable: false,
       width: _textColumnWidth,
       minWidth: _textColumnWidth,
       hideBelowBreakpoint: AppBreakpoints.reportColumnHideWide,

@@ -2,7 +2,6 @@ import 'package:checks/checks.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_by.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_direction.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_margem_produto_sort.dart';
-import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -18,7 +17,7 @@ void main() {
   });
 
   group('SalesMargemProdutoSort.restore', () {
-    test('restores page size, search term and sort', () {
+    test('restores page size and search term', () {
       final restored = SalesMargemProdutoSort.restore(<String, Object?>{
         'sortBy': 'custoReposicao',
         'sortDirection': 'descending',
@@ -30,10 +29,10 @@ void main() {
 
       check(restored.pageSize).equals(50);
       check(restored.searchTerm).equals('Mel');
-      check(restored.sortBy).equals(MargemProdutoSortBy.custoReposicao);
+      check(restored.sortBy).equals(MargemProdutoSortBy.nomeProduto);
       check(
         restored.sortDirection,
-      ).equals(MargemProdutoSortDirection.descending);
+      ).equals(MargemProdutoSortDirection.ascending);
     });
 
     test('sanitizes invalid page size', () {
@@ -44,28 +43,16 @@ void main() {
       check(restored.pageSize).equals(20);
     });
 
-    test('sanitizes invalid sort keys to name ascending', () {
+    test('ignores persisted sort keys', () {
       final restored = SalesMargemProdutoSort.restore(<String, Object?>{
-        'sortBy': 'not-a-column',
-        'sortDirection': 'sideways',
-      });
-
-      check(restored.sortBy).equals(MargemProdutoSortBy.nomeProduto);
-      check(
-        restored.sortDirection,
-      ).equals(MargemProdutoSortDirection.ascending);
-    });
-
-    test('maps removed margin sort onto product name', () {
-      final restored = SalesMargemProdutoSort.restore(<String, Object?>{
-        'sortBy': 'margemLucro',
+        'sortBy': 'percentualMarkup',
         'sortDirection': 'descending',
       });
 
       check(restored.sortBy).equals(MargemProdutoSortBy.nomeProduto);
       check(
         restored.sortDirection,
-      ).equals(MargemProdutoSortDirection.descending);
+      ).equals(MargemProdutoSortDirection.ascending);
     });
 
     test('drops blank search terms', () {
@@ -78,30 +65,18 @@ void main() {
   });
 
   group('SalesMargemProdutoSort.persistMap', () {
-    test('persists page size, search and sort keys', () {
+    test('persists page size, search and the fixed name sort', () {
       final persisted = SalesMargemProdutoSort.persistMap(
         pageSize: 10,
         searchTerm: '  Mel  ',
-        sortBy: MargemProdutoSortBy.percentualMarkup,
-        sortDirection: MargemProdutoSortDirection.descending,
       );
 
-      check(persisted['sortBy']).equals('percentualMarkup');
-      check(persisted['sortDirection']).equals('descending');
+      check(persisted['sortBy']).equals('nomeProduto');
+      check(persisted['sortDirection']).equals('ascending');
       check(persisted.containsKey('codEmpresa')).isFalse();
       check(persisted.containsKey('codFilial')).isFalse();
       check(persisted['pageSize']).equals(10);
       check(persisted['searchTerm']).equals('Mel');
-    });
-
-    test('persists product name instead of the removed margin sort', () {
-      final persisted = SalesMargemProdutoSort.persistMap(
-        pageSize: 20,
-        sortBy: MargemProdutoSortBy.margemLucro,
-        sortDirection: MargemProdutoSortDirection.ascending,
-      );
-
-      check(persisted['sortBy']).equals('nomeProduto');
     });
   });
 
@@ -141,7 +116,7 @@ void main() {
       check(query.searchTerm).equals('Mel');
     });
 
-    test('keeps previous sort when paging', () {
+    test('discards requested sorts and keeps the name default', () {
       final previous = SalesMargemProdutoSort.queryFor(
         page: 1,
         pageSize: 20,
@@ -156,12 +131,7 @@ void main() {
         previous: previous,
       );
 
-      check(query.sorts.single.columnKey).equals(
-        SalesMargemProdutoSort.columnMarkup,
-      );
-      check(query.sorts.single.direction).equals(
-        AppReportSortDirection.descending,
-      );
+      check(query.sorts).deepEquals(SalesMargemProdutoSort.defaultSorts);
     });
 
     test('clears searchTerm when requested', () {

@@ -124,7 +124,7 @@ void main() {
       );
 
       expect(style.headerRowHeight, 48);
-      expect(style.allowSorting, isTrue);
+      expect(style.allowSorting, isFalse);
       expect(style.trustServerRowOrder, isTrue);
       expect(style.showSearchBar, isTrue);
     });

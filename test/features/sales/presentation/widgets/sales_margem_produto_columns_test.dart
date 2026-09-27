@@ -2,6 +2,7 @@ import 'package:checks/checks.dart';
 import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_by.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_direction.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_margem_produto_columns.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_margem_produto_sort.dart';
 import 'package:flutter/material.dart';
@@ -20,7 +21,7 @@ void main() {
   group('buildSalesMargemProdutoColumns', () {
     final columns = buildSalesMargemProdutoColumns(labels: _labels);
 
-    test('exposes pinned code and sortable catalog columns', () {
+    test('exposes pinned code and non-sortable catalog columns', () {
       check(
         columns.map((column) => column.key).toList(),
       ).deepEquals(<String>[
@@ -33,7 +34,7 @@ void main() {
       ]);
 
       for (final column in columns) {
-        check(column.sortable).equals(true);
+        check(column.sortable).equals(false);
       }
 
       final codigo = columns.firstWhere(
@@ -196,10 +197,18 @@ void main() {
       ).equals(MargemProdutoSortBy.nomeProduto);
     });
 
-    test('should sanitize empty sorts to the name default', () {
+    test('should sanitize any sorts to the name default', () {
       check(SalesMargemProdutoSort.sanitizeSorts(const [])).deepEquals(
         SalesMargemProdutoSort.defaultSorts,
       );
+      check(
+        SalesMargemProdutoSort.sanitizeSorts(
+          SalesMargemProdutoSort.descriptorsFor(
+            sortBy: MargemProdutoSortBy.percentualMarkup,
+            sortDirection: MargemProdutoSortDirection.descending,
+          ),
+        ),
+      ).deepEquals(SalesMargemProdutoSort.defaultSorts);
     });
   });
 }

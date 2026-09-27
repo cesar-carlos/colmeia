@@ -503,8 +503,6 @@ class SalesMargemProdutoController extends ChangeNotifier {
       SalesMargemProdutoSort.cardId,
       SalesMargemProdutoSort.persistMap(
         pageSize: _pageSize,
-        sortBy: SalesMargemProdutoSort.sortByFromQuery(_query),
-        sortDirection: SalesMargemProdutoSort.sortDirectionFromQuery(_query),
         searchTerm: _query.searchTerm,
       ),
     );

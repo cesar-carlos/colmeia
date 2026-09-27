@@ -4,10 +4,10 @@ import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_query.dart';
 import 'package:flutter/foundation.dart';
 
-/// Maps AppReportViewer pagination and sort onto the MargemProduto catalog.
+/// Maps AppReportViewer pagination onto the MargemProduto catalog.
 ///
-/// Column keys identify grid columns. Ordering is applied in SQL
-/// (`ROW_NUMBER`) from a whitelist — never from raw user identifiers.
+/// Column keys identify grid columns. Catalog order is fixed to product name
+/// in SQL (`ROW_NUMBER`) — header sorting is not offered.
 abstract final class SalesMargemProdutoSort {
   static const String cardId = 'margem_produto';
 
@@ -125,14 +125,7 @@ abstract final class SalesMargemProdutoSort {
   static List<AppReportSortDescriptor> sanitizeSorts(
     List<AppReportSortDescriptor> sorts,
   ) {
-    if (sorts.isEmpty) {
-      return defaultSorts;
-    }
-    final first = sorts.first;
-    return descriptorsFor(
-      sortBy: sortByFromColumnKey(first.columnKey),
-      sortDirection: domainDirectionFrom(first.direction),
-    );
+    return defaultSorts;
   }
 
   static MargemProdutoSortBy sortByFromQuery(AppReportQuery query) {
@@ -176,7 +169,7 @@ abstract final class SalesMargemProdutoSort {
       );
     }
     return previous.copyWith(
-      sorts: sorts == null ? null : sanitizeSorts(sorts),
+      sorts: sanitizeSorts(sorts ?? previous.sorts),
       page: sanitizedPage,
       pageSize: sanitizedPageSize,
       searchTerm: normalizedSearch,
@@ -201,63 +194,24 @@ abstract final class SalesMargemProdutoSort {
     );
   }
 
-  static MargemProdutoSortBy restoreSortBy(Object? raw) {
-    if (raw is MargemProdutoSortBy) {
-      return _visibleSortBy(raw);
-    }
-    if (raw is String) {
-      for (final value in MargemProdutoSortBy.values) {
-        if (value.name == raw.trim()) {
-          return _visibleSortBy(value);
-        }
-      }
-    }
-    return MargemProdutoSortBy.nomeProduto;
-  }
-
-  static MargemProdutoSortBy _visibleSortBy(MargemProdutoSortBy sortBy) {
-    return switch (sortBy) {
-      MargemProdutoSortBy.margemLucro => MargemProdutoSortBy.nomeProduto,
-      _ => sortBy,
-    };
-  }
-
-  static MargemProdutoSortDirection restoreSortDirection(Object? raw) {
-    if (raw is MargemProdutoSortDirection) {
-      return raw;
-    }
-    if (raw is String) {
-      for (final value in MargemProdutoSortDirection.values) {
-        if (value.name == raw.trim()) {
-          return value;
-        }
-      }
-    }
-    return MargemProdutoSortDirection.ascending;
-  }
-
   static SalesMargemProdutoPersistedFilters restore(
     Map<String, Object?> raw,
   ) {
     return SalesMargemProdutoPersistedFilters(
       pageSize: sanitizePageSize(raw[persistPageSizeKey]),
       searchTerm: normalizeSearchTerm(raw[persistSearchTermKey]),
-      sortBy: restoreSortBy(raw[persistSortByKey]),
-      sortDirection: restoreSortDirection(raw[persistSortDirectionKey]),
     );
   }
 
   static Map<String, Object?> persistMap({
     required int pageSize,
-    required MargemProdutoSortBy sortBy,
-    required MargemProdutoSortDirection sortDirection,
     String? searchTerm,
   }) {
     return <String, Object?>{
       persistPageSizeKey: sanitizePageSize(pageSize),
       persistSearchTermKey: normalizeSearchTerm(searchTerm),
-      persistSortByKey: _visibleSortBy(sortBy).name,
-      persistSortDirectionKey: sortDirection.name,
+      persistSortByKey: MargemProdutoSortBy.nomeProduto.name,
+      persistSortDirectionKey: MargemProdutoSortDirection.ascending.name,
     };
   }
 

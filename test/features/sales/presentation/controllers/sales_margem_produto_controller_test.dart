@@ -14,7 +14,6 @@ import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.da
 import 'package:colmeia/features/sales/presentation/controllers/sales_margem_produto_controller.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_margem_produto_sort.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
-import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:result_dart/result_dart.dart';
@@ -112,7 +111,7 @@ void main() {
     controller.dispose();
   });
 
-  test('restores page size, search and sort from session', () {
+  test('restores page size and search, ignoring persisted sort', () {
     when(
       () => preferences.restoreCardFilters(SalesMargemProdutoSort.cardId),
     ).thenReturn(<String, Object?>{
@@ -132,10 +131,9 @@ void main() {
 
     expect(restored.pageSize, 50);
     expect(restored.query.searchTerm, 'cabo');
-    expect(restored.query.sorts.single.columnKey, 'percentualMarkup');
     expect(
-      restored.query.sorts.single.direction,
-      AppReportSortDirection.descending,
+      restored.query.sorts,
+      SalesMargemProdutoSort.defaultSorts,
     );
   });
 
@@ -225,7 +223,7 @@ void main() {
     expect(filter.page, 1);
   });
 
-  test('applySort persists markup DESC and sends it on the filter', () async {
+  test('applySort keeps the fixed name order on the filter', () async {
     await controller.bindUser('user-1');
     await controller.loadCatalog();
 
@@ -248,8 +246,8 @@ void main() {
               ),
             ).captured.last
             as MargemProdutoFilter;
-    expect(filter.sortBy, MargemProdutoSortBy.percentualMarkup);
-    expect(filter.sortDirection, MargemProdutoSortDirection.descending);
+    expect(filter.sortBy, MargemProdutoSortBy.nomeProduto);
+    expect(filter.sortDirection, MargemProdutoSortDirection.ascending);
   });
 
   test('loadRowsForShare copies search and sort', () async {
@@ -270,12 +268,6 @@ void main() {
     await controller.bindUser('user-1');
     await controller.loadCatalog();
     await controller.applySearch('mel');
-    await controller.applySort(
-      SalesMargemProdutoSort.descriptorsFor(
-        sortBy: MargemProdutoSortBy.codProduto,
-        sortDirection: MargemProdutoSortDirection.descending,
-      ),
-    );
 
     final result = await controller.loadRowsForShare();
 
@@ -293,7 +285,7 @@ void main() {
             ).captured.single
             as MargemProdutoFilter;
     expect(filter.searchTerm, 'mel');
-    expect(filter.sortBy, MargemProdutoSortBy.codProduto);
-    expect(filter.sortDirection, MargemProdutoSortDirection.descending);
+    expect(filter.sortBy, MargemProdutoSortBy.nomeProduto);
+    expect(filter.sortDirection, MargemProdutoSortDirection.ascending);
   });
 }

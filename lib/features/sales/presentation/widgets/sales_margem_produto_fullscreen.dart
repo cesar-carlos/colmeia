@@ -54,7 +54,7 @@ AppReportViewerStyle salesMargemProdutoReportViewerStyle({
     gridHeight: gridHeight,
     dataRowHeight: kSalesMargemProdutoDataRowHeight,
   ).copyWith(
-    allowSorting: true,
+    allowSorting: false,
     trustServerRowOrder: true,
     showRefreshAction: false,
     enablePullToRefresh: false,
