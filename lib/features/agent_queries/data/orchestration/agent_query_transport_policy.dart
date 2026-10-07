@@ -20,52 +20,10 @@ class AgentQueryTransportPolicy {
       case AgentQueryTransportPolicyMode.legacy:
         return request;
       case AgentQueryTransportPolicyMode.preferRelay:
-        return AgentSqlExecuteRequest(
-          agentId: request.agentId,
-          sql: request.sql,
-          namedParams: request.namedParams,
-          clientToken: request.clientToken,
-          requestingUserId: request.requestingUserId,
-          hubPresenceOnlineAgentIdsSnapshot:
-              request.hubPresenceOnlineAgentIdsSnapshot,
-          hubConnectedFromApprovedCatalogRow:
-              request.hubConnectedFromApprovedCatalogRow,
-          bridgeTimeoutMs: request.bridgeTimeoutMs,
-          totalTimeoutMs: request.totalTimeoutMs,
-          transportRpcId: request.transportRpcId,
-          pagination: request.pagination,
-          executeOptions: request.executeOptions,
-          skipTransportCache: request.skipTransportCache,
-          useRelay: true,
-          relayMode: request.relayMode,
-          apiVersion: request.apiVersion,
-          outboundCompression: request.outboundCompression,
-          payloadFrameCompression: request.payloadFrameCompression,
-        );
+        return request.copyWith(useRelay: true);
       case AgentQueryTransportPolicyMode.autoByShape:
         if (request.relayMode == AgentSqlRelayMode.streaming) {
-          return AgentSqlExecuteRequest(
-            agentId: request.agentId,
-            sql: request.sql,
-            namedParams: request.namedParams,
-            clientToken: request.clientToken,
-            requestingUserId: request.requestingUserId,
-            hubPresenceOnlineAgentIdsSnapshot:
-                request.hubPresenceOnlineAgentIdsSnapshot,
-            hubConnectedFromApprovedCatalogRow:
-                request.hubConnectedFromApprovedCatalogRow,
-            bridgeTimeoutMs: request.bridgeTimeoutMs,
-            totalTimeoutMs: request.totalTimeoutMs,
-            transportRpcId: request.transportRpcId,
-            pagination: request.pagination,
-            executeOptions: request.executeOptions,
-            skipTransportCache: request.skipTransportCache,
-            useRelay: true,
-            relayMode: request.relayMode,
-            apiVersion: request.apiVersion,
-            outboundCompression: request.outboundCompression,
-            payloadFrameCompression: request.payloadFrameCompression,
-          );
+          return request.copyWith(useRelay: true);
         }
         if (request.pagination != null) {
           return request;
@@ -89,23 +47,6 @@ class AgentQueryTransportPolicy {
     if (!shouldUseRelay) {
       return request;
     }
-    return AgentSqlExecuteBatchRequest(
-      agentId: request.agentId,
-      commands: request.commands,
-      clientToken: request.clientToken,
-      requestingUserId: request.requestingUserId,
-      hubPresenceOnlineAgentIdsSnapshot:
-          request.hubPresenceOnlineAgentIdsSnapshot,
-      hubConnectedFromApprovedCatalogRow:
-          request.hubConnectedFromApprovedCatalogRow,
-      bridgeTimeoutMs: request.bridgeTimeoutMs,
-      totalTimeoutMs: request.totalTimeoutMs,
-      transportRpcId: request.transportRpcId,
-      options: request.options,
-      useRelay: true,
-      apiVersion: request.apiVersion,
-      payloadFrameCompression: request.payloadFrameCompression,
-      skipTransportCache: request.skipTransportCache,
-    );
+    return request.copyWith(useRelay: true);
   }
 }
