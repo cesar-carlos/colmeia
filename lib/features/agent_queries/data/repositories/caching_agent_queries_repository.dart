@@ -1,3 +1,4 @@
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_request_key.dart';
@@ -7,17 +8,18 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
+import 'package:result_dart/result_dart.dart';
 
 /// Short-term cache for idempotent SQL queries to reduce redundant hub calls.
 ///
-/// Caches successful results for a brief TTL (default 3 seconds) to handle:
+/// Caches successful results for a brief TTL (default 5 seconds) to handle:
 /// - Rapid UI refreshes (pull-to-refresh spam)
 /// - Multiple widgets requesting the same data during a single frame
 /// - Back-and-forth navigation within a short window
 ///
 /// The cache is keyed by (agentId + sql + params + clientToken) to prevent
 /// stale or cross-user data leakage. Cache entries are invalidated when:
-/// - TTL expires (default 3 seconds, tunable by AGENT_SQL_CACHE_TTL_MS)
+/// - TTL expires (default 5 seconds, tunable by AGENT_SQL_CACHE_TTL_MS)
 /// - Maximum cache size is exceeded (LRU eviction, default 500 entries)
 /// - Session changes (clientToken mismatch)
 ///
@@ -32,11 +34,12 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
   CachingAgentQueriesRepository({
     required this._delegate,
     this._cacheTtl = defaultCacheTtl,
-    this._catalogCacheTtl,
+    this._catalogCacheTtl = defaultCatalogCacheTtl,
     this._maxCacheSize = 500,
   });
 
-  static const Duration defaultCacheTtl = Duration(seconds: 3);
+  static const Duration defaultCatalogCacheTtl = Duration(seconds: 30);
+  static const Duration defaultCacheTtl = Duration(seconds: 5);
 
   final AgentQueriesRepository _delegate;
   final Duration _cacheTtl;
@@ -72,6 +75,9 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
     AgentSqlExecuteRequest request, {
     AgentQueriesCancelScope? cancelScope,
   }) async {
+    if (cancelScope?.isCancelled ?? false) {
+      return const Failure(OperationCancelledFailure());
+    }
     final key = AgentQueriesRequestKey.build(request);
     final now = DateTime.now();
     final ttl = _effectiveTtlForSql(request.trimmedSql);
@@ -80,6 +86,9 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
       final entry = _sqlCache[key];
       if (entry != null && now.difference(entry.cachedAt) <= ttl) {
         _cacheHits++;
+        cancelScope?.diagnostics?.cacheHit = true;
+        cancelScope?.diagnostics?.mark('first_rows');
+        cancelScope?.diagnostics?.complete();
         AppLogger.debug(
           'Cache hit for SQL query',
           context: <String, Object?>{
@@ -123,6 +132,9 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
     AgentSqlExecuteBatchRequest request, {
     AgentQueriesCancelScope? cancelScope,
   }) async {
+    if (cancelScope?.isCancelled ?? false) {
+      return const Failure(OperationCancelledFailure());
+    }
     final key = AgentQueriesRequestKey.buildBatch(request);
     final now = DateTime.now();
 
@@ -130,6 +142,9 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
       final entry = _batchCache[key];
       if (entry != null && now.difference(entry.cachedAt) <= _cacheTtl) {
         _batchCacheHits++;
+        cancelScope?.diagnostics?.cacheHit = true;
+        cancelScope?.diagnostics?.mark('first_rows');
+        cancelScope?.diagnostics?.complete();
         AppLogger.debug(
           'Cache hit for SQL batch',
           context: <String, Object?>{

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/agent_command_sender.dart';
+import 'package:colmeia/core/socket/command_phase_observability.dart';
 import 'package:colmeia/core/socket/socket_coalesce_key.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:uuid/uuid.dart';
@@ -25,7 +26,8 @@ import 'package:uuid/uuid.dart';
 /// `SocketCoalesceKey`, ensuring that two identical pendings within the
 /// same window share a single batch slot. Each caller still owns an
 /// independent Future so it can cancel its local interest safely.
-class AgentCommandBatchCoordinator implements AgentCommandSender {
+class AgentCommandBatchCoordinator
+    implements AgentCommandSender, CommandPhaseObservability {
   AgentCommandBatchCoordinator({
     required this._directSender,
     Duration windowDuration = const Duration(milliseconds: 8),
@@ -48,6 +50,12 @@ class AgentCommandBatchCoordinator implements AgentCommandSender {
        // Hard-cap to the hub's documented limit even if the env passes more.
        _maxBatchSize = maxBatchSize > 32 ? 32 : maxBatchSize,
        _minBatchSize = minBatchSize;
+
+  @override
+  void Function() observePhases(
+    String requestId,
+    CommandPhaseListener listener,
+  ) => observeCommandPhases(_directSender, requestId, listener);
 
   final AgentCommandSender _directSender;
   final Duration _windowDuration;

@@ -5,16 +5,27 @@ import 'package:colmeia/features/agent_queries/data/agent_queries_sql_local_date
 import 'package:colmeia/features/agent_queries/data/models/resumo_parcela_forma_pagamento_row_model_v2.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcela_forma_pagamento_sql_v2.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repository_execution.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/progressive_report_loader.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/scoped_agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_progress.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_filter_v2.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_forma_pagamento_row_v2.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/progressive_report_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_forma_pagamento_repository_v2.dart';
 
 class ResumoParcelaFormaPagamentoRepositoryImplV2
-    implements ResumoParcelaFormaPagamentoRepositoryV2 {
+    implements
+        ResumoParcelaFormaPagamentoRepositoryV2,
+        ProgressiveReportRepository<
+          ResumoParcelaFormaPagamentoFilterV2,
+          ResumoParcelaFormaPagamentoRowV2
+        > {
   ResumoParcelaFormaPagamentoRepositoryImplV2(
     this._agentQueriesRepository,
   );
@@ -30,6 +41,7 @@ class ResumoParcelaFormaPagamentoRepositoryImplV2
     required ResumoParcelaFormaPagamentoFilterV2 filter,
     String? clientToken,
     int? bridgeTimeoutMs,
+    AgentQueriesCancelScope? cancelScope,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
   }) async {
@@ -76,6 +88,7 @@ class ResumoParcelaFormaPagamentoRepositoryImplV2
     >(
       agentQueriesRepository: _agentQueriesRepository,
       request: request,
+      cancelScope: cancelScope,
       operation: _operation,
       agentId: agentId.trim(),
       unexpectedRowsLogMessage:
@@ -94,4 +107,34 @@ class ResumoParcelaFormaPagamentoRepositoryImplV2
         )
         .toList(growable: false);
   }
+
+  @override
+  Stream<AppResult<AgentQueryProgress<ResumoParcelaFormaPagamentoRowV2>>>
+  loadProgressively({
+    required String userId,
+    required String agentId,
+    required ResumoParcelaFormaPagamentoFilterV2 filter,
+    String? clientToken,
+    int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
+    AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
+  }) => const ProgressiveReportLoader<ResumoParcelaFormaPagamentoRowV2>().load(
+    parent: cancelScope,
+    mapRows: _mapExecutionToRows,
+    execute: (scope) =>
+        ResumoParcelaFormaPagamentoRepositoryImplV2(
+          ScopedAgentQueriesRepository(_agentQueriesRepository, scope),
+        ).load(
+          userId: userId,
+          agentId: agentId,
+          filter: filter,
+          clientToken: clientToken,
+          bridgeTimeoutMs: bridgeTimeoutMs,
+          hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+          hubConnectedFromApprovedCatalogRow:
+              hubConnectedFromApprovedCatalogRow,
+        ),
+  );
 }

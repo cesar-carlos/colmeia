@@ -7,6 +7,13 @@ final class GateQueueWaitCancelled implements Exception {
   const GateQueueWaitCancelled();
 }
 
+final class GateQueueFull implements Exception {
+  const GateQueueFull(this.message);
+  final String message;
+  @override
+  String toString() => message;
+}
+
 /// Bounds the number of in-flight `agents:command` / relay dispatches per
 /// agent.
 ///
@@ -137,7 +144,8 @@ class PerAgentConcurrencyGate {
   ///
   /// Throws [ArgumentError] when [count] is less than 1. Throws [StateError]
   /// when [count] exceeds [maxInflightPerAgent] (the request can never be
-  /// satisfied) or when the waiter queue is at [maxWaitersPerAgent].
+  /// satisfied). Throws [GateQueueFull] when the waiter queue reaches
+  /// [maxWaitersPerAgent].
   Future<void> acquireSlots(
     String agentId,
     int count, {
@@ -167,7 +175,7 @@ class PerAgentConcurrencyGate {
     final cap = maxWaitersPerAgent;
     if (cap != null && queue.length >= cap) {
       onWaiterQueueRejected?.call();
-      throw StateError(
+      throw GateQueueFull(
         'PerAgentConcurrencyGate waiter queue exceeded for agentId=$agentId '
         '(maxWaitersPerAgent=$cap)',
       );

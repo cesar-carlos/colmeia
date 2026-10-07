@@ -27,6 +27,52 @@ void main() {
       expect(policy.apply(request).useRelay, isTrue);
     });
 
+    for (final mode in <AgentQueryTransportPolicyMode>[
+      AgentQueryTransportPolicyMode.preferRelay,
+      AgentQueryTransportPolicyMode.autoByShape,
+    ]) {
+      test('should preserve retry identity and cache bypass for $mode', () {
+        final policy = AgentQueryTransportPolicy(mode: mode);
+        const request = AgentSqlExecuteRequest(
+          agentId: agentId,
+          sql: sql,
+          relayMode: AgentSqlRelayMode.streaming,
+          transportRpcId: 'logical-request-1',
+          totalTimeoutMs: 42000,
+          skipTransportCache: true,
+        );
+
+        final routed = policy.apply(request);
+
+        expect(routed.useRelay, isTrue);
+        expect(routed.transportRpcId, request.transportRpcId);
+        expect(routed.totalTimeoutMs, request.totalTimeoutMs);
+        expect(routed.skipTransportCache, isTrue);
+      });
+    }
+
+    test('should preserve batch retry identity when promoting to relay', () {
+      const policy = AgentQueryTransportPolicy(
+        mode: AgentQueryTransportPolicyMode.preferRelay,
+      );
+      const request = AgentSqlExecuteBatchRequest(
+        agentId: agentId,
+        commands: <AgentSqlExecuteBatchCommand>[
+          AgentSqlExecuteBatchCommand(sql: sql),
+        ],
+        transportRpcId: 'logical-batch-1',
+        totalTimeoutMs: 43000,
+        skipTransportCache: true,
+      );
+
+      final routed = policy.applyBatch(request);
+
+      expect(routed.useRelay, isTrue);
+      expect(routed.transportRpcId, request.transportRpcId);
+      expect(routed.totalTimeoutMs, request.totalTimeoutMs);
+      expect(routed.skipTransportCache, isTrue);
+    });
+
     test('autoByShape enables relay only for streaming mode', () {
       const policy = AgentQueryTransportPolicy(
         mode: AgentQueryTransportPolicyMode.autoByShape,

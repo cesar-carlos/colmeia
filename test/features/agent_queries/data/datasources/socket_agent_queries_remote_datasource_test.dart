@@ -2,6 +2,7 @@ import 'package:checks/checks.dart';
 import 'package:colmeia/core/socket/agent_command_sender.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/socket_agent_queries_remote_datasource.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -50,6 +51,40 @@ void main() {
     sender = _FakeSender();
     dataSource = SocketAgentQueriesRemoteDataSource(sender: sender);
   });
+
+  for (final batch in [false, true]) {
+    test(
+      'legacy ${batch ? 'batch' : 'unary'} attempts use fresh wire ids',
+      () async {
+        final ids = <String>[];
+        for (var attempt = 0; attempt < 2; attempt++) {
+          if (batch) {
+            await dataSource.postSqlExecuteBatch(
+              const AgentSqlExecuteBatchRequest(
+                agentId: 'agent-42',
+                transportRpcId: 'stable-relay-operation',
+                commands: [AgentSqlExecuteBatchCommand(sql: 'SELECT 1')],
+              ),
+            );
+          } else {
+            await dataSource.postSqlExecute(
+              const AgentSqlExecuteRequest(
+                agentId: 'agent-42',
+                transportRpcId: 'stable-relay-operation',
+                sql: 'SELECT 1',
+              ),
+            );
+          }
+          ids.add(sender.lastRpcId!);
+          final bodyCommand =
+              sender.lastBody!['command']! as Map<String, Object?>;
+          check(bodyCommand['id']).equals(sender.lastRpcId);
+        }
+        check(ids.toSet().length).equals(2);
+        check(ids.contains('stable-relay-operation')).isFalse();
+      },
+    );
+  }
 
   test('forwards body shaped by AgentSqlExecuteRequestToBridgeBody', () async {
     const request = AgentSqlExecuteRequest(

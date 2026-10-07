@@ -143,6 +143,7 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
       pageInfo: _controller.pageInfo,
       query: _controller.query,
       isLoading: _controller.isLoading && _controller.loadFailure == null,
+      isIncomplete: _controller.isIncomplete,
       loadFailure: _controller.loadFailure,
     );
   }
@@ -255,7 +256,10 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
                 valueListenable: _gridView,
                 builder: (context, snapshot, _) {
                   final canShare =
-                      !snapshot.isLoading && snapshot.pageInfo.totalRows > 0;
+                      !snapshot.isLoading &&
+                      !snapshot.isIncomplete &&
+                      snapshot.loadFailure == null &&
+                      snapshot.pageInfo.totalRows > 0;
                   return AppChartHeaderTrailing(
                     onShare: canShare ? () => unawaited(_shareCatalog()) : null,
                     shareProgressKey: _shareKey,
@@ -529,6 +533,7 @@ class _SalesMargemProdutoReportSurface extends StatelessWidget {
             gridHeight: gridHeight,
           ),
           isLoading: controller.isLoading && loadFailure == null,
+          isIncomplete: controller.isIncomplete,
           loadErrorPanel: loadFailure == null
               ? null
               : AgentQueryErrorPanelFactory.fromFailure(

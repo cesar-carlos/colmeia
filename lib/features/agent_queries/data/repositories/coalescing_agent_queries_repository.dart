@@ -102,7 +102,10 @@ class CoalescingAgentQueriesRepository implements AgentQueriesRepository {
     if (traceId == null) {
       return base;
     }
-    return '$traceId|$base';
+    final observer = cancelScope?.progressObserver;
+    return observer == null
+        ? '$traceId|$base'
+        : '$traceId|progress:${identityHashCode(observer)}|$base';
   }
 
   static String _buildBatchKey(
@@ -114,7 +117,10 @@ class CoalescingAgentQueriesRepository implements AgentQueriesRepository {
     if (traceId == null) {
       return base;
     }
-    return '$traceId|$base';
+    final observer = cancelScope?.progressObserver;
+    return observer == null
+        ? '$traceId|$base'
+        : '$traceId|progress:${identityHashCode(observer)}|$base';
   }
 
   Future<void> _removeInflightWhenComplete(

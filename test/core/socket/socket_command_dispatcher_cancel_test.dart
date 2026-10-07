@@ -77,6 +77,36 @@ void main() {
 
   group('SocketCommandDispatcherImpl.cancel', () {
     test(
+      'cancellation during connection prevents a late command emit',
+      () async {
+        final connectionReady = Completer<ConsumerSocketConnected>();
+        when(connection.connect).thenAnswer((_) => connectionReady.future);
+        final future = dispatcher.sendAgentsCommand(
+          agentId: 'agent-1',
+          body: _body(rpcId: 'rpc-before-ready'),
+          rpcId: 'rpc-before-ready',
+          coalesce: false,
+        );
+        final assertion = expectLater(
+          future,
+          throwsA(isA<SocketDispatchCancelled>()),
+        );
+        dispatcher.cancel('rpc-before-ready');
+        await assertion;
+        connectionReady.complete(
+          ConsumerSocketConnected(
+            socketId: 's',
+            handshakeAt: DateTime.utc(2026),
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+        verifyNever(
+          () => correlator.register(any(), timeout: any(named: 'timeout')),
+        );
+        verifyNever(() => rawSocket.emit(any(), any<dynamic>()));
+      },
+    );
+    test(
       'forwards a SocketDispatchCancelled to the correlator and emits a '
       'transient outcome with reasonCode=cancelled',
       () async {

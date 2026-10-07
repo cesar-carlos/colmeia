@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:colmeia/shared/widgets/reports/export/report_export_sharing.dart';
@@ -46,6 +47,10 @@ void main() {
       expect(file.existsSync(), isTrue);
       expect(file.readAsBytesSync(), bytes);
       expect(file.parent.path, isNot(file.path));
+      expect(
+        file.parent.parent.uri.pathSegments,
+        contains('colmeia_share_exports'),
+      );
       file.parent.deleteSync(recursive: true);
       return;
     }
@@ -98,6 +103,7 @@ void main() {
     );
 
     expect(result.shareResult.status, ShareResultStatus.unavailable);
+    expect(result.isUnconfirmedShare, Platform.isWindows);
     expect(capturedArgs, isNotNull);
     final paths = capturedArgs!['paths'] as List<dynamic>?;
     expect(paths, isNotNull);
@@ -124,4 +130,31 @@ void main() {
       Platform.isWindows,
     );
   });
+
+  test(
+    'should preserve the PDF path when the native share call times out',
+    () async {
+      if (!(Platform.isWindows || Platform.isMacOS)) {
+        return;
+      }
+      const shareChannel = MethodChannel('dev.fluttercommunity.plus/share');
+      final pending = Completer<Object?>();
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(shareChannel, (_) => pending.future);
+
+      final result = await shareExportBytes(
+        bytes: Uint8List.fromList(<int>[0x25, 0x50, 0x44, 0x46]),
+        fileName: 'timeout.pdf',
+        mimeType: 'application/pdf',
+        shareTimeout: const Duration(milliseconds: 10),
+      );
+
+      expect(result.isUnconfirmedShare, isFalse);
+      expect(result.shareResult.status, ShareResultStatus.unavailable);
+      expect(result.tempFilePath, isNotNull);
+      expect(File(result.tempFilePath!).existsSync(), isTrue);
+      pending.complete('dev.fluttercommunity.plus/share/unavailable');
+      await deleteShareTempFile(result.tempFilePath!);
+    },
+  );
 }

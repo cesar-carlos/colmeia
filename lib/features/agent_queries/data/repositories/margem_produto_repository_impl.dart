@@ -6,7 +6,10 @@ import 'package:colmeia/features/agent_queries/data/agent_queries_sql_row_map_re
 import 'package:colmeia/features/agent_queries/data/models/margem_produto_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/queries/margem_produto_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repository_execution.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/paged_report_progress_loader.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/scoped_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/data/resumo_vendas_diarias_suggestion_sql_params.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_progress.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
@@ -16,6 +19,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_ro
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/margem_produto_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/paged_progressive_report_repository.dart';
 import 'package:result_dart/result_dart.dart';
 
 /// Paged product-margin catalog (`MargemProduto`).
@@ -27,7 +31,13 @@ import 'package:result_dart/result_dart.dart';
 /// page slice. Skips the short transport cache. A raw empty payload is a
 /// transport glitch, not an empty catalog — we retry once. A legitimate empty
 /// page is a `TotalCount = 0` sentinel row.
-class MargemProdutoRepositoryImpl implements MargemProdutoRepository {
+class MargemProdutoRepositoryImpl
+    implements
+        MargemProdutoRepository,
+        PagedProgressiveReportRepository<
+          MargemProdutoFilter,
+          MargemProdutoRow
+        > {
   MargemProdutoRepositoryImpl(
     this._agentQueriesRepository, {
     this.emptySuccessRetryDelay = const Duration(seconds: 2),
@@ -232,4 +242,52 @@ class MargemProdutoRepositoryImpl implements MargemProdutoRepository {
     );
     return raw != null;
   }
+
+  @override
+  Stream<AppResult<AgentQueryProgress<MargemProdutoRow>>>
+  loadPagesProgressively({
+    required String userId,
+    required String agentId,
+    required MargemProdutoFilter filter,
+    String? clientToken,
+    int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
+    bool emitPartialResults = true,
+  }) =>
+      const PagedReportProgressLoader<
+            MargemProdutoPageResult,
+            MargemProdutoRow
+          >()
+          .load(
+            parent: cancelScope,
+            emitPartialResults: emitPartialResults,
+            pageSize: filter.pageSize,
+            maxRows: AppEnvironment.socketStreamSqlCollectorMaxBufferedRows,
+            items: (page) => page.items,
+            totalCount: (page) => page.totalCount,
+            rowKey: (row) => (row.codEmpresa, row.codFilial, row.codProduto),
+            loadPage: (page, scope) =>
+                MargemProdutoRepositoryImpl(
+                  ScopedAgentQueriesRepository(_agentQueriesRepository, scope),
+                  emptySuccessRetryDelay: emptySuccessRetryDelay,
+                ).loadPage(
+                  userId: userId,
+                  agentId: agentId,
+                  filter: MargemProdutoFilter(
+                    searchTerm: filter.searchTerm,
+                    page: page,
+                    pageSize: filter.pageSize,
+                    sortBy: filter.sortBy,
+                    sortDirection: filter.sortDirection,
+                  ),
+                  clientToken: clientToken,
+                  bridgeTimeoutMs: bridgeTimeoutMs,
+                  hubPresenceOnlineAgentIdsSnapshot:
+                      hubPresenceOnlineAgentIdsSnapshot,
+                  hubConnectedFromApprovedCatalogRow:
+                      hubConnectedFromApprovedCatalogRow,
+                ),
+          );
 }

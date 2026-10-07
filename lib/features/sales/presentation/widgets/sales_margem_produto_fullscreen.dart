@@ -72,6 +72,7 @@ class SalesMargemProdutoGridSnapshot {
     required this.pageInfo,
     required this.query,
     required this.isLoading,
+    this.isIncomplete = false,
     this.loadFailure,
   });
 
@@ -95,6 +96,7 @@ class SalesMargemProdutoGridSnapshot {
   final AppReportPageInfo pageInfo;
   final AppReportQuery query;
   final bool isLoading;
+  final bool isIncomplete;
   final AppFailure? loadFailure;
 
   @override
@@ -110,6 +112,7 @@ class SalesMargemProdutoGridSnapshot {
         listEquals(query.sorts, other.query.sorts) &&
         query.searchTerm == other.query.searchTerm &&
         isLoading == other.isLoading &&
+        isIncomplete == other.isIncomplete &&
         identical(loadFailure, other.loadFailure);
   }
 
@@ -125,6 +128,7 @@ class SalesMargemProdutoGridSnapshot {
     query.searchTerm,
     Object.hashAll(query.sorts),
     isLoading,
+    isIncomplete,
     identityHashCode(loadFailure),
   );
 }
@@ -202,6 +206,7 @@ class _SalesMargemProdutoFullscreenState
             gridHeight: gridHeight,
           ),
           isLoading: widget.snapshot.isLoading,
+          isIncomplete: widget.snapshot.isIncomplete,
           loadErrorPanel: loadFailure == null
               ? null
               : AgentQueryErrorPanelFactory.fromFailure(

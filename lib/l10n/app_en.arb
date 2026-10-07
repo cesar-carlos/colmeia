@@ -1389,6 +1389,7 @@
   "reportInlineFiltersSelectDate": "Select date",
   "reportFiltersAppliedSectionTitle": "Applied filters",
   "reportRowDetailDefaultTitle": "Details",
+  "reportIncompleteMessage": "Incomplete result. Retry before sharing or exporting.",
   "reportLoadErrorTitle": "Could not load data",
   "reportEmptyClearFiltersAction": "Clear filters",
   "reportEmptyDefaultMessage": "No results found.",

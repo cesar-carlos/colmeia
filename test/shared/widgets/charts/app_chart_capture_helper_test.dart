@@ -31,6 +31,41 @@ Widget _chartBoundary({required GlobalKey key}) {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  test(
+    'should release the guard when Windows opens an unconfirmed share',
+    () async {
+      final key = GlobalKey();
+      final result = await captureAndShareChart(
+        key,
+        title: 'Catalog',
+        includeChartImage: false,
+        tableData: const ChartShareTableData(
+          headers: <String>['Product'],
+          rows: <List<String>>[
+            <String>['Honey'],
+          ],
+        ),
+        shareBytes:
+            ({
+              required bytes,
+              required fileName,
+              required mimeType,
+              subject,
+              title,
+            }) async => const ShareExportBytesResult(
+              shareResult: ShareResult('native', ShareResultStatus.unavailable),
+              isUnconfirmedShare: true,
+            ),
+      );
+
+      expect(result, isA<ChartShareSuccess>());
+      expect((result as ChartShareSuccess).isConfirmed, isFalse);
+      expect(ChartShareGuard.isInProgress(key), isFalse);
+    },
+  );
+
   testWidgets('captures PNG from repaint boundary', (tester) async {
     final key = GlobalKey();
 

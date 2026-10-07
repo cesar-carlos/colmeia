@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/socket/agent_sql_open_stream.dart';
+import 'package:colmeia/core/socket/command_phase_observability.dart';
 import 'package:colmeia/core/socket/relay/relay_batch_capabilities.dart';
 import 'package:colmeia/core/socket/relay/relay_batch_command_coordinator.dart';
 import 'package:colmeia/core/socket/relay/relay_batch_item.dart';
@@ -15,7 +16,14 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Records every call the coordinator forwards to the inner dispatcher
 /// and lets each test stub the response shape per surface.
-class _RecordingRelayDispatcher implements RelayCommandDispatcher {
+class _RecordingRelayDispatcher
+    implements RelayCommandDispatcher, CommandPhaseObservability {
+  final phases = CommandPhaseObservers();
+  @override
+  void Function() observePhases(
+    String requestId,
+    CommandPhaseListener listener,
+  ) => phases.observe(requestId, listener);
   final List<_UnaryCall> unaryCalls = <_UnaryCall>[];
   final List<_BatchCall> batchCalls = <_BatchCall>[];
   final List<_StreamingCall> streamingCalls = <_StreamingCall>[];
@@ -201,6 +209,31 @@ Map<String, Object?> _legacyBodyFor({
 }
 
 void main() {
+  test('batch coordinator preserves per-request phase listeners and their disposal', () {
+    final inner = _RecordingRelayDispatcher();
+    final coordinator = RelayBatchCommandCoordinator(inner: inner);
+    final events = <(String, Duration)>[];
+    final unregister = coordinator.observePhases(
+      'request-1',
+      (phase, elapsed) => events.add((phase, elapsed)),
+    );
+    inner.phases
+      ..record('request-2', 'frame_decode', const Duration(milliseconds: 1))
+      ..record(
+        'request-1',
+        'connection_conversation',
+        const Duration(milliseconds: 4),
+      );
+    unregister();
+    inner.phases.record(
+      'request-1',
+      'frame_decode',
+      const Duration(milliseconds: 1),
+    );
+    check(events).deepEquals([
+      ('connection_conversation', const Duration(milliseconds: 4)),
+    ]);
+  });
   late _RecordingRelayDispatcher inner;
   late RelayBatchCommandCoordinator coordinator;
   late List<int> emissions;

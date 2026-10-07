@@ -96,10 +96,14 @@ Future<XFile> createShareableXFile({
 }) async {
   if (_shareRequiresTempFilePath()) {
     final directory = await getTemporaryDirectory();
-    unawaited(_sweepStaleShareTempDirectories(directory));
+    final shareRoot = Directory(
+      p.join(directory.path, 'colmeia_share_exports'),
+    );
+    await shareRoot.create(recursive: true);
+    unawaited(_sweepStaleShareTempDirectories(shareRoot));
     final resolvedFileName = _resolvedShareFileName(fileName);
     final fileDirectory = Directory(
-      p.join(directory.path, const Uuid().v4()),
+      p.join(shareRoot.path, const Uuid().v4()),
     );
     await fileDirectory.create(recursive: true);
     final filePath = p.normalize(
@@ -126,10 +130,14 @@ class ShareExportBytesResult {
   const ShareExportBytesResult({
     required this.shareResult,
     this.tempFilePath,
+    this.isUnconfirmedShare = false,
   });
 
   final ShareResult shareResult;
   final String? tempFilePath;
+
+  /// Windows opens the share sheet without reporting the user's action.
+  final bool isUnconfirmedShare;
 }
 
 bool _shouldCleanupShareTempFileAfterAttempt(ShareResult result) {
@@ -149,6 +157,7 @@ Future<ShareExportBytesResult> shareExportBytes({
   required String mimeType,
   String? subject,
   String? title,
+  Duration shareTimeout = const Duration(minutes: 1),
 }) async {
   final resolvedFileName = _resolvedShareFileName(fileName);
   final resolvedTitle = _resolvedShareTitle(
@@ -164,19 +173,25 @@ Future<ShareExportBytesResult> shareExportBytes({
   );
   final tempFilePath = _shareRequiresTempFilePath() ? xFile.path : null;
   try {
-    final shareResult = await SharePlus.instance.share(
-      ShareParams(
-        files: <XFile>[xFile],
-        subject: subject,
-        title: resolvedTitle,
-      ),
-    );
+    final shareResult = await SharePlus.instance
+        .share(
+          ShareParams(
+            files: <XFile>[xFile],
+            subject: subject,
+            title: resolvedTitle,
+          ),
+        )
+        .timeout(shareTimeout);
     if (_shouldCleanupShareTempFileAfterAttempt(shareResult)) {
       unawaited(deleteShareTempFile(xFile.path));
     }
     return ShareExportBytesResult(
       shareResult: shareResult,
       tempFilePath: tempFilePath,
+      isUnconfirmedShare:
+          !kIsWeb &&
+          Platform.isWindows &&
+          shareResult.status == ShareResultStatus.unavailable,
     );
   } on Object {
     return ShareExportBytesResult(

@@ -1,5 +1,10 @@
+import 'dart:async';
+
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/core/socket/socket_command_dispatcher.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_deadline.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_diagnostics.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_progress.dart';
 import 'package:uuid/uuid.dart';
 
 /// Target for hub-side `sql.cancel` when a streaming SQL load is abandoned.
@@ -21,11 +26,33 @@ class AgentStreamingSqlCancelTarget {
 /// [traceId] is stable for the lifetime of the scope (one logical load) and
 /// can be forwarded to bridge / relay metadata for hub correlation.
 class AgentQueriesCancelScope {
-  AgentQueriesCancelScope({String? traceId})
-    : traceId = traceId ?? const Uuid().v4();
+  AgentQueriesCancelScope({
+    String? traceId,
+    this.deadline,
+    this.diagnostics,
+    this.progressObserver,
+  }) : traceId = traceId ?? const Uuid().v4();
 
   /// Correlates all SQL commands issued under this load (relay `meta.trace_id`).
   final String traceId;
+  final AgentQueryDeadline? deadline;
+  final AgentQueryDiagnostics? diagnostics;
+  final AgentQueryProgressObserver? progressObserver;
+  bool get hasPublishedRows => progressObserver?.hasPublishedRows ?? false;
+
+  Future<bool> waitForRetry(Duration delay) async {
+    final completed = Completer<bool>();
+    final timer = Timer(delay, () => completed.complete(true));
+    final unregister = registerLocalCancellation(() {
+      if (!completed.isCompleted) completed.complete(false);
+    });
+    try {
+      return await completed.future;
+    } finally {
+      timer.cancel();
+      unregister();
+    }
+  }
 
   bool _cancelled = false;
   final Set<String> _pendingRelayClientRequestIds = <String>{};
@@ -130,6 +157,7 @@ class AgentQueriesCancelScope {
       return;
     }
     _cancelled = true;
+    diagnostics?.cancelled = true;
     final relayIds = List<String>.of(
       _pendingRelayClientRequestIds,
       growable: false,

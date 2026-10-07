@@ -5,6 +5,7 @@ import 'package:colmeia/core/observability/socket/socket_sql_metrics_appendix_po
     show SocketSqlMetricsAppendixProvider;
 import 'package:colmeia/features/agent_queries/data/repositories/caching_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/coalescing_agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_diagnostics.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
@@ -95,6 +96,7 @@ class MetricsAgentQueriesRepository implements AgentQueriesRepository {
     stopwatch.stop();
 
     _recordMetric(
+      diagnostics: cancelScope?.diagnostics,
       operation: 'sql.execute',
       agentId: request.trimmedAgentId,
       duration: stopwatch.elapsed,
@@ -130,6 +132,7 @@ class MetricsAgentQueriesRepository implements AgentQueriesRepository {
     stopwatch.stop();
 
     _recordMetric(
+      diagnostics: cancelScope?.diagnostics,
       operation: 'sql.executeBatch',
       agentId: request.trimmedAgentId,
       duration: stopwatch.elapsed,
@@ -154,6 +157,7 @@ class MetricsAgentQueriesRepository implements AgentQueriesRepository {
     required String agentId,
     required Duration duration,
     required bool success,
+    AgentQueryDiagnostics? diagnostics,
     AppFailure? failure,
     bool useRelay = false,
     String? relayMode,
@@ -166,6 +170,7 @@ class MetricsAgentQueriesRepository implements AgentQueriesRepository {
     int? rowCount,
   }) {
     final entry = _MetricEntry(
+      diagnostics: diagnostics,
       operation: operation,
       agentId: agentId,
       duration: duration,
@@ -304,6 +309,8 @@ class MetricsAgentQueriesRepository implements AgentQueriesRepository {
     final recent = _metrics.reversed.take(limit).toList();
     return recent.map((entry) {
       return <String, Object?>{
+        if (entry.diagnostics != null)
+          'diagnostics': entry.diagnostics!.toJson(),
         'operation': entry.operation,
         'agentId': entry.agentId,
         'durationMs': entry.duration.inMilliseconds,
@@ -414,6 +421,7 @@ class _MetricEntry {
     required this.duration,
     required this.success,
     required this.recordedAt,
+    this.diagnostics,
     this.failure,
     this.useRelay = false,
     this.relayMode,
@@ -426,6 +434,7 @@ class _MetricEntry {
     this.rowCount,
   });
 
+  final AgentQueryDiagnostics? diagnostics;
   final String operation;
   final String agentId;
   final Duration duration;

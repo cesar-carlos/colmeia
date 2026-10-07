@@ -1,5 +1,9 @@
+import 'dart:async';
+
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_margem_produto_page_use_case.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_progress.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_row.dart';
@@ -14,6 +18,7 @@ import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.da
 import 'package:colmeia/features/sales/presentation/controllers/sales_margem_produto_controller.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_margem_produto_sort.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:result_dart/result_dart.dart';
@@ -62,6 +67,7 @@ void main() {
     loadAgents = _MockLoadAvailableAgentsForSales();
     resolveToken = _MockResolveClientToken();
     loadPage = _MockLoadPage();
+    when(() => loadPage.usesProgressiveCatalog).thenReturn(false);
     loadShare = _MockLoadShare();
     sessionService = SalesSessionService(preferences);
 
@@ -109,6 +115,128 @@ void main() {
 
   tearDown(() {
     controller.dispose();
+  });
+
+  test('progressive catalog shows partial rows, publishes totals only at completion and reuses pages for share', () async {
+    when(() => loadPage.usesProgressiveCatalog).thenReturn(true);
+    final source =
+        StreamController<AppResult<AgentQueryProgress<MargemProdutoRow>>>();
+    when(
+      () => loadPage.watchCatalog(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        filter: any(named: 'filter'),
+        clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    ).thenAnswer((_) => source.stream);
+    final rows = List.generate(
+      65,
+      (index) => MargemProdutoRow(
+        codEmpresa: 1,
+        codFilial: 1,
+        nomeFilial: 'Centro',
+        codProduto: index + 1,
+        nomeProduto: 'Produto $index',
+        precoVendaProduto: 2,
+      ),
+    );
+    await controller.bindUser('user-1');
+    final loading = controller.loadCatalog();
+    await Future<void>.delayed(Duration.zero);
+    source.add(
+      Success(
+        AgentQueryProgress(
+          rows: rows.take(20),
+          isComplete: false,
+          receivedRowCount: 20,
+        ),
+      ),
+    );
+    await Future<void>.delayed(Duration.zero);
+    expect(controller.rows, rows.take(controller.pageSize));
+    expect(controller.isLoading, true);
+    expect(controller.isIncomplete, true);
+    expect(controller.totalCount, 0);
+    expect(controller.canShare, false);
+    source.add(
+      Success(
+        AgentQueryProgress(
+          rows: rows,
+          isComplete: true,
+          receivedRowCount: rows.length,
+        ),
+      ),
+    );
+    expect((await loading).isSuccess, true);
+    expect(controller.totalCount, 65);
+    expect(controller.isIncomplete, false);
+    await controller.applyPaging(page: 2, pageSize: 20);
+    expect(controller.rows, rows.sublist(20, 40));
+    expect((await controller.loadRowsForShare()).getOrThrow(), rows);
+    verifyNever(
+      () => loadPage(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        filter: any(named: 'filter'),
+        clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    );
+    verifyNever(
+      () => loadShare(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        filter: any(named: 'filter'),
+        totalCount: any(named: 'totalCount'),
+        clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    );
+    await source.close();
+  });
+
+  test('partial failure preserves visible rows and blocks sharing; changing the agent cancels the stream', () async {
+    when(() => loadPage.usesProgressiveCatalog).thenReturn(true);
+    final source =
+        StreamController<AppResult<AgentQueryProgress<MargemProdutoRow>>>();
+    AgentQueriesCancelScope? scope;
+    when(
+      () => loadPage.watchCatalog(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        filter: any(named: 'filter'),
+        clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    ).thenAnswer((invocation) {
+      scope =
+          invocation.namedArguments[#cancelScope] as AgentQueriesCancelScope;
+      return source.stream;
+    });
+    await controller.bindUser('user-1');
+    final loading = controller.loadCatalog();
+    await Future<void>.delayed(Duration.zero);
+    source
+      ..add(
+        Success(
+          AgentQueryProgress(
+            rows: [row],
+            isComplete: false,
+            receivedRowCount: 1,
+          ),
+        ),
+      )
+      ..add(const Failure(NetworkFailure(message: 'lost')));
+    expect((await loading).isFailure, true);
+    expect(controller.rows, [row]);
+    expect(controller.isIncomplete, true);
+    expect(controller.canShare, false);
+    expect(scope!.isCancelled, true);
+    await controller.bindUser(null);
+    expect(controller.rows, isEmpty);
+    expect(controller.isIncomplete, false);
+    await source.close();
   });
 
   test('restores page size and search, ignoring persisted sort', () {
@@ -252,6 +380,19 @@ void main() {
 
   test('loadRowsForShare copies search and sort', () async {
     when(
+      () => loadPage(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        filter: any(named: 'filter'),
+        clientToken: any(named: 'clientToken'),
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    ).thenAnswer(
+      (_) async => const Success<MargemProdutoPageResult, AppFailure>(
+        MargemProdutoPageResult(items: <MargemProdutoRow>[row], totalCount: 2),
+      ),
+    );
+    when(
       () => loadShare(
         userId: any(named: 'userId'),
         agentId: any(named: 'agentId'),
@@ -278,7 +419,7 @@ void main() {
                 userId: 'user-1',
                 agentId: 'agent-1',
                 filter: captureAny(named: 'filter'),
-                totalCount: 1,
+                totalCount: 2,
                 clientToken: 'token-1',
                 cancelScope: any(named: 'cancelScope'),
               ),
@@ -287,5 +428,116 @@ void main() {
     expect(filter.searchTerm, 'mel');
     expect(filter.sortBy, MargemProdutoSortBy.nomeProduto);
     expect(filter.sortDirection, MargemProdutoSortDirection.ascending);
+  });
+
+  test(
+    'should share the complete loaded catalog without another query',
+    () async {
+      await controller.bindUser('user-1');
+      await controller.loadCatalog();
+
+      final result = await controller.loadRowsForShare();
+
+      expect(result.getOrNull(), <MargemProdutoRow>[row]);
+      verifyZeroInteractions(loadShare);
+    },
+  );
+
+  test('should time out and cancel when export loading never completes', () {
+    fakeAsync((async) {
+      final pending = Completer<AppResult<List<MargemProdutoRow>>>();
+      AgentQueriesCancelScope? scope;
+      when(
+        () => loadShare(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+          filter: any(named: 'filter'),
+          totalCount: any(named: 'totalCount'),
+          clientToken: any(named: 'clientToken'),
+          cancelScope: any(named: 'cancelScope'),
+        ),
+      ).thenAnswer((invocation) {
+        scope =
+            invocation.namedArguments[#cancelScope] as AgentQueriesCancelScope;
+        return pending.future;
+      });
+      unawaited(controller.bindUser('user-1'));
+      async.flushMicrotasks();
+      AppResult<List<MargemProdutoRow>>? result;
+      unawaited(controller.loadRowsForShare().then((value) => result = value));
+      async
+        ..flushMicrotasks()
+        ..elapse(controller.shareLoadTimeout)
+        ..flushMicrotasks();
+
+      expect(result?.exceptionOrNull(), isA<NetworkFailure>());
+      expect(result?.exceptionOrNull()?.message, 'share_export_load_timeout');
+      expect(scope?.isCancelled, isTrue);
+      expect(pending.isCompleted, isFalse);
+    });
+  });
+
+  test('should bound token resolution and stop a late token from querying', () {
+    fakeAsync((async) {
+      final token = Completer<String?>();
+      when(
+        () => resolveToken(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+        ),
+      ).thenAnswer((_) => token.future);
+      unawaited(controller.bindUser('user-1'));
+      async.flushMicrotasks();
+      AppResult<List<MargemProdutoRow>>? result;
+      unawaited(controller.loadRowsForShare().then((value) => result = value));
+      async
+        ..flushMicrotasks()
+        ..elapse(controller.shareLoadTimeout)
+        ..flushMicrotasks();
+      expect(result?.exceptionOrNull(), isA<NetworkFailure>());
+
+      token.complete('late-token');
+      async.flushMicrotasks();
+      verifyZeroInteractions(loadShare);
+    });
+  });
+
+  test(
+    'should finish sharing promptly when the user session is cleared',
+    () async {
+      final token = Completer<String?>();
+      when(
+        () => resolveToken(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+        ),
+      ).thenAnswer((_) => token.future);
+      await controller.bindUser('user-1');
+
+      final pendingShare = controller.loadRowsForShare();
+      await controller.bindUser(null);
+      final result = await pendingShare;
+
+      expect(result.exceptionOrNull(), isA<OperationCancelledFailure>());
+      expect(token.isCompleted, isFalse);
+      token.complete('late-token');
+      await Future<void>.delayed(Duration.zero);
+      verifyZeroInteractions(loadShare);
+    },
+  );
+
+  test('should return a failure when token resolution throws', () async {
+    when(
+      () => resolveToken(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+      ),
+    ).thenThrow(StateError('token lookup failed'));
+    await controller.bindUser('user-1');
+
+    final result = await controller.loadRowsForShare();
+
+    expect(result.exceptionOrNull(), isA<UnknownFailure>());
+    verifyZeroInteractions(loadShare);
   });
 }

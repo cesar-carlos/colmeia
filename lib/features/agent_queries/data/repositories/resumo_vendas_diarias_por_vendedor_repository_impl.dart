@@ -5,16 +5,27 @@ import 'package:colmeia/features/agent_queries/data/agent_queries_sql_local_date
 import 'package:colmeia/features/agent_queries/data/models/resumo_vendas_diarias_por_vendedor_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_vendas_diarias_por_vendedor_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repository_execution.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/progressive_report_loader.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/scoped_agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_progress.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_vendas_diarias_por_vendedor_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/progressive_report_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas_diarias_por_vendedor_repository.dart';
 
 class ResumoVendasDiariasPorVendedorRepositoryImpl
-    implements ResumoVendasDiariasPorVendedorRepository {
+    implements
+        ResumoVendasDiariasPorVendedorRepository,
+        ProgressiveReportRepository<
+          ResumoVendasDiariasPorVendedorFilter,
+          ResumoVendasDiariasPorVendedorRow
+        > {
   ResumoVendasDiariasPorVendedorRepositoryImpl(
     this._agentQueriesRepository,
   );
@@ -30,6 +41,7 @@ class ResumoVendasDiariasPorVendedorRepositoryImpl
     required ResumoVendasDiariasPorVendedorFilter filter,
     String? clientToken,
     int? bridgeTimeoutMs,
+    AgentQueriesCancelScope? cancelScope,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
   }) async {
@@ -81,6 +93,7 @@ class ResumoVendasDiariasPorVendedorRepositoryImpl
     >(
       agentQueriesRepository: _agentQueriesRepository,
       request: request,
+      cancelScope: cancelScope,
       operation: _operation,
       agentId: agentId.trim(),
       unexpectedRowsLogMessage:
@@ -99,4 +112,34 @@ class ResumoVendasDiariasPorVendedorRepositoryImpl
         )
         .toList(growable: false);
   }
+
+  @override
+  Stream<AppResult<AgentQueryProgress<ResumoVendasDiariasPorVendedorRow>>>
+  loadProgressively({
+    required String userId,
+    required String agentId,
+    required ResumoVendasDiariasPorVendedorFilter filter,
+    String? clientToken,
+    int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
+    AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
+  }) => const ProgressiveReportLoader<ResumoVendasDiariasPorVendedorRow>().load(
+    parent: cancelScope,
+    mapRows: _mapExecutionToRows,
+    execute: (scope) =>
+        ResumoVendasDiariasPorVendedorRepositoryImpl(
+          ScopedAgentQueriesRepository(_agentQueriesRepository, scope),
+        ).load(
+          userId: userId,
+          agentId: agentId,
+          filter: filter,
+          clientToken: clientToken,
+          bridgeTimeoutMs: bridgeTimeoutMs,
+          hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+          hubConnectedFromApprovedCatalogRow:
+              hubConnectedFromApprovedCatalogRow,
+        ),
+  );
 }

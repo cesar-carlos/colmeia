@@ -176,6 +176,10 @@ Future<ChartShareResult> captureAndShareChart(
         ChartShareFailureReason.shareCancelled,
       );
     }
+    if (shareResult.status == ShareResultStatus.unavailable &&
+        shareExportResult.isUnconfirmedShare) {
+      return const ChartShareSuccess(isConfirmed: false);
+    }
     if (shareResult.status != ShareResultStatus.success) {
       return ChartShareFailure(
         ChartShareFailureReason.sharePlatformFailed,

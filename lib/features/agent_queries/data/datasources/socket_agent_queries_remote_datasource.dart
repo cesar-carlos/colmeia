@@ -1,4 +1,5 @@
 import 'package:colmeia/core/socket/agent_command_sender.dart';
+import 'package:colmeia/core/socket/command_phase_observability.dart';
 import 'package:colmeia/core/socket/socket_dispatch_exception.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_agents_command_response_adapter.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_execute_batch_request_to_bridge_body.dart';
@@ -14,6 +15,8 @@ import 'package:uuid/uuid.dart';
 /// [AgentSqlExecuteRequestToBridgeBody] so the body sent through
 /// `agents:command` is byte-for-byte identical to the REST body — this is
 /// pinned by snapshot tests in `test/features/agent_queries/data/`.
+/// Each attempt uses a fresh wire id: the REST/legacy anti-replay guard rejects
+/// repeated ids instead of replaying a deduplicated result as Relay does.
 ///
 /// Activated by setting `AGENT_BRIDGE_TRANSPORT=socket`. The repository
 /// (`AgentQueriesRepositoryImpl`) is unchanged because the response shape
@@ -45,9 +48,15 @@ class SocketAgentQueriesRemoteDataSource
         ),
       );
     }
-    final rpcId = request.transportRpcId ?? _uuid.v4();
+    cancelScope?.diagnostics?.route('socket_legacy');
+    final rpcId = _uuid.v4();
     final body = _bodyMapper.build(request: request, rpcId: rpcId);
     cancelScope?.trackSocketPending(rpcId);
+    final stopObserving = observeCommandPhases(
+      _sender,
+      rpcId,
+      cancelScope?.diagnostics?.addDuration,
+    );
     return _sender
         .send(
           agentId: request.trimmedAgentId,
@@ -58,12 +67,18 @@ class SocketAgentQueriesRemoteDataSource
           ),
         )
         .then(
-          (payload) => agentsCommandResponseToBridgeEnvelope(
-            Map<String, dynamic>.from(payload),
-            responseType: 'single',
-          ),
+          (payload) {
+            cancelScope?.diagnostics?.mark('first_response');
+            return agentsCommandResponseToBridgeEnvelope(
+              Map<String, dynamic>.from(payload),
+              responseType: 'single',
+            );
+          },
         )
-        .whenComplete(() => cancelScope?.untrackSocketPending(rpcId));
+        .whenComplete(() {
+          cancelScope?.untrackSocketPending(rpcId);
+          stopObserving();
+        });
   }
 
   @override
@@ -79,9 +94,15 @@ class SocketAgentQueriesRemoteDataSource
         ),
       );
     }
-    final rpcId = request.transportRpcId ?? _uuid.v4();
+    cancelScope?.diagnostics?.route('socket_legacy');
+    final rpcId = _uuid.v4();
     final body = _batchBodyMapper.build(request: request, rpcId: rpcId);
     cancelScope?.trackSocketPending(rpcId);
+    final stopObserving = observeCommandPhases(
+      _sender,
+      rpcId,
+      cancelScope?.diagnostics?.addDuration,
+    );
     return _sender
         .send(
           agentId: request.trimmedAgentId,
@@ -92,11 +113,17 @@ class SocketAgentQueriesRemoteDataSource
           ),
         )
         .then(
-          (payload) => agentsCommandResponseToBridgeEnvelope(
-            Map<String, dynamic>.from(payload),
-            responseType: 'batch',
-          ),
+          (payload) {
+            cancelScope?.diagnostics?.mark('first_response');
+            return agentsCommandResponseToBridgeEnvelope(
+              Map<String, dynamic>.from(payload),
+              responseType: 'batch',
+            );
+          },
         )
-        .whenComplete(() => cancelScope?.untrackSocketPending(rpcId));
+        .whenComplete(() {
+          cancelScope?.untrackSocketPending(rpcId);
+          stopObserving();
+        });
   }
 }

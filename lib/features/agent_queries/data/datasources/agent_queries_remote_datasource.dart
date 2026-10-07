@@ -1,6 +1,7 @@
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/network/api_routes.dart';
+import 'package:colmeia/core/observability/socket/agent_phase_timings.dart';
 import 'package:colmeia/core/observability/socket/server_timings.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_execute_batch_request_to_bridge_body.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_execute_request_to_bridge_body.dart';
@@ -25,6 +26,8 @@ abstract interface class AgentQueriesRemoteDataSource {
   });
 }
 
+/// REST attempts use fresh wire ids because the hub's anti-replay guard rejects
+/// repeated ids; the stable operation id is reserved for Relay deduplication.
 class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
   ApiAgentQueriesRemoteDataSource({
     required this._dio,
@@ -71,6 +74,7 @@ class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
       throw _restRequestCancelled(operation);
     }
 
+    cancelScope?.diagnostics?.route('rest');
     CancelToken? cancelToken;
     void Function()? untrackRest;
     if (cancelScope != null) {
@@ -101,6 +105,7 @@ class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
         cancelToken: cancelToken,
       );
 
+      cancelScope?.diagnostics?.mark('first_response');
       final payload = response.data;
       if (payload == null) {
         AppLogger.warning(
@@ -124,6 +129,12 @@ class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
         );
       }
 
+      if (payload != null) {
+        final phases = AgentPhaseTimings.fromRelayBody(payload);
+        if (phases != null) {
+          cancelScope?.diagnostics?.agentPhases(phases.phasesMs);
+        }
+      }
       _maybeRecordServerTimings(payload);
       return payload ?? const <String, dynamic>{};
     } finally {
@@ -138,7 +149,7 @@ class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
     AgentSqlExecuteRequest request, {
     AgentQueriesCancelScope? cancelScope,
   }) {
-    final rpcId = request.transportRpcId ?? _uuid.v4();
+    final rpcId = _uuid.v4();
     final body = _withServerTimingsFlag(
       _bodyMapper.build(request: request, rpcId: rpcId),
     );
@@ -156,7 +167,7 @@ class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
     AgentSqlExecuteBatchRequest request, {
     AgentQueriesCancelScope? cancelScope,
   }) {
-    final rpcId = request.transportRpcId ?? _uuid.v4();
+    final rpcId = _uuid.v4();
     final body = _withServerTimingsFlag(
       _batchBodyMapper.build(request: request, rpcId: rpcId),
     );

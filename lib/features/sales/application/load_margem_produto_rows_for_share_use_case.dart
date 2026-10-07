@@ -44,10 +44,18 @@ class LoadMargemProdutoRowsForShareUseCase {
       );
     }
 
-    final pageSize = totalCount.clamp(1, MargemProdutoFilter.maxPageSize);
+    // Preserve the page size already used by the screen instead of expanding
+    // every share query to the maximum payload size.
+    final pageSize = filter.pageSize
+        .clamp(1, MargemProdutoFilter.maxPageSize)
+        .clamp(1, totalCount);
     final collected = <MargemProdutoRow>[];
+    final identities = <(int, int, int)>{};
     var page = 1;
     while (collected.length < totalCount) {
+      if (cancelScope?.isCancelled ?? false) {
+        return const Failure(OperationCancelledFailure());
+      }
       final pageFilter = MargemProdutoFilter(
         searchTerm: filter.searchTerm,
         page: page,
@@ -67,6 +75,9 @@ class LoadMargemProdutoRowsForShareUseCase {
         hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
         cancelScope: cancelScope,
       );
+      if (cancelScope?.isCancelled ?? false) {
+        return const Failure(OperationCancelledFailure());
+      }
 
       AppFailure? failure;
       var pageResult = const MargemProdutoPageResult(
@@ -81,7 +92,12 @@ class LoadMargemProdutoRowsForShareUseCase {
         return Failure(failure!);
       }
       if (pageResult.totalCount != totalCount ||
-          pageResult.items.length != expectedCount) {
+          pageResult.items.length != expectedCount ||
+          pageResult.items.any(
+            (row) => !identities.add(
+              (row.codEmpresa, row.codFilial, row.codProduto),
+            ),
+          )) {
         return const Failure(
           ValidationFailure(message: 'share_export_incomplete_catalog'),
         );

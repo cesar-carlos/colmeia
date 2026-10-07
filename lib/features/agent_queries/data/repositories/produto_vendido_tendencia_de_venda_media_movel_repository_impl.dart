@@ -11,7 +11,10 @@ import 'package:colmeia/features/agent_queries/data/produto_tendencia_paged_sql_
 import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_tendencia_de_venda_media_movel_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_tendencia_de_venda_media_movel_summary_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repository_execution.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/paged_report_progress_loader.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/scoped_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_progress.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
@@ -19,10 +22,12 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_page_result.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_screen_data.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_media_movel_summary_row.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/paged_progressive_report_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_tendencia_de_venda_media_movel_repository.dart';
 import 'package:result_dart/result_dart.dart';
 
@@ -43,7 +48,12 @@ import 'package:result_dart/result_dart.dart';
 /// `loadPageAndSummary` stays on `sql.executeBatch` (relay unary at the batch
 /// layer) and already returned correct rows on the same agent.
 class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
-    implements ProdutoVendidoTendenciaDeVendaMediaMovelRepository {
+    implements
+        ProdutoVendidoTendenciaDeVendaMediaMovelRepository,
+        PagedProgressiveReportRepository<
+          ProdutoVendidoTendenciaDeVendaMediaMovelFilter,
+          ProdutoVendidoTendenciaDeVendaMediaMovelRow
+        > {
   ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl(
     this._agentQueriesRepository,
   );
@@ -513,4 +523,61 @@ class ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl
         )
         .toList(growable: false);
   }
+
+  @override
+  Stream<
+    AppResult<AgentQueryProgress<ProdutoVendidoTendenciaDeVendaMediaMovelRow>>
+  >
+  loadPagesProgressively({
+    required String userId,
+    required String agentId,
+    required ProdutoVendidoTendenciaDeVendaMediaMovelFilter filter,
+    String? clientToken,
+    int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
+    bool emitPartialResults = true,
+  }) =>
+      const PagedReportProgressLoader<
+            ProdutoVendidoTendenciaDeVendaMediaMovelPageResult,
+            ProdutoVendidoTendenciaDeVendaMediaMovelRow
+          >()
+          .load(
+            parent: cancelScope,
+            emitPartialResults: emitPartialResults,
+            pageSize: filter.pageSize,
+            maxRows: AppEnvironment.socketStreamSqlCollectorMaxBufferedRows,
+            items: (page) => page.items,
+            totalCount: (page) => page.totalCount,
+            rowKey: (row) => (row.codEmpresa, row.codFilial, row.codProduto),
+            loadPage: (page, scope) =>
+                ProdutoVendidoTendenciaDeVendaMediaMovelRepositoryImpl(
+                  ScopedAgentQueriesRepository(_agentQueriesRepository, scope),
+                ).loadPage(
+                  userId: userId,
+                  agentId: agentId,
+                  filter: ProdutoVendidoTendenciaDeVendaMediaMovelFilter(
+                    quantidadeDias: filter.quantidadeDias,
+                    origem: filter.origem,
+                    searchTerm: filter.searchTerm,
+                    classificacao: filter.classificacao,
+                    codGrupoProduto: filter.codGrupoProduto,
+                    codMarca: filter.codMarca,
+                    codFilial: filter.codFilial,
+                    metricMode: filter.metricMode,
+                    minVolumeUnits: filter.minVolumeUnits,
+                    trendThresholdPercent: filter.trendThresholdPercent,
+                    sortBy: filter.sortBy,
+                    page: page,
+                    pageSize: filter.pageSize,
+                  ),
+                  clientToken: clientToken,
+                  bridgeTimeoutMs: bridgeTimeoutMs,
+                  hubPresenceOnlineAgentIdsSnapshot:
+                      hubPresenceOnlineAgentIdsSnapshot,
+                  hubConnectedFromApprovedCatalogRow:
+                      hubConnectedFromApprovedCatalogRow,
+                ),
+          );
 }

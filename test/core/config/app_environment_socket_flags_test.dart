@@ -17,6 +17,20 @@ SOCKET_PRESENCE_LISTENER_ENABLED=false
   });
 
   group('AppEnvironment socket flags', () {
+    test(
+      'communication defaults keep REST, bounded queues and short SQL cache',
+      () {
+        dotenv.loadFromString(envString: 'AGENT_BRIDGE_TRANSPORT=rest');
+        expect(AppEnvironment.agentBridgeTransport, AgentBridgeTransport.rest);
+        expect(AppEnvironment.agentSqlRestMaxInflightPerAgent, 8);
+        expect(AppEnvironment.agentSqlRestMaxWaitersPerAgent, 16);
+        expect(AppEnvironment.agentSqlRestAcquireWaitMs, 5000);
+        expect(AppEnvironment.agentSqlCacheTtlMs, 5000);
+        expect(AppEnvironment.agentSqlCatalogCacheTtlMs, 30000);
+        expect(AppEnvironment.progressiveReportIds, isEmpty);
+      },
+    );
+
     test('socket transport implies relay and presence stacks', () {
       dotenv.loadFromString(
         envString: '''

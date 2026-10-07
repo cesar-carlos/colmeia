@@ -65,10 +65,15 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
           OperationCancelledFailure(),
         );
       }
+      final parseClock = Stopwatch()..start();
       final result = await AgentSqlBridgeResponse.parseSuccessMaybeAsync(
         payload,
         isolateRowThreshold: AppEnvironment.agentSqlParseIsolateRowThreshold,
       );
+      cancelScope?.diagnostics?.addDuration('decode', parseClock.elapsed);
+      if (result.rows.isNotEmpty) {
+        cancelScope?.diagnostics?.mark('first_rows');
+      }
       AppLogger.info(
         'Agent SQL execute completed',
         context: <String, Object?>{
@@ -263,10 +268,15 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
           OperationCancelledFailure(),
         );
       }
+      final parseClock = Stopwatch()..start();
       final result = await AgentSqlBridgeResponse.parseBatchSuccessMaybeAsync(
         payload,
         isolateRowThreshold: AppEnvironment.agentSqlParseIsolateRowThreshold,
       );
+      cancelScope?.diagnostics?.addDuration('decode', parseClock.elapsed);
+      if (result.items.any((item) => item.rows.isNotEmpty)) {
+        cancelScope?.diagnostics?.mark('first_rows');
+      }
       AppLogger.info(
         'Agent SQL batch execute completed',
         context: <String, Object?>{

@@ -1,7 +1,7 @@
 # Bridge Agent SQL API options
 
 This is the Colmeia-facing summary for SQL bridge payloads. The normative
-contract lives in `plug_server/docs/api_rest_bridge.md`.
+contract lives in `plug_server/docs/api/api_rest_bridge.md`.
 
 ## Shared command envelope
 
@@ -33,6 +33,10 @@ top-level body:
   `relay:rpc.request`. Do not wrap it in the REST top-level body; the decoded
   frame starts at `{ "jsonrpc": "2.0", "method": "...", "id": ..., "params": ... }`.
 - Do not send relay notifications (`id: null`); relay requires correlation.
+- REST and legacy `agents:command` reject repeated `command.id` values through
+  the hub's two-minute anti-replay guard (`-32014`, `replay_detected`). Colmeia
+  generates a fresh wire ID for each attempt on these transports. Relay retains
+  the logical operation ID across retries under its separate idempotency contract.
 - Relay responses are forwarded as JSON-RPC (`result` or `error`) inside
   `relay:rpc.response`; Colmeia adapts that response to the local bridge
   envelope before invoking `AgentSqlBridgeResponse`.
@@ -100,7 +104,7 @@ product change.
 | Mechanism | What it does | Colmeia overview |
 |-----------|--------------|------------------|
 | `sql.executeBatch` | Multiple `commands[]`, each with its own `params`; optional `max_parallel_read_only_batch_items` for read-only parallelism (see `plug_server/docs/snippets/agent_command_performance_options.ts`). | Main batch runs **forma pagamento** + **per-user** resumo (`OverviewBatchLoader`); section batch runs monthly/weekday/daily/etc. Filter-options and moving-average screens batch independent `sql.execute` calls where the hub allows read-only batching. |
-| `multi_result` | Single `sql.execute`, one SQL string with multiple statements; **cannot** be combined with named `params` or pagination (`plug_server/docs/api_rest_bridge.md`). | **Not used** for overview (all resumo queries use `:named` binds). |
+| `multi_result` | Single `sql.execute`, one SQL string with multiple statements; **cannot** be combined with named `params` or pagination (`plug_server/docs/api/api_rest_bridge.md`). | **Not used** for overview (all resumo queries use `:named` binds). |
 | JSON-RPC `command: []` | Up to 32 independent RPC objects in one REST body. | Not used for overview batch; relay unary still uses one RPC per `relay:rpc.request` unless relay batch is enabled (below). |
 
 ## Relay batch vs `SOCKET_BATCH_ENABLED`
@@ -302,7 +306,9 @@ E2E wall-clock; see the E2E env A/B section above.
 ### Residual `sql.execute` audit — product trend
 
 [`produto_vendido_tendencia_de_venda_repository_impl.dart`](lib/features/agent_queries/data/repositories/produto_vendido_tendencia_de_venda_repository_impl.dart)
-uses at most **one** `AgentSqlRepositoryExecution.execute` per public method
-(`loadAll`, `loadSummary`). The combined UI path uses **`loadPageAndSummary`**
-only, which performs a **single** `executeSqlBatch` (page + summary) and does
-not stack duplicate `execute` calls in one function.
+uses one unary query per page or summary attempt. `loadAll` is the first-page
+compatibility entry point. The combined UI path uses **`loadPageAndSummary`**,
+which executes a single tagged `UNION ALL` query over a shared CTE for the page,
+summary and top movers. Moving-average `loadPageAndSummary` retains the existing
+`sql.executeBatch` strategy. These unary exceptions keep `preferDbStreaming: false`;
+complete catalog progress publishes validated pages without changing their SQL.

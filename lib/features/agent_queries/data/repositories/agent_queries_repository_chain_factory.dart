@@ -5,10 +5,12 @@ import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_r
 import 'package:colmeia/features/agent_queries/data/repositories/caching_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/circuit_breaker_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/coalescing_agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/deadline_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/gated_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/metrics_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/rest_inflight_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/retrying_agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_sql_execution_eligibility_port.dart';
 
@@ -43,8 +45,13 @@ abstract final class AgentQueriesRepositoryChainFactory {
     required AgentSqlExecutionEligibilityPort eligibility,
     required int maxCacheSize,
     Duration cacheTtl = CachingAgentQueriesRepository.defaultCacheTtl,
-    Duration? catalogCacheTtl,
+    Duration? catalogCacheTtl =
+        CachingAgentQueriesRepository.defaultCatalogCacheTtl,
     int agentSqlRestMaxInflightPerAgent = 0,
+    int agentSqlRestMaxWaitersPerAgent = 16,
+    Duration agentSqlRestAcquireWait = const Duration(seconds: 5),
+    void Function(AgentQueriesCancelScope)? bindCancelScope,
+    bool diagnosticsEnabled = false,
   }) {
     final base = AgentQueriesRepositoryImpl(remoteDataSource);
 
@@ -53,6 +60,8 @@ abstract final class AgentQueriesRepositoryChainFactory {
             delegate: base,
             gate: PerAgentConcurrencyGate(
               maxInflightPerAgent: agentSqlRestMaxInflightPerAgent,
+              maxWaitersPerAgent: agentSqlRestMaxWaitersPerAgent,
+              maxWaitForSlot: agentSqlRestAcquireWait,
             ),
           )
         : base;
@@ -70,7 +79,11 @@ abstract final class AgentQueriesRepositoryChainFactory {
     );
 
     final coalescing = CoalescingAgentQueriesRepository(
-      delegate: retrying,
+      delegate: DeadlineAgentQueriesRepository(
+        delegate: retrying,
+        bindCancelScope: bindCancelScope,
+        diagnosticsEnabled: diagnosticsEnabled,
+      ),
     );
 
     final caching = CachingAgentQueriesRepository(
@@ -95,6 +108,7 @@ abstract final class AgentQueriesRepositoryChainFactory {
       'CircuitBreakerAgentQueriesRepository',
       'CachingAgentQueriesRepository',
       'CoalescingAgentQueriesRepository',
+      'DeadlineAgentQueriesRepository',
       'RetryingAgentQueriesRepository',
       'AdaptiveTimeoutAgentQueriesRepository',
       'MetricsAgentQueriesRepository',

@@ -1,5 +1,6 @@
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_relay_response_adapter.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 
 /// Aggregates the chunked output of
@@ -88,6 +89,8 @@ class BridgeShapedSqlExecuteCollector implements StreamingSqlExecuteCollector {
     var sawItem = false;
     var sawChunk = false;
     var sawComplete = false;
+    String? streamId;
+    int? lastChunkIndex;
 
     await for (final chunk in chunks) {
       if (cancelScope?.isCancelled ?? false) {
@@ -96,15 +99,41 @@ class BridgeShapedSqlExecuteCollector implements StreamingSqlExecuteCollector {
         );
       }
       sawItem = true;
+      if (sawComplete) {
+        throw const FormatException('Relay streaming item after completion');
+      }
       if (isRelayJsonRpcResponse(chunk)) {
+        if (sawChunk) {
+          throw const FormatException('Unary response after streaming rows');
+        }
         return relayJsonRpcToBridgeEnvelope(chunk, responseType: 'single');
       }
 
       // Capture envelope-level metadata.
-      requestId ??= _readString(chunk, 'request_id', 'requestId');
+      final nextRequestId = _readString(chunk, 'request_id', 'requestId');
+      final nextStreamId = _readString(chunk, 'stream_id', 'streamId');
+      if ((requestId != null &&
+              nextRequestId != null &&
+              requestId != nextRequestId) ||
+          (streamId != null &&
+              nextStreamId != null &&
+              streamId != nextStreamId)) {
+        throw const FormatException('Relay streaming identity changed');
+      }
+      requestId ??= nextRequestId;
+      streamId ??= nextStreamId;
 
       // Chunk: append rows + grab column_metadata once.
       if (chunk.containsKey('rows')) {
+        final index = chunk['chunk_index'] ?? chunk['chunkIndex'];
+        if (index != null) {
+          if (index is! int ||
+              index < 0 ||
+              (lastChunkIndex != null && index != lastChunkIndex + 1)) {
+            throw const FormatException('Relay streaming chunks out of order');
+          }
+          lastChunkIndex = index;
+        }
         final maybeRows = chunk['rows'];
         if (maybeRows is! List) {
           throw const FormatException(
@@ -124,6 +153,24 @@ class BridgeShapedSqlExecuteCollector implements StreamingSqlExecuteCollector {
             '(maxBufferedRows=$cap, currentRows=${rows.length})',
           );
         }
+        if (maybeRows.isNotEmpty) {
+          cancelScope?.diagnostics?.mark('first_rows');
+        }
+        cancelScope?.progressObserver?.publish(
+          AgentSqlExecutionResult(
+            rows: maybeRows
+                .map((row) {
+                  if (row is! Map) {
+                    throw const FormatException(
+                      'Streaming row must be an object',
+                    );
+                  }
+                  return Map<String, dynamic>.from(row);
+                })
+                .toList(growable: false),
+            rowCount: maybeRows.length,
+          ),
+        );
         final cols = chunk['column_metadata'];
         if (cols is List && columnMetadata == null) {
           columnMetadata = List<Object?>.from(cols);

@@ -2,6 +2,7 @@ import 'package:checks/checks.dart';
 import 'package:colmeia/features/agent_queries/data/datasources/agent_queries_remote_datasource.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_http_receive_timeout.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
@@ -23,6 +24,51 @@ void main() {
     dio = _MockDio();
     dataSource = ApiAgentQueriesRemoteDataSource(dio: dio);
   });
+
+  for (final batch in [false, true]) {
+    test(
+      'REST ${batch ? 'batch' : 'unary'} attempts use fresh wire ids',
+      () async {
+        final ids = <String>[];
+        when(
+          () => dio.post<Map<String, dynamic>>(
+            any(),
+            data: any(named: 'data'),
+            options: any(named: 'options'),
+          ),
+        ).thenAnswer((invocation) async {
+          final body = invocation.namedArguments[#data] as Map<String, Object?>;
+          final command = body['command']! as Map<String, Object?>;
+          ids.add(command['id']! as String);
+          return Response<Map<String, dynamic>>(
+            requestOptions: RequestOptions(path: '/agents/commands'),
+            data: const <String, dynamic>{},
+          );
+        });
+        for (var attempt = 0; attempt < 2; attempt++) {
+          if (batch) {
+            await dataSource.postSqlExecuteBatch(
+              const AgentSqlExecuteBatchRequest(
+                agentId: 'agent-1',
+                transportRpcId: 'stable-relay-operation',
+                commands: [AgentSqlExecuteBatchCommand(sql: 'SELECT 1')],
+              ),
+            );
+          } else {
+            await dataSource.postSqlExecute(
+              const AgentSqlExecuteRequest(
+                agentId: 'agent-1',
+                transportRpcId: 'stable-relay-operation',
+                sql: 'SELECT 1',
+              ),
+            );
+          }
+        }
+        check(ids.toSet().length).equals(2);
+        check(ids.contains('stable-relay-operation')).isFalse();
+      },
+    );
+  }
 
   test(
     'should build normalized bridge payload when request has options',

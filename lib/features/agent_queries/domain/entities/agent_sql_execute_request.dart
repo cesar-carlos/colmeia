@@ -10,7 +10,8 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute
 
 /// Default `api_version` advertised by Colmeia.
 ///
-/// Aligned with the current hub profile `plug-jsonrpc-profile/2.10`.
+/// Advertises the stable `plug-jsonrpc-profile/2.10` contract. The current
+/// hub profile 2.11.2 remains compatible; newer capabilities are negotiated.
 /// Forward-compatible: the bridge silently ignores the field on agents that
 /// do not check it. Pass an explicit value for legacy agents.
 ///
@@ -41,6 +42,7 @@ class AgentSqlExecuteRequest {
     this.hubPresenceOnlineAgentIdsSnapshot,
     this.hubConnectedFromApprovedCatalogRow,
     this.bridgeTimeoutMs,
+    this.totalTimeoutMs,
     this.pagination,
     this.executeOptions,
     this.useRelay = false,
@@ -75,6 +77,9 @@ class AgentSqlExecuteRequest {
 
   /// HTTP bridge wait timeout (`timeoutMs` in the request body).
   final int? bridgeTimeoutMs;
+
+  /// Local budget across queueing, connection, retries and fallback.
+  final int? totalTimeoutMs;
 
   /// HTTP body pagination injected by the hub into `params.options`.
   final AgentSqlBridgePagination? pagination;
@@ -139,8 +144,9 @@ class AgentSqlExecuteRequest {
   /// Stable JSON-RPC / relay `clientRequestId` for the logical operation.
   ///
   /// Set by the retrying agent-queries repository decorator so retries reuse
-  /// the same wire id and the hub can dedupe post-timeout replays. Callers
-  /// should leave this `null`; transport layers generate a fresh id when absent.
+  /// the same wire id for Relay replay deduplication. REST and legacy Socket
+  /// generate fresh wire ids per attempt because the hub rejects repeated ids
+  /// through its anti-replay guard. Callers should leave this `null`.
   final String? transportRpcId;
 
   String get trimmedAgentId => agentId.trim();
@@ -156,6 +162,9 @@ class AgentSqlExecuteRequest {
       return 'sql must not be empty';
     }
 
+    if (totalTimeoutMs != null && totalTimeoutMs! < 1) {
+      return 'totalTimeoutMs must be >= 1';
+    }
     final timeout = bridgeTimeoutMs;
     if (timeout != null && timeout < 1) {
       return 'bridgeTimeoutMs must be >= 1';
@@ -222,6 +231,7 @@ class AgentSqlExecuteRequest {
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
     int? bridgeTimeoutMs,
+    int? totalTimeoutMs,
     AgentSqlBridgePagination? pagination,
     AgentSqlExecuteOptions? executeOptions,
     bool? useRelay,
@@ -245,6 +255,7 @@ class AgentSqlExecuteRequest {
           hubConnectedFromApprovedCatalogRow ??
           this.hubConnectedFromApprovedCatalogRow,
       bridgeTimeoutMs: bridgeTimeoutMs ?? this.bridgeTimeoutMs,
+      totalTimeoutMs: totalTimeoutMs ?? this.totalTimeoutMs,
       pagination: pagination ?? this.pagination,
       executeOptions: executeOptions ?? this.executeOptions,
       useRelay: useRelay ?? this.useRelay,

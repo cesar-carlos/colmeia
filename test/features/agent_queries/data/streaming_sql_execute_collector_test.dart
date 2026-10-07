@@ -18,6 +18,63 @@ void main() {
   }
 
   group('BridgeShapedSqlExecuteCollector', () {
+    test('rejects duplicate or missing chunk indexes', () async {
+      for (final nextIndex in [0, 2]) {
+        await expectLater(
+          collector.collect(
+            streamOf([
+              {
+                'request_id': 'rpc',
+                'chunk_index': 0,
+                'rows': [
+                  {'id': 1},
+                ],
+              },
+              {
+                'request_id': 'rpc',
+                'chunk_index': nextIndex,
+                'rows': [
+                  {'id': 2},
+                ],
+              },
+              {'request_id': 'rpc', 'total_rows': 2},
+            ]),
+          ),
+          throwsFormatException,
+        );
+      }
+    });
+    test('rejects a changed stream identity', () async {
+      await expectLater(
+        collector.collect(
+          streamOf([
+            {
+              'stream_id': 'first',
+              'rows': [
+                {'id': 1},
+              ],
+            },
+            {'stream_id': 'other', 'total_rows': 1},
+          ]),
+        ),
+        throwsFormatException,
+      );
+    });
+    test('rejects rows following completion', () async {
+      await expectLater(
+        collector.collect(
+          streamOf([
+            {'total_rows': 0},
+            {
+              'rows': [
+                {'id': 1},
+              ],
+            },
+          ]),
+        ),
+        throwsFormatException,
+      );
+    });
     test(
       'merges row chunks + complete payload into the bridge envelope',
       () async {

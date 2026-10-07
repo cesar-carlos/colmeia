@@ -20,6 +20,20 @@ void main() {
     clientToken: 'token-1',
   );
 
+  test(
+    'cancellation takes precedence over a cached successful result',
+    () async {
+      final delegate = _SequenceAgentQueriesRepository();
+      final repo = CachingAgentQueriesRepository(delegate: delegate);
+      delegate.enqueue(_successResult(rowCount: 1));
+      await repo.executeSql(baseRequest);
+      final scope = AgentQueriesCancelScope()..cancelAll();
+      final result = await repo.executeSql(baseRequest, cancelScope: scope);
+      expect(result.exceptionOrNull(), isA<OperationCancelledFailure>());
+      expect(repo.cacheHits, 0);
+      expect(delegate.callCount, 1);
+    },
+  );
   test('should cache identical successful requests inside ttl', () async {
     final delegate = _SequenceAgentQueriesRepository();
     final caching = CachingAgentQueriesRepository(delegate: delegate);

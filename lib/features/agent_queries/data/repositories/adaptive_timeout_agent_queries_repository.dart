@@ -53,7 +53,14 @@ class AdaptiveTimeoutAgentQueriesRepository implements AgentQueriesRepository {
     AgentSqlExecuteRequest request, {
     AgentQueriesCancelScope? cancelScope,
   }) async {
-    final adaptiveTimeout = _effectiveAdaptiveTimeout(request);
+    final proposedTimeout = _effectiveAdaptiveTimeout(request);
+    final adaptiveTimeout = cancelScope?.deadline == null
+        ? proposedTimeout
+        : Duration(
+            milliseconds: cancelScope!.deadline!.clampTimeoutMs(
+              proposedTimeout?.inMilliseconds,
+            ),
+          );
 
     final adjustedRequest = adaptiveTimeout != null
         ? request.copyWith(bridgeTimeoutMs: adaptiveTimeout.inMilliseconds)
@@ -91,7 +98,14 @@ class AdaptiveTimeoutAgentQueriesRepository implements AgentQueriesRepository {
     AgentSqlExecuteBatchRequest request, {
     AgentQueriesCancelScope? cancelScope,
   }) async {
-    final adaptiveTimeout = _effectiveBatchAdaptiveTimeout(request);
+    final proposedTimeout = _effectiveBatchAdaptiveTimeout(request);
+    final adaptiveTimeout = cancelScope?.deadline == null
+        ? proposedTimeout
+        : Duration(
+            milliseconds: cancelScope!.deadline!.clampTimeoutMs(
+              proposedTimeout?.inMilliseconds,
+            ),
+          );
     final adjustedRequest = adaptiveTimeout == null
         ? request
         : request.copyWith(bridgeTimeoutMs: adaptiveTimeout.inMilliseconds);

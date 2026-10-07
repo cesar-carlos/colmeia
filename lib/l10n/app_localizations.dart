@@ -4202,6 +4202,12 @@ abstract class AppLocalizations {
   /// **'Details'**
   String get reportRowDetailDefaultTitle;
 
+  /// No description provided for @reportIncompleteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Incomplete result. Retry before sharing or exporting.'**
+  String get reportIncompleteMessage;
+
   /// No description provided for @reportLoadErrorTitle.
   ///
   /// In en, this message translates to:

@@ -7,6 +7,9 @@ import 'package:colmeia/features/agent_queries/data/notas_entrada_sql_page_total
 import 'package:colmeia/features/agent_queries/data/notas_entrada_sql_params.dart';
 import 'package:colmeia/features/agent_queries/data/queries/notas_entrada_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repository_execution.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/paged_report_progress_loader.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/scoped_agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_progress.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
@@ -16,9 +19,13 @@ import 'package:colmeia/features/agent_queries/domain/entities/notas_entrada_pag
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/notas_entrada_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/paged_progressive_report_repository.dart';
 
 /// Numbered, non-cancelled entrada notes for one company and branch.
-class NotasEntradaRepositoryImpl implements NotasEntradaRepository {
+class NotasEntradaRepositoryImpl
+    implements
+        NotasEntradaRepository,
+        PagedProgressiveReportRepository<NotasEntradaFilter, NotaEntradaRow> {
   NotasEntradaRepositoryImpl(this._agentQueriesRepository);
 
   static const int _defaultSqlTimeoutMs = 170000;
@@ -143,4 +150,50 @@ class NotasEntradaRepositoryImpl implements NotasEntradaRepository {
     );
     return raw != null;
   }
+
+  @override
+  Stream<AppResult<AgentQueryProgress<NotaEntradaRow>>> loadPagesProgressively({
+    required String userId,
+    required String agentId,
+    required NotasEntradaFilter filter,
+    String? clientToken,
+    int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
+    bool emitPartialResults = true,
+  }) =>
+      const PagedReportProgressLoader<NotasEntradaPageResult, NotaEntradaRow>()
+          .load(
+            parent: cancelScope,
+            emitPartialResults: emitPartialResults,
+            pageSize: filter.pageSize,
+            maxRows: AppEnvironment.socketStreamSqlCollectorMaxBufferedRows,
+            items: (page) => page.items,
+            totalCount: (page) => page.totalCount,
+            rowKey: (row) => (row.codEmpresa, row.codFilial, row.compraId),
+            loadPage: (page, scope) =>
+                NotasEntradaRepositoryImpl(
+                  ScopedAgentQueriesRepository(_agentQueriesRepository, scope),
+                ).loadPage(
+                  userId: userId,
+                  agentId: agentId,
+                  filter: NotasEntradaFilter(
+                    dataLancamentoInicio: filter.dataLancamentoInicio,
+                    dataLancamentoFim: filter.dataLancamentoFim,
+                    searchTerm: filter.searchTerm,
+                    codFornecedor: filter.codFornecedor,
+                    codEmpresa: filter.codEmpresa,
+                    codFilial: filter.codFilial,
+                    page: page,
+                    pageSize: filter.pageSize,
+                  ),
+                  clientToken: clientToken,
+                  bridgeTimeoutMs: bridgeTimeoutMs,
+                  hubPresenceOnlineAgentIdsSnapshot:
+                      hubPresenceOnlineAgentIdsSnapshot,
+                  hubConnectedFromApprovedCatalogRow:
+                      hubConnectedFromApprovedCatalogRow,
+                ),
+          );
 }

@@ -24,6 +24,7 @@ abstract final class AgentQueriesRequestKey {
       'hub_connected_from_approved_catalog_row':
           request.hubConnectedFromApprovedCatalogRow,
       'bridge_timeout_ms': request.bridgeTimeoutMs,
+      'total_timeout_ms': request.totalTimeoutMs,
       'pagination': _paginationToKey(request.pagination),
       'execute_options': _executeOptionsToKey(request.executeOptions),
       'use_relay': request.useRelay,
@@ -55,6 +56,7 @@ abstract final class AgentQueriesRequestKey {
       'hub_connected_from_approved_catalog_row':
           request.hubConnectedFromApprovedCatalogRow,
       'bridge_timeout_ms': request.bridgeTimeoutMs,
+      'total_timeout_ms': request.totalTimeoutMs,
       'options': _batchOptionsToKey(request.options),
       'use_relay': request.useRelay,
       'api_version': request.apiVersion,

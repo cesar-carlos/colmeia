@@ -1,3 +1,4 @@
+import 'package:colmeia/core/observability/socket/agent_phase_timings.dart';
 import 'package:colmeia/core/observability/socket/server_timings.dart';
 import 'package:colmeia/core/observability/socket/socket_metrics_snapshot.dart';
 import 'package:colmeia/core/socket/agent_command_outcome.dart';
@@ -81,6 +82,7 @@ class SocketChannelMetrics {
   final _ReservoirHistogram _relayBatchSizeDistribution;
   final Map<String, int> _relayBatchBypassByReason;
   final Map<String, _ReservoirHistogram> _serverPhaseMsByName;
+  final Map<String, _ReservoirHistogram> _agentPhaseMsByName = {};
   int _serverTimingsSchemaMismatchTotal = 0;
   int _restFallbackLatchTotal = 0;
   int _restFallbackTemporaryLatchTotal = 0;
@@ -288,6 +290,12 @@ class SocketChannelMetrics {
   /// REST) into per-phase histograms. Schema mismatches are counted
   /// separately so dashboards can detect a hub bump that needs a client
   /// update.
+  void recordAgentTimings(AgentPhaseTimings timings) {
+    timings.phasesMs.forEach((phase, ms) {
+      _histogramFor(_agentPhaseMsByName, phase).add(ms);
+    });
+  }
+
   void recordServerTimings(ServerTimings timings) {
     if (timings.schemaVersion != 1) {
       _serverTimingsSchemaMismatchTotal += 1;
@@ -357,6 +365,10 @@ class SocketChannelMetrics {
         for (final entry in _serverPhaseMsByName.entries)
           entry.key: entry.value.snapshot(),
       },
+      agentPhaseMsByName: {
+        for (final entry in _agentPhaseMsByName.entries)
+          entry.key: entry.value.snapshot(),
+      },
       serverTimingsSchemaMismatchTotal: _serverTimingsSchemaMismatchTotal,
       restFallbackLatchTotal: _restFallbackLatchTotal,
       restFallbackTemporaryLatchTotal: _restFallbackTemporaryLatchTotal,
@@ -400,6 +412,7 @@ class SocketChannelMetrics {
     _relayBatchSizeDistribution.clear();
     _relayBatchBypassByReason.clear();
     _serverPhaseMsByName.clear();
+    _agentPhaseMsByName.clear();
     _serverTimingsSchemaMismatchTotal = 0;
     _restFallbackLatchTotal = 0;
     _restFallbackTemporaryLatchTotal = 0;

@@ -7,6 +7,15 @@ import 'package:colmeia/core/socket/relay/relay_event_names.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 abstract final class AppEnvironment {
+  static Set<String> get progressiveReportIds =>
+      AppEnvironmentResolution.resolveString(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.agentQueryProgressiveReports,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.agentQueryProgressiveReports),
+        fallback: '',
+      ).split(',').map((id) => id.trim()).where((id) => id.isNotEmpty).toSet();
+
   static bool get useFakeBackend => AppEnvironmentResolution.resolveBool(
     fromDefine: const String.fromEnvironment(EnvKeys.useFakeBackend),
     fromDotenv: _dotenvMaybe(EnvKeys.useFakeBackend),
@@ -130,7 +139,7 @@ abstract final class AppEnvironment {
       );
 
   static const int defaultAgentSqlCacheMaxSize = 500;
-  static const int defaultAgentSqlCacheTtlMs = 3000;
+  static const int defaultAgentSqlCacheTtlMs = 5000;
   static const int defaultAgentSqlParseIsolateRowThreshold = 2000;
   static const int defaultAgentSqlCatalogCacheTtlMs = 30000;
   static const int defaultAgentQueryMergeAllConcurrency = 4;
@@ -408,6 +417,24 @@ abstract final class AppEnvironment {
         fromDotenv: _dotenvMaybe(EnvKeys.agentSqlRestMaxInflightPerAgent),
         fallback: defaultAgentSqlRestMaxInflightPerAgent,
       ).clamp(0, 64);
+
+  static int get agentSqlRestMaxWaitersPerAgent =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.agentSqlRestMaxWaitersPerAgent,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.agentSqlRestMaxWaitersPerAgent),
+        fallback: 16,
+      ).clamp(0, 1024);
+
+  static int get agentSqlRestAcquireWaitMs =>
+      AppEnvironmentResolution.resolveInt(
+        fromDefine: const String.fromEnvironment(
+          EnvKeys.agentSqlRestAcquireWaitMs,
+        ),
+        fromDotenv: _dotenvMaybe(EnvKeys.agentSqlRestAcquireWaitMs),
+        fallback: 5000,
+      ).clamp(1, 60000);
 
   static const bool defaultAgentQueryFactsPrefetchEnabled = true;
 

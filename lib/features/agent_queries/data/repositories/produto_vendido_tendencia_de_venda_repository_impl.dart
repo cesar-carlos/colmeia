@@ -11,7 +11,10 @@ import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_tend
 import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_tendencia_de_venda_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/produto_vendido_tendencia_de_venda_summary_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repository_execution.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/paged_report_progress_loader.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/scoped_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_progress.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
@@ -22,6 +25,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_t
 import 'package:colmeia/features/agent_queries/domain/entities/produto_vendido_tendencia_de_venda_summary_row.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/paged_progressive_report_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendido_tendencia_de_venda_repository.dart';
 
 /// Product sales trend (`ProdutoVendidoTendenciaDeVenda`).
@@ -41,7 +45,12 @@ import 'package:colmeia/features/agent_queries/domain/repositories/produto_vendi
 /// `loadPageAndSummary` runs one tagged `UNION ALL` query over a shared CTE
 /// universe (summary + page + top movers) instead of `sql.executeBatch`.
 class ProdutoVendidoTendenciaDeVendaRepositoryImpl
-    implements ProdutoVendidoTendenciaDeVendaRepository {
+    implements
+        ProdutoVendidoTendenciaDeVendaRepository,
+        PagedProgressiveReportRepository<
+          ProdutoVendidoTendenciaDeVendaFilter,
+          ProdutoVendidoTendenciaDeVendaRow
+        > {
   ProdutoVendidoTendenciaDeVendaRepositoryImpl(this._agentQueriesRepository);
 
   /// 90 % of the active bridge timeout, clamped for very short overrides.
@@ -659,4 +668,62 @@ class ProdutoVendidoTendenciaDeVendaRepositoryImpl
         )
         .toList(growable: false);
   }
+
+  @override
+  Stream<AppResult<AgentQueryProgress<ProdutoVendidoTendenciaDeVendaRow>>>
+  loadPagesProgressively({
+    required String userId,
+    required String agentId,
+    required ProdutoVendidoTendenciaDeVendaFilter filter,
+    String? clientToken,
+    int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
+    bool emitPartialResults = true,
+  }) =>
+      const PagedReportProgressLoader<
+            ProdutoVendidoTendenciaDeVendaPageResult,
+            ProdutoVendidoTendenciaDeVendaRow
+          >()
+          .load(
+            parent: cancelScope,
+            emitPartialResults: emitPartialResults,
+            pageSize: filter.pageSize,
+            maxRows: AppEnvironment.socketStreamSqlCollectorMaxBufferedRows,
+            items: (page) => page.items,
+            totalCount: (page) => page.totalCount,
+            rowKey: (row) => (row.codEmpresa, row.codFilial, row.codProduto),
+            loadPage: (page, scope) =>
+                ProdutoVendidoTendenciaDeVendaRepositoryImpl(
+                  ScopedAgentQueriesRepository(_agentQueriesRepository, scope),
+                ).loadPage(
+                  userId: userId,
+                  agentId: agentId,
+                  filter: ProdutoVendidoTendenciaDeVendaFilter(
+                    periodoAtualInicio: filter.periodoAtualInicio,
+                    periodoAtualFim: filter.periodoAtualFim,
+                    periodoAnteriorInicio: filter.periodoAnteriorInicio,
+                    periodoAnteriorFim: filter.periodoAnteriorFim,
+                    origem: filter.origem,
+                    searchTerm: filter.searchTerm,
+                    classificacao: filter.classificacao,
+                    codGrupoProduto: filter.codGrupoProduto,
+                    codMarca: filter.codMarca,
+                    codFilial: filter.codFilial,
+                    metricMode: filter.metricMode,
+                    minVolumeUnits: filter.minVolumeUnits,
+                    trendThresholdPercent: filter.trendThresholdPercent,
+                    topMoversSortBy: filter.topMoversSortBy,
+                    page: page,
+                    pageSize: filter.pageSize,
+                  ),
+                  clientToken: clientToken,
+                  bridgeTimeoutMs: bridgeTimeoutMs,
+                  hubPresenceOnlineAgentIdsSnapshot:
+                      hubPresenceOnlineAgentIdsSnapshot,
+                  hubConnectedFromApprovedCatalogRow:
+                      hubConnectedFromApprovedCatalogRow,
+                ),
+          );
 }

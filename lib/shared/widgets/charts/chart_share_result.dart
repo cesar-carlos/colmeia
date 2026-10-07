@@ -3,9 +3,11 @@ sealed class ChartShareResult {
   const ChartShareResult();
 }
 
-/// The chart image was shared successfully.
+/// The generated PDF was handed to the platform share sheet.
 final class ChartShareSuccess extends ChartShareResult {
-  const ChartShareSuccess();
+  const ChartShareSuccess({this.isConfirmed = true});
+
+  final bool isConfirmed;
 }
 
 /// Sharing failed before or during the platform share sheet.

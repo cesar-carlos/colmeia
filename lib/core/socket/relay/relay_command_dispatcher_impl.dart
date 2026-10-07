@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/core/observability/socket/agent_phase_timings.dart';
 import 'package:colmeia/core/observability/socket/server_timings.dart';
 import 'package:colmeia/core/observability/socket/socket_channel_metrics.dart';
 import 'package:colmeia/core/socket/agent_latency_oracle.dart';
 import 'package:colmeia/core/socket/agent_sql_open_stream.dart';
+import 'package:colmeia/core/socket/command_phase_observability.dart';
 import 'package:colmeia/core/socket/consumer_socket_app_error_codes.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
@@ -48,7 +50,8 @@ part 'relay_pending_entries.dart';
 ///
 /// - [_PendingUnary] — single-shot request (`sendUnary`).
 /// - [_PendingStream] — chunked request (`sendStreaming`) with auto-pull.
-class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
+class RelayCommandDispatcherImpl
+    implements RelayCommandDispatcher, CommandPhaseObservability {
   RelayCommandDispatcherImpl({
     required this._connection,
     required this._conversationManager,
@@ -85,6 +88,13 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     }
   }
 
+  final _phaseObservers = CommandPhaseObservers();
+  @override
+  void Function() observePhases(
+    String requestId,
+    CommandPhaseListener listener,
+  ) => _phaseObservers.observe(requestId, listener);
+
   final ConsumerSocketConnection _connection;
   final RelayConversationManager _conversationManager;
   final PayloadFrameCodec _codec;
@@ -105,6 +115,10 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
   /// uses `requestId` for downstream events.
   final Map<String, _PendingRelay> _pendingByClientId =
       <String, _PendingRelay>{};
+  final Map<String, Completer<RelayConversation>> _preparingByClientId = {};
+
+  bool _isCurrentPending(_PendingRelay pending) =>
+      identical(_pendingByClientId[pending.clientRequestId], pending);
 
   /// Reverse index from server-assigned `requestId` to `client_request_id`.
   /// Populated after `relay:rpc.accepted`, and also after a fast-path body
@@ -211,7 +225,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
         );
         return pending.completer.future;
       }
-      if (!_pendingByClientId.containsKey(clientRequestId)) {
+      if (!_isCurrentPending(pending)) {
         gate.release(pending.agentId);
         return pending.completer.future;
       }
@@ -251,10 +265,13 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
         RelayPayloadFrameCompression.auto,
   }) {
     var subscriptionCancelled = false;
+    _PendingStream? ownedPending;
     late final StreamController<Map<String, dynamic>> controller;
     controller = StreamController<Map<String, dynamic>>(
       onCancel: () {
         subscriptionCancelled = true;
+        final pending = ownedPending;
+        if (pending != null && !_isCurrentPending(pending)) return;
         cancel(
           clientRequestId,
           reason: 'stream_subscription_cancelled',
@@ -306,6 +323,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
                   );
                 },
           );
+          ownedPending = pending;
           if (subscriptionCancelled) {
             _failPending(
               clientRequestId,
@@ -366,7 +384,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
             );
             return;
           }
-          if (!_pendingByClientId.containsKey(clientRequestId)) {
+          if (!_isCurrentPending(pending)) {
             gate.release(pending.agentId);
             return;
           }
@@ -854,6 +872,15 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     if (_isDisposed) {
       return;
     }
+    final preparing = _preparingByClientId[clientRequestId];
+    if (preparing != null && !preparing.isCompleted) {
+      preparing.completeError(
+        RelayRequestCancelled(
+          message: 'Relay preparation cancelled by caller',
+          clientRequestId: clientRequestId,
+        ),
+      );
+    }
     _failPending(
       clientRequestId,
       RelayRequestCancelled(
@@ -871,7 +898,10 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       return const <AgentSqlOpenStream>[];
     }
     final streams = <AgentSqlOpenStream>[];
-    final ids = _pendingByClientId.keys.toList(growable: false);
+    final ids = {
+      ..._pendingByClientId.keys,
+      ..._preparingByClientId.keys,
+    }.toList(growable: false);
     for (final pending in _pendingByClientId.values) {
       if (pending is! _PendingStream) {
         continue;
@@ -894,6 +924,15 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
   Future<void> dispose() async {
     if (_isDisposed) {
       return;
+    }
+    for (final preparing in _preparingByClientId.values) {
+      if (!preparing.isCompleted) {
+        preparing.completeError(
+          const RelayDispatcherDisposed(
+            message: 'Dispatcher disposed during preparation',
+          ),
+        );
+      }
     }
     _isDisposed = true;
     final cb = _routerCallback;
@@ -948,17 +987,25 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     if (_isDisposed) {
       throw const RelayDispatcherDisposed(message: 'Dispatcher disposed');
     }
-    if (_pendingByClientId.containsKey(clientRequestId)) {
+    if (_pendingByClientId.containsKey(clientRequestId) ||
+        _preparingByClientId.containsKey(clientRequestId)) {
       throw RelayDuplicateRequestId(
         message: 'clientRequestId already pending: $clientRequestId',
-        conversationId: _pendingByClientId[clientRequestId]!.conversationId,
+        conversationId:
+            _pendingByClientId[clientRequestId]?.conversationId ?? '',
         clientRequestId: clientRequestId,
       );
     }
 
     final RelayConversation conversation;
+    final prepareClock = Stopwatch()..start();
+    final preparation = Completer<RelayConversation>();
+    _preparingByClientId[clientRequestId] = preparation;
     try {
-      conversation = await _conversationManager.obtain(agentId);
+      conversation = await Future.any([
+        _conversationManager.obtain(agentId),
+        preparation.future,
+      ]);
     } on RelayDispatchException {
       rethrow;
     }
@@ -997,6 +1044,18 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
         cause: e,
         stackTrace: s,
       );
+    } finally {
+      _preparingByClientId.remove(clientRequestId);
+      _phaseObservers.record(
+        clientRequestId,
+        'connection_conversation',
+        prepareClock.elapsed,
+      );
+    }
+    if (_isDisposed) {
+      throw const RelayDispatcherDisposed(
+        message: 'Dispatcher disposed during preparation',
+      );
     }
     final conversationId = conversation.conversationId!;
 
@@ -1019,7 +1078,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     Duration? timeout, {
     String? rpcMethodHint,
   }) {
-    if (!_pendingByClientId.containsKey(pending.clientRequestId)) {
+    if (!_isCurrentPending(pending)) {
       return;
     }
     final method = pending.method ?? rpcMethodHint;
@@ -1034,6 +1093,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       );
     }
     pending.timeoutTimer = Timer(effectiveTimeout, () {
+      if (!_isCurrentPending(pending)) return;
       _failPending(
         pending.clientRequestId,
         RelayRequestTimeout(
@@ -1081,6 +1141,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
         elapsed: encodeSw.elapsed,
       );
     } on PayloadFrameDecodeException catch (e, s) {
+      if (!_isCurrentPending(pending)) return;
       encodeSw.stop();
       _channelMetrics?.recordRelayPayloadEncodeWallClock(
         elapsed: encodeSw.elapsed,
@@ -1100,6 +1161,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       return;
     }
 
+    if (!_isCurrentPending(pending)) return;
     final useFastPath = allowFastPath && _fastPathEnabled;
     // Per-request hub wait via envelope `timeoutMs` (REST parity through
     // computeBridgeWaitTimeoutMs). See docs/plug_server/relay_envelope_timeout_ms.md.
@@ -1587,7 +1649,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
         if (_isDisposed) {
           return;
         }
-        if (!_pendingByClientId.containsKey(pending.clientRequestId)) {
+        if (!_isCurrentPending(pending)) {
           return;
         }
         try {
@@ -1724,6 +1786,13 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     decodeSw.stop();
     _recordRelayDecodeMetrics(decodeSw, frame);
     final pending = _pendingFromDecodedBodyValue(decoded);
+    if (pending != null) {
+      _phaseObservers.record(
+        pending.clientRequestId,
+        'frame_decode',
+        decodeSw.elapsed,
+      );
+    }
     if (pending == null) {
       return;
     }
@@ -1752,7 +1821,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     if (_isDisposed) {
       return;
     }
-    if (!_pendingByClientId.containsKey(pending.clientRequestId)) {
+    if (!_isCurrentPending(pending)) {
       return;
     }
     if (parseResult is PayloadFrameParseFailure) {
@@ -1807,6 +1876,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       try {
         decoded = await _codec.decodeJsonAsync(frame);
       } on PayloadFrameDecodeException catch (e, s) {
+        if (!_isCurrentPending(pending)) return;
         decodeSw.stop();
         _channelMetrics?.recordRelayPayloadDecodeWallClock(
           elapsed: decodeSw.elapsed,
@@ -1825,10 +1895,19 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
         );
         return;
       }
+      if (!_isCurrentPending(pending)) return;
       decodeSw.stop();
       _recordRelayDecodeMetrics(decodeSw, frame);
+      _phaseObservers.record(
+        pending.clientRequestId,
+        'frame_decode',
+        decodeSw.elapsed,
+      );
     }
 
+    // A retry keeps its operation id. An async decode from the old attempt
+    // must not complete or fail the new pending registered under that id.
+    if (!_isCurrentPending(pending)) return;
     if (decoded is! Map) {
       _channelMetrics?.recordRelayDecodeFailure(code: 'malformed_payload');
       _failPending(
@@ -1977,7 +2056,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     // the agent finished — see [_PendingStream.streamTerminalSeen].
     if (pending.streamTerminalSeen ||
         pending.controller.isClosed ||
-        !_pendingByClientId.containsKey(pending.clientRequestId)) {
+        !_isCurrentPending(pending)) {
       return;
     }
     final requestId = pending.requestId;
@@ -1994,7 +2073,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       // while we were framing the pull.
       if (pending.streamTerminalSeen ||
           pending.controller.isClosed ||
-          !_pendingByClientId.containsKey(pending.clientRequestId)) {
+          !_isCurrentPending(pending)) {
         return;
       }
       final envelope = <String, Object?>{
@@ -2210,6 +2289,13 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
       decodeSw.stop();
       _recordRelayDecodeMetrics(decodeSw, frame);
       final pending = _pendingFromDecodedBodyValue(decoded);
+      if (pending != null) {
+        _phaseObservers.record(
+          pending.clientRequestId,
+          'frame_decode',
+          decodeSw.elapsed,
+        );
+      }
       if (pending == null) {
         return null;
       }
@@ -2279,6 +2365,8 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
     // the relay response carries a per-phase snapshot under
     // `meta.serverTimings`. We fold it into the metrics service without
     // touching the JSON-RPC body the caller sees.
+    final agentTimings = AgentPhaseTimings.fromRelayBody(response);
+    if (agentTimings != null) _channelMetrics?.recordAgentTimings(agentTimings);
     final serverTimings = ServerTimings.tryParseFromRelayBody(response);
     if (serverTimings != null) {
       _channelMetrics?.recordServerTimings(serverTimings);
@@ -2291,6 +2379,7 @@ class RelayCommandDispatcherImpl implements RelayCommandDispatcher {
   }
 
   void _completeStreamPending(_PendingStream entry) {
+    if (!_isCurrentPending(entry)) return;
     final removed = _pendingByClientId.remove(entry.clientRequestId);
     if (removed == null) {
       return;

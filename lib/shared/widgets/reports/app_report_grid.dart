@@ -65,6 +65,7 @@ class AppReportGrid<T> extends StatefulWidget {
     this.emptyMessage,
     this.emptyAction,
     this.isLoading = false,
+    this.isIncomplete = false,
   });
 
   final List<AppReportColumn<T>> columns;
@@ -91,6 +92,7 @@ class AppReportGrid<T> extends StatefulWidget {
   /// When [rows] is empty and this is true, shows a loading surface instead of
   /// the empty state (avoids "no results" while data is still fetching).
   final bool isLoading;
+  final bool isIncomplete;
 
   @override
   State<AppReportGrid<T>> createState() => _AppReportGridState<T>();
@@ -671,7 +673,9 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
       source: _source,
       controller: _gridController,
       columns: _buildGridColumns(visible),
-      tableSummaryRows: _buildSummaryRows(visible),
+      tableSummaryRows: widget.isLoading || widget.isIncomplete
+          ? const []
+          : _buildSummaryRows(visible),
       allowExpandCollapseGroup: widget.currentGroups.isNotEmpty,
       groupCaptionTitleFormat: '{ColumnName}|{Key}|{ItemsCount}',
       allowSorting:

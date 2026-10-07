@@ -140,7 +140,9 @@ Future<void> _e2eSetupDependenciesBody() async {
   }
   registerInjectorAgentQueries(getIt);
   await installE2eOmitSalesOrigemRepository();
-  _e2eRegisterRelayConversationPreWarmerIfAvailable();
+  if (!const bool.fromEnvironment('E2E_REQUEST_BENCHMARK')) {
+    _e2eRegisterRelayConversationPreWarmerIfAvailable();
+  }
   await _e2eWarmConsumerSocketAfterQueriesRegistered();
 
   if (!_e2eAnnouncedConfiguredAgentId &&

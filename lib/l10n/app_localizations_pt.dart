@@ -2607,6 +2607,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get reportRowDetailDefaultTitle => 'Detalhes';
 
   @override
+  String get reportIncompleteMessage =>
+      'Resultado incompleto. Tente novamente antes de compartilhar ou exportar.';
+
+  @override
   String get reportLoadErrorTitle => 'Não foi possível carregar os dados';
 
   @override

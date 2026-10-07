@@ -6,13 +6,18 @@ import 'package:colmeia/features/agent_queries/data/agent_queries_sql_row_map_re
 import 'package:colmeia/features/agent_queries/data/models/resumo_produto_venda_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_produto_venda_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repository_execution.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/paged_report_progress_loader.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/scoped_agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_progress.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_produto_venda_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/paged_progressive_report_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_produto_venda_repository.dart';
 
 /// Paged product sales summary (`ResumoProdutoVenda`).
@@ -24,7 +29,13 @@ import 'package:colmeia/features/agent_queries/domain/repositories/resumo_produt
 /// page slice. Skips the short transport cache. Empty-success retry is not used
 /// here because a legitimate empty page is a `TotalCount = 0` sentinel row, not
 /// an empty payload — retrying would add latency on valid empty filters.
-class ResumoProdutoVendaRepositoryImpl implements ResumoProdutoVendaRepository {
+class ResumoProdutoVendaRepositoryImpl
+    implements
+        ResumoProdutoVendaRepository,
+        PagedProgressiveReportRepository<
+          ResumoProdutoVendaFilter,
+          ResumoProdutoVendaRow
+        > {
   ResumoProdutoVendaRepositoryImpl(this._agentQueriesRepository);
 
   /// Upper bound for the agent-side SQL timeout (`options.timeout_ms`).
@@ -168,4 +179,53 @@ class ResumoProdutoVendaRepositoryImpl implements ResumoProdutoVendaRepository {
     );
     return raw != null;
   }
+
+  @override
+  Stream<AppResult<AgentQueryProgress<ResumoProdutoVendaRow>>>
+  loadPagesProgressively({
+    required String userId,
+    required String agentId,
+    required ResumoProdutoVendaFilter filter,
+    String? clientToken,
+    int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
+    bool emitPartialResults = true,
+  }) =>
+      const PagedReportProgressLoader<
+            ResumoProdutoVendaPageResult,
+            ResumoProdutoVendaRow
+          >()
+          .load(
+            parent: cancelScope,
+            emitPartialResults: emitPartialResults,
+            pageSize: filter.pageSize,
+            maxRows: AppEnvironment.socketStreamSqlCollectorMaxBufferedRows,
+            items: (page) => page.items,
+            totalCount: (page) => page.totalCount,
+            rowKey: (row) => (row.codEmpresa, row.codFilial, row.codProduto),
+            loadPage: (page, scope) =>
+                ResumoProdutoVendaRepositoryImpl(
+                  ScopedAgentQueriesRepository(_agentQueriesRepository, scope),
+                ).loadPage(
+                  userId: userId,
+                  agentId: agentId,
+                  filter: ResumoProdutoVendaFilter(
+                    dataVendaInicio: filter.dataVendaInicio,
+                    dataVendaFim: filter.dataVendaFim,
+                    origem: filter.origem,
+                    sortBy: filter.sortBy,
+                    sortDirection: filter.sortDirection,
+                    page: page,
+                    pageSize: filter.pageSize,
+                  ),
+                  clientToken: clientToken,
+                  bridgeTimeoutMs: bridgeTimeoutMs,
+                  hubPresenceOnlineAgentIdsSnapshot:
+                      hubPresenceOnlineAgentIdsSnapshot,
+                  hubConnectedFromApprovedCatalogRow:
+                      hubConnectedFromApprovedCatalogRow,
+                ),
+          );
 }

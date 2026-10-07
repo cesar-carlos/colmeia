@@ -161,8 +161,10 @@ Future<ChartShareResult> shareChartCapture(
   switch (result) {
     case final ChartShareFailure failure:
       showChartShareFailureSnackBar(context, failure);
-    case ChartShareSuccess():
-      showChartShareSuccessSnackBar(context);
+    case ChartShareSuccess(:final isConfirmed):
+      if (isConfirmed) {
+        showChartShareSuccessSnackBar(context);
+      }
   }
   return result;
 }

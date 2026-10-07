@@ -6,6 +6,7 @@ import 'package:colmeia/core/observability/socket/server_timings.dart';
 import 'package:colmeia/core/socket/agent_command_outcome.dart';
 import 'package:colmeia/core/socket/agent_latency_oracle.dart';
 import 'package:colmeia/core/socket/agents_wire_payload.dart';
+import 'package:colmeia/core/socket/command_phase_observability.dart';
 import 'package:colmeia/core/socket/consumer_socket_app_error_codes.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
@@ -36,7 +37,8 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 /// [SocketCommandCoalescer].
 ///
 /// See `docs/Features/socket_command_dispatcher_design.md` §5.
-class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
+class SocketCommandDispatcherImpl
+    implements SocketCommandDispatcher, CommandPhaseObservability {
   SocketCommandDispatcherImpl({
     required this._connection,
     required this._correlator,
@@ -53,6 +55,13 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
        _outcomes = StreamController<AgentCommandOutcome>.broadcast() {
     _stateSub = _connection.states().listen(_onConnectionState);
   }
+
+  final _phaseObservers = CommandPhaseObservers();
+  @override
+  void Function() observePhases(
+    String requestId,
+    CommandPhaseListener listener,
+  ) => _phaseObservers.observe(requestId, listener);
 
   final ConsumerSocketConnection _connection;
   final SocketRequestCorrelator _correlator;
@@ -75,6 +84,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
   /// resolves. Captures `method` so metrics and presence consumers can
   /// pivot per JSON-RPC method without re-parsing the body.
   final Map<String, _PendingMeta> _meta = <String, _PendingMeta>{};
+  final Map<String, Completer<ConsumerSocketConnected>> _connectingByRpcId = {};
 
   /// Dispatches that have connected but are still waiting for a per-agent
   /// slot. They are tracked separately because the correlator only sees a
@@ -155,8 +165,21 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     required String rpcId,
     Duration? timeout,
   }) async {
+    if (_isDisposed) {
+      throw const SocketDispatchDisconnected(message: 'Dispatcher disposed');
+    }
+    if (_connectingByRpcId.containsKey(rpcId)) {
+      throw SocketDispatchDuplicateId(
+        message: 'Request already connecting: $rpcId',
+      );
+    }
+    final connectClock = Stopwatch()..start();
+    final connecting = Completer<ConsumerSocketConnected>();
+    _connectingByRpcId[rpcId] = connecting;
     try {
-      await _connection.connect();
+      await Future.any([_connection.connect(), connecting.future]);
+    } on SocketDispatchException {
+      rethrow;
     } on ConsumerSocketTerminalException catch (e) {
       // Typed terminal failures from the connection layer. The exhaustive
       // switch lets the compiler verify every subtype is mapped — no more
@@ -195,6 +218,14 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
         message: 'Connect failed before dispatch: $e',
         cause: e,
         stackTrace: s,
+      );
+    } finally {
+      _connectingByRpcId.remove(rpcId);
+      _phaseObservers.record(rpcId, 'connection', connectClock.elapsed);
+    }
+    if (_isDisposed) {
+      throw const SocketDispatchDisconnected(
+        message: 'Dispatcher disposed during connection',
       );
     }
 
@@ -447,6 +478,14 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     final cancelled = SocketDispatchCancelled(
       message: 'Request cancelled by caller (reason=$reason)',
     );
+    final connecting = _connectingByRpcId[rpcId];
+    final connectingLeaderKey = _coalescer.leaderKeyForRpcId(rpcId);
+    if (connecting != null &&
+        !connecting.isCompleted &&
+        (connectingLeaderKey == null ||
+            !_coalescer.hasFollowersForKey(connectingLeaderKey))) {
+      connecting.completeError(cancelled);
+    }
     final followerCompleter = _coalescer.takeFollower(rpcId);
     if (followerCompleter != null) {
       if (!followerCompleter.isCompleted) {
@@ -520,6 +559,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
       cancel(rpcId, reason: reason);
     }
     final ids = <String>{
+      ..._connectingByRpcId.keys,
       ..._preDispatchByRpcId.keys,
       ..._meta.keys,
       ..._coalescer.pendingClientRpcIds,
@@ -600,6 +640,15 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
   Future<void> dispose() async {
     if (_isDisposed) {
       return;
+    }
+    for (final connecting in _connectingByRpcId.values) {
+      if (!connecting.isCompleted) {
+        connecting.completeError(
+          const SocketDispatchDisconnected(
+            message: 'Dispatcher disposed during connection',
+          ),
+        );
+      }
     }
     _isDisposed = true;
     _failPreDispatches(

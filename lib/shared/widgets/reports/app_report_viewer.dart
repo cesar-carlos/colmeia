@@ -69,6 +69,7 @@ class AppReportViewer<T> extends StatefulWidget {
     this.events = const AppReportEvents(),
     this.style = const AppReportViewerStyle(),
     this.isLoading = false,
+    this.isIncomplete = false,
     this.loadErrorPanel,
     this.errorMessage,
     this.onRetry,
@@ -128,6 +129,7 @@ class AppReportViewer<T> extends StatefulWidget {
   final AppReportEvents<T> events;
   final AppReportViewerStyle style;
   final bool isLoading;
+  final bool isIncomplete;
 
   /// Optional load-error surface injected by the feature layer (e.g. agent-query
   /// failures). When null, [errorMessage] drives a generic inline error panel.
@@ -437,33 +439,39 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
     final showPanelFilters =
         showFilters && style.filterLayout == AppReportFilterLayout.panel;
     final showSummary =
-        style.showSummaryBar && (widget.summaryItems?.isNotEmpty ?? false);
-    final showPagination = style.showPagination && widget.pageInfo != null;
-    final pagination =
-        widget.paginationFooter ??
-        (showPagination
-            ? AppSkeleton(
-                enabled: widget.isLoading,
-                loadingSemanticsLabel: l10n.reportLoadingPaginationSemantics,
-                child: AppReportPaginationBar(
-                  pageInfo: widget.pageInfo!,
-                  onPageChanged: (page) {
-                    widget.events.onPageChanged?.call(page);
-                    _emitQueryChanged(page: page);
-                  },
-                  onPageSizeChanged: (size) {
-                    widget.events.onPageSizeChanged?.call(size);
-                    _emitQueryChanged(page: 1, pageSize: size);
-                  },
-                  availablePageSizes: style.resolvedPageSizes,
-                  isLoading: widget.isLoading,
-                  entityLabel: style.entityLabel,
-                  itemsPerPageLabel: style.itemsPerPageLabel,
-                  showingLabelPrefix: style.showingLabelPrefix,
-                  showingLabelMiddle: style.showingLabelMiddle,
-                ),
-              )
-            : null);
+        style.showSummaryBar &&
+        !widget.isLoading &&
+        !widget.isIncomplete &&
+        (widget.summaryItems?.isNotEmpty ?? false);
+    final showPagination =
+        style.showPagination && !widget.isIncomplete && widget.pageInfo != null;
+    final pagination = widget.isIncomplete
+        ? null
+        : widget.paginationFooter ??
+              (showPagination
+                  ? AppSkeleton(
+                      enabled: widget.isLoading,
+                      loadingSemanticsLabel:
+                          l10n.reportLoadingPaginationSemantics,
+                      child: AppReportPaginationBar(
+                        pageInfo: widget.pageInfo!,
+                        onPageChanged: (page) {
+                          widget.events.onPageChanged?.call(page);
+                          _emitQueryChanged(page: page);
+                        },
+                        onPageSizeChanged: (size) {
+                          widget.events.onPageSizeChanged?.call(size);
+                          _emitQueryChanged(page: 1, pageSize: size);
+                        },
+                        availablePageSizes: style.resolvedPageSizes,
+                        isLoading: widget.isLoading,
+                        entityLabel: style.entityLabel,
+                        itemsPerPageLabel: style.itemsPerPageLabel,
+                        showingLabelPrefix: style.showingLabelPrefix,
+                        showingLabelMiddle: style.showingLabelMiddle,
+                      ),
+                    )
+                  : null);
     final showAdvancedInlineFilters =
         showInlineFilters &&
         (widget.filters?.any((f) => !f.type.supportsInlineLayout) ?? false);
@@ -504,6 +512,19 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
                 onRetry: widget.onRetry,
               ),
           SizedBox(height: tokens.sectionSpacing),
+        ],
+        if (widget.isIncomplete && !widget.isLoading) ...<Widget>[
+          Semantics(
+            liveRegion: true,
+            child: Text(l10n.reportIncompleteMessage),
+          ),
+          SizedBox(height: tokens.sectionSpacing),
+        ],
+        if (widget.isLoading && widget.rows.isNotEmpty) ...<Widget>[
+          LinearProgressIndicator(
+            semanticsLabel: l10n.reportLoadingTableSemantics,
+          ),
+          SizedBox(height: tokens.gapMd),
         ],
         if (showPanelFilters) ...<Widget>[
           AppSkeleton(
@@ -577,8 +598,12 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
               onGroupChanged: _onGroupChanged,
               onGroupStateChanged: _onGroupStateChanged,
               onColumnVisibilityChanged: _onColumnVisibilityChanged,
-              onExportRequested: widget.events.onExportRequested,
-              onPrintRequested: widget.events.onPrintRequested,
+              onExportRequested: widget.isIncomplete
+                  ? null
+                  : widget.events.onExportRequested,
+              onPrintRequested: widget.isIncomplete
+                  ? null
+                  : widget.events.onPrintRequested,
               onRefresh: widget.events.onRefresh,
             ),
             columns: widget.columns,
@@ -603,7 +628,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
           ),
           grid: ExcludeFocus(
             child: AppSkeleton(
-              enabled: widget.isLoading,
+              enabled: widget.isLoading && widget.rows.isEmpty,
               loadingSemanticsLabel: l10n.reportLoadingTableSemantics,
               child: AppReportGrid<T>(
                 columns: _visibleColumns,
@@ -613,6 +638,7 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
                 groupController: _groupController,
                 style: style.copyWith(density: _density),
                 isLoading: widget.isLoading,
+                isIncomplete: widget.isIncomplete,
                 events: AppReportEvents<T>(
                   onSortChanged: _onSortChanged,
                   onRowTap: _onRowTap,

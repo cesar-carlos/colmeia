@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/socket/agent_sql_open_stream.dart';
+import 'package:colmeia/core/socket/command_phase_observability.dart';
 import 'package:colmeia/core/socket/relay/relay_batch_capabilities.dart';
 import 'package:colmeia/core/socket/relay/relay_batch_item.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
@@ -26,7 +27,8 @@ import 'package:colmeia/core/socket/relay/relay_rpc_outcome.dart';
 ///
 /// Other channel surfaces (`sendStreaming`, `sendBatch`, `cancel`,
 /// `outcomes`, `dispose`) forward to the inner dispatcher unchanged.
-class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
+class RelayBatchCommandCoordinator
+    implements RelayCommandDispatcher, CommandPhaseObservability {
   RelayBatchCommandCoordinator({
     required this._inner,
     Duration windowDuration = const Duration(milliseconds: 8),
@@ -51,6 +53,12 @@ class RelayBatchCommandCoordinator implements RelayCommandDispatcher {
        );
 
   final RelayCommandDispatcher _inner;
+
+  @override
+  void Function() observePhases(
+    String requestId,
+    CommandPhaseListener listener,
+  ) => observeCommandPhases(_inner, requestId, listener);
   final Duration _windowDuration;
   final int _maxBatchSize;
 

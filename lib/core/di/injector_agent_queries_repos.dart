@@ -13,6 +13,14 @@ void _registerAgentQueriesRepositoryChain(GetIt getIt) {
             : null,
         agentSqlRestMaxInflightPerAgent:
             AppEnvironment.agentSqlRestMaxInflightPerAgent,
+        agentSqlRestMaxWaitersPerAgent:
+            AppEnvironment.agentSqlRestMaxWaitersPerAgent,
+        agentSqlRestAcquireWait: Duration(
+          milliseconds: AppEnvironment.agentSqlRestAcquireWaitMs,
+        ),
+        diagnosticsEnabled: AppEnvironment.socketRequestServerTimingsEnabled,
+        bindCancelScope: (scope) =>
+            wireAgentQueriesCancelScopeHandlers(getIt, scope),
       );
 
       final cache = chain.cachingRepository;

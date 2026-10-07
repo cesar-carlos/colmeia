@@ -8,6 +8,12 @@ import 'package:colmeia/core/config/agent_query_transport_policy_mode.dart';
 /// commented). CI runs `python tool/validate_env.py`; locally use
 /// `python tool/ci_preflight.py`.
 abstract final class EnvKeys {
+  static const String agentQueryProgressiveReports =
+      'AGENT_QUERY_PROGRESSIVE_REPORTS';
+  static const String agentSqlRestMaxWaitersPerAgent =
+      'AGENT_SQL_REST_MAX_WAITERS_PER_AGENT';
+  static const String agentSqlRestAcquireWaitMs =
+      'AGENT_SQL_REST_ACQUIRE_WAIT_MS';
   static const String apiBaseUrl = 'API_BASE_URL';
   static const String useFakeBackend = 'USE_FAKE_BACKEND';
   static const String sentryDsn = 'SENTRY_DSN';

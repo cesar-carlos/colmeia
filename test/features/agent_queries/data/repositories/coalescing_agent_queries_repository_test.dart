@@ -4,6 +4,7 @@ import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/coalescing_agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_progress.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
@@ -16,6 +17,39 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:result_dart/result_dart.dart';
 
 void main() {
+  test(
+    'independent progressive consumers cannot lose chunks through coalescing',
+    () async {
+      final delegate = _QueueAgentQueriesRepository();
+      final first = Completer<AppResult<AgentSqlExecutionResult>>();
+      final second = Completer<AppResult<AgentSqlExecutionResult>>();
+      delegate
+        ..enqueue((_) => first.future)
+        ..enqueue((_) => second.future);
+      final repo = CoalescingAgentQueriesRepository(delegate: delegate);
+      const request = AgentSqlExecuteRequest(agentId: 'a', sql: 'SELECT 1');
+      final one = repo.executeSql(
+        request,
+        cancelScope: AgentQueriesCancelScope(
+          traceId: 'same-load',
+          progressObserver: AgentQueryProgressObserver((_) {}),
+        ),
+      );
+      final two = repo.executeSql(
+        request,
+        cancelScope: AgentQueriesCancelScope(
+          traceId: 'same-load',
+          progressObserver: AgentQueryProgressObserver((_) {}),
+        ),
+      );
+      expect(delegate.callCount, 2);
+      first.complete(_successResult(rowCount: 1));
+      second.complete(_successResult(rowCount: 1));
+      expect((await one).isSuccess(), true);
+      expect((await two).isSuccess(), true);
+    },
+  );
+
   const baseRequest = AgentSqlExecuteRequest(
     agentId: 'agent-1',
     sql: 'SELECT 1',

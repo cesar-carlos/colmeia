@@ -116,6 +116,7 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
   }) {
     return _dispatch(
       agentId: request.agentId,
+      cancelScope: cancelScope,
       useRest: () =>
           _restDelegate.postSqlExecute(request, cancelScope: cancelScope),
       useSocket: () =>
@@ -130,6 +131,7 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
   }) {
     return _dispatch(
       agentId: request.agentId,
+      cancelScope: cancelScope,
       useRest: () =>
           _restDelegate.postSqlExecuteBatch(request, cancelScope: cancelScope),
       useSocket: () => _socketDelegate.postSqlExecuteBatch(
@@ -141,6 +143,7 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
 
   Future<Map<String, dynamic>> _dispatch({
     required String agentId,
+    required AgentQueriesCancelScope? cancelScope,
     required Future<Map<String, dynamic>> Function() useRest,
     required Future<Map<String, dynamic>> Function() useSocket,
   }) async {
@@ -153,9 +156,15 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
       _onSocketSuccess(normalizedAgentId);
       return response;
     } on SocketDispatchNamespaceForbidden catch (trigger) {
+      if (cancelScope?.hasPublishedRows ?? false) {
+        rethrow;
+      }
       _latchPermanent(trigger, reason: 'namespace_forbidden');
       return useRest();
     } on SocketDispatchUnauthorized catch (trigger) {
+      if (cancelScope?.hasPublishedRows ?? false) {
+        rethrow;
+      }
       _latchPermanent(trigger, reason: 'unauthorized_exhausted');
       return useRest();
     } on SocketDispatchException catch (error) {

@@ -109,7 +109,7 @@ void main() {
     });
 
     test(
-      'throws StateError when waiter queue exceeds maxWaitersPerAgent',
+      'throws GateQueueFull when waiter queue exceeds maxWaitersPerAgent',
       () async {
         final gate = PerAgentConcurrencyGate(
           maxInflightPerAgent: 1,
@@ -119,7 +119,7 @@ void main() {
         final waiter = gate.acquire('a');
         await expectLater(
           () => gate.acquire('a'),
-          throwsA(isA<StateError>()),
+          throwsA(isA<GateQueueFull>()),
         );
         gate.release('a');
         await waiter;
@@ -137,7 +137,7 @@ void main() {
       final waiter = gate.acquire('a');
       await expectLater(
         () => gate.acquire('a'),
-        throwsA(isA<StateError>()),
+        throwsA(isA<GateQueueFull>()),
       );
       check(rejected).equals(1);
       gate.release('a');

@@ -6,17 +6,28 @@ import 'package:colmeia/features/agent_queries/data/agent_queries_sql_local_date
 import 'package:colmeia/features/agent_queries/data/models/resumo_parcelas_anual_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_anual_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repository_execution.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/progressive_report_loader.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/scoped_agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_progress.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_anual_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_anual_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/progressive_report_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_anual_repository.dart';
 import 'package:flutter/foundation.dart';
 
 class ResumoParcelasAnualRepositoryImpl
-    implements ResumoParcelasAnualRepository {
+    implements
+        ResumoParcelasAnualRepository,
+        ProgressiveReportRepository<
+          ResumoParcelasAnualFilter,
+          ResumoParcelasAnualRow
+        > {
   ResumoParcelasAnualRepositoryImpl(
     this._agentQueriesRepository,
   );
@@ -32,6 +43,7 @@ class ResumoParcelasAnualRepositoryImpl
     required ResumoParcelasAnualFilter filter,
     String? clientToken,
     int? bridgeTimeoutMs,
+    AgentQueriesCancelScope? cancelScope,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
   }) async {
@@ -80,6 +92,7 @@ class ResumoParcelasAnualRepositoryImpl
     return AgentSqlRepositoryExecution.execute<List<ResumoParcelasAnualRow>>(
       agentQueriesRepository: _agentQueriesRepository,
       request: request,
+      cancelScope: cancelScope,
       operation: _operation,
       agentId: agentId.trim(),
       unexpectedRowsLogMessage: 'Unexpected row shape for ResumoParcelasAnual',
@@ -153,4 +166,38 @@ class ResumoParcelasAnualRepositoryImpl
     }
     return rows;
   }
+
+  @override
+  Stream<AppResult<AgentQueryProgress<ResumoParcelasAnualRow>>>
+  loadProgressively({
+    required String userId,
+    required String agentId,
+    required ResumoParcelasAnualFilter filter,
+    String? clientToken,
+    int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
+    AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
+  }) => const ProgressiveReportLoader<ResumoParcelasAnualRow>().load(
+    parent: cancelScope,
+    mapRows: (executionResult) => _mapExecutionToRows(
+      executionResult,
+      agentId: agentId.trim(),
+      filter: filter,
+    ),
+    execute: (scope) =>
+        ResumoParcelasAnualRepositoryImpl(
+          ScopedAgentQueriesRepository(_agentQueriesRepository, scope),
+        ).load(
+          userId: userId,
+          agentId: agentId,
+          filter: filter,
+          clientToken: clientToken,
+          bridgeTimeoutMs: bridgeTimeoutMs,
+          hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+          hubConnectedFromApprovedCatalogRow:
+              hubConnectedFromApprovedCatalogRow,
+        ),
+  );
 }

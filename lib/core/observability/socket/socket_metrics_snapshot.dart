@@ -38,6 +38,7 @@ class SocketMetricsSnapshot {
     this.relayBatchPartialFailureTotal = 0,
     this.relayBatchBypassTotalByReason = const <String, int>{},
     this.serverPhaseMsByName = const <String, HistogramSnapshot>{},
+    this.agentPhaseMsByName = const <String, HistogramSnapshot>{},
     this.serverTimingsSchemaMismatchTotal = 0,
     this.restFallbackLatchTotal = 0,
     this.restFallbackTemporaryLatchTotal = 0,
@@ -173,6 +174,7 @@ class SocketMetricsSnapshot {
   /// the client does not understand. Non-zero in this counter means a
   /// hub bump rolled out — bump the client schema handling.
   final int serverTimingsSchemaMismatchTotal;
+  final Map<String, HistogramSnapshot> agentPhaseMsByName;
 
   /// Times the SQL datasource latched to REST for auth/namespace failures.
   final int restFallbackLatchTotal;
@@ -227,6 +229,10 @@ class SocketMetricsSnapshot {
       'relayBatchBypassTotalByReason': relayBatchBypassTotalByReason,
       'serverPhaseMsByName': <String, Object?>{
         for (final entry in serverPhaseMsByName.entries)
+          entry.key: entry.value.toJson(),
+      },
+      'agentPhaseMsByName': {
+        for (final entry in agentPhaseMsByName.entries)
           entry.key: entry.value.toJson(),
       },
       'serverTimingsSchemaMismatchTotal': serverTimingsSchemaMismatchTotal,
@@ -297,6 +303,12 @@ class SocketMetricsSnapshot {
       out['relayBatchBypassTotalByReason'] = Map<String, int>.from(
         relayBatchBypassTotalByReason,
       );
+    }
+    if (agentPhaseMsByName.isNotEmpty) {
+      out['agentPhaseMsByName'] = {
+        for (final entry in agentPhaseMsByName.entries)
+          entry.key: entry.value.toJson(),
+      };
     }
     if (serverPhaseMsByName.isNotEmpty) {
       final entries = <String, Object?>{

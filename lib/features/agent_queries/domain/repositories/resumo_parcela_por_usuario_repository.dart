@@ -1,6 +1,7 @@
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_por_usuario_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_por_usuario_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 
 // ignore: one_member_abstracts, reason: Repository boundaries in this project use single-method contracts for DI and testing.
 abstract interface class ResumoParcelaPorUsuarioRepository {
@@ -10,6 +11,7 @@ abstract interface class ResumoParcelaPorUsuarioRepository {
     required ResumoParcelaPorUsuarioFilter filter,
     String? clientToken,
     int? bridgeTimeoutMs,
+    AgentQueriesCancelScope? cancelScope,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
   });

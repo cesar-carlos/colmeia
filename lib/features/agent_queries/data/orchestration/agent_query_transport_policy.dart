@@ -31,8 +31,11 @@ class AgentQueryTransportPolicy {
           hubConnectedFromApprovedCatalogRow:
               request.hubConnectedFromApprovedCatalogRow,
           bridgeTimeoutMs: request.bridgeTimeoutMs,
+          totalTimeoutMs: request.totalTimeoutMs,
+          transportRpcId: request.transportRpcId,
           pagination: request.pagination,
           executeOptions: request.executeOptions,
+          skipTransportCache: request.skipTransportCache,
           useRelay: true,
           relayMode: request.relayMode,
           apiVersion: request.apiVersion,
@@ -52,8 +55,11 @@ class AgentQueryTransportPolicy {
             hubConnectedFromApprovedCatalogRow:
                 request.hubConnectedFromApprovedCatalogRow,
             bridgeTimeoutMs: request.bridgeTimeoutMs,
+            totalTimeoutMs: request.totalTimeoutMs,
+            transportRpcId: request.transportRpcId,
             pagination: request.pagination,
             executeOptions: request.executeOptions,
+            skipTransportCache: request.skipTransportCache,
             useRelay: true,
             relayMode: request.relayMode,
             apiVersion: request.apiVersion,
@@ -93,6 +99,8 @@ class AgentQueryTransportPolicy {
       hubConnectedFromApprovedCatalogRow:
           request.hubConnectedFromApprovedCatalogRow,
       bridgeTimeoutMs: request.bridgeTimeoutMs,
+      totalTimeoutMs: request.totalTimeoutMs,
+      transportRpcId: request.transportRpcId,
       options: request.options,
       useRelay: true,
       apiVersion: request.apiVersion,

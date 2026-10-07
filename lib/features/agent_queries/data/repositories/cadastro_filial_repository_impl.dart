@@ -7,6 +7,9 @@ import 'package:colmeia/features/agent_queries/data/agent_queries_sql_row_map_re
 import 'package:colmeia/features/agent_queries/data/models/cadastro_filial_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/queries/cadastro_filial_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repository_execution.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/paged_report_progress_loader.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/scoped_agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_progress.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
@@ -16,6 +19,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_r
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/cadastro_filial_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/paged_progressive_report_repository.dart';
 import 'package:result_dart/result_dart.dart';
 
 /// Paged branch registration (`Filial`).
@@ -28,7 +32,13 @@ import 'package:result_dart/result_dart.dart';
 /// branch" — we retry once, then fall back to a non-CTE `SELECT TOP`. A raw
 /// empty payload after that fallback is still a transport glitch — not an
 /// empty `Filial` table (that case is a `TotalCount = 0` sentinel on the CTE).
-class CadastroFilialRepositoryImpl implements CadastroFilialRepository {
+class CadastroFilialRepositoryImpl
+    implements
+        CadastroFilialRepository,
+        PagedProgressiveReportRepository<
+          CadastroFilialFilter,
+          CadastroFilialRow
+        > {
   CadastroFilialRepositoryImpl(
     this._agentQueriesRepository, {
     this.emptySuccessRetryDelay = const Duration(seconds: 2),
@@ -305,4 +315,54 @@ class CadastroFilialRepositoryImpl implements CadastroFilialRepository {
     );
     return raw != null;
   }
+
+  @override
+  Stream<AppResult<AgentQueryProgress<CadastroFilialRow>>>
+  loadPagesProgressively({
+    required String userId,
+    required String agentId,
+    required CadastroFilialFilter filter,
+    String? clientToken,
+    int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
+    bool emitPartialResults = true,
+  }) =>
+      const PagedReportProgressLoader<
+            CadastroFilialPageResult,
+            CadastroFilialRow
+          >()
+          .load(
+            parent: cancelScope,
+            emitPartialResults: emitPartialResults,
+            pageSize: filter.pageSize,
+            maxRows: AppEnvironment.socketStreamSqlCollectorMaxBufferedRows,
+            items: (page) => page.items,
+            totalCount: (page) => page.totalCount,
+            rowKey: (row) => (row.codEmpresa, row.codFilial),
+            loadPage: (page, scope) =>
+                CadastroFilialRepositoryImpl(
+                  ScopedAgentQueriesRepository(_agentQueriesRepository, scope),
+                ).loadPage(
+                  userId: userId,
+                  agentId: agentId,
+                  filter: CadastroFilialFilter(
+                    codEmpresa: filter.codEmpresa,
+                    codFilial: filter.codFilial,
+                    searchTerm: filter.searchTerm,
+                    selectedBranches: filter.selectedBranches,
+                    page: page,
+                    pageSize: filter.pageSize,
+                    mapCatalogProjection: filter.mapCatalogProjection,
+                    branchOptionsProjection: filter.branchOptionsProjection,
+                  ),
+                  clientToken: clientToken,
+                  bridgeTimeoutMs: bridgeTimeoutMs,
+                  hubPresenceOnlineAgentIdsSnapshot:
+                      hubPresenceOnlineAgentIdsSnapshot,
+                  hubConnectedFromApprovedCatalogRow:
+                      hubConnectedFromApprovedCatalogRow,
+                ),
+          );
 }

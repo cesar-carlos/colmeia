@@ -1,3 +1,5 @@
+import 'package:colmeia/core/observability/socket/agent_phase_timings.dart';
+import 'package:colmeia/core/socket/command_phase_observability.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
@@ -46,8 +48,14 @@ class RelayAgentQueriesRemoteDataSource
         ),
       );
     }
+    cancelScope?.diagnostics?.route('relay');
     final clientRequestId = request.transportRpcId ?? _uuid.v4();
     cancelScope?.trackRelayPending(clientRequestId);
+    final stopObserving = observeCommandPhases(
+      _dispatcher,
+      clientRequestId,
+      cancelScope?.diagnostics?.addDuration,
+    );
     final body = _bodyMapper.buildRelayCommand(
       request: request,
       rpcId: clientRequestId,
@@ -65,12 +73,22 @@ class RelayAgentQueriesRemoteDataSource
           compression: _resolveCompression(request.payloadFrameCompression),
         )
         .then(
-          (payload) => relayJsonRpcToBridgeEnvelope(
-            payload,
-            responseType: 'single',
-          ),
+          (payload) {
+            cancelScope?.diagnostics?.mark('first_response');
+            final phases = AgentPhaseTimings.fromRelayBody(payload);
+            if (phases != null) {
+              cancelScope?.diagnostics?.agentPhases(phases.phasesMs);
+            }
+            return relayJsonRpcToBridgeEnvelope(
+              payload,
+              responseType: 'single',
+            );
+          },
         )
-        .whenComplete(() => cancelScope?.untrackRelayPending(clientRequestId));
+        .whenComplete(() {
+          cancelScope?.untrackRelayPending(clientRequestId);
+          stopObserving();
+        });
   }
 
   @override
@@ -85,8 +103,14 @@ class RelayAgentQueriesRemoteDataSource
         ),
       );
     }
+    cancelScope?.diagnostics?.route('relay');
     final clientRequestId = request.transportRpcId ?? _uuid.v4();
     cancelScope?.trackRelayPending(clientRequestId);
+    final stopObserving = observeCommandPhases(
+      _dispatcher,
+      clientRequestId,
+      cancelScope?.diagnostics?.addDuration,
+    );
     final body = _batchBodyMapper.buildRelayCommand(
       request: request,
       rpcId: clientRequestId,
@@ -104,12 +128,22 @@ class RelayAgentQueriesRemoteDataSource
           compression: _resolveCompression(request.payloadFrameCompression),
         )
         .then(
-          (payload) => relayJsonRpcToBridgeEnvelope(
-            payload,
-            responseType: 'batch',
-          ),
+          (payload) {
+            cancelScope?.diagnostics?.mark('first_response');
+            final phases = AgentPhaseTimings.fromRelayBody(payload);
+            if (phases != null) {
+              cancelScope?.diagnostics?.agentPhases(phases.phasesMs);
+            }
+            return relayJsonRpcToBridgeEnvelope(
+              payload,
+              responseType: 'batch',
+            );
+          },
         )
-        .whenComplete(() => cancelScope?.untrackRelayPending(clientRequestId));
+        .whenComplete(() {
+          cancelScope?.untrackRelayPending(clientRequestId);
+          stopObserving();
+        });
   }
 
   RelayPayloadFrameCompression _resolveCompression(

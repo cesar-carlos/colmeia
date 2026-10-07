@@ -2,11 +2,14 @@ import 'dart:async';
 
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_margem_produto_page_use_case.dart';
+import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_row.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
+import 'package:colmeia/features/agent_queries/presentation/controllers/progressive_report_controller.dart';
 import 'package:colmeia/features/sales/application/load_margem_produto_rows_for_share_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
@@ -61,6 +64,7 @@ class SalesMargemProdutoController extends ChangeNotifier {
     required LoadMargemProdutoPageUseCase loadMargemProdutoPageUseCase,
     required LoadMargemProdutoRowsForShareUseCase loadRowsForShareUseCase,
     this._relayCancelScopeBinder,
+    this.shareLoadTimeout = const Duration(minutes: 1),
   }) : _loadAgentsUseCase = loadSalesAvailableAgentsUseCase,
        _resolveClientTokenUseCase = resolveSalesAgentClientTokenUseCase,
        _loadMargemProduto = loadMargemProdutoPageUseCase,
@@ -79,6 +83,7 @@ class SalesMargemProdutoController extends ChangeNotifier {
         sortDirection: restored.sortDirection,
       ),
     );
+    _progressiveCatalog.addListener(_onCatalogProgress);
   }
 
   final SalesSessionService _sessionService;
@@ -87,6 +92,7 @@ class SalesMargemProdutoController extends ChangeNotifier {
   final LoadMargemProdutoPageUseCase _loadMargemProduto;
   final LoadMargemProdutoRowsForShareUseCase _loadRowsForShare;
   final AgentQueriesRelayCancelScopeBinder? _relayCancelScopeBinder;
+  final Duration shareLoadTimeout;
 
   String? _boundUserId;
   String? _selectedAgentId;
@@ -110,6 +116,9 @@ class SalesMargemProdutoController extends ChangeNotifier {
   AgentQueriesCancelScope? _sqlCancelScope;
   AgentQueriesCancelScope? _shareCancelScope;
   bool _disposed = false;
+  final _progressiveCatalog = ProgressiveReportController<MargemProdutoRow>();
+  bool _progressiveCatalogActive = false;
+  List<MargemProdutoRow>? _completeCatalog;
 
   String? get selectedAgentId => _selectedAgentId;
   List<DashboardAgentOption> get availableAgents => _availableAgents;
@@ -121,7 +130,13 @@ class SalesMargemProdutoController extends ChangeNotifier {
   bool get isLoading => _catalogLoading;
   AppFailure? get loadFailure => _loadFailure;
   bool get canOpenFullscreen => !_catalogLoading && _rows.isNotEmpty;
-  bool get canShare => !_catalogLoading && _totalCount > 0;
+  bool get isIncomplete =>
+      _progressiveCatalogActive && _progressiveCatalog.isIncomplete;
+  bool get canShare =>
+      !_catalogLoading &&
+      !isIncomplete &&
+      _loadFailure == null &&
+      _totalCount > 0;
 
   AppReportPageInfo get pageInfo => SalesMargemProdutoSort.pageInfo(
     page: _page,
@@ -152,6 +167,7 @@ class SalesMargemProdutoController extends ChangeNotifier {
 
     _boundUserId = userId;
     _sqlLoadGeneration += 1;
+    _abandonProgressiveCatalog();
     _sqlCancelScope?.cancelAll();
     _shareCancelScope?.cancelAll();
     _availableAgents = const <DashboardAgentOption>[];
@@ -188,6 +204,7 @@ class SalesMargemProdutoController extends ChangeNotifier {
     bool clearVisibleCatalog = false,
   }) async {
     final generation = ++_sqlLoadGeneration;
+    _abandonProgressiveCatalog();
     _sqlCancelScope = _replaceCancelScope(_sqlCancelScope);
     final sqlScope = _sqlCancelScope!;
 
@@ -234,6 +251,29 @@ class SalesMargemProdutoController extends ChangeNotifier {
       _loadFailure = failure;
       _notify();
       return SalesMargemProdutoLoadOutcome.failure(failure);
+    }
+
+    if (_loadMargemProduto.usesProgressiveCatalog) {
+      _progressiveCatalogActive = true;
+      _rows = const [];
+      _totalCount = 0;
+      final result = await _progressiveCatalog.load(
+        (scope) => _loadMargemProduto.watchCatalog(
+          userId: userId,
+          agentId: agentId,
+          filter: _catalogFilter(page: 1, pageSize: _pageSize),
+          clientToken: clientToken,
+          cancelScope: scope,
+        ),
+        cancelScope: sqlScope,
+      );
+      if (_disposed || generation != _sqlLoadGeneration) {
+        return const SalesMargemProdutoLoadOutcome.superseded();
+      }
+      return result.fold(
+        (_) => const SalesMargemProdutoLoadOutcome.success(),
+        SalesMargemProdutoLoadOutcome.failure,
+      );
     }
 
     final result = await _loadMargemProduto(
@@ -398,10 +438,29 @@ class SalesMargemProdutoController extends ChangeNotifier {
     );
     _notify();
     unawaited(_persistFilters());
+    if (_completeCatalog != null) {
+      final totalPages = (_totalCount / _pageSize).ceil();
+      if (totalPages > 0 && _page > totalPages) {
+        _page = totalPages;
+        _query = SalesMargemProdutoSort.queryFor(
+          page: _page,
+          pageSize: _pageSize,
+          previous: _query,
+        );
+      }
+      _rows = _visibleCatalogRows(_completeCatalog!);
+      _notify();
+      return const SalesMargemProdutoLoadOutcome.success();
+    }
     return loadCatalog();
   }
 
   Future<AppResult<List<MargemProdutoRow>>> loadRowsForShare() async {
+    if (_progressiveCatalogActive && !_progressiveCatalog.canExport) {
+      return const Failure(
+        ValidationFailure(message: 'share_export_incomplete_catalog'),
+      );
+    }
     final userId = _boundUserId;
     final agentId = _selectedAgentId?.trim();
     if (userId == null || agentId == null || agentId.isEmpty) {
@@ -412,8 +471,79 @@ class SalesMargemProdutoController extends ChangeNotifier {
       );
     }
 
+    final completeRows =
+        _completeCatalog ?? (_rows.length == _totalCount ? _rows : null);
+    if (canShare && completeRows != null) {
+      return Success(List<MargemProdutoRow>.unmodifiable(completeRows));
+    }
+
     _shareCancelScope = _replaceCancelScope(_shareCancelScope);
     final shareScope = _shareCancelScope!;
+    final filter = _catalogFilter(page: 1, pageSize: _pageSize);
+    final totalCount = _totalCount;
+    final cancelled = Completer<AppResult<List<MargemProdutoRow>>>();
+    final unregisterCancellation = shareScope.registerLocalCancellation(() {
+      cancelled.complete(const Failure(OperationCancelledFailure()));
+    });
+    try {
+      return await Future.any(<Future<AppResult<List<MargemProdutoRow>>>>[
+        _loadShareRows(
+          userId: userId,
+          agentId: agentId,
+          filter: filter,
+          totalCount: totalCount,
+          shareScope: shareScope,
+        ),
+        cancelled.future,
+      ]).timeout(shareLoadTimeout);
+    } on TimeoutException catch (error, stackTrace) {
+      shareScope.cancelAll();
+      AppLogger.warning(
+        'Product margin share load timed out',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return Failure(
+        NetworkFailure(
+          message: 'share_export_load_timeout',
+          cause: error,
+          stackTrace: stackTrace,
+          context: const <String, Object?>{
+            AgentSqlRpcFailureUiKey.field:
+                AgentSqlRpcFailureUiKey.transportTimeout,
+          },
+        ),
+      );
+    } on Object catch (error, stackTrace) {
+      shareScope.cancelAll();
+      AppLogger.warning(
+        'Product margin share load failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return Failure(
+        mapToAppFailure(
+          error,
+          stackTrace: stackTrace,
+          fallbackMessage: 'share_export_load_failed',
+          context: const <String, Object?>{
+            AgentSqlRpcFailureUiKey.field:
+                AgentSqlRpcFailureUiKey.queryLoadFailed,
+          },
+        ),
+      );
+    } finally {
+      unregisterCancellation();
+    }
+  }
+
+  Future<AppResult<List<MargemProdutoRow>>> _loadShareRows({
+    required String userId,
+    required String agentId,
+    required MargemProdutoFilter filter,
+    required int totalCount,
+    required AgentQueriesCancelScope shareScope,
+  }) async {
     final clientToken = await _resolveClientToken(
       userId: userId,
       agentId: agentId,
@@ -432,14 +562,8 @@ class SalesMargemProdutoController extends ChangeNotifier {
     return _loadRowsForShare(
       userId: userId,
       agentId: agentId,
-      filter: MargemProdutoFilter(
-        searchTerm: SalesMargemProdutoSort.normalizeSearchTerm(
-          _query.searchTerm,
-        ),
-        sortBy: SalesMargemProdutoSort.sortByFromQuery(_query),
-        sortDirection: SalesMargemProdutoSort.sortDirectionFromQuery(_query),
-      ),
-      totalCount: _totalCount,
+      filter: filter,
+      totalCount: totalCount,
       clientToken: clientToken,
       cancelScope: shareScope,
     );
@@ -448,9 +572,44 @@ class SalesMargemProdutoController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _progressiveCatalog.dispose();
     _sqlCancelScope?.cancelAll();
     _shareCancelScope?.cancelAll();
     super.dispose();
+  }
+
+  void _abandonProgressiveCatalog() {
+    _progressiveCatalogActive = false;
+    _completeCatalog = null;
+    _progressiveCatalog.cancel();
+  }
+
+  List<MargemProdutoRow> _visibleCatalogRows(List<MargemProdutoRow> rows) {
+    final start = ((_page - 1) * _pageSize).clamp(0, rows.length);
+    final end = (start + _pageSize).clamp(start, rows.length);
+    return List.unmodifiable(rows.sublist(start, end));
+  }
+
+  void _onCatalogProgress() {
+    if (_disposed || !_progressiveCatalogActive) return;
+    final progress = _progressiveCatalog;
+    if (progress.isComplete) {
+      _completeCatalog = progress.rows;
+      _totalCount = _completeCatalog!.length;
+      final totalPages = (_totalCount / _pageSize).ceil();
+      if (totalPages > 0 && _page > totalPages) {
+        _page = totalPages;
+        _query = SalesMargemProdutoSort.queryFor(
+          page: _page,
+          pageSize: _pageSize,
+          previous: _query,
+        );
+      }
+    }
+    _rows = progress.rowsForPage(page: _page, pageSize: _pageSize);
+    _catalogLoading = progress.isLoading;
+    _loadFailure = progress.failure;
+    _notify();
   }
 
   MargemProdutoFilter _catalogFilter({

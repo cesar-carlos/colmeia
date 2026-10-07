@@ -9,7 +9,6 @@ import 'package:colmeia/core/layout/app_responsive_spacing.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after_host.dart';
-import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/sales/application/load_sales_daily_totals_use_case.dart';
 import 'package:colmeia/features/sales/application/resolve_sales_agent_client_token_use_case.dart';
@@ -17,6 +16,7 @@ import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_single_agent_auto_refresh_mixin.dart';
+import 'package:colmeia/features/sales/presentation/controllers/sales_daily_totals_controller.dart';
 import 'package:colmeia/features/sales/presentation/share/sales_chart_share_export_filter.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_anchor_month_support.dart';
@@ -30,6 +30,7 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
+import 'package:colmeia/shared/widgets/actions/app_text_action_button.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
@@ -64,28 +65,21 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
         AgentQueryRetryAfterHost<SalesDailyTotalsPage> {
   late final SalesSessionService _sessionService;
   late final LoadAvailableAgentsForSales _loadAgentsUseCase;
-  late final LoadSalesDailyTotalsUseCase _loadDailyTotals;
-  late final ResolveSalesAgentClientTokenUseCase _resolveClientTokenUseCase;
+  late final SalesDailyTotalsController _loadController;
 
   String? _selectedAgentId;
   List<DashboardAgentOption> _availableAgents = const <DashboardAgentOption>[];
   late DashboardYearMonth _anchorYearMonth;
   DashboardDateRange? _dailyTotalsDateRange;
-  String? _cachedClientTokenUserId;
-  String? _cachedClientTokenAgentId;
-  String? _cachedClientToken;
-
-  List<DailySalesTrendPoint> _dailyPoints = const <DailySalesTrendPoint>[];
-  bool _loading = false;
-  bool _loadFailed = false;
-  AppFailure? _loadFailure;
-  String? _loadFailureMessage;
-  int _loadGeneration = 0;
-  AgentQueriesCancelScope? _sqlCancelScope;
+  bool get _loading => _loadController.loading;
+  List<DailySalesTrendPoint> get _dailyPoints => _loadController.points;
+  AppFailure? get _loadFailure => _loadController.failure;
+  bool get _loadFailed => _loadFailure != null;
 
   @override
   void dispose() {
-    _sqlCancelScope?.cancelAll();
+    _loadController.removeListener(_onLoadChanged);
+    _loadController.dispose();
     super.dispose();
   }
 
@@ -94,8 +88,11 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
     super.initState();
     _sessionService = widget.sessionService;
     _loadAgentsUseCase = widget.loadSalesAvailableAgentsUseCase;
-    _loadDailyTotals = widget.loadSalesDailyTotalsUseCase;
-    _resolveClientTokenUseCase = widget.resolveSalesAgentClientTokenUseCase;
+    _loadController = SalesDailyTotalsController(
+      loadDailyTotals: widget.loadSalesDailyTotalsUseCase,
+      resolveClientToken: widget.resolveSalesAgentClientTokenUseCase,
+      bindCancelScope: widget.relayCancelScopeBinder,
+    )..addListener(_onLoadChanged);
     _selectedAgentId = _sessionService.selectedAgentId;
     _anchorYearMonth =
         _sessionService.restoreSalesChartReferenceMonth() ??
@@ -140,25 +137,13 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
     unawaited(_reload());
   }
 
-  Future<String?> _resolveClientToken({
-    required String userId,
-    required String agentId,
-  }) async {
-    if (_cachedClientTokenUserId == userId &&
-        _cachedClientTokenAgentId == agentId) {
-      return _cachedClientToken;
-    }
+  void _onLoadChanged() {
+    if (mounted) setState(() {});
+  }
 
-    final resolved = await _resolveClientTokenUseCase(
-      userId: userId,
-      agentId: agentId,
-    );
-    if (resolved != null) {
-      _cachedClientTokenUserId = userId;
-      _cachedClientTokenAgentId = agentId;
-      _cachedClientToken = resolved;
-    }
-    return resolved;
+  void _cancelLoad() {
+    markAutoRefreshCancelled();
+    _loadController.cancel();
   }
 
   Future<void> _reload() => reloadWithAutoRefresh();
@@ -180,83 +165,24 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
 
   @override
   Future<void> performAutoRefreshReload() async {
-    final auth = context.read<AuthController>();
-    final userId = auth.session?.userId;
+    final userId = context.read<AuthController>().session?.userId;
     final agentId = _selectedAgentId;
-    final anchor = _anchorYearMonth;
-    final generation = ++_loadGeneration;
-    _sqlCancelScope?.cancelAll();
-    final sqlScope = AgentQueriesCancelScope();
-    _sqlCancelScope = sqlScope;
-    widget.relayCancelScopeBinder?.call(sqlScope);
     markAutoRefreshCancelled();
-
-    setState(() {
-      _loading = true;
-      _loadFailed = false;
-      _loadFailure = null;
-      _loadFailureMessage = null;
-    });
-
     if (userId == null || agentId == null || agentId.trim().isEmpty) {
-      if (!mounted || generation != _loadGeneration) {
-        return;
-      }
-      setState(() {
-        _loading = false;
-        _dailyPoints = const <DailySalesTrendPoint>[];
-        _loadFailed = false;
-        _loadFailureMessage = null;
-      });
+      _loadController.cancel();
       return;
     }
-
-    final trimmed = agentId.trim();
-    final clientToken = await _resolveClientToken(
+    final bundle = await _loadController.load(
       userId: userId,
-      agentId: trimmed,
-    );
-    if (!mounted || generation != _loadGeneration) {
-      return;
-    }
-    if (clientToken == null) {
-      final authMsg = AppLocalizations.of(
-        context,
-      ).agentSqlErrorAuthenticationFailed;
-      setState(() {
-        _loading = false;
-        _dailyPoints = const <DailySalesTrendPoint>[];
-        _loadFailed = true;
-        _loadFailureMessage = authMsg;
-      });
-      markAutoRefreshCancelled();
-      return;
-    }
-
-    final bundle = await _loadDailyTotals(
-      userId: userId,
-      agentId: trimmed,
-      anchor: anchor,
+      agentId: agentId,
+      anchor: _anchorYearMonth,
       dailySaleDateRange: _dailyTotalsDateRange,
-      clientToken: clientToken,
-      cancelScope: sqlScope,
     );
-
-    if (!mounted || generation != _loadGeneration) {
+    if (!mounted || bundle == null) return;
+    if (context.read<AuthController>().session?.userId != userId) {
+      _loadController.cancel();
       return;
     }
-    setState(() {
-      _dailyPoints = bundle.points;
-      _loadFailed = bundle.loadFailed;
-      _loadFailure = bundle.loadFailure;
-      _loadFailureMessage = bundle.loadFailure == null
-          ? null
-          : agentQueryFailureUserMessage(
-              bundle.loadFailure!,
-              AppLocalizations.of(context),
-            );
-      _loading = false;
-    });
     onAgentQueryLoadFailure(bundle.loadFailure);
     if (bundle.loadFailed) {
       markAutoRefreshFailure();
@@ -290,7 +216,7 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
         range: dailyRange,
       ),
     );
-    unawaited(_reload());
+    unawaited(reloadWithAutoRefresh(force: true));
   }
 
   Future<void> _openFiltersSheet() async {
@@ -330,10 +256,11 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
       l10n: l10n,
       agentName: selectedBranchName,
       parameters: <ChartShareExportHeaderParameter>[
-        salesAnchorMonthExportHeaderParameter(
-          l10n: l10n,
-          anchorMonthLabel: anchorLabel,
-        ),
+        if (_dailyTotalsDateRange == null)
+          salesAnchorMonthExportHeaderParameter(
+            l10n: l10n,
+            anchorMonthLabel: anchorLabel,
+          ),
         ?rangeParameter,
       ],
     );
@@ -382,10 +309,11 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
                 label: l10n.salesBranchFilterLabel,
                 value: selectedBranchName,
               ),
-              SalesCardFilterSummaryItem(
-                label: l10n.salesMonthlyPnlFilterAnchorMonth,
-                value: anchorLabel,
-              ),
+              if (dailyRange == null)
+                SalesCardFilterSummaryItem(
+                  label: l10n.salesMonthlyPnlFilterAnchorMonth,
+                  value: anchorLabel,
+                ),
               SalesCardFilterSummaryItem(
                 label: l10n.salesDailyTotalsFilterSummaryLabel,
                 value: dailyRange == null
@@ -396,7 +324,6 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
                       ),
               ),
             ],
-            enabled: !_loading,
           ),
           SizedBox(height: tokens.gapMd),
           SalesAutoRefreshActionsRow(
@@ -413,6 +340,15 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
                 : autoRefreshPauseReason,
             l10n: l10n,
           ),
+          if (_loading)
+            Align(
+              alignment: Alignment.centerRight,
+              child: AppTextActionButton(
+                onPressed: _cancelLoad,
+                label: MaterialLocalizations.of(context).cancelButtonLabel,
+                icon: const Icon(Icons.close),
+              ),
+            ),
           SizedBox(height: tokens.sectionSpacing),
           if (_selectedAgentId == null)
             AppInlineErrorPanel(
@@ -426,7 +362,6 @@ class _SalesDailyTotalsPageState extends State<SalesDailyTotalsPage>
               points: _dailyPoints,
               loadFailed: _loadFailed,
               loadFailure: _loadFailure,
-              loadFailureMessage: _loadFailureMessage,
               isLoading: _loading && _selectedAgentId != null,
               dailySaleDateRange: _dailyTotalsDateRange,
               exportHeaderContext: _dailyTotalsExportHeaderContext(

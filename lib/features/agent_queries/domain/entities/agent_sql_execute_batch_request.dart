@@ -12,6 +12,7 @@ class AgentSqlExecuteBatchRequest {
     this.hubPresenceOnlineAgentIdsSnapshot,
     this.hubConnectedFromApprovedCatalogRow,
     this.bridgeTimeoutMs,
+    this.totalTimeoutMs,
     this.options,
     this.useRelay = false,
     this.apiVersion = kColmeiaAgentBatchApiVersion,
@@ -27,6 +28,9 @@ class AgentSqlExecuteBatchRequest {
   final Set<String>? hubPresenceOnlineAgentIdsSnapshot;
   final bool? hubConnectedFromApprovedCatalogRow;
   final int? bridgeTimeoutMs;
+
+  /// Local budget across queueing, connection, retries and fallback.
+  final int? totalTimeoutMs;
   final AgentSqlExecuteBatchOptions? options;
   final bool useRelay;
   final String apiVersion;
@@ -62,6 +66,9 @@ class AgentSqlExecuteBatchRequest {
       return 'requestingUserId must be null or non-empty when provided';
     }
 
+    if (totalTimeoutMs != null && totalTimeoutMs! < 1) {
+      return 'totalTimeoutMs must be >= 1';
+    }
     final bridgeTimeout = bridgeTimeoutMs;
     if (bridgeTimeout != null && bridgeTimeout < 1) {
       return 'bridgeTimeoutMs must be >= 1';
@@ -90,6 +97,7 @@ class AgentSqlExecuteBatchRequest {
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
     int? bridgeTimeoutMs,
+    int? totalTimeoutMs,
     AgentSqlExecuteBatchOptions? options,
     bool? useRelay,
     String? apiVersion,
@@ -109,6 +117,7 @@ class AgentSqlExecuteBatchRequest {
           hubConnectedFromApprovedCatalogRow ??
           this.hubConnectedFromApprovedCatalogRow,
       bridgeTimeoutMs: bridgeTimeoutMs ?? this.bridgeTimeoutMs,
+      totalTimeoutMs: totalTimeoutMs ?? this.totalTimeoutMs,
       options: options ?? this.options,
       useRelay: useRelay ?? this.useRelay,
       apiVersion: apiVersion ?? this.apiVersion,

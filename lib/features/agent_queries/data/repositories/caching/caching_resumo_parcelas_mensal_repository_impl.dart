@@ -4,9 +4,11 @@ import 'package:colmeia/features/agent_queries/data/repositories/caching/agent_q
 import 'package:colmeia/features/agent_queries/data/repositories/caching/agent_query_facts_bucket_batch_supports.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/caching/base_cached_agent_query_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_progress.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_mensal_row.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/progressive_report_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_mensal_repository.dart';
 
 final class CachingResumoParcelasMensalRepositoryImpl
@@ -15,7 +17,12 @@ final class CachingResumoParcelasMensalRepositoryImpl
           ResumoParcelasMensalFilter,
           ResumoParcelasMensalRow
         >
-    implements ResumoParcelasMensalRepository {
+    implements
+        ResumoParcelasMensalRepository,
+        ProgressiveReportRepository<
+          ResumoParcelasMensalFilter,
+          ResumoParcelasMensalRow
+        > {
   CachingResumoParcelasMensalRepositoryImpl({
     required ResumoParcelasMensalRepository delegate,
     required super.factsStore,
@@ -28,7 +35,8 @@ final class CachingResumoParcelasMensalRepositoryImpl
     ResumoParcelasMensalCacheStrategy super.strategy =
         const ResumoParcelasMensalCacheStrategy(),
     super.clock,
-  }) : super(
+  }) : _delegate = delegate,
+       super(
          bucketBatchSupport:
              bucketBatchSupport ??
              const ResumoParcelasMensalFactsBucketBatchSupport(),
@@ -82,6 +90,70 @@ final class CachingResumoParcelasMensalRepositoryImpl
       hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
       hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
       cancelScope: cancelScope,
+    );
+  }
+
+  final ResumoParcelasMensalRepository _delegate;
+
+  /// Streaming bypasses the facts store: only complete snapshots are durable.
+  @override
+  Stream<AppResult<AgentQueryProgress<ResumoParcelasMensalRow>>>
+  loadProgressively({
+    required String userId,
+    required String agentId,
+    required ResumoParcelasMensalFilter filter,
+    String? clientToken,
+    int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
+    AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
+  }) {
+    final delegate = _delegate;
+    if (delegate
+        is ProgressiveReportRepository<
+          ResumoParcelasMensalFilter,
+          ResumoParcelasMensalRow
+        >) {
+      return (delegate
+              as ProgressiveReportRepository<
+                ResumoParcelasMensalFilter,
+                ResumoParcelasMensalRow
+              >)
+          .loadProgressively(
+            userId: userId,
+            agentId: agentId,
+            filter: filter,
+            clientToken: clientToken,
+            bridgeTimeoutMs: bridgeTimeoutMs,
+            hubPresenceOnlineAgentIdsSnapshot:
+                hubPresenceOnlineAgentIdsSnapshot,
+            hubConnectedFromApprovedCatalogRow:
+                hubConnectedFromApprovedCatalogRow,
+            cancelScope: cancelScope,
+            cachePolicy: cachePolicy,
+          );
+    }
+    return Stream.fromFuture(
+      load(
+        userId: userId,
+        agentId: agentId,
+        filter: filter,
+        clientToken: clientToken,
+        bridgeTimeoutMs: bridgeTimeoutMs,
+        hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+        hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
+        cancelScope: cancelScope,
+        cachePolicy: cachePolicy,
+      ).then(
+        (result) => result.map(
+          (rows) => AgentQueryProgress(
+            rows: rows,
+            isComplete: true,
+            receivedRowCount: rows.length,
+          ),
+        ),
+      ),
     );
   }
 }

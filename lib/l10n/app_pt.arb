@@ -1133,6 +1133,7 @@
   "reportInlineFiltersSelectDate": "Selecionar data",
   "reportFiltersAppliedSectionTitle": "Filtros aplicados",
   "reportRowDetailDefaultTitle": "Detalhes",
+  "reportIncompleteMessage": "Resultado incompleto. Tente novamente antes de compartilhar ou exportar.",
   "reportLoadErrorTitle": "Não foi possível carregar os dados",
   "reportEmptyClearFiltersAction": "Limpar filtros",
   "reportEmptyDefaultMessage": "Nenhum resultado encontrado.",

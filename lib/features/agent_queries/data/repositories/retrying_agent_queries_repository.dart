@@ -14,6 +14,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
+import 'package:result_dart/result_dart.dart';
 import 'package:uuid/uuid.dart';
 
 /// Decorator that retries transient failures automatically with exponential
@@ -52,8 +53,25 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
     final logicalRequest = _stableExecuteRequest(request);
     final budget = Stopwatch()..start();
     var attempt = 1;
-    AppResult<AgentSqlExecutionResult>? lastFailure;
     while (true) {
+      if (cancelScope?.isCancelled ?? false) {
+        return const Failure(OperationCancelledFailure());
+      }
+      if (cancelScope?.deadline?.remaining == Duration.zero) {
+        return const Failure(
+          NetworkFailure(
+            message: 'Agent query total deadline exceeded before attempt',
+            isTransient: false,
+            context: {
+              AgentSqlRpcFailureUiKey.field:
+                  AgentSqlRpcFailureUiKey.transportTimeout,
+              'deadlineExceeded': true,
+            },
+          ),
+        );
+      }
+      final diagnostics = cancelScope?.diagnostics;
+      if (diagnostics != null) diagnostics.attempts++;
       final result = await _delegate.executeSql(
         logicalRequest,
         cancelScope: cancelScope,
@@ -73,7 +91,6 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
         return result;
       }
 
-      lastFailure = result;
       final failure = result.exceptionOrNull()!;
 
       if (attempt >= _maxAttempts ||
@@ -115,9 +132,12 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
         },
       );
 
-      await Future<void>.delayed(delay);
-      if (cancelScope?.isCancelled == true) {
-        return lastFailure;
+      if (cancelScope != null) {
+        if (!await cancelScope.waitForRetry(delay)) {
+          return const Failure(OperationCancelledFailure());
+        }
+      } else {
+        await Future<void>.delayed(delay);
       }
       attempt++;
     }
@@ -131,8 +151,25 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
     final logicalRequest = _stableBatchRequest(request);
     final budget = Stopwatch()..start();
     var attempt = 1;
-    AppResult<AgentSqlBatchExecutionResult>? lastFailure;
     while (true) {
+      if (cancelScope?.isCancelled ?? false) {
+        return const Failure(OperationCancelledFailure());
+      }
+      if (cancelScope?.deadline?.remaining == Duration.zero) {
+        return const Failure(
+          NetworkFailure(
+            message: 'Agent query total deadline exceeded before attempt',
+            isTransient: false,
+            context: {
+              AgentSqlRpcFailureUiKey.field:
+                  AgentSqlRpcFailureUiKey.transportTimeout,
+              'deadlineExceeded': true,
+            },
+          ),
+        );
+      }
+      final diagnostics = cancelScope?.diagnostics;
+      if (diagnostics != null) diagnostics.attempts++;
       final result = await _delegate.executeSqlBatch(
         logicalRequest,
         cancelScope: cancelScope,
@@ -142,7 +179,6 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
         return result;
       }
 
-      lastFailure = result;
       final failure = result.exceptionOrNull()!;
       if (attempt >= _maxAttempts ||
           !_shouldRetry(failure, cancelScope) ||
@@ -172,9 +208,12 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
         },
       );
 
-      await Future<void>.delayed(delay);
-      if (cancelScope?.isCancelled == true) {
-        return lastFailure;
+      if (cancelScope != null) {
+        if (!await cancelScope.waitForRetry(delay)) {
+          return const Failure(OperationCancelledFailure());
+        }
+      } else {
+        await Future<void>.delayed(delay);
       }
       attempt++;
     }
@@ -236,7 +275,8 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
     AppFailure failure, [
     AgentQueriesCancelScope? cancelScope,
   ]) {
-    if (cancelScope?.isCancelled == true) {
+    if ((cancelScope?.hasPublishedRows ?? false) ||
+        cancelScope?.isCancelled == true) {
       return false;
     }
     if (failure is OperationCancelledFailure) {

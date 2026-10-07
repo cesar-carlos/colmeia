@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_page_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_by.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_direction.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/margem_produto_repository.dart';
 import 'package:colmeia/features/sales/application/load_margem_produto_rows_for_share_use_case.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,10 +34,11 @@ void main() {
   late _MockRepository repository;
   late LoadMargemProdutoRowsForShareUseCase useCase;
 
-  const filter = MargemProdutoFilter();
+  const filter = MargemProdutoFilter(pageSize: MargemProdutoFilter.maxPageSize);
 
   setUpAll(() {
     registerFallbackValue(filter);
+    registerFallbackValue(AgentQueriesCancelScope());
   });
 
   setUp(() {
@@ -41,6 +46,91 @@ void main() {
     useCase = LoadMargemProdutoRowsForShareUseCase(repository);
   });
 
+  test(
+    'uses the visible page size for contiguous complete-catalog share queries',
+    () async {
+      final sizes = <int>[];
+      final starts = <int>[];
+      when(
+        () => repository.loadPage(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+          filter: any(named: 'filter'),
+          clientToken: any(named: 'clientToken'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          hubPresenceOnlineAgentIdsSnapshot: any(
+            named: 'hubPresenceOnlineAgentIdsSnapshot',
+          ),
+          hubConnectedFromApprovedCatalogRow: any(
+            named: 'hubConnectedFromApprovedCatalogRow',
+          ),
+        ),
+      ).thenAnswer((invocation) async {
+        final page = invocation.namedArguments[#filter] as MargemProdutoFilter;
+        sizes.add(page.pageSize);
+        starts.add(page.startRow);
+        return Success(
+          MargemProdutoPageResult(
+            items: [
+              for (var i = page.startRow; i <= page.endRow && i <= 55; i++)
+                _row(i),
+            ],
+            totalCount: 55,
+          ),
+        );
+      });
+      final result = await useCase(
+        userId: 'u',
+        agentId: 'a',
+        filter: const MargemProdutoFilter(),
+        totalCount: 55,
+      );
+      expect(
+        result.getOrThrow().map((row) => row.codProduto),
+        List.generate(55, (i) => i + 1),
+      );
+      expect(sizes, [20, 20, 20]);
+      expect(starts, [1, 21, 41]);
+    },
+  );
+
+  test(
+    'refuses exporting duplicate product identities even when counts match',
+    () async {
+      when(
+        () => repository.loadPage(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+          filter: any(named: 'filter'),
+          clientToken: any(named: 'clientToken'),
+          bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+          hubPresenceOnlineAgentIdsSnapshot: any(
+            named: 'hubPresenceOnlineAgentIdsSnapshot',
+          ),
+          hubConnectedFromApprovedCatalogRow: any(
+            named: 'hubConnectedFromApprovedCatalogRow',
+          ),
+        ),
+      ).thenAnswer(
+        (_) async => Success(
+          MargemProdutoPageResult(
+            items: [_row(1), _row(1)],
+            totalCount: 2,
+          ),
+        ),
+      );
+      final result = await useCase(
+        userId: 'u',
+        agentId: 'a',
+        filter: filter,
+        totalCount: 2,
+      );
+      expect(
+        result.exceptionOrNull()?.message,
+        'share_export_incomplete_catalog',
+      );
+    },
+  );
   test('returns empty list when totalCount is zero', () async {
     final result = await useCase(
       userId: 'u',
@@ -273,6 +363,7 @@ void main() {
 
   test('forwards searchTerm on every export page', () async {
     const searchFilter = MargemProdutoFilter(
+      pageSize: MargemProdutoFilter.maxPageSize,
       searchTerm: 'Mel',
     );
     when(
@@ -553,5 +644,69 @@ void main() {
 
     expect(result.isError(), isTrue);
     expect(result.exceptionOrNull(), isA<ValidationFailure>());
+  });
+
+  test('should skip all queries when export is already cancelled', () async {
+    final scope = AgentQueriesCancelScope()..cancelAll();
+
+    final result = await useCase(
+      userId: 'u',
+      agentId: 'a',
+      filter: filter,
+      totalCount: 600,
+      cancelScope: scope,
+    );
+
+    expect(result.exceptionOrNull(), isA<OperationCancelledFailure>());
+    verifyZeroInteractions(repository);
+  });
+
+  test('should stop paging when a page returns after cancellation', () async {
+    final scope = AgentQueriesCancelScope();
+    final pending = Completer<AppResult<MargemProdutoPageResult>>();
+    when(
+      () => repository.loadPage(
+        userId: any(named: 'userId'),
+        agentId: any(named: 'agentId'),
+        filter: any(named: 'filter'),
+        clientToken: any(named: 'clientToken'),
+        bridgeTimeoutMs: any(named: 'bridgeTimeoutMs'),
+        hubPresenceOnlineAgentIdsSnapshot: any(
+          named: 'hubPresenceOnlineAgentIdsSnapshot',
+        ),
+        hubConnectedFromApprovedCatalogRow: any(
+          named: 'hubConnectedFromApprovedCatalogRow',
+        ),
+        cancelScope: any(named: 'cancelScope'),
+      ),
+    ).thenAnswer((_) => pending.future);
+
+    final export = useCase(
+      userId: 'u',
+      agentId: 'a',
+      filter: filter,
+      totalCount: 600,
+      cancelScope: scope,
+    );
+    scope.cancelAll();
+    pending.complete(
+      Success(
+        MargemProdutoPageResult(
+          items: List<MargemProdutoRow>.generate(500, _row),
+          totalCount: 600,
+        ),
+      ),
+    );
+
+    expect((await export).exceptionOrNull(), isA<OperationCancelledFailure>());
+    verify(
+      () => repository.loadPage(
+        userId: 'u',
+        agentId: 'a',
+        filter: any(named: 'filter'),
+        cancelScope: scope,
+      ),
+    ).called(1);
+    verifyNoMoreInteractions(repository);
   });
 }

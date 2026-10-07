@@ -4,10 +4,12 @@ import 'package:colmeia/features/agent_queries/data/repositories/caching/agent_q
 import 'package:colmeia/features/agent_queries/data/repositories/caching/agent_query_facts_bucket_batch_supports.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/caching/base_cached_agent_query_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_progress.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_dia_semana_row_merger.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/progressive_report_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcelas_dia_semana_repository.dart';
 import 'package:result_dart/result_dart.dart';
 
@@ -17,7 +19,12 @@ final class CachingResumoParcelasDiaSemanaRepositoryImpl
           ResumoParcelasDiaSemanaFilter,
           ResumoParcelasDiaSemanaRow
         >
-    implements ResumoParcelasDiaSemanaRepository {
+    implements
+        ResumoParcelasDiaSemanaRepository,
+        ProgressiveReportRepository<
+          ResumoParcelasDiaSemanaFilter,
+          ResumoParcelasDiaSemanaRow
+        > {
   CachingResumoParcelasDiaSemanaRepositoryImpl({
     required ResumoParcelasDiaSemanaRepository delegate,
     required super.factsStore,
@@ -30,7 +37,8 @@ final class CachingResumoParcelasDiaSemanaRepositoryImpl
     ResumoParcelasDiaSemanaCacheStrategy super.strategy =
         const ResumoParcelasDiaSemanaCacheStrategy(),
     super.clock,
-  }) : super(
+  }) : _delegate = delegate,
+       super(
          bucketBatchSupport:
              bucketBatchSupport ??
              const ResumoParcelasDiaSemanaFactsBucketBatchSupport(),
@@ -90,5 +98,69 @@ final class CachingResumoParcelasDiaSemanaRepositoryImpl
       return Failure(cached.exceptionOrNull()!);
     }
     return Success(ResumoParcelasDiaSemanaRowMerger.merge(rows));
+  }
+
+  final ResumoParcelasDiaSemanaRepository _delegate;
+
+  /// Streaming bypasses the facts store: only complete snapshots are durable.
+  @override
+  Stream<AppResult<AgentQueryProgress<ResumoParcelasDiaSemanaRow>>>
+  loadProgressively({
+    required String userId,
+    required String agentId,
+    required ResumoParcelasDiaSemanaFilter filter,
+    String? clientToken,
+    int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
+    AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
+  }) {
+    final delegate = _delegate;
+    if (delegate
+        is ProgressiveReportRepository<
+          ResumoParcelasDiaSemanaFilter,
+          ResumoParcelasDiaSemanaRow
+        >) {
+      return (delegate
+              as ProgressiveReportRepository<
+                ResumoParcelasDiaSemanaFilter,
+                ResumoParcelasDiaSemanaRow
+              >)
+          .loadProgressively(
+            userId: userId,
+            agentId: agentId,
+            filter: filter,
+            clientToken: clientToken,
+            bridgeTimeoutMs: bridgeTimeoutMs,
+            hubPresenceOnlineAgentIdsSnapshot:
+                hubPresenceOnlineAgentIdsSnapshot,
+            hubConnectedFromApprovedCatalogRow:
+                hubConnectedFromApprovedCatalogRow,
+            cancelScope: cancelScope,
+            cachePolicy: cachePolicy,
+          );
+    }
+    return Stream.fromFuture(
+      load(
+        userId: userId,
+        agentId: agentId,
+        filter: filter,
+        clientToken: clientToken,
+        bridgeTimeoutMs: bridgeTimeoutMs,
+        hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+        hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
+        cancelScope: cancelScope,
+        cachePolicy: cachePolicy,
+      ).then(
+        (result) => result.map(
+          (rows) => AgentQueryProgress(
+            rows: rows,
+            isComplete: true,
+            receivedRowCount: rows.length,
+          ),
+        ),
+      ),
+    );
   }
 }

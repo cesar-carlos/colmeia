@@ -1,3 +1,5 @@
+import 'package:colmeia/core/observability/socket/agent_phase_timings.dart';
+import 'package:colmeia/core/socket/command_phase_observability.dart';
 import 'package:colmeia/core/socket/relay/relay_command_dispatcher.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
@@ -37,8 +39,14 @@ class RelayStreamingAgentQueriesRemoteDataSource
         message: 'streamSqlExecute skipped: AgentQueriesCancelScope already cancelled',
       );
     }
+    cancelScope?.diagnostics?.route('relay_streaming');
     final clientRequestId = request.transportRpcId ?? _uuid.v4();
     cancelScope?.trackRelayPending(clientRequestId);
+    final stopObserving = observeCommandPhases(
+      _dispatcher,
+      clientRequestId,
+      cancelScope?.diagnostics?.addDuration,
+    );
     AgentStreamingSqlCancelTarget? streamTarget;
     var completedNormally = false;
 
@@ -74,6 +82,11 @@ class RelayStreamingAgentQueriesRemoteDataSource
         compression: _resolveCompression(request.payloadFrameCompression),
       );
       yield* stream.map((chunk) {
+        cancelScope?.diagnostics?.mark('first_response');
+        final phases = AgentPhaseTimings.fromRelayBody(chunk);
+        if (phases != null) {
+          cancelScope?.diagnostics?.agentPhases(phases.phasesMs);
+        }
         final streamId = _readStreamId(chunk);
         if (streamId != null) {
           trackStreamId(streamId);
@@ -94,6 +107,7 @@ class RelayStreamingAgentQueriesRemoteDataSource
         }
       }
       cancelScope?.untrackRelayPending(clientRequestId);
+      stopObserving();
     }
   }
 

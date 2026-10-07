@@ -5,16 +5,27 @@ import 'package:colmeia/features/agent_queries/data/agent_queries_sql_local_date
 import 'package:colmeia/features/agent_queries/data/models/resumo_parcela_por_usuario_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcela_por_usuario_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repository_execution.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/progressive_report_loader.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/scoped_agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_progress.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_por_usuario_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcela_por_usuario_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/progressive_report_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_parcela_por_usuario_repository.dart';
 
 class ResumoParcelaPorUsuarioRepositoryImpl
-    implements ResumoParcelaPorUsuarioRepository {
+    implements
+        ResumoParcelaPorUsuarioRepository,
+        ProgressiveReportRepository<
+          ResumoParcelaPorUsuarioFilter,
+          ResumoParcelaPorUsuarioRow
+        > {
   ResumoParcelaPorUsuarioRepositoryImpl(
     this._agentQueriesRepository,
   );
@@ -30,6 +41,7 @@ class ResumoParcelaPorUsuarioRepositoryImpl
     required ResumoParcelaPorUsuarioFilter filter,
     String? clientToken,
     int? bridgeTimeoutMs,
+    AgentQueriesCancelScope? cancelScope,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
   }) async {
@@ -76,6 +88,7 @@ class ResumoParcelaPorUsuarioRepositoryImpl
     >(
       agentQueriesRepository: _agentQueriesRepository,
       request: request,
+      cancelScope: cancelScope,
       operation: _operation,
       agentId: agentId.trim(),
       unexpectedRowsLogMessage:
@@ -93,4 +106,34 @@ class ResumoParcelaPorUsuarioRepositoryImpl
         )
         .toList(growable: false);
   }
+
+  @override
+  Stream<AppResult<AgentQueryProgress<ResumoParcelaPorUsuarioRow>>>
+  loadProgressively({
+    required String userId,
+    required String agentId,
+    required ResumoParcelaPorUsuarioFilter filter,
+    String? clientToken,
+    int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
+    AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
+  }) => const ProgressiveReportLoader<ResumoParcelaPorUsuarioRow>().load(
+    parent: cancelScope,
+    mapRows: _mapExecutionToRows,
+    execute: (scope) =>
+        ResumoParcelaPorUsuarioRepositoryImpl(
+          ScopedAgentQueriesRepository(_agentQueriesRepository, scope),
+        ).load(
+          userId: userId,
+          agentId: agentId,
+          filter: filter,
+          clientToken: clientToken,
+          bridgeTimeoutMs: bridgeTimeoutMs,
+          hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
+          hubConnectedFromApprovedCatalogRow:
+              hubConnectedFromApprovedCatalogRow,
+        ),
+  );
 }

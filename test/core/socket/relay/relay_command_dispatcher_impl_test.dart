@@ -48,6 +48,29 @@ class _CountingPayloadFrameCodec extends PayloadFrameCodec {
   }
 }
 
+class _DelayedFirstDecodeCodec extends PayloadFrameCodec {
+  _DelayedFirstDecodeCodec({this.failFirstDecode = false});
+
+  final bool failFirstDecode;
+  final started = Completer<void>();
+  final release = Completer<void>();
+
+  @override
+  Future<Object?> decodeJsonAsync(PayloadFrame frame) async {
+    if (!started.isCompleted) {
+      started.complete();
+      await release.future;
+      if (failFirstDecode) {
+        throw const PayloadFrameDecodeException(
+          'delayed_decode',
+          'Old attempt decode failed',
+        );
+      }
+    }
+    return super.decodeJsonAsync(frame);
+  }
+}
+
 class _MockConnection extends Mock implements ConsumerSocketConnection {}
 
 class _MockSocket extends Mock implements io.Socket {}
@@ -212,6 +235,142 @@ void main() {
     final conversation = await future;
     return conversation.conversationId!;
   }
+
+  for (final streaming in [false, true]) {
+    for (final failDecode in [false, true]) {
+      test(
+        'late decode${failDecode ? " failure" : ''} cannot complete a ${streaming ? 'streaming' : 'unary'} retry with the same operation id',
+        () async {
+          final codec = _DelayedFirstDecodeCodec(failFirstDecode: failDecode);
+          final dispatcher = await dispatcherFor(codec: codec);
+          addTearDown(dispatcher.dispose);
+          await openConversation();
+          const id = 'rpc-reused';
+          const body = <String, Object?>{
+            'command': <String, Object?>{
+              'jsonrpc': '2.0',
+              'method': 'sql.execute',
+              'id': id,
+            },
+          };
+          Future<Map<String, dynamic>> send() => streaming
+              ? dispatcher
+                    .sendStreaming(
+                      agentId: 'agent-1',
+                      body: body,
+                      clientRequestId: id,
+                    )
+                    .toList()
+                    .then((items) => items.single)
+              : dispatcher.sendUnary(
+                  agentId: 'agent-1',
+                  body: body,
+                  clientRequestId: id,
+                );
+          final first = send();
+          final firstFailure = expectLater(
+            first,
+            throwsA(isA<RelayRequestCancelled>()),
+          );
+          await pumpEventQueue();
+          wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+            'conversationId': 'conv-agent-1',
+            'clientRequestId': id,
+            'requestId': 'srv-old',
+            'success': true,
+          });
+          wiring.fire(
+            RelayEventNames.rpcResponse,
+            _buildResponseFrame(<String, Object?>{
+              'marker': 'old',
+            }, requestId: 'srv-old'),
+          );
+          await codec.started.future;
+          dispatcher.cancel(id);
+          await firstFailure;
+          final second = send();
+          var secondCompleted = false;
+          unawaited(second.then<void>((_) => secondCompleted = true));
+          await pumpEventQueue();
+          codec.release.complete();
+          await pumpEventQueue();
+          check(secondCompleted).isFalse();
+          wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+            'conversationId': 'conv-agent-1',
+            'clientRequestId': id,
+            'requestId': 'srv-new',
+            'success': true,
+          });
+          wiring.fire(
+            RelayEventNames.rpcResponse,
+            _buildResponseFrame(<String, Object?>{
+              'marker': 'new',
+            }, requestId: 'srv-new'),
+          );
+          check((await second)['marker']).equals('new');
+        },
+      );
+    }
+  }
+
+  test('draining an old stream cannot cancel a new retry', () async {
+    final dispatcher = await dispatcherFor();
+    addTearDown(dispatcher.dispose);
+    await openConversation();
+    const id = 'rpc-drained';
+    const body = <String, Object?>{
+      'command': <String, Object?>{
+        'jsonrpc': '2.0',
+        'method': 'sql.execute',
+        'id': id,
+      },
+    };
+    final oldErrors = <Object>[];
+    final drained = Completer<void>();
+    final subscription = dispatcher
+        .sendStreaming(agentId: 'agent-1', body: body, clientRequestId: id)
+        .listen((_) {}, onError: oldErrors.add, onDone: drained.complete);
+    addTearDown(subscription.cancel);
+    await pumpEventQueue();
+    subscription.pause();
+    dispatcher.cancel(id);
+    var secondSettled = false;
+    final second = dispatcher
+        .sendUnary(agentId: 'agent-1', body: body, clientRequestId: id)
+        .then<Object>(
+          (value) {
+            secondSettled = true;
+            return value;
+          },
+          onError: (Object error) {
+            secondSettled = true;
+            return error;
+          },
+        );
+    await pumpEventQueue();
+    subscription.resume();
+    await drained.future;
+    await pumpEventQueue();
+    check(oldErrors.single).isA<RelayRequestCancelled>();
+    check(secondSettled).isFalse();
+    wiring.fire(RelayEventNames.rpcAccepted, <String, Object?>{
+      'conversationId': 'conv-agent-1',
+      'clientRequestId': id,
+      'requestId': 'srv-drained-new',
+      'success': true,
+    });
+    wiring.fire(
+      RelayEventNames.rpcResponse,
+      _buildResponseFrame(
+        <String, Object?>{'marker': 'new'},
+        requestId: 'srv-drained-new',
+      ),
+    );
+    check(await second)
+        .isA<Map<String, dynamic>>()
+        .has((value) => value['marker'], 'marker')
+        .equals('new');
+  });
 
   group('RelayCommandDispatcherImpl per-agent concurrency gate', () {
     test(
@@ -566,6 +725,41 @@ void main() {
   });
 
   group('RelayCommandDispatcherImpl.sendUnary', () {
+    test('cancellation during connection prevents a late SQL emit', () async {
+      final connectionReady = Completer<ConsumerSocketConnected>();
+      when(connection.connect).thenAnswer((_) => connectionReady.future);
+      final dispatcher = await dispatcherFor();
+      addTearDown(dispatcher.dispose);
+      final future = dispatcher.sendUnary(
+        agentId: 'agent-1',
+        clientRequestId: 'rpc-before-ready',
+        body: const {
+          'jsonrpc': '2.0',
+          'id': 'rpc-before-ready',
+          'method': 'sql.execute',
+        },
+      );
+      final assertion = expectLater(
+        future,
+        throwsA(isA<RelayRequestCancelled>()),
+      );
+      dispatcher.cancel('rpc-before-ready');
+      await assertion;
+      connectionReady.complete(
+        ConsumerSocketConnected(socketId: 's', handshakeAt: DateTime.utc(2026)),
+      );
+      await Future<void>.delayed(Duration.zero);
+      wiring.fire(RelayEventNames.conversationStarted, const {
+        'success': true,
+        'conversationId': 'late-conv',
+        'agentId': 'agent-1',
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(
+        wiring.emits.where((e) => e.event == RelayEventNames.rpcRequest),
+        isEmpty,
+      );
+    });
     test('emits relay:rpc.request and resolves on rpc.response', () async {
       final dispatcher = await dispatcherFor();
       addTearDown(dispatcher.dispose);

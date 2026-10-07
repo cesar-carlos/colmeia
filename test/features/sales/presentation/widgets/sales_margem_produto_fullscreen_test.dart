@@ -50,6 +50,17 @@ void main() {
   });
 
   group('SalesMargemProdutoGridSnapshot', () {
+    test('notifies when otherwise unchanged rows become incomplete', () {
+      final first = SalesMargemProdutoGridSnapshot.initial();
+      final second = SalesMargemProdutoGridSnapshot(
+        rows: first.rows,
+        pageInfo: first.pageInfo,
+        query: first.query,
+        isLoading: first.isLoading,
+        isIncomplete: true,
+      );
+      expect(first == second, false);
+    });
     test('treats equivalent grid state as equal for ValueNotifier', () {
       final rows = <MargemProdutoRow>[
         const MargemProdutoRow(

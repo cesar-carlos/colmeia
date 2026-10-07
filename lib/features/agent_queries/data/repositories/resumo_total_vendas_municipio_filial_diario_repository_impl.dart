@@ -7,17 +7,28 @@ import 'package:colmeia/features/agent_queries/data/agent_queries_warn_if_sql_ro
 import 'package:colmeia/features/agent_queries/data/models/resumo_total_vendas_municipio_filial_diario_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_total_vendas_municipio_filial_diario_sql.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repository_execution.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/progressive_report_loader.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/scoped_agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_progress.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_diario_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_vendas_municipio_filial_diario_row.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/repositories/progressive_report_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_total_vendas_municipio_filial_diario_repository.dart';
 import 'package:flutter/foundation.dart';
 
 class ResumoTotalVendasMunicipioFilialDiarioRepositoryImpl
-    implements ResumoTotalVendasMunicipioFilialDiarioRepository {
+    implements
+        ResumoTotalVendasMunicipioFilialDiarioRepository,
+        ProgressiveReportRepository<
+          ResumoTotalVendasMunicipioFilialDiarioFilter,
+          ResumoTotalVendasMunicipioFilialDiarioRow
+        > {
   ResumoTotalVendasMunicipioFilialDiarioRepositoryImpl(
     this._agentQueriesRepository,
   );
@@ -33,6 +44,7 @@ class ResumoTotalVendasMunicipioFilialDiarioRepositoryImpl
     required ResumoTotalVendasMunicipioFilialDiarioFilter filter,
     String? clientToken,
     int? bridgeTimeoutMs,
+    AgentQueriesCancelScope? cancelScope,
     Set<String>? hubPresenceOnlineAgentIdsSnapshot,
     bool? hubConnectedFromApprovedCatalogRow,
   }) async {
@@ -80,6 +92,7 @@ class ResumoTotalVendasMunicipioFilialDiarioRepositoryImpl
     >(
       agentQueriesRepository: _agentQueriesRepository,
       request: request,
+      cancelScope: cancelScope,
       operation: _operation,
       agentId: agentId.trim(),
       unexpectedRowsLogMessage:
@@ -148,4 +161,43 @@ class ResumoTotalVendasMunicipioFilialDiarioRepositoryImpl
       },
     );
   }
+
+  @override
+  Stream<
+    AppResult<AgentQueryProgress<ResumoTotalVendasMunicipioFilialDiarioRow>>
+  >
+  loadProgressively({
+    required String userId,
+    required String agentId,
+    required ResumoTotalVendasMunicipioFilialDiarioFilter filter,
+    String? clientToken,
+    int? bridgeTimeoutMs,
+    Set<String>? hubPresenceOnlineAgentIdsSnapshot,
+    bool? hubConnectedFromApprovedCatalogRow,
+    AgentQueriesCancelScope? cancelScope,
+    AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
+  }) =>
+      const ProgressiveReportLoader<ResumoTotalVendasMunicipioFilialDiarioRow>()
+          .load(
+            parent: cancelScope,
+            mapRows: (executionResult) => _mapExecutionToRows(
+              executionResult,
+              agentId: agentId.trim(),
+              filter: filter,
+            ),
+            execute: (scope) =>
+                ResumoTotalVendasMunicipioFilialDiarioRepositoryImpl(
+                  ScopedAgentQueriesRepository(_agentQueriesRepository, scope),
+                ).load(
+                  userId: userId,
+                  agentId: agentId,
+                  filter: filter,
+                  clientToken: clientToken,
+                  bridgeTimeoutMs: bridgeTimeoutMs,
+                  hubPresenceOnlineAgentIdsSnapshot:
+                      hubPresenceOnlineAgentIdsSnapshot,
+                  hubConnectedFromApprovedCatalogRow:
+                      hubConnectedFromApprovedCatalogRow,
+                ),
+          );
 }

@@ -2567,6 +2567,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportRowDetailDefaultTitle => 'Details';
 
   @override
+  String get reportIncompleteMessage =>
+      'Incomplete result. Retry before sharing or exporting.';
+
+  @override
   String get reportLoadErrorTitle => 'Could not load data';
 
   @override
