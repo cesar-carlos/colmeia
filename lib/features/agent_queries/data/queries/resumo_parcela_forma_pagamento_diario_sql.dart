@@ -11,7 +11,8 @@ abstract final class ResumoParcelaFormaPagamentoDiarioSql {
   /// The inner query selects many columns for future filters; when those land,
   /// push predicates into the inner slice where possible and validate indexes
   /// on the ERP side if this becomes hot.
-  static const String _queryHead = '''
+  static const String _queryHead =
+      '''
     SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}
       CodEmpresa,
       CodFilial,

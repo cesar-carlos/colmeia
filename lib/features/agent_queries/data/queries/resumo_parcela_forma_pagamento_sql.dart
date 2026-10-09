@@ -15,7 +15,8 @@ abstract final class ResumoParcelaFormaPagamentoSql {
   ///
   /// Outer aggregate groups by month label and payment method, counting
   /// distinct sales via the composite `Id` expression in the inner select.
-  static const String _queryHead = '''
+  static const String _queryHead =
+      '''
     SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}
       CodEmpresa,
       CodFilial,

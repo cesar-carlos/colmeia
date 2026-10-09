@@ -24,7 +24,8 @@ abstract final class ResumoParcelasFormaPagamentoPorMesSql {
   /// `DataVenda`, `Origem`, `CodEmpresa`, and `CodFilial` via supporting
   /// indexes; parcel aggregates benefit from
   /// `(CodEmpresa, CodProdutoVendido)` on `ParcelaProdutoVendido`.
-  static const String _queryHead = '''
+  static const String _queryHead =
+      '''
     SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}
       CodEmpresa,
       CodFilial,

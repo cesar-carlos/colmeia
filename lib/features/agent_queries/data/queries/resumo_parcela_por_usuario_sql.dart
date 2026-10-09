@@ -13,7 +13,8 @@ import 'package:colmeia/features/agent_queries/data/queries/parcela_produto_vend
 /// back to payment-method aggregation in
 /// `overview_user_rankings_override_policy.dart`.
 abstract final class ResumoParcelaPorUsuarioSql {
-  static const String _queryHead = '''
+  static const String _queryHead =
+      '''
     SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}
       CodEmpresa,
       CodFilial,

@@ -21,7 +21,8 @@ void main() {
     check(sql).contains(
       'SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}',
     );
-    check(sql).contains('ORDER BY\n        c.Nome ASC,\n        c.CodCliente ASC');
+    check(sql)
+        .contains('ORDER BY\n        c.Nome ASC,\n        c.CodCliente ASC');
   });
 
   test('query paginates with row number bounds and stable order', () {

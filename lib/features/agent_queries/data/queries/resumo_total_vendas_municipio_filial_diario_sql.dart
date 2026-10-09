@@ -60,7 +60,8 @@ import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result
 /// INCLUDE (Nome, NomeFantasia, CEP, CodMunicipio);
 /// ```
 abstract final class ResumoTotalVendasMunicipioFilialDiarioSql {
-  static const String query = '''
+  static const String query =
+      '''
 SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}
   CodEmpresa,
   CodFilial,

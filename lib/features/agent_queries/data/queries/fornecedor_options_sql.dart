@@ -16,7 +16,8 @@ import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result
 /// `:searchPattern` is a contains literal (e.g. `%term%`) from
 /// `ResumoVendasDiariasSuggestionSqlParams.buildSearchPattern`.
 abstract final class FornecedorOptionsSql {
-  static const String pagedQuery = '''
+  static const String pagedQuery =
+      '''
     WITH Parametros AS (
       SELECT
         CAST(:searchPattern AS VARCHAR(255)) AS SearchPattern,

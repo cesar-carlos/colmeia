@@ -28,7 +28,8 @@ abstract final class ResumoParcelasAnualSql {
   /// When new filters use inner-only columns, push predicates into the inner
   /// slice where possible and re-check indexes on the ERP side if this query
   /// becomes hot.
-  static const String _queryHead = '''
+  static const String _queryHead =
+      '''
     SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}
       CodEmpresa,
       CodFilial,

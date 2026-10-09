@@ -34,7 +34,8 @@ abstract final class ResumoParcelasDiaSemanaUsuarioSql {
   /// **Bridge named-parameter caps**: at most five named binds are sent;
   /// optional dimensions are inlined as integer literals (see
   /// [ResumoParcelasSqlDimensionFilters]).
-  static const String _queryHead = '''
+  static const String _queryHead =
+      '''
     SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}
       CodEmpresa,
       CodFilial,

@@ -15,7 +15,8 @@ abstract final class ResumoParcelaFormaPagamentoSqlV2 {
   ///
   /// Date filter uses a half-open calendar range on `DataVenda` (sargable, aligned
   /// with map/daily SQL).
-  static const String _queryHead = '''
+  static const String _queryHead =
+      '''
     SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}
       CodEmpresa,
       CodFilial,
