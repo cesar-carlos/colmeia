@@ -1,3 +1,4 @@
+import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/data/queries/cadastro_filial_sql.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_filter.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,6 +8,13 @@ void main() {
     test('query uses direct branch catalog joins and paging params', () {
       final sql = CadastroFilialSql.query();
 
+      expect(
+        sql,
+        contains(
+          'SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}',
+        ),
+      );
+      expect(sql, contains('ORDER BY f.CodEmpresa ASC, f.CodFilial ASC'));
       expect(sql, contains('FROM Filial f'));
       expect(sql, contains('LEFT JOIN Municipio m ON'));
       expect(sql, contains('TRIM(m.Nome) AS NomeMunicipio'));

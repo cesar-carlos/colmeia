@@ -1,3 +1,4 @@
+import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/data/queries/parcela_produto_vendido_detalhe_sql.dart';
 
 /// Parcel resumo aggregated by sale user only (no payment method dimension).
@@ -13,7 +14,7 @@ import 'package:colmeia/features/agent_queries/data/queries/parcela_produto_vend
 /// `overview_user_rankings_override_policy.dart`.
 abstract final class ResumoParcelaPorUsuarioSql {
   static const String _queryHead = '''
-    SELECT
+    SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}
       CodEmpresa,
       CodFilial,
       NomeUsuario,

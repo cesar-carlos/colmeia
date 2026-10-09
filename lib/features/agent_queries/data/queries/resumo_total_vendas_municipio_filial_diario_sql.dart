@@ -1,3 +1,5 @@
+import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
+
 /// Daily sales aggregate by company, branch (with **filial** municipality), and
 /// calendar day (`ResumoTotalVendasMunicipioFilialDiario`).
 ///
@@ -59,7 +61,7 @@
 /// ```
 abstract final class ResumoTotalVendasMunicipioFilialDiarioSql {
   static const String query = '''
-SELECT
+SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}
   CodEmpresa,
   CodFilial,
   NomeFilial,

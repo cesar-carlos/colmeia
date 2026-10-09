@@ -1,3 +1,4 @@
+import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/data/queries/parcela_produto_vendido_detalhe_sql.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_parcelas_sql_dimension_filters.dart';
 
@@ -24,7 +25,7 @@ abstract final class ResumoParcelasFormaPagamentoPorMesSql {
   /// indexes; parcel aggregates benefit from
   /// `(CodEmpresa, CodProdutoVendido)` on `ParcelaProdutoVendido`.
   static const String _queryHead = '''
-    SELECT
+    SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}
       CodEmpresa,
       CodFilial,
       NomeUsuario,

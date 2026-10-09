@@ -1,3 +1,5 @@
+import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
+
 /// Daily sales totals per company, branch, calendar day.
 ///
 /// Performance notes:
@@ -28,7 +30,7 @@
 /// ```
 abstract final class ResumoTotalDiarioVendasSql {
   static const String query = '''
-SELECT
+SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}
   CodEmpresa,
   CodFilial,
   DataVenda,

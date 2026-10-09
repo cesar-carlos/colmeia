@@ -1,3 +1,4 @@
+import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/data/queries/parcela_produto_vendido_detalhe_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_vendas_diarias_por_vendedor_bairro_nome_expression.dart';
 
@@ -41,7 +42,7 @@ abstract final class ResumoVendasDiariasPorVendedorSql {
           municipio,
         );
     return '''
-      SELECT
+      SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}
         CodEmpresa,
         CodFilial,
         DataVenda,

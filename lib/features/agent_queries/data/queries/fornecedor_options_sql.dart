@@ -1,4 +1,10 @@
+import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
+
 /// Paged fornecedor catalog with total count in one `sql.execute` round-trip.
+///
+/// `Base` is `SELECT TOP` [AgentQueriesBoundedResultMaxRows.sqlReturnRowCap]
+/// so the catalog scan stops. `TotalCount` is the size of that cap, not the
+/// full `Fornecedor` table.
 ///
 /// Uses `WITH Base/Tot/Numbered` and `Tot LEFT JOIN Numbered ON Rn BETWEEN …`
 /// so when the filter matches zero rows or the requested page is empty, the
@@ -17,7 +23,7 @@ abstract final class FornecedorOptionsSql {
         CAST(:searchDigitsPattern AS VARCHAR(255)) AS SearchDigitsPattern
     ),
     Base AS (
-      SELECT
+      SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}
         f.CodFornecedor,
         f.RazaoSocial AS NomeFornecedor,
         f.NomeFantasia,
@@ -48,6 +54,9 @@ abstract final class FornecedorOptionsSql {
           AND CAST(m.CodigoIBGE AS VARCHAR(20)) LIKE p.SearchDigitsPattern
         )
       )
+      ORDER BY
+        f.RazaoSocial ASC,
+        f.CodFornecedor ASC
     ),
     Tot AS (
       SELECT COUNT(*) AS TotalCount FROM Base

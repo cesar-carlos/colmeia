@@ -1,4 +1,5 @@
 import 'package:checks/checks.dart';
+import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/data/queries/cliente_options_sql.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -14,6 +15,13 @@ void main() {
     check(sql).contains('UFMunicipio');
     check(sql).contains('m.CodigoIBGE');
     check(sql).contains('N.CodigoIBGE');
+  });
+
+  test('query caps the catalog scan at the shared return limit', () {
+    check(sql).contains(
+      'SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}',
+    );
+    check(sql).contains('ORDER BY\n        c.Nome ASC,\n        c.CodCliente ASC');
   });
 
   test('query paginates with row number bounds and stable order', () {

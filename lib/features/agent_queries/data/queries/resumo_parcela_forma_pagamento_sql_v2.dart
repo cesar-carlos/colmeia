@@ -1,3 +1,4 @@
+import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/data/queries/parcela_produto_vendido_detalhe_sql.dart';
 
 abstract final class ResumoParcelaFormaPagamentoSqlV2 {
@@ -15,7 +16,7 @@ abstract final class ResumoParcelaFormaPagamentoSqlV2 {
   /// Date filter uses a half-open calendar range on `DataVenda` (sargable, aligned
   /// with map/daily SQL).
   static const String _queryHead = '''
-    SELECT
+    SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}
       CodEmpresa,
       CodFilial,
       CodFormaPagamento,

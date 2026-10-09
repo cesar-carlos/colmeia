@@ -1,6 +1,10 @@
 /// Conservative `max_rows` for `sql.execute` on aggregate queries with bounded
 /// row counts (safety net if SQL or grouping changes).
 abstract final class AgentQueriesBoundedResultMaxRows {
+  /// `SELECT TOP` applied to agent SQL that must not stream an unbounded
+  /// result. Catalog queries use it on the source CTE so the scan stops.
+  static const int sqlReturnRowCap = 100;
+
   /// Shared cap for aggregates that return many buckets across companies and
   /// branches (e.g. weekday or month per filial).
   static const int aggregateMultiBranchCap = 1600;

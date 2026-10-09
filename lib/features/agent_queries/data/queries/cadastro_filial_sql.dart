@@ -1,3 +1,4 @@
+import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_filter.dart';
 
 /// Paged branch registration query with total count in one `sql.execute`.
@@ -51,12 +52,13 @@ abstract final class CadastroFilialSql {
 ''';
     return '''
     WITH Base AS (
-      SELECT
+      SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}
 $baseColumns
       FROM Filial f
 $municipioJoin      WHERE 1 = 1
 $branchPredicate
 $searchPredicate
+      ORDER BY f.CodEmpresa ASC, f.CodFilial ASC
     ),
     Tot AS (
       SELECT COUNT(*) AS TotalCount FROM Base
