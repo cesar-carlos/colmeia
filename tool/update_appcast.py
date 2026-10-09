@@ -6,6 +6,7 @@ Create or update the Colmeia Windows appcast feed.
 from __future__ import annotations
 
 import argparse
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -34,14 +35,19 @@ def main() -> None:
     metadata = parse_args()
     output_path = metadata.output
     root = ensure_document(output_path, metadata.release)
+    output_path.write_bytes(update_document(root, metadata.release))
+
+
+def update_document(root: ET.Element, release: ReleaseMetadata) -> bytes:
     channel = root.find("channel")
     if channel is None:
         raise SystemExit("Invalid appcast.xml: missing channel node")
 
-    upsert_release_item(channel, metadata.release)
-    trim_release_items(channel, metadata.release.max_items)
+    upsert_release_item(channel, release)
+    sort_release_items(channel)
+    trim_release_items(channel, release.max_items)
     indent_xml(root)
-    ET.ElementTree(root).write(output_path, encoding="utf-8", xml_declaration=True)
+    return ET.tostring(root, encoding="utf-8", xml_declaration=True)
 
 
 def parse_args() -> argparse.Namespace:
@@ -81,7 +87,10 @@ def parse_args() -> argparse.Namespace:
 def ensure_document(path: Path, release: ReleaseMetadata) -> ET.Element:
     if path.exists():
         return ET.parse(path).getroot()
+    return create_document(release)
 
+
+def create_document(release: ReleaseMetadata) -> ET.Element:
     rss = ET.Element(
         "rss",
         attrib={
@@ -140,6 +149,25 @@ def trim_release_items(channel: ET.Element, max_items: int) -> None:
     items = channel.findall("item")
     for item in items[max_items:]:
         channel.remove(item)
+
+
+def sort_release_items(channel: ET.Element) -> None:
+    def version_key(item: ET.Element) -> tuple[int, ...]:
+        enclosure = item.find("enclosure")
+        version = (
+            enclosure.get(f"{{{SPARKLE_NS}}}version", "")
+            if enclosure is not None
+            else ""
+        )
+        match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)(?:\+(\d+))?", version)
+        if match is None:
+            raise SystemExit(f"Invalid appcast release version: {version!r}")
+        return tuple(int(part or 0) for part in match.groups())
+
+    items = sorted(channel.findall("item"), key=version_key, reverse=True)
+    for item in items:
+        channel.remove(item)
+    channel.extend(items)
 
 
 def http_date_now() -> str:

@@ -249,8 +249,8 @@ jobs:
 
           gh --version
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release edit "$tag" --title "$title"
             gh release upload "$tag" release-assets/* --clobber
+            gh release edit "$tag" --title "$title" --draft=false
           else
             gh release create "$tag" release-assets/* \
               --title "$title" \
@@ -295,11 +295,14 @@ jobs:
       - build_windows
       - publish_release
     runs-on: ubuntu-latest
+    concurrency:
+      group: windows-appcast-main
+      cancel-in-progress: false
+      queue: max
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          ref: main
           fetch-depth: 0
 
       - name: Download Windows release asset
@@ -308,14 +311,17 @@ jobs:
           name: release-windows
           path: release-assets
 
-      - name: Generate appcast.xml
+      - name: Update and publish appcast.xml to main
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          APPCAST_PUSH_TOKEN: ${{ secrets.APPCAST_PUSH_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
           asset_path="release-assets/${{ needs.prepare_release.outputs.windows_asset_name }}"
           asset_length=$(stat -c%s "$asset_path")
 
-          python tool/update_appcast.py \
+          python tool/publish_appcast.py \
             --output appcast.xml \
             --version '${{ needs.prepare_release.outputs.full_version }}' \
             --short-version '${{ needs.prepare_release.outputs.short_version }}' \
@@ -327,72 +333,3 @@ jobs:
             --description 'Most recent Windows releases for Colmeia' \
             --language 'pt-BR' \
             --max-items 5
-
-      - name: Publish appcast.xml to main
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          APPCAST_PUSH_TOKEN: ${{ secrets.APPCAST_PUSH_TOKEN }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          import base64
-          import json
-          import os
-          import sys
-          import urllib.error
-          import urllib.request
-          from pathlib import Path
-
-          token = (os.environ.get("APPCAST_PUSH_TOKEN") or "").strip() or (
-              os.environ.get("GITHUB_TOKEN") or ""
-          ).strip()
-          if not token:
-              raise SystemExit("No token available to publish appcast.xml.")
-
-          repo = os.environ["GITHUB_REPOSITORY"]
-          url = f"https://api.github.com/repos/{repo}/contents/appcast.xml"
-          headers = {
-              "Authorization": f"Bearer {token}",
-              "Accept": "application/vnd.github+json",
-              "X-GitHub-Api-Version": "2022-11-28",
-              "User-Agent": "colmeia-tagged-release",
-          }
-
-          local_content = Path("appcast.xml").read_text(encoding="utf-8")
-          remote_document = None
-
-          request = urllib.request.Request(f"{url}?ref=main", headers=headers)
-          try:
-              with urllib.request.urlopen(request) as response:
-                  remote_document = json.load(response)
-          except urllib.error.HTTPError as error:
-              if error.code != 404:
-                  raise
-
-          if remote_document is not None:
-              remote_content = base64.b64decode(remote_document["content"]).decode("utf-8")
-              if remote_content == local_content:
-                  print("appcast.xml already up to date.")
-                  sys.exit(0)
-
-          request_body = {
-              "message": (
-                  "chore: update appcast for "
-                  "${{ needs.prepare_release.outputs.short_version }}"
-              ),
-              "content": base64.b64encode(local_content.encode("utf-8")).decode("ascii"),
-              "branch": "main",
-          }
-          if remote_document is not None:
-              request_body["sha"] = remote_document["sha"]
-
-          update_request = urllib.request.Request(
-              url,
-              data=json.dumps(request_body).encode("utf-8"),
-              headers={**headers, "Content-Type": "application/json"},
-              method="PUT",
-          )
-          with urllib.request.urlopen(update_request):
-              pass
-          PY

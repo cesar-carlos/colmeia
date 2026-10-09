@@ -36,7 +36,9 @@ def main() -> int:
         if failed and not in_progress:
             print(
                 f"Flutter CI failed for {args.sha}. "
-                "Fix CI on main before publishing this tag.",
+                "Rerun Flutter CI for this exact commit and wait for success "
+                "before rerunning the release. A newer main commit does not "
+                "validate this tag.",
                 file=sys.stderr,
             )
             for run in failed[:3]:

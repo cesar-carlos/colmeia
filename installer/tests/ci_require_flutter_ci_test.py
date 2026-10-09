@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import sys
 import unittest
 from pathlib import Path
@@ -27,6 +28,31 @@ def load_module():
 class RequireFlutterCiTest(unittest.TestCase):
     def setUp(self) -> None:
         self.module = load_module()
+
+    def test_should_reject_cancelled_ci_with_exact_commit_recovery_instructions(self) -> None:
+        with (
+            mock.patch.object(self.module, "list_flutter_ci_runs", return_value=[
+                {"conclusion": "cancelled", "status": "completed", "url": "https://example.test/run"},
+            ]),
+            mock.patch.object(sys, "argv", ["ci_require_flutter_ci.py", "--sha", "tag-sha"]),
+            mock.patch.object(sys, "stderr", new_callable=io.StringIO) as stderr,
+        ):
+            self.assertEqual(1, self.module.main())
+
+        self.assertIn("this exact commit", stderr.getvalue())
+        self.assertIn("https://example.test/run", stderr.getvalue())
+
+    def test_should_wait_for_rerun_instead_of_rejecting_previous_cancellation(self) -> None:
+        cancelled = {"conclusion": "cancelled", "status": "completed"}
+        with (
+            mock.patch.object(self.module, "list_flutter_ci_runs", side_effect=[
+                [cancelled, {"status": "queued", "conclusion": None}],
+                [{"status": "completed", "conclusion": "success"}],
+            ]),
+            mock.patch.object(sys, "argv", ["ci_require_flutter_ci.py", "--sha", "tag-sha"]),
+            mock.patch.object(self.module.time, "sleep"),
+        ):
+            self.assertEqual(0, self.module.main())
 
     def test_success_when_run_succeeded(self) -> None:
         with mock.patch.object(
