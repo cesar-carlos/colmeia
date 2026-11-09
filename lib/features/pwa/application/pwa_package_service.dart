@@ -132,6 +132,9 @@ class PwaPackageService {
         }
         onProgress?.call(OfflineDownloadStage.authorizing);
         var authorization = await _authorization.authorize(agent);
+        if (cancelled()) {
+          throw const OfflinePackageException(OfflinePackageIssue.cancelled);
+        }
         if (!authorization.permits(user, agent, _clock().toUtc())) {
           throw const OfflinePackageException(
             OfflinePackageIssue.authorizationExpired,

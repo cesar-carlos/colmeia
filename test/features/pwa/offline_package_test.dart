@@ -269,6 +269,42 @@ void main() {
     );
     expect(await service.read('user', 'agent'), isNull);
   });
+  test(
+    'should not query after cancellation while authorization is pending',
+    () async {
+      final entered = Completer<void>();
+      final pending = Completer<OfflineAuthorization>();
+      when(() => authorization.authorize('agent')).thenAnswer((_) {
+        entered.complete();
+        return pending.future;
+      });
+      var queries = 0;
+      load = () async {
+        queries++;
+        return {
+          'rows': [1],
+        };
+      };
+      final operation = service.synchronize('user', 'agent');
+      final failure = expectLater(
+        operation,
+        throwsA(
+          isA<OfflinePackageException>().having(
+            (e) => e.issue,
+            'issue',
+            OfflinePackageIssue.cancelled,
+          ),
+        ),
+      );
+      await entered.future;
+      service.cancel();
+      pending.complete(grant());
+      await failure;
+      expect(queries, 0);
+      expect(await service.selectedAgents('user'), isEmpty);
+      expect(await service.read('user', 'agent'), isNull);
+    },
+  );
   test('offline reads never authorize or query remote sources', () async {
     await service.synchronize('user', 'agent');
     clearInteractions(authorization);

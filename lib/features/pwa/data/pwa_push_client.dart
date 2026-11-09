@@ -10,6 +10,8 @@ class PwaPushClient implements PushSubscriptions {
   final PwaPlatform _platform;
   final Dio _dio;
   final SharedPreferences _preferences;
+  final _removalGenerations = <String, int>{};
+  final _reconciliations = <String, Future<void>>{};
   String _installationKey(String user) => 'pwa.installation.$user';
   String _pendingKey(String user) => 'pwa.pushRemoval.$user';
   Future<String> _installation(String user) async {
@@ -63,22 +65,50 @@ class PwaPushClient implements PushSubscriptions {
 
   @override
   Future<void> disable(String user) async {
-    final id = _preferences.getString(_installationKey(user));
-    if (id != null) await _preferences.setString(_pendingKey(user), id);
+    _removalGenerations[user] = (_removalGenerations[user] ?? 0) + 1;
     try {
-      await _platform.setPushEnabled(enabled: false);
+      final id = _preferences.getString(_installationKey(user));
+      if (id != null && !await _preferences.setString(_pendingKey(user), id)) {
+        throw StateError('Could not persist pending Push removal');
+      }
     } finally {
-      await _preferences.setBool('pwa.pushEnabled.$user', false);
-      await _platform.unsubscribe();
+      try {
+        await _platform.setPushEnabled(enabled: false);
+      } finally {
+        try {
+          if (!await _preferences.setBool('pwa.pushEnabled.$user', false)) {
+            throw StateError('Could not persist disabled Push preference');
+          }
+        } finally {
+          await _platform.unsubscribe();
+        }
+      }
     }
     if (_platform.online) await reconcile(user);
   }
 
   @override
   Future<void> reconcile(String user) async {
+    final active = _reconciliations[user];
+    if (active != null) return active;
+    final operation = _reconcile(user).whenComplete(() {
+      // ignore: discarded_futures -- Remove tracking; awaiting would await this callback.
+      _reconciliations.remove(user);
+    });
+    _reconciliations[user] = operation;
+    return operation;
+  }
+
+  Future<void> _reconcile(String user) async {
+    final generation = _removalGenerations[user] ?? 0;
     final pending = _preferences.getString(_pendingKey(user));
     if (pending == null || !_platform.online) return;
     await _dio.delete<void>('/client/me/pwa/subscriptions/$pending');
-    await _preferences.remove(_pendingKey(user));
+    if (generation == (_removalGenerations[user] ?? 0) &&
+        _preferences.getString(_pendingKey(user)) == pending) {
+      if (!await _preferences.remove(_pendingKey(user))) {
+        throw StateError('Could not persist completed Push removal');
+      }
+    }
   }
 }

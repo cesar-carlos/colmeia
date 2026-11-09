@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:colmeia/core/pwa/pwa_platform.dart';
 import 'package:colmeia/features/pwa/data/pwa_push_client.dart';
 import 'package:colmeia/features/pwa/domain/push_subscription_exception.dart';
@@ -9,6 +11,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 class _Platform extends Mock implements PwaPlatform {}
 
 class _Dio extends Mock implements Dio {}
+
+class _Preferences extends Mock implements SharedPreferences {}
 
 void main() {
   late _Platform platform;
@@ -61,7 +65,104 @@ void main() {
         .thenThrow(DioException(requestOptions: RequestOptions(path: '/')));
     await expectLater(client.reconcile('user'), throwsA(isA<DioException>()));
     expect(preferences.getString('pwa.pushRemoval.user'), 'installation');
+    when(() => dio.delete<void>(any())).thenAnswer(
+      (_) async => Response<void>(
+        requestOptions: RequestOptions(path: '/'),
+        statusCode: 204,
+      ),
+    );
+    await client.reconcile('user');
+    expect(preferences.getString('pwa.pushRemoval.user'), isNull);
+    verify(() => dio.delete<void>(any())).called(2);
   });
+  test('should share concurrent removal requests for the same user', () async {
+    await client.disable('user');
+    when(() => platform.online).thenReturn(true);
+    final response = Completer<Response<void>>();
+    when(() => dio.delete<void>(any())).thenAnswer((_) => response.future);
+    final first = client.reconcile('user');
+    final second = client.reconcile('user');
+    response.complete(
+      Response<void>(
+        requestOptions: RequestOptions(path: '/'),
+        statusCode: 204,
+      ),
+    );
+    await Future.wait([first, second]);
+    verify(() => dio.delete<void>(any())).called(1);
+    expect(preferences.getString('pwa.pushRemoval.user'), isNull);
+  });
+  test(
+    'should retain a newer removal when an older request finishes',
+    () async {
+      await client.disable('user');
+      when(() => platform.online).thenReturn(true);
+      final response = Completer<Response<void>>();
+      when(() => dio.delete<void>(any())).thenAnswer((_) => response.future);
+      final first = client.reconcile('user');
+      when(() => platform.online).thenReturn(false);
+      await client.disable('user');
+      response.complete(
+        Response<void>(
+          requestOptions: RequestOptions(path: '/'),
+          statusCode: 204,
+        ),
+      );
+      await first;
+      expect(preferences.getString('pwa.pushRemoval.user'), 'installation');
+      when(() => platform.online).thenReturn(true);
+      await client.reconcile('user');
+      expect(preferences.getString('pwa.pushRemoval.user'), isNull);
+      verify(() => dio.delete<void>(any())).called(2);
+    },
+  );
+  test('should unsubscribe when installation storage cannot be read', () async {
+    final storage = _Preferences();
+    when(() => storage.getString('pwa.installation.user'))
+        .thenThrow(StateError('storage unavailable'));
+    when(() => storage.setBool('pwa.pushEnabled.user', false))
+        .thenAnswer((_) async => true);
+    await expectLater(
+      PwaPushClient(platform, dio, storage).disable('user'),
+      throwsStateError,
+    );
+    verify(() => platform.setPushEnabled(enabled: false)).called(1);
+    verify(() => platform.unsubscribe()).called(1);
+  });
+  for (final failedWrite in ['pending', 'disabled']) {
+    for (final throws in [true, false]) {
+      test(
+        'should unsubscribe when $failedWrite storage ${throws ? 'throws' : 'rejects'}',
+        () async {
+          final storage = _Preferences();
+          when(() => storage.getString('pwa.installation.user'))
+              .thenReturn('installation');
+          when(() => storage.setString('pwa.pushRemoval.user', 'installation'))
+              .thenAnswer((_) async => true);
+          when(() => storage.setBool('pwa.pushEnabled.user', false))
+              .thenAnswer((_) async => true);
+          if (failedWrite == 'pending') {
+            when(
+              () => storage.setString('pwa.pushRemoval.user', 'installation'),
+            ).thenAnswer((_) async {
+              if (throws) throw StateError('storage unavailable');
+              return false;
+            });
+          } else {
+            when(() => storage.setBool('pwa.pushEnabled.user', false))
+                .thenAnswer((_) async {
+                  if (throws) throw StateError('storage unavailable');
+                  return false;
+                });
+          }
+          final failing = PwaPushClient(platform, dio, storage);
+          await expectLater(failing.disable('user'), throwsStateError);
+          verify(() => platform.setPushEnabled(enabled: false)).called(1);
+          verify(() => platform.unsubscribe()).called(1);
+        },
+      );
+    }
+  }
   for (final scenario in [
     (
       data: <String, dynamic>{'enabled': false},
