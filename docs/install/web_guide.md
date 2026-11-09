@@ -50,6 +50,54 @@ python tool/package_pwa.py
 - Deploy assets together and avoid long-lived caching of `index.html` and bootstrap
   files so releases do not leave users loading stale application code.
 
+## Production deployment — 2026-11-09
+
+The Web application is published at
+`https://colmeia.se7esistemassinop.com.br` on `62.72.11.49`.
+The deployed source is commit `04920d4e`; the packaged release is
+`4ef1f35cb04f16cabb5e` (51 static files). Reproduce its build with:
+
+```bash
+flutter build web --release --no-web-resources-cdn --no-wasm-dry-run \
+  --dart-define=API_BASE_URL=https://colmeia.se7esistemassinop.com.br/api/v1 \
+  --dart-define=USE_FAKE_BACKEND=false
+python tool/package_pwa.py
+```
+
+Operational locations on the host:
+
+- Releases: `/var/www/colmeia/releases/<release-id>`; Nginx serves the
+  `/var/www/colmeia/current` symlink. Upload and verify a complete release before
+  switching this symlink atomically; retain previous releases for rollback.
+- Virtual host: `/etc/nginx/sites-available/colmeia.se7esistemassinop.com.br`.
+- Pre-deployment Nginx backup: `/root/colmeia-deploy-20261109/nginx`.
+- Dedicated logs: `/var/log/nginx/colmeia-access.log` and
+  `/var/log/nginx/colmeia-error.log`.
+- Certificate: `/etc/letsencrypt/live/colmeia.se7esistemassinop.com.br/`.
+  Certbot uses `/var/www/certbot` for webroot renewal and the existing timer;
+  `renewal-hooks/deploy/colmeia-nginx-reload` validates and reloads Nginx after
+  this certificate renews. Contact: `cesar_carlos@msn.com`.
+
+The dedicated virtual host redirects HTTP to HTTPS, serves static files with
+revalidation, returns 404 for missing assets, and falls back to `index.html`
+for application routes. `/api/` and `/socket.io` use the existing local
+`plug_server_upstream`, with no proxy cache and no-store response headers.
+The proxy rejects foreign or opaque Origin values before removing Origin for
+the internal request, and forwards the real client IP. Authentication remains
+the backend's responsibility. No backend environment, container or existing
+site configuration was changed. Browser requests use the Colmeia origin;
+direct cross-origin calls to the hub are not enabled by this deployment.
+
+Deployment validation: static analysis passed; 45 tooling tests and eight
+worker/browser tests passed. Chrome rendered the live login at desktop/mobile
+widths without JavaScript exceptions, installed the release cache and reopened
+the login offline. The protected agent and Push-key routes returned 401 without
+credentials; the live WebSocket handshake succeeded. Existing sites retained
+their baseline HTTP statuses, and existing containers retained their IDs.
+Authenticated dashboards, complete offline packages and Push delivery still
+require acceptance with an authorized account. These checks do not establish
+full PWA business-flow acceptance.
+
 ## Browser behavior
 
 - Browser data can be evicted or cleared by the user. HTTPS is required for
