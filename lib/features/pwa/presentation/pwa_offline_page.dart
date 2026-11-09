@@ -13,6 +13,7 @@ import 'package:colmeia/features/pwa/application/pwa_package_service.dart';
 import 'package:colmeia/features/pwa/domain/offline_download_stage.dart';
 import 'package:colmeia/features/pwa/domain/offline_package.dart';
 import 'package:colmeia/features/pwa/domain/offline_package_exception.dart';
+import 'package:colmeia/features/pwa/domain/push_subscription_exception.dart';
 import 'package:colmeia/features/pwa/domain/push_subscriptions.dart';
 import 'package:colmeia/features/pwa/presentation/offline_report_projection.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -130,6 +131,12 @@ class _PwaOfflinePageState extends State<PwaOfflinePage> {
     } on Object catch (error) {
       _message = switch (error) {
         AppFailure() => error.displayMessage,
+        PushSubscriptionException(:final issue) => switch (issue) {
+          PushSubscriptionIssue.serverDisabled =>
+            'Notificações ainda não configuradas no servidor.',
+          PushSubscriptionIssue.permissionDenied => 'Permissão de notificações não concedida. Verifique as configurações do navegador.',
+          PushSubscriptionIssue.invalidResponse => 'A configuração de notificações recebida é inválida. Contate o suporte.',
+        },
         OfflinePackageException(:final issue) => switch (issue) {
           OfflinePackageIssue.connectionRequired =>
             'Conecte-se à internet para atualizar o pacote.',

@@ -131,15 +131,42 @@ Two acceptance blockers were reproduced:
   production access approval/revocation was performed to manufacture an event.
 
 The complete-package test froze its clock before subsequent live authorization
-requests. A local, uncommitted test adjustment used the live clock until the
+requests. The corrected test uses the live clock until the
 explicit expiration assertion, avoiding that artificial source of future-issued
 grants; the real clock-skew failure above remained. Scoped static analysis passed.
-That test adjustment is not part of this operational documentation delivery.
 
 Overview chart navigation labels saying “carregando” also describe lazy sections
 that have not been opened. Those labels alone do not prove an active or stuck
 request. Existing containers and the seven other sites retained their baseline
 identities/statuses during these checks; no service was restarted or reconfigured.
+
+### PWA client follow-up — 2026-11-09
+
+The authorization gateway now waits for a future issuance timestamp only when
+the difference is at most five seconds. It does not modify the grant, relax
+`permits`, or extend expiration; larger differences remain invalid. This addresses
+the small clock skew reproduced above without granting an extra offline window.
+Push activation now distinguishes disabled server configuration, malformed key
+responses and denied browser permission. Invalid/disabled configuration does not
+request browser permission. These corrections do not enable VAPID or establish
+live package/Push acceptance. Deployment evidence is recorded below.
+
+### Avatar CORS correction — 2026-11-09
+
+The profile returned a valid thumbnail URL on the Plug Server origin, but that
+image response lacked CORS headers. Flutter Web could therefore fall back to
+initials despite the image returning HTTP 200. The Plug Server Nginx virtual host
+now has a dedicated `/uploads/client-thumbnails/` location, aliased to
+`/var/lib/plug_server/uploads/client-thumbnails/`, with
+`Access-Control-Allow-Origin: https://colmeia.se7esistemassinop.com.br`.
+This applies only to already-public avatars; API authentication and other upload
+routes are unchanged. The location preserves seven-day expiration and adds HSTS
+and nosniff. No credentials or wildcard origin allowance was introduced.
+
+After `nginx -t` and a graceful reload, Chrome on the Colmeia origin successfully
+fetched and decoded the configured account's 256-by-256 WebP avatar. Existing
+cached responses may require a hard reload. The original virtual host is backed
+up under `/root/avatar-cors-20261109-125906/`.
 
 ### Shared Nginx and firewall review — 2026-11-09
 

@@ -1,4 +1,5 @@
 import 'package:colmeia/core/pwa/pwa_platform.dart';
+import 'package:colmeia/features/pwa/domain/push_subscription_exception.dart';
 import 'package:colmeia/features/pwa/domain/push_subscriptions.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -25,13 +26,28 @@ class PwaPushClient implements PushSubscriptions {
     final response = await _dio.get<Map<String, dynamic>>(
       '/client/me/pwa/push-key',
     );
-    final data = response.data!['data'] as Map;
-    if (data['enabled'] != true) {
-      throw StateError('Notificações ainda não configuradas no servidor.');
+    final data = response.data?['data'];
+    if (data is! Map || data['enabled'] is! bool) {
+      throw const PushSubscriptionException(
+        PushSubscriptionIssue.invalidResponse,
+      );
     }
-    final subscription = await _platform.subscribe(data['publicKey'] as String);
+    if (data['enabled'] == false) {
+      throw const PushSubscriptionException(
+        PushSubscriptionIssue.serverDisabled,
+      );
+    }
+    final key = data['publicKey'];
+    if (key is! String || key.trim().isEmpty) {
+      throw const PushSubscriptionException(
+        PushSubscriptionIssue.invalidResponse,
+      );
+    }
+    final subscription = await _platform.subscribe(key);
     if (subscription == null) {
-      throw StateError('Permissão de notificações não concedida.');
+      throw const PushSubscriptionException(
+        PushSubscriptionIssue.permissionDenied,
+      );
     }
     final id = await _installation(user);
     await _dio.put<void>(

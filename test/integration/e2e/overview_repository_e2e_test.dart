@@ -113,7 +113,7 @@ void main() {
         final gateway = PwaAuthorizationGateway(dio);
         final grant = await gateway.authorize(agent);
         final user = grant.userId;
-        var now = DateTime.now();
+        DateTime? now;
         final store = OfflinePackageStore(getIt<AppCacheStore>());
         final service = PwaPackageService(
           platform: createPwaPlatform(),
@@ -126,7 +126,7 @@ void main() {
             getIt<AgentClientTokenReader>(),
             getIt<LoadResumoTotalVendasMunicipioFilialPeriodoUseCase>(),
           ).call,
-          clock: () => now,
+          clock: () => now ?? DateTime.now(),
         );
         await service.synchronize(user, agent);
         var remoteCalls = 0;

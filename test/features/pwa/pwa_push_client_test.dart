@@ -1,5 +1,6 @@
 import 'package:colmeia/core/pwa/pwa_platform.dart';
 import 'package:colmeia/features/pwa/data/pwa_push_client.dart';
+import 'package:colmeia/features/pwa/domain/push_subscription_exception.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -60,5 +61,62 @@ void main() {
         .thenThrow(DioException(requestOptions: RequestOptions(path: '/')));
     await expectLater(client.reconcile('user'), throwsA(isA<DioException>()));
     expect(preferences.getString('pwa.pushRemoval.user'), 'installation');
+  });
+  for (final scenario in [
+    (
+      data: <String, dynamic>{'enabled': false},
+      issue: PushSubscriptionIssue.serverDisabled,
+    ),
+    (
+      data: <String, dynamic>{'enabled': true, 'publicKey': ''},
+      issue: PushSubscriptionIssue.invalidResponse,
+    ),
+    (data: <String, dynamic>{}, issue: PushSubscriptionIssue.invalidResponse),
+  ]) {
+    test(
+      'should report ${scenario.issue} before requesting browser permission',
+      () async {
+        when(() => dio.get<Map<String, dynamic>>(any())).thenAnswer(
+          (_) async => Response(
+            requestOptions: RequestOptions(path: '/'),
+            data: {'data': scenario.data},
+          ),
+        );
+        await expectLater(
+          client.enable('user'),
+          throwsA(
+            isA<PushSubscriptionException>().having(
+              (e) => e.issue,
+              'issue',
+              scenario.issue,
+            ),
+          ),
+        );
+        verifyNever(() => platform.subscribe(any()));
+        expect(preferences.getBool('pwa.pushEnabled.user'), isNull);
+      },
+    );
+  }
+  test('should report denied permission without enabling push', () async {
+    when(() => dio.get<Map<String, dynamic>>(any())).thenAnswer(
+      (_) async => Response(
+        requestOptions: RequestOptions(path: '/'),
+        data: {
+          'data': {'enabled': true, 'publicKey': 'key'},
+        },
+      ),
+    );
+    when(() => platform.subscribe('key')).thenAnswer((_) async => null);
+    await expectLater(
+      client.enable('user'),
+      throwsA(
+        isA<PushSubscriptionException>().having(
+          (e) => e.issue,
+          'issue',
+          PushSubscriptionIssue.permissionDenied,
+        ),
+      ),
+    );
+    expect(preferences.getBool('pwa.pushEnabled.user'), isNull);
   });
 }
