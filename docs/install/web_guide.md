@@ -84,8 +84,9 @@ for application routes. `/api/` and `/socket.io` use the existing local
 `plug_server_upstream`, with no proxy cache and no-store response headers.
 The proxy rejects foreign or opaque Origin values before removing Origin for
 the internal request, and forwards the real client IP. Authentication remains
-the backend's responsibility. No backend environment, container or existing
-site configuration was changed. Browser requests use the Colmeia origin;
+the backend's responsibility. The initial deployment did not change backend
+environments, containers or other sites; the subsequent shared Nginx changes
+are recorded below. Browser requests use the Colmeia origin;
 direct cross-origin calls to the hub are not enabled by this deployment.
 
 Deployment validation: static analysis passed; 45 tooling tests and eight
@@ -97,6 +98,172 @@ their baseline HTTP statuses, and existing containers retained their IDs.
 Authenticated dashboards, complete offline packages and Push delivery still
 require acceptance with an authorized account. These checks do not establish
 full PWA business-flow acceptance.
+
+### Authenticated production acceptance — 2026-11-09
+
+Validation used the configured E2E account in an isolated Chrome profile and
+the deployed Colmeia origin. Login succeeded, the authenticated agent catalog
+loaded, and the overview and sales pages opened. The strict
+`offline package overview returns complete bounded live data` E2E case passed
+against the production proxy for the configured agent and the last 30 days.
+This checks complete query results, not correctness of business totals against
+an independent ledger or every report/filter combination.
+The daily-sales UI was exercised through its branch selector and Apply actions;
+the configured branch and November 2026 filter completed and displayed the
+explicit no-sales-data state with an update timestamp. This validates the empty
+result path, not charts populated with production sales.
+
+Two acceptance blockers were reproduced:
+
+- Offline authorization returned HTTP 200 with the correct user/agent scope
+  and a 24-hour duration, but `issuedAt` was approximately 400 ms ahead of the
+  client clock at receipt. `OfflineAuthorization.permits` rejects future-issued
+  grants immediately. The real download button displayed the online-validation
+  message, and the strict complete-package E2E failed before downloading data.
+  Package publication, offline data export and full offline session restoration
+  therefore remain unproven. Do not extend the absolute expiry to work around
+  clock skew.
+- The authenticated Push-key endpoint returned `enabled: false` with no public
+  key. The real activation button displayed a generic connection error even
+  though the request succeeded; this message should distinguish disabled server
+  configuration. No browser subscription was created and no delivery was tested.
+  Enabling server VAPID configuration is a separate operational change; no
+  production access approval/revocation was performed to manufacture an event.
+
+The complete-package test froze its clock before subsequent live authorization
+requests. A local, uncommitted test adjustment used the live clock until the
+explicit expiration assertion, avoiding that artificial source of future-issued
+grants; the real clock-skew failure above remained. Scoped static analysis passed.
+That test adjustment is not part of this operational documentation delivery.
+
+Overview chart navigation labels saying “carregando” also describe lazy sections
+that have not been opened. Those labels alone do not prove an active or stuck
+request. Existing containers and the seven other sites retained their baseline
+identities/statuses during these checks; no service was restarted or reconfigured.
+
+### Shared Nginx and firewall review — 2026-11-09
+
+These changes apply to the shared production host, not to the Flutter artifact.
+Nginx configuration was backed up, checked with `nginx -t`, and gracefully
+reloaded. Applications, Docker containers and the Plug Server environment were
+not restarted or changed.
+
+**Nginx corrections**
+
+- Aligned TLS listeners on HTTP/2 and removed redundant `text/html` from
+  `gzip_types`; configuration validation now completes without the prior warnings.
+- Added `$upstream_connection`: ordinary HTTP requests omit the Connection header
+  so the existing Plug Server and Evolution upstream keepalive pools can be used;
+  WebSocket requests retain `Connection: upgrade`.
+- Reduced Evolution's connection-establishment timeout from 86,400 to 15 seconds.
+  Its long-running read/send timeouts remain unchanged.
+- Restored security headers lost through location-level `add_header` inheritance
+  in Colmeia, MCP and Plug Server static locations. Colmeia API responses avoid
+  duplicate security headers and retain `Referrer-Policy: no-referrer`.
+- Swagger CSS/JS filenames are not versioned: they now require revalidation
+  instead of 30-day immutable caching. Uploads retain their seven-day expiration
+  without a duplicate Cache-Control header.
+- Active access logs use the JSON `safe_main` format, defined before its first
+  use in `nginx.conf`. Fields include host, source IP, method, path, status,
+  response size, request/upstream duration, upstream status, request ID and
+  rate-limit outcome. Query strings, Referer, cookies and authorization headers
+  are omitted. Paths and IP addresses remain operational data; this is not
+  full anonymization or client-side error collection. Existing error logs and
+  historical access entries were not rewritten or sanitized.
+
+**Request limits**
+
+`/etc/nginx/conf.d/01-plug-rate-limit.conf` defines shared per-source-IP zones.
+`/etc/nginx/snippets/plug_edge_limits.conf` applies them to the HTTPS servers for
+both `plug-server.se7esistemassinop.com.br` and
+`colmeia.se7esistemassinop.com.br`. Switching between those origins does not
+create a fresh bucket.
+
+| Zone | Matched URI paths | Sustained rate | Excess burst |
+| --- | --- | --- | --- |
+| `plug_api` | Paths beginning `/api/` or `/auth/` | 150 requests/second | 300 |
+| `plug_login` | `/auth/login` or `/client-auth/login`, optionally prefixed by `/api/v1` | 60 requests/minute | 60 |
+| `plug_sensitive` | Same auth prefixes, ending in `/register` or `/password-recovery/request` | 90 requests/minute | 30 |
+
+Auth patterns also accept a trailing slash. Matching is path-based, regardless
+of HTTP method. Applicable limits accumulate; the general API limit also covers
+the normal versioned login and registration routes. Bursts use `nodelay`: requests
+within burst capacity are served immediately and excess requests return HTTP 429.
+No edge Retry-After header was added. Rejections use notice-level error logging;
+access logs expose `$limit_req_status`.
+
+Socket.IO handshakes and established WebSockets are excluded from these URI
+limits. Token refresh is subject to the general API limit, not the narrower login
+limit. This is edge protection, not per-account brute-force protection or a
+replacement for backend business-operation limits. Several backend limits remain
+disabled in the existing environment. The observed recent peak was 54 API
+requests/IP/second; this short sample does not establish all NAT/reconnection
+peaks. Monitor 429 outcomes before tightening thresholds.
+
+**Network exposure**
+
+| TCP port | Service | External IPv4 check before → after | Local access |
+| --- | --- | --- | --- |
+| 3000 | Chatwoot | Reachable → blocked | Preserved for Nginx |
+| 5433 | Docker-published Plug MCP PostgreSQL | Reachable → blocked | Preserved |
+| 8081 | Docker-published Evolution | Reachable → blocked | Preserved for Nginx |
+
+UFW's first rule denies incoming TCP traffic on `eth0` to these three ports for
+IPv4 and IPv6. Existing broader allow rules remain below it. Docker forwarding
+can bypass UFW INPUT rules, so IPv4/IPv6 `DOCKER-USER` also drops new incoming
+connections on `eth0` whose original destination port is 5433 or 8081. Matching
+uses conntrack's original destination port, before Docker port translation.
+Established connections, loopback and traffic originating on container bridges
+are not targeted. No containers were recreated or port bindings changed.
+
+Persistence is provided by:
+
+- `/usr/local/sbin/se7e-edge-firewall` (idempotent Docker rules).
+- `/etc/systemd/system/se7e-edge-firewall.service` (enabled, after Docker/UFW).
+- `/etc/systemd/system/docker.service.d/50-se7e-edge-firewall.conf`
+  (`ExecStartPost` reapplies the rules on Docker startup).
+
+SSH 22, HTTP 80, HTTPS 443 and existing RustDesk rules were preserved. External
+TCP probes succeeded for 22/80/443 and RustDesk 21116/21117. Ports
+3010/4000/5432/6379/7433 were already unreachable from the test client and remained
+so. Old UFW allowances for 3036/5432/6379 were not removed; services must not be
+rebound publicly without another exposure review. IPv6 rules were inspected,
+but external IPv6 reachability and reboot persistence were not exercised.
+
+**Evidence and recovery**
+
+All nine configured domains retained their previous root status: Chatwoot,
+dev-chat, Colmeia, Evolution QR, n8n, Plug Server and support returned 200;
+Evolution and MCP retained their existing root 404 responses. TLS validation
+passed. Plug Server and Colmeia WebSocket handshakes returned 101, the protected
+Colmeia agent route returned 401 without credentials, and a missing asset returned
+404. Container IDs were unchanged. These checks do not establish every service's
+authenticated workflow or continuous zero downtime.
+
+An isolated Nginx process using the deployed rate-limit definitions handled 85
+test requests: 61 returned 200 and 24 returned 429. No burst was sent to a business
+backend. A synthetic query/Referer marker was absent from the new access-log
+entries. Firewall rollback was armed during the change and cancelled after
+external and application checks succeeded.
+
+- Pre-Nginx-review backup: `/root/nginx-audit-20261109-123926/` contains the
+  previous `nginx/` tree and before/after HTTP evidence.
+- Pre-rate-limit/firewall backup: `/root/edge-hardening-20261109-124402/` contains
+  `nginx/`, `ufw/`, IPv4/IPv6 rule snapshots and container identities.
+- The latter directory's `rollback.sh` reverses only this firewall change and
+  removes its persistence files; it does not restore Nginx. Running it reopens
+  the previously exposed ports. Use it only for a confirmed connectivity regression.
+- To revert the rate limits, restore the backed-up `nginx.conf`,
+  `conf.d/01-plug-rate-limit.conf` and the Colmeia/Plug Server site files, then
+  remove the newly added `snippets/plug_edge_limits.conf`. Review differences
+  first so newer changes are not overwritten. Run `nginx -t` before
+  `systemctl reload nginx`, then repeat domain, API and WebSocket checks.
+
+The backups and active configuration live on the server; this repository records
+the operational state, not an automated provisioning or restore system.
+Reference behavior: [Nginx rate limiting](https://nginx.org/en/docs/http/ngx_http_limit_req_module.html),
+[header inheritance](https://nginx.org/en/docs/http/ngx_http_headers_module.html),
+and [Docker firewall rules](https://docs.docker.com/engine/network/firewall-iptables/).
 
 ## Browser behavior
 
