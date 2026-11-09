@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:colmeia/app/preferences/app_user_experience_preferences_controller.dart';
 import 'package:colmeia/app/theme/app_theme_mode_controller.dart';
 import 'package:colmeia/core/cache/app_cache_store.dart';
@@ -44,10 +42,13 @@ Future<void> registerInjectorCore(GetIt getIt) async {
     dispose: (platform) => platform.dispose(),
   );
   final cacheStore = await createAppCacheStore();
+  getIt.registerSingleton<AppCacheStore>(
+    cacheStore,
+    dispose: closeAppCacheStore,
+  );
   final sharedPreferences = await SharedPreferences.getInstance();
 
   getIt
-    ..registerSingleton<AppCacheStore>(cacheStore, dispose: closeAppCacheStore)
     ..registerLazySingleton<AppLocationGeocodeCache>(
       () => AppLocationGeocodeCache(getIt<AppCacheStore>()),
     )
@@ -90,15 +91,18 @@ Future<void> registerInjectorCore(GetIt getIt) async {
         feedUrlResolver: () => AppEnvironment.autoUpdateFeedUrl,
         preferencesStore: getIt<AppUserPreferencesStore>(),
       ),
+      dispose: (controller) => controller.dispose(),
     )
     // App scope — [ColmeiaBootstrap] exposes these via Provider with noop dispose.
     ..registerLazySingleton<AppThemeModeController>(
       () => AppThemeModeController(getIt<AppUserPreferencesStore>()),
+      dispose: (controller) => controller.dispose(),
     )
     ..registerLazySingleton<AppUserExperiencePreferencesController>(
       () => AppUserExperiencePreferencesController(
         getIt<AppUserPreferencesStore>(),
       ),
+      dispose: (controller) => controller.dispose(),
     )
     ..registerLazySingleton<FlutterSecureStorage>(createAppSecureStorage)
     ..registerLazySingleton<SessionStorage>(
@@ -115,7 +119,10 @@ Future<void> registerInjectorCore(GetIt getIt) async {
     ..registerLazySingleton<AuthSessionAccessor>(
       () => AuthSessionAccessor(getIt<AuthLocalDataSource>()),
     )
-    ..registerLazySingleton<AuthSessionEvents>(AuthSessionEvents.new)
+    ..registerLazySingleton<AuthSessionEvents>(
+      AuthSessionEvents.new,
+      dispose: (events) => events.dispose(),
+    )
     ..registerLazySingleton<Dio>(
       AppDioClient.create,
       instanceName: 'refresh_dio',
@@ -158,7 +165,7 @@ Future<void> registerInjectorCore(GetIt getIt) async {
           : ApiUserContextRemoteDataSource(getIt<Dio>()),
     );
 
-  unawaited(_purgeLocationGeocodeCache(getIt));
+  await _purgeLocationGeocodeCache(getIt);
 }
 
 Future<void> _purgeLocationGeocodeCache(GetIt getIt) async {

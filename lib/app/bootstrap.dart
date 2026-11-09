@@ -129,6 +129,7 @@ Future<void> _executeBootstrapPhases() async {
 
 Future<void> _bootstrapAppRunner() async {
   await setupDependencies();
+  validateBootstrapDependencies();
   await configureSentryBootScope();
   unawaited(
     AppBrazilMapStaticData.precacheBrazilUfGeoJsonAsset().catchError(
@@ -219,15 +220,37 @@ bool _isHiveRecoverableBootstrapPhase(String phase) =>
     phase == 'setup_dependencies';
 
 Future<void> _clearLocalCacheAndRetryBootstrap() async {
+  await getIt.reset();
   await clearAppCacheForRecovery();
   await _retryBootstrap();
 }
 
 Future<void> _retryBootstrap() async {
-  if (getIt.isRegistered<AppCacheStore>()) {
-    await getIt.reset();
-  }
+  await getIt.reset();
   await _runBootstrapOrShowFailure();
+}
+
+@visibleForTesting
+void validateBootstrapDependencies() {
+  getIt<AuthController>();
+  getIt<CurrentUserContextController>();
+  getIt<AppThemeModeController>();
+  getIt<AppUserExperiencePreferencesController>();
+  getIt<WindowsAutoUpdateController>();
+  getIt<CacheRefreshCoordinator>();
+  getIt<AgentPresenceStream>();
+  getIt<PwaPlatform>();
+  getIt<PwaPackageService>();
+  getIt<PushSubscriptions>();
+  getIt<AppCacheStore>();
+  getIt<CacheRefreshLock>();
+  if (AppEnvironment.consumerSocketLifecycleEnabled) {
+    getIt<ConsumerSocketConnection>();
+    getIt<SocketMetricsListener>();
+  }
+  if (getIt.isRegistered<RelayConversationPreWarmer>()) {
+    getIt<RelayConversationPreWarmer>();
+  }
 }
 
 Future<void> _captureBootstrapException({

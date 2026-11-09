@@ -115,5 +115,6 @@ void registerInjectorAuth(GetIt getIt) {
         registrationPreferencesService:
             getIt<AuthRegistrationPreferencesService>(),
       ),
+      dispose: (controller) => controller.dispose(),
     );
 }

@@ -59,6 +59,7 @@ void registerInjectorPresentation(GetIt getIt) {
         agentQueryTargetWarmUpCoordinator:
             getIt<AgentQueryTargetWarmUpCoordinator>(),
       ),
+      dispose: (controller) => controller.dispose(),
     )
     ..registerFactory<OverviewController>(
       () => OverviewController(

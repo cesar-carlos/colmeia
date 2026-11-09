@@ -15,12 +15,28 @@ import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 
 final GetIt getIt = GetIt.instance;
+Future<void>? _pendingSetup;
 
-Future<void> setupDependencies() async {
+Future<void> setupDependencies() {
+  return _pendingSetup ??= _setupDependencies().whenComplete(() {
+    _pendingSetup = null;
+  });
+}
+
+Future<void> _setupDependencies() async {
   if (getIt.isRegistered<CurrentUserContextController>()) {
     return;
   }
 
+  try {
+    await _registerDependencies();
+  } on Object {
+    await getIt.reset();
+    rethrow;
+  }
+}
+
+Future<void> _registerDependencies() async {
   await registerInjectorCore(getIt);
   registerInjectorAuth(getIt);
   registerInjectorUserContext(getIt);

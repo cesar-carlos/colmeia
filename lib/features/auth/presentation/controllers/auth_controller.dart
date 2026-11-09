@@ -13,6 +13,7 @@ import 'package:colmeia/features/auth/application/usecases/restore_session_use_c
 import 'package:colmeia/features/auth/domain/entities/auth_session.dart';
 import 'package:colmeia/features/auth/presentation/state/auth_presentation_state.dart';
 import 'package:flutter/foundation.dart';
+import 'package:result_dart/result_dart.dart';
 
 class AuthController extends ChangeNotifier implements AuthenticationGate {
   AuthController({
@@ -35,6 +36,10 @@ class AuthController extends ChangeNotifier implements AuthenticationGate {
 
   AuthPresentationState _presentation = const AuthPresentationState();
   Future<void>? _restoreSessionFuture;
+  Future<void>? _signInFuture;
+  Future<void>? _signOutFuture;
+  int _sessionGeneration = 0;
+  bool _disposed = false;
   late final StreamSubscription<AuthSessionEvent>
   _authSessionEventsSubscription;
 
@@ -49,8 +54,15 @@ class AuthController extends ChangeNotifier implements AuthenticationGate {
   String? get successMessage => _presentation.successMessage;
 
   void _handleAuthSessionEvent(AuthSessionEvent event) {
-    if (event.type != AuthSessionEventType.invalidated ||
-        !_presentation.isAuthenticated) {
+    if (_disposed ||
+        event.type != AuthSessionEventType.invalidated ||
+        _signOutFuture != null) {
+      return;
+    }
+    _sessionGeneration++;
+    if (!_presentation.isAuthenticated &&
+        !_presentation.isRestoringSession &&
+        !_presentation.isLoading) {
       return;
     }
 
@@ -65,6 +77,7 @@ class AuthController extends ChangeNotifier implements AuthenticationGate {
   }
 
   void clearTransientFeedback() {
+    if (_disposed) return;
     _presentation = _presentation.copyWith(
       clearErrorMessage: true,
       clearSuccessMessage: true,
@@ -73,6 +86,7 @@ class AuthController extends ChangeNotifier implements AuthenticationGate {
   }
 
   Future<void> initialize() {
+    if (_disposed || _signOutFuture != null) return Future.value();
     AppLogger.debug(
       'Initializing authentication controller',
       context: const <String, Object?>{
@@ -83,13 +97,21 @@ class AuthController extends ChangeNotifier implements AuthenticationGate {
   }
 
   Future<void> _restoreSession() async {
+    final generation = _sessionGeneration;
     _presentation = _presentation.copyWith(
       isRestoringSession: true,
       clearErrorMessage: true,
     );
     notifyListeners();
 
-    final result = await _restoreSessionUseCase();
+    if (!_isCurrent(generation)) return;
+    final result = await Future.sync(_restoreSessionUseCase.call)
+        .onError<Object>(
+          (error, stack) => Failure<AuthSession, AppFailure>(
+            mapToAppFailure(error, stackTrace: stack),
+          ),
+        );
+    if (!_isCurrent(generation)) return;
 
     result.fold(
       (session) {
@@ -128,11 +150,24 @@ class AuthController extends ChangeNotifier implements AuthenticationGate {
   Future<void> signIn({
     required String email,
     required String password,
+  }) {
+    if (_disposed || _signOutFuture != null) return Future.value();
+    return _signInFuture ??= _signIn(
+      email: email,
+      password: password,
+    ).whenComplete(() => _signInFuture = null);
+  }
+
+  Future<void> _signIn({
+    required String email,
+    required String password,
   }) async {
+    final generation = _sessionGeneration;
     final restoreSessionFuture = _restoreSessionFuture;
     if (restoreSessionFuture != null) {
       await restoreSessionFuture;
     }
+    if (!_isCurrent(generation)) return;
 
     AppLogger.debug(
       'Starting sign in flow',
@@ -148,6 +183,7 @@ class AuthController extends ChangeNotifier implements AuthenticationGate {
     );
     notifyListeners();
 
+    if (!_isCurrent(generation)) return;
     final authEmail = _parseEmailAddress(
       email,
       operation: 'signIn',
@@ -159,14 +195,30 @@ class AuthController extends ChangeNotifier implements AuthenticationGate {
       return;
     }
 
-    final result = await _loginUseCase(
-      email: authEmail.value,
-      password: password,
-    );
+    final result =
+        await Future.sync(
+          () => _loginUseCase(email: authEmail.value, password: password),
+        ).onError<Object>(
+          (error, stack) => Failure<AuthSession, AppFailure>(
+            mapToAppFailure(error, stackTrace: stack),
+          ),
+        );
+    if (!_isCurrent(generation)) return;
 
     result.fold(
       (session) {
-        unawaited(_registrationPreferencesService.clearPollToken());
+        unawaited(
+          _registrationPreferencesService.clearPollToken().catchError((
+            Object error,
+            StackTrace stack,
+          ) {
+            AppLogger.warning(
+              'Unable to clear registration poll token',
+              error: error,
+              stackTrace: stack,
+            );
+          }),
+        );
         _presentation = _presentation.copyWith(
           session: session,
           clearErrorMessage: true,
@@ -200,7 +252,15 @@ class AuthController extends ChangeNotifier implements AuthenticationGate {
     notifyListeners();
   }
 
-  Future<void> signOut() async {
+  Future<void> signOut() {
+    if (_disposed) return Future.value();
+    return _signOutFuture ??= _signOut().whenComplete(
+      () => _signOutFuture = null,
+    );
+  }
+
+  Future<void> _signOut() async {
+    final generation = ++_sessionGeneration;
     AppLogger.debug(
       'Starting sign out flow',
       context: const <String, Object?>{
@@ -208,12 +268,22 @@ class AuthController extends ChangeNotifier implements AuthenticationGate {
       },
     );
     _presentation = _presentation.copyWith(
+      clearSession: true,
       isLoading: true,
+      isRestoringSession: false,
       clearSuccessMessage: true,
     );
     notifyListeners();
 
-    final result = await _logoutUseCase();
+    // Let pending authentication writes finish before clearing persisted data.
+    await _restoreSessionFuture;
+    await _signInFuture;
+    final result = await Future.sync(_logoutUseCase.call).onError<Object>(
+      (error, stack) => Failure<Unit, AppFailure>(
+        mapToAppFailure(error, stackTrace: stack),
+      ),
+    );
+    if (!_isCurrent(generation)) return;
     result.fold(
       (_) {
         _presentation = _presentation.copyWith(
@@ -248,9 +318,14 @@ class AuthController extends ChangeNotifier implements AuthenticationGate {
 
   @override
   void dispose() {
+    _disposed = true;
+    _sessionGeneration++;
     unawaited(_authSessionEventsSubscription.cancel());
     super.dispose();
   }
+
+  bool _isCurrent(int generation) =>
+      !_disposed && generation == _sessionGeneration;
 
   EmailAddress? _parseEmailAddress(
     String email, {

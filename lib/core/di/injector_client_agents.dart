@@ -35,6 +35,7 @@ import 'package:colmeia/features/client_agents/application/usecases/sync_pending
 import 'package:colmeia/features/client_agents/application/usecases/update_client_agent_profile_use_case.dart';
 import 'package:colmeia/features/client_agents/data/datasources/client_agents_local_datasource.dart';
 import 'package:colmeia/features/client_agents/data/datasources/client_agents_remote_datasource.dart';
+import 'package:colmeia/features/client_agents/data/disabled_agent_presence_stream.dart';
 import 'package:colmeia/features/client_agents/data/repositories/client_agents_repository_impl.dart';
 import 'package:colmeia/features/client_agents/data/repositories/remote_agent_client_token_repository.dart';
 import 'package:colmeia/features/client_agents/data/socket/agent_command_presence_hinter.dart';
@@ -232,6 +233,11 @@ void registerInjectorClientAgents(GetIt getIt) {
         ),
         dispose: (poller) => poller.dispose(),
       );
+  } else {
+    getIt.registerLazySingleton<AgentPresenceStream>(
+      () => const DisabledAgentPresenceStream(),
+      dispose: (stream) => stream.dispose(),
+    );
   }
 
   // Relay conversation pre-warm: opens `relay:conversation.start` for the

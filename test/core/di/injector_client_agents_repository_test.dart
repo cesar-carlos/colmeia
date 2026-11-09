@@ -3,6 +3,8 @@ import 'package:colmeia/core/di/injector_cache_refresh.dart';
 import 'package:colmeia/core/di/injector_client_agents.dart';
 import 'package:colmeia/features/agent_queries/data/scheduling/catalog_cache_refresh_presence.dart';
 import 'package:colmeia/features/agent_queries/domain/scheduling/cache_refresh_ports.dart';
+import 'package:colmeia/features/client_agents/data/socket/socket_agent_presence_stream.dart';
+import 'package:colmeia/features/client_agents/domain/ports/agent_presence_stream.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -13,6 +15,27 @@ import 'package:mocktail/mocktail.dart';
 class _MockAppCacheStore extends Mock implements AppCacheStore {}
 
 void main() {
+  test(
+    'should resolve presence without Socket when listeners are disabled',
+    () async {
+      dotenv.loadFromString(
+        envString: 'SOCKET_PRESENCE_LISTENER_ENABLED=false',
+      );
+      addTearDown(dotenv.clean);
+      final getIt = GetIt.asNewInstance();
+      addTearDown(getIt.reset);
+
+      registerInjectorClientAgents(getIt);
+
+      final presence = getIt<AgentPresenceStream>();
+      expect(await presence.events().toList(), isEmpty);
+      expect(await presence.events().toList(), isEmpty);
+      expect(getIt.isRegistered<SocketAgentPresenceStream>(), isFalse);
+      await presence.dispose();
+      await presence.dispose();
+    },
+  );
+
   test(
     'should resolve scheduler presence using the shared agents repository',
     () {

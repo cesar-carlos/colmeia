@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/network/auth_session_events.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/auth/application/auth_registration_preferences_service.dart';
@@ -22,6 +25,7 @@ void main() {
     late _MockAuthRepository repository;
     late AuthSessionEvents sessionEvents;
     late AuthController controller;
+    var disposed = false;
 
     final session = AuthSession(
       userId: 'client-1',
@@ -32,6 +36,7 @@ void main() {
     );
 
     setUp(() async {
+      disposed = false;
       SharedPreferences.setMockInitialValues(<String, Object>{});
       repository = _MockAuthRepository();
       sessionEvents = AuthSessionEvents();
@@ -45,6 +50,126 @@ void main() {
           prefs,
         ),
       );
+    });
+
+    tearDown(() async {
+      if (!disposed) controller.dispose();
+      await sessionEvents.dispose();
+    });
+
+    test('should ignore restoration completed after disposal', () async {
+      final pending = Completer<AppResult<AuthSession>>();
+      when(repository.restoreSession).thenAnswer((_) => pending.future);
+      final operation = controller.initialize();
+      controller.dispose();
+      disposed = true;
+      pending.complete(Success(session));
+      await operation;
+      expect(controller.session, isNull);
+    });
+
+    test('should invalidate a pending restoration', () async {
+      final pending = Completer<AppResult<AuthSession>>();
+      when(repository.restoreSession).thenAnswer((_) => pending.future);
+      final operation = controller.initialize();
+      sessionEvents.notifyInvalidated();
+      await Future<void>.delayed(Duration.zero);
+      pending.complete(Success(session));
+      await operation;
+      expect(controller.session, isNull);
+      expect(controller.isRestoringSession, isFalse);
+    });
+
+    test(
+      'should wait for pending login before logout without publishing it',
+      () async {
+        final pending = Completer<AppResult<AuthSession>>();
+        when(
+          () => repository.login(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+          ),
+        ).thenAnswer((_) => pending.future);
+        when(repository.logout).thenAnswer((_) async => const Success(unit));
+        final login = controller.signIn(
+          email: 'client@corp.com',
+          password: 'password',
+        );
+        await Future<void>.delayed(Duration.zero);
+        final logout = controller.signOut();
+        verifyNever(repository.logout);
+        pending.complete(Success(session));
+        await Future.wait([login, logout]);
+        verify(repository.logout).called(1);
+        expect(controller.isAuthenticated, isFalse);
+        expect(controller.isLoading, isFalse);
+      },
+    );
+
+    test(
+      'should block access immediately and coalesce pending logout',
+      () async {
+        when(repository.restoreSession)
+            .thenAnswer((_) async => Success(session));
+        final pending = Completer<AppResult<Unit>>();
+        when(repository.logout).thenAnswer((_) => pending.future);
+        await controller.initialize();
+        final first = controller.signOut();
+        final second = controller.signOut();
+        expect(controller.session, isNull);
+        expect(first, same(second));
+        await controller.signIn(email: 'client@corp.com', password: 'password');
+        verifyNever(
+          () => repository.login(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+          ),
+        );
+        pending.complete(const Success(unit));
+        await first;
+        verify(repository.logout).called(1);
+      },
+    );
+
+    test('should coalesce concurrent login attempts', () async {
+      final pending = Completer<AppResult<AuthSession>>();
+      when(
+        () => repository.login(
+          email: any(named: 'email'),
+          password: any(named: 'password'),
+        ),
+      ).thenAnswer((_) => pending.future);
+      final first = controller.signIn(
+        email: 'client@corp.com',
+        password: 'password',
+      );
+      final second = controller.signIn(
+        email: 'client@corp.com',
+        password: 'password',
+      );
+      expect(first, same(second));
+      pending.complete(Success(session));
+      await first;
+      verify(
+        () => repository.login(
+          email: any(named: 'email'),
+          password: any(named: 'password'),
+        ),
+      ).called(1);
+    });
+
+    test('should allow login after restoration unexpectedly throws', () async {
+      when(repository.restoreSession).thenThrow(StateError('storage failed'));
+      when(
+        () => repository.login(
+          email: any(named: 'email'),
+          password: any(named: 'password'),
+        ),
+      ).thenAnswer((_) async => Success(session));
+      await controller.initialize();
+      expect(controller.isRestoringSession, isFalse);
+      await controller.signIn(email: 'client@corp.com', password: 'password');
+      expect(controller.isAuthenticated, isTrue);
     });
 
     test(
