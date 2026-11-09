@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/data/cache/strategies/resumo_total_diario_vendas_cache_strategy.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/caching/caching_resumo_total_diario_vendas_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_cache_invalidate_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/resumo_total_diario_vendas_row.dart';
@@ -28,6 +31,90 @@ void main() {
         clock: () => clock,
       );
     });
+
+    for (final days in [1, 2]) {
+      for (final cancel in [false, true]) {
+        test(
+          'should prevent late $days-day writes after ${cancel ? 'cancellation' : 'invalidation'}',
+          () async {
+            final started = Completer<void>();
+            final release = Completer<void>();
+            fakeDelegate
+              ..onLoad = () async {
+                if (!started.isCompleted) started.complete();
+                await release.future;
+              }
+              ..rows = [
+                for (var day = 1; day <= days; day++)
+                  ResumoTotalDiarioVendasRow(
+                    codEmpresa: 1,
+                    codFilial: 1,
+                    dataVenda: DateTime(2026, 6, day),
+                    qtdVendas: day,
+                    valorTotalDiarioVenda: day.toDouble(),
+                  ),
+              ];
+            final filter = ResumoTotalDiarioVendasFilter(
+              dataVendaInicio: DateTime(2026, 6),
+              dataVendaFim: DateTime(2026, 6, days, 23, 59, 59),
+            );
+            final scope = AgentQueriesCancelScope();
+            final pending = cachingRepo.load(
+              userId: 'u1',
+              agentId: 'a1',
+              filter: filter,
+              cancelScope: scope,
+            );
+            await started.future;
+            if (cancel) {
+              scope.cancelAll();
+            } else {
+              await cachingRepo.invalidateCache(
+                const AgentQueryCacheInvalidateUser(userId: 'u1'),
+              );
+            }
+            release.complete();
+            final result = await pending;
+            if (cancel) {
+              expect(
+                result.exceptionOrNull(),
+                isA<OperationCancelledFailure>(),
+              );
+            } else {
+              expect(result.isSuccess(), isTrue);
+            }
+            for (var day = 1; day <= days; day++) {
+              expect(
+                await cachingRepo.factsStore.readPayload(
+                  storageKey: strategy.storageKey(
+                    userId: 'u1',
+                    agentId: 'a1',
+                    bucketId: '2026-06-0$day',
+                    rangeFilter: filter,
+                  ),
+                  expectedSchemaVersion: strategy.schemaVersion,
+                ),
+                isNull,
+              );
+            }
+            fakeDelegate.onLoad = null;
+            await cachingRepo.load(userId: 'u1', agentId: 'a1', filter: filter);
+            expect(
+              await cachingRepo.factsStore.readPayload(
+                storageKey: strategy.storageKey(
+                  userId: 'u1',
+                  agentId: 'a1',
+                  bucketId: '2026-06-01',
+                  rangeFilter: filter,
+                ),
+                expectedSchemaVersion: strategy.schemaVersion,
+              ),
+              isNotNull,
+            );
+          },
+        );
+      }
+    }
 
     test(
       'defaultLoad reads closed bucket from store without delegate',
@@ -307,6 +394,7 @@ void main() {
 
 final class _FakeDelegate implements ResumoTotalDiarioVendasRepository {
   int loadCount = 0;
+  Future<void> Function()? onLoad;
   List<ResumoTotalDiarioVendasRow> rows = const <ResumoTotalDiarioVendasRow>[];
 
   @override
@@ -322,6 +410,7 @@ final class _FakeDelegate implements ResumoTotalDiarioVendasRepository {
     AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
   }) async {
     loadCount++;
+    await onLoad?.call();
     return Success<List<ResumoTotalDiarioVendasRow>, AppFailure>(rows);
   }
 }

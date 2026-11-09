@@ -1,3 +1,4 @@
+import 'package:colmeia/core/cache/app_cache_store.dart';
 import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/features/agent_queries/application/orchestration/agent_query_plan_builder.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_across_agents_use_case.dart';
@@ -94,7 +95,10 @@ void registerInjectorSales(GetIt getIt) {
       ),
     )
     ..registerLazySingleton<SalesLiveMapCatalogDiskCache>(
-      () => SalesLiveMapCatalogDiskCache(getIt<SharedPreferences>()),
+      () => SalesLiveMapCatalogDiskCache(
+        getIt<AppCacheStore>(),
+        legacyPreferences: getIt<SharedPreferences>(),
+      ),
     )
     ..registerLazySingleton<SalesLiveMapCatalogCache>(
       () => getIt<SalesLiveMapCatalogDiskCache>(),

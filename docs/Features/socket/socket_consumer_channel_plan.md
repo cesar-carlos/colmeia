@@ -36,8 +36,8 @@
 >
 > - `plug_server/docs/socket_relay_protocol.md`
 > - `plug_server/docs/socket_client_sdk.md`
-> - `plug_server/docs/api_rest_bridge.md`
-> - `plug_server/docs/client_agent_business_rules.md`
+> - `plug_server/docs/api/api_rest_bridge.md`
+> - `plug_server/docs/api/client_agent_business_rules.md`
 > - `plug_server/docs/performance_hub_agent.md`
 > - resumo local: `docs/plug_server_docs_index_for_colmeia.md`,
 >   `docs/bridge_agent_sql_api_options.md`
@@ -219,7 +219,7 @@ linha 122) — o gate é controlado por `SOCKET_CONSUMER_ROLES`. O
 _default no código_ já inclui `client` (`user,admin,client`,
 linha 88), e o `.env.example` do hub também — mas a instância de
 produção atual está com `SOCKET_CONSUMER_ROLES=user,admin` (sem
-`client`). Bate com a nota em `plug_server/docs/api_rest_bridge.md`
+`client`). Bate com a nota em `plug_server/docs/api/api_rest_bridge.md`
 linha 77.
 
 **Ação operacional do lado do servidor:**

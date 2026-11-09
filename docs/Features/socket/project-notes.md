@@ -4,7 +4,7 @@ Caderno vivo para decisões, integrações e lembretes operacionais. As regras c
 
 ## Visão geral
 
-- **Stack:** Flutter (Android e iOS), Material 3, `go_router`, `provider`, `dio`, `get_it`.
+- **Stack:** Flutter (Android, Windows desktop, and Web), Material 3, `go_router`, `provider`, `dio`, `get_it`.
 - **Arquitetura:** por feature (`presentation` / `application` / `domain` / `data`); detalhes em `clean_architecture.mdc`.
 
 ## Ambiente e build
@@ -37,7 +37,7 @@ flutter build apk --dart-define=SENTRY_DSN=https://...@...ingest.sentry.io/...
 | Caminho                                      | Conteúdo (resumo)                                                                                                                                                                                              |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `docs/analysis/`                             | Análises em texto                                                                                                                                                                                              |
-| `docs/bridge_agent_sql_api_options.md`       | Resumo das opções do bridge (`multi_result`, batch, paginação); spec canónica em `plug_server/docs/api_rest_bridge.md`                                                                                         |
+| `docs/bridge_agent_sql_api_options.md`       | Resumo das opções do bridge (`multi_result`, batch, paginação); spec canónica em `plug_server/docs/api/api_rest_bridge.md`                                                                                         |
 | `docs/plug_server_docs_index_for_colmeia.md` | Mapa da pasta `plug_server/docs` (REST vs socket, relay, negócio Client/Agent, limites, multi-instância)                                                                                                       |
 | Relatórios agregados multi-agente            | `AgentQueryExecutionReport` + `agent_query_execution_report_resumo_parcelas.dart`: `chartRowsWeek` / `chartRowsFilledPeriod` para séries completas; `max_rows` em `agent_queries_bounded_result_max_rows.dart` |
 | `docs/design/`                               | Referências de design                                                                                                                                                                                          |
@@ -65,11 +65,11 @@ dart format lib test
 | Rotas e nomes                          | `lib/app/router/app_routes.dart`, composição em `app_router.dart`   |
 | Injeção de dependência                 | `lib/core/di/injector*.dart`                                        |
 | Cliente HTTP                           | `lib/core/network/app_dio_client.dart`                              |
-| Cache local (Hive) e prefixos de chave | `lib/core/cache/`, datasources em `features/*/data/`                |
+| Local cache (`AppCacheStore`) e prefixos de chave | `lib/core/cache/`, datasources em `features/*/data/`                |
 
 ## Plataformas e escopo
 
-- **Alvo:** Android e iOS (app corporativo; evitar expandir web/desktop sem necessidade).
+- **Alvo:** Android, Windows desktop, and Web (corporate application).
 - **Web:** se fizer build web, há estratégia de URL em `lib/app/web_url_strategy*.dart` e `<base href>` no `web/index.html`.
 
 ## Design e UX

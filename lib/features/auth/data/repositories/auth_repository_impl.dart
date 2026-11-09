@@ -20,7 +20,12 @@ class AuthRepositoryImpl implements AuthRepository {
     required this._remoteDataSource,
     required this._appCacheStore,
     this._sessionEvents,
+    this._offlineSessionAllowed,
+    this.beforeLocalLogout,
   });
+
+  final Future<bool?> Function(String userId)? _offlineSessionAllowed;
+  final Future<void> Function(String userId)? beforeLocalLogout;
 
   final AuthLocalDataSource _localDataSource;
   final AuthRemoteDataSource _remoteDataSource;
@@ -479,6 +484,16 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<AppResult<Unit>> logout() async {
     try {
       final storedSession = await _localDataSource.readSession();
+      _sessionEvents?.notifyInvalidated();
+      if (storedSession != null) {
+        try {
+          await beforeLocalLogout?.call(storedSession.userId);
+        } on Object {
+          AppLogger.warning(
+            'PWA logout cleanup failed; local session will still be cleared',
+          );
+        }
+      }
       if (storedSession != null) {
         await _remoteDataSource.logout(
           refreshToken: storedSession.refreshToken,
@@ -552,6 +567,18 @@ class AuthRepositoryImpl implements AuthRepository {
       }
 
       final session = authSessionModel.toEntity();
+      final offlineAccess = await _offlineSessionAllowed?.call(session.userId);
+      if (offlineAccess != null) {
+        return offlineAccess
+            ? Success<AuthSession, AppFailure>(session)
+            : const Failure<AuthSession, AppFailure>(
+                SessionFailure(
+                  message: 'Offline authorization unavailable or expired',
+                  userMessage:
+                      'Conecte-se para validar seu acesso aos dados locais.',
+                ),
+              );
+      }
 
       if (session.isExpired) {
         try {
@@ -568,6 +595,15 @@ class AuthRepositoryImpl implements AuthRepository {
           );
           return Success<AuthSession, AppFailure>(refreshedSession.toEntity());
         } on Object catch (error, stackTrace) {
+          if (error is DioException &&
+              mapToAppFailure(error, stackTrace: stackTrace).isTransient) {
+            if (await _offlineSessionAllowed?.call(session.userId) ?? false) {
+              return Success<AuthSession, AppFailure>(session);
+            }
+            return Failure<AuthSession, AppFailure>(
+              mapToAppFailure(error, stackTrace: stackTrace),
+            );
+          }
           await _localDataSource.clearSession();
           // Broadcast the invalidation so other consumers wired to
           // `AuthSessionEvents` (typically the consumer socket

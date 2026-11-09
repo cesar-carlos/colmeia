@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/network/auth_session_events.dart';
 import 'package:colmeia/core/observability/socket/socket_channel_metrics.dart';
@@ -14,6 +16,133 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('SocketWithRestFallbackAgentQueriesRemoteDataSource', () {
     final request = _request('SELECT 1');
+
+    test(
+      'should ignore an old session failure without replaying it through REST',
+      () async {
+        final pending = Completer<Map<String, dynamic>>();
+        final socket = _RecordingDataSource()..pending = pending.future;
+        final rest = _RecordingDataSource();
+        final fallback = SocketWithRestFallbackAgentQueriesRemoteDataSource(
+          socketDelegate: socket,
+          restDelegate: rest,
+        );
+        addTearDown(fallback.dispose);
+        final result = _capture(fallback.postSqlExecute(request));
+        fallback.resetLatch(reason: 'new_session');
+        pending.completeError(
+          const SocketDispatchUnauthorized(message: 'old session'),
+        );
+        expect(await result, isA<SocketDispatchCancelled>());
+        expect(rest.callCount, 0);
+        expect(fallback.isLatchedToRest, isFalse);
+      },
+    );
+
+    test(
+      'should not let a cancelled batch open the temporary fallback',
+      () async {
+        final pending = Completer<Map<String, dynamic>>();
+        final socket = _RecordingDataSource()..pending = pending.future;
+        final rest = _RecordingDataSource();
+        final scope = AgentQueriesCancelScope();
+        final fallback = SocketWithRestFallbackAgentQueriesRemoteDataSource(
+          socketDelegate: socket,
+          restDelegate: rest,
+          transientFailureThreshold: 1,
+        );
+        addTearDown(fallback.dispose);
+        final result = _capture(
+          fallback.postSqlExecuteBatch(_batchRequest(), cancelScope: scope),
+        );
+        scope.cancelAll();
+        pending.completeError(
+          const RelayConversationLost(message: 'disconnected'),
+        );
+        expect(await result, isA<SocketDispatchCancelled>());
+        expect(fallback.isTemporarilyLatchedToRest, isFalse);
+        expect(rest.callCount, 0);
+      },
+    );
+
+    test('should allow only one recovery probe per agent', () async {
+      var now = DateTime.utc(2026, 10, 25);
+      final socket = _RecordingDataSource(
+        throwOn: const SocketDispatchTimeout(message: 'timeout'),
+      );
+      final rest = _RecordingDataSource(
+        response: <String, dynamic>{'source': 'rest'},
+      );
+      final fallback = SocketWithRestFallbackAgentQueriesRemoteDataSource(
+        socketDelegate: socket,
+        restDelegate: rest,
+        transientFailureThreshold: 1,
+        clock: () => now,
+      );
+      addTearDown(fallback.dispose);
+      await _capture(fallback.postSqlExecute(request));
+      now = now.add(const Duration(minutes: 2));
+      final pending = Completer<Map<String, dynamic>>();
+      socket.pending = pending.future;
+      final probe = fallback.postSqlExecute(request);
+      final concurrent = fallback.postSqlExecuteBatch(_batchRequest());
+      expect(socket.callCount, 2);
+      expect(rest.callCount, 1);
+      pending.complete(<String, dynamic>{'source': 'socket'});
+      expect((await concurrent)['source'], 'rest');
+      await probe;
+      expect(fallback.isTemporarilyLatchedToRest, isFalse);
+    });
+
+    for (final viaRest in <bool>[false, true]) {
+      test(
+        'should reject stale success after session reset (REST: $viaRest)',
+        () async {
+          final pending = Completer<Map<String, dynamic>>();
+          final socket = _RecordingDataSource(
+            throwOn: viaRest
+                ? const SocketDispatchUnauthorized(message: 'auth')
+                : null,
+          );
+          final rest = _RecordingDataSource();
+          final fallback = SocketWithRestFallbackAgentQueriesRemoteDataSource(
+            socketDelegate: socket,
+            restDelegate: rest,
+          );
+          addTearDown(fallback.dispose);
+          if (viaRest) {
+            await fallback.postSqlExecute(request);
+            rest.pending = pending.future;
+          } else {
+            socket.pending = pending.future;
+          }
+          final result = _capture(fallback.postSqlExecute(request));
+          fallback.resetLatch(reason: 'new_session');
+          pending.complete(<String, dynamic>{'old_user_data': true});
+          expect(await result, isA<SocketDispatchCancelled>());
+        },
+      );
+    }
+
+    test(
+      'should skip both transports when scope is already cancelled',
+      () async {
+        final socket = _RecordingDataSource();
+        final rest = _RecordingDataSource();
+        final fallback = SocketWithRestFallbackAgentQueriesRemoteDataSource(
+          socketDelegate: socket,
+          restDelegate: rest,
+        );
+        addTearDown(fallback.dispose);
+        final scope = AgentQueriesCancelScope()..cancelAll();
+        final result = await _capture(
+          fallback.postSqlExecute(request, cancelScope: scope),
+        );
+        expect(result, isA<SocketDispatchCancelled>());
+        expect(socket.callCount, 0);
+        expect(rest.callCount, 0);
+      },
+    );
 
     test(
       'happy path: socket succeeds, REST is never touched, latch stays open',
@@ -401,6 +530,7 @@ class _RecordingDataSource implements AgentQueriesRemoteDataSource {
   Map<String, dynamic>? response;
   Object? throwOn;
   int callCount = 0;
+  Future<Map<String, dynamic>>? pending;
 
   @override
   Future<Map<String, dynamic>> postSqlExecute(
@@ -408,6 +538,7 @@ class _RecordingDataSource implements AgentQueriesRemoteDataSource {
     AgentQueriesCancelScope? cancelScope,
   }) {
     callCount += 1;
+    if (pending case final future?) return future;
     final toThrow = throwOn;
     if (toThrow != null) {
       return Future<Map<String, dynamic>>.error(toThrow);
@@ -423,6 +554,7 @@ class _RecordingDataSource implements AgentQueriesRemoteDataSource {
     AgentQueriesCancelScope? cancelScope,
   }) {
     callCount += 1;
+    if (pending case final future?) return future;
     final toThrow = throwOn;
     if (toThrow != null) {
       return Future<Map<String, dynamic>>.error(toThrow);

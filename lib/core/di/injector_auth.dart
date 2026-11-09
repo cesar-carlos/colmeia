@@ -1,5 +1,7 @@
 import 'package:colmeia/core/cache/app_cache_store.dart';
+import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/network/auth_session_events.dart';
+import 'package:colmeia/core/pwa/pwa_platform.dart';
 import 'package:colmeia/features/auth/application/auth_login_preferences_service.dart';
 import 'package:colmeia/features/auth/application/auth_registration_preferences_service.dart';
 import 'package:colmeia/features/auth/application/usecases/change_password_use_case.dart';
@@ -22,6 +24,8 @@ import 'package:colmeia/features/auth/data/repositories/client_registration_repo
 import 'package:colmeia/features/auth/domain/repositories/auth_repository.dart';
 import 'package:colmeia/features/auth/domain/repositories/client_registration_repository.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:colmeia/features/pwa/application/pwa_package_service.dart';
+import 'package:colmeia/features/pwa/domain/push_subscriptions.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -44,6 +48,20 @@ void registerInjectorAuth(GetIt getIt) {
         remoteDataSource: getIt<AuthRemoteDataSource>(),
         appCacheStore: getIt<AppCacheStore>(),
         sessionEvents: getIt<AuthSessionEvents>(),
+        offlineSessionAllowed: (user) async => getIt<PwaPlatform>().online
+            ? null
+            : getIt<PwaPackageService>().canRestoreOffline(user),
+        beforeLocalLogout: (user) async {
+          getIt<PwaPlatform>().broadcastLogout();
+          await getIt<PwaPackageService>().clearUser(user);
+          if (getIt<PwaPlatform>().supported) {
+            try {
+              await getIt<PushSubscriptions>().disable(user);
+            } on Object {
+              AppLogger.warning('PWA push removal pending reconciliation');
+            }
+          }
+        },
       ),
     )
     ..registerLazySingleton<LoginUseCase>(

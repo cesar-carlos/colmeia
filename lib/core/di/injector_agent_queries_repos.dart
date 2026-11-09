@@ -46,7 +46,14 @@ void _registerAgentQueriesRepositoryChain(GetIt getIt) {
       () => getIt<AgentQueriesRepositoryChain>().metricsRepository,
     )
     ..registerLazySingleton<AgentQueriesRepository>(
-      () => getIt<AgentQueriesRepositoryChain>().repository,
+      () => getIt.isRegistered<CacheRefreshScheduleRepository>()
+          ? ScheduledQuerySnapshots(
+              getIt<AgentQueriesRepositoryChain>().repository,
+              getIt<CacheRefreshScheduleRepository>(),
+              getIt<CacheRefreshPresence>(),
+              () => getIt<PwaPlatform>().online,
+            )
+          : getIt<AgentQueriesRepositoryChain>().repository,
     );
 }
 

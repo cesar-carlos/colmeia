@@ -1,4 +1,10 @@
+import 'dart:async';
+
 import 'package:colmeia/app/router/app_routes.dart';
+import 'package:colmeia/core/di/injector.dart';
+import 'package:colmeia/features/agent_queries/presentation/controllers/cache_refresh_controller.dart';
+import 'package:colmeia/features/agent_queries/presentation/pages/cache_refresh_page.dart';
+import 'package:colmeia/features/pwa/presentation/pwa_offline_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_area_trend_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_badges_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/app_brazil_store_sales_map_chart_demo_page.dart';
@@ -42,6 +48,7 @@ import 'package:colmeia/features/settings/presentation/pages/horizontal_progress
 import 'package:colmeia/features/settings/presentation/pages/settings_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/shared_components_demo_index_page.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 const String sharedComponentsDemoIndexPath = 'component-demos';
 const String horizontalProgressChartDemoPath = 'horizontal-progress-chart-demo';
@@ -219,6 +226,23 @@ List<RouteBase> buildSettingsRoutes() {
         return const SettingsPage();
       },
       routes: <RouteBase>[
+        GoRoute(
+          path: cacheRefreshRouteSegment,
+          name: cacheRefreshRouteName,
+          builder: (context, state) => ChangeNotifierProvider(
+            create: (_) {
+              final controller = getIt<CacheRefreshController>();
+              unawaited(controller.load(catalog: true));
+              return controller;
+            },
+            child: const CacheRefreshPage(),
+          ),
+        ),
+        GoRoute(
+          name: pwaOfflineRouteName,
+          path: pwaOfflineRouteSegment,
+          builder: (context, state) => const PwaOfflinePage(),
+        ),
         GoRoute(
           path: sharedComponentsDemoIndexPath,
           builder: (context, state) {

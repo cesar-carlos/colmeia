@@ -34,6 +34,31 @@ class CurrentUserContextModel {
   Set<UserPermission> get permissions => access.permissions;
   List<DashboardAccessGrant> get dashboardGrants => access.dashboardGrants;
 
+  Map<String, Object?> toJson() => {
+    'userId': profile.id,
+    'name': profile.name,
+    'roleLabel': profile.roleLabel,
+    'corporateEmail': profile.corporateEmail,
+    'phone': profile.phone,
+    'firstName': profile.firstName,
+    'lastName': profile.lastName,
+    'thumbnailUrl': profile.thumbnailUrl,
+    'activeStoreId': activeStoreId,
+    'allowedStores': [
+      for (final store in access.allowedStores)
+        {'id': store.id, 'name': store.name},
+    ],
+    'permissions': access.permissions.map((value) => value.name).toList(),
+    'dashboardGrants': [
+      for (final grant in access.dashboardGrants)
+        {
+          'dashboardId': grant.dashboardId,
+          'allowedFilterKeys': grant.allowedFilterKeys.toList(),
+          'allowedActions': grant.allowedActions.toList(),
+        },
+    ],
+  };
+
   CurrentUserContext toEntity({String? persistedActiveStoreId}) {
     return CurrentUserContext(
       scope: CurrentUserScope(

@@ -65,14 +65,11 @@ class AuthInterceptor extends QueuedInterceptor {
           session = await _sessionAccessor.read() ?? session;
         }
       } on Object catch (error, stackTrace) {
-        // Best-effort — if proactive refresh fails (network down,
-        // server hiccup), fall back to sending the stale token and
-        // let the existing 401 path do its job. Logged at warning
-        // (above debug) because a recurring failure here means the
-        // 401-driven retry is the only thing keeping the session
-        // alive.
+        // A still-valid token can be used after a transient refresh failure.
+        // The absolute expiry check below prevents expired credentials leaving
+        // the device, including when an offline session has been restored.
         AppLogger.warning(
-          'Proactive token refresh failed; sending stored token',
+          'Proactive token refresh failed',
           context: <String, Object?>{
             'operation': 'authInterceptor.proactiveRefresh',
           },
@@ -82,6 +79,17 @@ class AuthInterceptor extends QueuedInterceptor {
       }
     }
 
+    if (session != null && !session.expiresAt.isAfter(_clock())) {
+      handler.reject(
+        DioException(
+          requestOptions: options,
+          type: DioExceptionType.connectionError,
+          message:
+              'A valid online session is required before sending this request',
+        ),
+      );
+      return;
+    }
     if (session != null && session.accessToken.isNotEmpty) {
       options.headers[_authorizationHeader] = 'Bearer ${session.accessToken}';
     }

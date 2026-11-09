@@ -9,6 +9,57 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:result_dart/result_dart.dart';
 
 void main() {
+  test('should reuse immutable rows until progress changes the data', () async {
+    final source = StreamController<AppResult<AgentQueryProgress<int>>>();
+    final controller = ProgressiveReportController<int>();
+    addTearDown(controller.dispose);
+    final pending = controller.load((_) => source.stream);
+    source.add(
+      Success(
+        AgentQueryProgress(
+          rows: [1],
+          isComplete: false,
+          receivedRowCount: 1,
+        ),
+      ),
+    );
+    await Future<void>.delayed(Duration.zero);
+    final first = controller.rows;
+    expect(controller.rows, same(first));
+    expect(() => first.add(9), throwsUnsupportedError);
+
+    source.add(
+      Success(
+        AgentQueryProgress(
+          rows: [2],
+          isComplete: false,
+          receivedRowCount: 2,
+        ),
+      ),
+    );
+    await Future<void>.delayed(Duration.zero);
+    expect(first, [1]);
+    expect(controller.rows, [1, 2]);
+    expect(controller.rows, isNot(same(first)));
+
+    source.add(
+      Success(
+        AgentQueryProgress(
+          rows: [3],
+          isComplete: true,
+          receivedRowCount: 1,
+        ),
+      ),
+    );
+    final result = await pending;
+    expect(result.getOrNull(), [3]);
+    expect(controller.rows, same(result.getOrNull()));
+    controller.cancel();
+    expect(controller.rows, isEmpty);
+    expect(result.getOrNull(), [3]);
+    await source.close();
+  });
+
   test('cancellation during the initial notification prevents starting the producer', () async {
     final controller = ProgressiveReportController<int>();
     addTearDown(controller.dispose);

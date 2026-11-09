@@ -28,15 +28,15 @@ nas rules universais de Dart e Flutter.
 
 ## Strings e Localizacao
 
-- No MVP, strings de UI podem viver diretamente em Portugues dentro dos widgets
+- Reuse the existing `AppLocalizations` and ARB workflow for localized UI.
+  Follow `l10n.yaml`; keep `app_pt_BR.arb` and the `app_pt.arb` fallback in
+  sync with `tool/sync_pt_locale_arb.dart`, then regenerate localizations.
 - Texto de erro voltado ao usuario deve vir de `AppFailure.userMessage` ou de
   uma abstracao equivalente
 - Labels, titulos de tela e textos de confirmacao podem viver perto da page ou
   widget em vez de arquivos globais de constantes de string
-- Nao introduza i18n prematuramente antes de existir necessidade real de um
-  segundo idioma
-- Quando o produto se tornar multi-idioma, prefira `flutter_localizations` com
-  arquivos ARB gerados
+- Do not introduce a parallel localization system or move unrelated legacy
+  strings during a focused fix.
 - Formate datas, moedas e numeros por meio de helpers em
   `lib/core/formatters/` em vez de formatar ad hoc dentro dos widgets
 

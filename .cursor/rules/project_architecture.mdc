@@ -14,7 +14,8 @@ composicao de dependencias.
 
 ```text
 lib/
-|-- core/                    # app shell, router, theme, config, and shared utilities
+|-- app/                     # app shell, bootstrap and router
+|-- core/                    # DI, theme, config and shared infrastructure
 |-- features/
 |   `-- <feature>/
 |       |-- presentation/    # pages, widgets, controllers, and view models
@@ -32,8 +33,8 @@ lib/
 - Em features menores, menos arquivos sao aceitaveis, mas nao misture UI,
   regra de negocio e acesso a dados no mesmo tipo
 - `shared/` deve conter apenas o que e realmente reutilizado entre features
-- `core/` deve concentrar app shell, tema, roteamento e utilitarios
-  transversais sem virar deposito generico
+- `app/` owns shell, bootstrap and routing; `core/` contains cross-cutting
+  infrastructure and DI without becoming a generic dumping ground
 - Value objects reutilizaveis podem viver em `core/value_objects/`; value
   objects especificos de feature pertencem ao `domain` da propria feature
 
@@ -58,8 +59,9 @@ lib/
 
 ## Use Cases na Camada Application
 
-Use cases vivem em `lib/features/<feature>/application/usecases/` e expoem
-um unico ponto de entrada (`call(...)`) para uma intencao de negocio.
+Use cases live under `lib/features/<feature>/application/`, following the
+feature's existing organization (`usecases/` where present), and expose one
+entry point (`call(...)`) for a business intention.
 
 ### Quando criar use case
 
@@ -97,8 +99,8 @@ sem trocar dados nem aplicar regra. Nesses casos:
 
 ### Sinais de over-engineering
 
-- O use case e mais curto que ~30 linhas e nao tem `try/catch`, `if` ou
-  `await` encadeado
+- The use case merely forwards a call without expressing an independent
+  business intention; line count alone is not a reason to remove it
 - O teste do use case e identico ao teste do repositorio mockado
 - Multiplos use cases delegam ao mesmo metodo de repositorio com
   parametros levemente diferentes (sugere que o repositorio deveria
@@ -110,8 +112,8 @@ sem trocar dados nem aplicar regra. Nesses casos:
 
 - Use `get_it` para registrar e resolver dependencias fora da camada de
   apresentacao
-- Organize registros por feature em arquivos de modulo dedicados e invoque-os
-  a partir de um `AppDependencies.setup()` centralizado
+- Organize registrations by feature in dedicated modules, composed by
+  `setupDependencies()` in `lib/core/di/injector.dart`.
 - Use `registerLazySingleton` para servicos stateless que vivem enquanto o app
   estiver aberto
 - Use `registerFactory` para use cases e objetos que possam ter estado por
@@ -120,8 +122,8 @@ sem trocar dados nem aplicar regra. Nesses casos:
   app for realmente necessaria
 - Nunca chame `GetIt.instance` ou `sl()` dentro de widgets, controllers de
   apresentacao ou regras de dominio; injete dependencias por construtor
-- Em testes, use `GetIt.instance.reset()` no `tearDown` para evitar vazamento
-  de estado
+- Tests using GetIt must await teardown/reset so asynchronous disposals
+  complete before another test starts; prefer existing test setup helpers
 
 ### Ciclo de vida: singleton GetIt vs controller de rota
 
@@ -139,7 +141,7 @@ sem trocar dados nem aplicar regra. Nesses casos:
   o callback de registro do GetIt
 
 ```dart
-// lib/features/auth/auth_module.dart
+// Registration pattern inside lib/core/di/injector_auth.dart
 void setupAuthDependencies(GetIt sl) {
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(sl(), sl()),
@@ -149,7 +151,7 @@ void setupAuthDependencies(GetIt sl) {
   );
 }
 
-// lib/core/app_dependencies.dart
+// Composition pattern inside lib/core/di/injector.dart
 Future<void> setupDependencies() async {
   final sl = GetIt.instance;
   setupAuthDependencies(sl);

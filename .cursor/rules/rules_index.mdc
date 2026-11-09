@@ -17,7 +17,7 @@ aqui.
 
 - **`global_guardrails.mdc`**: restricoes minimas globais de seguranca e fluxo
   de trabalho
-- **`rules_authoring.mdc`**: como manter `.cursor/rules` e `CLAUDE.md` sem
+- **`rules_authoring.mdc`**: como manter `.cursor/rules` e os entry points sem
   duplicacao ou drift
 
 ## Categorias de Rules
@@ -69,31 +69,15 @@ Use estas rules apenas quando o codebase for Dart/Flutter.
 - **`project_conventions.mdc`**: formularios, strings, design system
   especifico, erros, monitoramento e prioridades de teste do repositorio
 
-## Regras de Coordenacao
+## Cross-cutting tasks
 
-- Guardrails globais do repositorio: `global_guardrails.mdc`
-- Autoria e manutencao de rules: `rules_authoring.mdc`
-- Comportamento geral, docs e comentarios, reuso, duplicacao e refatoracao:
-  `general_rules.mdc`
-- Camadas e direcao de dependencias: `clean_architecture.mdc`
-- Design de classes e interfaces, acoplamento e coesao: `solid_principles.mdc`
-- Estrategia de testes em qualquer stack: `testing.mdc`
-- Sintaxe, estilo e tooling Dart: `coding_style.mdc`
-- Nullability em Dart: `null_safety.mdc`
-- Widgets e layout em Flutter: `flutter_widgets.mdc`
-- UX mobile e design system: `ui_ux_design.mdc`
-- Codigo de teste Dart/Flutter: `testing_dart_flutter.mdc`
-- Ponto de entrada e roteamento especifico do Colmeia:
-  `project_specifics.mdc`
-- Escopo do produto no Colmeia: `project_product_scope.mdc`
-- Arquitetura e DI no Colmeia: `project_architecture.mdc`
-- Plataforma e pacotes no Colmeia: `project_platform_dependencies.mdc`
-- Fluxos de dados e dominio no Colmeia: `project_data_domain.mdc`
-- SQL do agente, payloads RPC e E2E obrigatorio por repositorio SQL no Colmeia:
-  `project_agent_sql.mdc`
-- Ciclo de vida de componentes compartilhados no Colmeia:
-  `project_shared_components.mdc`
-- Convencoes de implementacao no Colmeia: `project_conventions.mdc`
+- PWA product limits: `project_product_scope.mdc`; offline data and session
+  authorization: `project_data_domain.mdc`; service worker, Push and packaging:
+  `project_platform_dependencies.mdc`; acceptance evidence: `testing.mdc`.
+- REST/Socket query behavior: `project_data_domain.mdc`; RPC payloads and SQL
+  repository integration tests: `project_agent_sql.mdc`.
+- Agent entry points route to these owners. Read relevant rules even when a
+  tool does not automatically attach their globs.
 
 ## Copia para Outros Projetos
 

@@ -62,6 +62,17 @@ void main() {
         check(decoded.lucratividadeTrendLoadFailed).isFalse();
       });
 
+      test('explicit offline snapshots retain derived weekday-user values', () {
+        final original = _fullModel();
+        final decoded = OverviewModel.fromJson(
+          original.toJson(includeDerivedSnapshots: true),
+        );
+        check(decoded.weekdayUserSalesTrend).length
+            .equals(original.weekdayUserSalesTrend.length);
+        check(decoded.weekdayUserSalesTrend.single.userName)
+            .equals(original.weekdayUserSalesTrend.single.userName);
+      });
+
       test('fromJson still reads legacy persisted weekday-by-user keys', () {
         final decoded = OverviewModel.fromJson(<String, dynamic>{
           'periodStart': '2026-03-09T00:00:00.000',

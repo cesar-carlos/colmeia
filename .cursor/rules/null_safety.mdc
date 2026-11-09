@@ -1,5 +1,6 @@
 ---
-alwaysApply: true
+description: Modelagem de nullability e inicializacao segura em Dart
+globs: ["**/*.dart"]
 ---
 
 # Null Safety

@@ -81,8 +81,8 @@ void main() {
   });
 
   group('lookupCached', () {
-    test('returns null when nothing is cached', () {
-      final outcome = lookup.lookupCached(
+    test('returns null when nothing is cached', () async {
+      final outcome = await lookup.lookupCached(
         userId: userId,
         scope: SalesLiveMapCatalogScope.fullAgent(agentIds: const ['agent-a']),
         now: now,
@@ -90,27 +90,30 @@ void main() {
       expect(outcome, isNull);
     });
 
-    test('returns memory hit with source=memory when in memory cache', () {
-      final scope = SalesLiveMapCatalogScope.fullAgent(
-        agentIds: const ['agent-a'],
-      );
-      final page = _pageForAgents(<String>['agent-a']);
-      memoryCache.write(userId: userId, scope: scope, now: now, result: page);
+    test(
+      'returns memory hit with source=memory when in memory cache',
+      () async {
+        final scope = SalesLiveMapCatalogScope.fullAgent(
+          agentIds: const ['agent-a'],
+        );
+        final page = _pageForAgents(<String>['agent-a']);
+        memoryCache.write(userId: userId, scope: scope, now: now, result: page);
 
-      final outcome = lookup.lookupCached(
-        userId: userId,
-        scope: scope,
-        now: now,
-      );
+        final outcome = await lookup.lookupCached(
+          userId: userId,
+          scope: scope,
+          now: now,
+        );
 
-      expect(outcome, isNotNull);
-      expect(outcome!.source, SalesLiveMapCatalogSource.memory);
-      expect(outcome.page, same(page));
-    });
+        expect(outcome, isNotNull);
+        expect(outcome!.source, SalesLiveMapCatalogSource.memory);
+        expect(outcome.page, same(page));
+      },
+    );
 
     test(
       'returns disk hit with source=disk AND hydrates the memory cache',
-      () {
+      () async {
         final scope = SalesLiveMapCatalogScope.fullAgent(
           agentIds: const ['agent-a'],
         );
@@ -123,7 +126,7 @@ void main() {
           ),
         ).thenReturn(page);
 
-        final first = lookup.lookupCached(
+        final first = await lookup.lookupCached(
           userId: userId,
           scope: scope,
           now: now,
@@ -140,7 +143,7 @@ void main() {
             now: any(named: 'now'),
           ),
         ).thenReturn(null);
-        final second = lookup.lookupCached(
+        final second = await lookup.lookupCached(
           userId: userId,
           scope: scope,
           now: now,
@@ -152,7 +155,7 @@ void main() {
     test(
       'broaderCacheFiltered narrows agents and branches when only the '
       'fullAgent scope is cached',
-      () {
+      () async {
         // Cache a broader fullAgent scope for {agent-a} with rows for
         // both codFilial 1 and 2.
         final broaderScope = SalesLiveMapCatalogScope.fullAgent(
@@ -184,7 +187,7 @@ void main() {
           ],
         );
 
-        final outcome = lookup.lookupCached(
+        final outcome = await lookup.lookupCached(
           userId: userId,
           scope: narrowScope,
           now: now,
@@ -224,12 +227,12 @@ void main() {
     test(
       'returns null when nothing matches the exact scope and the scope '
       'is not a branchSubset (no broader narrowing possible)',
-      () {
+      () async {
         final scope = SalesLiveMapCatalogScope.fullAgent(
           agentIds: const ['agent-a'],
         );
 
-        final outcome = lookup.lookupCached(
+        final outcome = await lookup.lookupCached(
           userId: userId,
           scope: scope,
           now: now,

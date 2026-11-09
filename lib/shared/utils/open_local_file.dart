@@ -15,10 +15,6 @@ Future<bool> openLocalFile(String path) async {
         '',
         path,
       ], runInShell: true);
-    } else if (Platform.isMacOS) {
-      await Process.run('open', <String>[path]);
-    } else if (Platform.isLinux) {
-      await Process.run('xdg-open', <String>[path]);
     } else {
       return false;
     }

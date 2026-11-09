@@ -95,6 +95,9 @@ void _registerAgentQueryTransport(GetIt getIt) {
           required String latchLabel,
         }) {
           return SocketWithRestFallbackAgentQueriesRemoteDataSource(
+            canAccessNetwork: () =>
+                !getIt.isRegistered<PwaPlatform>() ||
+                getIt<PwaPlatform>().online,
             socketDelegate: socketDelegate,
             restDelegate: rest,
             sessionEvents: getIt.isRegistered<AuthSessionEvents>()

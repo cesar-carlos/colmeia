@@ -363,9 +363,9 @@ void main() {
       final session = AuthSessionModel(
         userId: 'client-1',
         email: 'client@corp.com',
-        accessToken: 'expired-access-token',
+        accessToken: 'locally-valid-but-revoked-token',
         refreshToken: 'refresh-token-1',
-        expiresAt: DateTime.now().subtract(const Duration(minutes: 2)),
+        expiresAt: DateTime.now().add(const Duration(hours: 1)),
       );
       when(
         () => localDataSource.readSession(),

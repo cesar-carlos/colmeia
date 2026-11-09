@@ -3,6 +3,21 @@ import 'package:colmeia/core/socket/socket_coalesce_key.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('matches the FNV-1a 64-bit reference on native and Web', () {
+    expect(
+      SocketCoalesceKey.compute(
+        agentId: 'x',
+        body: {
+          'command': {
+            'method': 'sql.execute',
+            'params': {'sql': 'SELECT 1'},
+          },
+        },
+      ),
+      '381823e2cc26f5cd',
+    );
+  });
+
   Map<String, Object?> body({
     String agentId = 'agent-1',
     String? rpcId = 'rpc-1',

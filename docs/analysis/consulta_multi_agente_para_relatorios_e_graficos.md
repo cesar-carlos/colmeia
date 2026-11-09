@@ -1,5 +1,8 @@
 # Consulta Multi-Agente Para Relatorios e Graficos
 
+> Historical analysis: implementation status and proposed technologies reflect
+> the original research. See the [analysis index](README.md) for current references.
+
 ## Objetivo
 
 Este documento detalha a proxima camada evolutiva do Colmeia: usar os agentes aprovados do cliente como fontes reais de consulta para alimentar dashboards, graficos e relatorios.

@@ -5,7 +5,9 @@
 ### Calendar day
 
 - A **calendar day** is closed when `day < startOfDay(now)` in the app's local timezone.
-- **Today** is never written to the durable facts store. It may be held in memory for the current screen session only.
+- **Today** is never written as a consolidated historical fact. Explicit PWA
+  packages may persist it as a partial snapshot under separate authorization
+  and freshness rules; see [offline packages](../install/web_guide.md#offline-packages).
 - Daily series (`ResumoTotalDiarioVendasRow.dataVenda`) align with this rule.
 
 ### Calendar month
@@ -34,18 +36,18 @@ live SQL or in-memory for the session.
 not persisted as canonical facts. Prefer computing from cached daily facts when
 available, or live SQL when the filter includes open days.
 
-## Catalog (initial)
+## Current consolidation catalog
 
 | `AgentQueryKey` | `FactKind` | Bucket | Closed when | Persist | Phase |
 | --------------- | ---------- | ------ | ----------- | ------- | ----- |
 | `resumoTotalDiarioVendas` | `dailySales` | `yyyy-MM-dd` | day &lt; today | Yes | Pilot 1 |
 | `resumoParcelasMensal` | `monthlyParcels` | `yyyy-MM` | month &lt; current | Yes | Pilot 2 |
-| `resumoProdutoVendaLucratividadeMensal` | `lucratividadeMensal` | `yyyy-MM` | month &lt; current | Yes | Later |
 | `resumoParcelaFormaPagamentoV2` | `paymentPeriod` | period | hybrid | Later | Derive or month blob |
 | `resumoParcelaPorUsuario` | `userPeriod` | period | hybrid | Later | Same |
 | `resumoParcelasDiaSemana` | `weekdayPeriod` | period | open if range includes today | Yes (closed buckets) | Active |
 | `resumoParcelasDiaSemanaUsuario` | `weekdayUserPeriod` | — | derived | No | Derived |
 | `resumoProdutoVendaLucratividade` | `lucratividadePeriod` | period | open if range includes today | Yes (closed buckets) | Active |
+| `resumoTotalVendasMunicipioFilialPeriodo` | `branchMunicipalityPeriodSales` | full period | range closed | Yes | Active |
 | Catalog / options | — | — | volatile | No | Never |
 
 Canonical writers (enforced at store write):
@@ -56,7 +58,7 @@ Canonical writers (enforced at store write):
 | `monthlyParcels` | `resumoParcelasMensal` |
 | `weekdayPeriod` | `resumoParcelasDiaSemana` |
 | `lucratividadePeriod` | `resumoProdutoVendaLucratividade` |
-| `lucratividadeMensal` | `resumoProdutoVendaLucratividadeMensal` |
+| `branchMunicipalityPeriodSales` | `resumoTotalVendasMunicipioFilialPeriodo` |
 
 ## Filter → buckets
 
@@ -67,7 +69,10 @@ Example: dashboard `referenceRange` 2026-03-01 .. 2026-03-15 (local):
 | Daily | Store: 01..14 if present; network: 15 (today) if in range |
 | Monthly | If range spans March 2026 only: network for March (open month); store for Feb 2026 and earlier months if chart needs 12m window |
 
-The strategy's `planBuckets(filter, clock)` returns `BucketPlan` with `storeHits`, `networkBuckets`, and `openBuckets` metadata for logging.
+The strategy's `planBuckets(filter:, clock:, policy:)` returns
+`AgentQueryBucketPlan` with `allBucketIdsInRange`, `closedBucketIds`,
+`openBucketIds` and `networkBucketIds`. Actual store misses are resolved by the
+decorator after planning.
 
 ## Timezone
 
@@ -75,7 +80,11 @@ Bucket closure uses the **device local calendar** (`DateTime.now()` in the app p
 
 ## Performance
 
-Long ranges (for example 12 months of daily buckets for one agent) imply one store read per closed day. Prefetch backfills closed buckets in the background; avoid blocking the UI on full-range first paint when possible.
+Long ranges use the store batch-read API. Strategies that support range
+coalescing can fill multiple missing buckets from one query; other strategies
+use batches or individual loads. Municipality/branch sales retain one full-period
+bucket (schema version 2), because summing daily `COUNT(DISTINCT)` values changes
+the result. Prefetch runs while the app is alive; it is not an OS background job.
 
 ## Schema version
 
@@ -89,7 +98,7 @@ If a closed day is reopened in ERP, use `invalidateCache` with bucket scope or `
 
 Facts keys include a `cacheScopeId` derived from filter dimensions (not calendar buckets). Daily and monthly strategies use [AgentQueryCacheScope](../../lib/features/agent_queries/domain/cache/agent_query_cache_scope.dart): period flags for all reports; monthly also adds `e*`, `f*`, `v*` segments when company, branch, or seller filters are set.
 
-Entries written before `cacheScopeId` was added remain in Hive until user-wide eviction (`removeMatching` with the user prefix), logout `clearAll`, or manual support action. They are not read after the key shape change.
+Entries written before `cacheScopeId` was added remain in the local cache until user-wide eviction (`removeMatching` with the user prefix), logout `clearAll`, or manual support action. They are not read after the key shape change.
 
 Overview `forceRefresh` calls `AgentQueryFactsStore.removeMatching` for the user prefix before load, and skips background prefetch for that request so stale closed buckets are not repopulated from an in-flight prefetch.
 

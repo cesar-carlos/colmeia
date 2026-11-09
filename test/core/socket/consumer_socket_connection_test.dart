@@ -16,11 +16,13 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 class _FakeTokenProvider implements SocketAuthTokenProvider {
   _FakeTokenProvider({
     this._token,
-  }) : _refreshToken = null,
-       _events = StreamController<void>.broadcast();
+    this._refreshToken,
+  }) : _events = StreamController<void>.broadcast();
 
   String? _token;
   final String? _refreshToken;
+  int refreshCalls = 0;
+  Future<String?>? nextRead;
   final StreamController<void> _events;
 
   // Simple mutator used by tests to mimic post-login token availability.
@@ -30,10 +32,15 @@ class _FakeTokenProvider implements SocketAuthTokenProvider {
   void emitInvalidation() => _events.add(null);
 
   @override
-  Future<String?> readAccessToken() async => _token;
+  Future<String?> readAccessToken() async {
+    final pending = nextRead;
+    nextRead = null;
+    return pending == null ? _token : await pending;
+  }
 
   @override
   Future<String?> refreshAccessToken() async {
+    refreshCalls += 1;
     _token = _refreshToken;
     return _refreshToken;
   }
@@ -120,6 +127,7 @@ ConsumerSocketConnection _build({
   required _FakeTokenProvider tokenProvider,
   SocketIoClientFactory? factory,
   Duration handshakeTimeout = const Duration(milliseconds: 50),
+  int maxReconnectAttempts = 1,
 }) {
   return ConsumerSocketConnection(
     urlResolver: AppSocketUrlResolver(
@@ -129,7 +137,7 @@ ConsumerSocketConnection _build({
     factory: factory ?? _RecordingFactory(),
     readyDecoder: const JsonOnlyConnectionReadyDecoder(),
     handshakeTimeout: handshakeTimeout,
-    maxReconnectAttempts: 1,
+    maxReconnectAttempts: maxReconnectAttempts,
     reconnectInitialDelay: const Duration(milliseconds: 1),
     reconnectMaxDelay: const Duration(milliseconds: 1),
   );
@@ -141,6 +149,94 @@ void main() {
   });
 
   group('ConsumerSocketConnection', () {
+    test(
+      'should preserve a new connection when an old token read finishes',
+      () async {
+        final tokens = _FakeTokenProvider(token: 'tok');
+        final oldRead = Completer<String?>();
+        tokens.nextRead = oldRead.future;
+        final factory = _InteractiveFactory();
+        final conn = _build(tokenProvider: tokens, factory: factory);
+        addTearDown(() async {
+          await conn.dispose();
+          await tokens.dispose();
+        });
+        final oldAttempt = expectLater(
+          conn.connect(),
+          throwsA(isA<ConsumerSocketConnectCancelled>()),
+        );
+        await conn.disconnect(reason: 'session_changed');
+        final current = conn.connect();
+        await Future<void>.delayed(Duration.zero);
+        factory.fire('connection:ready', <String, Object?>{
+          'id': 'new-socket',
+          'user': <String, Object?>{},
+        });
+        await current;
+        oldRead.complete('old-token');
+        await oldAttempt;
+        expect(conn.isConnected, isTrue);
+        expect((conn.state as ConsumerSocketConnected).socketId, 'new-socket');
+      },
+    );
+
+    test(
+      'should reject ready followed immediately by transport loss',
+      () async {
+        final tokens = _FakeTokenProvider(token: 'tok');
+        final factory = _InteractiveFactory();
+        final conn = _build(tokenProvider: tokens, factory: factory);
+        addTearDown(() async {
+          await conn.dispose();
+          await tokens.dispose();
+        });
+        final result = expectLater(
+          conn.connect(),
+          throwsA(isA<ConsumerSocketReconnectExhausted>()),
+        );
+        await Future<void>.delayed(Duration.zero);
+        factory
+          ..fire('connection:ready', <String, Object?>{
+            'id': 'lost-socket',
+            'user': <String, Object?>{},
+          })
+          ..fire('disconnect', 'transport close');
+        await result;
+        expect(conn.isConnected, isFalse);
+      },
+    );
+
+    test(
+      'should refresh only once when renewed credentials are rejected',
+      () async {
+        final tokens = _FakeTokenProvider(
+          token: 'tok',
+          refreshToken: 'renewed',
+        );
+        final factory = _InteractiveFactory();
+        final conn = _build(
+          tokenProvider: tokens,
+          factory: factory,
+          maxReconnectAttempts: 3,
+        );
+        addTearDown(() async {
+          await conn.dispose();
+          await tokens.dispose();
+        });
+        final result = expectLater(
+          conn.connect(),
+          throwsA(isA<ConsumerSocketAuthFailed>()),
+        );
+        await Future<void>.delayed(Duration.zero);
+        factory.fire('connect_error', '401 unauthorized');
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        factory.fire('connect_error', '401 unauthorized');
+        await result;
+        expect(tokens.refreshCalls, 1);
+        expect(factory.calls.length, 2);
+      },
+    );
+
     test('starts disconnected and isConnected is false', () {
       final tokens = _FakeTokenProvider(token: 'tok');
       final conn = _build(tokenProvider: tokens);

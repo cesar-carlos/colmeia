@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:colmeia/core/cache/app_cache_store.dart';
+
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_participant.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_execution_report.dart';
@@ -20,16 +22,18 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// [AgentConnectionStatus.unknown] — sufficient for map aggregation only;
 /// network load replaces this before final state.
 class SalesLiveMapCatalogDiskCache implements SalesLiveMapCatalogCache {
-  SalesLiveMapCatalogDiskCache(this._prefs);
+  SalesLiveMapCatalogDiskCache(
+    this._cache, {
+    this._legacyPreferences,
+  });
 
-  final SharedPreferences _prefs;
+  final AppCacheStore _cache;
+  final SharedPreferences? _legacyPreferences;
 
   static const Duration ttl = SalesLiveMapCatalogCache.ttl;
   static const int _schemaVersion = 2;
   static const String _keyPrefix = 'colmeia_sales_live_map_catalog_v2.';
   static const String _legacyKeyPrefix = 'colmeia_sales_live_map_catalog_v1.';
-  static const int _legacyCompanyCode = 1;
-  static const int _legacyBranchCode = 1;
 
   static String agentSignature(Set<String>? selectedAgentIds) =>
       SalesLiveMapCatalogScope.agentSignatureOf(selectedAgentIds);
@@ -39,30 +43,37 @@ class SalesLiveMapCatalogDiskCache implements SalesLiveMapCatalogCache {
   ) => SalesLiveMapCatalogScope.branchSignatureOf(selectedBranches);
 
   @override
-  CadastroFilialAcrossAgentsPageResult? readIfFresh({
+  Future<CadastroFilialAcrossAgentsPageResult?> readIfFresh({
     required String userId,
     required SalesLiveMapCatalogScope scope,
     required DateTime now,
-  }) {
+  }) async {
     final v2Key = _storageKey(userId: userId, scope: scope);
-    final raw = _prefs.getString(v2Key);
+    final raw = await _cache.getString(v2Key);
     if (raw != null && raw.isNotEmpty) {
       return _decodeIfFresh(raw: raw, expectedScope: scope, now: now);
     }
 
-    if (!scope.isFullAgent) {
-      return null;
-    }
-
-    final legacyKey = _legacyStorageKey(
-      userId: userId,
-      agentSignature: scope.agentSignature,
+    final prefs = _legacyPreferences;
+    final legacyRaw =
+        prefs?.getString(v2Key) ??
+        (scope.isFullAgent
+            ? prefs?.getString(
+                '$_legacyKeyPrefix${userId.trim()}|1|1|'
+                '${scope.agentSignature}',
+              )
+            : null);
+    if (legacyRaw == null) return null;
+    final legacy = _decodeIfFresh(
+      raw: legacyRaw,
+      expectedScope: scope,
+      now: now,
     );
-    final legacyRaw = _prefs.getString(legacyKey);
-    if (legacyRaw == null || legacyRaw.isEmpty) {
-      return null;
+    if (legacy != null) {
+      await _cache.putString(key: v2Key, value: legacyRaw);
     }
-    return _decodeIfFresh(raw: legacyRaw, expectedScope: scope, now: now);
+    await _removeLegacyEntries(userId);
+    return legacy;
   }
 
   @override
@@ -72,26 +83,40 @@ class SalesLiveMapCatalogDiskCache implements SalesLiveMapCatalogCache {
     required DateTime now,
     required CadastroFilialAcrossAgentsPageResult result,
   }) async {
-    final key = _storageKey(userId: userId, scope: scope);
-    final encoded = jsonEncode(
-      _encode(now: now, scope: scope, result: result),
+    await _cache.putString(
+      key: _storageKey(userId: userId, scope: scope),
+      value: jsonEncode(_encode(now: now, scope: scope, result: result)),
     );
-    await _prefs.setString(key, encoded);
+    await _removeLegacyEntries(userId);
   }
 
   @override
   Future<void> invalidateUser(String userId) async {
-    final trimmedUserId = userId.trim();
-    final keys = _prefs
-        .getKeys()
-        .where(
-          (key) =>
-              key.startsWith('$_keyPrefix$trimmedUserId|') ||
-              key.startsWith('$_legacyKeyPrefix$trimmedUserId|'),
-        )
-        .toList(growable: false);
-    for (final key in keys) {
-      await _prefs.remove(key);
+    await _cache.removeKeysWithPrefix('$_keyPrefix${userId.trim()}|');
+    await _removeLegacyEntries(userId);
+  }
+
+  Future<void> _removeLegacyEntries(String userId) async {
+    final prefs = _legacyPreferences;
+    if (prefs == null) return;
+    try {
+      final keys = prefs
+          .getKeys()
+          .where(
+            (key) =>
+                key.startsWith('$_keyPrefix${userId.trim()}|') ||
+                key.startsWith('$_legacyKeyPrefix${userId.trim()}|'),
+          )
+          .toList(growable: false);
+      for (final key in keys) {
+        await prefs.remove(key);
+      }
+    } on Object catch (error, stackTrace) {
+      AppLogger.warning(
+        'Legacy catalog cache cleanup failed',
+        error: error,
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -100,14 +125,6 @@ class SalesLiveMapCatalogDiskCache implements SalesLiveMapCatalogCache {
     required SalesLiveMapCatalogScope scope,
   }) {
     return '$_keyPrefix${userId.trim()}|${scope.storageKey}';
-  }
-
-  String _legacyStorageKey({
-    required String userId,
-    required String agentSignature,
-  }) {
-    return '$_legacyKeyPrefix${userId.trim()}|$_legacyCompanyCode|'
-        '$_legacyBranchCode|$agentSignature';
   }
 
   CadastroFilialAcrossAgentsPageResult? _decodeIfFresh({

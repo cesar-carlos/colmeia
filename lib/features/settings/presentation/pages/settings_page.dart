@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:colmeia/app/preferences/app_user_experience_preferences_controller.dart';
+import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/app/theme/app_theme_mode_controller.dart';
 import 'package:colmeia/core/constants/app_version.g.dart';
 import 'package:colmeia/core/di/injector.dart';
@@ -13,6 +14,7 @@ import 'package:colmeia/features/auth/application/usecases/upload_client_thumbna
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/auth/presentation/widgets/auth_form_text_field.dart';
 import 'package:colmeia/features/auth/presentation/widgets/auth_password_text_field.dart';
+import 'package:colmeia/features/pwa/presentation/pwa_settings_panel.dart';
 import 'package:colmeia/features/settings/presentation/controllers/client_account_settings_controller.dart';
 import 'package:colmeia/features/settings/presentation/routes/settings_routes.dart';
 import 'package:colmeia/features/settings/presentation/widgets/windows_auto_update_settings_tile.dart';
@@ -27,6 +29,7 @@ import 'package:colmeia/shared/widgets/actions/app_flat_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/app_editorial_media_card.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
+import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/app_status_badge.dart';
@@ -1254,6 +1257,18 @@ class _SettingsPreferencesTab extends StatelessWidget {
           onTap: onComponentsTap,
         ),
         SizedBox(height: tokens.gapMd),
+        AppSectionCard(
+          child: ListTile(
+            leading: const Icon(Icons.update),
+            title: const Text('Atualização de dados'),
+            subtitle: const Text(
+              'Agendamentos por agente, relatório e período',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.pushNamed(cacheRefreshRouteName),
+          ),
+        ),
+        const PwaSettingsPanel(),
         WindowsAutoUpdateSettingsTile(
           controller: windowsAutoUpdateController,
         ),

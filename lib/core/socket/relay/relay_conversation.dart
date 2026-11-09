@@ -8,6 +8,7 @@ import 'package:colmeia/core/socket/relay/relay_conversation_state.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
 import 'package:colmeia/core/socket/relay/relay_event_names.dart';
 import 'package:colmeia/core/socket/socket_wire_utils.dart';
+import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:uuid/uuid.dart';
 
 /// One conversation against one agent, isolated by `conversationId`. A
@@ -43,6 +44,10 @@ class RelayConversation {
   Future<RelayConversationActive>? _inFlightStart;
   Future<void>? _inFlightEnd;
   Completer<void>? _endAckCompleter;
+  Completer<RelayConversationActive>? _startAckCompleter;
+  io.Socket? _startedSocket;
+  io.Socket? _endedSocket;
+  int _generation = 0;
 
   void Function(Object?)? _conversationStartedHandler;
   void Function(Object?)? _conversationEndedHandler;
@@ -72,18 +77,23 @@ class RelayConversation {
     if (inFlight != null) {
       return inFlight;
     }
-    final operation = _startInternal().whenComplete(() {
-      _inFlightStart = null;
+    late final Future<RelayConversationActive> operation;
+    operation = _startInternal().whenComplete(() {
+      if (identical(_inFlightStart, operation)) {
+        _inFlightStart = null;
+      }
     });
     _inFlightStart = operation;
     return operation;
   }
 
   Future<RelayConversationActive> _startInternal() async {
+    final generation = _generation;
     _setState(RelayConversationStarting(agentId: _agentId));
 
     final startRequestId = _uuid.v4();
     final completer = Completer<RelayConversationActive>();
+    _startAckCompleter = completer;
     void onStarted(Object? raw) {
       if (completer.isCompleted) {
         return;
@@ -144,15 +154,18 @@ class RelayConversation {
     }
 
     _conversationStartedHandler = onStarted;
-    _connection.raw.on(RelayEventNames.conversationStarted, onStarted);
     try {
-      _connection.raw.emit(
-        RelayEventNames.conversationStart,
-        <String, Object?>{
-          'requestId': startRequestId,
-          'agentId': _agentId,
-        },
-      );
+      final socket = _connection.raw;
+      _startedSocket = socket;
+      socket
+        ..on(RelayEventNames.conversationStarted, onStarted)
+        ..emit(
+          RelayEventNames.conversationStart,
+          <String, Object?>{
+            'requestId': startRequestId,
+            'agentId': _agentId,
+          },
+        );
     } on Object catch (e, s) {
       _detachConversationStartedListener();
       _setState(
@@ -181,6 +194,7 @@ class RelayConversation {
         stackTrace: s,
       );
     } on RelayConversationStartFailure {
+      if (generation != _generation) rethrow;
       _detachConversationStartedListener();
       _setState(
         RelayConversationEnded(agentId: _agentId, reason: 'rejected'),
@@ -199,6 +213,12 @@ class RelayConversation {
       );
     }
 
+    if (generation != _generation) {
+      throw const RelayConversationStartFailure(
+        message: 'Relay conversation start was cancelled',
+        code: 'obtain_superseded',
+      );
+    }
     _detachConversationStartedListener();
     _setState(active);
     AppLogger.debug(
@@ -224,19 +244,21 @@ class RelayConversation {
     if (inFlight != null) {
       return inFlight;
     }
-    final operation = _endInternal(reason: reason).whenComplete(() {
-      _inFlightEnd = null;
+    late final Future<void> operation;
+    operation = _endInternal(reason: reason).whenComplete(() {
+      if (identical(_inFlightEnd, operation)) {
+        _inFlightEnd = null;
+      }
     });
     _inFlightEnd = operation;
     return operation;
   }
 
   Future<void> _endInternal({String? reason}) async {
+    final generation = _generation;
     final id = conversationId;
     if (id == null) {
-      _setState(
-        RelayConversationEnded(agentId: _agentId, reason: reason ?? 'no_id'),
-      );
+      forceEnd(reason: reason ?? 'no_id');
       return;
     }
     _setState(
@@ -256,50 +278,52 @@ class RelayConversation {
       completer.complete();
     }
 
-    final router = _conversationEndedRouter;
-    if (router != null) {
-      void onEnded({
-        required String conversationId,
-        String? requestId,
-        String? reason,
-      }) {
-        if (conversationId != id) {
-          return;
-        }
-        if (requestId != null &&
-            requestId.isNotEmpty &&
-            requestId != endRequestId) {
-          return;
-        }
-        completeAck(hubReason: reason);
-      }
-
-      _routerEndedCallback = onEnded;
-      router.addListener(onEnded);
-    } else {
-      void onEnded(Object? raw) {
-        if (completer.isCompleted) {
-          return;
-        }
-        final map = _toMap(raw);
-        final endedId = map?['conversationId']?.toString();
-        if (endedId != null && endedId != id) {
-          return;
-        }
-        final echoedRequestId = map?['requestId']?.toString();
-        if (echoedRequestId != null &&
-            echoedRequestId.isNotEmpty &&
-            echoedRequestId != endRequestId) {
-          return;
-        }
-        completeAck(hubReason: map?['reason']?.toString());
-      }
-
-      _conversationEndedHandler = onEnded;
-      _connection.raw.on(RelayEventNames.conversationEnded, onEnded);
-    }
-
     try {
+      final router = _conversationEndedRouter;
+      if (router != null) {
+        void onEnded({
+          required String conversationId,
+          String? requestId,
+          String? reason,
+        }) {
+          if (conversationId != id) {
+            return;
+          }
+          if (requestId != null &&
+              requestId.isNotEmpty &&
+              requestId != endRequestId) {
+            return;
+          }
+          completeAck(hubReason: reason);
+        }
+
+        _routerEndedCallback = onEnded;
+        router.addListener(onEnded);
+      } else {
+        void onEnded(Object? raw) {
+          if (completer.isCompleted) {
+            return;
+          }
+          final map = _toMap(raw);
+          final endedId = map?['conversationId']?.toString();
+          if (endedId != null && endedId != id) {
+            return;
+          }
+          final echoedRequestId = map?['requestId']?.toString();
+          if (echoedRequestId != null &&
+              echoedRequestId.isNotEmpty &&
+              echoedRequestId != endRequestId) {
+            return;
+          }
+          completeAck(hubReason: map?['reason']?.toString());
+        }
+
+        _conversationEndedHandler = onEnded;
+        final socket = _connection.raw;
+        _endedSocket = socket;
+        socket.on(RelayEventNames.conversationEnded, onEnded);
+      }
+
       _connection.raw.emit(
         RelayEventNames.conversationEnd,
         <String, Object?>{
@@ -307,15 +331,17 @@ class RelayConversation {
           'conversationId': id,
         },
       );
-    } on Object catch (e) {
+    } on Object catch (e, stackTrace) {
+      completeAck();
       AppLogger.warning(
         'failed to emit relay:conversation.end',
         context: <String, Object?>{
           'component': 'RelayConversation',
           'agentId': _agentId,
           'conversationId': id,
-          'error': e.toString(),
         },
+        error: e,
+        stackTrace: stackTrace,
       );
     }
 
@@ -332,18 +358,20 @@ class RelayConversation {
         },
       );
     } finally {
-      _detachConversationEndedListener();
-      _endAckCompleter = null;
-      _setState(
-        RelayConversationEnded(
-          agentId: _agentId,
-          conversationId: id,
-          reason: RelayConversationEndReasons.resolve(
-            hubReason: hubEndedReason,
-            localReason: reason ?? 'closed',
+      if (generation == _generation) {
+        _detachConversationEndedListener();
+        _endAckCompleter = null;
+        _setState(
+          RelayConversationEnded(
+            agentId: _agentId,
+            conversationId: id,
+            reason: RelayConversationEndReasons.resolve(
+              hubReason: hubEndedReason,
+              localReason: reason ?? 'closed',
+            ),
           ),
-        ),
-      );
+        );
+      }
     }
   }
 
@@ -352,6 +380,16 @@ class RelayConversation {
   /// to the hub.
   void forceEnd({String? reason}) {
     final id = conversationId;
+    _generation += 1;
+    final startAck = _startAckCompleter;
+    if (startAck != null && !startAck.isCompleted) {
+      startAck.completeError(
+        const RelayConversationStartFailure(
+          message: 'Relay conversation start was cancelled',
+          code: 'obtain_superseded',
+        ),
+      );
+    }
     _inFlightStart = null;
     _inFlightEnd = null;
     final endAck = _endAckCompleter;
@@ -373,9 +411,11 @@ class RelayConversation {
   void _detachConversationStartedListener() {
     final handler = _conversationStartedHandler;
     if (handler != null) {
-      _connection.raw.off(RelayEventNames.conversationStarted, handler);
+      _startedSocket?.off(RelayEventNames.conversationStarted, handler);
       _conversationStartedHandler = null;
     }
+    _startedSocket = null;
+    _startAckCompleter = null;
   }
 
   void _detachConversationEndedListener() {
@@ -386,9 +426,10 @@ class RelayConversation {
     }
     final handler = _conversationEndedHandler;
     if (handler != null) {
-      _connection.raw.off(RelayEventNames.conversationEnded, handler);
+      _endedSocket?.off(RelayEventNames.conversationEnded, handler);
       _conversationEndedHandler = null;
     }
+    _endedSocket = null;
   }
 
   // Setters do not compose with the sealed-class state pattern as cleanly

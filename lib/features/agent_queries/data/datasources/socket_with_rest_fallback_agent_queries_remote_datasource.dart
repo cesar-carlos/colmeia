@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:colmeia/core/errors/app_failure.dart';
+
 import 'package:colmeia/core/logging/app_logger.dart';
 import 'package:colmeia/core/network/auth_session_events.dart';
 import 'package:colmeia/core/socket/relay/relay_dispatch_exception.dart';
@@ -33,6 +35,7 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
     required this._restDelegate,
     this._onFallback,
     this._onTemporaryFallback,
+    this.canAccessNetwork,
     AuthSessionEvents? sessionEvents,
     this._transientFailureThreshold = 5,
     this._temporaryLatchCooldown = const Duration(seconds: 60),
@@ -47,6 +50,7 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
   }
 
   final AgentQueriesRemoteDataSource _socketDelegate;
+  final bool Function()? canAccessNetwork;
   final AgentQueriesRemoteDataSource _restDelegate;
   final void Function(SocketDispatchException trigger)? _onFallback;
   final void Function({required String reason, required Object trigger})?
@@ -59,6 +63,8 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
 
   /// `true` once the latch has caught a permanent failure.
   bool _latched = false;
+  int _sessionGeneration = 0;
+  bool _isDisposed = false;
 
   final Map<String, _AgentTransientLatchState> _transientByAgent =
       <String, _AgentTransientLatchState>{};
@@ -86,6 +92,7 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
   /// Clears permanent and temporary REST fallback so a new auth session
   /// (or test) can retry the socket transport.
   void resetLatch({required String reason}) {
+    _sessionGeneration += 1;
     final hadPermanent = _latched;
     final hadTemporary = _transientByAgent.isNotEmpty;
     if (!hadPermanent && !hadTemporary) {
@@ -105,6 +112,8 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
   }
 
   Future<void> dispose() async {
+    _isDisposed = true;
+    _sessionGeneration += 1;
     await _sessionEventsSub?.cancel();
     _sessionEventsSub = null;
   }
@@ -147,27 +156,66 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
     required Future<Map<String, dynamic>> Function() useRest,
     required Future<Map<String, dynamic>> Function() useSocket,
   }) async {
+    final generation = _sessionGeneration;
+    void ensureActive() {
+      if (canAccessNetwork?.call() == false) {
+        throw const ValidationFailure(
+          message: 'offline_query_requires_connection',
+          userMessage: 'Requer conexão: esta consulta não está disponível no pacote offline.',
+        );
+      }
+      if (_isDisposed ||
+          generation != _sessionGeneration ||
+          (cancelScope?.isCancelled ?? false)) {
+        throw const SocketDispatchCancelled(
+          message: 'Query cancelled or auth session changed during dispatch',
+        );
+      }
+    }
+
+    Future<Map<String, dynamic>> dispatchRest() async {
+      ensureActive();
+      final response = await useRest();
+      ensureActive();
+      return response;
+    }
+
+    ensureActive();
     final normalizedAgentId = _normalizeAgentId(agentId);
-    if (_latched || _isAgentTemporarilyLatched(normalizedAgentId)) {
-      return useRest();
+    final transientState = _transientByAgent[normalizedAgentId];
+    if (_latched ||
+        _isAgentTemporarilyLatched(normalizedAgentId) ||
+        (transientState?.probeInFlight ?? false)) {
+      return dispatchRest();
+    }
+    final isRecoveryProbe = transientState?.latchedUntil != null;
+    if (isRecoveryProbe) {
+      transientState!.probeInFlight = true;
     }
     try {
       final response = await useSocket();
-      _onSocketSuccess(normalizedAgentId);
+      ensureActive();
+      if (identical(_transientByAgent[normalizedAgentId], transientState) &&
+          (isRecoveryProbe || transientState?.latchedUntil == null)) {
+        _onSocketSuccess(normalizedAgentId);
+      }
       return response;
     } on SocketDispatchNamespaceForbidden catch (trigger) {
+      ensureActive();
       if (cancelScope?.hasPublishedRows ?? false) {
         rethrow;
       }
       _latchPermanent(trigger, reason: 'namespace_forbidden');
-      return useRest();
+      return dispatchRest();
     } on SocketDispatchUnauthorized catch (trigger) {
+      ensureActive();
       if (cancelScope?.hasPublishedRows ?? false) {
         rethrow;
       }
       _latchPermanent(trigger, reason: 'unauthorized_exhausted');
-      return useRest();
+      return dispatchRest();
     } on SocketDispatchException catch (error) {
+      ensureActive();
       if (_isTransientSocketFailure(error)) {
         _noteTransientFailure(
           normalizedAgentId,
@@ -177,6 +225,7 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
       }
       rethrow;
     } on RelayDispatchException catch (error) {
+      ensureActive();
       if (_isTransientRelayFailure(error)) {
         _noteTransientFailure(
           normalizedAgentId,
@@ -185,6 +234,10 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
         );
       }
       rethrow;
+    } finally {
+      if (isRecoveryProbe) {
+        transientState!.probeInFlight = false;
+      }
     }
   }
 
@@ -322,5 +375,6 @@ class SocketWithRestFallbackAgentQueriesRemoteDataSource
 
 final class _AgentTransientLatchState {
   int consecutiveFailures = 0;
+  bool probeInFlight = false;
   DateTime? latchedUntil;
 }

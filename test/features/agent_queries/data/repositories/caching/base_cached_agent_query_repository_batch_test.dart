@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/features/agent_queries/data/cache/strategies/resumo_total_diario_vendas_cache_strategy.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/caching/caching_resumo_total_diario_vendas_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/domain/cache/calendar_bucket_closure.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_query_cache_invalidate_scope.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_query_load_policy.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
@@ -298,6 +301,91 @@ void main() {
       check(delegate.loadCount).equals(1);
     },
   );
+
+  for (final cancel in [false, true]) {
+    test(
+      'should reject late batch persistence after ${cancel ? 'cancellation' : 'invalidation'}',
+      () async {
+        final started = Completer<void>();
+        final release = Completer<void>();
+        final scope = AgentQueriesCancelScope();
+        when(() => agentQueries.executeSqlBatch(any(), cancelScope: scope))
+            .thenAnswer((
+              invocation,
+            ) async {
+              if (!started.isCompleted) started.complete();
+              await release.future;
+              final request =
+                  invocation.positionalArguments.single
+                      as AgentSqlExecuteBatchRequest;
+              return Success<AgentSqlBatchExecutionResult, AppFailure>(
+                AgentSqlBatchExecutionResult(
+                  totalCommands: request.commands.length,
+                  successfulCommands: request.commands.length,
+                  failedCommands: 0,
+                  items: List<AgentSqlBatchExecutionItem>.generate(
+                    request.commands.length,
+                    (index) => AgentSqlBatchExecutionItem(
+                      index: index,
+                      ok: true,
+                      rows: <Map<String, dynamic>>[
+                        <String, dynamic>{
+                          'codEmpresa': 1,
+                          'codFilial': 1,
+                          'dataVenda': request
+                              .commands[index]
+                              .namedParams['dataVendaInicio'],
+                          'qtdVendas': 7,
+                          'valorTotalDiarioVenda': 7.0,
+                        },
+                      ],
+                      rowCount: 1,
+                    ),
+                  ),
+                ),
+              );
+            });
+
+        final filter = ResumoTotalDiarioVendasFilter(
+          dataVendaInicio: DateTime(2026, 6),
+          dataVendaFim: DateTime(2026, 6, 1, 23, 59, 59),
+        );
+        final pending = cachingRepo.load(
+          userId: 'u1',
+          agentId: 'a1',
+          filter: filter,
+          cancelScope: scope,
+        );
+        await started.future;
+        if (cancel) {
+          scope.cancelAll();
+        } else {
+          await cachingRepo.invalidateCache(
+            const AgentQueryCacheInvalidateAgent(userId: 'u1', agentId: 'a1'),
+          );
+        }
+        release.complete();
+        final result = await pending;
+        if (cancel) {
+          expect(result.exceptionOrNull(), isA<OperationCancelledFailure>());
+        } else {
+          expect(result.isSuccess(), isTrue);
+        }
+        expect(
+          await cachingRepo.factsStore.readPayload(
+            storageKey: strategy.storageKey(
+              userId: 'u1',
+              agentId: 'a1',
+              bucketId: '2026-06-01',
+              rangeFilter: filter,
+            ),
+            expectedSchemaVersion: strategy.schemaVersion,
+          ),
+          isNull,
+        );
+      },
+    );
+  }
 
   test('single-bucket forceRefresh persists via executeSqlBatch', () async {
     when(() => agentQueries.executeSqlBatch(any())).thenAnswer((

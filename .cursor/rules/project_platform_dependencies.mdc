@@ -1,6 +1,6 @@
 ---
 description: Foco de plataforma do Colmeia e escolhas preferenciais de dependencias
-globs: ["lib/**/*.dart", "pubspec.yaml"]
+globs: ["lib/**/*.dart", "pubspec.yaml", "web/**", "android/**", "windows/**", "tool/**", ".github/workflows/**"]
 ---
 
 # Colmeia - Plataforma e Dependencias
@@ -12,15 +12,37 @@ repositorio.
 
 ## Foco de Plataforma
 
-- O produto prioriza Android e iOS
-- Web pode existir para preview ou entregas secundarias quando agregar valor
-  claro
-- Evite codigo e abstracoes desktop-specific sem necessidade explicita de
-  escopo
-- Ao adicionar comportamento multiplataforma, valide se ele agrega valor ao
-  escopo mobile ativo
-- Respeite expectativas nativas de Android e iOS para navegacao, permissoes,
-  comportamento de teclado e lifecycle
+- Supported targets: Android, Windows desktop, and Web.
+- Native iOS development and distribution are discontinued; do not recreate
+  the iOS runner or release tooling.
+- Web is a supported delivery target, not a preview-only platform.
+- Keep native APIs behind platform guards or conditional imports, and validate
+  browser behavior as well as Android and Windows behavior.
+- Use responsive layouts and support touch, mouse, and keyboard interaction.
+- A runtime `kIsWeb` check does not make an unsupported import portable.
+  Use conditional imports for native IO and browser-only implementations.
+- Browser storage is origin-scoped and may be cleared or denied. Do not treat
+  Web token storage as equivalent to a native OS credential vault.
+
+## PWA Delivery
+
+- Use the custom `web/pwa-worker.js` for static assets and Push, with the
+  versioned artifact list produced by `tool/package_pwa.py`. Follow
+  `docs/install/web_guide.md` for build and hosting commands.
+- Bundle renderer, fonts and required assets locally. Cache Storage contains
+  only static files, never tokens, authenticated responses, API or Socket data.
+- Navigation fallback applies only within the application scope; missing
+  assets must remain errors. Validate both root and subdirectory hosting.
+- Keep the previous version usable after failed downloads. Activate updates
+  only through user action, respecting active synchronization/export work and
+  other tabs before deleting old caches.
+- Request Push permission only after explicit user action. Keep VAPID private
+  keys on the server; authenticated subscriptions belong to the current user.
+- Push clicks pass through existing authentication and authorization guards.
+  Disable/logout unsubscribes locally and reconciles pending server cleanup.
+- Keep Web capabilities behind interfaces with inactive native adapters.
+- Client build configuration and bundled environment files are public assets;
+  never place server secrets or private VAPID keys in them.
 
 ## Dependencias Preferenciais
 
@@ -34,7 +56,8 @@ repositorio.
 - `package_info_plus` para metadados da app
 - `flutter_dotenv` para ambiente e configuracao de build
 - `logger` para logging estruturado quando o projeto precisar de camada propria
-- `hive_ce` para cache local chave-valor
+- `hive_ce` for native key-value caching (Android and Windows)
+- `idb_shim` for transactional IndexedDB access on Web, behind `AppCacheStore`
 - `path` e `path_provider` para diretorios de dados no VM
 - `uuid` para identificadores tecnicos
 - `crypto` para hashing e operacoes criptograficas pontuais
@@ -51,12 +74,12 @@ repositorio.
 - `sentry_flutter` para erros e performance, com DSN fornecido via
   `--dart-define=SENTRY_DSN=`
 - `mocktail` como biblioteca padrao de mocks em testes
-- `socket_io_client` para o canal Socket `/consumers` do `plug_server`
-  (PR-A em `docs/Features/socket_consumer_channel_plan.md`)
+- `socket_io_client` para o canal Socket `/consumers` do `plug_server`;
+  transport behavior belongs to `project_data_domain.mdc`
 
 ## Dependencias Fora de Escopo
 
-- Nao adicione `tray_manager`; o projeto e mobile-first
+- Add `tray_manager` only when a concrete Windows product flow requires it
 - Nao mantenha `flutter_lints` junto com `very_good_analysis`
 - Nao adicione `syncfusion_flutter_core` diretamente sem uso explicito de API
 - Nao adicione `protoc_plugin` sem pipeline real de protobuf

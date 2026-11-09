@@ -9,15 +9,15 @@
 > **What this is NOT**: a replacement for the canonical contract docs. The
 > source of truth for the wire format is the hub repository:
 >
-> - [`plug_server/docs/socket_relay_protocol.md`](../../../plug_database/plug_server/docs/socket_relay_protocol.md)
+> - `plug_server/docs/socket_relay_protocol.md` (upstream reference: `plug_server/docs/socket/socket_relay_protocol.md`)
 >   ("Relay unary fast-path", "Server-side phase diagnostics")
-> - [`plug_server/docs/api_rest_bridge.md`](../../../plug_database/plug_server/docs/api_rest_bridge.md)
+> - `plug_server/docs/api/api_rest_bridge.md` (upstream reference: `plug_server/docs/api/api_rest_bridge.md`)
 >   ("Server-side phase diagnostics", "Limite de um agentId por envelope")
-> - [`plug_server/docs/socket_client_sdk.md`](../../../plug_database/plug_server/docs/socket_client_sdk.md)
+> - `plug_server/docs/socket_client_sdk.md` (upstream reference: `plug_server/docs/socket/socket_client_sdk.md`)
 >   ("Opt-ins de performance e diagnostico")
-> - [`plug_server/docs/adrs/0008-relay-batch-protocol.md`](../../../plug_database/plug_server/docs/adrs/0008-relay-batch-protocol.md)
-> - [`plug_server/docs/spikes/hmac_worker_offload.md`](../../../plug_database/plug_server/docs/spikes/hmac_worker_offload.md)
-> - [`plug_server/docs/runbooks/socket_perf_investigation.md`](../../../plug_database/plug_server/docs/runbooks/socket_perf_investigation.md)
+> - `plug_server/docs/adrs/0008-relay-batch-protocol.md` (upstream reference: `plug_server/docs/adrs/0008-relay-batch-protocol.md`)
+> - `plug_server/docs/spikes/hmac_worker_offload.md` (upstream reference: `plug_server/docs/spikes/hmac_worker_offload.md`)
+> - `plug_server/docs/runbooks/socket_perf_investigation.md` (upstream reference: `plug_server/docs/runbooks/socket_perf_investigation.md`)
 
 ## TL;DR
 
@@ -480,7 +480,7 @@ hangs, no response, no error".
 ### What was documented on the hub
 
 A new section in
-[`docs/api_rest_bridge.md`](../../../plug_database/plug_server/docs/api_rest_bridge.md)
+`docs/api_rest_bridge.md` (upstream reference: `plug_server/docs/api/api_rest_bridge.md`)
 ("Limite de um `agentId` por envelope") makes the contract explicit:
 
 > Tanto a rota REST quanto o evento Socket `agents:command` aceitam
@@ -562,11 +562,11 @@ For traceability, the hub changes that back this delivery:
 
 - Wire contract or protocol-level questions: open issue against
   `plug_database/plug_server` referencing
-  [`docs/socket_relay_protocol.md`](../../../plug_database/plug_server/docs/socket_relay_protocol.md).
+  `docs/socket_relay_protocol.md` (upstream reference: `plug_server/docs/socket/socket_relay_protocol.md`).
 - Adoption / migration questions on the Colmeia side: existing
   [`socket_channel_performance_review.md`](../Features/socket/socket_channel_performance_review.md)
   remains the integration playbook.
 - New perf measurements that suggest a gap not covered here:
   follow the runbook
-  [`docs/runbooks/socket_perf_investigation.md`](../../../plug_database/plug_server/docs/runbooks/socket_perf_investigation.md)
+  `docs/runbooks/socket_perf_investigation.md` (upstream reference: `plug_server/docs/runbooks/socket_perf_investigation.md`)
   to capture per-phase numbers first, then file the proposal back here.

@@ -70,6 +70,11 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
         payload,
         isolateRowThreshold: AppEnvironment.agentSqlParseIsolateRowThreshold,
       );
+      if (cancelScope?.isCancelled ?? false) {
+        return const Failure<AgentSqlExecutionResult, AppFailure>(
+          OperationCancelledFailure(),
+        );
+      }
       cancelScope?.diagnostics?.addDuration('decode', parseClock.elapsed);
       if (result.rows.isNotEmpty) {
         cancelScope?.diagnostics?.mark('first_rows');
@@ -273,6 +278,11 @@ class AgentQueriesRepositoryImpl implements AgentQueriesRepository {
         payload,
         isolateRowThreshold: AppEnvironment.agentSqlParseIsolateRowThreshold,
       );
+      if (cancelScope?.isCancelled ?? false) {
+        return const Failure<AgentSqlBatchExecutionResult, AppFailure>(
+          OperationCancelledFailure(),
+        );
+      }
       cancelScope?.diagnostics?.addDuration('decode', parseClock.elapsed);
       if (result.items.any((item) => item.rows.isNotEmpty)) {
         cancelScope?.diagnostics?.mark('first_rows');

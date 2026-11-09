@@ -6,6 +6,62 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('PerAgentConcurrencyGate', () {
+    test(
+      'should preserve FIFO after cancelling alternate queued requests',
+      () async {
+        final gate = PerAgentConcurrencyGate(maxInflightPerAgent: 1);
+        await gate.acquire('agent');
+        final waiters = <Completer<void>>[];
+        final futures = <Future<void>>[];
+        final completed = <int>[];
+        for (var index = 0; index < 1000; index++) {
+          final pending = gate.acquire('agent', onQueuedWaiter: waiters.add);
+          futures.add(
+            pending.then<void>(
+              (_) {
+                completed.add(index);
+                gate.release('agent');
+              },
+              onError: (Object error) {
+                expect(error, isA<GateQueueWaitCancelled>());
+              },
+            ),
+          );
+        }
+        for (var index = 998; index >= 0; index -= 2) {
+          gate.cancelQueuedWaiter('agent', waiters[index]);
+        }
+        expect(gate.waitingFor('agent'), 500);
+        gate.release('agent');
+        await Future.wait(futures);
+        expect(completed, <int>[
+          for (var index = 1; index < 1000; index += 2) index,
+        ]);
+        expect(gate.inflightFor('agent'), 0);
+        expect(gate.waitingFor('agent'), 0);
+      },
+    );
+
+    test(
+      'should remove the waiter when its registration callback fails',
+      () async {
+        final gate = PerAgentConcurrencyGate(maxInflightPerAgent: 1);
+        await gate.acquire('agent');
+        await expectLater(
+          gate.acquire(
+            'agent',
+            onQueuedWaiter: (_) => throw StateError('registration failed'),
+          ),
+          throwsStateError,
+        );
+        expect(gate.waitingFor('agent'), 0);
+        gate.release('agent');
+        expect(gate.inflightFor('agent'), 0);
+        await gate.acquire('agent').timeout(const Duration(milliseconds: 100));
+        gate.release('agent');
+      },
+    );
+
     test('rejects non-positive maxInflightPerAgent', () {
       check(
         () => PerAgentConcurrencyGate(maxInflightPerAgent: 0),

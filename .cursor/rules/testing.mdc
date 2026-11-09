@@ -1,6 +1,6 @@
 ---
 description: Estrutura, isolamento, falhas e cobertura de testes
-globs: ["test/**/*.dart"]
+globs: ["test/**", "tool/tests/**", "tool/pwa-tests/**"]
 ---
 
 # Padroes de Testes
@@ -74,6 +74,21 @@ Para convencoes especificas de Dart/Flutter, use `testing_dart_flutter.mdc`.
 - Priorize alta cobertura no dominio e nas fronteiras de erro
 - Prefira poucos testes precisos a muitos testes redundantes
 - Quando uma regressao ocorrer, adicione um teste que a capture de forma direta
+
+## Evidence and Acceptance
+
+- Report executed commands and distinguish passed, failed, skipped and
+  unexecuted checks. Missing credentials or tolerated transport failures do
+  not prove successful integration or performance improvements.
+- Match validation to the change. Rule/documentation-only edits require
+  reference, consistency and diff checks, not application builds or reloads.
+- For performance claims, compare the same workload and environment before
+  and after; correctness tests alone do not establish a speed improvement.
+- Production Web behavior requires browser checks against the packaged build:
+  offline navigation, root/subpath hosting, interrupted updates and multi-tab
+  behavior cannot be proven by mocked Dart tests alone.
+- PWA acceptance also requires real server authorization and Push integration.
+  Record unavailable infrastructure as a limitation, not a successful check.
 
 ## Referencias Cruzadas
 

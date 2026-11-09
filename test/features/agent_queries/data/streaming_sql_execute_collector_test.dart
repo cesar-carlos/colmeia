@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:checks/checks.dart';
 import 'package:colmeia/features/agent_queries/data/streaming_sql_execute_collector.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -18,6 +20,26 @@ void main() {
   }
 
   group('BridgeShapedSqlExecuteCollector', () {
+    test('should reject oversized chunks before copying their rows', () async {
+      const limited = BridgeShapedSqlExecuteCollector(maxBufferedRows: 2);
+      final oversized = _UnreadableRows();
+      await expectLater(
+        limited.collect(
+          streamOf([
+            {
+              'rows': <Object?>[
+                {'id': 1},
+              ],
+              'chunk_index': 0,
+            },
+            {'rows': oversized, 'chunk_index': 1},
+          ]),
+        ),
+        throwsFormatException,
+      );
+      expect(oversized.reads, 0);
+    });
+
     test('rejects duplicate or missing chunk indexes', () async {
       for (final nextIndex in [0, 2]) {
         await expectLater(
@@ -308,4 +330,21 @@ void main() {
       );
     });
   });
+}
+
+class _UnreadableRows extends ListBase<Object?> {
+  int reads = 0;
+  @override
+  int get length => 2;
+  @override
+  set length(int value) => throw UnsupportedError('read only');
+  @override
+  Object? operator [](int index) {
+    reads++;
+    throw StateError('Oversized chunk must not be copied');
+  }
+
+  @override
+  void operator []=(int index, Object? value) =>
+      throw UnsupportedError('read only');
 }

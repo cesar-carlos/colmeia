@@ -12,13 +12,16 @@ fluxo de dados.
 
 ## Estrategia de Dados
 
-- Use REST como fonte principal para autenticacao, bootstrap da sessao,
-  dashboards, relatorios, filtros, exportacao e preferencias
-- Trate sockets ou `WebSocket` como mecanismos complementares para aviso de
-  atualizacao, invalidacao de cache ou refresh pontual de KPI
-- Introduza comportamento em tempo real apenas em modulos que realmente se
-  beneficiem disso
-- O app deve continuar funcionando sem conectividade em tempo real
+- Use REST for authentication, session bootstrap and hub resource management.
+- Agent queries use REST or Socket/relay through the existing transport
+  abstraction and configured fallback policy. Socket carries query results
+  as well as presence and invalidation events.
+- Keep transport selection, retry, cancellation and concurrency policies out
+  of UI and domain repositories. Reuse the existing gates and coalescers.
+- Do not retry authorization failures or cancelled work through another
+  transport. Preserve deadlines across fallback and avoid duplicate dispatch.
+- Local-only reads must not attempt REST or Socket. Agent unavailability is
+  not evidence that the browser itself has no internet connection.
 
 ## Hub Plug (plug_server) — documentacao de apoio no repo
 
@@ -32,15 +35,26 @@ no **plug_agente**). No Colmeia, use estes resumos para nao depender só da memo
 
 ## Cache Local
 
-- Comece com cache leve focado em performance de leitura
-- Cacheie apenas dados de sessao, loja ativa, preferencias, filtros recentes,
-  dashboards, metadados e os ultimos resumos relevantes
-- Exponha acesso ao cache via `AppCacheStore` em vez de vazar detalhes de
-  `Hive` ou `Box` para as features
+- Keep opportunistic caches bounded and separate from user-selected offline
+  packages. Product limits belong to `project_product_scope.mdc`.
+- Expose cache access through `AppCacheStore` rather than leaking `Hive`,
+  `Box` or IndexedDB transactions to features.
 - Use chaves logicas, TTL por recurso e invalidacao explicita
 - Sempre permita refresh manual para dados que possam ficar desatualizados
-- Evite sincronizacao offline completa, merges complexos e reconciliacao
-  avancada nas fases iniciais do produto
+- Offline packages reuse current queries and use cases; do not add full-table
+  downloads or new SQL solely to populate them.
+- Scope datasets by user, authorized store/agent, query parameters, format
+  version and period. Record collection time, completeness and partial days.
+- Publish a temporary generation only after completion and permission
+  revalidation. Failure, cancellation or quota exhaustion preserves the
+  previous generation; do not silently evict selected packages.
+- Keep derived snapshots and open periods separate from consolidated facts.
+- Coordinate downloads across tabs and reuse existing concurrency limits.
+  Resume overdue work on reconnection or foreground entry using the configured
+  schedule interval (two hours by default), after validating permissions;
+  support manual refresh and preserve explicitly configured intervals.
+- Missing datasets or unsupported filter combinations require connection;
+  they are not empty results. Offline filtering and export use available data.
 
 ## Autenticacao e Autorizacao
 
@@ -51,6 +65,13 @@ no **plug_agente**). No Colmeia, use estes resumos para nao depender só da memo
   recursos concedidos e filtros autorizados
 - Modele permissoes por usuario, perfil, escopo de loja e recursos habilitados,
   nao por um cargo estatico unico
+- Offline authorization is server-issued, user-bound and scoped to permitted
+  stores/agents. Enforce its absolute expiry on reads; local refreshes cannot
+  extend it. An expired access token cannot authenticate remote calls.
+- Transient network failures must not erase persisted sessions. Confirmed
+  revocation removes the affected data and cancels pending work.
+- Logout immediately blocks local access, cancels synchronization, removes
+  private user data and propagates the change to other tabs.
 
 ## Dashboards Dinamicos
 
@@ -69,7 +90,8 @@ no **plug_agente**). No Colmeia, use estes resumos para nao depender só da memo
   que possivel
 - Cada parametro deve descrever tipo, obrigatoriedade, valor inicial, opcoes
   permitidas e regras de exibicao
-- Prefira filtros, ordenacao e paginacao no servidor
+- Prefer server-side filtering, sorting and pagination for online queries;
+  prepared offline datasets follow the local-read policy above
 - Use formularios dinamicos na UI para que regras especificas de relatorio nao
   sejam duplicadas
 - Quando um parametro precisar de formatacao brasileira recorrente, prefira

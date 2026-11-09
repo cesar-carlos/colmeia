@@ -1,5 +1,8 @@
 # Agentes Como Fontes de Dados
 
+> Historical analysis: implementation status and proposed technologies reflect
+> the original research. See the [analysis index](README.md) for current references.
+
 ## Visao geral
 
 No contexto do Colmeia, cada agente funciona como uma **fonte de dados conectada a uma base de dados especifica**. O cliente nao consulta a base diretamente pelo app. Em vez disso, o app trabalha com a ideia de que:

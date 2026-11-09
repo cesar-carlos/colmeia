@@ -66,6 +66,7 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
   final DateTime Function() _clock;
   final int _bucketLoadConcurrency;
   final bool _useExecuteBatchForBuckets;
+  int _cacheGeneration = 0;
 
   AgentQueryCacheStrategy<Filter, Row> get strategy => _strategy;
 
@@ -85,9 +86,13 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
     bool? hubConnectedFromApprovedCatalogRow,
     AgentQueriesCancelScope? cancelScope,
   }) async {
+    final cacheGeneration = _cacheGeneration;
+    if (cancelScope?.isCancelled ?? false) {
+      return const Failure(OperationCancelledFailure());
+    }
     if (cachePolicy == AgentQueryLoadPolicy.networkOnly ||
         _strategy.storageMode == ConsolidationStorageMode.derivedOnly) {
-      return _delegateLoad(
+      final result = await _delegateLoad(
         userId: userId,
         agentId: agentId,
         filter: filter,
@@ -98,6 +103,9 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
         cancelScope: cancelScope,
         cachePolicy: cachePolicy,
       );
+      return cancelScope?.isCancelled ?? false
+          ? const Failure(OperationCancelledFailure())
+          : result;
     }
 
     final clock = _clock();
@@ -115,6 +123,10 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
       cachePolicy: cachePolicy,
     );
 
+    if (cancelScope?.isCancelled ?? false) {
+      return const Failure(OperationCancelledFailure());
+    }
+
     final needNetworkBucketIds = _resolveNeedNetworkBucketIds(
       userId: userId,
       agentId: agentId,
@@ -129,6 +141,7 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
     } else if (_strategy.supportsRangeCoalesce) {
       prefetchedNetworkResults =
           await _loadNetworkBucketsPreferringContiguousCoalesce(
+            cacheGeneration: cacheGeneration,
             userId: userId,
             agentId: agentId,
             rangeFilter: filter,
@@ -146,6 +159,7 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
           );
     } else {
       prefetchedNetworkResults = await _loadNetworkBucketsViaExecuteBatch(
+        cacheGeneration: cacheGeneration,
         userId: userId,
         agentId: agentId,
         rangeFilter: filter,
@@ -161,9 +175,14 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
       );
     }
 
+    if (cancelScope?.isCancelled ?? false) {
+      return const Failure(OperationCancelledFailure());
+    }
+
     final bucketResults = await _loadBucketsInWaves(
       bucketIds: plan.allBucketIdsInRange,
       loadBucket: (bucketId) => _loadBucket(
+        cacheGeneration: cacheGeneration,
         userId: userId,
         agentId: agentId,
         rangeFilter: filter,
@@ -187,6 +206,10 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
         cancelScope: cancelScope,
       ),
     );
+
+    if (cancelScope?.isCancelled ?? false) {
+      return const Failure(OperationCancelledFailure());
+    }
 
     final rows = <Row>[];
     for (final bucketResult in bucketResults) {
@@ -230,6 +253,7 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
   /// so sparse holes do not re-download days already in cache.
   Future<Map<String, AppResult<List<Row>>>>
   _loadNetworkBucketsPreferringContiguousCoalesce({
+    required int cacheGeneration,
     required String userId,
     required String agentId,
     required Filter rangeFilter,
@@ -249,6 +273,7 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
       if (run.length >= 2) {
         results.addAll(
           await _loadNetworkBucketsViaRangeCoalesce(
+            cacheGeneration: cacheGeneration,
             userId: userId,
             agentId: agentId,
             rangeFilter: rangeFilter,
@@ -271,6 +296,7 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
     if (singles.isNotEmpty) {
       results.addAll(
         await _loadNetworkBucketsViaExecuteBatch(
+          cacheGeneration: cacheGeneration,
           userId: userId,
           agentId: agentId,
           rangeFilter: rangeFilter,
@@ -339,6 +365,7 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
 
   Future<Map<String, AppResult<List<Row>>>>
   _loadNetworkBucketsViaRangeCoalesce({
+    required int cacheGeneration,
     required String userId,
     required String agentId,
     required Filter rangeFilter,
@@ -358,17 +385,21 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
       rangeFilter: rangeFilter,
       needNetworkBucketIds: needNetworkBucketIds,
     );
-    final result = await _delegateLoad(
-      userId: userId,
-      agentId: agentId,
-      filter: coalesceFilter,
-      clientToken: clientToken,
-      bridgeTimeoutMs: bridgeTimeoutMs,
-      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
-      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
-      cancelScope: cancelScope,
-      cachePolicy: networkPolicy,
-    );
+    final result = cancelScope?.isCancelled ?? false
+        ? Failure<List<Row>, AppFailure>(const OperationCancelledFailure())
+        : await _delegateLoad(
+            userId: userId,
+            agentId: agentId,
+            filter: coalesceFilter,
+            clientToken: clientToken,
+            bridgeTimeoutMs: bridgeTimeoutMs,
+            hubPresenceOnlineAgentIdsSnapshot:
+                hubPresenceOnlineAgentIdsSnapshot,
+            hubConnectedFromApprovedCatalogRow:
+                hubConnectedFromApprovedCatalogRow,
+            cancelScope: cancelScope,
+            cachePolicy: networkPolicy,
+          );
 
     final rows = result.getOrNull();
     if (rows == null) {
@@ -395,7 +426,8 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
         continue;
       }
 
-      if (_strategy.isBucketClosed(bucketId: bucketId, clock: clock) &&
+      if (_canPersist(cacheGeneration, cancelScope) &&
+          _strategy.isBucketClosed(bucketId: bucketId, clock: clock) &&
           ConsolidationCatalog.mayPersist(
             factKind: _strategy.factKind,
             writer: _strategy.queryKey,
@@ -433,6 +465,7 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
         if (factKind != _strategy.factKind) {
           return;
         }
+        _cacheGeneration++;
         await _factsStore.removeKey(
           _storageKeyForScope(
             userId: userId,
@@ -442,10 +475,12 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
           ),
         );
       case AgentQueryCacheInvalidateUser(:final userId):
+        _cacheGeneration++;
         await _factsStore.removeMatching(
           AgentQueryFactsKeyPrefix.forUser(userId),
         );
       case AgentQueryCacheInvalidateAgent(:final userId, :final agentId):
+        _cacheGeneration++;
         await _factsStore.removeMatching(
           AgentQueryFactsKeyPrefix.forAgent(userId: userId, agentId: agentId),
         );
@@ -453,12 +488,17 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
         if (factKind != _strategy.factKind) {
           return;
         }
+        _cacheGeneration++;
         await _factsStore.removeMatchingFactKind(
           userId: userId,
           factKind: factKind,
         );
     }
   }
+
+  // Invalidation also fences writes from loads that have not reached storage yet.
+  bool _canPersist(int generation, AgentQueriesCancelScope? cancelScope) =>
+      generation == _cacheGeneration && !(cancelScope?.isCancelled ?? false);
 
   String _storageKeyForScope({
     required String userId,
@@ -531,6 +571,7 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
   }
 
   Future<Map<String, AppResult<List<Row>>>> _loadNetworkBucketsViaExecuteBatch({
+    required int cacheGeneration,
     required String userId,
     required String agentId,
     required Filter rangeFilter,
@@ -615,10 +656,14 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
         skipTransportCache: batchSupport.bypassTransportCache(networkPolicy),
       );
 
-      final batchResult = await agentQueriesRepository.executeSqlBatch(
-        batchRequest,
-        cancelScope: cancelScope,
-      );
+      final batchResult = cancelScope?.isCancelled ?? false
+          ? const Failure<AgentSqlBatchExecutionResult, AppFailure>(
+              OperationCancelledFailure(),
+            )
+          : await agentQueriesRepository.executeSqlBatch(
+              batchRequest,
+              cancelScope: cancelScope,
+            );
       final execution = batchResult.getOrNull();
       if (execution == null) {
         final failure = batchResult.exceptionOrNull()!;
@@ -654,7 +699,8 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
           continue;
         }
 
-        if (_strategy.isBucketClosed(bucketId: bucketId, clock: clock) &&
+        if (_canPersist(cacheGeneration, cancelScope) &&
+            _strategy.isBucketClosed(bucketId: bucketId, clock: clock) &&
             ConsolidationCatalog.mayPersist(
               factKind: _strategy.factKind,
               writer: _strategy.queryKey,
@@ -682,6 +728,7 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
   }
 
   Future<AppResult<List<Row>>> _loadBucket({
+    required int cacheGeneration,
     required String userId,
     required String agentId,
     required Filter rangeFilter,
@@ -698,6 +745,9 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
     bool? hubConnectedFromApprovedCatalogRow,
     AgentQueriesCancelScope? cancelScope,
   }) async {
+    if (cancelScope?.isCancelled ?? false) {
+      return const Failure(OperationCancelledFailure());
+    }
     final needsNetwork =
         forceNetwork || plan.networkBucketIds.contains(bucketId);
     final isClosed = _strategy.isBucketClosed(bucketId: bucketId, clock: clock);
@@ -735,24 +785,29 @@ abstract base class BaseCachedAgentQueryRepository<Filter, Row extends Object>
     final networkPolicy = cachePolicy == AgentQueryLoadPolicy.defaultLoad
         ? AgentQueryLoadPolicy.forceRefresh
         : cachePolicy;
-    final result = await _delegateLoad(
-      userId: userId,
-      agentId: agentId,
-      filter: bucketFilter,
-      clientToken: clientToken,
-      bridgeTimeoutMs: bridgeTimeoutMs,
-      hubPresenceOnlineAgentIdsSnapshot: hubPresenceOnlineAgentIdsSnapshot,
-      hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
-      cancelScope: cancelScope,
-      cachePolicy: networkPolicy,
-    );
+    final result = cancelScope?.isCancelled ?? false
+        ? Failure<List<Row>, AppFailure>(const OperationCancelledFailure())
+        : await _delegateLoad(
+            userId: userId,
+            agentId: agentId,
+            filter: bucketFilter,
+            clientToken: clientToken,
+            bridgeTimeoutMs: bridgeTimeoutMs,
+            hubPresenceOnlineAgentIdsSnapshot:
+                hubPresenceOnlineAgentIdsSnapshot,
+            hubConnectedFromApprovedCatalogRow:
+                hubConnectedFromApprovedCatalogRow,
+            cancelScope: cancelScope,
+            cachePolicy: networkPolicy,
+          );
 
     final rows = result.getOrNull();
     if (rows == null) {
       return Failure<List<Row>, AppFailure>(result.exceptionOrNull()!);
     }
 
-    if (rows.isNotEmpty &&
+    if (_canPersist(cacheGeneration, cancelScope) &&
+        rows.isNotEmpty &&
         isClosed &&
         ConsolidationCatalog.mayPersist(
           factKind: _strategy.factKind,

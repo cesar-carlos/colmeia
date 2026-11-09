@@ -205,6 +205,9 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
     setState(() {
       final validKeys = widget.columns.map((column) => column.key).toSet();
       final syncedKeys = _visibleColumnKeys.intersection(validKeys);
+      _sorts = _sorts
+          .where((sort) => validKeys.contains(sort.columnKey))
+          .toList(growable: false);
       _groups = _groups
           .where((group) => validKeys.contains(group.columnKey))
           .toList(growable: false);

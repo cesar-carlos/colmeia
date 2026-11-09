@@ -1,9 +1,9 @@
 ---
-description: Design system mobile, loading, empty, error, acessibilidade e responsividade
+description: Design system, estados de UI, acessibilidade e responsividade multiplataforma
 globs: ["lib/**/*.dart"]
 ---
 
-# UI/UX Design Principles for Mobile Apps
+# UI/UX Design for Android, Windows and Web
 
 ## Escopo
 
@@ -12,7 +12,7 @@ Este arquivo e a fonte de verdade para:
 - design system e linguagem visual
 - navegacao e interacoes mobile
 - estados de loading, empty e error
-- acessibilidade, feedback e adaptacao entre Android e iOS
+- accessibility, feedback, and adaptation across Android, Windows desktop, and Web
 
 Nao duplique aqui detalhes de implementacao de widgets. Para composicao,
 layout, builders e performance, use `flutter_widgets.mdc`.
@@ -141,9 +141,15 @@ O projeto define breakpoints em `AppBreakpoints` (`lib/core/layout/`):
 
 ## Plataforma
 
-- Respeite convencoes de Android e iOS para navegacao, feedback e permissoes
+- Respect Android, Windows, and browser conventions for navigation, feedback, and permissions
 - Use comportamentos nativos quando isso melhorar previsibilidade para o usuario
 - Mostre progresso em operacoes longas de IO, rede ou processamento
+- Support visible keyboard focus, tab order, mouse input and browser back
+  navigation without relying on touch-only gestures.
+- Offline views show period, collection time and partial data. Missing local
+  datasets require connection and must not render as empty query results.
+- Installation, update and Push controls must handle unsupported or denied
+  browser capabilities without blocking normal use.
 
 ## Referencias Cruzadas
 

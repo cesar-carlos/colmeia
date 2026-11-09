@@ -1,105 +1,68 @@
 # Colmeia
 
-App Flutter corporativo para dashboards, relatorios e consultas analiticas em contexto multi-loja e multi-perfil.
+Flutter application for corporate dashboards, reports, and agent-backed analytical
+queries across stores and user scopes.
 
-## Visao geral
+## Supported platforms
 
-O Colmeia usa uma API central como fluxo principal de integracao e foi desenhado para evoluir de forma incremental, com:
+Android, Windows desktop, and Web. Native iOS development and distribution have
+been discontinued. Platform dependencies are maintained in
+[project_platform_dependencies.mdc](.cursor/rules/project_platform_dependencies.mdc).
 
-- autenticacao e controle de sessao
-- permissoes por usuario e por escopo
-- dashboards com integracao real inicial
-- cache local leve e controlado
-- manutencao de agentes do cliente por lista aprovada, solicitacoes e fila local
-- preparacao para relatorios e consultas multi-agente
+## Application structure
 
-## Estado atual
+The application includes authentication and token refresh, user/store scope,
+client-agent approval and requests, agent SQL execution, overview and sales
+dashboards, and sales maps. Shared report components support tabular views and
+exports; a standalone reports module is not an active navigation destination.
+Backend authorization remains authoritative.
 
-### Ja implementado
+Features live in `lib/features/`, with presentation, application, domain, and
+data layers where needed. Shared infrastructure lives in `lib/core/`; reusable
+UI lives in `lib/shared/`; shell, bootstrap and routes live in `lib/app/`.
+Provider manages presentation state, GetIt wires
+services, GoRouter handles navigation, and Dio/Socket.IO provide remote access.
 
-- login, sessao e refresh automatico de token
-- contexto de usuario e escopo por loja
-- dashboard principal
-- cache local com `Hive`
-- manutencao de agentes do cliente com:
-- agentes aprovados
-- solicitacao manual por `agentId`
-- historico de solicitacoes
-- fila local de pendencias e sincronizacao
+Local storage separates opportunistic caches from explicitly selected PWA
+offline packages. Packages cover 30 days and require a server-issued permission
+grant valid for at most 24 hours; they do not queue new remote business actions.
+Browser storage can still be evicted. See [storage architecture](docs/cache_repo/architecture.md)
+and the [Web/PWA guide](docs/install/web_guide.md) for lifecycle, installation,
+Push and the remaining real-server/device acceptance checks.
 
-### Em evolucao
+## Documentation
 
-- religar relatorios na navegacao principal
-- transformar agentes aprovados em fontes reais de consulta
-- suportar consultas `single-source` e `multi-source race`
+| Topic | Reference |
+| --- | --- |
+| Setup, installation, and releases | [Installation index](docs/install/readme.md) |
+| Web/PWA build, offline use and acceptance | [Web guide](docs/install/web_guide.md) |
+| Cache and persistence | [Cache index](docs/cache_repo/README.md) |
+| Hub integration and transport defaults | [Plug server index](docs/plug_server_docs_index_for_colmeia.md) |
+| Agent SQL contracts | [Bridge SQL options](docs/bridge_agent_sql_api_options.md) |
+| Charts and reports UI | [Charts design system](docs/Features/charts_design_system.md) |
+| Product analysis and design history | [Analysis index](docs/analysis/README.md) |
+| Contributor rules | [Rules index](.cursor/rules/rules_index.mdc) |
 
-## Stack principal
+## Development
 
-- Flutter
-- Dart
-- `Provider`
-- `Dio`
-- `GetIt`
-- `GoRouter`
-- `Hive`
-- `flutter_secure_storage`
-
-## Estrutura de alto nivel
-
-```text
-lib/
-  core/
-  features/
-  shared/
-```
-
-O projeto segue organizacao por feature e separacao em camadas, priorizando `presentation`, `application`, `domain` e `data` quando a complexidade justificar.
-
-## Documentacao
-
-A documentacao de analise e planejamento fica em `docs/analysis/`.
-
-Leituras principais:
-
-- `docs/analysis/README.md`
-- `docs/analysis/analise.md`
-- `docs/analysis/analise_tecnica.md`
-- `docs/analysis/agentes_como_fontes_de_dados.md`
-- `docs/analysis/consulta_multi_agente_para_relatorios_e_graficos.md`
-- `docs/analysis/plano_evolucao_agentes_relatorios_dashboards.md`
-
-## Ambiente de desenvolvimento
-
-Com Flutter configurado, os comandos mais comuns sao:
+Use the Flutter version in `tool/flutter_ci_version.txt`, then:
 
 ```bash
 flutter pub get
 python tool/install_git_hooks.py
-. ./tool/env_windows.ps1   # PowerShell / Windows only
 python tool/ci_preflight.py --templates-only
 flutter analyze
-dart format lib test
 flutter test
-flutter run
+flutter run -d windows
+flutter run -d chrome
+# Android: flutter run -d <device-id>
 ```
 
-`python tool/ci_preflight.py` espelha os gates baratos do job `analyze` do
-Flutter CI (templates de env, format e sync de versao). Antes de push/release,
-prefira esse comando a descobrir a falha so no GitHub. Use `--templates-only`
-no dia a dia se `local.env` tiver secrets E2E ativos.
+On Windows PowerShell, load `. ./tool/env_windows.ps1` when configuring the
+local tool environment. Format changed Dart files with `dart format`.
 
-Guias de release por plataforma: `docs/install/release_guide.md` (Windows/Android),
-`docs/install/android_guide.md`, `docs/install/ios_guide.md`.
-
-## Direcao do produto
-
-O objetivo atual do Colmeia e consolidar uma base mobile para leitura analitica corporativa, mantendo:
-
-- backend como fonte final de autorizacao
-- REST como integracao principal
-- cache leve no MVP
-- agentes aprovados como futuras fontes de dados autorizadas
-
-## Observacao
-
-Os levantamentos iniciais originais foram consolidados em Markdown dentro de `docs/analysis/`, que agora funciona como referencia principal para contexto de negocio, arquitetura e roadmap.
+`python tool/ci_preflight.py` checks environment templates, formatting, and
+version synchronization before release. Use `--templates-only` while local E2E
+secrets are active. Backend-dependent tests require their documented environment;
+see the [cache testing guide](docs/cache_repo/testing.md) for storage and agent
+SQL checks.

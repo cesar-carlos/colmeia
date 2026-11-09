@@ -1,0 +1,1 @@
+{"name":"colmeia-pwa-browser-tests","private":true,"type":"module","scripts":{"test":"node --test worker.test.mjs browser.test.mjs","test:worker":"node --test worker.test.mjs"},"devDependencies":{"playwright":"^1.58.0"}}

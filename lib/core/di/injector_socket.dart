@@ -35,6 +35,7 @@ import 'package:colmeia/core/socket/socket_command_dispatcher.dart';
 import 'package:colmeia/core/socket/socket_command_dispatcher_impl.dart';
 import 'package:colmeia/core/socket/socket_io_client_factory.dart';
 import 'package:colmeia/core/socket/socket_request_correlator.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:get_it/get_it.dart';
 
 /// PR-A: registers the consumer socket infrastructure as **lazy** singletons.
@@ -71,7 +72,7 @@ void registerInjectorSocket(GetIt getIt) {
     )
     ..registerLazySingleton<ConnectionReadyDecoder>(_buildReadyDecoder);
 
-  if (AppEnvironment.socketPayloadWorkerIsolatesEnabled) {
+  if (!kIsWeb && AppEnvironment.socketPayloadWorkerIsolatesEnabled) {
     getIt.registerLazySingleton<PayloadFrameCodecWorker>(
       () {
         final key = AppEnvironment.socketPayloadSigningKey;
@@ -364,7 +365,7 @@ AgentLatencyOracle? _resolveLatencyOracle(GetIt getIt) {
 /// while the default (permissive) tolerates unsigned ones — matching
 /// the hub's own opt-in policy controlled by `PAYLOAD_SIGN_OUTBOUND`.
 PayloadFrameCodec _buildPayloadFrameCodec(GetIt getIt) {
-  final worker = AppEnvironment.socketPayloadWorkerIsolatesEnabled;
+  final worker = !kIsWeb && AppEnvironment.socketPayloadWorkerIsolatesEnabled;
   final gzipDecodeThreshold =
       AppEnvironment.socketPayloadGzipDecodeIsolateThresholdBytes;
   final gzipEncodeThreshold =

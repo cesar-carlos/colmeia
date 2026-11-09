@@ -12,7 +12,10 @@ class UserContextRepositoryImpl implements UserContextRepository {
   UserContextRepositoryImpl({
     required this._localDataSource,
     required this._remoteDataSource,
+    this.offlineContextLoader,
   });
+
+  final Future<CurrentUserContext?> Function(String user)? offlineContextLoader;
 
   final UserContextLocalDataSource _localDataSource;
   final UserContextRemoteDataSource _remoteDataSource;
@@ -22,6 +25,8 @@ class UserContextRepositoryImpl implements UserContextRepository {
     required String userId,
   }) async {
     try {
+      final offline = await offlineContextLoader?.call(userId);
+      if (offline != null) return Success(offline);
       final persistedActiveStoreId = await _localDataSource.readActiveStoreId(
         userId,
       );

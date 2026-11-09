@@ -96,9 +96,9 @@ class RelayConversationManager {
     // async error and bypasses `_prepareSend`'s typed catches.
     late final Future<RelayConversation> shared;
     shared = _obtainInternal(agentId).whenComplete(() {
-      _inflightObtainByAgentId.removeWhere(
-        (key, value) => identical(value, shared),
-      );
+      if (identical(_inflightObtainByAgentId[agentId], shared)) {
+        _inflightObtainByAgentId.remove(agentId)?.ignore();
+      }
     });
     _inflightObtainByAgentId[agentId] = shared;
     return shared;

@@ -154,7 +154,7 @@ class AppSocketUrlResolver {
 ```
 
 > Observação: o nginx de produção do hub roteia WebSocket sem o
-> prefixo `/api/v1` — confirmar com `plug_server/docs/nginx_production.md`.
+> prefixo `/api/v1` — confirmar com `plug_server/docs/infrastructure/nginx_production.md`.
 > Em ambiente de desenvolvimento local com porta diferente, usar
 > `API_BASE_URL` apontando para a porta do hub raiz.
 

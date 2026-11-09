@@ -1,6 +1,7 @@
 import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/app/theme/app_theme_mode_controller.dart';
 import 'package:colmeia/core/localization/app_locale_resolution.dart';
+import 'package:colmeia/features/pwa/presentation/pwa_status_host.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -15,6 +16,8 @@ class ColmeiaApp extends StatelessWidget {
     final themeMode = context.watch<AppThemeModeController>().themeMode;
 
     return MaterialApp.router(
+      builder: (context, child) =>
+          PwaStatusHost(child: child ?? const SizedBox.shrink()),
       onGenerateTitle: (context) =>
           AppLocalizations.of(context).shellAppBrandName,
       debugShowCheckedModeBanner: false,

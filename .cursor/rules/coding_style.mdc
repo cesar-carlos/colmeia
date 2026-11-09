@@ -142,29 +142,35 @@ final List<String> activeIds = users
   `dart format lib/feature/x.dart test/feature/x_test.dart`). Evite `dart format`
   em pastas largas (`lib/`, `test/`, um modulo inteiro) quando o working tree
   tiver muitas mudancas nao relacionadas — isso reformatar ficheiros por acidente
-  e polui o diff. Para formatar cada `.dart` listado pelo Git (PowerShell):
-  `git diff --name-only HEAD -- '*.dart' | ForEach-Object { dart format $_ }`
-  (ajuste `HEAD` ou use `--cached` para staged).
-- Use `dart fix --apply` para correcoes seguras de lint/refactor
+  e polui o diff. A Git diff can include pre-existing user changes: select
+  task-owned files explicitly rather than formatting every modified file.
+- Preview automated fixes and restrict them to the task scope. Do not run
+  repository-wide `dart fix --apply` against unrelated working-tree changes.
 - Rode `flutter analyze` antes de encerrar **qualquer** tarefa que altere
   codigo Dart — nao apenas tarefas longas; erros de analyzer bloqueiam CI e
   revelam problemas que o compilador nao detecta imediatamente
 - Corrija erros e avisos relevantes identificados pelo analyzer antes de fechar
   a tarefa
 - Mantenha imports e codigo sem lixo morto
+- Use available Dart/Flutter skills and MCP tools when relevant. Inspect
+  tool availability and connect through DTD before runtime inspection or
+  reload; never report a reload or runtime check that was not performed.
+  If no running app is available, state that limitation and run applicable
+  static checks and tests.
 
 ## Modern Dart
 
 ### Primary Constructors
 
-- Dart 3.13 enables primary constructors by default
+- Check the SDK constraint in `pubspec.yaml` and the installed toolchain
+  before adopting language features; do not rely on a version claim in rules.
 - Use them on **new**, small types: `class const Foo(final int x);` or
   `this._dep` initializing formals for private injected fields
 - Do not migrate a type that already has multiple generative constructors in
   the same step; those must redirect to a single primary constructor
 - For existing `_field = param` constructors, use
   `dart fix --apply --code=prefer_initializing_formals` rather than a
-  hand-written rewrite of the class header
+  hand-written rewrite of the class header; scope fixes as described above
 
 ### Pattern Matching
 

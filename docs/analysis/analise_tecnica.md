@@ -1,5 +1,8 @@
 # Analise Tecnica Inicial
 
+> Historical analysis: implementation status and proposed technologies reflect
+> the original research. See the [analysis index](README.md) for current references.
+
 ## Visao geral
 
 O levantamento tecnico inicial definiu o Colmeia como um app Flutter mobile para dashboards e relatorios, com foco em:

@@ -5,14 +5,19 @@ unilaterally to close the REST↔Socket performance gap on cross-agent /
 relay workloads. Each item links to a focused spec, the affected code on
 both sides, and a validation plan.
 
-The client side of the gap is already addressed in
-[`socket_channel_performance_review.md`](../Features/socket/socket_channel_performance_review.md)
-and the pre-warm shipped in
-[`relay_conversation_pre_warmer.dart`](../../lib/core/socket/relay/relay_conversation_pre_warmer.dart).
-Remaining client items are micro-optimizations below 5% impact; the
-meaningful wins live here.
+The original client investigation is preserved in
+[`socket_channel_performance_review.md`](../Features/socket/socket_channel_performance_review.md).
+Its performance estimates are historical, not proof that all current client gaps
+are resolved. For the 2026-11-08 source review, including cancellation payload
+mismatch, PWA acceptance and client/server flag mapping, use the
+[current integration gaps](../plug_server_docs_index_for_colmeia.md#integration-gaps-and-follow-ups).
 
-## ⚠ Pending hub work (read this first)
+## Historical hub follow-up (July 2026)
+
+The table below preserves the original investigation status, not a live backlog.
+Relay batch has since shipped and is enabled in Colmeia bundled defaults; see the
+[current integration index](../plug_server_docs_index_for_colmeia.md). Verify
+other hub deployment details before acting on these historical requests.
 
 As of 2026-07 the relay unary fast-path defect (item 3) is **resolved** on the
 hub side; Colmeia enables `SOCKET_RELAY_FAST_PATH_ENABLED=true` in bundled

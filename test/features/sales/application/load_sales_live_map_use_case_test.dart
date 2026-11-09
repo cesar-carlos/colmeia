@@ -149,7 +149,7 @@ void main() {
         scope: any(named: 'scope'),
         now: any(named: 'now'),
       ),
-    ).thenReturn(null);
+    ).thenAnswer((_) async => null);
     when(
       () => catalogDiskCache.write(
         userId: any(named: 'userId'),
@@ -1892,7 +1892,7 @@ void main() {
           scope: any(named: 'scope'),
           now: any(named: 'now'),
         ),
-      ).thenAnswer((invocation) {
+      ).thenAnswer((invocation) async {
         final scope =
             invocation.namedArguments[#scope] as SalesLiveMapCatalogScope;
         if (diskEnabled && scope.storageKey == exactScope.storageKey) {
@@ -1999,7 +1999,10 @@ void main() {
     () async {
       SharedPreferences.setMockInitialValues(<String, Object>{});
       final prefs = await SharedPreferences.getInstance();
-      final realDiskCache = SalesLiveMapCatalogDiskCache(prefs);
+      final realDiskCache = SalesLiveMapCatalogDiskCache(
+        cacheStore,
+        legacyPreferences: prefs,
+      );
       final localMetrics = SalesLiveMapRefreshMetrics();
       final localUseCase = buildUseCaseWithDiskCache(
         realDiskCache,
@@ -2096,7 +2099,10 @@ void main() {
   test('decodifica snapshot v2 branchSubset exato do disk cache', () async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
     final prefs = await SharedPreferences.getInstance();
-    final realDiskCache = SalesLiveMapCatalogDiskCache(prefs);
+    final realDiskCache = SalesLiveMapCatalogDiskCache(
+      cacheStore,
+      legacyPreferences: prefs,
+    );
     final localMetrics = SalesLiveMapRefreshMetrics();
     final localUseCase = buildUseCaseWithDiskCache(
       realDiskCache,
@@ -2218,7 +2224,10 @@ void main() {
         ],
       }),
     );
-    final realDiskCache = SalesLiveMapCatalogDiskCache(prefs);
+    final realDiskCache = SalesLiveMapCatalogDiskCache(
+      cacheStore,
+      legacyPreferences: prefs,
+    );
     final localMetrics = SalesLiveMapRefreshMetrics();
     final localUseCase = buildUseCaseWithDiskCache(
       realDiskCache,
@@ -2285,7 +2294,7 @@ void main() {
           scope: any(named: 'scope'),
           now: any(named: 'now'),
         ),
-      ).thenAnswer((invocation) {
+      ).thenAnswer((invocation) async {
         final scope =
             invocation.namedArguments[#scope] as SalesLiveMapCatalogScope;
         return diskEntries[scope.storageKey];

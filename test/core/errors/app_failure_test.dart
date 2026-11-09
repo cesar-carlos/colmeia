@@ -3,6 +3,7 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http_parser/http_parser.dart' show formatHttpDate;
 
 void main() {
   group('mapToAppFailure', () {
@@ -228,6 +229,29 @@ void main() {
         );
       },
     );
+
+    test('parses HTTP-date Retry-After on every platform', () {
+      final options = RequestOptions(path: '/api/test');
+      final retryAt = DateTime.now().toUtc().add(const Duration(seconds: 60));
+      final failure = mapToAppFailure(
+        DioException(
+          requestOptions: options,
+          response: Response<void>(
+            requestOptions: options,
+            statusCode: 429,
+            headers: Headers.fromMap({
+              'retry-after': [formatHttpDate(retryAt)],
+            }),
+          ),
+          type: DioExceptionType.badResponse,
+        ),
+      );
+      expect(failure, isA<NetworkFailure>());
+      expect(
+        (failure as NetworkFailure).retryAfter!.inSeconds,
+        inInclusiveRange(55, 60),
+      );
+    });
 
     test('should propagate Retry-After header (delta seconds) on 429', () {
       final failure = mapToAppFailure(

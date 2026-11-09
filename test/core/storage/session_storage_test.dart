@@ -69,62 +69,74 @@ void main() {
     });
 
     test(
-      'should fall back to in-memory storage on platform write error',
+      'keeps missing-plugin writes readable when the plugin recovers',
       () async {
         when(
           () => secureStorage.write(
             key: any(named: 'key'),
             value: any(named: 'value'),
           ),
-        ).thenThrow(
-          PlatformException(
-            code: 'write_failed',
-            message: 'Keystore unavailable',
-          ),
-        );
-        when(
-          () => secureStorage.read(key: any(named: 'key')),
         ).thenThrow(MissingPluginException());
-
-        await sessionStorage.write(
-          key: 'auth_session',
-          value: 'raw-session',
-        );
-
-        final value = await sessionStorage.read('auth_session');
-
-        check(value).equals('raw-session');
+        when(() => secureStorage.read(key: any(named: 'key')))
+            .thenAnswer((_) async => _signedValue('stale-session'));
+        await sessionStorage.write(key: 'auth_session', value: 'new-session');
+        expect(await sessionStorage.read('auth_session'), 'new-session');
       },
     );
 
-    test('should clear in-memory fallback on platform delete error', () async {
+    for (final error in [
+      PlatformException(code: 'storage_blocked'),
+      UnsupportedError('HTTPS required'),
+      StateError('Browser quota exceeded'),
+    ]) {
+      test('surfaces write failures of type ${error.runtimeType}', () async {
+        when(
+          () => secureStorage.write(
+            key: any(named: 'key'),
+            value: any(named: 'value'),
+          ),
+        ).thenThrow(error);
+        await expectLater(
+          sessionStorage.write(key: 'auth_session', value: 'session'),
+          throwsA(isA<StorageFailure>()),
+        );
+      });
+      test('surfaces read failures of type ${error.runtimeType}', () async {
+        when(() => secureStorage.read(key: any(named: 'key'))).thenThrow(error);
+        await expectLater(
+          sessionStorage.read('auth_session'),
+          throwsA(isA<StorageFailure>()),
+        );
+      });
+    }
+
+    test(
+      'failed deletion cannot resurrect a stored token in this instance',
+      () async {
+        when(() => secureStorage.delete(key: any(named: 'key')))
+            .thenThrow(PlatformException(code: 'delete_failed'));
+        when(() => secureStorage.read(key: any(named: 'key')))
+            .thenAnswer((_) async => _signedValue('old-session'));
+        await expectLater(
+          sessionStorage.delete('auth_session'),
+          throwsA(isA<StorageFailure>()),
+        );
+        expect(await sessionStorage.read('auth_session'), isNull);
+      },
+    );
+
+    test('successful deletion clears a missing-plugin fallback', () async {
       when(
         () => secureStorage.write(
           key: any(named: 'key'),
           value: any(named: 'value'),
         ),
       ).thenThrow(MissingPluginException());
-      when(
-        () => secureStorage.delete(key: any(named: 'key')),
-      ).thenThrow(
-        PlatformException(
-          code: 'delete_failed',
-          message: 'Keystore unavailable',
-        ),
-      );
-      when(
-        () => secureStorage.read(key: any(named: 'key')),
-      ).thenThrow(MissingPluginException());
-
-      await sessionStorage.write(
-        key: 'auth_session',
-        value: 'raw-session',
-      );
+      when(() => secureStorage.delete(key: any(named: 'key')))
+          .thenAnswer((_) async {});
+      await sessionStorage.write(key: 'auth_session', value: 'session');
       await sessionStorage.delete('auth_session');
-
-      final value = await sessionStorage.read('auth_session');
-
-      check(value).isNull();
+      expect(await sessionStorage.read('auth_session'), isNull);
     });
 
     test('should throw storage failure when digest is invalid', () async {

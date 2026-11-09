@@ -23,8 +23,8 @@ class AppReportGridSource<T> extends DataGridSource {
     required List<AppReportColumn<T>> visibleColumns,
     required this._context,
     this.onSortChanged,
-    this.alternateRowColor,
-    this.dataTextStyle,
+    this._alternateRowColor,
+    this._dataTextStyle,
   }) : _rows = List<T>.from(rows),
        _columns = List<AppReportColumn<T>>.from(visibleColumns) {
     _buildRows();
@@ -37,8 +37,25 @@ class AppReportGridSource<T> extends DataGridSource {
   /// Fired when the user changes column sort. Emits the new sort state.
   final ValueChanged<List<AppReportSortDescriptor>>? onSortChanged;
 
-  final Color? alternateRowColor;
-  final TextStyle? dataTextStyle;
+  Color? _alternateRowColor;
+  TextStyle? _dataTextStyle;
+
+  Color? get alternateRowColor => _alternateRowColor;
+  TextStyle? get dataTextStyle => _dataTextStyle;
+
+  /// Refreshes appearance without rebuilding rows or losing sort state.
+  void updatePresentation({
+    Color? alternateRowColor,
+    TextStyle? dataTextStyle,
+  }) {
+    if (_alternateRowColor == alternateRowColor &&
+        _dataTextStyle == dataTextStyle) {
+      return;
+    }
+    _alternateRowColor = alternateRowColor;
+    _dataTextStyle = dataTextStyle;
+    notifyListeners();
+  }
 
   bool _suppressSortCallback = false;
 

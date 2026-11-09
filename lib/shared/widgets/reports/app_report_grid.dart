@@ -103,6 +103,8 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
   bool _hasBuiltSource = false;
   final DataGridController _gridController = DataGridController();
   bool _suppressSelectionCallback = false;
+  bool _gridSyncScheduled = false;
+  int _gridSyncGeneration = 0;
 
   // ---- Memoization caches --------------------------------------------------
   // Recomputing `_visibleColumns`, `_buildGridColumns` and `_buildSummaryRows`
@@ -134,6 +136,10 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_hasBuiltSource) {
+      _source.updatePresentation(
+        alternateRowColor: _resolvedAlternateRowColor,
+        dataTextStyle: widget.style.dataTextStyle,
+      );
       return;
     }
     _source = _buildSource();
@@ -171,8 +177,12 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
         _invalidateColumnCaches();
       }
       if (styleChanged) {
-        _source = _buildSource();
-      } else {
+        _source.updatePresentation(
+          alternateRowColor: _resolvedAlternateRowColor,
+          dataTextStyle: widget.style.dataTextStyle,
+        );
+      }
+      if (rowsChanged || columnsChanged) {
         _source.update(
           rows: widget.rows,
           visibleColumns: _visibleColumns,
@@ -194,7 +204,7 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
   }
 
   /// [AppReportGridSource] stores [AppReportViewerStyle.alternateRowColor] and
-  /// [AppReportViewerStyle.dataTextStyle] at construction; recreate when either
+  /// [AppReportViewerStyle.dataTextStyle]; refresh presentation when either
   /// changes so cell rendering matches the theme.
   static bool _sourceStyleChanged(
     AppReportViewerStyle oldStyle,
@@ -216,7 +226,12 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
   /// Order matters: grouping builds on [DataGridSource.sortedColumns]; applying
   /// selection last avoids transient indices while the grid rebuilds.
   void _scheduleSyncGridStateFromParent() {
+    _gridSyncGeneration++;
+    if (_gridSyncScheduled) return;
+    _gridSyncScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      _gridSyncScheduled = false;
+      final generation = _gridSyncGeneration;
       if (!mounted) {
         return;
       }
@@ -229,7 +244,7 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
             widget.currentSorts,
             keys,
           );
-          if (!mounted) {
+          if (!mounted || generation != _gridSyncGeneration) {
             return;
           }
         }
@@ -318,6 +333,7 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
   void dispose() {
     widget.groupController?._unbind();
     _gridController.dispose();
+    if (_hasBuiltSource) _source.dispose();
     super.dispose();
   }
 
@@ -337,7 +353,9 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
       context: context,
       alternateRowColor: _resolvedAlternateRowColor,
       dataTextStyle: widget.style.dataTextStyle,
-      onSortChanged: widget.events.onSortChanged,
+      onSortChanged: (sorts) {
+        if (mounted) widget.events.onSortChanged?.call(sorts);
+      },
     );
   }
 

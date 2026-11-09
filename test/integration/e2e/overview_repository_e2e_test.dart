@@ -9,6 +9,8 @@ import 'package:colmeia/core/di/injector_overview.dart';
 import 'package:colmeia/core/errors/app_failure.dart'
     show AppFailure, SessionFailure, UnknownFailure;
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/core/pwa/pwa_platform_stub.dart';
+import 'package:colmeia/features/agent_queries/application/usecases/load_resumo_total_vendas_municipio_filial_periodo_use_case.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcela_forma_pagamento_sql_v2.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcela_por_usuario_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_dia_semana_sql.dart';
@@ -17,11 +19,23 @@ import 'package:colmeia/features/agent_queries/data/queries/resumo_parcelas_mens
 import 'package:colmeia/features/agent_queries/data/queries/resumo_produto_venda_lucratividade_sql.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_total_diario_vendas_sql.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
+import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:colmeia/features/overview/application/usecases/load_overview_use_case.dart';
 import 'package:colmeia/features/overview/domain/entities/overview.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
+import 'package:colmeia/features/overview/domain/entities/overview_section_request.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
+import 'package:colmeia/features/pwa/application/pwa_package_service.dart';
+import 'package:colmeia/features/pwa/data/offline_package_store.dart';
+import 'package:colmeia/features/pwa/data/pwa_authorization_gateway.dart';
+import 'package:colmeia/features/pwa/data/pwa_dataset_loader.dart';
+import 'package:colmeia/features/pwa/presentation/offline_report_projection.dart';
+import 'package:colmeia/features/user_context/data/datasources/user_context_remote_datasource.dart';
+import 'package:colmeia/shared/filters/dashboard_filter.dart'
+    show DashboardDateRange;
+import 'package:colmeia/shared/widgets/reports/app_report_query.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart' hide group;
 import 'package:result_dart/result_dart.dart';
 import 'package:test_api/scaffolding.dart' show group;
@@ -89,6 +103,118 @@ void main() {
             _expectOverviewE2eSuccess,
             _expectOverviewRepositoryE2eFailure,
           );
+        },
+      );
+
+      test('complete package uses live authorization and remains readable without HTTP', () async {
+        expect(missingE2eRepositoryKeys(), isEmpty);
+        final dio = getIt<Dio>();
+        final agent = AppEnvironment.e2eAgentId;
+        final gateway = PwaAuthorizationGateway(dio);
+        final grant = await gateway.authorize(agent);
+        final user = grant.userId;
+        var now = DateTime.now();
+        final store = OfflinePackageStore(getIt<AppCacheStore>());
+        final service = PwaPackageService(
+          platform: createPwaPlatform(),
+          store: store,
+          cache: getIt<AppCacheStore>(),
+          authorization: gateway,
+          loader: PwaDatasetLoader(
+            getIt<OverviewRepository>(),
+            ApiUserContextRemoteDataSource(dio),
+            getIt<AgentClientTokenReader>(),
+            getIt<LoadResumoTotalVendasMunicipioFilialPeriodoUseCase>(),
+          ).call,
+          clock: () => now,
+        );
+        await service.synchronize(user, agent);
+        var remoteCalls = 0;
+        final blocker = InterceptorsWrapper(
+          onRequest: (options, handler) {
+            remoteCalls++;
+            handler.reject(
+              DioException(
+                requestOptions: options,
+                type: DioExceptionType.connectionError,
+              ),
+            );
+          },
+        );
+        dio.interceptors.insert(0, blocker);
+        try {
+          final package = await service.read(user, agent);
+          expect(package, isNotNull);
+          expect(
+            package!.datasets.keys,
+            containsAll(['context', 'overview', 'salesByBranch']),
+          );
+          for (final dataset in OfflineReportProjection.datasets.keys) {
+            expect(
+              OfflineReportProjection.isAvailable(package, dataset),
+              isTrue,
+            );
+            final projection = OfflineReportProjection(
+              package,
+              dataset,
+              const AppReportQuery(),
+            );
+            expect(projection.columns, isNotEmpty);
+            expect(projection.rows, isA<List<Map<String, dynamic>>>());
+          }
+          expect(await service.read('another-user', agent), isNull);
+          now = package.authorization.expiresAt;
+          expect(await service.read(user, agent), isNull);
+          expect(remoteCalls, 0);
+        } finally {
+          dio.interceptors.remove(blocker);
+          await service.clearUser(user);
+        }
+      }, skip: !const bool.fromEnvironment('PWA_LIVE_ACCEPTANCE'));
+
+      test(
+        'offline package overview returns complete bounded live data',
+        () async {
+          expect(
+            missingE2eRepositoryKeys(),
+            isEmpty,
+            reason: 'Live PWA acceptance requires configured credentials',
+          );
+          final today = DateTime.now();
+          final end = DateTime(today.year, today.month, today.day);
+          final start = DateTime(end.year, end.month, end.day - 29);
+          final result = await getIt<LoadOverviewUseCase>()(
+            userId: 'user-1',
+            policy: OverviewLoadPolicy.forceRefresh,
+            sectionRequest: OverviewSectionRequest.offlinePackage,
+            filter: DashboardFilter(
+              selectedAgentIds: {AppEnvironment.e2eAgentId},
+              referenceRange: DashboardDateRange(
+                startInclusive: start,
+                endInclusive: end,
+              ),
+            ),
+            rowLabels: OverviewLoadLabels.englishFallback,
+          );
+          final overview = result.getOrThrow();
+          expect(overview.approvedAgentCount, greaterThan(0));
+          expect(overview.hasMissingClientToken, isFalse);
+          expect(overview.hasAgentsSkippedDueToHubPresence, isFalse);
+          expect(overview.hasPartialAgentQueryFailure, isFalse);
+          expect(overview.dailySalesTrendLoadFailed, isFalse);
+          expect(overview.monthlyParcelTrendLoadFailed, isFalse);
+          expect(overview.weekdaySalesTrendLoadFailed, isFalse);
+          expect(overview.weekdayUserSalesTrendLoadFailed, isFalse);
+          expect(overview.lucratividadeTrendLoadFailed, isFalse);
+          expect(overview.userRankingsLoadFailed, isFalse);
+          expect(overview.periodStart, start);
+          for (final point in overview.dailySalesTrend) {
+            expect(point.saleDate.isBefore(start), isFalse);
+            expect(
+              point.saleDate.isBefore(end.add(const Duration(days: 1))),
+              isTrue,
+            );
+          }
         },
       );
 

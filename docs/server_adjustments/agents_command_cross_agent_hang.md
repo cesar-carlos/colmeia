@@ -23,7 +23,7 @@
 > **Recommendation for the hub team:** add a fast-fail on
 > `agents:command` when the target `agentId` is not currently connected
 > to the hub (mirror what relay already does). The contract clause
-> "1 agentId per envelope" from `plug_server/docs/api_rest_bridge.md`
+> "1 agentId per envelope" from `plug_server/docs/api/api_rest_bridge.md`
 > remains correct and is now exercised by client tests.
 >
 > **Workaround in production:** Colmeia keeps routing every SQL through
@@ -148,5 +148,5 @@ queries stay on relay.
 - Client default fallback selector: `lib/core/di/injector_agent_queries.dart:348-354`
 - Client batch coordinator (target of this fix):
   `lib/core/socket/agent_command_batch_coordinator.dart`
-- Hub contract: `plug_server/docs/api_rest_bridge.md`,
+- Hub contract: `plug_server/docs/api/api_rest_bridge.md`,
   `plug_server/docs/socket_relay_protocol.md`

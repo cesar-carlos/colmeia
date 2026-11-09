@@ -4,6 +4,20 @@ This file is a short routing map for Colmeia work. The normative contract stays
 in the sibling `plug_server` repository under `docs/` and shared source
 constants.
 
+## Review scope and sources
+
+Reviewed on **2026-11-08** against the local server checkout at
+`D:/Developer/plug_database/plug_server`. This is a source/documentation review,
+not a check of deployed endpoints or fleet versions. Current source contracts
+and deployment acceptance must be reported separately.
+
+HTTP schemas are exposed by the hub at `GET /docs.json` and versioned in
+`contracts/plug-mcp-rest-v2.json` (currently contract 2.1.0). That version is
+independent of the agent OpenRPC profile 2.11.2 and Colmeia's explicit SQL
+`api_version: "2.10"`; do not equate these version numbers. The client constant
+is `kColmeiaAgentApiVersion` in
+`lib/features/agent_queries/domain/entities/agent_sql_execute_request.dart`.
+
 ## Primary references
 
 | plug_server document | Use in Colmeia |
@@ -11,19 +25,36 @@ constants.
 | `docs/api/api_rest_bridge.md` | REST bridge shape, `agents:command`, `sql.execute`, `sql.executeBatch`, pagination, timeouts, JSON-RPC ids, and REST materialization behavior. |
 | `docs/socket/socket_client_sdk.md` | Consumer Socket.IO guide for `/consumers`, handshake, event names, frame compression, rate-limit hints, and examples. |
 | `docs/socket/socket_relay_protocol.md` | Relay protocol: conversations, `relay:rpc.request`, `relay:rpc.stream.pull`, PayloadFrame envelope, validation, and streaming semantics. |
-| `docs/client_agent_business_rules.md` | Client/agent access authorization, `client_token`, revocation behavior, and per-event authorization. |
+| `docs/api/client_agent_business_rules.md` | Client/agent access authorization, `client_token`, revocation behavior, and per-event authorization. |
+| `docs/pwa.md` | Offline authorization, authenticated Push subscriptions, VAPID, transactional delivery and deployment prerequisites. |
+| `docs/runbooks/agent_profile_reconciliation.md` | Stale profile versions and safe reconciliation; registration ACK is not proof of profile convergence. |
+| `docs/plug_agente/remote_action_io_specification.md` | Negotiated process I/O contracts; not an implemented Colmeia dashboard feature. |
 | `docs/configuration.md` | Socket/relay env vars, rate limits, inflight gates, and payload frame defaults. |
-| `docs/observability.md` | Metrics and logs for bridge latency, socket rooms, relay queues, and troubleshooting. |
-| `docs/nginx_production.md` | Reverse proxy and WebSocket deployment settings. |
+| `docs/observability/observability.md` | Metrics and logs for bridge latency, socket rooms, relay queues, and troubleshooting. |
+| `docs/infrastructure/nginx_production.md` | Reverse proxy and WebSocket deployment settings. |
 | `docs/limits/limites_acesso_e_quotas.md` | Access limits, quotas, rate-limit buckets, and fair-share rules that cap REST, `agents:command`, and relay throughput. |
 | `docs/performance/performance_hub_agent.md` | Hub/agent performance tuning: Socket.IO transport, relay buffer caps, inflight gates, and staging smoke env hints referenced from Colmeia rollout checklists. |
 | `docs/adrs/0008-relay-batch-protocol.md` | ADR for relay JSON-RPC batch (`relay:rpc.request.batch`, v1 shipped **2026-05-28**). |
-| `docs/adrs/0009-relay-unary-fast-path.md` | ADR for relay unary fast-path (`fastPath` opt-in; hub echoes client JSON-RPC `id` on fast-path responses — see Colmeia [`docs/server_adjustments/relay_unary_fast_path.md`](server_adjustments/relay_unary_fast_path.md)). |
-| `docs/adrs/0010-request-server-timings.md` | ADR for per-phase `requestServerTimings` on relay, `agents:command`, and REST. |
+| `docs/adrs/0009-client-request-id-echo.md` | ADR for relay unary fast-path (`fastPath` opt-in; hub echoes client JSON-RPC `id` on fast-path responses — see Colmeia [`docs/server_adjustments/relay_unary_fast_path.md`](server_adjustments/relay_unary_fast_path.md)). |
+| `docs/adrs/0012-agent-phase-timings.md` | Negotiated agent-side `meta.agent_phases`; hub `requestServerTimings` is specified in the relay protocol. |
 | `docs/plug_agente/03_performance_roadmap.md` | Agent-side performance roadmap and expectations for bridge SQL, streaming, and batch semantics. |
 | Colmeia [`docs/bridge_agent_sql_api_options.md`](bridge_agent_sql_api_options.md) | Colmeia-facing bridge SQL summary: `sql.execute` / `sql.executeBatch`, choosing `multi_result` vs semantic batch vs JSON-RPC batch arrays, overview read-only parallelism (`max_parallel_read_only_batch_items`). Payload examples: `plug_server/docs/snippets/agent_command_performance_options.ts`. |
 | Colmeia [`docs/Features/socket/socket_channel_performance_review.md`](Features/socket/socket_channel_performance_review.md) | Client socket/relay performance notes: coalescing, batch, gates, temporary REST latch, obtain single-flight, pool=`1`. |
 | Colmeia [`docs/Features/socket/socket_production_rollout_runbook.md`](Features/socket/socket_production_rollout_runbook.md) | Rollout smoke + troubleshooting (temp REST latch, relay fast-path). |
+
+## Authentication and readiness
+
+Colmeia authenticates as a **Client**, not as the owning User or Agent.
+The bearer JWT authorizes access to the hub; `params.client_token` is a separate
+agent-policy credential and never substitutes for that JWT. Approval of access,
+active account status and the agent policy are independent checks.
+
+`connection:ready` confirms base identity rooms. Agent-derived rooms are filled
+asynchronously by the hub; initial pushes are best-effort. Refresh approved-agent
+and profile state through authenticated REST after connecting/reconnecting.
+Do not infer a complete catalog or continued authorization solely from a socket
+connection. Profile versions describe catalog revisions, not executable versions;
+a stale remote profile needs reconciliation, not a forced counter increase.
 
 ## Socket contract used by Colmeia
 
@@ -32,7 +63,8 @@ constants.
 - `connection:ready` is the application readiness signal. Colmeia defaults to
   `payload_frame_only`; raw JSON is compatibility-only, requires an explicit
   `SOCKET_CONNECTION_READY_COMPAT_MODE=compat` or `raw_json_only` override, and
-  is planned for removal after 2026-09-30.
+  remains a migration shim. The planned 2026-09-30 date did not remove client
+  support; the current hub documentation rejects raw modes in production.
 - `agents:command` uses the same body shape as `POST /api/v1/agents/commands`.
   It can receive `agents:command_stream_*` from the hub, but Colmeia does not
   pull that legacy stream path.
@@ -86,31 +118,45 @@ constants.
 
 ## Colmeia ↔ hub feature flags
 
-These flags must be enabled on **both** the hub deployment and the Colmeia
-build (via `assets/env/local.env`, `default.env`, or `--dart-define`). Colmeia
-code is already wired; flipping a client flag before the hub accepts the
-contract causes rejections or retries. See
-[`docs/server_adjustments/DELIVERED.md`](server_adjustments/DELIVERED.md) for
-envelope shapes and validation.
+Client flags and hub controls are not necessarily named alike. Verify the
+connected hub capabilities and deployment policy before enabling a client opt-in.
+The table distinguishes client configuration from server controls; historical
+handoffs in [server adjustments](server_adjustments/DELIVERED.md) are not the
+current configuration schema.
 
 | Flag | Hub / client contract | Colmeia default | Rollout notes |
 | --- | --- | --- | --- |
 | `SOCKET_RELAY_BATCH_ENABLED` | `relay:rpc.request.batch` — multiple JSON-RPC commands per relay emit (ADR 0008). | `true` in bundled `default.env` | Hub v1 shipped **2026-05-28**; E2E validated before production default. Override `false` for A/B. Distinct from `SOCKET_BATCH_ENABLED` (see [`bridge_agent_sql_api_options.md`](bridge_agent_sql_api_options.md)). |
-| `SOCKET_RELAY_FAST_PATH_ENABLED` | Relay unary skips `relay:rpc.accepted` when `fastPath: true` (ADR 0009). | `true` in bundled `default.env` | Hub fix shipped **2026-05** (Option B) + ADR 0009 **2026-06-24**. Roll back to `false` if a hub still returns hub UUID in `body.id` (see [`server_adjustments/relay_unary_fast_path.md`](server_adjustments/relay_unary_fast_path.md)). |
-| `SOCKET_REQUEST_SERVER_TIMINGS_ENABLED` | Appends `serverTimings` phase snapshot to relay, `agents:command`, and REST responses (ADR 0010). | `false` | Safe for E2E and diagnostic builds (~120 B per response). Enable when correlating client metrics with hub queue/SQL phases. |
+| `SOCKET_RELAY_FAST_PATH_ENABLED` | Client emits `fastPath: true`; hub kill switch is `SOCKET_RELAY_FAST_PATH_FORBIDDEN` (default `false`). There is no hub `SOCKET_RELAY_FAST_PATH_ENABLED`. | `true` in bundled `default.env` | Hub fix shipped **2026-05** (Option B) + ADR 0009 **2026-06-24**. Roll back to `false` if a hub still returns hub UUID in `body.id` (see [`server_adjustments/relay_unary_fast_path.md`](server_adjustments/relay_unary_fast_path.md)). |
+| `SOCKET_REQUEST_SERVER_TIMINGS_ENABLED` | Client sends `requestServerTimings: true`; the hub has no matching `SOCKET_REQUEST_SERVER_TIMINGS_ENABLED` environment flag. Agent phases additionally require negotiated `agentPhaseTimings: v1` (ADR 0012). | `false` | Safe for E2E and diagnostic builds (~120 B per response). Enable when correlating client metrics with hub queue/SQL phases. |
 
 Related client-only socket tuning (no hub mirror flag): `SOCKET_BATCH_ENABLED`
 coalesces multiple JSON-RPC objects into one `agents:command` emit — not relay.
 
 ## Legacy removal plan
 
-After 2026-09-30, once the target hub fleet no longer emits raw JSON:
+The original target date was 2026-09-30. Removal is still conditional on
+verified fleet migration; a calendar date is not proof of compatibility:
 
 1. Remove `compat` and `raw_json_only` support for `connection:ready`.
 2. Remove `SOCKET_PROFILE_UPDATED_LEGACY_RAW_JSON_ENABLED` and the raw JSON
    fallback in `ClientAgentProfileUpdatedListener`.
 3. Remove docs/examples that mention raw JSON as an executable path; keep only
    a changelog note if needed.
+
+## Integration gaps and follow-ups
+
+| Priority | Gap / boundary | Required evidence or next step |
+| --- | --- | --- |
+| High | PWA routes and real-provider Push are implemented in the server checkout, but last recorded live acceptance failed. | Deploy through the authorized operational workflow, then run full package and real-device Push acceptance. See [Web validation](install/web_guide.md#recorded-validation-and-acceptance-gaps); this review did not retry production. |
+| High | A shared HMAC signing secret configured through client assets or dart-defines is extractable from a Web build. | Do not ship the hub's signing secret in Colmeia Web. Verify the deployment's consumer signing policy separately from agent-to-hub signing, while retaining TLS, JWT and authorization checks; a strict shared-secret requirement needs an agreed browser-safe contract. |
+| High | Colmeia `AgentSqlCancelCommand` sends only `stream_id`, while the current hub validator requires `execution_id` or `request_id`. Unary/batch remote cancellation is also not wired. | Align execution identity from dispatch/stream responses before changing the payload; do not assume a stream ID equals an execution ID. Add cross-repository contract and live cancellation checks, preserving sibling/coalesced work. See [cancellation map](Features/socket/sql_cancel_contract_colmeia_map.md). |
+| Medium | Hub advertises profile 2.11.2 while SQL requests explicitly use 2.10. | This difference alone is not a bug. Keep the compatibility baseline until contract tests and target-agent smoke justify an upgrade; negotiate optional capabilities independently. |
+| Medium | New hub process I/O and SQL-operation capabilities are outside the current analytical client surface. | Do not inherit SQL read retries for side-effecting methods. Any future integration needs capability checks, idempotency and outcome reconciliation first. |
+| Medium | Progressive-query performance approval remains incomplete. | Retain disabled report flags until strict data equivalence and comparable before/after measurements pass; historical passing small-query samples do not approve large reports. |
+
+Client/network availability is also distinct from hub reachability; the current
+PWA limitation is documented in the [Web guide](install/web_guide.md#connectivity-limitation).
 
 ## Maintenance checklist
 
@@ -136,7 +182,7 @@ unrelated perf tuning):
    `tool/compare_e2e_transports.py`).
 2. **Hub / edge:** Sticky sessions for Socket.IO (nginx upstream or
    `X-Hub-Instance-Id`); `SOCKET_CONSUMER_ROLES` and relay prerequisites per
-   `docs/configuration.md` and `docs/nginx_production.md` in plug_server.
+   `docs/configuration.md` and `docs/infrastructure/nginx_production.md` in plug_server.
 3. **Staging:** Flip transport in staging env; watch `503`, relay timeouts,
    and `namespace forbidden`; compare REST vs socket wall-clock where useful.
 4. **Production:** Flip `default.env` only after sign-off; keep
@@ -153,7 +199,7 @@ Use this checklist when re-validating hub rollouts or local overrides:
 
 1. **Hub staging:** `SOCKET_RELAY_BATCH_ENABLED=true` on the hub deployment
    (v1 shipped **2026-05-28**); `SOCKET_CONSUMER_ROLES` includes `client`;
-   sticky Socket.IO sessions per `docs/nginx_production.md` in plug_server.
+   sticky Socket.IO sessions per `docs/infrastructure/nginx_production.md` in plug_server.
 2. **Colmeia staging:** merge `assets/env/staging.env` into
    `assets/env/local.env` or pass
    `--dart-define=SOCKET_RELAY_BATCH_ENABLED=true` (see
@@ -167,14 +213,14 @@ Use this checklist when re-validating hub rollouts or local overrides:
    (hub echoes client JSON-RPC `id` per ADR 0009 — see
    [`server_adjustments/relay_unary_fast_path.md`](server_adjustments/relay_unary_fast_path.md)).
    Roll back to `false` only on hubs that still return a hub UUID in `body.id`.
-5. **Optional:** `SOCKET_REQUEST_SERVER_TIMINGS_ENABLED=true` on hub + client
+5. **Optional:** `SOCKET_REQUEST_SERVER_TIMINGS_ENABLED=true` on the client
    for phase correlation during staging only.
 6. **Sign-off:** no new `relay_batch_not_supported` / `RATE_LIMITED` spikes;
    wall-clock within expected variance vs batch-off baseline
    ([`server_adjustments/README.md`](server_adjustments/README.md) smoke matrix).
 
 
-## Colmeia communication validation and rollout
+## Colmeia communication behavior and historical rollout evidence
 
 REST remains the default. Local REST admission allows eight active calls and
 16 waiters per agent, with a five-second queue wait. The local operation deadline

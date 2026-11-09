@@ -11,7 +11,8 @@ import 'package:result_dart/result_dart.dart';
 class ProgressiveReportController<Row> extends ChangeNotifier {
   static const notificationInterval = Duration(milliseconds: 100);
   final List<Row> _rows = [];
-  List<Row> get rows => List.unmodifiable(_rows);
+  List<Row>? _rowsSnapshot;
+  List<Row> get rows => _rowsSnapshot ??= List<Row>.unmodifiable(_rows);
   List<Row> rowsForPage({required int page, required int pageSize}) {
     final start = ((page - 1) * pageSize).clamp(0, _rows.length);
     final end = (start + pageSize).clamp(start, _rows.length);
@@ -38,6 +39,7 @@ class ProgressiveReportController<Row> extends ChangeNotifier {
     final generation = ++_generation;
     _stop();
     _rows.clear();
+    _rowsSnapshot = null;
     failure = null;
     isComplete = false;
     isLoading = true;
@@ -75,6 +77,7 @@ class ProgressiveReportController<Row> extends ChangeNotifier {
               final first = _rows.isEmpty;
               if (progress.isComplete) _rows.clear();
               _rows.addAll(progress.rows);
+              _rowsSnapshot = null;
               isComplete = progress.isComplete;
               isLoading = !progress.isComplete;
               if (progress.isComplete) _scope = null;
@@ -176,6 +179,7 @@ class ProgressiveReportController<Row> extends ChangeNotifier {
     _generation++;
     _stop();
     _rows.clear();
+    _rowsSnapshot = null;
     failure = null;
     isComplete = false;
     isLoading = false;

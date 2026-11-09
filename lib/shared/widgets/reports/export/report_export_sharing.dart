@@ -20,11 +20,7 @@ bool _shareRequiresTempFilePath() {
   if (kIsWeb) {
     return false;
   }
-  return Platform.isWindows ||
-      Platform.isLinux ||
-      Platform.isMacOS ||
-      Platform.isAndroid ||
-      Platform.isIOS;
+  return Platform.isWindows || Platform.isAndroid;
 }
 
 /// Windows share UI returns before the user picks a target; keep temp files

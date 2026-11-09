@@ -1,6 +1,8 @@
 # Implementation phases
 
-Separate PRs per phase ([`general_rules.mdc`](../../.cursor/rules/general_rules.mdc): do not mix large docs + feature in one commit).
+Historical rollout sequence. The foundation, daily/monthly pilots, overview
+integration, and prefetch are implemented. Use [architecture.md](architecture.md)
+and [di_registration.md](di_registration.md) for current behavior.
 
 ## Phase 0 — Documentation (this folder)
 
@@ -23,7 +25,7 @@ Optional: one-line link from `docs/analysis/README.md` under caching evolution.
 | `domain/cache/agent_query_bucket_plan.dart` | Plan DTO |
 | `domain/cache/agent_query_cache_control.dart` | Invalidate port |
 | `domain/cache/consolidation_catalog.dart` | Registry |
-| `data/facts/hive_agent_query_facts_store.dart` | Hive implementation |
+| `data/facts/hive_agent_query_facts_store.dart` | Facts adapter over `AppCacheStore` |
 | `data/repositories/caching/base_cached_agent_query_repository.dart` | Shared decorator |
 | `AppKvCacheKeyPrefixes.agentQueryFacts` | Key prefix |
 
@@ -52,7 +54,9 @@ Same pattern for `ResumoParcelasMensal` + across-agents.
 1. `AgentSqlExecuteRequest.skipTransportCache` + honor in `CachingAgentQueriesRepository`.
 2. `OverviewRepositoryImpl`: map `OverviewLoadPolicy` → `AgentQueryLoadPolicy` when calling migrated loaders.
 3. `OverviewBatchLoader`: daily/monthly via cached use cases; section SQL batch excludes those queries when use cases are wired.
-4. `OverviewLocalDataSource` removed — facts store + live batch are the only overview persistence paths.
+4. `OverviewLocalDataSource` removed — facts store + live batch replaced the
+   legacy overview snapshot. Later PWA work added a separate, explicitly prepared
+   package adapter; see [selected packages](architecture.md#selected-offline-packages).
 
 **Success:** Home filter change over closed days uses store; pull-to-refresh uses `forceRefresh` on facts and transport cache.
 
@@ -77,7 +81,7 @@ Same pattern for `ResumoParcelasMensal` + across-agents.
 ## Rollback
 
 - DI: register plain `*RepositoryImpl` again to disable business cache per report.
-- Clear Hive / `AppCacheStore` for corrupted payloads.
+- Clear `AppCacheStore` for corrupted payloads.
 
 ## Non-goals
 

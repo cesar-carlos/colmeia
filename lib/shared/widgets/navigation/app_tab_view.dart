@@ -1,5 +1,6 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/navigation/app_tab_change_guard_controller.dart';
 import 'package:flutter/material.dart';
 
 class AppTabViewItem {
@@ -49,6 +50,7 @@ class AppTabView extends StatefulWidget {
 class _AppTabViewState extends State<AppTabView> {
   late final ValueNotifier<int> _selectedIndex;
   late final bool _ownsSelectedIndex;
+  final _changeGuard = AppTabChangeGuardController();
 
   @override
   void initState() {
@@ -62,6 +64,7 @@ class _AppTabViewState extends State<AppTabView> {
     } else {
       _selectedIndex = ValueNotifier<int>(_clampIndex(widget.initialIndex));
       _ownsSelectedIndex = true;
+      _selectedIndex.addListener(_onSelectedIndexChanged);
     }
   }
 
@@ -75,6 +78,10 @@ class _AppTabViewState extends State<AppTabView> {
       );
     }
 
+    if (oldWidget.items.length != widget.items.length ||
+        oldWidget.onTabChangeGuard != widget.onTabChangeGuard) {
+      _changeGuard.invalidate();
+    }
     final nextIndex = _clampIndex(_selectedIndex.value);
     if (_selectedIndex.value != nextIndex) {
       _selectedIndex.value = nextIndex;
@@ -92,6 +99,7 @@ class _AppTabViewState extends State<AppTabView> {
 
   @override
   void dispose() {
+    _changeGuard.invalidate();
     if (_ownsSelectedIndex) {
       _selectedIndex.dispose();
     } else {
@@ -101,9 +109,7 @@ class _AppTabViewState extends State<AppTabView> {
   }
 
   void _onSelectedIndexChanged() {
-    if (mounted) {
-      setState(() {});
-    }
+    _changeGuard.invalidate();
   }
 
   int _clampIndex(int index) {
@@ -114,20 +120,16 @@ class _AppTabViewState extends State<AppTabView> {
   }
 
   Future<void> _handleTabChange(int index) async {
-    if (_selectedIndex.value == index) {
-      return;
-    }
-
-    final guard = widget.onTabChangeGuard;
-    if (guard != null) {
-      final allowed = await guard(_selectedIndex.value, index);
-      if (!allowed || !mounted) {
-        return;
-      }
-    }
-
-    _selectedIndex.value = index;
-    widget.onChanged?.call(index);
+    await _changeGuard.requestChange(
+      fromIndex: _selectedIndex.value,
+      toIndex: index,
+      guard: widget.onTabChangeGuard,
+      onAllowed: () {
+        if (!mounted || index != _clampIndex(index)) return;
+        _selectedIndex.value = index;
+        widget.onChanged?.call(index);
+      },
+    );
   }
 
   @override

@@ -1,7 +1,7 @@
 # Guia de Release e Versionamento
 
-Fluxo oficial de versionamento e release Windows + Android do Colmeia. Para
-iOS/TestFlight, veja [ios_guide.md](ios_guide.md).
+Windows and Android release workflow. Web builds and hosting are documented
+in the [Web guide](web_guide.md). Native iOS releases are discontinued.
 
 ## Fonte de verdade da versao
 
@@ -56,7 +56,7 @@ commitadas.
 
 Ao alterar PNGs em **`assets/icons/`** (por exemplo `colmeia-512.png`):
 
-1. `dart run flutter_launcher_icons` (Android, iOS, Web; Windows esta desativado
+1. `dart run flutter_launcher_icons` (Android, Web; Windows esta desativado
    no `pubspec.yaml` para evitar ICO de uma unica resolucao).
 2. Para atualizar **`windows/runner/resources/app_icon.ico`** e gerar
    **`installer/setup_icon.ico`** (icone dedicado do Inno Setup, fora de `windows/`):
@@ -64,7 +64,7 @@ Ao alterar PNGs em **`assets/icons/`** (por exemplo `colmeia-512.png`):
    dentro de `python installer/build_installer.py` **antes e depois** do
    `flutter build windows` (o segundo evita que o Setup.exe fique com ICO substituido
    pelo tooling do Flutter).
-3. Revise e commit dos ficheiros gerados (Android, iOS, Web e `app_icon.ico`).
+3. Revise e commit dos ficheiros gerados (Android, Web e `app_icon.ico`).
    **`installer/setup_icon.ico`** e gerado e esta **gitignored** — nao commite.
 4. Para o instalador Windows completo: `python installer/build_installer.py`
 
@@ -95,10 +95,6 @@ Validacoes e workarounds:
 - gerar a proxima versao para mudar o nome final do asset;
 - reiniciar o Explorer ou limpar o icon cache local antes de concluir que o
   build saiu com icone errado.
-
-**Nota:** o projeto nao inclui a pasta `macos/`; quando existir suporte macOS,
-adicione o bloco `macos:` em `flutter_launcher_icons` no `pubspec.yaml` e volte a
-correr o comando acima.
 
 ## Feed do auto-update no instalador local
 
@@ -287,14 +283,7 @@ python tool/build_android_release.py --aab
 Esses comandos exportam os artefatos versionados para `installer/dist/` e
 tambem geram os arquivos `.sha256`.
 
-Se estiver validando iOS localmente (macOS + Xcode), rode tambem:
-
-```bash
-python tool/build_ios_release.py
-```
-
-Isso gera `installer/dist/Colmeia-iOS-X.Y.Z.ipa` e o `.sha256` correspondente.
-O upload para o TestFlight continua manual — veja [ios_guide.md](ios_guide.md).
+For Web validation, run `flutter build web --release`; see [Web hosting](web_guide.md).
 
 ### 4. Commitar
 

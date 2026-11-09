@@ -1,5 +1,6 @@
 ---
-alwaysApply: true
+description: Design de classes, interfaces, acoplamento e coesao
+globs: ["lib/**", "test/**", "tool/**"]
 ---
 
 # Principios SOLID

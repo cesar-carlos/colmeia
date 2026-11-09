@@ -222,7 +222,7 @@ class LoadSalesLiveMapUseCase {
     );
     final cachedCatalog = bypassCatalogCache
         ? null
-        : _catalogLookup.lookupCached(
+        : await _catalogLookup.lookupCached(
             userId: userId,
             scope: catalogScope,
             now: now,

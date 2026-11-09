@@ -1,5 +1,8 @@
 # Alinhamento dos Levantamentos Iniciais com o Objetivo Atual
 
+> Historical analysis: implementation status and proposed technologies reflect
+> the original research. See the [analysis index](README.md) for current references.
+
 ## Objetivo
 
 Este documento compara os levantamentos iniciais em:

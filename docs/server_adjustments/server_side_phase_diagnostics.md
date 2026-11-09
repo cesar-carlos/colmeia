@@ -150,5 +150,5 @@ suite") is hard to attribute. After phase diagnostics ship:
 ## References
 
 - Client metrics class: `lib/core/observability/socket/socket_channel_metrics.dart`
-- Existing hub observability: `plug_server/docs/observability.md`
+- Existing hub observability: `plug_server/docs/observability/observability.md`
 - Existing hub performance doc: `plug_server/docs/performance_hub_agent.md`

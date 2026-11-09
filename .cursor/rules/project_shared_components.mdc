@@ -1,5 +1,6 @@
 ---
-alwaysApply: true
+description: Criacao e evolucao de componentes compartilhados do Colmeia
+globs: ["lib/**/*.dart", "test/**/*.dart"]
 ---
 
 # Colmeia - Componentes Compartilhados

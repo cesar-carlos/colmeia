@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:isolate';
 import 'dart:typed_data';
 
+import 'package:archive/archive.dart';
 import 'package:colmeia/core/socket/payload_frame.dart';
 import 'package:colmeia/core/socket/payload_frame_signer.dart';
 
@@ -23,6 +23,7 @@ class PayloadFrameCodecWorker {
   ReceivePort? _replies;
   StreamSubscription<dynamic>? _replySub;
   Future<void>? _start;
+  Completer<SendPort>? _startupHandshake;
   var _disposed = false;
   var _nextJobId = 0;
   var _jobsSubmitted = 0;
@@ -124,6 +125,14 @@ class PayloadFrameCodecWorker {
       return;
     }
     _disposed = true;
+    final handshake = _startupHandshake;
+    if (handshake != null && !handshake.isCompleted) {
+      handshake.completeError(
+        const PayloadFrameCodecWorkerUnavailable(
+          'worker disposed during startup',
+        ),
+      );
+    }
     _start = null;
     _commands = null;
     final replySub = _replySub;
@@ -147,6 +156,9 @@ class PayloadFrameCodecWorker {
     final replies = ReceivePort();
     _replies = replies;
     final handshake = Completer<SendPort>();
+    _startupHandshake = handshake;
+    // Disposal can reject the handshake while Isolate.spawn is still pending.
+    handshake.future.ignore();
     _replySub = replies.listen((message) {
       if (!handshake.isCompleted && message is SendPort) {
         handshake.complete(message);
@@ -159,8 +171,20 @@ class PayloadFrameCodecWorker {
         _payloadFrameCodecWorkerMain,
         replies.sendPort,
       );
+      if (_disposed) {
+        isolate.kill(priority: Isolate.immediate);
+        throw const PayloadFrameCodecWorkerUnavailable(
+          'worker disposed during startup',
+        );
+      }
       _isolate = isolate;
-      _commands = await handshake.future;
+      final commands = await handshake.future;
+      if (_disposed) {
+        throw const PayloadFrameCodecWorkerUnavailable(
+          'worker disposed during startup',
+        );
+      }
+      _commands = commands;
     } on Object {
       await _replySub?.cancel();
       _replySub = null;
@@ -171,6 +195,10 @@ class PayloadFrameCodecWorker {
       _commands = null;
       _start = null;
       rethrow;
+    } finally {
+      if (identical(_startupHandshake, handshake)) {
+        _startupHandshake = null;
+      }
     }
   }
 
@@ -315,9 +343,13 @@ Object? _runWorkerJob(String kindName, Map<Object?, Object?> message) {
   );
   switch (kind) {
     case _WorkerJobKind.gzipEncode:
-      return Uint8List.fromList(gzip.encode(_requireBytes(message['bytes'])));
+      return Uint8List.fromList(
+        const GZipEncoder().encodeBytes(_requireBytes(message['bytes'])),
+      );
     case _WorkerJobKind.gzipDecode:
-      return Uint8List.fromList(gzip.decode(_requireBytes(message['bytes'])));
+      return Uint8List.fromList(
+        const GZipDecoder().decodeBytes(_requireBytes(message['bytes'])),
+      );
     case _WorkerJobKind.jsonDecodeUtf8:
       return jsonDecode(utf8.decode(_requireBytes(message['bytes'])));
     case _WorkerJobKind.jsonEncodeUtf8:

@@ -121,8 +121,12 @@ class OverviewRepositoryImpl implements OverviewRepository {
       clock: _now,
     );
     final mensalFilter = ResumoParcelasMensalFilter(
-      dataVendaInicio: last12Range.dataVendaInicio,
-      dataVendaFim: last12Range.dataVendaFim,
+      dataVendaInicio: sectionRequest.restrictToReferencePeriod
+          ? period.start
+          : last12Range.dataVendaInicio,
+      dataVendaFim: sectionRequest.restrictToReferencePeriod
+          ? period.end
+          : last12Range.dataVendaFim,
     );
     final weekdayFilter = ResumoParcelasDiaSemanaFilter(
       dataVendaInicio: period.start,
@@ -327,17 +331,19 @@ class OverviewRepositoryImpl implements OverviewRepository {
             batchResults: batchResults,
             period: period,
           );
-          _scheduleFactsPrefetch(
-            userId: userId,
-            targets: loaded.plan.plannedTargets,
-            dailyFilter: dailyTotalFilter,
-            monthlyFilter: mensalFilter,
-            hubPresenceOnlineAgentIdsSnapshot:
-                loaded.resolution.hubPresenceOnlineAgentIdsSnapshot,
-            bridgeTimeoutMs: loaded.plan.bridgeTimeoutMs,
-            cancelScope: cancelScope,
-            skipAgentIds: loaded.factsPersistedAgentIds,
-          );
+          if (!sectionRequest.restrictToReferencePeriod) {
+            _scheduleFactsPrefetch(
+              userId: userId,
+              targets: loaded.plan.plannedTargets,
+              dailyFilter: dailyTotalFilter,
+              monthlyFilter: mensalFilter,
+              hubPresenceOnlineAgentIdsSnapshot:
+                  loaded.resolution.hubPresenceOnlineAgentIdsSnapshot,
+              bridgeTimeoutMs: loaded.plan.bridgeTimeoutMs,
+              cancelScope: cancelScope,
+              skipAgentIds: loaded.factsPersistedAgentIds,
+            );
+          }
         }
 
         yield Success<OverviewProgressiveSnapshot, AppFailure>(

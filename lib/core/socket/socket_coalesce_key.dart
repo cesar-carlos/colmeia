@@ -55,12 +55,10 @@ abstract final class SocketCoalesceKey {
 /// Leaf numbers/bools/strings use the same encoding as `jsonEncode` so
 /// equality matches the previous JSON-string key.
 final class _Fnv1a64 {
-  // FNV-1a 64-bit offset basis 0xcbf29ce484222325, split so the literal
-  // stays inside the JS-safe integer range the linter requires.
-  static const int _offsetHi = 0xcbf29ce4;
-  static const int _offsetLo = 0x84222325;
-  static const int _prime = 0x100000001b3;
-  static const int _mask64 = 0xffffffffffffffff;
+  static const int _primeLow = 0x1b3;
+  static const int _primeHigh = 0x100;
+  static const int _wordBase = 0x100000000;
+  static const int _wordMask = 0xffffffff;
 
   static const int _tagNull = 0;
   static const int _tagBool = 1;
@@ -69,7 +67,8 @@ final class _Fnv1a64 {
   static const int _tagList = 4;
   static const int _tagMap = 5;
 
-  int _hash = (_offsetHi << 32) | _offsetLo;
+  int _high = 0xcbf29ce4;
+  int _low = 0x84222325;
 
   void hashCanonical(Object? value) {
     if (value == null) {
@@ -118,7 +117,9 @@ final class _Fnv1a64 {
     _feedUtf8(jsonEncode(value));
   }
 
-  String hexDigest() => _hash.toRadixString(16).padLeft(16, '0');
+  String hexDigest() =>
+      '${_high.toRadixString(16).padLeft(8, '0')}'
+      '${_low.toRadixString(16).padLeft(8, '0')}';
 
   void _feedUtf8(String text) {
     final bytes = utf8.encode(text);
@@ -130,7 +131,12 @@ final class _Fnv1a64 {
   }
 
   void _feedByte(int b) {
-    _hash ^= b & 0xff;
-    _hash = (_hash * _prime) & _mask64;
+    // Two 32-bit words keep every multiplication exact in JavaScript.
+    final low = _low ^ (b & 0xff);
+    final product = low * _primeLow;
+    _high =
+        (_high * _primeLow + low * _primeHigh + product ~/ _wordBase) &
+        _wordMask;
+    _low = product & _wordMask;
   }
 }

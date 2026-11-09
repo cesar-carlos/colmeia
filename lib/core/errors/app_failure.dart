@@ -1,7 +1,6 @@
-import 'dart:io';
-
 import 'package:colmeia/core/value_objects/value_object_validation_exception.dart';
 import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart' show parseHttpDate;
 
 sealed class AppFailure implements Exception {
   const AppFailure({
@@ -646,7 +645,7 @@ Duration? _parseDurationFromMillis(Object? raw) {
 
 DateTime? _tryParseHttpDate(String value) {
   try {
-    return HttpDate.parse(value);
+    return parseHttpDate(value);
   } on Object {
     return null;
   }

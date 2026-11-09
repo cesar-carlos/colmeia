@@ -7,6 +7,7 @@ final class OverviewSectionRequest {
     required this.sectionBatchSections,
     this.mainBatchIncludePaymentResumo = true,
     this.mainBatchIncludeUserRanking = true,
+    this.restrictToReferencePeriod = false,
   });
 
   /// Lazy chart detail surfaces.
@@ -39,6 +40,21 @@ final class OverviewSectionRequest {
       ),
     };
   }
+
+  /// Prevents auxiliary windows and historical prefetch when preparing a bounded offline snapshot.
+  final bool restrictToReferencePeriod;
+
+  static const offlinePackage = OverviewSectionRequest(
+    runMainBatch: true,
+    restrictToReferencePeriod: true,
+    sectionBatchSections: {
+      OverviewProgressiveSection.dailySales,
+      OverviewProgressiveSection.monthlyParcels,
+      OverviewProgressiveSection.weekdaySales,
+      OverviewProgressiveSection.weekdayUserSales,
+      OverviewProgressiveSection.lucratividadePeriod,
+    },
+  );
 
   /// Home dashboard: KPIs + agent ranking + monthly chart only.
   ///

@@ -1,10 +1,12 @@
 import 'package:colmeia/core/di/injector_agent_meta.dart';
 import 'package:colmeia/core/di/injector_agent_queries.dart';
 import 'package:colmeia/core/di/injector_auth.dart';
+import 'package:colmeia/core/di/injector_cache_refresh.dart';
 import 'package:colmeia/core/di/injector_client_agents.dart';
 import 'package:colmeia/core/di/injector_core.dart';
 import 'package:colmeia/core/di/injector_overview.dart';
 import 'package:colmeia/core/di/injector_presentation.dart';
+import 'package:colmeia/core/di/injector_pwa.dart';
 import 'package:colmeia/core/di/injector_sales.dart';
 import 'package:colmeia/core/di/injector_socket.dart';
 import 'package:colmeia/core/di/injector_user_context.dart';
@@ -25,9 +27,11 @@ Future<void> setupDependencies() async {
   registerInjectorSocket(getIt);
   registerInjectorClientAgents(getIt);
   registerInjectorAgentMeta(getIt);
+  registerInjectorCacheRefresh(getIt);
   registerInjectorAgentQueries(getIt);
   registerInjectorOverview(getIt);
   registerInjectorSales(getIt);
+  registerInjectorPwa(getIt);
   registerInjectorPresentation(getIt);
 }
 

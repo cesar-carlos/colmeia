@@ -18,6 +18,20 @@ void main() {
       worker.dispose();
     });
 
+    test(
+      'should finish pending startup when disposed before handshake',
+      () async {
+        final starting = worker.ensureStarted();
+        worker.dispose();
+        await expectLater(
+          starting.timeout(const Duration(seconds: 2)),
+          throwsA(isA<PayloadFrameCodecWorkerUnavailable>()),
+        );
+        expect(worker.isAlive, isFalse);
+        expect(worker.jobsSubmitted, 0);
+      },
+    );
+
     test('round-trips gzip and json', () async {
       final jsonBytes = Uint8List.fromList(
         utf8.encode(jsonEncode(<String, Object?>{'ok': true, 'n': 7})),

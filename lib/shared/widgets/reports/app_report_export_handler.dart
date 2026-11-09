@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 
+import 'package:colmeia/core/pwa/pwa_platform.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:colmeia/shared/widgets/reports/export/report_excel_exporter.dart';
@@ -7,6 +8,7 @@ import 'package:colmeia/shared/widgets/reports/export/report_export_filter_forma
 import 'package:colmeia/shared/widgets/reports/export/report_pdf_exporter.dart';
 import 'package:colmeia/shared/widgets/reports/export/report_text_exporter.dart';
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 
 /// Facade that dispatches report export requests to the per-format exporter
 /// (PDF, Excel, JSON, CSV). Each format lives in its own class under
@@ -40,6 +42,10 @@ abstract final class AppReportExportHandler {
       filterValues,
     );
 
+    final platform = GetIt.I.isRegistered<PwaPlatform>()
+        ? GetIt.I<PwaPlatform>()
+        : null;
+    platform?.beginWork();
     try {
       switch (request.format) {
         case AppReportExportFormat.pdf:
@@ -85,6 +91,8 @@ abstract final class AppReportExportHandler {
         stackTrace: stackTrace,
       );
       rethrow;
+    } finally {
+      platform?.endWork();
     }
   }
 }

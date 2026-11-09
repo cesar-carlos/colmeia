@@ -1,10 +1,13 @@
 # Dependency injection registration
 
-File: [`lib/core/di/injector_agent_queries.dart`](../../lib/core/di/injector_agent_queries.dart)
+Repository registrations: [injector_agent_queries_repos.dart](../../lib/core/di/injector_agent_queries_repos.dart),
+a part of [injector_agent_queries.dart](../../lib/core/di/injector_agent_queries.dart).
+Platform storage is registered separately in [injector_core.dart](../../lib/core/di/injector_core.dart).
 
 ## Shared infrastructure
 
-Register once in `registerInjectorAgentQueries` (or `_registerSingleAgentQueryRepositories` prologue):
+The `_registerSingleAgentQueryRepositories` prologue registers the facts store
+and strategies once. The store consumes the platform-selected `AppCacheStore`:
 
 ```dart
 getIt.registerLazySingleton<AgentQueryFactsStore>(

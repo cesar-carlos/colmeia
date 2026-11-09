@@ -15,7 +15,7 @@
 > - `plug_server/docs/performance_hub_agent.md`
 > - `plug_server/docs/socket_relay_protocol.md`
 > - `plug_server/docs/relay_fastpath_study.md`
-> - `plug_server/docs/api_rest_bridge.md`
+> - `plug_server/docs/api/api_rest_bridge.md`
 >
 > **TL;DR** — O plano atual já captura 80% das boas práticas (websocket-only,
 > single socket, auto-gzip alinhado ao hub, dispatcher correlacionado,
@@ -628,7 +628,7 @@ attempts best-effort `sql.cancel` when abandoned. See
   - `plug_server/docs/performance_hub_agent.md`
   - `plug_server/docs/socket_relay_protocol.md`
   - `plug_server/docs/relay_fastpath_study.md`
-  - `plug_server/docs/api_rest_bridge.md`
+  - `plug_server/docs/api/api_rest_bridge.md`
 - Colmeia docs locais:
   - `docs/bridge_agent_sql_api_options.md` (batch, multi_result, executeBatch)
   - `docs/plug_server_docs_index_for_colmeia.md`

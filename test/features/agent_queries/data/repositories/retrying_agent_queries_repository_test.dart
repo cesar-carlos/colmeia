@@ -6,6 +6,8 @@ import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_f
 import 'package:colmeia/features/agent_queries/data/repositories/agent_queries_retry_backoff.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/retrying_agent_queries_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/agent_queries_repository.dart';
@@ -20,6 +22,12 @@ void main() {
   late RetryingAgentQueriesRepository retrying;
 
   setUpAll(() {
+    registerFallbackValue(
+      const AgentSqlExecuteBatchRequest(
+        agentId: 'fallback',
+        commands: [AgentSqlExecuteBatchCommand(sql: 'SELECT 1')],
+      ),
+    );
     registerFallbackValue(
       const AgentSqlExecuteRequest(agentId: 'fallback', sql: 'SELECT 1'),
     );
@@ -41,6 +49,60 @@ void main() {
   const successResult = AgentSqlExecutionResult(
     rows: <Map<String, dynamic>>[],
     rowCount: 0,
+  );
+
+  for (final timedOut in [true, false]) {
+    test(
+      'should ${timedOut ? 'not repeat dispatched SQL' : 'retry hub unavailability'} on HTTP 503',
+      () async {
+        final failure = NetworkFailure(
+          message: 'HTTP 503',
+          context: {
+            'httpStatusCode': 503,
+            DioHttpFailureContext.responseBodyField: {
+              'code': 'SERVICE_UNAVAILABLE',
+              'message': timedOut
+                  ? 'Timed out waiting for agent response'
+                  : 'Service temporarily unavailable',
+            },
+          },
+        );
+        when(() => delegate.executeSql(any())).thenAnswer(
+          (_) async => Failure<AgentSqlExecutionResult, AppFailure>(failure),
+        );
+        final result = await retrying.executeSql(request);
+        expect(result.exceptionOrNull(), same(failure));
+        verify(() => delegate.executeSql(any())).called(timedOut ? 1 : 3);
+      },
+    );
+  }
+
+  test(
+    'should not repeat a batch after the hub times out waiting for the agent',
+    () async {
+      const failure = NetworkFailure(
+        message: 'HTTP 503',
+        context: {
+          'httpStatusCode': 503,
+          DioHttpFailureContext.responseBodyField: {
+            'code': 'SERVICE_UNAVAILABLE',
+            'message': 'Timed out waiting for agent response',
+          },
+        },
+      );
+      when(() => delegate.executeSqlBatch(any())).thenAnswer(
+        (_) async =>
+            const Failure<AgentSqlBatchExecutionResult, AppFailure>(failure),
+      );
+      final result = await retrying.executeSqlBatch(
+        const AgentSqlExecuteBatchRequest(
+          agentId: 'agent-1',
+          commands: [AgentSqlExecuteBatchCommand(sql: 'SELECT 1')],
+        ),
+      );
+      expect(result.exceptionOrNull(), same(failure));
+      verify(() => delegate.executeSqlBatch(any())).called(1);
+    },
   );
 
   test('success on first attempt: delegate called once', () async {

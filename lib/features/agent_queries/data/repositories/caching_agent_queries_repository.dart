@@ -50,6 +50,7 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
   final Map<String, _BatchCacheEntry> _batchCache =
       <String, _BatchCacheEntry>{};
 
+  int _generation = 0;
   int _cacheHits = 0;
   int _cacheMisses = 0;
   int _batchCacheHits = 0;
@@ -78,6 +79,7 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
     if (cancelScope?.isCancelled ?? false) {
       return const Failure(OperationCancelledFailure());
     }
+    final generation = _generation;
     final key = AgentQueriesRequestKey.build(request);
     final now = DateTime.now();
     final ttl = _effectiveTtlForSql(request.trimmedSql);
@@ -109,7 +111,13 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
       cancelScope: cancelScope,
     );
 
-    if (result.isSuccess() && !request.skipTransportCache) {
+    if (cancelScope?.isCancelled ?? false) {
+      return const Failure(OperationCancelledFailure());
+    }
+
+    if (generation == _generation &&
+        result.isSuccess() &&
+        !request.skipTransportCache) {
       final execution = result.getOrThrow();
       // Empty success payloads are often transport/agent flakiness on SQL
       // Anywhere streaming (not a durable "no data" answer). Caching them
@@ -135,6 +143,7 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
     if (cancelScope?.isCancelled ?? false) {
       return const Failure(OperationCancelledFailure());
     }
+    final generation = _generation;
     final key = AgentQueriesRequestKey.buildBatch(request);
     final now = DateTime.now();
 
@@ -165,7 +174,13 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
       cancelScope: cancelScope,
     );
 
-    if (result.isSuccess() && !request.skipTransportCache) {
+    if (cancelScope?.isCancelled ?? false) {
+      return const Failure(OperationCancelledFailure());
+    }
+
+    if (generation == _generation &&
+        result.isSuccess() &&
+        !request.skipTransportCache) {
       _batchCache[key] = _BatchCacheEntry(
         result: result,
         cachedAt: DateTime.now(),
@@ -238,6 +253,7 @@ class CachingAgentQueriesRepository implements AgentQueriesRepository {
 
   /// Clears all cached entries. Useful for testing or explicit cache busting.
   void clear() {
+    _generation += 1;
     _sqlCache.clear();
     _batchCache.clear();
     _cacheHits = 0;

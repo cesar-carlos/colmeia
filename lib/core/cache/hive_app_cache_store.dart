@@ -7,6 +7,8 @@ class HiveAppCacheStore implements AppCacheStore {
 
   final Box<String> _box;
 
+  Future<void> close() => _box.close();
+
   @override
   Future<String?> getString(String key) async {
     try {

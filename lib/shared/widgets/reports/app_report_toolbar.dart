@@ -94,6 +94,8 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
     if (!hadFocus &&
         oldWidget.searchTerm != widget.searchTerm &&
         widget.searchTerm != _searchController.text) {
+      _searchDebounceTimer?.cancel();
+      _searchDebounceTimer = null;
       final next = widget.searchTerm ?? '';
       _searchController.value = TextEditingValue(
         text: next,
@@ -119,13 +121,14 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
   }
 
   void _emitSearchChanged(String term) {
+    _searchDebounceTimer?.cancel();
+    _searchDebounceTimer = null;
     final debounce = widget.style.searchDebounce;
     if (debounce == Duration.zero) {
       widget.events.onSearchChanged?.call(term);
       return;
     }
 
-    _searchDebounceTimer?.cancel();
     _searchDebounceTimer = Timer(
       debounce,
       () => widget.events.onSearchChanged?.call(term),

@@ -3,7 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 /// Platform-appropriate secure storage for OAuth-style tokens.
 ///
-/// On Android and iOS, tokens are stored with the platform secure enclave /
+/// On Android, tokens are stored with the platform secure enclave /
 /// Keystore behavior provided by the plugin.
 ///
 /// On web, the plugin persists encrypted blobs in browser storage using the

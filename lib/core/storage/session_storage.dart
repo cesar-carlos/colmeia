@@ -15,93 +15,77 @@ class SessionStorage {
   static const String _versionKey = 'version';
 
   final FlutterSecureStorage _secureStorage;
-  final Map<String, String> _fallbackStorage = <String, String>{};
+  final Map<String, String?> _fallbackStorage = <String, String?>{};
 
   Future<String?> read(String key) async {
-    try {
-      final storedValue = await _secureStorage.read(key: key);
-      return _unwrapStoredValue(
-        key: key,
-        storedValue: storedValue,
-      );
-    } on MissingPluginException {
-      AppLogger.warning(
-        'Secure storage plugin unavailable on read',
-        context: <String, Object?>{
-          'storageKey': key,
-        },
-      );
-      return _unwrapStoredValue(
-        key: key,
-        storedValue: _fallbackStorage[key],
-      );
-    } on PlatformException catch (error, stackTrace) {
-      AppLogger.warning(
-        'Secure storage platform error on read; session cleared',
-        context: <String, Object?>{
-          'storageKey': key,
-          'code': error.code,
-        },
-        error: error,
-        stackTrace: stackTrace,
-      );
-      return null;
+    String? storedValue;
+    if (_fallbackStorage.containsKey(key)) {
+      storedValue = _fallbackStorage[key];
+    } else {
+      try {
+        storedValue = await _secureStorage.read(key: key);
+      } on MissingPluginException {
+        _logUnavailable('read', key);
+      } on Object catch (error, stackTrace) {
+        throw _storageFailure('read', key, error, stackTrace);
+      }
     }
+    return _unwrapStoredValue(key: key, storedValue: storedValue);
   }
 
-  Future<void> write({
-    required String key,
-    required String value,
-  }) async {
+  Future<void> write({required String key, required String value}) async {
     final encodedValue = _wrapStoredValue(value);
-
     try {
       await _secureStorage.write(key: key, value: encodedValue);
+      _fallbackStorage.remove(key);
     } on MissingPluginException {
-      AppLogger.warning(
-        'Secure storage plugin unavailable on write',
-        context: <String, Object?>{
-          'storageKey': key,
-        },
-      );
+      _logUnavailable('write', key);
       _fallbackStorage[key] = encodedValue;
-    } on PlatformException catch (error, stackTrace) {
-      AppLogger.warning(
-        'Secure storage platform error on write; using in-memory fallback',
-        context: <String, Object?>{
-          'storageKey': key,
-          'code': error.code,
-        },
-        error: error,
-        stackTrace: stackTrace,
-      );
-      _fallbackStorage[key] = encodedValue;
+    } on Object catch (error, stackTrace) {
+      throw _storageFailure('write', key, error, stackTrace);
     }
   }
 
   Future<void> delete(String key) async {
+    // Never expose an old token again in this instance after a failed deletion.
+    _fallbackStorage[key] = null;
     try {
       await _secureStorage.delete(key: key);
     } on MissingPluginException {
-      AppLogger.warning(
-        'Secure storage plugin unavailable on delete',
-        context: <String, Object?>{
-          'storageKey': key,
-        },
-      );
-      _fallbackStorage.remove(key);
-    } on PlatformException catch (error, stackTrace) {
-      AppLogger.warning(
-        'Secure storage platform error on delete; clearing in-memory fallback',
-        context: <String, Object?>{
-          'storageKey': key,
-          'code': error.code,
-        },
-        error: error,
-        stackTrace: stackTrace,
-      );
-      _fallbackStorage.remove(key);
+      _logUnavailable('delete', key);
+    } on Object catch (error, stackTrace) {
+      throw _storageFailure('delete', key, error, stackTrace);
     }
+  }
+
+  void _logUnavailable(String operation, String key) {
+    AppLogger.warning(
+      'Secure storage plugin unavailable; persistence is limited to this process',
+      context: {'operation': operation, 'storageKey': key},
+    );
+  }
+
+  StorageFailure _storageFailure(
+    String operation,
+    String key,
+    Object error,
+    StackTrace stackTrace,
+  ) {
+    AppLogger.warning(
+      'Secure storage operation failed',
+      context: {'operation': operation, 'storageKey': key},
+      error: error,
+      stackTrace: stackTrace,
+    );
+    return StorageFailure(
+      message: 'Secure storage $operation failed',
+      userMessage:
+          'Nao foi possivel acessar o armazenamento seguro. '
+          'No navegador, use HTTPS e permita o armazenamento do site.',
+      cause: error,
+      stackTrace: stackTrace,
+      context: {'operation': operation, 'storageKey': key},
+    );
   }
 
   String _wrapStoredValue(String value) {

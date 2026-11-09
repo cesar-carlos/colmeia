@@ -1,7 +1,10 @@
 # Bridge Agent SQL API options
 
 This is the Colmeia-facing summary for SQL bridge payloads. The normative
-contract lives in `plug_server/docs/api/api_rest_bridge.md`.
+contract lives in `plug_server/docs/api/api_rest_bridge.md`. Reviewed against
+the local hub checkout on 2026-11-08; deployed behavior still requires smoke
+validation. [Integration gaps and sources](plug_server_docs_index_for_colmeia.md)
+cover versioning, authorization and cross-repository follow-ups.
 
 ## Shared command envelope
 
@@ -19,7 +22,6 @@ top-level body:
     "params": {}
   },
   "timeoutMs": 30000,
-  "pagination": null,
   "payloadFrameCompression": "default"
 }
 ```
@@ -44,6 +46,26 @@ top-level body:
   selects unary vs streaming for `sql.execute`; the default is unary.
 - Colmeia defaults to `api_version: "2.10"` for `sql.execute` and
   `sql.executeBatch`. Override per request only for a known legacy agent.
+
+## Deadlines, errors and negotiated limits
+
+- `options.timeout_ms` controls SQL execution. Body/envelope `timeoutMs`
+  controls requested hub wait. The hub computes the greater of that wait and
+  SQL timeout plus five seconds, capped at 360,000 ms. Without an explicit
+  relay envelope timeout, its configured default is 30,000 ms.
+- Colmeia's `totalTimeoutMs` is a local operation deadline covering queues,
+  retries and fallback; it is not a wire field and does not extend hub waiting.
+- HTTP 200 is not sufficient for success: inspect `response.item.error` and
+  per-item batch errors. A known disconnected agent can return JSON-RPC
+  `-32000` / `agent_offline` with `agent_disconnected_at_dispatch` under HTTP 200.
+  Keep that distinct from HTTP 503 overload or mid-request disconnect.
+- `relay:rpc.accepted` with `success: false` is terminal for the correlated
+  attempt; do not wait for a later result and misreport the rejection as timeout.
+- Effective row/batch limits depend on both hub and agent capabilities. Hub
+  ceilings are not a promise of agent capacity. Observe announced relay batch
+  availability and size, and existing local gates, before increasing concurrency.
+- Automatic retries described here apply to analytical reads. Do not apply
+  them to new side-effecting RPC methods with an unknown outcome.
 
 ## `sql.execute`
 
@@ -103,7 +125,7 @@ product change.
 
 | Mechanism | What it does | Colmeia overview |
 |-----------|--------------|------------------|
-| `sql.executeBatch` | Multiple `commands[]`, each with its own `params`; optional `max_parallel_read_only_batch_items` for read-only parallelism (see `plug_server/docs/snippets/agent_command_performance_options.ts`). | Main batch runs **forma pagamento** + **per-user** resumo (`OverviewBatchLoader`); section batch runs monthly/weekday/daily/etc. Filter-options and moving-average screens batch independent `sql.execute` calls where the hub allows read-only batching. |
+| `sql.executeBatch` | Multiple `commands[]`, each with its own `params`; optional `max_parallel_read_only_batch_items` for read-only parallelism (see `plug_server/docs/snippets/agent_command_performance_options.ts`). | Main batch runs **forma pagamento** + **per-user** resumo (`OverviewBatchLoader`); section batch runs monthly/weekday/daily/etc. Filter-options and moving-average screens batch independent statements; product trend uses one combined query instead. |
 | `multi_result` | Single `sql.execute`, one SQL string with multiple statements; **cannot** be combined with named `params` or pagination (`plug_server/docs/api/api_rest_bridge.md`). | **Not used** for overview (all resumo queries use `:named` binds). |
 | JSON-RPC `command: []` | Up to 32 independent RPC objects in one REST body. | Not used for overview batch; relay unary still uses one RPC per `relay:rpc.request` unless relay batch is enabled (below). |
 
@@ -185,8 +207,9 @@ Allowed values:
   path) keep `relayMode: unary` and `prefer_db_streaming: false` because SQL
   Anywhere streaming (and older nested-subquery shapes) returned empty success
   payloads. Guarded by `agent_sql_execute_request_use_relay_guard_test.dart`.
-  Revisit after an agent/hub fix; unary also lacks guaranteed agent-side
-  `sql.cancel`.
+  Revisit after an agent/hub fix. The current Colmeia unary path does not
+  dispatch remote SQL cancellation; this is a client coverage gap, not absence
+  of an upstream `sql.cancel` contract.
 - The monthly profitability query matches the period lucratividade nested-
   subquery join shape, with `YEAR`/`MONTH` applied in a middle layer (same
   pattern as parcelas mensal) and `AnoMes` via `MAX(...)`.
@@ -212,7 +235,7 @@ Allowed values:
 - Overview read-only `sql.executeBatch` calls set
   `options.max_parallel_read_only_batch_items: 4`.
 - Local performance knobs:
-  - `AGENT_SQL_CACHE_TTL_MS` defaults to `3000`; use `0` to effectively
+  - `AGENT_SQL_CACHE_TTL_MS` defaults to `5000`; use `0` to effectively
     disable cross-call reuse while preserving coalescing and the repository
     chain shape.
   - `AGENT_SQL_OVERVIEW_BATCH_MAX_PARALLEL_READ_ONLY_ITEMS` defaults to `4`;
@@ -223,9 +246,10 @@ Allowed values:
     comparator before increasing further.
   - `AGENT_SQL_REST_MAX_INFLIGHT_PER_AGENT` defaults to `8` on REST (per-agent
     cap on concurrent `POST .../agents/commands`); set `0` to disable.
-- Hub-mirrored opt-ins: `SOCKET_RELAY_BATCH_ENABLED` (`true` in bundled
+- Client protocol opt-ins: `SOCKET_RELAY_BATCH_ENABLED` (`true` in bundled
     `default.env`; code fallback `false`), `SOCKET_RELAY_FAST_PATH_ENABLED`,
-    `SOCKET_REQUEST_SERVER_TIMINGS_ENABLED` (both default `false`).
+    `SOCKET_REQUEST_SERVER_TIMINGS_ENABLED`. Fast-path is `true` in bundled
+    `default.env` with code fallback `false`; server timings is `false`.
     See [`plug_server_docs_index_for_colmeia.md`](plug_server_docs_index_for_colmeia.md)
     ("Colmeia ↔ hub feature flags" and **Staging validation checklist**).
     Committed staging overlay (no secrets): `assets/env/staging.env`.
@@ -267,28 +291,24 @@ python tool/compare_e2e_transports.py --scope suite --transport both --timeout-s
 4. Append a row to the table in `dart_test.yaml` (E2E env A/B section) so the
    repo keeps a reproducible measurement log.
 
-### Product trend (`produto_tendencia_venda`)
+### Product trend and overview persistence
 
-The sales product trend card loads paged rows and the KPI summary in one
-`sql.executeBatch` round-trip via
-`ProdutoVendidoTendenciaDeVendaRepository.loadPageAndSummary` (wired through
-`LoadProdutoVendidoTendenciaDeVendaScreenUseCase`). Call sites that need only one
-half can still use `loadAll` or `loadSummary` alone.
+The product-trend combined path uses one tagged `UNION ALL` query; moving-average
+trend retains `sql.executeBatch`. See [the implementation audit](#residual-sqlexecute-audit--product-trend)
+for the distinction rather than treating both as semantic batches.
 
-### Dashboard Hive TTL (`OVERVIEW_CACHE_MAX_AGE_MS`)
-
-Overview snapshots use `OverviewLocalDataSource` with `savedAt` plus
-`AppEnvironment.overviewCacheMaxAgeMs` (documented in `assets/env/.env.example`).
-Other heavy report screens can reuse the same JSON envelope pattern without
-putting TTL on `AppCacheStore` itself.
+The legacy `OverviewLocalDataSource` snapshot path was removed. Historical
+facts and explicitly selected PWA packages have separate storage and authorization
+rules; see [cache architecture](cache_repo/architecture.md). Do not reuse a
+legacy snapshot TTL as an offline permission lease.
 
 ## `mergeAll` executor matrix (reference)
 
 `AgentQueryExecutor.mergeAllConcurrency` defaults to **16** in
-[`agent_query_executor.dart`](lib/features/agent_queries/application/orchestration/agent_query_executor.dart)
+[`agent_query_executor.dart`](../lib/features/agent_queries/application/orchestration/agent_query_executor.dart)
 when a call site omits the parameter. Colmeia overrides that default only where
 executors are registered in
-[`injector_agent_queries.dart`](lib/core/di/injector_agent_queries.dart).
+[`injector_agent_queries.dart`](../lib/core/di/injector_agent_queries.dart).
 
 **Transport (`AGENT_BRIDGE_TRANSPORT`):** merge-all waves run on top of the
 shared `AgentQueriesRepository` chain (REST, socket, or socket+REST fallback).
@@ -305,7 +325,7 @@ E2E wall-clock; see the E2E env A/B section above.
 
 ### Residual `sql.execute` audit — product trend
 
-[`produto_vendido_tendencia_de_venda_repository_impl.dart`](lib/features/agent_queries/data/repositories/produto_vendido_tendencia_de_venda_repository_impl.dart)
+[`produto_vendido_tendencia_de_venda_repository_impl.dart`](../lib/features/agent_queries/data/repositories/produto_vendido_tendencia_de_venda_repository_impl.dart)
 uses one unary query per page or summary attempt. `loadAll` is the first-page
 compatibility entry point. The combined UI path uses **`loadPageAndSummary`**,
 which executes a single tagged `UNION ALL` query over a shared CTE for the page,

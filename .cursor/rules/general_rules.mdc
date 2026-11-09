@@ -1,5 +1,6 @@
 ---
-alwaysApply: true
+description: Principios universais de manutencao, documentacao e refatoracao
+globs: ["lib/**", "test/**", "tool/**", ".cursor/rules/**", "docs/**"]
 ---
 
 # Regras Gerais do Projeto
@@ -93,8 +94,9 @@ Prefira:
 
 - Faca passos pequenos e comportamentalmente equivalentes; nunca mude logica e
   estrutura no mesmo passo
-- Nunca misture refatoracao com adicao de feature no mesmo commit ou PR; o
-  revisor precisa distinguir o que muda comportamento do que so limpa
+- Keep behavior-preserving refactoring and feature changes in separate,
+  reviewable steps. This does not require a separate branch or PR and does not
+  authorize commits; Git operations follow `global_guardrails.mdc`.
 - Rode o analyzer e os testes existentes apos cada passo significativo
 - Ao encerrar uma refatoracao, rode o lint ou analyzer aplicavel e os testes
   relevantes da area alterada; nao assuma que rodar toda a suite e sempre a

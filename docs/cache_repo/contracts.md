@@ -1,156 +1,78 @@
-# Domain contracts
+# Cache contracts
 
-All paths under `lib/features/agent_queries/domain/` unless noted.
+The source interfaces below are authoritative. This guide describes their
+behavior instead of duplicating signatures that can drift from the code.
 
-## `AgentQueryLoadPolicy`
+## Read policies
 
-```dart
-enum AgentQueryLoadPolicy {
-  /// Read closed buckets from store; network for misses and open buckets.
-  defaultLoad,
+[`AgentQueryLoadPolicy`](../../lib/features/agent_queries/domain/entities/agent_query_load_policy.dart)
+controls ordinary repository fact caching:
 
-  /// Skip store for buckets in scope; network; rewrite closed buckets.
-  forceRefresh,
+| Policy | Behavior |
+| --- | --- |
+| `defaultLoad` | Read closed facts; fetch missing and open buckets remotely |
+| `forceRefresh` | Bypass facts in scope, fetch remotely and rewrite closed buckets |
+| `networkOnly` | Delegate without persisting facts |
 
-  /// Network only; never persist (debug / sensitive).
-  networkOnly,
-}
+Overview maps its `defaultLoad` and `forceRefresh` policies to these values.
+Repositories without a caching decorator ignore the cache policy. None of these
+values means local-only: PWA reads use the separate package contracts below.
+`AgentSqlExecuteRequest.skipTransportCache` bypasses short-lived SQL results
+when a fact repository requests fresh data.
+
+## Fact persistence and invalidation
+
+- [`AgentQueryFactsStore`](../../lib/features/agent_queries/domain/cache/agent_query_facts_store.dart)
+  reads individual or multiple payloads, accepts an expected schema version,
+  writes opaque versioned bytes and removes keys by key, prefix or user/fact kind.
+  Missing or stale entries are omitted from batch results.
+- [`AgentQueryCacheControl`](../../lib/features/agent_queries/domain/cache/agent_query_cache_control.dart)
+  exposes invalidation for caching decorators.
+- [`AgentQueryCacheInvalidateScope`](../../lib/features/agent_queries/domain/entities/agent_query_cache_invalidate_scope.dart)
+  supports user, agent, fact kind and bucket scopes.
+
+Canonical key shape:
+
+```text
+{agentQueryFactsPrefix}{userId}:{agentId}:{factKind}:{cacheScopeId}:{bucketId}
 ```
 
-Mapping from overview:
+The bucket invalidation scope must use the same `cacheScopeId` as the write.
+Filter dimensions belong in this segment, separately from dates. Strategies use
+[`AgentQueryCacheScope`](../../lib/features/agent_queries/domain/cache/agent_query_cache_scope.dart)
+for stable scope construction. Old keys without this segment are not read and
+remain until matching eviction or session cleanup.
 
-| `OverviewLoadPolicy` | `AgentQueryLoadPolicy` |
-| -------------------- | ---------------------- |
-| `defaultLoad` | `defaultLoad` |
-| `forceRefresh` | `forceRefresh` |
+## Strategies and bucket plans
 
-Repositories without a caching decorator ignore the parameter.
+[`AgentQueryCacheStrategy`](../../lib/features/agent_queries/domain/cache/agent_query_cache_strategy.dart)
+owns bucket planning, closure, filter slicing, scope keys and row serialization.
+It declares `supportsRangeCoalesce`, `networkCoalesceFilter` and
+`selectRowsForBucket` so the decorator can reduce round trips without changing
+aggregate semantics. Do not coalesce or split a period aggregate unless the
+strategy supports it.
 
-## `AgentQueryCacheInvalidateScope`
+[`AgentQueryBucketPlan`](../../lib/features/agent_queries/domain/cache/agent_query_bucket_plan.dart)
+contains `allBucketIdsInRange`, `closedBucketIds`, `openBucketIds` and
+`networkBucketIds`. It is a plan, not a report of actual cache hits.
 
-Sealed hierarchy for targeted eviction:
+[`ConsolidationCatalog`](../../lib/features/agent_queries/domain/cache/consolidation_catalog.dart)
+controls canonical writers and `persistClosedBuckets` versus `derivedOnly`.
+See [consolidation rules](consolidation_rules.md) for the current catalog and
+[architecture](architecture.md#in-flight-invalidation) for cancellation fences.
 
-- `AgentQueryCacheInvalidateUser(userId)`
-- `AgentQueryCacheInvalidateAgent(userId, agentId)`
-- `AgentQueryCacheInvalidateFactKind(userId, factKind)`
-- `AgentQueryCacheInvalidateBucket(userId, agentId, factKind, cacheScopeId, bucketId)`
+## Offline package contracts
 
-## `AgentQueryCacheControl`
+- [`OfflinePackageRepository` and `OfflineAuthorizationGateway`](../../lib/features/pwa/domain/offline_package_repository.dart)
+  separate package persistence from online permission issuance.
+- [`OfflinePackage`](../../lib/features/pwa/domain/offline_package.dart) carries
+  prepared datasets and their period/collection metadata.
+- [`OfflineAuthorization`](../../lib/features/pwa/domain/offline_authorization.dart)
+  limits access by user, agent and absolute expiry.
+- [`OfflineOverviewRepository`](../../lib/features/pwa/data/offline_overview_repository.dart)
+  adapts a matching prepared snapshot to overview reads.
 
-Optional port mixin for repositories that support invalidation:
-
-```dart
-abstract interface class AgentQueryCacheControl {
-  Future<void> invalidateCache(AgentQueryCacheInvalidateScope scope);
-}
-```
-
-Decorators implement this; plain `*RepositoryImpl` do not.
-
-## `AgentQueryFactsStore`
-
-```dart
-abstract interface class AgentQueryFactsStore {
-  Future<List<int>?> readPayload({required String storageKey});
-
-  Future<void> writePayload({
-    required String storageKey,
-    required List<int> payload,
-    required int schemaVersion,
-  });
-
-  Future<void> removeMatching(String keyPrefix);
-
-  Future<void> removeKey(String storageKey);
-}
-```
-
-Payload is opaque bytes; strategies own encode/decode. Store enforces catalog writer rules before `writePayload`.
-
-## `AgentQueryCacheStrategy<Filter, Row>`
-
-```dart
-abstract interface class AgentQueryCacheStrategy<Filter, Row> {
-  AgentQueryKey get queryKey;
-  AgentQueryFactKind get factKind;
-  int get schemaVersion;
-  ConsolidationStorageMode get storageMode;
-
-  AgentQueryBucketPlan planBuckets({
-    required Filter filter,
-    required DateTime clock,
-    required AgentQueryLoadPolicy policy,
-  });
-
-  Filter filterForBucket({required Filter rangeFilter, required String bucketId});
-
-  String bucketIdForRow(Row row); // or extract from filter for single-bucket loads
-
-  List<Row> decodePayload(List<int> bytes);
-  List<int> encodePayload(List<Row> rows);
-
-  /// Stable scope segment for [storageKey] (filter dimensions, not dates).
-  /// Implemented via [AgentQueryCacheScope] helpers in the domain layer.
-  String cacheScopeId(Filter filter);
-
-  String storageKey({
-    required String userId,
-    required String agentId,
-    required String bucketId,
-    required Filter rangeFilter,
-  });
-
-  bool isBucketClosed({required String bucketId, required DateTime clock});
-}
-```
-
-Facts storage key shape:
-
-`{agentQueryFactsPrefix}{userId}:{agentId}:{factKind}:{cacheScopeId}:{bucketId}`
-
-`cacheScopeId` encodes period flags (`origem`, `geraFinanceiro`, `preVenda`) and, for monthly parcels, optional `codEmpresa` / `codFilial` / `codVendedor` when set. Keys written before scope was introduced (no `cacheScopeId` segment) are orphaned until `clearAll`, logout, or `removeMatching` for the user.
-
-`AgentQueryCacheInvalidateBucket` requires the same `cacheScopeId` used when the bucket was written.
-
-`ConsolidationStorageMode`: `persistClosedBuckets` | `derivedOnly`.
-
-## `AgentQueryBucketPlan`
-
-```dart
-final class AgentQueryBucketPlan {
-  const AgentQueryBucketPlan({
-    required this.allBucketIdsInRange,
-    required this.closedBucketIds,
-    required this.openBucketIds,
-    required this.networkBucketIds,
-  });
-
-  final List<String> allBucketIdsInRange;
-  final List<String> closedBucketIds;
-  final List<String> openBucketIds;
-  /// Subset of closed+open that must be fetched from network this request.
-  final List<String> networkBucketIds;
-}
-```
-
-## Repository port extension
-
-Cached reports add an optional parameter to existing `load`:
-
-```dart
-Future<AppResult<List<ResumoTotalDiarioVendasRow>>> load({
-  required String userId,
-  required String agentId,
-  required ResumoTotalDiarioVendasFilter filter,
-  AgentQueryLoadPolicy cachePolicy = AgentQueryLoadPolicy.defaultLoad,
-  // ... existing hub / cancel params
-});
-```
-
-## `CachedQueryResult` metadata (optional future)
-
-If UI needs `servedFromCache` per load, wrap in application layer or extend `AppResult` context map. Overview `isStaleCache` remains for legacy snapshot fallback only.
-
-## Transport bypass
-
-`AgentSqlExecuteRequest.skipTransportCache` (Phase 4): when true, `CachingAgentQueriesRepository` does not return cached SQL results. Set when `cachePolicy == forceRefresh` inside network delegate or decorator.
+These snapshots do not change historical fact consolidation. Missing data or an
+unsupported period requires connection; it is not an empty result. See the
+[Web guide](../install/web_guide.md#offline-packages) for supported operations,
+publication, expiry, reconnection and acceptance limitations.

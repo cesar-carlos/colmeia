@@ -1,13 +1,15 @@
 # Guia Android — Colmeia
 
 Guia prático para build, publicação e manutenção do app **Colmeia** no Android.
-Para iOS/TestFlight, veja [ios_guide.md](install/ios_guide.md). Valores abaixo refletem o estado atual do repositório (Flutter + Gradle Kotlin DSL).
+For browser delivery, see the [Web guide](install/web_guide.md). Valores abaixo refletem o estado atual do repositório (Flutter + Gradle Kotlin DSL).
 
 ## Pré-requisitos
 
-- **Flutter** compatível com `pubspec.yaml` (`sdk: ^3.11.0`). Confira com `flutter doctor -v`.
+- **Flutter** compatível com `pubspec.yaml` (`sdk: ^3.13.0`). Confira com `flutter doctor -v`.
 - **JDK 17** — o módulo `:app` define Java 17 em `compileOptions` e alinha o Kotlin com `tasks.withType<KotlinCompile> { compilerOptions.jvmTarget = JVM_17 }` em `android/app/build.gradle.kts`. Plugins Flutter legados em outros subprojetos herdam o alinhamento via `android/build.gradle.kts`.
-- **Android SDK** instalado (via Android Studio ou `sdkmanager`). O `compileSdk`, `minSdk` e `targetSdk` seguem as versões definidas pelo **Flutter** (`flutter.compileSdkVersion`, `flutter.minSdkVersion`, `flutter.targetSdkVersion` no `build.gradle.kts` do app).
+- **Android SDK:** compile SDK 37 is explicit in `android/app/build.gradle.kts`.
+  `minSdk` and `targetSdk` follow the Flutter SDK defaults. Use the Flutter
+  version selected by `tool/flutter_ci_version.txt` or the CI override.
 - Arquivo **`android/local.properties`** gerado pelo Flutter/Android Studio com `sdk.dir` e `flutter.sdk` (não versionar credenciais ou caminhos sensíveis se a política do time exigir).
 
 ## Identidade do aplicativo
@@ -22,9 +24,9 @@ Versão exposta no app: **`version`** + **`versionCode`** em `pubspec.yaml` (`ve
 
 ## Stack de build (referência)
 
-- **Android Gradle Plugin:** `8.11.1` (`android/settings.gradle.kts`)
-- **Kotlin:** `2.2.20`
-- **Gradle Wrapper:** `8.14` (`android/gradle/wrapper/gradle-wrapper.properties`)
+- **Android Gradle Plugin:** `9.1.1` (`android/settings.gradle.kts`)
+- **Kotlin:** `2.3.20`
+- **Gradle Wrapper:** `9.3.1` (`android/gradle/wrapper/gradle-wrapper.properties`)
 - **Desugaring:** habilitado; dependência `desugar_jdk_libs:2.1.4` no `app/build.gradle.kts`
 
 ## Executar e depurar
@@ -98,25 +100,26 @@ A partir do Android 15, dispositivos com **page size de 16 KB** (ex.: Galaxy S24
 2. Instale um build release assinado: `flutter build apk --release` (com `key.properties`) e `adb install`.
 3. Abra o app, exercite fluxos com plugins nativos (câmera, arquivos, notificações) e monitore `adb logcat` por falhas de carregamento de `.so` ou crashes na inicialização.
 
-**Verificação automatizada (CI e local):**
+### Automated alignment check
 
-`ash
+```bash
 python tool/check_apk_native_alignment.py build/app/outputs/flutter-apk/app-release.apk
-`
+```
 
-O job ndroid_release_smoke em .github/workflows/flutter_ci.yml executa esse script após lutter build apk --release.
+The `android_release_smoke` job in `.github/workflows/flutter_ci.yml` runs this
+check after the release build. A successful archive check does not replace
+startup and plugin checks on a device or emulator configured for 16 KB pages.
 
-Se o app falhar só em 16 KB, atualize Flutter/NDK/plugins para versões compatíveis e recompile; consulte [Support 16 KB page sizes](https://developer.android.com/guide/practices/page-sizes) na documentação Android.
+## Backup and data extraction
 
+The main manifest sets `android:allowBackup="false"` and references:
 
-## Backup e extração de dados
+- `android/app/src/main/res/xml/backup_rules.xml` via `android:fullBackupContent`
+- `android/app/src/main/res/xml/data_extraction_rules.xml` via `android:dataExtractionRules`
 
-O app define ndroid:allowBackup="false" e regras explícitas em:
+Review these exclusions when adding local stores so private data is not
+inadvertently included in backup or device-transfer flows.
 
-- ndroid/app/src/main/res/xml/backup_rules.xml (ndroid:fullBackupContent)
-- ndroid/app/src/main/res/xml/data_extraction_rules.xml (ndroid:dataExtractionRules)
-
-Isso evita backup em nuvem ou transferência entre dispositivos de dados locais (Hive, preferências, cache).
 ## Deep links e App Links
 
 O `AndroidManifest.xml` declara `intent-filter` com `android:autoVerify="true"` para URLs HTTPS do host **`plug-server.se7esistemassinop.com.br`**, incluindo prefixos de revisão de recuperação de senha e registro (com e sem prefixo `/api/v1`).
@@ -161,3 +164,14 @@ cd android
 - [ ] App Links / deep links validados com asset links e certificado correto
 - [ ] Teste em dispositivo físico (`profile`/`release`) para jank e rede
 - [ ] Política de privacidade e permissões alinhadas ao que o app realmente usa
+
+## SDK 37 build compatibility
+
+The toolchain versions are listed in [Build stack](#stack-de-build-referência)
+and declared by the Gradle files above. Do not rename installed SDK folders to
+work around plugin incompatibilities.
+The current Flutter Gradle adapter and Sentry plugin require `android.newDsl=false`
+and `android.builtInKotlin=false`. Keep the Kotlin plugin applied until those
+components migrate; then remove these temporary compatibility settings together.
+The debug APK build passed on 2026-10-28. Release signing and device installation
+are separate checks.

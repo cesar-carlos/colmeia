@@ -1037,8 +1037,8 @@ env) está fiel ao design.
 
 - Plano executivo: `docs/Features/socket_consumer_channel_plan.md` (§19).
 - Hub: `plug_server/docs/socket_client_sdk.md` (§"Push de catalogo"),
-  `plug_server/docs/client_agent_business_rules.md` (§3.4 e §"Perfil no catálogo"),
-  `plug_server/docs/observability.md` (§"agent_profile_broadcast").
+  `plug_server/docs/api/client_agent_business_rules.md` (§3.4 e §"Perfil no catálogo"),
+  `plug_server/docs/observability/observability.md` (§"agent_profile_broadcast").
 - Regras Colmeia: `.cursor/rules/clean_architecture.mdc`,
   `.cursor/rules/solid_principles.mdc`,
   `.cursor/rules/project_data_domain.mdc` (Estratégia de dados —

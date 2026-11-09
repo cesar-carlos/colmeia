@@ -64,7 +64,7 @@ abstract interface class StreamingSqlExecuteCollector {
 /// misreported as a successful empty SQL result.
 ///
 /// When [maxBufferedRows] is set, buffered row count across chunks must
-/// not exceed it — otherwise [collect] throws [StateError] to cap
+/// not exceed it — otherwise [collect] throws [FormatException] to cap
 /// client memory for very large result sets (prefer true streaming in
 /// the domain when this trips).
 class BridgeShapedSqlExecuteCollector implements StreamingSqlExecuteCollector {
@@ -141,18 +141,19 @@ class BridgeShapedSqlExecuteCollector implements StreamingSqlExecuteCollector {
           );
         }
         sawChunk = true;
-        rows.addAll(maybeRows);
+        final bufferedRowCount = rows.length + maybeRows.length;
         final cap = maxBufferedRows;
-        if (cap != null && rows.length > cap) {
+        if (cap != null && bufferedRowCount > cap) {
           // FormatException is consistent with the other protocol failures
           // surfaced by this collector. The repository layer should map this
           // to a user-visible "result set too large" message rather than a
           // generic technical error — see canvas finding T1.
           throw FormatException(
             'Relay streaming buffered row cap exceeded '
-            '(maxBufferedRows=$cap, currentRows=${rows.length})',
+            '(maxBufferedRows=$cap, currentRows=$bufferedRowCount)',
           );
         }
+        rows.addAll(maybeRows);
         if (maybeRows.isNotEmpty) {
           cancelScope?.diagnostics?.mark('first_rows');
         }

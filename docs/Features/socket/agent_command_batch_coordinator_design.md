@@ -914,7 +914,7 @@ Logging estruturado (`AppLogger`):
      devem usar `batchEligible: false`.
 
 4. **Ordem dentro do batch**: o hub mantém ordem em `items[]` correspondente
-   a `command[]`? Conferir contrato em `plug_server/docs/api_rest_bridge.md`
+   a `command[]`? Conferir contrato em `plug_server/docs/api/api_rest_bridge.md`
    (§ "Batch JSON-RPC nativo"). Se **não garantida**, o coordenador já
    trata: usa `id` para correlação, não índice.
 
@@ -935,7 +935,7 @@ Logging estruturado (`AppLogger`):
     aberto §14.1 deste doc).
   - `docs/Features/socket_channel_performance_review.md` §5.2 (origem).
 - Hub:
-  - `plug_server/docs/api_rest_bridge.md` (§ "Batch JSON-RPC nativo",
+  - `plug_server/docs/api/api_rest_bridge.md` (§ "Batch JSON-RPC nativo",
     `command` array até 32, `response.type === 'batch'`, semântica
     de `id` por item).
   - `plug_server/docs/socket_client_sdk.md` (§ "Bridge de comandos —

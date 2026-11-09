@@ -64,11 +64,11 @@ class SalesLiveMapCatalogLookup {
   /// Looks up the branch catalog purely from the local caches (memory +
   /// disk + broader-cache narrowing). Returns `null` when nothing usable
   /// is cached and the caller should fall back to [loadRemote].
-  SalesLiveMapCatalogLookupResult? lookupCached({
+  Future<SalesLiveMapCatalogLookupResult?> lookupCached({
     required String userId,
     required SalesLiveMapCatalogScope scope,
     required DateTime now,
-  }) {
+  }) async {
     final exactMemory = _memoryCache.read(
       userId: userId,
       scope: scope,
@@ -81,7 +81,7 @@ class SalesLiveMapCatalogLookup {
       );
     }
 
-    final exactDisk = _diskCache.readIfFresh(
+    final exactDisk = await _diskCache.readIfFresh(
       userId: userId,
       scope: scope,
       now: now,
@@ -126,7 +126,7 @@ class SalesLiveMapCatalogLookup {
       );
     }
 
-    final broaderDisk = _diskCache.readIfFresh(
+    final broaderDisk = await _diskCache.readIfFresh(
       userId: userId,
       scope: broaderScope,
       now: now,

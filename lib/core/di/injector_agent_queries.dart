@@ -9,6 +9,7 @@ import 'package:colmeia/core/network/auth_session_events.dart';
 import 'package:colmeia/core/observability/agent_query_failure_support_metrics.dart';
 import 'package:colmeia/core/observability/socket/socket_channel_metrics.dart';
 import 'package:colmeia/core/observability/socket/socket_metrics_listener.dart';
+import 'package:colmeia/core/pwa/pwa_platform.dart';
 import 'package:colmeia/core/socket/agent_command_batch_coordinator.dart';
 import 'package:colmeia/core/socket/agent_command_sender.dart';
 import 'package:colmeia/core/socket/agent_sql_cancel_emitter.dart';
@@ -146,6 +147,7 @@ import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_d
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_filter_options_across_agents_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_filter_options_repository_impl.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/resumo_vendas_diarias_por_vendedor_repository_impl.dart';
+import 'package:colmeia/features/agent_queries/data/scheduling/scheduled_query_snapshots.dart';
 import 'package:colmeia/features/agent_queries/data/streaming_sql_execute_collector.dart';
 import 'package:colmeia/features/agent_queries/domain/cache/agent_query_facts_store.dart';
 import 'package:colmeia/features/agent_queries/domain/cache/agent_query_facts_store_metrics.dart';
@@ -219,6 +221,7 @@ import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas_diarias_por_vendedor_filter_options_across_agents_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas_diarias_por_vendedor_filter_options_repository.dart';
 import 'package:colmeia/features/agent_queries/domain/repositories/resumo_vendas_diarias_por_vendedor_repository.dart';
+import 'package:colmeia/features/agent_queries/domain/scheduling/cache_refresh_ports.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/agent_client_token_reader.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_agents_repository.dart';
 import 'package:colmeia/shared/maps/resolve_postal_address_location_use_case.dart';

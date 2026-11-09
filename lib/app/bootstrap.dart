@@ -2,12 +2,14 @@ import 'dart:async';
 
 import 'package:colmeia/app/app.dart';
 import 'package:colmeia/app/bootstrap_failure_app.dart';
+import 'package:colmeia/app/cache_refresh_lifecycle.dart';
 import 'package:colmeia/app/preferences/app_user_experience_preferences_controller.dart';
 import 'package:colmeia/app/router/app_router.dart';
 import 'package:colmeia/app/socket_lifecycle_observer.dart';
 import 'package:colmeia/app/theme/app_theme_mode_controller.dart';
 import 'package:colmeia/app/web_url_strategy.dart';
 import 'package:colmeia/core/cache/app_cache_store.dart';
+import 'package:colmeia/core/cache/app_cache_store_factory.dart';
 import 'package:colmeia/core/config/agent_bridge_transport.dart';
 import 'package:colmeia/core/config/app_dotenv_loader.dart';
 import 'package:colmeia/core/config/app_environment.dart';
@@ -20,11 +22,16 @@ import 'package:colmeia/core/observability/sentry_bootstrap.dart'
         runAppWithOptionalSentry,
         shouldInitializeSentry;
 import 'package:colmeia/core/observability/socket/socket_metrics_listener.dart';
+import 'package:colmeia/core/pwa/pwa_platform.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/relay/relay_conversation_pre_warmer.dart';
-import 'package:colmeia/core/storage/app_hive.dart';
 import 'package:colmeia/core/update/windows_auto_update_controller.dart';
+import 'package:colmeia/features/agent_queries/application/sync/cache_refresh_coordinator.dart';
+import 'package:colmeia/features/agent_queries/domain/scheduling/cache_refresh_ports.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
+import 'package:colmeia/features/client_agents/domain/ports/agent_presence_stream.dart';
+import 'package:colmeia/features/pwa/application/pwa_package_service.dart';
+import 'package:colmeia/features/pwa/domain/push_subscriptions.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_map_static_data.dart';
 import 'package:colmeia/shared/widgets/export/pdf_export_font_cache.dart';
@@ -212,7 +219,7 @@ bool _isHiveRecoverableBootstrapPhase(String phase) =>
     phase == 'setup_dependencies';
 
 Future<void> _clearLocalCacheAndRetryBootstrap() async {
-  await AppHive.clearLocalKvCacheForRecovery();
+  await clearAppCacheForRecovery();
   await _retryBootstrap();
 }
 
@@ -312,7 +319,17 @@ class ColmeiaBootstrap extends StatelessWidget {
               milliseconds:
                   AppEnvironment.socketConsumerIdleKeepaliveIntervalMs,
             ),
-            child: const ColmeiaApp(),
+            child: CacheRefreshLifecycle(
+              auth: getIt<AuthController>(),
+              coordinator: getIt<CacheRefreshCoordinator>(),
+              presence: getIt<AgentPresenceStream>(),
+              platform: getIt<PwaPlatform>(),
+              packages: getIt<PwaPackageService>(),
+              push: getIt<PushSubscriptions>(),
+              cache: getIt<AppCacheStore>(),
+              lock: getIt<CacheRefreshLock>(),
+              child: const ColmeiaApp(),
+            ),
           );
         },
       ),

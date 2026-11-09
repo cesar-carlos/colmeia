@@ -42,6 +42,7 @@ void main() {
           final periodStart = DateTime(2026, 7, 10);
           final periodEnd = DateTime(2026, 7, 11);
 
+          final stopwatch = Stopwatch()..start();
           final result = await runE2eAppResult(
             () => repository.load(
               userId: 'user-1',
@@ -54,8 +55,14 @@ void main() {
             ),
           );
 
+          stopwatch.stop();
           result.fold(
             (rows) {
+              // ignore: avoid_print -- Keep real-query timing visible in E2E logs.
+              print(
+                'E2E daily payment: rows=${rows.length} '
+                'elapsedMs=${stopwatch.elapsedMilliseconds}',
+              );
               for (final row in rows) {
                 expect(row.origem, isNotEmpty);
                 expect(row.nomeUsuario, isNotEmpty);
@@ -64,6 +71,11 @@ void main() {
               }
             },
             (failure) {
+              // ignore: avoid_print -- Distinguish tolerated failures from rows.
+              print(
+                'E2E daily payment: elapsedMs=${stopwatch.elapsedMilliseconds} '
+                'failure=${e2eAgentSqlFailureDiagnostic(failure)}',
+              );
               expect(
                 failure,
                 isNot(isA<SessionFailure>()),

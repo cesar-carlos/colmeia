@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 
+import 'package:colmeia/core/pwa/pwa_platform.dart';
 import 'package:colmeia/shared/widgets/charts/chart_capture_image_processor.dart';
 import 'package:colmeia/shared/widgets/charts/chart_export_pixel_ratio.dart';
 import 'package:colmeia/shared/widgets/charts/chart_pdf_exporter.dart';
@@ -15,6 +16,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:get_it/get_it.dart';
 import 'package:share_plus/share_plus.dart';
 
 const Duration _kFrameWaitTimeout = Duration(seconds: 1);
@@ -45,7 +47,13 @@ Future<ChartShareResult> captureAndShareChart(
   }
 
   final resolvedTitle = title ?? subject ?? 'chart';
+  final platform = GetIt.I.isRegistered<PwaPlatform>()
+      ? GetIt.I<PwaPlatform>()
+      : null;
+  var tracking = false;
   try {
+    platform?.beginWork();
+    tracking = platform != null;
     final hasTable = tableData != null && !tableData.isEmpty;
     final fontsFuture = ChartPdfExporter.warmFonts();
 
@@ -189,6 +197,7 @@ Future<ChartShareResult> captureAndShareChart(
 
     return const ChartShareSuccess();
   } finally {
+    if (tracking) platform?.endWork();
     ChartShareGuard.release(progressKey);
   }
 }

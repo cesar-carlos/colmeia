@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:colmeia/features/agent_queries/domain/entities/cadastro_filial_across_agents_page_result.dart';
 import 'package:colmeia/features/sales/application/sales_live_map_catalog_scope.dart';
 
@@ -10,7 +12,7 @@ abstract class SalesLiveMapCatalogCache {
 
   /// Returns the cached catalog page when one exists for [userId] / [scope]
   /// and is still fresh relative to [now]. Returns null otherwise.
-  CadastroFilialAcrossAgentsPageResult? readIfFresh({
+  FutureOr<CadastroFilialAcrossAgentsPageResult?> readIfFresh({
     required String userId,
     required SalesLiveMapCatalogScope scope,
     required DateTime now,

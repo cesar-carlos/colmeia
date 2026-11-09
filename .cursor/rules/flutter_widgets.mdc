@@ -1,5 +1,6 @@
 ---
-alwaysApply: true
+description: Composicao, lifecycle e desempenho de widgets Flutter
+globs: ["lib/**/*.dart", "test/**/*.dart"]
 ---
 
 # Flutter Widgets
@@ -41,8 +42,9 @@ componente pertence define onde ele fica e quando extrair para `lib/shared/`:
   subarvore possivel sem precisar de `StatefulWidget`
 - Se o widget for dono do `ValueNotifier`, mantenha o lifecycle explicito e
   descarte-o corretamente
-- Use `StatefulWidget` apenas quando houver controle de foco, animacao,
-  controllers de scroll/texto ou subscriptions que exijam `initState`/`dispose`
+- Use `StatefulWidget` for owned mutable UI state or resources requiring
+  `initState`/`dispose`, including an owned `ValueNotifier`. Simple `setState`
+  is valid when rebuilds remain small; do not add a notifier without benefit.
 - Mantenha `setState()` restrito a menor subarvore que realmente muda
 - Separe regra de negocio de estado visual
 - Sempre descarte `FocusNode`, controllers, timers, subscriptions e streams
@@ -88,7 +90,7 @@ class _PasswordFieldState extends State<_PasswordField> {
 ```
 
 ```dart
-// StatefulWidget quando ha FocusNode, AnimationController ou initState real
+// Owned local state with a small rebuild surface
 class _CounterPanel extends StatefulWidget {
   const _CounterPanel();
 
@@ -97,14 +99,7 @@ class _CounterPanel extends StatefulWidget {
 }
 
 class _CounterPanelState extends State<_CounterPanel> {
-  final FocusNode _focusNode = FocusNode();
   int _counter = 0;
-
-  @override
-  void dispose() {
-    _focusNode.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -183,9 +178,9 @@ AppTextField          <- base: teclado, formatters, densidade, decoration
 - Ha configuracoes fixas de UX que nunca devem variar (autofill, keyboardType)
 - O componente base ficaria com muitos parametros condicionais sem uso claro
 
-**Nao use heranca de widget para especializacao.** Estender `StatelessWidget`
-ou `StatefulWidget` nao e idiomatico em Flutter e quebra o modelo de composicao
-do framework. Use sempre um novo widget que constroi o base como filho.
+Extend `StatelessWidget` or `StatefulWidget` normally to define a widget.
+To specialize an existing application widget, compose it as a child rather
+than subclassing its concrete implementation.
 
 ### Mixins para comportamento de State
 
@@ -413,7 +408,9 @@ Row(
 
 - Use `const` em widgets e filhos imutaveis sempre que possivel
 - Nao execute trabalho caro dentro de `build()`
-- Use `compute()` ou outro isolamento para processamento pesado
+- Move heavy work out of build and measure on each target. `compute()` does
+  not provide a background isolate on Web; use bounded/chunked work or a
+  platform-specific worker when browser responsiveness requires it.
 - Use `RepaintBoundary` em subarvores complexas que repintam com frequencia
 - Use `Key` apenas quando necessario: listas, reorder, animacoes
 - Prefira tear-offs e construtores diretos a wrappers desnecessarios quando a
@@ -544,7 +541,7 @@ de refatoracao (quando, como, o que nao fazer), veja `general_rules.mdc`.
 | -------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | Metodo `Widget _buildX()` em vez de classe privada             | Extraia para classe `_X extends StatelessWidget`                              |
 | `build()` com calculos, formatacao ou logica de negocio        | Mova para getter, funcao pura ou controller                                   |
-| `StatefulWidget` sem `FocusNode`, controller ou lifecycle real | Substitua por `ValueNotifier` + `ValueListenableBuilder`                      |
+| Local state causing broad rebuilds | Narrow the state owner or use a listenable with explicit disposal |
 | `setState()` com async, validacao ou multiplas variaveis       | Mova logica para controller ou use case                                       |
 | `Card` inline em pagina ou feature                             | Substitua por `AppSectionCard` ou `AppSectionCardWithHeading`                 |
 | `SizedBox(height/width: N)` ou padding numerico literal        | Substitua pelo token correspondente (`tokens.gapSm`, `tokens.contentSpacing`) |
@@ -574,8 +571,8 @@ de refatoracao (quando, como, o que nao fazer), veja `general_rules.mdc`.
 - [ ] Superficies de conteudo usam `AppSectionCard` ou `AppSectionCardWithHeading`
 - [ ] Estados de erro usam `AppInlineErrorPanel`
 - [ ] Estados de loading usam `AppSkeleton`
-- [ ] `ValueNotifier` foi preferido sobre `StatefulWidget` para estado local simples
-- [ ] `StatefulWidget` foi usado somente quando ha controllers, foco ou lifecycle real
+- [ ] Local state uses the smallest appropriate owner and rebuild surface
+- [ ] Owned notifiers, controllers and subscriptions are disposed correctly
 - [ ] Comportamento compartilhado entre `State` classes usa mixin, nao duplicacao
 - [ ] Componente com multiplas zonas visuais usa slot pattern (parametros Widget? nomeados)
 - [ ] Componente com mais de 3 parametros visuais usa style object com const constructor

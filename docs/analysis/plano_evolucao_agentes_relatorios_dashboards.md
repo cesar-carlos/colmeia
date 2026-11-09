@@ -1,5 +1,8 @@
 # Plano de Evolucao dos Agentes para Relatorios e Dashboards
 
+> Historical analysis: implementation status and proposed technologies reflect
+> the original research. See the [analysis index](README.md) for current references.
+
 ## Objetivo
 
 Este documento resume, em formato executivo, como evoluir o Colmeia da manutencao de agentes ja implementada para uma arquitetura de consultas que alimente dashboards, graficos e relatorios.

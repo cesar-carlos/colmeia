@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:checks/checks.dart';
@@ -11,6 +13,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
+import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -37,6 +40,69 @@ void main() {
       ),
     );
   });
+
+  for (final batch in <bool>[false, true]) {
+    test(
+      'should discard a result cancelled during parsing (batch: $batch)',
+      () async {
+        final scope = AgentQueriesCancelScope();
+        final payload = _CancelDuringReadMap(<String, dynamic>{
+          'response': <String, dynamic>{
+            'success': true,
+            'item': <String, dynamic>{
+              'success': true,
+              'result': <String, dynamic>{
+                if (batch)
+                  'items': <Object?>[
+                    <String, dynamic>{
+                      'index': 0,
+                      'ok': true,
+                      'rows': <Object?>[
+                        <String, dynamic>{'id': 1},
+                      ],
+                    },
+                  ]
+                else
+                  'rows': <Object?>[
+                    <String, dynamic>{'id': 1},
+                  ],
+              },
+            },
+          },
+        }, scope.cancelAll);
+        if (batch) {
+          when(
+            () =>
+                remoteDataSource.postSqlExecuteBatch(any(), cancelScope: scope),
+          ).thenAnswer((_) async => payload);
+          final result = await repository.executeSqlBatch(
+            const AgentSqlExecuteBatchRequest(
+              agentId: 'agent-1',
+              clientToken: 'token',
+              commands: <AgentSqlExecuteBatchCommand>[
+                AgentSqlExecuteBatchCommand(sql: 'SELECT 1'),
+              ],
+            ),
+            cancelScope: scope,
+          );
+          expect(result.exceptionOrNull(), isA<OperationCancelledFailure>());
+        } else {
+          when(() => remoteDataSource.postSqlExecute(any(), cancelScope: scope))
+              .thenAnswer((_) async => payload);
+          final result = await repository.executeSql(
+            const AgentSqlExecuteRequest(
+              agentId: 'agent-1',
+              clientToken: 'token',
+              sql: 'SELECT 1',
+            ),
+            cancelScope: scope,
+          );
+          expect(result.exceptionOrNull(), isA<OperationCancelledFailure>());
+        }
+        expect(scope.isCancelled, isTrue);
+      },
+    );
+  }
 
   test(
     'executeSqlBatch returns per-item failures as successful result',
@@ -533,4 +599,28 @@ Map<String, Object?> _namedParamsAtUtf8JsonByteLength(int targetBytes) {
     size = utf8.encode(jsonEncode(<String, Object?>{'p': value})).length;
   }
   return <String, Object?>{'p': value};
+}
+
+class _CancelDuringReadMap extends MapBase<String, dynamic> {
+  _CancelDuringReadMap(this._values, this._cancel);
+  final Map<String, dynamic> _values;
+  final void Function() _cancel;
+  bool _scheduled = false;
+  @override
+  dynamic operator [](Object? key) {
+    if (!_scheduled) {
+      _scheduled = true;
+      scheduleMicrotask(_cancel);
+    }
+    return _values[key];
+  }
+
+  @override
+  void operator []=(String key, dynamic value) => _values[key] = value;
+  @override
+  Iterable<String> get keys => _values.keys;
+  @override
+  dynamic remove(Object? key) => _values.remove(key);
+  @override
+  void clear() => _values.clear();
 }

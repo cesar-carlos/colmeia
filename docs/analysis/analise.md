@@ -1,8 +1,11 @@
 # Analise Inicial do Produto
 
+> Historical analysis: implementation status and proposed technologies reflect
+> the original research. See the [analysis index](README.md) for current references.
+
 ## Objetivo do projeto
 
-O Colmeia nasce como um aplicativo mobile em Flutter para iOS e Android, voltado para consumo analitico de dados operacionais e gerenciais. A proposta inicial do produto e entregar:
+Colmeia is a Flutter application for Android, Windows desktop, and Web, focused on operational and management analytics. Native iOS development is discontinued. The product delivers:
 
 - dashboards dinamicos
 - relatorios gerenciais

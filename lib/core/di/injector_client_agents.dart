@@ -95,6 +95,9 @@ void registerInjectorClientAgents(GetIt getIt) {
         localDataSource: getIt<ClientAgentsLocalDataSource>(),
       ),
     )
+    ..registerLazySingleton<ClientApprovedAgentsRepository>(
+      () => getIt<ClientAgentsRepository>(),
+    )
     ..registerLazySingleton<LoadCatalogAgentByIdUseCase>(
       () => LoadCatalogAgentByIdUseCase(getIt<ClientAgentsRepository>()),
     )

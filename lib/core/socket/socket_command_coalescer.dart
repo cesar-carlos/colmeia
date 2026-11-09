@@ -20,6 +20,8 @@ class SocketCommandCoalescer {
 
   /// Leader `rpcId` for each active coalesce key.
   final Map<String, String> _leaderRpcIdByKey = <String, String>{};
+  final Map<String, String> _leaderKeyByRpcId = <String, String>{};
+  final Map<String, int> _followerCountByKey = <String, int>{};
 
   /// Leader client-facing completer — cancel leader without failing hub.
   final Map<String, Completer<Map<String, dynamic>>>
@@ -59,6 +61,7 @@ class SocketCommandCoalescer {
     final followerCompleter = Completer<Map<String, dynamic>>();
     _awaiterByRpcId[rpcId] = followerCompleter;
     _awaiterKeyByRpcId[rpcId] = key;
+    _followerCountByKey.update(key, (count) => count + 1, ifAbsent: () => 1);
     onJoined?.call(followerCompleter);
     unawaited(
       existing
@@ -75,8 +78,9 @@ class SocketCommandCoalescer {
             },
           )
           .whenComplete(() {
-            _awaiterByRpcId.remove(rpcId);
-            _awaiterKeyByRpcId.remove(rpcId);
+            if (identical(_awaiterByRpcId[rpcId], followerCompleter)) {
+              takeFollower(rpcId);
+            }
           }),
     );
     return followerCompleter.future;
@@ -107,6 +111,7 @@ class SocketCommandCoalescer {
     );
     _inflightByKey[key] = tracked;
     _leaderRpcIdByKey[key] = rpcId;
+    _leaderKeyByRpcId[rpcId] = key;
     unawaited(_clearEntryWhenDone(key, tracked));
     return leaderClient.future;
   }
@@ -126,6 +131,7 @@ class SocketCommandCoalescer {
         final leaderRpcId = _leaderRpcIdByKey.remove(key);
         if (leaderRpcId != null) {
           _leaderClientCompleterByRpcId.remove(leaderRpcId);
+          _leaderKeyByRpcId.remove(leaderRpcId);
         }
       }
     }
@@ -136,23 +142,22 @@ class SocketCommandCoalescer {
   Completer<Map<String, dynamic>>? takeFollower(String rpcId) {
     final completer = _awaiterByRpcId.remove(rpcId);
     if (completer != null) {
-      _awaiterKeyByRpcId.remove(rpcId);
+      final key = _awaiterKeyByRpcId.remove(rpcId);
+      if (key != null) {
+        final remaining = (_followerCountByKey[key] ?? 1) - 1;
+        if (remaining == 0) {
+          _followerCountByKey.remove(key);
+        } else {
+          _followerCountByKey[key] = remaining;
+        }
+      }
     }
     return completer;
   }
 
-  String? leaderKeyForRpcId(String rpcId) {
-    for (final entry in _leaderRpcIdByKey.entries) {
-      if (entry.value == rpcId) {
-        return entry.key;
-      }
-    }
-    return null;
-  }
+  String? leaderKeyForRpcId(String rpcId) => _leaderKeyByRpcId[rpcId];
 
-  bool hasFollowersForKey(String key) {
-    return _awaiterKeyByRpcId.values.any((awaiterKey) => awaiterKey == key);
-  }
+  bool hasFollowersForKey(String key) => _followerCountByKey.containsKey(key);
 
   Completer<Map<String, dynamic>>? takeLeaderClientCompleter(String rpcId) {
     return _leaderClientCompleterByRpcId.remove(rpcId);
@@ -173,6 +178,8 @@ class SocketCommandCoalescer {
   void failFollowersAndClearInflight(Object error) {
     _inflightByKey.clear();
     _leaderRpcIdByKey.clear();
+    _leaderKeyByRpcId.clear();
+    _followerCountByKey.clear();
     for (final c in _awaiterByRpcId.values) {
       if (!c.isCompleted) {
         c.completeError(error);
@@ -199,5 +206,7 @@ class SocketCommandCoalescer {
     _leaderClientCompleterByRpcId.clear();
     _inflightByKey.clear();
     _leaderRpcIdByKey.clear();
+    _leaderKeyByRpcId.clear();
+    _followerCountByKey.clear();
   }
 }

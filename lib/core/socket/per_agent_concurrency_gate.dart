@@ -73,8 +73,8 @@ class PerAgentConcurrencyGate {
   final void Function()? onAcquireWaitTimeout;
 
   final Map<String, int> _inflight = <String, int>{};
-  final Map<String, Queue<_QueuedWaiter>> _waiters =
-      <String, Queue<_QueuedWaiter>>{};
+  final Map<String, LinkedHashMap<Completer<void>, _QueuedWaiter>> _waiters =
+      <String, LinkedHashMap<Completer<void>, _QueuedWaiter>>{};
 
   /// Session maximum of per-agent in-flight slots observed since process
   /// start (or last [resetSessionConcurrencyPeak]). Updated in O(1) on
@@ -171,7 +171,10 @@ class PerAgentConcurrencyGate {
       _updateSessionPeak(newCount);
       return;
     }
-    final queue = _waiters.putIfAbsent(agentId, Queue<_QueuedWaiter>.new);
+    final queue = _waiters.putIfAbsent(
+      agentId,
+      LinkedHashMap<Completer<void>, _QueuedWaiter>.new,
+    );
     final cap = maxWaitersPerAgent;
     if (cap != null && queue.length >= cap) {
       onWaiterQueueRejected?.call();
@@ -201,14 +204,20 @@ class PerAgentConcurrencyGate {
         }
       });
     }
-    queue.add(
-      _QueuedWaiter(
-        completer: completer,
-        timeoutTimer: timer,
-        slotCount: count,
-      ),
+    queue[completer] = _QueuedWaiter(
+      completer: completer,
+      timeoutTimer: timer,
+      slotCount: count,
     );
-    onQueuedWaiter?.call(completer);
+    try {
+      onQueuedWaiter?.call(completer);
+    } on Object {
+      completer.future.ignore();
+      if (_removeQueuedWaiter(agentId, completer)) {
+        _grantReadyWaiters(agentId);
+      }
+      rethrow;
+    }
     try {
       await completer.future;
     } finally {
@@ -244,12 +253,12 @@ class PerAgentConcurrencyGate {
       return;
     }
     while (waiters.isNotEmpty) {
-      final next = waiters.first;
+      final next = waiters.values.first;
       final current = _inflight[agentId] ?? 0;
       if (current + next.slotCount > maxInflightPerAgent) {
         break;
       }
-      waiters.removeFirst();
+      waiters.remove(next.completer);
       next.cancelTimer();
       final newCount = current + next.slotCount;
       _inflight[agentId] = newCount;
@@ -268,23 +277,12 @@ class PerAgentConcurrencyGate {
     if (q == null) {
       return false;
     }
-    var removed = false;
-    final retained = Queue<_QueuedWaiter>();
-    while (q.isNotEmpty) {
-      final w = q.removeFirst();
-      if (identical(w.completer, target)) {
-        w.cancelTimer();
-        removed = true;
-      } else {
-        retained.add(w);
-      }
-    }
-    if (retained.isEmpty) {
+    final removed = q.remove(target);
+    removed?.cancelTimer();
+    if (q.isEmpty) {
       _waiters.remove(agentId);
-    } else {
-      _waiters[agentId] = retained;
     }
-    return removed;
+    return removed != null;
   }
 }
 

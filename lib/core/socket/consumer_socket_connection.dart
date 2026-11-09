@@ -31,7 +31,7 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 ///    disconnecting.
 /// 8. `pause()` / `resume()` hooks for the app lifecycle (mobile economy).
 ///
-/// Detailed contract: `docs/Features/consumer_socket_connection_design.md`.
+/// Detailed contract: `docs/Features/socket/consumer_socket_connection_design.md`.
 class ConsumerSocketConnection implements RelayBatchCapabilitiesProvider {
   ConsumerSocketConnection({
     required this._urlResolver,
@@ -185,6 +185,13 @@ class ConsumerSocketConnection implements RelayBatchCapabilitiesProvider {
   ) async {
     var attempt = 0;
     var delay = _reconnectInitialDelay;
+    var refreshAttempted = false;
+
+    Future<String?> refreshTokenOnce() async {
+      if (refreshAttempted) return null;
+      refreshAttempted = true;
+      return _tokenProvider.refreshAccessToken();
+    }
 
     while (true) {
       attempt += 1;
@@ -194,9 +201,9 @@ class ConsumerSocketConnection implements RelayBatchCapabilitiesProvider {
       var outcome = await _connectOnce(
         abortSignal,
         attemptGeneration: attemptGeneration,
+        refreshToken: refreshTokenOnce,
       );
-      if (outcome is _ConnectSuccess &&
-          attemptGeneration != _connectGeneration) {
+      if (attemptGeneration != _connectGeneration) {
         outcome = const _ConnectCancelled(reason: 'superseded');
       }
       switch (outcome) {
@@ -204,7 +211,6 @@ class ConsumerSocketConnection implements RelayBatchCapabilitiesProvider {
           final disconnectReason = _resolveCancelledDisconnectReason(
             outcome.reason,
           );
-          _setState(ConsumerSocketDisconnected(reason: disconnectReason));
           throw ConsumerSocketConnectCancelled(
             message: 'Consumer socket connect cancelled: $disconnectReason',
             reason: disconnectReason,
@@ -345,7 +351,6 @@ class ConsumerSocketConnection implements RelayBatchCapabilitiesProvider {
   }
 
   Never _throwConnectCancelled(String reason) {
-    _setState(ConsumerSocketDisconnected(reason: reason));
     throw ConsumerSocketConnectCancelled(
       message: 'Consumer socket connect cancelled: $reason',
       reason: reason,
@@ -365,6 +370,7 @@ class ConsumerSocketConnection implements RelayBatchCapabilitiesProvider {
   Future<_ConnectOutcome> _connectOnce(
     Future<_ConnectOutcome> abortSignal, {
     required int attemptGeneration,
+    required Future<String?> Function() refreshToken,
   }) async {
     final token = await _tokenProvider.readAccessToken();
     if (attemptGeneration != _connectGeneration) {
@@ -390,6 +396,8 @@ class ConsumerSocketConnection implements RelayBatchCapabilitiesProvider {
 
     final readyCompleter = Completer<ConsumerSocketConnected>();
     final errorCompleter = Completer<_ConnectOutcome>();
+    _ConnectTransientFailure? transportFailure;
+    var refreshingToken = false;
 
     void resolveError(_ConnectOutcome outcome) {
       if (!errorCompleter.isCompleted) {
@@ -442,8 +450,10 @@ class ConsumerSocketConnection implements RelayBatchCapabilitiesProvider {
           return;
         }
         if (_isAuthFailure(err)) {
+          if (refreshingToken || errorCompleter.isCompleted) return;
+          refreshingToken = true;
           try {
-            final refreshed = await _tokenProvider.refreshAccessToken();
+            final refreshed = await refreshToken();
             if (refreshed != null && refreshed.isNotEmpty) {
               resolveError(
                 const _ConnectTransientFailure(
@@ -452,8 +462,12 @@ class ConsumerSocketConnection implements RelayBatchCapabilitiesProvider {
               );
               return;
             }
-          } on Object catch (_) {
-            // Treat refresh failure same as missing refresh below.
+          } on Object catch (error, stackTrace) {
+            AppLogger.warning(
+              'Consumer socket token refresh failed',
+              error: error,
+              stackTrace: stackTrace,
+            );
           }
           resolveError(const _ConnectAuthFailure(reason: 'refresh_failed'));
           return;
@@ -464,17 +478,16 @@ class ConsumerSocketConnection implements RelayBatchCapabilitiesProvider {
       })
       ..onDisconnect((reason) {
         final reasonText = reason?.toString();
-        if (_state is ConsumerSocketConnecting && !readyCompleter.isCompleted) {
+        if (_state is ConsumerSocketConnecting) {
           if (identical(_socket, socket)) {
             _socket = null;
           }
-          resolveError(
-            _ConnectTransientFailure(
-              error:
-                  'handshake_disconnected'
-                  '${reasonText == null ? '' : ': $reasonText'}',
-            ),
+          transportFailure = _ConnectTransientFailure(
+            error:
+                'handshake_disconnected'
+                '${reasonText == null ? '' : ': $reasonText'}',
           );
+          resolveError(transportFailure!);
           return;
         }
         // If the disconnect happens after we already moved to `connected`,
@@ -506,7 +519,7 @@ class ConsumerSocketConnection implements RelayBatchCapabilitiesProvider {
       }
     });
 
-    final _ConnectOutcome outcome;
+    _ConnectOutcome outcome;
     try {
       outcome = await Future.any<_ConnectOutcome>(<Future<_ConnectOutcome>>[
         readyCompleter.future.then(
@@ -528,6 +541,10 @@ class ConsumerSocketConnection implements RelayBatchCapabilitiesProvider {
       return const _ConnectCancelled(reason: 'superseded');
     }
 
+    final disconnectFailure = transportFailure;
+    if (outcome is _ConnectSuccess && disconnectFailure != null) {
+      outcome = disconnectFailure;
+    }
     if (outcome is! _ConnectSuccess) {
       _disposeSocket(socket);
       if (identical(_socket, socket)) {

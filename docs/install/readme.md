@@ -1,45 +1,17 @@
-# Windows Install e Release
+# Installation and release documentation
 
-Indice canonico da documentacao de instalacao Windows e release oficial do
-Colmeia.
+Supported targets are Android, Windows desktop, and Web. Native iOS builds and
+distribution are discontinued.
 
-## Fluxos principais
+| Task | Guide |
+| --- | --- |
+| Set up Android and run on a device | [Android guide](../android_guide.md) |
+| Check Windows prerequisites | [Windows requirements](requirements.md) |
+| Install or uninstall on Windows | [Windows installation](installation_guide.md) |
+| Build Windows/Android releases and publish release artifacts | [Release guide](release_guide.md) |
+| Build the Windows installer | [Installer tooling](../../installer/readme.md) |
+| Configure and validate Windows updates | [Automatic updates](auto_update_setup.md) |
+| Build, package, install and validate Web/PWA, offline data and Push | [Web guide](web_guide.md) |
 
-### Instalar uma release
-
-1. Conferir [requirements.md](requirements.md)
-2. Baixar o instalador na pagina de releases
-3. Seguir [installation_guide.md](installation_guide.md)
-
-### Gerar um instalador local
-
-1. Revisar [release_guide.md](release_guide.md)
-2. (Opcional) Copiar `.env.example` para `.env.release` na raiz para embutir
-   o feed oficial no binario Windows (auto-update). No CI o feed vem do workflow;
-   opcional: variavel de repositorio `APPCAST_FEED_URL` — ver `installer/readme.md`.
-3. Se alterou icones em `assets/icons/`, executar `dart run flutter_launcher_icons`
-   e commitar alteracoes geradas antes do instalador.
-4. Executar `python installer/build_installer.py`
-
-Saida esperada:
-
-```text
-installer/dist/Colmeia-Setup-{MAJOR.MINOR.PATCH}.exe
-```
-
-### Publicar uma release oficial
-
-1. Atualizar `pubspec.yaml`
-2. Garantir sincronismo com `python installer/update_version.py`
-3. Criar a tag `vX.Y.Z` em um commit ja alcancavel a partir de `main`
-4. Aprovar o environment `production`, quando configurado
-5. Deixar o GitHub Actions publicar `.exe` Windows, `apk` Android, `aab`
-   Android, seus `.sha256` e `appcast.xml`
-6. Se `main` tiver protecao restritiva, configurar `APPCAST_PUSH_TOKEN`
-
-## Documentos
-
-- [installation_guide.md](installation_guide.md): instalacao e desinstalacao no Windows
-- [requirements.md](requirements.md): compatibilidade e prerequisitos
-- [release_guide.md](release_guide.md): versionamento, tags e release no GitHub
-- [auto_update_setup.md](auto_update_setup.md): feed oficial e validacao do updater
+Windows and Android artifacts use the release workflow. Web hosting is a separate
+step; follow the Web guide for routing, HTTPS, and API origin requirements.

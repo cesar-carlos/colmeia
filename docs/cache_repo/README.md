@@ -1,7 +1,7 @@
 # Per-repository consolidated facts cache
 
-Design and rollout guide for optional business-layer caching on agent SQL report
-repositories in Colmeia.
+Implementation reference for local storage and optional business-layer caching
+on agent SQL report repositories in Colmeia.
 
 ## Purpose
 
@@ -20,12 +20,12 @@ sales surfaces that load multi-agent SQL reports.
 
 | Document | Contents |
 | -------- | -------- |
-| [architecture.md](architecture.md) | Layers, decorator pattern, facts store, replication control |
+| [architecture.md](architecture.md) | Platform storage, sessions, migration, layers, and facts store |
 | [consolidation_rules.md](consolidation_rules.md) | When a bucket is "closed"; catalog per `AgentQueryKey` |
 | [contracts.md](contracts.md) | Domain ports, load policies, invalidate scopes |
 | [di_registration.md](di_registration.md) | GetIt: plain impl vs caching decorator |
-| [implementation_phases.md](implementation_phases.md) | PR order, overview migration, prefetch |
-| [testing.md](testing.md) | Unit tests, E2E requirements |
+| [implementation_phases.md](implementation_phases.md) | Rollout history, overview migration, prefetch |
+| [testing.md](testing.md) | Unit tests, browser storage checks, E2E requirements |
 
 ## Glossary
 
@@ -33,10 +33,14 @@ sales surfaces that load multi-agent SQL reports.
 | ---- | ------- |
 | **Bucket** | Smallest cache unit (e.g. one local calendar day, one calendar month) |
 | **Closed bucket** | Bucket that ERP treats as consolidated; safe to persist (not today / not current month for monthly series) |
-| **Open bucket** | Current day or current month; always fetched live, not written to durable store |
+| **Open bucket** | Current day/month; fetched live by ordinary fact repositories and never consolidated as historical facts |
+| **Offline package** | User-selected snapshot with its own period, completeness and expiring authorization; may include partial/open data |
 | **Fact kind** | Logical metric family (`dailySales`, `monthlyParcels`, …) used in storage keys |
 | **Transport cache** | Short TTL SQL dedupe in `CachingAgentQueriesRepository` (~3s); separate from this design |
 | **Decorator** | `Caching*RepositoryImpl` wrapping `*RepositoryImpl` (network-only) |
+
+The fact-cache policies below do not provide offline-only reads. Prepared PWA
+packages have a separate lifecycle documented in the [Web guide](../install/web_guide.md#offline-packages).
 
 ## Related code
 
@@ -45,7 +49,7 @@ sales surfaces that load multi-agent SQL reports.
 | Report repository ports | `lib/features/agent_queries/domain/repositories/` |
 | Network implementations | `lib/features/agent_queries/data/repositories/` |
 | SQL transport chain | `lib/features/agent_queries/data/repositories/agent_queries_repository_chain_factory.dart` |
-| Overview snapshot cache (legacy) | `lib/features/overview/data/datasources/overview_local_datasource.dart` |
+| Platform cache adapter selection | `lib/core/cache/app_cache_store_factory.dart` |
 | Reference: sales catalog cache port | `lib/features/sales/application/ports/sales_live_map_catalog_cache.dart` |
 | KV prefixes | `lib/core/cache/app_kv_cache_key_prefixes.dart` |
 

@@ -17,6 +17,8 @@ import 'package:colmeia/features/overview/data/overview_batch_loader.dart';
 import 'package:colmeia/features/overview/data/overview_cached_facts_warmth_checker.dart';
 import 'package:colmeia/features/overview/data/repositories/overview_repository_impl.dart';
 import 'package:colmeia/features/overview/domain/repositories/overview_repository.dart';
+import 'package:colmeia/features/pwa/application/pwa_package_service.dart';
+import 'package:colmeia/features/pwa/data/offline_overview_repository.dart';
 import 'package:get_it/get_it.dart';
 
 void registerInjectorOverview(GetIt getIt) {
@@ -47,12 +49,20 @@ void registerInjectorOverview(GetIt getIt) {
             AppEnvironment.agentSqlOverviewBatchMaxParallelReadOnlyItems,
       ),
     )
-    ..registerLazySingleton<OverviewRepository>(
+    ..registerLazySingleton<OverviewRepositoryImpl>(
       () => OverviewRepositoryImpl(
         batchLoader: getIt<OverviewBatchLoader>(),
         factsStore: getIt<AgentQueryFactsStore>(),
         factsPrefetchCoordinator: getIt<AgentQueryFactsPrefetchCoordinator>(),
       ),
+    )
+    ..registerLazySingleton<OverviewRepository>(
+      () => !getIt.isRegistered<PwaPackageService>()
+          ? getIt<OverviewRepositoryImpl>()
+          : OfflineOverviewRepository(
+              getIt<OverviewRepositoryImpl>(),
+              getIt<PwaPackageService>(),
+            ),
     )
     ..registerLazySingleton<LoadOverviewUseCase>(
       () => LoadOverviewUseCase(getIt<OverviewRepository>()),

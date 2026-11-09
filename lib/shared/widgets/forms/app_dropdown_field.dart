@@ -180,7 +180,7 @@ class _AppDropdownFieldState<T> extends State<AppDropdownField<T>> {
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: _toggleExpanded,
+                    onTap: widget.enabled ? _toggleExpanded : null,
                     borderRadius: borderRadius,
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 140),
@@ -269,8 +269,12 @@ class _AppDropdownFieldState<T> extends State<AppDropdownField<T>> {
                                             selected: selected,
                                             showSelectedIcon: false,
                                             onTap: () {
-                                              widget.onChanged(option.value);
+                                              if (!widget.enabled ||
+                                                  !_expanded) {
+                                                return;
+                                              }
                                               _setExpanded(false);
+                                              widget.onChanged(option.value);
                                             },
                                           );
                                         },
@@ -363,17 +367,12 @@ class _AppMultiSelectSearchFieldState<T>
   void didUpdateWidget(covariant AppMultiSelectSearchField<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!widget.enabled && _expanded) {
-      // Cannot use _setExpanded(false) here because its !widget.enabled guard
-      // would return early — the widget is already disabled at this point.
-      // Call setState + unfocus + clear directly, matching _setExpanded(false).
-      setState(() => _expanded = false);
-      _searchFocusNode.unfocus();
-      _searchController.clear();
+      _setExpanded(false);
     }
   }
 
   void _setExpanded(bool value) {
-    if (!widget.enabled) {
+    if (!widget.enabled && value) {
       return;
     }
 
@@ -392,6 +391,7 @@ class _AppMultiSelectSearchFieldState<T>
   }
 
   void _toggleValue(T value) {
+    if (!widget.enabled) return;
     final next = widget.selectedValues.toList(growable: true);
     if (next.contains(value)) {
       next.removeWhere((e) => e == value);
@@ -629,7 +629,11 @@ class _AppMultiSelectSearchFieldState<T>
                                       label: option.label,
                                       selected: selected,
                                       multiSelect: true,
-                                      onTap: () => _toggleValue(option.value),
+                                      onTap: () {
+                                        if (_expanded) {
+                                          _toggleValue(option.value);
+                                        }
+                                      },
                                     );
                                   },
                                 ),

@@ -1,5 +1,9 @@
 ﻿# Socket Relay Protocol (N:1)
 
+> Archived hub snapshot, synchronized on 2026-07-22. Upstream references
+> resolve in the hub repository, not this checkout. For current Colmeia defaults,
+> use the [canonical integration index](../../plug_server_docs_index_for_colmeia.md).
+
 Data: 2026-05-11
 
 ## Objetivo
@@ -351,8 +355,8 @@ Regras atuais no servidor:
 - **Opcao A (negociada):** quando o agente anuncia `extensions.clientRequestIdEcho: "v1"`,
   o hub **nao** sobrescreve `body.id` — preserva o id do consumer end-to-end e
   pode saltar o re-encode (`canBypassReencode`). Ver
-  [ADR 0009](../adrs/0009-client-request-id-echo.md).
-- Historico do defeito / racional: [`01_relay_body_id_echo.md`](../plug_agente/01_relay_body_id_echo.md).
+  ADR 0009 (upstream reference: `../adrs/0009-client-request-id-echo.md`).
+- Historico do defeito / racional: `01_relay_body_id_echo.md` (upstream reference: `../plug_agente/01_relay_body_id_echo.md`).
 - Respostas `relay:rpc.response/chunk/complete` correlacionam pelo `requestId`
   interno no **envelope PayloadFrame** (`envelope.requestId`) — fonte de verdade
   wire-level e `correlation_id` em erros sinteticos.
@@ -450,7 +454,7 @@ Regras do contrato:
   - O envelope PayloadFrame (`envelope.requestId`) continua sendo o UUID
     interno do hub, util para correlacionar com `correlation_id` em logs
     de ops.
-  - Veja [`docs/plug_agente/01_relay_body_id_echo.md`](plug_agente/01_relay_body_id_echo.md)
+  - Veja `docs/plug_agente/01_relay_body_id_echo.md` (upstream reference: `plug_agente/01_relay_body_id_echo.md`)
     para o racional do fix (issue Colmeia `relay_unary_fast_path.md §1`).
 
 Sem cancelamento explicito: o relay nao possui evento `relay:rpc.cancel`.
@@ -514,7 +518,7 @@ Regras do contrato:
 Quando o consumer enviou `requestServerTimings: true` **e** o agente negociou
 `extensions.agentPhaseTimings: "v1"` em `agent:register`, o hub repassa
 `meta.agent_phases` do agente no `relay:rpc.response` sem mutacao (ver
-[ADR 0012](../adrs/0012-agent-phase-timings.md)).
+ADR 0012 (upstream reference: `../adrs/0012-agent-phase-timings.md`)).
 
 Desde 2026-07-07 o hub aplica um **gate defensivo**: se o agente enviar
 `meta.agent_phases` sem ter negociado `agentPhaseTimings`, o campo e removido
@@ -647,7 +651,7 @@ JSON-RPC body. A relacao `clientRequestId → requestId` para cada item esta
 - `plug_socket_relay_batch_envelope_decode_avg_ms` / `_max_ms` (gauge por processo)
 - `plug_socket_relay_batch_items_per_envelope_avg` / `_max` (gauge por processo)
 
-Dashboard Grafana: [`docs/grafana/relay_batch_dashboard.json`](../grafana/relay_batch_dashboard.json).
+Dashboard Grafana: `docs/grafana/relay_batch_dashboard.json` (upstream reference: `../grafana/relay_batch_dashboard.json`).
 
 ## Isolamento por conversa
 
@@ -785,8 +789,8 @@ Variaveis principais do relay:
 - `SOCKET_RATE_LIMIT_REDIS_URL`
 
 Valores default, envelopes HTTP/Socket ao atingir quotas e Nginx edge:
-[`docs/limits/limites_acesso_e_quotas.md`](../limits/limites_acesso_e_quotas.md)
-e [`docs/configuration.md`](../configuration.md).
+`docs/limits/limites_acesso_e_quotas.md` (upstream reference: `../limits/limites_acesso_e_quotas.md`)
+e `docs/configuration.md` (upstream reference: `../configuration.md`).
 
 ### Rate limit por consumer (janela fixa)
 

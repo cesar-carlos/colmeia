@@ -9,6 +9,7 @@ import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_form_builder_date_picker_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_form_builder_dropdown_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_form_builder_text_field.dart';
+import 'package:colmeia/shared/widgets/reports/app_report_filter_form_values.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -45,6 +46,7 @@ class AppReportFiltersPanel extends StatefulWidget {
 class _AppReportFiltersPanelState extends State<AppReportFiltersPanel> {
   final GlobalKey<FormBuilderState> _formKey = GlobalKey<FormBuilderState>();
   late bool _expanded;
+  bool _formSyncScheduled = false;
 
   @override
   void initState() {
@@ -61,12 +63,17 @@ class _AppReportFiltersPanelState extends State<AppReportFiltersPanel> {
   }
 
   void _scheduleSyncFormValues() {
+    if (_formSyncScheduled) return;
+    _formSyncScheduled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _formSyncScheduled = false;
       if (!mounted) {
         return;
       }
       _formKey.currentState?.reset();
-      _formKey.currentState?.patchValue(widget.initialValues);
+      _formKey.currentState?.patchValue(
+        reportFilterFormValues(widget.filters, widget.initialValues),
+      );
     });
   }
 
@@ -170,11 +177,13 @@ class _AppReportFiltersPanelState extends State<AppReportFiltersPanel> {
               padding: EdgeInsets.only(top: tokens.contentSpacing),
               child: FormBuilder(
                 key: _formKey,
+                clearValueOnUnregister: true,
                 child: Column(
                   children: <Widget>[
                     ...widget.filters.asMap().entries.map((entry) {
                       final isLast = entry.key == widget.filters.length - 1;
                       return Padding(
+                        key: ValueKey((entry.value.name, entry.value.type)),
                         padding: EdgeInsets.only(
                           bottom: isLast ? tokens.gapMd : tokens.contentSpacing,
                         ),
@@ -190,6 +199,13 @@ class _AppReportFiltersPanelState extends State<AppReportFiltersPanel> {
                           child: AppSecondaryButton(
                             onPressed: () {
                               _formKey.currentState?.reset();
+                              _formKey.currentState?.patchValue(
+                                reportFilterFormValues(
+                                  widget.filters,
+                                  const {},
+                                  clear: true,
+                                ),
+                              );
                               widget.onClear?.call();
                             },
                             label: l10n.reportFiltersClearAction,
@@ -247,8 +263,9 @@ class _FilterField extends StatelessWidget {
     final helperText = descriptor.required
         ? l10n.reportFilterRequired
         : l10n.reportFilterOptional;
-    final initialValue =
-        initialValues[descriptor.name] ?? descriptor.initialValue;
+    final initialValue = initialValues.containsKey(descriptor.name)
+        ? initialValues[descriptor.name]
+        : descriptor.initialValue;
     final requiredValidator = descriptor.required
         ? FormBuilderValidators.compose(<String? Function(Object?)>[
             FormBuilderValidators.required(),

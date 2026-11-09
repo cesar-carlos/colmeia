@@ -76,6 +76,65 @@ void main() {
   }
 
   group('RelayConversation.start', () {
+    test('should cancel pending start immediately after socket loss', () async {
+      final conversation = buildConversation(
+        startTimeout: const Duration(seconds: 10),
+      );
+      final pending = expectLater(
+        conversation.start(),
+        throwsA(isA<RelayConversationStartFailure>()),
+      );
+      when(() => connection.raw).thenThrow(StateError('disconnected'));
+      conversation.forceEnd(reason: 'socket_dropped');
+      await pending.timeout(const Duration(milliseconds: 200));
+      expect(
+        (conversation.state as RelayConversationEnded).reason,
+        'socket_dropped',
+      );
+      verify(() => socket.off(RelayEventNames.conversationStarted, any()))
+          .called(1);
+    });
+
+    test(
+      'should not reactivate a start ended before its response settles',
+      () async {
+        final conversation = buildConversation();
+        final pending = expectLater(
+          conversation.start(),
+          throwsA(isA<RelayConversationStartFailure>()),
+        );
+        wiring.fire(RelayEventNames.conversationStarted, <String, Object?>{
+          'success': true,
+          'conversationId': 'old',
+          'agentId': 'agent-1',
+        });
+        await conversation.end(reason: 'logout');
+        await pending;
+        expect(conversation.isActive, isFalse);
+      },
+    );
+
+    test('should preserve a restarted conversation after cancelling its predecessor', () async {
+      final conversation = buildConversation();
+      final old = expectLater(
+        conversation.start(),
+        throwsA(isA<RelayConversationStartFailure>()),
+      );
+      conversation.forceEnd(reason: 'socket_dropped');
+      final current = conversation.start();
+      final body = wiring.emits.last.data! as Map;
+      wiring.fire(RelayEventNames.conversationStarted, <String, Object?>{
+        'success': true,
+        'requestId': body['requestId'],
+        'conversationId': 'new',
+        'agentId': 'agent-1',
+      });
+      await old;
+      await current;
+      expect(conversation.conversationId, 'new');
+      expect(conversation.isActive, isTrue);
+    });
+
     test('emits start and resolves on relay:conversation.started', () async {
       final conversation = buildConversation();
       final future = conversation.start();
@@ -194,6 +253,51 @@ void main() {
   });
 
   group('RelayConversation.end', () {
+    test(
+      'should finish ending immediately when the socket is unavailable',
+      () async {
+        final conversation = buildConversation(
+          endTimeout: const Duration(seconds: 10),
+        );
+        final started = conversation.start();
+        wiring.fire(RelayEventNames.conversationStarted, <String, Object?>{
+          'success': true,
+          'conversationId': 'conv',
+          'agentId': 'agent-1',
+        });
+        await started;
+        when(() => connection.raw).thenThrow(StateError('disconnected'));
+        await conversation
+            .end(reason: 'logout')
+            .timeout(const Duration(milliseconds: 200));
+        expect((conversation.state as RelayConversationEnded).reason, 'logout');
+      },
+    );
+
+    test(
+      'should preserve forced end reason while waiting for end acknowledgment',
+      () async {
+        final conversation = buildConversation();
+        final started = conversation.start();
+        wiring.fire(RelayEventNames.conversationStarted, <String, Object?>{
+          'success': true,
+          'conversationId': 'conv',
+          'agentId': 'agent-1',
+        });
+        await started;
+        final ending = conversation.end(reason: 'logout');
+        when(() => connection.raw).thenThrow(StateError('disconnected'));
+        conversation.forceEnd(reason: 'socket_dropped');
+        await ending;
+        expect(
+          (conversation.state as RelayConversationEnded).reason,
+          'socket_dropped',
+        );
+        verify(() => socket.off(RelayEventNames.conversationEnded, any()))
+            .called(1);
+      },
+    );
+
     test('emits end and waits for relay:conversation.ended', () async {
       final conversation = buildConversation();
       final start = conversation.start();

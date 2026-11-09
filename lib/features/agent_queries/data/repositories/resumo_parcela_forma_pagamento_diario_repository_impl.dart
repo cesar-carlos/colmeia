@@ -4,6 +4,7 @@ import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result
 import 'package:colmeia/features/agent_queries/data/agent_queries_sql_local_date.dart';
 import 'package:colmeia/features/agent_queries/data/models/resumo_parcela_forma_pagamento_diario_row_model.dart';
 import 'package:colmeia/features/agent_queries/data/queries/resumo_parcela_forma_pagamento_diario_sql.dart';
+import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_bridge_timeout.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/agent_sql_repository_execution.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/progressive_report_loader.dart';
 import 'package:colmeia/features/agent_queries/data/repositories/scoped_agent_queries_repository.dart';
@@ -56,6 +57,10 @@ class ResumoParcelaFormaPagamentoDiarioRepositoryImpl
       );
     }
 
+    final timeouts = AgentSqlBridgeTimeout.resolve(
+      bridgeTimeoutMs:
+          bridgeTimeoutMs ?? AppEnvironment.agentSqlBridgeTimeoutMs,
+    );
     final request = AgentSqlExecuteRequest(
       agentId: agentId,
       requestingUserId: userId,
@@ -63,8 +68,7 @@ class ResumoParcelaFormaPagamentoDiarioRepositoryImpl
       hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
       sql: ResumoParcelaFormaPagamentoDiarioSql.query,
       clientToken: clientToken,
-      bridgeTimeoutMs:
-          bridgeTimeoutMs ?? AppEnvironment.agentSqlBridgeTimeoutMs,
+      bridgeTimeoutMs: timeouts.bridgeMs,
       namedParams: <String, Object?>{
         'dataVendaInicio': AgentQueriesSqlLocalDate.format(
           filter.dataVendaInicio,
@@ -74,7 +78,8 @@ class ResumoParcelaFormaPagamentoDiarioRepositoryImpl
         'geraFinanceiro': filter.trimmedGeraFinanceiro,
         'preVenda': filter.trimmedPreVenda,
       },
-      executeOptions: const AgentSqlExecuteOptions(
+      executeOptions: AgentSqlExecuteOptions(
+        sqlTimeoutMs: timeouts.sqlMs,
         executionMode: AgentSqlExecutionMode.preserve,
         preferDbStreaming: true,
         maxRows:

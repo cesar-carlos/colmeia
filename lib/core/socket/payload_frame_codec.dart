@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:archive/archive.dart';
 import 'package:colmeia/core/socket/payload_frame.dart';
 import 'package:colmeia/core/socket/payload_frame_codec_worker.dart';
 import 'package:colmeia/core/socket/payload_frame_signer.dart';
@@ -200,7 +200,9 @@ class PayloadFrameCodec {
     var wire = encoded;
     var cmp = PayloadFrame.compressionNone;
     if (encoded.length >= compressionThresholdBytes) {
-      final compressed = Uint8List.fromList(gzip.encode(encoded));
+      final compressed = Uint8List.fromList(
+        const GZipEncoder().encodeBytes(encoded),
+      );
       if (_shouldUseCompressed(encoded, compressed)) {
         wire = compressed;
         cmp = PayloadFrame.compressionGzip;
@@ -242,7 +244,9 @@ class PayloadFrameCodec {
           encoded.length >= gzipEncodeIsolateThresholdBytes) {
         compressed = await _gzipEncodeOffload(encoded);
       } else {
-        compressed = Uint8List.fromList(gzip.encode(encoded));
+        compressed = Uint8List.fromList(
+          const GZipEncoder().encodeBytes(encoded),
+        );
       }
       if (_shouldUseCompressed(encoded, compressed)) {
         wire = compressed;
@@ -457,7 +461,9 @@ class PayloadFrameCodec {
         );
       }
       try {
-        final jsonBytes = Uint8List.fromList(gzip.decode(frame.payload));
+        final jsonBytes = Uint8List.fromList(
+          const GZipDecoder().decodeBytes(frame.payload),
+        );
         if (jsonBytes.length != frame.originalSize) {
           throw PayloadFrameDecodeException(
             'original_size_mismatch',
@@ -518,7 +524,9 @@ class PayloadFrameCodec {
       }
     } else {
       try {
-        jsonBytes = Uint8List.fromList(gzip.decode(frame.payload));
+        jsonBytes = Uint8List.fromList(
+          const GZipDecoder().decodeBytes(frame.payload),
+        );
       } on FormatException catch (e) {
         throw PayloadFrameDecodeException(
           'gzip_decode_failed',
@@ -795,11 +803,11 @@ class PayloadFrameCodec {
 
 /// Top-level worker for Flutter `compute` — isolate must not capture codec state.
 Uint8List _payloadFrameCodecGzipDecode(Uint8List compressed) {
-  return Uint8List.fromList(gzip.decode(compressed));
+  return Uint8List.fromList(const GZipDecoder().decodeBytes(compressed));
 }
 
 Uint8List _payloadFrameCodecGzipEncode(Uint8List rawJsonUtf8) {
-  return Uint8List.fromList(gzip.encode(rawJsonUtf8));
+  return Uint8List.fromList(const GZipEncoder().encodeBytes(rawJsonUtf8));
 }
 
 Object? _payloadFrameCodecJsonDecodeUtf8(Uint8List jsonBytes) {

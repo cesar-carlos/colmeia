@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -108,7 +109,7 @@ class _AppAsyncSearchFieldState<T> extends State<AppAsyncSearchField<T>> {
   late final TextEditingController _searchController;
   late final FocusNode _focusNode;
   late final ScrollController _scrollController;
-  late final AppDebouncer _debouncer;
+  late AppDebouncer _debouncer;
 
   bool _expanded = false;
   bool _loading = false;
@@ -148,6 +149,11 @@ class _AppAsyncSearchFieldState<T> extends State<AppAsyncSearchField<T>> {
     if (oldWidget.debounceDuration != widget.debounceDuration) {
       _debouncer.dispose();
       _debouncer = AppDebouncer(duration: widget.debounceDuration);
+      if (_expanded) _onSearchChanged(_searchController.text);
+    }
+    if (oldWidget.minSearchLength != widget.minSearchLength ||
+        oldWidget.pageSize != widget.pageSize) {
+      if (_expanded) _onSearchChanged(_searchController.text);
     }
   }
 
@@ -173,6 +179,7 @@ class _AppAsyncSearchFieldState<T> extends State<AppAsyncSearchField<T>> {
   }
 
   void _resetPanelState() {
+    _debouncer.cancel();
     _loading = false;
     _loadingMore = false;
     _panelErrorMessage = null;
@@ -183,10 +190,12 @@ class _AppAsyncSearchFieldState<T> extends State<AppAsyncSearchField<T>> {
   }
 
   void _onSearchChanged(String value) {
-    if (!_expanded) {
-      setState(() => _expanded = true);
+    if (!widget.enabled || !_expanded) return;
+    setState(_resetPanelState);
+    if (value.trim().length >= widget.minSearchLength) {
+      setState(() => _loading = true);
+      _debouncer.run(() => unawaited(_loadPage(reset: true)));
     }
-    _debouncer.run(() => unawaited(_loadPage(reset: true)));
   }
 
   void _onScroll() {
@@ -203,24 +212,18 @@ class _AppAsyncSearchFieldState<T> extends State<AppAsyncSearchField<T>> {
   }
 
   Future<void> _loadPage({required bool reset}) async {
+    if (!mounted || !widget.enabled || !_expanded) return;
     final trimmed = _searchController.text.trim();
     if (trimmed.length < widget.minSearchLength) {
       if (!mounted) {
         return;
       }
-      setState(() {
-        _loading = false;
-        _loadingMore = false;
-        _panelErrorMessage = null;
-        _options = <AppAsyncSearchOption<T>>[];
-        _hasMore = false;
-        _loadedPage = 0;
-      });
+      setState(_resetPanelState);
       return;
     }
 
     final nextPage = reset ? 1 : _loadedPage + 1;
-    if (!reset && (!_hasMore || _loadingMore)) {
+    if (!reset && (!_hasMore || _loading || _loadingMore)) {
       return;
     }
 
@@ -241,13 +244,27 @@ class _AppAsyncSearchFieldState<T> extends State<AppAsyncSearchField<T>> {
       }
     });
 
-    final result = await widget.loader(
-      AppAsyncSearchQuery(
-        searchTerm: trimmed,
-        page: nextPage,
-        pageSize: widget.pageSize,
-      ),
-    );
+    final AppAsyncSearchLoadResult<T> result;
+    try {
+      result = await widget.loader(
+        AppAsyncSearchQuery(
+          searchTerm: trimmed,
+          page: nextPage,
+          pageSize: widget.pageSize,
+        ),
+      );
+    } on Object catch (error, stackTrace) {
+      if (!mounted || generation != _requestGeneration) return;
+      setState(() {
+        _loading = false;
+        _loadingMore = false;
+        _panelErrorMessage = mapToAppFailure(
+          error,
+          stackTrace: stackTrace,
+        ).displayMessage;
+      });
+      return;
+    }
 
     if (!mounted || generation != _requestGeneration) {
       return;
@@ -281,13 +298,15 @@ class _AppAsyncSearchFieldState<T> extends State<AppAsyncSearchField<T>> {
   }
 
   void _selectOption(AppAsyncSearchOption<T> option) {
-    widget.onChanged(option.value, label: option.label);
+    if (!widget.enabled || !_expanded) return;
     _setExpanded(false);
+    widget.onChanged(option.value, label: option.label);
   }
 
   void _clearSelection() {
-    widget.onChanged(null);
+    if (!widget.enabled || !_expanded) return;
     _setExpanded(false);
+    widget.onChanged(null);
   }
 
   @override

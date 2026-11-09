@@ -1,35 +1,28 @@
-# `plug_server` — handoffs para o hub
+# Hub handoffs and archived protocol snapshots
 
-Pasta de pedidos **acionáveis** para o time do `plug_server`.
+This directory preserves investigations and handoffs to the `plug_server` team.
+Their status reflects the investigation date; it does not establish the status
+of the current production hub. Current Colmeia transport defaults and routing
+belong to the [canonical integration index](../plug_server_docs_index_for_colmeia.md)
+and [SQL options](../bridge_agent_sql_api_options.md).
 
-## Aberto
+## Investigation records
 
-| Documento | Tema | Ação do hub |
-| --- | --- | --- |
-| [`socket_relay_timeout_deep_investigation_2026_07_22.md`](./socket_relay_timeout_deep_investigation_2026_07_22.md) | **RCA:** REST ok; socket/relay `RELAY_REQUEST_TIMEOUT` — agent nao responde | Logs por `conversation_id` + emit `rpc:request` |
-| [`relay_request_timeout_socket_smoke_2026_07_22.md`](./relay_request_timeout_socket_smoke_2026_07_22.md) | Smoke socket repro + IDs | Correlacionar `relay_request_timeout` |
-| [`relay_envelope_timeout_ms.md`](./relay_envelope_timeout_ms.md) | Aceitar `timeoutMs` no envelope relay | Schema Zod + timer |
-| [`relay_rpc_accepted_error_missing_ids.md`](./relay_rpc_accepted_error_missing_ids.md) | `accepted` de erro sem ids | Ecoar ids no `catch` |
-
-## Já tratado no Colmeia
-
-| Tema | Feito |
+| Document | Topic |
 | --- | --- |
-| Docs `socket/` sincronizadas com hub | Copia de `plug_server/docs/socket` (2026-07-22) |
-| `fastPath` × streaming-capable | Guard no dispatcher (`BAD_REQUEST`) |
-| Smoke unary | Sem `prefer_db_streaming` |
-| `accepted` de erro | `RelayRequestRejected` imediato + fallback orphan |
-| `timeoutMs` no envelope | Enviado (forward-compat); hub ainda stripa — ver handoff |
-| `agents:command_response` PayloadFrame | `decodeAgentsWirePayload` (shim `raw_json` até 2026-09-30) |
-| `app:error` terminal | Sem reconnect cego; `ACCOUNT_BLOCKED` invalida sessão |
-| Idle keepalive | Touch valido `socket:event.subscribe` (env) |
-| `requestId` conversa + `ended.reason` | Emitidos / parseados |
-| `inFlight` + batch streaming | Flag + rejeição `BATCH_STREAMING_ITEM_REJECTED` no client |
-| Stream `error_code` | Surfaced em `RelayStreamTerminated` |
-| Gzip min-savings | Alinhado ao hub (64 bytes) |
+| [Relay timeout investigation](socket_relay_timeout_deep_investigation_2026_07_22.md) | Correlation and missing agent responses |
+| [Socket smoke reproduction](relay_request_timeout_socket_smoke_2026_07_22.md) | Reproduction steps and correlation IDs |
+| [Relay envelope timeout](relay_envelope_timeout_ms.md) | Per-request timeout handoff |
+| [Rejected request correlation](relay_rpc_accepted_error_missing_ids.md) | Missing IDs in error acknowledgments |
 
-## Convenção
+## Protocol snapshots
 
-- Sem segredos; handoffs com repro + IDs de correlação + critérios de aceite
-- Fonte normativa socket: [`socket/`](./socket/) (espelho de `plug_server/docs/socket`)
-- Remover da pasta quando resolvido
+The [relay protocol](socket/socket_relay_protocol.md) and
+[client SDK notes](socket/socket_client_sdk.md) are archived copies synchronized
+from the hub on 2026-07-22. Keep them for investigation context; do not update
+these copies as competing current specifications. References to snippets, ADRs,
+and configuration inside them belong to the upstream hub repository.
+
+Server delivery reports and related proposals are indexed in
+[server adjustments](../server_adjustments/README.md). Verify hub deployment
+status before treating any historical handoff as an outstanding action.

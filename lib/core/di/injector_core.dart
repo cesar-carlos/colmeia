@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:colmeia/app/preferences/app_user_experience_preferences_controller.dart';
 import 'package:colmeia/app/theme/app_theme_mode_controller.dart';
 import 'package:colmeia/core/cache/app_cache_store.dart';
-import 'package:colmeia/core/cache/hive_app_cache_store.dart';
+import 'package:colmeia/core/cache/app_cache_store_factory.dart';
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/dev/fake_backend/fake_identity_backend_store.dart';
 import 'package:colmeia/core/network/app_dio_client.dart';
@@ -11,8 +11,10 @@ import 'package:colmeia/core/network/auth_interceptor.dart';
 import 'package:colmeia/core/network/auth_refresh_coordinator.dart';
 import 'package:colmeia/core/network/auth_session_accessor.dart';
 import 'package:colmeia/core/network/auth_session_events.dart';
+import 'package:colmeia/core/network/pwa_network_interceptor.dart';
 import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
-import 'package:colmeia/core/storage/app_hive.dart';
+import 'package:colmeia/core/pwa/pwa_platform.dart';
+import 'package:colmeia/core/pwa/pwa_platform_factory.dart';
 import 'package:colmeia/core/storage/app_secure_storage_factory.dart';
 import 'package:colmeia/core/storage/session_storage.dart';
 import 'package:colmeia/core/update/appcast_probe_client.dart';
@@ -37,12 +39,15 @@ import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> registerInjectorCore(GetIt getIt) async {
-  await AppHive.ensureInitialized();
-  final kvCacheBox = await AppHive.openHiveKvCacheBox();
+  getIt.registerSingleton<PwaPlatform>(
+    createPwaPlatform(),
+    dispose: (platform) => platform.dispose(),
+  );
+  final cacheStore = await createAppCacheStore();
   final sharedPreferences = await SharedPreferences.getInstance();
 
   getIt
-    ..registerSingleton<AppCacheStore>(HiveAppCacheStore(kvCacheBox))
+    ..registerSingleton<AppCacheStore>(cacheStore, dispose: closeAppCacheStore)
     ..registerLazySingleton<AppLocationGeocodeCache>(
       () => AppLocationGeocodeCache(getIt<AppCacheStore>()),
     )
@@ -125,6 +130,7 @@ Future<void> registerInjectorCore(GetIt getIt) async {
     ..registerLazySingleton<Dio>(
       () {
         final dio = AppDioClient.create();
+        dio.interceptors.add(PwaNetworkInterceptor(getIt<PwaPlatform>()));
         dio.interceptors.add(
           AuthInterceptor(
             dio: dio,
@@ -172,9 +178,7 @@ List<AppLocationGeocoder> buildPlatformLocationGeocoders({
   required String hereApiKey,
 }) {
   final geocoders = <AppLocationGeocoder>[];
-  if (!isWeb &&
-      (targetPlatform == TargetPlatform.android ||
-          targetPlatform == TargetPlatform.iOS)) {
+  if (!isWeb && targetPlatform == TargetPlatform.android) {
     geocoders.add(AppGeocodingPluginGeocoder());
   }
   if (!isWeb && hereApiKey.trim().isNotEmpty) {

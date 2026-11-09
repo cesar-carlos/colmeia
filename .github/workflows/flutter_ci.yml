@@ -175,9 +175,9 @@ jobs:
         shell: bash
         run: rm -f android/key.properties android/app/ci-upload-keystore.jks
 
-  ios_smoke:
+  web_smoke:
     needs: analyze
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -187,8 +187,42 @@ jobs:
         with:
           flutter-version: ${{ vars.FLUTTER_CI_VERSION }}
 
-      - name: iOS release compile smoke (no codesign)
+      - name: Browser compatibility tests
+        run: >-
+          flutter test --platform chrome
+          test/core/socket/payload_frame_web_compatibility_test.dart
+          test/core/socket/socket_coalesce_key_test.dart
+          test/core/errors/app_failure_test.dart
+
+      - name: Web release smoke build
         shell: bash
         run: |
           set -euo pipefail
-          flutter build ios --release --no-codesign
+          flutter build web --release --no-web-resources-cdn
+          python3 tool/package_pwa.py
+
+      - name: Setup browser tests
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Test production PWA lifecycle
+        working-directory: tool/pwa-tests
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm test
+
+      - name: Test local scheduler across browser tabs
+        shell: bash
+        run: |
+          set -euo pipefail
+          flutter build web --release --no-web-resources-cdn --no-wasm-dry-run --target test/integration/cache_refresh_browser.dart --output build/cache_refresh_browser
+          node --test tool/pwa-tests/cache-refresh.test.mjs
+
+      - name: Upload Web build
+        uses: actions/upload-artifact@v4
+        with:
+          name: colmeia-web
+          path: build/web
+          if-no-files-found: error

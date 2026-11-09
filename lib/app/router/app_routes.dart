@@ -1,6 +1,12 @@
 import 'package:colmeia/features/user_context/domain/entities/user_permission.dart';
 import 'package:flutter/material.dart';
 
+const cacheRefreshRouteName = 'cacheRefresh';
+const cacheRefreshRouteSegment = 'data-refresh';
+
+const pwaOfflineRouteName = 'pwaOffline';
+const pwaOfflineRouteSegment = 'offline';
+
 enum AppRoute {
   unmatched(
     path: '/__unmatched__',

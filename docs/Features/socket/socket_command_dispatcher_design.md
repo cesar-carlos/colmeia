@@ -705,7 +705,7 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
   }
 
   // Catalog of offline-like codes/reasons (alinhado a
-  // `plug_server/docs/api_rest_bridge.md` e `socket_relay_protocol.md`).
+  // `plug_server/docs/api/api_rest_bridge.md` e `socket_relay_protocol.md`).
   bool _isOfflineCode(int? code, String? reason) {
     if (reason == null) return false;
     const offlineReasons = <String>{
@@ -1057,7 +1057,7 @@ getIt.registerLazySingleton<AgentSqlExecuteRequestToBridgeBody>(
 - Conexão: `docs/Features/consumer_socket_connection_design.md`.
 - Presença: `docs/Features/agent_presence_realtime_design.md` (§4.2).
 - Hub:
-  - `plug_server/docs/api_rest_bridge.md` (§"Agente direto" e tabela
+  - `plug_server/docs/api/api_rest_bridge.md` (§"Agente direto" e tabela
     de códigos JSON-RPC `-32001`/`-32002`).
   - `plug_server/docs/socket_client_sdk.md` (§"Bridge de comandos
     `agents:command`").

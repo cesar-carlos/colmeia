@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
@@ -19,6 +21,55 @@ void main() {
     sql: 'SELECT 1',
     clientToken: 'token-1',
   );
+
+  for (final batch in <bool>[false, true]) {
+    for (final cancel in <bool>[false, true]) {
+      test(
+        'should not cache an invalidated in-flight result (batch: $batch, cancel: $cancel)',
+        () async {
+          final barrier = Completer<void>();
+          final delegate = _SequenceAgentQueriesRepository()
+            ..barrier = barrier.future;
+          final repo = CachingAgentQueriesRepository(delegate: delegate);
+          final scope = AgentQueriesCancelScope();
+          delegate
+            ..enqueue(_successResult(rowCount: 1))
+            ..enqueueBatch(_successBatchResult());
+          const batchRequest = AgentSqlExecuteBatchRequest(
+            agentId: 'agent-1',
+            clientToken: 'token-1',
+            commands: <AgentSqlExecuteBatchCommand>[
+              AgentSqlExecuteBatchCommand(sql: 'SELECT 1'),
+            ],
+          );
+          final pending = batch
+              ? repo.executeSqlBatch(batchRequest, cancelScope: scope)
+              : repo.executeSql(baseRequest, cancelScope: scope);
+          if (cancel) {
+            scope.cancelAll();
+          } else {
+            repo.clear();
+          }
+          barrier.complete();
+          final result = await pending;
+          if (cancel) {
+            expect(result.exceptionOrNull(), isA<OperationCancelledFailure>());
+          } else {
+            expect(result.isSuccess(), isTrue);
+          }
+          expect(repo.cacheSize, 0);
+          if (batch) {
+            delegate.enqueueBatch(_successBatchResult());
+            await repo.executeSqlBatch(batchRequest);
+          } else {
+            delegate.enqueue(_successResult(rowCount: 2));
+            await repo.executeSql(baseRequest);
+          }
+          expect(repo.cacheSize, 1);
+        },
+      );
+    }
+  }
 
   test(
     'cancellation takes precedence over a cached successful result',
@@ -277,6 +328,7 @@ final class _SequenceAgentQueriesRepository implements AgentQueriesRepository {
   _SequenceAgentQueriesRepository({this.delay = Duration.zero});
 
   final Duration delay;
+  Future<void>? barrier;
   final List<AppResult<AgentSqlExecutionResult>> _results =
       <AppResult<AgentSqlExecutionResult>>[];
   final List<AppResult<AgentSqlBatchExecutionResult>> _batchResults =
@@ -299,6 +351,8 @@ final class _SequenceAgentQueriesRepository implements AgentQueriesRepository {
     AgentQueriesCancelScope? cancelScope,
   }) async {
     callCount++;
+    final pending = barrier;
+    if (pending != null) await pending;
     if (delay > Duration.zero) {
       await Future<void>.delayed(delay);
     }
@@ -311,6 +365,8 @@ final class _SequenceAgentQueriesRepository implements AgentQueriesRepository {
     AgentQueriesCancelScope? cancelScope,
   }) async {
     batchCallCount++;
+    final pending = barrier;
+    if (pending != null) await pending;
     if (delay > Duration.zero) {
       await Future<void>.delayed(delay);
     }

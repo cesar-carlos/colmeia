@@ -282,6 +282,9 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
     if (failure is OperationCancelledFailure) {
       return false;
     }
+    if (_isAgentResponseTimeout(failure)) {
+      return false;
+    }
     if (_isRateLimitedFailure(failure)) {
       return false;
     }
@@ -295,6 +298,19 @@ class RetryingAgentQueriesRepository implements AgentQueriesRepository {
       return true;
     }
     return _isCooperativeHubWarmupFailure(failure);
+  }
+
+  // The hub timed out after dispatch; it has not confirmed that SQL stopped.
+  // Repeating this request can overlap expensive work still running on the agent.
+  bool _isAgentResponseTimeout(AppFailure failure) {
+    if (failure is! NetworkFailure ||
+        failure.context['httpStatusCode'] != 503) {
+      return false;
+    }
+    final body = failure.context[DioHttpFailureContext.responseBodyField];
+    return body is Map &&
+        body['code'] == 'SERVICE_UNAVAILABLE' &&
+        body['message'] == 'Timed out waiting for agent response';
   }
 
   bool _isReplayDetectedFailure(AppFailure failure) {

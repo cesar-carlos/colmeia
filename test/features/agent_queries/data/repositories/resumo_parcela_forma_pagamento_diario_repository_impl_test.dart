@@ -109,10 +109,35 @@ void main() {
     check(capturedRequest.trimmedAgentId).equals('agent-1');
     check(capturedRequest.trimmedClientToken).equals('token-123');
     check(capturedRequest.bridgeTimeoutMs).equals(120000);
+    check(capturedRequest.executeOptions?.sqlTimeoutMs).equals(108000);
     check(capturedRequest.useRelay).isTrue();
     check(capturedRequest.namedParams['dataVendaInicio']).equals('2026-01-01');
     check(capturedRequest.namedParams['dataVendaFim']).equals('2026-12-31');
     check(capturedRequest.sql).contains('ResumoVendaProdutoDiario');
+  });
+
+  test('should bound SQL execution below an explicit bridge timeout', () async {
+    when(() => agentQueriesRepository.executeSql(any())).thenAnswer(
+      (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+        AgentSqlExecutionResult(rows: [], rowCount: 0),
+      ),
+    );
+    await repository.load(
+      userId: 'user-1',
+      agentId: 'agent-1',
+      bridgeTimeoutMs: 20000,
+      filter: ResumoParcelaFormaPagamentoDiarioFilter(
+        dataVendaInicio: DateTime(2026, 7, 10),
+        dataVendaFim: DateTime(2026, 7, 11),
+      ),
+    );
+    final request =
+        verify(() => agentQueriesRepository.executeSql(captureAny()))
+                .captured
+                .single
+            as AgentSqlExecuteRequest;
+    expect(request.bridgeTimeoutMs, 20000);
+    expect(request.executeOptions?.toRpcOptions()?['timeout_ms'], 18000);
   });
 
   test('returns UnknownFailure when row mapping fails', () async {

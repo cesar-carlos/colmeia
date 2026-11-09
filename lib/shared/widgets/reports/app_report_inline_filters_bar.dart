@@ -1,10 +1,10 @@
-import 'dart:async';
-
+import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
+import 'package:colmeia/shared/widgets/reports/app_report_filter_values_controller.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:flutter/material.dart';
 
@@ -45,8 +45,8 @@ class AppReportInlineFiltersBar extends StatefulWidget {
 
 class _AppReportInlineFiltersBarState extends State<AppReportInlineFiltersBar> {
   late final Map<String, TextEditingController> _textControllers;
-  final Map<String, Timer> _textDebouncers = <String, Timer>{};
-  late Map<String, Object?> _currentValues;
+  late final AppReportFilterValuesController _valuesController;
+  Map<String, Object?> get _currentValues => _valuesController.values;
 
   static bool _isTextType(AppReportFilterDescriptor f) =>
       f.type == AppReportFilterType.text ||
@@ -55,7 +55,7 @@ class _AppReportInlineFiltersBarState extends State<AppReportInlineFiltersBar> {
   @override
   void initState() {
     super.initState();
-    _currentValues = Map<String, Object?>.from(widget.initialValues);
+    _valuesController = AppReportFilterValuesController(widget.initialValues);
     _textControllers = <String, TextEditingController>{};
     _reconcileTextControllers();
   }
@@ -64,8 +64,7 @@ class _AppReportInlineFiltersBarState extends State<AppReportInlineFiltersBar> {
   void didUpdateWidget(covariant AppReportInlineFiltersBar oldWidget) {
     super.didUpdateWidget(oldWidget);
     _reconcileTextControllers();
-    if (oldWidget.initialValues != widget.initialValues) {
-      _currentValues = Map<String, Object?>.from(widget.initialValues);
+    if (_valuesController.synchronize(widget.initialValues)) {
       for (final entry in _textControllers.entries) {
         final newText = widget.initialValues[entry.key] as String? ?? '';
         if (entry.value.text != newText) {
@@ -89,7 +88,7 @@ class _AppReportInlineFiltersBarState extends State<AppReportInlineFiltersBar> {
         .where((name) => !desiredNames.contains(name))
         .toList(growable: false);
     for (final name in removedNames) {
-      _textDebouncers.remove(name)?.cancel();
+      _valuesController.cancelPending();
       _textControllers.remove(name)?.dispose();
     }
 
@@ -105,9 +104,7 @@ class _AppReportInlineFiltersBarState extends State<AppReportInlineFiltersBar> {
 
   @override
   void dispose() {
-    for (final timer in _textDebouncers.values) {
-      timer.cancel();
-    }
+    _valuesController.dispose();
     for (final c in _textControllers.values) {
       c.dispose();
     }
@@ -124,11 +121,9 @@ class _AppReportInlineFiltersBarState extends State<AppReportInlineFiltersBar> {
   });
 
   void _clearAll() {
-    for (final timer in _textDebouncers.values) {
-      timer.cancel();
-    }
+    _valuesController.cancelPending();
     setState(() {
-      _currentValues = <String, Object?>{};
+      _valuesController.clear();
       for (final c in _textControllers.values) {
         c.clear();
       }
@@ -136,34 +131,23 @@ class _AppReportInlineFiltersBarState extends State<AppReportInlineFiltersBar> {
     widget.onFiltersChanged(const <String, Object?>{});
   }
 
-  void _emit(Map<String, Object?> updated) {
-    setState(() => _currentValues = updated);
-    widget.onFiltersChanged(Map<String, Object?>.from(updated));
+  void _emitValue(
+    String name,
+    Object? value, {
+    Duration delay = Duration.zero,
+  }) {
+    if (!mounted) return;
+    _valuesController.change(
+      name,
+      value,
+      delay: delay,
+      onChanged: (values) => widget.onFiltersChanged(values),
+    );
+    setState(() {});
   }
 
-  void _emitTextChange(String name, String text) {
-    final updated = Map<String, Object?>.from(_currentValues);
-    if (text.trim().isEmpty) {
-      updated.remove(name);
-    } else {
-      updated[name] = text;
-    }
-
-    final debounce = widget.debounceDuration;
-    if (debounce == Duration.zero) {
-      _emit(updated);
-      return;
-    }
-
-    setState(() => _currentValues = updated);
-    _textDebouncers[name]?.cancel();
-    _textDebouncers[name] = Timer(debounce, () {
-      if (!mounted) {
-        return;
-      }
-      widget.onFiltersChanged(Map<String, Object?>.from(updated));
-    });
-  }
+  void _emitTextChange(String name, String text) =>
+      _emitValue(name, text, delay: widget.debounceDuration);
 
   @override
   Widget build(BuildContext context) {
@@ -196,7 +180,7 @@ class _AppReportInlineFiltersBarState extends State<AppReportInlineFiltersBar> {
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final isNarrow = constraints.maxWidth < 600;
+            final isNarrow = constraints.maxWidth < AppBreakpoints.mobile;
             return isNarrow
                 ? _buildWrapped(context, tokens, supported, hasAdvancedFilters)
                 : _buildScrollable(
@@ -228,11 +212,12 @@ class _AppReportInlineFiltersBarState extends State<AppReportInlineFiltersBar> {
             return <Widget>[
               if (i > 0) SizedBox(width: tokens.gapMd),
               _InlineFilterField(
+                key: ValueKey(f.name),
                 descriptor: f,
                 currentValues: _currentValues,
                 textController: _textControllers[f.name],
                 isLoading: widget.isLoading,
-                onChanged: _emit,
+                onChanged: (value) => _emitValue(f.name, value),
                 onTextChanged: (text) => _emitTextChange(f.name, text),
               ),
             ];
@@ -263,11 +248,12 @@ class _AppReportInlineFiltersBarState extends State<AppReportInlineFiltersBar> {
       children: <Widget>[
         ...filters.map(
           (f) => _InlineFilterField(
+            key: ValueKey(f.name),
             descriptor: f,
             currentValues: _currentValues,
             textController: _textControllers[f.name],
             isLoading: widget.isLoading,
-            onChanged: _emit,
+            onChanged: (value) => _emitValue(f.name, value),
             onTextChanged: (text) => _emitTextChange(f.name, text),
           ),
         ),
@@ -291,6 +277,7 @@ class _InlineFilterField extends StatelessWidget {
     required this.currentValues,
     required this.onChanged,
     required this.onTextChanged,
+    super.key,
     this.textController,
     this.isLoading = false,
   });
@@ -299,7 +286,7 @@ class _InlineFilterField extends StatelessWidget {
   final Map<String, Object?> currentValues;
   final TextEditingController? textController;
   final bool isLoading;
-  final ValueChanged<Map<String, Object?>> onChanged;
+  final ValueChanged<Object?> onChanged;
   final ValueChanged<String> onTextChanged;
 
   @override
@@ -307,23 +294,26 @@ class _InlineFilterField extends StatelessWidget {
     final theme = Theme.of(context);
     final typography = theme.appTypography;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.only(bottom: 4),
-          child: Text(
-            descriptor.label.toUpperCase(),
-            style: typography.utilityOverline.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              letterSpacing: 0.5,
-              fontSize: 10,
+    return Semantics(
+      label: descriptor.label,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text(
+              descriptor.label.toUpperCase(),
+              style: typography.utilityOverline.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                letterSpacing: 0.5,
+                fontSize: 10,
+              ),
             ),
           ),
-        ),
-        _buildInput(context),
-      ],
+          _buildInput(context),
+        ],
+      ),
     );
   }
 
@@ -384,13 +374,7 @@ class _InlineFilterField extends StatelessWidget {
         enabled: !isLoading,
         density: AppTextFieldDensity.compact,
         onChanged: (v) {
-          final updated = Map<String, Object?>.from(currentValues);
-          if (v == null || v.isEmpty) {
-            updated.remove(descriptor.name);
-          } else {
-            updated[descriptor.name] = v;
-          }
-          onChanged(updated);
+          onChanged(v == null || v.isEmpty ? null : v);
         },
       ),
     );
@@ -419,10 +403,8 @@ class _InlineFilterField extends StatelessWidget {
                   initialDateRange: current,
                   builder: (ctx, child) => Theme(data: theme, child: child!),
                 );
-                if (picked != null) {
-                  final updated = Map<String, Object?>.from(currentValues)
-                    ..[descriptor.name] = picked;
-                  onChanged(updated);
+                if (context.mounted && picked != null) {
+                  onChanged(picked);
                 }
               },
         borderRadius: BorderRadius.circular(tokens.formFieldRadius),
@@ -461,10 +443,8 @@ class _InlineFilterField extends StatelessWidget {
                   lastDate: DateTime(2100),
                   initialDate: current ?? DateTime.now(),
                 );
-                if (picked != null) {
-                  final updated = Map<String, Object?>.from(currentValues)
-                    ..[descriptor.name] = picked;
-                  onChanged(updated);
+                if (context.mounted && picked != null) {
+                  onChanged(picked);
                 }
               },
         borderRadius: BorderRadius.circular(tokens.formFieldRadius),

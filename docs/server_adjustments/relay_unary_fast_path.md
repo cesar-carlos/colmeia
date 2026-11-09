@@ -185,7 +185,7 @@ There is no other code path or migration to undo.
 
 > Filed before the hub shipped fast-path. Preserved here for context.
 > The canonical contract is in
-> [`plug_server/docs/socket_relay_protocol.md`](../../../plug_database/plug_server/docs/socket_relay_protocol.md)
+> `plug_server/docs/socket_relay_protocol.md` (upstream reference: `plug_server/docs/socket/socket_relay_protocol.md`)
 > ("Relay unary fast-path"). **Priority:** medium-high.
 > **Companion study on the hub side:**
 > `plug_server/docs/relay_fastpath_study.md` (per

@@ -22,6 +22,23 @@ final class HiveAgentQueryFactsStore implements AgentQueryFactsStore {
 
   final AppCacheStore _cacheStore;
   final int _maxEntriesPerUser;
+  Future<void> _mutationTail = Future<void>.value();
+
+  Future<void> _mutate(Future<void> Function() operation) {
+    final result = _mutationTail.then((_) => operation());
+    // A failed operation reaches its caller without blocking later mutations.
+    _mutationTail = result.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return result;
+  }
+
+  Future<void> _removeIfUnchanged(String key, String raw) => _mutate(() async {
+    if (await _cacheStore.getString(key) == raw) {
+      await _removeKey(key);
+    }
+  });
 
   @override
   Future<List<int>?> readPayload({
@@ -37,7 +54,7 @@ final class HiveAgentQueryFactsStore implements AgentQueryFactsStore {
       final decoded = jsonDecode(raw);
       if (decoded is! Map<String, dynamic>) {
         AgentQueryFactsStoreMetrics.instance.misses++;
-        await removeKey(storageKey);
+        await _removeIfUnchanged(storageKey, raw);
         return null;
       }
       final envelope = AgentQueryFactsEnvelope.fromJson(decoded);
@@ -45,21 +62,22 @@ final class HiveAgentQueryFactsStore implements AgentQueryFactsStore {
           envelope.schemaVersion != expectedSchemaVersion) {
         AgentQueryFactsStoreMetrics.instance.staleSchemaEvictions++;
         AgentQueryFactsStoreMetrics.instance.misses++;
-        await removeKey(storageKey);
+        await _removeIfUnchanged(storageKey, raw);
         return null;
       }
       if (envelope.payloadBase64.isEmpty) {
         AgentQueryFactsStoreMetrics.instance.misses++;
-        await removeKey(storageKey);
+        await _removeIfUnchanged(storageKey, raw);
         return null;
       }
-      AgentQueryFactsStoreMetrics.instance.hits++;
-      return AgentQueryFactsEnvelope.decodePayloadBase64(
+      final payload = AgentQueryFactsEnvelope.decodePayloadBase64(
         envelope.payloadBase64,
       );
+      AgentQueryFactsStoreMetrics.instance.hits++;
+      return payload;
     } on Object catch (error, stackTrace) {
       AgentQueryFactsStoreMetrics.instance.misses++;
-      await removeKey(storageKey);
+      await _removeIfUnchanged(storageKey, raw);
       AppLogger.warning(
         'Agent query facts decode failed; treating as miss',
         context: <String, Object?>{
@@ -104,6 +122,18 @@ final class HiveAgentQueryFactsStore implements AgentQueryFactsStore {
     required String storageKey,
     required List<int> payload,
     required int schemaVersion,
+  }) => _mutate(
+    () => _writePayload(
+      storageKey: storageKey,
+      payload: payload,
+      schemaVersion: schemaVersion,
+    ),
+  );
+
+  Future<void> _writePayload({
+    required String storageKey,
+    required List<int> payload,
+    required int schemaVersion,
   }) async {
     final envelope = AgentQueryFactsEnvelope(
       schemaVersion: schemaVersion,
@@ -118,48 +148,48 @@ final class HiveAgentQueryFactsStore implements AgentQueryFactsStore {
   }
 
   @override
-  Future<void> removeKey(String storageKey) async {
+  Future<void> removeKey(String storageKey) =>
+      _mutate(() => _removeKey(storageKey));
+
+  Future<void> _removeKey(String storageKey) async {
     await _cacheStore.removeString(storageKey);
     final userId = _userIdFromStorageKey(storageKey);
     if (userId == null) {
       return;
     }
-    await _removeFromLruIndex(userId: userId, storageKey: storageKey);
+    await _removeFromLruIndex(
+      userId: userId,
+      matches: (key) => key == storageKey,
+    );
   }
 
   @override
-  Future<void> removeMatching(String keyPrefix) async {
+  Future<void> removeMatching(String keyPrefix) => _mutate(() async {
     await _cacheStore.removeKeysWithPrefix(keyPrefix);
-    final userId = _userIdFromPrefix(keyPrefix);
+    final userId = _userIdFromStorageKey(keyPrefix);
     if (userId != null) {
-      await _cacheStore.removeString(_lruIndexKey(userId));
+      await _removeFromLruIndex(
+        userId: userId,
+        matches: (key) => key.startsWith(keyPrefix),
+      );
     }
-  }
+  });
 
   @override
   Future<void> removeMatchingFactKind({
     required String userId,
     required AgentQueryFactKind factKind,
-  }) async {
-    final prefix = AgentQueryFactsKeyPrefix.forUser(userId);
-    final removedKeys = <String>[];
-    await _cacheStore.removeKeysWhere(
-      prefix: prefix,
-      predicate: (key) {
-        final matches = AgentQueryFactsKeyPrefix.matchesFactKind(
-          storageKey: key,
-          factKind: factKind,
-        );
-        if (matches) {
-          removedKeys.add(key);
-        }
-        return matches;
-      },
+  }) => _mutate(() async {
+    bool matches(String key) => AgentQueryFactsKeyPrefix.matchesFactKind(
+      storageKey: key,
+      factKind: factKind,
     );
-    for (final key in removedKeys) {
-      await _removeFromLruIndex(userId: userId, storageKey: key);
-    }
-  }
+    await _cacheStore.removeKeysWhere(
+      prefix: AgentQueryFactsKeyPrefix.forUser(userId),
+      predicate: matches,
+    );
+    await _removeFromLruIndex(userId: userId, matches: matches);
+  });
 
   Future<void> _recordWriteAndEvictIfNeeded(String storageKey) async {
     final userId = _userIdFromStorageKey(storageKey);
@@ -201,12 +231,12 @@ final class HiveAgentQueryFactsStore implements AgentQueryFactsStore {
 
   Future<void> _removeFromLruIndex({
     required String userId,
-    required String storageKey,
+    required bool Function(String) matches,
   }) async {
     final orderedKeys = await _readLruIndex(userId);
-    if (!orderedKeys.remove(storageKey)) {
-      return;
-    }
+    final previousLength = orderedKeys.length;
+    orderedKeys.removeWhere(matches);
+    if (previousLength == orderedKeys.length) return;
     await _cacheStore.putString(
       key: _lruIndexKey(userId),
       value: jsonEncode(orderedKeys),
@@ -228,14 +258,5 @@ final class HiveAgentQueryFactsStore implements AgentQueryFactsStore {
       return null;
     }
     return rest.substring(0, colonIndex);
-  }
-
-  String? _userIdFromPrefix(String keyPrefix) {
-    const prefix = AppKvCacheKeyPrefixes.agentQueryFacts;
-    if (!keyPrefix.startsWith(prefix) || !keyPrefix.endsWith(':')) {
-      return null;
-    }
-    final userId = keyPrefix.substring(prefix.length, keyPrefix.length - 1);
-    return userId.isEmpty ? null : userId;
   }
 }

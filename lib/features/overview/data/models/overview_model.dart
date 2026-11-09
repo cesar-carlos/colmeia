@@ -312,7 +312,7 @@ class OverviewModel {
   /// fields to keep payload small (high-cardinality series); those fields
   /// reload on next successful fetch. Legacy cache files may still contain
   /// those keys; `fromJson` continues to parse them when present.
-  Map<String, Object?> toJson() {
+  Map<String, Object?> toJson({bool includeDerivedSnapshots = false}) {
     return <String, Object?>{
       'periodStart': periodStart.toIso8601String(),
       'periodEnd': periodEnd.toIso8601String(),
@@ -374,6 +374,19 @@ class OverviewModel {
           )
           .toList(growable: false),
       'weekdaySalesTrendLoadFailed': weekdaySalesTrendLoadFailed,
+      if (includeDerivedSnapshots)
+        'weekdayUserSalesTrend': weekdayUserSalesTrend
+            .map(
+              (point) => <String, Object?>{
+                'weekdayNumber': point.weekdayNumber,
+                'userName': point.userName,
+                'salesCount': point.salesCount,
+                'salesAmount': point.salesAmount,
+              },
+            )
+            .toList(growable: false),
+      if (includeDerivedSnapshots)
+        'weekdayUserSalesTrendLoadFailed': weekdayUserSalesTrendLoadFailed,
       'dailySalesTrend': dailySalesTrend
           .map(
             (p) => <String, Object?>{
