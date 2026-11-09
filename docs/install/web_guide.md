@@ -50,13 +50,40 @@ python tool/package_pwa.py
 - Deploy assets together and avoid long-lived caching of `index.html` and bootstrap
   files so releases do not leave users loading stale application code.
 
+## Latest production synchronization — 2026-11-09
+
+Application source commit `6384338297af73e3264ae755e49a47de0b34078f`
+is published as release `041f33e1fe0ad9c9022d` (51 files, 50,107,061 bytes).
+This release checks cancellation after offline authorization before starting
+queries, attempts local Push shutdown even when preferences fail, deduplicates
+concurrent removal reconciliation within an app instance, and prevents an older
+removal response from clearing a newer pending removal. Cross-tab Push removal
+deduplication is not established by these changes.
+
+Validation: scoped static analysis clean; 40 PWA tests, six worker tests and both
+Chrome production-shell tests passed. The browser scenarios cover offline routes
+and interrupted updates at `/` and `/colmeia/`. Live login returned 200 and the
+disabled-server Push message was displayed for the new release. VAPID remains
+disabled; full live offline-package acceptance and Push delivery remain pending.
+
+The uploaded archive SHA-256 is
+`2cff9ca912bcd6aec3a22a530c443f05e8c733598113de82bdca04daed28ec79`.
+Each packaged static-file hash was verified before switching `current` atomically.
+Previous release `c3241ce5fdc51a131aab` remains available for rollback. Deployment
+evidence is in `/root/colmeia-pwa-deploy-20261109-133049/`. No Nginx configuration
+change or service restart was needed. All nine site roots retained their previous
+HTTP results and valid TLS; both WebSocket handshakes returned 101, and container
+IDs remained unchanged. Later documentation-only commits do not change this
+application artifact or its recorded source commit.
+
 ## Production deployment — 2026-11-09
 
 The Web application is published at
 `https://colmeia.se7esistemassinop.com.br` on `62.72.11.49`.
 The initial deployed source was commit `04920d4e`, packaged as
 `4ef1f35cb04f16cabb5e` (51 static files). The PWA follow-up below records the
-current release. Reproduce the production build configuration with:
+earlier release; the synchronization entry above identifies the current release.
+Reproduce the production build configuration with:
 
 ```bash
 flutter build web --release --no-web-resources-cdn --no-wasm-dry-run \
