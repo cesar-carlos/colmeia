@@ -54,8 +54,9 @@ python tool/package_pwa.py
 
 The Web application is published at
 `https://colmeia.se7esistemassinop.com.br` on `62.72.11.49`.
-The deployed source is commit `04920d4e`; the packaged release is
-`4ef1f35cb04f16cabb5e` (51 static files). Reproduce its build with:
+The initial deployed source was commit `04920d4e`, packaged as
+`4ef1f35cb04f16cabb5e` (51 static files). The PWA follow-up below records the
+current release. Reproduce the production build configuration with:
 
 ```bash
 flutter build web --release --no-web-resources-cdn --no-wasm-dry-run \
@@ -150,6 +151,27 @@ Push activation now distinguishes disabled server configuration, malformed key
 responses and denied browser permission. Invalid/disabled configuration does not
 request browser permission. These corrections do not enable VAPID or establish
 live package/Push acceptance. Deployment evidence is recorded below.
+
+The corrections were published from commit `4eddd745` as release
+`c3241ce5fdc51a131aab` (51 files, 50,106,008 bytes). The archive SHA-256 is
+`8c15004bb60802ba87299b2192b2c4fb382d8103f757cbdf3f48d9723151fc6b`.
+All packaged file hashes were verified before atomically switching
+`/var/www/colmeia/current`. The previous release remains available at
+`/var/www/colmeia/releases/4ef1f35cb04f16cabb5e`; rollback is an atomic symlink
+switch to that directory, not an overwrite of live files. Deployment evidence,
+the previous target and container identities are stored under
+`/root/colmeia-pwa-deploy-20261109-130223/`.
+
+The 32 PWA tests passed again before publication. Earlier review validation
+passed 45 tooling tests, six worker tests and both production-build browser
+scenarios (root/subdirectory); focused analysis was clean. On the published
+release, isolated Chrome login succeeded and Push activation displayed the
+specific server-not-configured message. The nine domains retained their HTTP
+baselines, TLS and both WebSocket handshakes passed, and container IDs were
+unchanged. No application or Nginx restart was needed for the static release.
+Full live package preparation and actual Push delivery remain acceptance gaps.
+Existing PWA tabs should accept the application's update prompt to activate the
+new worker when tracked work is idle.
 
 ### Avatar CORS correction — 2026-11-09
 
