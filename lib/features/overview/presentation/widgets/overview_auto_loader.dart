@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_load_labels.dart';
 import 'package:colmeia/features/overview/presentation/controllers/overview_controller.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Schedules the first overview load when [userId] and [isReady] allow it.
 class OverviewAutoLoader extends StatefulWidget {

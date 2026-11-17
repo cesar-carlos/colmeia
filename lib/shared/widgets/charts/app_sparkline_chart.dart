@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Trend direction hint for [AppSparklineChart].
 ///
@@ -129,7 +129,7 @@ class AppSparklineChart extends StatelessWidget {
         : trend;
 
     return switch (effectiveTrend) {
-      AppSparklineTrend.up => const Color(0xFF2E9E5B),
+      AppSparklineTrend.up => theme.colorScheme.tertiary,
       AppSparklineTrend.down => theme.colorScheme.error,
       _ => theme.colorScheme.primary,
     };

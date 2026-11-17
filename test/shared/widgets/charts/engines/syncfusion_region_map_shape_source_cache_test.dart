@@ -3,8 +3,8 @@ import 'dart:typed_data';
 
 import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_region_map_shape_source_cache.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   final mapDefinition = AppMapDefinition.memory(

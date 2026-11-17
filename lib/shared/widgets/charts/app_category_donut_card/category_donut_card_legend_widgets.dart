@@ -5,7 +5,7 @@ import 'package:colmeia/shared/widgets/charts/app_category_donut_card/category_d
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card_style.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class CategoryDonutCardLegendSection extends StatelessWidget {
   const CategoryDonutCardLegendSection({

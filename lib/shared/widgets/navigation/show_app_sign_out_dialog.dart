@@ -1,6 +1,6 @@
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/app_dialog.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Returns true if the user confirmed sign-out.
 Future<bool> showAppSignOutConfirmDialog(BuildContext context) async {

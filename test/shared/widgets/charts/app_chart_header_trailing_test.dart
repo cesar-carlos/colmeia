@@ -2,8 +2,8 @@ import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_header_trailing.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_guard.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets('shows share before fullscreen when both actions are provided', (

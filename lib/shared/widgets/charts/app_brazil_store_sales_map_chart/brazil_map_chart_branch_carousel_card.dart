@@ -1,4 +1,4 @@
-﻿import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart/brazil_map_chart_branch_carousel_navigation_widgets.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart/brazil_map_chart_branch_detail_surface_widget.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.dart';
@@ -6,8 +6,8 @@ import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.
 import 'package:colmeia/shared/widgets/charts/brazil_map_chart_visual_snapshot.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_store_sales_display_helpers.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 
 class BrazilMapChartSelectedMarkerBranchCarouselCard extends StatefulWidget {
   const BrazilMapChartSelectedMarkerBranchCarouselCard({

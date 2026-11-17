@@ -1,6 +1,37 @@
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+
+Color resolveAppActionButtonForeground(ColorScheme scheme) =>
+    scheme.surfaceAccent;
+
+Color resolveAppActionButtonLoadingColor({
+  required ColorScheme scheme,
+  required ButtonStyle style,
+  required Color fallbackBackground,
+  Color? overrideColor,
+}) {
+  if (overrideColor != null) return overrideColor;
+  final background = Color.alphaBlend(
+    style.backgroundColor?.resolve({WidgetState.disabled}) ??
+        fallbackBackground,
+    scheme.surface,
+  );
+  double contrast(Color color) {
+    final foreground = Color.alphaBlend(color, background).computeLuminance();
+    final backdrop = background.computeLuminance();
+    return foreground > backdrop
+        ? (foreground + 0.05) / (backdrop + 0.05)
+        : (backdrop + 0.05) / (foreground + 0.05);
+  }
+
+  final normal = scheme.onSurface;
+  final inverse = scheme.onInverseSurface;
+  return contrast(normal) >= 3 || contrast(normal) >= contrast(inverse)
+      ? normal
+      : inverse;
+}
 
 /// Shared [CircularProgressIndicator] sizing for action buttons (loading).
 Widget buildAppActionButtonProgressIndicator({

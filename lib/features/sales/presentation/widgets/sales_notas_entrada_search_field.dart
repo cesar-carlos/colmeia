@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:colmeia/features/sales/presentation/widgets/sales_notas_entrada_search.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Compact supplier search field with debounce and a clear suffix.
 class SalesNotasEntradaSearchField extends StatefulWidget {

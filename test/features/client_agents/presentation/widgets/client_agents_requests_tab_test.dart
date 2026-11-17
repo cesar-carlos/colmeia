@@ -2,8 +2,8 @@ import 'package:colmeia/features/client_agents/domain/entities/agent_access_requ
 import 'package:colmeia/features/client_agents/domain/entities/client_agent_access_request.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_requests_tab.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../support/localized_test_app.dart';
 

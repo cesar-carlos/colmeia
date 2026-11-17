@@ -6,7 +6,7 @@ import 'package:colmeia/core/network/auth_session_events.dart';
 import 'package:colmeia/core/pwa/pwa_platform.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/pwa/application/pwa_package_service.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class PwaStatusHost extends StatefulWidget {
   const PwaStatusHost({required this.child, super.key});

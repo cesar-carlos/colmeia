@@ -1,8 +1,8 @@
 import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_chart_failure_placeholder_content.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_rankings_section.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../support/localized_test_app.dart';
 

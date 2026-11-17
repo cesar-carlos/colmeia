@@ -1,6 +1,7 @@
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppProfileSectionTitle extends StatelessWidget {
   const AppProfileSectionTitle({
@@ -21,7 +22,7 @@ class AppProfileSectionTitle extends StatelessWidget {
 
     return Row(
       children: <Widget>[
-        Icon(icon, size: 22, color: cs.primary),
+        Icon(icon, size: 22, color: cs.surfaceAccent),
         SizedBox(width: tokens.gapSm),
         Text(
           title,

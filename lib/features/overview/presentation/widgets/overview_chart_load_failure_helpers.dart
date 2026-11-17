@@ -4,7 +4,7 @@ import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_
 import 'package:colmeia/features/agent_queries/presentation/localization/agent_query_failure_l10n.dart';
 import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_chart_failure_placeholder_content.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 export 'package:colmeia/features/overview/application/overview_chart_partial_failure.dart';
 

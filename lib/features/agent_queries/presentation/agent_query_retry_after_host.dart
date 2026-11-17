@@ -2,7 +2,7 @@ import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/features/agent_queries/presentation/agent_query_retry_after.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Hosts a [RetryAfterGate] for agent-query surfaces (Sales charts, reports).
 mixin AgentQueryRetryAfterHost<T extends StatefulWidget> on State<T> {

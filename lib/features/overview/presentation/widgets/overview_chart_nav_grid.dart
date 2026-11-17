@@ -9,7 +9,7 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/navigation/app_hub_navigation_card.dart';
 import 'package:colmeia/shared/widgets/navigation/app_hub_navigation_card_density.dart';
 import 'package:colmeia/shared/widgets/navigation/app_hub_navigation_grid.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 /// Compact navigation grid for lazy-loaded overview chart detail pages.

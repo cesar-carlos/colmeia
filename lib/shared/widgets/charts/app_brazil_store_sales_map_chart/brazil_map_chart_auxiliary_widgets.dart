@@ -3,7 +3,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart/brazil_map_chart_auxiliary_surface.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_chart_visual_snapshot.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 export 'brazil_map_chart_auxiliary_surface.dart';
 export 'brazil_map_chart_scale_legend_widgets.dart';

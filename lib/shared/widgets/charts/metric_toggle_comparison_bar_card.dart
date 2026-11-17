@@ -6,7 +6,7 @@ import 'package:colmeia/shared/widgets/charts/chart_share_actions.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/charts/metric_toggle_comparison_bar_fullscreen_body.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 enum MetricToggleComparisonBarMetric { count, amount }
 

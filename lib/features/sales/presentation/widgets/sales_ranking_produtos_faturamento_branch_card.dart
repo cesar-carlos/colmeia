@@ -23,8 +23,8 @@ import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/metrics/app_compact_kpi_stat.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 class SalesRankingProdutosFaturamentoBranchCard extends StatefulWidget {
   const SalesRankingProdutosFaturamentoBranchCard({

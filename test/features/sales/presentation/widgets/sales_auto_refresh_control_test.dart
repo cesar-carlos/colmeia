@@ -4,8 +4,8 @@ import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refr
 import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_control.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/l10n/app_localizations_en.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 const String _offLabel = 'Off';
 const String _tooltipLabel = 'Auto-refresh';

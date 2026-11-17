@@ -4,7 +4,7 @@ import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.
 import 'package:colmeia/shared/widgets/charts/brazil_map_chart_chrome.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_chart_visual_snapshot.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_layout_constants.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Pure(ish) layout geometry for the Brazil store-sales map tile: resolves the
 /// map height by deducting header/footer reserves from the available space.

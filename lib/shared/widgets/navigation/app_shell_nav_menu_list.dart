@@ -1,5 +1,5 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Scrollable list of navigation rows; add items via [children].
 class AppShellNavMenuList extends StatelessWidget {

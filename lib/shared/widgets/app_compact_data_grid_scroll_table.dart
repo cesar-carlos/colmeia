@@ -1,7 +1,7 @@
 import 'package:colmeia/shared/design_system/app_data_grid_density.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Horizontally scrollable compact data grid with an optional vertically
 /// scrollable body and a header that stays pinned when [itemCount] exceeds

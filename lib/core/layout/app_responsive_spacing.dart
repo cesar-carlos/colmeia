@@ -1,6 +1,6 @@
 import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 abstract final class AppPageSpacingPresets {
   const AppPageSpacingPresets._();

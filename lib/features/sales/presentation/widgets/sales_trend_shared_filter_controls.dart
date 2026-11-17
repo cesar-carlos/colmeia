@@ -5,7 +5,7 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/forms/app_choice_chip.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Shared metric / volume / threshold controls for both trend filter sheets.
 class SalesTrendSharedFilterControls extends StatelessWidget {

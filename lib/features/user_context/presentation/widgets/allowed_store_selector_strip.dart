@@ -2,7 +2,7 @@ import 'package:colmeia/features/user_context/domain/entities/access/store_scope
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
 import 'package:colmeia/shared/widgets/forms/app_choice_chip.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AllowedStoreSelectorStrip extends StatelessWidget {
   const AllowedStoreSelectorStrip({

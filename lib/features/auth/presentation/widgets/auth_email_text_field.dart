@@ -2,7 +2,7 @@
 // auth_form_text_field, auth_password_text_field).
 import 'package:colmeia/shared/widgets/forms/app_email_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Auth-scoped alias over [AppEmailField].
 class AuthEmailTextField extends StatelessWidget {

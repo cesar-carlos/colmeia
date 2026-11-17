@@ -8,8 +8,8 @@ import 'package:colmeia/shared/widgets/charts/engines/syncfusion_region_map_char
 import 'package:colmeia/shared/widgets/charts/region_map_viewport_sync_policy.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:syncfusion_flutter_maps/maps.dart';
 
 void main() {

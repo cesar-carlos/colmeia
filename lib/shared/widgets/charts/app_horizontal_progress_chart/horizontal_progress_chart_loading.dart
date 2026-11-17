@@ -1,6 +1,6 @@
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_horizontal_progress_chart/horizontal_progress_chart_header.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class HorizontalProgressChartLoadingBlock extends StatelessWidget {
   const HorizontalProgressChartLoadingBlock({

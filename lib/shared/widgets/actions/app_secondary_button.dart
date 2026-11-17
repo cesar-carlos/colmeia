@@ -1,6 +1,6 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/action_button_helpers.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Visual style for [AppSecondaryButton].
 enum AppSecondaryButtonVariant {
@@ -74,14 +74,13 @@ class AppSecondaryButton extends StatelessWidget {
         2;
     final radius = resolveAppActionButtonRadius(tokens);
     final scheme = theme.colorScheme;
-    final primary = scheme.primary;
+    final foreground = resolveAppActionButtonForeground(scheme);
     final labelStyle = resolveAppActionButtonTextStyle(theme);
-    final indicatorColor = loadingIndicatorColor ?? primary;
 
     var effectiveStyle =
         style ??
         OutlinedButton.styleFrom(
-          foregroundColor: primary,
+          foregroundColor: foreground,
           backgroundColor: Colors.transparent,
           disabledForegroundColor: resolveAppActionButtonDisabledForeground(
             scheme,
@@ -108,11 +107,16 @@ class AppSecondaryButton extends StatelessWidget {
     final content = isLoading
         ? buildAppActionButtonProgressIndicator(
             context: context,
-            color: indicatorColor,
+            color: resolveAppActionButtonLoadingColor(
+              scheme: scheme,
+              style: effectiveStyle,
+              fallbackBackground: Colors.transparent,
+              overrideColor: loadingIndicatorColor,
+            ),
             size: loadingSize,
             strokeWidth: loadingStroke,
           )
-        : _buildLabelRow(context, gapSm, primary);
+        : _buildLabelRow(gapSm);
 
     return wrapAppActionButtonSemantics(
       child: OutlinedButton(
@@ -144,7 +148,6 @@ class AppSecondaryButton extends StatelessWidget {
       scheme.surfaceContainerHigh,
     );
     final labelStyle = resolveAppActionButtonTextStyle(theme);
-    final indicatorColor = loadingIndicatorColor ?? scheme.onSecondaryContainer;
 
     var effectiveStyle =
         style ??
@@ -179,11 +182,18 @@ class AppSecondaryButton extends StatelessWidget {
     final content = isLoading
         ? buildAppActionButtonProgressIndicator(
             context: context,
-            color: indicatorColor,
+            color: resolveAppActionButtonLoadingColor(
+              scheme: scheme,
+              style: effectiveStyle,
+              fallbackBackground: resolveAppActionButtonDisabledBackground(
+                scheme,
+              ),
+              overrideColor: loadingIndicatorColor,
+            ),
             size: loadingSize,
             strokeWidth: loadingStroke,
           )
-        : _buildLabelRow(context, gapSm, scheme.primary);
+        : _buildLabelRow(gapSm);
 
     return wrapAppActionButtonSemantics(
       child: FilledButton.tonal(
@@ -198,11 +208,7 @@ class AppSecondaryButton extends StatelessWidget {
     );
   }
 
-  Widget _buildLabelRow(
-    BuildContext context,
-    double iconTextGap,
-    Color iconColor,
-  ) {
+  Widget _buildLabelRow(double iconTextGap) {
     if (child != null) {
       return child!;
     }
@@ -222,7 +228,7 @@ class AppSecondaryButton extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         IconTheme.merge(
-          data: IconThemeData(size: 20, color: iconColor),
+          data: const IconThemeData(size: 20),
           child: icon!,
         ),
         SizedBox(width: iconTextGap),

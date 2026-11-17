@@ -6,7 +6,7 @@ import 'package:colmeia/shared/widgets/charts/chart_share_action_icon.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_guard.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Share action for fullscreen chart scaffolds (header trailing slot).
 Widget buildChartFullscreenShareTrailing({

@@ -5,8 +5,8 @@ import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_so
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_direction.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_margem_produto_columns.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_margem_produto_sort.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 const _labels = SalesMargemProdutoColumnLabels(
   codigo: 'Code',

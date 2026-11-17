@@ -31,6 +31,9 @@ class AppReportQuery {
   final String? searchTerm;
   final AppReportDensity density;
 
+  Set<String> resolveVisibleColumnKeys(Iterable<String> defaultKeys) =>
+      Set<String>.of(visibleColumnKeys ?? defaultKeys);
+
   /// True when [term] matches [searchTerm] after trim. Null and blank are equal.
   bool isSameSearchTerm(String? term) {
     final next = term?.trim() ?? '';
@@ -74,11 +77,12 @@ class AppReportQuery {
 
   /// Clears [searchTerm] when [term] is null or empty; otherwise sets it.
   AppReportQuery withSearchTerm(String? term) {
-    final cleared = term == null || term.isEmpty;
+    final normalized = term?.trim();
+    final cleared = normalized == null || normalized.isEmpty;
     if (cleared) {
       return copyWith(clearSearchTerm: true, page: 1);
     }
-    return copyWith(searchTerm: term, page: 1);
+    return copyWith(searchTerm: normalized, page: 1);
   }
 
   AppReportQuery withDensity(AppReportDensity newDensity) =>

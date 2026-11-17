@@ -4,6 +4,42 @@ import 'package:colmeia/shared/widgets/navigation/app_tab_change_guard_controlle
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test(
+    'does not apply approval to a replaced selection configuration',
+    () async {
+      final controller = AppTabChangeGuardController();
+      final decision = Completer<bool>();
+      var current = true;
+      var applied = false;
+      final request = controller.requestChange(
+        fromIndex: 0,
+        toIndex: 1,
+        guard: (_, _) => decision.future,
+        isCurrent: () => current,
+        onAllowed: () => applied = true,
+      );
+      current = false;
+      decision.complete(true);
+      expect(await request, isFalse);
+      expect(applied, isFalse);
+    },
+  );
+
+  test('current selection configuration preserves approval', () async {
+    final controller = AppTabChangeGuardController();
+    var applied = false;
+    expect(
+      await controller.requestChange(
+        fromIndex: 0,
+        toIndex: 1,
+        guard: (_, _) async => true,
+        isCurrent: () => true,
+        onAllowed: () => applied = true,
+      ),
+      isTrue,
+    );
+    expect(applied, isTrue);
+  });
   test('should ignore an older approval after a newer tab request', () async {
     final controller = AppTabChangeGuardController();
     final applied = <int>[];

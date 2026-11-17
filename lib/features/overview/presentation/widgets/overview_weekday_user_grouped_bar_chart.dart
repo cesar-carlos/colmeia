@@ -11,8 +11,8 @@ import 'package:colmeia/shared/widgets/charts/app_grouped_column_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_grouped_column_chart_series.dart';
 import 'package:colmeia/shared/widgets/charts/comparison_bar_plot_floor.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Grouped column chart: weekdays on the category axis; one series per user.
 class OverviewWeekdayUserGroupedBarChart extends StatelessWidget {

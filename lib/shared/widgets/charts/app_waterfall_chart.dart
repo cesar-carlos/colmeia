@@ -2,8 +2,8 @@ import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_waterfall_chart.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppWaterfallChartStyle {
   const AppWaterfallChartStyle({

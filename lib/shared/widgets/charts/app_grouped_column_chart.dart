@@ -6,8 +6,8 @@ import 'package:colmeia/shared/widgets/charts/app_grouped_column_chart_series.da
 import 'package:colmeia/shared/widgets/charts/chart_horizontal_scroll_shell.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 /// Grouped column chart with one or more series per category.

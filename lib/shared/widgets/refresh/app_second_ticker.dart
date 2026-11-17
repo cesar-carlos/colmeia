@@ -54,7 +54,20 @@ class AppSecondTicker implements ValueListenable<DateTime> {
       final listeners = List<VoidCallback>.from(_listeners);
       for (final listener in listeners) {
         if (_listeners.contains(listener)) {
-          listener();
+          try {
+            listener();
+          } on Object catch (error, stackTrace) {
+            FlutterError.reportError(
+              FlutterErrorDetails(
+                exception: error,
+                stack: stackTrace,
+                library: 'Colmeia shared refresh',
+                context: ErrorDescription(
+                  'while notifying a second ticker listener',
+                ),
+              ),
+            );
+          }
         }
       }
       if (_listeners.isEmpty) {

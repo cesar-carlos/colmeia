@@ -1,7 +1,7 @@
 import 'package:colmeia/features/sales/presentation/widgets/sales_anchor_month_filters_context.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets('SalesAnchorMonthFiltersContext titles', (tester) async {

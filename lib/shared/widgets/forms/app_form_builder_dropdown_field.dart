@@ -1,7 +1,7 @@
 import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppFormBuilderDropdownField<T> extends StatelessWidget {
   const AppFormBuilderDropdownField({
@@ -40,6 +40,7 @@ class AppFormBuilderDropdownField<T> extends StatelessWidget {
       validator: validator,
       autovalidateMode: autovalidateMode,
       builder: (field) {
+        final state = field as FormBuilderFieldState<FormBuilderField<T>, T>;
         return AppDropdownField<T>(
           value: field.value,
           options: options,
@@ -47,7 +48,7 @@ class AppFormBuilderDropdownField<T> extends StatelessWidget {
           hintText: hintText,
           helperText: field.errorText == null ? helperText : null,
           errorText: field.errorText,
-          enabled: enabled,
+          enabled: state.enabled,
           density: density,
           menuMaxHeight: menuMaxHeight,
           onChanged: field.didChange,
@@ -98,13 +99,15 @@ class AppFormBuilderMultiSelectSearchField<T> extends StatelessWidget {
       validator: validator,
       autovalidateMode: autovalidateMode,
       builder: (field) {
+        final state =
+            field as FormBuilderFieldState<FormBuilderField<List<T>>, List<T>>;
         return AppMultiSelectSearchField<T>(
           options: options,
           selectedValues: field.value ?? <T>[],
           label: label,
           helperText: field.errorText == null ? helperText : null,
           errorText: field.errorText,
-          enabled: enabled,
+          enabled: state.enabled,
           density: density,
           menuMaxHeight: menuMaxHeight,
           searchHintText: searchHintText,

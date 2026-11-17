@@ -1,7 +1,7 @@
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Full-width primary CTA; delegates to [AppPrimaryButton] with auth styling.
 class LoginPrimaryButton extends StatelessWidget {

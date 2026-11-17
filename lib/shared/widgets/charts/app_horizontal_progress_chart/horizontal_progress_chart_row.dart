@@ -1,7 +1,7 @@
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/horizontal_progress_chart_math.dart';
 import 'package:colmeia/shared/widgets/charts/horizontal_progress_chart_typedefs.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class HorizontalProgressChartRow<T> extends StatelessWidget {
   const HorizontalProgressChartRow({

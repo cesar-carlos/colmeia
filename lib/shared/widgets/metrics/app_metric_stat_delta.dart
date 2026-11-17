@@ -1,5 +1,5 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Semantic sign of a KPI delta string for styling (colors, pill).
 enum MetricDeltaSign {

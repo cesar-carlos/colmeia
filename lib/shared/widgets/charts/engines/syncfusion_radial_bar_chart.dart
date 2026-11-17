@@ -5,7 +5,7 @@ import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_radial_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 class SyncfusionRadialBarChart<T> extends StatelessWidget {

@@ -1,7 +1,7 @@
 import 'package:colmeia/features/auth/presentation/widgets/auth_email_text_field.dart';
 import 'package:colmeia/features/auth/presentation/widgets/login/login_labeled_field.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class LoginEmailFormField extends StatelessWidget {
   const LoginEmailFormField({

@@ -1,6 +1,6 @@
 import 'package:colmeia/shared/widgets/pagination/app_table_pagination_footer.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Pagination bar for the report viewer, aligned with the shared table footer.
 class AppReportPaginationBar extends StatelessWidget {

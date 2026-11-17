@@ -3,8 +3,8 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 const _samplePoint = AppBrazilStoreSalesPoint(
   id: 'branch-1',

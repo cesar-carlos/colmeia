@@ -1,7 +1,7 @@
 import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Compact footnote below paginated tables ("Pode haver mais linhas...").
 class AppTablePaginationNotice extends StatelessWidget {

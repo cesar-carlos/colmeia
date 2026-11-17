@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// True when [anterior] and [atual] are not contiguous and not an allowed
 /// aligned pair (full-month or month-to-date), so the UI can warn managers.

@@ -3,7 +3,7 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_snapshot.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class BrazilMapChartDesktopBranchSidebarEmptyState extends StatelessWidget {
   const BrazilMapChartDesktopBranchSidebarEmptyState({

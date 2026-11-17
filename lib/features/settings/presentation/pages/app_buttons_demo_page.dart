@@ -7,7 +7,7 @@ import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_text_action_button.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Demos for primary, secondary, flat and text action buttons (fake actions).
 class AppButtonsDemoPage extends StatelessWidget {

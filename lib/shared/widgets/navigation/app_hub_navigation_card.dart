@@ -5,7 +5,7 @@ import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/navigation/app_hub_navigation_card_density.dart';
 import 'package:colmeia/shared/widgets/navigation/app_hub_navigation_card_metrics.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Resolves the tooltip body shown for hub navigation cards.
 String resolveAppHubNavigationTooltipMessage({
@@ -111,7 +111,7 @@ class AppHubNavigationCard extends StatelessWidget {
           child: Icon(
             icon,
             size: metrics.iconSize,
-            color: colors.primary,
+            color: theme.colorScheme.surfaceAccent,
           ),
         ),
       ),
@@ -133,7 +133,7 @@ class AppHubNavigationCard extends StatelessWidget {
                   child: Icon(
                     Icons.check_circle,
                     size: metrics.readyBadgeSize,
-                    color: colors.primary,
+                    color: theme.colorScheme.surfaceAccent,
                   ),
                 ),
               ),
@@ -180,7 +180,7 @@ class AppHubNavigationCard extends StatelessWidget {
               child: Icon(
                 Icons.check_circle_outline,
                 size: metrics.readyBadgeSize,
-                color: colors.primary,
+                color: theme.colorScheme.surfaceAccent,
               ),
             ),
           ),

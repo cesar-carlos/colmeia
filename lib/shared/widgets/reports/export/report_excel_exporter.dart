@@ -4,7 +4,7 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:colmeia/shared/widgets/reports/export/report_export_sharing.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 
 /// Produces and shares an XLSX workbook for a typed report.

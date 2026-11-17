@@ -10,9 +10,9 @@ import 'package:colmeia/features/auth/domain/repositories/client_registration_re
 import 'package:colmeia/features/auth/presentation/controllers/register_page_controller.dart';
 import 'package:colmeia/features/auth/presentation/pages/register_page.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:result_dart/result_dart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

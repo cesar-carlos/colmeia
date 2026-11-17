@@ -6,8 +6,8 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../support/localized_test_app.dart';
 

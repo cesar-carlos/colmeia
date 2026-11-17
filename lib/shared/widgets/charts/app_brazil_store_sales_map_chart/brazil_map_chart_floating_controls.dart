@@ -6,7 +6,7 @@ import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_layout_constants.dart';
 import 'package:colmeia/shared/widgets/forms/app_choice_chip.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class BrazilMapChartFloatingMapControlsOverlay extends StatelessWidget {
   const BrazilMapChartFloatingMapControlsOverlay({

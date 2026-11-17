@@ -13,8 +13,8 @@ import 'package:colmeia/shared/widgets/charts/daily_sales_trend_chart_labels.dar
 import 'package:colmeia/shared/widgets/charts/daily_sales_trend_point.dart';
 import 'package:colmeia/shared/widgets/charts/daily_sales_weekday_labels.dart';
 import 'package:colmeia/shared/widgets/charts/metric_toggle_comparison_bar_card.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Daily sales totals (bar chart) for the overview period or Sales branch/month scope.
 class DailySalesTrendChart extends StatelessWidget {

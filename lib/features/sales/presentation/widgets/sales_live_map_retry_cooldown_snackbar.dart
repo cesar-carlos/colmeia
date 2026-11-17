@@ -1,6 +1,6 @@
 import 'package:colmeia/core/errors/retry_after_gate.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 void showSalesLiveMapRetryCooldownSnackbar(
   BuildContext context,

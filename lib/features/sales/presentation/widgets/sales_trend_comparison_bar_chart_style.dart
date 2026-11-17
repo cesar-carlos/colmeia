@@ -2,8 +2,8 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/charts/metric_toggle_comparison_bar_fullscreen_body.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Visual parity with the home dashboard comparison bar charts (ranking /
 /// payment): horizontal auto-scroll, wrapped multi-line X labels, outer data

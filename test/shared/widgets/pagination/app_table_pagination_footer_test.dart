@@ -1,8 +1,9 @@
 import 'package:colmeia/app/theme/app_theme.dart';
+import 'package:colmeia/core/localization/app_locale_resolution.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/pagination/app_table_pagination_footer.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets('pumpAndSettle succeeds and shows page size menu', (
@@ -12,7 +13,7 @@ void main() {
       MaterialApp(
         theme: AppTheme.light(),
         locale: const Locale('pt'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: colmeiaLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: MediaQuery(
           data: const MediaQueryData(size: Size(1200, 800)),
@@ -49,7 +50,7 @@ void main() {
       MaterialApp(
         theme: AppTheme.light(),
         locale: const Locale('pt'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: colmeiaLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: MediaQuery(
           data: const MediaQueryData(size: Size(1200, 800)),
@@ -102,7 +103,7 @@ void main() {
       MaterialApp(
         theme: AppTheme.light(),
         locale: const Locale('pt'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: colmeiaLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: MediaQuery(
           data: const MediaQueryData(size: Size(1200, 800)),
@@ -152,7 +153,7 @@ void main() {
       MaterialApp(
         theme: AppTheme.light(),
         locale: const Locale('pt'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: colmeiaLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: MediaQuery(
           data: const MediaQueryData(size: Size(400, 800)),

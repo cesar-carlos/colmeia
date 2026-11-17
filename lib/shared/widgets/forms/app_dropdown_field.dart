@@ -4,8 +4,8 @@ import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/app_top_aligned_expand_switcher.dart';
 import 'package:colmeia/shared/widgets/forms/app_form_field_message.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppDropdownOption<T> {
   const AppDropdownOption({
@@ -742,9 +742,7 @@ class _MultiSelectChip extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: enabled
-            ? scheme.primary
-            : scheme.primary.withValues(alpha: 0.48),
+        color: enabled ? scheme.primary : scheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(tokens.formFieldRadius),
       ),
       child: Padding(
@@ -760,7 +758,9 @@ class _MultiSelectChip extends StatelessWidget {
             Text(
               label,
               style: theme.appTypography.utilityOverline.copyWith(
-                color: scheme.onPrimary,
+                color: enabled
+                    ? scheme.onPrimary
+                    : scheme.onSurface.withValues(alpha: 0.38),
                 fontWeight: FontWeight.w800,
               ),
             ),

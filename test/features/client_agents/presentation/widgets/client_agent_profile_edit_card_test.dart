@@ -17,8 +17,8 @@ import 'package:colmeia/features/client_agents/presentation/controllers/client_a
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agent_profile_edit_card.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:result_dart/result_dart.dart';
 

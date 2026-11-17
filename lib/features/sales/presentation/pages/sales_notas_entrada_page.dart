@@ -28,7 +28,7 @@ import 'package:colmeia/shared/widgets/charts/app_chart_header_trailing.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_guard.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 class SalesNotasEntradaPage extends StatefulWidget {

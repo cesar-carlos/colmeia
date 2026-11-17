@@ -3,7 +3,7 @@ import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card/category_donut_card_constants.dart';
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card_style.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_header_trailing.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class CategoryDonutCardHeader extends StatelessWidget {
   const CategoryDonutCardHeader({

@@ -1,6 +1,6 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Brand section at the top of the login screen.
 /// Matches Stitch "Login - Colmeia BI": hive icon container + product title.

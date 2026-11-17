@@ -1,5 +1,5 @@
 import 'package:colmeia/shared/widgets/app_status_badge.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppProfileStatusPill extends StatelessWidget {
   const AppProfileStatusPill({

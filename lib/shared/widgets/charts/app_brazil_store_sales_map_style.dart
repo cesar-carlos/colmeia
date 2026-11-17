@@ -1,6 +1,6 @@
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_enums.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 extension AppBrazilStoreSalesMapPresetX on AppBrazilStoreSalesMapPreset {
   AppBrazilStoreSalesMapStyle style({

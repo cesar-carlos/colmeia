@@ -1,6 +1,6 @@
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Presentation-mode derived flags for the Brazil store-sales map, computed
 /// purely from widget configuration (no [BuildContext]). Context-dependent

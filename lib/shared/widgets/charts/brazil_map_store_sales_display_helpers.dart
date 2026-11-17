@@ -5,7 +5,7 @@ import 'package:colmeia/shared/utils/app_branch_display_name.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_chart_visual_snapshot.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 String brazilMapChartFormatMetricValue(
   BuildContext context,

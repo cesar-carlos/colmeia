@@ -3,7 +3,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_payment_kpis.
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_summary_bar.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class OverviewKpiBar extends StatelessWidget {
   const OverviewKpiBar({

@@ -1,7 +1,7 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Visual density for [AppTextField] padding (theme tokens).
 enum AppTextFieldDensity {

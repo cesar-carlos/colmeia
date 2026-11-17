@@ -13,8 +13,8 @@ import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/pagination/app_table_pagination_footer.dart';
 import 'package:colmeia/shared/widgets/pagination/app_table_pagination_notice.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 class SalesProdutoTendenciaMediaMovelDetailsSection extends StatelessWidget {
   const SalesProdutoTendenciaMediaMovelDetailsSection({

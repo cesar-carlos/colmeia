@@ -55,6 +55,15 @@ add_subdirectory("runner")
 
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
+# The printing plugin downloads PDFium here before importing it. Keep its DLL,
+# import library and headers from the same build-local distribution; CMake's
+# default search can otherwise select an installed Colmeia DLL and cache it.
+set(PDFium_LIBRARY "${CMAKE_BINARY_DIR}/pdfium-src/bin/pdfium.dll"
+  CACHE FILEPATH "Build-local PDFium runtime" FORCE)
+set(PDFium_IMPLIB "${CMAKE_BINARY_DIR}/pdfium-src/lib/pdfium.dll.lib"
+  CACHE FILEPATH "Build-local PDFium import library" FORCE)
+set(PDFium_INCLUDE_DIR "${CMAKE_BINARY_DIR}/pdfium-src/include"
+  CACHE PATH "Build-local PDFium headers" FORCE)
 include(flutter/generated_plugins.cmake)
 
 

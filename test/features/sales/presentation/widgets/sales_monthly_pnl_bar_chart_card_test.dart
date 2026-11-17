@@ -3,8 +3,8 @@ import 'package:colmeia/features/sales/data/sales_preferences.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_monthly_pnl_bar_chart_card.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

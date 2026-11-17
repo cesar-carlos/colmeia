@@ -13,8 +13,8 @@ import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/metrics/app_metric_stat_card.dart';
 import 'package:colmeia/shared/widgets/metrics/app_responsive_metric_stat_grid.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 class SalesProdutoTendenciaSummarySection extends StatelessWidget {
   const SalesProdutoTendenciaSummarySection({

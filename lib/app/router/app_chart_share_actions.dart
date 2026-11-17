@@ -5,7 +5,7 @@ import 'package:colmeia/shared/utils/open_local_file.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_capture_helper.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_result.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 String chartShareFailureMessage(
   AppLocalizations l10n,

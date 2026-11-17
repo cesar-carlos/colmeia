@@ -4,9 +4,9 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_dashboard_comparison_bar_chart_preset.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 Widget salesMonthlyPnlBarDisplayModeSegmented({
   required AppLocalizations l10n,

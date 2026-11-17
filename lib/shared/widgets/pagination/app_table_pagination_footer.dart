@@ -2,8 +2,8 @@ import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Builds 1-based page indices with `null` for ellipsis when [totalPages]
 /// is large.

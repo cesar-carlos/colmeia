@@ -1,7 +1,36 @@
 import 'package:colmeia/shared/widgets/refresh/app_second_ticker.dart';
+import 'package:fake_async/fake_async.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('reports listener errors and keeps other counters updating', () {
+    fakeAsync((clock) {
+      final ticker = AppSecondTicker.create();
+      final errors = <FlutterErrorDetails>[];
+      final previousHandler = FlutterError.onError;
+      FlutterError.onError = errors.add;
+      var calls = 0;
+      void failingListener() => throw StateError('Counter failed');
+      void healthyListener() => calls++;
+      try {
+        ticker
+          ..addListener(failingListener)
+          ..addListener(healthyListener);
+        clock.elapse(const Duration(seconds: 2));
+        expect(calls, 2);
+        expect(errors, hasLength(2));
+        expect(errors.first.exception, isA<StateError>());
+      } finally {
+        ticker
+          ..removeListener(failingListener)
+          ..removeListener(healthyListener);
+        FlutterError.onError = previousHandler;
+      }
+      expect(ticker.isTicking, isFalse);
+    });
+  });
+
   testWidgets('shares one timer across multiple listeners and stops cleanly', (
     tester,
   ) async {

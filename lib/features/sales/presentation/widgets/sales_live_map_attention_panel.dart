@@ -8,7 +8,7 @@ import 'package:colmeia/shared/utils/app_branch_display_name.dart';
 import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 const double _kSalesLiveMapInlineIconSize = 18;
 const int _kSalesLiveMapMaxVisibleUnmappedBranches = 6;

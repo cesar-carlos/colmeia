@@ -1,7 +1,7 @@
 import 'package:colmeia/shared/widgets/forms/app_date_picker_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppFormBuilderDatePickerField extends StatelessWidget {
   const AppFormBuilderDatePickerField({
@@ -47,6 +47,12 @@ class AppFormBuilderDatePickerField extends StatelessWidget {
       onSaved: onSaved,
       autovalidateMode: autovalidateMode,
       builder: (field) {
+        final state =
+            field
+                as FormBuilderFieldState<
+                  FormBuilderField<DateTime?>,
+                  DateTime?
+                >;
         return AppDatePickerField(
           label: label,
           helperText: helperText,
@@ -55,10 +61,11 @@ class AppFormBuilderDatePickerField extends StatelessWidget {
           value: field.value,
           firstDate: firstDate,
           lastDate: lastDate,
-          enabled: enabled,
+          enabled: state.enabled,
           density: density,
           errorText: field.errorText,
           onChanged: (value) {
+            if (!state.mounted || !state.enabled) return;
             field.didChange(value);
             onChanged?.call(value);
           },
@@ -112,6 +119,12 @@ class AppFormBuilderDateRangePickerField extends StatelessWidget {
       onSaved: onSaved,
       autovalidateMode: autovalidateMode,
       builder: (field) {
+        final state =
+            field
+                as FormBuilderFieldState<
+                  FormBuilderField<DateTimeRange?>,
+                  DateTimeRange?
+                >;
         return AppDateRangePickerField(
           label: label,
           helperText: helperText,
@@ -120,10 +133,11 @@ class AppFormBuilderDateRangePickerField extends StatelessWidget {
           value: field.value,
           firstDate: firstDate,
           lastDate: lastDate,
-          enabled: enabled,
+          enabled: state.enabled,
           density: density,
           errorText: field.errorText,
           onChanged: (value) {
+            if (!state.mounted || !state.enabled) return;
             field.didChange(value);
             onChanged?.call(value);
           },

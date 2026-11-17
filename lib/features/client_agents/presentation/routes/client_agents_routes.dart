@@ -6,8 +6,8 @@ import 'package:colmeia/features/client_agents/presentation/controllers/client_a
 import 'package:colmeia/features/client_agents/presentation/controllers/client_agents_owner_controller.dart';
 import 'package:colmeia/features/client_agents/presentation/pages/client_agent_detail_page.dart';
 import 'package:colmeia/features/client_agents/presentation/pages/client_agents_page.dart';
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 const String _agentIdPathParameter = 'agentId';
 

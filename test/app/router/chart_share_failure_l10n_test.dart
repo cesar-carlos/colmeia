@@ -1,8 +1,8 @@
 import 'package:colmeia/app/router/app_chart_share_actions.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_result.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   test('chartShareFailureMessage maps each reason to l10n', () {

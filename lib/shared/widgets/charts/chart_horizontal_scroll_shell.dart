@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Width of the edge fade overlays in logical pixels.
 const double kChartHorizontalScrollFadeWidth = 32;

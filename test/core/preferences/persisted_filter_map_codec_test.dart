@@ -1,7 +1,7 @@
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/preferences/persisted_filter_map_codec.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   group('PersistedFilterMapCodec', () {

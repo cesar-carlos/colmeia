@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 typedef AppHorizontalProgressLabelBuilder<T> = String Function(T item);
 typedef AppHorizontalProgressValueBuilder<T> = double Function(T item);

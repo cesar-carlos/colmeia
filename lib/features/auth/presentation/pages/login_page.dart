@@ -17,7 +17,7 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/backgrounds/app_hex_screen_body.dart';
 import 'package:colmeia/shared/widgets/feedback/inline_alert_banner.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 class LoginPage extends StatelessWidget {

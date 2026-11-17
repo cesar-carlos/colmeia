@@ -6,7 +6,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_ai_insight.da
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/app_editorial_media_card.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Stitch-style IA insight callout: tonal surface and operational CTA.
 class OverviewAiInsightCard extends StatelessWidget {

@@ -41,9 +41,9 @@ import 'package:colmeia/shared/widgets/profile/app_profile_interactive_field.dar
 import 'package:colmeia/shared/widgets/profile/app_profile_section_title.dart';
 import 'package:colmeia/shared/widgets/profile/app_profile_static_field.dart';
 import 'package:colmeia/shared/widgets/profile/app_profile_status_pill.dart';
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 

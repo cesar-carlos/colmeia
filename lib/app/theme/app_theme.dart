@@ -4,7 +4,7 @@ import 'package:colmeia/shared/design_system/app_motion_tokens.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 abstract final class AppTheme {
   static final Map<_ThemeCacheKey, ThemeData> _cache =
@@ -177,17 +177,19 @@ abstract final class AppTheme {
               return colorScheme.surfaceContainerHighest.withValues(alpha: 0.4);
             }
             if (states.contains(WidgetState.selected)) {
-              return Color.alphaBlend(
-                colorScheme.primary.withValues(alpha: 0.12),
-                colorScheme.primaryContainer,
-              );
+              return colorScheme.primaryContainer;
             }
             return colorScheme.surfaceContainerLowest;
           }),
           side: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.disabled)) {
+              return BorderSide(
+                color: colorScheme.onSurface.withValues(alpha: 0.12),
+              );
+            }
             if (states.contains(WidgetState.selected)) {
               return BorderSide(
-                color: colorScheme.primary.withValues(alpha: 0.32),
+                color: colorScheme.surfaceAccent,
               );
             }
             return BorderSide(
@@ -216,11 +218,11 @@ abstract final class AppTheme {
       ),
       checkboxTheme: CheckboxThemeData(
         fillColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return colorScheme.primary;
-          }
           if (states.contains(WidgetState.disabled)) {
             return colorScheme.onSurface.withValues(alpha: 0.12);
+          }
+          if (states.contains(WidgetState.selected)) {
+            return colorScheme.primary;
           }
           return colorScheme.surfaceContainerLowest;
         }),
@@ -247,7 +249,7 @@ abstract final class AppTheme {
         minWidth: 72,
         useIndicator: true,
         selectedIconTheme: IconThemeData(
-          color: colorScheme.primary,
+          color: colorScheme.onPrimaryContainer,
           size: 24,
         ),
         unselectedIconTheme: IconThemeData(
@@ -271,7 +273,9 @@ abstract final class AppTheme {
           fontWeight: FontWeight.w600,
         ),
         floatingLabelStyle: textTheme.labelMedium?.copyWith(
-          color: colorScheme.primary,
+          color: colorScheme.brightness == Brightness.light
+              ? colorScheme.onPrimaryContainer
+              : colorScheme.primary,
           fontWeight: FontWeight.w700,
         ),
         hintStyle: textTheme.bodyMedium?.copyWith(
@@ -300,7 +304,7 @@ abstract final class AppTheme {
         focusedBorder: OutlineInputBorder(
           borderRadius: fieldRadius,
           borderSide: BorderSide(
-            color: colorScheme.primary.withValues(alpha: 0.92),
+            color: colorScheme.surfaceAccent,
             width: 1.5,
           ),
         ),
@@ -339,7 +343,10 @@ abstract final class AppTheme {
         iconTheme: WidgetStateProperty.resolveWith((states) {
           const size = 24.0;
           if (states.contains(WidgetState.selected)) {
-            return IconThemeData(color: colorScheme.primary, size: size);
+            return IconThemeData(
+              color: colorScheme.onPrimaryContainer,
+              size: size,
+            );
           }
           return IconThemeData(color: colorScheme.onSurfaceVariant, size: size);
         }),
@@ -369,10 +376,13 @@ abstract final class AppTheme {
           return colorScheme.surfaceContainerHighest;
         }),
         trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.disabled)) {
+            return colorScheme.onSurface.withValues(alpha: 0.12);
+          }
           if (states.contains(WidgetState.selected)) {
             return Colors.transparent;
           }
-          return colorScheme.outlineVariant;
+          return colorScheme.outline;
         }),
       ),
     );

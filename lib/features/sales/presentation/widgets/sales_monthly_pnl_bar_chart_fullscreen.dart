@@ -1,4 +1,4 @@
-﻿import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
+import 'package:colmeia/app/router/app_chart_fullscreen_routes.dart';
 import 'package:colmeia/app/router/chart_share_icon_button.dart';
 import 'package:colmeia/features/agent_queries/presentation/widgets/dashboard_lucratividade_percent_metrics.dart';
 import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.dart';
@@ -11,9 +11,9 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 Future<void> pushSalesMonthlyPnlBarChartFullscreen({
   required BuildContext context,

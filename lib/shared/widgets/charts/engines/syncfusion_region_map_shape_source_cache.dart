@@ -1,5 +1,5 @@
 import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:syncfusion_flutter_maps/maps.dart';
 
 /// Caches [MapShapeSource] by geometry fingerprint while metric colors follow

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_flat_button.dart';
@@ -15,7 +16,7 @@ import 'package:colmeia/shared/widgets/reports/app_report_events.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_grid.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_style.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Action bar rendered above the grid.
 ///
@@ -360,7 +361,7 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
               children: <Widget>[
                 Expanded(child: searchField),
                 SizedBox(width: actionSpacing),
-                trailing,
+                Flexible(child: trailing),
               ],
             );
 
@@ -376,7 +377,7 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
         } else {
           toolbarControls = Row(
             children: <Widget>[
-              trailing,
+              Flexible(child: trailing),
               SizedBox(width: actionSpacing),
               Expanded(child: actionWrap),
             ],
@@ -399,11 +400,11 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
             Expanded(child: searchField),
             if (trailing != null) ...<Widget>[
               SizedBox(width: actionSpacing),
-              trailing,
+              Flexible(child: trailing),
             ],
             if (actionChildren.isNotEmpty) ...<Widget>[
               SizedBox(width: actionSpacing),
-              actionWrap,
+              Flexible(child: actionWrap),
             ],
           ],
         );
@@ -434,7 +435,11 @@ class _AppReportToolbarState<T> extends State<AppReportToolbar<T>> {
       padding: EdgeInsets.only(bottom: tokens.gapSm),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final content = buildContent(constraints);
+          final content = buildContent(
+            compactToolbar
+                ? constraints
+                : constraints.deflate(EdgeInsets.all(tokens.gapSm)),
+          );
           if (compactToolbar) {
             return Padding(
               padding: EdgeInsets.symmetric(vertical: tokens.gapXs),
@@ -527,11 +532,13 @@ class _ToolbarPill extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              AppTagChip(
-                label: label,
-                icon: icon,
-                backgroundColor: Colors.transparent,
-                foregroundColor: theme.colorScheme.onSurfaceVariant,
+              Flexible(
+                child: AppTagChip(
+                  label: label,
+                  icon: icon,
+                  backgroundColor: Colors.transparent,
+                  foregroundColor: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               if (onRemove != null) ...<Widget>[
                 SizedBox(width: tokens.gapXs),
@@ -583,7 +590,9 @@ class _FilterSheetButton extends StatelessWidget {
       child: Icon(
         Icons.filter_list_rounded,
         size: 18,
-        color: hasActiveFilters ? theme.colorScheme.primary : null,
+        color: hasActiveFilters && onPressed != null
+            ? theme.colorScheme.surfaceAccent
+            : null,
       ),
     );
 

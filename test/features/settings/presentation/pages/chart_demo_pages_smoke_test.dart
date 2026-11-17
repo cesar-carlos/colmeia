@@ -23,8 +23,8 @@ import 'package:colmeia/features/settings/presentation/pages/app_treemap_chart_d
 import 'package:colmeia/features/settings/presentation/pages/app_waterfall_chart_demo_page.dart';
 import 'package:colmeia/features/settings/presentation/pages/horizontal_progress_chart_demo_page.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../support/localized_test_app.dart';
 

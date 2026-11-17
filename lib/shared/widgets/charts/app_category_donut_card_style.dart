@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Default right inset for scrollable legends so the platform scrollbar does
 /// not sit on top of currency / percent columns (see map sidebar gutter).

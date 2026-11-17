@@ -9,8 +9,8 @@ import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/forms/app_form_field_message.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:syncfusion_flutter_datepicker/datepicker.dart';
 
 AppLocalizations? _tryL10n(BuildContext context) =>
@@ -577,6 +577,7 @@ class _AppDatePickerSheetState extends State<_AppDatePickerSheet> {
       },
       child: RepaintBoundary(
         child: SfDateRangePicker(
+          backgroundColor: theme.colorScheme.surface,
           initialSelectedDate: _selectedDate,
           initialDisplayDate: _selectedDate ?? DateTime.now(),
           minDate: widget.firstDate,
@@ -679,6 +680,7 @@ class _AppDateRangePickerSheetState extends State<_AppDateRangePickerSheet> {
       },
       child: RepaintBoundary(
         child: SfDateRangePicker(
+          backgroundColor: theme.colorScheme.surface,
           selectionMode: DateRangePickerSelectionMode.range,
           enableMultiView: true,
           viewSpacing: tokens?.gapSm ?? 8,
@@ -833,6 +835,7 @@ class _AppPickerSheetScaffold extends StatelessWidget {
 DateRangePickerHeaderStyle _buildHeaderStyle(BuildContext context) {
   final theme = Theme.of(context);
   return DateRangePickerHeaderStyle(
+    backgroundColor: theme.colorScheme.surface,
     textAlign: TextAlign.center,
     textStyle: theme.textTheme.titleMedium?.copyWith(
       fontWeight: FontWeight.w700,
@@ -846,7 +849,7 @@ DateRangePickerMonthCellStyle _buildMonthCellStyle(BuildContext context) {
   return DateRangePickerMonthCellStyle(
     textStyle: theme.textTheme.bodyMedium,
     todayTextStyle: theme.textTheme.bodyMedium?.copyWith(
-      color: theme.colorScheme.primary,
+      color: theme.colorScheme.surfaceAccent,
       fontWeight: FontWeight.w700,
     ),
     disabledDatesTextStyle: theme.textTheme.bodyMedium?.copyWith(

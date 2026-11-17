@@ -1,6 +1,6 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Title, emphasized value, and detail line (e.g. report executive summary).
 class AppExecutiveMetricTile extends StatelessWidget {

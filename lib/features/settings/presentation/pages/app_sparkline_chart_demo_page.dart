@@ -4,7 +4,7 @@ import 'package:colmeia/shared/widgets/charts/app_sparkline_chart.dart';
 import 'package:colmeia/shared/widgets/metrics/app_metric_stat_card.dart'
     show AppMetricStatCard, AppMetricStatCardLayout;
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppSparklineChartDemoPage extends StatelessWidget {
   const AppSparklineChartDemoPage({super.key});

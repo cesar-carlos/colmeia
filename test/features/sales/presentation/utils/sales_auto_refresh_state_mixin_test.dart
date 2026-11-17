@@ -5,8 +5,8 @@ import 'package:colmeia/core/refresh/auto_refresh_state_mixin.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_persistence.dart';
 import 'package:colmeia/core/refresh/auto_refresh_ui_state.dart';
 import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refresh_support.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets('does not reload while auto-refresh is off', (tester) async {

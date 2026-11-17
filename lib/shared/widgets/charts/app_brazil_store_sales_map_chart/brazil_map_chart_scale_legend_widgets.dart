@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart/brazil_map_chart_auxiliary_surface.dart';
@@ -7,7 +5,7 @@ import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_chart/b
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_store_sales_display_helpers.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class BrazilMapChartMarkerScaleLegend extends StatelessWidget {
   const BrazilMapChartMarkerScaleLegend({
@@ -113,39 +111,37 @@ class BrazilMapChartMarkerScaleLegendMenuButton extends StatelessWidget {
   }
 
   void _showLegendSheet(BuildContext context) {
-    unawaited(
-      showModalBottomSheet<void>(
-        context: context,
-        useSafeArea: true,
-        showDragHandle: true,
-        builder: (context) {
-          final tokens = Theme.of(context).extension<AppThemeTokens>()!;
-          return Padding(
-            padding: EdgeInsets.fromLTRB(
-              tokens.contentSpacing,
-              tokens.gapSm,
-              tokens.contentSpacing,
-              tokens.contentSpacing,
+    showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (context) {
+        final tokens = Theme.of(context).extension<AppThemeTokens>()!;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            tokens.contentSpacing,
+            tokens.gapSm,
+            tokens.contentSpacing,
+            tokens.contentSpacing,
+          ),
+          child: KeyedSubtree(
+            key: const ValueKey<String>(
+              'brazil-store-sales-map-legend-content',
             ),
-            child: KeyedSubtree(
-              key: const ValueKey<String>(
-                'brazil-store-sales-map-legend-content',
-              ),
-              child: BrazilMapChartMarkerScaleLegendContent(
-                sizeLegendLabel: sizeLegendLabel,
-                metric: metric,
-                minValue: minValue,
-                maxValue: maxValue,
-                minSize: minSize,
-                maxSize: maxSize,
-                color: color,
-                strokeColor: strokeColor,
-                visual: visual,
-              ),
+            child: BrazilMapChartMarkerScaleLegendContent(
+              sizeLegendLabel: sizeLegendLabel,
+              metric: metric,
+              minValue: minValue,
+              maxValue: maxValue,
+              minSize: minSize,
+              maxSize: maxSize,
+              color: color,
+              strokeColor: strokeColor,
+              visual: visual,
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

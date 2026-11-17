@@ -12,7 +12,7 @@ import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_dashboard_comparison_bar_chart_preset.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_actions.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class OverviewAgentRankingCard extends StatefulWidget {
   const OverviewAgentRankingCard({

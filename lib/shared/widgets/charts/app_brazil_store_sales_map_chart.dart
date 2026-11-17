@@ -29,8 +29,8 @@ import 'package:colmeia/shared/widgets/charts/brazil_map_viewport_coordinator.da
 import 'package:colmeia/shared/widgets/charts/brazil_map_zoom_controller.dart';
 import 'package:colmeia/shared/widgets/charts/region_map_viewport_sync_policy.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 export 'app_brazil_store_sales_map_chart/brazil_map_chart_overlay_widgets.dart'
     show

@@ -17,7 +17,7 @@ import 'package:colmeia/shared/widgets/charts/engines/syncfusion_region_map_view
 import 'package:colmeia/shared/widgets/charts/region_map_marker_overlay_policy.dart';
 import 'package:colmeia/shared/widgets/charts/region_map_viewport_sync_policy.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:syncfusion_flutter_maps/maps.dart';
 
 class SyncfusionRegionMapChart<T> extends StatefulWidget {

@@ -1,6 +1,6 @@
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// App-agnostic description of a chart that wants to be presented full screen.
 ///

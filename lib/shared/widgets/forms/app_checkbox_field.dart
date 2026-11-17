@@ -1,6 +1,6 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Checkbox with label, tap target on label, optional semantics.
 class AppCheckboxField extends StatelessWidget {
@@ -36,16 +36,24 @@ class AppCheckboxField extends StatelessWidget {
     final helperColor = enabled
         ? colors.onSurfaceVariant
         : colors.onSurface.withValues(alpha: 0.38);
-    final containerColor = value
+    final containerColor = value && enabled
         ? scheme.primaryContainer.withValues(alpha: 0.55)
         : scheme.surfaceContainerLowest;
     final borderColor = enabled
         ? (value
-              ? colors.primary
+              ? scheme.surfaceAccent
               : colors.outlineVariant.withValues(alpha: 0.72))
         : colors.onSurface.withValues(alpha: 0.12);
-    final controlColor = value ? colors.primary : colors.surfaceContainerLowest;
-    final controlIconColor = value ? scheme.onPrimary : Colors.transparent;
+    final controlColor = !enabled
+        ? scheme.onSurface.withValues(alpha: 0.12)
+        : value
+        ? colors.primary
+        : colors.surfaceContainerLowest;
+    final controlIconColor = !value
+        ? Colors.transparent
+        : enabled
+        ? scheme.onPrimary
+        : scheme.onSurface.withValues(alpha: 0.38);
 
     return Semantics(
       label: semanticLabel ?? label,
@@ -84,7 +92,9 @@ class AppCheckboxField extends StatelessWidget {
                           (tokens?.formFieldRadius ?? 8) - 2,
                         ),
                         border: Border.all(
-                          color: value ? controlColor : borderColor,
+                          color: enabled
+                              ? (value ? scheme.surfaceAccent : scheme.outline)
+                              : (value ? controlColor : borderColor),
                         ),
                       ),
                       child: Icon(

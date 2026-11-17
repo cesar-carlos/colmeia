@@ -14,7 +14,7 @@ import 'package:colmeia/shared/widgets/reports/app_report_query.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_style.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_viewer.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 const double kSalesMargemProdutoDataRowHeight = 56;
 const double kSalesMargemProdutoGridMinHeight = 240;

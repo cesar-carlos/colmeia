@@ -43,7 +43,7 @@ import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_events.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_query.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_viewer.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 class SalesMargemProdutoPage extends StatefulWidget {

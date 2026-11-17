@@ -3,8 +3,8 @@ import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_pyramid_chart.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppPyramidChartDemoPage extends StatelessWidget {
   const AppPyramidChartDemoPage({super.key});

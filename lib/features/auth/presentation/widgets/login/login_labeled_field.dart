@@ -1,5 +1,5 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Label row (icon + uppercase text + optional trailing) followed by a field.
 /// Matches Stitch label style: small uppercase, tracking, onSurfaceVariant.

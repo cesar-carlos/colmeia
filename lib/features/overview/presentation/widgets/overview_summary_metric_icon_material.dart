@@ -1,6 +1,6 @@
 import 'package:colmeia/features/overview/domain/entities/overview_summary_metric.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 extension OverviewSummaryMetricIconMaterial on OverviewSummaryMetricIcon {
   IconData get materialIconData => switch (this) {

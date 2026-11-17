@@ -1,6 +1,6 @@
-﻿import 'package:colmeia/core/layout/app_breakpoints.dart';
+import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class BrazilMapChartStateLabelResolver {
   const BrazilMapChartStateLabelResolver({

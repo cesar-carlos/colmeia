@@ -1,8 +1,8 @@
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/ranking_produtos_faturamento_row.dart';
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card_models.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 final NumberFormat _percentLabelFormat = NumberFormat('#,##0.0', 'pt_BR');
 

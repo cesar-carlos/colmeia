@@ -1,7 +1,7 @@
 import 'package:colmeia/features/agent_queries/domain/entities/ranking_produtos_faturamento_row.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_ranking_produtos_faturamento_donut_segments.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 RankingProdutosFaturamentoRow _row({
   required int codProduto,

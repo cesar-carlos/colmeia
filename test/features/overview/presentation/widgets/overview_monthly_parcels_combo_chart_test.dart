@@ -6,8 +6,8 @@ import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/features/overview/domain/entities/overview_monthly_parcel_point.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_monthly_parcels_combo_chart.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   late List<OverviewMonthlyParcelPoint> points;

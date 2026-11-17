@@ -14,8 +14,8 @@ import 'package:colmeia/features/auth/presentation/controllers/login_page_contro
 import 'package:colmeia/features/auth/presentation/pages/login_page.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/feedback/inline_alert_banner.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:result_dart/result_dart.dart';
 import 'package:shared_preferences/shared_preferences.dart';

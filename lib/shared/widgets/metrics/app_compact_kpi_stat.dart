@@ -1,7 +1,7 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Label (muted) + primary value: shared by report overview strips and similar.
 class AppCompactKpiStat extends StatelessWidget {

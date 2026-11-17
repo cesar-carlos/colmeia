@@ -4,8 +4,8 @@ import 'package:colmeia/features/overview/presentation/widgets/lucratividade_com
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Main display mode control plus optional percent-metric sub-selector.
 class LucratividadeComboChartControls extends StatelessWidget {

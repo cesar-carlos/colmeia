@@ -6,7 +6,7 @@ import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.
 import 'package:colmeia/shared/widgets/charts/app_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_zoom_controller.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Input for pure preferred-viewport resolution (no side effects).
 class BrazilMapPreferredViewportRequest {

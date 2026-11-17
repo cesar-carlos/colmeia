@@ -1,8 +1,9 @@
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
+import 'package:colmeia/shared/widgets/app_skeleton_effect.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 class CategoryDonutCardLoadingBlock extends StatelessWidget {
@@ -60,6 +61,7 @@ class CategoryDonutCardLoadingBlock extends StatelessWidget {
 
     return ExcludeSemantics(
       child: Skeletonizer(
+        effect: appSkeletonEffect(colors),
         child: placeholder,
       ),
     );

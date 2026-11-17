@@ -1,5 +1,5 @@
 import 'package:colmeia/shared/design_system/app_motion_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Fade + top-anchored height expand/collapse for overlay menus and panels.
 class AppTopAlignedExpandSwitcher extends StatelessWidget {

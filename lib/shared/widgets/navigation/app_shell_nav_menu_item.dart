@@ -1,7 +1,7 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppShellNavMenuItem extends StatelessWidget {
   const AppShellNavMenuItem({
@@ -28,16 +28,31 @@ class AppShellNavMenuItem extends StatelessWidget {
     final enabled = onTap != null;
 
     final borderRadius = BorderRadius.circular(tokens.inlineAlertCornerRadius);
-    final backgroundColor = selected ? colors.primary : Colors.transparent;
-    final iconColor = selected ? colors.onPrimary : colors.onSurfaceVariant;
+    final backgroundColor = !enabled
+        ? colors.surfaceContainerHighest.withValues(alpha: 0.4)
+        : selected
+        ? colors.primary
+        : Colors.transparent;
+    final disabledForeground = colors.onSurface.withValues(alpha: 0.38);
+    final iconColor = !enabled
+        ? disabledForeground
+        : selected
+        ? colors.onPrimary
+        : colors.onSurfaceVariant;
     final titleStyle = typography.sectionHeaderH2.copyWith(
       fontSize: theme.textTheme.titleSmall?.fontSize,
       fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-      color: selected ? colors.onPrimary : colors.onSurface,
+      color: !enabled
+          ? disabledForeground
+          : selected
+          ? colors.onPrimary
+          : colors.onSurface,
     );
     final subtitleStyle = typography.caption.copyWith(
-      color: selected
-          ? colors.onPrimary.withValues(alpha: 0.78)
+      color: !enabled
+          ? disabledForeground
+          : selected
+          ? colors.onPrimary
           : colors.onSurfaceVariant,
     );
 
@@ -62,7 +77,7 @@ class AppShellNavMenuItem extends StatelessWidget {
               children: <Widget>[
                 DecoratedBox(
                   decoration: BoxDecoration(
-                    color: selected
+                    color: selected && enabled
                         ? colors.onPrimary.withValues(alpha: 0.18)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(

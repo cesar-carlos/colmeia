@@ -1,5 +1,7 @@
+import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart' show DateTimeRange;
 
 /// Resolves active report filters into human-readable label/value pairs for
 /// inclusion in exported documents (PDF/Excel).
@@ -18,13 +20,27 @@ abstract final class ReportExportFilterFormatter {
     final result = <({String label, String value})>[];
     for (final filter in filters) {
       final rawValue = filterValues[filter.name];
-      final formattedValue = _formatValue(filter, rawValue);
+      final formattedValue = filter.type == AppReportFilterType.numericRange
+          ? _formatNumericRange(filter, filterValues)
+          : _formatValue(filter, rawValue);
       if (formattedValue == null || formattedValue.isEmpty) {
         continue;
       }
       result.add((label: filter.label, value: formattedValue));
     }
     return result;
+  }
+
+  static String? _formatNumericRange(
+    AppReportFilterDescriptor filter,
+    Map<String, Object?> values,
+  ) {
+    final minimum = _formatValue(filter, values['${filter.name}_min']);
+    final maximum = _formatValue(filter, values['${filter.name}_max']);
+    if (minimum != null && maximum != null) return '$minimum – $maximum';
+    if (minimum != null) return '≥ $minimum';
+    if (maximum != null) return '≤ $maximum';
+    return null;
   }
 
   static String? _formatValue(
@@ -48,7 +64,12 @@ abstract final class ReportExportFilterFormatter {
     }
 
     if (value is DateTime) {
-      return DateFormat('dd/MM/yyyy').format(value);
+      return AppBrFormatters.shortDate(value);
+    }
+
+    if (value is DateTimeRange) {
+      return '${AppBrFormatters.shortDate(value.start)} – '
+          '${AppBrFormatters.shortDate(value.end)}';
     }
 
     if (value is num) {

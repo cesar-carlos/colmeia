@@ -12,7 +12,7 @@ import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_brand_icon.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_user_avatar.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 IconData _shellLeadingBackIcon() {

@@ -1,8 +1,8 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// [FormBuilderTextField] aligned with [AppTextField] padding tokens and theme.
 class AppFormBuilderTextField extends StatelessWidget {

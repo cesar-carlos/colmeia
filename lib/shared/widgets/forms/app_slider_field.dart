@@ -3,7 +3,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/forms/app_form_field_message.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Slider compartilhado que segue o padrao visual de `AppDropdownField` e
 /// `AppDatePickerField`: label overline em caixa alta acima, controle com
@@ -152,18 +152,10 @@ class _AppSliderFieldState extends State<AppSliderField> {
             SizedBox(height: labelGap),
           ],
           SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              trackHeight: compact ? 3 : 4,
-              activeTrackColor: scheme.primary,
-              inactiveTrackColor: scheme.outlineVariant.withValues(alpha: 0.6),
-              thumbColor: scheme.primary,
-              overlayColor: scheme.primary.withValues(alpha: 0.12),
-              valueIndicatorColor: scheme.inverseSurface,
-              valueIndicatorTextStyle: typography.caption.copyWith(
-                color: scheme.onInverseSurface,
-                fontWeight: FontWeight.w600,
-              ),
-              showValueIndicator: ShowValueIndicator.onlyForDiscrete,
+            data: resolveAppSliderTheme(
+              theme: theme,
+              base: SliderTheme.of(context),
+              compact: compact,
             ),
             child: Slider(
               value: effective,
@@ -184,4 +176,29 @@ class _AppSliderFieldState extends State<AppSliderField> {
       ),
     );
   }
+}
+
+SliderThemeData resolveAppSliderTheme({
+  required ThemeData theme,
+  required SliderThemeData base,
+  required bool compact,
+}) {
+  final scheme = theme.colorScheme;
+  return base.copyWith(
+    trackHeight: compact ? 3 : 4,
+    activeTrackColor: scheme.surfaceAccent,
+    inactiveTrackColor: scheme.surfaceContainerHighest,
+    thumbColor: scheme.surfaceAccent,
+    activeTickMarkColor: scheme.brightness == Brightness.light
+        ? scheme.surface
+        : scheme.onPrimary,
+    inactiveTickMarkColor: scheme.onSurfaceVariant,
+    overlayColor: scheme.primary.withValues(alpha: 0.12),
+    valueIndicatorColor: scheme.inverseSurface,
+    valueIndicatorTextStyle: theme.appTypography.caption.copyWith(
+      color: scheme.onInverseSurface,
+      fontWeight: FontWeight.w600,
+    ),
+    showValueIndicator: ShowValueIndicator.onlyForDiscrete,
+  );
 }

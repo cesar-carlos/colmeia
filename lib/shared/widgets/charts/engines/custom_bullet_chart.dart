@@ -7,7 +7,7 @@ import 'package:colmeia/shared/widgets/charts/app_bullet_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_theme.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class CustomBulletChart<T> extends StatelessWidget {
   const CustomBulletChart({

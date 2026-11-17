@@ -32,8 +32,8 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_intro
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_retry_cooldown_snackbar.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 class SalesLiveMapPage extends StatelessWidget {

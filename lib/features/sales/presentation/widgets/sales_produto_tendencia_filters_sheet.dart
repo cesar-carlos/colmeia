@@ -18,7 +18,7 @@ import 'package:colmeia/shared/widgets/forms/app_choice_chip.dart';
 import 'package:colmeia/shared/widgets/forms/app_date_picker_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Modal bottom-sheet form that owns the filter state for the produto
 /// tendência screen.

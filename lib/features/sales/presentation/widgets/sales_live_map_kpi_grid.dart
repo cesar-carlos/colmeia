@@ -6,8 +6,8 @@ import 'package:colmeia/features/sales/application/load_sales_live_map_use_case.
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/metrics/app_metric_stat_card.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 const int _kSalesLiveMapKpiNarrowColumns = 2;
 const int _kSalesLiveMapKpiWideColumns = 3;

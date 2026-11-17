@@ -1,5 +1,5 @@
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Calendar presets the produto tendência filters sheet offers as
 /// one-tap selections for the "current period" range; the "previous

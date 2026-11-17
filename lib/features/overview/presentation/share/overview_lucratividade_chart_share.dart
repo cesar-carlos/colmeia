@@ -11,7 +11,7 @@ import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 String overviewLucratividadeAgentXLabel(
   ResumoProdutoVendaLucratividadeRow row,

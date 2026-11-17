@@ -1,5 +1,5 @@
 import 'package:colmeia/features/overview/domain/entities/overview_progressive_snapshot.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 final class OverviewChartCardDescriptor {
   const OverviewChartCardDescriptor({

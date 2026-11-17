@@ -1,6 +1,6 @@
 import 'dart:ui' show lerpDouble;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Motion tokens for the Hive design system: durations, easing curves, and
 /// composable helpers for staged dashboard entrances.

@@ -1,8 +1,8 @@
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 const int kSalesAnchorMonthChoiceCount = 36;
 

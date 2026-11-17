@@ -12,7 +12,7 @@ import 'package:colmeia/shared/widgets/navigation/app_hub_navigation_card.dart';
 import 'package:colmeia/shared/widgets/navigation/app_hub_navigation_card_density.dart';
 import 'package:colmeia/shared/widgets/navigation/app_hub_navigation_grid.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class SalesHubPage extends StatelessWidget {
   const SalesHubPage({super.key});

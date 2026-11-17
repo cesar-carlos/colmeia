@@ -3,7 +3,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_action_icon.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_guard.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Header trailing actions shared by chart cards: custom slot, share, fullscreen.
 class AppChartHeaderTrailing extends StatefulWidget {
@@ -121,14 +121,11 @@ class _AppChartHeaderTrailingState extends State<AppChartHeaderTrailing> {
       return actions.first;
     }
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        for (var index = 0; index < actions.length; index++) ...<Widget>[
-          if (index > 0) SizedBox(width: tokens.gapXs),
-          actions[index],
-        ],
-      ],
+    return Wrap(
+      spacing: tokens.gapXs,
+      runSpacing: tokens.gapXs,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: actions,
     );
   }
 }

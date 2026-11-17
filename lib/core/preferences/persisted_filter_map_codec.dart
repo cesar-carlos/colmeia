@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 typedef PersistedFilterRule = void Function(
   PersistedFilterMapDraft draft,

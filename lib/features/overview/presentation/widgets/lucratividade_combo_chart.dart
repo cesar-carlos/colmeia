@@ -15,8 +15,8 @@ import 'package:colmeia/shared/widgets/charts/chart_share_actions.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:syncfusion_flutter_charts/charts.dart' show TooltipArgs;
 
 export 'package:colmeia/features/overview/presentation/widgets/lucratividade_combo_chart_types.dart';

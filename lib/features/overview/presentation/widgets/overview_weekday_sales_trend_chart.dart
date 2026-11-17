@@ -13,8 +13,8 @@ import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_dashboard_comparison_bar_chart_preset.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/charts/metric_toggle_comparison_bar_card.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 class OverviewWeekdaySalesTrendChart extends StatefulWidget {
   const OverviewWeekdaySalesTrendChart({

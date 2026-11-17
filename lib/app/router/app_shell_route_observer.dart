@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Observes the app shell navigator (see `ShellRoute.observers` in go_router).
 ///

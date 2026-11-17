@@ -16,7 +16,7 @@ import 'package:colmeia/shared/widgets/navigation/app_shell_nav_menu_item.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_nav_menu_list.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_nav_profile_card.dart';
 import 'package:colmeia/shared/widgets/navigation/show_app_sign_out_dialog.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 /// Shared column for shell drawer and rail: brand, profile, routes, sign out.

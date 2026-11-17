@@ -4,8 +4,8 @@ import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_ro
 import 'package:colmeia/features/sales/presentation/widgets/sales_margem_produto_sort.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 class SalesMargemProdutoColumnLabels {
   const SalesMargemProdutoColumnLabels({

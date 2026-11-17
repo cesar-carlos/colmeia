@@ -3,7 +3,7 @@ import 'package:colmeia/features/agent_queries/presentation/lucratividade_percen
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Sub-selector for [LucratividadePercentMetric] plus explanation text.
 class DashboardLucratividadePercentMetricSection extends StatelessWidget {

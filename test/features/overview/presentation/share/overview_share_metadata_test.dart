@@ -14,9 +14,9 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_combo_chart.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   late AppLocalizations l10n;

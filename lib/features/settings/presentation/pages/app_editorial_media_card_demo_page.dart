@@ -5,7 +5,7 @@ import 'package:colmeia/shared/widgets/app_editorial_media_card.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppEditorialMediaCardDemoPage extends StatelessWidget {
   const AppEditorialMediaCardDemoPage({super.key});

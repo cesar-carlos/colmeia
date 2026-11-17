@@ -7,7 +7,7 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_auto_refresh_a
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 class SalesProdutoTendenciaMediaMovelAutoRefreshSection

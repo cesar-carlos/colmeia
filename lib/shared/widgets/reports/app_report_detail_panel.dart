@@ -4,7 +4,7 @@ import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_flat_button.dart';
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Opens a bottom sheet showing all column values of the selected row as
 /// key-value pairs. Useful on compact screens where not all columns fit.

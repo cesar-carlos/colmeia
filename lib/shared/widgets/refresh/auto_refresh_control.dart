@@ -1,7 +1,7 @@
 import 'package:colmeia/core/refresh/auto_refresh_option.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_flat_button.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AutoRefreshControl extends StatelessWidget {
   const AutoRefreshControl({

@@ -9,8 +9,8 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_scaffold.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 typedef AppChartFullscreenBuilder = Widget Function(BuildContext context);
 typedef AppChartFullscreenHeaderBuilder = Widget Function(BuildContext context);

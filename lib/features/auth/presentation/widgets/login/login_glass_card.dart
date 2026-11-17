@@ -1,7 +1,7 @@
 import 'dart:ui';
 
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Frosted-glass container — Stitch "Glass & Gradient" rule:
 /// surface at ~85% opacity with backdrop blur; edge via outline, not shadow.

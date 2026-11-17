@@ -17,8 +17,8 @@ import 'package:colmeia/shared/widgets/forms/app_async_search_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_choice_chip.dart';
 import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 
 const List<int> kSalesProdutoTendenciaMediaMovelWindowPresets = <int>[
   7,

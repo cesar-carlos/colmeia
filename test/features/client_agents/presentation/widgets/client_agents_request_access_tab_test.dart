@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:checks/checks.dart';
 import 'package:colmeia/features/client_agents/presentation/models/client_agent_access_request_row_input.dart';
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_request_access_tab.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../support/localized_test_app.dart';
 

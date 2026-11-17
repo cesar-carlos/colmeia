@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Upper bound on logical width for offscreen cartesian chart export captures.
 ///

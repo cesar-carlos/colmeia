@@ -15,7 +15,7 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_motion_tokens.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Charts that remain embedded on the overview home (monthly trend + agent ranking).
 class OverviewHomeChartsBelowKpis extends StatefulWidget {

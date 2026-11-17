@@ -9,11 +9,14 @@ class AppTabChangeGuardController {
     required int toIndex,
     required void Function() onAllowed,
     Future<bool> Function(int fromIndex, int toIndex)? guard,
+    bool Function()? isCurrent,
   }) async {
     final generation = ++_generation;
     if (fromIndex == toIndex) return false;
     final allowed = guard == null || await guard(fromIndex, toIndex);
-    if (!allowed || generation != _generation) return false;
+    if (!allowed || generation != _generation || !(isCurrent?.call() ?? true)) {
+      return false;
+    }
     onAllowed();
     return true;
   }

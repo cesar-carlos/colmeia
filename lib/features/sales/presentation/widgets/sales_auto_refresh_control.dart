@@ -3,7 +3,7 @@ import 'package:colmeia/features/sales/presentation/auto_refresh/sales_auto_refr
 import 'package:colmeia/features/sales/presentation/localization/sales_auto_refresh_l10n.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/refresh/auto_refresh_control.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class SalesAutoRefreshControl extends StatelessWidget {
   const SalesAutoRefreshControl({

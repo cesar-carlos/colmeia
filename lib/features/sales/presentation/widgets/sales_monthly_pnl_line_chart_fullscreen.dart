@@ -5,7 +5,7 @@ import 'package:colmeia/features/sales/presentation/share/sales_monthly_pnl_shar
 import 'package:colmeia/features/sales/presentation/widgets/sales_monthly_pnl_line_chart.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 Future<void> pushSalesMonthlyPnlLineChartFullscreen({
   required BuildContext context,

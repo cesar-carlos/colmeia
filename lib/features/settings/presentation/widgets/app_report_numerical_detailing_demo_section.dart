@@ -10,8 +10,8 @@ import 'package:colmeia/shared/widgets/reports/app_report_query.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_rich_cells.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_style.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_viewer.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 enum _NumericalChannelStatus { stable, rising, normal }
 

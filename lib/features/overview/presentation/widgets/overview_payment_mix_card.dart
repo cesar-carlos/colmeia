@@ -8,7 +8,7 @@ import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart'
 import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_actions.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Payment mix donut for the overview home. Caches derived segments and total
 /// while the [methods] list instance is unchanged (avoids repeated fold/map on

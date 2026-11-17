@@ -6,7 +6,7 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_chart
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_inline_chart_section.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_scaffold.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 class SalesLiveMapFullscreenHeader extends StatelessWidget {

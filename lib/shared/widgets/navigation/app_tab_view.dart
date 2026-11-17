@@ -1,7 +1,9 @@
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/navigation/app_tab_change_guard_controller.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppTabViewItem {
   const AppTabViewItem({
@@ -120,10 +122,12 @@ class _AppTabViewState extends State<AppTabView> {
   }
 
   Future<void> _handleTabChange(int index) async {
+    final requestedItems = List<AppTabViewItem>.of(widget.items);
     await _changeGuard.requestChange(
       fromIndex: _selectedIndex.value,
       toIndex: index,
       guard: widget.onTabChangeGuard,
+      isCurrent: () => mounted && listEquals(requestedItems, widget.items),
       onAllowed: () {
         if (!mounted || index != _clampIndex(index)) return;
         _selectedIndex.value = index;
@@ -224,7 +228,7 @@ class _AppTabViewTrigger extends StatelessWidget {
       fontSize: 15,
       fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
       letterSpacing: -0.15,
-      color: isSelected ? cs.primary : cs.onSurfaceVariant,
+      color: isSelected ? cs.surfaceAccent : cs.onSurfaceVariant,
     );
 
     return Semantics(

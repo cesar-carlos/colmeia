@@ -1,7 +1,8 @@
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/refresh/app_second_ticker.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 typedef AutoRefreshCountdownLabelBuilder = String Function(
   Duration remaining, {
@@ -102,7 +103,7 @@ class _AutoRefreshCountdownTextState extends State<AutoRefreshCountdownText> {
       widget.labelBuilder(clamped, isBackingOff: widget.isBackingOff),
       style: theme.appTypography.caption.copyWith(
         color: widget.isBackingOff
-            ? theme.colorScheme.primary
+            ? theme.colorScheme.surfaceAccent
             : theme.colorScheme.onSurfaceVariant,
         fontWeight: widget.isBackingOff ? FontWeight.w700 : FontWeight.w500,
       ),

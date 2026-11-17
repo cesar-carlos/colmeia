@@ -9,7 +9,7 @@ import 'package:colmeia/shared/widgets/charts/app_horizontal_progress_chart/hori
 import 'package:colmeia/shared/widgets/charts/app_horizontal_progress_chart_style.dart';
 import 'package:colmeia/shared/widgets/charts/horizontal_progress_chart_math.dart';
 import 'package:colmeia/shared/widgets/charts/horizontal_progress_chart_typedefs.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 export 'app_horizontal_progress_chart_style.dart';
 export 'horizontal_progress_chart_typedefs.dart';

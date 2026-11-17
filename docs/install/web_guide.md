@@ -50,7 +50,16 @@ python tool/package_pwa.py
 - Deploy assets together and avoid long-lived caching of `index.html` and bootstrap
   files so releases do not leave users loading stale application code.
 
-## Latest production synchronization — 2026-11-09
+## Local component review — 2026-11-17
+
+Responsive component corrections are present in the local working tree and have
+not been deployed by this review. The
+[responsiveness review](web_pwa_review_plan.md#shared-component-responsiveness-review-2026-11-17)
+records card/header reflow, text-aware KPI grids, filter layout, dialog scrolling,
+table column synchronization and their validation limits. Its browser checks use
+isolated components with fictitious data, not authenticated production pages.
+
+## Last recorded production synchronization — 2026-11-09
 
 Application source commit `6384338297af73e3264ae755e49a47de0b34078f`
 is published as release `041f33e1fe0ad9c9022d` (51 files, 50,107,061 bytes).
@@ -63,8 +72,8 @@ deduplication is not established by these changes.
 Validation: scoped static analysis clean; 40 PWA tests, six worker tests and both
 Chrome production-shell tests passed. The browser scenarios cover offline routes
 and interrupted updates at `/` and `/colmeia/`. Live login returned 200 and the
-disabled-server Push message was displayed for the new release. VAPID remains
-disabled; full live offline-package acceptance and Push delivery remain pending.
+disabled-server Push message was displayed before the VAPID activation recorded
+below. Full live offline-package acceptance and Push delivery remain pending.
 
 The uploaded archive SHA-256 is
 `2cff9ca912bcd6aec3a22a530c443f05e8c733598113de82bdca04daed28ec79`.
@@ -388,6 +397,30 @@ Packages are isolated by user and agent in IndexedDB through `AppCacheStore`. A 
 Synchronization runs only while the application is open. New selected-package schedules default to two hours; reconnect/focus resumes overdue work. Existing configured intervals are preserved and can be edited under **Atualização de dados**. Agent unavailability is reported as a failed download, not as absence of internet. An explicit storage-persistence request is optional; denial, quota exhaustion and browser eviction are surfaced without silently pruning user-selected packages. Revalidate online to recover expired access or rebuild evicted data. No new queue of remote business mutations is introduced.
 
 ## Web Push
+
+### Production activation — 2026-11-09
+
+The existing Plug Server image now uses `PWA_PUSH_ENABLED=true` and a stable
+VAPID pair generated exclusively on the server. Contact:
+`mailto:cesar_carlos@msn.com`. Private material is stored in
+`/root/plug_server/.env` with mode 0600, never in client assets or this repository.
+Preserve the pair across deployments; rotation requires browser re-subscription.
+
+Migration `20261026130000_pwa_push` was already applied. Only the hub was
+recreated, using its existing image with `--no-deps --no-build --pull never`.
+Hub clients reconnect during this operation. The hub returned healthy, other
+container IDs were unchanged, and Nginx was not reloaded. Colmeia, Plug Server
+and n8n HTTPS roots returned 200. Backup and evidence are restricted to root at
+`/root/pwa-vapid-20261109-134628/`.
+
+Authenticated login and Push-key retrieval succeeded; the latter reports
+enabled. Real delivery remains unproven: isolated automated Chrome rejected
+provider registration with `Registration failed - permission denied`, despite
+the test context granting notification permission. Earlier UI attempts did not
+complete server subscription registration. Test sessions were logged out and
+no agent approval or revocation was changed. Validate subscription, delivery
+with the application tab closed, notification click and logout cleanup on a
+supported interactive browser before declaring full Push acceptance.
 
 The server implementation and VAPID configuration are documented in `plug_server/docs/pwa.md`. The client uses the following additive authenticated routes (including the
 `/api/v1` prefix):

@@ -7,7 +7,7 @@ import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart_style.dar
 import 'package:colmeia/shared/widgets/charts/comparison_bar_chart_point_mapper.dart';
 import 'package:colmeia/shared/widgets/charts/comparison_bar_plot_floor.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_comparison_bar_chart.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 export 'app_comparison_bar_chart_style.dart';
 export 'comparison_bar_x_axis_label.dart'

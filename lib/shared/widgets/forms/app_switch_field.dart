@@ -1,6 +1,6 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Switch row with a compact card surface aligned to the design system.
 class AppSwitchField extends StatelessWidget {
@@ -28,12 +28,12 @@ class AppSwitchField extends StatelessWidget {
     final scheme = theme.colorScheme;
     final tokens = theme.extension<AppThemeTokens>();
     final radius = BorderRadius.circular(tokens?.formFieldRadius ?? 8);
-    final containerColor = value
+    final containerColor = value && enabled
         ? scheme.primaryContainer.withValues(alpha: 0.52)
         : scheme.surfaceContainerLowest;
     final borderColor = enabled
         ? (value
-              ? colors.primary
+              ? scheme.surfaceAccent
               : colors.outlineVariant.withValues(alpha: 0.72))
         : colors.onSurface.withValues(alpha: 0.12);
     final titleColor = enabled

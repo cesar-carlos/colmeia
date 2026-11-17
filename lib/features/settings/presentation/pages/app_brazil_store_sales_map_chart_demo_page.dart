@@ -8,7 +8,7 @@ import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_localiz
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppBrazilStoreSalesMapChartDemoPage extends StatefulWidget {
   const AppBrazilStoreSalesMapChartDemoPage({super.key});

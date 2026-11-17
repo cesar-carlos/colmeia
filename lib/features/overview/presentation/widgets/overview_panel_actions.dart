@@ -2,7 +2,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_flat_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Primary / secondary actions used on overview inline error panels.
 class OverviewPanelActions extends StatelessWidget {

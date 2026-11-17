@@ -8,7 +8,7 @@ import 'package:colmeia/features/overview/domain/entities/overview_category_shar
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card.dart';
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card_models.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Vendas por categoria: donut + legenda.
 ///

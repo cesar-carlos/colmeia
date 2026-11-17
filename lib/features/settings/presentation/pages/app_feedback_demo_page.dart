@@ -10,7 +10,7 @@ import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/feedback/inline_alert_banner.dart';
 import 'package:colmeia/shared/widgets/forms/app_switch_field.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Demos for error panels, alert banner and skeleton loading (interactive).
 class AppFeedbackDemoPage extends StatefulWidget {

@@ -1,7 +1,7 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/action_button_helpers.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Low-elevation filled tonal button for dense toolbars, drawers, and footers.
 class AppFlatButton extends StatelessWidget {
@@ -31,7 +31,7 @@ class AppFlatButton extends StatelessWidget {
   final bool fillWidth;
   final ButtonStyle? style;
 
-  /// Defaults to the ambient progress indicator color, then app primary.
+  /// Overrides the color resolved against the loading background.
   final Color? loadingIndicatorColor;
 
   /// Defaults to [AppThemeTokens.actionButtonLoadingIndicatorSize].
@@ -56,10 +56,6 @@ class AppFlatButton extends StatelessWidget {
         loadingIndicatorStrokeWidth ??
         tokens?.actionButtonLoadingIndicatorStrokeWidth ??
         2;
-    final indicatorColor =
-        loadingIndicatorColor ??
-        theme.progressIndicatorTheme.color ??
-        colors.onSurfaceVariant;
     final ghostFill = Color.alphaBlend(
       scheme.primaryContainer.withValues(alpha: 0.08),
       scheme.surfaceContainerHigh,
@@ -100,11 +96,18 @@ class AppFlatButton extends StatelessWidget {
     final content = isLoading
         ? buildAppActionButtonProgressIndicator(
             context: context,
-            color: indicatorColor,
+            color: resolveAppActionButtonLoadingColor(
+              scheme: scheme,
+              style: resolvedStyle,
+              fallbackBackground: resolveAppActionButtonDisabledBackground(
+                scheme,
+              ),
+              overrideColor: loadingIndicatorColor,
+            ),
             size: loadingSize,
             strokeWidth: loadingStroke,
           )
-        : _buildIdleContent(gapSm, colors.onSurfaceVariant);
+        : _buildIdleContent(gapSm);
 
     return wrapAppActionButtonSemantics(
       child: FilledButton.tonal(
@@ -119,7 +122,7 @@ class AppFlatButton extends StatelessWidget {
     );
   }
 
-  Widget _buildIdleContent(double iconTextGap, Color iconColor) {
+  Widget _buildIdleContent(double iconTextGap) {
     if (child != null) {
       return child!;
     }
@@ -139,10 +142,7 @@ class AppFlatButton extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         IconTheme.merge(
-          data: IconThemeData(
-            size: 20,
-            color: iconColor,
-          ),
+          data: const IconThemeData(size: 20),
           child: icon!,
         ),
         SizedBox(width: iconTextGap),

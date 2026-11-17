@@ -2,9 +2,9 @@ import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/features/overview/presentation/pages/overview_chart_not_found_page.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets('renders not found message and navigates back to overview', (

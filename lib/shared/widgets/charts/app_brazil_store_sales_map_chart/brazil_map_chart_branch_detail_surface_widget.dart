@@ -1,4 +1,4 @@
-﻿import 'package:colmeia/core/formatters/app_br_formatters.dart';
+import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
@@ -8,7 +8,7 @@ import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_overlay_chrome.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_chart_visual_snapshot.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_store_sales_display_helpers.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class BrazilMapChartSelectedMarkerBranchDetailSurface extends StatelessWidget {
   const BrazilMapChartSelectedMarkerBranchDetailSurface({

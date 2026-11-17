@@ -1,7 +1,7 @@
 import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/shared/widgets/forms/app_checkbox_field.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets('should toggle checkbox when label tapped', (tester) async {

@@ -1,5 +1,5 @@
 import 'package:colmeia/shared/widgets/charts/chart_pan_footnote_column.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Wraps a category-viewport-pan chart with optional semantics label/hint.
 ///

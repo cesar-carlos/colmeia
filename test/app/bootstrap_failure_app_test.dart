@@ -1,6 +1,6 @@
 import 'package:colmeia/app/bootstrap_failure_app.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets('shows clear-cache action only when recovery callback is set', (

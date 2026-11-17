@@ -24,12 +24,13 @@ and a `RepaintBoundary` where applicable:
 
 **Sales — resultado mensal (`SalesMonthlyPnlPage`):** [`SalesMonthlyPnlBarChartCard`](../../lib/features/sales/presentation/widgets/sales_monthly_pnl_bar_chart_card.dart) adds grouped monthly bars via [`AppGroupedColumnChart`](../../lib/shared/widgets/charts/app_grouped_column_chart.dart) (sales on primary Y-axis, profit + merchandise cost on secondary), optional **Percentuais** mode via `AppComparisonBarChart` with **~150 ms** series animation (via `resolveChartAnimationDurationMs`, matching the overview lucratividade percent chart); bar-chart mode and percent metric persist via [`SalesPreferences`](../../lib/features/sales/data/sales_preferences.dart); horizontal scroll regions use stable keys in [`sales_monthly_pnl_chart_keys.dart`](../../lib/features/sales/presentation/sales_monthly_pnl_chart_keys.dart) for tests; complements the existing three-series line chart on the same aggregates.
 
-### Shared design-system catalog (24 widgets)
+### Shared design-system catalog
 
 Each item below has a demo page under `Settings → Cardapio de UI → Graficos`
 ([`shared_components_demo_index_page.dart`](../../lib/features/settings/presentation/pages/shared_components_demo_index_page.dart)).
-Demos are the only consumers today; they double as design references and as
-smoke tests for the engines.
+Demos provide design references and smoke coverage for the engines. Some widgets
+also have dashboard consumers, as listed above; catalog membership does not imply
+demo-only usage.
 
 | Widget                       | Engine path                                                  |
 | ---------------------------- | ------------------------------------------------------------ |
@@ -109,6 +110,14 @@ of any item should explain why in the engine's source.
 
 ## Decisions worth remembering
 
+- **Responsive headers:** `AppSectionCardWithHeading` uses `OverflowBar` so
+  actions can move below the title. `AppChartHeaderTrailing` wraps custom,
+  share and fullscreen actions in their existing order. Callers must provide
+  bounded width for wrapping to work; window size alone does not describe a
+  chart card's available space. Theme colors, typography and spacing are retained.
+  See the [component responsiveness review](../install/web_pwa_review_plan.md#shared-component-responsiveness-review-2026-11-17)
+  for source ownership, local browser evidence and pending device checks.
+
 - **Pan was traded for horizontal scroll** in the overview combo and
   comparison engines (rationale in
   [`overview_monthly_parcels_combo_chart.dart`](../../lib/features/overview/presentation/widgets/overview_monthly_parcels_combo_chart.dart)):
@@ -151,9 +160,9 @@ of any item should explain why in the engine's source.
    render their own staged-mounting placeholder.
 5. Author a demo page in `lib/features/settings/presentation/pages/`,
    register the route, link it from `shared_components_demo_index_page.dart`.
-6. Drop a smoke test in
-   `test/shared/widgets/charts/engines/<name>_smoke_test.dart` using the
-   pattern from `syncfusion_area_trend_chart_smoke_test.dart`.
+6. Run the existing relevant engine tests and add focused unit coverage for new
+   logic. Add `testWidgets` smoke tests only when explicitly requested, following
+   `.cursor/rules/testing.mdc`; existing smoke tests can be run without adding new ones.
 7. If your chart can be expensive to remount (any `SfCartesianChart` /
    `SfCircularChart`), peg the `RepaintBoundary` key to
    `identityHashCode(<dataset>)` and have the parent cache the dataset.

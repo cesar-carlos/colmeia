@@ -1,7 +1,7 @@
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   group('AppBrazilStoreSalesMapPreset', () {

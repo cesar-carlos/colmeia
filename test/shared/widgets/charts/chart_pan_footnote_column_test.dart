@@ -1,6 +1,6 @@
 import 'package:colmeia/shared/widgets/charts/chart_pan_footnote_column.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets('ChartPanFootnoteColumn shows footnote text', (tester) async {

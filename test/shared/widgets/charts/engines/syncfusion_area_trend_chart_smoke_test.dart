@@ -1,8 +1,8 @@
 import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/shared/widgets/charts/app_area_trend_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Smoke test for [AppAreaTrendChart] focused on the Phase 1 changes:
 /// - the engine renders without throwing,

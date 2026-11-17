@@ -4,7 +4,7 @@ import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/refresh/auto_refresh_control.dart';
 import 'package:colmeia/shared/widgets/refresh/auto_refresh_countdown_text.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 enum AutoRefreshStatusTone { neutral, warning }
 

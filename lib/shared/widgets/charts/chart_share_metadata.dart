@@ -2,7 +2,7 @@ import 'package:colmeia/shared/widgets/charts/app_chart_fullscreen_request.dart'
 import 'package:colmeia/shared/widgets/charts/app_chart_share_request.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Share + PDF metadata built once per chart and reused for inline and
 /// fullscreen share actions.

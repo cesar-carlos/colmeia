@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Plot on top (typically in an [Expanded]) plus a compact pan hint under the
 /// chart, without a fixed-height footer slot.

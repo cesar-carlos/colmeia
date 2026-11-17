@@ -1,7 +1,7 @@
 import 'package:colmeia/features/client_agents/presentation/localization/client_agents_presentation_message_l10n.dart';
 import 'package:colmeia/features/client_agents/presentation/models/client_agents_presentation_message.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 enum ClientAgentDetailFeedbackTone { info, error }
 

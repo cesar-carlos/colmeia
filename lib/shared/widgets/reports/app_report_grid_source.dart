@@ -1,11 +1,12 @@
 import 'dart:collection';
 
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 
 /// Generic DataGridSource bridge between AppReportColumn definitions and
@@ -39,6 +40,7 @@ class AppReportGridSource<T> extends DataGridSource {
 
   Color? _alternateRowColor;
   TextStyle? _dataTextStyle;
+  ThemeData? _presentationTheme;
 
   Color? get alternateRowColor => _alternateRowColor;
   TextStyle? get dataTextStyle => _dataTextStyle;
@@ -48,10 +50,13 @@ class AppReportGridSource<T> extends DataGridSource {
     Color? alternateRowColor,
     TextStyle? dataTextStyle,
   }) {
+    final theme = Theme.of(_context);
     if (_alternateRowColor == alternateRowColor &&
-        _dataTextStyle == dataTextStyle) {
+        _dataTextStyle == dataTextStyle &&
+        _presentationTheme == theme) {
       return;
     }
+    _presentationTheme = theme;
     _alternateRowColor = alternateRowColor;
     _dataTextStyle = dataTextStyle;
     notifyListeners();
@@ -295,11 +300,11 @@ class AppReportGridSource<T> extends DataGridSource {
                 ),
                 child: buildText(
                   (col?.textStyle ?? dataTextStyle)?.copyWith(
-                        color: theme.colorScheme.primary,
+                        color: theme.colorScheme.surfaceAccent,
                         fontWeight: FontWeight.w600,
                       ) ??
                       TextStyle(
-                        color: theme.colorScheme.primary,
+                        color: theme.colorScheme.surfaceAccent,
                         fontWeight: FontWeight.w600,
                       ),
                 ),
@@ -416,7 +421,7 @@ class AppReportGridSource<T> extends DataGridSource {
               Icon(
                 Icons.unfold_more_rounded,
                 size: 16,
-                color: theme.colorScheme.primary,
+                color: theme.colorScheme.surfaceAccent,
               ),
               SizedBox(width: tokens.gapXs),
               Expanded(child: title),

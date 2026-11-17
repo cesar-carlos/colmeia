@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:colmeia/app/theme/app_theme.dart';
+import 'package:colmeia/core/localization/app_locale_resolution.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_map_static_data.dart';
@@ -9,9 +10,9 @@ import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.da
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:syncfusion_flutter_maps/maps.dart';
 
 import '../../../support/widget_test_l10n.dart';
@@ -41,7 +42,7 @@ void main() {
         MaterialApp(
           theme: AppTheme.light(),
           locale: const Locale('pt', 'BR'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: colmeiaLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: const Scaffold(
             body: Center(
@@ -80,7 +81,7 @@ void main() {
           MaterialApp(
             theme: AppTheme.light(),
             locale: const Locale('pt', 'BR'),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            localizationsDelegates: colmeiaLocalizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: const Scaffold(
               body: Center(
@@ -2646,7 +2647,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: colmeiaLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: StatefulBuilder(
@@ -2735,7 +2736,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: colmeiaLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(
             body: StatefulBuilder(
@@ -2808,7 +2809,7 @@ Future<void> _pumpMap(
     MaterialApp(
       theme: AppTheme.light(),
       locale: locale,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: colmeiaLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: Center(
@@ -2852,7 +2853,7 @@ Future<void> _pumpHoverAnchor(
     MaterialApp(
       theme: AppTheme.light(),
       locale: locale,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: colmeiaLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: Center(
@@ -2885,7 +2886,7 @@ Future<void> _pumpSelectedAnchor(
     MaterialApp(
       theme: AppTheme.light(),
       locale: locale,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: colmeiaLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: Center(

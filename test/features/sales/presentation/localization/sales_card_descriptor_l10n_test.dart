@@ -3,8 +3,8 @@ import 'package:colmeia/features/sales/domain/sales_card_descriptor.dart';
 import 'package:colmeia/features/sales/presentation/localization/sales_card_descriptor_l10n.dart';
 import 'package:colmeia/l10n/app_localizations_en.dart';
 import 'package:colmeia/l10n/app_localizations_pt.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   final en = AppLocalizationsEn();

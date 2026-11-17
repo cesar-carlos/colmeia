@@ -4,7 +4,7 @@ import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card.dart';
 import 'package:colmeia/shared/widgets/charts/app_category_donut_card_models.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Demo for [AppCategoryDonutCard] (donut + legenda em card de dashboard).
 class AppCategoryDonutCardDemoPage extends StatelessWidget {

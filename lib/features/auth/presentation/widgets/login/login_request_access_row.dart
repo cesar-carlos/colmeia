@@ -1,5 +1,5 @@
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class LoginRequestAccessRow extends StatelessWidget {
   const LoginRequestAccessRow({this.onTap, super.key});

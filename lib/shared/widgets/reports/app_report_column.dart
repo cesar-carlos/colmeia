@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 enum AppReportColumnAlignment { start, center, end }
 
@@ -7,7 +7,7 @@ enum AppReportColumnAlignment { start, center, end }
 /// Has no effect when [AppReportColumn.cellBuilder] is provided.
 ///
 /// [plain] renders plain text (default).
-/// [link] renders the value with primary color and semi-bold weight —
+/// [link] renders the value with theme-aware brand emphasis and semi-bold weight —
 /// suitable for IDs, codes, or clickable references (pair with
 /// `AppReportEvents.onRowTap`).
 /// [badge] renders the value inside a small rounded chip, useful for
@@ -98,7 +98,7 @@ class AppReportColumn<T> {
   /// Whether this column is visible by default (can still be toggled by user).
   final bool visibleByDefault;
 
-  /// Screen width (logical pixels) below which this column is automatically
+  /// Available grid width (logical pixels) below which this column is automatically
   /// hidden to keep the grid readable on small screens.
   final double? hideBelowBreakpoint;
 

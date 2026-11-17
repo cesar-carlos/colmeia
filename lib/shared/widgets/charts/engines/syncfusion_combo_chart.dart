@@ -14,7 +14,7 @@ import 'package:colmeia/shared/widgets/charts/engines/cartesian_scroll_geometry.
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_cartesian_viewport_layout.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 /// Reserved height for a simple two-row legend below the plot when the primary

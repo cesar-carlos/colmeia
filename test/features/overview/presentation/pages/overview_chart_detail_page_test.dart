@@ -14,8 +14,8 @@ import 'package:colmeia/features/overview/presentation/pages/overview_chart_deta
 import 'package:colmeia/features/overview/presentation/widgets/overview_chart_detail_loading_block.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:provider/provider.dart';
 

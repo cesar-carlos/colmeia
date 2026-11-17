@@ -3,7 +3,7 @@ import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/metrics/app_compact_kpi_stat.dart';
 import 'package:colmeia/shared/widgets/metrics/app_executive_metric_tile.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Fake data demos for [AppCompactKpiStat] and [AppExecutiveMetricTile].
 class AppCompactKpiAndExecutiveDemoPage extends StatelessWidget {

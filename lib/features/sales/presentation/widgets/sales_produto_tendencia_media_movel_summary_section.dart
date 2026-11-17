@@ -16,8 +16,8 @@ import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/metrics/app_metric_stat_card.dart';
 import 'package:colmeia/shared/widgets/metrics/app_responsive_metric_stat_grid.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 export 'package:colmeia/features/sales/presentation/share/sales_produto_tendencia_media_movel_share.dart'
     show

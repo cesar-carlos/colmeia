@@ -6,7 +6,7 @@
 import 'package:colmeia/features/overview/domain/entities/overview_chart_point.dart';
 import 'package:colmeia/features/overview/presentation/widgets/overview_chart_renderer.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 enum OverviewSalesTrendRange {
   lastWeek,

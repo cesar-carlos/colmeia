@@ -1,6 +1,7 @@
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppChoiceChip extends StatelessWidget {
   const AppChoiceChip({
@@ -27,7 +28,11 @@ class AppChoiceChip extends StatelessWidget {
     final typography = theme.appTypography;
     final cs = theme.colorScheme;
 
-    final labelColor = selected ? cs.primary : cs.onSurfaceVariant;
+    final labelColor = onSelected == null
+        ? cs.onSurface.withValues(alpha: 0.38)
+        : selected
+        ? cs.onPrimaryContainer
+        : cs.onSurfaceVariant;
     final chip = ChoiceChip(
       label: Text(label),
       avatar: icon == null
@@ -41,14 +46,13 @@ class AppChoiceChip extends StatelessWidget {
       onSelected: onSelected == null ? null : (_) => onSelected!(),
       showCheckmark: false,
       backgroundColor: cs.surfaceContainerLowest,
-      selectedColor: Color.alphaBlend(
-        cs.primary.withValues(alpha: 0.1),
-        cs.primaryContainer,
-      ),
+      selectedColor: cs.primaryContainer,
       disabledColor: cs.surfaceContainerHighest.withValues(alpha: 0.4),
       side: BorderSide(
-        color: selected
-            ? cs.primary.withValues(alpha: 0.32)
+        color: onSelected == null
+            ? cs.onSurface.withValues(alpha: 0.12)
+            : selected
+            ? cs.surfaceAccent
             : cs.outlineVariant.withValues(alpha: 0.4),
       ),
       shape: const StadiumBorder(),

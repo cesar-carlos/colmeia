@@ -15,7 +15,7 @@ import 'package:colmeia/shared/forms/app_form_validators.dart';
 import 'package:colmeia/shared/forms/registration_form_policy.dart';
 import 'package:colmeia/shared/widgets/backgrounds/app_hex_screen_body.dart';
 import 'package:colmeia/shared/widgets/feedback/inline_alert_banner.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 class RegisterPage extends StatelessWidget {

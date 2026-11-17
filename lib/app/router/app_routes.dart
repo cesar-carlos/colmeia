@@ -1,5 +1,5 @@
 import 'package:colmeia/features/user_context/domain/entities/user_permission.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 const cacheRefreshRouteName = 'cacheRefresh';
 const cacheRefreshRouteSegment = 'data-refresh';

@@ -5,7 +5,7 @@ import 'package:colmeia/features/overview/presentation/widgets/weekday_user_grou
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/chart_export_capture.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Mirrors [OverviewWeekdayUserGroupedBarChart] slot geometry for PDF export.
 const double kOverviewWeekdayUserGroupedPerBarSlot = 18;

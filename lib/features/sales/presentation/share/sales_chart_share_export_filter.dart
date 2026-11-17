@@ -5,7 +5,7 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_metric.dar
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 ChartShareExportHeaderContext
 buildSalesSingleAgentChartShareExportHeaderContext({

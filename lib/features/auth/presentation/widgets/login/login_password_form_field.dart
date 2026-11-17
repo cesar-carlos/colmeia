@@ -2,7 +2,7 @@ import 'package:colmeia/features/auth/presentation/widgets/auth_password_text_fi
 import 'package:colmeia/features/auth/presentation/widgets/login/login_labeled_field.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/forms/app_form_validators.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class LoginPasswordFormField extends StatelessWidget {
   const LoginPasswordFormField({

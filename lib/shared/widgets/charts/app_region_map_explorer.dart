@@ -10,7 +10,7 @@ import 'package:colmeia/shared/widgets/charts/app_chart_presets.dart';
 import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_region_map_data_source.dart';
 import 'package:colmeia/shared/widgets/feedback/app_data_stale_banner.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:result_dart/result_dart.dart';
 
 typedef AppRegionMapFiltersBuilder<TFilters> = Widget Function(

@@ -13,7 +13,7 @@ import 'package:colmeia/shared/utils/app_branch_display_model.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/bottom_sheet_compact_drag_handle.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 const double _kAgentFilterCircleSize = 44;
 

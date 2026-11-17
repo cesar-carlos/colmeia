@@ -6,7 +6,7 @@ import 'package:colmeia/shared/widgets/export/pdf_export_font_cache.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:colmeia/shared/widgets/reports/export/report_export_sharing.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';

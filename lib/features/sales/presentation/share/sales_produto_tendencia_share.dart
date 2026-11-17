@@ -11,8 +11,8 @@ import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 export 'package:colmeia/features/sales/presentation/share/mappers/sales_produto_tendencia_share_mapper.dart'
     show salesProdutoTendenciaClassificacaoOneLineLegend;

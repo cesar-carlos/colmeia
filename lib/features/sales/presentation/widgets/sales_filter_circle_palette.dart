@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Palette for the circular "filter trigger" affordance used by sales
 /// surfaces (the card filter trigger and the single-agent picker share the

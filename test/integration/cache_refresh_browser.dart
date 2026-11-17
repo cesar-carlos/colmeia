@@ -15,8 +15,8 @@ import 'package:colmeia/features/agent_queries/domain/scheduling/cache_refresh_s
 import 'package:colmeia/features/agent_queries/presentation/controllers/cache_refresh_controller.dart';
 import 'package:colmeia/features/agent_queries/presentation/pages/cache_refresh_page.dart';
 import 'package:colmeia/features/client_agents/domain/repositories/client_approved_agents_repository.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 @JS('cacheRefreshSmoke')

@@ -1,6 +1,6 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/action_button_helpers.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppTextActionButton extends StatelessWidget {
   const AppTextActionButton({
@@ -48,7 +48,7 @@ class AppTextActionButton extends StatelessWidget {
         loadingIndicatorStrokeWidth ??
         tokens?.actionButtonLoadingIndicatorStrokeWidth ??
         2;
-    final indicatorColor = loadingIndicatorColor ?? theme.colorScheme.primary;
+    final foreground = resolveAppActionButtonForeground(theme.colorScheme);
 
     final gapSm = tokens?.gapSm ?? 8;
     final radius = resolveAppActionButtonRadius(tokens);
@@ -67,7 +67,7 @@ class AppTextActionButton extends StatelessWidget {
               horizontal: tokens?.gapMd ?? 12,
               vertical: gapSm,
             ),
-            foregroundColor: theme.colorScheme.primary,
+            foregroundColor: foreground,
             disabledForegroundColor: resolveAppActionButtonDisabledForeground(
               theme.colorScheme,
             ),
@@ -80,11 +80,16 @@ class AppTextActionButton extends StatelessWidget {
     final content = isLoading
         ? buildAppActionButtonProgressIndicator(
             context: context,
-            color: indicatorColor,
+            color: resolveAppActionButtonLoadingColor(
+              scheme: theme.colorScheme,
+              style: effectiveStyle,
+              fallbackBackground: Colors.transparent,
+              overrideColor: loadingIndicatorColor,
+            ),
             size: loadingSize,
             strokeWidth: loadingStroke,
           )
-        : _buildLabelRow(context, gapSm);
+        : _buildLabelRow(gapSm);
 
     return wrapAppActionButtonSemantics(
       child: TextButton(
@@ -99,12 +104,11 @@ class AppTextActionButton extends StatelessWidget {
     );
   }
 
-  Widget _buildLabelRow(BuildContext context, double iconTextGap) {
+  Widget _buildLabelRow(double iconTextGap) {
     if (child != null) {
       return child!;
     }
 
-    final iconColor = Theme.of(context).colorScheme.primary;
     final text = Text(
       label!,
       maxLines: 1,
@@ -119,7 +123,7 @@ class AppTextActionButton extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         IconTheme.merge(
-          data: IconThemeData(size: 20, color: iconColor),
+          data: const IconThemeData(size: 20),
           child: icon!,
         ),
         SizedBox(width: iconTextGap),

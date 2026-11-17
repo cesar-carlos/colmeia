@@ -4,7 +4,7 @@ import 'package:colmeia/features/agent_queries/presentation/agent_query_failure_
 import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_failure_technical_details.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Chart/map empty state: friendly message, optional agent link, support details.
 class AgentQueryChartFailurePlaceholderContent extends StatelessWidget {

@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Minimum chart height when the viewport has enough room (portrait / tall).
 const double kFullscreenChartMinHeight = 220;

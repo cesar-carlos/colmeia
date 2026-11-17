@@ -2,8 +2,8 @@ import 'package:colmeia/features/agent_queries/domain/entities/notas_entrada_fil
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/pagination/app_table_pagination_footer.dart';
 import 'package:colmeia/shared/widgets/pagination/app_table_pagination_notice.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Numbered catalog footer: page size, range summary, and page buttons.
 class SalesNotasEntradaPaginationFooter extends StatelessWidget {

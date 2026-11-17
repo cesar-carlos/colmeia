@@ -2,10 +2,11 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:colmeia/app/theme/app_theme.dart';
+import 'package:colmeia/core/localization/app_locale_resolution.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_region_map_chart.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../support/widget_test_l10n.dart';
 
@@ -73,7 +74,7 @@ Future<void> _pumpRegionChart(
     MaterialApp(
       theme: AppTheme.light(),
       locale: locale,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: colmeiaLocalizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: Center(

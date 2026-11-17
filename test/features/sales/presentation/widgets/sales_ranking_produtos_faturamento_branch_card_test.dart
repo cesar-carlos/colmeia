@@ -1,8 +1,8 @@
 import 'package:colmeia/features/agent_queries/domain/entities/ranking_produtos_faturamento_row.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_ranking_produtos_faturamento_branch_card.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../support/localized_test_app.dart';
 

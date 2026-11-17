@@ -12,8 +12,8 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/bottom_sheet_compact_drag_handle.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:share_plus/share_plus.dart' show ShareParams, SharePlus;
 
 const Duration _kCopyConfirmationSnackBarDuration = Duration(seconds: 2);

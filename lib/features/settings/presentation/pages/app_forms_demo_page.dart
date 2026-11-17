@@ -17,9 +17,9 @@ import 'package:colmeia/shared/widgets/forms/app_radio_group.dart';
 import 'package:colmeia/shared/widgets/forms/app_switch_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Interactive fake form using shared field widgets.
 class AppFormsDemoPage extends StatefulWidget {

@@ -18,7 +18,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_fade_in.dart';
 import 'package:colmeia/shared/widgets/charts/daily_sales_trend_chart.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class OverviewChartDetailContent extends StatefulWidget {
   const OverviewChartDetailContent({

@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 /// Minimum scaled line height used when reserving top margin for outer data

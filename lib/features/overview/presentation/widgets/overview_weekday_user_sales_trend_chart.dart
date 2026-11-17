@@ -17,8 +17,8 @@ import 'package:colmeia/shared/widgets/charts/app_chart_shell.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_actions.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.dart';
 import 'package:colmeia/shared/widgets/charts/metric_toggle_comparison_bar_card.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 class OverviewWeekdayUserSalesTrendChart extends StatefulWidget {
   const OverviewWeekdayUserSalesTrendChart({

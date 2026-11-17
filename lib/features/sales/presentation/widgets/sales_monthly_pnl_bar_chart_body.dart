@@ -1,4 +1,4 @@
-﻿import 'package:colmeia/core/errors/app_failure.dart';
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/formatters/app_br_formatters.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/lucratividade_percent_metric.dart';
 import 'package:colmeia/features/agent_queries/presentation/lucratividade_percent_metric_labels.dart';
@@ -20,9 +20,9 @@ import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/app_grouped_column_chart.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 extension SalesMonthlyPnlBarChartPreferencesCopy
     on SalesMonthlyPnlBarChartPreferences {

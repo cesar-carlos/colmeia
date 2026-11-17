@@ -2,7 +2,9 @@ import 'dart:math' as math;
 
 import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
+import 'package:colmeia/shared/widgets/metrics/resolve_metric_grid_columns.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Lays out metric tiles in a responsive wrap grid with equal column widths.
 ///
@@ -15,7 +17,9 @@ class AppResponsiveMetricStatGrid extends StatelessWidget {
     this.wideColumns = 3,
     this.extraWideColumns = 3,
     super.key,
-  });
+  }) : assert(narrowColumns > 0, 'narrowColumns must be positive.'),
+       assert(wideColumns > 0, 'wideColumns must be positive.'),
+       assert(extraWideColumns > 0, 'extraWideColumns must be positive.');
 
   final List<Widget> children;
   final int narrowColumns;
@@ -25,14 +29,27 @@ class AppResponsiveMetricStatGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.appTokens;
+    final fontSize = Theme.of(context).appTypography.body.fontSize!;
+    final textScale =
+        MediaQuery.textScalerOf(context).scale(fontSize) / fontSize;
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = _resolveColumns(constraints.maxWidth);
         final gap = tokens.gapMd;
+        final availableWidth = constraints.hasBoundedWidth
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        final columns = resolveMetricGridColumns(
+          width: availableWidth,
+          gap: gap,
+          textScale: textScale,
+          narrowColumns: narrowColumns,
+          wideColumns: wideColumns,
+          extraWideColumns: extraWideColumns,
+        );
         final width = math.max<double>(
           0,
-          (constraints.maxWidth - (gap * (columns - 1))) / columns,
+          (availableWidth - (gap * (columns - 1))) / columns,
         );
 
         return Wrap(
@@ -44,15 +61,5 @@ class AppResponsiveMetricStatGrid extends StatelessWidget {
         );
       },
     );
-  }
-
-  int _resolveColumns(double maxWidth) {
-    if (maxWidth >= AppBreakpoints.kpiGridExtraWide) {
-      return extraWideColumns;
-    }
-    if (maxWidth >= AppBreakpoints.kpiGridWide) {
-      return wideColumns;
-    }
-    return narrowColumns;
   }
 }

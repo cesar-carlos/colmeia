@@ -7,8 +7,8 @@ import 'package:colmeia/shared/widgets/reports/export/report_excel_exporter.dart
 import 'package:colmeia/shared/widgets/reports/export/report_export_filter_formatter.dart';
 import 'package:colmeia/shared/widgets/reports/export/report_pdf_exporter.dart';
 import 'package:colmeia/shared/widgets/reports/export/report_text_exporter.dart';
-import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Facade that dispatches report export requests to the per-format exporter
 /// (PDF, Excel, JSON, CSV). Each format lives in its own class under

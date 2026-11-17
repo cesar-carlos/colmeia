@@ -13,10 +13,10 @@ import 'package:colmeia/shared/widgets/charts/chart_share_result.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
 import 'package:colmeia/shared/widgets/reports/export/report_export_sharing.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:get_it/get_it.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:share_plus/share_plus.dart';
 
 const Duration _kFrameWaitTimeout = Duration(seconds: 1);

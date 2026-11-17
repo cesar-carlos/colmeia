@@ -1,7 +1,7 @@
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/charts/daily_sales_trend_chart_labels.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets('DailySalesTrendChartLabels overview vs sales copy', (

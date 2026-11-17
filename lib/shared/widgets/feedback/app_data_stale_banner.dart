@@ -1,6 +1,6 @@
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Banner inline de aviso "dados podem estar desatualizados" com acao de
 /// atualizar. Use em listas, dashboards e snapshots quando a fonte estiver

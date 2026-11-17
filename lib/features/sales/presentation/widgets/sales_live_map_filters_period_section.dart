@@ -6,7 +6,7 @@ import 'package:colmeia/shared/widgets/app_section_card.dart';
 import 'package:colmeia/shared/widgets/forms/app_date_picker_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Period selector section of the sales live map filters sheet — toggles
 /// between predefined ranges (today / last 7 / current month) and a custom

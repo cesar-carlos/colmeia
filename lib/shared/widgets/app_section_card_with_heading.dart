@@ -2,7 +2,7 @@ import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppSectionCardWithHeadingStyle {
   const AppSectionCardWithHeadingStyle({
@@ -87,23 +87,24 @@ class AppSectionCardWithHeading extends StatelessWidget {
         crossAxisAlignment: crossAxisAlignment,
         children: <Widget>[
           if (hasTitle || headingTrailing != null)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            OverflowBar(
+              alignment: MainAxisAlignment.spaceBetween,
+              spacing: tokens.gapMd,
+              overflowSpacing: tokens.gapSm,
               children: <Widget>[
-                Expanded(
-                  child: hasTitle
-                      ? (titleWidget ??
-                            Text(
-                              title!,
-                              style: resolvedTitleStyle,
-                              textAlign: style.titleTextAlign,
-                            ))
-                      : const SizedBox.shrink(),
-                ),
-                if (headingTrailing != null) ...<Widget>[
-                  SizedBox(width: tokens.gapMd),
-                  headingTrailing!,
-                ],
+                if (hasTitle)
+                  titleWidget ??
+                      Text(
+                        title!,
+                        style: resolvedTitleStyle,
+                        textAlign: style.titleTextAlign,
+                      ),
+                if (headingTrailing != null)
+                  Align(
+                    widthFactor: 1,
+                    alignment: Alignment.centerRight,
+                    child: headingTrailing,
+                  ),
               ],
             ),
           if (hasSubtitle) ...<Widget>[
@@ -119,7 +120,10 @@ class AppSectionCardWithHeading extends StatelessWidget {
             SizedBox(height: tokens.gapSm),
             headingBottom!,
           ],
-          if (hasTitle || hasSubtitle || headingBottom != null)
+          if (hasTitle ||
+              hasSubtitle ||
+              headingTrailing != null ||
+              headingBottom != null)
             SizedBox(height: headerBottomSpacing),
           child,
         ],

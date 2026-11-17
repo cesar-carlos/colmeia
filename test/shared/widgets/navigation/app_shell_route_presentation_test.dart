@@ -1,8 +1,8 @@
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/app/shell/app_shell_route_presentation.dart';
 import 'package:colmeia/l10n/app_localizations_pt.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   final l10n = AppLocalizationsPt();

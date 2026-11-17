@@ -113,11 +113,13 @@ O projeto define breakpoints em `AppBreakpoints` (`lib/core/layout/`):
 
 | Tier    | Largura    | Navegacao                    |
 | ------- | ---------- | ---------------------------- |
-| Mobile  | < 600px    | Drawer + BottomNavigationBar |
-| Tablet  | 600–1199px | NavigationRail compacto      |
+| Mobile  | < 600px    | Drawer                       |
+| Tablet  | 600–1199px | Drawer                       |
 | Desktop | >= 1200px  | NavigationRail com labels    |
 
 - Use `AppBreakpoints.isMobile`, `isTablet`, `isDesktop` para adaptar layout
+- Para componentes aninhados, use a largura local de `LayoutBuilder`, incluindo
+  padding e escala de texto; o tier da janela nao representa o espaco do card.
 - Use `AppBreakpoints.isLandscape` para orientacao quando relevante
 - Conteudo em rotas autenticadas e centralizado automaticamente pelo shell
   via `AppContentConstraint` (max 960px); nao aplique manualmente nas pages

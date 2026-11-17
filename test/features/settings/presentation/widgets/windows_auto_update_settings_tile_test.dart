@@ -9,8 +9,8 @@ import 'package:colmeia/core/update/windows_auto_update_messages.dart';
 import 'package:colmeia/core/update/windows_auto_update_state.dart';
 import 'package:colmeia/features/settings/presentation/widgets/windows_auto_update_settings_tile.dart';
 import 'package:colmeia/shared/widgets/actions/app_flat_button.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {

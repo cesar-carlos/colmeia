@@ -4,8 +4,8 @@ import 'package:colmeia/features/sales/presentation/share/sales_ranking_produtos
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 RankingProdutosFaturamentoRow _row({
   required int codProduto,

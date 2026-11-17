@@ -1,10 +1,11 @@
 import 'package:colmeia/shared/utils/app_debouncer.dart';
+import 'package:colmeia/shared/widgets/reports/app_report_filter_values_equality.dart';
 import 'package:flutter/foundation.dart';
 
 /// Owns filter drafts and emits one complete snapshot after rapid edits.
 class AppReportFilterValuesController {
   AppReportFilterValuesController(Map<String, Object?> initialValues)
-    : _externalValues = Map.of(initialValues),
+    : _externalValues = _snapshotExternalValues(initialValues),
       _values = Map.of(initialValues);
 
   Map<String, Object?> _externalValues;
@@ -14,9 +15,9 @@ class AppReportFilterValuesController {
   Map<String, Object?> get values => Map.unmodifiable(_values);
 
   bool synchronize(Map<String, Object?> values) {
-    if (mapEquals(_externalValues, values)) return false;
+    if (reportFilterValuesEqual(_externalValues, values)) return false;
     cancelPending();
-    _externalValues = Map.of(values);
+    _externalValues = _snapshotExternalValues(values);
     _values = Map.of(values);
     return true;
   }
@@ -52,4 +53,14 @@ class AppReportFilterValuesController {
   }
 
   void dispose() => cancelPending();
+
+  static Map<String, Object?> _snapshotExternalValues(
+    Map<String, Object?> values,
+  ) => {
+    for (final entry in values.entries)
+      entry.key: switch (entry.value) {
+        final List<Object?> items => List<Object?>.of(items),
+        final value => value,
+      },
+  };
 }

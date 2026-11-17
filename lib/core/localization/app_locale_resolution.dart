@@ -1,4 +1,15 @@
-import 'package:flutter/material.dart';
+import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart' as legacy;
+import 'package:material_ui/material_ui.dart';
+
+const List<LocalizationsDelegate<dynamic>> colmeiaLocalizationsDelegates =
+    <LocalizationsDelegate<dynamic>>[
+      AppLocalizations.delegate,
+      ...GlobalMaterialLocalizations.delegates,
+      // Syncfusion still uses Flutter's legacy MaterialLocalizations type.
+      // ignore: deprecated_member_use
+      legacy.GlobalMaterialLocalizations.delegate,
+    ];
 
 /// Resolves [locale] against [supported], preferring `pt_BR` when the device
 /// reports Portuguese without a country code.

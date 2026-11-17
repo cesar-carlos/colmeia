@@ -1,6 +1,6 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/action_button_helpers.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// High-emphasis destructive action (delete, remove, discard).
 ///
@@ -35,7 +35,7 @@ class AppDestructiveButton extends StatelessWidget {
   final ButtonStyle? style;
   final bool fillWidth;
 
-  /// Defaults to the destructive on-fill color when null.
+  /// Overrides the color resolved against the loading background.
   final Color? loadingIndicatorColor;
 
   /// Defaults to [AppThemeTokens.actionButtonLoadingIndicatorSize].
@@ -93,7 +93,12 @@ class AppDestructiveButton extends StatelessWidget {
       );
     }
 
-    final indicatorColor = loadingIndicatorColor ?? onFillColor;
+    final indicatorColor = resolveAppActionButtonLoadingColor(
+      scheme: scheme,
+      style: resolvedStyle,
+      fallbackBackground: resolveAppActionButtonDisabledBackground(scheme),
+      overrideColor: loadingIndicatorColor,
+    );
 
     final content = isLoading
         ? buildAppActionButtonProgressIndicator(
@@ -102,7 +107,7 @@ class AppDestructiveButton extends StatelessWidget {
             size: loadingSize,
             strokeWidth: loadingStroke,
           )
-        : _buildIdleContent(gapSm, onFillColor);
+        : _buildIdleContent(gapSm);
 
     return wrapAppActionButtonSemantics(
       child: FilledButton(
@@ -117,7 +122,7 @@ class AppDestructiveButton extends StatelessWidget {
     );
   }
 
-  Widget _buildIdleContent(double iconTextGap, Color onFill) {
+  Widget _buildIdleContent(double iconTextGap) {
     if (child != null) {
       return child!;
     }
@@ -132,7 +137,7 @@ class AppDestructiveButton extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
         IconTheme.merge(
-          data: IconThemeData(size: 20, color: onFill),
+          data: const IconThemeData(size: 20),
           child: icon!,
         ),
         SizedBox(width: iconTextGap),

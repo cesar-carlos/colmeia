@@ -7,7 +7,7 @@ import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/bottom_sheet_compact_drag_handle.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class SalesFiltersSheetScaffold extends StatelessWidget {
   const SalesFiltersSheetScaffold({

@@ -1,7 +1,7 @@
 import 'package:colmeia/shared/forms/app_form_validators.dart';
 import 'package:colmeia/shared/widgets/forms/app_password_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Auth-scoped alias over [AppPasswordField].
 class AuthPasswordTextField extends StatelessWidget {

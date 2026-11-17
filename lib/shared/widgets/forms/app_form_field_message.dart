@@ -1,7 +1,7 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Inline helper/error message shown below custom form fields
 /// (`AppDropdownField`, `AppDatePickerField`, `AppSliderField`).
@@ -22,7 +22,8 @@ class AppFormFieldMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<AppThemeTokens>()!;
-    final message = errorText ?? helperText;
+    final hasError = errorText?.trim().isNotEmpty ?? false;
+    final message = hasError ? errorText : helperText;
     if (message == null || message.trim().isEmpty) {
       return const SizedBox.shrink();
     }
@@ -35,7 +36,7 @@ class AppFormFieldMessage extends StatelessWidget {
       child: Text(
         message,
         style: theme.appTypography.caption.copyWith(
-          color: errorText != null
+          color: hasError
               ? theme.colorScheme.error
               : theme.colorScheme.onSurfaceVariant,
         ),
@@ -62,7 +63,7 @@ BorderSide resolveFormFieldBorderSide({
     return BorderSide(color: scheme.error, width: 1.5);
   }
   if (focused) {
-    return BorderSide(color: scheme.primary, width: 1.5);
+    return BorderSide(color: scheme.surfaceAccent, width: 1.5);
   }
   return BorderSide(color: colors.outlineVariant.withValues(alpha: 0.82));
 }

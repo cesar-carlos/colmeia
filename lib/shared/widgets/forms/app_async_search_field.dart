@@ -9,8 +9,8 @@ import 'package:colmeia/shared/utils/app_debouncer.dart';
 import 'package:colmeia/shared/widgets/app_top_aligned_expand_switcher.dart';
 import 'package:colmeia/shared/widgets/forms/app_form_field_message.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppAsyncSearchOption<T> {
   const AppAsyncSearchOption({

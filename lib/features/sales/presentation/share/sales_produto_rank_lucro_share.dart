@@ -11,8 +11,8 @@ import 'package:colmeia/shared/widgets/charts/chart_share_export_header_context.
 import 'package:colmeia/shared/widgets/charts/chart_share_metadata.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_limits.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_table_data.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' hide TextDirection;
+import 'package:material_ui/material_ui.dart';
 
 const double _kRankLucroExportWidth = 720;
 

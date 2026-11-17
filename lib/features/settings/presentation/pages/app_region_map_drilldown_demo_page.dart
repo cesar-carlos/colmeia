@@ -12,7 +12,7 @@ import 'package:colmeia/shared/widgets/charts/app_region_map_explorer.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
 import 'package:colmeia/shared/widgets/forms/app_slider_field.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:result_dart/result_dart.dart';
 
 class AppRegionMapDrillDownDemoPage extends StatelessWidget {

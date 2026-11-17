@@ -10,8 +10,8 @@ import 'package:colmeia/shared/design_system/app_data_grid_density.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_compact_data_grid_scroll_table.dart';
 import 'package:colmeia/shared/widgets/pagination/app_table_pagination_footer.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 const List<int> kClientAgentsApprovedTablePageSizeOptions = <int>[
   10,

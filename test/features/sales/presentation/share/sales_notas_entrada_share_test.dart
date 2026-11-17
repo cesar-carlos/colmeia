@@ -4,9 +4,9 @@ import 'package:colmeia/features/sales/presentation/share/sales_notas_entrada_sh
 import 'package:colmeia/features/sales/presentation/widgets/sales_notas_entrada_columns.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/chart_share_pdf_orientation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:material_ui/material_ui.dart';
 
 NotaEntradaRow _row() {
   return NotaEntradaRow(

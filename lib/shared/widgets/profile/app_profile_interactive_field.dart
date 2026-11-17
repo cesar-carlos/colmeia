@@ -1,6 +1,6 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppProfileInteractiveField extends StatelessWidget {
   const AppProfileInteractiveField({
@@ -36,7 +36,9 @@ class AppProfileInteractiveField extends StatelessWidget {
     } else if (emphasizeValue) {
       valueStyle = typography.sectionHeaderH2.copyWith(
         fontSize: theme.textTheme.titleSmall?.fontSize,
-        color: cs.primary,
+        color: cs.brightness == Brightness.light
+            ? cs.onPrimaryContainer
+            : cs.primary,
         fontWeight: FontWeight.w700,
       );
     } else {

@@ -1,6 +1,6 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/action_button_helpers.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Filled primary action using solid [ColorScheme.primary] and
 /// [ColorScheme.onPrimary] (brand CTA). Override [style] for special cases.
@@ -102,7 +102,12 @@ class AppPrimaryButton extends StatelessWidget {
       );
     }
 
-    final indicatorColor = loadingIndicatorColor ?? theme.colorScheme.onPrimary;
+    final indicatorColor = resolveAppActionButtonLoadingColor(
+      scheme: scheme,
+      style: resolvedStyle,
+      fallbackBackground: resolveAppActionButtonDisabledBackground(scheme),
+      overrideColor: loadingIndicatorColor,
+    );
 
     Widget content;
     if (isLoading && showLabelWhileLoading && label != null) {

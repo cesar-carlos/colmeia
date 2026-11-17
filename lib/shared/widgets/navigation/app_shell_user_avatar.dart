@@ -1,6 +1,6 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_user_initials.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppShellUserAvatar extends StatelessWidget {
   const AppShellUserAvatar({

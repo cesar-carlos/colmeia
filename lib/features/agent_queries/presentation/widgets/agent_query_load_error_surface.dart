@@ -4,7 +4,7 @@ import 'package:colmeia/features/agent_queries/presentation/widgets/agent_query_
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/agent_query_error_panel.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Inline error for agent-query loads: [AgentQueryErrorPanel] when [loadFailure]
 /// is set, otherwise legacy [AppInlineErrorPanel] from [errorMessage].

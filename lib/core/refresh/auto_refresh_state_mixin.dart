@@ -5,7 +5,7 @@ import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_persistence.dart';
 import 'package:colmeia/core/refresh/auto_refresh_ui_state.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 enum AutoRefreshReloadResultKind { success, cancelled, failure }
 

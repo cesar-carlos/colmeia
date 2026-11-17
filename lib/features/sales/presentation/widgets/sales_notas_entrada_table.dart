@@ -9,9 +9,9 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_data_grid_density.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_compact_data_grid_scroll_table.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 
 class SalesNotasEntradaNotesGrid extends StatelessWidget {
   const SalesNotasEntradaNotesGrid({

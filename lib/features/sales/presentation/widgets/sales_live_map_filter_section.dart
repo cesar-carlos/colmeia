@@ -7,7 +7,7 @@ import 'package:colmeia/features/sales/presentation/widgets/sales_card_filter_tr
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_retry_cooldown_snackbar.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 class SalesLiveMapFilterSection extends StatelessWidget {

@@ -1,10 +1,10 @@
 import 'package:colmeia/app/theme/app_theme.dart';
+import 'package:colmeia/core/localization/app_locale_resolution.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/charts/daily_sales_trend_point.dart';
 import 'package:colmeia/shared/widgets/charts/daily_sales_trend_chart.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets('DailySalesTrendChart renders without agent_queries imports', (
@@ -13,12 +13,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light(),
-        localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
+        localizationsDelegates: colmeiaLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         locale: const Locale('pt'),
         home: Builder(
@@ -54,12 +49,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light(),
-        localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
+        localizationsDelegates: colmeiaLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         locale: const Locale('pt'),
         home: Builder(

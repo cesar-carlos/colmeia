@@ -21,7 +21,7 @@ import 'package:colmeia/shared/widgets/reports/app_report_style.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_summary_bar.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_toolbar.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Generic, interactive ERP-style report viewer.
 ///
@@ -187,7 +187,9 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
     _density = query?.density ?? widget.style.density;
     _sorts = query?.sorts ?? <AppReportSortDescriptor>[];
     _groups = query?.groups ?? <AppReportGroupDescriptor>[];
-    _visibleColumnKeys = query?.visibleColumnKeys ?? _defaultVisibleKeys();
+    _visibleColumnKeys =
+        query?.resolveVisibleColumnKeys(_defaultVisibleKeys()) ??
+        _defaultVisibleKeys();
   }
 
   void _applyExternalQuery(AppReportQuery query) {
@@ -195,9 +197,9 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
       _density = query.density;
       _sorts = query.sorts;
       _groups = query.groups;
-      if (query.visibleColumnKeys != null) {
-        _visibleColumnKeys = Set<String>.from(query.visibleColumnKeys!);
-      }
+      _visibleColumnKeys = query.resolveVisibleColumnKeys(
+        _defaultVisibleKeys(),
+      );
     });
   }
 
@@ -384,7 +386,9 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
             tokens.contentSpacing,
             tokens.gapMd,
             tokens.contentSpacing,
-            tokens.contentSpacing + bottomInset,
+            tokens.contentSpacing +
+                bottomInset +
+                MediaQuery.paddingOf(context).bottom,
           ),
           child: SingleChildScrollView(
             child: AppReportFiltersPanel(
@@ -633,33 +637,38 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
             child: AppSkeleton(
               enabled: widget.isLoading && widget.rows.isEmpty,
               loadingSemanticsLabel: l10n.reportLoadingTableSemantics,
-              child: AppReportGrid<T>(
-                columns: _visibleColumns,
-                rows: widget.rows,
-                currentGroups: _groups,
-                selectedRows: widget.selectedRows ?? List<T>.empty(),
-                groupController: _groupController,
-                style: style.copyWith(density: _density),
-                isLoading: widget.isLoading,
-                isIncomplete: widget.isIncomplete,
-                events: AppReportEvents<T>(
-                  onSortChanged: _onSortChanged,
-                  onRowTap: _onRowTap,
-                  onRowDoubleTap: widget.events.onRowDoubleTap,
-                  onRowLongPress: widget.events.onRowLongPress,
-                  onRowSelection: widget.events.onRowSelection,
-                  onGroupExpanded: (event) {
-                    _onGroupToggle(event);
-                    widget.events.onGroupExpanded?.call(event);
-                  },
-                  onGroupCollapsed: (event) {
-                    _onGroupToggle(event);
-                    widget.events.onGroupCollapsed?.call(event);
-                  },
+              child: LayoutBuilder(
+                builder: (context, constraints) => AppReportGrid<T>(
+                  availableWidth: constraints.hasBoundedWidth
+                      ? constraints.maxWidth
+                      : MediaQuery.sizeOf(context).width,
+                  columns: _visibleColumns,
+                  rows: widget.rows,
+                  currentGroups: _groups,
+                  selectedRows: widget.selectedRows ?? List<T>.empty(),
+                  groupController: _groupController,
+                  style: style.copyWith(density: _density),
+                  isLoading: widget.isLoading,
+                  isIncomplete: widget.isIncomplete,
+                  events: AppReportEvents<T>(
+                    onSortChanged: _onSortChanged,
+                    onRowTap: _onRowTap,
+                    onRowDoubleTap: widget.events.onRowDoubleTap,
+                    onRowLongPress: widget.events.onRowLongPress,
+                    onRowSelection: widget.events.onRowSelection,
+                    onGroupExpanded: (event) {
+                      _onGroupToggle(event);
+                      widget.events.onGroupExpanded?.call(event);
+                    },
+                    onGroupCollapsed: (event) {
+                      _onGroupToggle(event);
+                      widget.events.onGroupCollapsed?.call(event);
+                    },
+                  ),
+                  currentSorts: _sorts,
+                  emptyMessage: widget.emptyMessage,
+                  emptyAction: _buildEmptyClearFiltersAction(),
                 ),
-                currentSorts: _sorts,
-                emptyMessage: widget.emptyMessage,
-                emptyAction: _buildEmptyClearFiltersAction(),
               ),
             ),
           ),

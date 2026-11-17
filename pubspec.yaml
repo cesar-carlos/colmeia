@@ -19,9 +19,7 @@ dependencies:
     sdk: flutter
 
   flutter_dotenv: ^6.0.0
-  # 11.0.0 requires material_ui; FormBuilderTextField then fails at runtime with
-  # "No Material widget found" under package:flutter/material.dart MaterialApp.
-  flutter_form_builder: ^10.3.0+2
+  flutter_form_builder: ^11.0.0
 
   flutter_localizations:
     sdk: flutter
@@ -43,6 +41,7 @@ dependencies:
   image_picker: ^1.2.3
   intl: ^0.20.2
   logger: ^2.7.0
+  material_ui: ^1.11.1
   package_info_plus: ^10.2.1
   path: ^1.9.1
   path_provider: ^2.1.6

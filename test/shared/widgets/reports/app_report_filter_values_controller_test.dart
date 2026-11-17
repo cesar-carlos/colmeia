@@ -5,6 +5,79 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const delay = Duration(milliseconds: 300);
 
+  test('detects a selection mutated in place and cancels stale drafts', () {
+    fakeAsync((clock) {
+      final tags = <String>['one'];
+      final values = <String, Object?>{'tags': tags};
+      final controller = AppReportFilterValuesController(values);
+      final emitted = <Map<String, Object?>>[];
+      controller.change('name', 'draft', delay: delay, onChanged: emitted.add);
+      tags.add('two');
+      expect(controller.synchronize(values), isTrue);
+      clock.elapse(delay);
+      expect(emitted, isEmpty);
+      expect(controller.values, {
+        'tags': ['one', 'two'],
+      });
+
+      tags.remove('one');
+      expect(controller.synchronize(values), isTrue);
+      expect(
+        controller.synchronize({
+          'tags': ['two'],
+        }),
+        isFalse,
+      );
+      controller.dispose();
+    });
+  });
+
+  test('equivalent selection lists preserve pending text edits', () {
+    fakeAsync((clock) {
+      final controller = AppReportFilterValuesController({
+        'tags': <String>['one', 'two'],
+      });
+      final emitted = <Map<String, Object?>>[];
+      controller.change('name', 'Ana', delay: delay, onChanged: emitted.add);
+      expect(
+        controller.synchronize({
+          'tags': <String>['one', 'two'],
+        }),
+        isFalse,
+      );
+      clock.elapse(delay);
+      expect(emitted, [
+        {
+          'tags': ['one', 'two'],
+          'name': 'Ana',
+        },
+      ]);
+      controller.dispose();
+    });
+  });
+
+  test('changed selection lists cancel drafts and replace filters', () {
+    fakeAsync((clock) {
+      final controller = AppReportFilterValuesController({
+        'tags': <String>['one'],
+      });
+      final emitted = <Map<String, Object?>>[];
+      controller.change('name', 'Ana', delay: delay, onChanged: emitted.add);
+      expect(
+        controller.synchronize({
+          'tags': <String>['two'],
+        }),
+        isTrue,
+      );
+      clock.elapse(delay);
+      expect(emitted, isEmpty);
+      expect(controller.values, {
+        'tags': ['two'],
+      });
+      controller.dispose();
+    });
+  });
+
   test('rapid edits emit one complete filter snapshot', () {
     fakeAsync((clock) {
       final controller = AppReportFilterValuesController({});

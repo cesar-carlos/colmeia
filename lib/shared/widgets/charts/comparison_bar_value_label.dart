@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Max width for stacked value labels above a comparison bar so long ticket
 /// lines ellipsize instead of wrapping into a third visual row.

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppColors extends ThemeExtension<AppColors> {
   const AppColors({
@@ -493,4 +493,10 @@ extension AppColorsThemeDataX on ThemeData {
 
 extension AppColorsBuildContextX on BuildContext {
   AppColors get appColors => Theme.of(this).appColors;
+}
+
+extension AppColorSchemeContentColors on ColorScheme {
+  /// Brand emphasis for content drawn on neutral surfaces, not on brand fills.
+  Color get surfaceAccent =>
+      brightness == Brightness.light ? onPrimaryContainer : primary;
 }

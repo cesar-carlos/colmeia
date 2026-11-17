@@ -6,7 +6,7 @@ import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
 import 'package:colmeia/core/refresh/auto_refresh_state_persistence.dart';
 import 'package:colmeia/features/sales/application/sales_session_service.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 abstract final class SalesAutoRefreshOptions {
   static const AutoRefreshOption fiveMinutes = AutoRefreshOption(

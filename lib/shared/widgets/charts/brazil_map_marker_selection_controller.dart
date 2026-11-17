@@ -5,7 +5,7 @@ import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_data.da
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_chart_visual_snapshot.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_selection_policy.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Publishes marker highlight state and manages desktop branch preview lifecycle.
 class BrazilMapMarkerSelectionController {

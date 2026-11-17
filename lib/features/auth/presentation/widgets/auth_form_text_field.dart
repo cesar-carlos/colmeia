@@ -1,5 +1,5 @@
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Auth-scoped alias over [AppTextField].
 class AuthFormTextField extends StatelessWidget {

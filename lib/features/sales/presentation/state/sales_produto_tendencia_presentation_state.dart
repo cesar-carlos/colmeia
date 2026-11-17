@@ -7,7 +7,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_filte
 import 'package:colmeia/features/agent_queries/domain/entities/sales_trend_metric_mode.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 @immutable
 class SalesProdutoTendenciaPresentationState {

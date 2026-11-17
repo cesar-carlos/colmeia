@@ -1,8 +1,8 @@
 import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/charts/app_sunburst_chart.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets('loading state uses AppSkeleton instead of spinner', (

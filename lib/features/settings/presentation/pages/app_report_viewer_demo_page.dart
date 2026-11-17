@@ -17,8 +17,8 @@ import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_query.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_style.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_viewer.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // ---------------------------------------------------------------------------

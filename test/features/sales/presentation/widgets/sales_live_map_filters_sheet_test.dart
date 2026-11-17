@@ -4,8 +4,8 @@ import 'package:colmeia/features/sales/domain/entities/sales_live_map_filter.dar
 import 'package:colmeia/features/sales/presentation/widgets/sales_live_map_filters_sheet.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets('shows company and branch on a separate branch row', (

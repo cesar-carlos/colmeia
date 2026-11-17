@@ -1,9 +1,10 @@
 import 'package:colmeia/app/theme/app_theme.dart';
+import 'package:colmeia/core/localization/app_locale_resolution.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/forms/app_async_search_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets('debounces search, shows results, and selects option', (
@@ -12,7 +13,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light(),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: colmeiaLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: const Scaffold(
           body: SingleChildScrollView(
@@ -69,7 +70,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light(),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: colmeiaLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: SingleChildScrollView(
@@ -120,7 +121,7 @@ void main() {
       MaterialApp(
         theme: AppTheme.light(),
         locale: const Locale('pt', 'BR'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: colmeiaLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: AppAsyncSearchField<int>(

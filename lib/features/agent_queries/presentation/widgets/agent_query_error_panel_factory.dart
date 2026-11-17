@@ -6,7 +6,7 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/agent_query_error_panel.dart';
 import 'package:colmeia/shared/widgets/agent_query_error_presentation.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Feature-layer factory for agent-query error panels.
 abstract final class AgentQueryErrorPanelFactory {

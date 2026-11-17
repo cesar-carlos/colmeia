@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:colmeia/shared/widgets/charts/app_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_region_map_chart_widgets.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:syncfusion_flutter_maps/maps.dart';
 
 /// Builds Syncfusion [MapMarker] widgets with platform-aware tap targets.

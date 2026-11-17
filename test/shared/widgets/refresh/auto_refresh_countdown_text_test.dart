@@ -1,8 +1,8 @@
 import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/shared/widgets/refresh/app_second_ticker.dart';
 import 'package:colmeia/shared/widgets/refresh/auto_refresh_countdown_text.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   testWidgets('updates the label while the countdown is active', (
@@ -32,6 +32,39 @@ void main() {
     await tester.pump();
 
     expect(find.text('2s'), findsOneWidget);
+
+    for (final theme in [AppTheme.light(), AppTheme.dark()]) {
+      for (final backingOff in [true, false]) {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: theme,
+            home: Scaffold(
+              body: AutoRefreshCountdownText(
+                nextDueAt: DateTime(2026, 5, 19, 12, 0, 5),
+                isBackingOff: backingOff,
+                ticker: ticker,
+                labelBuilder: (remaining, {required isBackingOff}) =>
+                    '${remaining.inSeconds}s',
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final text = tester.widget<Text>(find.text('2s'));
+        final foreground = text.style!.color!.computeLuminance();
+        final background = theme.scaffoldBackgroundColor.computeLuminance();
+        final contrast = foreground > background
+            ? (foreground + 0.05) / (background + 0.05)
+            : (background + 0.05) / (foreground + 0.05);
+        expect(contrast, greaterThanOrEqualTo(4.5));
+        expect(
+          text.style!.fontWeight,
+          backingOff ? FontWeight.w700 : FontWeight.w500,
+        );
+      }
+    }
+    await tester.pumpWidget(const SizedBox.shrink());
+    ticker.dispose();
   });
 
   testWidgets('stops listening to the shared ticker when the countdown ends', (

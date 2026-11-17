@@ -1,6 +1,6 @@
 import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppRadioOption<T> {
   const AppRadioOption({
@@ -97,6 +97,11 @@ class _StackedRadioOption<T extends Object?> extends StatelessWidget {
     final scheme = theme.colorScheme;
     final tokens = theme.extension<AppThemeTokens>();
     final radius = BorderRadius.circular(tokens?.formFieldRadius ?? 8);
+    final indicatorColor = !enabled
+        ? colors.onSurface.withValues(alpha: 0.38)
+        : selected
+        ? scheme.onPrimaryContainer
+        : colors.onSurfaceVariant;
 
     return Semantics(
       selected: selected,
@@ -116,13 +121,15 @@ class _StackedRadioOption<T extends Object?> extends StatelessWidget {
               curve: Curves.easeOut,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: selected
+                color: selected && enabled
                     ? scheme.primaryContainer.withValues(alpha: 0.4)
                     : scheme.surfaceContainerLowest,
                 borderRadius: radius,
                 border: Border.all(
-                  color: selected
-                      ? colors.primary
+                  color: !enabled
+                      ? colors.onSurface.withValues(alpha: 0.12)
+                      : selected
+                      ? scheme.surfaceAccent
                       : colors.outlineVariant.withValues(alpha: 0.72),
                 ),
               ),
@@ -133,9 +140,7 @@ class _StackedRadioOption<T extends Object?> extends StatelessWidget {
                     Icon(
                       iconData,
                       size: 20,
-                      color: selected
-                          ? colors.primary
-                          : colors.onSurfaceVariant,
+                      color: indicatorColor,
                     ),
                     SizedBox(width: tokens?.gapSm ?? 8),
                   ],
@@ -147,9 +152,7 @@ class _StackedRadioOption<T extends Object?> extends StatelessWidget {
                           ? Icons.radio_button_checked
                           : Icons.radio_button_off,
                       size: visualSize,
-                      color: selected
-                          ? colors.primary
-                          : colors.onSurfaceVariant,
+                      color: indicatorColor,
                     ),
                   ),
                   SizedBox(width: tokens?.gapSm ?? 8),
@@ -215,6 +218,11 @@ class _CompactRadioOption<T extends Object?> extends StatelessWidget {
     final scheme = theme.colorScheme;
     final tokens = theme.extension<AppThemeTokens>();
     final radius = BorderRadius.circular(tokens?.formFieldRadius ?? 8);
+    final indicatorColor = !enabled
+        ? colors.onSurface.withValues(alpha: 0.38)
+        : selected
+        ? scheme.onPrimaryContainer
+        : colors.onSurfaceVariant;
 
     return Semantics(
       selected: selected,
@@ -235,13 +243,15 @@ class _CompactRadioOption<T extends Object?> extends StatelessWidget {
               constraints: const BoxConstraints(minHeight: 44),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: selected
+                color: selected && enabled
                     ? scheme.primaryContainer.withValues(alpha: 0.52)
                     : scheme.surfaceContainerLowest,
                 borderRadius: radius,
                 border: Border.all(
-                  color: selected
-                      ? colors.primary
+                  color: !enabled
+                      ? colors.onSurface.withValues(alpha: 0.12)
+                      : selected
+                      ? scheme.surfaceAccent
                       : colors.outlineVariant.withValues(alpha: 0.72),
                 ),
               ),
@@ -252,9 +262,7 @@ class _CompactRadioOption<T extends Object?> extends StatelessWidget {
                     Icon(
                       iconData,
                       size: 18,
-                      color: selected
-                          ? colors.primary
-                          : colors.onSurfaceVariant,
+                      color: indicatorColor,
                     ),
                     SizedBox(width: tokens?.gapSm ?? 8),
                   ],
@@ -263,7 +271,7 @@ class _CompactRadioOption<T extends Object?> extends StatelessWidget {
                         ? Icons.radio_button_checked
                         : Icons.radio_button_off,
                     size: visualSize - 2,
-                    color: selected ? colors.primary : colors.onSurfaceVariant,
+                    color: indicatorColor,
                   ),
                   SizedBox(width: tokens?.gapSm ?? 8),
                   Column(

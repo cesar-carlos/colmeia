@@ -12,7 +12,7 @@ import 'package:colmeia/shared/widgets/charts/engines/cartesian_scroll_geometry.
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart';
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:colmeia/shared/widgets/charts/engines/syncfusion_cartesian_viewport_layout.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 /// Keeps the custom tooltip bubble from spanning the full plot width so it

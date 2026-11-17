@@ -13,8 +13,8 @@ import 'package:colmeia/features/overview/presentation/pages/overview_chart_deta
 import 'package:colmeia/features/overview/presentation/pages/overview_chart_not_found_page.dart';
 import 'package:colmeia/features/overview/presentation/pages/overview_home_page.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 void _wireOverviewAgentSqlRelayCancel(AgentQueriesCancelScope scope) {

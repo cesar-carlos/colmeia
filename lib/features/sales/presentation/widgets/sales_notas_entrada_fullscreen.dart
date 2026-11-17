@@ -5,7 +5,7 @@ import 'package:colmeia/features/sales/presentation/sales_notas_entrada_view.dar
 import 'package:colmeia/features/sales/presentation/widgets/sales_notas_entrada_pagination_footer.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_notas_entrada_report_card.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 @immutable
 class SalesNotasEntradaGridSnapshot {

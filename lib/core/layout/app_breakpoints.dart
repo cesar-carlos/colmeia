@@ -1,11 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 abstract final class AppBreakpoints {
   /// Upper bound (exclusive) for compact / single-column layouts.
   static const double mobile = 600;
 
-  /// Lower bound for layouts below [desktop] (non-rail shell). Currently
-  /// identical to [mobile] because the app does not use a distinct tablet tier.
+  /// Lower bound for the tablet tier (non-rail shell).
   static const double tablet = mobile;
 
   /// Minimum width for persistent sidebar rail (shell + content constraint).
@@ -16,8 +15,11 @@ abstract final class AppBreakpoints {
   /// KPI grid switches from 2 to 3 columns at or above this width.
   static const double kpiGridWide = 720;
 
-  /// KPI grid switches from 3 to 5 columns at or above this width.
+  /// KPI grid uses its configured extra-wide column count at this width.
   static const double kpiGridExtraWide = 960;
+
+  /// Minimum KPI tile width at the default text scale.
+  static const double kpiTileMinWidth = 160;
 
   /// Hides a report column when grid width is below this (very narrow layouts).
   static const double reportColumnHideExtraNarrow = 360;

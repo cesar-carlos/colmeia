@@ -1,5 +1,5 @@
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Visual and behavioural configuration for the report viewer
 /// (AppReportViewer).

@@ -12,8 +12,8 @@ import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_overlay
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_snapshot.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_layout_constants.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 
 class BrazilMapChartDesktopBranchSidebar extends StatefulWidget {
   const BrazilMapChartDesktopBranchSidebar({

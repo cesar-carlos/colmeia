@@ -1,5 +1,5 @@
 import 'package:colmeia/core/preferences/app_user_preferences_store.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppThemeModeController extends ChangeNotifier {
   AppThemeModeController(AppUserPreferencesStore store)

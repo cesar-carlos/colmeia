@@ -7,7 +7,7 @@ import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_models.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_store_sales_display_helpers.dart';
 import 'package:colmeia/shared/widgets/widgets.dart' show AppSectionCard;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class BrazilMapChartSelectedMarkerDetailSurface extends StatelessWidget {
   const BrazilMapChartSelectedMarkerDetailSurface({

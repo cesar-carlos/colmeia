@@ -4,8 +4,8 @@ import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/charts/app_chart_filter_summary.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Fullscreen chart shell: full-screen background, default body insets, Escape
 /// to close (desktop/web), and tighter default vertical padding on short

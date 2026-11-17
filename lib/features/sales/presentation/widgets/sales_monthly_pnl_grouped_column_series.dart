@@ -1,7 +1,7 @@
 import 'package:colmeia/features/sales/domain/entities/sales_monthly_pnl_point.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/charts/app_grouped_column_chart_series.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 List<AppGroupedColumnChartSeries<SalesMonthlyPnlPoint>>
 salesMonthlyPnlGroupedColumnSeries({

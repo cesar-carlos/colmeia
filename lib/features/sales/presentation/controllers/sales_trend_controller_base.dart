@@ -8,7 +8,7 @@ import 'package:colmeia/features/sales/domain/load_available_agents_for_sales.da
 import 'package:colmeia/features/sales/presentation/controllers/sales_trend_reload_outcome.dart';
 import 'package:colmeia/features/sales/presentation/utils/reconcile_selected_sales_agent_id.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Shared SQL-load infrastructure for product trend controllers.
 abstract class SalesTrendControllerBase extends ChangeNotifier {

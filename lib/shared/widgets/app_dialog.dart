@@ -1,10 +1,11 @@
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/actions/app_destructive_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_flat_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_primary_button.dart';
 import 'package:colmeia/shared/widgets/actions/app_secondary_button.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppDialog extends StatelessWidget {
   const AppDialog({
@@ -98,7 +99,7 @@ class AppDialogSurface extends StatelessWidget {
         ),
       ),
       clipBehavior: Clip.antiAlias,
-      child: Padding(
+      child: SingleChildScrollView(
         padding: EdgeInsets.all(tokens.contentSpacing),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -113,7 +114,7 @@ class AppDialogSurface extends StatelessWidget {
                     child: Icon(
                       leadingIcon,
                       size: 20,
-                      color: scheme.primary,
+                      color: scheme.surfaceAccent,
                     ),
                   ),
                   SizedBox(width: tokens.gapSm),

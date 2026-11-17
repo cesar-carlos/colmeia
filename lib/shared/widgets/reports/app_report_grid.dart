@@ -1,4 +1,5 @@
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_column.dart';
@@ -7,7 +8,7 @@ import 'package:colmeia/shared/widgets/reports/app_report_grid_source.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_style.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 
 /// Right strip reserved when the grid has a fixed height and may scroll
@@ -66,6 +67,7 @@ class AppReportGrid<T> extends StatefulWidget {
     this.emptyAction,
     this.isLoading = false,
     this.isIncomplete = false,
+    this.availableWidth,
   });
 
   final List<AppReportColumn<T>> columns;
@@ -93,6 +95,7 @@ class AppReportGrid<T> extends StatefulWidget {
   /// the empty state (avoids "no results" while data is still fetching).
   final bool isLoading;
   final bool isIncomplete;
+  final double? availableWidth;
 
   @override
   State<AppReportGrid<T>> createState() => _AppReportGridState<T>();
@@ -136,6 +139,12 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_hasBuiltSource) {
+      final previousVisible = _cachedVisibleColumns;
+      final visible = _visibleColumns;
+      if (!listEquals(previousVisible, visible)) {
+        _source.update(rows: widget.rows, visibleColumns: visible);
+        _scheduleSyncGridStateFromParent();
+      }
       _source.updatePresentation(
         alternateRowColor: _resolvedAlternateRowColor,
         dataTextStyle: widget.style.dataTextStyle,
@@ -155,7 +164,11 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
       oldWidget.groupController?._unbind();
       _bindGroupController();
     }
-    final columnsChanged = oldWidget.columns != widget.columns;
+    final widthChanged = oldWidget.availableWidth != widget.availableWidth;
+    final previousVisible = _cachedVisibleColumns;
+    final columnsChanged =
+        oldWidget.columns != widget.columns ||
+        (widthChanged && !listEquals(previousVisible, _visibleColumns));
     final rowsChanged = oldWidget.rows != widget.rows;
     final styleChanged = _sourceStyleChanged(oldWidget.style, widget.style);
     final trustOrderChanged =
@@ -381,7 +394,8 @@ class _AppReportGridState<T> extends State<AppReportGrid<T>> {
   /// (column list identity, screen width) so repeated `build()` passes do not
   /// re-filter the columns.
   List<AppReportColumn<T>> get _visibleColumns {
-    final screenWidth = MediaQuery.sizeOf(context).width;
+    final screenWidth =
+        widget.availableWidth ?? MediaQuery.sizeOf(context).width;
     final signature = identityHashCode(widget.columns);
     final cached = _cachedVisibleColumns;
     if (cached != null &&
@@ -826,11 +840,11 @@ class _ReportGridColumnHeader extends StatelessWidget {
     final tokens = theme.extension<AppThemeTokens>()!;
     final isActive = sortDirection != null;
     final iconColor = isActive
-        ? theme.colorScheme.primary
+        ? theme.colorScheme.surfaceAccent
         : theme.colorScheme.onSurfaceVariant;
     final labelStyle = isActive
         ? textStyle.copyWith(
-            color: theme.colorScheme.primary,
+            color: theme.colorScheme.surfaceAccent,
             fontWeight: FontWeight.w800,
           )
         : textStyle;

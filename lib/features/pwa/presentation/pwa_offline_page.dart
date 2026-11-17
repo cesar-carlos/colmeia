@@ -23,7 +23,7 @@ import 'package:colmeia/shared/widgets/reports/app_report_query.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_style.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_viewer.dart';
 import 'package:colmeia/shared/widgets/reports/export/report_export_sharing.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class PwaOfflinePage extends StatefulWidget {
   const PwaOfflinePage({super.key});

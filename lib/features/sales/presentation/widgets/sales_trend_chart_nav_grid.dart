@@ -4,7 +4,7 @@ import 'package:colmeia/shared/widgets/app_skeleton.dart';
 import 'package:colmeia/shared/widgets/navigation/app_hub_navigation_card.dart';
 import 'package:colmeia/shared/widgets/navigation/app_hub_navigation_card_density.dart';
 import 'package:colmeia/shared/widgets/navigation/app_hub_navigation_grid.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Descriptor for one chart entry in a sales trend chart navigation grid.
 final class SalesTrendChartNavItem<T> {

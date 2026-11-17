@@ -23,7 +23,7 @@ import 'package:colmeia/shared/widgets/app_inline_error_panel.dart'
 import 'package:colmeia/shared/widgets/app_tag_chip.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:provider/provider.dart';
 
 class OverviewChartDetailPage extends StatefulWidget {

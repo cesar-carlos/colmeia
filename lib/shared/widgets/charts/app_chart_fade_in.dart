@@ -1,5 +1,5 @@
 import 'package:colmeia/shared/design_system/app_motion_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Plays a one-shot fade + subtle slide-up the first time the wrapped chart
 /// (or any heavy widget) is mounted.

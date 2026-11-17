@@ -2,8 +2,8 @@ import 'package:colmeia/shared/widgets/charts/engines/chart_engine_defaults.dart
 import 'package:colmeia/shared/widgets/charts/engines/chart_engine_states.dart';
 import 'package:colmeia/shared/widgets/widgets.dart'
     show AppChartPoint, AppComparisonBarChart;
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 /// Visual customization for [AppComparisonBarChart].

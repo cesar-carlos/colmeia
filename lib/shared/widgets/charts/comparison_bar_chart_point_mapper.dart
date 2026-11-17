@@ -1,7 +1,7 @@
 import 'package:colmeia/shared/widgets/charts/app_chart_models.dart';
 import 'package:colmeia/shared/widgets/charts/app_comparison_bar_chart.dart';
 import 'package:colmeia/shared/widgets/charts/comparison_bar_plot_floor.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class ComparisonBarChartMappedPoints<T> {
   const ComparisonBarChartMappedPoints({

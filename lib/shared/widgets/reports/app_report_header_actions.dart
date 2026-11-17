@@ -1,6 +1,7 @@
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 enum AppReportHeaderActionTone { neutral, primary }
 
@@ -30,13 +31,13 @@ class AppReportHeaderActionButton extends StatelessWidget {
 
     final foreground = enabled
         ? (isPrimary
-              ? theme.colorScheme.primary
+              ? theme.colorScheme.surfaceAccent
               : theme.colorScheme.onSurfaceVariant)
         : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.45);
-    final background = isPrimary
+    final background = isPrimary && enabled
         ? theme.colorScheme.primaryContainer.withValues(alpha: 0.42)
         : theme.colorScheme.surfaceContainerHigh.withValues(alpha: 0.92);
-    final border = isPrimary
+    final border = isPrimary && enabled
         ? theme.colorScheme.primary.withValues(alpha: 0.22)
         : theme.colorScheme.outlineVariant.withValues(alpha: 0.5);
 

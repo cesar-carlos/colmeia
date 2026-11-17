@@ -8,7 +8,7 @@ import 'package:colmeia/shared/widgets/charts/app_brazil_store_sales_map_overlay
 import 'package:colmeia/shared/widgets/charts/brazil_map_chart_visual_snapshot.dart';
 import 'package:colmeia/shared/widgets/charts/brazil_map_store_sales_display_helpers.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class BrazilMapChartBranchCarouselNavigation extends StatelessWidget {
   const BrazilMapChartBranchCarouselNavigation({

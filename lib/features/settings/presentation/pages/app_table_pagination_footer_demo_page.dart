@@ -4,7 +4,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/widgets/app_section_card_with_heading.dart';
 import 'package:colmeia/shared/widgets/navigation/app_shell_page_intro.dart';
 import 'package:colmeia/shared/widgets/pagination/app_table_pagination_footer.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class AppTablePaginationFooterDemoPage extends StatefulWidget {
   const AppTablePaginationFooterDemoPage({super.key});

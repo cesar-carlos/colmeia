@@ -1,5 +1,5 @@
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// [DraggableScrollableSheet.minChildSize] fraction so fixed header and footer
 /// fit before the flex list receives space (avoids [Column] overflow at min extent).

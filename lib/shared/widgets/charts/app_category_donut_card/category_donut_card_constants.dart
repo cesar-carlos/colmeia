@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Slightly smaller type within this card (header, legend, center labels).
 const double categoryDonutTypographyTightenFactor = 0.92;

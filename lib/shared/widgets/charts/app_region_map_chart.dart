@@ -11,8 +11,8 @@ import 'package:colmeia/shared/widgets/charts/engines/syncfusion_region_map_char
 import 'package:colmeia/shared/widgets/charts/region_map_viewport_sync_policy.dart';
 import 'package:colmeia/shared/widgets/forms/app_choice_chip.dart';
 import 'package:colmeia/shared/widgets/forms/app_segmented_control.dart';
-import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:material_ui/material_ui.dart';
 
 export 'app_map_models.dart';
 

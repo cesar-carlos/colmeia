@@ -4,8 +4,8 @@ import 'package:colmeia/features/client_agents/domain/entities/client_agent.dart
 import 'package:colmeia/features/client_agents/presentation/widgets/client_agents_approved_agents_tab.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/widgets/pagination/app_table_pagination_footer.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../../support/localized_test_app.dart';
 

@@ -9,12 +9,13 @@ import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_form_builder_date_picker_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_form_builder_dropdown_field.dart';
 import 'package:colmeia/shared/widgets/forms/app_form_builder_text_field.dart';
+import 'package:colmeia/shared/widgets/forms/app_responsive_field_pair.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_filter_form_values.dart';
+import 'package:colmeia/shared/widgets/reports/app_report_filter_values_equality.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Generic filters panel that renders form fields from a list of
 /// [AppReportFilterDescriptor] declarations.
@@ -57,7 +58,10 @@ class _AppReportFiltersPanelState extends State<AppReportFiltersPanel> {
   @override
   void didUpdateWidget(covariant AppReportFiltersPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!mapEquals(oldWidget.initialValues, widget.initialValues)) {
+    if (!reportFilterValuesEqual(
+      oldWidget.initialValues,
+      widget.initialValues,
+    )) {
       _scheduleSyncFormValues();
     }
   }
@@ -193,41 +197,33 @@ class _AppReportFiltersPanelState extends State<AppReportFiltersPanel> {
                         ),
                       );
                     }),
-                    Row(
-                      children: <Widget>[
-                        Expanded(
-                          child: AppSecondaryButton(
-                            onPressed: () {
-                              _formKey.currentState?.reset();
-                              _formKey.currentState?.patchValue(
-                                reportFilterFormValues(
-                                  widget.filters,
-                                  const {},
-                                  clear: true,
-                                ),
-                              );
-                              widget.onClear?.call();
-                            },
-                            label: l10n.reportFiltersClearAction,
-                          ),
-                        ),
-                        SizedBox(width: tokens.gapMd),
-                        Expanded(
-                          child: AppPrimaryButton(
-                            onPressed: () {
-                              final valid =
-                                  _formKey.currentState?.saveAndValidate() ??
-                                  false;
-                              if (!valid) return;
-                              widget.onApply(
-                                _formKey.currentState?.value ??
-                                    <String, Object?>{},
-                              );
-                            },
-                            label: l10n.reportFiltersApplyAction,
-                          ),
-                        ),
-                      ],
+                    AppResponsiveFieldPair(
+                      spacing: tokens.gapMd,
+                      first: AppSecondaryButton(
+                        onPressed: () {
+                          _formKey.currentState?.reset();
+                          _formKey.currentState?.patchValue(
+                            reportFilterFormValues(
+                              widget.filters,
+                              const {},
+                              clear: true,
+                            ),
+                          );
+                          widget.onClear?.call();
+                        },
+                        label: l10n.reportFiltersClearAction,
+                      ),
+                      second: AppPrimaryButton(
+                        onPressed: () {
+                          final valid =
+                              _formKey.currentState?.saveAndValidate() ?? false;
+                          if (!valid) return;
+                          widget.onApply(
+                            _formKey.currentState?.value ?? <String, Object?>{},
+                          );
+                        },
+                        label: l10n.reportFiltersApplyAction,
+                      ),
                     ),
                   ],
                 ),
@@ -378,34 +374,28 @@ class _FilterField extends StatelessWidget {
               ),
             ),
             SizedBox(height: tokens.gapXs),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: AppFormBuilderTextField(
-                    name: '${descriptor.name}_min',
-                    initialValue: initialValues['${descriptor.name}_min']
-                        ?.toString(),
-                    label: l10n.reportFilterRangeFrom,
-                    hintText: descriptor.minValue?.toString(),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                  ),
+            AppResponsiveFieldPair(
+              spacing: tokens.gapSm,
+              first: AppFormBuilderTextField(
+                name: '${descriptor.name}_min',
+                initialValue: initialValues['${descriptor.name}_min']
+                    ?.toString(),
+                label: l10n.reportFilterRangeFrom,
+                hintText: descriptor.minValue?.toString(),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
                 ),
-                SizedBox(width: tokens.gapSm),
-                Expanded(
-                  child: AppFormBuilderTextField(
-                    name: '${descriptor.name}_max',
-                    initialValue: initialValues['${descriptor.name}_max']
-                        ?.toString(),
-                    label: l10n.reportFilterRangeTo,
-                    hintText: descriptor.maxValue?.toString(),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                  ),
+              ),
+              second: AppFormBuilderTextField(
+                name: '${descriptor.name}_max',
+                initialValue: initialValues['${descriptor.name}_max']
+                    ?.toString(),
+                label: l10n.reportFilterRangeTo,
+                hintText: descriptor.maxValue?.toString(),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
                 ),
-              ],
+              ),
             ),
           ],
         );

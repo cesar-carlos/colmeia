@@ -1,5 +1,5 @@
 import 'package:colmeia/core/layout/app_breakpoints.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Constrains page-level content to [AppBreakpoints.pageContentMaxWidth]
 /// and centers it on desktop when the persistent rail is shown

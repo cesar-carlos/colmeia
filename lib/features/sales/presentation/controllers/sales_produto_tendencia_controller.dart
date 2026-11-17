@@ -15,7 +15,7 @@ import 'package:colmeia/features/sales/presentation/controllers/sales_trend_relo
 import 'package:colmeia/features/sales/presentation/state/sales_produto_tendencia_presentation_state.dart';
 import 'package:colmeia/features/sales/presentation/utils/sales_trend_date_preset.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 export 'package:colmeia/features/sales/presentation/controllers/sales_trend_reload_outcome.dart'
     show SalesProdutoTendenciaReloadOutcome;

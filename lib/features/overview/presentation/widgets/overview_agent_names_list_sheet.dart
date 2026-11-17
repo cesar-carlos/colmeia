@@ -5,7 +5,7 @@ import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:colmeia/shared/widgets/bottom_sheet_compact_drag_handle.dart';
 import 'package:colmeia/shared/widgets/forms/app_text_field.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Returns trimmed, non-empty names, sorted case-insensitively, with
 /// case-insensitive duplicates removed (first occurrence wins).
