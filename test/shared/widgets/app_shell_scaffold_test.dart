@@ -1,6 +1,7 @@
 import 'package:colmeia/app/router/app_routes.dart';
 import 'package:colmeia/app/shell/app_shell_scaffold.dart';
 import 'package:colmeia/app/theme/app_theme.dart';
+import 'package:colmeia/core/localization/app_locale_resolution.dart';
 import 'package:colmeia/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:colmeia/features/user_context/presentation/controllers/current_user_context_controller.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
@@ -214,7 +215,7 @@ MaterialApp _buildApp(GoRouter router) {
   return MaterialApp.router(
     theme: AppTheme.light(),
     locale: const Locale('pt', 'BR'),
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    localizationsDelegates: colmeiaLocalizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     routerConfig: router,
   );
