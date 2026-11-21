@@ -85,5 +85,13 @@ void main() {
     check(rows.single.nomeUsuario).equals('Caixa 01');
     check(rows.single.qtdVendas).equals(3);
     check(rows.single.valorParcela).equals(155.75);
+
+    final request =
+        verify(
+              () => agentQueriesRepository.executeSql(captureAny()),
+            ).captured.single
+            as AgentSqlExecuteRequest;
+    check(request.executeOptions!.maxRows).equals(100);
+    check(request.sql).contains('SELECT TOP 100');
   });
 }

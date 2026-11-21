@@ -8,6 +8,7 @@ import 'package:colmeia/features/agent_queries/data/agent_sql_execute_request_to
 import 'package:colmeia/features/agent_queries/domain/agent_sql_http_receive_timeout.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_bridge_pagination.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_batch_request.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_options.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/ports/agent_queries_cancel_scope.dart';
 import 'package:dio/dio.dart';
@@ -150,8 +151,22 @@ class ApiAgentQueriesRemoteDataSource implements AgentQueriesRemoteDataSource {
     AgentQueriesCancelScope? cancelScope,
   }) {
     final rpcId = _uuid.v4();
+    final options = request.executeOptions;
+    // REST consumes one materialized response. Forcing DB streaming can leave
+    // the deployed bridge waiting for an agent response even for tiny results.
+    // Keep the original request intact for Relay and any subsequent routing.
+    final restRequest = options?.preferDbStreaming == true
+        ? request.copyWith(
+            executeOptions: AgentSqlExecuteOptions(
+              maxRows: options!.maxRows,
+              sqlTimeoutMs: options.sqlTimeoutMs,
+              executionMode: options.executionMode,
+              preferDbStreaming: false,
+            ),
+          )
+        : request;
     final body = _withServerTimingsFlag(
-      _bodyMapper.build(request: request, rpcId: rpcId),
+      _bodyMapper.build(request: restRequest, rpcId: rpcId),
     );
 
     return _postBridgeCommand(

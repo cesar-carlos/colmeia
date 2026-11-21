@@ -5,6 +5,7 @@ import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/core/di/injector.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
+import 'package:colmeia/core/localization/app_locale_resolution.dart';
 import 'package:colmeia/core/refresh/auto_refresh_snapshot.dart';
 import 'package:colmeia/core/value_objects/email_address.dart';
 import 'package:colmeia/features/agent_queries/application/usecases/load_cadastro_filial_page_use_case.dart';
@@ -814,7 +815,7 @@ void main() {
         child: MaterialApp.router(
           theme: AppTheme.light(),
           routerConfig: router,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          localizationsDelegates: colmeiaLocalizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
         ),
       ),
@@ -840,7 +841,7 @@ Future<void> _pumpTrendPage(
       child: MaterialApp(
         theme: AppTheme.light(),
         locale: locale,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        localizationsDelegates: colmeiaLocalizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
           body: SalesProdutoTendenciaPage(

@@ -87,7 +87,19 @@ Common `options`:
 - `execution_mode`: agent-specific execution behavior.
 - `prefer_db_streaming`: bridge hint for DB-side streaming when the agent
   supports it; Colmeia enables it on large report/chart relay streaming
-  queries.
+  queries. The REST datasource changes an explicit `true` to `false` on its
+  outgoing copy, including REST fallback. It preserves row limits, SQL timeout,
+  execution mode, parameters and the original request used by Relay. REST
+  consumes one materialized response; it does not expose incremental progress.
+
+On 2026-11-21, the same four bounded reports (per-user parcels, daily branch
+municipality sales, payment-method V2 and payment-method by month) returned
+5/6/9/21 rows in 170–301 ms without the explicit DB-streaming hint. With the
+hint, all four reached a 20-second bridge timeout. Earlier repository runs
+waited 120 seconds and received HTTP 503. This is evidence for the deployed
+REST compatibility adjustment, not a SQL optimization or a guarantee about
+other agents. The seven affected repository/across-agent E2E cases passed
+after the change; Relay retains its streaming hint and collector.
 - `multi_result`: only when the agent method explicitly supports it.
 
 Top-level `pagination` belongs to REST/`agents:command` single `sql.execute`;

@@ -26,8 +26,8 @@ abstract final class AgentQueriesBoundedResultMaxRows {
   /// Payment method × month × user (and similar); overview forma pagamento.
   static const int resumoParcelaFormaPagamento = 5000;
 
-  /// Company, branch, and sale user — one bucket per operator per branch.
-  static const int resumoParcelaPorUsuario = 5000;
+  /// Company, branch, and sale user; aligned with the query's final `TOP`.
+  static const int resumoParcelaPorUsuario = sqlReturnRowCap;
 
   /// Same cardinality as `resumoParcelaFormaPagamento` (por-mes report).
   static const int resumoParcelasFormaPagamentoPorMes = 5000;
@@ -41,9 +41,8 @@ abstract final class AgentQueriesBoundedResultMaxRows {
   /// One row per company, branch, and calendar day — long ranges × filiais.
   static const int resumoTotalDiarioVendas = 8000;
 
-  /// Same cardinality as [resumoTotalDiarioVendas] with branch municipality
-  /// dimensions in each row.
-  static const int resumoTotalVendasMunicipioFilialDiario = 8000;
+  /// Daily branch municipality buckets; aligned with the query's final `TOP`.
+  static const int resumoTotalVendasMunicipioFilialDiario = sqlReturnRowCap;
 
   /// One row per company and branch for the sales live map period aggregate.
   static const int resumoTotalVendasMunicipioFilialPeriodo = 2000;

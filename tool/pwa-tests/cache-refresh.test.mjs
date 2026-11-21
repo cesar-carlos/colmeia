@@ -25,12 +25,21 @@ test('scheduler uses real Web Locks and IndexedDB across tabs and restart', {tim
     const errors = [];
     for (const page of [first,second]) page.on('pageerror', error=>errors.push(error.message));
     const call = (page,operation,extra={}) => page.evaluate(async args=>JSON.parse(await window.cacheRefreshSmoke(JSON.stringify(args))).value,{operation,...extra});
+    const waitForState = async (predicate) => {
+      const deadline = Date.now() + 15000;
+      let state;
+      do {
+        state = await call(first,'state');
+        if (predicate(state)) return state;
+        await new Promise(resolve=>setTimeout(resolve,50));
+      } while (Date.now() < deadline);
+      assert.fail(`Scheduler did not reach the expected state: ${JSON.stringify(state)}`);
+    };
     for (const page of [first,second]) {await page.goto(url);await page.waitForFunction(()=>!!window.cacheRefreshSmoke);}
     await call(first,'seed');
     await Promise.all([call(first,'offline',{agent:'A'}),call(second,'offline',{agent:'A'})]);
     await Promise.all([call(first,'start'),call(second,'start')]);
-    await first.waitForFunction(async()=>{
-      const s=JSON.parse(await window.cacheRefreshSmoke(JSON.stringify({operation:'state'}))).value;
+    await waitForState(s=>{
       return s.B==='1' && s.records.find(r=>r.schedule.agentId==='A')?.state.status==='waitingAgent'
         && s.records.find(r=>r.schedule.agentId==='B')?.state.lastSuccess !== null;
     });
@@ -38,15 +47,14 @@ test('scheduler uses real Web Locks and IndexedDB across tabs and restart', {tim
     assert.equal(state.A,null);
     assert.equal(state.records.find(r=>r.schedule.agentId==='A').state.status,'waitingAgent');
     await Promise.all([call(first,'recover',{agent:'A'}),call(second,'recover',{agent:'A'})]);
-    await first.waitForFunction(async()=>JSON.parse(await window.cacheRefreshSmoke(JSON.stringify({operation:'state'}))).value.A === '1');
+    await waitForState(s=>s.A === '1' && s.records.find(r=>r.schedule.agentId==='A')?.state.lastSuccess !== null);
     await first.reload();
     await first.waitForFunction(()=>!!window.cacheRefreshSmoke);
     await call(first,'start');
     state = await call(first,'state');
     assert.equal(state.A,'1');assert.equal(state.B,'1');
     await call(first,'advance');
-    await first.waitForFunction(async()=>{
-      const s=JSON.parse(await window.cacheRefreshSmoke(JSON.stringify({operation:'state'}))).value;
+    await waitForState(s=>{
       return s.A==='2' && s.B==='2' && s.running.length===0;
     });
     for (const [page, slot] of [[first,0],[second,1]]) {
@@ -60,22 +68,19 @@ test('scheduler uses real Web Locks and IndexedDB across tabs and restart', {tim
       await page.waitForFunction(()=>window.capacityHeld);
     }
     await call(first,'advance');
-    await first.waitForFunction(async()=>{
-      const s=JSON.parse(await window.cacheRefreshSmoke(JSON.stringify({operation:'state'}))).value;
+    await waitForState(s=>{
       return s.records.every(r=>r.state.reason==='capacity_busy');
     });
     state=await call(first,'state');
     assert.equal(state.A,'2');assert.equal(state.B,'2');
     await first.evaluate(async()=>{window.releaseCapacity();await window.capacityPromise;});
     await call(first,'advanceSeconds');
-    await first.waitForFunction(async()=>{
-      const s=JSON.parse(await window.cacheRefreshSmoke(JSON.stringify({operation:'state'}))).value;
+    await waitForState(s=>{
       return s.A==='3' || s.B==='3';
     });
     await second.evaluate(async()=>{window.releaseCapacity();await window.capacityPromise;});
     await call(first,'advanceSeconds');
-    await first.waitForFunction(async()=>{
-      const s=JSON.parse(await window.cacheRefreshSmoke(JSON.stringify({operation:'state'}))).value;
+    await waitForState(s=>{
       return s.A==='3' && s.B==='3' && s.running.length===0;
     });
     await mkdir(resolve(root,'evidence'),{recursive:true});

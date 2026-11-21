@@ -116,6 +116,8 @@ void main() {
     check(capturedRequest.executeOptions!.maxRows).equals(
       AgentQueriesBoundedResultMaxRows.resumoTotalVendasMunicipioFilialDiario,
     );
+    check(capturedRequest.executeOptions!.maxRows).equals(100);
+    check(capturedRequest.sql).contains('SELECT TOP 100');
     check(capturedRequest.namedParams['dataVendaInicio']).equals('2026-01-01');
     check(capturedRequest.namedParams['dataVendaFim']).equals('2026-12-31');
     check(capturedRequest.namedParams.length).equals(5);

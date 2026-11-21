@@ -142,6 +142,65 @@ void main() {
     },
   );
 
+  for (final streaming in [null, false, true]) {
+    test('REST materializes results with streaming hint $streaming', () async {
+      when(
+        () => dio.post<Map<String, dynamic>>(
+          any(),
+          data: any(named: 'data'),
+          options: any(named: 'options'),
+        ),
+      ).thenAnswer(
+        (_) async => Response<Map<String, dynamic>>(
+          requestOptions: RequestOptions(path: '/agents/commands'),
+          data: const <String, dynamic>{},
+        ),
+      );
+      final request = AgentSqlExecuteRequest(
+        agentId: 'agent-1',
+        sql: 'SELECT TOP 100 *\nFROM table WHERE Id = :id',
+        clientToken: 'test-token',
+        namedParams: const {'id': 7},
+        bridgeTimeoutMs: 20000,
+        useRelay: true,
+        relayMode: AgentSqlRelayMode.streaming,
+        executeOptions: AgentSqlExecuteOptions(
+          maxRows: 100,
+          sqlTimeoutMs: 10000,
+          executionMode: AgentSqlExecutionMode.preserve,
+          preferDbStreaming: streaming,
+        ),
+      );
+
+      await dataSource.postSqlExecute(request);
+
+      final captured =
+          verify(
+                () => dio.post<Map<String, dynamic>>(
+                  any(),
+                  data: captureAny(named: 'data'),
+                  options: any(named: 'options'),
+                ),
+              ).captured.single!
+              as Map<String, Object?>;
+      final command = captured['command']! as Map<String, Object?>;
+      final params = command['params']! as Map<String, Object?>;
+      final options = params['options']! as Map<String, Object?>;
+      expect(options, {
+        'max_rows': 100,
+        'timeout_ms': 10000,
+        'execution_mode': 'preserve',
+        if (streaming != null) 'prefer_db_streaming': false,
+      });
+      expect(params['params'], {'id': 7});
+      expect(params['client_token'], 'test-token');
+      expect(params['sql'], 'SELECT TOP 100 * FROM table WHERE Id = :id');
+      expect(captured['timeoutMs'], 20000);
+      expect(request.executeOptions!.preferDbStreaming, streaming);
+      expect(request.relayMode, AgentSqlRelayMode.streaming);
+    });
+  }
+
   test(
     'uses default HTTP receive timeout when bridgeTimeoutMs is null',
     () async {

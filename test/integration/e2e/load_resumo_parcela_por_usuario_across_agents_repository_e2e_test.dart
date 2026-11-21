@@ -55,6 +55,13 @@ void main() {
 
           result.fold(
             (report) {
+              expect(report.participants, isNotEmpty);
+              expect(report.failedAgentIds, isEmpty);
+              expect(report.skippedDueToHubPresenceTargets, isEmpty);
+              // ignore: avoid_print -- Live E2E evidence without report contents.
+              print(
+                'Complete report: ${report.mergedRows.length} rows in ${report.totalElapsedMs} ms.',
+              );
               for (final row in report.mergedRows) {
                 expect(row.qtdVendas, greaterThanOrEqualTo(0));
                 expect(row.valorParcela, isNonNegative);

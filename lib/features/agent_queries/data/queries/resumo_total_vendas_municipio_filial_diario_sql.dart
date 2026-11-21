@@ -62,7 +62,7 @@ import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result
 abstract final class ResumoTotalVendasMunicipioFilialDiarioSql {
   static const String query =
       '''
-SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}
+SELECT TOP ${AgentQueriesBoundedResultMaxRows.resumoTotalVendasMunicipioFilialDiario}
   CodEmpresa,
   CodFilial,
   NomeFilial,

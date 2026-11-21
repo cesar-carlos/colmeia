@@ -51,6 +51,9 @@ void main() {
 
           result.fold(
             (rows) {
+              expect(rows.length, lessThanOrEqualTo(100));
+              // ignore: avoid_print -- E2E evidence without report contents.
+              print('Per-user resumo returned ${rows.length} rows (cap: 100).');
               for (final row in rows) {
                 expect(row.nomeUsuario.trim(), isNotEmpty);
                 expect(row.qtdVendas, greaterThanOrEqualTo(0));
@@ -71,6 +74,9 @@ void main() {
                 reason:
                     'Repository e2e should return rows, invalid_policy / '
                     'missing_permission RPC, or transient bridge HTTP 5xx.',
+              );
+              markTestSkipped(
+                'Row limit not verified: ${failure.runtimeType}.',
               );
             },
           );

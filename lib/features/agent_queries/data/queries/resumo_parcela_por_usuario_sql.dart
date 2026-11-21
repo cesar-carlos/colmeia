@@ -15,7 +15,7 @@ import 'package:colmeia/features/agent_queries/data/queries/parcela_produto_vend
 abstract final class ResumoParcelaPorUsuarioSql {
   static const String _queryHead =
       '''
-    SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}
+    SELECT TOP ${AgentQueriesBoundedResultMaxRows.resumoParcelaPorUsuario}
       CodEmpresa,
       CodFilial,
       NomeUsuario,
