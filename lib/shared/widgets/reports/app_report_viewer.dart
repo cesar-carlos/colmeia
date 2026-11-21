@@ -75,7 +75,11 @@ class AppReportViewer<T> extends StatefulWidget {
     this.onRetry,
     this.emptyMessage,
     this.searchHintText,
+    this.embedded = false,
   });
+
+  /// Uses the parent scroll view while retaining scrolling inside the grid.
+  final bool embedded;
 
   /// Column definitions. Required -- defines schema and behaviour.
   final List<AppReportColumn<T>> columns;
@@ -496,8 +500,12 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
     );
 
     final body = ListView(
+      shrinkWrap: widget.embedded,
+      primary: widget.embedded ? false : null,
       padding: style.contentPadding ?? context.pageScrollPadding(tokens),
-      physics: style.enablePullToRefresh
+      physics: widget.embedded
+          ? const NeverScrollableScrollPhysics()
+          : style.enablePullToRefresh
           ? const AlwaysScrollableScrollPhysics()
           : null,
       children: <Widget>[

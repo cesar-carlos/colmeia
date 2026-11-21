@@ -3,6 +3,19 @@
 Windows and Android release workflow. Web builds and hosting are documented
 in the [Web guide](web_guide.md). Native iOS releases are discontinued.
 
+## Version 1.6.16+39 — 2026-11-21
+
+Product margin now scrolls as a page with a taller table instead of compressing
+rows below the header. The replacement-cost selector is directly visible, with
+All, With cost (default) and Without cost options. Existing query filtering,
+pagination reset and theme components are preserved. The report viewer's embedded
+layout is opt-in; other reports retain their existing scroll behavior.
+
+Local validation: 25 existing controller, grid sizing and dropdown tests passed;
+Flutter analysis reported no issues. Interactive visual validation was not performed
+because no debug app was available. Release CI validates the tagged commit before
+publishing native installers.
+
 ## Release validation — 2026-11-21
 
 The intermediate tags `v1.6.12`, `v1.6.13` and `v1.6.14` did not publish native installers.
