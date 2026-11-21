@@ -15,6 +15,7 @@ permissions:
 jobs:
   analyze:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -48,6 +49,11 @@ jobs:
   test:
     needs: analyze
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -58,30 +64,12 @@ jobs:
           flutter-version: ${{ vars.FLUTTER_CI_VERSION }}
 
       - name: Test
-        shell: bash
-        run: |
-          set -euo pipefail
-          mapfile -t root < <(find test -maxdepth 1 -name '*_test.dart' 2>/dev/null | sort || true)
-          if [ ${#root[@]} -eq 0 ]; then
-            flutter test \
-              test/app test/core test/features test/shared \
-              test/docs \
-              test/integration/dart_test_config_contract_test.dart \
-              --exclude-tags e2e \
-              --reporter expanded
-          else
-            flutter test \
-              "${root[@]}" \
-              test/app test/core test/features test/shared \
-              test/docs \
-              test/integration/dart_test_config_contract_test.dart \
-              --exclude-tags e2e \
-              --reporter expanded
-          fi
+        run: python tool/run_ci_tests.py --shards 4 --shard ${{ matrix.shard }}
 
   android_smoke:
     needs: analyze
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -91,6 +79,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+
+      - name: Cache Gradle dependencies and build state
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
 
       - name: Setup Flutter
         uses: ./.github/actions/setup-colmeia-flutter
@@ -113,6 +106,7 @@ jobs:
   android_release_smoke:
     needs: analyze
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -122,6 +116,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+
+      - name: Cache Gradle dependencies and build state
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
 
       - name: Setup Flutter
         uses: ./.github/actions/setup-colmeia-flutter
@@ -178,6 +177,7 @@ jobs:
   web_smoke:
     needs: analyze
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -198,13 +198,21 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          flutter build web --release --no-web-resources-cdn
+          flutter build web --release --no-web-resources-cdn --no-wasm-dry-run
           python3 tool/package_pwa.py
 
       - name: Setup browser tests
         uses: actions/setup-node@v6
         with:
           node-version: '24'
+          cache: npm
+          cache-dependency-path: tool/pwa-tests/package-lock.json
+
+      - name: Cache Playwright Chromium
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('tool/pwa-tests/package-lock.json') }}
 
       - name: Test production PWA lifecycle
         working-directory: tool/pwa-tests

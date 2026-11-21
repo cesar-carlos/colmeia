@@ -3,6 +3,64 @@
 Windows and Android release workflow. Web builds and hosting are documented
 in the [Web guide](web_guide.md). Native iOS releases are discontinued.
 
+## Release validation — 2026-11-21
+
+The intermediate tags `v1.6.12` and `v1.6.13` did not publish native installers.
+Linux CI caught export tests treating an in-memory XFile as a path-backed file,
+then expecting a name that the native implementation explicitly ignores. Empty
+cleanup paths could resolve to the checkout directory. The code now restricts
+cleanup to UUID directories under the application's temporary export root;
+regressions cover empty/relative paths and preservation of unrelated files.
+The Web deployment is recorded in the [Web guide](web_guide.md).
+
+## CI performance and local preparation
+
+The previous single Linux test job took about ten minutes on completed runs;
+Android debug took roughly six minutes and Web about five. Flutter SDK and pub
+caches already existed, but Gradle, npm and Playwright browser caches did not.
+
+- Four test jobs now divide the same 664 test files by sorted filename, with no
+  overlap. Every shard must pass. Splitting files avoids recompiling every suite
+  in every job. The CI suite still excludes remote E2E tests.
+- Gradle caches dependencies/build state for Android. Pull requests and tagged
+  releases read caches; main CI writes them. Signing files are not cached.
+- npm and Playwright caches use the dependency lockfile. The supported JavaScript
+  Web build skips the redundant Wasm compatibility dry run.
+- Native release compilation runs alongside the exact-commit CI verification.
+  Publishing still requires successful verification plus both native builds;
+  appcast publication still requires the completed release. Building in parallel
+  reduces the critical path but may spend build minutes on a commit that fails CI.
+- Jobs have bounded timeouts. Main runs are not automatically cancelled by later
+  commits, because a release must validate the exact commit of its tag.
+
+Prepare locally before pushing:
+
+```powershell
+flutter pub get
+python tool/ci_preflight.py --templates-only --analyze --tests
+python -m unittest discover -s installer/tests -p '*_test.py'
+python -m unittest discover -s tool/tests -p '*_test.py'
+```
+
+`--templates-only` leaves local test credentials in the ignored configuration;
+it is not permission to bundle that file. Release packaging still rejects private
+configuration. The version check compares generated content, so a synchronized
+but uncommitted version bump is valid. `tool/release_windows.py` uses the same
+suite runner as CI, including documentation tests.
+
+For focused investigation, use `python tool/run_ci_tests.py --shards 4 --shard 0`.
+`--list` enumerates that shard without running Flutter. Windows executes long file
+lists in bounded batches. Running all four shards covers the full CI suite.
+
+Local preprocessing finds failures earlier and reuses the developer machine's
+warm caches; it does not replace Linux CI or approve a different tagged commit.
+Artifacts built on a developer machine are not automatically trusted as signed
+GitHub release assets. Full E2E tests remain separate and require the real agent.
+
+Cold caches and runner capacity still affect wall-clock time. Compare Actions job
+start/end times after the optimized run; do not treat expected savings as measured
+results. No additional paid runners or always-on local runners are configured.
+
 ## Fonte de verdade da versao
 
 - `pubspec.yaml`: versao canonica no formato `MAJOR.MINOR.PATCH+BUILD`

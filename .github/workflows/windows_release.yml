@@ -42,14 +42,6 @@ jobs:
             exit 1
           fi
 
-      - name: Require Flutter CI success for tagged commit
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          python installer/ci_require_flutter_ci.py --sha "$GITHUB_SHA" --timeout-seconds 900
-
       - name: Resolve release metadata
         id: metadata
         shell: bash
@@ -57,9 +49,21 @@ jobs:
           set -euo pipefail
           python installer/ci_print_release_metadata.py
 
+  verify_ci:
+    needs: prepare_release
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v6
+      - name: Require Flutter CI success for tagged commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python installer/ci_require_flutter_ci.py --sha "$GITHUB_SHA" --timeout-seconds 1800
+
   build_windows:
     needs: prepare_release
     runs-on: windows-latest
+    timeout-minutes: 40
     env:
       # Optional repository variable `APPCAST_FEED_URL` overrides the default feed.
       AUTO_UPDATE_FEED_URL: ${{ vars.APPCAST_FEED_URL != '' && vars.APPCAST_FEED_URL || format('https://raw.githubusercontent.com/{0}/main/appcast.xml', github.repository) }}
@@ -111,6 +115,7 @@ jobs:
   build_android:
     needs: prepare_release
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     env:
       SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
     steps:
@@ -122,6 +127,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+
+      - name: Restore Gradle dependencies and build state
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: true
 
       - name: Setup Flutter
         uses: ./.github/actions/setup-colmeia-flutter
@@ -197,6 +207,7 @@ jobs:
 
   publish_release:
     needs:
+      - verify_ci
       - prepare_release
       - build_windows
       - build_android

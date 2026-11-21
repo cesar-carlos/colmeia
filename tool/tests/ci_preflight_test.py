@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -44,6 +45,40 @@ class CiPreflightTest(unittest.TestCase):
             args = self.module.parse_args()
 
         self.assertTrue(args.templates_only)
+
+    def test_tests_flag_runs_the_shared_suite(self) -> None:
+        with (
+            mock.patch.object(sys, "argv", ["ci_preflight.py", "--tests", "--skip-env", "--skip-format", "--skip-version-sync"]),
+            mock.patch.object(self.module, "run") as run,
+        ):
+            self.assertEqual(0, self.module.main())
+        run.assert_called_once_with([sys.executable, "tool/run_ci_tests.py"])
+
+    def test_version_sync_accepts_matching_uncommitted_release_files(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            setup = root / "installer/setup.iss"
+            dart = root / "lib/core/constants/app_version.g.dart"
+            for path in (setup, dart):
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("already synchronized\n")
+            with mock.patch.object(self.module, "PROJECT_ROOT", root), mock.patch.object(self.module, "run"):
+                self.module._check_version_sync()
+
+    def test_version_sync_detects_generated_content_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            setup = root / "installer/setup.iss"
+            dart = root / "lib/core/constants/app_version.g.dart"
+            for path in (setup, dart):
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("old\n")
+            with (
+                mock.patch.object(self.module, "PROJECT_ROOT", root),
+                mock.patch.object(self.module, "run", side_effect=lambda _: dart.write_text("new\n")),
+                self.assertRaises(SystemExit),
+            ):
+                self.module._check_version_sync()
 
     def test_resolve_sdk_command_prefers_which(self) -> None:
         with mock.patch.object(

@@ -45,6 +45,10 @@ def main() -> int:
         failures.extend(_run_step("version sync", _check_version_sync))
     if args.analyze:
         failures.extend(_run_step("flutter analyze", _flutter_analyze))
+    if args.tests:
+        failures.extend(_run_step(
+            "Flutter tests", lambda: run([sys.executable, "tool/run_ci_tests.py"]),
+        ))
 
     if failures:
         print("\nCI preflight failed:", file=sys.stderr)
@@ -81,6 +85,7 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--skip-env", action="store_true")
+    parser.add_argument("--tests", action="store_true", help="Run the complete non-E2E CI test suite locally.")
     parser.add_argument("--skip-format", action="store_true")
     parser.add_argument("--skip-version-sync", action="store_true")
     return parser.parse_args()
@@ -129,25 +134,19 @@ def _check_dart_format() -> None:
 
 
 def _check_version_sync() -> None:
+    paths = [
+        PROJECT_ROOT / "installer/setup.iss",
+        PROJECT_ROOT / "lib/core/constants/app_version.g.dart",
+    ]
+    before = [path.read_text(encoding="utf-8-sig") for path in paths]
     run([sys.executable, "installer/update_version.py"])
-    completed = run(
-        [
-            "git",
-            "diff",
-            "--exit-code",
-            "--",
-            "installer/setup.iss",
-            "lib/core/constants/app_version.g.dart",
-        ],
-        check=False,
-    )
-    if completed.returncode != 0:
+    if before != [path.read_text(encoding="utf-8-sig") for path in paths]:
         print(
             "Versioned release files are out of sync with pubspec.yaml. "
             "Run: python installer/update_version.py",
             file=sys.stderr,
         )
-        raise SystemExit(completed.returncode)
+        raise SystemExit(1)
 
 
 def _flutter_analyze() -> None:

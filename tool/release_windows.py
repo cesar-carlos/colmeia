@@ -20,7 +20,6 @@ if str(_TOOL_DIR) not in sys.path:
 
 from pubspec_version import read_pubspec_versions
 
-import ci_preflight as ci_preflight_tool
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PUBSPEC_PATH = PROJECT_ROOT / "pubspec.yaml"
@@ -100,22 +99,7 @@ def main() -> None:
         run([sys.executable, "tool/ci_preflight.py"])
 
     if not args.skip_tests:
-        flutter = ci_preflight_tool.resolve_flutter_command()
-        run(
-            [
-                flutter,
-                "test",
-                "test/app",
-                "test/core",
-                "test/features",
-                "test/shared",
-                "test/integration/dart_test_config_contract_test.dart",
-                "--exclude-tags",
-                "e2e",
-                "--reporter",
-                "expanded",
-            ],
-        )
+        run([sys.executable, "tool/run_ci_tests.py"])
 
     if not args.skip_installer:
         run([sys.executable, "installer/build_installer.py"])
