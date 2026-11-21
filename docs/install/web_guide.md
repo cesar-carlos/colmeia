@@ -57,6 +57,24 @@ The responsive component corrections are included in production version
 [responsiveness review](web_pwa_review_plan.md#shared-component-responsiveness-review-2026-11-17)
 records the component changes and their visual validation limits.
 
+## Production version 1.6.16+39 — 2026-11-21
+
+Published source `593d86c2` (tag `v1.6.16`) as PWA package
+`e727c4076b3864bb19af`. This includes the visible replacement-cost selector and
+taller, vertically scrolling product-margin page, plus the prior local.env fix.
+The release contains 52 precached files; all 57 deployed files passed SHA-256
+verification before the atomic switch of `/var/www/colmeia/current`.
+
+The previous package `8fc19c1f6a5537494aec` remains available for rollback.
+Evidence: `/var/www/colmeia/release-1.6.16.sha256`,
+`release-1.6.16-verified.log` and `release-1.6.16-previous.txt`.
+The public `version.json` confirms version 1.6.16, build 39; `pwa-release.json`
+confirms the package identity. No Nginx reload or service restart was performed.
+Local analysis and eight PWA tests passed, including root/subdirectory offline
+navigation and interrupted updates. The 25 report/controller/dropdown tests had
+also passed. These checks do not constitute authenticated visual acceptance of
+the report in production.
+
 ## Post-deployment log review and Web hotfix — 2026-11-21
 
 At 17:57 UTC, the current PWA package became `8fc19c1f6a5537494aec`
