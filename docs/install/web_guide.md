@@ -52,38 +52,36 @@ python tool/package_pwa.py
 
 ## Local component review — 2026-11-17
 
-Responsive component corrections are present in the local working tree and have
-not been deployed by this review. The
+The responsive component corrections are included in production version
+`1.6.12+35`. The
 [responsiveness review](web_pwa_review_plan.md#shared-component-responsiveness-review-2026-11-17)
-records card/header reflow, text-aware KPI grids, filter layout, dialog scrolling,
-table column synchronization and their validation limits. Its browser checks use
-isolated components with fictitious data, not authenticated production pages.
+records the component changes and their visual validation limits.
 
-## Last recorded production synchronization — 2026-11-09
+## Last recorded production synchronization — 2026-11-21
 
-Application source commit `6384338297af73e3264ae755e49a47de0b34078f`
-is published as release `041f33e1fe0ad9c9022d` (51 files, 50,107,061 bytes).
-This release checks cancellation after offline authorization before starting
-queries, attempts local Push shutdown even when preferences fail, deduplicates
-concurrent removal reconciliation within an app instance, and prevents an older
-removal response from clearing a newer pending removal. Cross-tab Push removal
-deduplication is not established by these changes.
+Version `1.6.12+35`, tag `v1.6.12`, source commit
+`43dc4af64bf89f495c03969339a4bf422892fe34` is published as PWA release
+`02bbbcfcca4443378706` (52 static files, 51,012,792 bytes). It includes the
+responsive pagination and theme corrections, replacement-cost product filters,
+REST materialized-result timeout correction, and localization/browser scheduler
+test corrections. No Plug Server changes were required.
 
-Validation: scoped static analysis clean; 40 PWA tests, six worker tests and both
-Chrome production-shell tests passed. The browser scenarios cover offline routes
-and interrupted updates at `/` and `/colmeia/`. Live login returned 200 and the
-disabled-server Push message was displayed before the VAPID activation recorded
-below. Full live offline-package acceptance and Push delivery remain pending.
+The production build uses the same-origin API and local CanvasKit. Eight PWA
+worker/browser tests passed, including offline routes and interrupted updates at
+`/` and `/colmeia/`. A fresh Chromium session against production confirmed version
+`1.6.12+35`, service-worker cache installation and offline navigation to `/agents`,
+with no JavaScript page errors. This smoke test did not authenticate a user or
+establish full offline-package or Push-delivery acceptance.
 
 The uploaded archive SHA-256 is
-`2cff9ca912bcd6aec3a22a530c443f05e8c733598113de82bdca04daed28ec79`.
-Each packaged static-file hash was verified before switching `current` atomically.
-Previous release `c3241ce5fdc51a131aab` remains available for rollback. Deployment
-evidence is in `/root/colmeia-pwa-deploy-20261109-133049/`. No Nginx configuration
-change or service restart was needed. All nine site roots retained their previous
-HTTP results and valid TLS; both WebSocket handshakes returned 101, and container
-IDs remained unchanged. Later documentation-only commits do not change this
-application artifact or its recorded source commit.
+`98c83e8c5f8f0eed01b5ba8debcbd6a9d9136595c28d341cc665fc60fdc9417a`.
+All uploaded file hashes were verified before atomically switching `current`.
+Evidence: `/var/www/colmeia/release-1.6.12.sha256` and
+`/var/www/colmeia/release-1.6.12-verified.log`. Previous release
+`041f33e1fe0ad9c9022d` remains available for rollback. No Nginx configuration change
+or service restart was needed; configuration validation passed, Colmeia and Plug
+Server roots returned HTTP 200, and all running container IDs remained unchanged.
+Later documentation/appcast commits do not change this application artifact.
 
 ## Production deployment — 2026-11-09
 

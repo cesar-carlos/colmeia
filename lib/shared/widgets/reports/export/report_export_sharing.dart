@@ -73,12 +73,27 @@ Future<void> _sweepStaleShareTempDirectories(Directory tempRoot) async {
 
 @visibleForTesting
 Future<void> deleteShareTempFile(String filePath) async {
+  if (kIsWeb || filePath.isEmpty || !p.isAbsolute(filePath)) {
+    return;
+  }
   try {
-    final file = File(filePath);
+    final directory = await getTemporaryDirectory();
+    final shareRoot = Directory(
+      p.join(directory.path, 'colmeia_share_exports'),
+    );
+    final file = File(p.normalize(filePath));
     final parent = file.parent;
-    if (parent.existsSync()) {
-      await parent.delete(recursive: true);
+    if (!p.equals(parent.parent.path, shareRoot.path) ||
+        !Uuid.isValidUUID(fromString: p.basename(parent.path)) ||
+        !parent.existsSync()) {
+      return;
     }
+    final resolvedRoot = await shareRoot.resolveSymbolicLinks();
+    final resolvedParent = await parent.resolveSymbolicLinks();
+    if (!p.equals(p.dirname(resolvedParent), resolvedRoot)) {
+      return;
+    }
+    await parent.delete(recursive: true);
   } on Object {
     // Best-effort cleanup after share attempt.
   }

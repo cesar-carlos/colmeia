@@ -4,7 +4,9 @@ import 'dart:io';
 import 'package:colmeia/shared/widgets/reports/export/report_export_sharing.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
+import 'package:uuid/uuid.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -42,7 +44,7 @@ void main() {
       mimeType: 'application/pdf',
     );
 
-    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    if (Platform.isWindows || Platform.isAndroid) {
       final file = File(xFile.path);
       expect(file.existsSync(), isTrue);
       expect(file.readAsBytesSync(), bytes);
@@ -51,30 +53,48 @@ void main() {
         file.parent.parent.uri.pathSegments,
         contains('colmeia_share_exports'),
       );
-      file.parent.deleteSync(recursive: true);
+      await deleteShareTempFile(xFile.path);
       return;
     }
 
     expect(xFile.name, 'chart_test.pdf');
+    expect(await xFile.readAsBytes(), bytes);
   });
 
   test('deleteShareTempFile removes uuid temp directory', () async {
-    if (!(Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
-      return;
-    }
-
-    final bytes = Uint8List.fromList(<int>[5, 6, 7]);
-    final xFile = await createShareableXFile(
-      bytes: bytes,
-      fileName: 'cleanup_test.pdf',
-      mimeType: 'application/octet-stream',
+    final parent = Directory(
+      p.join(
+        Directory.systemTemp.path,
+        'colmeia_share_exports',
+        const Uuid().v4(),
+      ),
     );
-    final parent = File(xFile.path).parent;
+    await parent.create(recursive: true);
+    final file = await File(p.join(parent.path, 'cleanup_test.pdf'))
+        .writeAsBytes(
+          <int>[5, 6, 7],
+        );
     expect(parent.existsSync(), isTrue);
 
-    await deleteShareTempFile(xFile.path);
+    await deleteShareTempFile(file.path);
 
     expect(parent.existsSync(), isFalse);
+  });
+
+  test('should ignore empty and relative cleanup paths', () async {
+    await deleteShareTempFile('');
+    await deleteShareTempFile('report.pdf');
+    expect(Directory.current.existsSync(), isTrue);
+  });
+
+  test('should preserve files outside the share export directory', () async {
+    final directory = await Directory.systemTemp.createTemp('colmeia_guard_');
+    addTearDown(() => directory.delete(recursive: true));
+    final file = await File(p.join(directory.path, 'keep.pdf')).writeAsString(
+      'keep',
+    );
+    await deleteShareTempFile(file.path);
+    expect(await file.readAsString(), 'keep');
   });
 
   test('shareExportBytes uses share_plus with path-backed PDF file', () async {
