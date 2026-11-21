@@ -57,6 +57,10 @@ warm caches; it does not replace Linux CI or approve a different tagged commit.
 Artifacts built on a developer machine are not automatically trusted as signed
 GitHub release assets. Full E2E tests remain separate and require the real agent.
 
+Measured on the successful [v1.6.15 CI run](https://github.com/cesar-carlos/colmeia/actions/runs/44931350895): all four shards passed, with 4,030 tests passing and one skipped. Including runner setup, shard durations were 2m40s, 4m07s, 4m24s and 4m38s. The previous single-job runs took approximately 10–12 minutes. Android debug completed in 4m14s (previous run: 6m44s), Web in 4m10s and Android release smoke in 6m24s. Analyze plus all dependent jobs completed in 7m53s. These are observed runs, not a controlled benchmark; runner load and cache warmth vary.
+
+The local workflow tooling has 86 passing Python tests. Actionlint 1.7.12 accepts the changed workflows after excluding its outdated diagnostic for the existing `concurrency.queue: max` key, which is supported by GitHub. Documentation UTF-8 is validated in preflight and before CI builds. No lint warning for changed workflow logic was suppressed.
+
 Cold caches and runner capacity still affect wall-clock time. Compare Actions job
 start/end times after the optimized run; do not treat expected savings as measured
 results. No additional paid runners or always-on local runners are configured.

@@ -53,15 +53,15 @@ python tool/package_pwa.py
 ## Local component review — 2026-11-17
 
 The responsive component corrections are included in production version
-`1.6.13+36`. The
+`1.6.15+38`. The
 [responsiveness review](web_pwa_review_plan.md#shared-component-responsiveness-review-2026-11-17)
 records the component changes and their visual validation limits.
 
 ## Last recorded production synchronization — 2026-11-21
 
-Version `1.6.13+36`, tag `v1.6.13`, source commit
-`6ea646adbe6bf4d08a12778874b710becd72a7b1` is published as PWA release
-`c13d53bfaab6261f8f92` (52 static files, 51,011,361 bytes). It includes the
+Version `1.6.15+38`, tag `v1.6.15`, source commit
+`24325ae503ec1212b9aff728b780887cf0e8a1e6` is published as PWA release
+`e6819d3db9646192b45a` (52 static files, 51,011,361 bytes). It includes the
 responsive pagination and theme corrections, replacement-cost product filters,
 REST materialized-result timeout correction, and localization/browser scheduler
 test corrections, plus guarded cleanup of temporary export files. No Plug Server changes were required.
@@ -69,15 +69,15 @@ test corrections, plus guarded cleanup of temporary export files. No Plug Server
 The production build uses the same-origin API and local CanvasKit. Eight PWA
 worker/browser tests passed, including offline routes and interrupted updates at
 `/` and `/colmeia/`. A fresh Chromium session against production confirmed version
-`1.6.13+36`, service-worker cache installation and offline navigation to `/agents`,
+`1.6.15+38`, service-worker cache installation and offline navigation to `/agents`,
 with no JavaScript page errors. This smoke test did not authenticate a user or
 establish full offline-package or Push-delivery acceptance.
 
 The uploaded archive SHA-256 is
-`43ccf776ffb97e79bd62ca1daf450540a9c6b63d638e8bb7186b7091df8b93b8`.
+`b2fcb2e50a52040e4a45ac70f9a93f213879209793239718131dbd7435ae2b8d`.
 All uploaded file hashes were verified before atomically switching `current`.
-Evidence: `/var/www/colmeia/release-1.6.13.sha256` and
-`/var/www/colmeia/release-1.6.13-verified.log`. Previous release
+Evidence: `/var/www/colmeia/release-1.6.15.sha256` and
+`/var/www/colmeia/release-1.6.15-verified.log`. Previous release
 `041f33e1fe0ad9c9022d` remains available for rollback. No Nginx configuration change
 or service restart was needed; configuration validation passed, Colmeia and Plug
 Server roots returned HTTP 200, and all running container IDs remained unchanged.
