@@ -35,6 +35,10 @@ Future<void> loadAppDotenv() async {
 
 Future<void> _mergeOptionalLocalEnv() async {
   try {
+    final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+    if (!manifest.listAssets().contains(EnvAssetPaths.bundledLocal)) {
+      return;
+    }
     final content = await rootBundle.loadString(EnvAssetPaths.bundledLocal);
     final merged = _parseSimpleEnvLines(content);
     for (final entry in merged.entries) {

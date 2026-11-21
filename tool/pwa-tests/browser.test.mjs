@@ -42,6 +42,8 @@ for (const prefix of ['/', '/colmeia/']) {
     browser = await chromium.launch(process.env.PWA_CHROME_PATH ? {executablePath:process.env.PWA_CHROME_PATH,headless:true} : {headless:true});
     context = await browser.newContext();
       const page = await context.newPage();
+      const requestedUrls = [];
+      page.on('request', request => requestedUrls.push(request.url()));
       await page.goto(url);
       await page.evaluate(()=>navigator.serviceWorker.ready);
       await page.waitForFunction(()=>navigator.serviceWorker.controller !== null);
@@ -49,6 +51,7 @@ for (const prefix of ['/', '/colmeia/']) {
       assert.ok(Number.isFinite(estimate.usage) && estimate.usage >= 0);
       assert.ok(Number.isFinite(estimate.quota) && estimate.quota >= estimate.usage);
       await page.waitForSelector('flutter-view',{state:'attached',timeout:60000});
+      assert.equal(requestedUrls.some(url => url.endsWith('/assets/env/local.env')), false);
       let old = await page.evaluate(()=>caches.keys());
       assert.ok(old.some(key=>key.startsWith('colmeia-shell-')));
       await context.setOffline(true);
