@@ -3704,6 +3704,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesCardMargemProdutoTitle => 'Product margin';
 
   @override
+  String get salesMargemProdutoCostFilter => 'Replacement cost';
+
+  @override
+  String get salesMargemProdutoCostAll => 'All products';
+
+  @override
+  String get salesMargemProdutoCostWith => 'With replacement cost';
+
+  @override
+  String get salesMargemProdutoCostWithout => 'Without replacement cost';
+
+  @override
+  String get salesMargemProdutoCostHelp =>
+      'With cost: greater than zero. Without cost: missing, zero or negative.';
+
+  @override
   String get salesMargemProdutoIntroSubtitle =>
       'List price versus replacement cost.';
 
@@ -3735,7 +3751,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get salesMargemProdutoEmpty => 'No products for this branch.';
 
   @override
-  String get salesMargemProdutoEmptySearch => 'No products match this search.';
+  String get salesMargemProdutoEmptySearch =>
+      'No products match the selected filters.';
 
   @override
   String get salesMargemProdutoFilterSearch => 'Name, code, group or brand';

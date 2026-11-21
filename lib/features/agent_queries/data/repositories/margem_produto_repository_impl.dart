@@ -106,6 +106,7 @@ class MargemProdutoRepositoryImpl
         hubConnectedFromApprovedCatalogRow: hubConnectedFromApprovedCatalogRow,
         // ROW_NUMBER uses filter.sortBy / sortDirection (whitelist).
         sql: MargemProdutoSql.pagedQuery(
+          costFilter: filter.costFilter,
           sortBy: filter.sortBy,
           sortDirection: filter.sortDirection,
           applySearch: applySearch,
@@ -276,6 +277,7 @@ class MargemProdutoRepositoryImpl
                   userId: userId,
                   agentId: agentId,
                   filter: MargemProdutoFilter(
+                    costFilter: filter.costFilter,
                     searchTerm: filter.searchTerm,
                     page: page,
                     pageSize: filter.pageSize,

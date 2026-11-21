@@ -1,10 +1,21 @@
+import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_filter.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_filters_sheet_scaffold.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_single_agent_picker_control.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/filters/dashboard_filter.dart';
 import 'package:colmeia/shared/widgets/app_inline_error_panel.dart';
+import 'package:colmeia/shared/widgets/forms/app_dropdown_field.dart';
 import 'package:material_ui/material_ui.dart';
+
+String salesMargemProdutoCostFilterLabel(
+  AppLocalizations l10n,
+  MargemProdutoCostFilter filter,
+) => switch (filter) {
+  MargemProdutoCostFilter.all => l10n.salesMargemProdutoCostAll,
+  MargemProdutoCostFilter.withCost => l10n.salesMargemProdutoCostWith,
+  MargemProdutoCostFilter.withoutCost => l10n.salesMargemProdutoCostWithout,
+};
 
 class SalesMargemProdutoFiltersSheet extends StatefulWidget {
   const SalesMargemProdutoFiltersSheet({
@@ -12,12 +23,14 @@ class SalesMargemProdutoFiltersSheet extends StatefulWidget {
     required this.availableAgents,
     required this.initialSelectedAgentId,
     required this.onApply,
+    this.initialCostFilter = MargemProdutoCostFilter.withCost,
     super.key,
   });
 
   final AppLocalizations l10n;
   final List<DashboardAgentOption> availableAgents;
   final String? initialSelectedAgentId;
+  final MargemProdutoCostFilter initialCostFilter;
   final ValueChanged<Map<String, Object?>> onApply;
 
   @override
@@ -28,11 +41,13 @@ class SalesMargemProdutoFiltersSheet extends StatefulWidget {
 class _SalesMargemProdutoFiltersSheetState
     extends State<SalesMargemProdutoFiltersSheet> {
   String? _selectedAgentId;
+  late MargemProdutoCostFilter _costFilter;
 
   @override
   void initState() {
     super.initState();
     _selectedAgentId = widget.initialSelectedAgentId;
+    _costFilter = widget.initialCostFilter;
   }
 
   void _apply() {
@@ -40,12 +55,18 @@ class _SalesMargemProdutoFiltersSheetState
     if (selectedAgentId == null || selectedAgentId.trim().isEmpty) {
       return;
     }
-    widget.onApply(<String, Object?>{'agentId': selectedAgentId});
+    widget.onApply(<String, Object?>{
+      'agentId': selectedAgentId,
+      'costFilter': _costFilter.name,
+    });
     Navigator.of(context).pop();
   }
 
   void _clear() {
-    setState(() => _selectedAgentId = widget.initialSelectedAgentId);
+    setState(() {
+      _selectedAgentId = widget.initialSelectedAgentId;
+      _costFilter = MargemProdutoCostFilter.withCost;
+    });
   }
 
   @override
@@ -93,6 +114,22 @@ class _SalesMargemProdutoFiltersSheetState
               showTrailingFilterButton: false,
               onSelectionChanged: (agentId) {
                 setState(() => _selectedAgentId = agentId);
+              },
+            ),
+            SizedBox(height: tokens.gapMd),
+            AppDropdownField<MargemProdutoCostFilter>(
+              label: l10n.salesMargemProdutoCostFilter,
+              helperText: l10n.salesMargemProdutoCostHelp,
+              value: _costFilter,
+              options: [
+                for (final filter in MargemProdutoCostFilter.values)
+                  AppDropdownOption(
+                    value: filter,
+                    label: salesMargemProdutoCostFilterLabel(l10n, filter),
+                  ),
+              ],
+              onChanged: (value) {
+                if (value != null) setState(() => _costFilter = value);
               },
             ),
             if (selectedAgentMissingToken) ...<Widget>[

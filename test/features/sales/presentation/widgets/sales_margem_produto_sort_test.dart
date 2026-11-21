@@ -1,10 +1,31 @@
 import 'package:checks/checks.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_by.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_direction.dart';
 import 'package:colmeia/features/sales/presentation/widgets/sales_margem_produto_sort.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test(
+    'cost selection round trips and old preferences default to with cost',
+    () {
+      for (final cost in MargemProdutoCostFilter.values) {
+        final saved = SalesMargemProdutoSort.persistMap(
+          pageSize: 20,
+          costFilter: cost,
+        );
+        expect(SalesMargemProdutoSort.restore(saved).costFilter, cost);
+      }
+      expect(
+        SalesMargemProdutoSort.restore({}).costFilter,
+        MargemProdutoCostFilter.withCost,
+      );
+      expect(
+        SalesMargemProdutoSort.restore({'costFilter': 'invalid'}).costFilter,
+        MargemProdutoCostFilter.withCost,
+      );
+    },
+  );
   group('SalesMargemProdutoSort.sanitizePageSize', () {
     test('keeps allowed sizes and falls back otherwise', () {
       check(SalesMargemProdutoSort.sanitizePageSize(10)).equals(10);

@@ -1,3 +1,4 @@
+import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_by.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_direction.dart';
 import 'package:colmeia/shared/widgets/reports/app_report_models.dart';
@@ -198,6 +199,7 @@ abstract final class SalesMargemProdutoSort {
     Map<String, Object?> raw,
   ) {
     return SalesMargemProdutoPersistedFilters(
+      costFilter: MargemProdutoCostFilter.restore(raw['costFilter']),
       pageSize: sanitizePageSize(raw[persistPageSizeKey]),
       searchTerm: normalizeSearchTerm(raw[persistSearchTermKey]),
     );
@@ -205,9 +207,11 @@ abstract final class SalesMargemProdutoSort {
 
   static Map<String, Object?> persistMap({
     required int pageSize,
+    MargemProdutoCostFilter costFilter = MargemProdutoCostFilter.withCost,
     String? searchTerm,
   }) {
     return <String, Object?>{
+      'costFilter': costFilter.name,
       persistPageSizeKey: sanitizePageSize(pageSize),
       persistSearchTermKey: normalizeSearchTerm(searchTerm),
       persistSortByKey: MargemProdutoSortBy.nomeProduto.name,
@@ -232,12 +236,14 @@ abstract final class SalesMargemProdutoSort {
 class SalesMargemProdutoPersistedFilters {
   const SalesMargemProdutoPersistedFilters({
     required this.pageSize,
+    this.costFilter = MargemProdutoCostFilter.withCost,
     this.searchTerm,
     this.sortBy = MargemProdutoSortBy.nomeProduto,
     this.sortDirection = MargemProdutoSortDirection.ascending,
   });
 
   final int pageSize;
+  final MargemProdutoCostFilter costFilter;
   final String? searchTerm;
   final MargemProdutoSortBy sortBy;
   final MargemProdutoSortDirection sortDirection;

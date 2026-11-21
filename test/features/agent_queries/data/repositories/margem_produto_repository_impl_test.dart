@@ -51,6 +51,52 @@ void main() {
     verifyNever(() => agentQueriesRepository.executeSql(any()));
   });
 
+  for (final cost in MargemProdutoCostFilter.values) {
+    test('passes cost selection to SQL before counting: $cost', () async {
+      when(() => agentQueriesRepository.executeSql(any())).thenAnswer(
+        (_) async => const Success<AgentSqlExecutionResult, AppFailure>(
+          AgentSqlExecutionResult(
+            rows: [
+              {'TotalCount': 0},
+            ],
+            rowCount: 1,
+          ),
+        ),
+      );
+      await repository.loadPage(
+        userId: 'u',
+        agentId: 'a',
+        filter: MargemProdutoFilter(costFilter: cost, searchTerm: 'Mel'),
+      );
+      final request =
+          verify(() => agentQueriesRepository.executeSql(captureAny()))
+                  .captured
+                  .single
+              as AgentSqlExecuteRequest;
+      expect(
+        request.sql,
+        MargemProdutoSql.pagedQuery(costFilter: cost, applySearch: true),
+      );
+      final where = request.sql
+          .split("WHERE p.Ativo = 'S'")
+          .last
+          .split('Tot AS')
+          .first;
+      switch (cost) {
+        case MargemProdutoCostFilter.all:
+          expect(where, isNot(contains('cp.CustoCompra')));
+        case MargemProdutoCostFilter.withCost:
+          expect(where, contains('AND cp.CustoCompra > 0'));
+        case MargemProdutoCostFilter.withoutCost:
+          expect(
+            where,
+            contains('AND (cp.CustoCompra IS NULL OR cp.CustoCompra <= 0)'),
+          );
+      }
+      expect(request.namedParams['startRow'], 1);
+    });
+  }
+
   test('total zero returns empty items in one execute', () async {
     when(
       () => agentQueriesRepository.executeSql(any()),

@@ -1,5 +1,6 @@
 import 'package:colmeia/features/agent_queries/data/queries/agent_queries_sql_accent_fold.dart';
 import 'package:colmeia/features/agent_queries/data/queries/agent_queries_sql_dictionary_sort.dart';
+import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_by.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_direction.dart';
 
@@ -30,8 +31,9 @@ import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_so
 /// appears **once** — SQL Anywhere ODBC expands every `:name` to a positional
 /// `?`.
 ///
-/// When `applySearch` is false the catalog is unfiltered (`p.Ativo = 'S'`
-/// only). That keeps default page loads off accent-folded `LIKE '%…%'` scans.
+/// Without search, page loads skip accent-folded `LIKE '%…%'` scans.
+/// The optional cost filter is applied before counting and numbering rows:
+/// positive cost is present; missing, zero or negative cost is absent.
 /// When true, `:nomeProdutoPattern` is a contains literal (e.g. `%mel%`) from
 /// `ResumoVendasDiariasSuggestionSqlParams.buildSearchPattern`. The `LIKE`
 /// runs in `MargemProduto` before `Tot` and `ROW_NUMBER`, so `totalCount` and
@@ -56,6 +58,7 @@ abstract final class MargemProdutoSql {
     MargemProdutoSortDirection sortDirection =
         MargemProdutoSortDirection.ascending,
     bool applySearch = false,
+    MargemProdutoCostFilter costFilter = MargemProdutoCostFilter.all,
   }) {
     final rowNumberOrderBy = _rowNumberOrderBy(
       sortBy: sortBy,
@@ -120,7 +123,7 @@ abstract final class MargemProdutoSql {
         cp.CodEmpresa = prm.CodEmpresa
         AND cp.CodFilial = prm.CodFilial
         AND cp.CodProduto = p.CodProduto
-      WHERE p.Ativo = 'S'${_searchPredicate(applySearch: applySearch)}
+      WHERE p.Ativo = 'S'${_costPredicate(costFilter)}${_searchPredicate(applySearch: applySearch)}
     ),
     Tot AS (
       SELECT COUNT(*) AS TotalCount FROM MargemProduto
@@ -156,6 +159,14 @@ abstract final class MargemProdutoSql {
     ORDER BY COALESCE(N.Rn, 2147483647)
   ''';
   }
+
+  static String _costPredicate(MargemProdutoCostFilter filter) =>
+      switch (filter) {
+        MargemProdutoCostFilter.all => '',
+        MargemProdutoCostFilter.withCost => ' AND cp.CustoCompra > 0',
+        MargemProdutoCostFilter.withoutCost =>
+          ' AND (cp.CustoCompra IS NULL OR cp.CustoCompra <= 0)',
+      };
 
   static String _searchPredicate({required bool applySearch}) {
     if (!applySearch) {

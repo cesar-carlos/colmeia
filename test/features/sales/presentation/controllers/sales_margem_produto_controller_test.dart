@@ -117,6 +117,43 @@ void main() {
     controller.dispose();
   });
 
+  test(
+    'cost filter defaults to with cost and reloads the same agent',
+    () async {
+      expect(controller.costFilter, MargemProdutoCostFilter.withCost);
+      await controller.bindUser('user-1');
+      await controller.loadCatalog();
+      for (final filter in MargemProdutoCostFilter.values) {
+        await controller.applyFilters({
+          'agentId': 'agent-1',
+          'costFilter': filter.name,
+        });
+        expect(controller.costFilter, filter);
+        expect(controller.page, 1);
+      }
+      final filters = verify(
+        () => loadPage(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+          filter: captureAny(named: 'filter'),
+          clientToken: any(named: 'clientToken'),
+          cancelScope: any(named: 'cancelScope'),
+        ),
+      ).captured.cast<MargemProdutoFilter>();
+      expect(filters.map((filter) => filter.costFilter), [
+        MargemProdutoCostFilter.withCost,
+        ...MargemProdutoCostFilter.values,
+      ]);
+      expect(
+        await controller.applyFilters({
+          'agentId': 'agent-1',
+          'costFilter': 'withoutCost',
+        }),
+        isNull,
+      );
+    },
+  );
+
   test('progressive catalog shows partial rows, publishes totals only at completion and reuses pages for share', () async {
     when(() => loadPage.usesProgressiveCatalog).thenReturn(true);
     final source =

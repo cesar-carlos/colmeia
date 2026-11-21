@@ -222,13 +222,7 @@ class _SalesMargemProdutoFullscreenState
                   ),
                 ),
           onRetry: () => unawaited(widget.onRefresh()),
-          emptyMessage:
-              SalesMargemProdutoSort.normalizeSearchTerm(
-                    widget.snapshot.query.searchTerm,
-                  ) ==
-                  null
-              ? l10n.salesMargemProdutoEmpty
-              : l10n.salesMargemProdutoEmptySearch,
+          emptyMessage: l10n.salesMargemProdutoEmptySearch,
           searchHintText: l10n.salesMargemProdutoSearchHint,
         );
       },

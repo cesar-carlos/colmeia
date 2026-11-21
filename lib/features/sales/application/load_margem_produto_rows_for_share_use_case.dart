@@ -57,6 +57,7 @@ class LoadMargemProdutoRowsForShareUseCase {
         return const Failure(OperationCancelledFailure());
       }
       final pageFilter = MargemProdutoFilter(
+        costFilter: filter.costFilter,
         searchTerm: filter.searchTerm,
         page: page,
         pageSize: pageSize,

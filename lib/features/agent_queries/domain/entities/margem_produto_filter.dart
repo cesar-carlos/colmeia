@@ -1,6 +1,15 @@
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_by.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_direction.dart';
 
+enum MargemProdutoCostFilter {
+  all,
+  withCost,
+  withoutCost;
+
+  static MargemProdutoCostFilter restore(Object? value) =>
+      values.where((option) => option.name == value).firstOrNull ?? withCost;
+}
+
 /// Filters and pagination for the product-margin catalog `sql.execute` query.
 ///
 /// **Branch scope:** company and branch are fixed at [fixedCodEmpresa] and
@@ -17,6 +26,7 @@ import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_so
 class MargemProdutoFilter {
   const MargemProdutoFilter({
     this.searchTerm,
+    this.costFilter = MargemProdutoCostFilter.all,
     this.page = 1,
     this.pageSize = defaultPageSize,
     this.sortBy = MargemProdutoSortBy.nomeProduto,
@@ -36,6 +46,7 @@ class MargemProdutoFilter {
 
   /// Optional free-text contains match on name, code, group, or brand.
   final String? searchTerm;
+  final MargemProdutoCostFilter costFilter;
 
   final int page;
   final int pageSize;

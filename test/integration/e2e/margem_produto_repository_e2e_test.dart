@@ -3,6 +3,7 @@ library;
 
 import 'package:colmeia/core/config/app_environment.dart';
 import 'package:colmeia/core/di/injector.dart';
+import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_filter.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_by.dart';
@@ -15,10 +16,86 @@ import 'support/e2e_agent_queries_test_helpers.dart';
 import 'support/e2e_name_filter_helpers.dart';
 
 void main() {
+  const requireCostQuerySuccess = bool.fromEnvironment(
+    'E2E_REQUIRE_COST_QUERY_SUCCESS',
+  );
   group(
     'MargemProdutoRepository (e2e)',
     () {
       registerE2eAgentQueriesSuiteHooks();
+
+      for (final cost in MargemProdutoCostFilter.values) {
+        test('cost filter $cost executes against the agent', () async {
+          if (shouldSkipE2eRepositoryTest('margem_produto_cost_filter')) {
+            if (requireCostQuerySuccess) {
+              fail('Real-query validation requires E2E credentials.');
+            }
+            markTestSkipped(
+              'Missing E2E credentials; cost query not validated.',
+            );
+            return;
+          }
+          final result = await runE2eAppResult(
+            () => getIt<MargemProdutoRepository>().loadPage(
+              userId: 'user-1',
+              agentId: AppEnvironment.e2eAgentId,
+              clientToken: AppEnvironment.e2eClientToken,
+              filter: MargemProdutoFilter(costFilter: cost),
+            ),
+          );
+          result.fold(
+            (page) {
+              // Record real-query evidence without exposing product contents.
+              // ignore: avoid_print
+              print(
+                'Cost filter ${cost.name}: query succeeded, ${page.items.length} rows checked.',
+              );
+              checkPageInvariants(
+                page.items,
+                page.totalCount,
+                MargemProdutoFilter.defaultPageSize,
+              );
+              for (final row in page.items) {
+                final costValue = row.custoReposicao;
+                if (cost == MargemProdutoCostFilter.withCost) {
+                  expect(row.custoReposicao, isNotNull);
+                  expect(row.custoReposicao, greaterThan(0));
+                } else if (cost == MargemProdutoCostFilter.withoutCost) {
+                  expect(
+                    costValue == null || costValue <= 0,
+                    isTrue,
+                  );
+                }
+              }
+            },
+            (failure) {
+              // External unavailability must not look like query validation.
+              // ignore: avoid_print
+              print(
+                'Cost filter ${cost.name}: external limitation (${failure.runtimeType}).',
+              );
+              if (failure is RpcFailure) {
+                // Only protocol classification; never log response data or credentials.
+                // ignore: avoid_print
+                print(
+                  'RPC code=${failure.rpcCode} reason=${failure.reason} category=${failure.category}',
+                );
+              }
+              expectAcceptableAgentQueriesE2eFailure(
+                failure,
+                failureScope: 'Cost filter e2e',
+              );
+              final reason = failure is RpcFailure
+                  ? failure.reason ?? 'unspecified RPC failure'
+                  : failure.runtimeType.toString();
+              final limitation =
+                  'Cost filter ${cost.name} not validated against the database: $reason';
+              if (requireCostQuerySuccess) fail(limitation);
+              markTestSkipped(limitation);
+            },
+          );
+        });
+      }
 
       test(
         'loadPage page 1 executes the real product-margin catalog query',

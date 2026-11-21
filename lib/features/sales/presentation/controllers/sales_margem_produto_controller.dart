@@ -74,6 +74,7 @@ class SalesMargemProdutoController extends ChangeNotifier {
       _sessionService.restoreCardFilters(SalesMargemProdutoSort.cardId),
     );
     _pageSize = restored.pageSize;
+    _costFilter = restored.costFilter;
     _query = SalesMargemProdutoSort.queryFor(
       page: 1,
       pageSize: _pageSize,
@@ -102,6 +103,8 @@ class SalesMargemProdutoController extends ChangeNotifier {
   String? _cachedClientToken;
 
   int _page = 1;
+  MargemProdutoCostFilter _costFilter = MargemProdutoCostFilter.withCost;
+  MargemProdutoCostFilter get costFilter => _costFilter;
   int _pageSize = SalesMargemProdutoSort.defaultPageSize;
   AppReportQuery _query = SalesMargemProdutoSort.queryFor(
     page: 1,
@@ -335,11 +338,16 @@ class SalesMargemProdutoController extends ChangeNotifier {
     final normalizedAgentId = nextAgentId == null || nextAgentId.isEmpty
         ? null
         : nextAgentId;
-    if (normalizedAgentId == _selectedAgentId) {
+    final nextCostFilter = next.containsKey('costFilter')
+        ? MargemProdutoCostFilter.restore(next['costFilter'])
+        : _costFilter;
+    if (normalizedAgentId == _selectedAgentId &&
+        nextCostFilter == _costFilter) {
       return null;
     }
     _shareCancelScope?.cancelAll();
     _selectedAgentId = normalizedAgentId;
+    _costFilter = nextCostFilter;
     _page = 1;
     _query = SalesMargemProdutoSort.queryFor(
       page: 1,
@@ -617,6 +625,7 @@ class SalesMargemProdutoController extends ChangeNotifier {
     required int pageSize,
   }) {
     return MargemProdutoFilter(
+      costFilter: _costFilter,
       searchTerm: SalesMargemProdutoSort.normalizeSearchTerm(
         _query.searchTerm,
       ),
@@ -661,6 +670,7 @@ class SalesMargemProdutoController extends ChangeNotifier {
     return _sessionService.persistCardFilters(
       SalesMargemProdutoSort.cardId,
       SalesMargemProdutoSort.persistMap(
+        costFilter: _costFilter,
         pageSize: _pageSize,
         searchTerm: _query.searchTerm,
       ),

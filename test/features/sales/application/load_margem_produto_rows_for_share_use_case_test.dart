@@ -67,6 +67,7 @@ void main() {
         ),
       ).thenAnswer((invocation) async {
         final page = invocation.namedArguments[#filter] as MargemProdutoFilter;
+        expect(page.costFilter, MargemProdutoCostFilter.withoutCost);
         sizes.add(page.pageSize);
         starts.add(page.startRow);
         return Success(
@@ -82,7 +83,9 @@ void main() {
       final result = await useCase(
         userId: 'u',
         agentId: 'a',
-        filter: const MargemProdutoFilter(),
+        filter: const MargemProdutoFilter(
+          costFilter: MargemProdutoCostFilter.withoutCost,
+        ),
         totalCount: 55,
       );
       expect(

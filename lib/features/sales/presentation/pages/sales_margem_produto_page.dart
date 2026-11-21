@@ -208,7 +208,12 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
   ChartShareExportHeaderContext _shareExportHeaderContext(
     AppLocalizations l10n,
   ) {
-    final parameters = <ChartShareExportHeaderParameter>[];
+    final parameters = <ChartShareExportHeaderParameter>[
+      ChartShareExportHeaderParameter(
+        label: l10n.salesMargemProdutoCostFilter,
+        value: salesMargemProdutoCostFilterLabel(l10n, _controller.costFilter),
+      ),
+    ];
     final normalizedSearch = SalesMargemProdutoSort.normalizeSearchTerm(
       _controller.query.searchTerm,
     );
@@ -398,6 +403,7 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
           l10n: AppLocalizations.of(context),
           availableAgents: _controller.availableAgents,
           initialSelectedAgentId: _controller.selectedAgentId,
+          initialCostFilter: _controller.costFilter,
           onApply: (next) => unawaited(
             _handleCatalogLoad(() => _controller.applyFilters(next)),
           ),
@@ -441,6 +447,13 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
                   SalesCardFilterSummaryItem(
                     label: l10n.salesBranchFilterLabel,
                     value: selectedBranchName,
+                  ),
+                  SalesCardFilterSummaryItem(
+                    label: l10n.salesMargemProdutoCostFilter,
+                    value: salesMargemProdutoCostFilterLabel(
+                      l10n,
+                      _controller.costFilter,
+                    ),
                   ),
                 ],
                 footer: SalesAutoRefreshActionsRow(
@@ -549,13 +562,7 @@ class _SalesMargemProdutoReportSurface extends StatelessWidget {
                   ),
                 ),
           onRetry: () => unawaited(onRefresh()),
-          emptyMessage:
-              SalesMargemProdutoSort.normalizeSearchTerm(
-                    controller.query.searchTerm,
-                  ) ==
-                  null
-              ? l10n.salesMargemProdutoEmpty
-              : l10n.salesMargemProdutoEmptySearch,
+          emptyMessage: l10n.salesMargemProdutoEmptySearch,
           searchHintText: l10n.salesMargemProdutoSearchHint,
         );
       },

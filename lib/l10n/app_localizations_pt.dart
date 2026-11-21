@@ -3756,6 +3756,22 @@ class AppLocalizationsPt extends AppLocalizations {
   String get salesCardMargemProdutoTitle => 'Margem produto';
 
   @override
+  String get salesMargemProdutoCostFilter => 'Custo de reposição';
+
+  @override
+  String get salesMargemProdutoCostAll => 'Todos';
+
+  @override
+  String get salesMargemProdutoCostWith => 'Com custo de reposição';
+
+  @override
+  String get salesMargemProdutoCostWithout => 'Sem custo de reposição';
+
+  @override
+  String get salesMargemProdutoCostHelp =>
+      'Com custo: maior que zero. Sem custo: ausente, zero ou negativo.';
+
+  @override
   String get salesMargemProdutoIntroSubtitle =>
       'Preço de lista versus custo de reposição.';
 
@@ -3788,7 +3804,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get salesMargemProdutoEmptySearch =>
-      'Nenhum produto corresponde a esta busca.';
+      'Nenhum produto corresponde aos filtros selecionados.';
 
   @override
   String get salesMargemProdutoFilterSearch => 'Nome, código, grupo ou marca';
@@ -9129,6 +9145,22 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get salesCardMargemProdutoTitle => 'Margem produto';
 
   @override
+  String get salesMargemProdutoCostFilter => 'Custo de reposição';
+
+  @override
+  String get salesMargemProdutoCostAll => 'Todos';
+
+  @override
+  String get salesMargemProdutoCostWith => 'Com custo de reposição';
+
+  @override
+  String get salesMargemProdutoCostWithout => 'Sem custo de reposição';
+
+  @override
+  String get salesMargemProdutoCostHelp =>
+      'Com custo: maior que zero. Sem custo: ausente, zero ou negativo.';
+
+  @override
   String get salesMargemProdutoIntroSubtitle =>
       'Preço de lista versus custo de reposição.';
 
@@ -9161,7 +9193,7 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get salesMargemProdutoEmptySearch =>
-      'Nenhum produto corresponde a esta busca.';
+      'Nenhum produto corresponde aos filtros selecionados.';
 
   @override
   String get salesMargemProdutoFilterSearch => 'Nome, código, grupo ou marca';

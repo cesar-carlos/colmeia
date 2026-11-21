@@ -6102,6 +6102,36 @@ abstract class AppLocalizations {
   /// **'Product margin'**
   String get salesCardMargemProdutoTitle;
 
+  /// No description provided for @salesMargemProdutoCostFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Replacement cost'**
+  String get salesMargemProdutoCostFilter;
+
+  /// No description provided for @salesMargemProdutoCostAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All products'**
+  String get salesMargemProdutoCostAll;
+
+  /// No description provided for @salesMargemProdutoCostWith.
+  ///
+  /// In en, this message translates to:
+  /// **'With replacement cost'**
+  String get salesMargemProdutoCostWith;
+
+  /// No description provided for @salesMargemProdutoCostWithout.
+  ///
+  /// In en, this message translates to:
+  /// **'Without replacement cost'**
+  String get salesMargemProdutoCostWithout;
+
+  /// No description provided for @salesMargemProdutoCostHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'With cost: greater than zero. Without cost: missing, zero or negative.'**
+  String get salesMargemProdutoCostHelp;
+
   /// No description provided for @salesMargemProdutoIntroSubtitle.
   ///
   /// In en, this message translates to:
@@ -6165,7 +6195,7 @@ abstract class AppLocalizations {
   /// No description provided for @salesMargemProdutoEmptySearch.
   ///
   /// In en, this message translates to:
-  /// **'No products match this search.'**
+  /// **'No products match the selected filters.'**
   String get salesMargemProdutoEmptySearch;
 
   /// No description provided for @salesMargemProdutoFilterSearch.
