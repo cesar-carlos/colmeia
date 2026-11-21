@@ -1,5 +1,6 @@
 import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/l10n/app_localizations.dart';
+import 'package:colmeia/shared/design_system/app_colors.dart';
 import 'package:colmeia/shared/design_system/app_theme_tokens.dart';
 import 'package:colmeia/shared/design_system/app_typography_tokens.dart';
 import 'package:intl/intl.dart';
@@ -111,101 +112,110 @@ class AppTablePaginationFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = theme.extension<AppThemeTokens>()!;
-    final scheme = theme.colorScheme;
-    final isMobile = AppBreakpoints.isMobile(context);
-    final numberFormat = NumberFormat.decimalPattern('pt_BR');
-    final resolvedItemsPerPageLabel =
-        itemsPerPageLabel ??
-        AppLocalizations.of(context).reportPaginationItemsPerPage;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final theme = Theme.of(context);
+        final tokens = theme.extension<AppThemeTokens>()!;
+        final scheme = theme.colorScheme;
+        final availableWidth = constraints.maxWidth.clamp(
+          0.0,
+          MediaQuery.sizeOf(context).width,
+        );
+        final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+        final isMobile = availableWidth / textScale < AppBreakpoints.mobile;
+        final numberFormat = NumberFormat.decimalPattern('pt_BR');
+        final resolvedItemsPerPageLabel =
+            itemsPerPageLabel ??
+            AppLocalizations.of(context).reportPaginationItemsPerPage;
 
-    final borderSide = BorderSide(
-      color: scheme.outlineVariant.withValues(alpha: 0.9),
-    );
-    final decorated = Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        border: style.showTopBorder ? Border(top: borderSide) : null,
-      ),
-      padding: EdgeInsets.symmetric(
-        vertical: tokens.gapXs,
-        horizontal: tokens.gapSm,
-      ),
-      child: isMobile
-          ? Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                _SummaryRow(
-                  isMobile: true,
-                  tokens: tokens,
-                  scheme: scheme,
-                  numberFormat: numberFormat,
-                  pageSize: pageSize,
-                  pageSizeOptions: pageSizeOptions,
-                  onPageSizeChanged: enabled ? onPageSizeChanged : null,
-                  itemsPerPageLabel: resolvedItemsPerPageLabel,
-                  showingLabelPrefix: showingLabelPrefix,
-                  showingLabelMiddle: showingLabelMiddle,
-                  rangeStart: rangeStart,
-                  rangeEnd: rangeEnd,
-                  totalItems: totalItems,
-                  entityLabel: entityLabel,
+        final borderSide = BorderSide(
+          color: scheme.outlineVariant.withValues(alpha: 0.9),
+        );
+        final decorated = Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            border: style.showTopBorder ? Border(top: borderSide) : null,
+          ),
+          padding: EdgeInsets.symmetric(
+            vertical: tokens.gapXs,
+            horizontal: tokens.gapSm,
+          ),
+          child: isMobile
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    _SummaryRow(
+                      isMobile: true,
+                      tokens: tokens,
+                      scheme: scheme,
+                      numberFormat: numberFormat,
+                      pageSize: pageSize,
+                      pageSizeOptions: pageSizeOptions,
+                      onPageSizeChanged: enabled ? onPageSizeChanged : null,
+                      itemsPerPageLabel: resolvedItemsPerPageLabel,
+                      showingLabelPrefix: showingLabelPrefix,
+                      showingLabelMiddle: showingLabelMiddle,
+                      rangeStart: rangeStart,
+                      rangeEnd: rangeEnd,
+                      totalItems: totalItems,
+                      entityLabel: entityLabel,
+                    ),
+                    SizedBox(height: tokens.gapXs),
+                    _PaginationControls(
+                      style: style,
+                      scheme: scheme,
+                      tokens: tokens,
+                      currentPage: currentPage,
+                      totalPages: totalPages,
+                      onPrevious: enabled ? onPrevious : null,
+                      onNext: enabled ? onNext : null,
+                      onPageSelected: onPageSelected,
+                      enabled: enabled,
+                      compact: true,
+                    ),
+                  ],
+                )
+              : Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: _SummaryRow(
+                        isMobile: false,
+                        tokens: tokens,
+                        scheme: scheme,
+                        numberFormat: numberFormat,
+                        pageSize: pageSize,
+                        pageSizeOptions: pageSizeOptions,
+                        onPageSizeChanged: enabled ? onPageSizeChanged : null,
+                        itemsPerPageLabel: resolvedItemsPerPageLabel,
+                        showingLabelPrefix: showingLabelPrefix,
+                        showingLabelMiddle: showingLabelMiddle,
+                        rangeStart: rangeStart,
+                        rangeEnd: rangeEnd,
+                        totalItems: totalItems,
+                        entityLabel: entityLabel,
+                      ),
+                    ),
+                    SizedBox(width: tokens.gapMd),
+                    _PaginationControls(
+                      style: style,
+                      scheme: scheme,
+                      tokens: tokens,
+                      currentPage: currentPage,
+                      totalPages: totalPages,
+                      onPrevious: enabled ? onPrevious : null,
+                      onNext: enabled ? onNext : null,
+                      onPageSelected: onPageSelected,
+                      enabled: enabled,
+                    ),
+                  ],
                 ),
-                SizedBox(height: tokens.gapXs),
-                _PaginationControls(
-                  style: style,
-                  scheme: scheme,
-                  tokens: tokens,
-                  currentPage: currentPage,
-                  totalPages: totalPages,
-                  onPrevious: enabled ? onPrevious : null,
-                  onNext: enabled ? onNext : null,
-                  onPageSelected: onPageSelected,
-                  enabled: enabled,
-                  compact: true,
-                ),
-              ],
-            )
-          : Row(
-              children: <Widget>[
-                Expanded(
-                  child: _SummaryRow(
-                    isMobile: false,
-                    tokens: tokens,
-                    scheme: scheme,
-                    numberFormat: numberFormat,
-                    pageSize: pageSize,
-                    pageSizeOptions: pageSizeOptions,
-                    onPageSizeChanged: enabled ? onPageSizeChanged : null,
-                    itemsPerPageLabel: resolvedItemsPerPageLabel,
-                    showingLabelPrefix: showingLabelPrefix,
-                    showingLabelMiddle: showingLabelMiddle,
-                    rangeStart: rangeStart,
-                    rangeEnd: rangeEnd,
-                    totalItems: totalItems,
-                    entityLabel: entityLabel,
-                  ),
-                ),
-                SizedBox(width: tokens.gapMd),
-                _PaginationControls(
-                  style: style,
-                  scheme: scheme,
-                  tokens: tokens,
-                  currentPage: currentPage,
-                  totalPages: totalPages,
-                  onPrevious: enabled ? onPrevious : null,
-                  onNext: enabled ? onNext : null,
-                  onPageSelected: onPageSelected,
-                  enabled: enabled,
-                ),
-              ],
-            ),
-    );
+        );
 
-    return Material(
-      color: Colors.transparent,
-      child: decorated,
+        return Material(
+          color: Colors.transparent,
+          child: decorated,
+        );
+      },
     );
   }
 }
@@ -260,11 +270,12 @@ class _SummaryRow extends StatelessWidget {
         onPageSizeChanged != null;
 
     final pageSizeBlock = hasPageSizeControl
-        ? Row(
-            mainAxisSize: MainAxisSize.min,
+        ? Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: tokens.gapXs,
+            runSpacing: tokens.gapXs,
             children: <Widget>[
               Text(itemsPerPageLabel, style: labelStyle),
-              SizedBox(width: tokens.gapXs),
               _PageSizeMenu(
                 value: pageSize,
                 options: pageSizeOptions!,
@@ -649,8 +660,10 @@ class _PageNumberCell extends StatelessWidget {
           : scheme.onSurface.withValues(alpha: enabled ? 1 : 0.38),
       fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
     );
-    final borderColor = selected
-        ? scheme.primary.withValues(alpha: 0.22)
+    final borderColor = !enabled
+        ? scheme.onSurface.withValues(alpha: 0.12)
+        : selected
+        ? scheme.surfaceAccent
         : scheme.outlineVariant.withValues(alpha: enabled ? 0.72 : 0.4);
 
     return Semantics(

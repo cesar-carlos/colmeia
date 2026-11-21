@@ -9,38 +9,54 @@ void main() {
   testWidgets('pumpAndSettle succeeds and shows page size menu', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.light(),
-        locale: const Locale('pt'),
-        localizationsDelegates: colmeiaLocalizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: MediaQuery(
-          data: const MediaQueryData(size: Size(1200, 800)),
-          child: Scaffold(
-            body: AppTablePaginationFooter(
-              currentPage: 2,
-              totalPages: 5,
-              pageSize: 10,
-              rangeStart: 11,
-              rangeEnd: 20,
-              totalItems: 42,
-              entityLabel: 'itens',
-              pageSizeOptions: const <int>[10, 20, 50],
-              onPageSizeChanged: (_) {},
-              onPrevious: () {},
-              onNext: () {},
-              onPageSelected: (_) {},
+    for (final theme in [AppTheme.light(), AppTheme.dark()]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: theme,
+          locale: const Locale('pt'),
+          localizationsDelegates: colmeiaLocalizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: MediaQuery(
+            data: const MediaQueryData(size: Size(1200, 800)),
+            child: Scaffold(
+              body: AppTablePaginationFooter(
+                currentPage: 2,
+                totalPages: 5,
+                pageSize: 10,
+                rangeStart: 11,
+                rangeEnd: 20,
+                totalItems: 42,
+                entityLabel: 'itens',
+                pageSizeOptions: const <int>[10, 20, 50],
+                onPageSizeChanged: (_) {},
+                onPrevious: () {},
+                onNext: () {},
+                onPageSelected: (_) {},
+              ),
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
-    expect(find.byType(MenuAnchor), findsOneWidget);
-    expect(find.text('Itens por página:'), findsOneWidget);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.byType(MenuAnchor), findsOneWidget);
+      expect(find.text('Itens por página:'), findsOneWidget);
+      final selectedMaterial = tester.widget<Material>(
+        find
+            .ancestor(of: find.text('2'), matching: find.byType(Material))
+            .first,
+      );
+      final border =
+          (selectedMaterial.shape! as RoundedRectangleBorder).side.color;
+      final background = selectedMaterial.color!;
+      final a = Color.alphaBlend(border, background).computeLuminance();
+      final b = background.computeLuminance();
+      expect(
+        a > b ? (a + 0.05) / (b + 0.05) : (b + 0.05) / (a + 0.05),
+        greaterThanOrEqualTo(3),
+      );
+    }
   });
 
   testWidgets('page size menu opens as overlay without growing footer', (
@@ -149,37 +165,53 @@ void main() {
   testWidgets('should show page-of label instead of page numbers on mobile', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.light(),
-        locale: const Locale('pt'),
-        localizationsDelegates: colmeiaLocalizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: MediaQuery(
-          data: const MediaQueryData(size: Size(400, 800)),
-          child: Scaffold(
-            body: AppTablePaginationFooter(
-              currentPage: 1,
-              totalPages: 49,
-              pageSize: 20,
-              rangeStart: 1,
-              rangeEnd: 20,
-              totalItems: 973,
-              entityLabel: 'produtos',
-              pageSizeOptions: const <int>[10, 20, 50],
-              onPageSizeChanged: (_) {},
-              onPrevious: () {},
-              onNext: () {},
-              onPageSelected: (_) {},
+    for (final theme in [AppTheme.light(), AppTheme.dark()]) {
+      for (final width in [320.0, 540.0]) {
+        for (final scale in [1.0, 2.0]) {
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: theme,
+              locale: const Locale('pt'),
+              localizationsDelegates: colmeiaLocalizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: MediaQuery(
+                data: MediaQueryData(
+                  size: const Size(1200, 800),
+                  textScaler: TextScaler.linear(scale),
+                ),
+                child: Scaffold(
+                  body: Align(
+                    alignment: Alignment.topLeft,
+                    child: SizedBox(
+                      width: width,
+                      child: AppTablePaginationFooter(
+                        currentPage: 1,
+                        totalPages: 49,
+                        pageSize: 20,
+                        rangeStart: 1,
+                        rangeEnd: 20,
+                        totalItems: 973,
+                        entityLabel: 'produtos',
+                        pageSizeOptions: const <int>[10, 20, 50],
+                        onPageSizeChanged: (_) {},
+                        onPrevious: () {},
+                        onNext: () {},
+                        onPageSelected: (_) {},
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
-      ),
-    );
+          );
 
-    await tester.pumpAndSettle();
-    expect(find.text('Página 1 de 49'), findsOneWidget);
-    expect(find.text('2'), findsNothing);
-    expect(find.text('49'), findsNothing);
+          await tester.pumpAndSettle();
+          expect(find.text('Página 1 de 49'), findsOneWidget);
+          expect(find.text('2'), findsNothing);
+          expect(find.text('49'), findsNothing);
+          expect(tester.takeException(), isNull);
+        }
+      }
+    }
   });
 }

@@ -1,4 +1,5 @@
 import 'package:checks/checks.dart';
+import 'package:colmeia/app/theme/app_theme.dart';
 import 'package:colmeia/core/layout/app_breakpoints.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_row.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/margem_produto_sort_by.dart';
@@ -18,6 +19,31 @@ const _labels = SalesMargemProdutoColumnLabels(
 );
 
 void main() {
+  for (final theme in [AppTheme.light(), AppTheme.dark()]) {
+    test(
+      'markup remains readable on both row surfaces (${theme.brightness})',
+      () {
+        for (final value in [-3.2, 0, 83.8]) {
+          final color = salesMargemProdutoSignedPercentColor(
+            theme.colorScheme,
+            value,
+          )!;
+          for (final background in [
+            theme.colorScheme.surface,
+            theme.colorScheme.surfaceContainerLow,
+            theme.colorScheme.surfaceContainerHighest,
+          ]) {
+            final a = color.computeLuminance();
+            final b = background.computeLuminance();
+            expect(
+              a > b ? (a + 0.05) / (b + 0.05) : (b + 0.05) / (a + 0.05),
+              greaterThanOrEqualTo(4.5),
+            );
+          }
+        }
+      },
+    );
+  }
   group('buildSalesMargemProdutoColumns', () {
     final columns = buildSalesMargemProdutoColumns(labels: _labels);
 
