@@ -57,7 +57,7 @@ void main() {
       return;
     }
 
-    expect(xFile.name, 'chart_test.pdf');
+    expect(xFile.mimeType, 'application/pdf');
     expect(await xFile.readAsBytes(), bytes);
   });
 
