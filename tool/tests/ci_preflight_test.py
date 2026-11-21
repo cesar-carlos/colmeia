@@ -54,6 +54,19 @@ class CiPreflightTest(unittest.TestCase):
             self.assertEqual(0, self.module.main())
         run.assert_called_once_with([sys.executable, "tool/run_ci_tests.py"])
 
+    def test_documentation_encoding_rejects_windows_only_bytes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            docs = root / "docs"
+            docs.mkdir()
+            guide = docs / "guide.md"
+            guide.write_bytes(b"Release \x97 notes")
+            with mock.patch.object(self.module, "PROJECT_ROOT", root):
+                with self.assertRaisesRegex(ValueError, "UTF-8"):
+                    self.module._check_documentation_encoding()
+                guide.write_text("Release \u2014 notes", encoding="utf-8")
+                self.module._check_documentation_encoding()
+
     def test_version_sync_accepts_matching_uncommitted_release_files(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

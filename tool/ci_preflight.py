@@ -31,6 +31,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 def main() -> int:
     args = parse_args()
     failures: list[str] = []
+    failures.extend(_run_step("documentation UTF-8", _check_documentation_encoding))
 
     if not args.skip_env:
         failures.extend(
@@ -110,6 +111,14 @@ def _validate_env(*, templates_only: bool) -> None:
     if templates_only:
         command.append("--templates-only")
     run(command)
+
+
+def _check_documentation_encoding() -> None:
+    for path in (PROJECT_ROOT / "docs").rglob("*.md"):
+        try:
+            path.read_text(encoding="utf-8")
+        except UnicodeDecodeError as error:
+            raise ValueError(f"Save {path.relative_to(PROJECT_ROOT)} as UTF-8") from error
 
 
 def _check_dart_format() -> None:

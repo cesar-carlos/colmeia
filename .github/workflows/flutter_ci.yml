@@ -36,7 +36,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python tool/validate_env.py
+          python tool/ci_preflight.py --templates-only --skip-format --skip-version-sync
           python -m unittest discover -s installer/tests -p '*_test.py'
           python -m unittest discover -s tool/tests -p '*_test.py'
 

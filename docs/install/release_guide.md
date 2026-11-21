@@ -3,9 +3,9 @@
 Windows and Android release workflow. Web builds and hosting are documented
 in the [Web guide](web_guide.md). Native iOS releases are discontinued.
 
-## Release validation — 2026-11-21
+## Release validation â€” 2026-11-21
 
-The intermediate tags `v1.6.12` and `v1.6.13` did not publish native installers.
+The intermediate tags `v1.6.12`, `v1.6.13` and `v1.6.14` did not publish native installers.
 Linux CI caught export tests treating an in-memory XFile as a path-backed file,
 then expecting a name that the native implementation explicitly ignores. Empty
 cleanup paths could resolve to the checkout directory. The code now restricts
