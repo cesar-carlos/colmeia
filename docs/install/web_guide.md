@@ -57,6 +57,33 @@ The responsive component corrections are included in production version
 [responsiveness review](web_pwa_review_plan.md#shared-component-responsiveness-review-2026-11-17)
 records the component changes and their visual validation limits.
 
+## Production version 1.6.17+40 — 2026-11-23
+
+Published source `dfbf7055` (tag `v1.6.17`) as PWA package
+`b838c78d40ac0f3d8330`. Includes payment-method change allocation, aggregate
+completeness checks and the product-margin duplicate-scrollbar correction.
+The exact-commit [Flutter CI](https://github.com/cesar-carlos/colmeia/actions/runs/45241622123)
+passed all four test shards, analysis, Web and both Android smoke builds before
+activation. Local production-browser/worker checks passed all eight scenarios.
+
+All 57 deployed files were verified with SHA-256. Cache installation contains
+52 files / 51,014,830 bytes. Evidence under `/var/www/colmeia/`:
+`release-1.6.17.sha256`, `release-1.6.17-verified.log`,
+`release-1.6.17-previous.txt`, and the before/after container inventories.
+The atomic symlink switch preserved rollback to
+`/var/www/colmeia/releases/e727c4076b3864bb19af` (1.6.16+39).
+
+Public `version.json` confirmed 1.6.17/build 40 and `pwa-release.json` confirmed
+the package above. `/`, `/dashboard`, `/main.dart.js`, `/pwa-worker.js` and
+`/api/v1/health` returned HTTP 200. Nginx remained active; container IDs/names
+were unchanged. No Nginx reload, service restart or database migration was used.
+
+Live SQL acceptance remains limited by the HTTP 503 agent timeout and the
+numeric fixture's `Not authorized` rejection documented in the
+[release guide](release_guide.md#version-161740--2026-11-23).
+HTTP checks do not prove authenticated report results or visual behavior.
+Existing PWA clients must accept the available update to load the new code.
+
 ## Production version 1.6.16+39 — 2026-11-21
 
 Published source `593d86c2` (tag `v1.6.16`) as PWA package
