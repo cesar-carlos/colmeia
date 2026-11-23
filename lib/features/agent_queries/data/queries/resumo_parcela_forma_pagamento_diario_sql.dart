@@ -13,7 +13,7 @@ abstract final class ResumoParcelaFormaPagamentoDiarioSql {
   /// on the ERP side if this becomes hot.
   static const String _queryHead =
       '''
-    SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}
+    SELECT TOP ${AgentQueriesBoundedResultMaxRows.resumoParcelaFormaPagamentoDiario}
       CodEmpresa,
       CodFilial,
       CodProdutoVendido,

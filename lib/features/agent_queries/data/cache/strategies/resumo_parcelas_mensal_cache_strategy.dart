@@ -27,7 +27,7 @@ final class ResumoParcelasMensalCacheStrategy
   AgentQueryFactKind get factKind => AgentQueryFactKind.monthlyParcels;
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   ConsolidationStorageMode get storageMode =>

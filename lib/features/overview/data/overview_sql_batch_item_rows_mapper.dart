@@ -20,13 +20,15 @@ abstract final class OverviewSqlBatchItemRowsMapper {
   mapRowsForIndex<Row extends Object>(
     Map<int, AgentSqlBatchExecutionItem> byIndex,
     int index,
-    Row Function(Map<String, dynamic> row) mapRow,
-  ) {
+    Row Function(Map<String, dynamic> row) mapRow, {
+    int? maxRows,
+  }) {
     final inner = AgentSqlBatchItemRowsMapper.mapRowsForIndex(
       byIndex,
       index,
       mapRow,
       operation: 'loadOverviewBatch',
+      maxRows: maxRows,
     );
     return OverviewSqlBatchItemRowsResult<Row>(
       rows: inner.rows,
@@ -38,11 +40,12 @@ abstract final class OverviewSqlBatchItemRowsMapper {
   mapRowsForOptionalIndex<Row extends Object>(
     Map<int, AgentSqlBatchExecutionItem> byIndex,
     int? index,
-    Row Function(Map<String, dynamic> row) mapRow,
-  ) {
+    Row Function(Map<String, dynamic> row) mapRow, {
+    int? maxRows,
+  }) {
     if (index == null) {
       return OverviewSqlBatchItemRowsResult<Row>(rows: <Row>[]);
     }
-    return mapRowsForIndex(byIndex, index, mapRow);
+    return mapRowsForIndex(byIndex, index, mapRow, maxRows: maxRows);
   }
 }

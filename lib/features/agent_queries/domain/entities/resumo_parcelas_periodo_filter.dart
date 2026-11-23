@@ -19,7 +19,17 @@ class ResumoParcelasPeriodoFilter {
   String get trimmedPreVenda => preVenda.trim().toUpperCase();
 
   String? validationError() {
-    if (dataVendaFim.isBefore(dataVendaInicio)) {
+    final start = DateTime.utc(
+      dataVendaInicio.year,
+      dataVendaInicio.month,
+      dataVendaInicio.day,
+    );
+    final end = DateTime.utc(
+      dataVendaFim.year,
+      dataVendaFim.month,
+      dataVendaFim.day,
+    );
+    if (end.isBefore(start)) {
       return 'dataVendaFim must be on or after dataVendaInicio';
     }
     final origemTrim = trimmedOrigem;

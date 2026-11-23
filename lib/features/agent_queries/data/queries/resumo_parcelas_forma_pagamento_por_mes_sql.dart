@@ -17,7 +17,7 @@ abstract final class ResumoParcelasFormaPagamentoPorMesSql {
   /// **Agent policy review**: driving rows are `ParcelaProdutoVendido` joined
   /// to `ProdutoVendido`, `FormaPagamento`, `TipoOperacaoSaida`, `Cliente`,
   /// `Municipio`, optional `GrupoCliente`, `Regiao`, `Vendedor`, plus
-  /// correlated subqueries on `ParcelaProdutoVendido`,
+  /// pre-aggregated joins on `ParcelaProdutoVendido`,
   /// `ProdutoVendidoTrocoFormaPagamento`, and `Vale`.
   ///
   /// **Performance (SQL Server)**: keep `ProdutoVendido` selective on
@@ -26,7 +26,7 @@ abstract final class ResumoParcelasFormaPagamentoPorMesSql {
   /// `(CodEmpresa, CodProdutoVendido)` on `ParcelaProdutoVendido`.
   static const String _queryHead =
       '''
-    SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}
+    SELECT TOP ${AgentQueriesBoundedResultMaxRows.resumoParcelasFormaPagamentoPorMes}
       CodEmpresa,
       CodFilial,
       NomeUsuario,

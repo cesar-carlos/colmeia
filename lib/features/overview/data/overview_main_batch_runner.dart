@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:colmeia/core/config/app_environment.dart';
+import 'package:colmeia/features/agent_queries/data/agent_queries_bounded_result_max_rows.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_read_only_batch_options.dart';
 import 'package:colmeia/features/agent_queries/data/models/resumo_parcela_forma_pagamento_row_model_v2.dart';
 import 'package:colmeia/features/agent_queries/data/models/resumo_parcela_por_usuario_row_model.dart';
@@ -102,6 +105,10 @@ final class OverviewMainBatchRunner {
       byIndex,
       indexes.paymentResumo,
       (row) => ResumoParcelaFormaPagamentoRowModelV2.fromMap(row).toEntity(),
+      maxRows: math.min(
+        _maxRows,
+        AgentQueriesBoundedResultMaxRows.resumoParcelaFormaPagamento,
+      ),
     );
     final userRanking = OverviewSqlBatchItemRowsMapper.mapRowsForOptionalIndex(
       byIndex,

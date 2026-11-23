@@ -99,6 +99,8 @@ class ResumoParcelasFormaPagamentoPorMesRepositoryImpl
       agentId: agentId.trim(),
       unexpectedRowsLogMessage:
           'Unexpected row shape for ResumoParcelasFormaPagamentoPorMes',
+      maxRows:
+          AgentQueriesBoundedResultMaxRows.resumoParcelasFormaPagamentoPorMes,
       mapExecution: _mapExecutionToRows,
     );
   }

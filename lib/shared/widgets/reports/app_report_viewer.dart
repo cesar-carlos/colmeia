@@ -499,190 +499,200 @@ class _AppReportViewerState<T> extends State<AppReportViewer<T>> {
       isMinimal ? tokens.gapMd : tokens.contentSpacing,
     );
 
+    final children = <Widget>[
+      if (showHeader) ...<Widget>[
+        AppReportHeader(
+          title: widget.title ?? '',
+          subtitle: widget.subtitle,
+          contextChips: widget.contextChips ?? <String>[],
+          trailing: widget.headerTrailing,
+          actions: widget.headerActions,
+        ),
+        SizedBox(height: tokens.sectionSpacing),
+      ],
+      if (_hasLoadError) ...<Widget>[
+        widget.loadErrorPanel ??
+            AppInlineErrorPanel(
+              title: l10n.reportLoadErrorTitle,
+              message: widget.errorMessage!.trim(),
+              onRetry: widget.onRetry,
+            ),
+        SizedBox(height: tokens.sectionSpacing),
+      ],
+      if (widget.isIncomplete && !widget.isLoading) ...<Widget>[
+        Semantics(
+          liveRegion: true,
+          child: Text(l10n.reportIncompleteMessage),
+        ),
+        SizedBox(height: tokens.sectionSpacing),
+      ],
+      if (widget.isLoading && widget.rows.isNotEmpty) ...<Widget>[
+        LinearProgressIndicator(
+          semanticsLabel: l10n.reportLoadingTableSemantics,
+        ),
+        SizedBox(height: tokens.gapMd),
+      ],
+      if (showPanelFilters) ...<Widget>[
+        AppSkeleton(
+          enabled: widget.isLoading,
+          loadingSemanticsLabel: l10n.reportLoadingFiltersSemantics,
+          child: AppReportFiltersPanel(
+            filters: widget.filters!,
+            initialValues:
+                widget.filterValues ??
+                widget.query?.filters ??
+                <String, Object?>{},
+            onApply: (values) {
+              widget.events.onFiltersApplied?.call(values);
+              _emitQueryChanged(filters: values, page: 1);
+            },
+            onClear: () {
+              widget.events.onFilterCleared?.call();
+              _emitQueryChanged(
+                filters: const <String, Object?>{},
+                page: 1,
+              );
+            },
+            startExpanded: style.filtersStartExpanded,
+          ),
+        ),
+        SizedBox(height: tokens.sectionSpacing),
+      ],
+      if (showSummary) ...<Widget>[
+        AppSkeleton(
+          enabled: widget.isLoading,
+          loadingSemanticsLabel: l10n.reportLoadingSummarySemantics,
+          child: AppReportSummaryBar(items: widget.summaryItems!),
+        ),
+        SizedBox(height: tokens.sectionSpacing),
+      ],
+      _ReportViewerTableCard(
+        color: reportCardColor,
+        borderSide: reportCardBorder,
+        padding: reportCardPadding,
+        filtersToolbarGap: tokens.gapMd,
+        inlineFilters: showInlineFilters
+            ? AppReportInlineFiltersBar(
+                filters: widget.filters!,
+                initialValues:
+                    widget.filterValues ??
+                    widget.query?.filters ??
+                    <String, Object?>{},
+                isLoading: widget.isLoading,
+                debounceDuration: style.searchDebounce,
+                showAdvancedFiltersButton: showAdvancedInlineFilters,
+                onOpenAdvancedFilters: _showAdvancedFiltersSheet,
+                onFiltersChanged: (values) {
+                  widget.events.onFiltersApplied?.call(values);
+                  _emitQueryChanged(filters: values, page: 1);
+                },
+              )
+            : null,
+        toolbar: AppReportToolbar<T>(
+          style: style,
+          events: AppReportEvents<T>(
+            onSearchChanged: (term) {
+              widget.events.onSearchChanged?.call(term);
+              final current =
+                  _emittedQuery ?? widget.query ?? const AppReportQuery();
+              if (current.isSameSearchTerm(term)) {
+                return;
+              }
+              _emitQueryChanged(searchTerm: term, page: 1);
+            },
+            onDensityChanged: _onDensityChanged,
+            onGroupChanged: _onGroupChanged,
+            onGroupStateChanged: _onGroupStateChanged,
+            onColumnVisibilityChanged: _onColumnVisibilityChanged,
+            onExportRequested: widget.isIncomplete
+                ? null
+                : widget.events.onExportRequested,
+            onPrintRequested: widget.isIncomplete
+                ? null
+                : widget.events.onPrintRequested,
+            onRefresh: widget.events.onRefresh,
+          ),
+          columns: widget.columns,
+          groupableColumns: groupableColumns,
+          visibleColumnKeys: _visibleColumnKeys,
+          currentDensity: _density,
+          currentGroups: _groups,
+          isLoading: widget.isLoading,
+          groupController: _groupController,
+          searchTerm: widget.query?.searchTerm,
+          searchHintText: widget.searchHintText,
+          selectedRowCount: widget.selectedRows?.length ?? 0,
+          onOpenFiltersSheet:
+              style.filterLayout == AppReportFilterLayout.sheet && showFilters
+              ? _showAdvancedFiltersSheet
+              : null,
+          activeFilterCount: _activeFilterCount,
+          onClearSelection: widget.events.onRowSelection != null
+              ? () => widget.events.onRowSelection?.call(List<T>.empty())
+              : null,
+          trailing: toolbarTrailing,
+        ),
+        grid: ExcludeFocus(
+          child: AppSkeleton(
+            enabled: widget.isLoading && widget.rows.isEmpty,
+            loadingSemanticsLabel: l10n.reportLoadingTableSemantics,
+            child: LayoutBuilder(
+              builder: (context, constraints) => AppReportGrid<T>(
+                availableWidth: constraints.hasBoundedWidth
+                    ? constraints.maxWidth
+                    : MediaQuery.sizeOf(context).width,
+                columns: _visibleColumns,
+                rows: widget.rows,
+                currentGroups: _groups,
+                selectedRows: widget.selectedRows ?? List<T>.empty(),
+                groupController: _groupController,
+                style: style.copyWith(density: _density),
+                isLoading: widget.isLoading,
+                isIncomplete: widget.isIncomplete,
+                events: AppReportEvents<T>(
+                  onSortChanged: _onSortChanged,
+                  onRowTap: _onRowTap,
+                  onRowDoubleTap: widget.events.onRowDoubleTap,
+                  onRowLongPress: widget.events.onRowLongPress,
+                  onRowSelection: widget.events.onRowSelection,
+                  onGroupExpanded: (event) {
+                    _onGroupToggle(event);
+                    widget.events.onGroupExpanded?.call(event);
+                  },
+                  onGroupCollapsed: (event) {
+                    _onGroupToggle(event);
+                    widget.events.onGroupCollapsed?.call(event);
+                  },
+                ),
+                currentSorts: _sorts,
+                emptyMessage: widget.emptyMessage,
+                emptyAction: _buildEmptyClearFiltersAction(),
+              ),
+            ),
+          ),
+        ),
+        pagination: pagination,
+      ),
+    ];
+
+    final padding = style.contentPadding ?? context.pageScrollPadding(tokens);
+    if (widget.embedded) {
+      return Padding(
+        padding: padding,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: children,
+        ),
+      );
+    }
+
     final body = ListView(
-      shrinkWrap: widget.embedded,
-      primary: widget.embedded ? false : null,
-      padding: style.contentPadding ?? context.pageScrollPadding(tokens),
-      physics: widget.embedded
-          ? const NeverScrollableScrollPhysics()
-          : style.enablePullToRefresh
+      padding: padding,
+      physics: style.enablePullToRefresh
           ? const AlwaysScrollableScrollPhysics()
           : null,
-      children: <Widget>[
-        if (showHeader) ...<Widget>[
-          AppReportHeader(
-            title: widget.title ?? '',
-            subtitle: widget.subtitle,
-            contextChips: widget.contextChips ?? <String>[],
-            trailing: widget.headerTrailing,
-            actions: widget.headerActions,
-          ),
-          SizedBox(height: tokens.sectionSpacing),
-        ],
-        if (_hasLoadError) ...<Widget>[
-          widget.loadErrorPanel ??
-              AppInlineErrorPanel(
-                title: l10n.reportLoadErrorTitle,
-                message: widget.errorMessage!.trim(),
-                onRetry: widget.onRetry,
-              ),
-          SizedBox(height: tokens.sectionSpacing),
-        ],
-        if (widget.isIncomplete && !widget.isLoading) ...<Widget>[
-          Semantics(
-            liveRegion: true,
-            child: Text(l10n.reportIncompleteMessage),
-          ),
-          SizedBox(height: tokens.sectionSpacing),
-        ],
-        if (widget.isLoading && widget.rows.isNotEmpty) ...<Widget>[
-          LinearProgressIndicator(
-            semanticsLabel: l10n.reportLoadingTableSemantics,
-          ),
-          SizedBox(height: tokens.gapMd),
-        ],
-        if (showPanelFilters) ...<Widget>[
-          AppSkeleton(
-            enabled: widget.isLoading,
-            loadingSemanticsLabel: l10n.reportLoadingFiltersSemantics,
-            child: AppReportFiltersPanel(
-              filters: widget.filters!,
-              initialValues:
-                  widget.filterValues ??
-                  widget.query?.filters ??
-                  <String, Object?>{},
-              onApply: (values) {
-                widget.events.onFiltersApplied?.call(values);
-                _emitQueryChanged(filters: values, page: 1);
-              },
-              onClear: () {
-                widget.events.onFilterCleared?.call();
-                _emitQueryChanged(
-                  filters: const <String, Object?>{},
-                  page: 1,
-                );
-              },
-              startExpanded: style.filtersStartExpanded,
-            ),
-          ),
-          SizedBox(height: tokens.sectionSpacing),
-        ],
-        if (showSummary) ...<Widget>[
-          AppSkeleton(
-            enabled: widget.isLoading,
-            loadingSemanticsLabel: l10n.reportLoadingSummarySemantics,
-            child: AppReportSummaryBar(items: widget.summaryItems!),
-          ),
-          SizedBox(height: tokens.sectionSpacing),
-        ],
-        _ReportViewerTableCard(
-          color: reportCardColor,
-          borderSide: reportCardBorder,
-          padding: reportCardPadding,
-          filtersToolbarGap: tokens.gapMd,
-          inlineFilters: showInlineFilters
-              ? AppReportInlineFiltersBar(
-                  filters: widget.filters!,
-                  initialValues:
-                      widget.filterValues ??
-                      widget.query?.filters ??
-                      <String, Object?>{},
-                  isLoading: widget.isLoading,
-                  debounceDuration: style.searchDebounce,
-                  showAdvancedFiltersButton: showAdvancedInlineFilters,
-                  onOpenAdvancedFilters: _showAdvancedFiltersSheet,
-                  onFiltersChanged: (values) {
-                    widget.events.onFiltersApplied?.call(values);
-                    _emitQueryChanged(filters: values, page: 1);
-                  },
-                )
-              : null,
-          toolbar: AppReportToolbar<T>(
-            style: style,
-            events: AppReportEvents<T>(
-              onSearchChanged: (term) {
-                widget.events.onSearchChanged?.call(term);
-                final current =
-                    _emittedQuery ?? widget.query ?? const AppReportQuery();
-                if (current.isSameSearchTerm(term)) {
-                  return;
-                }
-                _emitQueryChanged(searchTerm: term, page: 1);
-              },
-              onDensityChanged: _onDensityChanged,
-              onGroupChanged: _onGroupChanged,
-              onGroupStateChanged: _onGroupStateChanged,
-              onColumnVisibilityChanged: _onColumnVisibilityChanged,
-              onExportRequested: widget.isIncomplete
-                  ? null
-                  : widget.events.onExportRequested,
-              onPrintRequested: widget.isIncomplete
-                  ? null
-                  : widget.events.onPrintRequested,
-              onRefresh: widget.events.onRefresh,
-            ),
-            columns: widget.columns,
-            groupableColumns: groupableColumns,
-            visibleColumnKeys: _visibleColumnKeys,
-            currentDensity: _density,
-            currentGroups: _groups,
-            isLoading: widget.isLoading,
-            groupController: _groupController,
-            searchTerm: widget.query?.searchTerm,
-            searchHintText: widget.searchHintText,
-            selectedRowCount: widget.selectedRows?.length ?? 0,
-            onOpenFiltersSheet:
-                style.filterLayout == AppReportFilterLayout.sheet && showFilters
-                ? _showAdvancedFiltersSheet
-                : null,
-            activeFilterCount: _activeFilterCount,
-            onClearSelection: widget.events.onRowSelection != null
-                ? () => widget.events.onRowSelection?.call(List<T>.empty())
-                : null,
-            trailing: toolbarTrailing,
-          ),
-          grid: ExcludeFocus(
-            child: AppSkeleton(
-              enabled: widget.isLoading && widget.rows.isEmpty,
-              loadingSemanticsLabel: l10n.reportLoadingTableSemantics,
-              child: LayoutBuilder(
-                builder: (context, constraints) => AppReportGrid<T>(
-                  availableWidth: constraints.hasBoundedWidth
-                      ? constraints.maxWidth
-                      : MediaQuery.sizeOf(context).width,
-                  columns: _visibleColumns,
-                  rows: widget.rows,
-                  currentGroups: _groups,
-                  selectedRows: widget.selectedRows ?? List<T>.empty(),
-                  groupController: _groupController,
-                  style: style.copyWith(density: _density),
-                  isLoading: widget.isLoading,
-                  isIncomplete: widget.isIncomplete,
-                  events: AppReportEvents<T>(
-                    onSortChanged: _onSortChanged,
-                    onRowTap: _onRowTap,
-                    onRowDoubleTap: widget.events.onRowDoubleTap,
-                    onRowLongPress: widget.events.onRowLongPress,
-                    onRowSelection: widget.events.onRowSelection,
-                    onGroupExpanded: (event) {
-                      _onGroupToggle(event);
-                      widget.events.onGroupExpanded?.call(event);
-                    },
-                    onGroupCollapsed: (event) {
-                      _onGroupToggle(event);
-                      widget.events.onGroupCollapsed?.call(event);
-                    },
-                  ),
-                  currentSorts: _sorts,
-                  emptyMessage: widget.emptyMessage,
-                  emptyAction: _buildEmptyClearFiltersAction(),
-                ),
-              ),
-            ),
-          ),
-          pagination: pagination,
-        ),
-      ],
+      children: children,
     );
 
     if (style.enablePullToRefresh && widget.events.onRefresh != null) {

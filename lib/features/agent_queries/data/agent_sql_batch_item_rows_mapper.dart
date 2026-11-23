@@ -1,5 +1,6 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/data/agent_sql_batch_item_rpc_failure_mapper.dart';
+import 'package:colmeia/features/agent_queries/data/agent_sql_result_completeness.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_batch_execution_result.dart';
 
 /// Rows (or failure) parsed from one [AgentSqlBatchExecutionItem] slot.
@@ -20,6 +21,7 @@ abstract final class AgentSqlBatchItemRowsMapper {
     int index,
     Row Function(Map<String, dynamic> row) mapRow, {
     String operation = 'sql.executeBatch',
+    int? maxRows,
   }) {
     final item = byIndex[index];
     if (item == null) {
@@ -41,6 +43,19 @@ abstract final class AgentSqlBatchItemRowsMapper {
       );
     }
 
+    if (maxRows != null) {
+      final failure = AgentSqlResultCompleteness.failure(
+        rowCount: item.rowCount,
+        receivedRows: item.rows.length,
+        maxRows: maxRows,
+      );
+      if (failure != null) {
+        return AgentSqlBatchItemRowsResult<Row>(
+          rows: <Row>[],
+          failure: failure,
+        );
+      }
+    }
     try {
       return AgentSqlBatchItemRowsResult<Row>(
         rows: item.rows.map(mapRow).toList(growable: false),

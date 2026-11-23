@@ -428,93 +428,97 @@ class _SalesMargemProdutoPageState extends State<SalesMargemProdutoPage>
           l10n.salesBranchPickerEmpty,
         );
 
-        return Scrollbar(
-          controller: _pageScrollController,
-          child: SingleChildScrollView(
+        return ScrollConfiguration(
+          behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+          child: Scrollbar(
             controller: _pageScrollController,
-            child: Padding(
-              padding: context.pageScrollPadding(
-                tokens,
-                horizontalAdjustment:
-                    AppPageSpacingPresets.dashboardHorizontalAdjustment,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  AppShellPageIntro(
-                    sectionLabel: l10n.shellNavSalesLabel,
-                    onSectionLabelTap: () => context.goTo(AppRoute.sales),
-                    title: l10n.salesCardMargemProdutoTitle,
-                    subtitle: l10n.salesMargemProdutoIntroSubtitle,
-                  ),
-                  SizedBox(height: tokens.sectionSpacing),
-                  SalesCardFilterTrigger(
-                    onTap: () => unawaited(_openFiltersSheet()),
-                    buttonSemanticsLabel: l10n.reportFiltersButton,
-                    summaryItems: <SalesCardFilterSummaryItem>[
-                      SalesCardFilterSummaryItem(
-                        label: l10n.salesBranchFilterLabel,
-                        value: selectedBranchName,
-                      ),
-                    ],
-                    footer: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        AppDropdownField<MargemProdutoCostFilter>(
-                          label: l10n.salesMargemProdutoCostFilter,
-                          helperText: l10n.salesMargemProdutoCostHelp,
-                          value: _controller.costFilter,
-                          enabled:
-                              _controller.selectedAgentId != null &&
-                              !_controller.isLoading,
-                          options: [
-                            for (final filter in MargemProdutoCostFilter.values)
-                              AppDropdownOption(
-                                value: filter,
-                                label: salesMargemProdutoCostFilterLabel(
-                                  l10n,
-                                  filter,
-                                ),
-                              ),
-                          ],
-                          onChanged: (value) {
-                            if (value == null) return;
-                            unawaited(
-                              _handleCatalogLoad(
-                                () => _controller.applyFilters({
-                                  'agentId': _controller.selectedAgentId,
-                                  'costFilter': value.name,
-                                }),
-                              ),
-                            );
-                          },
-                        ),
-                        SizedBox(height: tokens.gapMd),
-                        SalesAutoRefreshActionsRow(
-                          value: autoRefreshOption,
-                          onChanged: setAutoRefreshOption,
-                          onRefreshNow: () => unawaited(_reload()),
-                          enabled: canScheduleAutoRefresh,
-                          lastUpdatedAt: autoRefreshLastUpdatedAt,
-                          isPaused: autoRefreshIsPaused,
-                          pauseReason: autoRefreshPauseReason,
-                          l10n: l10n,
+            child: SingleChildScrollView(
+              controller: _pageScrollController,
+              child: Padding(
+                padding: context.pageScrollPadding(
+                  tokens,
+                  horizontalAdjustment:
+                      AppPageSpacingPresets.dashboardHorizontalAdjustment,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    AppShellPageIntro(
+                      sectionLabel: l10n.shellNavSalesLabel,
+                      onSectionLabelTap: () => context.goTo(AppRoute.sales),
+                      title: l10n.salesCardMargemProdutoTitle,
+                      subtitle: l10n.salesMargemProdutoIntroSubtitle,
+                    ),
+                    SizedBox(height: tokens.sectionSpacing),
+                    SalesCardFilterTrigger(
+                      onTap: () => unawaited(_openFiltersSheet()),
+                      buttonSemanticsLabel: l10n.reportFiltersButton,
+                      summaryItems: <SalesCardFilterSummaryItem>[
+                        SalesCardFilterSummaryItem(
+                          label: l10n.salesBranchFilterLabel,
+                          value: selectedBranchName,
                         ),
                       ],
+                      footer: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          AppDropdownField<MargemProdutoCostFilter>(
+                            label: l10n.salesMargemProdutoCostFilter,
+                            helperText: l10n.salesMargemProdutoCostHelp,
+                            value: _controller.costFilter,
+                            enabled:
+                                _controller.selectedAgentId != null &&
+                                !_controller.isLoading,
+                            options: [
+                              for (final filter
+                                  in MargemProdutoCostFilter.values)
+                                AppDropdownOption(
+                                  value: filter,
+                                  label: salesMargemProdutoCostFilterLabel(
+                                    l10n,
+                                    filter,
+                                  ),
+                                ),
+                            ],
+                            onChanged: (value) {
+                              if (value == null) return;
+                              unawaited(
+                                _handleCatalogLoad(
+                                  () => _controller.applyFilters({
+                                    'agentId': _controller.selectedAgentId,
+                                    'costFilter': value.name,
+                                  }),
+                                ),
+                              );
+                            },
+                          ),
+                          SizedBox(height: tokens.gapMd),
+                          SalesAutoRefreshActionsRow(
+                            value: autoRefreshOption,
+                            onChanged: setAutoRefreshOption,
+                            onRefreshNow: () => unawaited(_reload()),
+                            enabled: canScheduleAutoRefresh,
+                            lastUpdatedAt: autoRefreshLastUpdatedAt,
+                            isPaused: autoRefreshIsPaused,
+                            pauseReason: autoRefreshPauseReason,
+                            l10n: l10n,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  SizedBox(height: tokens.sectionSpacing),
-                  _SalesMargemProdutoReportSurface(
-                    controller: _controller,
-                    columns: _columns,
-                    headerTrailing: _catalogHeaderTrailing(l10n),
-                    onQueryChanged: _onQueryChanged,
-                    onPageChanged: _onPageChanged,
-                    onPageSizeChanged: _onPageSizeChanged,
-                    onRefresh: _loadCatalog,
-                    retryCountdownLabel: agentQueryRetryCountdownLabel(l10n),
-                  ),
-                ],
+                    SizedBox(height: tokens.sectionSpacing),
+                    _SalesMargemProdutoReportSurface(
+                      controller: _controller,
+                      columns: _columns,
+                      headerTrailing: _catalogHeaderTrailing(l10n),
+                      onQueryChanged: _onQueryChanged,
+                      onPageChanged: _onPageChanged,
+                      onPageSizeChanged: _onPageSizeChanged,
+                      onRefresh: _loadCatalog,
+                      retryCountdownLabel: agentQueryRetryCountdownLabel(l10n),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

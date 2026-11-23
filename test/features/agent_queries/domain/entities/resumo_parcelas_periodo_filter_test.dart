@@ -9,6 +9,17 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('ResumoParcelasPeriodoFilter', () {
+    test(
+      'calendar dates ignore time and timezone when validating SQL dates',
+      () {
+        final filter = ResumoParcelasPeriodoFilter(
+          dataVendaInicio: DateTime(2026, 11, 23, 23, 59),
+          dataVendaFim: DateTime.utc(2026, 11, 23),
+        );
+        expect(filter.validationError(), isNull);
+      },
+    );
+
     test('validationError when dataVendaFim is before dataVendaInicio', () {
       final filter = ResumoParcelasPeriodoFilter(
         dataVendaInicio: DateTime.utc(2026, 4, 30),

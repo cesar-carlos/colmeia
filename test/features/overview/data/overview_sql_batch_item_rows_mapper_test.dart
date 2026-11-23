@@ -5,6 +5,29 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('OverviewSqlBatchItemRowsMapper', () {
+    test('rejects capped or mismatched aggregates before mapping rows', () {
+      for (final rowCount in [1, 2]) {
+        final result =
+            OverviewSqlBatchItemRowsMapper.mapRowsForOptionalIndex<int>(
+              {
+                0: AgentSqlBatchExecutionItem(
+                  index: 0,
+                  ok: true,
+                  rows: const [
+                    {'v': 10},
+                  ],
+                  rowCount: rowCount,
+                ),
+              },
+              0,
+              (row) => row['v']! as int,
+              maxRows: rowCount == 1 ? 1 : 10,
+            );
+        expect(result.rows, isEmpty);
+        expect(result.failure, isNotNull);
+      }
+    });
+
     test('returns failure when batch item index is absent', () {
       final byIndex = <int, AgentSqlBatchExecutionItem>{};
       final result = OverviewSqlBatchItemRowsMapper.mapRowsForIndex<int>(

@@ -63,20 +63,29 @@ abstract final class ParcelaProdutoVendidoDetalheSql {
       _fromJoinsOverviewAggregate +
       _selectWithTrocoLayerSuffix;
 
-  static const String _selectWithTrocoLayerPrefix = '''
+  /// Allocates change once: eligible methods when sufficient, all otherwise.
+  static const String trocoExpression = '''
+        CASE WHEN det.ValorTotalTrocoVenda > 0 THEN
+          CASE WHEN det.ValorTotalParcelasRateioTroco >= det.ValorTotalTrocoVenda THEN
+            CASE WHEN det.TipoForma IN ('DH', 'CH', 'VL', 'PX', 'PIX') THEN
+              (det.ValorParcela / NULLIF(det.ValorTotalParcelasRateioTroco, 0))
+                * det.ValorTotalTrocoVenda
+              ELSE 0
+            END
+            ELSE (det.ValorParcela / NULLIF(det.ValorTotalParcelas, 0))
+              * det.ValorTotalTrocoVenda
+          END
+          ELSE 0
+        END
+  ''';
+
+  static const String _selectWithTrocoLayerPrefix =
+      '''
     SELECT *
     FROM (
       SELECT
         det.*,
-        CASE WHEN det.ValorTotalTrocoVenda > 0
-          AND det.ValorTotalParcelasRateioTroco >= det.ValorTotalTrocoVenda
-          AND det.TipoForma IN ('DH', 'CH', 'VL', 'PX', 'PIX') THEN
-          (det.ValorParcela / NULLIF(det.ValorTotalParcelasRateioTroco, 0))
-            * det.ValorTotalTrocoVenda
-          WHEN det.ValorTotalTrocoVenda > 0 THEN
-          (det.ValorParcela / NULLIF(det.ValorTotalParcelas, 0)) * det.ValorTotalTrocoVenda
-          ELSE 0
-        END AS ValorTrocoParcela
+        $trocoExpression AS ValorTrocoParcela
       FROM (
   ''';
 

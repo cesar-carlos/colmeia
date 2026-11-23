@@ -9,15 +9,14 @@ abstract final class ResumoParcelaFormaPagamentoSql {
   /// troco allocation (`SUM(ValorParcela - ValorTrocoParcela)`).
   ///
   /// The middle `SELECT` projects only columns consumed by the outer aggregate
-  /// (filters, `GROUP BY`, `COUNT(DISTINCT Id)`, and sums). Additional
-  /// `Detalhe` columns are listed in a SQL block comment so they are not lost
-  /// when extending this resumo — see [_queryMiddleSelect].
+  /// (filters, `GROUP BY`, `COUNT(DISTINCT Id)`, and sums). Other columns
+  /// remain available in the shared detail projection.
   ///
   /// Outer aggregate groups by month label and payment method, counting
   /// distinct sales via the composite `Id` expression in the inner select.
   static const String _queryHead =
       '''
-    SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}
+    SELECT TOP ${AgentQueriesBoundedResultMaxRows.resumoParcelaFormaPagamento}
       CodEmpresa,
       CodFilial,
       NomeUsuario,
@@ -33,8 +32,8 @@ abstract final class ResumoParcelaFormaPagamentoSql {
 
   /// Middle projection: only columns referenced by the outer resumo.
   ///
-  /// Other [ParcelaProdutoVendidoDetalheSql] outputs are documented in the SQL
-  /// comment block and can be added here when a new slice needs them.
+  /// Other [ParcelaProdutoVendidoDetalheSql] outputs can be added here when
+  /// a new slice needs them.
   static const String _queryMiddleSelect = '''
       SELECT
         CodEmpresa,

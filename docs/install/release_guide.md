@@ -3,6 +3,27 @@
 Windows and Android release workflow. Web builds and hosting are documented
 in the [Web guide](web_guide.md). Native iOS releases are discontinued.
 
+## Version 1.6.17+40 — 2026-11-23
+
+Corrects duplicated scrollbars in the product-margin report: embedded reports
+use a Column instead of a disabled ListView; the page suppresses automatic
+desktop scrollbars while preserving its explicit scrollbar and the grid's own
+scrolling. Other standalone report layouts retain their ListView.
+
+Payment-method summaries now allocate change once for mixed payments, validate
+calendar-date ranges consistently, and reject potentially incomplete aggregates.
+SQL caps match the existing transport limits (5,000 summary groups; 10,000 daily
+rows). Monthly/weekday parcel facts use schema 2 to invalidate old allocations.
+Details and caveats are in [Agent SQL options](../bridge_agent_sql_api_options.md#revisão-de-vendas-por-forma-de-pagamento-2026-11-23).
+
+Local evidence: 189 query/repository/cache tests, 66 overview data tests, 69
+report/product-margin tests and five SQL arithmetic tests passed (some suites
+overlap). Static analysis passed. Live E2E remains unproven: the daily query
+returned HTTP 503 after 120 seconds; the numeric fixture returned `Not authorized`,
+including via relay. No interactive debug app was available for visual validation.
+These limitations are retained in the release; they are not counted as successful
+live-data acceptance. Native artifacts remain gated by exact-commit CI.
+
 ## Version 1.6.16+39 — 2026-11-21
 
 Product margin now scrolls as a page with a taller table instead of compressing

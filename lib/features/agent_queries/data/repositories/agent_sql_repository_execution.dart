@@ -1,6 +1,7 @@
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/core/errors/app_result.dart';
 import 'package:colmeia/core/logging/app_logger.dart';
+import 'package:colmeia/features/agent_queries/data/agent_sql_result_completeness.dart';
 import 'package:colmeia/features/agent_queries/domain/agent_sql_rpc_failure_ui_key.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execute_request.dart';
 import 'package:colmeia/features/agent_queries/domain/entities/agent_sql_execution_result.dart';
@@ -46,6 +47,7 @@ abstract final class AgentSqlRepositoryExecution {
     String? unexpectedRowsLogMessage,
     String unexpectedRowsUserMessage = defaultUnexpectedRowsUserMessage,
     String? unexpectedRowsUiKey,
+    int? maxRows,
     AgentQueriesCancelScope? cancelScope,
   }) async {
     final result = await agentQueriesRepository.executeSql(
@@ -61,6 +63,7 @@ abstract final class AgentSqlRepositoryExecution {
         unexpectedRowsLogMessage: unexpectedRowsLogMessage,
         unexpectedRowsUserMessage: unexpectedRowsUserMessage,
         unexpectedRowsUiKey: unexpectedRowsUiKey,
+        maxRows: maxRows,
       ),
       Failure<T, AppFailure>.new,
     );
@@ -74,7 +77,16 @@ abstract final class AgentSqlRepositoryExecution {
     String? unexpectedRowsLogMessage,
     String unexpectedRowsUserMessage = defaultUnexpectedRowsUserMessage,
     String? unexpectedRowsUiKey,
+    int? maxRows,
   }) {
+    if (maxRows != null) {
+      final failure = AgentSqlResultCompleteness.failure(
+        rowCount: executionResult.rowCount,
+        receivedRows: executionResult.rows.length,
+        maxRows: maxRows,
+      );
+      if (failure != null) return Failure<T, AppFailure>(failure);
+    }
     try {
       return Success<T, AppFailure>(mapExecution(executionResult));
     } catch (error, stackTrace) {

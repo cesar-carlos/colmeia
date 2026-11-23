@@ -99,6 +99,8 @@ class ResumoParcelaFormaPagamentoDiarioRepositoryImpl
       agentId: agentId.trim(),
       unexpectedRowsLogMessage:
           'Unexpected row shape for ResumoVendaProdutoDiario',
+      maxRows:
+          AgentQueriesBoundedResultMaxRows.resumoParcelaFormaPagamentoDiario,
       mapExecution: _mapExecutionToRows,
     );
   }

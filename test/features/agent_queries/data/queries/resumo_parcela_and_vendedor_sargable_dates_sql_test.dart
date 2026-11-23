@@ -41,17 +41,25 @@ void main() {
     const top =
         'SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}';
     final capped = <String>[
-      ResumoParcelaFormaPagamentoSql.query,
-      ResumoParcelaFormaPagamentoSqlV2.query,
-      ResumoParcelaFormaPagamentoDiarioSql.query,
       ResumoParcelaPorUsuarioSql.query,
       ResumoParcelasAnualSql.query(),
       ResumoParcelasDiaSemanaUsuarioSql.query(),
-      ResumoParcelasFormaPagamentoPorMesSql.query(),
       ResumoVendasDiariasPorVendedorSql.query(),
       ResumoTotalDiarioVendasSql.query,
       ResumoTotalVendasMunicipioFilialDiarioSql.query,
     ];
+    for (final sql in [
+      ResumoParcelaFormaPagamentoSql.query,
+      ResumoParcelaFormaPagamentoSqlV2.query,
+      ResumoParcelasFormaPagamentoPorMesSql.query(),
+    ]) {
+      check(sql).contains(
+        'SELECT TOP ${AgentQueriesBoundedResultMaxRows.resumoParcelaFormaPagamento}',
+      );
+    }
+    check(ResumoParcelaFormaPagamentoDiarioSql.query).contains(
+      'SELECT TOP ${AgentQueriesBoundedResultMaxRows.resumoParcelaFormaPagamentoDiario}',
+    );
     for (final sql in capped) {
       check(sql).contains(top);
     }

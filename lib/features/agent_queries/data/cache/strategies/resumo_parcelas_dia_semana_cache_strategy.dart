@@ -28,7 +28,7 @@ final class ResumoParcelasDiaSemanaCacheStrategy
   AgentQueryFactKind get factKind => AgentQueryFactKind.weekdayPeriod;
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   ConsolidationStorageMode get storageMode =>

@@ -32,6 +32,52 @@ void main() {
     );
   });
 
+  for (final count in [101, 5000]) {
+    test(
+      'handles $count payment groups without publishing truncated totals',
+      () async {
+        final rows = List.generate(
+          count,
+          (i) => <String, dynamic>{
+            'CodEmpresa': 1,
+            'CodFilial': i + 1,
+            'CodFormaPagamento': 'PIX',
+            'DescricaoFormaPagamento': 'Pix',
+            'QtdVendas': 1,
+            'ValorParcela': 10.0,
+          },
+        );
+        when(() => agentQueriesRepository.executeSql(any())).thenAnswer(
+          (_) async => Success<AgentSqlExecutionResult, AppFailure>(
+            AgentSqlExecutionResult(rows: rows, rowCount: count),
+          ),
+        );
+        final result = await repository.load(
+          userId: 'user-1',
+          agentId: 'agent-1',
+          filter: ResumoParcelaFormaPagamentoFilterV2(
+            dataVendaInicio: DateTime(2026, 11, 23, 23),
+            dataVendaFim: DateTime(2026, 11, 23),
+          ),
+        );
+        if (count == 101) {
+          expect(result.getOrNull(), hasLength(101));
+        } else {
+          expect(result.isError(), isTrue);
+        }
+        final request =
+            verify(() => agentQueriesRepository.executeSql(captureAny()))
+                    .captured
+                    .single
+                as AgentSqlExecuteRequest;
+        expect(request.sql, contains('SELECT TOP 5000'));
+        expect(request.executeOptions!.maxRows, 5000);
+        expect(request.namedParams['dataVendaInicio'], '2026-11-23');
+        expect(request.namedParams['dataVendaFim'], '2026-11-23');
+      },
+    );
+  }
+
   test('should return validation failure when date range is invalid', () async {
     final result = await repository.load(
       userId: 'user-1',

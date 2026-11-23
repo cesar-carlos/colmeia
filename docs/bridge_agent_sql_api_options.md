@@ -344,3 +344,54 @@ which executes a single tagged `UNION ALL` query over a shared CTE for the page,
 summary and top movers. Moving-average `loadPageAndSummary` retains the existing
 `sql.executeBatch` strategy. These unary exceptions keep `preferDbStreaming: false`;
 complete catalog progress publishes validated pages without changing their SQL.
+
+
+## Revisão de vendas por forma de pagamento (2026-11-23)
+
+- Período inclusivo por data de calendário: início `>= início` e fim
+  `< DATEADD(day, 1, fim)`. A validação ignora horários no mesmo dia,
+  coerente com os parâmetros `yyyy-MM-dd` enviados ao agente.
+- O troco é rateado exclusivamente entre DH/CH/VL/PX/PIX quando essas
+  parcelas cobrem o troco. As demais formas recebem troco zero nesse caso.
+  Quando o conjunto elegível é insuficiente, o rateio usa todas as parcelas.
+  Isso corrige o desconto duplicado em vendas com formas mistas. O fragmento
+  compartilhado também corrige os resumos mensal, semanal e por usuário.
+- Valor por forma = soma das parcelas menos o troco rateado. Quantidade é
+  `COUNT(DISTINCT Id)` por forma: uma venda com duas formas participa das duas
+  contagens. Essa soma não equivale à quantidade global de vendas únicas.
+- Preservados os filtros padrão `FrenteLoja`, `GeraFinanceiro=S` e
+  `PreVenda=N`. O indicador financeiro da parcela prevalece sobre o da
+  operação. Não foi inventado um filtro de cancelamento sem contrato do ERP.
+- Substituído `TOP 100` por limites correspondentes ao transporte: 5.000
+  grupos nos resumos por forma (V1/V2/mês), 10.000 no detalhe diário.
+  Ao atingir o limite, ou divergir a contagem declarada das linhas recebidas,
+  os repositórios rejeitam o resultado como incompleto. A consulta por forma
+  da Visão geral aplica a mesma proteção no lote, considerando também um
+  limite de transporte inferior. Não há paginação automática desses agregados;
+  o limite é conservador, inclusive quando a cardinalidade é exatamente igual.
+- Fatos mensais e semanais passam ao schema 2 para não reutilizar o rateio
+  antigo. Snapshots de consultas têm chaves dependentes da SQL. Pacotes offline
+  já publicados precisam ser atualizados online para incorporar novos valores.
+
+Validação local: 189 testes Dart passaram, incluindo consultas, filtros,
+repositórios, mapeamento de lote e cache. O teste
+`tool/tests/parcel_troco_sql_test.py` executa a expressão CASE de produção em
+SQLite: cinco testes cobrem formas mistas, rateio alternativo, tipos elegíveis,
+ausência de troco e ausência de formas elegíveis. Isso comprova a aritmética,
+não o plano de execução ou a integração SQL Anywhere. Há também um cenário
+numérico no E2E V2 para executar a expressão pelo bridge.
+
+Os 66 testes de dados da Visão geral também passaram; análise estática sem
+avisos. Na tentativa real desta revisão, o teste diário recebeu HTTP 503
+`Timed out waiting for agent response` após aproximadamente 120 segundos.
+Os testes legados aceitam falhas transitórias: passar nesses casos não comprova
+os totais reais. O cenário numérico marca explicitamente como não executado
+quando o bridge retorna uma falha externa aceita pela política E2E.
+Não houve alteração no plug_server nem publicação em produção nesta revisão.
+
+A reexecução isolada do cenário numérico, inclusive pelo mesmo relay streaming
+usado pelo repositório V2, retornou `RpcFailure: Not authorized`. Essa rejeição
+não é suprimida pelo teste. Portanto, permanece uma falha E2E externa e a
+validação dos valores no banco real está pendente de autorização/resposta do
+agente. Não foram alteradas credenciais, políticas ou permissões para contornar
+a rejeição. Nenhum app debug estava disponível no DTD para hot reload.

@@ -17,7 +17,7 @@ abstract final class ResumoParcelaFormaPagamentoSqlV2 {
   /// with map/daily SQL).
   static const String _queryHead =
       '''
-    SELECT TOP ${AgentQueriesBoundedResultMaxRows.sqlReturnRowCap}
+    SELECT TOP ${AgentQueriesBoundedResultMaxRows.resumoParcelaFormaPagamento}
       CodEmpresa,
       CodFilial,
       CodFormaPagamento,
