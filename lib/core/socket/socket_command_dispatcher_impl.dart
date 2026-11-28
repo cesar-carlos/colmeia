@@ -1414,10 +1414,8 @@ class SocketCommandDispatcherImpl
 
     const offlineSignals = <String>{
       'agent_offline',
-      'protocol_not_ready',
       'agent_not_found',
       'agent_unreachable',
-      'circuit_open',
     };
     const authSignals = <String>{
       'unauthorized',

@@ -3,6 +3,23 @@
 Windows and Android release workflow. Web builds and hosting are documented
 in the [Web guide](web_guide.md). Native iOS releases are discontinued.
 
+## Version 1.6.18+41 — 2026-11-28
+
+Corrects false offline indicators by publishing the resolved catalog presence
+to dashboard filters and treating stale, malformed or incomplete cached presence
+as unknown. Persisted and in-memory presence expire conservatively, including
+invalid timestamps and clock rollback. Invalidation fences pending resolutions.
+
+Protocol readiness and open circuit breakers are transient failures, not evidence
+of disconnection. Presence listeners reject obsolete attachments and revisions;
+controllers reject late results after newer events or logout. Polling backoff is
+cancelled on session restart. Scheduler dispatch reloads work after session changes.
+
+Regression tests cover ordering, cache integrity, session isolation and restart.
+Interactive authenticated production presence has not been independently verified;
+no debug app was available. Publication does not change the hub or its databases.
+Release validation and deployment evidence are recorded in the Web guide.
+
 ## Version 1.6.17+40 — 2026-11-23
 
 Corrects duplicated scrollbars in the product-margin report: embedded reports

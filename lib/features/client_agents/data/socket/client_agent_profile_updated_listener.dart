@@ -7,6 +7,7 @@ import 'package:colmeia/core/socket/payload_frame_codec.dart';
 import 'package:colmeia/core/socket/push_event_deduper.dart';
 import 'package:colmeia/core/socket/socket_wire_utils.dart';
 import 'package:colmeia/features/client_agents/domain/events/agent_presence_event.dart';
+import 'package:socket_io_client/socket_io_client.dart' as io;
 
 /// Edge adapter: subscribes the raw socket to `client:agent.profile.updated`
 /// (PayloadFrame envelope, available since Phase 2 of the hub) and emits
@@ -45,6 +46,8 @@ class ClientAgentProfileUpdatedListener {
   late final void Function(Object?) _eventHandler;
 
   bool _attached = false;
+  io.Socket? _attachedSocket;
+  int _attachmentGeneration = 0;
 
   bool get isAttached => _attached;
 
@@ -55,7 +58,9 @@ class ClientAgentProfileUpdatedListener {
       return;
     }
     try {
-      _connection.raw.on(eventName, _eventHandler);
+      final socket = _connection.raw..on(eventName, _eventHandler);
+      _attachedSocket = socket;
+      _attachmentGeneration++;
       _attached = true;
     }
     // ConsumerSocketConnection.raw throws StateError when not yet
@@ -81,14 +86,10 @@ class ClientAgentProfileUpdatedListener {
       return;
     }
     _attached = false;
-    try {
-      _connection.raw.off(eventName, _eventHandler);
-    }
-    // The connection may already be torn down (logout / app dispose).
-    // ignore: avoid_catching_errors
-    on StateError catch (_) {
-      // Nothing else to do.
-    }
+    _attachmentGeneration++;
+    final socket = _attachedSocket;
+    _attachedSocket = null;
+    socket?.off(eventName, _eventHandler);
   }
 
   void _onEvent(Object? raw) {
@@ -96,9 +97,15 @@ class ClientAgentProfileUpdatedListener {
   }
 
   Future<void> _onEventAsync(Object? raw) async {
+    if (!_attached) {
+      return;
+    }
+    final generation = _attachmentGeneration;
     try {
       final logical = await _decodeLogical(raw);
-      if (logical == null) {
+      if (!_attached ||
+          generation != _attachmentGeneration ||
+          logical == null) {
         return;
       }
       final agentId = logical['agent_id']?.toString().trim();
@@ -112,9 +119,11 @@ class ClientAgentProfileUpdatedListener {
         return;
       }
       final observedAt = _parseObservedAt(logical);
+      final profileVersion = _asInt(logical['profile_version']);
       if (!_observedAtDeduper.shouldAccept(
         key: agentId,
         observedAt: observedAt,
+        revision: profileVersion,
       )) {
         AppLogger.debug(
           '$eventName ignored: stale observedAt after reconnect',
@@ -130,7 +139,7 @@ class ClientAgentProfileUpdatedListener {
           agentId: agentId,
           observedAt: observedAt,
           changedFields: _parseChangedFields(logical),
-          profileVersion: _asInt(logical['profile_version']),
+          profileVersion: profileVersion,
           source: logical['source']?.toString(),
         ),
       );

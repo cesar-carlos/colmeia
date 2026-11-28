@@ -302,6 +302,174 @@ void main() {
   });
 
   group('ClientAgentsController PR-M part 2 — presence wire-up', () {
+    test('old hints cannot override newer catalog presence', () async {
+      when(
+        () => loadClientAgentDetailUseCase(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+        ),
+      ).thenAnswer(
+        (_) async => Success<ClientAgent, AppFailure>(_agent(id: 'a1')),
+      );
+      await controller.initialize();
+      final catalogTime = DateTime.utc(2026, 4, 17, 12);
+      presenceStream.emit(
+        AgentPresenceCatalogUpdated(agentId: 'a1', observedAt: catalogTime),
+      );
+      await pumpEventQueue();
+      for (final time in [
+        catalogTime.subtract(const Duration(seconds: 1)),
+        catalogTime,
+      ]) {
+        presenceStream.emit(
+          AgentPresenceHint(
+            agentId: 'a1',
+            observedAt: time,
+            online: false,
+            source: 'polling_rest',
+          ),
+        );
+        await pumpEventQueue();
+        expect(
+          controller.approvedAgents!.items
+              .firstWhere((a) => a.agentId == 'a1')
+              .connectionStatus,
+          AgentConnectionStatus.online,
+        );
+      }
+      presenceStream.emit(
+        AgentPresenceHint(
+          agentId: 'a1',
+          observedAt: catalogTime.add(const Duration(seconds: 1)),
+          online: false,
+          source: 'polling_rest',
+        ),
+      );
+      await pumpEventQueue();
+      expect(
+        controller.approvedAgents!.items
+            .firstWhere((a) => a.agentId == 'a1')
+            .connectionStatus,
+        AgentConnectionStatus.offline,
+      );
+    });
+
+    test(
+      'presence hint after logout does not change the approved list',
+      () async {
+        await controller.initialize();
+        final before = controller.approvedAgents;
+        when(() => authController.session).thenReturn(null);
+        presenceStream.emit(
+          AgentPresenceHint(
+            agentId: 'a2',
+            observedAt: DateTime.utc(2026, 4, 17, 12),
+            online: true,
+            source: 'polling_rest',
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+        expect(controller.approvedAgents, same(before));
+        verifyNever(
+          () => loadClientAgentDetailUseCase(
+            userId: any(named: 'userId'),
+            agentId: any(named: 'agentId'),
+          ),
+        );
+      },
+    );
+
+    test('unversioned events retain the catalog revision watermark', () async {
+      when(
+        () => loadClientAgentDetailUseCase(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+        ),
+      ).thenAnswer(
+        (_) async => Success<ClientAgent, AppFailure>(_agent(id: 'a1')),
+      );
+      await controller.initialize();
+      final versions = <int?>[5, null, 4];
+      for (var index = 0; index < versions.length; index++) {
+        presenceStream.emit(
+          AgentPresenceCatalogUpdated(
+            agentId: 'a1',
+            observedAt: DateTime.utc(2026, 4, 17, 12, index),
+            profileVersion: versions[index],
+          ),
+        );
+        await pumpEventQueue();
+      }
+      verify(
+        () => loadClientAgentDetailUseCase(userId: 'client-1', agentId: 'a1'),
+      ).called(2);
+    });
+
+    test(
+      'late catalog response cannot overwrite a newer online hint',
+      () async {
+        final pending = Completer<Success<ClientAgent, AppFailure>>();
+        when(
+          () => loadClientAgentDetailUseCase(
+            userId: any(named: 'userId'),
+            agentId: any(named: 'agentId'),
+          ),
+        ).thenAnswer((_) => pending.future);
+        await controller.initialize();
+        presenceStream.emit(
+          AgentPresenceCatalogUpdated(
+            agentId: 'a2',
+            observedAt: DateTime.utc(2026, 4, 17, 12),
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+        presenceStream.emit(
+          AgentPresenceHint(
+            agentId: 'a2',
+            observedAt: DateTime.utc(2026, 4, 17, 12, 1),
+            online: true,
+            source: 'polling_rest',
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+        pending.complete(
+          Success(
+            _agent(id: 'a2', connectionStatus: AgentConnectionStatus.offline),
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+        expect(
+          controller.approvedAgents!.items
+              .firstWhere((agent) => agent.agentId == 'a2')
+              .connectionStatus,
+          AgentConnectionStatus.online,
+        );
+      },
+    );
+
+    test('presence response is discarded after logout', () async {
+      final pending = Completer<Success<ClientAgent, AppFailure>>();
+      when(
+        () => loadClientAgentDetailUseCase(
+          userId: any(named: 'userId'),
+          agentId: any(named: 'agentId'),
+        ),
+      ).thenAnswer((_) => pending.future);
+      await controller.initialize();
+      final before = controller.approvedAgents;
+      presenceStream.emit(
+        AgentPresenceCatalogUpdated(
+          agentId: 'a2',
+          observedAt: DateTime.utc(2026, 4, 17, 12),
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+      when(() => authController.session).thenReturn(null);
+      pending.complete(Success(_agent(id: 'a2')));
+      await Future<void>.delayed(Duration.zero);
+      expect(controller.approvedAgents, same(before));
+    });
+
     test(
       'AgentPresenceHint(online) flips connectionStatus in-memory '
       'without calling REST immediately',

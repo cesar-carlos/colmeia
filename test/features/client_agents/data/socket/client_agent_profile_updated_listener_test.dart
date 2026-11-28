@@ -96,6 +96,73 @@ void main() {
   }
 
   group('ClientAgentProfileUpdatedListener', () {
+    test('new profile version is delivered despite equal event time', () async {
+      final listener = buildListener();
+      listener.attach();
+      final emitted = <AgentPresenceEvent>[];
+      final subscription = sink.stream.listen(emitted.add);
+      addTearDown(subscription.cancel);
+      for (final version in [2, 3, 2, 3]) {
+        wiring.fire(
+          ClientAgentProfileUpdatedListener.eventName,
+          _payloadFrame(<String, Object?>{
+            'agent_id': 'agent-7',
+            'profile_version': version,
+            'profileUpdatedAt': '2026-04-17T15:30:00Z',
+          }),
+        );
+        await pumpEventQueue();
+      }
+      expect(
+        emitted.cast<AgentPresenceCatalogUpdated>().map(
+          (e) => e.profileVersion,
+        ),
+        [2, 3],
+      );
+      await listener.dispose();
+    });
+
+    test('dispose detaches from the socket used at attachment', () async {
+      final listener = buildListener();
+      listener.attach();
+      final replacement = _MockSocket();
+      when(() => connection.raw).thenReturn(replacement);
+
+      await listener.dispose();
+
+      expect(wiring.handlers, isEmpty);
+      verify(
+        () => socket.off(ClientAgentProfileUpdatedListener.eventName, any()),
+      ).called(1);
+      verifyNever(
+        () =>
+            replacement.off(ClientAgentProfileUpdatedListener.eventName, any()),
+      );
+    });
+
+    test('pending decode from an old attachment is discarded', () async {
+      final listener = buildListener();
+      listener.attach();
+      final emitted = <AgentPresenceEvent>[];
+      final subscription = sink.stream.listen(emitted.add);
+      addTearDown(subscription.cancel);
+      final frame = _payloadFrame(<String, Object?>{
+        'agent_id': 'agent-7',
+        'profile_version': 12,
+        'profileUpdatedAt': '2026-04-17T15:30:00Z',
+      });
+      wiring.fire(ClientAgentProfileUpdatedListener.eventName, frame);
+      await listener.dispose();
+      listener.attach();
+      await pumpEventQueue();
+      expect(emitted, isEmpty);
+
+      wiring.fire(ClientAgentProfileUpdatedListener.eventName, frame);
+      await pumpEventQueue();
+      expect(emitted, hasLength(1));
+      await listener.dispose();
+    });
+
     test('attach is idempotent and reports state', () {
       final listener = buildListener();
       check(listener.isAttached).isFalse();

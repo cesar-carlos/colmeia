@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:checks/checks.dart';
+import 'package:colmeia/core/socket/agent_command_outcome.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection.dart';
 import 'package:colmeia/core/socket/consumer_socket_connection_state.dart';
 import 'package:colmeia/core/socket/socket_command_dispatcher_impl.dart';
@@ -109,6 +110,44 @@ void main() {
     }
     fail(
       'expected $expected pending requests, got ${correlator.pendingCount}',
+    );
+  }
+
+  for (final reason in [
+    'protocol_not_ready',
+    'circuit_open',
+    'AGENT_OFFLINE',
+  ]) {
+    test(
+      'classifies decoded RPC error $reason without false presence',
+      () async {
+        const rpcId = 'rpc-presence';
+        final outcome = dispatcher.outcomes().first;
+        final pending = dispatcher.sendAgentsCommand(
+          agentId: 'agent-1',
+          body: _body(rpcId: rpcId),
+          rpcId: rpcId,
+          timeout: const Duration(seconds: 2),
+        );
+        await attachHandler();
+        commandResponseHandler!(<String, dynamic>{
+          'response': <String, dynamic>{
+            'type': 'single',
+            'item': <String, dynamic>{
+              'id': rpcId,
+              'error': <String, dynamic>{'code': -32600, 'reason': reason},
+            },
+          },
+        });
+        await flushAgentsCommandRouting();
+        await pending;
+        expect(
+          await outcome,
+          reason == 'AGENT_OFFLINE'
+              ? isA<AgentCommandFailedOffline>()
+              : isA<AgentCommandFailedTransient>(),
+        );
+      },
     );
   }
 

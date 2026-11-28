@@ -27,7 +27,12 @@ PaginatedResult<ClientAgentCatalogItem> mapClientAgentCatalogResponse(
     response.agents
         .map(
           (agent) => ClientAgentCatalogItem(
-            agent: mapClientAgentProfile(agent, onlineIds: onlineIds),
+            agent: mapClientAgentProfile(
+              agent,
+              onlineIds: onlineIds,
+              isStaleCache: isStaleCache,
+            ),
+            isStaleCache: isStaleCache,
           ),
         )
         .toList(growable: false),
@@ -42,7 +47,13 @@ PaginatedResult<ClientAgent> mapClientApprovedAgentsResponse(
 }) {
   return response.toPaginatedResult(
     response.agents
-        .map((agent) => mapClientAgentProfile(agent, onlineIds: onlineIds))
+        .map(
+          (agent) => mapClientAgentProfile(
+            agent,
+            onlineIds: onlineIds,
+            isStaleCache: isStaleCache,
+          ),
+        )
         .toList(growable: false),
     isStaleCache: isStaleCache,
   );
@@ -85,8 +96,8 @@ ClientAgent mapClientAgentProfile(
 }) {
   final connectionStatus = resolveAgentConnectionStatus(
     agentId: profile.agentId,
-    isHubConnected: profile.isHubConnected,
-    onlineAgentIds: onlineIds,
+    isHubConnected: isStaleCache ? null : profile.isHubConnected,
+    onlineAgentIds: isStaleCache ? null : onlineIds,
   );
   return profile.toEntity(
     connectionStatus: connectionStatus,

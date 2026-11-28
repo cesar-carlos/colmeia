@@ -6,6 +6,50 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('InMemoryAgentQueryTargetResolutionCache', () {
+    test('expires at the exact ttl boundary', () {
+      var now = DateTime.utc(2026, 6, 3, 12);
+      final cache =
+          InMemoryAgentQueryTargetResolutionCache(
+            ttl: () => const Duration(seconds: 30),
+            now: () => now,
+          )..publish(
+            userId: 'user-1',
+            resolution: _resolution(agentIds: ['agent-a']),
+          );
+      now = now.add(const Duration(seconds: 30));
+      expect(cache.read(userId: 'user-1'), isNull);
+    });
+
+    test('clock rollback discards the entry permanently', () {
+      var now = DateTime.utc(2026, 6, 3, 12);
+      final cache =
+          InMemoryAgentQueryTargetResolutionCache(
+            ttl: () => const Duration(seconds: 30),
+            now: () => now,
+          )..publish(
+            userId: 'user-1',
+            resolution: _resolution(agentIds: ['agent-a']),
+          );
+      now = now.subtract(const Duration(hours: 1));
+      expect(cache.read(userId: 'user-1'), isNull);
+      now = now.add(const Duration(hours: 1));
+      expect(cache.read(userId: 'user-1'), isNull);
+    });
+
+    for (final ttl in [Duration.zero, const Duration(seconds: -1)]) {
+      test('nonpositive ttl disables reuse ($ttl)', () {
+        final cache =
+            InMemoryAgentQueryTargetResolutionCache(
+              ttl: () => ttl,
+              now: () => DateTime.utc(2026),
+            )..publish(
+              userId: 'user-1',
+              resolution: _resolution(agentIds: ['agent-a']),
+            );
+        expect(cache.read(userId: 'user-1'), isNull);
+      });
+    }
+
     test('keys entries by user id and selection scope', () {
       final cache = InMemoryAgentQueryTargetResolutionCache();
       final allResolution = _resolution(

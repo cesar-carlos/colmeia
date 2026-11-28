@@ -90,7 +90,7 @@ class ClientAgentsRepositoryCacheSupport {
       maxAge: maxAge,
     );
     if (primary != null) {
-      return primary.agents.map((item) => item.agentId).toSet();
+      return _completeOnlineAgentIds(primary);
     }
     if (!fallbackToOfflineCache) {
       return null;
@@ -102,7 +102,17 @@ class ClientAgentsRepositoryCacheSupport {
     if (fallback == null) {
       return null;
     }
-    return fallback.agents.map((item) => item.agentId).toSet();
+    return _completeOnlineAgentIds(fallback);
+  }
+
+  Set<String>? _completeOnlineAgentIds(OnlineAgentsResponseDto snapshot) {
+    final ids = snapshot.agents.map((agent) => agent.agentId).toSet();
+    if (snapshot.malformedAgentRowCount != 0 ||
+        snapshot.count != snapshot.agents.length ||
+        ids.length != snapshot.agents.length) {
+      return null;
+    }
+    return ids;
   }
 
   Future<void> applySnapshotToCachedAgentDetail({

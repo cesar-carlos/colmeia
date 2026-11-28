@@ -130,7 +130,8 @@ final class AgentCommandSuccess extends AgentCommandOutcome {
 }
 
 /// Erro indicando que o agente está offline / hub sem rota
-/// (ex.: `AGENT_OFFLINE`, `protocol_not_ready`, `agent_not_found`).
+/// (e.g. `AGENT_OFFLINE`, `agent_not_found`). Protocol readiness and
+/// circuit-breaker failures are transient and do not establish presence.
 /// **Sinaliza presença = offline** para o `AgentPresenceHinter`.
 final class AgentCommandFailedOffline extends AgentCommandOutcome {
   const AgentCommandFailedOffline({
@@ -710,10 +711,8 @@ class SocketCommandDispatcherImpl implements SocketCommandDispatcher {
     if (reason == null) return false;
     const offlineReasons = <String>{
       'agent_offline',
-      'protocol_not_ready',
       'agent_not_found',
       'agent_unreachable',
-      'circuit_open',
     };
     return offlineReasons.contains(reason.toLowerCase());
   }

@@ -100,6 +100,50 @@ void main() {
     );
   });
 
+  for (final snapshot in [
+    const OnlineAgentsResponseDto(agents: [], count: 1),
+    const OnlineAgentsResponseDto(
+      agents: [],
+      count: 0,
+      malformedAgentRowCount: 1,
+    ),
+  ]) {
+    test(
+      'incomplete presence is unknown (${snapshot.count}, ${snapshot.malformedAgentRowCount})',
+      () async {
+        when(
+          () => local.readOnlineAgents(
+            userId: 'user-1',
+            maxAge: any(named: 'maxAge'),
+          ),
+        ).thenAnswer((_) async => snapshot);
+        expect(await repository.loadOnlineAgentIds(userId: 'user-1'), isNull);
+      },
+    );
+  }
+
+  test('expired presence does not fall back to a seven-day snapshot', () async {
+    when(
+      () => local.readOnlineAgents(
+        userId: 'user-1',
+        maxAge: any(named: 'maxAge'),
+      ),
+    ).thenAnswer((invocation) async {
+      final age = invocation.namedArguments[#maxAge]! as Duration;
+      return age == const Duration(minutes: 1)
+          ? null
+          : const OnlineAgentsResponseDto(agents: [], count: 0);
+    });
+
+    expect(await repository.loadOnlineAgentIds(userId: 'user-1'), isNull);
+    verifyNever(
+      () => local.readOnlineAgents(
+        userId: 'user-1',
+        maxAge: const Duration(days: 7),
+      ),
+    );
+  });
+
   test('should enqueue request access without syncing immediately', () async {
     when(
       () => local.readPendingActions(userId: any(named: 'userId')),

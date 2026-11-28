@@ -68,6 +68,7 @@ class ClientAgentsPresenceCoordinator {
       <String, _PresenceObservation>{};
   final Map<String, DateTime> _lastHintObservedByAgentId = <String, DateTime>{};
   final Map<String, Timer> _hintConfirmTimers = <String, Timer>{};
+  final Map<String, int> _presenceRevisionByAgentId = <String, int>{};
 
   bool _isDisposed = false;
   bool _isScreenVisible = false;
@@ -159,7 +160,8 @@ class ClientAgentsPresenceCoordinator {
   }
 
   void _onPresence(AgentPresenceEvent event) {
-    if (_isDisposed || _host.isDisposed) {
+    final userId = _host.currentUserId;
+    if (_isDisposed || _host.isDisposed || userId == null || userId.isEmpty) {
       return;
     }
 
@@ -186,8 +188,9 @@ class ClientAgentsPresenceCoordinator {
     }
     _lastCatalogObservedByAgentId[event.agentId] = _PresenceObservation(
       observedAt: event.observedAt,
-      profileVersion: event.profileVersion,
+      profileVersion: event.profileVersion ?? last?.profileVersion,
     );
+    _advancePresenceRevision(event.agentId);
 
     final userId = _host.currentUserId;
     if (userId == null || userId.isEmpty) {
@@ -202,6 +205,14 @@ class ClientAgentsPresenceCoordinator {
   }
 
   void _onHintPresence(AgentPresenceHint event) {
+    final lastCatalog = _lastCatalogObservedByAgentId[event.agentId];
+    if (lastCatalog != null &&
+        !PushEventDeduper.isObservationAfter(
+          candidate: event.observedAt,
+          lastObservedAt: lastCatalog.observedAt,
+        )) {
+      return;
+    }
     final lastHint = _lastHintObservedByAgentId[event.agentId];
     if (lastHint != null &&
         !PushEventDeduper.isObservationAfter(
@@ -211,12 +222,18 @@ class ClientAgentsPresenceCoordinator {
       return;
     }
     _lastHintObservedByAgentId[event.agentId] = event.observedAt;
+    _advancePresenceRevision(event.agentId);
 
-    final changed = _applyHintInMemory(
+    _applyHintInMemory(
       agentId: event.agentId,
       online: event.online,
     );
-    if (!changed || event.source == 'polling_rest') {
+    final isKnownAgent =
+        _host.approvedAgentsSnapshot?.items.any(
+          (agent) => agent.agentId == event.agentId,
+        ) ??
+        false;
+    if (!isKnownAgent || event.source == 'polling_rest') {
       return;
     }
 
@@ -255,15 +272,25 @@ class ClientAgentsPresenceCoordinator {
     required String userId,
     required String agentId,
   }) async {
+    if (_isDisposed || _host.isDisposed || _host.currentUserId != userId) {
+      return;
+    }
+    final revision = _presenceRevisionByAgentId[agentId];
     final result = await _loadClientAgentDetailUseCase(
       userId: userId,
       agentId: agentId,
     );
-    if (_host.isDisposed) {
+    if (_isDisposed ||
+        _host.isDisposed ||
+        _host.currentUserId != userId ||
+        _presenceRevisionByAgentId[agentId] != revision) {
       return;
     }
     result.fold(
       (agent) {
+        if (agent.isStaleCache) {
+          return;
+        }
         _host
           ..upsertApprovedAgentsInMemory(<ClientAgent>[agent])
           ..notifyPresenceChanged();
@@ -321,6 +348,7 @@ class ClientAgentsPresenceCoordinator {
           total: current.total,
           page: current.page,
           pageSize: current.pageSize,
+          isStaleCache: current.isStaleCache,
         ),
       )
       ..notifyPresenceChanged();
@@ -346,6 +374,12 @@ class ClientAgentsPresenceCoordinator {
     });
   }
 
+  void _advancePresenceRevision(String agentId) {
+    _presenceRevisionByAgentId[agentId] =
+        (_presenceRevisionByAgentId[agentId] ?? 0) + 1;
+    _hintConfirmTimers.remove(agentId)?.cancel();
+  }
+
   void dispose() {
     if (_isDisposed) {
       return;
@@ -364,6 +398,7 @@ class ClientAgentsPresenceCoordinator {
     _agentPresencePoller?.stop();
     _lastCatalogObservedByAgentId.clear();
     _lastHintObservedByAgentId.clear();
+    _presenceRevisionByAgentId.clear();
   }
 }
 

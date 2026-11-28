@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/errors/app_failure.dart';
 import 'package:colmeia/features/agent_queries/data/orchestration/agent_query_target_resolver.dart';
@@ -51,6 +53,110 @@ void main() {
       ),
     ).thenAnswer((_) async => null);
   });
+
+  for (final invalidatedUser in ['user-1', 'other']) {
+    test(
+      'in-flight token resolution respects invalidation of $invalidatedUser',
+      () async {
+        when(
+          () => agentsRepository.loadApprovedAgents(
+            userId: any(named: 'userId'),
+            query: any(named: 'query'),
+            includeOnlineStatus: any(named: 'includeOnlineStatus'),
+          ),
+        ).thenAnswer(
+          (_) async => Success(
+            PaginatedResult<ClientAgent>(
+              items: [_agent('agent-a')],
+              count: 1,
+              total: 1,
+              page: 1,
+              pageSize: 50,
+            ),
+          ),
+        );
+        final tokens = Completer<Map<String, String>>();
+        final started = Completer<void>();
+        when(
+          () => tokenStore.readMany(
+            userId: any(named: 'userId'),
+            agentIds: any(named: 'agentIds'),
+          ),
+        ).thenAnswer((_) {
+          started.complete();
+          return tokens.future;
+        });
+        final pending = resolver.resolve(userId: 'user-1');
+        await started.future;
+        resolver.invalidate(userId: invalidatedUser);
+        tokens.complete({'agent-a': 'token-a'});
+        final result = await pending;
+        if (invalidatedUser == 'user-1') {
+          expect(result.exceptionOrNull(), isA<OperationCancelledFailure>());
+          expect(resolutionCache.read(userId: 'user-1'), isNull);
+        } else {
+          expect(result.isSuccess(), isTrue);
+          expect(resolutionCache.read(userId: 'user-1'), isNotNull);
+        }
+      },
+    );
+  }
+
+  test(
+    'publishes resolved presence instead of contradictory cached ids',
+    () async {
+      when(
+        () => agentsRepository.loadApprovedAgents(
+          userId: any(named: 'userId'),
+          query: any(named: 'query'),
+          includeOnlineStatus: any(named: 'includeOnlineStatus'),
+        ),
+      ).thenAnswer(
+        (_) async => Success<PaginatedResult<ClientAgent>, AppFailure>(
+          PaginatedResult<ClientAgent>(
+            items: [
+              _agent('online'),
+              _agent(
+                'offline',
+                connectionStatus: AgentConnectionStatus.offline,
+              ),
+            ],
+            count: 2,
+            total: 2,
+            page: 1,
+            pageSize: 50,
+          ),
+        ),
+      );
+      when(() => agentsRepository.loadOnlineAgentIds(userId: 'user-1'))
+          .thenAnswer((_) async => {'offline'});
+      when(
+        () => tokenStore.readMany(
+          userId: any(named: 'userId'),
+          agentIds: any(named: 'agentIds'),
+        ),
+      ).thenAnswer((_) async => {'online': 'token-a', 'offline': 'token-b'});
+
+      final resolution = (await resolver.resolve(userId: 'user-1'))
+          .getOrThrow();
+      expect(resolution.hubPresenceOnlineAgentIdsSnapshot, {'online'});
+      expect(
+        resolution.skippedDueToHubPresenceTargets.map(
+          (target) => target.agentId,
+        ),
+        ['offline'],
+      );
+      expect(resolution.sqlEligibleConsideredTargetCount, 1);
+
+      final selected = (await resolver.resolve(
+        userId: 'user-1',
+        selectedAgentIds: {'offline'},
+      )).getOrThrow();
+      expect(selected.hubPresenceOnlineAgentIdsSnapshot, {'online'});
+      final cached = (await resolver.resolve(userId: 'user-1')).getOrThrow();
+      expect(cached.hubPresenceOnlineAgentIdsSnapshot, {'online'});
+    },
+  );
 
   test('should fail when no approved agents exist', () async {
     when(

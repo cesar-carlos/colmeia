@@ -2,6 +2,18 @@ import 'package:colmeia/features/client_agents/data/models/online_agents_respons
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('cache round trip preserves discarded rows without double counting', () {
+    final original = OnlineAgentsResponseDto.fromJson(<String, dynamic>{
+      'agents': <dynamic>[
+        {'invalid': true},
+      ],
+    });
+    final cached = OnlineAgentsResponseDto.fromJson(original.toJson());
+    final reread = OnlineAgentsResponseDto.fromJson(cached.toJson());
+    expect(cached.malformedAgentRowCount, 1);
+    expect(reread.malformedAgentRowCount, 1);
+  });
+
   test('fromJson skips malformed agent rows but keeps valid ids', () {
     final dto = OnlineAgentsResponseDto.fromJson(<String, dynamic>{
       'agents': <dynamic>[

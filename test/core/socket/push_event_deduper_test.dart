@@ -4,6 +4,48 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('PushEventDeduper', () {
+    test(
+      'revision takes priority over time and survives unversioned events',
+      () {
+        final deduper = PushEventDeduper();
+        final time = DateTime.utc(2026);
+        expect(
+          deduper.shouldAccept(key: 'a', observedAt: time, revision: 3),
+          isTrue,
+        );
+        expect(
+          deduper.shouldAccept(key: 'a', observedAt: time, revision: 4),
+          isTrue,
+        );
+        expect(
+          deduper.shouldAccept(
+            key: 'a',
+            observedAt: time.subtract(const Duration(seconds: 1)),
+            revision: 5,
+          ),
+          isTrue,
+        );
+        expect(deduper.shouldAccept(key: 'a', observedAt: time), isTrue);
+        expect(
+          deduper.shouldAccept(
+            key: 'a',
+            observedAt: time.add(const Duration(seconds: 1)),
+            revision: 4,
+          ),
+          isFalse,
+        );
+        expect(
+          deduper.shouldAccept(key: 'b', observedAt: time, revision: 1),
+          isTrue,
+        );
+        deduper.clear();
+        expect(
+          deduper.shouldAccept(key: 'a', observedAt: time, revision: 1),
+          isTrue,
+        );
+      },
+    );
+
     test('shouldAccept drops stale and equal observedAt', () {
       final deduper = PushEventDeduper();
       final t0 = DateTime.utc(2026, 1, 1, 12);

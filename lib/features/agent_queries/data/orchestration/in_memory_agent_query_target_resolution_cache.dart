@@ -22,9 +22,12 @@ final class _AgentQueryTargetResolutionCacheEntry {
     required DateTime now,
     required Duration ttl,
   }) {
+    final age = now.difference(resolvedAt);
     return this.userId == userId &&
         this.selectionScopeKey == selectionScopeKey &&
-        now.difference(resolvedAt) <= ttl;
+        ttl > Duration.zero &&
+        !age.isNegative &&
+        age < ttl;
   }
 }
 

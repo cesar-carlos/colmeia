@@ -122,7 +122,11 @@ class ClientAgentCatalogRepositoryImpl implements ClientAgentCatalogRepository {
               .onlineStatusOfflineFallbackMaxAge,
         );
         return ClientAgentCatalogItem(
-          agent: mapClientAgentProfile(cached, onlineIds: onlineIds),
+          agent: mapClientAgentProfile(
+            cached,
+            onlineIds: onlineIds,
+            isStaleCache: true,
+          ),
           isStaleCache: true,
         );
       },

@@ -11,24 +11,36 @@ class PushEventDeduper {
   /// are evicted first when this limit is reached.
   final int maxTrackedKeys;
 
-  final Map<String, DateTime> _lastObservedAtByKey = <String, DateTime>{};
+  final Map<String, ({DateTime observedAt, int? revision})> _observations = {};
 
-  /// Returns `true` when [observedAt] is strictly newer than the last event
-  /// for [key]. Updates internal state on accept.
+  /// Prefers monotonic [revision] when both events have one; otherwise uses
+  /// [observedAt]. Unversioned events retain the last known revision.
   bool shouldAccept({
     required String key,
     required DateTime observedAt,
+    int? revision,
   }) {
     final normalized = observedAt.toUtc();
-    final last = _lastObservedAtByKey[key];
-    if (last != null && !normalized.isAfter(last)) {
-      return false;
+    final last = _observations[key];
+    if (last != null) {
+      final hasComparableRevision = revision != null && last.revision != null;
+      if (hasComparableRevision && revision < last.revision!) {
+        return false;
+      }
+      final isNewerRevision =
+          hasComparableRevision && revision > last.revision!;
+      if (!isNewerRevision && !normalized.isAfter(last.observedAt)) {
+        return false;
+      }
     }
-    if (last == null && _lastObservedAtByKey.length >= maxTrackedKeys) {
+    if (last == null && _observations.length >= maxTrackedKeys) {
       // Evict the oldest entry (first in LinkedHashMap insertion order).
-      _lastObservedAtByKey.remove(_lastObservedAtByKey.keys.first);
+      _observations.remove(_observations.keys.first);
     }
-    _lastObservedAtByKey[key] = normalized;
+    _observations[key] = (
+      observedAt: normalized,
+      revision: revision ?? last?.revision,
+    );
     return true;
   }
 
@@ -43,5 +55,5 @@ class PushEventDeduper {
     return candidate.toUtc().isAfter(lastObservedAt.toUtc());
   }
 
-  void clear() => _lastObservedAtByKey.clear();
+  void clear() => _observations.clear();
 }

@@ -37,6 +37,51 @@ void main() {
   }
 
   group('AgentPresencePoller', () {
+    for (final nextUser in ['client-1', 'client-2']) {
+      test('late failure does not delay restarted session $nextUser', () async {
+        final pending = Completer<Set<String>?>();
+        var calls = 0;
+        when(
+          () => repository.loadOnlineAgentIds(userId: any(named: 'userId')),
+        ).thenAnswer((_) {
+          calls++;
+          return calls == 1 ? pending.future : Future.value({'fresh'});
+        });
+        final poller = buildPoller(interval: const Duration(seconds: 10));
+        addTearDown(poller.dispose);
+        final events = <AgentPresenceEvent>[];
+        final sub = sink.stream.listen(events.add);
+        addTearDown(sub.cancel);
+        poller.start(userId: 'client-1');
+        poller.stop();
+        poller.start(userId: nextUser);
+        pending.completeError(StateError('old session failed'));
+        await pumpEventQueue();
+        expect(calls, 2);
+        expect(events.single.agentId, 'fresh');
+      });
+    }
+
+    test('restart interrupts an active backoff wait', () async {
+      var calls = 0;
+      when(
+        () => repository.loadOnlineAgentIds(userId: any(named: 'userId')),
+      ).thenAnswer((_) async {
+        calls++;
+        if (calls == 1) throw StateError('temporary failure');
+        return {'fresh'};
+      });
+      final poller = buildPoller(interval: const Duration(milliseconds: 10));
+      addTearDown(poller.dispose);
+      poller.start(userId: 'client-1');
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+      expect(calls, 1);
+      poller.stop();
+      poller.start(userId: 'client-2');
+      await pumpEventQueue();
+      expect(calls, greaterThanOrEqualTo(2));
+    });
+
     test(
       'start fires an immediate tick and converts each id into an online hint',
       () async {

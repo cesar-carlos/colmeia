@@ -236,7 +236,6 @@ class ClientApprovedAgentsRepositoryImpl
     return _cacheSupport.readOnlineAgentIds(
       userId: userId,
       maxAge: ClientAgentsRepositoryCacheSupport.onlineStatusMaxAge,
-      fallbackToOfflineCache: true,
     );
   }
 }

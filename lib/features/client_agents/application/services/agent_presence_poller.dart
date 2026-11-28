@@ -47,6 +47,8 @@ class AgentPresencePoller {
   final Duration _interval;
 
   Timer? _timer;
+  Timer? _backoffTimer;
+  Completer<void>? _backoffWait;
   String? _activeUserId;
   bool _tickInFlight = false;
   bool _isDisposed = false;
@@ -70,6 +72,7 @@ class AgentPresencePoller {
       return;
     }
     _timer?.cancel();
+    _cancelBackoff();
     _epoch++;
     _activeUserId = userId;
     _consecutiveTickFailures = 0;
@@ -81,6 +84,7 @@ class AgentPresencePoller {
   /// Idempotente. Cancela o timer atual e libera o `userId` ativo.
   void stop() {
     _timer?.cancel();
+    _cancelBackoff();
     _timer = null;
     _epoch++;
     _activeUserId = null;
@@ -126,7 +130,10 @@ class AgentPresencePoller {
 
   Future<void> _runOneTick(String userId, {required int epoch}) async {
     if (_currentBackoff > Duration.zero) {
-      await Future<void>.delayed(_currentBackoff);
+      final wait = Completer<void>();
+      _backoffWait = wait;
+      _backoffTimer = Timer(_currentBackoff, _cancelBackoff);
+      await wait.future;
       if (_isDisposed || _activeUserId != userId || _epoch != epoch) {
         return;
       }
@@ -157,6 +164,9 @@ class AgentPresencePoller {
         );
       }
     } on Object catch (error, stackTrace) {
+      if (_isDisposed || _activeUserId != userId || _epoch != epoch) {
+        return;
+      }
       _consecutiveTickFailures += 1;
       final stepIndex = (_consecutiveTickFailures - 1).clamp(0, 2);
       _currentBackoff = _backoffBase + _backoffStep * stepIndex;
@@ -175,5 +185,13 @@ class AgentPresencePoller {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  void _cancelBackoff() {
+    _backoffTimer?.cancel();
+    _backoffTimer = null;
+    final wait = _backoffWait;
+    _backoffWait = null;
+    wait?.complete();
   }
 }

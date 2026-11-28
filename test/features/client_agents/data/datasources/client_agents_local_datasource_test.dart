@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:checks/checks.dart';
 import 'package:colmeia/core/cache/app_cache_store.dart';
+import 'package:colmeia/core/cache/app_kv_cache_key_prefixes.dart';
 import 'package:colmeia/features/client_agents/data/datasources/client_agents_local_datasource.dart';
 import 'package:colmeia/features/client_agents/data/models/paginated_agent_catalog_response_dto.dart';
 import 'package:colmeia/features/client_agents/domain/entities/paginated_query.dart';
@@ -53,6 +54,55 @@ void main() {
 
   setUp(() {
     datasource = ClientAgentsLocalDataSource(_InMemoryCacheStore());
+  });
+
+  for (final savedAt in <Object?>[
+    null,
+    'invalid-date',
+    123,
+    DateTime.now().add(const Duration(days: 1)).toIso8601String(),
+    DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
+  ]) {
+    test('presence with invalid freshness is unknown ($savedAt)', () async {
+      final cache = _InMemoryCacheStore();
+      final source = ClientAgentsLocalDataSource(cache);
+      await cache.putString(
+        key: '${AppKvCacheKeyPrefixes.clientAgentsOnline}user-1',
+        value: jsonEncode({
+          'savedAt': savedAt,
+          'payload': {'agents': <Object?>[], 'count': 0},
+        }),
+      );
+      expect(
+        await source.readOnlineAgents(
+          userId: 'user-1',
+          maxAge: const Duration(minutes: 1),
+        ),
+        isNull,
+      );
+    });
+  }
+
+  test('valid empty presence remains distinct from unknown presence', () async {
+    final cache = _InMemoryCacheStore();
+    final source = ClientAgentsLocalDataSource(cache);
+    await cache.putString(
+      key: '${AppKvCacheKeyPrefixes.clientAgentsOnline}user-1',
+      value: jsonEncode({
+        'savedAt': DateTime.now().toIso8601String(),
+        'payload': {'agents': <Object?>[], 'count': 0},
+      }),
+    );
+    final result = await source.readOnlineAgents(
+      userId: 'user-1',
+      maxAge: const Duration(minutes: 1),
+    );
+    expect(result, isNotNull);
+    expect(result!.agents, isEmpty);
+    expect(
+      await source.readOnlineAgents(userId: 'user-1', maxAge: Duration.zero),
+      isNull,
+    );
   });
 
   test('should keep catalog cache isolated by query and search', () async {

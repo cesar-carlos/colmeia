@@ -9,7 +9,11 @@ class OnlineAgentsResponseDto {
 
   factory OnlineAgentsResponseDto.fromJson(Map<String, dynamic> json) {
     final raw = json['agents'] as List<dynamic>? ?? const <dynamic>[];
-    var malformedAgentRowCount = 0;
+    final persistedMalformedCount = json['malformedAgentRowCount'];
+    var malformedAgentRowCount =
+        persistedMalformedCount is int && persistedMalformedCount > 0
+        ? persistedMalformedCount
+        : 0;
     final agents = <OnlineAgentDto>[];
     for (final item in raw) {
       if (item is! Map<String, dynamic>) {

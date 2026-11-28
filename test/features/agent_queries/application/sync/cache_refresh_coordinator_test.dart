@@ -55,6 +55,20 @@ class Presence implements CacheRefreshPresence {
   }
 }
 
+class DelayedScheduleRepository extends LocalCacheRefreshScheduleRepository {
+  DelayedScheduleRepository(super._cache, super._lock);
+
+  final firstList = Completer<List<CacheRefreshRecord>>();
+  int listCalls = 0;
+
+  @override
+  Future<List<CacheRefreshRecord>> list(String user) {
+    listCalls++;
+    if (listCalls == 1) return firstList.future;
+    return super.list(user);
+  }
+}
+
 class Executor implements ScheduledReportRefreshExecutor {
   final calls = <String>[];
   final waiting = <String, Completer<void>>{};
@@ -140,6 +154,40 @@ void main() {
     );
   });
   tearDown(() => coordinator.dispose());
+  for (final nextUser in ['user', 'other']) {
+    test('session restart reloads pending work for $nextUser', () async {
+      final delayed = DelayedScheduleRepository(cache, lock);
+      await coordinator.dispose();
+      final listsAtDispatch = <int>[];
+      coordinator = CacheRefreshCoordinator(
+        repository: delayed,
+        executor: executor,
+        presence: presence,
+        lock: lock,
+        online: () => true,
+        clock: () => now,
+        onWorkStarted: () => listsAtDispatch.add(delayed.listCalls),
+      );
+      await store.save(schedule('a', 'A'));
+      final oldRecords = await store.list('user');
+      if (nextUser != 'user') {
+        await store.save(schedule('b', 'B', user: nextUser));
+      }
+      coordinator.start('user');
+      await until(() => delayed.listCalls == 1);
+      coordinator
+        ..stop()
+        ..start(nextUser);
+      delayed.firstList.complete(oldRecords);
+
+      await until(() => executor.calls.isNotEmpty);
+      expect(delayed.listCalls, greaterThanOrEqualTo(2));
+      expect(listsAtDispatch.every((count) => count >= 2), isTrue);
+      expect(executor.calls, [if (nextUser == 'user') 'a' else 'b']);
+      await until(() => coordinator.runningIds.isEmpty);
+    });
+  }
+
   test(
     'offline agent does not block other agents and resumes once on recovery',
     () async {

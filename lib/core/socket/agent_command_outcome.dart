@@ -53,8 +53,7 @@ final class AgentCommandFailedOffline extends AgentCommandOutcome {
     super.method,
   });
 
-  /// Server-side classification (e.g. `AGENT_OFFLINE`, `protocol_not_ready`,
-  /// `circuit_open`). Useful for diagnosis only.
+  /// Server-side classification (e.g. `AGENT_OFFLINE`, `agent_unreachable`).
   final String reasonCode;
 }
 

@@ -128,10 +128,11 @@ class CacheRefreshCoordinator {
   Future<void> tick() async {
     final user = _user;
     if (_pumping || _disposed || user == null) return;
+    final dispatchEpoch = _epoch;
     _pumping = true;
     try {
       final records = await repository.list(user);
-      if (_user != user) return;
+      if (_disposed || _user != user || _epoch != dispatchEpoch) return;
       final now = _clock().toUtc();
       final eligible =
           records.where((r) {
@@ -164,6 +165,7 @@ class CacheRefreshCoordinator {
                 );
           });
       for (final record in eligible) {
+        if (_disposed || _user != user || _epoch != dispatchEpoch) return;
         if (_running.length >= 2) break;
         final schedule = record.schedule;
         if (_running.containsKey(schedule.agentId)) continue;
@@ -198,6 +200,9 @@ class CacheRefreshCoordinator {
       );
     } finally {
       _pumping = false;
+      if (!_disposed && _user != null && _epoch != dispatchEpoch) {
+        unawaited(tick());
+      }
     }
   }
 

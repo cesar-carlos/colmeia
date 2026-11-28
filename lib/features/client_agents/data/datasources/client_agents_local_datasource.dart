@@ -241,11 +241,18 @@ class ClientAgentsLocalDataSource {
       return null;
     }
     final payload = json['payload'];
-    final savedAt = DateTime.tryParse(json['savedAt'] as String? ?? '');
-    if (maxAge != null &&
-        savedAt != null &&
-        DateTime.now().difference(savedAt) > maxAge) {
-      return null;
+    if (maxAge != null) {
+      final rawSavedAt = json['savedAt'];
+      final savedAt = rawSavedAt is String
+          ? DateTime.tryParse(rawSavedAt)
+          : null;
+      if (savedAt == null || maxAge <= Duration.zero) {
+        return null;
+      }
+      final age = DateTime.now().difference(savedAt);
+      if (age.isNegative || age >= maxAge) {
+        return null;
+      }
     }
     if (payload is! Map<String, dynamic>) {
       return null;

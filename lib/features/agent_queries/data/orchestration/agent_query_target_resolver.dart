@@ -31,6 +31,7 @@ class AgentQueryTargetResolverImpl
   final AgentClientTokenReader _clientTokenReader;
   final AgentQueryTargetResolutionCache _resolutionCache;
   final AgentSqlExecutionEligibilityPolicy _presencePolicy;
+  final Map<String, int> _generations = {};
 
   static const int _maxApprovedAgentsPaginationPages = 400;
   static const String _paginationSignatureSeparator = '\u001f';
@@ -41,6 +42,7 @@ class AgentQueryTargetResolverImpl
     Set<String>? selectedAgentIds,
   }) async {
     final stopwatch = Stopwatch()..start();
+    final generation = _generations[userId] ?? 0;
     final normalizedSelectedIds = _normalizeSelectedIds(selectedAgentIds);
     if (normalizedSelectedIds != null && normalizedSelectedIds.isEmpty) {
       return const Success<AgentQueryTargetResolution, AppFailure>(
@@ -71,6 +73,9 @@ class AgentQueryTargetResolverImpl
     }
 
     final baseResult = await _resolveAllApprovedTargets(userId: userId);
+    if ((_generations[userId] ?? 0) != generation) {
+      return const Failure(OperationCancelledFailure());
+    }
     final base = baseResult.getOrNull();
     if (base == null) {
       return Failure<AgentQueryTargetResolution, AppFailure>(
@@ -120,6 +125,7 @@ class AgentQueryTargetResolverImpl
     >
   >
   _resolveAllApprovedTargets({required String userId}) async {
+    final generation = _generations[userId] ?? 0;
     final cached = _resolutionCache.read(userId: userId);
     if (cached != null) {
       return Success<
@@ -129,6 +135,9 @@ class AgentQueryTargetResolverImpl
     }
 
     final approvedAgentsResult = await _loadAllApprovedAgents(userId: userId);
+    if ((_generations[userId] ?? 0) != generation) {
+      return const Failure(OperationCancelledFailure());
+    }
     final approvedAgents = approvedAgentsResult.getOrNull();
     if (approvedAgents == null) {
       return Failure<
@@ -147,6 +156,9 @@ class AgentQueryTargetResolverImpl
       _clientAgentsRepository.loadOnlineAgentIds(userId: userId),
     ]);
     final tokensByAgentId = parallel[0]! as Map<String, String>;
+    if ((_generations[userId] ?? 0) != generation) {
+      return const Failure(OperationCancelledFailure());
+    }
     final onlineIds = parallel[1] as Set<String>?;
 
     final consideredTargets = sortedAgents
@@ -213,7 +225,13 @@ class AgentQueryTargetResolverImpl
       consideredApprovedTargets: consideredTargets,
       missingClientTokenTargets: missingClientTokenTargets,
       consideredApprovedAgentCount: consideredTargets.length,
-      hubPresenceOnlineAgentIdsSnapshot: onlineIds,
+      hubPresenceOnlineAgentIdsSnapshot: onlineIds == null
+          ? null
+          : <String>{
+              for (final target in consideredTargets)
+                if (target.connectionStatus == AgentConnectionStatus.online)
+                  target.agentId,
+            },
       skippedDueToHubPresenceTargets: skippedDueToHubPresenceTargets,
       sqlEligibleConsideredTargetCount: sqlEligibleConsideredTargetCount,
     );
@@ -395,6 +413,7 @@ class AgentQueryTargetResolverImpl
 
   @override
   void invalidate({required String userId}) {
+    _generations[userId] = (_generations[userId] ?? 0) + 1;
     _resolutionCache.invalidate(userId: userId);
   }
 }
