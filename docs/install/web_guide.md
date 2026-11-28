@@ -57,6 +57,30 @@ The responsive component corrections are included in production version
 [responsiveness review](web_pwa_review_plan.md#shared-component-responsiveness-review-2026-11-17)
 records the component changes and their visual validation limits.
 
+## Production version 1.6.18+41 — 2026-11-28
+
+Published source `5dc8f1a5` (tag `v1.6.18`) as PWA package
+`574e233ec319636f528d`. Fixes presence reconciliation, stale/incomplete caches,
+event ordering, listener cleanup, session fencing and polling cancellation.
+The exact-commit [Flutter CI](https://github.com/cesar-carlos/colmeia/actions/runs/46161853086)
+passed analysis, all four test shards, Web and Android smoke builds before activation.
+Local validation passed 807 focused regressions, 60 release-tool tests and eight
+production PWA worker/browser checks. Native assets are delivered by the
+[tagged release](https://github.com/cesar-carlos/colmeia/actions/runs/46161864189).
+
+All 57 deployed files passed SHA-256 verification. The precache contains 52 files
+and 51,016,851 bytes. Evidence under `/var/www/colmeia/` includes
+`release-1.6.18.sha256`, `release-1.6.18-verified.log`,
+`release-1.6.18-previous.txt` and before/after container inventories.
+The atomic switch preserves `/var/www/colmeia/releases/b838c78d40ac0f3d8330`
+(1.6.17+40) for rollback. Nginx stayed active and container IDs/names were unchanged;
+no service restart, Nginx reload or database migration was required.
+
+Public version metadata confirmed 1.6.18/build 41 and the package ID above.
+`/`, `/dashboard`, `/main.dart.js`, `/pwa-worker.js` and `/api/v1/health` returned
+HTTP 200. These checks do not establish authenticated visual or live SQL acceptance;
+the previously documented E2E limitations remain. The hub was not modified.
+
 ## Production version 1.6.17+40 — 2026-11-23
 
 Published source `dfbf7055` (tag `v1.6.17`) as PWA package

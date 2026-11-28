@@ -16,6 +16,9 @@ controllers reject late results after newer events or logout. Polling backoff is
 cancelled on session restart. Scheduler dispatch reloads work after session changes.
 
 Regression tests cover ordering, cache integrity, session isolation and restart.
+Local validation passed 807 focused regression tests, 60 release-tool tests,
+the production Web build, all eight PWA worker/browser scenarios and static
+analysis. These suites overlap prior focused checks and are not live SQL E2E.
 Interactive authenticated production presence has not been independently verified;
 no debug app was available. Publication does not change the hub or its databases.
 Release validation and deployment evidence are recorded in the Web guide.
